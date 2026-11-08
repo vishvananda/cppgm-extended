@@ -151,7 +151,8 @@ enum OperandFlag : uint8_t
 	AO_WRITE = 2,
 	AO_COMMUTATIVE = 4,
 	AO_FLAG = 8,
-	AO_VOLATILE = 16
+	AO_VOLATILE = 16,
+	AO_NO_MEMORY = 32
 };
 
 enum Property : uint16_t

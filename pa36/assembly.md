@@ -54,7 +54,10 @@ compiler effect; it must not introduce a CPU fence.
 An `operand` gives its value type, input argument index, output-address argument
 index, access bits, input-storage flag and flag-output condition. `-1` means
 absent. Access bits are read (1), write (2), commutative pair (4), flag output
-(8) and volatile storage access (16). Register inputs are captured values;
+(8), volatile storage access (16) and prohibited memory binding (32).
+The last flag permits producers to materialize value-only output places,
+such as bit-fields, without offering that temporary as an assembly memory
+operand. Register inputs are captured values;
 explicit storage inputs and output arguments are pointers. Flag conditions use
 the architectural x86 condition-code nibble. Output places may alias: capture
 results before storing them in operand order. Discarded outputs have no address.
@@ -83,6 +86,10 @@ Template pieces are `text "..."`, `use <operand> <format> <bits> <offset>`, or
 Zero width chooses the operand's view; offset 8 selects an available high-byte
 view. The frontend handles its own string escapes and placeholder syntax. The
 backend parses the resulting assembly source once and retains typed operands.
+Named/numeric labels and branches stay within the template. Numeric `1f`/`1b`
+references select the nearest matching label in that direction. A `unique`
+piece supplies a label suffix; every emitted occurrence has its own label
+identities, including clones of one invocation.
 
 The reader checks bounds, alternative columns, access promises, references and
 invocation types. Native capability checks are separate: a packet can be

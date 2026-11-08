@@ -81,7 +81,8 @@ public:
 
 	const std::shared_ptr<const AssemblyPlan>& assembly_plan(const lowir::Instruction& inst) const;
 	void emit_assembly(const lowir::Instruction& inst);
-	mutable std::map<uint64_t, std::shared_ptr<const AssemblyPlan>> assembly_plans_;
+	Operand assembly_input(const lowir::AssemblyOperand& operand, lowir::Value value, Reg reg, bool memory);
+	mutable std::map<uint32_t, std::shared_ptr<const AssemblyPlan>> assembly_plans_;
 
 	// ---- allocation.cpp
 	void inst_clobbers(uint32_t inst, uint32_t& clobber, uint32_t& early) const;

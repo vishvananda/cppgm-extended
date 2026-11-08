@@ -84,7 +84,7 @@ for my $test (@tests)
 	my $source = abs_path($test);
 	my $profile = read_file(profile_path($test));
 	$profile =~ s/\s+\z//;
-	die "$test: unknown assembly profile '$profile'\n" if $profile !~ /\A(?:lowir|gnu)(?:-reject)?\z/;
+	die "$test: unknown assembly profile '$profile'\n" if $profile !~ /\A(?:(?:lowir|gnu)(?:-reject)?|gnu-native)\z/;
 	my $directory = File::Spec->rel2abs(tempdir('case-XXXXXX', DIR => $out, CLEANUP => 0));
 	if ($profile =~ /-reject\z/)
 	{
@@ -123,10 +123,10 @@ for my $test (@tests)
 			note_progress_state('compile', $test);
 			my $label = "input-$index-$level";
 			my $object = "$directory/$label.o";
-			my @flags = $profile eq 'gnu' ? ('--full-asm') : ();
+			my @flags = $profile =~ /\Agnu/ ? ('--full-asm') : ();
 			command($directory, "$label.compile", $app, @flags, "-$level", '-c', $input, '-o', $object);
 			push @observations, observe($directory, $label, $object, $driver);
-			if ($profile eq 'gnu')
+			if ($profile =~ /\Agnu/)
 			{
 				my $lowered = "$directory/$label.lowir";
 				my $canonical = "$directory/$label.canonical.lowir";

@@ -2387,6 +2387,8 @@ RValue FunctionLowering::bit_field_increment(const syntax::UnaryExpr& expr, bool
 
 const RValue& FunctionLowering::update_operand(BitFieldUpdate& update)
 {
+	if (update.kind == BitFieldUpdate::Kind::Capture)
+		return update.capture->empty;
 	// An assignment's right operand converted as the course converts a
 	// bit-field's assigned value (a class object by its conversion function,
 	// 13.3.1.2p7); a compound assignment's to the operation.
@@ -2413,6 +2415,12 @@ const RValue& FunctionLowering::update_operand(BitFieldUpdate& update)
 RValue FunctionLowering::update_bit_field(const syntax::Expr& target, BitFieldUpdate& update)
 {
 	const syntax::Expr* e = WithoutParentheses(&target);
+	if (update.kind == BitFieldUpdate::Kind::Capture &&
+		(e->kind == syntax::ExprKind::Assign ||
+			(e->kind == syntax::ExprKind::Unary &&
+				(static_cast<const syntax::UnaryExpr*>(e)->op == TokenKind::OP_INC ||
+					static_cast<const syntax::UnaryExpr*>(e)->op == TokenKind::OP_DEC))))
+		return capture_asm_designator(*e, update);
 	if (e->kind == syntax::ExprKind::Conditional)
 	{
 		// 5.16p4: the operand the condition selects is updated; the right
@@ -2539,6 +2547,8 @@ RValue FunctionLowering::apply_bit_field_update(const BitField& field, const Pla
 	update.type = type;
 	switch (update.kind)
 	{
+	case BitFieldUpdate::Kind::Capture:
+		return capture_asm_case(*update.capture, &field, unit, type);
 	case BitFieldUpdate::Kind::Assign:
 		return write_bit_field(field, unit, to_unit(field, fit(update_operand(update), type), type));
 	case BitFieldUpdate::Kind::Compound:
@@ -2573,11 +2583,17 @@ RValue FunctionLowering::apply_object_update(const syntax::Expr& target, BitFiel
 {
 	// A conditional's operand that is no bit-field, updated as an object.
 	const sema::Type* type = target.facts->type;
+	return apply_object_update_at(type, glvalue(target), update);
+}
+
+RValue FunctionLowering::apply_object_update_at(const sema::Type* type, const Place& place, BitFieldUpdate& update)
+{
 	const lowir::Type storage = lowering_.storage_type(type);
 	update.type = type;
-	const Place place = glvalue(target);
 	switch (update.kind)
 	{
+	case BitFieldUpdate::Kind::Capture:
+		return capture_asm_case(*update.capture, nullptr, place, type);
 	case BitFieldUpdate::Kind::Assign:
 	{
 		const RValue value = fit(update_operand(update), type);

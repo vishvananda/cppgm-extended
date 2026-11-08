@@ -10,11 +10,14 @@ namespace {
 using namespace asm_model;
 using namespace mir_model;
 
-unsigned width(lowir::Type type)
+unsigned width(lowir::Type type, RegisterBank bank)
 {
-	return type.is_vector() || type.is_float() ? 128
-		: type.is_pointer()                    ? 64
-											   : std::max(8u, lowir::integer_bits(type.kind()));
+	if (bank == RegisterBank::Vector)
+		return 128;
+	return type.is_vector()                                        ? 128
+		: type.kind() == lowir::TypeKind::F32                      ? 32
+		: type.kind() == lowir::TypeKind::F64 || type.is_pointer() ? 64
+																   : std::max(8u, lowir::integer_bits(type.kind()));
 }
 
 uint32_t register_domain(
@@ -24,7 +27,7 @@ uint32_t register_domain(
 		operand.type.kind() == lowir::TypeKind::F80)
 		return 0;
 	if (alt.matching != asm_model::kNoId)
-		return (operand.type.is_vector() || operand.type.is_float()) ? kAllXmms : 0xffcfu;
+		return kAllXmms | (operand.type.is_vector() ? 0 : 0xffcfu);
 	if ((alt.locations & AL_REGISTER) == 0)
 		return 0;
 	uint32_t mask = 0;
@@ -34,11 +37,12 @@ uint32_t register_domain(
 		if (group.register_count != 1)
 			continue;
 		const Register& reg = module.registers[group.first_register];
-		const bool vector = operand.type.is_vector() || operand.type.is_float();
-		if (reg.offset != 0 || reg.number >= 16 || (reg.bits != 0 && reg.bits != width(operand.type)) ||
-			reg.bank != (vector ? RegisterBank::Vector : RegisterBank::Gpr))
+		if (reg.offset != 0 || reg.number >= 16 ||
+			(reg.bank != RegisterBank::Gpr && reg.bank != RegisterBank::Vector) ||
+			(reg.bank == RegisterBank::Gpr && operand.type.is_vector()) ||
+			(reg.bits != 0 && reg.bits != width(operand.type, reg.bank)))
 			continue;
-		const Reg r = static_cast<Reg>(reg.number + (vector ? 16 : 0));
+		const Reg r = static_cast<Reg>(reg.number + (reg.bank == RegisterBank::Vector ? 16 : 0));
 		if (r != RSP && r != RBP)
 			mask |= reg_bit(r);
 	}
@@ -197,7 +201,7 @@ bool column(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& 
 				(op.input != asm_model::kNoId && arguments[op.input] == arguments[op.output]);
 			const bool address = (op.input_storage && op.input != asm_model::kNoId && shared_storage) ||
 				((op.flags & AO_READ) == 0 && op.output != asm_model::kNoId);
-			if ((alt.locations & AL_MEMORY) != 0 && address)
+			if ((alt.locations & AL_MEMORY) != 0 && (op.flags & AO_NO_MEMORY) == 0 && address)
 				group.addresses = 0xffcfu & ~clobbers;
 			if ((op.flags & (AO_READ | AO_WRITE)) == AO_READ && !op.input_storage)
 				group.immediate = immediate_domain(module, alt, body, arguments[op.input], result.constants[i]);

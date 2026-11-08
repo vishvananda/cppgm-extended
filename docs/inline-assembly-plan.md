@@ -348,3 +348,25 @@ The initial register subset also passed native Intel macOS CI under LLVM 18 and
 full register-class transfers, commutative swaps, symbols and bit-field output
 places. The later control-flow, module assembly, unwind, ISA and Rust release
 stages are still required before claiming full assembly support.
+
+### Register, output-place and local-branch checkpoint (2026-11-08)
+
+Scalar floating values can bind GPRs and integer values can bind XMM registers,
+with bit-preserving transfers and staged setup that does not assume the emitter's
+scratch registers are free. Incoming condition flags survive operand setup.
+Bit-field outputs capture their selected places once, preserve neighboring bits
+and commit register outputs in operand order. Conditional, comma, assignment
+and prefix-increment designators have behavioral coverage. A GNU-native fixture
+uses its observer directly where GCC drops conditional bit-field writeback.
+
+The integrated parser resolves named and numeric local labels to typed targets;
+each emitted occurrence receives fresh label identities, including GNU unique
+labels and optimized clones. Direct jumps and all condition-code branches stay
+inside one assembly packet. The optional suite has 35 fixtures, all passing at
+O0/O2/O3 with host-built and self-built compilers. The required strict report
+passes 8,099/8,099, as do debug info, self-host through PA5, inception equality,
+PA35 smoke, architecture/placement audits and the harness checks.
+
+Symbol/relocation operands, outgoing CFG edges, assembly items/unwind state,
+wider ISA/register coverage and Rust source/pin qualification remain open.
+Godot is paused until the assembly work is finished.

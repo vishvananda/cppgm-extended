@@ -150,7 +150,7 @@ bool operand(const AssemblyModule& module, const AssemblyTemplate& site, uint32_
 {
 	const AssemblyOperand& op = module.operands[site.first_operand + index];
 	if (static_cast<unsigned>(op.type.kind()) > static_cast<unsigned>(TypeKind::Obj) ||
-		(op.flags & ~(AO_READ | AO_WRITE | AO_COMMUTATIVE | AO_FLAG | AO_VOLATILE)) != 0 ||
+		(op.flags & ~(AO_READ | AO_WRITE | AO_COMMUTATIVE | AO_FLAG | AO_VOLATILE | AO_NO_MEMORY)) != 0 ||
 		!slice(op.first_alternative, op.alternative_count, module.alternatives.size()) ||
 		(op.input != lowir::kNoId && op.input >= site.argument_count) ||
 		(op.output != lowir::kNoId && op.output >= site.argument_count))

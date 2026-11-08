@@ -31,6 +31,7 @@ FunctionSelector::FunctionSelector(const lowir::Program& program, SelectStats& s
 
 void FunctionSelector::reset(lowir::SymbolId symbol, Function& out)
 {
+	assembly_plans_.clear();
 	const lowir::Symbol& sym = program_.symbols[symbol];
 	const lowir::Function& function = program_.functions[sym.detail];
 	body_ = function.body.get();

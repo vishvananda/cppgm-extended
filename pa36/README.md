@@ -8,7 +8,7 @@ that same contract directly as LowIR. Generate native instructions and object
 fixups with your own encoder.
 
 PA36 is optional and outside the required 35-assignment ladder. The current
-contract is the register-based subset below. The broader extensions at the end
+contract is the operand and local-control-flow subset below. The broader extensions at the end
 are separate goals. PA29's bounded GNU compatibility remains unchanged.
 
 ### Prerequisites and starter kit
@@ -54,8 +54,12 @@ constants, `g` mixed locations and the integer ranges in `x86_asm_model.h`.
 Letters within a constraint alternative describe a union; select one alternative
 column jointly across every operand. GNU immediate constraints see the
 operand's machine-mode bits, including sign extension of narrow constants.
-Output places are addressable scalar or vector lvalues; bit-field output
-places are a further extension.
+Output places include scalar/vector lvalues and bit-fields. Capture each
+selected place once, then assign register results in operand order, preserving
+neighboring bits and volatile accesses. Constraints requiring a bit-field's
+memory address are impossible and must fail. Register classes select the
+physical bank: scalar floating values can travel through GPRs, and scalar
+integer values through XMM registers, preserving their bits.
 Preserve named operands, supported width modifiers, volatility and memory/state
 effects through the [documented LowIR records](assembly.md).
 Evaluate each memory address once. A register alternative may load from that
@@ -64,6 +68,9 @@ unrequested read of an output-only memory operand.
 
 Support the initial integer/SSE forms described by the supplied encoding facts,
 in Intel and AT&T syntax, including their register widths and addressing forms.
+Support named and numeric local labels, forward/backward numeric references,
+GNU `%=` labels, and direct `jmp`/condition-code branches within one template.
+Keep label identities distinct when optimization clones or inlines a template.
 LowIR selects the dialect; the current GNU source adapter uses AT&T. Choose one
 alternative column jointly across operands. Respect register aliases
 and lifetimes, preserve the host ABI, and capture outputs before assigning
@@ -100,8 +107,10 @@ when iterating. Set both `CXX` and
 on Linux or `otool` on Intel macOS.
 
 Tests check native behavior, complete value bits, guard bytes, ABI preservation,
-output ordering and LowIR roundtrips. Source cases also run with the host
-compiler. Allocation choices and surrounding instructions are unconstrained;
+output ordering and LowIR roundtrips. Portable source cases also run with the host
+compiler. A `gnu-native` profile uses the supplied observer directly when host
+compiler behavior does not provide an independent oracle; it still checks
+source compilation and LowIR roundtrips at every optimization level. Allocation choices and surrounding instructions are unconstrained;
 assembly instructions explicitly requested by the source must be emitted.
 Reject malformed syntax, inconsistent constraints and type errors with failure.
 Report unsupported native capabilities clearly. Exact diagnostic text is not
@@ -113,7 +122,7 @@ included in those reports or in the required course completion criteria.
 
 ### Further extensions
 
-Symbol constraints, internal and outgoing labels, GNU goto,
+Symbol constraints, outgoing labels, GNU goto,
 global/naked assembly, directives, relocations, unwind state and broader
 x86/VEX/EVEX coverage remain extension goals. Original Rust assembly is a useful
 cross-frontend consumer. These goals require additional contracts and tests;

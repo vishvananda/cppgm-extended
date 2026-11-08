@@ -186,7 +186,7 @@ void vector(Assembler& out, const assembly::Instruction& inst, const Form& form)
 
 } // namespace
 
-void encode_assembly(Assembler& out, const assembly::Instruction& inst)
+void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 {
 	uint16_t suffix = 0;
 	const Form* form = asm_detail::assembly_form(inst.mnemonic, suffix);
@@ -204,6 +204,35 @@ void encode_assembly(Assembler& out, const assembly::Instruction& inst)
 		vector(out, inst, *form);
 	else
 		integer(out, inst, *form, suffix);
+}
+
+void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& instructions)
+{
+	std::vector<uint32_t> labels(instructions.size(), kNoLabel);
+	for (size_t i = 0; i < instructions.size(); ++i)
+		if (instructions[i].label)
+			labels[i] = out.new_label();
+	for (const assembly::Instruction& inst : instructions)
+	{
+		if (inst.label)
+		{
+			out.bind(labels[&inst - instructions.data()]);
+			continue;
+		}
+		const int condition = asm_detail::branch_condition(inst.mnemonic);
+		if (inst.mnemonic == "jmp" || condition >= 0)
+		{
+			if (inst.operands.size() != 1 || inst.operands[0].kind != OperandKind::Label)
+				fail(inst, "expected one assembly-local branch target");
+			const uint32_t label = labels[inst.operands[0].label];
+			if (condition < 0)
+				out.jmp(label);
+			else
+				out.jcc(static_cast<Cond>(condition), label);
+		}
+		else
+			encode_instruction(out, inst);
+	}
 }
 
 } // namespace native

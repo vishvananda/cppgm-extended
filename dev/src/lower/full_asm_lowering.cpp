@@ -32,6 +32,7 @@ void FunctionLowering::full_asm_statement(const syntax::AsmStmt& stmt)
 		end_tracking();
 		begin_tracking(expressions.data(), expressions.size(), true, true);
 	}
+	std::vector<AsmOutputCapture> captures(expressions.size());
 	std::vector<lowir::Type> types;
 	std::vector<lowir::Value> values(packet.definition.argument_count, lowir::Value::none());
 	for (uint32_t i = 0; i < expressions.size(); ++i)
@@ -41,6 +42,27 @@ void FunctionLowering::full_asm_statement(const syntax::AsmStmt& stmt)
 		const lowir::Type type = lowering_.storage_type(expr.facts->type->unqualified);
 		types.push_back(type);
 		lowir::Value destination = lowir::Value::none();
+		if (argument.output != asm_model::kNoId && (argument.flags & asm_model::AO_NO_MEMORY) != 0)
+		{
+			AsmOutputCapture& capture = captures[i];
+			capture.result_slot = lowir::Value::slot(generated_slot(lowir::SlotKind::Asm, type));
+			capture.pointer_slot = lowir::Value::slot(
+				generated_slot(lowir::SlotKind::Asm, lowir::Type::scalar(lowir::TypeKind::Ptr)));
+			capture.selector_slot = lowir::Value::slot(
+				generated_slot(lowir::SlotKind::Asm, lowir::Type::scalar(lowir::TypeKind::I32)));
+			capture.empty = integer(type, 0);
+			capture.read = (argument.flags & asm_model::AO_READ) != 0;
+			BitFieldUpdate update = BitFieldUpdate();
+			update.kind = BitFieldUpdate::Kind::Capture;
+			update.capture = &capture;
+			const RValue initial = update_bit_field(expr, update);
+			Place result = Place();
+			result.storage = capture.result_slot;
+			values[argument.output] = address_of(result);
+			if (argument.input != asm_model::kNoId)
+				values[argument.input] = initial.value;
+			continue;
+		}
 		if (argument.output != asm_model::kNoId || argument.input_storage)
 			destination = address(expr);
 		if (argument.output != asm_model::kNoId)
@@ -70,6 +92,9 @@ void FunctionLowering::full_asm_statement(const syntax::AsmStmt& stmt)
 	inst.extra_count = static_cast<uint32_t>(values.size());
 	inst.extra_first = builder_.add_operands(values.data(), inst.extra_count);
 	builder_.append(inst);
+	for (const AsmOutputCapture& capture : captures)
+		if (!capture.cases.empty())
+			finish_asm_output(capture);
 	destroy_temporaries(cleanup_base);
 	end_full_expression(region);
 }
