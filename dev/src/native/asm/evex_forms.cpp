@@ -115,14 +115,19 @@ void emit(Assembler& out, const EvexForm& form, const VectorEncodingPlan& plan, 
 		out.byte(plan.control);
 }
 }
-void encode_evex_vector_transfer(Assembler& out, const asm_model::Register& reg, const RM& memory, bool store)
+void encode_evex_vector_transfer(
+	Assembler& out, const asm_model::Register& reg, const RM& memory, bool store, unsigned bytes)
 {
-	if (reg.bank != asm_model::RegisterBank::Vector || reg.number >= 32 || reg.bits != 512 || reg.offset ||
-		memory.is_reg)
+	if (reg.bank != asm_model::RegisterBank::Vector || reg.number >= 32 ||
+		(reg.bits != 128 && reg.bits != 256 && reg.bits != 512) || reg.offset || memory.is_reg)
 		throw BackendError("invalid EVEX assembly vector transfer");
-	const EvexForm form = { { "vmovdqu64", L::Move, 0x6f, 1, 2, 1, 4, 0, 0, 0 }, 64, 3 };
-	const VectorEncodingPlan plan = { 512, 512, reg.number, 0, memory, static_cast<uint8_t>(store ? 0x7f : 0x6f), 0,
-		false };
+	const bool scalar = bytes < 16;
+	const EvexForm form = { { "transfer", L::Move, static_cast<uint8_t>(scalar ? 0x10 : 0x6f), 1,
+								static_cast<uint8_t>(bytes == 8 ? 3 : 2), static_cast<uint8_t>(bytes == 4 ? 0 : 1), 7,
+								0, 0, 0 },
+		64, 3 };
+	const VectorEncodingPlan plan = { reg.bits, bytes * 8, reg.number, 0, memory,
+		static_cast<uint8_t>(scalar ? (store ? 0x11 : 0x10) : (store ? 0x7f : 0x6f)), 0, false };
 	emit(out, form, plan, 0, false, false);
 }
 

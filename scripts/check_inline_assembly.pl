@@ -128,14 +128,20 @@ for my $test (@tests)
 	@fixture_link = fixture_link_options($test);
 	my $profile = read_file(profile_path($test));
 	$profile =~ s/\s+\z//;
-	die "$test: unknown assembly profile '$profile'\n" if $profile !~ /\A(?:(?:lowir|gnu)(?:-reject)?|gnu-native|lowir-native)\z/;
+	die "$test: unknown assembly profile '$profile'\n" if $profile !~ /\A(?:(?:lowir|gnu)(?:-reject)?|gnu-native|lowir-native(?:-reject)?)\z/;
 	my $directory = File::Spec->rel2abs(tempdir('case-XXXXXX', DIR => $out, CLEANUP => 0));
 	if ($profile =~ /-reject\z/)
 	{
 		note_progress_state('reject', $test);
+		my $native_source = $source;
+		if ($profile eq 'lowir-native-reject')
+		{
+			$native_source = "$directory/accepted.lowir";
+			command($directory, 'accepted-transport', $lowir, '-o', $native_source, $source);
+		}
 		my @cmd = $profile eq 'lowir-reject'
 			? ($lowir, '-o', "$directory/rejected.lowir", $source)
-			: ($app, '--full-asm', '-O0', '-c', $source, '-o', "$directory/rejected.o");
+			: ($app, ($profile =~ /^gnu/ ? ('--full-asm') : ()), '-O0', '-c', $native_source, '-o', "$directory/rejected.o");
 		my $status = run_command_capture(cmd => \@cmd,
 			stdout => "$directory/reject.stdout", stderr => "$directory/reject.stderr",
 			timeout => get_timeout_from_env('CPPGM_BUILD_TEST_TIMEOUT_SEC', 30));

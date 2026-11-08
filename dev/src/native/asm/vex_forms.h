@@ -9,5 +9,6 @@ namespace native {
 // widen the ordinary MIR register sets or fabricate scalar value carriers.
 void encode_vex_plan(Assembler& out, const x86_asm_model::VexForm& form, const VectorEncodingPlan& plan);
 bool encode_vex_form(Assembler& out, const assembly::Instruction& instruction);
-void encode_assembly_vector_transfer(Assembler& out, const asm_model::Register& reg, const RM& memory, bool store);
+void encode_assembly_vector_transfer(
+	Assembler& out, const asm_model::Register& reg, const RM& memory, bool store, unsigned bytes);
 } // namespace native

@@ -1143,7 +1143,8 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	{
 		const AssemblyPlan& plan = *function.assembly->plans[static_cast<uint32_t>(a.imm)];
 		if (plan.transfer_bytes != 0)
-			encode_assembly_vector_transfer(asm_, plan.transfer_register, rm(b), plan.transfer_store);
+			encode_assembly_vector_transfer(
+				asm_, plan.transfer_register, rm(b), plan.transfer_store, plan.transfer_bytes);
 		else
 			encode_assembly(asm_, plan.instructions, inst.nops == 2 ? rm(b) : RM());
 		break;

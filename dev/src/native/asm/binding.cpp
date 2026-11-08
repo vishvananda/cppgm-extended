@@ -20,7 +20,8 @@ using namespace mir_model;
 
 Reg physical(const Register& reg)
 {
-	if (reg.number >= 16 || (reg.bank != RegisterBank::Gpr && reg.bank != RegisterBank::Vector))
+	if (reg.number >= (reg.bank == RegisterBank::Vector ? 32 : 16) ||
+		(reg.bank != RegisterBank::Gpr && reg.bank != RegisterBank::Vector))
 		unsupported("this register bank or extension");
 	return static_cast<Reg>(reg.number + (reg.bank == RegisterBank::Vector ? 16 : 0));
 }
@@ -162,28 +163,26 @@ std::shared_ptr<AssemblyPlan> prepare_assembly_source(const lowir::AssemblyModul
 		if ((module.operands[definition.first_operand + i].flags & AO_FLAG) != 0 &&
 			module.operands[definition.first_operand + i].type.kind() == lowir::TypeKind::I128)
 			unsupported("128-bit flag outputs");
-	uint32_t clobbers = 0;
+	uint64_t clobbers = 0;
 	for (uint32_t i = 0; i < definition.clobber_count; ++i)
 	{
 		const Register& view = module.clobbers[definition.first_clobber + i];
-		// The ordinary allocator has no upper vector or opmask values. Both
-		// banks are caller-saved on the supported ABI, so they need no spill.
-		if ((view.bank == RegisterBank::Vector && view.number >= 16 && view.number < 32) ||
-			(view.bank == RegisterBank::Mask && view.number < 8))
+		// Opmask values have no ordinary register allocation yet.
+		if (view.bank == RegisterBank::Mask && view.number < 8)
 			continue;
 		const Reg reg = physical(module.clobbers[definition.first_clobber + i]);
 		if (reg == RSP || reg == RBP)
 			unsupported("stack or frame register clobbers");
-		clobbers |= reg_bit(reg);
+		clobbers |= assembly_register_bit(reg);
 	}
 	static_cast<AssemblyBinding&>(*plan) = assign_assembly_operands(module, definition, clobbers, body, arguments);
-	plan->writes = clobbers;
+	plan->writes = static_cast<uint32_t>(clobbers);
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
 		if (plan->registers[i] == kNoReg)
 			continue;
-		const uint32_t bit = reg_bit(plan->registers[i]);
+		const uint32_t bit = ordinary_assembly_mask(plan->registers[i]);
 		plan->writes |= bit; // input setup also overwrites its selected register
 		if ((operand.flags & AO_READ) != 0 || plan->locations[i] == AL_MEMORY)
 			plan->reads |= bit;

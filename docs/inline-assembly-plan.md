@@ -746,3 +746,30 @@ transfers. Runtime AVX-512 coverage requires a capable host.
 Aggregate qualification remains deferred. Typed upper-register alternatives,
 mask operands, x87/MMX and other forms/directives, rounding/SAE and original
 Rust source/backend integration remain unfinished.
+
+## 2026-11-08 checkpoint: upper vector allocation
+
+Assembly-only register keys and constraint sets now cover all32 vector units;
+ordinary MIR sets stay32-bit. LowIR explicit upper alternatives and GNU `v`
+constraints bind through the same joint search, aliasing and full-width
+transfers. `x` retains its initial16-register domain. Clobbers exclude entire
+units across XMM/YMM/ZMM views. Scalar and128-bit transfers use the matching
+memory width while512-bit storage remains a real64-byte value.
+
+Focused source and LowIR checks pass atO0/O2/O3 with GCC/Clang observers;
+AVX-512 execution remains CPU-skipped here with required instruction inspection.
+3200 independent scalar/vector transfer encodings match LLVM across register
+views, frame bases and displacement boundaries. The existing256-bit native
+case still executes and passes. A native rejection profile validates LowIR
+transport before checking a genuinely impossible clobber/operand assignment.
+
+Constant/symbol/label-only choices are selected linearly before register
+search. They cannot exclude any physical assignment, and recursion now follows
+physical resources rather than immutable arguments. A private64000-constant
+packet compiles successfully. Failed private probes using invented f16/bf16/
+f128 LowIR type spellings were discarded as evidence; those spellings are not
+part of this transport. No implementation-limit negatives ship to students.
+
+Whole qualification is still deferred. Typed mask/x87/MMX bindings, broader
+instruction/directive coverage, rounding/SAE and original Rust integration
+remain open.

@@ -21,31 +21,32 @@ unsigned width(lowir::Type type, RegisterBank bank)
 																   : std::max(8u, lowir::integer_bits(type.kind()));
 }
 
-uint32_t register_domain(
+uint64_t register_domain(
 	const lowir::AssemblyModule& module, const lowir::AssemblyOperand& operand, const Alternative& alt)
 {
 	if ((operand.type.is_object() && !wide_assembly_operand(operand.type)) || operand.type.is_void() ||
 		operand.type.kind() == lowir::TypeKind::I128 || operand.type.kind() == lowir::TypeKind::F80)
 		return 0;
 	if (alt.matching != asm_model::kNoId)
-		return kAllXmms | (operand.type.is_vector() || wide_assembly_operand(operand.type) ? 0 : 0xffcfu);
+		return (uint64_t(0xffffffffu) << 16) |
+			(operand.type.is_vector() || wide_assembly_operand(operand.type) ? 0 : 0xffcfu);
 	if ((alt.locations & AL_REGISTER) == 0)
 		return 0;
-	uint32_t mask = 0;
+	uint64_t mask = 0;
 	for (uint32_t i = 0; i < alt.group_count; ++i)
 	{
 		const RegisterGroup& group = module.groups[alt.first_group + i];
 		if (group.register_count != 1)
 			continue;
 		const Register& reg = module.registers[group.first_register];
-		if (reg.offset != 0 || reg.number >= 16 ||
+		if (reg.offset != 0 || reg.number >= (reg.bank == RegisterBank::Vector ? 32 : 16) ||
 			(reg.bank != RegisterBank::Gpr && reg.bank != RegisterBank::Vector) ||
 			(reg.bank == RegisterBank::Gpr && (operand.type.is_vector() || operand.type.is_object())) ||
 			(reg.bits != 0 && reg.bits != width(operand.type, reg.bank)))
 			continue;
 		const Reg r = static_cast<Reg>(reg.number + (reg.bank == RegisterBank::Vector ? 16 : 0));
 		if (r != RSP && r != RBP)
-			mask |= reg_bit(r);
+			mask |= assembly_register_bit(r);
 	}
 	return mask;
 }
@@ -106,8 +107,8 @@ bool symbol_value(const lowir::FunctionBody& body, lowir::Value value, SymbolRef
 
 struct Group
 {
-	uint32_t registers = ~uint32_t(0);
-	uint32_t addresses = 0;
+	uint64_t registers = ~uint64_t(0);
+	uint64_t addresses = 0;
 	uint8_t access = 0;
 	bool early = false;
 	bool immediate = false;
@@ -129,16 +130,17 @@ bool conflict(const Group& a, const Group& b)
 		(b.location == AL_REGISTER && b.early && (aa & AO_READ) != 0);
 }
 
-uint32_t available(const std::vector<Group>& groups, uint32_t index, uint32_t mask)
+uint64_t available(const std::vector<Group>& groups, uint32_t index, uint64_t mask)
 {
 	for (uint32_t j = 0; j < groups.size(); ++j)
 		if (groups[j].assigned != kNoReg && conflict(groups[index], groups[j]))
-			mask &= ~reg_bit(groups[j].assigned);
+			mask &= ~assembly_register_bit(groups[j].assigned);
 	return mask;
 }
 
 const Reg kPreference[] = { R10, R11, XMM14, XMM15, RAX, RCX, RDX, RSI, RDI, R8, R9, XMM0, XMM1, XMM2, XMM3, XMM4, XMM5,
-	XMM6, XMM7, XMM8, XMM9, XMM10, XMM11, XMM12, XMM13, RBX, R12, R13, R14, R15 };
+	XMM6, XMM7, XMM8, XMM9, XMM10, XMM11, XMM12, XMM13, RBX, R12, R13, R14, R15, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+	42, 43, 44, 45, 46, 47 };
 
 // Location and physical register are one joint choice. Memory operands retain
 // their address registers for the effect; an immediate uses no register unit.
@@ -156,10 +158,9 @@ bool search(std::vector<Group>& groups, uint32_t left, uint32_t& work)
 		if (group.location != 0)
 			continue;
 		group.location = AL_REGISTER;
-		unsigned n = static_cast<unsigned>(__builtin_popcount(available(groups, i, group.registers)));
+		unsigned n = static_cast<unsigned>(__builtin_popcountll(available(groups, i, group.registers)));
 		group.location = AL_MEMORY;
-		n += static_cast<unsigned>(__builtin_popcount(available(groups, i, group.addresses))) + group.immediate +
-			group.symbol + group.label;
+		n += static_cast<unsigned>(__builtin_popcountll(available(groups, i, group.addresses)));
 		group.location = 0;
 		if (n == 0)
 			return false;
@@ -170,18 +171,12 @@ bool search(std::vector<Group>& groups, uint32_t left, uint32_t& work)
 		}
 	}
 	Group& group = groups[selected];
-	if (group.immediate || group.symbol || group.label)
-	{
-		group.location = group.label ? AL_LABEL : group.symbol ? AL_SYMBOL : AL_IMMEDIATE;
-		if (search(groups, left - 1, work))
-			return true;
-	}
 	for (uint8_t location : { uint8_t(AL_REGISTER), uint8_t(AL_MEMORY) })
 	{
 		group.location = location;
-		const uint32_t mask = available(groups, selected, location == AL_REGISTER ? group.registers : group.addresses);
+		const uint64_t mask = available(groups, selected, location == AL_REGISTER ? group.registers : group.addresses);
 		for (Reg r : kPreference)
-			if ((mask & reg_bit(r)) != 0)
+			if ((mask & assembly_register_bit(r)) != 0)
 			{
 				group.assigned = r;
 				if (search(groups, left - 1, work))
@@ -194,7 +189,7 @@ bool search(std::vector<Group>& groups, uint32_t left, uint32_t& work)
 }
 
 bool column(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& definition, uint32_t column,
-	uint32_t clobbers, const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments,
+	uint64_t clobbers, const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments,
 	AssemblyBinding& result, const std::vector<uint32_t>& sources, uint32_t& work)
 {
 	std::vector<uint32_t> roots(definition.operand_count), vertices(definition.operand_count, asm_model::kNoId);
@@ -258,7 +253,13 @@ bool column(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& 
 			}
 		}
 	}
-	if (!search(groups, static_cast<uint32_t>(groups.size()), work))
+	uint32_t pending = 0;
+	for (Group& group : groups)
+		if (group.immediate || group.symbol || group.label)
+			group.location = group.label ? AL_LABEL : group.symbol ? AL_SYMBOL : AL_IMMEDIATE;
+		else
+			++pending;
+	if (!search(groups, pending, work))
 		return false;
 	result.registers.assign(definition.operand_count, kNoReg);
 	result.locations.assign(definition.operand_count, 0);
@@ -276,7 +277,7 @@ bool column(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& 
 } // namespace
 
 AssemblyBinding assign_assembly_operands(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& definition,
-	uint32_t clobbers, const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments)
+	uint64_t clobbers, const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments)
 {
 	uint32_t columns = 1;
 	for (uint32_t i = 0; i < definition.operand_count; ++i)

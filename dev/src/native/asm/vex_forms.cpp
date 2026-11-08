@@ -56,17 +56,22 @@ void encode_vex_plan(Assembler& out, const x86_asm_model::VexForm& form, const V
 {
 	emit(out, form, plan.bits, plan.reg, plan.source, plan.other, plan.opcode, plan.has_immediate, plan.control);
 }
-void encode_assembly_vector_transfer(Assembler& out, const asm_model::Register& reg, const RM& memory, bool store)
+void encode_assembly_vector_transfer(
+	Assembler& out, const asm_model::Register& reg, const RM& memory, bool store, unsigned bytes)
 {
-	if (reg.bits == 512)
+	if (reg.bits == 512 || reg.number >= 16)
 	{
-		encode_evex_vector_transfer(out, reg, memory, store);
+		encode_evex_vector_transfer(out, reg, memory, store, bytes);
 		return;
 	}
-	if (reg.bank != RegisterBank::Vector || reg.number >= 16 || reg.bits != 256 || reg.offset != 0 || memory.is_reg)
+	if (reg.bank != RegisterBank::Vector || reg.number >= 16 || (reg.bits != 128 && reg.bits != 256) ||
+		reg.offset != 0 || memory.is_reg)
 		throw BackendError("invalid assembly vector transfer");
-	const VexForm form = { "vmovdqu", L::Move, 0x6f, 1, 2, 0, 3, 0, 0, 0 };
-	emit(out, form, reg.bits, reg.number, 0, memory, store ? 0x7f : 0x6f, false, 0);
+	const bool scalar = bytes < 16;
+	const VexForm form = { "transfer", L::Move, static_cast<uint8_t>(scalar ? 0x10 : 0x6f), 1,
+		static_cast<uint8_t>(bytes == 8 ? 3 : 2), 0, 3, 0, 0, 0 };
+	emit(out, form, reg.bits, reg.number, 0, memory,
+		static_cast<uint8_t>(scalar ? (store ? 0x11 : 0x10) : (store ? 0x7f : 0x6f)), false, 0);
 }
 
 bool encode_vex_form(Assembler& out, const assembly::Instruction& inst)
