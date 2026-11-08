@@ -37,7 +37,10 @@ const Type* DefinitionPack(const Binding* binding)
 	if (binding->kind == BindingKind::Parameter && binding->type != nullptr &&
 		binding->type->kind == TypeKind::Expansion)
 		return binding->type->element;
-	if (binding->entity != nullptr && binding->entity->kind == EntityKind::TemplateParameter)
+	// An expanded type element is a TypeAlias binding that retains the
+	// original parameter entity as provenance (bind_pack); it is no pack.
+	if ((binding->kind == BindingKind::Type || binding->kind == BindingKind::TemplateValue) &&
+		binding->entity != nullptr && binding->entity->kind == EntityKind::TemplateParameter)
 	{
 		const TemplateParameterEntity* parameter = static_cast<const TemplateParameterEntity*>(binding->entity);
 		if (parameter->pack)
