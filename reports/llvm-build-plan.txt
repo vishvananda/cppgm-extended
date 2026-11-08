@@ -522,3 +522,39 @@ LLVM sources remain unchanged and all C++ objects are compiled by cppgm.
 The complete LLVM build and all three downstream comparisons remain pending.
 Immutable tools: compiler-block10-defaults-values; receipt outside the checkout:
 block10-defaults-values-validation.json. All initial observations are retained.
+
+
+Block 11: capture initialization, member lookup and template constants (accepted)
+------------------------------------------------------------------------------
+Parenthesized initialized captures retain direct initialization and use their
+single argument for scalar/reference lowering and exception cleanup. Capture
+names hide enclosing typedefs in a separate body scope. PA29's optional modern
+lane covers copy/reference captures, mutable and constexpr bodies, destruction,
+throwing later captures, and invalid empty/multiple/C++11 forms. The supporting
+N3648 paper is archived as text in doc/cwg and included in the student export.
+
+Unscoped enum-qualified member access resolves the enumerator through its enum
+and owning class, preserving object effects and base validation. Explicit
+member specialization declarations no longer inherit the primary definition's
+body/defined state. Parser scopes carry parameter-dependent bases through
+intermediate template bases. A constexpr initializer_list class parameter binds
+the list object directly, avoiding recursive construction of the enclosing
+class. Required regressions live at PA11:100/200, PA14:100, PA15:300,
+PA17:300 and PA21:200. The first fixture placement audit correctly identified
+inheritance and extern-instantiation cases; these were split into their owning
+clusters and all affected checks were rerun. All initial observations remain.
+
+Strict 9889/9889, debug, modern, architecture/format/file/placement/CWG audits,
+PA5 self-host, root inception, harness, PA35 quick and smoke pass. Course and
+student full release builds each pass all 17 gates and extra margins. Frozen
+parent/candidate instruction ratios are O0 0.999922 and O3 1.000035, with
+byte-identical frozen objects. All 90 final cppgm/GCC/Clang O0/O3 observations
+pass. A fresh export passes the 213-document inventory, all 42 wrappers and
+all 15 new exported fixtures. No compiler source changed after freezing.
+
+The fresh LLVM build clears 15 of the prior 39 failed C++ compilations; 24
+failed compilations and the same two generator runtime failures remain. LLVM
+sources are unchanged and every C++ object is compiled by cppgm. The complete
+build and the three downstream comparisons are still pending. Immutable tools:
+compiler-block11-captures-lookup. Receipt outside the checkout:
+block11-captures-lookup-validation.json.
