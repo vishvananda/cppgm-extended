@@ -350,3 +350,42 @@ Those hybrid links are diagnostic evidence, not completed cppgm LLVM builds.
 The fresh all-cppgm LLVM build is running; LLVM sources remain unchanged.
 The tuple compiler error is still open. Build-time ratios and byte identity
 of cppgm objects produced by the two finished Clang builds remain unmeasured.
+
+Block 7: empty placement construction (accepted)
+-----------------------------------------------
+Empty scalar placement construction can target a zero-size base, including
+through void*. It now uses the existing overlapping-empty initialization
+fact to avoid storing a synthetic byte over the enclosing object. Selected
+constructors still run. PA12:300 owns the regression, which covers direct,
+void-pointer and braced placement plus constructor side effects. The earlier
+padding control no longer treats a placed empty object's sizeof byte as an
+observable payload. Other zero-initialization and padding checks remain.
+This is the general GNU/Clang empty-object construction behavior, documented
+in the handout; it is not an LLVM-name or source-path exception.
+
+Strict 9871/9871, debug, modern suites, PA5 self-host, all required audits,
+normal PA35 quick and correctness smoke, fresh student export, 211-file
+document inventory, 42 installed wrappers and both exported PA12 regressions
+pass. Both course and student builds pass all 17 full PA35 release gates with
+their required margins on the first full check. The frozen instruction ratios
+are O0 1.000041 and O3 0.999998, with byte-identical frozen output objects.
+The regression passes cppgm/GCC/Clang at O0 and O3; the frozen parent fails both.
+
+The real all-cppgm llvm-min-tblgen now passes the reduced input with output
+byte-identical to the native tool. IntrinsicEnums.inc, IntrinsicImpl.inc,
+IntrinsicsAMDGPU.h and IntrinsicsX86.h also match the native build exactly.
+No native C++ object was substituted into that build. A fresh clang-target
+build completes 1973 of 3163 available actions before dependency failures
+stop it: 388 failed compilations at 25 diagnostic locations. These are not
+388 independent gaps. 308 failures share tuple helper defaults, 28 share
+inherited-call classification and 16 reject C++17 typename template-template
+parameters. Later failures include a related inherited constructor-argument
+classification problem and smaller language/lowering families.
+
+The next group is frozen for combined validation in cppgm-llvm-next. Compile
+replays clear 360 of those 388 failed actions, leaving 28 actions, including
+newly exposed failures beyond the cleared headers. Its tests also exercise
+canonical enclosing-helper identities and no eager class completion. A fresh
+all-cppgm LLVM build is running. Stage 1 remains incomplete; stages 2-4 have
+not started and no paired LLVM build-time or final cppgm-object comparison
+is claimed. Evidence is retained outside the checkout in cppgm-llvm-evidence.
