@@ -1,0 +1,3 @@
+// expect exit 0
+// N3485 14.5.3/14.8.1p9: recursive explicit bool pack appends while callable parameter hides class.
+template<bool B>struct Flag{};struct target{template<bool B,class I>int operator()(Flag<B>,I i){return B?i:-i;}};template<bool...B,class F,class...T>auto dispatch(F target,T...t)->decltype(target(Flag<B>()...,t...)){return target(Flag<B>()...,t...);}template<bool...B,class F,class...T>auto dispatch(F target,bool b,T...t)->decltype(dispatch<B...,true>(target,t...)){return b?dispatch<B...,true>(target,t...):dispatch<B...,false>(target,t...);}int main(){return dispatch(target(),true,5)!=5 || dispatch(target(),false,5)!=-5;}
