@@ -1175,7 +1175,8 @@ FunctionEntity* Analyzer::initialize_class(ClassEntity* entity, const Type* type
 					const ConstructionKind kind = init.kind == syntax::InitializerKind::Braced
 						? ConstructionKind::Direct
 						: ConstructionKind::Copy;
-					FunctionEntity* constructor = copy_initialization(entity, element, kind, location, false, nullptr, complete_object);
+					FunctionEntity* constructor = copy_initialization(
+						entity, element, kind, location, false, nullptr, complete_object);
 					ExprFacts* facts = new_facts(*list, type->unqualified, ValueCategory::PRValue);
 					facts->single_class_element = true;
 					facts->entity = constructor;
@@ -1319,7 +1320,8 @@ FunctionEntity* Analyzer::direct_initialization(
 	// (or a derived one) alone is copied or moved, a prvalue of the class
 	// perhaps in place (see copy_initialization).
 	if (arguments.size == 1 && same_class_source(entity, *arguments[0]))
-		return copy_initialization(entity, *arguments[0], ConstructionKind::Direct, location, false, nullptr, complete_object);
+		return copy_initialization(
+			entity, *arguments[0], ConstructionKind::Direct, location, false, nullptr, complete_object);
 	const bool saved = eliding_direct_;
 	eliding_direct_ = cxx17_ && complete_object;
 	FunctionEntity* constructor = select_constructor(entity, arguments, ConstructionKind::Direct, location);

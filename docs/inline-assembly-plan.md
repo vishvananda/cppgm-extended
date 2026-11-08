@@ -1,8 +1,21 @@
 # Full inline assembly across frontends
 
-Status: implementation in progress, 2026-11-07. This is a maintainer plan, outside the student
-export. It changes neither the current 35-assignment contract nor the backend
-capabilities advertised to other frontends.
+Status: implementation in progress, 2026-11-08. This is a maintainer plan,
+outside the student export. The exported optional PA36 now defines the supported
+assembly profile; the required 35-assignment contract remains unchanged.
+
+The current branch implements the shared LowIR boundary, GNU operands and goto,
+raw/module assembly, macro environments, unwind descriptions, VEX/EVEX forms,
+wide-vector and mask transfers, inline data/alignment and computed goto. Its
+181-case optional suite passes alongside the 9,858-case required report. An
+unmodified full headless Godot 4.7.2 release build now compiles and links.
+Godot's CI lane also checks native engine workloads against independent results.
+
+The broader plan below remains open for x87/MMX operand allocation, additional
+ISA/directive/relocation forms and the actual RustGM source/body/backend-pin
+integration. Direct LowIR tests establish the shared compiler boundary, not
+completion of that Rust integration. Earlier checkpoints below describe the
+evidence available at their dates.
 
 Recommendation: implement one frontend-neutral assembly facility at the LowIR
 boundary, backed by an integrated assembler and explicit allocation constraints.

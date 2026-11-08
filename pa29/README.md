@@ -808,6 +808,8 @@ GNU source accepts `\e` and `\E` for the escape character (value 27),
 including wide literals. Preserve their source spelling during preprocessing
 and stringification; raw strings retain their backslashes.
 
-`-fno-exceptions` rejects source throw and try/catch constructs and omits
-unwind cleanup regions. Normal scope-exit destruction, temporary lifetimes and
-array destruction still run. The opposite flag restores exception handling.
+`-fno-exceptions` rejects throw and try/catch constructs in checked function
+bodies, including instantiated templates, and omits unwind cleanup regions.
+Unused template bodies may contain those constructs. Normal scope-exit
+destruction, temporary lifetimes and array destruction still run. The opposite
+flag restores exception handling.

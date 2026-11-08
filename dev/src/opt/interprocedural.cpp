@@ -417,8 +417,8 @@ void CalleeCopier::measure(SymbolId s)
 	if (body == nullptr)
 		return;
 	const Signature& sig = program.signatures[program.functions[symbol.detail].signature];
-	if (!body->code_labels.empty() || (symbol.metadata.flags & (SF_NO_INLINE | SF_REPLACEABLE)) != 0 || sig.boundary.arity != ir_model::CAM_FIXED ||
-		instruction_count(*body) > kCalleeCopyCap)
+	if (!body->code_labels.empty() || (symbol.metadata.flags & (SF_NO_INLINE | SF_REPLACEABLE)) != 0 ||
+		sig.boundary.arity != ir_model::CAM_FIXED || instruction_count(*body) > kCalleeCopyCap)
 		return;
 	uint64_t mask = 0;
 	for (BlockId b : body->layout)
