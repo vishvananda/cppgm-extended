@@ -167,16 +167,6 @@ bool ModuleAssembler::directive(const std::string& name, assembly::ModuleCursor&
 	}
 	else if (name == ".p2align" || name == ".balign" || name == ".align")
 		alignment(cursor, name == ".p2align" || (name == ".align" && target_ == Target::MacOS));
-	else if (name == ".intel_syntax" || name == ".att_syntax")
-	{
-		dialect_ = name == ".intel_syntax" ? asm_model::Dialect::Intel : asm_model::Dialect::Att;
-		if (!cursor.end())
-		{
-			const std::string mode = cursor.word();
-			if (mode != (dialect_ == asm_model::Dialect::Intel ? "noprefix" : "prefix"))
-				cursor.fail("unsupported assembly register-prefix mode");
-		}
-	}
 	else if (name == ".code64" || name == ".subsections_via_symbols")
 	{
 	}

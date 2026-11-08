@@ -95,10 +95,17 @@ struct SymbolLookup
 	virtual bool interposable(const std::string&) const { return false; }
 };
 
+struct Syntax
+{
+	asm_model::Dialect dialect = asm_model::Dialect::Att;
+	bool register_prefix = true;
+};
+
 // The input is user assembly after its frontend's placeholder expansion.
 // This is its only instruction parse; ordinary compiler code never uses it.
+// An optional state carries dialect/prefix switches across module buffers.
 std::vector<Instruction> parse(const std::string& source, asm_model::Dialect dialect,
 	const std::vector<SymbolUse>& symbols = {}, const std::vector<LabelUse>& labels = {},
-	SymbolLookup* lookup = nullptr);
+	SymbolLookup* lookup = nullptr, Syntax* state = nullptr);
 
 } // namespace assembly
