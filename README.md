@@ -1,7 +1,5 @@
 # cppgm-extended
 
-> **README preview:** proposed layout with real, pinned observations. Review this branch; the main README keeps its existing layout.
-
 [![Tests](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml/badge.svg)](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml)
 
 A C++11 compiler course designed for agents, with 35 cumulative assignments from
