@@ -1,0 +1,192 @@
+{
+  "schema": 1,
+  "source_preview": "35d5623bb9f3208733b37055a822002327c338e5",
+  "badges": {
+    "tests-internal": {
+      "label": "Internal assignment tests",
+      "message": "9,832 / 9,832",
+      "color": "166534",
+      "target": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476441247"
+    },
+    "tests-gcc": {
+      "label": "GCC C++11 profile",
+      "message": "3,968 / 3,968",
+      "color": "166534",
+      "target": "docs/performance/preview/upstream-cxx11.md"
+    },
+    "tests-clang": {
+      "label": "Clang C++11 profile",
+      "message": "815 / 815",
+      "color": "166534",
+      "target": "docs/performance/preview/upstream-cxx11.md"
+    },
+    "tests-native": {
+      "label": "Internal C++ subset \u00b7 all three compilers",
+      "message": "5,614 compile; 1,210 run",
+      "color": "166534",
+      "target": "docs/performance/preview/internal.md"
+    },
+    "tests-public": {
+      "label": "Public programs",
+      "message": "81 / 81",
+      "color": "166534",
+      "target": "docs/performance/preview/public.md"
+    },
+    "tests-index": {
+      "label": "index-cpp",
+      "message": "50 / 50",
+      "color": "166534",
+      "target": "docs/performance/preview/index-cpp.md"
+    },
+    "tests-simd": {
+      "label": "simdjson \u00b7 scalar + SSE",
+      "message": "passing",
+      "color": "166534",
+      "target": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476441186"
+    },
+    "tests-boost": {
+      "label": "Boost advisory",
+      "message": "passing",
+      "color": "166534",
+      "target": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476437427"
+    },
+    "tests-self": {
+      "label": "Self-build + inception",
+      "message": "passing",
+      "color": "166534",
+      "target": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476437424"
+    },
+    "tests-export": {
+      "label": "Student export",
+      "message": "passing",
+      "color": "166534",
+      "target": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476441242"
+    },
+    "tests-godot": {
+      "label": "Godot",
+      "message": "planned",
+      "color": "475569",
+      "target": "docs/performance/preview/correctness.md"
+    },
+    "public-compile-gcc": {
+      "label": "Public programs \u00b7 EPYC 9V45 O3 compile-gcc",
+      "message": "4.02\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/public.md"
+    },
+    "public-compile-clang": {
+      "label": "Public programs \u00b7 EPYC 9V45 O3 compile-clang",
+      "message": "3.49\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/public.md"
+    },
+    "public-runtime-gcc": {
+      "label": "Public programs \u00b7 EPYC 9V45 O3 runtime-gcc",
+      "message": "0.99\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/public.md"
+    },
+    "public-runtime-clang": {
+      "label": "Public programs \u00b7 EPYC 9V45 O3 runtime-clang",
+      "message": "1.00\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/public.md"
+    },
+    "index-compile-gcc": {
+      "label": "index-cpp \u00b7 EPYC 9V74 O3 compile-gcc",
+      "message": "6.76\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/index-cpp.md"
+    },
+    "index-compile-clang": {
+      "label": "index-cpp \u00b7 EPYC 9V74 O3 compile-clang",
+      "message": "5.89\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/index-cpp.md"
+    },
+    "index-runtime-gcc": {
+      "label": "index-cpp \u00b7 EPYC 9V74 O3 runtime-gcc",
+      "message": "0.99\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/index-cpp.md"
+    },
+    "index-runtime-clang": {
+      "label": "index-cpp \u00b7 EPYC 9V74 O3 runtime-clang",
+      "message": "0.99\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/index-cpp.md"
+    },
+    "scalar-compile-gcc": {
+      "label": "simdjson scalar \u00b7 EPYC 7763 O3 compile-gcc",
+      "message": "4.47\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/simdjson.md"
+    },
+    "scalar-compile-clang": {
+      "label": "simdjson scalar \u00b7 EPYC 7763 O3 compile-clang",
+      "message": "2.33\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/simdjson.md"
+    },
+    "scalar-runtime-gcc": {
+      "label": "simdjson scalar \u00b7 EPYC 7763 O3 runtime-gcc",
+      "message": "0.81\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/simdjson.md"
+    },
+    "scalar-runtime-clang": {
+      "label": "simdjson scalar \u00b7 EPYC 7763 O3 runtime-clang",
+      "message": "0.80\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/simdjson.md"
+    },
+    "sse-compile-gcc": {
+      "label": "simdjson SSE \u00b7 EPYC 7763 O3 compile-gcc",
+      "message": "4.49\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/simdjson.md"
+    },
+    "sse-compile-clang": {
+      "label": "simdjson SSE \u00b7 EPYC 7763 O3 compile-clang",
+      "message": "2.56\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/simdjson.md"
+    },
+    "sse-runtime-gcc": {
+      "label": "simdjson SSE \u00b7 EPYC 7763 O3 runtime-gcc",
+      "message": "0.90\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/simdjson.md"
+    },
+    "sse-runtime-clang": {
+      "label": "simdjson SSE \u00b7 EPYC 7763 O3 runtime-clang",
+      "message": "0.89\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/simdjson.md"
+    },
+    "native-compile-gcc": {
+      "label": "Internal C++ subset\u2020 \u00b7 Xeon E5-2696 v4 O3 compile-gcc",
+      "message": "4.46\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/internal.md"
+    },
+    "native-compile-clang": {
+      "label": "Internal C++ subset\u2020 \u00b7 Xeon E5-2696 v4 O3 compile-clang",
+      "message": "6.85\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/internal.md"
+    },
+    "build-compile-gcc": {
+      "label": "Build cppgm++ \u00b7 EPYC 9V45 O3 compile-gcc",
+      "message": "4.24\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/public.md#building-the-compiler"
+    },
+    "inception": {
+      "label": "Self-built versus GCC-built cppgm",
+      "message": "0.97\u00d7",
+      "color": "1e40af",
+      "target": "docs/performance/preview/public.md#paired-self-built-compiler-measurements"
+    }
+  }
+}

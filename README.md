@@ -17,84 +17,41 @@ To take the course, start with
 containing scaffolds, handouts, tests and downloadable reference tools.
 The export's references are generated from this compiler.
 
-## Correctness and external builds
+## Correctness
 
-Results below are a preview snapshot for `783dbfcf0`. Performance rows name their own measured revision; older measurements are labeled separately.
+| Suite | Result / details |
+|---|---|
+| Internal assignment tests | [![Internal assignment tests: 9,832 / 9,832](docs/performance/preview/badges/tests-internal.svg)](https://github.com/vishvananda/cppgm-extended/actions/runs/42476441247) |
+| GCC C++11 profile | [![GCC C++11 profile: 3,968 / 3,968](docs/performance/preview/badges/tests-gcc.svg)](docs/performance/preview/upstream-cxx11.md) |
+| Clang C++11 profile | [![Clang C++11 profile: 815 / 815](docs/performance/preview/badges/tests-clang.svg)](docs/performance/preview/upstream-cxx11.md) |
+| Internal C++ subset · all three compilers | [![Internal C++ subset · all three compilers: 5,614 compile; 1,210 run](docs/performance/preview/badges/tests-native.svg)](docs/performance/preview/internal.md) |
+| Public programs | [![Public programs: 81 / 81](docs/performance/preview/badges/tests-public.svg)](docs/performance/preview/public.md) |
+| index-cpp | [![index-cpp: 50 / 50](docs/performance/preview/badges/tests-index.svg)](docs/performance/preview/index-cpp.md) |
+| simdjson · scalar + SSE | [![simdjson · scalar + SSE: passing](docs/performance/preview/badges/tests-simd.svg)](https://github.com/vishvananda/cppgm-extended/actions/runs/42476441186) |
+| Boost advisory | [![Boost advisory: passing](docs/performance/preview/badges/tests-boost.svg)](https://github.com/vishvananda/cppgm-extended/actions/runs/42476437427) |
+| Self-build + inception | [![Self-build + inception: passing](docs/performance/preview/badges/tests-self.svg)](https://github.com/vishvananda/cppgm-extended/actions/runs/42476437424) |
+| Student export | [![Student export: passing](docs/performance/preview/badges/tests-export.svg)](https://github.com/vishvananda/cppgm-extended/actions/runs/42476441242) |
+| Godot | [![Godot: planned](docs/performance/preview/badges/tests-godot.svg)](docs/performance/preview/correctness.md) |
 
-| Suite / configuration | Result | What is checked | Evidence |
-|---|---|---|---|
-| Required internal suite | 9,832 / 9,832 | Stage, IR, ABI, driver and execution contracts | [CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476441247) |
-| GCC C++11 profile | 3,968 / 3,968 | 2,678 acceptance; 1,290 required diagnostics; 162 link/run cases | [Scope and timings](docs/performance/preview/upstream-cxx11.md) |
-| Clang C++11 profile | 815 / 815 | 310 acceptance; 505 required diagnostics; compile-only | [Scope and timings](docs/performance/preview/upstream-cxx11.md) |
-| Internal native overlap | 5,614 groups compile; 1,210 matched controls run | cppgm, GCC and Clang, O0 and O3 | [Details and exclusions](docs/performance/preview/internal.md) |
-| Public programs | 81 / 81 | Builds and matching output | [Per-program results](docs/performance/preview/public.md) |
-| index-cpp | 50 / 50 | Original checksums, all three compilers | [Per-workload results](docs/performance/preview/index-cpp.md) |
-| simdjson scalar / SSE | Pass, both backends | twitter and citm canonical DOM output | [Current CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476441186) |
-| Boost | Pinned advisory suites pass | Upstream build, run and rejection actions | [CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476437427) |
-| Self-build and inception | Pass | Complete rebuild; identical self/inception compiler binaries | [CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476437424) |
-| Student export | Pass | Exported compiler, fixtures and reference wrappers | [CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476441242) |
-| Godot | Planned | Configurations and benchmark inputs not yet declared | Not measured |
-
-Upstream counts describe selected C++11 profiles. Exclusions remain visible and are not passes. The internal native overlap is a source/object projection, separate from the complete course harness. The [original GCC audit and source dispositions](reports/cxx11-final-source-review.txt) retain the broader scope limits.
+[Coverage, exclusions and test scope](docs/performance/preview/correctness.md).
 
 ## Performance
 
-**Speedup = reference time / cppgm time; higher is better.** GCC and Clang are separate baselines. CPU time is used unless a row explicitly says elapsed time. Every hardware section is an exact CPU model and execution environment. Small differences need confirmation; the linked reports retain estimator and calibration information.
+**O3 speedups; higher is better.** Each badge links to its measured revision and details.
+CPU time, except index-cpp runtime uses elapsed time.
 
-### AMD EPYC 9V45 96-Core Processor · GitHub hosted
+| Workload · host | Compile vs GCC | Compile vs Clang | Runtime vs GCC | Runtime vs Clang |
+|---|---:|---:|---:|---:|
+| Public programs · EPYC 9V45 | [![Public programs · EPYC 9V45 O3 compile-gcc: 4.02×](docs/performance/preview/badges/public-compile-gcc.svg)](docs/performance/preview/public.md) | [![Public programs · EPYC 9V45 O3 compile-clang: 3.49×](docs/performance/preview/badges/public-compile-clang.svg)](docs/performance/preview/public.md) | [![Public programs · EPYC 9V45 O3 runtime-gcc: 0.99×](docs/performance/preview/badges/public-runtime-gcc.svg)](docs/performance/preview/public.md) | [![Public programs · EPYC 9V45 O3 runtime-clang: 1.00×](docs/performance/preview/badges/public-runtime-clang.svg)](docs/performance/preview/public.md) |
+| index-cpp · EPYC 9V74 | [![index-cpp · EPYC 9V74 O3 compile-gcc: 6.76×](docs/performance/preview/badges/index-compile-gcc.svg)](docs/performance/preview/index-cpp.md) | [![index-cpp · EPYC 9V74 O3 compile-clang: 5.89×](docs/performance/preview/badges/index-compile-clang.svg)](docs/performance/preview/index-cpp.md) | [![index-cpp · EPYC 9V74 O3 runtime-gcc: 0.99×](docs/performance/preview/badges/index-runtime-gcc.svg)](docs/performance/preview/index-cpp.md) | [![index-cpp · EPYC 9V74 O3 runtime-clang: 0.99×](docs/performance/preview/badges/index-runtime-clang.svg)](docs/performance/preview/index-cpp.md) |
+| simdjson scalar · EPYC 7763 | [![simdjson scalar · EPYC 7763 O3 compile-gcc: 4.47×](docs/performance/preview/badges/scalar-compile-gcc.svg)](docs/performance/preview/simdjson.md) | [![simdjson scalar · EPYC 7763 O3 compile-clang: 2.33×](docs/performance/preview/badges/scalar-compile-clang.svg)](docs/performance/preview/simdjson.md) | [![simdjson scalar · EPYC 7763 O3 runtime-gcc: 0.81×](docs/performance/preview/badges/scalar-runtime-gcc.svg)](docs/performance/preview/simdjson.md) | [![simdjson scalar · EPYC 7763 O3 runtime-clang: 0.80×](docs/performance/preview/badges/scalar-runtime-clang.svg)](docs/performance/preview/simdjson.md) |
+| simdjson SSE · EPYC 7763 | [![simdjson SSE · EPYC 7763 O3 compile-gcc: 4.49×](docs/performance/preview/badges/sse-compile-gcc.svg)](docs/performance/preview/simdjson.md) | [![simdjson SSE · EPYC 7763 O3 compile-clang: 2.56×](docs/performance/preview/badges/sse-compile-clang.svg)](docs/performance/preview/simdjson.md) | [![simdjson SSE · EPYC 7763 O3 runtime-gcc: 0.90×](docs/performance/preview/badges/sse-runtime-gcc.svg)](docs/performance/preview/simdjson.md) | [![simdjson SSE · EPYC 7763 O3 runtime-clang: 0.89×](docs/performance/preview/badges/sse-runtime-clang.svg)](docs/performance/preview/simdjson.md) |
+| Internal C++ subset† · Xeon E5-2696 v4 | [![Internal C++ subset† · Xeon E5-2696 v4 O3 compile-gcc: 4.46×](docs/performance/preview/badges/native-compile-gcc.svg)](docs/performance/preview/internal.md) | [![Internal C++ subset† · Xeon E5-2696 v4 O3 compile-clang: 6.85×](docs/performance/preview/badges/native-compile-clang.svg)](docs/performance/preview/internal.md) | n/a | n/a |
+| Build cppgm++ · EPYC 9V45 | [![Build cppgm++ · EPYC 9V45 O3 compile-gcc: 4.24×](docs/performance/preview/badges/build-compile-gcc.svg)](docs/performance/preview/public.md#building-the-compiler) | Not measured | n/a | n/a |
 
-| Workload / configuration | Opt | Compile vs GCC | Compile vs Clang | Runtime vs GCC | Runtime vs Clang | Timed coverage | Revision / details |
-|---|---|---:|---:|---:|---:|---|---|
-| Public programs | O0 | 2.753× | 2.641× | 1.031× | 0.999× | compile 76/81; run 81/81 | [`783dbfcf0`](docs/performance/preview/public.md) |
-| Public programs | O3 | 4.021× | 3.492× | 0.991× | 0.999× | compile 79/81; run 80/81 | [`783dbfcf0`](docs/performance/preview/public.md) |
+Self-built compiler speed · EPYC 9V45: [![Self-built versus GCC-built cppgm: 0.97×](docs/performance/preview/badges/inception.svg)](docs/performance/preview/public.md#paired-self-built-compiler-measurements) vs GCC-built cppgm.
 
-Public aggregates are equal-weight geometric means. The existing 10 ms eligibility floor explains smaller timed counts; all 81 programs remain in the detail tables.
-
-| Compiler build / execution | Opt | vs GCC | vs Clang | Comparison | Details |
-|---|---|---:|---|---|---|
-| Build cppgm++ | O3 | 4.237× | Not measured | Initial bootstrap CPU; GCC 279.08 s / cppgm 65.87 s | [783dbfcf0](docs/performance/preview/public.md#building-the-compiler) |
-| Generated compiler execution | O3 | Not applicable | Not applicable | Self-built / GCC-built cppgm speed: 0.969×; paired CPU | [Inception details](docs/performance/preview/public.md#paired-self-built-compiler-measurements) |
-
-### AMD EPYC 9V74 80-Core Processor · GitHub hosted
-
-| Workload / configuration | Opt | Compile CPU vs GCC | Compile CPU vs Clang | Runtime elapsed vs GCC | Runtime elapsed vs Clang | Coverage | Revision / details |
-|---|---|---:|---:|---:|---:|---|---|
-| index-cpp / full inputs | O3 | 6.765× | 5.889× | 0.994× | 0.989× | 50 / 50 | [`c9774d6a9`](docs/performance/preview/index-cpp.md) |
-
-Runtime is the equal-weight geometric mean of all 50 workload loop elapsed speedups. A/A warnings stay visible and no workloads are dropped.
-
-### AMD EPYC 7763 64-Core Processor · GitHub hosted
-
-| Workload / configuration | Opt | Compile vs GCC | Compile vs Clang | Runtime vs GCC | Runtime vs Clang | Coverage | Revision / details |
-|---|---|---:|---:|---:|---:|---|---|
-| simdjson / scalar | O3 | 4.467× | 2.329× | 0.814× | 0.801× | one library; two inputs | [`7dbe6549e`](docs/performance/preview/simdjson.md) |
-| simdjson / sse | O3 | 4.492× | 2.558× | 0.900× | 0.891× | one library; two inputs | [`7dbe6549e`](docs/performance/preview/simdjson.md) |
-
-These are the labeled earlier published snapshots. Runtime aggregates give twitter and citm equal weight; per-input CPU and elapsed results remain in the linked tables. SSE uses the westmere backend (SSE4.2, PCLMUL and POPCNT).
-
-### Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz · GitHub hosted
-
-| Workload / configuration | Opt | Compile vs GCC | Compile vs Clang | Runtime vs GCC | Runtime vs Clang | Coverage | Revision / details |
-|---|---|---:|---:|---:|---:|---|---|
-| simdjson / scalar | O3 | 4.431× | 2.101× | 0.851× | 0.849× | one library; two inputs | [`adb8a65ad`](docs/performance/preview/simdjson.md) |
-| simdjson / sse | O3 | 4.344× | 2.221× | 0.988× | 0.960× | one library; two inputs | [`adb8a65ad`](docs/performance/preview/simdjson.md) |
-
-These are the labeled earlier published snapshots. Runtime aggregates give twitter and citm equal weight; per-input CPU and elapsed results remain in the linked tables. SSE uses the westmere backend (SSE4.2, PCLMUL and POPCNT).
-
-### Intel Xeon E5-2696 v4 · local shared host
-
-| Workload / configuration | Opt | Compile CPU vs GCC | Compile CPU vs Clang | Execution observation | Revision / details |
-|---|---|---:|---:|---|---|
-| Internal C++ overlap | O0 | 3.981× | 6.302× | 1,210 matched normal-exit controls pass | [`783dbfcf0`](docs/performance/preview/internal.md) |
-| Internal C++ overlap | O3 | 4.461× | 6.849× | 1,210 matched normal-exit controls pass | [`783dbfcf0`](docs/performance/preview/internal.md) |
-
-This is one complete observation under load, using four workers and identical resource limits. The 5,614 fixture groups contain 5,724 translation units. Execution totals include process startup and appear in detail rather than as an application-runtime score.
-
-### Adding a workload or configuration
-
-Add a named configuration to the [workload catalog](benchmarks/catalog.json), emit [versioned correctness and comparison records](docs/performance/results-format.md), and regenerate the summary and linked tables. Tests/inputs are children of a configuration; compiling one library is counted once. Godot can add build presets and benchmark scenes using this same contract.
-
-This preview uses pinned snapshots. Existing automatic publishers still need migration to the [shared reporting contract](docs/performance/results-format.md#producer-migration-checks). [Snapshot provenance](docs/performance/preview/sources.json).
+[O0, Intel, per-test results and methodology](docs/performance/preview/performance.md). † Internal compilation is a single-run observation on a shared host.
 
 ## Caveats
 
