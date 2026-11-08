@@ -26,6 +26,6 @@ struct BackendOptions
 // for LowIR outside the supported native subset or an I/O failure; an
 // InternalError (a broken invariant of the back end) propagates.
 bool compile_program(
-	const lowir::Program& program, const BackendOptions& options, std::string& error, std::string* stats_line);
+	lowir::Program& program, const BackendOptions& options, std::string& error, std::string* stats_line);
 
 } // namespace native

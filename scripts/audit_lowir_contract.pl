@@ -315,6 +315,17 @@ for my $row (@raw_rows)
 	push @errors, "assembly_function is absent from its owner documentation"
 		if $text !~ /\bassembly_function\b/;
 }
+my @global_rows = grep { $_->{category} eq 'structure' && $_->{surface} eq 'assembly_global' } @retained;
+push @errors, "module assembly has no retained ledger structure row" if !@global_rows;
+push @errors, "assembly_global has no public keyword or adapter"
+	if !$keyword{assembly_global} || $parser !~ /Keyword::AssemblyGlobal/ || $writer !~ /Keyword::AssemblyGlobal/;
+push @errors, "assembly_global has no static input validator"
+	if read_file('dev/src/lowir/assembly_globals.cpp') !~ /validate_assembly_globals/;
+for my $row (@global_rows)
+{
+	my $text = join '', map { read_file($_) } split /;/, $row->{owner};
+	push @errors, "assembly_global is absent from its owner documentation" if $text !~ /\bassembly_global\b/;
+}
 for my $table ('kDialects', 'kMemories')
 {
 	for my $word (table_strings($assembly_vocabulary, $table, 'asm_model.h'))

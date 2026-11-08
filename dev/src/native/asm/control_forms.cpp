@@ -78,16 +78,20 @@ bool encode_assembly_branch(Assembler& out, const assembly::Instruction& inst, c
 		else
 			out.jmp(label);
 	}
-	else if (condition >= 0)
-		fail(inst, "conditional branch requires an assembly-local label");
-	else if (target.kind == OperandKind::Symbol && target.address.relocation == assembly::Relocation::Address)
+	else if (target.kind == OperandKind::Symbol &&
+		(target.address.relocation == assembly::Relocation::Address ||
+			target.address.relocation == assembly::Relocation::Plt))
 	{
-		if (call)
+		if (condition >= 0)
+			out.jcc_symbol(static_cast<Cond>(condition), target.address.symbol.symbol);
+		else if (call)
 			out.call_symbol(target.address.symbol.symbol);
 		else
 			out.jmp_symbol(target.address.symbol.symbol);
 		out.fixups().back().addend += target.address.displacement;
 	}
+	else if (condition >= 0)
+		fail(inst, "conditional branch requires a direct label or symbol");
 	else if ((target.kind == OperandKind::Register || target.kind == OperandKind::Memory) &&
 		(target.bits == 0 || target.bits == 64))
 	{

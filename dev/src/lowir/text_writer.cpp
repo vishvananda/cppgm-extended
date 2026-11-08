@@ -70,6 +70,7 @@ public:
 	void function_definition(const Symbol& symbol);
 	void function_body();
 	void assembly_functions();
+	void assembly_globals();
 	// Writes the buffered text to the sink; false if a write failed.
 	bool flush();
 
@@ -435,6 +436,7 @@ void Writer::write()
 		written = written || phase_written;
 	}
 	assembly_functions();
+	assembly_globals();
 	debug_info();
 	for (const ObjectAlias& alias : program_.aliases)
 	{
@@ -620,6 +622,29 @@ void Writer::function_definition(const Symbol& symbol)
 	location(function.location);
 	text(" {\n");
 	function_body();
+}
+
+void Writer::assembly_globals()
+{
+	if (!program_.assembly)
+		return;
+	for (const AssemblyGlobal& item : program_.assembly->globals)
+	{
+		FunctionBody constants;
+		constants.literals = item.literals;
+		body_ = &constants;
+		word(spelling(Keyword::AssemblyGlobal));
+		append_assembly_reference(out_, program_, item.definition);
+		out_.push_back('(');
+		for (uint32_t i = 0; i < item.arguments.size(); ++i)
+		{
+			if (i != 0)
+				text(", ");
+			value(item.arguments[i]);
+		}
+		text(")\n");
+		body_ = nullptr;
+	}
 }
 
 void Writer::assembly_functions()

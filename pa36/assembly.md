@@ -196,3 +196,38 @@ constant result, remove its ABI parameters, inline its raw body or infer
 still apply. Normal symbol binding, sections and object-name metadata apply to
 its definition. Reject duplicate bodies and attempts to mix raw and ordinary
 function definitions. Unwind directives are a separate extension goal.
+
+## Ordered module assembly
+
+`assembly_global @template(arguments)` invokes a previously defined template at
+module scope. Its arguments are constants or symbol addresses; it has no
+runtime inputs, outputs, outgoing labels or compiler register setup. Templates
+use only immediate/symbol alternatives. Invocations remain in source order,
+sharing their module symbol and section environment. Each invocation selects
+its template's initial dialect; directives can change it within the invocation.
+
+```text
+assembly @module_body intel none 1 0 0 1 {
+  operand i64 0 -1 1 0 0 { alternative 4 0 -1 {} }
+  text ".text\n.globl add_constant\nadd_constant:\nlea rax, [rdi + "
+  use 0 1 0 0
+  text "]\nret\n"
+}
+assembly_global @module_body(23)
+```
+
+Labels and literal symbol names refer to the target assembler's linker symbol
+namespace. Typed symbol pieces retain their identity, including at a definition.
+Preserve weak replacement, visibility, aliases and relocations; symbol binding
+and type declarations apply to the whole module, including earlier uses.
+An exposed symbol call must remain interposable even when its definition
+appears nearby.
+C++ declarations and other LowIR functions can call these definitions through
+ordinary signatures. Unresolved references are resolved by the linker.
+
+The current module subset emits code, data, BSS, strings, alignment, symbol
+attributes and aliases into ELF or Mach-O objects. `lowir2native` uses the existing
+object linker for module-containing standalone programs. A module has no
+ordinary MIR function body; a requested ordinary MIR dump must fail clearly.
+Assembly-defined code owns its ABI and has no automatic unwind description.
+Macros, CFI and wider directive coverage remain further goals.

@@ -83,6 +83,23 @@ class CheckControlsTests(unittest.TestCase):
     def run_checker(self, target):
         return self.check(self.frontend, self.backend, target)
 
+    def test_optional_assembly_sidecar_owns_a_section_named_fixture(self):
+        ordinary = self.control("200-section-token-safe.t", "int main() { return 0; }")
+        optional = self.control("100-module-empty-section-stack.t", 'asm(".popsection");')
+        optional.with_suffix(".assembly-profile").write_text("gnu-reject\n")
+        result = subprocess.run(
+            ["perl", str(REPO_ROOT / "scripts/check_pa27_section_contract.pl"),
+             "--list", str(self.controls)], capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), [str(ordinary)])
+        assembly = subprocess.run(
+            ["perl", str(REPO_ROOT / "scripts/check_inline_assembly.pl"),
+             "--list", str(self.controls)], capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(assembly.returncode, 0, assembly.stderr)
+        self.assertEqual(assembly.stdout.splitlines(), [str(optional)])
+
     def test_directory_grades_stated_outcomes_and_skips_focused_controls(self):
         self.control("100-pass.t", "// N3485 x: rule; expect exit 7\nint main() { return 7; }\n")
         self.control("100-reject.t", "// N3485 x: ill-formed; must be rejected\nREJECTED\n")

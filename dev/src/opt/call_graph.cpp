@@ -45,6 +45,13 @@ void mark_data_references(const Program& program, Mark mark)
 			for (const Value value : function.body->operands)
 				if (value.kind == ValueKind::Symbol)
 					mark(value.index);
+	// Literal module symbols are resolved by the object assembler. Until its
+	// source has been parsed, an ordinary definition can be named by that
+	// external assembly, so preserve its complete identity and ABI.
+	if (program.assembly && !program.assembly->globals.empty())
+		for (SymbolId symbol : program.order)
+			if (is_definition(program, symbol))
+				mark(symbol);
 	// An object alias is another name for its target's code: it keeps a
 	// target alive only when the target is kept for its own sake (pruning
 	// drops the aliases of what it removes). A jump thunk

@@ -205,14 +205,19 @@ void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 		integer(out, inst, *form, suffix);
 }
 
-void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& instructions, const RM& exit_frame)
+void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& instructions, const RM& exit_frame,
+	std::vector<uint32_t>* positions)
 {
+	if (positions != nullptr)
+		positions->clear();
 	std::vector<uint32_t> labels(instructions.size(), kNoLabel);
 	for (size_t i = 0; i < instructions.size(); ++i)
 		if (instructions[i].label)
 			labels[i] = out.new_label();
 	for (const assembly::Instruction& inst : instructions)
 	{
+		if (positions != nullptr)
+			positions->push_back(out.size());
 		if (inst.is_exit)
 		{
 			out.mov_store_imm(exit_frame, inst.exit_tag, 4);

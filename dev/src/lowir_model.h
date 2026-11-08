@@ -976,18 +976,19 @@ enum class Keyword : std::uint8_t
 	DebugType,
 	DebugScope,
 	DebugLocal,
-	Assembly,        // optional assembly template
-	EquivalentEntry, // equivalent_entry @entry = @target
-	AssemblyFunction // optional opaque assembly-defined function
+	Assembly,         // optional assembly template
+	EquivalentEntry,  // equivalent_entry @entry = @target
+	AssemblyFunction, // optional opaque assembly-defined function
+	AssemblyGlobal    // ordered module assembly invocation
 };
 
-const unsigned kKeywordCount = static_cast<unsigned>(Keyword::AssemblyFunction) + 1;
+const unsigned kKeywordCount = static_cast<unsigned>(Keyword::AssemblyGlobal) + 1;
 
 inline const char* spelling(Keyword keyword)
 {
 	static const char* const kKeywords[kKeywordCount] = { "declare", "global", "function", "alias", "object", "slot",
 		"block", "zero", "as", "debug_type", "debug_scope", "debug_local", "assembly", "equivalent_entry",
-		"assembly_function" };
+		"assembly_function", "assembly_global" };
 	return kKeywords[static_cast<unsigned>(keyword)];
 }
 

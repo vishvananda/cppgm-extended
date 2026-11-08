@@ -350,7 +350,8 @@ bool Validator::run()
 	if (program_.assembly)
 	{
 		const char* error = nullptr;
-		if (!validate_assembly_module(*program_.assembly, error) || !validate_assembly_functions(program_, error))
+		if (!validate_assembly_module(*program_.assembly, error) || !validate_assembly_functions(program_, error) ||
+			!validate_assembly_globals(program_, error))
 			return fail(error);
 		for (const AssemblyTemplate& definition : program_.assembly->templates)
 			if (definition.name >= program_.names.size() || definition.location.file >= program_.names.size())

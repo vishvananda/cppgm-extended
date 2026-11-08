@@ -239,6 +239,46 @@ void Parser::parse_assembly_call(FunctionBuilder& builder, Instruction& inst)
 	inst.extra_first = builder.add_operands(values.data(), inst.extra_count);
 }
 
+void Parser::parse_assembly_global()
+{
+	const NameId name = expect_name(TokenKind::Global, "module assembly template");
+	if (!program_.assembly || name >= assemblies_.size() || assemblies_[name] == kNoId)
+		fail("assembly template must be defined before a module invocation");
+	AssemblyGlobal item;
+	item.definition = assemblies_[name];
+	const AssemblyTemplate& definition = program_.assembly->templates[item.definition];
+	if (uint64_t(definition.argument_count) > uint64_t(definition.operand_count) * 2)
+		fail("module assembly argument count exceeds its operands");
+	std::vector<TypeKind> types(definition.argument_count, TypeKind::Void);
+	for (uint32_t i = 0; i < definition.operand_count; ++i)
+	{
+		const AssemblyOperand& operand = program_.assembly->operands[definition.first_operand + i];
+		if (operand.input < types.size())
+			types[operand.input] = operand.type.kind();
+	}
+	expect(TokenKind::LParen, "(");
+	for (uint32_t i = 0; i < definition.argument_count; ++i)
+	{
+		if (i != 0)
+			expect(TokenKind::Comma, ",");
+		if (at(TokenKind::Global))
+		{
+			item.arguments.push_back(Value::symbol(reference_symbol(token().name)));
+			advance();
+		}
+		else
+		{
+			const Constant constant = parse_constant(types[i]);
+			Value value = Value::make(constant.kind, static_cast<uint32_t>(item.literals.size()));
+			value.float_kind = constant.float_kind;
+			item.literals.push_back(constant.bits);
+			item.arguments.push_back(value);
+		}
+	}
+	expect(TokenKind::RParen, ")");
+	program_.assembly->globals.push_back(std::move(item));
+}
+
 void Parser::parse_assembly_function()
 {
 	const NameId name = expect_name(TokenKind::Global, "assembly function name");

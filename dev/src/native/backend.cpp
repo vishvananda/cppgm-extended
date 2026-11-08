@@ -11,6 +11,8 @@
 #include "native/image/global_data.h"
 #include "native/image/image.h"
 #include "native/mir/mir_writer.h"
+#include "native/object/object_compiler.h"
+#include "native/link/linker.h"
 #include "native/runtime/runtime.h"
 #include "native/select/call_abi.h"
 #include "native/select/selector.h"
@@ -106,8 +108,34 @@ Startup find_startup(const lowir::Program& program)
 } // namespace
 
 bool compile_program(
-	const lowir::Program& program, const BackendOptions& options, std::string& error, std::string* stats_line)
+	lowir::Program& program, const BackendOptions& options, std::string& error, std::string* stats_line)
 {
+	if (program.assembly && !program.assembly->globals.empty())
+	{
+		if (!options.machine_ir.empty())
+		{
+			error = "module assembly has no ordinary machine-IR function body";
+			return false;
+		}
+		std::vector<object::ObjectFile> objects(1);
+		ObjectStats object_stats;
+		if (!compile_object(program, objects[0], error, stats_line != nullptr ? &object_stats : nullptr,
+				EhModel::Course, options.optimization_level, false, options.target))
+			return false;
+		LinkStats link_stats;
+		if (!options.output.empty() &&
+			!link_executable(
+				objects, options.output, error, stats_line != nullptr ? &link_stats : nullptr, options.target))
+			return false;
+		if (stats_line != nullptr)
+		{
+			std::ostringstream line;
+			line << "native module_assembly=1 sections=" << object_stats.sections
+				 << " symbols=" << object_stats.symbols;
+			*stats_line = line.str();
+		}
+		return true;
+	}
 	const std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 	const Startup startup = find_startup(program);
 	if (!options.output.empty() && startup.entry == lowir::kNoId)

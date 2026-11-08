@@ -2149,6 +2149,7 @@ discontiguous lexical block ranges and nests source locals under their block.
 Optional PA36 adds `assembly` template definitions and `asm` invocations with
 typed arguments, constraints, outputs and effects. Outgoing label tags feed
 ordinary LowIR control flow. Opaque `assembly_function` definitions retain
-typed call signatures while assembly owns the complete ABI entry and exit. See
+typed call signatures while assembly owns the complete ABI entry and exit.
+Ordered `assembly_global` invocations describe module code/data and linker symbols. See
 [the assembly boundary](../pa36/assembly.md). These forms add no required PA8
 work and do not change PA29's bounded GNU compatibility contract.
