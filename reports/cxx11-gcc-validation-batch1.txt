@@ -1,0 +1,103 @@
+GCC C++11 validation batch1
+2026-11-08 | repair/cxx11-gcc-validation-batch1
+
+The grouped repair passes full validation and the normal performance gate.
+GCC improves from 3774/4092 to 3800/4092 (92.86%), clearing 26 configurations
+from 13 source files. Clang remains 815/815. There are no passing-to-failing
+outcome changes and no manifest, expectation, policy or diagnostic-parity changes.
+There remain 292 failing GCC configurations from 146 distinct sources.
+
+Changes grouped for validation
+
+- A union's non-static data member cannot have reference type. Preserve
+  ordinary class references, static references, pointers and substituted types.
+- Constructor using-declarations must name a direct base. Dependent base lists
+  defer validation until substitution; instantiated unrelated bases still fail.
+- Reuse the existing typed pack walker for ordinary typedefs and data members,
+  and inspect outer class packs in ordinary member-function declarations.
+  Nested expansions retain their existing meaning; do not instantiate bodies
+  just to search for errors.
+- Include the previously prepared implicit-object cv correction in noexcept.
+
+Regressions and validation
+
+18 new required controls are in PA11:500, PA12:300, PA14:100 and PA15:200,
+after reading the owning handouts. Eight prepared PA6:300 noexcept fixtures
+are included. All 26 cases pass both dialects at O0/O2: 104 configurations each
+with cppgm, GCC 15.2 and Clang 21.1.8. Positive controls cover valid static
+union references, class references, pointers, direct aliases, dependent base
+packs, expanded parameter/typedef packs and object-cv neighbors.
+
+The parent compiler exposes the intended defects. A first candidate exposed
+premature checking of a dependent base list; positive/negative substitution
+guards were added before the final candidate. The superseded results remain
+in the evidence directory and are not acceptance evidence.
+
+The integrated candidate passes 9541/9541 strict tests, affected PA6/11/12/14/15
+suites, modern C++ checks, debug info, self-host through PA5, inception, all
+architecture/format/file/placement audits, CWG/student document checks, harness
+checks, PA35 quick and smoke. The student export preserves all 105 offline CWG
+catalog files, validates 42 reference wrappers and runs 96 accumulated required
+regression controls, including every fixture in this batch.
+
+Normal performance gate against actual accepted parent c5da240c
+
+Frozen instruction ratios: O0=1.002322 (+0.2322%), O3=1.000863 (+0.0863%).
+Both pass the unchanged 1.005 limit. Frozen output objects are byte-identical.
+Normal quick/self-compile and kernel gates also pass. No bespoke calibration,
+RSS campaign or public runtime/codegen regression investigation was added.
+
+Both upstream jobs timed the unchanged declared workloads
+
+GCC: cppgm 26.406s, GCC 65.924s, ratio 0.40055. This ratio remains non-comparable
+because 292 tests fail with cppgm. GCC itself passes 4092/4092.
+Clang: cppgm 3.546s, Clang 26.957s, ratio 0.13156; 815/815 pass with both compilers.
+These are observed suite elapsed times under the recorded load, not a claim
+of a speedup relative to the previous run.
+
+Newly passing source files
+
+  inh-ctor28.C
+  inh-ctor33.C
+  noexcept56.C
+  pr31437.C
+  pr32114.C
+  pr34056.C
+  pr34058.C
+  pr78890-1.C
+  pr78890-2.C
+  union6.C
+  variadic71.C
+  vt-34754.C
+  vt-35026.C
+
+pr34056, variadic71 and vt-34754 were IFNDR-review sources: their diagnoses
+are permitted consequences of the shared declaration validation. Ten other
+sources cover the independently supported language repairs. No source was
+removed, regraded or counted as a pass without an executed result.
+
+Remaining work packages (files/configurations)
+
+  T: 22/44  Templates: validation, substitution, deduction and identity
+  D: 18/36  Declaration grammar and class invariants
+  I: 18/36  Initialization, reference binding, overload ranking and lifetime
+  C: 11/22  Constant evaluation, object facts and cast validation
+  E: 8/16  Implicit object, exception specifications and TU linkage
+  P: 5/10  Declarators, parser disambiguation and literal operator IDs
+  R: 45/90  Standards, source expectations and IFNDR adjudication
+  X: 19/38  Course, language-mode, vendor-extension and adapter policy
+
+79 remaining files indicate likely language repairs; 3 are conditional leads
+and 64 require standards/course/extension/adapter adjudication. Counts are
+source files, not independent bugs. Next: the template substitution/deduction
+batch, then initialization/ranking and the remaining declaration invariants.
+The non-type pack use in pr32253 is still pending; this batch fixes the typed
+declaration surfaces, not every pack-expression path.
+
+Evidence
+
+/mnt/vizier/cppgm-cxx11-upstream/batches/gcc-01/acceptance-v2.json
+Compiler SHA256: 31b15825856023c5c0acaffceedcc04c5eb7698446aa006312381cf586ae540e
+Validated source commit: f95a5958970b2b41be095529f3962daf69d13e78
+The companion cxx11-gcc-remaining-after-batch1.json maps every one of the
+292 current failure IDs to a reviewed source, candidate owner and work package.
