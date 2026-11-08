@@ -60,8 +60,10 @@ void FunctionLowering::closure_captures()
 	if (facts->this_member != nullptr)
 	{
 		closure_this_ = true;
+		closure_this_copied_ = sema::ClassOf(facts->this_member->type) != nullptr;
 		closure_this_offset_ = lowering_.member_offset(facts->this_member, 0);
-		closure_this_class_ = sema::ClassOf(facts->this_member->type->element);
+		closure_this_class_ = sema::ClassOf(
+			closure_this_copied_ ? facts->this_member->type : facts->this_member->type->element);
 	}
 	for (uint32_t i = 0; i < facts->capture_count; ++i)
 	{

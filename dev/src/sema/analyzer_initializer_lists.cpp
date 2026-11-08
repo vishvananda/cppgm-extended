@@ -293,7 +293,6 @@ FunctionEntity* Analyzer::select_list_constructor(ClassEntity* entity, ExprFacts
 	FunctionEntity* selected = inherited_specialization(entity, found, 1, location);
 	if (selected == nullptr)
 		return nullptr;
-	check_inheriting_access(selected, entity, location);
 	if (kind == ConstructionKind::CopyList && selected->is_explicit)
 	{
 		substitution_error(location, "copy-list-initialization selects an explicit constructor");

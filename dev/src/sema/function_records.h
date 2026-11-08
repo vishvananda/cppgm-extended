@@ -575,6 +575,7 @@ inline FunctionEntity* PatternOf(const FunctionEntity* function)
 // object's by `constructor`, 5.1.2p21).
 struct Capture
 {
+	// Null only for the copied *this object, supplied by the enclosing body.
 	const Entity* entity;
 	const VariableEntity* member;
 	const FunctionEntity* constructor;
@@ -596,6 +597,8 @@ struct ClosureFacts
 	const FunctionEntity* conversion;
 	const FunctionEntity* invoker;
 	const VariableEntity* this_member;
+	// *this capture stores an object instead of a pointer; its copy operation.
+	const FunctionEntity* this_constructor;
 	const Capture* captures;
 	uint32_t capture_count;
 	bool member_context;

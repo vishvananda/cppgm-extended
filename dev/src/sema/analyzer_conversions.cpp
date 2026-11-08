@@ -572,7 +572,6 @@ void Analyzer::apply_user_conversion(const ExprFacts* from, Conversion& conversi
 		// 10.4p2: the converting constructor's object is no abstract class's.
 		check_abstract_object(function->owner->entity->type, location);
 		check_special_access(function, ClassOf(function->owner->entity->type), expression_scope_, location);
-		check_inheriting_access(function, ClassOf(function->owner->entity->type), location);
 		if (conversion.form == ConversionForm::Standard && ClassOf(conversion.result) != nullptr)
 			check_final_copy(const_cast<ClassEntity*>(ClassOf(conversion.result)), location);
 		const Type* parameter = function->type->canonical->param_count != 0 ? function->type->canonical->params[0]

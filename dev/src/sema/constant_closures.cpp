@@ -16,8 +16,15 @@ bool ConstantInterpreter::closure_object(const syntax::LambdaExpr& expr, const C
 	if (closure->this_member != nullptr)
 	{
 		ConstPlace self, member;
-		if (!this_place(self, expr.location) || !member_slot(target, closure->this_member, member, expr.location) ||
-			!write(member, PointerTo(self, closure->this_member->type), expr.location))
+		if (!this_place(self, expr.location) || !member_slot(target, closure->this_member, member, expr.location))
+			return false;
+		if (ClassOf(closure->this_member->type) != nullptr)
+		{
+			if (!copy_closure_capture(
+					closure->this_member->type, closure->this_constructor, member, self, expr.location))
+				return false;
+		}
+		else if (!write(member, PointerTo(self, closure->this_member->type), expr.location))
 			return false;
 	}
 	for (uint32_t i = 0; i < closure->capture_count; ++i)

@@ -1135,7 +1135,7 @@ lowir::Value FunctionLowering::object_pointer(uint32_t location)
 	captured.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, this_pointer(location),
 		integer(lowir::Type::scalar(lowir::TypeKind::I64), closure_this_offset_))
 						   .value;
-	return load(lowir::Type::scalar(lowir::TypeKind::Ptr), captured).value;
+	return closure_this_copied_ ? captured.storage : load(lowir::Type::scalar(lowir::TypeKind::Ptr), captured).value;
 }
 
 const sema::ClassEntity* FunctionLowering::object_class() const

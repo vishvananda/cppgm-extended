@@ -1347,7 +1347,13 @@ Expr* Parser::parse_lambda()
 			return nullptr;
 		first = false;
 		LambdaCapture capture = LambdaCapture();
-		if (accept(TokenKind::KW_THIS))
+		if (cxx17_ && accept(TokenKind::OP_STAR))
+		{
+			if (!expect(TokenKind::KW_THIS))
+				return nullptr;
+			capture.kind = TokenKind::OP_STAR;
+		}
+		else if (accept(TokenKind::KW_THIS))
 		{
 			capture.kind = TokenKind::KW_THIS;
 		}

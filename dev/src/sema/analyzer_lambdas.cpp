@@ -355,7 +355,7 @@ void Analyzer::scan_nested_lambda(const syntax::LambdaExpr& lambda, Scope* scope
 			initializer_names(capture.initializer, scope, false);
 			continue;
 		}
-		if (capture.kind == TokenKind::KW_THIS)
+		if (capture.kind == TokenKind::KW_THIS || capture.kind == TokenKind::OP_STAR)
 		{
 			if (capture_scan_->expr->has_default)
 				capture_scan_->this_captured = true;
@@ -413,6 +413,7 @@ bool Analyzer::sealed_frame(const ClassEntity* closure, LambdaFrame& frame)
 	frame.facts = const_cast<ClosureFacts*>(facts);
 	frame.expr = facts->lambda;
 	frame.this_captured = facts->this_member != nullptr;
+	frame.this_copied = facts->this_member != nullptr && ClassOf(facts->this_member->type) != nullptr;
 	frame.sealed = true;
 	for (uint32_t i = 0; i < facts->capture_count; ++i)
 	{
@@ -460,14 +461,16 @@ Scope* Analyzer::explicit_captures(LambdaFrame& frame, Scope* scope)
 			initialized_capture(frame, capture, scope, inner);
 			continue;
 		}
-		if (capture.kind == TokenKind::KW_THIS)
+		if (capture.kind == TokenKind::KW_THIS || capture.kind == TokenKind::OP_STAR)
 		{
-			if (frame.this_captured || (expr.has_default && expr.capture_default == TokenKind::OP_ASS))
+			const bool copy = capture.kind == TokenKind::OP_STAR;
+			if (frame.this_captured || (!copy && expr.has_default && expr.capture_default == TokenKind::OP_ASS))
 				error(expr.location, "`this` captured twice or after a copy capture-default (5.1.2p8)");
 			if (body_ == nullptr || body_->this_type == nullptr)
 				error(expr.location, "`this` captured outside a non-static member function (5.1.2p8)");
 			capture_this(expr.location);
 			frame.this_captured = true;
+			frame.this_copied = copy;
 			continue;
 		}
 		if (capture.pack)
@@ -672,6 +675,11 @@ const Conversion* Analyzer::potential_array_operand(const syntax::Expr& expr, co
 
 void Analyzer::potential_use(const syntax::Expr& expr, const Conversion* binding, bool discarded)
 {
+	// A generic lambda's pattern checks fixed expressions before its name
+	// walk records captures. Its instantiated body performs the odr-use
+	// checks with the closure's established capture frame.
+	if (capture_scan_ != nullptr && body_ != nullptr && body_->pattern)
+		return;
 	if (unevaluated_ != 0 || expr.facts == nullptr || !expr.facts->potential_result)
 		return;
 	const Type* type = expr.facts->type;
@@ -906,11 +914,13 @@ void Analyzer::finish_captures(LambdaFrame& frame)
 	ClassEntity* closure = frame.closure;
 	if (frame.this_captured)
 	{
-		VariableEntity* member = new_entity<VariableEntity>(
-			EntityKind::Variable, nullptr, closure->scope, body_->this_type);
+		const Type* type = frame.this_copied ? body_->this_type->element : body_->this_type;
+		VariableEntity* member = new_entity<VariableEntity>(EntityKind::Variable, nullptr, closure->scope, type);
 		member->member = true;
 		add_data_member(closure, member, 0, false);
 		facts->this_member = member;
+		if (frame.this_copied)
+			facts->this_constructor = capture_constructor(closure, type, frame.expr->location);
 	}
 	const uint32_t count = static_cast<uint32_t>(frame.captures.size());
 	Capture* captures = count != 0 ? static_cast<Capture*>(arena_.allocate(sizeof(Capture) * count, alignof(Capture)))

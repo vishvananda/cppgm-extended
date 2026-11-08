@@ -1,0 +1,154 @@
+Source: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4268.html
+Full historical text follows; DELETE/INSERT markers preserve, rather than apply, edits.
+
+ISO/IEC JTC1 SC22 WG21
+N4268
+Richard Smith
+richard@metafoo.co.uk
+2014-11-05
+
+Allow constant evaluation for all non-type template arguments
+
+Wording
+
+Change in 5.19 (expr.const) paragraph 3 and convert to a bulleted list:
+
+[...] A converted constant expression of type T is an expression, implicitly converted
+to [DELETE: a prvalue of] type T, where the converted expression is a [DELETE: core]
+constant expression and the implicit conversion sequence contains only[INSERT: :]
+
+- user-defined conversions,
+
+- lvalue-to-rvalue conversions (4.1),
+
+- [INSERT: array-to-pointer conversions (4.2), ]
+
+- [INSERT: function-to-pointer conversions (4.3), ]
+
+- [INSERT: qualification conversions (4.4), ]
+
+- integral promotions (4.5), [DELETE: and]
+
+- integral conversions (4.7) other than narrowing conversions (8.5.4)[INSERT: ,]
+
+- [INSERT: null pointer conversions (4.10) from std::nullptr_t, and ]
+
+- [INSERT: null member pointer conversions (4.11) from std::nullptr_t, ]
+
+and where the reference binding (if any) binds directly. [ Note: such expressions may be
+used in new expressions (5.3.4), as case expressions (6.4.2), as enumerator initializers
+if the underlying type is fixed (7.2), as array bounds (8.3.4), and as [DELETE: integral
+or enumeration] non-type template arguments (14.3). — end note ]
+Drafting note: previously, a converted constant expression could only be of integral or
+enumeration type, so these conversions do not change any existing uses of the term.
+
+Change in 14.3.2 (temp.arg.nontype) paragraph 1 and remove the bullets:
+
+A template-argument for a non-type[DELETE: , non-template] template-parameter shall be
+[DELETE: one of:]
+
+- [DELETE: for a non-type template-parameter of integral or enumeration type,] a
+converted constant expression (5.19) of the type of the template-parameter[INSERT:
+.][DELETE: ; or]
+
+- [DELETE: the name of a non-type template-parameter; or]
+
+- [DELETE: a constant expression (5.19) that designates the address of a complete object
+[DELETE: with static storage duration and external or internal linkage or a function
+with external or internal linkage, including function templates and function
+template-ids but excluding non-static class members, expressed (ignoring parentheses) as
+& id-expression, where the id-expression is the name of an object or function, except
+that the & may be omitted if the name refers to a function or array and shall be omitted
+if the corresponding template-parameter is a reference; or] ]
+
+- [DELETE: a constant expression that evaluates to a null pointer value (4.10); or]
+
+- [DELETE: a constant expression that evaluates to a null member pointer value (4.11);
+or]
+
+- [DELETE: a pointer to member expressed as described in 5.3.1; or]
+
+- [DELETE: a constant expression of type std::nullptr_t].
+
+[INSERT: For a non-type template-parameter of reference or pointer type, the value of
+the constant expression shall not refer to (or for a pointer type, shall not be the
+address of):
+
+- a subobject (1.8),
+
+- a temporary object (12.2),
+
+- a string literal (2.14.5),
+
+- the result of a typeid expression (5.2.8), or
+
+- a predefined __func__ variable (8.4.1).
+
+[ Note: If the template-argument represents a set of overloaded functions (or a pointer
+or member pointer to such), the matching function is selected from the set (13.4). ]]
+
+Change in 14.3.2 (temp.arg.nontype) paragraph 2:
+
+[ Note: A string literal (2.14.5) [DELETE: does not satisfy the requirements of any of
+these categories and thus] is not an acceptable template-argument. [ Example: ... ] ]
+
+Change in 14.3.2 (temp.arg.nontype) paragraph 3:
+
+[ Note: [INSERT: The address] [DELETE: Addresses] of [INSERT: an] array element[DELETE:
+s and names] or [DELETE: addresses of a] non-static [DELETE: class] [INSERT: data]
+member[DELETE: s are] [INSERT: is] not [INSERT: an] acceptable template-argument[DELETE:
+s]. [ Example:
+
+template<int* p> class X { };
+
+int a[10];
+struct S { int m; static int s; } s;
+
+X<&a[2]> x3; // error: address of array element
+X<&s.m> x4;  // error: address of non-static member
+X<&s.s> x5;  // [DELETE: error: &S::s must be used] [INSERT: OK: address of static member]
+X<&S::s> x6; // OK: address of static member
+
+] ]
+
+Change in 14.3.2 (temp.arg.nontype) paragraph 4:
+
+[ Note: [DELETE: Temporaries, unnamed lvalues, and named lvalues with no linkage are]
+[INSERT: A temporary object is] not [INSERT: an] acceptable template-argument[DELETE: s]
+when the corresponding template-parameter has reference type. [ Example: ... ] ]
+
+Delete all of 14.3.2 (temp.arg.nontype) paragraph 5 other than its example and move it
+to before paragraph 2:
+
+[DELETE: The following conversions are performed on each expression used as a non-type
+template-argument. If a non-type template-argument cannot be converted to the type of
+the corresponding template-parameter then the program is ill-formed.
+
+- ...
+
+] [ Example: ... ]
+
+Change in 14.4 (temp.type) paragraph 1:
+
+Two template-ids refer to the same class, function, or variable if
+
+- their template-names, operator-function-ids, or literal-operator-ids refer to the same
+template and
+
+- their corresponding type template-arguments are the same type and
+
+- their corresponding non-type template arguments of integral or enumeration type have
+identical values and
+
+- their corresponding non-type template-arguments of pointer type refer to the same
+[DELETE: external] object or function or are both the null pointer value and
+
+- their corresponding non-type template-arguments of pointer-to-member type refer to the
+same class member or are both the null member pointer value and
+
+- their corresponding non-type template-arguments of reference type refer to the same
+[DELETE: external] object or function and
+
+- their corresponding template template-arguments refer to the same template.
+
+[ Example: ... ]

@@ -754,6 +754,16 @@ void Analyzer::check_special_access(const FunctionEntity* function, const ClassE
 	if (function->public_special_access && function->inherited == nullptr && function->owner == entity->scope)
 		return;
 	const ClassEntity* acted = object != nullptr ? object : base_object_ != nullptr ? base_object_ : entity;
+	if (function->inherited != nullptr)
+	{
+		// P0136R1: access is checked as construction of the originating
+		// base at this call site, independently of the inheriting class.
+		const FunctionEntity* root = graph_.inherited_root(function);
+		if (root == nullptr)
+			root = function->inherited;
+		check_special_access(root, ClassOf(root->owner->entity->type), scope, location, acted);
+		return;
+	}
 	const Identifier* key = function->destructor ? destructor_key_ : constructor_key_;
 	// Its declaration through the overload index (a template's by the set).
 	const FunctionList* same = function->templated ? nullptr : names_.overload(entity->scope, key, function->signature);

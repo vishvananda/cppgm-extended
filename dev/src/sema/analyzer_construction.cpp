@@ -1088,7 +1088,6 @@ FunctionEntity* Analyzer::select_constructor(ClassEntity* entity, const syntax::
 		return nullptr;
 	if (entity->member_initializer_active && !check_member_initializer_constructor(selected, location))
 		return nullptr;
-	check_inheriting_access(selected, entity, location);
 	if (kind == ConstructionKind::CopyList && selected->is_explicit)
 	{
 		substitution_error(location, "copy-list-initialization selects an explicit constructor");
@@ -1657,19 +1656,6 @@ void Analyzer::record_inherited_constructor(FunctionEntity* inheriting)
 	const Type* own = inheriting->type->canonical;
 	const Type* declared = root->type->canonical;
 	inheriting->inherits_full = own->param_count == declared->param_count && own->variadic == declared->variadic;
-}
-
-void Analyzer::check_inheriting_access(const FunctionEntity* constructor, const ClassEntity* entity, uint32_t location)
-{
-	// An inheriting constructor used is defined (12.9p8): its base
-	// constructor is called as from a constructor of the class (a private
-	// one is inaccessible there).
-	if (constructor == nullptr || constructor->inherited == nullptr || entity->inherits_constructors == nullptr)
-		return;
-	const ClassEntity* saved_object = base_object_;
-	base_object_ = entity;
-	check_special_access(constructor->inherited, entity->inherits_constructors, entity->scope, location);
-	base_object_ = saved_object;
 }
 
 FunctionEntity* Analyzer::inherited_specialization(

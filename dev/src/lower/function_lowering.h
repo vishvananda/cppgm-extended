@@ -1913,6 +1913,7 @@ private:
 	// A lambda's function call operator whose closure captured `this`: the
 	// pointer member's offset, and the enclosing function's class.
 	bool closure_this_ = false;
+	bool closure_this_copied_ = false;
 	uint64_t closure_this_offset_ = 0;
 	const sema::ClassEntity* closure_this_class_ = nullptr;
 	// The object whose default member initializer is being evaluated.

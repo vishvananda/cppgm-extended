@@ -404,7 +404,9 @@ void SyntaxRenderer::lambda_introducer(const LambdaExpr& lambda)
 			text(",");
 		if (capture.by_reference)
 			text("&");
-		if (capture.kind == TokenKind::KW_THIS)
+		if (capture.kind == TokenKind::OP_STAR)
+			text("*this");
+		else if (capture.kind == TokenKind::KW_THIS)
 			text("this");
 		else
 			identifier(capture.name);

@@ -210,7 +210,7 @@ struct DeleteExpr : Expr
 
 struct LambdaCapture
 {
-	// TT identifier capture (by copy), OP_AMP (by reference) or KW_THIS.
+	// Identifier capture by copy/reference, KW_THIS, or OP_STAR for *this.
 	TokenKind kind;
 	bool by_reference;
 	bool pack;

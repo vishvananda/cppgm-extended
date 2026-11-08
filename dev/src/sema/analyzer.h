@@ -167,7 +167,6 @@ public:
 		ClassEntity* entity, FunctionEntity* specialization, uint32_t arguments, uint32_t location);
 	void planned_inheriting_constructor(FunctionEntity* inheriting, ClassEntity* entity, uint32_t location);
 	bool plan_nothrow(const FunctionEntity* constructor);
-	void check_inheriting_access(const FunctionEntity* constructor, const ClassEntity* entity, uint32_t location);
 	static uint32_t definition_context(const FunctionEntity* definition);
 	static uint32_t class_definition_context(const Scope* scope);
 	// An instance's static data member's definition (14.7.1p1), on demand:

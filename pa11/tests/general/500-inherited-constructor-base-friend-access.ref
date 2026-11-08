@@ -1,0 +1,163 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+  slot $tmpobj__2 : obj<4x4>
+  slot $tmpobj__3 : obj<4x4>
+  slot $tmpobj__4 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $tmpobj__2
+    %t2 = call obj<4x4> @Factory__first()
+    copyobj 4x4 %t2, %t1
+    %t3 = index i8 %t1, 0
+    %t4 = call i32 @Base__get(%t3)
+    %t5 = addr $tmpobj__3
+    %t6 = call obj<4x4> @Factory__second()
+    copyobj 4x4 %t6, %t5
+    %t7 = index i8 %t5, 0
+    %t8 = call i32 @Base__get(%t7)
+    %t9 = binary add nowrap i32 %t4, %t8
+    %t10 = addr $tmpobj__4
+    %t11 = call obj<4x4> @Factory__third()
+    copyobj 4x4 %t11, %t10
+    %t12 = index i8 %t10, 0
+    %t13 = call i32 @PrivateBase__get(%t12)
+    %t14 = binary add nowrap i32 %t9, %t13
+    %t15 = cmp eq i32 %t14, 24
+    branch %t15, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t16 = load typed i32 $cond__1
+    return i32 %t16
+}
+function @Factory__first() -> obj<4x4> [binding=weak, object=_ZN7Factory5firstEv, inline_hint=yes] {
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $retobj__1
+    call void @Derived__Derived(%t1, 7)
+    return obj<4x4> $retobj__1
+}
+function @Base__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZNK4Base3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    return i32 %t3
+}
+function @Factory__second() -> obj<4x4> [binding=weak, object=_ZN7Factory6secondEv, inline_hint=yes] {
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $retobj__1
+    call void @Further__Further(%t1, 8)
+    return obj<4x4> $retobj__1
+}
+function @Factory__third() -> obj<4x4> [binding=weak, object=_ZN7Factory5thirdEv, inline_hint=yes] {
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $retobj__1
+    call void @PrivateDerived__PrivateDerived(%t1, 9)
+    return obj<4x4> $retobj__1
+}
+function @PrivateBase__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZNK11PrivateBase3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    return i32 %t3
+}
+function @Derived__Derived__base_entry(%this : ptr [object_bytes=4], %__param1 : i32) -> void [binding=weak, object=_ZN7DerivedC2Ei, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    %t3 = load typed i32 $__param1
+    call void @Base__Base__base_entry(%t2, %t3)
+    return void
+}
+function @Further__Further(%this : ptr [object_bytes=4], %__param1 : i32) -> void [binding=weak, object=_ZN7FurtherC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    %t3 = load typed i32 $__param1
+    call void @Derived__Derived__base_entry(%t2, %t3)
+    return void
+}
+function @PrivateDerived__PrivateDerived(%this : ptr [object_bytes=4], %__param1 : i32) -> void [binding=weak, object=_ZN14PrivateDerivedC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    %t3 = load typed i32 $__param1
+    call void @PrivateBase__PrivateBase__base_entry(%t2, %t3)
+    return void
+}
+function @Base__Base__base_entry(%this : ptr [object_bytes=4], %n : i32) -> void [binding=weak, object=_ZN4BaseC2Ei, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    return void
+}
+function @Derived__Derived(%this : ptr [object_bytes=4], %__param1 : i32) -> void [binding=weak, object=_ZN7DerivedC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    %t3 = load typed i32 $__param1
+    call void @Base__Base__base_entry(%t2, %t3)
+    return void
+}
+function @PrivateBase__PrivateBase__base_entry(%this : ptr [object_bytes=4], %n : i32) -> void [binding=weak, object=_ZN11PrivateBaseC2Ei, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    return void
+}
+alias object _ZN7FurtherC2Ei = @Further__Further
+alias object _ZN14PrivateDerivedC2Ei = @PrivateDerived__PrivateDerived

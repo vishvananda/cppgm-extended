@@ -195,6 +195,15 @@ const Type* Analyzer::address_argument(const syntax::Expr& expr, const Type* tar
 		return types_.address(value.type->unqualified->canonical, nullptr);
 	if (value.kind == ValueKind::MemberPointer && value.address.entity == nullptr)
 		return types_.address(value.type->unqualified->canonical, nullptr);
+	// N4268 (C++17): a member-pointer argument can be a constant
+	// expression, including a constexpr variable or call. Preserve the
+	// canonical member identity when no this-adjustment is required.
+	if (cxx17_ && value.kind == ValueKind::MemberPointer && value.address.offset == 0)
+	{
+		const Entity* member = static_cast<const Entity*>(value.address.entity);
+		note_argument_demand(member);
+		return types_.address(value.type->unqualified->canonical, const_cast<Entity*>(member));
+	}
 	substitution_error(expr.location, "a template argument that designates no named object or function");
 	return nullptr;
 }

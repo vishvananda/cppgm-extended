@@ -305,6 +305,11 @@ its initializer in the enclosing scope; its new name is visible in the lambda
 body. Both assignment and parenthesized initializers are supported; see the
 offline [generalized-capture wording](../doc/cwg/paper-n3648.txt).
 Preserve reference binding, moves, and cleanup if a later capture throws.
+C++17 `[*this]` captures copy the enclosing object, with its ordinary copy
+constructor, destruction and const/mutable behavior; see the offline
+[P0018R3 wording](../doc/cwg/paper-p0018r3.txt). Modern controls also cover
+constant expressions yielding direct member-pointer template arguments,
+including constexpr variables and calls ([N4268](../doc/cwg/paper-n4268.txt)).
 Generic-lambda capture discovery includes callable objects named as callees;
 unevaluated calls do not acquire captures. Keep recursive generic calls bound
 to their parameters and captured objects through the closure's stored members.

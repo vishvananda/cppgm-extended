@@ -381,7 +381,10 @@ PA11 supports the following in addition to the PA10 procedural subset:
   copy/move construction through reference-related single arguments, including
   specializations of inherited constructor templates (P0136/CWG 2356);
   constructors declared in the class and multi-argument calls keep their usual
-  overload behavior
+  overload behavior. Access is checked against the originating base constructor
+  at the call site; the inheriting using-declaration's access has no effect.
+  A friend of the base therefore retains that privilege when constructing the
+  derived object. See the offline [P0136R1 wording](../doc/cwg/paper-p0136r1.txt).
 - use of complete class types in:
   - `sizeof(type-id)`
   - `sizeof(expr)`

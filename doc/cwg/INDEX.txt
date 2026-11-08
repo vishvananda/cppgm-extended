@@ -434,3 +434,10 @@ N4051 | Allow typename in a template template parameter | paper-n4051.txt
 
 N3648 | Wording Changes for Generalized Lambda-capture | paper-n3648.txt
   Historical C++14 initialized-capture wording, including parenthesized initializers.
+
+N4268 | paper-n4268.txt
+  https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4268.html
+  Constant-expression non-type arguments; direct member-pointer values in the modern controls.
+P0018R3 | paper-p0018r3.txt
+  https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0018r3.html
+  C++17 capture of *this by value.

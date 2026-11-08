@@ -45,6 +45,7 @@ struct LambdaFrame
 	ClosureFacts* facts;
 	const syntax::LambdaExpr* expr;
 	bool this_captured;
+	bool this_copied = false;
 	// A templated lambda's call operator specialization's body: its
 	// captures were fixed with its closure (no more are added).
 	bool sealed = false;

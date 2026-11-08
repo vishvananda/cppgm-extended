@@ -450,7 +450,11 @@ void FunctionLowering::closure_capture(const sema::Capture& capture, const Place
 			construct(type, member.storage, capture.initializer, capture.constructor, EntryVariant::Complete, location);
 		return;
 	}
-	const Place source = variable_place(capture.entity, capture.entity->type, location);
+	Place source = Place();
+	if (capture.entity != nullptr)
+		source = variable_place(capture.entity, capture.entity->type, location);
+	else
+		source.storage = object_pointer_as(sema::ClassOf(type), location);
 	if (capture.constructor != nullptr && type->kind != sema::TypeKind::Array)
 		construct_from(capture.constructor, member.storage, address_of(source), location);
 	else if (capture.constructor != nullptr && !copies_storage(capture.constructor))
@@ -478,6 +482,8 @@ void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::V
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	const uint32_t first = facts->this_member != nullptr ? 1 : 0;
+	const bool copied_this = first != 0 && sema::ClassOf(facts->this_member->type) != nullptr;
+	const sema::Capture this_capture{ nullptr, facts->this_member, facts->this_constructor, nullptr };
 	const uint32_t count = facts->capture_count + first;
 	// Whether a member's copy calls a constructor that may throw; the last
 	// such member.
@@ -502,11 +508,11 @@ void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::V
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		const bool is_this = i < first;
-		const sema::Capture* capture = is_this ? nullptr : &facts->captures[i - first];
+		const sema::Capture* capture = is_this ? (copied_this ? &this_capture : nullptr) : &facts->captures[i - first];
 		const uint64_t offset = lowering_.member_offset(is_this ? facts->this_member : capture->member, location);
 		Place member = Place();
 		member.storage = offset == 0 ? object : index(i8, ir_model::IPK_FIELD, object, integer(i64, offset)).value;
-		const sema::Type* type = is_this ? nullptr : capture->member->type;
+		const sema::Type* type = capture != nullptr ? capture->member->type : nullptr;
 		if (pending && capture != nullptr && copy_throws(*capture))
 		{
 			closure_member_region();

@@ -1023,9 +1023,16 @@ bool ConstantInterpreter::this_place(ConstPlace& out, uint32_t location)
 	{
 		ConstPlace member;
 		ConstValue pointer;
-		if (!member_place(out, closure->this_member, member, location) || !read(member, pointer, location))
+		if (!member_place(out, closure->this_member, member, location))
 			return false;
-		out = PlaceOf(pointer, closure->this_member->type->element);
+		if (ClassOf(closure->this_member->type) != nullptr)
+			out = member;
+		else
+		{
+			if (!read(member, pointer, location))
+				return false;
+			out = PlaceOf(pointer, closure->this_member->type->element);
+		}
 	}
 	return true;
 }

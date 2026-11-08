@@ -128,12 +128,25 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 		if (context.lambda != nullptr && context.lambda->sealed)
 		{
 			if (context.lambda->facts->this_member != nullptr)
-				context.this_type = context.lambda->facts->this_member->type;
+			{
+				const Type* captured = context.lambda->facts->this_member->type;
+				context.this_type = context.lambda->this_copied
+					? types_.pointer(types_.qualified(captured, static_cast<uint8_t>(captured->cv | type->function_cv)))
+					: captured;
+			}
 		}
 		else if (context.lambda != nullptr)
 		{
 			if (saved_body != nullptr && (context.lambda->expr->has_default || context.lambda->this_captured))
+			{
 				context.this_type = saved_body->this_type;
+				if (context.this_type != nullptr && context.lambda->this_copied)
+				{
+					const Type* object = context.this_type->element;
+					context.this_type = types_.pointer(types_.qualified(
+						object, static_cast<uint8_t>(object->cv | (context.lambda->expr->is_mutable ? 0 : kConst))));
+				}
+			}
 		}
 		else if (function->member && !function->is_static && function->owner->entity != nullptr &&
 			graph_.closure_call(static_cast<const ClassEntity*>(function->owner->entity)) != function)
