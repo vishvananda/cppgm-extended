@@ -16,7 +16,7 @@ complete record. This proposal accompanies the working
 | Clang C++11 | Pinned, source-reviewed profile | Compile-only acceptance and ordinary required diagnostics | Clang baseline; label suite versus compile CPU | Not applicable to this compile-only profile |
 | Boost | Pinned upstream libraries and their test actions | Actual declared build/run/rejection oracles | Not yet measured against native compilers | Not yet measured |
 | Public programs | Declared program and input manifest | Built programs have matching output | O0 / O3, both baselines | O0 / O3, both baselines; included counts shown |
-| Compiler self-build | Course source and build configuration | Complete compiler rebuild and validation | Build time against available native baseline | Separate generated-compiler/inception result |
+| Compiler self-build | Course source and build configuration | Complete compiler rebuild and validation | Build time against available native baseline | Codegen: self-built versus GCC-built compiler |
 | index-cpp | Pinned source, full inputs, 50 checksums | All original workload checksums | Measured optimization levels only | Both baselines, all 50 workloads in detail |
 | simdjson | Scalar and SSE configurations separately | Canonical DOM output for both JSON inputs | One library build per backend | twitter and citm inputs separately |
 | Godot | Planned; presets not yet declared | No pass claimed | Not measured | Not measured |
@@ -58,8 +58,8 @@ absolute times. Raw observations and calibration warnings stay linked.
 
 Keep source version/input hashes, compiler source revision/binary hashes,
 compiler/library versions, full flags, ISA, workers, affinity and resource limits
-alongside the tables. A self-built compiler's execution measures generated code;
-it must not be conflated with the time needed to build that compiler.
+alongside the tables. The cppgm++ runtime result measures codegen performance:
+the self-built compiler runs against the GCC-built compiler on identical inputs.
 
 ## Adding data
 

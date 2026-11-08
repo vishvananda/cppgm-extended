@@ -103,7 +103,7 @@
     },
     {
       "id": "inception",
-      "name": "Generated compiler performance",
+      "name": "cppgm code generation",
       "kind": "benchmark",
       "documentation": "benchmarks/self_compile/README.md",
       "configurations": [

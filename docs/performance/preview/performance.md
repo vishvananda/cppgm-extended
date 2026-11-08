@@ -14,7 +14,7 @@ Public aggregates are equal-weight geometric means. The existing 10 ms eligibili
 | Compiler build / execution | Opt | vs GCC | vs Clang | Comparison | Details |
 |---|---|---:|---|---|---|
 | Build cppgm++ | O3 | 4.237× | Not measured | Initial bootstrap CPU; GCC 279.08 s / cppgm 65.87 s | [783dbfcf0](public.md#building-the-compiler) |
-| Generated compiler execution | O3 | Not applicable | Not applicable | Self-built / GCC-built cppgm speed: 0.969×; paired CPU | [Inception details](public.md#paired-self-built-compiler-measurements) |
+| cppgm++ codegen | O3 | 0.969× | Not measured | Self-built versus GCC-built cppgm; paired CPU | [Inception details](public.md#paired-self-built-compiler-measurements) |
 
 ### AMD EPYC 9V74 80-Core Processor · GitHub hosted
 

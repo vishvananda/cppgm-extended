@@ -2,6 +2,10 @@
 
 # Public benchmarks
 
+The cppgm++ runtime result is our codegen benchmark: self-built versus GCC-built
+compiler execution on identical compiler source inputs. Its paired measurements
+appear under [paired self-built compiler measurements](#paired-self-built-compiler-measurements).
+
 81 of 81 programs built with cppgm++ and g++ and agreed. Each number is the reference over cppgm++, so above 1× means cppgm++ is smaller or faster.
 
 CPU: AMD EPYC 9V45 96-Core Processor.

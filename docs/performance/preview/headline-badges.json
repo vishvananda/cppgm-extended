@@ -71,122 +71,143 @@
     "public-compile-gcc": {
       "label": "Public programs \u00b7 EPYC 9V45 O3 compile-gcc",
       "message": "4.02\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/public.md"
+      "color": "14532d",
+      "target": "docs/performance/preview/public.md",
+      "speedup": 4.020792074411886
     },
     "public-compile-clang": {
       "label": "Public programs \u00b7 EPYC 9V45 O3 compile-clang",
       "message": "3.49\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/public.md"
+      "color": "14532d",
+      "target": "docs/performance/preview/public.md",
+      "speedup": 3.49236324418553
     },
     "public-runtime-gcc": {
       "label": "Public programs \u00b7 EPYC 9V45 O3 runtime-gcc",
       "message": "0.99\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/public.md"
+      "color": "166534",
+      "target": "docs/performance/preview/public.md",
+      "speedup": 0.9912148984393135
     },
     "public-runtime-clang": {
       "label": "Public programs \u00b7 EPYC 9V45 O3 runtime-clang",
       "message": "1.00\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/public.md"
+      "color": "166534",
+      "target": "docs/performance/preview/public.md",
+      "speedup": 0.9985122472431855
     },
     "index-compile-gcc": {
       "label": "index-cpp \u00b7 EPYC 9V74 O3 compile-gcc",
-      "message": "6.76\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/index-cpp.md"
+      "message": "6.77\u00d7",
+      "color": "14532d",
+      "target": "docs/performance/preview/index-cpp.md",
+      "speedup": 6.765306122448979
     },
     "index-compile-clang": {
       "label": "index-cpp \u00b7 EPYC 9V74 O3 compile-clang",
       "message": "5.89\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/index-cpp.md"
+      "color": "14532d",
+      "target": "docs/performance/preview/index-cpp.md",
+      "speedup": 5.888513513513513
     },
     "index-runtime-gcc": {
       "label": "index-cpp \u00b7 EPYC 9V74 O3 runtime-gcc",
       "message": "0.99\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/index-cpp.md"
+      "color": "166534",
+      "target": "docs/performance/preview/index-cpp.md",
+      "speedup": 0.9943965563909242
     },
     "index-runtime-clang": {
       "label": "index-cpp \u00b7 EPYC 9V74 O3 runtime-clang",
       "message": "0.99\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/index-cpp.md"
+      "color": "166534",
+      "target": "docs/performance/preview/index-cpp.md",
+      "speedup": 0.9887067896745086
     },
     "scalar-compile-gcc": {
       "label": "simdjson scalar \u00b7 EPYC 7763 O3 compile-gcc",
       "message": "4.47\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/simdjson.md"
+      "color": "14532d",
+      "target": "docs/performance/preview/simdjson.md",
+      "speedup": 4.467391304347826
     },
     "scalar-compile-clang": {
       "label": "simdjson scalar \u00b7 EPYC 7763 O3 compile-clang",
       "message": "2.33\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/simdjson.md"
+      "color": "14532d",
+      "target": "docs/performance/preview/simdjson.md",
+      "speedup": 2.3285714285714283
     },
     "scalar-runtime-gcc": {
       "label": "simdjson scalar \u00b7 EPYC 7763 O3 runtime-gcc",
       "message": "0.81\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/simdjson.md"
+      "color": "166534",
+      "target": "docs/performance/preview/simdjson.md",
+      "speedup": 0.8137598594570282
     },
     "scalar-runtime-clang": {
       "label": "simdjson scalar \u00b7 EPYC 7763 O3 runtime-clang",
       "message": "0.80\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/simdjson.md"
+      "color": "166534",
+      "target": "docs/performance/preview/simdjson.md",
+      "speedup": 0.8005651314266378
     },
     "sse-compile-gcc": {
       "label": "simdjson SSE \u00b7 EPYC 7763 O3 compile-gcc",
       "message": "4.49\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/simdjson.md"
+      "color": "14532d",
+      "target": "docs/performance/preview/simdjson.md",
+      "speedup": 4.4924012158054705
     },
     "sse-compile-clang": {
       "label": "simdjson SSE \u00b7 EPYC 7763 O3 compile-clang",
       "message": "2.56\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/simdjson.md"
+      "color": "14532d",
+      "target": "docs/performance/preview/simdjson.md",
+      "speedup": 2.557926829268293
     },
     "sse-runtime-gcc": {
       "label": "simdjson SSE \u00b7 EPYC 7763 O3 runtime-gcc",
       "message": "0.90\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/simdjson.md"
+      "color": "166534",
+      "target": "docs/performance/preview/simdjson.md",
+      "speedup": 0.9000603431387565
     },
     "sse-runtime-clang": {
       "label": "simdjson SSE \u00b7 EPYC 7763 O3 runtime-clang",
       "message": "0.89\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/simdjson.md"
+      "color": "166534",
+      "target": "docs/performance/preview/simdjson.md",
+      "speedup": 0.8914454359887916
     },
     "native-compile-gcc": {
       "label": "Internal C++ subset\u2020 \u00b7 Xeon E5-2696 v4 O3 compile-gcc",
       "message": "4.46\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/internal.md"
+      "color": "14532d",
+      "target": "docs/performance/preview/internal.md",
+      "speedup": 4.461470669269994
     },
     "native-compile-clang": {
       "label": "Internal C++ subset\u2020 \u00b7 Xeon E5-2696 v4 O3 compile-clang",
       "message": "6.85\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/internal.md"
+      "color": "14532d",
+      "target": "docs/performance/preview/internal.md",
+      "speedup": 6.849275009722701
     },
     "build-compile-gcc": {
-      "label": "Build cppgm++ \u00b7 EPYC 9V45 O3 compile-gcc",
+      "label": "cppgm++ \u00b7 EPYC 9V45 O3 compile-gcc",
       "message": "4.24\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/public.md#building-the-compiler"
+      "color": "14532d",
+      "target": "docs/performance/preview/public.md#building-the-compiler",
+      "speedup": 4.2368301199332015
     },
     "inception": {
-      "label": "Self-built versus GCC-built cppgm",
+      "label": "cppgm++ codegen: self-built versus GCC-built compiler",
       "message": "0.97\u00d7",
-      "color": "1e40af",
-      "target": "docs/performance/preview/public.md#paired-self-built-compiler-measurements"
+      "color": "166534",
+      "target": "docs/performance/preview/public.md#paired-self-built-compiler-measurements",
+      "speedup": 0.9693896949444509
     }
-  }
+  },
+  "performance_badge_method": "scripts/public_benchmarks.py:speed_badge; colors from unrounded speedups"
 }
