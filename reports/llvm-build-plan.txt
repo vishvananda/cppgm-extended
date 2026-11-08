@@ -439,3 +439,43 @@ function defaults on implicit deduction guides. Both fixes are under test.
 All LLVM sources remain unmodified. Stage 1 is incomplete; the paired LLVM
 build-time, byte-identical cppgm output and compiled-Clang performance
 comparisons remain pending.
+
+Block 9: defaulted constructor guides, reference ABI and switch copies (accepted)
+-------------------------------------------------------------------------------
+Implicit deduction guides preserve ordinary constructor function defaults from
+retained parameter syntax without evaluating them or completing the class.
+Reference ABI metadata describes complete referents without instantiating a
+class merely to obtain an optional size annotation. Copied native jump-table
+instructions own separate target slices, so frame splitting and block-layout
+renumbering cannot rewrite the same targets twice. Required regressions are in
+PA14 and PA33; C++17 deduction regressions are in PA29's optional modern lane.
+
+The previous compiler rejects the positive frontend regressions and executes
+the switch object-file regression incorrectly. GCC/Clang accept and execute
+the positive cases; all reject the required-constructor-argument negative.
+A diagnostic all-cppgm relink of clang-tblgen with the corrected RISC-V utility
+object generates native-byte-identical vector builtins in 0.219 seconds. This
+is generator correctness evidence, not a complete LLVM build or build benchmark.
+
+Strict 9873/9873, debug, modern, PA5 self-host, root inception, architecture,
+file/placement/CWG/format audits, harness, PA35 quick and smoke all pass. Both
+full course and student release builds pass all 17 gates and extra margins.
+Frozen parent/candidate instruction ratios are O0 1.000045 and O3 1.000007;
+both frozen objects are byte-identical. A fresh export passes its 212-document
+inventory, all 42 wrappers and all five new/affected exported fixture checks.
+
+The initial strict run exposed one expected optional reference-size metadata
+difference in PA18; only that reference was regenerated through its harness.
+The initial PA14 regression used PA15's static_assert; it was reduced to a
+plain dependent member before the passing placement check and final export.
+All initial observations are retained outside the checkout.
+
+The new compiler clears 11 of the prior 28 failed compilations. Its fresh LLVM
+build reaches 2902/3163 available dependency steps, exposing 92 failed C++
+compilations and two generator runtime failures. Forty-three compile failures
+share one IntrusiveRefCntPtr header locus. OpenCL and X86 GlobalISel generators
+still abort under the recorded per-process resource bounds. LLVM sources are
+unmodified, every C++ object uses cppgm, and the full LLVM build is incomplete.
+Build-time comparison and the two finished-Clang comparisons remain pending.
+Immutable tools and manifests: compiler-block9-guide-switch-reference.
+Receipt: block9-guide-switch-reference-validation.json outside this checkout.
