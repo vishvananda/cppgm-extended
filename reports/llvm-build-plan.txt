@@ -479,3 +479,46 @@ unmodified, every C++ object uses cppgm, and the full LLVM build is incomplete.
 Build-time comparison and the two finished-Clang comparisons remain pending.
 Immutable tools and manifests: compiler-block9-guide-switch-reference.
 Receipt: block9-guide-switch-reference-validation.json outside this checkout.
+
+Block 10: default demands, class result boundaries and completion (accepted)
+-------------------------------------------------------------------------
+Default-argument declarations retain typed function-demand lists without
+instantiating those definitions until a call uses the default. Ordinary
+declaration-time initialization/conversion checks remain active; a used invalid
+constructor default is rejected. This clears the 43-file IntrusiveRefCntPtr
+family. A built-in binary chain treats a user-converted class expression as a
+leaf, preserving the complete operator call, temporary and destructor behavior.
+References do not complete template classes merely by being named. Tuple-like
+structured bindings explicitly request completion for their member lookup.
+
+The pure-virtual runtime entry now uses the Itanium API's own void() boundary,
+so incomplete by-value source parameters/results do not need layout just to
+emit a vtable. Static member template references can supply a deduced function
+argument type; direct member calls retain their separate explicit-argument
+resolution. Empty aggregate-base overload checks stop when their initializer
+list runs out, preventing an out-of-bounds read.
+
+Required regressions are in PA12, PA13, PA14 and PA17; C++17 aggregate/structured
+binding controls are in PA29's optional modern lane. All 48 final cppgm/GCC/Clang
+O0/O3 observations pass. The initial reference-expression control incorrectly
+applied unary & to an incomplete template (which may require completion for
+operator lookup); it was reduced to plain reference forwarding. An initial
+tuple control exposed the separately recorded unsupported enum-valued tuple_size
+value; the regression now follows the real library's static integral member.
+
+Strict 9879/9879, debug, modern, all architecture/format/file/placement/CWG
+audits, PA5 self-host, root inception, harness, PA35 quick and smoke pass. Both
+course and student full release builds pass all 17 gates and extra margins.
+Frozen parent/candidate instruction ratios are O0 0.999406 and O3 0.999813,
+with byte-identical frozen objects. Exactly 20 reviewed LowIR references were
+regenerated through their owning harnesses for the canonical pure-virtual
+boundary and omitted optional sizes on still-incomplete referents. No compiler
+code changed after the immutable snapshot. A fresh export passes its 212-file
+document inventory, all 42 wrappers and all eight new exported fixtures.
+
+A fresh LLVM build clears 53 of the prior 92 failed C++ compilations and has
+39 remaining failed compilations plus the same two generator runtime failures.
+LLVM sources remain unchanged and all C++ objects are compiled by cppgm.
+The complete LLVM build and all three downstream comparisons remain pending.
+Immutable tools: compiler-block10-defaults-values; receipt outside the checkout:
+block10-defaults-values-validation.json. All initial observations are retained.
