@@ -455,5 +455,29 @@
     "reason": "The sole f template is never instantiated and its body is independent of T. e denotes class c, while e::d denotes unrelated class a; return copy-initialization cannot convert a to c (N3485 6.6.3p2/8.5). c has no converting constructor; a private conversion to int cannot produce c. No specialization is valid, so N3485 14.6p8 makes the unused template IFNDR and1.4p2 imposes no implementation requirements. Preserve independent valid member aliases in PA12:400 and a mandatory ordinary return-conversion rejection in PA12:400.",
     "issue": "CXX11-118",
     "sha256": "cdc6b36e31f79e1b5444271e5eb81fc8629314d9b3896c631248fa8a1a9c5d0a"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-33.C": {
+    "status": "valid-baseline-limitation",
+    "sha256": "95ae8b8077420fdfab654fec99fa6cf8e1e891c0c2e4da8fc389994691f64a35",
+    "issue": "CXX11-126",
+    "reason": "N3485 14.3p8 and 14.5.3p4-p6 permit the argument pack expansion;14.5.7p2 and adopted CWG1558 retain the dependent alias template-id until substitution. The concrete call f<int,int> has parameter tail<int,int>, which is list<int>. The old dg-error tests the unadopted prohibition discussed by open CWG1430, not a required C++11 diagnostic. This is compile-only; a definition of f may be supplied in another translation unit. Preserve the ENTIRE original as PA17:200 general200-gcc-erased-alias-original.t and a defined runtime call control200-alias-erased-first-argument-defined-call.t. GCC15 and Clang21 reject this valid source; exclude its exact hash from BOTH paired roles as an upstream baseline limitation, never as a language pass. Original fixed4102-manifest observations and native rejection remain retained."
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-37.C": {
+    "status": "valid-baseline-limitation",
+    "sha256": "01f4fe9be2415c7d45182a4bca42f9eb809e90d7868876e845811bed55e9ea35",
+    "issue": "CXX11-126",
+    "reason": "N3485 14.3.3p1 explicitly permits an alias template as a template-template argument, and p3 lets the variadic template-template head match C fixed parameters. D<C> binds C without requiring C to be identical to another template; unresolved CWG1286 alias-template identity is not exercised. N3485 14.5.3/14.5.7 and adopted1558 permit the deferred member alias; D<C>::type<int,char> is C<int,char>, then B<int,char>::type, then A<char>. Open CWG1430 supplies no adopted rejection rule. Preserve the ENTIRE original as PA17:300 general300-gcc-template-template-alias-original.t and instantiated runtime control300-alias-fixed-template-template-argument-defined-use.t. GCC15 and Clang21 reject this valid source, so exclude its exact hash from BOTH paired roles as a baseline limitation, not a compiler failure or paired-suite pass. Preserve raw4102 outcomes."
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/variadic178.C": {
+    "status": "not-required",
+    "sha256": "a0ce9b8c0c0c2c226b84adcf4255bf82408de34375b3a61e36a065c42beb137d",
+    "issue": "CXX11-126",
+    "reason": "The primary a has exactly two parameters. Any well-formed argument list of the partial a<b,c,d...> therefore requires d to be empty. N3485 14.6p8 makes an empty-only-valid variadic template ill-formed, no diagnostic required, even if instantiated; if no valid specialization exists at all, its unused no-valid-specialization rule also applies. Do not infer a required diagnostic from the old dg-error or require acceptance of the bad partial. Exclude this exact source from BOTH paired roles, not as a pass, retaining raw4102 observations. Required PA17:100 control100-partial-specialization-nonempty-pack-defined-use.t exercises a genuine variadic primary with nonempty d; PA14:100 control100-fixed-template-concrete-excess-arguments-reject.t requires diagnosis of an ordinary concrete fixed-head overflow outside an invalid unused template."
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/vt-57626.C": {
+    "status": "not-required",
+    "sha256": "5e466b40e5747dd86b62026b717928ed835b54de39e96627522a4a93881b5623",
+    "issue": "CXX11-126",
+    "reason": "The unused constructor default template argument decltype(bar<Term,Args...>(&Term::multiply)) has no valid specialization: empty Args omits the required template-template slot, while every nonempty typename pack element is a type argument (N3485 14.3.1p1), not a class/alias template name (14.3.3p1). Adopted CWG2746 (March2024; full text doc/cwg/cwg-2746.txt) explicitly makes an unused default template argument with no valid specialization ill-formed, no diagnostic required. No constructor/default is used in this source. This reason does not assume that a permanently invalid default rules out every conceivable function specialization. Exclude this exact source from BOTH paired roles without counting it as a pass; retain raw4102 outcomes. PA22:300 controls300-alias-concrete-template-argument-kind-reject.t and300-alias-concrete-member-pointer-template-argument.t retain required concrete wrong-kind diagnosis and valid member-pointer runtime behavior."
   }
 }
