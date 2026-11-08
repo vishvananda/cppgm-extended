@@ -264,6 +264,10 @@ jobs:
             name: optional target features
             command: make test-target-features-nobuild
             timeout: 30
+          - id: test-inline-assembly
+            name: optional inline assembly
+            command: make -C pa36 test-nobuild
+            timeout: 30
           - id: selfhost-through-pa5
             name: test-through-pa5
             command: make -C pa34 test-through-pa5 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
