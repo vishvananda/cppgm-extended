@@ -77,7 +77,11 @@ Support the initial integer/SSE forms described by the supplied encoding facts,
 in Intel and AT&T syntax, including their register widths and addressing forms.
 Include returns, push/pop, local/symbol/indirect calls and jumps,
 unary arithmetic, shifts/rotates, `test`, multiply forms and
-`xadd`/`cmpxchg`. Validate `lock` against a lockable memory destination and
+`xadd`/`cmpxchg`. Include conditional moves and byte condition results, bit
+scans/counts, byte reversal, bit tests/updates, double shifts and wide
+compare/exchange. Sign/zero-extension moves have distinct source and destination
+widths, including their AT&T names; reject invalid high-byte/REX combinations.
+Feature-dependent native observations must check the host CPU before execution. Validate `lock` against a lockable memory destination and
 repeat prefixes against string instructions. Implicit register operands and
 their clobbers remain the producer's responsibility.
 Support named and numeric local labels, forward/backward numeric references,

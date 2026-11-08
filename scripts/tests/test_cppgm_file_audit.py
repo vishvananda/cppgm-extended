@@ -67,6 +67,41 @@ private:
         self.assertIn("member is 243 lines", result.stdout)
 
 
+class FileAuditHeaderData(unittest.TestCase):
+    def audit(self, source):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / "table.h").write_text(source)
+            return subprocess.run(
+                ["perl", str(AUDIT), "--root", str(root), "--warnings-fail", "--paths", "table.h"],
+                capture_output=True, text=True, check=False,
+            )
+
+    def test_literal_aggregate_table_is_data(self):
+        rows = "\n".join(f"    {{{i}, {i + 1}}}," for i in range(190))
+        source = "#pragma once\nstruct Entry { int key, value; };\n"
+        source += "inline const Entry* data() {\nstatic constexpr Entry entries[] = {\n"
+        source += rows + "\n};\nreturn entries;\n}\n"
+        result = self.audit(source)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_callback_initializer_remains_implementation(self):
+        body = "\n".join(f"    value += {i};" for i in range(190))
+        source = "#pragma once\nstatic const int values[] = { [] {\n"
+        source += "    int value = 0;\n" + body + "\n    return value;\n}() };\n"
+        result = self.audit(source)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("header contains substantial implementation body", result.stdout)
+
+    def test_data_still_has_a_file_size_limit(self):
+        rows = "\n".join(f"    {{{i}, {i + 1}}}," for i in range(2401))
+        source = "#pragma once\nstruct Entry { int key, value; };\n"
+        source += "static const Entry entries[] = {\n" + rows + "\n};\n"
+        result = self.audit(source)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("[fatal][size]", result.stdout)
+
+
 class FileAuditShippedFiles(unittest.TestCase):
     READS_ENVIRONMENT = '#include <cstdlib>\nconst char* home() { return std::getenv("HOME"); }\n'
 

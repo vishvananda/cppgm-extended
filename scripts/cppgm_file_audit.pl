@@ -754,10 +754,34 @@ sub report_function_shape {
     }
 }
 
+# Constant aggregate tables are header data. Keep their lines in the ordinary
+# file/function limits, but do not mistake initializer rows for implementation
+# statements. Calls, lambdas and side-effecting expressions remain visible.
+sub mask_literal_array_initializers {
+    my ($text) = @_;
+    while ($text =~ /\b(?:const|constexpr)\s+[^;{}()]*?\[[^\[\];{}()]*\]\s*=\s*\{/g) {
+        my $start = pos($text) - 1;
+        my $depth = 1;
+        my $end = $start + 1;
+        while ($end < length($text) && $depth) {
+            my $c = substr($text, $end++, 1);
+            $depth++ if $c eq '{';
+            $depth-- if $c eq '}';
+        }
+        next if $depth || substr($text, $end) !~ /^\s*;/;
+        my $body = substr($text, $start, $end - $start);
+        next if $body =~ /[()\[\];]|\+\+|--|(?<![<>=!])=(?!=)|\b(?:new|delete|throw|co_await)\b/;
+        $body =~ s/[^\n]/ /g;
+        substr($text, $start, $end - $start, $body);
+        pos($text) = $end;
+    }
+    return $text;
+}
+
 sub check_header_body_weight {
     my ($rel, $code_masked_text, $fatal, $warning) = @_;
     return if $rel !~ /\.(?:h|hh|hpp|hxx)$/;
-    my @lines = split /\n/, $code_masked_text;
+    my @lines = split /\n/, mask_literal_array_initializers($code_masked_text);
     my $body_lines = 0;
     for my $line (@lines) {
         next if $line =~ /^\s*[{}]+\s*;?\s*$/;   # a brace alone is layout, not body
