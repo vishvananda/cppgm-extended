@@ -1,12 +1,13 @@
 #pragma once
 
 #include "lowir/assembly.h"
+#include "native/object/object_file.h"
 
 namespace native {
-class Image;
+class ModuleAssembler;
 
-// Raw functions own their entire ABI. No frame, register setup or unwind
-// promise is inferred from their opaque body.
-void emit_assembly_function(Image& image, const lowir::Program& program, const lowir::AssemblyFunction& function);
+// Raw functions share the module assembler's labels, fixups and CFI rules.
+void emit_assembly_function(ModuleAssembler& assembler, const lowir::Program& program,
+	const lowir::AssemblyFunction& function, const std::vector<uint32_t>& symbols);
 
 } // namespace native

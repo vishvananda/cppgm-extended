@@ -1,6 +1,7 @@
 #include "native/asm/module_symbols.h"
 
 #include "native/backend_error.h"
+#include "support/internal_error.h"
 
 namespace native {
 
@@ -48,13 +49,14 @@ bool ModuleSymbols::interposable(const std::string& name) const
 	return (binding == bindings_.end() ? out_.symbols[found->second].binding : binding->second) !=
 		object::Binding::Local;
 }
-uint32_t ModuleSymbols::program_symbol(const lowir::Program& program, lowir::SymbolId symbol)
+void remap_assembly_symbols(std::vector<assembly::SymbolUse>& uses, const std::vector<uint32_t>& symbols)
 {
-	const lowir::Symbol& source = program.symbols[symbol];
-	std::string name = program.spelling(source.metadata.object != 0 ? source.metadata.object : source.name);
-	if (source.metadata.binding == ir_model::SBM_INTERNAL && source.metadata.object == 0)
-		name.insert(name.begin(), '@');
-	return intern(name);
+	for (assembly::SymbolUse& use : uses)
+	{
+		if (use.reference.symbol >= symbols.size() || symbols[use.reference.symbol] == 0)
+			throw InternalError("assembly symbol has no object identity");
+		use.reference.symbol = symbols[use.reference.symbol];
+	}
 }
 uint32_t ModuleSymbols::token(assembly::ModuleCursor& cursor)
 {

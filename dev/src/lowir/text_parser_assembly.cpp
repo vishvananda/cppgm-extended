@@ -286,10 +286,16 @@ void Parser::parse_assembly_function()
 	if (symbol == kNoId || program_.symbols[symbol].kind != SymbolKind::FunctionDeclaration ||
 		find_assembly_function(program_, symbol))
 		fail("assembly function requires a prior, undefined function declaration");
+	asm_model::FunctionUnwind unwind = asm_model::FunctionUnwind::None;
+	if (at_word(asm_model::spelling(asm_model::FunctionUnwind::Initial)))
+	{
+		advance();
+		unwind = asm_model::FunctionUnwind::Initial;
+	}
 	program_.functions[program_.symbols[symbol].detail].body.reset(new FunctionBody());
 	expect(TokenKind::LBrace, "{");
 	parse_body(symbol);
-	retain_assembly_function(program_, symbol);
+	retain_assembly_function(program_, symbol, unwind);
 }
 
 } // namespace text

@@ -35,6 +35,7 @@ struct AssemblyTemplate : asm_model::Template
 struct AssemblyFunction
 {
 	SymbolId symbol;
+	asm_model::FunctionUnwind unwind = asm_model::FunctionUnwind::None;
 	std::unique_ptr<FunctionBody> body;
 };
 
@@ -65,7 +66,8 @@ struct AssemblyModule
 };
 
 const AssemblyFunction* find_assembly_function(const Program& program, SymbolId symbol);
-void retain_assembly_function(Program& program, SymbolId symbol);
+void retain_assembly_function(
+	Program& program, SymbolId symbol, asm_model::FunctionUnwind unwind = asm_model::FunctionUnwind::None);
 bool validate_assembly_functions(const Program& program, const char*& error);
 bool validate_assembly_globals(const Program& program, const char*& error);
 

@@ -594,3 +594,35 @@ module expansion and its limits. Symbol-dependent expressions, sharing macros
 with inline statements, CFI/unwind, broader ISA/register coverage and original
 Rust integration remain open. Earlier 94-case native Mac checkpoints passed
 LLVM18/21; the current module/macro checkpoint needs its own native Mac run.
+
+## 2026-11-08 checkpoint: explicit unwind descriptions
+
+Module and raw-function assembly now share direct object emission and CFI.
+The optional `assembly_function @name initial` mode supplies entry/exit unwind
+records without machine frame instructions; the GNU naked adapter selects it.
+The reader, writer, validator, vocabulary and checker retain that choice.
+Typed static symbol inputs use the object compiler's symbol identities directly.
+Raw definitions retain binding, aliases, COMDAT grouping and standalone entry.
+
+CFI includes CFA and saved-register rules, state save/restore, simple/signal and
+return-column metadata, opaque escape bytes, and personality/LSDA relocations
+with fixed-width pointer encodings. Instruction-offset anchors preserve numeric
+branches across directives. Entry register/CFA rules form the CIE prefix;
+state-stack operations and escapes remain in the FDE. The prefix distinction
+was checked against GNU assembler output. Escape bytes preserve GNU's logical
+CFA bookkeeping rather than being interpreted as assembler state updates.
+
+Focused checks pass: 140 optional cases with GCC and Clang observers at
+O0/O2/O3, plus a new standalone raw-entry case; 62 existing exception cases;
+64 independent CFI streams with 2048 randomized directives. Native observers
+exercise throws through module, naked and independent LowIR frames, escaped
+CFA expressions, alternate epilogues, personality indirection, exception-data
+addresses and 64-bit/absolute pointers. A RIP-restore runtime experiment also
+crashed with GCC's host runtime and is kept outside student execution tests;
+its record semantics remain covered by the metadata oracle.
+
+Whole-course, performance, export and native Mac qualification are deferred
+until the full assembly change is ready, as requested. Shared source
+environments, wider expressions/ISA/register bindings and original Rust
+integration remain open. Ordinary compiler-owned inline-frame unwinding is
+still a separately rejected capability.

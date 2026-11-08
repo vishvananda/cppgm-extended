@@ -48,7 +48,7 @@ void mark_data_references(const Program& program, Mark mark)
 	// Literal module symbols are resolved by the object assembler. Until its
 	// source has been parsed, an ordinary definition can be named by that
 	// external assembly, so preserve its complete identity and ABI.
-	if (program.assembly && !program.assembly->globals.empty())
+	if (program.assembly && (!program.assembly->globals.empty() || !program.assembly->functions.empty()))
 		for (SymbolId symbol : program.order)
 			if (is_definition(program, symbol))
 				mark(symbol);

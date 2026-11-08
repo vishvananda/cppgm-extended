@@ -79,6 +79,18 @@ enum class PieceKind : uint8_t
 	Unique
 };
 
+enum class FunctionUnwind : uint8_t
+{
+	None,
+	Initial
+};
+const unsigned kFunctionUnwindCount = static_cast<unsigned>(FunctionUnwind::Initial) + 1;
+inline const char* spelling(FunctionUnwind mode)
+{
+	static const char* const kFunctionUnwinds[kFunctionUnwindCount] = { "none", "initial" };
+	return kFunctionUnwinds[static_cast<unsigned>(mode)];
+}
+
 enum class Record : uint8_t
 {
 	Operand,
@@ -112,6 +124,11 @@ inline const char* spelling(Memory memory)
 {
 	static const char* const kMemories[kMemoryCount] = { "none", "read", "write", "readwrite" };
 	return kMemories[static_cast<unsigned>(memory)];
+}
+
+inline bool from_spelling(const char* text, std::size_t length, FunctionUnwind* mode)
+{
+	return detail::find_spelling(text, length, kFunctionUnwindCount, mode);
 }
 
 inline bool from_spelling(const char* text, std::size_t length, Record* record)

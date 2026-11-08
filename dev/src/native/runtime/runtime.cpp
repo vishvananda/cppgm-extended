@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "native/runtime/eh_record.h"
+#include "lowir/assembly.h"
 
 namespace native {
 
@@ -365,7 +366,8 @@ uint32_t emit_runtime(
 	for (lowir::SymbolId s = 0; s < program.symbols.size(); ++s)
 	{
 		const lowir::Symbol& symbol = program.symbols[s];
-		if (symbol.kind != lowir::SymbolKind::FunctionDeclaration || image.symbol(s).section != Section::Undefined)
+		if (symbol.kind != lowir::SymbolKind::FunctionDeclaration || image.symbol(s).section != Section::Undefined ||
+			lowir::find_assembly_function(program, s) != nullptr)
 			continue;
 		if (symbol.metadata.role == ir_model::SR_CPU_QUERY || symbol.metadata.role == ir_model::SR_XSTATE_QUERY)
 		{

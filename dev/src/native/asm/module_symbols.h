@@ -2,11 +2,12 @@
 
 #include <map>
 #include "asm/module_text.h"
-#include "lowir/program.h"
 #include "native/object/object_file.h"
 #include "native/target.h"
 
 namespace native {
+
+void remap_assembly_symbols(std::vector<assembly::SymbolUse>& uses, const std::vector<uint32_t>& symbols);
 
 class ModuleSymbols : public assembly::SymbolLookup
 {
@@ -15,7 +16,6 @@ public:
 	bool lookup(const std::string& name, asm_model::SymbolReference& reference) override;
 	bool interposable(const std::string& name) const override;
 	uint32_t named(const std::string& name);
-	uint32_t program_symbol(const lowir::Program& program, lowir::SymbolId symbol);
 	uint32_t token(assembly::ModuleCursor& cursor);
 	void define(uint32_t symbol, uint32_t section, uint64_t offset);
 	void bind(uint32_t symbol, object::Binding binding);

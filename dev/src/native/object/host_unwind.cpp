@@ -145,37 +145,59 @@ struct Cursor
 
 uint32_t encode_cie(bool personality, std::vector<uint8_t>& out)
 {
+	CieDescription description;
+	description.personality = personality;
+	description.lsda_encoding = personality ? 0x1b : 0xff;
+	return encode_cie(description, out);
+}
+
+uint32_t encode_cie(const CieDescription& description, std::vector<uint8_t>& out)
+{
+	const bool personality = description.personality;
 	const size_t start = out.size();
 	put32(out, 0);
 	put32(out, 0); // CIE id
 	out.push_back(1);
-	const char* augmentation = personality ? "zPLR" : "zR";
-	for (const char* c = augmentation; *c != 0; ++c)
-		out.push_back(static_cast<uint8_t>(*c));
+	char augmentation[8];
+	unsigned length = 0;
+	augmentation[length++] = 'z';
+	if (personality)
+		augmentation[length++] = 'P';
+	if (description.lsda_encoding != 0xff)
+		augmentation[length++] = 'L';
+	augmentation[length++] = 'R';
+	if (description.signal)
+		augmentation[length++] = 'S';
+	for (unsigned i = 0; i < length; ++i)
+		out.push_back(static_cast<uint8_t>(augmentation[i]));
 	out.push_back(0);
 	put_uleb(out, 1);
 	put_sleb(out, -8);
-	put_uleb(out, kDwarfReturn);
+	put_uleb(out, description.return_column);
 	uint32_t field = 0;
+	put_uleb(out,
+		1 + (description.lsda_encoding != 0xff ? 1 : 0) +
+			(personality ? 1 + unwind_pointer_bytes(description.personality_encoding) : 0));
 	if (personality)
 	{
-		put_uleb(out, 7);
-		out.push_back(kIndirectPcrelSdata4);
+		out.push_back(description.personality_encoding);
 		field = static_cast<uint32_t>(out.size());
-		put32(out, 0);
-		out.push_back(kPcrelSdata4);
-		out.push_back(kPcrelSdata4);
+		for (unsigned i = 0; i < unwind_pointer_bytes(description.personality_encoding); ++i)
+			out.push_back(0);
 	}
-	else
+	if (description.lsda_encoding != 0xff)
+		out.push_back(description.lsda_encoding);
+	out.push_back(kPcrelSdata4);
+	if (description.initial)
 	{
+		out.push_back(DW_CFA_def_cfa);
+		put_uleb(out, kDwarfRsp);
+		put_uleb(out, 8);
+		out.push_back(DW_CFA_offset | kDwarfReturn);
 		put_uleb(out, 1);
-		out.push_back(kPcrelSdata4);
 	}
-	out.push_back(DW_CFA_def_cfa);
-	put_uleb(out, kDwarfRsp);
-	put_uleb(out, 8);
-	out.push_back(DW_CFA_offset | kDwarfReturn);
-	put_uleb(out, 1);
+
+	out.insert(out.end(), description.initial_rules.begin(), description.initial_rules.end());
 	finish_entry(out, start);
 	return field;
 }
@@ -387,21 +409,40 @@ void encode_frame_instructions(const UnwindFacts& facts, bool lsda, std::vector<
 		epilogue(facts.leave_end, facts.ret_end, facts.size > facts.ret_end);
 }
 
+unsigned unwind_pointer_bytes(uint8_t encoding)
+{
+	if (encoding == 0xff)
+		return 0;
+	const uint8_t format = encoding & 15;
+	return format == 0 || format == 4 || format == 12 ? 8 : format == 3 || format == 11 ? 4 : 0;
+}
+
 void encode_fde(uint32_t cie, uint32_t code_bytes, bool lsda, const uint8_t* instructions, size_t count,
 	std::vector<uint8_t>& out, uint32_t& pc_field, uint32_t& lsda_field)
 {
+	FdeDescription description;
+	description.cie = cie;
+	description.code_bytes = code_bytes;
+	description.lsda_encoding = lsda ? 0x1b : 0xff;
+	encode_fde(description, instructions, count, out, pc_field, lsda_field);
+}
+
+void encode_fde(const FdeDescription& description, const uint8_t* instructions, size_t count, std::vector<uint8_t>& out,
+	uint32_t& pc_field, uint32_t& lsda_field)
+{
 	const size_t start = out.size();
 	put32(out, 0);
-	put32(out, static_cast<uint32_t>(out.size() - cie));
+	put32(out, static_cast<uint32_t>(out.size() - description.cie));
 	pc_field = static_cast<uint32_t>(out.size());
 	put32(out, 0);
-	put32(out, code_bytes);
-	put_uleb(out, lsda ? 4 : 0);
+	put32(out, description.code_bytes);
+	put_uleb(out, unwind_pointer_bytes(description.lsda_encoding));
 	lsda_field = 0;
-	if (lsda)
+	if (description.lsda_encoding != 0xff)
 	{
 		lsda_field = static_cast<uint32_t>(out.size());
-		put32(out, 0);
+		for (unsigned i = 0; i < unwind_pointer_bytes(description.lsda_encoding); ++i)
+			out.push_back(0);
 	}
 	out.insert(out.end(), instructions, instructions + count);
 	finish_entry(out, start);
