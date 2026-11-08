@@ -94,6 +94,16 @@ per-workload detailed tables from the same records. It does not establish that a
 producer's tests or measurements were valid; the producer's own validation remains
 required. The normalized records and raw artifacts are retained together.
 
+The document can also contain `validations: [...]` for standalone correctness
+results, such as the required internal stage/IR/ABI harness. These records need
+no native baseline or timing measurement. Each identifies `workload`,
+`configuration`, `host`, `revision`, `optimization`, a named `oracle`, `status`,
+the three evidence URLs and `provenance`. Its `coverage` contains `selected`,
+`executed`, `passed`, `excluded`, `unit` and `case_set_sha256`. A passing record
+requires complete execution and validation of every selected case. These rows
+populate the correctness overview and linked details without inventing a native
+translation or performance score for a course-specific contract.
+
 ## Add Godot or another workload
 
 1. Add one catalog entry with its status, documentation and named configurations.

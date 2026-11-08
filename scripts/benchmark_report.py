@@ -38,10 +38,43 @@ def catalog_entries(catalog):
     return entries
 
 
+def validate_correctness(entries, rows, hosts):
+    seen = set()
+    for row in rows:
+        entry = entries.get(row['workload'])
+        require(entry is not None and row['configuration'] in {c['id'] for c in entry['configurations']},
+                'Unknown correctness workload/configuration')
+        require(re.fullmatch(r'[0-9a-f]{40}', row['revision']), 'Measured revision must be a full SHA')
+        require(row['optimization'] in LEVELS and bool(row['oracle']), 'Correctness level/oracle required')
+        host = row['host']
+        require(all(isinstance(host.get(k), str) and host[k] for k in
+                    ['id', 'cpu', 'architecture', 'environment']), 'Incomplete host identity')
+        identity = tuple(host[k] for k in ['cpu', 'architecture', 'environment'])
+        require(hosts.setdefault(host['id'], identity) == identity, 'Host ID merges CPU models/environments')
+        coverage = row['coverage']
+        require(all(type(coverage[k]) is int and coverage[k] >= 0 for k in
+                    ['selected', 'executed', 'passed', 'excluded']), 'Invalid correctness coverage count')
+        require(coverage['passed'] <= coverage['executed'] <= coverage['selected'], 'Impossible coverage counts')
+        require(bool(coverage['unit']) and re.fullmatch(r'[0-9a-f]{64}', coverage['case_set_sha256']),
+                'Missing case-set identity/unit')
+        require(row['status'] in {'passed', 'failed', 'partial'}, 'Invalid correctness status')
+        complete = coverage['selected'] > 0 and coverage['passed'] == coverage['executed'] == coverage['selected']
+        require(row['status'] != 'passed' or complete, 'Passing correctness requires complete validation')
+        for k in ['details_url', 'raw_url', 'run_url']:
+            link = urlparse(row[k])
+            require(link.scheme == 'https' and bool(link.netloc), 'Evidence must have HTTPS URLs')
+        require(isinstance(row['provenance'], dict), 'Producer provenance is required')
+        key = tuple(row[k] for k in ['workload', 'configuration', 'revision', 'optimization', 'oracle'])
+        key += (host['id'], coverage['case_set_sha256'])
+        require(key not in seen, 'Duplicate correctness identity')
+        seen.add(key)
+
+
 def validate(catalog, document):
     entries = catalog_entries(catalog)
     require(document.get('schema') == 1, 'Unknown results schema')
     seen, hosts = set(), {}
+    validate_correctness(entries, document.get('validations', []), hosts)
     for row in document['records']:
         workload = entries.get(row['workload'])
         require(workload is not None, 'Unknown workload')
@@ -130,7 +163,9 @@ def render(catalog, document, output):
     output.mkdir(parents=True, exist_ok=False)
     (output/'records.json').write_text(json.dumps(document, indent=2)+'\n')
     (output/'catalog.json').write_text(json.dumps(catalog, indent=2)+'\n')
-    by_host, by_workload = defaultdict(list), defaultdict(list)
+    by_host, by_workload, by_validation = defaultdict(list), defaultdict(list), defaultdict(list)
+    for row in document.get('validations', []):
+        by_validation[row['workload']].append(row)
     for row in document['records']:
         if row['scope'] == 'summary':
             by_host[row['host']['id']].append(row)
@@ -143,12 +178,24 @@ def render(catalog, document, output):
     for key, entry in entries.items():
         for config in entry['configurations'] or [dict(id='', name='configuration not yet declared', optimizations=[])]:
             present = [r for r in by_workload[key] if r['configuration'] == config['id']]
-            available = 'recorded' if present else entry.get('status', 'not measured')
+            validated = [r for r in by_validation[key] if r['configuration'] == config['id']]
+            available = 'recorded' if present else 'correctness recorded; timing not measured' if validated else entry.get('status', 'not measured')
             name = cell(entry['name']+' / '+config['name'])
-            link = f'[{name}]({key}.md)' if present else name
+            link = f'[{name}]({key}.md)' if present or validated else name
             levels = ', '.join(config.get('optimizations', [])) or 'not yet declared'
             measured = ', '.join(sorted({r['optimization'] for r in present})) or 'none'
             lines.append(f'| {link} | declared: {levels}; recorded: {measured} | {available} | {cell(entry.get("documentation", "not yet documented"))} |')
+    if document.get('validations'):
+        lines += ['', '## Correctness coverage', '',
+                  '| Workload / configuration | Oracle | CPU / environment | Opt | Passed / executed / selected | Excluded | Status | Revision |',
+                  '|---|---|---|---|---|---|---|---|']
+        for row in document['validations']:
+            cov = row['coverage']; label = row['workload']+'/'+row['configuration']
+            values = [f'[{label}]({row["workload"]}.md)', row['oracle'],
+                      row['host']['cpu']+' / '+row['host']['environment'], row['optimization'],
+                      f"{cov['passed']} / {cov['executed']} / {cov['selected']} {cov['unit']}",
+                      cov['excluded'], row['status'], row['revision'][:9]]
+            lines.append('| '+' | '.join(cell(x) for x in values)+' |')
     for host_id, rows in sorted(by_host.items()):
         host = rows[0]['host']
         lines += ['', f'## {cell(host["cpu"])} — {cell(host["environment"])}', '',
@@ -174,7 +221,8 @@ def render(catalog, document, output):
                                    for name, r in sorted(comparisons.items()))
             lines.append(f'| [{cell(label)}]({row["workload"]}.md) | {row["optimization"]} | {row["phase"]} / {row["metric"]} | {speed(comparisons["gcc"])} | {speed(comparisons["clang"])} | {cell(validation)} | {cell(cases)} | `{row["revision"][:9]}` |')
     (output/'summary.md').write_text('\n'.join(lines)+'\n')
-    for workload, rows in by_workload.items():
+    for workload in sorted(by_workload.keys() | by_validation.keys()):
+        rows = by_workload[workload]
         detail = ['# '+entries[workload]['name'], '',
                   '| Configuration / test | CPU / environment | Opt | Baseline | Phase / metric | cppgm seconds | Reference seconds | Speedup | Validation | Revision | Method | Evidence |',
                   '|---|---|---|---|---|---:|---:|---:|---|---|---|---|']
@@ -184,6 +232,12 @@ def render(catalog, document, output):
                 row['phase']+' / '+row['metric'], seconds(row, 'candidate_seconds'), seconds(row, 'reference_seconds'),
                 speed(row), f"{row['coverage']['candidate_passed']} candidate / {row['coverage']['reference_passed']} reference / {row['coverage']['selected']} selected; {row['coverage']['excluded']} excluded", row['revision'][:9],
                 row['method'], f'[details]({row["details_url"]}) · [raw]({row["raw_url"]}) · [CI]({row["run_url"]})'])+' |')
+        for row in by_validation[workload]:
+            cov = row['coverage']
+            detail += ['', f"Correctness: {cell(row['configuration'])}, {cell(row['oracle'])}, {cell(row['status'])}; "
+                       f"{cov['passed']}/{cov['executed']}/{cov['selected']} passed/executed/selected {cell(cov['unit'])}; "
+                       f"{cov['excluded']} excluded; set `{cov['case_set_sha256']}`; revision `{row['revision']}`.",
+                       f'[details]({row["details_url"]}) · [raw]({row["raw_url"]}) · [CI]({row["run_url"]})']
         detail += ['', 'The retained records.json contains coverage, case-set hashes and producer provenance for every row.']
         (output/(workload+'.md')).write_text('\n'.join(detail)+'\n')
 

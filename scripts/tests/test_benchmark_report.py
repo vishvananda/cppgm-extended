@@ -113,6 +113,26 @@ class Results(unittest.TestCase):
             self.assertEqual(len(rows),2)
             self.assertTrue(all('not-measured' in line for line in rows))
 
+    def test_course_oracles_need_no_native_baseline_or_timing_record(self):
+        row={k:copy.deepcopy(self.row[k]) for k in
+             ['host','revision','optimization','details_url','raw_url','run_url','provenance']}
+        row.update(workload='internal', configuration='required', optimization='mixed',
+                   oracle='Strict stage, IR, ABI, driver and runtime contracts', status='passed',
+                   coverage=dict(selected=9832,executed=9832,passed=9832,excluded=0,
+                                 unit='fixture contracts',case_set_sha256='c'*64))
+        document=dict(schema=1,records=[],validations=[row])
+        with tempfile.TemporaryDirectory() as directory:
+            target=Path(directory)/'report';report.render(self.catalog,document,target)
+            text=(target/'summary.md').read_text()
+            self.assertIn('9832 / 9832 / 9832',text)
+            self.assertIn('correctness recorded; timing not measured',text)
+            self.assertEqual(json.loads((target/'records.json').read_text())['records'],[])
+            self.assertIn(row['oracle'],(target/'internal.md').read_text())
+        row['coverage']['executed']-=1;row['coverage']['passed']-=1
+        with self.assertRaisesRegex(ValueError,'complete validation'):
+            report.validate(self.catalog,document)
+        row['status']='partial';report.validate(self.catalog,document)
+
 
 if __name__=='__main__':
     unittest.main()
