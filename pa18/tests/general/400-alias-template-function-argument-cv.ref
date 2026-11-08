@@ -22,7 +22,7 @@ function @function_box___cppgm_class_template_identity_2___function_box(%this : 
     %t2 = load typed ptr $invoker
     return void
 }
-function @handler___cppgm_class_template_identity_3___invoke(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN7handlerIFiRK5tokenIcES3_E8callableE6invokeES3_S3_, inline_hint=yes] {
+function @handler___cppgm_class_template_identity_3___invoke(%__param0 : ptr [pass=by_address], %__param1 : ptr [pass=by_address]) -> i32 [binding=weak, object=_ZN7handlerIFiRK5tokenIcES3_E8callableE6invokeES3_S3_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
