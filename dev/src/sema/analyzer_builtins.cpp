@@ -61,7 +61,7 @@ FunctionEntity* Analyzer::builtin_function(const Identifier* name)
 {
 	// Reserved names (17.6.4.3.2p1) only, each looked up in the registry
 	// once (a redeclared library function's name is asked again).
-	if (name->length < 7 || name->spelling[0] != '_' || name->spelling[1] != '_')
+	if (!IsGnuBuiltinCandidate(name->spelling, name->length))
 		return nullptr;
 	if (builtin_names_.size() <= name->id)
 		builtin_names_.resize(name->id + 1, 0);
@@ -149,6 +149,9 @@ const Type* Analyzer::builtin_signature(const char* signature, char floating)
 			break;
 		case 'i':
 			type = types_.fundamental(FundamentalType::Int);
+			break;
+		case 'u':
+			type = types_.fundamental(FundamentalType::UnsignedInt);
 			break;
 		case 'l':
 			type = types_.fundamental(FundamentalType::LongInt);

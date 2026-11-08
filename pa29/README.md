@@ -804,6 +804,9 @@ checks must guard execution on CPUs that lack the requested instruction set.
 The SSE control builtins behind `_mm_getcsr` and `_mm_setcsr` access actual CPU
 state. Preserve argument evaluation, mode bits and instruction ordering; restore
 the original state in tests that change it.
+Clang headers may declare `_mm_getcsr` and `_mm_setcsr` directly as compiler
+intrinsics rather than define inline wrappers. Those global declarations use
+the same semantics and must not require external runtime symbols.
 
 GNU source accepts `\e` and `\E` for the escape character (value 27),
 including wide literals. Preserve their source spelling during preprocessing

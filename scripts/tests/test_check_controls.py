@@ -3,12 +3,14 @@
 Makefile routes with a stand-in frontend and reference backend."""
 
 from pathlib import Path
+import importlib.util
 import json
 import shutil
 import os
 import re
-from unittest.mock import patch
+from unittest.mock import call, patch
 import subprocess
+import sys
 import tempfile
 import textwrap
 import unittest
@@ -164,7 +166,8 @@ class CheckControlsTests(unittest.TestCase):
             "source = pathlib.Path(args[-1]).read_text()",
             "import resource\n"
             "assert resource.getrlimit(resource.RLIMIT_CPU) == (2, 3)\n"
-            "assert resource.getrlimit(resource.RLIMIT_AS) == (268435456, 268435456)\n"
+            "if sys.platform != 'darwin':\n"
+            "    assert resource.getrlimit(resource.RLIMIT_AS) == (268435456, 268435456)\n"
             "assert resource.getrlimit(resource.RLIMIT_FSIZE) == (1048576, 1048576)\n"
             "source = pathlib.Path(args[-1]).read_text()"))
         control = self.control("100-bounded.t", "// expect exit 0\nint main() { return 0; }\n",
@@ -172,6 +175,37 @@ class CheckControlsTests(unittest.TestCase):
                                                       file_bytes=1048576)))
         result = self.run_checker(control)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_darwin_memory_gate_is_reported_without_skipping_correctness(self):
+        control = self.control("100-bounded.t", "// expect exit 0\nint main() { return 0; }\n",
+                               limits=json.dumps(dict(cpu_seconds=2, address_space_bytes=268435456,
+                                                      file_bytes=1048576)))
+        skips = self.root / "skips"
+        with patch.dict(os.environ, CPPGM_TEST_PLATFORM="macos", CPPGM_TEST_SKIPS_FILE=str(skips)):
+            result = self.run_checker(control)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("address-space ceiling", skips.read_text())
+        self.assertIn("correctness and CPU/file limits still run", skips.read_text())
+
+    def test_platform_resource_selection_preserves_cpu_and_file_limits(self):
+        spec = importlib.util.spec_from_file_location("resource_limiter", REPO_ROOT / "scripts/run_resource_limited.py")
+        limiter = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(limiter)
+        path = self.root / "limits.json"
+        path.write_text(json.dumps(dict(cpu_seconds=2, address_space_bytes=268435456, file_bytes=1048576)))
+        for platform in ("linux", "darwin"):
+            with self.subTest(platform=platform), \
+                    patch.object(limiter.sys, "platform", platform), \
+                    patch.object(limiter.sys, "argv", ["limiter", str(path), "--", "/bin/true"]), \
+                    patch.object(limiter.resource, "setrlimit") as limits, \
+                    patch.object(limiter.signal, "signal"), \
+                    patch.object(limiter.os, "execvp") as execute:
+                limiter.main()
+                limits.assert_has_calls([call(limiter.resource.RLIMIT_CPU, (2, 3))])
+                self.assertIn(call(limiter.resource.RLIMIT_FSIZE, (1048576, 1048576)), limits.call_args_list)
+                address = call(limiter.resource.RLIMIT_AS, (268435456, 268435456))
+                self.assertEqual(address in limits.call_args_list, platform == "linux")
+                execute.assert_called_once_with("/bin/true", ["/bin/true"])
 
     def test_resource_exhaustion_fails_a_positive_control(self):
         control = self.control("100-bounded.t", "// expect exit 0\nint main() { return 0; }\n",
@@ -181,10 +215,11 @@ class CheckControlsTests(unittest.TestCase):
         result = self.run_checker(control)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("frontend was killed by signal", result.stderr)
-        self.frontend.write_text("#!/usr/bin/env python3\nx = bytearray(536870912)\n")
-        result = self.run_checker(control)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("MemoryError", result.stderr)
+        if sys.platform != "darwin":
+            self.frontend.write_text("#!/usr/bin/env python3\nx = bytearray(536870912)\n")
+            result = self.run_checker(control)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("MemoryError", result.stderr)
         self.frontend.write_text("#!/usr/bin/env python3\nimport sys\n"
                                  "open(sys.argv[sys.argv.index('-o') + 1], 'wb').write(b'x' * 2097152)\n")
         result = self.run_checker(control)

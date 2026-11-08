@@ -36,6 +36,7 @@ use FindBin;
 use lib $FindBin::Bin;
 
 use CppgmBatchWorker qw(collect_tests run_command_capture);
+use CppgmTestPlatform ();
 
 sub read_file
 {
@@ -129,6 +130,11 @@ sub grade
 	if (-f "$base.limits")
 	{
 		return 'resource limits require a positive exit control' if $kind ne 'exit';
+		if (CppgmTestPlatform::platform() eq 'macos')
+		{
+			CppgmTestPlatform::skip("$test address-space ceiling",
+				'requires linux: small virtual-memory budgets exclude Darwin shared-library mappings; correctness and CPU/file limits still run');
+		}
 		@frontend = ('python3', "$FindBin::Bin/run_resource_limited.py", "$base.limits", '--', @frontend);
 	}
 	my $directory = tempdir('cppgm-control-XXXXXX', TMPDIR => 1, CLEANUP => 1);
