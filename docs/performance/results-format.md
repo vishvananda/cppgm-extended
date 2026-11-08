@@ -15,10 +15,17 @@ external builds, and benchmark output checks. Show selected, executed, passed an
 excluded counts with their units and measured commit. A source-only projection is
 separate from its original IR, ABI, linker or driver oracle.
 
-Performance tables are grouped by **exact CPU model and execution environment**.
+Detailed performance tables are grouped by **exact CPU model and execution environment**.
 The existing published data already contains two EPYC models: public benchmarks on
 9V74, and index-cpp/simdjson on 7763. Dedicated Intel and GitHub-hosted Intel are
 also separate profiles. The target ISA is an additional configuration property.
+
+The compact README keeps one row per workload/configuration. Each metric cell
+can stack three processor-labeled badges: EPYC, local/dedicated Intel, and hosted
+Intel. A badge retains its own exact CPU, environment, source revision and evidence
+link. Missing processor results are gray and say not measured. Performance colors
+vary continuously using `public_benchmarks.badge_color`; yellow and orange badges
+use dark text for readability.
 
 Within each host table, use:
 

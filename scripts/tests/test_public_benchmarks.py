@@ -375,18 +375,28 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(badge['schemaVersion'], 1)
         self.assertEqual(badge['label'], '-O3 generated speed vs gcc')
         self.assertEqual(badge['message'], '0.80×')
-        self.assertEqual(badge['color'], 'c2410c')
+        self.assertEqual(badge['color'], 'f97316')
         badge = pb.badge(results, '-O3 compile speed vs gcc', 'compile_cpu_O3', 1)
         self.assertEqual(badge['message'], '5.0×')
         self.assertEqual(badge['color'], '14532d')
 
     def test_badge_color_follows_the_speed(self):
         for speed, color in [(1.2, '14532d'), (1.0, '14532d'),
-                             (0.9999, 'a16207'), (0.95, 'a16207'),
-                             (0.9499, 'c2410c'), (0.80, 'c2410c'),
-                             (0.7999, 'b91c1c'), (0.5, 'b91c1c')]:
+                             (0.95, 'eab308'), (0.80, 'f97316'), (0.5, 'b91c1c')]:
             with self.subTest(speed=speed):
                 self.assertEqual(pb.badge_color(speed), color)
+        # Neighboring measurements vary smoothly, including around each anchor.
+        colors = {pb.badge_color(n / 1000) for n in range(600, 1001)}
+        self.assertGreater(len(colors), 200)
+        for anchor in [.60, .80, .95, 1.0]:
+            a, b = pb.badge_color(anchor - .0001), pb.badge_color(anchor + .0001)
+            self.assertLessEqual(max(abs(int(a[n:n+2],16)-int(b[n:n+2],16)) for n in (0,2,4)), 2)
+
+    def test_badges_keep_yellow_text_readable(self):
+        yellow = publication.badge_svg(dict(label='speed', message='0.95×', color=pb.badge_color(.95)))
+        green = publication.badge_svg(dict(label='speed', message='1.00×', color=pb.badge_color(1)))
+        self.assertIn('fill="#000" text-anchor', yellow)
+        self.assertIn('fill="#fff" text-anchor', green)
 
     def test_badge_turns_red_on_a_failure(self):
         results = [outcome('p', dict(compile_cpu_O0=1.0, run_cpu_O0=1.0),
@@ -408,7 +418,7 @@ class ReportTests(unittest.TestCase):
     def test_build_badge_compares_the_self_built_compiler_with_the_gcc_built_one(self):
         builds = dict(status='ok', gcc=500.0, self=100.0, inception=102.0)
         badge = pb.build_badge(builds, 'inception', 'self', 'self-built speed vs gcc', 2)
-        self.assertEqual((badge['message'], badge['color']), ('0.98×', 'a16207'))
+        self.assertEqual((badge['message'], badge['color']), ('0.98×', pb.badge_color(100/102)))
 
     def test_self_built_badge_uses_the_paired_result(self):
         builds = dict(status='ok', gcc=500.0, self=100.0, inception=102.0,

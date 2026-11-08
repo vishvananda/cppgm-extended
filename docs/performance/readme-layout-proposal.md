@@ -27,7 +27,13 @@ layout, rather than publishing stale manual pass counts.
 
 ## Performance summary
 
-Use one compact table per exact CPU model and environment. For example, **AMD
+Use one compact README table with a row per workload/configuration and separate
+compile/runtime columns for GCC and Clang. Stack processor-labeled badges within
+each metric cell: EPYC, local/dedicated Intel, then hosted Intel. Gray badges mark
+missing measurements. Colors vary continuously from green through yellow and
+orange to red as speed decreases.
+
+Linked detail tables retain exact CPU models and environments. For example, **AMD
 EPYC 7763 / GitHub hosted** and **AMD EPYC 9V74 / GitHub hosted** are different
 sections, as are **dedicated Xeon E5-2696 v4** and **hosted Xeon Platinum 8370C**.
 The CPU list comes from records, so adding a new processor needs no README logic.

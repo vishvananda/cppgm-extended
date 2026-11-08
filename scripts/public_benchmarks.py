@@ -574,10 +574,16 @@ def mean_ratio(results, metric, reference):
 
 
 def badge_color(speed):
-    for limit, color in ((1.0, '14532d'), (0.95, 'a16207'), (0.80, 'c2410c')):
-        if speed >= limit:
-            return color
-    return 'b91c1c'
+    """Interpolate continuously from parity green through yellow/orange to red."""
+    stops = ((1.0, '14532d'), (0.95, 'eab308'), (0.80, 'f97316'), (0.60, 'b91c1c'))
+    if speed >= stops[0][0]:
+        return stops[0][1]
+    for (upper, first), (lower, last) in zip(stops, stops[1:]):
+        if speed >= lower:
+            fraction = (upper - speed) / (upper - lower)
+            colors = [(int(first[n:n+2], 16), int(last[n:n+2], 16)) for n in (0, 2, 4)]
+            return ''.join(f'{round(a + fraction * (b-a)):02x}' for a, b in colors)
+    return stops[-1][1]
 
 
 def speed_text(mean, digits=2):

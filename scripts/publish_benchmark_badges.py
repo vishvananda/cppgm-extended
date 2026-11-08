@@ -20,6 +20,10 @@ def badge_svg(data):
     color = data['color']
     if not re.fullmatch(r'[0-9a-fA-F]{6}', color):
         raise ValueError('badge color must be a six-digit hex value')
+    channels = [int(color[n:n+2], 16) / 255 for n in (0, 2, 4)]
+    linear = [v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4 for v in channels]
+    luminance = sum(v * weight for v, weight in zip(linear, (.2126, .7152, .0722)))
+    text_color = '#000' if luminance > .179 else '#fff'
     text_width = max(8, len(message) * 8 - 1)
     width = text_width + 12
     title = escape(f"{data['label']}: {message}", quote=True)
@@ -27,7 +31,7 @@ def badge_svg(data):
             f'viewBox="0 0 {width} 24" role="img" aria-label="{title}">\n'
             f'  <title>{title}</title>\n'
             f'  <rect width="{width}" height="24" rx="4" fill="#{color}"/>\n'
-            f'  <text x="{width / 2:g}" y="16.5" fill="#fff" text-anchor="middle" '
+            f'  <text x="{width / 2:g}" y="16.5" fill="{text_color}" text-anchor="middle" '
             'font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" '
             f'font-weight="700" letter-spacing="1" textLength="{text_width}" '
             f'lengthAdjust="spacingAndGlyphs">{escape(message)}</text>\n'
