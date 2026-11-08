@@ -240,7 +240,11 @@ void Analyzer::bind_pack(Scope* frame, const TemplateParameterEntity* parameter,
 	const Type* bound = types_.bound_pack(
 		argument, parameter->canonical, parameter->depth + InstanceLevels(frame->parent));
 	Binding* alias = new_binding(BindingKind::TypeAlias, parameter->name, nullptr, bound);
-	if (alias_pack_parameters_.find(parameter) != PointerMap::kMissing)
+	// A shared expression may retain another template's parameter scope.
+	// A non-identity dependent pack still needs its complete captured key;
+	// replacing it by that scope's original parameter loses its arguments.
+	if (alias_pack_parameters_.find(parameter) != PointerMap::kMissing ||
+		(dependent_type(argument) && !OwnParameter(argument, parameter->depth, parameter->index)))
 		captured_pack_bindings_.set(alias, 1);
 	alias->hidden = true;
 	print_in(frame, alias);

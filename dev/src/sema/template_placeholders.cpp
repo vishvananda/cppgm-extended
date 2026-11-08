@@ -734,6 +734,21 @@ bool Analyzer::decltype_words(const syntax::Expr* expr, Scope* scope)
 				keyed_dependent_ = true;
 				return true;
 			}
+			// Clang's ABI uses sZ of the substituted scalar parameter for
+			// a single plain parameter argument. Its canonical entity is
+			// distinct from the original pack, so the key retains capture.
+			if (captured->param_count == 1 && captured->params[0]->kind == TypeKind::TemplateParameter)
+			{
+				const TemplateParameterEntity* scalar = static_cast<const TemplateParameterEntity*>(
+					captured->params[0]->entity);
+				if (!scalar->pack && !IsPlaceholder(scalar) && scalar->qualifier == nullptr)
+				{
+					words.push_back(Word(kWordNode, kind));
+					words.push_back(PointerWord(scalar->canonical));
+					keyed_dependent_ = true;
+					return true;
+				}
+			}
 			// A captured alias pack can mix residual expansions and fixed
 			// arguments. Its full typed argument list is part of the key.
 			words.push_back(Word(kWordNode, kind | 2u << 8));
