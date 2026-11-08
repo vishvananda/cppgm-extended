@@ -538,7 +538,8 @@ const Type* Analyzer::template_argument(
 		// A previously evaluated, fixed class constant can undergo its
 		// public constexpr conversion at definition time. Reuse this
 		// lookup, rather than speculating during every value evaluation.
-		if (semantic() && template_depth_ != 0 && kind == BindingKind::Variable && result.binding->entity != nullptr &&
+		if (semantic() && template_depth_ != 0 && target != nullptr && IsIntegralOrUnscopedEnum(target) &&
+			kind == BindingKind::Variable && result.binding->entity != nullptr &&
 			result.binding->entity->kind == EntityKind::Variable)
 		{
 			const auto* variable = static_cast<const VariableEntity*>(result.binding->entity);
