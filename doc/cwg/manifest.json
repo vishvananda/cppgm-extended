@@ -1948,6 +1948,23 @@
         "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
         "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
       }
+    },
+    {
+      "issue": 2327,
+      "title": "Copy elision for direct-initialization with a conversion function",
+      "status": "drafting",
+      "role": "optional-hosted-compatibility-reference",
+      "file": "cwg-2327.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2327.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2327.html",
+      "source_html_sha256": "3c64ca13830c3c53349eae832e55a028599a0b181f8fc5a8153bd4eaadee74b4",
+      "text_sha256": "439b3f68e6c38236f3cccec3f5c506b61e7665f3e2e473eed0055bb8cb623fae",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     }
   ],
   "supplemental_papers": [

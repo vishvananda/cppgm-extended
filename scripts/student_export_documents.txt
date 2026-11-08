@@ -109,6 +109,7 @@ doc/cwg/cwg-2237.txt
 doc/cwg/cwg-2267.txt
 doc/cwg/cwg-2273.txt
 doc/cwg/cwg-2312.txt
+doc/cwg/cwg-2327.txt
 doc/cwg/cwg-2346.txt
 doc/cwg/cwg-2351.txt
 doc/cwg/cwg-2352.txt
