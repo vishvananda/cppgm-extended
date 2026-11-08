@@ -1562,7 +1562,21 @@
         "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
       },
       "retrieved": "2026-11-08",
-      "paper": "N3922"
+      "paper": "N3922",
+      "adoption_evidence": {
+        "document": "N4251",
+        "motion": "CWG Motion 16",
+        "meeting": "November 2014 Urbana",
+        "kind": "Working paper wording",
+        "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4251.html",
+        "source_html_sha256": "3df8b920a8267e7e163adb91c93f7c24f86efc729cf510bcbcdf6038163138f6",
+        "sd1": {
+          "source_url": "https://www.open-std.org/Jtc1/sc22/wg21/docs/papers/2015/sd-1.htm",
+          "source_html_sha256": "707946739771ab3c5d02033b8d38dc9b3641c235af362a7ea33f7fda2640ea05",
+          "status": "Adopted 2014-11"
+        }
+      },
+      "course_application": "apply same corrected auto deduction in the C++11 course modes, consistent with original GCC required source and native behavior"
     },
     {
       "file": "paper-p0398r0.txt",

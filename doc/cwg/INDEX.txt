@@ -276,6 +276,8 @@ N3638 | paper-n3638.txt
 
 N3922 | paper-n3922.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3922.html
+  Adopted in November 2014: N4251 CWG Motion 16; SD1 records 2014-11.
+  The course applies the corrected deduction in its C++11 modes.
 P0398R0 | paper-p0398r0.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0398r0.html
 P0727R0 | paper-p0727r0.txt
