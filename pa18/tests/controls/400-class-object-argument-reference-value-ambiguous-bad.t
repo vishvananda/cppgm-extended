@@ -1,4 +1,4 @@
-// expect error
+// expect reject
 struct Literal { constexpr operator int() const { return 4; } };
 constexpr Literal object = Literal();
 template<const Literal&> int select();

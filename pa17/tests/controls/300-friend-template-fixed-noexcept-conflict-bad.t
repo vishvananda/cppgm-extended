@@ -1,4 +1,4 @@
-// expect error
+// expect reject
 template<class T> struct Friend {
  template<int N> friend void action(T value) noexcept(sizeof(decltype(value)) < 1);
 };

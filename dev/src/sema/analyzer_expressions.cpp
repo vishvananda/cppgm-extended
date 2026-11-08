@@ -207,7 +207,7 @@ void Analyzer::odr_use(FunctionEntity* function, bool call)
 	}
 	if (function->temporary_reference_initializer)
 		error(0, "an odr-used constructor binds a reference subobject to a temporary (CWG1696)");
-	if (!function->defined && !function->implicit && !function->defaulted && !function->c_linkage)
+	if (!function->defined && !function->implicit && !function->defaulted && !function->pure && !function->c_linkage)
 		note_linkage_use(function, function->parameters != nullptr ? function->parameters->location : 0);
 	// Its exception-specification is needed now (15.4p13).
 	if (function->noexcept_pending)
