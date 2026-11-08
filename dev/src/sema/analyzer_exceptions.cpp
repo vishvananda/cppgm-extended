@@ -774,7 +774,8 @@ bool Analyzer::noexcept_value(const FunctionEntity* function, const syntax::Expr
 		;
 	else if (function->member && !function->is_static && !function->constructor && function->owner != nullptr &&
 		function->owner->kind == ScopeKind::Class)
-		context.this_type = types_.pointer(types_.qualified(function->owner->entity->type, function->type->cv));
+		context.this_type = types_.pointer(
+			types_.qualified(function->owner->entity->type, function->type->function_cv));
 	else if (function->constructor && function->owner != nullptr && function->owner->kind == ScopeKind::Class)
 		context.this_type = types_.pointer(function->owner->entity->type);
 	body_ = &context;
