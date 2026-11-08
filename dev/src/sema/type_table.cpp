@@ -34,6 +34,8 @@ TypeTable::TypeTable(Arena& arena, bool plain_char_unsigned) : arena_(arena), sl
 	{
 		Type key = Key(TypeKind::Fundamental);
 		key.fundamental = static_cast<FundamentalType>(i);
+		// Fundamental types never depend on template parameters.
+		key.dependence = 1;
 		key.plain_char_unsigned = plain_char_unsigned && key.fundamental == FundamentalType::Char;
 		fundamentals_[i] = intern(key);
 	}

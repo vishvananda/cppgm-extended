@@ -209,6 +209,9 @@ ClassTemplateFacts* Analyzer::class_template_facts(ClassEntity* entity, Template
 	facts->role = role;
 	facts->depth = instantiation_depth_;
 	entity->templ = facts;
+	// These roles are dependent regardless of their later definitions.
+	if (role == TemplateRole::Template || role == TemplateRole::Pattern || role == TemplateRole::Partial)
+		entity->type->dependence = 2;
 	return facts;
 }
 
@@ -1372,6 +1375,8 @@ ClassEntity* Analyzer::class_specialization(
 	facts->dependent = stand_in || (templ->owner != nullptr && templated_class(templ->owner));
 	for (const Type* argument : canonical)
 		facts->dependent = facts->dependent || dependent_type(argument);
+	// The specialization's argument list is fixed before it is published.
+	entity->type->dependence = facts->dependent ? 2 : 1;
 	facts->primary_arguments = own;
 	// Its presentation spelling (`box<int>`) is rendered where a symbol
 	// needs it (lower/symbol_lowering.cpp).

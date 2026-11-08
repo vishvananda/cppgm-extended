@@ -123,9 +123,10 @@ struct Type
 	// Plain char keeps its own identity when -funsigned-char selects its
 	// unsigned representation. Fixed when the type table is constructed.
 	bool plain_char_unsigned;
-	// A compound type's dependence on a template parameter, once computed
-	// (0 unknown, 1 no, 2 yes; see Analyzer::dependent_type): a property of
-	// its components, fixed once they exist.
+	// Dependence proven from immutable type structure or template facts
+	// (0 unknown, 1 no, 2 yes; see Analyzer::dependent_type). Nominal types
+	// can acquire template facts after creation, so their cache is seeded
+	// only when the relevant facts become fixed.
 	mutable uint8_t dependence;
 	uint32_t param_count;
 	uint32_t hash;
