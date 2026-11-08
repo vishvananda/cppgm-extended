@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "native/backend_error.h"
+#include "native/asm/functions.h"
 #include "native/image/global_data.h"
 #include "native/image/image.h"
 #include "native/object/function_census.h"
@@ -253,7 +254,8 @@ bool ObjectCompiler::comdat_definition(lowir::SymbolId symbol) const
 	// own section in a COMDAT group. A GNU weak one, which a strong
 	// definition replaces, stays in the shared section.
 	const lowir::Symbol& s = program_.symbols[symbol];
-	return (s.kind == lowir::SymbolKind::FunctionDefinition || s.kind == lowir::SymbolKind::GlobalDefinition) &&
+	return (s.kind == lowir::SymbolKind::FunctionDefinition || s.kind == lowir::SymbolKind::GlobalDefinition ||
+			   lowir::find_assembly_function(program_, symbol)) &&
 		s.metadata.binding == ir_model::SBM_WEAK && (s.metadata.flags & lowir::SF_REPLACEABLE) == 0;
 }
 
@@ -490,6 +492,13 @@ void ObjectCompiler::emit_remaining()
 		function(s);
 		program_.functions[symbol.detail].body.reset();
 	}
+	if (program_.assembly)
+		for (const lowir::AssemblyFunction& function : program_.assembly->functions)
+		{
+			emit_assembly_function(image_, program_, function);
+			ranges_.push_back(
+				CodeRange{ function.symbol, image_.symbol(function.symbol).offset, image_.text().size(), 0, 0, false });
+		}
 	stats_.select = selector_.stats();
 	// A declared thread-local wrapper returns its object's address.
 	for (lowir::SymbolId s = 0; s < program_.symbols.size(); ++s)
@@ -498,6 +507,8 @@ void ObjectCompiler::emit_remaining()
 		if (symbol.kind == lowir::SymbolKind::FunctionDeclaration &&
 			(symbol.metadata.role == ir_model::SR_CPU_QUERY || symbol.metadata.role == ir_model::SR_XSTATE_QUERY))
 		{
+			if (image_.symbol(s).section != Section::Undefined)
+				continue;
 			UnwindFacts facts;
 			if (symbol.metadata.role == ir_model::SR_CPU_QUERY)
 				emit_cpu_query(image_, s, facts);
@@ -508,7 +519,8 @@ void ObjectCompiler::emit_remaining()
 				record_unwind(static_cast<uint32_t>(ranges_.size() - 1), false, &facts);
 			continue;
 		}
-		if (symbol.kind != lowir::SymbolKind::FunctionDeclaration || symbol.metadata.tls_for == lowir::kNoId)
+		if (symbol.kind != lowir::SymbolKind::FunctionDeclaration || symbol.metadata.tls_for == lowir::kNoId ||
+			image_.symbol(s).section != Section::Undefined)
 			continue;
 		UnwindFacts facts;
 		const bool darwin = image_.target == Target::MacOS && eh_model_ == EhModel::Host;
@@ -528,7 +540,8 @@ bool ObjectCompiler::local_function(uint32_t image_symbol) const
 			s.metadata.role != ir_model::SR_XSTATE_QUERY) ||
 		(s.metadata.flags & lowir::SF_OBJECT_ROOT) != 0)
 		return false;
-	return s.metadata.binding == ir_model::SBM_INTERNAL || s.kind == lowir::SymbolKind::FunctionDeclaration;
+	return s.metadata.binding == ir_model::SBM_INTERNAL ||
+		(s.kind == lowir::SymbolKind::FunctionDeclaration && !lowir::find_assembly_function(program_, image_symbol));
 }
 
 void ObjectCompiler::prune_functions()
@@ -728,7 +741,7 @@ void ObjectCompiler::place_startup()
 	for (lowir::SymbolId s = 0; s < program_.symbols.size(); ++s)
 	{
 		const lowir::Symbol& symbol = program_.symbols[s];
-		if (symbol.kind != lowir::SymbolKind::FunctionDefinition)
+		if (symbol.kind != lowir::SymbolKind::FunctionDefinition && !lowir::find_assembly_function(program_, s))
 			continue;
 		const uint8_t role = symbol.metadata.role;
 		if (role != ir_model::SR_INIT && role != ir_model::SR_FINI)
@@ -960,7 +973,10 @@ uint32_t ObjectCompiler::object_symbol(uint32_t image_symbol)
 	// where no object defines it (the object-mode lowering declares
 	// vague-linkage entities strong: see ProgramLowering::finish).
 	symbol.binding = binding == ir_model::SBM_WEAK ? Binding::Weak : Binding::Global;
-	if (defined && (binding == ir_model::SBM_INTERNAL || s.kind == lowir::SymbolKind::FunctionDeclaration))
+	if (defined &&
+		(binding == ir_model::SBM_INTERNAL ||
+			(s.kind == lowir::SymbolKind::FunctionDeclaration &&
+				!lowir::find_assembly_function(program_, image_symbol))))
 		symbol.binding = Binding::Local;
 	const lowir::NameId name = object_name(image_symbol);
 	// One object symbol per non-local name: a definition completes an

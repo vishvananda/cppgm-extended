@@ -9,6 +9,7 @@
 #include "lower/function_lowering.h"
 #include "lower/source_inlining.h"
 #include "lower/debug_info.h"
+#include "lowir/assembly.h"
 #include "preprocess/preprocessor.h"
 #include "sema/aggregates.h"
 #include "sema/analyzer.h"
@@ -337,7 +338,9 @@ void ProgramLowering::finish()
 		{
 			if ((symbol.kind == lowir::SymbolKind::FunctionDeclaration ||
 					symbol.kind == lowir::SymbolKind::GlobalDeclaration) &&
-				symbol.metadata.binding == ir_model::SBM_WEAK && (symbol.metadata.flags & lowir::SF_REPLACEABLE) == 0)
+				symbol.metadata.binding == ir_model::SBM_WEAK && (symbol.metadata.flags & lowir::SF_REPLACEABLE) == 0 &&
+				!lowir::find_assembly_function(
+					program_, static_cast<lowir::SymbolId>(&symbol - program_.symbols.data())))
 				symbol.metadata.binding = ir_model::SBM_STRONG;
 		}
 		for (const lowir::SymbolId symbol : weak_references_)
@@ -472,7 +475,9 @@ void ProgramLowering::resolve_singleton_roles()
 			const lowir::Symbol& symbol = program_.symbols[id];
 			if (symbol.kind == lowir::SymbolKind::FunctionDefinition ||
 				symbol.kind == lowir::SymbolKind::FunctionDeclaration)
-				consider(id, symbol.metadata, symbol.kind == lowir::SymbolKind::FunctionDefinition);
+				consider(id, symbol.metadata,
+					symbol.kind == lowir::SymbolKind::FunctionDefinition ||
+						lowir::find_assembly_function(program_, id));
 		}
 		for (const PendingDeclaration& pending : pending_)
 		{
@@ -813,6 +818,12 @@ void ProgramLowering::emit_definition(
 	for (uint32_t i = analyzer_->argument_demand_head(function); i != 0; i = analyzer_->argument_demand(i).previous)
 		if (!object_mode_ || analyzer_->argument_demand(i).function->used)
 			demand(analyzer_->argument_demand(i).function);
+	if (function->naked)
+	{
+		lowir::retain_assembly_function(program_, symbol);
+		++counters_.functions;
+		return;
+	}
 	// An inert destructor's complete entry is written at the unit's end: a
 	// later body omitting a call of it makes it an object root (only
 	// inert ones are omitted). A program kept whole completes it there too.

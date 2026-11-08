@@ -431,3 +431,39 @@ mandatory audits pass. The LowIR handout's exit example was read and compiled.
 
 Global/naked assembly, directives/unwind, wider register/ISA coverage and Rust
 source/pin qualification still remain before claiming full assembly support.
+
+
+## 2026-11-08 checkpoint: opaque raw functions
+
+GNU `asm goto` and the shared exit-tag contract are complete. Raw function
+support now adds `assembly_function` definitions with ordinary typed ABI
+declarations, constant/symbol arguments and opaque bodies. C++ `naked` basic
+statements join their user fragments before the sole instruction parse. The
+native emitter adds no frame, setup moves or inferred return. Explicit returns,
+push/pop, local calls, indirect transfers and symbol tail jumps use cppgm's
+encoder. Typed symbol arguments observe their targets' full ABI in reachability
+and interprocedural analysis. Virtual thunks, weak binding and COMDAT behavior
+recognize raw definitions.
+
+Validation: 78 optional cases pass at O0/O2/O3 with the host-built and self-built
+compilers, including independent observers where Clang cannot provide an oracle
+(its naked virtual-thunk code generation crashes, and it inherits naked onto
+an explicit specialization differently from GCC). Required strict report is
+8099/8099; debug information, self-host through PA5, inception compiler/object
+equality, PA35 smoke and the harness pass. The shape validator rejects runtime
+inputs, register setup, ordinary bodies and duplicate definitions. The handout,
+LowIR contract ledger, vocabulary checker and optional suite were updated.
+
+Private independent encoding coverage is 9357 cases per dialect, with zero
+mismatches after accounting for 64 legal legacy-prefix-order variants. Frozen
+compile instruction work versus the pre-assembly compiler changes by about +0.0083%
+at O0 and +0.016% at O3; output objects are byte-identical. Every observation
+and compiler hash is retained under the private assembly experiment directory.
+These are instruction-work measurements, not wall-time claims. Fresh export
+and native macOS qualification follow this commit.
+
+Remaining full-plan work: ordered module assembly/data and symbol bindings;
+directives/macros/repetition and unwind/CFI; wider register/ISA encoding and its
+pinned coverage inventory; original Rust source/body transport, backend lock
+and clean-install qualification. Raw functions do not establish those broader
+capabilities. Godot remains paused until assembly support is finished.

@@ -301,6 +301,20 @@ for my $record (@records)
 	push @errors, "assembly record '$record' is not written"
 		if $assembly_writer !~ /"[^"\n]*\b\Q$record\E\b/;
 }
+# Raw assembly definitions retain a typed declaration and a separate body.
+my @raw_rows = grep { $_->{category} eq 'structure' && $_->{surface} eq 'assembly_function' } @retained;
+push @errors, "assembly functions have no retained ledger structure row" if !@raw_rows;
+push @errors, "assembly_function has no public keyword" if !$keyword{assembly_function};
+push @errors, "assembly_function has no reader or writer"
+	if $parser !~ /Keyword::AssemblyFunction/ || $writer !~ /Keyword::AssemblyFunction/;
+push @errors, "assembly_function has no shape validator"
+	if read_file('dev/src/lowir/assembly_functions.cpp') !~ /validate_assembly_functions/;
+for my $row (@raw_rows)
+{
+	my $text = join '', map { read_file($_) } split /;/, $row->{owner};
+	push @errors, "assembly_function is absent from its owner documentation"
+		if $text !~ /\bassembly_function\b/;
+}
 for my $table ('kDialects', 'kMemories')
 {
 	for my $word (table_strings($assembly_vocabulary, $table, 'asm_model.h'))

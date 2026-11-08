@@ -99,7 +99,9 @@ enum class AttributeKind : uint8_t
 	// [[noreturn]] and GNU noreturn: calls of the function do not return.
 	NoReturn,
 	// GNU mode(identifier): its machine-mode keyword, never an expression.
-	Mode
+	Mode,
+	// Optional shared assembly: a body owns its ABI and frame.
+	Naked
 };
 
 struct TypeId;

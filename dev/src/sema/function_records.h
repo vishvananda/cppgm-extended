@@ -420,6 +420,7 @@ struct FunctionEntity : Entity
 	// A noexcept-specification's constant expression waits for its first
 	// need (Analyzer::function_nothrow, which holds it; `nothrow` is false
 	// until then).
+	bool naked : 1;
 	bool noexcept_pending;
 	// Odr-used (3.2p2): its definition is instantiated by the unit's end
 	// whether or not a unit emits it (14.7.1p3, 14.6.4.1p8; queued once,

@@ -239,5 +239,18 @@ void Parser::parse_assembly_call(FunctionBuilder& builder, Instruction& inst)
 	inst.extra_first = builder.add_operands(values.data(), inst.extra_count);
 }
 
+void Parser::parse_assembly_function()
+{
+	const NameId name = expect_name(TokenKind::Global, "assembly function name");
+	const SymbolId symbol = program_.find_symbol(name);
+	if (symbol == kNoId || program_.symbols[symbol].kind != SymbolKind::FunctionDeclaration ||
+		find_assembly_function(program_, symbol))
+		fail("assembly function requires a prior, undefined function declaration");
+	program_.functions[program_.symbols[symbol].detail].body.reset(new FunctionBody());
+	expect(TokenKind::LBrace, "{");
+	parse_body(symbol);
+	retain_assembly_function(program_, symbol);
+}
+
 } // namespace text
 } // namespace lowir

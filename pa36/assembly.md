@@ -143,3 +143,45 @@ invocation types. Native capability checks are separate: a packet can be
 structurally valid while requiring an unsupported register class, instruction
 form or control-flow feature. Such cases must fail clearly. The current native
 subset is listed in the [handout](README.md).
+
+## Assembly-defined functions
+
+A function implemented entirely in assembly keeps an ordinary typed declaration
+for its callers and has an `assembly_function` definition. Declare the function
+and define its templates before the raw body:
+
+```text
+assembly @add_constant intel none 1 0 0 1 {
+  operand i64 0 -1 1 0 0 { alternative 4 0 -1 {} }
+  text "lea rax, [rdi + "
+  use 0 1 0 0
+  text "]; ret"
+}
+declare function @add_23(%value : i64) -> i64
+assembly_function @add_23 {
+  block ^entry:
+    asm @add_constant(23)
+    unreachable
+}
+```
+
+The body has one block containing one or more `asm` invocations followed by
+`unreachable`. It has no slots, computed values or ordinary instructions.
+Invocation arguments are literal constants or symbol addresses; operands are
+read-only immediate/symbol alternatives. No operand may require compiler
+register setup or output storage. The declaration supplies the callable ABI;
+its parameters are available in their ABI registers or stack locations,
+not as runtime LowIR operands in this body.
+
+The assembly owns the complete entry/exit sequence, preserved registers, stack
+alignment and result. There is no automatic prologue, epilogue, return value or
+unwind description. Arrange an explicit return, tail transfer or other terminal
+path; reaching the end traps. Local labels belong to each template invocation;
+put cooperating labels and instructions in one template.
+
+Ordinary optimization treats the function as opaque: it must not infer a
+constant result, remove its ABI parameters, inline its raw body or infer
+`noreturn` from the LowIR `unreachable` marker. Explicit declaration effects
+still apply. Normal symbol binding, sections and object-name metadata apply to
+its definition. Reject duplicate bodies and attempts to mix raw and ordinary
+function definitions. Unwind directives are a separate extension goal.

@@ -276,6 +276,7 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 		function->noreturn = false;
 		function->effects = FunctionEffect::Default;
 		function->no_inline = false;
+		function->naked = false;
 	}
 	// Retain inline from an earlier declaration of this specialization,
 	// while discarding the primary template's independent inline state.

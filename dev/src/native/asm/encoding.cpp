@@ -1,6 +1,7 @@
 #include "native/asm/encoding.h"
 
 #include "native/asm/forms.h"
+#include "native/asm/control_forms.h"
 #include "native/asm/integer_forms.h"
 #include "native/asm/operands.h"
 #include "native/backend_error.h"
@@ -150,6 +151,11 @@ void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 	const Form* form = asm_detail::assembly_form(inst.mnemonic, suffix);
 	if (form == nullptr)
 		fail(inst, "instruction form is not implemented");
+	if (form->encoding == Encoding::Control)
+	{
+		encode_control_form(out, inst, *form, suffix);
+		return;
+	}
 	if (form->encoding >= Encoding::Unary && form->encoding != Encoding::String)
 	{
 		encode_integer_form(out, inst, *form, integer_width(inst, suffix, form->encoding == Encoding::Shift ? 1 : 5));
@@ -198,26 +204,7 @@ void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& i
 			out.bind(labels[&inst - instructions.data()]);
 			continue;
 		}
-		const int condition = asm_detail::branch_condition(inst.mnemonic);
-		if (inst.mnemonic == "jmp" || condition >= 0)
-		{
-			if (inst.prefix != 0 || inst.operands.size() != 1 || inst.operands[0].kind != OperandKind::Label)
-				fail(inst, "expected one assembly-local branch target");
-			const uint32_t label = labels[inst.operands[0].label];
-			if (condition < 0)
-				out.jmp(label);
-			else
-				out.jcc(static_cast<Cond>(condition), label);
-		}
-		else if (inst.mnemonic == "call" || inst.mnemonic == "callq")
-		{
-			if (inst.prefix != 0 || inst.operands.size() != 1 || inst.operands[0].kind != OperandKind::Symbol ||
-				inst.operands[0].address.relocation != assembly::Relocation::Address)
-				fail(inst, "expected one symbol call target");
-			out.call_symbol(inst.operands[0].address.symbol.symbol);
-			out.fixups().back().addend += inst.operands[0].address.displacement;
-		}
-		else
+		if (!encode_assembly_branch(out, inst, labels))
 		{
 			const size_t first = out.fixups().size();
 			encode_instruction(out, inst);

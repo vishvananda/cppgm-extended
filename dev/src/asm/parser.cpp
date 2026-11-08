@@ -395,7 +395,23 @@ Operand Parser::target()
 	if (symbol(result))
 		return result;
 	result.kind = OperandKind::Label;
+	if (dialect_ == asm_model::Dialect::Intel && current() == '[')
+		return intel_memory(0);
 	result.target = word(false);
+	if (dialect_ == asm_model::Dialect::Intel)
+	{
+		if (parse_register(result.target.data(), result.target.size(), result.reg))
+		{
+			result.kind = OperandKind::Register;
+			result.bits = result.reg.bits;
+		}
+		else if (result.target == "qword")
+		{
+			if (word() != "ptr")
+				fail("expected ptr after assembly branch width");
+			return intel_memory(64);
+		}
+	}
 	return result;
 }
 
@@ -496,7 +512,8 @@ std::vector<Instruction> Parser::run()
 		{
 			do
 			{
-				inst.operands.push_back(branch && current() != '*' ? target() : operand());
+				const bool indirect = branch && dialect_ == asm_model::Dialect::Att && take('*');
+				inst.operands.push_back(branch && !indirect ? target() : operand());
 				if (inst.operands.size() > 5)
 					fail("too many assembly instruction operands");
 			} while (take(','));

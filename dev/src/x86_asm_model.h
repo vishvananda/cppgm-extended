@@ -37,7 +37,8 @@ enum class Encoding : std::uint8_t
 	Test,
 	Multiply,
 	Atomic,
-	String
+	String,
+	Control
 };
 
 struct Form
@@ -73,6 +74,9 @@ inline const Form* forms(std::size_t& count)
 {
 	using E = Encoding;
 	static const Form kForms[] = {
+		{ "ret", E::Control, 0xc3, 0, 64, false },
+		{ "push", E::Control, 0x50, 0, 0, false },
+		{ "pop", E::Control, 0x58, 0, 0, false },
 		{ "mov", E::Move, 0, 0, 0, false },
 		{ "movabs", E::Move, 0, 0, 64, false },
 		{ "lea", E::Lea, 0x8d, 0, 0, true },

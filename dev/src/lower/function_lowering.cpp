@@ -91,6 +91,8 @@ void FunctionLowering::lower_definition()
 	// An implicit (or defaulted) constructor or destructor has no body of
 	// its own: its subobject initializations or destructions are its code.
 	const syntax::FunctionBody* body = function_->body;
+	if (function_->naked)
+		return lower_naked_definition();
 	const bool inert_destructor = function_->destructor &&
 		lowering_.destructor_does_nothing(sema::ClassOf(function_->owner->entity->type));
 	// 15.5.1: a non-throwing function whose body may throw runs in a

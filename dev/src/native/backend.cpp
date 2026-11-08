@@ -7,6 +7,7 @@
 #include <sys/resource.h>
 
 #include "native/backend_error.h"
+#include "native/asm/functions.h"
 #include "native/image/global_data.h"
 #include "native/image/image.h"
 #include "native/mir/mir_writer.h"
@@ -78,7 +79,7 @@ Startup find_startup(const lowir::Program& program)
 		const lowir::Symbol& symbol = program.symbols[s];
 		if (symbol.kind == lowir::SymbolKind::FunctionDeclaration && declares_atexit(program, symbol))
 			startup.atexit = s;
-		if (symbol.kind != lowir::SymbolKind::FunctionDefinition)
+		if (symbol.kind != lowir::SymbolKind::FunctionDefinition && !lowir::find_assembly_function(program, s))
 			continue;
 		defines_atexit = defines_atexit || std::strcmp(object_name(program, symbol), "atexit") == 0;
 		switch (symbol.metadata.role)
@@ -180,6 +181,14 @@ bool compile_program(
 				if (stats_line != nullptr)
 					encode_ms += milliseconds_since(phase);
 			}
+		}
+		if (program.assembly)
+		{
+			if (mir_file != nullptr && !program.assembly->functions.empty())
+				throw BackendError("raw assembly functions have no ordinary machine-IR body");
+			if (!options.output.empty())
+				for (const lowir::AssemblyFunction& function : program.assembly->functions)
+					emit_assembly_function(image, program, function);
 		}
 		if (mir_file != nullptr && !writer.finish())
 		{

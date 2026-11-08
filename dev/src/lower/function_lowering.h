@@ -780,6 +780,7 @@ private:
 	// A GNU asm statement's lifted operations (sema/asm_statements.h).
 	void asm_statement(const syntax::AsmStmt& stmt);
 	void full_asm_statement(const syntax::AsmStmt& stmt);
+	void lower_naked_definition();
 	lowir::Value full_asm_exit_arguments(
 		const syntax::AsmStmt& stmt, std::vector<lowir::Type>& types, std::vector<lowir::Value>& values);
 	void branch_asm_exits(const syntax::AsmStmt& stmt, lowir::Value selector);

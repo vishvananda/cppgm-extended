@@ -288,7 +288,7 @@ private:
 	bool check_spellings(uint32_t count, NameOf name_of, const char* message);
 	bool check_symbols();
 	bool check_equivalent_entries();
-	bool check_function(SymbolId symbol);
+	bool check_function(SymbolId symbol, const FunctionBody* assembly_body = nullptr);
 	bool check_layout();
 	bool check_operands(InstId id, const Instruction& inst);
 	bool is_operand(Value value, uint8_t kinds) const
@@ -350,12 +350,16 @@ bool Validator::run()
 	if (program_.assembly)
 	{
 		const char* error = nullptr;
-		if (!validate_assembly_module(*program_.assembly, error))
+		if (!validate_assembly_module(*program_.assembly, error) || !validate_assembly_functions(program_, error))
 			return fail(error);
 		for (const AssemblyTemplate& definition : program_.assembly->templates)
 			if (definition.name >= program_.names.size() || definition.location.file >= program_.names.size())
 				return fail("invalid assembly name or source location");
 	}
+	if (program_.assembly)
+		for (const AssemblyFunction& function : program_.assembly->functions)
+			if (!check_function(function.symbol, function.body.get()))
+				return false;
 	if (!check_symbols())
 		return false;
 	for (SymbolId symbol = 0; symbol < program_.symbols.size(); ++symbol)
@@ -384,7 +388,8 @@ bool Validator::check_symbols()
 			if (is_singleton_role(metadata.role) && role_owner[metadata.role] != kNoId)
 				return fail("duplicate singleton role", symbol.name);
 			role_owner[metadata.role] = id;
-			if (metadata.role == ir_model::SR_ENTRY && symbol.kind != SymbolKind::FunctionDefinition)
+			if (metadata.role == ir_model::SR_ENTRY && symbol.kind != SymbolKind::FunctionDefinition &&
+				!find_assembly_function(program_, id))
 				return fail("entry role requires a function definition", symbol.name);
 			if (metadata.role == ir_model::SR_CPU_QUERY && !cpu_query_declaration(program_, symbol))
 				return fail("cpu_query role requires an effectful void (i32, i32, ptr) declaration", symbol.name);
@@ -450,12 +455,12 @@ bool Validator::check_equivalent_entries()
 	return true;
 }
 
-bool Validator::check_function(SymbolId symbol)
+bool Validator::check_function(SymbolId symbol, const FunctionBody* assembly_body)
 {
 	function_ = symbol;
 	inst_ = kNoId;
 	const Function& function = program_.functions[program_.symbols[symbol].detail];
-	body_ = function.body.get();
+	body_ = assembly_body != nullptr ? assembly_body : function.body.get();
 	signature_ = &program_.signatures[function.signature];
 	if (!check_layout() || !check_targets())
 		return false;
@@ -1127,7 +1132,8 @@ void apply_legacy_roles(Program& program)
 		if (taken || id == kNoId)
 			continue;
 		Symbol& symbol = program.symbols[id];
-		if (symbol.kind == SymbolKind::FunctionDefinition && symbol.metadata.role == ir_model::SR_NONE)
+		if ((symbol.kind == SymbolKind::FunctionDefinition || find_assembly_function(program, id)) &&
+			symbol.metadata.role == ir_model::SR_NONE)
 			symbol.metadata.role = role;
 	}
 }

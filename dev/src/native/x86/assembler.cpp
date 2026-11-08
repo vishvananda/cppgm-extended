@@ -474,6 +474,18 @@ void Assembler::jcc_short(Cond cond, uint32_t label)
 	byte(0);
 }
 
+void Assembler::call_label(uint32_t label)
+{
+	byte(0xe8);
+	LabelRef ref;
+	ref.offset = size();
+	ref.label = label;
+	ref.size = 4;
+	ref.end = 4;
+	label_refs_.push_back(ref);
+	imm(0, 4);
+}
+
 void Assembler::call_symbol(uint32_t symbol)
 {
 	byte(0xe8);
