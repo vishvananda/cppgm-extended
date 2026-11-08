@@ -829,7 +829,7 @@ ExprFacts* Analyzer::binding_expression(
 		ExprFacts* facts = new_facts(expr, several ? nullptr : function->type->canonical, ValueCategory::LValue);
 		facts->entity = function;
 		facts->functions = result.functions;
-		if (!several && function->member && !function->is_static)
+		if (!callee_name_ && !several && function->member && !function->is_static)
 			facts->flags |= kBoundMember;
 		if (several)
 			facts->flags |= kOverloadSet;
