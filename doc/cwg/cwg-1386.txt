@@ -1,0 +1,43 @@
+CWG 1386: Explicitly-specified partial argument list with multiple parameter packs
+Source: https://cplusplus.github.io/CWG/issues/1386.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: NAD
+Catalog role: course-reference
+
+This complete pinned issue affirms that the existing explicit-prefix deduction
+behavior is intended; NAD is not a newly adopted wording change. Historical
+[DELETE: ...] and [INSERT: ...] markup is retained rather than applied.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1386. Explicitly-specified partial argument list with multiple parameter packs
+Section: 13.10.2 [temp.arg.explicit [1]] Status: NAD Submitter: James Widman Date:
+2011-09-01
+
+Given
+
+
+    template<class T, class U> struct A { };
+    template<class... T, class ... U> void f( A<T,U>...p);
+
+    void g() {
+        f<int>(
+            A<int,unsigned>(),
+            A<short,unsigned short>()
+            );
+    }
+
+
+I would expect this to work, but all the recent compilers I tried reject it, indicating
+deduction failure.
+
+Rationale (April, 2013):
+
+This is well-formed.
+
+Source links:
+[1] https://wg21.link/temp.arg.explicit

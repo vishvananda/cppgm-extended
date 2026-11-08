@@ -667,18 +667,18 @@ void Analyzer::range_for_equivalent(const syntax::RangeForStmt& loop, Scope* blo
 	else
 	{
 		const ClassEntity* cls = ClassOf(range_type);
-		if (cls == nullptr)
-			error(location, "a range-based for over a range that is no array or class");
-		if (!require_complete(cls))
+		if (cls != nullptr && !require_complete(cls))
 			error(location, "a range-based for over an incomplete class");
 		// Its members begin and end (class member access lookup, 3.4.5),
 		// if either is found; else begin(__range) and end(__range) by
 		// argument-dependent lookup alone.
 		const Identifier* begin_name = range_for_identifier(kBeginName);
 		const Identifier* end_name = range_for_identifier(kEndName);
-		implicit_members_for(cls->scope, begin_name);
-		const bool members = names_.qualified(cls->scope, begin_name, LookupFilter::Ordinary).found() ||
-			names_.qualified(cls->scope, end_name, LookupFilter::Ordinary).found();
+		if (cls != nullptr)
+			implicit_members_for(cls->scope, begin_name);
+		const bool members = cls != nullptr &&
+			(names_.qualified(cls->scope, begin_name, LookupFilter::Ordinary).found() ||
+				names_.qualified(cls->scope, end_name, LookupFilter::Ordinary).found());
 		syntax::Expr* ends[2];
 		for (unsigned i = 0; i < 2; ++i)
 		{

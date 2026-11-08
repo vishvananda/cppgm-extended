@@ -68,7 +68,7 @@ bool Analyzer::NamesLinkedObject(const syntax::Expr& expr)
 		!LinkedEntity(entity))
 		return false;
 	const Type* type = entity->type->unqualified;
-	return IsIntegralType(type) || type->kind == TypeKind::Enum;
+	return IsIntegralType(type) || type->kind == TypeKind::Enum || type->kind == TypeKind::Class;
 }
 
 ConstValue ArgumentPointer(const Type* argument)

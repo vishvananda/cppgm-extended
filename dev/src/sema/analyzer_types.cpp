@@ -1051,6 +1051,12 @@ DeclaratorInfo Analyzer::declarator(const syntax::Declarator* declarator, const 
 			type = apply_suffix(suffix, type, after, current->location, &suffix == member_suffix ? member : nullptr);
 			if (failed())
 				return info;
+			// In C++11 the nested function's exception specification is not
+			// part of its type, but its own prototype must still validate it.
+			// It cannot borrow the enclosing member function's implicit object.
+			if (!cxx17_ && use == DeclaratorUse::Parameter && suffix.kind == syntax::DeclaratorSuffixKind::Function &&
+				HasExceptionSpecification(&suffix))
+				function_exception_type(suffix, after, type->params, type->param_count);
 			direct_reference = false;
 			function = suffix.kind == syntax::DeclaratorSuffixKind::Function ? &suffix : nullptr;
 			if (function != nullptr && function->parameters->has_defaults)
@@ -1545,8 +1551,7 @@ const Type* Analyzer::parameter_type(const syntax::ParameterDeclaration& paramet
 	this->specifiers(parameter.specifiers, scope, specifiers, false);
 	if (specifiers.is_constinit)
 		error(parameter.location, "__constinit in a parameter declaration");
-	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_ ||
-		specifiers.type == decltype_auto_placeholder_)
+	if (specifiers.type == nullptr)
 		error(parameter.location, "parameter without a type");
 	// 7.1.2p1: function-specifiers only in function declarations; 9.2p9:
 	// virt-specifiers only in member function declarations.
@@ -1558,6 +1563,11 @@ const Type* Analyzer::parameter_type(const syntax::ParameterDeclaration& paramet
 		error(parameter.location, "constexpr in a parameter declaration");
 	const DeclaratorInfo info = declarator(parameter.declarator, specifiers.type, scope, parameter.location,
 		specifiers.mode_specifiers.empty() ? nullptr : &specifiers, DeclaratorUse::Parameter);
+	// A nested function declarator's trailing return type can resolve its
+	// leading auto. A parameter itself still cannot have an undeduced type.
+	if ((specifiers.type == auto_placeholder_ || specifiers.type == decltype_auto_placeholder_) &&
+		holds_auto(info.type))
+		error(parameter.location, "parameter without a type");
 	// 8.3p1,3.3.4: a parameter is not a special function or a
 	// specialization, and its name belongs to its parameter scope.
 	if (info.name != nullptr &&

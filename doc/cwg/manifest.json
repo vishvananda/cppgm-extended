@@ -284,6 +284,42 @@
       "adopted_papers": []
     },
     {
+      "issue": 1170,
+      "title": "Access checking during template argument deduction",
+      "status": "C++11",
+      "role": "course-reference",
+      "file": "cwg-1170.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1170.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1170.html",
+      "source_html_sha256": "a168a90cb44bcd288028efe17b5b64ce71925f2e1e45bd0355e62fcf2fdaa148",
+      "text_sha256": "d86a574c270a6d6a3d9010268f47205b8dd7e8e562a58c493a6ccbcd51a5bf54",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08"
+    },
+    {
+      "issue": 1172,
+      "title": "\u201cinstantiation-dependent\u201d constructs",
+      "status": "drafting",
+      "role": "reference-only",
+      "file": "cwg-1172.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1172.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1172.html",
+      "source_html_sha256": "6cfaa36acbe726b940c382ae02baf63341d97bf08e36ff894990e48334e1d900",
+      "text_sha256": "1c0af0d60c4e024e43d6b27a414bdc04a08c3271a4187d84b46bcb526109b6ff",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08"
+    },
+    {
       "issue": 1213,
       "title": "Array subscripting and xvalues",
       "status": "CD3",
@@ -294,6 +330,24 @@
       "source_html_sha256": "1a3f13db06e9f1bfac4f5d9755b8aa5b209333248159a24cc7697b299f6b83b0",
       "text_sha256": "92ddeb4655b6c9b219d03577380370016e7665cff9b6f079077a273c9625cd07",
       "adopted_papers": []
+    },
+    {
+      "issue": 1273,
+      "title": "Accessibility and function signatures",
+      "status": "NAD",
+      "role": "course-reference",
+      "file": "cwg-1273.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1273.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1273.html",
+      "source_html_sha256": "c6a74b747ad0b5efca25f94a1fb844bf36467df7ac6d24d8c995cf9be66cb068",
+      "text_sha256": "c858a924966ccbe4e744bc6b569c6823e17c3f91b270e9ffba37ce0a0702dfc0",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08"
     },
     {
       "issue": 1286,
@@ -429,6 +483,24 @@
       "local_papers": [
         "paper-p2448r2.txt"
       ]
+    },
+    {
+      "issue": 1386,
+      "title": "Explicitly-specified partial argument list with multiple parameter packs",
+      "status": "NAD",
+      "role": "course-reference",
+      "file": "cwg-1386.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1386.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1386.html",
+      "source_html_sha256": "59b01ec64db927ae0375145e008ecf201a723f56fad8caee0fcc93907a855096",
+      "text_sha256": "23e8a821b6ba2f55e6060f45f1ef7d710ca774e5dc15fffa3df82d6107597813",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08"
     },
     {
       "issue": 1391,

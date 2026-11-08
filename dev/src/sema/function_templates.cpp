@@ -1050,9 +1050,8 @@ FunctionEntity* Analyzer::deduce_for_call(
 			arguments[i] = nullptr;
 	const uint32_t total = static_cast<uint32_t>(parameters.size());
 	const bool trailing = total != 0 && parameters[total - 1]->kind == TypeKind::Expansion;
-	const uint32_t fixed = trailing ? total - 1 : total;
-	const uint32_t count = call_arguments.size < fixed ? call_arguments.size : fixed;
-	for (uint32_t i = 0; i < count; ++i)
+	uint32_t fixed = 0;
+	for (uint32_t i = 0; i < total - (trailing ? 1 : 0); ++i)
 	{
 		// 14.8.2.1p1: a braced-init-list argument is a non-deduced context,
 		// as is a function parameter pack that does not end the list
@@ -1062,17 +1061,22 @@ FunctionEntity* Analyzer::deduce_for_call(
 		// An alias template-id that drops dependent arguments takes part as
 		// the type it aliases (CWG 1558).
 		const Type* p = parameters[i]->canonical;
-		if (p->kind == TypeKind::Expansion || !dependent_type(aliased_type(p)) ||
+		if (p->kind == TypeKind::Expansion)
+			continue;
+		// A non-trailing pack is non-deduced, not one call argument.
+		// Its explicitly supplied prefix was already expanded above.
+		const uint32_t argument = fixed++;
+		if (argument >= call_arguments.size || !dependent_type(aliased_type(p)) ||
 			!Deducible(aliased_type(p)->canonical, depth, 0))
 			continue;
-		if (call_arguments[i]->kind == syntax::ExprKind::BracedInit)
+		if (call_arguments[argument]->kind == syntax::ExprKind::BracedInit)
 		{
 			if (!deduce_list_elements(
-					p, static_cast<const syntax::BracedInitList&>(*call_arguments[i]), depth, arguments))
+					p, static_cast<const syntax::BracedInitList&>(*call_arguments[argument]), depth, arguments))
 				return nullptr;
 			continue;
 		}
-		const ExprFacts* facts = call_arguments[i]->facts;
+		const ExprFacts* facts = call_arguments[argument]->facts;
 		if (NonstaticMemberName(facts))
 			return nullptr;
 		if ((facts->flags & kOverloadSet) != 0)

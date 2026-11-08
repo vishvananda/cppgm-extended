@@ -2130,6 +2130,7 @@ SubobjectInit* Analyzer::mem_initializer_target(
 	// the class or a direct base (by any name that denotes it); null: it
 	// names the class itself (a delegating constructor, p6).
 	const syntax::Name& name = *initializer.name;
+	const bool decltype_name = !name.qualified() && name.last().kind == syntax::NameComponentKind::Decltype;
 	LookupResult result = LookupResult();
 	// An identifier's lookup here: 0 none (lookup_name's checks its
 	// access), 1 in the class, 2 where the constructor is.
@@ -2146,15 +2147,15 @@ SubobjectInit* Analyzer::mem_initializer_target(
 			looked_up = 2;
 		}
 	}
-	else
+	else if (!decltype_name)
 		result = lookup_name(name, scope, LookupFilter::Ordinary);
-	if (!result.found())
+	if (!decltype_name && !result.found())
 		error(initializer.location, "the mem-initializer names nothing");
 	if (result.ambiguous)
 		error(initializer.location, "the mem-initializer name is ambiguous");
 	const Binding* binding = result.binding;
 	uint32_t index = 0;
-	if (binding->kind == BindingKind::Variable)
+	if (binding != nullptr && binding->kind == BindingKind::Variable)
 	{
 		const VariableEntity* variable = static_cast<const VariableEntity*>(binding->entity);
 		const DataMember* member = variable->data_member;
@@ -2184,7 +2185,7 @@ SubobjectInit* Analyzer::mem_initializer_target(
 		target->designated = true;
 		return target;
 	}
-	if (binding->kind != BindingKind::Type && binding->kind != BindingKind::TypeAlias)
+	if (!decltype_name && binding->kind != BindingKind::Type && binding->kind != BindingKind::TypeAlias)
 		error(initializer.location, "the mem-initializer does not name a member or base");
 	// 11.2p5: a type name found in the class (a base's injected-class-name
 	// is a member of it, 11.1p5) is named there, so a private base's is
@@ -2193,7 +2194,11 @@ SubobjectInit* Analyzer::mem_initializer_target(
 		check_access(binding, entity, nullptr, scope, initializer.location);
 	else if (looked_up == 2 && semantic() && template_depth_ == 0)
 		check_unqualified_access(binding, scope, initializer.location);
-	const ClassEntity* named = ClassOf(binding_type(binding, initializer.location));
+	const Type* named_type = decltype_name ? decltype_type(*name.last().decltype_operand, scope)
+										   : binding_type(binding, initializer.location);
+	if (named_type == nullptr)
+		return nullptr;
+	const ClassEntity* named = ClassOf(named_type);
 	if (named == entity)
 		return nullptr;
 	for (const BaseClass* base = entity->bases; base != nullptr; base = base->next, ++index)

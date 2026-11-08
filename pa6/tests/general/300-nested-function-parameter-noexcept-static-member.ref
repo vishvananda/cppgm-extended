@@ -1,0 +1,9 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type Item struct Item
+    scope class Item
+      variable valid const bool
+      function take function of (function of () returning int) returning void
+end translation unit

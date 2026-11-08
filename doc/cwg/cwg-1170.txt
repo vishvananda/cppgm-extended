@@ -1,0 +1,45 @@
+CWG 1170: Access checking during template argument deduction
+Source: https://cplusplus.github.io/CWG/issues/1170.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: C++11
+Catalog role: course-reference
+
+The full pinned issue follows. Historical [DELETE: ...] and [INSERT: ...]
+markup is retained rather than applied. NAD in issue 1273 affirms the existing
+C++11 access/substitution behavior; it is not a newly adopted wording change.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1170. Access checking during template argument deduction
+Section: 13.10.3 [temp.deduct [1]] Status: C++11 Submitter: Adamczyk Date: 2010-08-03
+
+[Voted into the WP at the March, 2011 meeting.]
+
+According to 13.10.3 [temp.deduct [2]] paragraph 8,
+
+Access checking is not done as part of the substitution process. Consequently, when
+deduction succeeds, an access error could still result when the function is
+instantiated.
+
+This mimics the way access checking is done in overload resolution. However, experience
+has shown that this exemption of access errors from deduction failure significantly
+complicates the Standard library, so this rule should be changed.
+
+Proposed resolution (January, 2011):
+
+Change 13.10.3 [temp.deduct [2]] paragraph 8 as follows:
+
+If a substitution results in an invalid type or expression, type deduction fails. An
+invalid type or expression is one that would be ill-formed if written using the
+substituted arguments. [INSERT: [Note:] Access checking is [DELETE: not] done as part of
+the substitution process. [INSERT: —end note]] [DELETE: Consequently, when deduction
+succeeds, an access error could still result when the function is instantiated.] Only
+invalid types...
+
+Source links:
+[1] https://wg21.link/temp.deduct
+[2] https://wg21.link/temp.deduct#8

@@ -1,0 +1,6 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    function take function of (function of (int) returning int) returning int
+end translation unit

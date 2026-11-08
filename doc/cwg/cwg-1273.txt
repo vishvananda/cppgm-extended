@@ -1,0 +1,61 @@
+CWG 1273: Accessibility and function signatures
+Source: https://cplusplus.github.io/CWG/issues/1273.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: NAD
+Catalog role: course-reference
+
+The full pinned issue follows. Historical [DELETE: ...] and [INSERT: ...]
+markup is retained rather than applied. NAD in issue 1273 affirms the existing
+C++11 access/substitution behavior; it is not a newly adopted wording change.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1273. Accessibility and function signatures
+Section: 13.10.3 [temp.deduct [1]] Status: NAD Submitter: Jason Merrill Date: 2011-03-24
+
+With the resolution of issue 1170 [2], which takes access into account in template
+argument deduction, it is now possible to have instantiation-dependent expressions (see
+issue 1172 [3]) that do not directly involve a template parameter. For example:
+
+
+  template <class T> struct C;
+
+  class A
+  {
+    int i;
+    friend struct C<int>;
+  } a;
+
+  class B
+  {
+    int i;
+    friend struct C<float>;
+  } b;
+
+  template <class T>
+  struct C
+  {
+    template <class U> decltype (a.i) f() { } // #1
+    template <class U> decltype (b.i) f() { } // #2
+  };
+
+  int main()
+  {
+    C<int>().f<int>();   // calls #1
+    C<float>().f<float>(); // calls #2
+  }
+
+
+Rationale (August, 2011):
+
+The specification is as intended. To the extent that there is an issue here, it is
+covered by issue 1172 [3].
+
+Source links:
+[1] https://wg21.link/temp.deduct
+[2] https://cplusplus.github.io/CWG/issues/1170.html
+[3] https://cplusplus.github.io/CWG/issues/1172.html

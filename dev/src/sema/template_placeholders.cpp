@@ -1042,16 +1042,34 @@ const Type* Analyzer::dependent_expression(const syntax::Expr& operand, Scope* s
 	}
 	if (independent && (!value || target == nullptr || !dependent_type(target)))
 	{
-		decltype_words_.resize(base);
-		if (enclosing != nullptr)
-			*enclosing |= named;
 		const uint32_t depth = template_depth_;
+		bool access_dependent = false;
+		bool* saved_probe = fixed_access_probe_;
+		const uint32_t saved_probe_depth = fixed_access_depth_;
+		if (!value && depth != 0)
+		{
+			fixed_access_probe_ = &access_dependent;
+			fixed_access_depth_ = instantiation_depth_;
+		}
 		template_depth_ = 0;
 		const Type* type = value
 			? template_value(operand, scope, evaluation_target != nullptr ? evaluation_target : target, unknown)
 			: decltype_type(operand, scope);
 		template_depth_ = depth;
-		return type;
+		fixed_access_probe_ = saved_probe;
+		fixed_access_depth_ = saved_probe_depth;
+		if (!access_dependent)
+		{
+			decltype_words_.resize(base);
+			if (enclosing != nullptr)
+				*enclosing |= named;
+			return type;
+		}
+		// CWG1273 (NAD): access can depend on specialization friendship
+		// although the expression's type names no template parameter.
+		if (saved_probe != nullptr)
+			*saved_probe = true;
+		key.words = decltype_words_.data() + base;
 	}
 	if (keyed && !value && (key.words[0] & 1) == 0 && bare->kind == syntax::ExprKind::BuiltinTrait &&
 		IsGnuTypeTransform(static_cast<const syntax::BuiltinTraitExpr*>(bare)->trait) &&
@@ -1068,7 +1086,16 @@ const Type* Analyzer::dependent_expression(const syntax::Expr& operand, Scope* s
 	// check_fixed_operands; the key's words may move).
 	if (fixed && !value && !class_instantiations_.empty())
 	{
+		bool access_dependent = false;
+		bool* saved_probe = fixed_access_probe_;
+		const uint32_t saved_probe_depth = fixed_access_depth_;
+		fixed_access_probe_ = &access_dependent;
+		fixed_access_depth_ = instantiation_depth_;
 		check_fixed_operands(operand, scope, 0);
+		fixed_access_probe_ = saved_probe;
+		fixed_access_depth_ = saved_probe_depth;
+		if (saved_probe != nullptr && access_dependent)
+			*saved_probe = true;
 		key = DecltypeKey{ decltype_words_.data() + base, static_cast<uint32_t>(decltype_words_.size() - base) };
 	}
 	DecltypeKey alias{ nullptr, 0 };

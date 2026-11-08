@@ -44,6 +44,7 @@ public:
 	// units (little-endian), the array bound and the ud-suffix (empty if
 	// none).
 	FundamentalType element_type() const { return StringElementType(prefix_); }
+	EncodingPrefix encoding_prefix() const { return prefix_; }
 	const unsigned char* data() const { return reinterpret_cast<const unsigned char*>(units_.data()); }
 	uint32_t size() const { return static_cast<uint32_t>(units_.size()); }
 	uint32_t element_count() const { return size() / CodeUnitWidth(prefix_); }

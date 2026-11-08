@@ -1124,11 +1124,34 @@ const Type* Analyzer::decltype_type(const syntax::Expr& operand, Scope* scope)
 		return dependent_expression(operand, scope, false, nullptr, semantic());
 	if (expr->kind == syntax::ExprKind::Id)
 	{
+		bool access_dependent = false;
+		bool* saved_probe = fixed_access_probe_;
+		const uint32_t saved_probe_depth = fixed_access_depth_;
+		if (template_depth_ != 0)
+		{
+			fixed_access_probe_ = &access_dependent;
+			fixed_access_depth_ = instantiation_depth_;
+		}
 		const LookupResult result = lookup_name(
 			*static_cast<const syntax::IdExpr*>(expr)->name, scope, LookupFilter::Ordinary);
+		fixed_access_probe_ = saved_probe;
+		fixed_access_depth_ = saved_probe_depth;
 		if (failed())
 			return nullptr;
 		const Binding* binding = result.binding;
+		if (template_depth_ != 0 && semantic() &&
+			(access_dependent ||
+				(binding->declared_in != nullptr && binding->declared_in->kind == ScopeKind::Class &&
+					(binding->access != Access::Public ||
+						(last_prefix_.scope != nullptr && last_prefix_.scope != binding->declared_in)))))
+		{
+			fixed_access_probe_ = &access_dependent;
+			fixed_access_depth_ = instantiation_depth_;
+			const Type* type = dependent_expression(operand, scope, false, nullptr, true);
+			fixed_access_probe_ = saved_probe;
+			fixed_access_depth_ = saved_probe_depth;
+			return type;
+		}
 		if (template_depth_ != 0 &&
 			(last_prefix_.dependent != nullptr ||
 				(binding->entity != nullptr && binding->entity->kind == EntityKind::TemplateParameter)))
@@ -1138,6 +1161,13 @@ const Type* Analyzer::decltype_type(const syntax::Expr& operand, Scope* scope)
 		{
 		case BindingKind::Variable:
 			type = binding->entity->type;
+			if (parenthesized && static_cast<const VariableEntity*>(binding->entity)->member &&
+				implicit_object(static_cast<const ClassEntity*>(binding->entity->owner->entity)))
+			{
+				const VariableEntity* variable = static_cast<const VariableEntity*>(binding->entity);
+				type = types_.qualified(type,
+					static_cast<uint8_t>(body_->this_type->element->cv & (variable->is_mutable ? ~kConst : 0xff)));
+			}
 			// A structured binding gives its referenced type (C++17's
 			// 7.1.6.2p4), and parenthesized, its lvalue's (11.5p1).
 			if (static_cast<const VariableEntity*>(binding->entity)->structured_binding)

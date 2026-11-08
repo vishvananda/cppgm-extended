@@ -290,7 +290,7 @@ bool Parser::parse_declarator_into(DeclaratorMode mode, Declarator* declarator)
 		(at(TokenKind::OP_RPAREN, 1) || at(TokenKind::OP_DOTS, 1)))
 	{
 		// `()` and `(...)` make the parameter's declarator abstract.
-		return fail();
+		declarator->abstract = true;
 	}
 	const bool parsed = parse_declarator_suffixes(mode, declarator, NamesDirectly(declarator), member_of);
 	declarator_member_of_ = member_of;

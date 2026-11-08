@@ -632,6 +632,91 @@ void Analyzer::class_abi_tags(
 		declare_abi_tags(entity, tags, redeclaration, location);
 }
 
+bool Analyzer::no_linkage_type(const Type* type)
+{
+	// 3.5p8: a local or unnamed class/enum can have no linkage. Compound
+	// types retain that property in their parts; named internal-linkage
+	// types and the explicitly listed class specializations are excluded.
+	if (type == nullptr)
+		return false;
+	type = type->canonical;
+	const uint32_t known = no_linkage_types_.find(type);
+	if (known != PointerMap::kMissing)
+		return known == 2;
+	no_linkage_types_.set(type, 1);
+	bool result = false;
+	if (type->kind == TypeKind::Class || type->kind == TypeKind::Enum)
+	{
+		const Entity* entity = type->entity;
+		const ClassEntity* cls = type->kind == TypeKind::Class ? static_cast<const ClassEntity*>(entity) : nullptr;
+		const bool specialization = cls != nullptr && cls->templ != nullptr &&
+			cls->templ->role == TemplateRole::Specialization;
+		const bool member = entity->owner != nullptr && entity->owner->kind == ScopeKind::Class;
+		// 3.5p8 explicitly gives class specializations linkage. An unnamed
+		// class/enum member of a class with linkage also has linkage: another
+		// TU can name it through decltype of the enclosing class's member.
+		result = !specialization &&
+			(entity->name == nullptr || (member && no_linkage_type(entity->owner->entity->type)));
+		if (member && !no_linkage_type(entity->owner->entity->type))
+			result = false;
+		for (const Scope* owner = entity->owner;
+			!result && !specialization && owner != nullptr && owner->kind != ScopeKind::Namespace;
+			owner = owner->parent)
+			result = owner->kind == ScopeKind::Block || owner->kind == ScopeKind::Function;
+		if (cls != nullptr && graph_.closure_facts(cls) != nullptr)
+			result = true;
+	}
+	else
+	{
+		result = no_linkage_type(type->element) || no_linkage_type(type->owner);
+		for (uint32_t i = 0; !result && i < type->param_count; ++i)
+			result = no_linkage_type(type->params[i]);
+	}
+	no_linkage_types_.set(type, result ? 2 : 1);
+	return result;
+}
+
+void Analyzer::note_linkage_use(const Entity* entity, uint32_t location)
+{
+	if (entity->kind == EntityKind::Function ? static_cast<const FunctionEntity*>(entity)->internal_linkage ||
+				static_cast<const FunctionEntity*>(entity)->c_linkage
+											 : static_cast<const VariableEntity*>(entity)->internal_linkage ||
+				static_cast<const VariableEntity*>(entity)->c_linkage)
+		return;
+	if (linkage_use_index_.find(entity) != PointerMap::kMissing || !no_linkage_type(entity->type))
+		return;
+	linkage_use_index_.set(entity, static_cast<uint32_t>(linkage_uses_.size()));
+	linkage_uses_.push_back(std::make_pair(entity, location));
+}
+
+void Analyzer::check_linkage_definitions()
+{
+	// A definition later in the translation unit still satisfies 3.5p8.
+	// Retain only actual uses; an unused declaration is permitted.
+	for (size_t i = 0; i < linkage_uses_.size(); ++i)
+	{
+		const Entity* entity = linkage_uses_[i].first;
+		bool defined = false;
+		if (entity->kind == EntityKind::Function)
+		{
+			const FunctionEntity* function = static_cast<const FunctionEntity*>(entity);
+			if (!function->defined && function->instantiated)
+				instantiate_definition(function);
+			defined = function->defined;
+		}
+		else
+		{
+			const VariableEntity* variable = static_cast<const VariableEntity*>(entity);
+			if (!variable->defined && variable->templ != nullptr)
+				instantiate_variable(variable);
+			defined = variable->defined;
+		}
+		if (!defined)
+			error(linkage_uses_[i].second,
+				"an odr-used entity with a no-linkage type has no definition in this translation unit");
+	}
+}
+
 void Analyzer::note_block_linkage(const Entity* entity, Scope* block, bool c_linkage)
 {
 	// 3.5p6: a block-scope declaration with linkage that denotes no
@@ -1904,6 +1989,17 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 	FunctionEntity* function = pattern_friend
 		? nullptr
 		: earlier_function(name, where, signature, templated, invisible, location);
+	if (c_language_ && !templated && !specifiers.is_static && where->kind == ScopeKind::Namespace)
+	{
+		const uint32_t index = c_function_index_.find(name.key);
+		if (index != PointerMap::kMissing)
+		{
+			FunctionEntity* earlier = c_functions_[index];
+			if (signature_of(earlier->type) != signature || (function != nullptr && function != earlier))
+				error(location, "conflicting declaration of a C-linkage function");
+			function = earlier;
+		}
+	}
 	if (friend_block != nullptr && specifiers.is_friend && function == nullptr)
 		error(location, "a local class's friend names no function declared in its innermost block");
 	bool first = false;
@@ -1933,6 +2029,11 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 	{
 		function = new_function(specifiers, info, name, scope, where, signature, templated, location);
 		first = true;
+	}
+	if (function->c_linkage && !function->internal_linkage && c_function_index_.find(name.key) == PointerMap::kMissing)
+	{
+		c_function_index_.set(name.key, static_cast<uint32_t>(c_functions_.size()));
+		c_functions_.push_back(function);
 	}
 	// 8.3.6p6: a class template member's default arguments are given on
 	// its declaration in the class; 8.3.6p4: only a non-template function's

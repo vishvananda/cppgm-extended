@@ -391,6 +391,9 @@ private:
 	void note_block_linkage(const Entity* entity, Scope* block, bool c_linkage);
 	void agree_block_linkage(const Entity* entity, bool c_linkage, bool internal, uint32_t location);
 	void agree_language_linkage(bool c_linkage, uint32_t location);
+	bool no_linkage_type(const Type* type);
+	void note_linkage_use(const Entity* entity, uint32_t location);
+	void check_linkage_definitions();
 	void effect_attributes(
 		FunctionEntity* function, const syntax::Attribute* leading, const syntax::Declarator* declarator);
 	void reject_noreturn(const syntax::Attribute* list, const char* message) const;
@@ -1879,6 +1882,10 @@ private:
 	// The namespace scope of the declaration whose failed access checks
 	// wait for its entity, and those checks (see settle_declaration_access).
 	Scope* access_deferral_;
+	// A fixed decltype probe may discover an access obligation whose
+	// result belongs to template substitution, even without a named parameter.
+	bool* fixed_access_probe_ = nullptr;
+	uint32_t fixed_access_depth_ = 0;
 	std::vector<PendingAccess> pending_access_;
 	// Each friend declaration as (befriending class, friend): a class, a
 	// function, or a function template, whose every specialization it
@@ -1913,6 +1920,13 @@ private:
 	};
 	std::vector<BlockLinkage> block_linkages_;
 	PointerMap block_linkage_index_;
+	// External C functions denote one entity per name across namespaces
+	// (7.5p6); C++ overload lookup alone cannot establish that identity.
+	PointerMap c_function_index_;
+	std::vector<FunctionEntity*> c_functions_;
+	PointerMap no_linkage_types_;
+	PointerMap linkage_use_index_;
+	std::vector<std::pair<const Entity*, uint32_t>> linkage_uses_;
 	uintptr_t stack_base_;
 	uintptr_t stack_budget_;
 	const Identifier* constructor_key_;

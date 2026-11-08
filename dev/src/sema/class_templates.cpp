@@ -894,13 +894,42 @@ const Type* Analyzer::converted_value(const TemplateParameterEntity* parameter, 
 		argument->entity->kind == EntityKind::Variable && (IsIntegralType(target) || target->kind == TypeKind::Enum))
 	{
 		Constant value;
-		if (!variable_constant(static_cast<const VariableEntity*>(argument->entity), value))
+		if (ClassOf(argument->entity->type) != nullptr)
+		{
+			// Preserve the designated object until each overload's parameter
+			// is known. A reference binds it; an integral parameter selects
+			// and evaluates its own converted constant expression.
+			syntax::IdExpr* use = arena_.allocate_array<syntax::IdExpr>(1);
+			*use = syntax::IdExpr();
+			use->location = location;
+			use->kind = syntax::ExprKind::Id;
+			use->name = implicit_name(argument->entity->name, location);
+			ExprFacts* facts = new_facts(*use, argument->entity->type, ValueCategory::LValue);
+			facts->entity = argument->entity;
+			facts->flags = kImplicit;
+			const Type* converted = nullptr;
+			{
+				SoftSubstitution soft(*this);
+				converted = template_value(*use, argument->entity->owner, target);
+				if (soft.failed())
+					converted = nullptr;
+			}
+			if (converted == nullptr)
+			{
+				if (fatal)
+					error(location, "a class template argument that is not a converted constant expression");
+				return nullptr;
+			}
+			argument = converted;
+		}
+		else if (!variable_constant(static_cast<const VariableEntity*>(argument->entity), value))
 		{
 			if (fatal)
 				error(location, "a template argument that is not a constant expression");
 			return nullptr;
 		}
-		argument = types_.value(value.type->unqualified, value.bits);
+		else
+			argument = types_.value(value.type->unqualified, value.bits);
 	}
 	if (AddressParameterType(target) || AddressArgument(argument))
 	{

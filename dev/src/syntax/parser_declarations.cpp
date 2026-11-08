@@ -990,6 +990,24 @@ Decl* Parser::finish_simple_declaration(
 	friend_declarator_ = saved_friend;
 	if (declarator == nullptr)
 		return nullptr;
+	// In a block's tentative parenthesized declaration, `int(f()->member)`
+	// is an expression: a trailing-return declarator requires leading auto.
+	// Reject that reading so the existing statement checkpoint can select it.
+	if (context == DeclContext::Block && declarator->nested != nullptr)
+	{
+		bool leading_auto = false;
+		for (const DeclSpecifier& specifier : specifiers)
+			leading_auto = leading_auto ||
+				(specifier.kind == DeclSpecKind::Keyword && specifier.keyword == TokenKind::KW_AUTO);
+		for (const Declarator* part = declarator; !leading_auto && part != nullptr; part = part->nested)
+			for (const DeclaratorSuffix& suffix : part->suffixes)
+				for (const FunctionQualifier& qualifier : suffix.qualifiers)
+					if (qualifier.kind == FunctionQualifierKind::TrailingReturn)
+					{
+						fail();
+						return nullptr;
+					}
+	}
 	if (is_function_declarator(declarator) && at_function_body_start(false))
 	{
 		FunctionDecl* function = make<FunctionDecl>(DeclKind::Function, start);

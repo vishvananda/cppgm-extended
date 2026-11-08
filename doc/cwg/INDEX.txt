@@ -292,6 +292,24 @@ P2448R2 | paper-p2448r2.txt
   Implemented here: defaulted scalar constructor suitability; actual constant
   initialization and indeterminate reads still use the ordinary evaluator.
 
+Access-dependent signatures and primary interpretation
+-------------------------------------------------------
+
+CWG 1170 | C++11 | cwg-1170.txt
+  Access checking participates in substitution (March 2011 WP adoption).
+CWG 1273 | NAD | cwg-1273.txt
+  Existing specialization-dependent accessibility in fixed decltype signatures
+  is intended. NAD is an affirmation, not a newly adopted defect resolution.
+CWG 1172 | drafting | cwg-1172.txt
+  Background on terminology only; no drafting proposal is implemented.
+
+Explicit pack prefixes
+----------------------
+
+CWG 1386 | NAD | cwg-1386.txt
+  Explicit prefixes can extend while multiple parameter packs are deduced.
+  NAD affirms existing behavior, not a new defect resolution.
+
 Adding a decision
 -----------------
 

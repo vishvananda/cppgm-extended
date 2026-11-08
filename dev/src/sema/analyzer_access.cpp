@@ -689,6 +689,11 @@ void Analyzer::check_access(
 		: accessible(naming, declaring, binding->access, scope, &via, location, receiver);
 	if (!reached)
 	{
+		if (fixed_access_probe_ != nullptr && fixed_access_depth_ == instantiation_depth_)
+		{
+			*fixed_access_probe_ = true;
+			return;
+		}
 		if (via == nullptr && soft_substitution_ == 0 && defer_access(binding, naming, object, scope, location))
 			return;
 		substitution_error(location,

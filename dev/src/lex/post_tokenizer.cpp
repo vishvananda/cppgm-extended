@@ -177,9 +177,6 @@ void PostTokenizer::convert_character(const PPToken& pp)
 void PostTokenizer::convert_string_sequence(const PPToken& first)
 {
 	strings_.clear();
-	if (split_literal_operator_suffix(first))
-		return;
-
 	strings_.add(first.spelling, first.length);
 	uint32_t end = first.end;
 	for (;;)
@@ -194,6 +191,7 @@ void PostTokenizer::convert_string_sequence(const PPToken& first)
 		end = pp.end;
 	}
 	finish_string_sequence(first.begin, end);
+	split_literal_operator_suffix(first);
 }
 
 bool PostTokenizer::split_literal_operator_suffix(const PPToken& first)
@@ -206,16 +204,19 @@ bool PostTokenizer::split_literal_operator_suffix(const PPToken& first)
 	// and validates its suffix.
 	// The identifier's source range starts at the earliest
 	// offset it can have; splices may lie in between.
-	if (literals_ != NumberDialect::Gnu || !after_operator_ || first.kind != PPTokenKind::UserDefinedStringLiteral ||
-		first.length < 3 || first.spelling[0] != '"' || first.spelling[1] != '"')
+	if (literals_ != NumberDialect::Gnu || !after_operator_ || token_.kind == PostTokenKind::Invalid ||
+		strings_.encoding_prefix() != EncodingPrefix::None || token_.elements != 1)
 	{
 		return false;
 	}
-	strings_.add(first.spelling, 2);
-	split_suffix_ = TokenSpelling{ first.spelling + 2, first.length - 2 };
+	// Phase 6 has already concatenated the entire sequence and checked its
+	// suffix agreement. Only its empty ordinary string can name an operator.
+	split_suffix_ = token_.ud_suffix;
 	split_suffix_begin_ = first.begin + 2;
-	split_suffix_end_ = first.end;
-	finish_string_sequence(first.begin, first.begin + 2);
+	split_suffix_end_ = split_suffix_begin_ + split_suffix_.length;
+	token_.kind = PostTokenKind::Literal;
+	token_.source = TokenSpelling{ "\"\"", 2 };
+	token_.ud_suffix = TokenSpelling{ nullptr, 0 };
 	return true;
 }
 

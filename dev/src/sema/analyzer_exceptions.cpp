@@ -547,7 +547,17 @@ void Analyzer::check_redeclared_exceptions(
 		// decltype_words), with the declarators' parameters in scope.
 		const uint32_t index = noexcept_index_.find(function);
 		if (index == PointerMap::kMissing)
+		{
+			// The earlier declaration can have plain noexcept/throw(), with
+			// no pending operand. A class instance's friend template still
+			// has to agree when its operand is already independent of its head.
+			if (info.parameters != nullptr)
+				scope = prototype_scope(*info.parameters, function->type->params, function->type->param_count, scope);
+			if (fixed_expression(*operand, scope) && !failed() &&
+				noexcept_value(function, operand, scope) != function_nothrow(function))
+				error(location, "redeclaration with an incompatible exception-specification");
 			return;
+		}
 		const PendingNoexcept& first = noexcepts_[index];
 		const Type* type = function->type;
 		Scope* earlier = first.parameters != nullptr

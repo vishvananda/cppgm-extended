@@ -1,0 +1,69 @@
+CWG 1172: “instantiation-dependent” constructs
+Source: https://cplusplus.github.io/CWG/issues/1172.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: drafting
+Catalog role: reference-only
+
+The full pinned issue follows. Historical [DELETE: ...] and [INSERT: ...]
+markup is retained rather than applied. This drafting issue is background, not an
+adopted rule or an assertion of implementation of a proposal.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1172. “instantiation-dependent” constructs
+Section: 13.10.3 [temp.deduct [1]] Status: drafting Submitter: Adamczyk Date: 2010-08-05
+
+There are certain constructs that are not covered by the existing categories of “type
+dependent” and “value dependent.” For example, the expression sizeof(sizeof(T())) is
+neither type-dependent nor value-dependent, but its validity depends on whether T can be
+value-constructed. We should be able to overload on such characteristics and select via
+deduction failure, but we need a term like “instantiation-dependent” to describe these
+cases in the Standard. The phrase “expression involving a template parameter” seems to
+come pretty close to capturing this idea.
+
+Notes from the November, 2010 meeting:
+
+The CWG favored extending the concepts of “type-dependent” and “value-dependent” to
+cover these additional cases, rather than adding a new concept.
+
+Notes from the March, 2011 meeting:
+
+The CWG reconsidered the direction from the November, 2010 meeting, as it would make
+more constructs dependent, thus requiring more template and typename keywords, resulting
+in worse error messages, etc.
+
+Notes from the August, 2011 meeting:
+
+The following example (from issue 1273 [2]) was deemed relevant for this issue:
+
+
+    template <class T> struct C;
+
+    class A {
+       int i;
+       friend struct C<int>;
+    } a;
+
+    class B {
+       int i;
+       friend struct C<float>;
+    } b;
+
+    template <class T>
+    struct C {
+       template <class U> decltype (a.i) f() { } // #1
+       template <class U> decltype (b.i) f() { } // #2
+    };
+
+    int main() {
+       C<int>().f<int>();     // calls #1
+       C<float>().f<float>(); // calls #2
+    }
+
+Source links:
+[1] https://wg21.link/temp.deduct
+[2] https://cplusplus.github.io/CWG/issues/1273.html
