@@ -295,7 +295,7 @@ my @records = table_strings($assembly_vocabulary, 'kRecords', 'asm_model.h');
 for my $record (@records)
 {
 	push @errors, "assembly record '$record' is absent from its owner documentation"
-		if $assembly_documentation !~ /\b\Q$record\E\b/;
+		if $assembly_documentation !~ /`\Q$record\E(?:`|\s)/;
 	push @errors, "assembly record '$record' is not recognized by the reader"
 		if $assembly_parser !~ /at_word\("\Q$record\E"\)/;
 	push @errors, "assembly record '$record' is not written"

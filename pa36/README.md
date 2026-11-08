@@ -138,8 +138,22 @@ state, cyclic aliases and unbounded storage requests.
 
 The same module records work in host-linkable objects and standalone
 `lowir2native` executables. Ordinary function MIR dumps do not represent module
-items; reject that unsupported combination. Module macros shared with inline
-statements, unwind directives and broader expressions remain extension goals.
+items; reject that unsupported combination. Support `.macro`/`.endm` and `.purgem`, positional or named arguments, defaults,
+`:req` and final `:vararg` parameters. Preserve quoted argument grouping and raw
+variadic source, including typed symbol pieces. Macro names are case insensitive;
+parameter names are case sensitive. Include nested definitions, `\@` unique
+expansion numbers and `\()` parameter separators.
+
+Support `.rept`, `.irp` and `.irpc` blocks ending in `.endr`, and `.exitm` from
+the current macro or repetition. Include `.if`/`.ifne`, `.ifeq`, signed
+`.ifge`/`.ifgt`/`.ifle`/`.iflt`, blank `.ifb`/`.ifnb` and string
+`.ifc`/`.ifnc`/`.ifeqs`/`.ifnes` conditions, with `.elseif`, `.else` and `.endif`.
+Numeric conditions and repetition counts accept absolute integer expressions,
+using GNU assembler precedence and truth values. Expansion must have bounded
+nesting, work and output size; malformed blocks and runaway recursion fail.
+
+Sharing macros with inline statements, symbol-dependent expressions and unwind
+directives remain extension goals.
 
 ### Suggested implementation order
 
@@ -184,7 +198,7 @@ included in those reports or in the required course completion criteria.
 
 ### Further extensions
 
-Module macros, broader directives/expressions, further relocations, unwind state and broader
+Shared module/inline environments, broader directives/expressions, further relocations, unwind state and broader
 x86/VEX/EVEX coverage remain extension goals. Original Rust assembly is a useful
 cross-frontend consumer. These goals require additional contracts and tests;
 the current suite does not establish their completion. Header vocabulary for

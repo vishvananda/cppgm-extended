@@ -568,3 +568,29 @@ with inline statements; CFI/unwind; broader expressions, registers and ISA;
 capability manifest and original Rust source/body transport/backend-lock
 qualification. Student material names the supported subset. Godot remains
 paused until assembly closure is complete.
+
+## 2026-11-08 checkpoint: module source expansion
+
+Ordered module invocations now share macro definitions. Expansion retains typed
+symbol spans through positional/named arguments, defaults and raw variadic
+arguments, including definitions produced by macros. Nested macros, unique
+labels, repetition, conditional blocks and bounded recursive expansion have
+native behavior fixtures. Numeric conditions use GNU assembler precedence and
+truth values. Input, intermediate and emitted source share a bounded byte
+budget, alongside work and nesting limits. Instructions are parsed once after
+expansion; declaration prepasses see only expanded source.
+
+124 optional cases pass at O0/O2/O3 with GCC/Clang observers and the self-built
+compiler. Strict 8099/8099, debug checks, selfhost PA5, inception equality, PA35
+smoke, harness and mandatory audits pass. The independent checks include 3009
+absolute expressions and six macro/data groups against GNU as. The final frozen
+compiler adds about 0.0114% instructions at O0 and 0.0179% at O3 versus the
+pre-assembly baseline, with byte-identical output objects. These are compile
+instruction observations, not wall-time measurements.
+
+The LowIR documentation audit now requires record spellings in code markup, so
+ordinary prose cannot mask a missing documented record. Student material names
+module expansion and its limits. Symbol-dependent expressions, sharing macros
+with inline statements, CFI/unwind, broader ISA/register coverage and original
+Rust integration remain open. Earlier 94-case native Mac checkpoints passed
+LLVM18/21; the current module/macro checkpoint needs its own native Mac run.
