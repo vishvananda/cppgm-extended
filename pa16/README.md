@@ -66,6 +66,17 @@ for that specialization is nondependent, so its member types do not require
 `typename`. Body-local expressions need no shared expression key to establish
 this fact; arguments that name template parameters remain dependent.
 
+### Defaulted constructors and constant values
+
+For defaulted scalar constructors, this course follows CWG 1360 and its adopted
+resolution in `doc/cwg/paper-p2448r2.txt` (under the repository root).
+Scalar members without initializers do not disqualify the defaulted constructor
+from constant evaluation. Value-initialization zero-initializes those members
+before invoking the constructor. Default-initialization can leave them
+indeterminate; a required constant object or an indeterminate read still fails
+constant evaluation. Keep constructor eligibility separate from the initialized
+values of each actual object.
+
 ### Constant initialization of nonliteral objects
 
 A static object's constexpr constructor can initialize nonliteral base and
