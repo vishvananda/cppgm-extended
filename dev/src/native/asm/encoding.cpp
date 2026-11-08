@@ -31,7 +31,8 @@ void integer(Assembler& out, const assembly::Instruction& inst, const Form& form
 	const Operand& src = inst.operands[1];
 	const unsigned bits = integer_width(inst, suffix);
 	if (form.bits != 0 &&
-		(bits != form.bits || dst.kind != OperandKind::Register || src.kind != OperandKind::Immediate))
+		(bits != form.bits || dst.kind != OperandKind::Register ||
+			(src.kind != OperandKind::Immediate && src.kind != OperandKind::Symbol)))
 		fail(inst, "this absolute move form requires a 64-bit register and immediate");
 	const unsigned bytes = bits / 8;
 	if (src.kind == OperandKind::Symbol)
@@ -67,6 +68,12 @@ void integer(Assembler& out, const assembly::Instruction& inst, const Form& form
 				if (bits != 64 && !fits_operation(value, bytes))
 					fail(inst, "immediate exceeds the destination width");
 				const Reg reg = physical(dst.reg, inst);
+				if (wide && form.bits == 0 && fits_i32(value))
+				{
+					out.op(0, true, 0xc7, 1, 0, RM::r(reg), false, 4);
+					out.imm(value, 4);
+					return;
+				}
 				// Byte B0+r needs the same low-byte REX rule as ModRM.
 				if (byte_regs && reg >= 4 && reg < 8)
 					out.byte(0x40);
@@ -150,7 +157,7 @@ void vector(Assembler& out, const assembly::Instruction& inst, const Form& form)
 void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 {
 	uint16_t suffix = 0;
-	const Form* form = asm_detail::assembly_form(inst.mnemonic, suffix);
+	const Form* form = asm_detail::assembly_form(inst.mnemonic, suffix, static_cast<uint32_t>(inst.operands.size()));
 	if (form == nullptr)
 		fail(inst, "instruction form is not implemented");
 	if (form->encoding == Encoding::Control)

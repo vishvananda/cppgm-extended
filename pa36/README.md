@@ -81,7 +81,13 @@ unary arithmetic, shifts/rotates, `test`, multiply forms and
 scans/counts, byte reversal, bit tests/updates, double shifts and wide
 compare/exchange. Sign/zero-extension moves have distinct source and destination
 widths, including their AT&T names; reject invalid high-byte/REX combinations.
-Feature-dependent native observations must check the host CPU before execution. Validate `lock` against a lockable memory destination and
+Feature-dependent native observations must check the host CPU before execution.
+Preserve scalar SSE move bits and memory widths, including NaN payloads.
+Distinguish scalar-double `movsd` from its zero-operand 32-bit string form.
+Both dialects' string spellings are supported. Immediate moves preserve flags;
+explicit `movabs` accepts numeric and typed symbol addresses, including addends.
+Nonreturning packets have no outputs and use an explicit `unreachable`
+continuation in LowIR. Validate `lock` against a lockable memory destination and
 repeat prefixes against string instructions. Implicit register operands and
 their clobbers remain the producer's responsibility.
 Support named and numeric local labels, forward/backward numeric references,
@@ -136,6 +142,8 @@ These targets use the shared Perl parallel runner and comparer. Set
 when iterating. Set both `CXX` and
 `CPPGM_HOST_CXX` when selecting a host toolchain. The observer needs `objdump`
 on Linux or `otool` on Intel macOS.
+A fixture using absolute text addresses declares `no-pie` in its
+`.assembly-link-mode` sidecar; other fixtures use the host's default link mode.
 
 Tests check native behavior, complete value bits, guard bytes, ABI preservation,
 output ordering and LowIR roundtrips. Portable source cases also run with the host

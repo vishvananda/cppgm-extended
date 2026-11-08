@@ -500,3 +500,34 @@ definition after an earlier function using it; Clang's integrated path behaves
 differently. Preserve explicit module ordering/environment epochs rather than
 hoisting all global assembly into every function's environment. This work,
 directives/CFI, wider ISA/register support and Rust qualification remain open.
+
+
+## 2026-11-08 checkpoint: scalar moves and nonreturning packets
+
+Scalar SSE moves preserve bits, including NaN payloads, and their memory widths.
+Instruction form selection distinguishes scalar-double `movsd` from the
+zero-operand dword string form; Intel and AT&T string names are qualified.
+Ordinary sign-extended 64-bit immediate moves use their shorter encoding,
+while explicit `movabs` retains the absolute form. Typed symbol immediates and
+addends are accepted by `movabs`. Absolute-text-address fixtures explicitly
+request a non-PIE observer executable through a validated link-mode sidecar.
+Ordinary fixtures retain the host link defaults.
+
+Nonreturning packets have no output operands and require an immediately
+following `unreachable` instruction. Native emission preserves their effects
+before divergence. Raw assembly-defined functions remain opaque ABI definitions:
+the marker does not infer that an assembly function containing an ABI return
+is nonreturning. A native observer checks both behaviors independently.
+
+94 optional fixtures pass at O0/O2/O3 with GCC/Clang observers and the self-built
+compiler. Strict report8099/8099, debug checks, selfhost PA5, inception equality,
+PA35 smoke, harness, mandatory audits and placement checks pass. The independent
+corpus has19394 encodings per dialect, zero mismatches after112 legal prefix
+order variants; all207 declared form mnemonics occur in the corpus.
+
+Frozen compile instruction work versus the pre-assembly baseline changes by
++0.01055% at O0 and +0.02993% at O3, with byte-identical output. The O3 measurement
+was interrupted and repeated as a fresh pair; both completed measurements and
+the interrupted raw logs remain retained. Fresh export and CI follow this
+checkpoint. Module assembly, directives/CFI, wider ISA/classes and Rust producer
+qualification remain incomplete; Godot is paused.
