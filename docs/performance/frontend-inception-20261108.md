@@ -124,13 +124,22 @@ Those calibrations limit interpretation of a one-percentage-point move.
 | Select 32-bit unsigned bitwise and short logical shifts | High-bit/wider-reader checks agree with GCC and Clang at O0–O3; 86 of 321 self-build objects change, but measured compiler instructions and CPU are essentially flat | Withhold |
 | Track local register equality with value numbers | PA33 driver checks pass 396/396; more copies disappear on two controls, but the compile-work effect is tiny | Retain as a prototype for the next investigation |
 
-The type-key, dataflow and width experiments remain outside production sources.
+The type-key and integer-width experiments remain outside production sources.
+The revised register-home dataflow implementation is evaluated separately in
+the codegen-pass measurements below.
 No benchmark-specific source checks, instruction sequences or magic values are
 used to select a program for optimization.
 
-## Next codegen work
+## Codegen work
 
-1. **Carry register equivalence across joins.** In the generated type hash,
+1. **Reduce the cost of producing the existing machine code.** Include
+   allocation, machine cleanup and layout in the compile-time investigation.
+   Profile repeated graph construction, unchanged dataflow inputs, register
+   effects and unnecessary queries. Preserve typed facts and respect the
+   mutations that invalidate them. The first change makes register-home
+   forwarding cheaper; [the measurements](codegen-pass-efficiency-20261108.md)
+   include a frozen compiler rebuild with byte-identical output.
+2. **Carry register equivalence across joins.** In the generated type hash,
    incoming phi transfers leave two registers equal, then the join copies one
    back into the other. Local copy cleanup forgets that equality at the block
    boundary. Model equivalence partitions over all incoming edges, with writes
@@ -138,22 +147,25 @@ used to select a program for optimization.
    postorder and changed-predecessor scheduling. Account for every mid-block
    exit, exceptional entry, addressed label and inline-assembly clobber. Reuse
    CFG and instruction-effect facts; avoid repeated unbounded backward scans.
-2. **Give loop constants an economical register lifetime.** The same hash's
+3. **Give loop constants an economical register lifetime.** The same hash's
    wide multiplier is materialized into the emitter scratch on each iteration;
    GCC retains it in a register. Expose materialization and register effects at
    the appropriate machine stage so allocation can weigh reuse against
    pressure. Scratch-register lifetime assumptions and hidden emitter clobbers
    must remain valid. Do not merely retain a scratch value across a label.
-3. **Continue frontend attribution before changing containers.** Separate
+4. **Continue frontend attribution before changing containers.** Separate
    extra instantiated entities from work per entity, then target repeated
    structural or already-published facts. Preserve definition-point lookup,
    substitution, access and completion dependencies. Avoid global caches whose
    invalidation introduces speculative hot-path work.
 
-Each step needs reduced behavior tests, broad cost bounds where useful,
-immutable compiler controls and an existing-workload sanity check. Tests
+Use reduced behavior tests for new behavior or generated-code improvements,
+broad cost bounds where useful, immutable compiler controls and an
+existing-workload sanity check. Tests
 should permit different registers, instructions and block layouts. Accept a
-codegen change only after it improves execution and its compile cost is justified.
+change to generated code only after it improves execution and its compile cost
+is justified. An implementation change that produces the same code qualifies
+through lower compilation cost and byte-for-byte output checks instead.
 
 ## Validation of the fact-cache candidate
 

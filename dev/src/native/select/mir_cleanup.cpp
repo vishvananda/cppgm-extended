@@ -688,6 +688,24 @@ unsigned held_bytes(int32_t h)
 	return (h & 7) == 0 ? 8u : static_cast<unsigned>(h & 7);
 }
 
+// Without a direct frame read, this pass has no rewrite to perform.
+bool has_frame_read(const Function& function)
+{
+	for (const Inst& inst : function.insts)
+	{
+		if ((inst.flags & MF_VOLATILE) || (inst.op != Op::Load && inst.op != Op::Cmp && inst.op != Op::Test))
+			continue;
+		for (unsigned k = 0; k < inst.nops; ++k)
+		{
+			const Operand& operand = inst.ops[k];
+			if (operand.kind == OperandKind::Mem && operand.reg == kFrame && operand.index == kNoReg &&
+				operand.symbol == lowir::kNoId)
+				return true;
+		}
+	}
+	return false;
+}
+
 // forward_home_reloads' dataflow: per block, the frame home each GPR holds
 // at its start (the meet of its predecessors' ends) and the transfer
 // through its instructions.
@@ -944,7 +962,6 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 		}
 		int32_t offset = 0;
 		const bool wide = inst.type == lowir::TypeKind::I64 || inst.type == lowir::TypeKind::Ptr;
-		const unsigned bytes = wide ? 8 : register_bytes(inst.type);
 		// A volatile access reads or writes memory each time: nothing
 		// forwards to or from its location.
 		if (inst.flags & MF_VOLATILE)
@@ -965,22 +982,26 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 			return kNoReg;
 		};
 		// A narrow reload extends the holder's low bytes as the load would.
-		if (inst.op == Op::Load && !wide && bytes < 8 && plain_gpr(inst.ops[0]) && frame_slot(inst.ops[1], offset) &&
+		if (inst.op == Op::Load && !wide && plain_gpr(inst.ops[0]) && frame_slot(inst.ops[1], offset) &&
 			(offset & 7) == 0)
 		{
-			const Reg dst = inst.ops[0].reg;
-			const Reg holder = holder_of(offset, bytes);
-			holds[dst] = dst == R11 ? kHoldsNothing : held(offset, bytes);
-			if (!rewrite || holder == kNoReg)
+			const unsigned bytes = register_bytes(inst.type);
+			if (bytes < 8)
+			{
+				const Reg dst = inst.ops[0].reg;
+				const Reg holder = rewrite ? holder_of(offset, bytes) : kNoReg;
+				holds[dst] = dst == R11 ? kHoldsNothing : held(offset, bytes);
+				if (!rewrite || holder == kNoReg)
+					continue;
+				const lowir::TypeKind type = inst.type;
+				const bool sign = type == lowir::TypeKind::I8 || type == lowir::TypeKind::I16 ||
+					type == lowir::TypeKind::I32;
+				inst.op = sign ? Op::Sext : Op::Zext;
+				inst.type = type == lowir::TypeKind::I1 ? lowir::TypeKind::U8 : type;
+				inst.ops[1] = Operand::make_reg(holder);
+				++removed_;
 				continue;
-			const lowir::TypeKind type = inst.type;
-			const bool sign = type == lowir::TypeKind::I8 || type == lowir::TypeKind::I16 ||
-				type == lowir::TypeKind::I32;
-			inst.op = sign ? Op::Sext : Op::Zext;
-			inst.type = type == lowir::TypeKind::I1 ? lowir::TypeKind::U8 : type;
-			inst.ops[1] = Operand::make_reg(holder);
-			++removed_;
-			continue;
+			}
 		}
 		// A compare or test reading a home the holder covers reads it.
 		if ((inst.op == Op::Cmp || inst.op == Op::Test) && rewrite)
@@ -997,7 +1018,7 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 		if (inst.op == Op::Load && wide && plain_gpr(inst.ops[0]) && frame_slot(inst.ops[1], offset))
 		{
 			const Reg dst = inst.ops[0].reg;
-			const Reg holder = holder_of(offset, 8);
+			const Reg holder = rewrite ? holder_of(offset, 8) : kNoReg;
 			holds[dst] = dst == R11 || (offset & 7) != 0 ? kHoldsNothing : offset;
 			if (!rewrite || holder == kNoReg)
 				continue;
@@ -1021,6 +1042,7 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 		}
 		if (inst.op == Op::Store && frame_slot(inst.ops[0], offset))
 		{
+			const unsigned bytes = wide ? 8 : register_bytes(inst.type);
 			forget_home(offset, offset + static_cast<int32_t>(bytes));
 			if (plain_gpr(inst.ops[1]) && inst.ops[1].reg != R11 && (offset & 7) == 0 &&
 				(bytes == 8 || bytes == 4 || bytes == 2 || bytes == 1))
@@ -1032,6 +1054,7 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 			inst.nops > 0 && inst.ops[0].kind == OperandKind::Mem;
 		if (rmw && frame_slot(inst.ops[0], offset))
 		{
+			const unsigned bytes = wide ? 8 : register_bytes(inst.type);
 			forget_home(offset, offset + static_cast<int32_t>(bytes));
 			continue;
 		}
@@ -1052,53 +1075,72 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 
 uint32_t HomeForwarding::run()
 {
+	if (n_ == 0 || f_.stack_size == 0 || !has_frame_read(f_))
+		return 0;
 	for (const FrameBinding& binding : f_.bindings)
 		if (binding.kind != BindingKind::Slot && !binding.type.is_object() &&
 			binding.type.kind() != lowir::TypeKind::F80 && binding.type.kind() != lowir::TypeKind::I128)
 			homes_.push_back(binding.offset);
 	std::sort(homes_.begin(), homes_.end());
-	if (n_ == 0 || f_.stack_size == 0)
-		return 0;
 	edges();
 	// The available holders to a fixed point (each state only falls:
 	// any, then one home, then none), then the rewrite from them.
 	std::vector<int32_t> out(static_cast<size_t>(n_) * 16, kHoldsAny);
 	std::vector<int32_t> in(static_cast<size_t>(n_) * 16, kHoldsNothing);
+	// Visit contiguous register rows instead of rescanning the predecessor list
+	// separately for every register. The meet and predecessor order are unchanged.
 	auto meet = [&](uint32_t b, int32_t* holds) {
-		for (Reg r = 0; r < 16; ++r)
+		const uint32_t first = pred_first_[b], past = pred_first_[b + 1];
+		if (cut_[b] || first == past)
 		{
-			int32_t h = cut_[b] || pred_first_[b] == pred_first_[b + 1] ? kHoldsNothing : kHoldsAny;
-			for (uint32_t k = pred_first_[b]; k < pred_first_[b + 1]; ++k)
-			{
-				const uint32_t p = preds_[k];
-				const int32_t o = out[static_cast<size_t>(p) * 16 + r];
-				h = h == kHoldsAny ? o : (o == kHoldsAny || o == h ? h : kHoldsNothing);
-			}
-			holds[r] = h == kHoldsAny ? kHoldsNothing : h;
+			std::fill(holds, holds + 16, kHoldsNothing);
+			return;
 		}
+		const int32_t* source = &out[static_cast<size_t>(preds_[first]) * 16];
+		std::copy(source, source + 16, holds);
+		for (uint32_t k = first + 1; k < past; ++k)
+		{
+			source = &out[static_cast<size_t>(preds_[k]) * 16];
+			for (Reg r = 0; r < 16; ++r)
+			{
+				const int32_t h = holds[r], o = source[r];
+				holds[r] = h == kHoldsAny ? o : (o == kHoldsAny || o == h ? h : kHoldsNothing);
+			}
+		}
+		for (Reg r = 0; r < 16; ++r)
+			if (holds[r] == kHoldsAny)
+				holds[r] = kHoldsNothing;
 	};
 	// A block met with the input of its last evaluation leaves the same
 	// output (transfer reads nothing else without rewriting): skipped.
+	// 0: not visited, 1: clean, 2: a predecessor output changed. Keep the same
+	// reverse-postorder rounds; a clean block does not even need another meet.
 	std::vector<uint8_t> evaluated(n_, 0);
 	for (bool changed = true; changed;)
 	{
 		changed = false;
 		for (uint32_t b : order_)
 		{
+			const uint8_t state = evaluated[b];
+			if (state == 1)
+				continue;
+			evaluated[b] = 1;
 			int32_t holds[16];
 			meet(b, holds);
 			int32_t* const block_in = &in[static_cast<size_t>(b) * 16];
-			if (evaluated[b] && std::equal(holds, holds + 16, block_in))
+			if (state != 0 && std::equal(holds, holds + 16, block_in))
 				continue;
-			evaluated[b] = 1;
 			std::copy(holds, holds + 16, block_in);
 			transfer(b, holds, false);
-			for (Reg r = 0; r < 16; ++r)
-				if (out[static_cast<size_t>(b) * 16 + r] != holds[r])
-				{
-					out[static_cast<size_t>(b) * 16 + r] = holds[r];
-					changed = true;
-				}
+			int32_t* const block_out = &out[static_cast<size_t>(b) * 16];
+			if (!std::equal(holds, holds + 16, block_out))
+			{
+				std::copy(holds, holds + 16, block_out);
+				changed = true;
+				for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
+					if (evaluated[succs_[k]] != 0)
+						evaluated[succs_[k]] = 2;
+			}
 		}
 	}
 	for (uint32_t b : order_)
