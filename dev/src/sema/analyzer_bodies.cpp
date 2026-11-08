@@ -1246,6 +1246,11 @@ void Analyzer::call_names(const syntax::CallExpr& call, Scope* scope, bool uneva
 		!unqualified(scope, name.last().identifier, LookupFilter::Ordinary).found())
 		return;
 	const Binding* callee = check_id_expression(name, scope, !call.arguments.empty(), true);
+	// The lookup itself is unevaluated, but a named callable object is an
+	// evaluated use in a call. Generic-lambda capture discovery must retain
+	// it just as it retains names used as other expression operands.
+	if (capture_scan_ != nullptr && callee != nullptr && !unevaluated)
+		scan_capture(callee, call.callee->location);
 	// An operator-function-id callee (`operator+(t, t)`) is looked up with
 	// the operator's own rules where it is instantiated.
 	if (callee == nullptr && template_depth_ != 0 && !name.qualified() &&

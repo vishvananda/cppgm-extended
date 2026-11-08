@@ -1063,8 +1063,15 @@ const Type* Analyzer::template_default(const TemplateHead* head, const Type* con
 		const DeductionHeadOrigins& origins = *head->deduction_origins;
 		if (index < origins.outer->count)
 			return template_default(origins.outer, arguments, index, arguments_dependent, substitution, named_in);
-		const Type* result = template_default(origins.inner, arguments + origins.outer->count,
-			index - origins.outer->count, arguments_dependent, substitution, named_in);
+		// A constructor's default can evaluate a class parameter (including
+		// sizeof... of a class pack) before it yields a type to substitute.
+		// Bind that outer context before evaluating the inner default, while
+		// retaining the constructor head's original parameter positions.
+		const uint32_t inner_index = index - origins.outer->count;
+		Scope* context = named_in != nullptr ? named_in : origins.inner->default_scopes[inner_index]->parent;
+		context = substituted_scope(context, substitution_of(origins.outer, arguments));
+		const Type* result = template_default(
+			origins.inner, arguments + origins.outer->count, inner_index, arguments_dependent, substitution, context);
 		return result != nullptr ? substitute(result, substitution_of(origins.outer, arguments)) : nullptr;
 	}
 	// 14.1p9: parameter `index`'s default argument, analyzed with the

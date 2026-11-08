@@ -191,3 +191,44 @@ unit. Its binary/configuration records live in native-reference-qualified.json.
 No final paired LLVM build timing or cppgm object-equality comparison is claimed
 until cppgm-built LLVM is available. All initial failed setup/build observations
 remain retained as qualification evidence.
+
+Third validated fix block: template binding contexts
+---------------------------------------------------
+A named callable in a generic-lambda call now participates in capture discovery
+using the binding already found by callee lookup. Capture-default by-copy and
+by-reference cases work; unevaluated calls still capture nothing. The owning
+PA29 C++14 runtime group covers recursive invocation, captured callables and
+an empty closure that uses a callable only inside sizeof.
+
+Implicit constructor-guide defaults now bind the enclosing class parameters
+before evaluating their expressions, retaining the constructor head's own
+positions. A PA29 C++17 runtime group checks class-pack cardinality and SFINAE
+for both a plain and allocator-shaped constructor. Both groups reject with
+the accepted parent and pass with GCC, Clang and the candidate. References
+were generated through the owning harness and require successful execution.
+
+Strict 9860/9860, debug, modern, PA5 self-host, architecture/format/file/placement
+and CWG checks, fresh student export and all 42 installed reference wrappers
+pass; the two new runtime groups also pass in that exported client. Normal
+frozen instruction ratios are 1.000064 at O0 and 0.999998 at O3, with identical
+objects. The quick self/seed ratios and kernels remain effectively unchanged,
+with zero behavior failures. Binaries and source hashes are retained in
+compiler-block3/ and block3-validation.json outside this checkout.
+
+LLVM UnicodeNameToCodepoint.cpp and DirectiveEmitter.cpp now compile. The
+ClangASTNodesEmitter.cpp replay advances beyond the direct class-pack default,
+then exposes a second default-context gap: a boolean constructor default calls
+a constexpr static class helper whose definition still sees an unbound outer
+pack. A tiny helper-with-boolean-default reducer reproduces it. This failure
+remains open; the first direct-pack fix does not claim to resolve it.
+
+The private-base failure also has a small C++11 reducer now. It requires the
+derived class to live in a nested namespace; unqualified friend-class lookup
+fails to search the inherited injected-class-name before reaching that
+namespace. Simple CRTP examples in the template's namespace do not expose it.
+
+PR #117's final long benchmark job is now successful: all eight CI runs pass.
+Its public artifact independently verifies 14 successful rebuilds per GCC/
+Clang comparison, identical objects and compiler outputs within each pair,
+and matching native builtin host configurations. The merged PR description
+records these links; main remains fast-forwarded to 67f175d75 as requested.

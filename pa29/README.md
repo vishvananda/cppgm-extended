@@ -296,6 +296,9 @@ parameters (including packs and forwarding), initialized lambda captures, and
 pack-expanded using-declarations. An initialized capture deduces its type from
 its initializer in the enclosing scope; its new name is visible in the lambda
 body. Preserve reference binding, moves, and cleanup if a later capture throws.
+Generic-lambda capture discovery includes callable objects named as callees;
+unevaluated calls do not acquire captures. Keep recursive generic calls bound
+to their parameters and captured objects through the closure's stored members.
 An explicit lambda trailing return type can itself be `auto` in C++14 and
 later; deduce it from the body while preserving `decltype(auto)`'s reference
 semantics and the restrictions on nested function types.
@@ -339,6 +342,8 @@ added after an earlier deduction, and prefer a declared guide when otherwise
 tied with an implicit guide. Reject invalid result types, equivalent guide
 declarations and explicit-guide selection in copy-list initialization; ordinary
 copy initialization considers only non-explicit candidates.
+Implicit constructor guides retain the class template's context while
+evaluating constructor-template defaults, including class parameter packs.
 
 Placeholder non-type template parameters (`auto`, `auto*`, `auto&` and
 `decltype(auto)`) deduce the argument's type as well as its value. Preserve
