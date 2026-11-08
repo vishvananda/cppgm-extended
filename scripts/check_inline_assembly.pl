@@ -70,11 +70,25 @@ sub command
 	return read_file("$directory/$step.stdout");
 }
 
+# Absolute text addresses require an explicitly non-PIE executable. The fixture
+# declares the linkage requirement; ordinary fixtures retain the host default.
+my @fixture_link;
+sub fixture_link_options
+{
+	my ($test) = @_;
+	$test =~ s/\.t$/.assembly-link-mode/;
+	return () if !-f $test;
+	my $mode = read_file($test);
+	$mode =~ s/\s+\z//;
+	die "$test: unknown assembly link mode '$mode'\n" if $mode ne 'no-pie';
+	return $^O eq 'darwin' ? ('-Wl,-no_pie') : ('-no-pie');
+}
+
 sub observe
 {
 	my ($directory, $label, $object, $driver) = @_;
 	my $program = "$directory/$label.program";
-	command($directory, "$label.link", @host, '-std=c++11', '-O2', @stdlib,
+	command($directory, "$label.link", @host, '-std=c++11', '-O2', @stdlib, @fixture_link,
 		$driver, $object, '-o', $program);
 	return command($directory, "$label.run", $program);
 }
@@ -82,6 +96,7 @@ sub observe
 for my $test (@tests)
 {
 	my $source = abs_path($test);
+	@fixture_link = fixture_link_options($test);
 	my $profile = read_file(profile_path($test));
 	$profile =~ s/\s+\z//;
 	die "$test: unknown assembly profile '$profile'\n" if $profile !~ /\A(?:(?:lowir|gnu)(?:-reject)?|gnu-native)\z/;
@@ -146,7 +161,7 @@ for my $test (@tests)
 	}
 	if ($profile eq 'gnu')
 	{
-		command($directory, 'host-compile', @host, '-std=c++11', '-O3', @stdlib,
+		command($directory, 'host-compile', @host, '-std=c++11', '-O3', @stdlib, @fixture_link,
 			'-x', 'c++', $source, $driver, '-o', "$directory/host.program");
 		push @observations, command($directory, 'host-run', "$directory/host.program");
 	}

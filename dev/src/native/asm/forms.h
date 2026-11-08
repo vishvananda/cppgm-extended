@@ -10,7 +10,7 @@ int branch_condition(const std::string& mnemonic);
 using x86_asm_model::Encoding;
 using x86_asm_model::Form;
 
-const Form* assembly_form(const std::string& mnemonic, uint16_t& suffix);
+const Form* assembly_form(const std::string& mnemonic, uint16_t& suffix, uint32_t operand_count);
 
 } // namespace asm_detail
 } // namespace native

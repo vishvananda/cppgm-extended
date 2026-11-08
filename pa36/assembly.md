@@ -144,6 +144,17 @@ structurally valid while requiring an unsupported register class, instruction
 form or control-flow feature. Such cases must fail clearly. The current native
 subset is listed in the [handout](README.md).
 
+## Nonreturning invocations
+
+Property 32 declares an invocation with no ordinary continuation. It has no
+output operands, and its `asm` instruction is immediately followed by LowIR
+`unreachable`. This retains real control flow through validation, optimization
+and native emission; the backend must preserve the assembly's effects before
+it stops. Unwinding remains a separate capability.
+
+This invocation promise does not replace an assembly-defined function's typed
+ABI declaration. Its opaque raw body can return through the ABI it implements.
+
 ## Assembly-defined functions
 
 A function implemented entirely in assembly keeps an ordinary typed declaration

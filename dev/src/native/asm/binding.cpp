@@ -147,8 +147,8 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments)
 {
 	const lowir::AssemblyTemplate& definition = module.templates[id];
-	if ((definition.properties & (AP_UNWIND | AP_NORETURN)) != 0)
-		unsupported("unwinding or divergent assembly");
+	if ((definition.properties & AP_UNWIND) != 0)
+		unsupported("unwinding assembly");
 	std::shared_ptr<AssemblyPlan> plan(new AssemblyPlan());
 	plan->definition = id;
 	for (uint32_t i = 0; i < definition.operand_count; ++i)

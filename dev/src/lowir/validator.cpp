@@ -819,6 +819,9 @@ bool Validator::check_assembly(const Instruction& inst)
 	const AssemblyTemplate& definition = module.templates[static_cast<uint32_t>(inst.immediate)];
 	if (!inst.type.is_void() || inst.extra_count != definition.argument_count)
 		return fail("assembly invocation argument count or effect type mismatch");
+	if ((definition.properties & asm_model::AP_NORETURN) != 0 &&
+		(inst.next >= body_->instructions.size() || body_->instructions[inst.next].op != Opcode::Unreachable))
+		return fail("nonreturning assembly must be followed by unreachable");
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const AssemblyOperand& operand = module.operands[definition.first_operand + i];

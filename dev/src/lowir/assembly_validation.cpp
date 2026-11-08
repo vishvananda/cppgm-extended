@@ -233,6 +233,8 @@ bool template_packet(const AssemblyModule& module, const AssemblyTemplate& site,
 	for (uint32_t i = 0; i < site.operand_count; ++i)
 	{
 		const AssemblyOperand& op = module.operands[site.first_operand + i];
+		if ((site.properties & AP_NORETURN) != 0 && (op.flags & AO_WRITE) != 0)
+			return invalid("nonreturning assembly cannot have outputs", error);
 		selectors += (op.flags & AO_EXIT_TAG) != 0;
 		bool label = false, other = false;
 		for (uint32_t a = 0; a < op.alternative_count; ++a)
