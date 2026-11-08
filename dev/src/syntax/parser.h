@@ -177,8 +177,11 @@ private:
 	// An attribute-specifier-seq, alignas and GNU __attribute__, keeping
 	// the attributes later stages use on `list` (the rest are dropped).
 	bool gnu_attribute(const char* spelling, Attribute& attribute, bool& kept);
-	bool collect_attributes(Attribute*& list) { return !at_attribute() || collect_attribute_specifiers(list); }
-	bool collect_attribute_specifiers(Attribute*& list);
+	bool collect_attributes(Attribute*& list, bool* standard = nullptr)
+	{
+		return !at_attribute() || collect_attribute_specifiers(list, standard);
+	}
+	bool collect_attribute_specifiers(Attribute*& list, bool* standard);
 	bool parse_alignment_operand(Attribute& attribute);
 	// GNU `__typeof__ ( type-id )` or `__typeof__ unary-expression` as a
 	// decltype-specifier of a TypeofOperand (parse_typeof_operand).

@@ -1791,6 +1791,11 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 	// 8.3.6p4 (CWG136): a friend supplying defaults is a definition.
 	if (specifiers.is_friend && info.parameters != nullptr && info.parameters->has_defaults && !definition && !deleted)
 		error(location, "a friend supplying defaults must be a definition");
+	// 14.1p9: the same requirement applies to default template arguments.
+	if (specifiers.is_friend && scope == template_scope_ && template_list_ != nullptr && !definition && !deleted)
+		for (const syntax::TemplateParameter* parameter : template_list_->parameters)
+			if (parameter->default_type != nullptr || parameter->default_value != nullptr)
+				error(location, "a friend template supplying defaults must be a definition");
 	// 14.5.4p9: a friend declaration naming a function template's
 	// specialization has no default arguments and is not inline.
 	if (specifiers.is_friend && info.name->last().has_arguments &&
@@ -1805,7 +1810,7 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 	Scope* friend_block = specifiers.is_friend ? LocalFriendBlock(where) : nullptr;
 	// 11.3p6: a friend definition has an unqualified name and belongs to
 	// a non-local class. Check before the qualified-friend dispatch too.
-	if (specifiers.is_friend && definition && (qualified || friend_block != nullptr))
+	if (specifiers.is_friend && (definition || deleted) && (qualified || friend_block != nullptr))
 		error(location, "a friend definition requires an unqualified name in a non-local class");
 	if (qualified && specifiers.is_friend)
 		return qualified_friend(specifiers, info, scope, location);
@@ -2549,7 +2554,7 @@ void Analyzer::default_definition(FunctionEntity* function, bool first, uint32_t
 		special = kind != CopyKind::None && type->params[0]->is_reference() &&
 			type->element->kind == TypeKind::LValueReference && type->element->element == entity->type;
 	}
-	if (!special)
+	if (!special || type->variadic)
 		error(location, "only special member functions can be defaulted");
 	for (uint32_t i = 0; function->default_arguments != nullptr && i < type->param_count; ++i)
 	{

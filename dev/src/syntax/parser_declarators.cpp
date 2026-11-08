@@ -558,6 +558,7 @@ bool Parser::parse_throw_types(Slice<TypeId*>& out)
 
 bool Parser::parse_function_qualifiers(ListFrame<FunctionQualifier>& qualifiers, Attribute** attributes)
 {
+	bool ref_qualified = false;
 	for (;;)
 	{
 		// A named declarator's GNU attributes among them appertain to the
@@ -585,6 +586,9 @@ bool Parser::parse_function_qualifiers(ListFrame<FunctionQualifier>& qualifiers,
 		}
 		else if (at(TokenKind::OP_AMP) || at(TokenKind::OP_LAND))
 		{
+			if (ref_qualified)
+				return fail();
+			ref_qualified = true;
 			qualifier.kind = FunctionQualifierKind::Ref;
 			qualifier.token = tok().simple;
 			next();

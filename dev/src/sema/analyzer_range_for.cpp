@@ -74,30 +74,7 @@ bool ClosureBody(const SemanticGraph& graph, const FunctionEntity* function)
 
 void Analyzer::range_for(const syntax::RangeForStmt& loop, Scope* scope)
 {
-	// 6.5.4p2: the for-range-declaration's decl-specifiers are
-	// type-specifiers or constexpr (no storage class, function specifier,
-	// typedef or friend).
-	for (const syntax::DeclSpecifier& specifier : loop.specifiers)
-	{
-		if (specifier.kind != syntax::DeclSpecKind::Keyword)
-			continue;
-		switch (specifier.keyword)
-		{
-		case TokenKind::KW_TYPEDEF:
-		case TokenKind::KW_FRIEND:
-		case TokenKind::KW_EXTERN:
-		case TokenKind::KW_STATIC:
-		case TokenKind::KW_REGISTER:
-		case TokenKind::KW_THREAD_LOCAL:
-		case TokenKind::KW_MUTABLE:
-		case TokenKind::KW_INLINE:
-		case TokenKind::KW_VIRTUAL:
-		case TokenKind::KW_EXPLICIT:
-			error(specifier.location, "a for-range-declaration's decl-specifier is no type-specifier or constexpr");
-		default:
-			break;
-		}
-	}
+	condition_specifiers(loop.specifiers);
 	// 6.5.4: the loop's names are the statement's (3.3.3p4: its declaration
 	// is not redeclared in the controlled statement's outermost block).
 	Scope* block = new_scope(ScopeKind::Block, scope, scope, nullptr, nullptr);

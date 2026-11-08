@@ -512,6 +512,7 @@ private:
 	void substatement(const syntax::Stmt& stmt, Scope* scope);
 	bool deferrable_expression(const syntax::Expr* expr, Scope* scope);
 	bool condition(const syntax::Condition& condition, Scope* scope);
+	void condition_specifiers(const syntax::Slice<syntax::DeclSpecifier>& specifiers);
 	void handlers(const syntax::Slice<syntax::Handler>& list, Scope* scope);
 	void expression(const syntax::Expr* expr, Scope* scope);
 	bool typed_initializer(VariableEntity* variable, const Type* type, const syntax::Initializer* initializer,

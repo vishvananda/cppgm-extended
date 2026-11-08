@@ -89,6 +89,9 @@ const char* Analyzer::anonymous_class_label(const syntax::ClassSpecifier& specif
 
 Entity* Analyzer::class_specifier(const syntax::ClassSpecifier& specifier, Scope* scope, Specifiers& out)
 {
+	if (specifier.name != nullptr && !specifier.name->qualified() && scope == template_scope_ &&
+		scope->parent->kind == ScopeKind::TemplateParameters)
+		error(specifier.location, "an unqualified class declaration has extra template parameter lists");
 	const syntax::Name* name = specifier.name;
 	Scope* where = declaration_scope(scope);
 	Scope* print = scope;
@@ -1075,6 +1078,8 @@ EnumEntity* Analyzer::redeclared_enum(const syntax::EnumSpecifier& specifier, Sc
 	if (entry->tag->entity->kind != EntityKind::Enum)
 		error(specifier.location, "enumeration name redeclared as a different kind of type");
 	EnumEntity* entity = static_cast<EnumEntity*>(entry->tag->entity);
+	if (target == member_scope_ && entry->tag->access != member_access())
+		error(specifier.location, "enumeration redeclared with different member access");
 	const Type* expected = underlying;
 	if (expected == nullptr && specifier.scoped)
 		expected = types_.fundamental(FundamentalType::Int);
@@ -1106,6 +1111,8 @@ Entity* Analyzer::enum_specifier(
 	}
 	Scope* where = declaration_scope(scope);
 	const syntax::Name* name = specifier.name;
+	if (lone_declaration && scope == template_scope_ && (name == nullptr || !name->qualified()))
+		error(specifier.location, "an enumeration cannot be declared as a template");
 	if (name != nullptr && name->last().has_arguments)
 		error(name->location, "template-ids are not supported here");
 	// 14.6.1p6: neither an enumeration defined here nor its enumerators
@@ -1230,6 +1237,10 @@ Entity* Analyzer::qualified_enum_definition(
 		explicit_specialization_ = false;
 	}
 	Scope* where = declaration_scope(scope);
+	// 7.2p4: a qualified enum definition appears in an enclosing
+	// namespace, not in a class or block that happens to enclose it.
+	if (where->kind != ScopeKind::Namespace)
+		error(name.location, "a qualified enumeration definition outside a namespace");
 	if (!encloses(where, prefix.scope))
 		error(name.location, "enumeration definition in a scope that does not enclose it");
 	EnumEntity* entity = redeclared_enum(specifier, prefix.scope, underlying);
@@ -1359,6 +1370,10 @@ void Analyzer::enumerators(EnumEntity* entity, const syntax::EnumSpecifier& spec
 		binding->value_dependent = value_dependent;
 		print_in(print, binding);
 		declare_in(lookup, binding);
+		// 7.2p10, 11: an out-of-class definition does not make the
+		// unscoped enumerators public; they retain their enum's access.
+		if (lookup->kind == ScopeKind::Class)
+			binding->access = declaration->access;
 		enumerator_scratch_.push_back(constant);
 	}
 	if (!entity->fixed)

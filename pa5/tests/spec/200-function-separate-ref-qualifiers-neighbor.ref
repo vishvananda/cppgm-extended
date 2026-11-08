@@ -1,0 +1,43 @@
+1 translation units
+start translation unit 1
+translation-unit
+  class-specifier S
+    class-key KW_STRUCT:struct
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_INT:int
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier f
+            parameter-clause
+            ref-qualifier OP_AMP:&
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_INT:int
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier f
+            parameter-clause
+            ref-qualifier OP_LAND:&&
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_INT:int
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier g
+            parameter-clause
+            cv-qualifier KW_CONST:const
+            ref-qualifier OP_AMP:&
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier main
+      parameter-clause
+    compound-statement
+      return-statement
+        literal 0
+end translation unit

@@ -321,6 +321,36 @@ bool Analyzer::deferrable_expression(const syntax::Expr* expr, Scope* scope)
 	return false;
 }
 
+void Analyzer::condition_specifiers(const syntax::Slice<syntax::DeclSpecifier>& specifiers)
+{
+	// 6.4p3, 6.5.4p2: only type-specifiers and constexpr, without a
+	// class or enum definition. Validate the already parsed declaration.
+	for (const syntax::DeclSpecifier& specifier : specifiers)
+	{
+		if (specifier.kind == syntax::DeclSpecKind::Class ||
+			(specifier.kind == syntax::DeclSpecKind::Enum && specifier.enum_specifier->has_body))
+			error(specifier.location, "a condition or range declaration cannot define a type");
+		if (specifier.kind != syntax::DeclSpecKind::Keyword)
+			continue;
+		switch (specifier.keyword)
+		{
+		case TokenKind::KW_TYPEDEF:
+		case TokenKind::KW_FRIEND:
+		case TokenKind::KW_EXTERN:
+		case TokenKind::KW_STATIC:
+		case TokenKind::KW_REGISTER:
+		case TokenKind::KW_THREAD_LOCAL:
+		case TokenKind::KW_MUTABLE:
+		case TokenKind::KW_INLINE:
+		case TokenKind::KW_VIRTUAL:
+		case TokenKind::KW_EXPLICIT:
+			error(specifier.location, "a condition or range declaration requires a type-specifier or constexpr");
+		default:
+			break;
+		}
+	}
+}
+
 bool Analyzer::condition(const syntax::Condition& condition, Scope* scope)
 {
 	// False when the condition's expression is deferred (a declaration's
@@ -332,6 +362,7 @@ bool Analyzer::condition(const syntax::Condition& condition, Scope* scope)
 	if (deferring_reserved_ != 0 && deferred_reserved_call())
 		return false;
 	const syntax::ConditionDeclaration& declaration = *condition.declaration;
+	condition_specifiers(declaration.specifiers);
 	Specifiers specifiers;
 	this->specifiers(declaration.specifiers, scope, specifiers, false);
 	if (deferred_reserved_call())

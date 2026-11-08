@@ -179,7 +179,7 @@ bool Parser::gnu_attribute(const char* spelling, Attribute& attribute, bool& kep
 	return false;
 }
 
-bool Parser::collect_attribute_specifiers(Attribute*& list)
+bool Parser::collect_attribute_specifiers(Attribute*& list, bool* standard)
 {
 	// (collect_attributes calls this at the first attribute.)
 	// attribute-specifier-seq (7.6.1), alignment-specifiers (7.6.2) and GNU
@@ -234,6 +234,8 @@ bool Parser::collect_attribute_specifiers(Attribute*& list)
 		const uint32_t start = location();
 		if (at(TokenKind::OP_LSQUARE))
 		{
+			if (standard != nullptr)
+				*standard = true;
 			next();
 			next();
 			const Identifier* prefix = attribute_using_prefix();
@@ -417,18 +419,22 @@ bool Parser::parse_alignment_operand(Attribute& attribute)
 
 bool Parser::parse_decl_specifiers(ListFrame<DeclSpecifier>& list, SpecifierInfo& info)
 {
+	uint32_t standard_after = 0;
 	for (;;)
 	{
 		// Those after a decl-specifier appertain to the type (7.1p1).
 		Attribute** added = &pending_attributes_;
 		while (*added != nullptr)
 			added = &(*added)->next;
-		if (!collect_attributes(pending_attributes_))
+		bool standard = false;
+		if (!collect_attributes(pending_attributes_, &standard))
 			return false;
 		for (Attribute* attribute = *added; attribute != nullptr && list.size() != 0; attribute = attribute->next)
 			attribute->on_type = true;
 		if (*added != nullptr)
 			type_attributes(*added, list);
+		if (standard && standard_after == 0)
+			standard_after = list.size();
 		const ParseToken token = tok();
 		if (token.kind == ParseTokenKind::Simple)
 		{
@@ -508,6 +514,10 @@ bool Parser::parse_decl_specifiers(ListFrame<DeclSpecifier>& list, SpecifierInfo
 	}
 	if (abandoning_lists_)
 		return false;
+	// The optional attributes end a decl-specifier-seq (7.1p1), even
+	// unknown attributes whose spelling is deliberately not retained.
+	if (standard_after != 0 && list.size() > standard_after)
+		return fail();
 	info.only_int = list.size() == 1 && list.back().kind == DeclSpecKind::Keyword &&
 		list.back().keyword == TokenKind::KW_INT;
 	return true;
@@ -697,6 +707,8 @@ bool Parser::parse_named_type_specifier(ListFrame<DeclSpecifier>& list, Specifie
 		return false;
 	if (!name->global && name->components.size == 1 && name->last().kind == NameComponentKind::Decltype)
 	{
+		if (typename_keyword)
+			return fail();
 		specifier.kind = DeclSpecKind::Decltype;
 		specifier.operand = name->last().decltype_operand;
 	}

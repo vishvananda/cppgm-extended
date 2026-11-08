@@ -37,10 +37,18 @@ Decl* Parser::parse_declaration(DeclContext context, Attribute* leading)
 	} restore(leading_attributes_, leading);
 	if (at_attribute())
 	{
-		if (!collect_attributes(leading_attributes_))
+		bool standard = false;
+		if (!collect_attributes(leading_attributes_, &standard))
 			return nullptr;
 		if (accept(TokenKind::OP_SEMICOLON))
+		{
+			if (standard && context == DeclContext::Class)
+			{
+				fail();
+				return nullptr;
+			}
 			return make<Decl>(DeclKind::Empty, start);
+		}
 	}
 	const ParseToken token = tok();
 	if (token.kind == ParseTokenKind::Simple)
@@ -442,6 +450,11 @@ Decl* Parser::parse_linkage_specification(DeclContext context)
 {
 	LinkageDecl* linkage = make<LinkageDecl>(DeclKind::Linkage, location());
 	next();
+	if (tok().kind == ParseTokenKind::UserDefinedLiteral)
+	{
+		fail();
+		return nullptr;
+	}
 	// The string-literal's contents, without its quotes.
 	const TokenSpelling literal = tok().spelling;
 	linkage->language = TokenSpelling{ literal.text + 1, literal.length >= 2 ? literal.length - 2 : 0 };

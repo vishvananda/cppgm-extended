@@ -995,6 +995,8 @@ void Analyzer::check_type_packs(const Type* type, uint32_t location)
 
 void Analyzer::declare_alias_template(const syntax::AliasDecl& decl, Scope* scope)
 {
+	if (scope->parent->kind == ScopeKind::TemplateParameters)
+		error(decl.location, "an alias template has extra template parameter lists");
 	// 14.5.7p1: the templated alias-declaration's type-id, analyzed in the
 	// template's parameter scope, is the alias template's type; its name is
 	// declared in the enclosing scope, where no other declaration may have
