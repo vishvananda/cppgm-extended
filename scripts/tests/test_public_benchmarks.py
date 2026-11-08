@@ -411,6 +411,13 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(panels[1].attrib['fill'], '#'+pb.badge_color(.80))
         self.assertEqual(int(panels[1].attrib['x']), int(panels[0].attrib['width']))
         self.assertEqual(int(root.attrib['width']), sum(int(node.attrib['width']) for node in panels))
+        for processor, value in [('9V45', '4.02×'), ('E5-2696v4', '0.98×'), ('8370C', 'n/m')]:
+            with self.subTest(processor=processor, value=value):
+                sized = ET.fromstring(publication.badge_svg(dict(label='speed', left_label=processor,
+                                                                 message=value, color='475569')))
+                self.assertEqual((sized.attrib['width'], sized.attrib['height']), ('160', '24'))
+                parts = sized.find(ns+'g').findall(ns+'rect')
+                self.assertEqual([node.attrib['width'] for node in parts], ['96', '64'])
 
     def test_badge_turns_red_on_a_failure(self):
         results = [outcome('p', dict(compile_cpu_O0=1.0, run_cpu_O0=1.0),

@@ -22,7 +22,7 @@
     },
     "tests-native": {
       "label": "Internal C++ subset \u00b7 all three compilers",
-      "message": "5,614 compile; 1,210 run",
+      "message": "5,614 / 1,210",
       "color": "166534",
       "target": "docs/performance/preview/internal.md"
     },
@@ -848,5 +848,11 @@
     "EPYC (hosted)",
     "Xeon E5 (dedicated or local, identified per badge)",
     "Xeon 8370C (hosted)"
-  ]
+  ],
+  "badge_dimensions": {
+    "width": 160,
+    "height": 24,
+    "processor_width": 96,
+    "value_width": 64
+  }
 }

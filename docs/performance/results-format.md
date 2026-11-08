@@ -27,6 +27,10 @@ link. Each badge has a gray processor label on the left and the numeric value
 on a colored right panel. Missing values use a gray `n/m` panel. Performance
 colors vary continuously using `public_benchmarks.badge_color`, reaching full
 red at 0.50× or below; yellow and orange panels use dark text for readability.
+Every badge is 160×24 pixels, with 96-pixel processor and 64-pixel value panels.
+The README uses explicit image dimensions and non-wrapping metric headings in
+HTML tables so GitHub scrolls the table on phones instead of shrinking badges
+by different amounts in each column.
 
 Within each host table, use:
 
