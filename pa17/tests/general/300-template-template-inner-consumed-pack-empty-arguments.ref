@@ -1,0 +1,6 @@
+declare global @Outer_int___Member____count : i32 [binding=weak, object=_ZN5OuterIJiEE6MemberIJEE5countE]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

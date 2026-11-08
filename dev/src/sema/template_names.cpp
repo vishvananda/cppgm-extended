@@ -227,6 +227,8 @@ void Analyzer::template_head_packs(const TemplateHead* head, TypeList& bound)
 	for (uint32_t i = 0; i < head->count; ++i)
 	{
 		const TemplateParameterEntity* parameter = head->parameters[i];
+		if (parameter->pack)
+			continue;
 		if (parameter->template_template && parameter->template_head != nullptr)
 			template_head_packs(parameter->template_head, bound);
 		else if (parameter->value_type != nullptr)
@@ -319,6 +321,50 @@ bool Analyzer::template_heads_match(
 	// parameters and packs of its kind. An argument's pack matches only such
 	// a pack (p2's example: `X<C>` is ill-formed, a template parameter pack
 	// does not match a template parameter).
+	// An inner non-type pack consumes its own outer packs. Its known
+	// expansion is a fixed sequence in this head, not an unconstrained
+	// pack and not a controller of the enclosing template-parameter pack.
+	std::vector<TemplateParameterEntity> expanded;
+	bool changed = false;
+	for (uint32_t i = 0; i < parameter->count; ++i)
+	{
+		const TemplateParameterEntity* p = parameter->parameters[i];
+		PackList packs;
+		TypeList bound;
+		if (p->pack && p->non_type)
+			unexpanded_packs(p->value_type, kAnyDepth, packs, &bound);
+		if (bound.empty())
+		{
+			if (changed)
+				expanded.push_back(*p);
+			continue;
+		}
+		if (!changed)
+			for (uint32_t j = 0; j < i; ++j)
+				expanded.push_back(*parameter->parameters[j]);
+		TypeList types;
+		const Type* pattern = types_.expansion(p->value_type);
+		substitute_list(&pattern, 1, Substitution{ p->depth, nullptr, 0 }, types);
+		for (const Type* type : types)
+		{
+			if (type == nullptr || type->kind == TypeKind::Expansion)
+				return false;
+			expanded.push_back(*p);
+			expanded.back().pack = false;
+			expanded.back().value_type = type;
+		}
+		changed = true;
+	}
+	if (changed)
+	{
+		std::vector<TemplateParameterEntity*> parameters;
+		for (TemplateParameterEntity& p : expanded)
+			parameters.push_back(&p);
+		TemplateHead head = *parameter;
+		head.count = static_cast<uint32_t>(parameters.size());
+		head.parameters = parameters.data();
+		return template_heads_match(&head, argument, selection);
+	}
 	uint32_t next = 0;
 	for (uint32_t i = 0; i < argument->count; ++i)
 	{

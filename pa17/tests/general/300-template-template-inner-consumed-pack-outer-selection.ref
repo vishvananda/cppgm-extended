@@ -1,0 +1,8 @@
+declare global @Outer_int_char___Member_IntFirst_CharFirst___count : i32 [binding=weak, object=_ZN5OuterIJicEE6MemberIJ8IntFirst9CharFirstEE5countE]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = cmp ne i32 2, 2
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
+}
