@@ -1,6 +1,7 @@
 #include "native/x86/emitter.h"
 #include "native/asm/binding.h"
 #include "native/asm/encoding.h"
+#include "native/asm/mask_forms.h"
 #include "native/asm/vex_forms.h"
 
 #include <algorithm>
@@ -256,10 +257,17 @@ void FunctionEmitter::emit(const Function& function)
 	function_ = &function;
 	calls_out_ = function.omit_frame_pointer && calls_out(function);
 	std::vector<uint8_t>& text = image_.text();
-	while (text.size() % 16 != 0)
+	uint32_t assembly_alignment = 1;
+	if (function.assembly)
+		for (const auto& plan : function.assembly->plans)
+			for (const auto& inst : plan->instructions)
+				assembly_alignment = std::max(assembly_alignment, inst.alignment);
+	const uint32_t code_alignment = std::max(16u, assembly_alignment);
+	while (text.size() % code_alignment != 0)
 		text.push_back(0xcc);
 	base_ = text.size();
 	image_.define(function.symbol, Section::Text, base_);
+	image_.align_code(function.symbol, code_alignment);
 	short_.clear();
 	branch_offset_.clear();
 	branch_label_.clear();
@@ -279,9 +287,15 @@ void FunctionEmitter::emit(const Function& function)
 	relax_target_.resize(branches);
 	for (size_t i = 0; i < branches; ++i)
 		relax_target_[i] = asm_.label_position(branch_label_[i]);
-	find_loop_heads(function);
+	if (assembly_alignment <= 1)
+		find_loop_heads(function);
+	else
+	{
+		loop_heads_.clear();
+		loop_padding_.assign(1, 0);
+	}
 	relax_saved_.assign(branches + 1, 0);
-	const unsigned passes = function.branches_laid_out ? kRelaxPasses : 1;
+	const unsigned passes = assembly_alignment > 1 ? 0 : function.branches_laid_out ? kRelaxPasses : 1;
 	bool shortened = false;
 	for (unsigned pass = 0; pass < passes; ++pass)
 	{
@@ -332,6 +346,8 @@ void FunctionEmitter::emit(const Function& function)
 	}
 	if (!asm_.resolve_labels())
 		throw InternalError("branch out of range");
+	for (const lowir::CodeLabel& label : function.code_labels)
+		image_.define(label.symbol, Section::Text, asm_.label_position(labels_[label.block]));
 	image_.add_code_fixups(asm_.fixups(), 0);
 	stats_.fixups += asm_.fixups().size();
 	asm_.fixups().clear();
@@ -622,7 +638,8 @@ void FunctionEmitter::encode(const Function& function)
 	rsp_shift_ = 0;
 	dynamic_stack_ = function.eh_records_pushed;
 	for (size_t i = 0; i < function.insts.size() && !dynamic_stack_; ++i)
-		dynamic_stack_ = function.insts[i].op == Op::StackAlloc;
+		dynamic_stack_ = function.insts[i].op == Op::StackAlloc || function.insts[i].op == Op::StackSave ||
+			function.insts[i].op == Op::StackRestore;
 	omit_fp_ = function.omit_frame_pointer && !dynamic_stack_ && eh_model_ == EhModel::Host;
 	unwind_.frameless = omit_fp_;
 	current_ = 0;
@@ -1143,8 +1160,14 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	{
 		const AssemblyPlan& plan = *function.assembly->plans[static_cast<uint32_t>(a.imm)];
 		if (plan.transfer_bytes != 0)
-			encode_assembly_vector_transfer(
-				asm_, plan.transfer_register, rm(b), plan.transfer_store, plan.transfer_bytes);
+		{
+			if (plan.transfer_register.bank == asm_model::RegisterBank::Mask)
+				encode_assembly_mask_transfer(
+					asm_, plan.transfer_register, rm(b), plan.transfer_store, plan.transfer_bytes);
+			else
+				encode_assembly_vector_transfer(
+					asm_, plan.transfer_register, rm(b), plan.transfer_store, plan.transfer_bytes);
+		}
 		else
 			encode_assembly(asm_, plan.instructions, inst.nops == 2 ? rm(b) : RM());
 		break;
@@ -1276,6 +1299,9 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	case Op::Jmp:
 		branch(CC_O, false, labels_[a.symbol]);
 		break;
+	case Op::IndirectJump:
+		asm_.jmp_rm(rm(a));
+		break;
 	case Op::JumpTable:
 		jump_table(inst);
 		break;
@@ -1374,6 +1400,16 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	}
 	case Op::VaArg:
 		variadic_argument(inst);
+		break;
+	case Op::ReadMxcsr:
+	case Op::WriteMxcsr:
+		asm_.sse(0, 0xae, inst.op == Op::ReadMxcsr ? Reg(3) : Reg(2), rm(a));
+		break;
+	case Op::StackSave:
+		asm_.mov_rr(a.reg, RSP);
+		break;
+	case Op::StackRestore:
+		asm_.mov_rr(RSP, a.reg);
 		break;
 	case Op::StackAlloc:
 		if (b.kind == OperandKind::Imm)

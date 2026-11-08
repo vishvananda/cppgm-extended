@@ -268,6 +268,7 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 	std::vector<uint8_t>& nounwind, const std::vector<uint8_t>& unwritten)
 {
 	const int level = options.level;
+	const bool addressed = !program.functions[program.symbols[symbol].detail].body->code_labels.empty();
 	FunctionContext context(program, symbol, stats, level);
 	const PooledContext pooled(context, context_pool());
 	context.nounwind = &nounwind;
@@ -275,6 +276,25 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 	enable_verify(context, options);
 	verify(context, "inlining");
 	record_switch_types(context.body);
+	if (addressed)
+	{
+		// Preserve every code entry and its fixed graph. These scalar passes
+		// neither clone entries nor require copies on an indirect edge.
+		context.level = 1;
+		for (unsigned round = 0; round < kScalarRounds; ++round)
+		{
+			bool changed = RUN_PASS(promote_slots);
+			changed = RUN_PASS(propagate_constants) || changed;
+			changed = RUN_PASS(simplify_values) || changed;
+			changed = RUN_PASS(forward_memory) || changed;
+			changed = RUN_PASS(remove_dead_code) || changed;
+			if (!changed)
+				break;
+		}
+		compact_body(program, context.body);
+		return;
+	}
+
 	// Scalar slots first: the lowering keeps locals in slots, so scalar
 	// rounds see their values once promoted. An object slot splits best
 	// after a round has simplified the copies that fill it, so a body with
@@ -498,6 +518,8 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	std::vector<uint8_t>& nounwind, std::vector<uint8_t>& unwritten, const std::vector<uint8_t>* moved,
 	BitTablePool& bit_tables)
 {
+	if (!program.functions[program.symbols[symbol].detail].body->code_labels.empty())
+		return;
 	FunctionContext context(program, symbol, stats, 2);
 	const PooledContext pooled(context, context_pool());
 	context.nounwind = &nounwind;
@@ -651,7 +673,28 @@ void materialize_call_arguments(Program& program, FunctionBody& body, BlockId b,
 void inline_source_required(Program& program)
 {
 	OptimizerStats stats;
+	for (SymbolId symbol : program.order)
+		if (program.symbols[symbol].kind == SymbolKind::FunctionDefinition &&
+			(program.symbols[symbol].metadata.flags & SF_FORCE_INLINE) != 0 &&
+			program.functions[program.symbols[symbol].detail].body != nullptr)
+		{
+			FunctionBody& body = *program.functions[program.symbols[symbol].detail].body;
+			bool allocates = false;
+			for (BlockId block : body.layout)
+				for (InstId i = body.blocks[block].first; i != kNoId; i = body.instructions[i].next)
+					allocates = allocates || body.instructions[i].op == Opcode::StackAlloc;
+			if (allocates && body.code_labels.empty())
+			{
+				FunctionContext context(program, symbol, stats, 0);
+				const PooledContext pooled(context, context_pool());
+				propagate_constants(context);
+				materialize_fixed_allocations(program, body);
+				scope_dynamic_allocations(body);
+			}
+		}
 	const std::function<void(SymbolId)> simplify = [&](SymbolId symbol) {
+		if (!program.functions[program.symbols[symbol].detail].body->code_labels.empty())
+			return;
 		FunctionContext context(program, symbol, stats, 0);
 		const PooledContext pooled(context, context_pool());
 		// Preserve named storage in full debug bodies.

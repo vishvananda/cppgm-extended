@@ -8,11 +8,26 @@
 
 namespace native {
 
-// Assembly-only keys extend the ordinary GPR/XMM units with vector16..31.
+// Assembly-only keys add vector16..31 and mask0..7 to the ordinary GPR/XMM units.
 // They never become ordinary MIR registers or widen its register sets.
 inline bool assembly_vector_register(mir_model::Reg reg)
 {
 	return reg >= 16 && reg < 48;
+}
+inline bool assembly_mask_register(mir_model::Reg reg)
+{
+	return reg >= 48 && reg < 56;
+}
+inline mir_model::Reg assembly_register_key(const asm_model::Register& reg)
+{
+	using asm_model::RegisterBank;
+	if (reg.bank == RegisterBank::Gpr && reg.number < 16)
+		return reg.number;
+	if (reg.bank == RegisterBank::Vector && reg.number < 32)
+		return 16 + reg.number;
+	if (reg.bank == RegisterBank::Mask && reg.number < 8)
+		return 48 + reg.number;
+	return mir_model::kNoReg;
 }
 inline uint64_t assembly_register_bit(mir_model::Reg reg)
 {

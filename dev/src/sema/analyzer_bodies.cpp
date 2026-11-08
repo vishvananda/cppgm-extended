@@ -385,6 +385,8 @@ bool Analyzer::condition(const syntax::Condition& condition, Scope* scope)
 
 void Analyzer::handlers(const syntax::Slice<syntax::Handler>& list, Scope* scope)
 {
+	if (!exceptions_ && list.size != 0)
+		error(list[0].body->location, "catch is disabled by -fno-exceptions");
 	// 15.3p5: a `...` handler is its try block's last.
 	bool catch_all = false;
 	for (const syntax::Handler& handler : list)
@@ -679,6 +681,8 @@ void Analyzer::scoped_statement(const syntax::Stmt& stmt, Scope* scope, BodyCont
 		return expression(static_cast<const syntax::ValueStmt&>(stmt).value, scope);
 	case syntax::StmtKind::Throw:
 	{
+		if (!exceptions_)
+			error(stmt.location, "throw is disabled by -fno-exceptions");
 		const syntax::Expr* operand = static_cast<const syntax::ValueStmt&>(stmt).value;
 		if (body == nullptr || body->pattern || operand == nullptr)
 			return expression(operand, scope);
@@ -706,10 +710,23 @@ void Analyzer::scoped_statement(const syntax::Stmt& stmt, Scope* scope, BodyCont
 			error(stmt.location, "continue outside a loop");
 		return;
 	case syntax::StmtKind::Goto:
+	{
+		const syntax::GotoStmt& jump = static_cast<const syntax::GotoStmt&>(stmt);
+		if (jump.target != nullptr)
+		{
+			if (!full_asm_ || body == nullptr)
+				error(stmt.location, "computed goto requires --full-asm inside a function");
+			ExprFacts* target = typed(*jump.target, scope);
+			const Type* type = decayed(target);
+			if (type->kind != TypeKind::Pointer || !IsVoid(type->element))
+				error(stmt.location, "computed goto requires a void pointer");
+			return;
+		}
 		if (body != nullptr)
 			gotos_.push_back(PendingGoto{
 				static_cast<const syntax::GotoStmt&>(stmt).label, stmt.location, scope, scope->initialized });
 		return;
+	}
 	}
 }
 
@@ -831,7 +848,7 @@ void Analyzer::check_gotos(const BodyContext& body)
 		const auto found = std::lower_bound(first, labels_.end(), key, by_name);
 		if (found == labels_.end() || found->label != gotos_[g].label)
 			error(gotos_[g].location, "goto names no label of the function");
-		if (bypasses_initialization(gotos_[g], *found))
+		if (gotos_[g].scope != nullptr && bypasses_initialization(gotos_[g], *found))
 			error(gotos_[g].location, "goto bypasses a variable's initialization");
 	}
 	labels_.resize(body.first_label);
@@ -884,7 +901,8 @@ const Type* Analyzer::switch_condition(const syntax::Condition& condition)
 		// A class condition by its single conversion function to an
 		// integral or enumeration type.
 		const ClassEntity* cls = ClassOf(facts_of(*condition.expression)->type);
-		if (cls != nullptr && (converter = unique_conversion(cls, IsIntegralOrEnumeration)) != nullptr)
+		if (cls != nullptr &&
+			(converter = unique_conversion(cls, IsIntegralOrEnumeration, facts_of(*condition.expression))) != nullptr)
 			convert_class_operand(*condition.expression, converter);
 		type = decayed(facts_of(*condition.expression));
 	}
@@ -895,7 +913,10 @@ const Type* Analyzer::switch_condition(const syntax::Condition& condition)
 			type = type->element;
 		type = type->unqualified;
 		const ClassEntity* cls = ClassOf(type);
-		if (cls != nullptr && (converter = unique_conversion(cls, IsIntegralOrEnumeration)) != nullptr)
+		ExprFacts object = ExprFacts();
+		object.type = type;
+		object.category = ValueCategory::LValue;
+		if (cls != nullptr && (converter = unique_conversion(cls, IsIntegralOrEnumeration, &object)) != nullptr)
 		{
 			ValueCategory category;
 			type = result_category(converter->type->canonical->element, category)->unqualified;
@@ -1347,6 +1368,8 @@ const Type* Analyzer::known_argument_type(const syntax::Expr& expr, Scope* scope
 	case syntax::ExprKind::FunctionalCast:
 	{
 		Specifiers specifiers;
+		if (cxx17_ && deduction_template(static_cast<const syntax::FunctionalCastExpr&>(*e).type, scope) != nullptr)
+			return nullptr;
 		this->specifiers(static_cast<const syntax::FunctionalCastExpr&>(*e).type, scope, specifiers, false);
 		return specifiers.type != nullptr && !dependent_type(specifiers.type) && !LocalType(specifiers.type)
 			? specifiers.type
@@ -1633,8 +1656,9 @@ void Analyzer::expression_names(const syntax::Expr& expr, Scope* scope, bool une
 	case syntax::ExprKind::FunctionalCast:
 	{
 		const syntax::FunctionalCastExpr& cast = static_cast<const syntax::FunctionalCastExpr&>(expr);
-		Specifiers specifiers;
-		this->specifiers(cast.type, scope, specifiers, false);
+		Specifiers specifiers = Specifiers();
+		if (!cxx17_ || deduction_template(cast.type, scope) == nullptr)
+			this->specifiers(cast.type, scope, specifiers, false);
 		const bool empty = cast.braced != nullptr ? cast.braced->elements.empty() : cast.arguments.empty();
 		if (empty && !unevaluated)
 			value_initialized_class(specifiers.type);

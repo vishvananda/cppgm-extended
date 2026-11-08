@@ -49,6 +49,13 @@ std::string PredefinedText(const PreprocessorOptions& options)
 		text += "#define __CHAR_UNSIGNED__ 1\n";
 	if (options.popcnt)
 		text += "#define __POPCNT__ 1\n";
+	if (options.hosted || options.sse_level != 0)
+		text += "#define __SSE__ 1\n#define __SSE2__ 1\n";
+	const char* features[] = { "__SSE3__", "__SSSE3__", "__SSE4_1__", "__SSE4_2__" };
+	for (unsigned i = 0; i < options.sse_level; ++i)
+		text += std::string("#define ") + features[i] + " 1\n";
+	if (options.cplusplus == "201703L")
+		text += "#define __STDCPP_DEFAULT_NEW_ALIGNMENT__ 16UL\n#define __cpp_aligned_new 201606L\n";
 	return text;
 }
 

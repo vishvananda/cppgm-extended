@@ -206,9 +206,20 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 	case sema::Intrinsic::ByteSwap:
 		return unary(lowir::UnaryOp::ByteSwap, operand(*expr.arguments[0], ConversionContext::Argument));
 	case sema::Intrinsic::Prefetch:
-		// A hint: the address operand's effects only.
-		for (const syntax::Expr* argument : expr.arguments)
-			discard(*argument);
+		// A hint can be discarded, but immediate controls must still become
+		// constants at actual call sites after required substitution.
+		discard(*expr.arguments[0]);
+		for (uint32_t i = 1; i < expr.arguments.size; ++i)
+		{
+			if ((expr.facts->value >> 8) != 0)
+			{
+				const RValue control = operand(*expr.arguments[i], ConversionContext::Argument);
+				builder_.call(lowir::Type::scalar(lowir::TypeKind::Void),
+					lowir::Value::symbol(lowering_.source_immediate_guard()), &control.value, 1, lowir::kNoId, 0);
+			}
+			else
+				discard(*expr.arguments[i]);
+		}
 		return RValue();
 	case sema::Intrinsic::Launder:
 		// The pointer's bits are unchanged. LowIR memory effects and object
@@ -220,6 +231,21 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		for (uint32_t i = 1; i < expr.arguments.size; ++i)
 			discard(*expr.arguments[i]);
 		return value;
+	}
+	case sema::Intrinsic::ReadMxcsr:
+	case sema::Intrinsic::WriteMxcsr:
+	{
+		const lowir::Type word = lowir::Type::scalar(lowir::TypeKind::U32);
+		const bool write = kind == sema::Intrinsic::WriteMxcsr;
+		lowir::Instruction inst = lowir::make_instruction(
+			write ? lowir::Opcode::WriteMxcsr : lowir::Opcode::ReadMxcsr, word);
+		if (write)
+		{
+			inst.ops[0] = operand(*expr.arguments[0], ConversionContext::Argument).value;
+			builder_.append(inst);
+			return RValue();
+		}
+		return RValue{ emit_value(inst, word), word };
 	}
 	case sema::Intrinsic::FltRounds:
 		return flt_rounds();
@@ -268,6 +294,8 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		return binary_immediate_vector(expr);
 	case sema::Intrinsic::VectorLanewise:
 		return lanewise_vector(expr);
+	case sema::Intrinsic::VectorImmediate:
+		return immediate_vector(expr);
 	case sema::Intrinsic::SourceFile:
 	case sema::Intrinsic::SourceLine:
 	case sema::Intrinsic::SourceFunction:

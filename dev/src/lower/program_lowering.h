@@ -460,6 +460,8 @@ public:
 	// Explicit whole-unit ISA selection (-mpopcnt), independent of the
 	// host compiler's predefined macros and of the optimization level.
 	void set_popcnt(bool on) { popcnt_ = on; }
+	void set_exceptions(bool on) { exceptions_ = on; }
+	bool exceptions() const { return exceptions_; }
 	bool popcnt() const { return popcnt_; }
 	bool states_type(lowir::TypeKind kind) const
 	{
@@ -889,6 +891,14 @@ public:
 
 private:
 	friend class FunctionLowering;
+	lowir::SymbolId code_label(const syntax::LabelAddressExpr& expr);
+	struct PendingCodeLabel
+	{
+		lowir::SymbolId function;
+		lowir::SymbolId symbol;
+		const Identifier* label;
+	};
+	std::vector<PendingCodeLabel> code_labels_;
 
 	// A class aggregate's initialization helper: its class, the number of
 	// leading members it takes as parameters, its symbol, and the class's
@@ -1166,6 +1176,7 @@ private:
 	void resolve_singleton_roles();
 	bool emitted_at_definition(const sema::FunctionEntity* function) const;
 	void release_definition(lowir::SymbolId symbol);
+	void remove_exception_regions(lowir::SymbolId symbol);
 	void mark_source_inline(const sema::FunctionEntity* function, lowir::SymbolId symbol);
 	void finish_source_inlining();
 	lowir::SymbolId source_immediate_guard();
@@ -2024,6 +2035,7 @@ private:
 	bool optimizing_ = false;
 	bool strict_aliasing_ = true;
 	bool popcnt_ = false;
+	bool exceptions_ = true;
 	uint64_t may_alias_kinds_ = 0; // bit per TypeKind: a may_alias typedef of the unit names it
 	std::uintptr_t stack_base_;
 	std::uintptr_t stack_budget_;

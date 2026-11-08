@@ -223,6 +223,7 @@ TemplateHead* Analyzer::template_head(
 	head->default_scopes = arena_.allocate_array<Scope*>(parameters.size());
 	head->argument_defaults = nullptr;
 	head->shape = nullptr;
+	head->deduction_origins = nullptr;
 	head->trailing_pack = head->count != 0 && parameters.back()->pack ? head->count - 1 : head->count;
 	head->ordinal = definition_point();
 	// The first declaration's defaults come with the template wherever it
@@ -612,7 +613,7 @@ const Type* Analyzer::template_value(const syntax::Expr& expr, Scope* scope, con
 	// constexpr conversion function (5.19p3).
 	// An argument's conversion can remain dependent after its expression's
 	// parameters were bound: keep the target until its own substitution.
-	if (template_depth_ == 0 && target != nullptr && dependent_type(target))
+	if (template_depth_ == 0 && target != nullptr && !holds_auto(target) && dependent_type(target))
 		return dependent_expression(expr, scope, true, target, semantic());
 	if (semantic() && template_depth_ == 0)
 	{
@@ -620,13 +621,35 @@ const Type* Analyzer::template_value(const syntax::Expr& expr, Scope* scope, con
 		// set of overloaded functions resolved by its type; or one of
 		// neither integral nor class type before its parameter is known (an
 		// integral lvalue is then read as its value).
-		const bool address = target != nullptr && AddressParameterType(target);
+		const bool deducing = target != nullptr && holds_auto(target);
+		bool address = target != nullptr && AddressParameterType(target);
 		const uint64_t values = names_.value_parameter_uses();
 		++template_arguments_;
 		constant_operand(expr, scope, !address);
 		--template_arguments_;
 		if (failed())
 			return nullptr;
+		if (deducing)
+		{
+			const ExprFacts* from = expr.facts;
+			if (from == nullptr || from->type == nullptr || (from->flags & kOverloadSet) != 0)
+				return substitution_error(expr.location, "a placeholder template argument has no deducible type"),
+					   nullptr;
+			if (target == decltype_auto_placeholder_)
+				target = decltype_result(expr, *from);
+			else
+			{
+				TypeList deduced(1, nullptr);
+				if (!deduce_argument(
+						replaced_auto(target, auto_placeholder_, 0), from->type, from->category, 0, deduced) ||
+					deduced[0] == nullptr)
+					return substitution_error(
+							   expr.location, "non-type template parameter placeholder deduction failed"),
+						   nullptr;
+				target = replaced_auto(target, deduced[0], 0);
+			}
+			address = AddressParameterType(target);
+		}
 		// A value naming a template parameter (an instantiation's frame
 		// binds it): the template-id is a dependent type in the template
 		// (14.6.2.1p7), so a call it is an argument of is dependent there
@@ -655,7 +678,7 @@ const Type* Analyzer::template_value(const syntax::Expr& expr, Scope* scope, con
 																					  : nullptr;
 		if (target == nullptr && cls != nullptr)
 		{
-			const FunctionEntity* conversion = unique_conversion(cls, IsIntegralOrUnscopedEnum);
+			const FunctionEntity* conversion = unique_conversion(cls, IsIntegralOrUnscopedEnum, expr.facts);
 			const Type* result = conversion != nullptr ? conversion->type->canonical->element : nullptr;
 			if (result != nullptr)
 				target = result->is_reference() ? result->element->unqualified : result->unqualified;
@@ -734,7 +757,7 @@ const Type* Analyzer::argument_target(const TemplateHead* head, uint32_t index, 
 	// a still-dependent result is retained for the value's substitution.
 	const TemplateParameterEntity* parameter = head->parameters[index];
 	const Type* type = parameter->value_type;
-	if (type == nullptr || !dependent_type(type))
+	if (type == nullptr || holds_auto(type) || !dependent_type(type))
 		return type;
 	for (uint32_t i = 0; i < index; ++i)
 	{
@@ -929,6 +952,22 @@ const Type* Analyzer::converted_value(const TemplateParameterEntity* parameter, 
 	// integral promotions and integral conversions that do not narrow, or
 	// the same enumeration.
 	const Type* target = element != nullptr ? element : parameter->value_type;
+	if (holds_auto(target))
+	{
+		if (target == decltype_auto_placeholder_)
+			target = argument->element;
+		else
+		{
+			TypeList deduced(1, nullptr);
+			const Type* source = argument->element;
+			if (!deduce_argument(replaced_auto(target, auto_placeholder_, 0),
+					source->is_reference() ? source->element : source,
+					source->is_reference() ? ValueCategory::LValue : ValueCategory::PRValue, 0, deduced) ||
+				deduced[0] == nullptr)
+				return nullptr;
+			target = replaced_auto(target, deduced[0], 0);
+		}
+	}
 	if (dependent_type(target))
 	{
 		target = substitute(
@@ -1016,6 +1055,15 @@ const Type* Analyzer::converted_value(const TemplateParameterEntity* parameter, 
 const Type* Analyzer::template_default(const TemplateHead* head, const Type* const* arguments, uint32_t index,
 	bool arguments_dependent, bool substitution, Scope* named_in)
 {
+	if (head->deduction_origins != nullptr)
+	{
+		const DeductionHeadOrigins& origins = *head->deduction_origins;
+		if (index < origins.outer->count)
+			return template_default(origins.outer, arguments, index, arguments_dependent, substitution, named_in);
+		const Type* result = template_default(origins.inner, arguments + origins.outer->count,
+			index - origins.outer->count, arguments_dependent, substitution, named_in);
+		return result != nullptr ? substitute(result, substitution_of(origins.outer, arguments)) : nullptr;
+	}
 	// 14.1p9: parameter `index`'s default argument, analyzed with the
 	// earlier parameters bound to their arguments (14.1p14), in the context
 	// of the template declaration that gave it. For arguments that do not
@@ -1958,6 +2006,15 @@ const Type* Analyzer::substitute_bound(const Type* array, const Substitution& gi
 	if (direct)
 	{
 		const Type* argument = substitution.arguments[named->index];
+		if (argument != nullptr && argument->kind == TypeKind::Value && !AddressArgument(argument))
+		{
+			IntegralKind kind;
+			if (argument->bound == 0 ||
+				(IntegralKindOf(argument->element, kind) && kind.is_signed &&
+					static_cast<int64_t>(argument->bound) < 0))
+				return substitution_error(0, "an array bound is not positive"), nullptr;
+			return checked_array(element, argument->bound, 0);
+		}
 		if (argument != nullptr && argument->kind == TypeKind::TemplateParameter &&
 			static_cast<const TemplateParameterEntity*>(argument->entity)->non_type &&
 			!IsPlaceholder(static_cast<const TemplateParameterEntity*>(argument->entity)))

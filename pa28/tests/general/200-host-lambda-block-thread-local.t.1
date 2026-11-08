@@ -1,0 +1,11 @@
+extern "C" int host_threads();
+extern "C" int exercise() {
+    thread_local int value = 3;
+    auto next = []() { return ++value; };
+    struct Local { static int next() { return ++value; } };
+    return next() * 10 + Local::next();
+}
+int main() {
+    if (exercise() != 45 || exercise() != 67) return 1;
+    return host_threads();
+}

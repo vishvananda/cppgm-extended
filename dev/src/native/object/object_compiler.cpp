@@ -178,6 +178,7 @@ private:
 	FlatMap<uint32_t, uint32_t, WordHash32> equivalent_targets_;
 	lowir::JumpThunk shared_entry_;
 	std::vector<lowir::EquivalentEntry> shared_aliases_;
+	std::vector<std::pair<lowir::SymbolId, lowir::SymbolId>> code_labels_;
 	std::vector<const char*> runtime_names_; // the first image-local symbols
 	uint32_t program_symbols_ = 0;
 	std::vector<Placement> placement_;
@@ -438,6 +439,8 @@ void ObjectCompiler::function(lowir::SymbolId symbol)
 		stats_.encode_ms += milliseconds_since(phase);
 	}
 	ranges_.push_back(CodeRange{ symbol, image_.symbol(symbol).offset, image_.text().size(), 0, 0, false });
+	for (const lowir::CodeLabel& label : mir_.code_labels)
+		code_labels_.push_back(std::make_pair(label.symbol, symbol));
 	if (!emitter_.locations().empty())
 	{
 		if (!debug_)
@@ -562,6 +565,8 @@ void ObjectCompiler::prune_functions()
 		ranges_[r].dropped = true;
 	}
 	first_fixup[ranges_.size()] = static_cast<uint32_t>(fixups.size());
+	for (const auto& label : code_labels_)
+		range_of[label.first] = range_of[label.second];
 	std::vector<uint32_t> work;
 	auto reach = [&](uint32_t image_symbol) {
 		if (image_symbol >= range_of.size() || range_of[image_symbol] == lowir::kNoId)
@@ -631,6 +636,12 @@ void ObjectCompiler::place_text()
 	}
 	for (const lowir::EquivalentEntry& alias : shared_aliases_)
 		placement_[slot(alias.symbol)] = placement_[slot(alias.target)];
+	for (const auto& label : code_labels_)
+	{
+		const Placement owner = placement_[slot(label.second)];
+		placement_[slot(label.first)] = Placement{ owner.section,
+			owner.offset + image_.symbol(label.first).offset - image_.symbol(label.second).offset, 0 };
+	}
 }
 
 // The floating constants end the read-only data: at its start in a small

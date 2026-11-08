@@ -1,6 +1,7 @@
 #include "native/asm/mask_forms.h"
 
 #include "native/asm/operands.h"
+#include "native/backend_error.h"
 #include "native/asm/vex_forms.h"
 
 namespace native {
@@ -28,6 +29,27 @@ unsigned general(const Operand& operand, unsigned bits, const Instruction& inst)
 	return operand.reg.number;
 }
 }
+void encode_assembly_mask_transfer(
+	Assembler& out, const asm_model::Register& reg, const RM& memory, bool store, unsigned bytes)
+{
+	if (reg.bank != RegisterBank::Mask || reg.number >= 8 || memory.is_reg || reg.offset || reg.bits != bytes * 8)
+		throw BackendError("invalid assembly mask transfer");
+	size_t count = 0;
+	const auto* forms = x86_asm_model::mask_move_forms(count);
+	for (size_t i = 0; i < count; ++i)
+		if (forms[i].bits == bytes * 8)
+		{
+			const auto& f = forms[i];
+			const x86_asm_model::VexForm form = { "transfer", x86_asm_model::VexLayout::Move, 0x90, 1, f.pp, f.w, 1,
+				f.bits, 0, 0 };
+			const VectorEncodingPlan plan{ 128, f.bits, reg.number, 0, memory,
+				static_cast<uint8_t>(store ? 0x91 : 0x90), 0, false };
+			encode_vex_plan(out, form, plan);
+			return;
+		}
+	throw BackendError("unsupported assembly mask transfer width");
+}
+
 bool encode_mask_form(Assembler& out, const assembly::Instruction& inst)
 {
 	size_t count = 0;

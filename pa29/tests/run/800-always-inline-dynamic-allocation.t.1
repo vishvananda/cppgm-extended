@@ -1,0 +1,15 @@
+static volatile unsigned calls;
+__attribute__((noinline)) int use(char *p, unsigned n) { ++calls; int s=0; for(unsigned i=0;i<n;++i) s+=p[i]; return s; }
+__attribute__((always_inline)) inline int compute(unsigned n, bool fail) {
+  char *p=static_cast<char*>(__builtin_alloca(n));
+  for(unsigned i=0;i<n;++i) p[i]=1;
+  int result=use(p,n);
+  if(fail) throw result;
+  return result;
+}
+int main() {
+  volatile unsigned n=4096;
+  for(unsigned i=0;i<6000;++i) if(compute(n,false)!=4096) return 1;
+  for(unsigned i=0;i<40;++i) { try { compute(n,true); return 2; } catch(int v) { if(v!=4096) return 3; } }
+  return calls!=6040;
+}

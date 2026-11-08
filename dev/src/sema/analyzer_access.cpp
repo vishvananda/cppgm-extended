@@ -447,6 +447,11 @@ bool Analyzer::base_accessible(const ClassEntity* derived, const BaseClass* base
 bool Analyzer::accessible(const ClassEntity* naming, const ClassEntity* declaring, Access declared, const Scope* scope,
 	const ClassEntity** via, uint32_t location, const ClassEntity* object)
 {
+	// The entire qualified member declaration has the member's access,
+	// including its leading return type. Lookup still uses its original
+	// namespace context; only the access privilege comes from the class.
+	if (declaration_class_ != nullptr && scope != nullptr && scope->kind == ScopeKind::Namespace)
+		scope = declaration_class_;
 	// One query: its member's accesses as a member of the classes below
 	// and the classes bullet 4 found no access through are kept until the
 	// next (a lattice of repeated bases costs its edges, not its paths).

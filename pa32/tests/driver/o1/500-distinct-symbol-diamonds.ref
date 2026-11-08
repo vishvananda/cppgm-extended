@@ -1,0 +1,271 @@
+global @__strlit__1 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 48
+  i8 48
+  i8 0
+}
+global @__strlit__2 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 48
+  i8 49
+  i8 0
+}
+global @__strlit__3 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 48
+  i8 50
+  i8 0
+}
+global @__strlit__4 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 48
+  i8 51
+  i8 0
+}
+global @__strlit__5 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 48
+  i8 52
+  i8 0
+}
+global @__strlit__6 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 48
+  i8 53
+  i8 0
+}
+global @__strlit__7 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 48
+  i8 54
+  i8 0
+}
+global @__strlit__8 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 48
+  i8 55
+  i8 0
+}
+global @__strlit__9 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 48
+  i8 56
+  i8 0
+}
+global @__strlit__10 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 48
+  i8 57
+  i8 0
+}
+global @__strlit__11 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 49
+  i8 48
+  i8 0
+}
+global @__strlit__12 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 49
+  i8 49
+  i8 0
+}
+global @__strlit__13 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 49
+  i8 50
+  i8 0
+}
+global @__strlit__14 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 49
+  i8 51
+  i8 0
+}
+global @__strlit__15 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 49
+  i8 52
+  i8 0
+}
+global @__strlit__16 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 49
+  i8 53
+  i8 0
+}
+global @__strlit__17 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 49
+  i8 54
+  i8 0
+}
+global @__strlit__18 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 49
+  i8 55
+  i8 0
+}
+global @__strlit__19 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 49
+  i8 56
+  i8 0
+}
+global @__strlit__20 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 49
+  i8 57
+  i8 0
+}
+global @__strlit__21 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 50
+  i8 48
+  i8 0
+}
+global @__strlit__22 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 50
+  i8 49
+  i8 0
+}
+global @__strlit__23 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 50
+  i8 50
+  i8 0
+}
+global @__strlit__24 [storage=readonly, binding=internal] = {
+  i8 112
+  i8 50
+  i8 51
+  i8 0
+}
+global @padding [binding=strong] = {
+  ptr addr @__strlit__1
+  ptr addr @__strlit__2
+  ptr addr @__strlit__3
+  ptr addr @__strlit__4
+  ptr addr @__strlit__5
+  ptr addr @__strlit__6
+  ptr addr @__strlit__7
+  ptr addr @__strlit__8
+  ptr addr @__strlit__9
+  ptr addr @__strlit__10
+  ptr addr @__strlit__11
+  ptr addr @__strlit__12
+  ptr addr @__strlit__13
+  ptr addr @__strlit__14
+  ptr addr @__strlit__15
+  ptr addr @__strlit__16
+  ptr addr @__strlit__17
+  ptr addr @__strlit__18
+  ptr addr @__strlit__19
+  ptr addr @__strlit__20
+  ptr addr @__strlit__21
+  ptr addr @__strlit__22
+  ptr addr @__strlit__23
+  ptr addr @__strlit__24
+}
+global @__strlit__25 [storage=readonly, binding=internal] = {
+  i8 97
+  i8 108
+  i8 112
+  i8 104
+  i8 97
+  i8 0
+}
+global @__strlit__26 [storage=readonly, binding=internal] = {
+  i8 98
+  i8 114
+  i8 97
+  i8 118
+  i8 111
+  i8 0
+}
+global @__strlit__27 [storage=readonly, binding=internal] = {
+  i8 99
+  i8 104
+  i8 97
+  i8 114
+  i8 108
+  i8 105
+  i8 101
+  i8 0
+}
+global @__strlit__28 [storage=readonly, binding=internal] = {
+  i8 100
+  i8 101
+  i8 108
+  i8 116
+  i8 97
+  i8 0
+}
+
+function @choose(%condition : u8) -> u32 [binding=strong, object=_Z6chooseb, no_inline=yes] {
+  block ^entry:
+    branch %condition, ^condaddr_then_1, ^condaddr_else_2
+
+  block ^condaddr_then_1:
+    %t1 = addr @__strlit__25
+    jump ^condaddr_end_3
+
+  block ^condaddr_else_2:
+    %t2 = addr @__strlit__26
+    jump ^condaddr_end_3
+
+  block ^condaddr_end_3:
+    %t3 = phi ptr [^condaddr_then_1: %t1, ^condaddr_else_2: %t2]
+    branch %condition, ^cond_then_4, ^cond_else_5
+
+  block ^cond_then_4:
+    %t4 = addr @__strlit__27
+    jump ^cond_end_6
+
+  block ^cond_else_5:
+    %t5 = addr @__strlit__28
+    jump ^cond_end_6
+
+  block ^cond_end_6:
+    %t6 = phi ptr [^cond_then_4: %t4, ^cond_else_5: %t5]
+    %t7 = load u8 %t3
+    %t8 = convert zext i32 u8 %t7
+    %t9 = binary mul nowrap i32 %t8, 256
+    %t10 = load u8 %t6
+    %t11 = convert zext i32 u8 %t10
+    %t12 = binary add nowrap i32 %t9, %t11
+    %t13 = copy u32 %t12
+    return u32 %t13
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $yes : u8
+  slot $no : u8
+
+  block ^entry:
+    store volatile u8 1, $yes
+    store volatile u8 0, $no
+    %t1 = load volatile u8 $yes
+    %t2 = call u32 @choose(%t1)
+    %t3 = cmp ne u32 %t2, 24931
+    branch %t3, ^if_then_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t4 = load volatile u8 $no
+    %t5 = call u32 @choose(%t4)
+    %t6 = cmp ne u32 %t5, 25188
+    branch %t6, ^if_then_2, ^if_end_3
+
+  block ^if_then_2:
+    return i32 1
+
+  block ^if_end_3:
+    %t7 = addr @padding
+    %t8 = index ptr [projection=array_element] %t7, 23
+    %t9 = load typed ptr %t8
+    %t10 = index i8 [projection=array_element] %t9, 1
+    %t11 = load i8 %t10
+    %t12 = cmp ne i8 %t11, 50
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
+}

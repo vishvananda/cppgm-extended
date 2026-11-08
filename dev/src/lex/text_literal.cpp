@@ -88,6 +88,9 @@ int SimpleEscapeValue(char c)
 		return 0x07;
 	case 'b':
 		return 0x08;
+	case 'e':
+	case 'E':
+		return 0x1B;
 	case 'f':
 		return 0x0C;
 	case 'n':

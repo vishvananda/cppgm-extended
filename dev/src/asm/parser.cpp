@@ -59,6 +59,7 @@ private:
 	void resolve_labels(std::vector<Instruction>& instructions);
 	uint64_t integer();
 	bool syntax(const std::string& name);
+	bool directive(Instruction& inst);
 	asm_model::Register reg();
 	Operand operand();
 	void decorators(Operand& operand);
@@ -177,6 +178,7 @@ Operand Parser::intel_memory(uint16_t bits)
 			if (minus || result.address.symbol.symbol != asm_model::kNoId)
 				fail("invalid assembly symbol expression");
 			result.address.symbol = bound.address.symbol;
+			result.address.local = bound.address.local;
 			result.address.relocation = bound.address.relocation;
 			displacement += bound.address.displacement;
 		}
@@ -297,6 +299,7 @@ Operand Parser::operand()
 			const Address binding = result.address;
 			result = att_memory(binding.displacement);
 			result.address.symbol = binding.symbol;
+			result.address.local = binding.local;
 			result.address.relocation = binding.relocation;
 		}
 		else if (register_prefix_ ? current() == '%' : alpha(current()))
@@ -405,18 +408,39 @@ bool Parser::symbol(Operand& operand)
 	}
 	else
 	{
-		if (lookup_ == nullptr || !alpha(current()))
-			return false;
 		const size_t begin = pos_;
 		size_t end = begin;
-		while (end < source_.size() && (alpha(source_[end]) || (source_[end] >= '0' && source_[end] <= '9')))
+		const bool numeric = current() >= '0' && current() <= '9';
+		if (numeric)
+		{
+			while (end < source_.size() && source_[end] >= '0' && source_[end] <= '9')
+				++end;
+			if (end == source_.size() || (source_[end] != 'f' && source_[end] != 'b'))
+				return false;
 			++end;
+			if (end < source_.size() && (alpha(source_[end]) || (source_[end] >= '0' && source_[end] <= '9')))
+				return false;
+		}
+		else
+		{
+			if (!alpha(current()))
+				return false;
+			while (end < source_.size() && (alpha(source_[end]) || (source_[end] >= '0' && source_[end] <= '9')))
+				++end;
+		}
 		const std::string name = source_.substr(begin, end - begin);
 		asm_model::Register reg;
 		if (name == "rip" || name == "byte" || name == "word" || name == "dword" || name == "qword" ||
 			name == "xmmword" || name == "ymmword" || name == "zmmword" || name == "tbyte" ||
-			parse_register(name.data(), name.size(), reg) || !lookup_->lookup(name, reference))
+			parse_register(name.data(), name.size(), reg))
 			return false;
+		if (lookup_ != nullptr && !numeric)
+		{
+			if (!lookup_->lookup(name, reference))
+				return false;
+		}
+		else
+			operand.address.local = name;
 		while (pos_ < end)
 			step();
 	}
@@ -470,9 +494,7 @@ Operand Parser::target()
 			step();
 		return result;
 	}
-	if (lookup_ == nullptr ||
-		(symbols_.size() != 0 &&
-			std::any_of(symbols_.begin(), symbols_.end(), [&](const SymbolUse& use) { return use.first == pos_; })))
+	if (std::any_of(symbols_.begin(), symbols_.end(), [&](const SymbolUse& use) { return use.first == pos_; }))
 		if (symbol(result))
 			return result;
 	result.kind = OperandKind::Label;
@@ -530,9 +552,13 @@ void Parser::resolve_labels(std::vector<Instruction>& instructions)
 	for (uint32_t i = 0; i < instructions.size(); ++i)
 		for (Operand& operand : instructions[i].operands)
 		{
-			if (operand.kind != OperandKind::Label || operand.external_label)
+			if (operand.kind == OperandKind::Symbol && !operand.address.local.empty())
+				throw AssemblyError{ "local code address requires RIP-relative memory", instructions[i].line,
+					instructions[i].column };
+			const bool memory = operand.kind == OperandKind::Memory && !operand.address.local.empty();
+			if ((!memory && operand.kind != OperandKind::Label) || operand.external_label)
 				continue;
-			const std::string& name = operand.target;
+			const std::string& name = memory ? operand.address.local : operand.target;
 			if (lookup_ != nullptr && lookup_->interposable(name) && lookup_->lookup(name, operand.address.symbol))
 			{
 				operand.kind = OperandKind::Symbol;
@@ -563,8 +589,76 @@ void Parser::resolve_labels(std::vector<Instruction>& instructions)
 			if (selected == UINT32_MAX)
 				throw AssemblyError{ "undefined assembly-local label: " + name, instructions[i].line,
 					instructions[i].column };
-			operand.label = selected;
+			if (memory)
+				operand.address.label = selected;
+			else
+				operand.label = selected;
 		}
+}
+
+bool Parser::directive(Instruction& inst)
+{
+	const std::string& name = inst.mnemonic;
+	if (name == ".p2align" || name == ".balign")
+	{
+		uint64_t alignment = integer();
+		if (name == ".p2align")
+		{
+			if (alignment > 20)
+				fail("assembly alignment exponent exceeds limit");
+			alignment = uint64_t(1) << alignment;
+		}
+		if (alignment == 0 || alignment > (1u << 20) || (alignment & (alignment - 1)))
+			fail("assembly alignment requires a bounded power of two");
+		inst.alignment = alignment;
+		if (take(','))
+		{
+			if (current() != ',')
+			{
+				const uint64_t fill = integer();
+				if (fill > 255)
+					fail("assembly alignment fill exceeds one byte");
+				inst.fill = fill;
+			}
+			if (take(','))
+			{
+				const uint64_t limit = integer();
+				if (limit > UINT32_MAX)
+					fail("assembly padding limit exceeds range");
+				inst.max_padding = limit;
+			}
+		}
+		return true;
+	}
+	const unsigned width = name == ".byte"    ? 1
+		: name == ".short" || name == ".word" ? 2
+		: name == ".long"                     ? 4
+		: name == ".quad"                     ? 8
+											  : 0;
+	if (width != 0)
+	{
+		inst.data = true;
+		do
+		{
+			const uint64_t value = integer();
+			if (inst.bytes.size() + width > (1u << 20))
+				fail("assembly data exceeds byte limit");
+			for (unsigned i = 0; i < width; ++i)
+				inst.bytes.push_back(value >> (8 * i));
+		} while (take(','));
+		return true;
+	}
+	if (name != ".zero" && name != ".space" && name != ".skip")
+		return false;
+	const uint64_t count = integer();
+	if (count > (1u << 20))
+		fail("assembly data exceeds byte limit");
+	const uint64_t fill = take(',') ? integer() : 0;
+	if (fill > 255)
+		fail("assembly data fill exceeds one byte");
+	inst.data = true;
+	inst.bytes.assign(count, fill);
+	return true;
 }
 
 bool Parser::syntax(const std::string& name)
@@ -650,6 +744,16 @@ std::vector<Instruction> Parser::run()
 		}
 		inst.prefix = pending_prefix;
 		pending_prefix = 0;
+		if (directive(inst))
+		{
+			if (inst.prefix)
+				fail("assembly prefix cannot precede data or alignment");
+			space();
+			if (pos_ != source_.size() && current() != '\n' && current() != ';' && current() != '#')
+				fail("unexpected token after assembly directive");
+			result.push_back(std::move(inst));
+			continue;
+		}
 		const bool branch = inst.mnemonic[0] == 'j' || inst.mnemonic == "call" || inst.mnemonic == "callq";
 		if (current() != '\n' && current() != ';' && current() != '#' && pos_ != source_.size())
 		{

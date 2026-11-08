@@ -28,7 +28,7 @@ uint64_t register_domain(
 		operand.type.kind() == lowir::TypeKind::I128 || operand.type.kind() == lowir::TypeKind::F80)
 		return 0;
 	if (alt.matching != asm_model::kNoId)
-		return (uint64_t(0xffffffffu) << 16) |
+		return (uint64_t(0xffffffffu) << 16) | (operand.type.is_integer() ? (uint64_t(0xff) << 48) : 0) |
 			(operand.type.is_vector() || wide_assembly_operand(operand.type) ? 0 : 0xffcfu);
 	if ((alt.locations & AL_REGISTER) == 0)
 		return 0;
@@ -39,12 +39,12 @@ uint64_t register_domain(
 		if (group.register_count != 1)
 			continue;
 		const Register& reg = module.registers[group.first_register];
-		if (reg.offset != 0 || reg.number >= (reg.bank == RegisterBank::Vector ? 32 : 16) ||
-			(reg.bank != RegisterBank::Gpr && reg.bank != RegisterBank::Vector) ||
+		const Reg r = assembly_register_key(reg);
+		if (reg.offset != 0 || r == kNoReg ||
 			(reg.bank == RegisterBank::Gpr && (operand.type.is_vector() || operand.type.is_object())) ||
+			(reg.bank == RegisterBank::Mask && !operand.type.is_integer()) ||
 			(reg.bits != 0 && reg.bits != width(operand.type, reg.bank)))
 			continue;
-		const Reg r = static_cast<Reg>(reg.number + (reg.bank == RegisterBank::Vector ? 16 : 0));
 		if (r != RSP && r != RBP)
 			mask |= assembly_register_bit(r);
 	}
@@ -140,7 +140,7 @@ uint64_t available(const std::vector<Group>& groups, uint32_t index, uint64_t ma
 
 const Reg kPreference[] = { R10, R11, XMM14, XMM15, RAX, RCX, RDX, RSI, RDI, R8, R9, XMM0, XMM1, XMM2, XMM3, XMM4, XMM5,
 	XMM6, XMM7, XMM8, XMM9, XMM10, XMM11, XMM12, XMM13, RBX, R12, R13, R14, R15, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
-	42, 43, 44, 45, 46, 47 };
+	42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55 };
 
 // Location and physical register are one joint choice. Memory operands retain
 // their address registers for the effect; an immediate uses no register unit.

@@ -133,7 +133,7 @@ void PPLexer::lex_escape_sequence()
 	const SourceChar backslash = cur_;
 	const SourceChar introducer = peek_after(backslash);
 	const int32_t c = introducer.code_point;
-	if (IsSimpleEscapeChar(c))
+	if (IsSimpleEscapeChar(c) || (gnu_escapes_ && (c == 'e' || c == 'E')))
 	{
 		take(backslash);
 		take(introducer);

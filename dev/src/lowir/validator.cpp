@@ -12,6 +12,7 @@ namespace {
 
 const uint32_t kPlacedBlock = 1;
 const uint32_t kHandlerBlock = 2;
+const uint32_t kCodeAddress = 4;
 
 bool cpu_query_declaration(const Program& program, const Symbol& symbol)
 {
@@ -185,6 +186,7 @@ enum class ExtraOperands : uint8_t
 	None,
 	Values,
 	Symbols,
+	Blocks,
 	PhiPairs, // (Block, value); kinds are check_phi's
 	CasePairs // (value, Block)
 };
@@ -220,6 +222,8 @@ const OperandRule kOperandRules[] = {
 		kMemoryOrderCount },                                                                 // AtomicCompareExchange
 	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // VaArg
 	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // StackAlloc
+	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // StackSave
+	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // ReadMxcsr
 	{ { kTempOperand | kSymbolOperand, kNoOperand, kNoOperand }, ExtraOperands::Values, 1 }, // Call
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // Exception
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // ExceptionSelector
@@ -229,6 +233,8 @@ const OperandRule kOperandRules[] = {
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // AtomicThreadFence
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // AtomicSignalFence
 	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // VaStart
+	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // StackRestore
+	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // WriteMxcsr
 	{ { kValueOperand, kValueOperand, kNoOperand }, ExtraOperands::None, 64 },               // CopyObject
 	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 64 },                  // ZeroInit
 	{ { kBlockOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // EhTry
@@ -242,6 +248,7 @@ const OperandRule kOperandRules[] = {
 	{ { kBlockOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // Jump
 	{ { kValueOperand, kBlockOperand, kBlockOperand }, ExtraOperands::None, kBranchPredictionCount }, // Branch
 	{ { kValueOperand, kBlockOperand, kNoOperand }, ExtraOperands::CasePairs, 1 },                    // Switch
+	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::Blocks, 1 },                          // IndirectJump
 	{ { kValueOperand | kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },               // Return
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                               // Unreachable
 };
@@ -262,6 +269,7 @@ Type result_type(const Instruction& inst)
 	case Opcode::Addr:
 	case Opcode::Index:
 	case Opcode::StackAlloc:
+	case Opcode::StackSave:
 		return Type::scalar(TypeKind::Ptr);
 	default:
 		return inst.type;
@@ -363,10 +371,25 @@ bool Validator::run()
 				return false;
 	if (!check_symbols())
 		return false;
+	std::vector<bool> code_names(program_.symbols.size(), false);
 	for (SymbolId symbol = 0; symbol < program_.symbols.size(); ++symbol)
 	{
-		if (program_.symbols[symbol].kind == SymbolKind::FunctionDefinition && !check_function(symbol))
+		if (program_.symbols[symbol].kind != SymbolKind::FunctionDefinition)
+			continue;
+		if (!check_function(symbol))
 			return false;
+		for (const CodeLabel& label : program_.functions[program_.symbols[symbol].detail].body->code_labels)
+		{
+			if (label.symbol >= code_names.size() || code_names[label.symbol])
+				return fail("duplicate or invalid code label symbol");
+			code_names[label.symbol] = true;
+			const Symbol& declaration = program_.symbols[label.symbol];
+			if (declaration.kind != SymbolKind::GlobalDeclaration ||
+				declaration.metadata.binding != ir_model::SBM_INTERNAL ||
+				declaration.metadata.storage != ir_model::GSM_DEFAULT || !program_.globals[declaration.detail].typed ||
+				program_.globals[declaration.detail].type != Type::scalar(TypeKind::I8))
+				return fail("code label requires an internal i8 declaration");
+		}
 	}
 	return true;
 }
@@ -465,6 +488,14 @@ bool Validator::check_function(SymbolId symbol, const FunctionBody* assembly_bod
 	signature_ = &program_.signatures[function.signature];
 	if (!check_layout() || !check_targets())
 		return false;
+	for (const CodeLabel& label : body_->code_labels)
+	{
+		if (label.block >= body_->blocks.size() || (block_flags_[label.block] & kPlacedBlock) == 0)
+			return fail("code label names no placed block");
+		const InstId first = body_->blocks[label.block].first;
+		if (first != kNoId && body_->instructions[first].op == Opcode::Phi)
+			return fail("addressed block cannot have phi inputs");
+	}
 	for (TempId temp = body_->parameter_count; temp < body_->temps.size(); ++temp)
 	{
 		if (body_->temps[temp].def == kNoId)
@@ -687,6 +718,7 @@ bool Validator::check_operands(InstId id, const Instruction& inst)
 	{
 		const uint8_t kinds = rule.extra == ExtraOperands::Values ? kValueOperand
 			: rule.extra == ExtraOperands::Symbols                ? kSymbolOperand
+			: rule.extra == ExtraOperands::Blocks                 ? kBlockOperand
 			: rule.extra == ExtraOperands::CasePairs              ? (i % 2 == 0 ? kValueOperand : kBlockOperand)
 																  : 0xff;
 		if (!is_operand(extra[i], kinds))
@@ -732,6 +764,12 @@ bool Validator::check_targets()
 	// Ordinary edges come from terminators; eh_try and eh_cleanup name
 	// handler blocks, which are not ordinary successors.
 	edges_.clear();
+	for (const CodeLabel& label : body_->code_labels)
+	{
+		if (label.block >= body_->blocks.size())
+			return fail("invalid code label block");
+		block_flags_[label.block] |= kCodeAddress;
+	}
 	marks_.assign(body_->blocks.size(), 0);
 	mark_ = 0;
 	for (BlockId block : body_->layout)
@@ -759,6 +797,19 @@ bool Validator::check_targets()
 				{
 					if (!add_edge(block, body_->operands[inst.extra_first + i]))
 						return false;
+				}
+			}
+			else if (inst.op == Opcode::IndirectJump)
+			{
+				if (inst.extra_count == 0)
+					return fail("indirect jump requires destinations");
+				for (uint32_t k = 0; k < inst.extra_count; ++k)
+				{
+					const Value target = body_->operands[inst.extra_first + k];
+					if (!add_edge(block, target))
+						return false;
+					if ((block_flags_[target.index] & kCodeAddress) == 0)
+						return fail("indirect destination has no code label");
 				}
 			}
 		}
@@ -863,6 +914,10 @@ bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId bl
 	Type type = Type::scalar(TypeKind::Void);
 	switch (inst.op)
 	{
+	case Opcode::IndirectJump:
+		if (!value_type(inst.ops[0], type) || !type.is_pointer())
+			return fail("indirect jump requires a pointer");
+		return true;
 	case Opcode::Phi:
 		return check_phi(inst, block);
 	case Opcode::Unary:
@@ -915,6 +970,17 @@ bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId bl
 				(inst.type.is_object() || inst.type.kind() == TypeKind::F80 || inst.type.kind() == TypeKind::I128)))
 			return fail("va_arg scalar type is not supported");
 		return true;
+	case Opcode::ReadMxcsr:
+		return inst.type.kind() == TypeKind::U32 || fail("read_mxcsr requires a u32 result");
+	case Opcode::WriteMxcsr:
+		return (inst.type.kind() == TypeKind::U32 &&
+				   (inst.ops[0].is(ValueKind::Integer) ||
+					   (value_type(inst.ops[0], type) && type.kind() == TypeKind::U32))) ||
+			fail("write_mxcsr requires a u32 value");
+	case Opcode::StackSave:
+		return inst.type.is_pointer() || fail("stack_save requires a pointer result");
+	case Opcode::StackRestore:
+		return (value_type(inst.ops[0], type) && type.is_pointer()) || fail("stack_restore requires a pointer mark");
 	case Opcode::StackAlloc:
 		if (!inst.ops[0].is(ValueKind::Integer) && (!value_type(inst.ops[0], type) || !type.is_integer()))
 			return fail("stack_alloc requires an integer size");

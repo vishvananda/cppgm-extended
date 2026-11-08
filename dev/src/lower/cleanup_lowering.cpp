@@ -76,12 +76,14 @@ bool FunctionLowering::call_may_throw(const sema::FunctionEntity* function) cons
 {
 	// 15.4p12: a function without a non-throwing exception-specification
 	// (destructors have one implicitly, 15.4p14).
-	return function != nullptr && function->builtin == sema::BuiltinFunction::None &&
+	return lowering_.exceptions() && function != nullptr && function->builtin == sema::BuiltinFunction::None &&
 		((hidden_eh_ && !function->destructor) || !lowering_.function_nothrow(function));
 }
 
 bool FunctionLowering::may_throw(const syntax::Expr* root)
 {
+	if (!lowering_.exceptions())
+		return false;
 	// Whether evaluating the expression calls a function that may throw:
 	// a direct call, an overloaded operator, a constructor, an allocation
 	// function, a user-defined literal or a call through a pointer;
@@ -720,6 +722,8 @@ void FunctionLowering::before_throwing_call()
 
 void FunctionLowering::open_region(bool empty, bool here)
 {
+	if (!lowering_.exceptions())
+		return;
 	// None opens inside an explicit region (an array element's, whose
 	// handler resumes into the enclosing one). Inside a handler a
 	// full-expression making temporaries brackets its calls all the same
@@ -2008,6 +2012,8 @@ bool FunctionLowering::declarator_may_throw(const syntax::InitDeclarator& init)
 
 bool FunctionLowering::definition_may_throw()
 {
+	if (!lowering_.exceptions())
+		return false;
 	// The body's statements and a constructor's subobject initializations.
 	// A delete-expression counts as its destructor does: a terminate guard
 	// is opened only where something in the definition can unwind.

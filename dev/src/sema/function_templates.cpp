@@ -1119,8 +1119,17 @@ FunctionEntity* Analyzer::deduce_for_call(
 			return nullptr;
 		if ((facts->flags & kOverloadSet) != 0)
 			deduce_overloaded(p, facts->functions, depth, arguments);
-		else if (facts->type == nullptr || !deduce_argument(p, facts->type, facts->category, depth, arguments))
-			return nullptr;
+		else
+		{
+			const bool class_rvalue = primary->templ->class_deduction_parameters != 0 &&
+				p->kind == TypeKind::RValueReference && p->element->kind == TypeKind::TemplateParameter &&
+				static_cast<const TemplateParameterEntity*>(p->element->entity)->index <
+					primary->templ->class_deduction_parameters;
+			if (facts->type == nullptr ||
+				!deduce_argument(
+					p, facts->type, class_rvalue ? ValueCategory::PRValue : facts->category, depth, arguments))
+				return nullptr;
+		}
 	}
 	if (trailing && call_arguments.size > fixed &&
 		!deduce_call_pack(parameters[total - 1]->element->canonical, call_arguments, fixed, depth, arguments,
@@ -1310,7 +1319,8 @@ bool Analyzer::deduced_values_typed(const FunctionEntity* primary, const TypeLis
 	{
 		const TemplateParameterEntity* parameter = head->parameters[i];
 		const Type* declared = parameter->value_type;
-		if (arguments[i] == nullptr || !parameter->non_type || declared == nullptr || dependent_type(declared))
+		if (arguments[i] == nullptr || !parameter->non_type || declared == nullptr || holds_auto(declared) ||
+			dependent_type(declared))
 			continue;
 		const bool pack = arguments[i]->kind == TypeKind::Pack;
 		const uint32_t count = pack ? arguments[i]->param_count : 1;

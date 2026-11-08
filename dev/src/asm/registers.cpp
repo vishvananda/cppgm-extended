@@ -53,6 +53,11 @@ Register view(RegisterBank bank, unsigned number, unsigned bits, unsigned offset
 
 bool parse_register(const char* name, std::size_t size, Register& reg)
 {
+	if (size != 0 && name[0] == '%')
+	{
+		++name;
+		--size;
+	}
 	if (size == 0 || size >= 9)
 		return false;
 	char text[9];
@@ -140,6 +145,9 @@ std::string register_name(const Register& reg)
 		return std::string();
 	if (reg.bank == RegisterBank::Segment && reg.bits == 16 && reg.number < 6)
 		return kSegment[reg.number];
+	if (reg.bank == RegisterBank::Mask && reg.number < 8 &&
+		(reg.bits == 8 || reg.bits == 16 || reg.bits == 32 || reg.bits == 64))
+		return "k" + std::to_string(reg.number);
 	if (reg.bank == RegisterBank::X87 && reg.bits == 80 && reg.number < 8)
 		return "st(" + std::to_string(reg.number) + ")";
 	for (const Family& family : kFamilies)

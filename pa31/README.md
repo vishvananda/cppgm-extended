@@ -256,7 +256,11 @@ Host-compiled and compiler-generated objects must agree on function-pointer
 types, template arguments, conversions and exception matching.
 
 The optional lane also checks C++14 aggregate member initialization with
-hosted library members, building on PA29's initialization rules.
+hosted library members, building on PA29's initialization rules. C++17 inline
+variables retain one address across translation units, including when `inline`
+appears on a later definition. Inline static class members receive their
+required initialization once, including default construction without a written
+initializer.
 
 The fixtures ship in `tests/modern-cxx/link/`. Run them explicitly:
 

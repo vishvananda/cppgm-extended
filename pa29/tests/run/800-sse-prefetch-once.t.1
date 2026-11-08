@@ -1,0 +1,9 @@
+#include <xmmintrin.h>
+static unsigned calls;
+static int values[32];
+__attribute__((noinline)) const void *address() { ++calls; return values; }
+int main() {
+    _mm_prefetch(static_cast<const char*>(address()), _MM_HINT_T0);
+    _mm_prefetch(static_cast<const char*>(address()), _MM_HINT_NTA);
+    return calls != 2;
+}

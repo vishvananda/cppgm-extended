@@ -1033,6 +1033,7 @@ Expr* SyntaxCloner::type_expr(const Expr* expr)
 		result->constructor = nullptr;
 		result->count = nullptr;
 		result->deallocation = nullptr;
+		result->implicit_alignment = 0;
 		return result;
 	}
 	default:
@@ -1119,6 +1120,7 @@ Expr* SyntaxCloner::call_like(const Expr* expr)
 		BracedInitList* result = copy(static_cast<const BracedInitList*>(expr));
 		result->elements = exprs(result->elements);
 		result->union_member = nullptr;
+		result->result_source = nullptr;
 		return result;
 	}
 	}
@@ -1141,6 +1143,13 @@ Expr* SyntaxCloner::expr(const Expr* expr)
 	case ExprKind::Literal:
 		result = copy(static_cast<const LiteralExpr*>(expr));
 		break;
+	case ExprKind::LabelAddress:
+	{
+		LabelAddressExpr* label = copy(static_cast<const LabelAddressExpr*>(expr));
+		label->function = nullptr;
+		result = label;
+		break;
+	}
 	case ExprKind::KeywordLiteral:
 		result = copy(static_cast<const KeywordLiteralExpr*>(expr));
 		if (collecting_ != nullptr && static_cast<const KeywordLiteralExpr*>(expr)->keyword == TokenKind::KW_THIS)
@@ -1449,7 +1458,11 @@ Stmt* SyntaxCloner::stmt(const Stmt* stmt)
 		return result;
 	}
 	case StmtKind::Goto:
-		return copy(static_cast<const GotoStmt*>(stmt));
+	{
+		GotoStmt* result = copy(static_cast<const GotoStmt*>(stmt));
+		result->target = expr(result->target);
+		return result;
+	}
 	case StmtKind::Break:
 	case StmtKind::Continue:
 		return copy(stmt);

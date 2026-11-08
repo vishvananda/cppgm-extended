@@ -108,6 +108,12 @@ struct ArgumentClasses
 // may be created before they are placed. Operand lists longer than an
 // instruction's inline operands live in `operands`, literals in `literals`,
 // debug locations in `locations`.
+struct CodeLabel
+{
+	SymbolId symbol;
+	BlockId block;
+};
+
 struct FunctionBody
 {
 	uint32_t parameter_count = 0;
@@ -120,6 +126,9 @@ struct FunctionBody
 	std::vector<Literal> literals;
 	std::vector<DebugLocation> locations;
 	std::vector<ArgumentClasses> argument_classes;
+	// Named code addresses. Their blocks have no phis: every indirect
+	// incoming edge must agree on the same machine state.
+	std::vector<CodeLabel> code_labels;
 
 	DebugLocation location_of(const Instruction& inst) const
 	{

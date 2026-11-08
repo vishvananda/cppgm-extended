@@ -48,6 +48,9 @@ hosted headers depend on:
 - hosted source lines may end in CRLF: a splice deletes the carriage return
   with the backslash and new-line, after a trigraph `??/` too. PA1's `new-line`
   stays LF alone
+- parenthesized parameter declarators introduce their names normally, including
+  array parameters; a known type name still participates in the usual
+  function-type disambiguation
 - a quote with no partner on its line is a token of its own, so `#if 0` text
   may say `don't`. PA1 rejects one
 
@@ -293,12 +296,18 @@ parameters (including packs and forwarding), initialized lambda captures, and
 pack-expanded using-declarations. An initialized capture deduces its type from
 its initializer in the enclosing scope; its new name is visible in the lambda
 body. Preserve reference binding, moves, and cleanup if a later capture throws.
+In C++14 and later, contextual conversions such as array bounds and switch
+conditions can select among cv-qualified conversion overloads when all viable
+conversions lead to one permitted type. Distinct result types remain ambiguous.
+
 In C++14 and later, default member initializers do not disqualify an aggregate.
 Explicitly initialized members use the supplied values; omitted members use
 their default initializers in member order. Retain the C++11 restriction in
 C++11 mode, along with the other aggregate restrictions in every mode.
 Preserve reference/value categories and reject invalid initializers and overload
-candidates. The selected language mode also controls later library interfaces.
+candidates. Digit separators keep their value in native floating literals and cooked
+literal-operator calls; raw and template literal operators retain the original
+characters. The selected language mode also controls later library interfaces.
 Deleted overloads with placeholder return types must not force deduction from
 a nonexistent body.
 
@@ -307,6 +316,35 @@ non-throwing types, allow discarding the guarantee, and preserve it through
 deduction. Static `constexpr` data members are implicitly inline; definitions
 across translation units denote one object, including arrays and class-valued
 members. PA31's optional suite checks the corresponding host ABI behavior.
+
+Constructor-based class template argument deduction applies to temporary
+construction and initialized object declarations, including array references,
+constructor templates and dependent uses. Deduce first, then initialize the
+selected specialization with the usual access and conversion checks. In C++17,
+a same-class prvalue initializes its result object directly, without selecting a
+copy or move constructor. Preserve that behavior for returns, parameters and
+members, while retaining copy requirements for potentially overlapping base
+and delegating subobjects.
+For hosted compatibility in this mode, a conversion function returning that
+class by value can also construct the direct-initialization result. Compare
+its object binding with competing constructors; a constructor wins a tie.
+
+Placeholder non-type template parameters (`auto`, `auto*`, `auto&` and
+`decltype(auto)`) deduce the argument's type as well as its value. Preserve
+function and object identities, reference binding and heterogeneous packs;
+the deduced type must still be a permitted C++17 template-argument type.
+
+Hosted C++17 allocation uses `<new>`'s `std::align_val_t` declarations for
+objects aligned beyond `__STDCPP_DEFAULT_NEW_ALIGNMENT__`. Select alignment-aware
+allocation and deallocation overloads, including arrays, class fallback forms
+and constructor-failure cleanup. Preserve placement arguments and pass the
+object's alignment to the selected ABI.
+
+C++17 aggregates can include public, non-virtual bases. Initialize those bases
+before direct members, with the same brace elision, constant evaluation and
+cleanup rules as other aggregate elements. Keep C++11/14's base restriction.
+An overloaded operator's placeholder return type must be deduced before its
+result is used, just as for an ordinary function call.
 
 `make test` and the cumulative reports exclude these tests. The root
 `make test-modern-cxx` collects the optional PA29 and PA31 suites.
@@ -389,6 +427,9 @@ To complete PA29, implement hosted compatibility for:
   `__has_declspec_attribute`, answer no rather than failing
 - GNU `always_inline` direct calls in host objects substitute the available
   body at every optimization level, including constructors and destructors.
+  A bounded constant stack request outside every control-flow cycle can use
+  fixed local storage before substitution. Preserve distinct allocations in
+  loops; a dynamic request still needs its own stack lifetime.
   Determine recursion from reachable calls after constant branch cleanup; an
   unreachable self call must not block substitution.
   Substitution preserves cleanup, noexcept termination, local-static identity
@@ -749,3 +790,24 @@ unary `+`/`-` promote it to `float`; variadic arguments promote it to `double`.
 Preserve binary16 conversions, vector lanes and its distinct Itanium `Dh`
 encoding. A declared scalar `__fp16` parameter or return type is rejected;
 pointers and references remain valid.
+
+Required inlining preserves dynamic stack allocation lifetimes. Constant-sized,
+on-repeating requests may use fixed frame storage; runtime-sized or repeated
+requests retain dynamic storage and release it when the substituted call returns.
+
+The optional `test-target-features` lane also checks ordered SSE feature flags
+(`-msse3`, `-mssse3`, `-msse4.1`, `-msse4.2` and their `-mno-` forms), implied
+feature macros, and SSE4.1 dot-product, insertion and rounding builtins. Native
+checks must guard execution on CPUs that lack the requested instruction set.
+
+The SSE control builtins behind `_mm_getcsr` and `_mm_setcsr` access actual CPU
+state. Preserve argument evaluation, mode bits and instruction ordering; restore
+the original state in tests that change it.
+
+GNU source accepts `\e` and `\E` for the escape character (value 27),
+including wide literals. Preserve their source spelling during preprocessing
+and stringification; raw strings retain their backslashes.
+
+`-fno-exceptions` rejects source throw and try/catch constructs and omits
+unwind cleanup regions. Normal scope-exit destruction, temporary lifetimes and
+array destruction still run. The opposite flag restores exception handling.

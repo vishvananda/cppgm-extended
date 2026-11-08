@@ -40,6 +40,7 @@ void SourceStack::enter(SourceFile* file, std::string presumed_name, std::size_t
 	options.digit_separators = hosted_;
 	options.legacy_comment_bytes = hosted_;
 	options.lone_quotes = hosted_;
+	options.gnu_escapes = hosted_;
 	options.crlf_splices = hosted_;
 	frame->lexer.reset(new PPLexer(file->buffer(), options));
 	frame->conditional_depth = conditional_depth;

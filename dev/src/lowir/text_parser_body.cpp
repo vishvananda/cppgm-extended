@@ -110,6 +110,22 @@ void Parser::parse_body(SymbolId function)
 				fail("slot declaration after first block");
 			parse_slot(builder);
 		}
+		else if (accept_keyword(Keyword::CodeLabel))
+		{
+			if (!body.layout.empty())
+				fail("code label declaration after first block");
+			const SymbolId symbol = reference_symbol(expect_name(TokenKind::Global, "code label symbol"));
+			if (program_.symbols[symbol].kind == SymbolKind::Unresolved)
+			{
+				Global global = Global();
+				global.typed = true;
+				global.type = Type::scalar(TypeKind::I8);
+				program_.declare_global(symbol, SymbolKind::GlobalDeclaration, global);
+				program_.symbols[symbol].metadata.binding = ir_model::SBM_INTERNAL;
+			}
+			expect(TokenKind::Equals, "=");
+			body.code_labels.push_back(CodeLabel{ symbol, expect_block(builder) });
+		}
 		else if (accept_keyword(Keyword::Block))
 			parse_block_label(builder);
 		else
@@ -435,6 +451,14 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Opcode keyword, I
 		inst.type = parse_type();
 		result = keyword == Opcode::Exception ? inst.type : kI64;
 		return true;
+	case Opcode::ReadMxcsr:
+		inst.op = keyword;
+		inst.type = result = Type::scalar(TypeKind::U32);
+		return true;
+	case Opcode::StackSave:
+		inst.op = Opcode::StackSave;
+		inst.type = result = kPtr;
+		return true;
 	case Opcode::StackAlloc:
 		inst.op = Opcode::StackAlloc;
 		inst.type = result = kPtr;
@@ -566,8 +590,14 @@ void Parser::parse_effect(FunctionBuilder& builder)
 		inst.op = keyword == Opcode::AtomicThreadFence ? Opcode::AtomicThreadFence : Opcode::AtomicSignalFence;
 		inst.order = parse_order();
 		break;
+	case Opcode::WriteMxcsr:
+		inst.op = keyword;
+		inst.type = Type::scalar(TypeKind::U32);
+		inst.ops[0] = parse_value(builder, TypeKind::U32);
+		break;
+	case Opcode::StackRestore:
 	case Opcode::VaStart:
-		inst.op = Opcode::VaStart;
+		inst.op = keyword;
 		inst.ops[0] = parse_value(builder, TypeKind::Ptr);
 		break;
 	case Opcode::Call:
@@ -646,6 +676,17 @@ bool Parser::parse_control_instruction(FunctionBuilder& builder, Opcode keyword,
 	case Opcode::Switch:
 		parse_switch(builder, inst);
 		return true;
+	case Opcode::IndirectJump:
+	{
+		inst.op = Opcode::IndirectJump;
+		inst.ops[0] = parse_value(builder, TypeKind::Ptr);
+		std::vector<Value> targets;
+		while (accept(TokenKind::Comma))
+			targets.push_back(Value::block(expect_block(builder)));
+		inst.extra_first = builder.add_operands(targets.data(), targets.size());
+		inst.extra_count = targets.size();
+		return true;
+	}
 	case Opcode::Return:
 		inst.op = Opcode::Return;
 		inst.type = parse_type();

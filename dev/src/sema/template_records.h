@@ -18,6 +18,8 @@ struct TypeId;
 // and the member classes of both (sema/class_templates.cpp builds them).
 namespace sema {
 
+struct DeductionHeadOrigins;
+
 // A template's parameter list (14.1) as its declarations accumulate it:
 // the parameters of its first declaration in order, and each position's
 // default argument (14.1p10: defaults merge across declarations), a type-id
@@ -49,6 +51,15 @@ struct TemplateHead
 	// non-type parameters' types, as an interned Pack (equivalent heads,
 	// 14.5.6.1p6, have one shape); null for other templates.
 	const Type* shape;
+	const DeductionHeadOrigins* deduction_origins;
+};
+
+// Implicit deduction guides join a class head and constructor head. Defaults
+// retain their original definition contexts, before the positional remapping.
+struct DeductionHeadOrigins
+{
+	const TemplateHead* outer;
+	const TemplateHead* inner;
 };
 
 inline bool HasDefault(const TemplateHead* head, uint32_t index)

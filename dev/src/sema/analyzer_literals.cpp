@@ -98,7 +98,11 @@ ExprFacts* Analyzer::literal(const syntax::LiteralExpr& expr)
 		return facts;
 	}
 	if (number.kind == NumberLiteralKind::Floating)
-		return new_facts(expr, types_.fundamental(number.type), ValueCategory::PRValue);
+	{
+		ExprFacts* facts = new_facts(expr, types_.fundamental(number.type), ValueCategory::PRValue);
+		facts->value = number.suffix_begin;
+		return facts;
+	}
 	if (number.kind == NumberLiteralKind::UserDefinedInteger || number.kind == NumberLiteralKind::UserDefinedFloating)
 		return user_numeric_literal(expr, number);
 	error(expr.location, "invalid numeric literal");
@@ -174,7 +178,7 @@ ExprFacts* Analyzer::user_numeric_literal(const syntax::LiteralExpr& expr, const
 	if (form == kLiteralCallCooked && number.kind == NumberLiteralKind::UserDefinedInteger &&
 		!UserIntegerValue(spelling.text, number.suffix_begin, digits))
 		error(expr.location, "a user-defined integer literal beyond unsigned long long");
-	return literal_call(expr, function, form);
+	return literal_call(expr, function, form | (uint64_t(number.suffix_begin) << 8));
 }
 
 ExprFacts* Analyzer::literal_call(const syntax::LiteralExpr& expr, FunctionEntity* function, uint64_t form)

@@ -792,7 +792,7 @@ void Analyzer::integral_constant_operand(const syntax::Expr& expr, Scope* scope,
 	expression_scope_ = scope;
 	if (target != nullptr)
 		convert_to_scalar(expr, target, false);
-	else if (const FunctionEntity* converter = unique_conversion(ClassOf(facts->type), IsIntegralOrUnscopedEnum))
+	else if (const FunctionEntity* converter = unique_conversion(ClassOf(facts->type), IsIntegralOrUnscopedEnum, facts))
 		convert_class_operand(expr, converter);
 	body_ = saved_body;
 	expression_scope_ = saved_scope;

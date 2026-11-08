@@ -31,6 +31,8 @@ struct PPLexerOptions
 	bool legacy_comment_bytes = false;
 	// A quote with no partner on its line is a token of its own (hosted).
 	bool lone_quotes = false;
+	// GNU source accepts escape-character spellings \e and \E.
+	bool gnu_escapes = false;
 	// Hosted sources may end lines in CRLF: a splice deletes the CR too.
 	bool crlf_splices = false;
 };
@@ -156,5 +158,6 @@ private:
 	bool digit_separators_;
 	bool legacy_comment_bytes_;
 	bool lone_quotes_;
+	bool gnu_escapes_;
 	DirectiveContext context_;
 };

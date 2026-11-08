@@ -1,5 +1,35 @@
 # Optional assembly boundary
 
+## Code addresses and indirect branches
+
+An ordinary function can declare named addresses before its first block:
+
+```text
+function @dispatch(%target : ptr) -> void {
+  code_label @again_address = ^again
+  block ^entry:
+    indirect_jump %target, ^again
+  block ^again:
+    return void
+}
+```
+
+`code_label @name = ^block` defines a unit-local symbol at that block's native
+entry. Its declaration is an internal `i8` global, created implicitly when
+absent. It allocates no data. Ordinary `addr` values and global address data
+can reference it. Each symbol belongs to one function and one placed block.
+Addressed blocks have no phi inputs: their incoming machine state must agree
+without predecessor-specific copies.
+
+`indirect_jump <ptr>, ^target...` terminates its block. The list is nonempty,
+names addressed blocks in this function and includes every destination the
+pointer may select. Jumping elsewhere is undefined. All listed destinations
+are real control-flow successors for liveness and effect analysis. The jump
+performs no implicit cleanup. Preserve code identities and prevent cloning
+that would redirect persistent tables into another function copy.
+
+## Assembly templates
+
 An assembly template has a separate name space from functions and globals.
 Define it before invoking it. It owns source fragments and operand descriptions;
 an invocation supplies ordinary LowIR values, so no frontend AST or temporary
@@ -164,6 +194,9 @@ YMM/ZMM alternatives in registers 0..31,
 including stored input values or explicit input-storage pointers. Object
 alignment describes its storage; transfers must preserve all payload bytes even
 when unaligned. XMM and YMM views of one register share an allocation unit.
+Integer operands can select k0..k7 groups with 8-, 16-, 32- or 64-bit views.
+Their transfers preserve exactly that payload width. A mask clobber excludes
+the whole k register from joint assignment.
 Capture full results before ordered output stores. This does not add a wide
 vector call ABI; larger values and further register classes remain separate
 capabilities.

@@ -210,6 +210,13 @@ void constraints(PacketBuilder& packet, const std::vector<GnuOperand>& source)
 					registers(packet, alternative, RegisterBank::Gpr, 0xef);
 				else if (c == 'x' || c == 'v')
 					registers(packet, alternative, RegisterBank::Vector, c == 'v' ? 0xffffffffu : 0xffffu);
+				else if (c == 'k')
+					registers(packet, alternative, RegisterBank::Mask, 0xffu);
+				else if (c == 'Y' && pos + 1 < constraint.size() && constraint[pos + 1] == 'k')
+				{
+					++pos;
+					registers(packet, alternative, RegisterBank::Mask, 0xfeu);
+				}
 				else if (c == 'm' || c == 'o')
 					alternative.locations |= AL_MEMORY;
 				else if (c == 'g' || c == 'X')

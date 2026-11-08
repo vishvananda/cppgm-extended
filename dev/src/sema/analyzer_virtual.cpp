@@ -1083,7 +1083,7 @@ const FunctionEntity* Analyzer::virtual_deallocation(ClassEntity* entity, bool f
 	if (!found.found())
 		found = names_.qualified(graph_.global, key, LookupFilter::Ordinary);
 	const FunctionEntity* function = found.found() && found.binding->kind == BindingKind::Function
-		? usual_deallocation(found.functions)
+		? usual_deallocation(found.functions, entity->type)
 		: nullptr;
 	if (!fatal)
 	{

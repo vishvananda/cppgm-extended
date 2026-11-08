@@ -1427,9 +1427,9 @@ destination. `vector` reads no memory, has no side effect and does not trap.
 | binary | `paddb` `paddw` `paddd` `paddq` `psubb` `psubw` `psubd` `psubq` `paddsb` `paddsw` `paddusb` `paddusw` `psubsb` `psubsw` `psubusb` `psubusw` `pavgb` `pavgw` `pmullw` `pmulld` `pmulhw` `pmulhuw` `pmulhrsw` `pmuludq` `pmuldq` `pmaddwd` `pmaddubsw` `psadbw` |
 | binary | `pmaxsb` `pmaxsw` `pmaxsd` `pmaxub` `pmaxuw` `pmaxud` `pminsb` `pminsw` `pminsd` `pminub` `pminuw` `pminud` `pand` `pandn` `por` `pxor` `pcmpeqb` `pcmpeqw` `pcmpeqd` `pcmpeqq` `pcmpgtb` `pcmpgtw` `pcmpgtd` `pcmpgtq` |
 | binary | `psllw` `pslld` `psllq` `psrlw` `psrld` `psrlq` `psraw` `psrad` `packsswb` `packssdw` `packuswb` `packusdw` `punpcklbw` `punpcklwd` `punpckldq` `punpcklqdq` `punpckhbw` `punpckhwd` `punpckhdq` `punpckhqdq` `pshufb` `psignb` `psignw` `psignd` `phaddw` `phaddd` `phaddsw` `phsubw` `phsubd` `phsubsw` |
-| unary | `sqrtps` `sqrtpd` `rcpps` `rsqrtps` `movshdup` `movsldup` `movddup` `pabsb` `pabsw` `pabsd` `pmovsxbw` `pmovsxbd` `pmovsxbq` `pmovsxwd` `pmovsxwq` `pmovsxdq` `pmovzxbw` `pmovzxbd` `pmovzxbq` `pmovzxwd` `pmovzxwq` `pmovzxdq` `cvtdq2ps` `cvtdq2pd` `cvtps2dq` `cvttps2dq` `cvtpd2dq` `cvttpd2dq` `cvtps2pd` `cvtpd2ps` |
-| binary with an immediate | `cmpps` `cmppd` `cmpss` `cmpsd` `shufps` `shufpd` `palignr` `blendps` `blendpd` `pblendw` `pclmulqdq` |
-| unary with an immediate | `pshufd` `pshuflw` `pshufhw` `psllwi` `pslldi` `psllqi` `psrlwi` `psrldi` `psrlqi` `psrawi` `psradi` `pslldq` `psrldq` |
+| unary | `sqrtps` `sqrtpd` `rcpps` `rsqrtps` `movshdup` `movsldup` `movddup` `phminposuw` `pabsb` `pabsw` `pabsd` `pmovsxbw` `pmovsxbd` `pmovsxbq` `pmovsxwd` `pmovsxwq` `pmovsxdq` `pmovzxbw` `pmovzxbd` `pmovzxbq` `pmovzxwd` `pmovzxwq` `pmovzxdq` `cvtdq2ps` `cvtdq2pd` `cvtps2dq` `cvttps2dq` `cvtpd2dq` `cvttpd2dq` `cvtps2pd` `cvtpd2ps` |
+| binary with an immediate | `cmpps` `cmppd` `cmpss` `cmpsd` `shufps` `shufpd` `palignr` `blendps` `blendpd` `pblendw` `pclmulqdq` `dpps` `dppd` `insertps` `roundss` `roundsd` |
+| unary with an immediate | `roundps` `roundpd` `pshufd` `pshuflw` `pshufhw` `psllwi` `pslldi` `psllqi` `psrlwi` `psrldi` `psrlqi` `psrawi` `psradi` `pslldq` `psrldq` |
 | blend | `blendvps` `blendvpd` `pblendvb` |
 | mask | `movmskps` `movmskpd` `pmovmskb` |
 | test | `ptestz` `ptestc` `ptestnzc` |
@@ -1441,6 +1441,15 @@ These forms have no single SSE name:
 - `pclmulqdq` returns the 128-bit carryless product of one 64-bit lane from
   each operand, selected by immediate bits 0 and 4; other bits are ignored.
   Like other operations beyond SSE2, callers must ensure CPU support.
+- `phminposuw` finds the minimum unsigned 16-bit lane, places its value in
+  bits 0..15 and its first matching index in bits 16..18, and zeroes the rest.
+- `dpps` and `dppd` multiply the lanes selected by the high mask bits, sum
+  the products in SSE order, then write the sum to low-mask-selected lanes,
+  zeroing the others. `insertps` selects a source and destination lane before
+  applying its low four zero-mask bits.
+- `roundps` and `roundpd` round packed lanes using the immediate's SSE rounding
+  controls; `roundss` and `roundsd` round the low lane of the second operand
+  and retain the first operand's upper lanes. Callers ensure SSE4.1 support.
 - The blends take `xmm0` as the mask, so a backend moves `%mask` there.
 - `movss` and `movsd` are the register forms: the low lane of `%b` above the
   upper lanes of `%a`.
@@ -1451,6 +1460,18 @@ These forms have no single SSE name:
 Operations past SSE2 come only from builtins, which a program reaches through
 its own feature macros. An operation with no form here, such as `pmulld` on a
 GNU `*`, goes lane by lane.
+
+### SSE control and status
+
+```text
+%control = read_mxcsr
+write_mxcsr <u32-value>
+```
+
+These instructions read and write the x86 SSE control/status register. Values
+must contain only bits supported by the target CPU. Preserve their order and
+explicit rounding instructions' dependence on current rounding control. This
+interface does not enable `FENV_ACCESS` for ordinary C++ floating expressions.
 
 ### Stack allocation
 
@@ -1463,6 +1484,23 @@ returns a `ptr` to the allocated storage. Native backends align the allocation t
 the target stack requirement and restore the stack through the normal function
 epilogue. This is the stable LowIR lowering for source builtins such as
 `__builtin_alloca`; it is not a callable external symbol.
+
+A substituted function with runtime-sized allocations can delimit their lifetime:
+
+```text
+%mark = stack_save
+%p = stack_alloc <size>
+stack_restore %mark
+```
+
+`stack_save` produces an opaque `ptr` mark for the current dynamic stack position.
+`stack_restore` releases allocations made after that mark; fixed slots remain
+valid. The mark must come from a dominating save in this invocation and restores
+must respect nesting. Released pointers must not be dereferenced. Neither
+operation may be moved across a stack allocation or another stack boundary.
+Inlining preserves each callee's normal-return boundary; exception unwinding
+restores the enclosing handler's saved stack independently. PA8 carries these
+forms; PA29's stack builtins and required inlining exercise their native behavior.
 
 ### Variadic Argument Access
 
@@ -2153,6 +2191,10 @@ typed call signatures while assembly owns the complete ABI entry and exit;
 the optional `initial` mode supplies entry/exit unwind records.
 Ordered `assembly_global` invocations describe module code/data, linker symbols
 and source macro expansion while retaining typed symbol references. Template
-`environment` prefixes select module macro snapshots for inline and raw bodies. See
+`environment` prefixes select module macro snapshots for inline and raw bodies.
+`code_label @name = ^block` inside an ordinary function names a real local code
+address; `indirect_jump <ptr>, ^target...` terminates with an explicit destination
+set. These optional forms preserve code identity and entry state; they do not
+implicitly run source cleanups. Their full validation and lifetime rules are in
 [the assembly boundary](../pa36/assembly.md). These forms add no required PA8
 work and do not change PA29's bounded GNU compatibility contract.

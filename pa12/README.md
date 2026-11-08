@@ -185,6 +185,10 @@ moving it into the return destination. The references use that direct return-slo
 and the comparison does not absorb the alternative (`../pa8/lowir.md`, "What The
 Comparison Absorbs And What It Enforces").
 
+A list containing one object of the parameter's class or a derived class uses
+that element's ordinary conversion rank. Reference-related single elements
+bind directly, preserving the original object and its value category.
+
 Ref-qualified member functions extend the PA11 member-call model: overload resolution still
 uses the implicit object argument, and the object expression's value category participates in
 viability and ranking for supported `&` and `&&` qualified members.

@@ -677,6 +677,9 @@ FunctionEntity* Analyzer::operand_constructor(ClassEntity* entity, const Type* t
 
 void Analyzer::check_final_copy(ClassEntity* entity, uint32_t location)
 {
+	// C++17's converted prvalue initializes the destination itself.
+	if (cxx17_)
+		return;
 	// 8.5p16 (C++11): a converting constructor's temporary then direct-
 	// initializes the object, by the constructor selected for an rvalue of
 	// the class (13.3.1.3), which must be usable even when the copy is
@@ -1232,13 +1235,15 @@ bool Analyzer::convert_to_scalar(const syntax::Expr& expr, const Type* target, b
 	return true;
 }
 
-const FunctionEntity* Analyzer::unique_conversion(const ClassEntity* entity, bool (*accepts)(const Type*))
+const FunctionEntity* Analyzer::unique_conversion(
+	const ClassEntity* entity, bool (*accepts)(const Type*), const ExprFacts* from)
 {
 	// The one non-explicit conversion function whose result type (without
 	// its reference) the predicate accepts (5.3.5p1, 6.4.2p2), else null.
 	const size_t functions = conversion_scratch_.size();
 	conversion_functions(entity, conversion_scratch_);
 	const FunctionEntity* found = nullptr;
+	const Type* target = nullptr;
 	bool several = false;
 	for (size_t k = functions; k < conversion_scratch_.size() && !several; ++k)
 	{
@@ -1248,10 +1253,26 @@ const FunctionEntity* Analyzer::unique_conversion(const ClassEntity* entity, boo
 			result = result->element;
 		if (function->is_explicit || !accepts(result->unqualified))
 			continue;
-		several = found != nullptr;
+		if (cxx14_ && from != nullptr)
+		{
+			Conversion object = Conversion();
+			if (!object_sequence(from, function, true, object))
+				continue;
+			several = target != nullptr && target != result->unqualified;
+			target = result->unqualified;
+		}
+		else
+			several = found != nullptr;
 		found = function;
 	}
 	conversion_scratch_.resize(functions);
+	if (!several && target != nullptr)
+	{
+		// C++14 contextual conversion determines one permitted result
+		// type, then resolves cv/ref overloads using the actual object.
+		Conversion conversion = Conversion();
+		return user_conversion(from, target, conversion) ? conversion.constructor : nullptr;
+	}
 	return several ? nullptr : found;
 }
 

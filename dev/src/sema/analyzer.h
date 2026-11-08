@@ -414,8 +414,8 @@ private:
 	const Type* complete_array_from_initializer(const Type* type, const syntax::Initializer* initializer, bool typed);
 
 	// ---------------------------------------------- specifiers, types
-	void specifiers(
-		const syntax::Slice<syntax::DeclSpecifier>& list, Scope* scope, Specifiers& out, bool lone_declaration);
+	void specifiers(const syntax::Slice<syntax::DeclSpecifier>& list, Scope* scope, Specifiers& out,
+		bool lone_declaration, bool deducing_class = false);
 	const Type* keyword_type(const syntax::Slice<syntax::DeclSpecifier>& list, uint32_t location);
 	const Type* int128_type(const syntax::Slice<syntax::DeclSpecifier>& list, uint32_t location);
 	enum class NameTypeUse : uint8_t
@@ -596,6 +596,14 @@ private:
 	LookupResult scalar_destructor_name(const syntax::Name& name, const Type* object, Scope* scope);
 	ExprFacts* cast_expression(const syntax::CastExpr& expr, Scope* scope);
 	ExprFacts* functional_cast(const syntax::FunctionalCastExpr& expr, Scope* scope);
+	ClassEntity* deduction_template(const syntax::Slice<syntax::DeclSpecifier>& type, Scope* scope);
+	const Type* deduce_class_type(
+		ClassEntity* templ, const syntax::Slice<syntax::Expr*>& arguments, Scope* scope, uint32_t location);
+	const Type* deduce_class_declaration(
+		const Specifiers& specifiers, const syntax::InitDeclarator& init, Scope* scope, uint32_t location);
+	TemplateHead* class_deduction_head(const TemplateHead* outer, const TemplateHead* inner, TypeList& remap);
+	FunctionEntity* class_deduction_guide(ClassEntity* cls, const FunctionEntity* constructor, bool copy);
+	void class_deduction_candidates(ClassEntity* cls, std::vector<FunctionEntity*>& out);
 	ExprFacts* explicit_conversion(
 		const syntax::Expr& expr, const Type* target, const syntax::Expr* operand, TokenKind cast, Scope* scope);
 	ExprFacts* member_pointer_cast(
@@ -1132,6 +1140,7 @@ private:
 	ExprFacts* constant_p_call(const syntax::CallExpr& expr, Scope* scope);
 	ExprFacts* object_size_call(const syntax::CallExpr& expr, Scope* scope);
 	ExprFacts* floating_builtin(const syntax::CallExpr& expr, GnuBuiltin builtin, uint8_t variant, Scope* scope);
+	ExprFacts* control_intrinsic(const syntax::CallExpr& expr, GnuBuiltin builtin, uint8_t variant, Scope* scope);
 	ExprFacts* gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin builtin, uint8_t variant, Scope* scope);
 	const FunctionEntity* header_builtin(const FunctionEntity* function);
 	bool integer_register(const Type* type);
@@ -1192,6 +1201,7 @@ private:
 	bool implicit_sequence(const syntax::Expr& argument, const Type* parameter, Conversion& out);
 	bool object_sequence(const ExprFacts* object, const FunctionEntity* function, bool ranking, Conversion& out);
 	int compare_candidates(const Candidate& a, const Candidate& b, uint32_t count, bool object);
+	const Conversion* elided_direct_sequence(const Candidate& candidate) const;
 	// Records the arguments' conversions: the chosen candidate's sequences
 	// (the implicit object's, if any, first, then `offset` on), or for an
 	// indirect call the conversions to the function type's parameters.
@@ -1242,7 +1252,8 @@ private:
 	void aggregate_initialize(const syntax::BracedInitList& list, ClassEntity* entity, Scope* scope);
 	void aggregate_members(const syntax::BracedInitList& list, uint32_t& next, ClassEntity* entity, Scope* scope);
 	bool aggregate_default_member(const DataMember* member);
-	void aggregate_element(const syntax::BracedInitList& list, uint32_t& next, const Type* type, Scope* scope);
+	void aggregate_element(const syntax::BracedInitList& list, uint32_t& next, const Type* type, Scope* scope,
+		bool complete_object = true);
 	void initialize_element(const syntax::Expr& element, const Type* type, Scope* scope);
 	FunctionEntity* implicit_constructor(ClassEntity* entity);
 	FunctionEntity* queried_default_constructor(ClassEntity* entity);
@@ -1269,12 +1280,16 @@ private:
 	static bool TypeIdHoldsAuto(const syntax::TypeId& type);
 	const Type* new_auto_type(const syntax::NewExpr& expr, const syntax::TypeId& type_syntax, bool array, Scope* scope);
 	ExprFacts* allocation(const syntax::NewExpr& expr, Scope* scope);
+	FunctionEntity* allocation_function(const syntax::NewExpr& expr, const ClassEntity* entity,
+		syntax::Slice<syntax::Expr*>& arguments, Scope* scope, bool bound);
 	ExprFacts* deletion(const syntax::DeleteExpr& expr, Scope* scope);
 	bool array_new_list(const syntax::NewExpr& expr, const syntax::BracedInitList& list, const Type* element,
 		bool& trailing, Scope* scope);
 	void new_deallocation(const syntax::NewExpr& expr, const ClassEntity* entity, const Identifier* key, Scope* scope,
 		const FunctionEntity* allocation);
-	const FunctionEntity* usual_deallocation(const FunctionList* functions);
+	const FunctionEntity* usual_deallocation(const FunctionList* functions, const Type* object = nullptr);
+	const Type* alignment_type();
+	void note_allocation_alignment(const FunctionEntity* function);
 	LookupResult global_allocation_functions(const Identifier* key);
 	// Whether the class's usual operator delete[] takes the size
 	// (kSizedArrayDelete).
@@ -1287,19 +1302,19 @@ private:
 	FunctionEntity* value_initialize(ClassEntity* entity, uint32_t location);
 	// 8.5p16: initializes an object (or reference) of `type`; returns the
 	// constructor a class object runs.
-	FunctionEntity* initialize_class(
-		ClassEntity* entity, const Type* type, const syntax::Initializer& init, Scope* scope, uint32_t location);
-	FunctionEntity* direct_initialization(
-		ClassEntity* entity, const syntax::Slice<syntax::Expr*>& arguments, uint32_t location);
+	FunctionEntity* initialize_class(ClassEntity* entity, const Type* type, const syntax::Initializer& init,
+		Scope* scope, uint32_t location, bool complete_object = true);
+	FunctionEntity* direct_initialization(ClassEntity* entity, const syntax::Slice<syntax::Expr*>& arguments,
+		uint32_t location, bool complete_object = true);
 	ExprFacts* class_prvalue(const syntax::Expr& expr, const Type* type, const syntax::Initializer& view, Scope* scope);
 	bool parenthesized_aggregate(ClassEntity* entity, const syntax::Slice<syntax::Expr*>& arguments, Scope* scope);
 	bool same_class_source(const ClassEntity* entity, const syntax::Expr& source);
 	FunctionEntity* copy_initialization(ClassEntity* entity, const syntax::Expr& source, ConstructionKind kind,
-		uint32_t location, bool in_place = false, const Candidate* chosen = nullptr);
+		uint32_t location, bool in_place = false, const Candidate* chosen = nullptr, bool complete_object = true);
 	// A chosen candidate borrows sequences_ from the immediately preceding
 	// resolution; consume it before another overload query can replace them.
 	const Conversion* record_copy(ClassEntity* entity, const Type* target, const syntax::Expr& source,
-		uint32_t location, bool in_place = false, const Candidate* chosen = nullptr);
+		uint32_t location, bool in_place = false, const Candidate* chosen = nullptr, bool complete_object = true);
 	FunctionEntity* initialize_object(
 		const Type* type, const syntax::Initializer& init, Scope* scope, uint32_t location);
 	void constructor_plan(FunctionEntity* constructor, ClassEntity* entity, const syntax::CtorInitializer* list,
@@ -1360,7 +1375,8 @@ private:
 		const FunctionEntity* b, const Conversion& b_first, const Conversion& b_second);
 	ExprFacts* convert_class_operand(const syntax::Expr& expr, const FunctionEntity* function);
 	bool convert_to_scalar(const syntax::Expr& expr, const Type* target, bool direct);
-	const FunctionEntity* unique_conversion(const ClassEntity* entity, bool (*accepts)(const Type*));
+	const FunctionEntity* unique_conversion(
+		const ClassEntity* entity, bool (*accepts)(const Type*), const ExprFacts* from = nullptr);
 
 	// ------------------------------ copy and move (analyzer_copy.cpp)
 	CopyKind copy_kind(const FunctionEntity* function, const ClassEntity* entity) const;
@@ -1716,6 +1732,8 @@ private:
 	bool hosted_ = false;
 	bool cxx14_ = false;
 	bool cxx17_ = false;
+	PointerMap class_deduction_index_;
+	std::vector<std::vector<FunctionEntity*>> class_deduction_sets_;
 	bool full_asm_ = false;
 	bool exceptions_ = true;
 	bool ignore_narrowing_ = false;
@@ -2387,6 +2405,8 @@ private:
 	// The class a single argument direct-initializes during constructor
 	// overload resolution (explicit conversion functions, CWG 899).
 	const ClassEntity* direct_class_ = nullptr;
+	bool eliding_direct_ = false;
+	const Type* alignment_type_ = nullptr;
 	// Arguments convert by standard conversions only (13.3.3.1p4): 13.3.1.4
 	// candidates and the second step of a class copy-initialization.
 	bool standard_only_ = false;

@@ -524,6 +524,10 @@ void SyntaxRenderer::operand(const Expr& expr)
 	case ExprKind::KeywordLiteral:
 		text(TokenKindSpelling(static_cast<const KeywordLiteralExpr&>(expr).keyword));
 		break;
+	case ExprKind::LabelAddress:
+		text("&&");
+		identifier(static_cast<const LabelAddressExpr&>(expr).label);
+		break;
 	case ExprKind::Paren:
 		text("(");
 		expression(*static_cast<const ParenExpr&>(expr).inner);
@@ -863,7 +867,13 @@ void SyntaxRenderer::statement(const Stmt& stmt)
 		break;
 	case StmtKind::Goto:
 		text("goto");
-		identifier(static_cast<const GotoStmt&>(stmt).label);
+		if (const Expr* target = static_cast<const GotoStmt&>(stmt).target)
+		{
+			text("*");
+			expression(*target);
+		}
+		else
+			identifier(static_cast<const GotoStmt&>(stmt).label);
 		text(";");
 		break;
 	case StmtKind::Return:

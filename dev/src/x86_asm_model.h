@@ -46,7 +46,8 @@ enum class Encoding : std::uint8_t
 	BitTest,
 	DoubleShift,
 	WideAtomic,
-	ExtendMove
+	ExtendMove,
+	Interrupt
 };
 
 struct Form
@@ -248,6 +249,11 @@ inline const Form* forms(std::size_t& count)
 		{ "stc", E::Zero, 0xf9, 0, 0, false, 0 },
 		{ "cmc", E::Zero, 0xf5, 0, 0, false, 0 },
 		{ "ud2", E::Zero, 0x0f0b, 0, 0, false, 0 },
+		{ "int", E::Interrupt, 0xcd, 0, 8, false, 0 },
+		{ "int3", E::Zero, 0xcc, 0, 0, false, 0 },
+		{ "int1", E::Zero, 0xf1, 0, 0, false, 0 },
+		{ "syscall", E::Zero, 0x0f05, 0, 0, false, 0 },
+		{ "endbr64", E::Zero, 0xf30f1efa, 0, 0, false, 0 },
 		{ "emms", E::Zero, 0x0f77, 0, 0, false, 0 },
 		{ "movaps", E::VectorRM, 0x0f28, 0, 128, false, 0 },
 		{ "movups", E::VectorRM, 0x0f10, 0, 128, false, 0 },

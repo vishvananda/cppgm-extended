@@ -237,6 +237,8 @@ struct ClassEntity : Entity
 	// a private or protected non-static data member or a member's
 	// brace-or-equal-initializer (bases and virtual functions apart).
 	bool not_aggregate;
+	// C++17 permits public, non-virtual base subobjects as aggregate elements.
+	bool aggregate_bases;
 	// Its declarations make it no POD for the purpose of layout (Itanium
 	// ABI 1.1, C++03 9p4 as GCC and Clang read it for C++11): a
 	// user-provided constructor, copy assignment operator or destructor, a
@@ -381,6 +383,8 @@ struct VariableEntity : Entity
 	// const, one object however many units define it (a weak definition
 	// in each, initialized once, as a template's static data member is).
 	bool is_inline : 1;
+	// The inline definition belongs to the class declaration itself.
+	bool inline_member_definition : 1;
 	// GCC's __constinit: constant initialization, without const qualification.
 	bool is_constinit : 1;
 	// A non-static data member's brace-or-equal-initializer may throw (it

@@ -84,6 +84,9 @@ void SourceInlining::select_vectors()
 					selector.kind != lowir::ValueKind::Integer)
 					continue;
 				const uint64_t count = selector.bits.low;
+				if (operation >= lowir::VectorOp::Dpps && operation <= lowir::VectorOp::Roundsd &&
+					(count > 255 || selector.bits.high != 0))
+					throw LoweringError(0, "a vector selector outside the unsigned-byte range after substitution");
 				const bool zero = (operation == lowir::VectorOp::Palignr && count >= 32) ||
 					((operation == lowir::VectorOp::Pslldq || operation == lowir::VectorOp::Psrldq) && count >= 16);
 				const lowir::Value first = original.operands[instruction.extra_first];

@@ -43,6 +43,9 @@ int run_toolchain(const std::vector<std::string>& args, const PreprocessorOption
 // Select the supported language mode and the host macro dialect.
 void language_standard(const std::string& standard, PreprocessorOptions& options);
 
+// Enable an SSE extension and its prerequisites, or disable it and dependents.
+bool sse_option(const std::string& option, uint8_t& level);
+
 // A -g option's request: 0 disables debug information, 1 enables it,
 // -1 is a modifier that leaves the current request unchanged.
 int debug_info_request(const std::string& arg);

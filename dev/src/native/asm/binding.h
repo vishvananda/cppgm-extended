@@ -19,7 +19,7 @@ inline bool wide_assembly_operand(lowir::Type type)
 
 inline bool assembly_transfer_required(lowir::Type type, mir_model::Reg reg)
 {
-	return wide_assembly_operand(type) || (assembly_vector_register(reg) && reg >= 32);
+	return wide_assembly_operand(type) || (assembly_vector_register(reg) && reg >= 32) || assembly_mask_register(reg);
 }
 
 struct AssemblyPlan : AssemblyBinding

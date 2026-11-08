@@ -100,6 +100,8 @@ bool ProgramLowering::runs_no_constructor(const sema::Type* type, uint32_t depth
 	const sema::ClassEntity* entity = type->is_reference() ? nullptr : sema::ClassOf(type);
 	if (entity == nullptr)
 		return true;
+	if (entity->bases != nullptr)
+		return false;
 	const uint32_t known = constructor_free_.find(entity);
 	if (known != PointerMap::kMissing)
 		return known == 1;
@@ -122,6 +124,8 @@ bool ProgramLowering::runs_no_constructor(const sema::Type* type, uint32_t depth
 
 bool ProgramLowering::empty_list_constructs(const sema::ClassEntity* entity, uint32_t depth)
 {
+	if (entity->bases != nullptr)
+		return true;
 	// Aggregate initialization from an empty list initializes each member
 	// from an empty list (8.5.1p7): a member of a class that is no
 	// aggregate runs its default constructor unless that is trivial.
@@ -216,6 +220,12 @@ FunctionLowering::PathStep FunctionLowering::element_step(const sema::Type* elem
 
 bool FunctionLowering::aggregate_stores(const sema::ClassEntity* entity)
 {
+	for (const sema::BaseClass* base = entity->bases; base != nullptr; base = base->next)
+	{
+		const sema::ClassEntity* cls = static_cast<const sema::ClassEntity*>(base->base);
+		if (!sema::IsAggregateClass(cls) || aggregate_stores(cls))
+			return true;
+	}
 	// Whether initializing the aggregate stores anything: every member but
 	// one of empty class type does.
 	for (const sema::DataMember* member = entity->members; member != nullptr; member = member->next)
@@ -233,6 +243,12 @@ bool FunctionLowering::aggregate_stores(const sema::ClassEntity* entity)
 void FunctionLowering::aggregate_class(const sema::ClassEntity* entity, uint8_t cv, const AddressPath& path,
 	const syntax::BracedInitList* list, uint32_t& next, uint32_t location)
 {
+	if (list != nullptr && list->result_source != nullptr)
+	{
+		materialize(*list->result_source, path_address(path), location);
+		next = list->elements.size;
+		return;
+	}
 	// 8.5.1p2: the members from the list's elements in declaration order,
 	// unnamed bit-fields skipped (9.6p2); the others value-initialized
 	// (8.5.1p7).
@@ -244,6 +260,15 @@ void FunctionLowering::aggregate_class(const sema::ClassEntity* entity, uint8_t 
 	// In a constructor (from `this`) each member's address comes before its
 	// value; elsewhere a member's value comes first.
 	const bool value_first = path.root != AddressPath::Root::This;
+	for (const sema::BaseClass* base = entity->bases; base != nullptr; base = base->next)
+	{
+		const sema::ClassEntity* cls = static_cast<const sema::ClassEntity*>(base->base);
+		path_steps_.push_back(
+			PathStep{ PathStep::Kind::Field, lowering_.base_offset(entity, cls, location), lowir::Type(), 0, false });
+		aggregate_item(lowering_.graph().types.qualified(cls->type, static_cast<uint8_t>(cv & sema::kVolatile)), path,
+			list, next, value_first, location);
+		path_steps_.pop_back();
+	}
 	// 8.5.1p15: a union's one member (see sema::UnionListMember).
 	const sema::DataMember* selected = entity->key == TokenKind::KW_UNION ? sema::ListUnionMember(entity, list, next)
 																		  : nullptr;
@@ -990,6 +1015,9 @@ bool FunctionLowering::omitted_may_throw(const sema::ClassEntity* cls, uint32_t 
 		return member_may_throw(cls, nullptr);
 	if (depth > 64)
 		return true;
+	for (const sema::BaseClass* base = cls->bases; base != nullptr; base = base->next)
+		if (omitted_may_throw(static_cast<const sema::ClassEntity*>(base->base), depth + 1))
+			return true;
 	for (const sema::DataMember* member = cls->members; member != nullptr; member = member->next)
 	{
 		if (cls->members_initialized && member->variable->kind == sema::EntityKind::Variable)
@@ -1290,7 +1318,8 @@ bool FunctionLowering::helper_eligible(
 bool FunctionLowering::helper_shape(
 	const sema::ClassEntity* entity, const syntax::BracedInitList* list, uint32_t& count)
 {
-	if (entity->key == TokenKind::KW_UNION)
+	if (entity->key == TokenKind::KW_UNION || entity->bases != nullptr ||
+		(list != nullptr && list->result_source != nullptr))
 		return false;
 	// The helper one object's list can call: its leading members through
 	// the last one initialized, no member before them omitted; the trailing
@@ -1421,7 +1450,7 @@ void FunctionLowering::structured_class(const sema::ClassEntity* entity, uint8_t
 {
 	// Default member initializers need the containing object as `this`.
 	// The general path already retains that context and member cleanups.
-	if (entity->members_initialized)
+	if (entity->members_initialized || entity->bases != nullptr || (list != nullptr && list->result_source != nullptr))
 	{
 		aggregate_class(
 			entity, cv, AddressPath{ AddressPath::Root::Value, object, path_steps_.size() }, list, next, location);

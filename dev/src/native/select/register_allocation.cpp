@@ -1183,10 +1183,10 @@ void FunctionSelector::assign_registers()
 			: kGprCapacity + (rbp_free_ ? 1 : 0) - (reserved_gprs(*out_) != 0 ? 1 : 0);
 		std::vector<uint32_t> conflicts;
 		bool homes = false;
-		bool planned = reg == kNoReg && loop_splitter_.candidates(*this, c) &&
+		bool planned = body_->code_labels.empty() && reg == kNoReg && loop_splitter_.candidates(*this, c) &&
 			split_choice(*this, c, split_registers(c), capacity, false, conflicts) &&
 			loop_splitter_.plan(*this, c, &conflicts);
-		if (reg == kNoReg && !planned)
+		if (body_->code_labels.empty() && reg == kNoReg && !planned)
 		{
 			conflicts.clear();
 			planned = homes = split_choice(*this, c, split_registers(c), capacity, true, conflicts) &&

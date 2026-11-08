@@ -20,10 +20,10 @@ using namespace mir_model;
 
 Reg physical(const Register& reg)
 {
-	if (reg.number >= (reg.bank == RegisterBank::Vector ? 32 : 16) ||
-		(reg.bank != RegisterBank::Gpr && reg.bank != RegisterBank::Vector))
+	const Reg key = assembly_register_key(reg);
+	if (key == kNoReg)
 		unsupported("this register bank or extension");
-	return static_cast<Reg>(reg.number + (reg.bank == RegisterBank::Vector ? 16 : 0));
+	return key;
 }
 
 unsigned width(lowir::Type type)
@@ -127,9 +127,13 @@ void expand(std::string& source, const lowir::AssemblyModule& module, const lowi
 			source += definition.dialect == Dialect::Att ? "(%" + name + ")" : "[" + name + "]";
 			continue;
 		}
-		Register reg{ r < 16 ? RegisterBank::Gpr : RegisterBank::Vector, static_cast<uint8_t>(r < 16 ? r : r - 16),
-			static_cast<uint16_t>(
-				r >= 16 && !wide_assembly_operand(module.operands[definition.first_operand + piece.operand].type)
+		const RegisterBank bank = r < 16 ? RegisterBank::Gpr : r < 48 ? RegisterBank::Vector : RegisterBank::Mask;
+		Register reg{ bank,
+			static_cast<uint8_t>(r < 16 ? r
+					: r < 48            ? r - 16
+										: r - 48),
+			static_cast<uint16_t>(assembly_vector_register(r) &&
+						!wide_assembly_operand(module.operands[definition.first_operand + piece.operand].type)
 					? 128
 					: width(module.operands[definition.first_operand + piece.operand].type)),
 			0 };
@@ -167,10 +171,7 @@ std::shared_ptr<AssemblyPlan> prepare_assembly_source(const lowir::AssemblyModul
 	for (uint32_t i = 0; i < definition.clobber_count; ++i)
 	{
 		const Register& view = module.clobbers[definition.first_clobber + i];
-		// Opmask values have no ordinary register allocation yet.
-		if (view.bank == RegisterBank::Mask && view.number < 8)
-			continue;
-		const Reg reg = physical(module.clobbers[definition.first_clobber + i]);
+		const Reg reg = physical(view);
 		if (reg == RSP || reg == RBP)
 			unsupported("stack or frame register clobbers");
 		clobbers |= assembly_register_bit(reg);
@@ -203,7 +204,7 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 		unsupported("unwinding inline assembly");
 	try
 	{
-		auto expander = environment.fork(definition.environment);
+		auto expander = environment.snapshot(definition.environment);
 		assembly::ModuleLine expanded;
 		for (const auto& line : expander.expand(assembly::module_lines(source, symbols, labels)))
 		{

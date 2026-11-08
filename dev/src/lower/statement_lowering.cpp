@@ -2068,6 +2068,15 @@ bool FunctionLowering::shared_return(bool contexts)
 
 void FunctionLowering::goto_statement(const syntax::GotoStmt& stmt)
 {
+	if (stmt.target != nullptr)
+	{
+		const RValue target = rvalue(*stmt.target);
+		lowir::Instruction jump = lowir::make_instruction(
+			lowir::Opcode::IndirectJump, lowir::Type::scalar(lowir::TypeKind::Void));
+		jump.ops[0] = target.value;
+		terminate(jump);
+		return;
+	}
 	// 6.6p2: the objects alive here but not at the label are destroyed,
 	// innermost first, before the transfer, and the try blocks and handlers
 	// it leaves are left as their normal exits leave them (15p2: a goto

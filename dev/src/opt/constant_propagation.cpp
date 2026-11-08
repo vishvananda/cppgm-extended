@@ -287,6 +287,10 @@ void Propagator::evaluate_terminator(BlockId block, const Instruction& term)
 		mark_edge(block, term.ops[2].index);
 		break;
 	}
+	case Opcode::IndirectJump:
+		for (uint32_t k = cfg_.succ_first[block]; k < cfg_.succ_first[block + 1]; ++k)
+			mark_successor(block, k);
+		break;
 	case Opcode::Switch:
 	{
 		const Lattice l = state(term.ops[0], c);

@@ -1514,8 +1514,11 @@ bool MemoryForwarding::run()
 				});
 	drop_unread_writes();
 	drop_overwritten_stores();
-	sink_slot_stores();
-	phi_loads();
+	if (body_.code_labels.empty())
+	{
+		sink_slot_stores();
+		phi_loads();
+	}
 	return changed_;
 }
 

@@ -846,6 +846,7 @@ PPToken MacroExpander::paste_tokens(const PPToken& left, const PPToken& right)
 	options.header_names_on_request = true;
 	options.token_text = true;
 	options.binary_exponents = binary_exponents_;
+	options.gnu_escapes = binary_exponents_;
 	options.digit_separators = digit_separators_;
 	PPLexer lexer(text, options);
 	PPToken result = PPToken();

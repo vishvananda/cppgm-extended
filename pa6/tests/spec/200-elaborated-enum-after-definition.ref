@@ -1,0 +1,9 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type Kind enum Kind
+    enumerator first enum Kind 0
+    enumerator second enum Kind 1
+    variable value enum Kind
+end translation unit

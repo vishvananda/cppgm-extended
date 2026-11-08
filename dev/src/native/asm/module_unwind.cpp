@@ -1,5 +1,7 @@
 #include "native/asm/module_unwind.h"
 
+#include "native/backend_error.h"
+
 #include <cstring>
 
 namespace native {
@@ -66,7 +68,8 @@ void ModuleUnwind::end(uint32_t anchor)
 void ModuleUnwind::record(const assembly::ModuleLine& line, uint32_t anchor, assembly::SymbolLookup* symbols)
 {
 	if (events_.size() >= 1000000)
-		throw assembly::AssemblyError{ "CFI directive count exceeds limit", line.line, 1 };
+		throw BackendError(
+			"assembly CFI line " + std::to_string(line.line) + ": " + "CFI directive count exceeds limit");
 	events_.push_back(parse_assembly_cfi(line, anchor, symbols));
 }
 void ModuleUnwind::flush(
@@ -88,14 +91,16 @@ void ModuleUnwind::apply(const AssemblyCfiEvent& event, uint32_t section, uint32
 	if (event.op == AssemblyCfiOp::Start)
 	{
 		if (current_)
-			throw assembly::AssemblyError{ "nested CFI procedures", event.line, 1 };
+			throw BackendError("assembly CFI line " + std::to_string(event.line) + ": " + "nested CFI procedures");
 		current_.reset(new Procedure(section, position, event.simple));
 		return;
 	}
 	if (!current_)
-		throw assembly::AssemblyError{ "CFI directive outside a procedure", event.line, 1 };
+		throw BackendError(
+			"assembly CFI line " + std::to_string(event.line) + ": " + "CFI directive outside a procedure");
 	if (section != current_->section || position < current_->first)
-		throw assembly::AssemblyError{ "CFI procedure changed its code section", event.line, 1 };
+		throw BackendError(
+			"assembly CFI line " + std::to_string(event.line) + ": " + "CFI procedure changed its code section");
 	if (event.op == AssemblyCfiOp::End)
 	{
 		emit(position);
@@ -208,6 +213,6 @@ void ModuleUnwind::emit(uint32_t end)
 void ModuleUnwind::finish()
 {
 	if (current_)
-		throw assembly::AssemblyError{ "unterminated CFI procedure", 1, 1 };
+		throw BackendError("assembly CFI line " + std::to_string(1) + ": " + "unterminated CFI procedure");
 }
 } // namespace native

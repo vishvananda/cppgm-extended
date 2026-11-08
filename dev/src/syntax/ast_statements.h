@@ -176,6 +176,7 @@ struct LabeledStmt : Stmt
 struct GotoStmt : Stmt
 {
 	const Identifier* label;
+	Expr* target = nullptr; // GNU computed goto, otherwise null
 };
 
 // A GNU asm statement's operand: `[ name ]`? constraint ( expression ).

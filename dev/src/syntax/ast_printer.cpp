@@ -835,7 +835,14 @@ void AstDumper::statement(const Stmt& stmt)
 		line("continue-statement");
 		break;
 	case StmtKind::Goto:
-		line("goto-statement", Spelling(static_cast<const GotoStmt&>(stmt).label));
+		if (const Expr* target = static_cast<const GotoStmt&>(stmt).target)
+		{
+			open("computed-goto-statement");
+			expression(*target);
+			close();
+		}
+		else
+			line("goto-statement", Spelling(static_cast<const GotoStmt&>(stmt).label));
 		break;
 	case StmtKind::Return:
 	case StmtKind::Throw:
@@ -1041,6 +1048,9 @@ void AstDumper::operand(const Expr& expr)
 	}
 	case ExprKind::KeywordLiteral:
 		line("keyword-literal", TokenText(static_cast<const KeywordLiteralExpr&>(expr).keyword));
+		break;
+	case ExprKind::LabelAddress:
+		line("label-address", Spelling(static_cast<const LabelAddressExpr&>(expr).label));
 		break;
 	case ExprKind::Paren:
 		open("parenthesized-expression");

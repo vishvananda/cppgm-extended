@@ -16,6 +16,8 @@ struct Specifiers
 	// The type with its cv-qualifiers, the `auto` placeholder, or null when
 	// no type specifier was written (constructors and similar).
 	const Type* type;
+	// C++17 deduced class placeholder, only in an initializing declaration.
+	ClassEntity* deduction;
 	uint8_t cv;
 	bool auto_type;
 	bool is_typedef;

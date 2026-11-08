@@ -632,7 +632,7 @@ void SlotPromotion::place_phis()
 				const BlockId f = df_[k];
 				if (placed[f] == c || (pruned && live[f] != c))
 					continue;
-				if ((cfg_.flags[f] & BF_HANDLER) != 0)
+				if ((cfg_.flags[f] & (BF_HANDLER | BF_ADDRESS)) != 0)
 				{
 					rejected = true;
 					break;

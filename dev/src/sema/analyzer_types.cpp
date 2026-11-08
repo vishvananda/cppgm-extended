@@ -150,8 +150,8 @@ bool ClassTemplateNameAlone(const Binding* binding)
 
 // ------------------------------------------------------------- specifiers
 
-void Analyzer::specifiers(
-	const syntax::Slice<syntax::DeclSpecifier>& list, Scope* scope, Specifiers& out, bool lone_declaration)
+void Analyzer::specifiers(const syntax::Slice<syntax::DeclSpecifier>& list, Scope* scope, Specifiers& out,
+	bool lone_declaration, bool deducing_class)
 {
 	out = Specifiers();
 	uint8_t cv = 0;
@@ -250,6 +250,15 @@ void Analyzer::specifiers(
 					error(specifier.location, "_Complex repeated in a decl-specifier-seq");
 				complex = true;
 				continue;
+			}
+			if (deducing_class && !out.is_typedef && !out.is_friend)
+				out.deduction = deduction_template(
+					syntax::Slice<syntax::DeclSpecifier>{ const_cast<syntax::DeclSpecifier*>(&specifier), 1 }, scope);
+			if (out.deduction != nullptr)
+			{
+				named = types_.named(TypeKind::Template, out.deduction);
+				out.type_specifier = &specifier;
+				break;
 			}
 			named = named_type(*specifier.name, scope);
 			if (named_binding_->aligned_alias)

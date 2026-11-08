@@ -6,6 +6,78 @@
 
 namespace lower {
 
+RValue FunctionLowering::immediate_vector(const syntax::CallExpr& expr)
+{
+	using lowir::VectorOp;
+	const VectorOp operations[] = { VectorOp::Dpps, VectorOp::Dppd, VectorOp::Insertps, VectorOp::Roundps,
+		VectorOp::Roundpd, VectorOp::Roundss, VectorOp::Roundsd };
+	const VectorOp operation = operations[(expr.facts->value >> 8) & 255];
+	const bool unary = lowir::shape_of(operation) == lowir::VectorShape::UnaryImmediate;
+	const RValue first = operand(*expr.arguments[0], ConversionContext::Argument);
+	const RValue second = unary ? first : operand(*expr.arguments[1], ConversionContext::Argument);
+	const syntax::Expr& selector = *expr.arguments[expr.arguments.size - 1];
+	if ((expr.facts->value & (uint64_t(1) << 24)) != 0)
+	{
+		RValue given = operand(selector, ConversionContext::Argument);
+		if ((expr.facts->value & (uint64_t(1) << 25)) != 0)
+			given = binary(lowir::BinaryOp::And, given.type, given, integer(given.type, 255));
+		builder_.call(lowir::Type::scalar(lowir::TypeKind::Void),
+			lowir::Value::symbol(lowering_.source_immediate_guard()), &given.value, 1, lowir::kNoId, 0);
+		return deferred_vector(operation, first, second, given);
+	}
+	discard(selector);
+	return vector_instruction(
+		operation, &first, unary ? nullptr : &second, nullptr, static_cast<int32_t>((expr.facts->value >> 16) & 255));
+}
+
+bool FunctionLowering::immediate_vector_helper(lowir::VectorOp operation)
+{
+	using lowir::VectorOp;
+	if (operation < VectorOp::Dpps || operation > VectorOp::Roundsd)
+		return false;
+	begin_unit();
+	const lowir::Type vector = lowir::Type::scalar(lowir::TypeKind::V128);
+	const lowir::Type word = lowir::Type::scalar(lowir::TypeKind::I32);
+	const RValue first{ lowir::Value::temp(builder_.parameter(0)), vector };
+	const RValue second{ lowir::Value::temp(builder_.parameter(1)), vector };
+	RValue selector{ lowir::Value::temp(builder_.parameter(2)), word };
+	const bool rounding = operation >= VectorOp::Roundps;
+	const bool packed_double = operation == VectorOp::Dppd;
+	const uint32_t count = rounding || packed_double ? 16 : 256;
+	if (rounding || packed_double)
+		selector = binary(lowir::BinaryOp::And, word, selector, integer(word, rounding ? 15 : 51));
+	const lowir::BlockId invalid = new_block(lowir::BlockKind::Unreachable);
+	std::vector<lowir::BlockId> blocks;
+	std::vector<lowir::Value> cases;
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		blocks.push_back(new_block(lowir::BlockKind::SwitchCase));
+		cases.push_back(integer(word, packed_double ? (i & 3) | ((i & 12) << 2) : i).value);
+		cases.push_back(lowir::Value::block(blocks.back()));
+	}
+	lowir::Instruction branch = lowir::make_instruction(
+		lowir::Opcode::Switch, lowir::Type::scalar(lowir::TypeKind::Void));
+	branch.ops[0] = selector.value;
+	branch.ops[1] = lowir::Value::block(invalid);
+	branch.extra_first = builder_.add_operands(cases.data(), cases.size());
+	branch.extra_count = cases.size();
+	terminate(branch);
+	const bool unary = lowir::shape_of(operation) == lowir::VectorShape::UnaryImmediate;
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		place(blocks[i]);
+		const int32_t immediate = packed_double ? (i & 3) | ((i & 12) << 2) : i;
+		const RValue result = vector_instruction(operation, &first, unary ? nullptr : &second, nullptr, immediate);
+		lowir::Instruction returned = lowir::make_instruction(lowir::Opcode::Return, vector);
+		returned.ops[0] = result.value;
+		terminate(returned);
+	}
+	place(invalid);
+	terminate(lowir::make_instruction(lowir::Opcode::Unreachable, lowir::Type::scalar(lowir::TypeKind::Void)));
+	builder_.finish();
+	return true;
+}
+
 RValue FunctionLowering::binary_immediate_vector(const syntax::CallExpr& expr)
 {
 	const bool multiply = static_cast<sema::Intrinsic>(expr.facts->value & 0xff) ==

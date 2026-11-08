@@ -32,6 +32,14 @@ RM rm(const Operand& op, const assembly::Instruction& inst)
 	const assembly::Address& address = op.address;
 	if (address.relocation == assembly::Relocation::Plt)
 		fail(inst, "PLT relocation requires a direct branch target");
+	if (address.label != asm_model::kNoId)
+	{
+		if (!address.rip || address.has_base || address.has_index)
+			fail(inst, "local code address requires unindexed RIP-relative memory");
+		RM memory = RM::m(kNoReg, address.displacement);
+		memory.label = address.label;
+		return memory;
+	}
 	if (address.symbol.symbol != asm_model::kNoId || address.rip)
 	{
 		if (!address.rip || address.symbol.symbol == asm_model::kNoId || address.has_base || address.has_index)

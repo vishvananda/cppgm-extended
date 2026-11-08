@@ -1,5 +1,6 @@
 #include "driver/toolchain.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -57,6 +58,22 @@ void language_standard(const std::string& standard, PreprocessorOptions& options
 		}
 	}
 	throw InvocationError("unsupported language standard: " + standard);
+}
+
+bool sse_option(const std::string& option, uint8_t& level)
+{
+	const bool disable = option.compare(0, 5, "-mno-") == 0;
+	if (!disable && option.compare(0, 2, "-m") != 0)
+		return false;
+	const std::string feature = option.substr(disable ? 5 : 2);
+	const char* names[] = { "sse3", "ssse3", "sse4.1", "sse4.2" };
+	for (uint8_t i = 0; i < 4; ++i)
+		if (feature == names[i] || (feature == "sse4" && i == (disable ? 2 : 3)))
+		{
+			level = disable ? std::min(level, i) : std::max(level, static_cast<uint8_t>(i + 1));
+			return true;
+		}
+	return false;
 }
 
 namespace {
@@ -297,6 +314,9 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 			invocation.strict_aliasing = arg == "-fstrict-aliasing";
 		else if (arg == "-mpopcnt" || arg == "-mno-popcnt")
 			invocation.preprocessor.popcnt = arg == "-mpopcnt";
+		else if (sse_option(arg, invocation.preprocessor.sse_level))
+		{
+		}
 		else if (arg == "-fno-rtti" || arg == "-frtti")
 			invocation.preprocessor.modes.rtti = arg == "-frtti";
 		else if (arg == "-funsigned-char" || arg == "-fno-signed-char" || arg == "-fsigned-char" ||
@@ -505,6 +525,7 @@ bool compile_unit(
 	lowering.set_optimizing(true);
 	lowering.set_strict_aliasing(invocation.strict_aliasing);
 	lowering.set_popcnt(invocation.preprocessor.popcnt);
+	lowering.set_exceptions(invocation.preprocessor.modes.exceptions);
 	double front_ms = 0;
 	UnitWork work;
 	try

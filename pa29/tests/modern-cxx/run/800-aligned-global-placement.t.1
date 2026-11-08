@@ -1,0 +1,21 @@
+#include <new>
+#include <cstddef>
+struct alignas(64) Value { int n; Value() : n(23) {} };
+template<class T> T *construct(T *p) { return ::new (p) T(); }
+static unsigned constructed, destroyed, freed;
+alignas(64) static unsigned char storage[1024];
+struct alignas(64) Array {
+    Array() { if (++constructed == 3) throw 19; }
+    ~Array() { ++destroyed; }
+    static void *operator new[](std::size_t, std::align_val_t) { return storage; }
+    static void operator delete[](void *p, std::size_t, std::align_val_t a) noexcept {
+        if (p == storage && static_cast<unsigned long>(a) == 64) ++freed;
+    }
+};
+int main() {
+    Value *v = construct(reinterpret_cast<Value*>(storage));
+    if (v != reinterpret_cast<Value*>(storage) || v->n != 23) return 1;
+    v->~Value();
+    try { new Array[5]; return 2; } catch (int n) { if (n != 19) return 3; }
+    return constructed != 3 || destroyed != 2 || freed != 1;
+}

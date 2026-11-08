@@ -28,7 +28,7 @@ void AssemblyEnvironment::ensure(uint32_t prefix)
 		snapshots_.push_back(current_);
 	}
 }
-assembly::ModuleExpander AssemblyEnvironment::fork(uint32_t prefix)
+assembly::ModuleExpander AssemblyEnvironment::snapshot(uint32_t prefix)
 {
 	ensure(prefix);
 	return snapshots_[prefix];

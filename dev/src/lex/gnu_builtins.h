@@ -54,6 +54,7 @@ enum class GnuBuiltin : uint8_t
 	AssumeAligned,
 	Launder,
 	FltRounds,
+	Mxcsr,
 	// GCC's __builtin_complex(re, im).
 	Complex,
 	// Clang's __builtin_reduce_and/or/xor/add/mul/max/min(vector), by
@@ -85,6 +86,7 @@ enum class GnuBuiltin : uint8_t
 	// Two integer vectors and an immediate: PCLMULQDQ (128 bits),
 	// or selection of two 128-bit halves from 256-bit inputs.
 	VectorBinaryImmediate,
+	VectorImmediate, // SSE4.1 dot, insert and rounding; typed signature shapes
 	// The SSE family computed lane by lane: the variant is a
 	// VectorLanewiseOp, the signature the shapes (see below), and `floating`
 	// is 's' for a scalar form, which leaves the first operand's other lanes.
@@ -186,6 +188,7 @@ enum class VectorLanewiseOp : uint8_t
 	MulAddBytes,
 	HorizontalAdd,
 	HorizontalSub,
+	MinPosition,
 	HorizontalAddSaturate,
 	HorizontalSubSaturate,
 	AddSub,

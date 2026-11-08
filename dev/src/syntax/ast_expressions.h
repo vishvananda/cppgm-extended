@@ -13,6 +13,7 @@ enum class ExprKind : uint8_t
 	Id,
 	Literal,
 	KeywordLiteral,
+	LabelAddress,
 	Paren,
 	Binary,
 	Assign,
@@ -71,6 +72,13 @@ struct LiteralExpr : Expr
 struct KeywordLiteralExpr : Expr
 {
 	TokenKind keyword;
+};
+
+// GNU labels as values; semantic analysis binds the owning function.
+struct LabelAddressExpr : Expr
+{
+	const Identifier* label;
+	mutable const sema::FunctionEntity* function = nullptr;
 };
 
 struct ParenExpr : Expr
@@ -190,6 +198,7 @@ struct NewExpr : Expr
 	// The deallocation function freeing the storage when an element's
 	// construction throws (5.3.4p19-p20), for an array of class objects.
 	mutable const sema::FunctionEntity* deallocation = nullptr;
+	mutable uint32_t implicit_alignment = 0;
 };
 
 struct DeleteExpr : Expr
@@ -258,6 +267,8 @@ struct BracedInitList : Expr
 	// union's designated member.
 	const Identifier** designators = nullptr;
 	mutable const sema::DataMember* union_member = nullptr;
+	// A same-class prvalue selected to initialize this list's result object.
+	mutable const Expr* result_source = nullptr;
 };
 
 struct PackExpansionExpr : Expr

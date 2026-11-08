@@ -317,6 +317,8 @@ bool ConstantInterpreter::construct(const Type* type, const ConstPlace& target, 
 	}
 	if (const syntax::BracedInitList* list = BracedList(*init))
 	{
+		if (list->result_source != nullptr)
+			return materialize(*list->result_source, target);
 		if (constructor == nullptr && list->facts != nullptr && list->facts->single_class_element)
 			return materialize(*list->elements[0], target);
 		if (constructor == nullptr && IsAggregateClass(cls))
@@ -342,6 +344,9 @@ bool ConstantInterpreter::construct(const Type* type, const ConstPlace& target, 
 			return value_initialize(type, target, constructor, location);
 		if (constructor != nullptr)
 			return constructor_call(constructor, target, init->arguments, location);
+		if (const Conversion* conversion = RecordedConversion(init->arguments[0]))
+			if (ConversionFunction(conversion))
+				return initialize_from(*init->arguments[0], conversion, target);
 		return materialize(*init->arguments[0], target);
 	}
 	if (init->kind != syntax::InitializerKind::Assign)
@@ -569,6 +574,8 @@ bool ConstantInterpreter::list_object(
 bool ConstantInterpreter::aggregate(
 	const Type* type, const ConstPlace& target, const syntax::BracedInitList& list, uint32_t location)
 {
+	if (list.result_source != nullptr)
+		return materialize(*list.result_source, target);
 	// 8.5.1p2: the elements initialize the members (array elements) in
 	// order; brace elision takes a subaggregate's from the same list.
 	uint32_t next = 0;
@@ -594,6 +601,14 @@ bool ConstantInterpreter::aggregate_members(const ClassEntity* entity, const Con
 			return false;
 		zero_into(*value);
 		return true;
+	}
+	for (const BaseClass* base = entity->bases; base != nullptr; base = base->next)
+	{
+		ConstPlace place = target;
+		place.offset += static_cast<int64_t>(base->offset);
+		place.type = base->base->type;
+		if (!aggregate_element(place.type, place, list, next, location))
+			return false;
 	}
 	// Unnamed bit-fields take no element (9.6p2); a union's one member is
 	// initialized (8.5.1p15, see UnionListMember).

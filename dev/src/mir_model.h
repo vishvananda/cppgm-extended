@@ -103,6 +103,10 @@ enum class Op : std::uint8_t
 	VaStart,
 	VaArg,
 	StackAlloc,
+	StackSave,
+	ReadMxcsr,
+	WriteMxcsr,
+	StackRestore,
 	EhPush,
 	EhPop,
 	Throw,
@@ -117,12 +121,13 @@ enum class Op : std::uint8_t
 	TlsAddr,
 	Exit,
 	Trap,
-	JumpTable, // jump_table idx, [^a, ^b, ...]
-	MulWide,   // mul src: rdx:rax = rax * src, unsigned
-	ImulWide,  // imul src: the signed form
-	Asm,       // opaque assembly: site, optional exit frame; aux/aux2 reads/writes; sub flags read/write, stack use
-	Prologue,  // a shrink-wrapped function's frame setup
-	Nop        // a removed instruction: no code, not dumped
+	JumpTable,    // jump_table idx, [^a, ^b, ...]
+	MulWide,      // mul src: rdx:rax = rax * src, unsigned
+	ImulWide,     // imul src: the signed form
+	Asm,          // opaque assembly: site, optional exit frame; aux/aux2 reads/writes; sub flags read/write, stack use
+	Prologue,     // a shrink-wrapped function's frame setup
+	IndirectJump, // jmp through a pointer, with explicit LowIR successors
+	Nop           // a removed instruction: no code, not dumped
 };
 
 const unsigned kOpCount = static_cast<unsigned>(Op::Nop) + 1;
@@ -138,9 +143,10 @@ inline const char* spelling(Op op)
 		"bt", "set", "cmov", "movzx", "sext", "zext", "cqo", "idiv", "div", "j", "jmp", "call", "tail_jump",
 		"copy_bytes", "zero_bytes", "ret", "fmov", "fadd", "fsub", "fmul", "fdiv", "fneg", "fabs", "vector", "fcmp",
 		"f", "", "fret", "fstp", "", "set", "cmp_branch", "lock_xadd", "xchg", "lock_cmpxchg", "lock_cmpxchg16b",
-		"mfence", "va_start", "va_arg", "stack_alloc", "eh_push", "eh_pop", "throw", "resume", "load_exception",
-		"eh_mark", "eh_catch", "load_selector", "landing", "eh_select", "catch_all", "tls_addr", "exit", "trap",
-		"jump_table", "mul", "imul", "asm", "prologue", "" };
+		"mfence", "va_start", "va_arg", "stack_alloc", "stack_save", "read_mxcsr", "write_mxcsr", "stack_restore",
+		"eh_push", "eh_pop", "throw", "resume", "load_exception", "eh_mark", "eh_catch", "load_selector", "landing",
+		"eh_select", "catch_all", "tls_addr", "exit", "trap", "jump_table", "mul", "imul", "asm", "prologue",
+		"indirect_jump", "" };
 	return kOps[static_cast<unsigned>(op)];
 }
 

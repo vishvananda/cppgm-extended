@@ -64,7 +64,8 @@ bool Specializer::candidate(uint32_t f) const
 	const Symbol& symbol = program.symbols[graph.functions[f]];
 	const Signature& sig = signature_of(f);
 	return symbol.metadata.binding == ir_model::SBM_INTERNAL && !graph.observed[f] && graph.calls_in[f] > 0 &&
-		!graph.recursive[f] && sig.boundary.arity == ir_model::CAM_FIXED && sig.parameter_count > 0;
+		!graph.recursive[f] && body_of(f).code_labels.empty() && sig.boundary.arity == ir_model::CAM_FIXED &&
+		sig.parameter_count > 0;
 }
 
 void Specializer::record(uint32_t g, bool agreeing)
@@ -416,7 +417,7 @@ void CalleeCopier::measure(SymbolId s)
 	if (body == nullptr)
 		return;
 	const Signature& sig = program.signatures[program.functions[symbol.detail].signature];
-	if ((symbol.metadata.flags & (SF_NO_INLINE | SF_REPLACEABLE)) != 0 || sig.boundary.arity != ir_model::CAM_FIXED ||
+	if (!body->code_labels.empty() || (symbol.metadata.flags & (SF_NO_INLINE | SF_REPLACEABLE)) != 0 || sig.boundary.arity != ir_model::CAM_FIXED ||
 		instruction_count(*body) > kCalleeCopyCap)
 		return;
 	uint64_t mask = 0;

@@ -178,6 +178,11 @@ PA22 supports the following in addition to the PA21 subset:
   conversions, and `.*` / `->*` application for non-virtual class layouts
 - `dynamic_cast<void*>` for the existing polymorphic single-inheritance ABI
 
+For built-in `->*`, consider implicit conversion functions on either operand
+alongside overloaded operators. A known member-pointer owner can guide a
+conversion template on the left. Preserve cv-qualification, base adjustment
+and the distinction between explicit and implicit conversions.
+
 Within this milestone, PA22 should produce valid LowIR for ordinary source programs over
 that subset. That LowIR should be accepted by PA24 `lowir2native` for the supported cases.
 
@@ -228,7 +233,7 @@ To complete PA22, implement these goals:
    bytes into the vtable of the adjusted object.
    The call's signature states `unwind=no` when the member pointer's
    declaration is non-throwing, and `object_bytes` on the object only when the
-   member pointer's class has no base class, since `adj` may move the object to
+   member pointer's class is complete and has no base class, since `adj` may move the object to
    a base subobject (5.5p6). A statically initialized const member pointer, and
    a const array of them, states `storage=readonly`.
 

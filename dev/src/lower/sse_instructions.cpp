@@ -207,6 +207,9 @@ bool IntegerForm(VectorLanewiseOp operation, const SseForm& form, SseInstruction
 	case VectorLanewiseOp::MinUnsigned:
 		out.op = Offset(VectorOp::Pminub, width);
 		return true;
+	case VectorLanewiseOp::MinPosition:
+		out.op = VectorOp::Phminposuw;
+		return !form.floating && form.lane_bytes == 2;
 	case VectorLanewiseOp::Abs:
 		out.op = Offset(VectorOp::Pabsb, width);
 		return true;

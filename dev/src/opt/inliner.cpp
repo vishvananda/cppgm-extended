@@ -194,7 +194,7 @@ Shape shape_of(
 	const Signature& sig = program.signatures[function.signature];
 	// An ellipsis alone needs no callee frame. Only operations that observe
 	// its argument area prevent substitution (checked below).
-	shape.unsafe = body.layout.empty();
+	shape.unsafe = body.layout.empty() || !body.code_labels.empty();
 	bool unwinding = false, unguarded = false;
 	bool same_result = !source_required && sig.result.is_integer();
 	uint32_t result_literal = kNoId;
@@ -244,8 +244,8 @@ Shape shape_of(
 					(may_unwind(program, inst) &&
 						!(inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) &&
 							nounwind[inst.ops[0].index])));
-			if (inst.op == Opcode::VaStart || inst.op == Opcode::VaArg || inst.op == Opcode::StackAlloc ||
-				(b == body.layout[0] && inst.op == Opcode::Phi))
+			if (inst.op == Opcode::VaStart || inst.op == Opcode::VaArg ||
+				(!source_required && is_stack_instruction(inst.op)) || (b == body.layout[0] && inst.op == Opcode::Phi))
 				shape.unsafe = true;
 		}
 	}

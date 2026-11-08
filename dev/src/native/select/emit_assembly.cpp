@@ -116,9 +116,9 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 		emit2(Op::Store, TypeKind::Ptr, Operand::make_frame(frame), Operand::make_reg(reg));
 	}
 	uint64_t initialized = 0;
-	Operand initial[48];
-	unsigned initial_bytes[48] = {};
-	bool initial_storage[48] = {};
+	Operand initial[64];
+	unsigned initial_bytes[64] = {};
+	bool initial_storage[64] = {};
 	moves_.clear();
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
