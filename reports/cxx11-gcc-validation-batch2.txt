@@ -1,8 +1,8 @@
 GCC C++11 validation batch 2
 2026-11-08 | repair/cxx 11-gcc-validation-batch 2
 
-Accepted source: 329d 459f 412ca 4890dba 57bbdf 7336f 4bdcdc 61c
-Compiler SHA 256: 6f 4b 519453e 001051696800271e 206dcc 85076ef 82c 5774cf 24094bb 0b 78f 0f 0
+Accepted source: 329d459f412ca4890dba57bbdf7336f4bdcdc61c
+Compiler SHA256: 6f4b519453e001051696800271e206dcc85076ef82c5774cf24094bb0b78f0f0
 
 GCC advances from 3800/4092 to 3822/4092 (93.40%). Twenty-two
 configurations from 11 source files pass newly, with no previously passing case
@@ -24,24 +24,24 @@ Grouped fixes
 - Adopted CWG 1601 preserves the preference for a fixed enum's underlying type.
 - Adopted CWG 2352 rejects binding an lvalue to an rvalue reference to a similar
   pointer type, while preserving compatible direct const-reference binding.
-- CXX 11-127: scalar captured sizeof-pack alias arguments match Clang's ABI in
+- CXX11-127: scalar captured sizeof-pack alias arguments match Clang's ABI in
   mixed producer/consumer translation units. Semantic Pack identity, ordinary
   sizeof(T), actual packs and the generic ABI encoder remain intact. This is
   a separate ABI correctness follow-up, not an extra GCC pass-count gain.
 
 Regressions and validation
 
-20 required controls are in earliest owning PA 10: 100, PA 11: 100, PA 17: 300 and
-PA 18: 300 lanes. Three PA 17: 200 ABI fixtures include the two-TU case. Immediate
+20 required controls are in earliest owning PA10: 100, PA11: 100, PA17: 300 and
+PA18: 300 lanes. Three PA17: 200 ABI fixtures include the two-TU case. Immediate
 substitution is paired with instantiated-body rejection and valid neighbors.
 The parent fails the intended new witnesses. cppgm/GCC/Clang each pass 80 root
-configuration cells (two dialects atO 0/O 2); the combined candidate passes 12 ABI
+configuration cells (two dialects atO 0/O2); the combined candidate passes 12 ABI
 language cells and 8 mixed Clang links/runtimes. Eight direct ABI-neighbor
 objects remain identical to the accepted parent. Fixture hashes are verified.
 
-All 9564 strict tests pass, together with affected PA 9/10/11/17/18 suites,
+All 9564 strict tests pass, together with affected PA9/10/11/17/18 suites,
 debug info, modern C++ checks, self-host throughPA 5, inception, architecture,
-format/file/placement audits, harness, document checks and PA 35 quick/smoke.
+format/file/placement audits, harness, document checks and PA35 quick/smoke.
 The student export validates 42 reference wrappers and 119 accumulated required
 fixtures. Two new plain-text decisions (1307/1601), provenance and index/export
 entries bring the offline catalog to 107 files (93 issues, 12 papers, 2 catalogs).
@@ -49,9 +49,9 @@ entries bring the offline catalog to 107 files (93 issues, 12 papers, 2 catalogs
 Performance and expected corrected output
 
 The actual accepted-parent instruction ratios areO 0=1.001064,
-O 3=1.000369, within the unchanged 1.005 budget.
-The original measure invocation correctly reports O 0 objects DIFFER and
-returns 1; it is not represented as an exact-output PASS. O 3 objects are exact.
+O3=1.000369, within the unchanged 1.005 budget.
+The original measure invocation correctly reports O0 objects DIFFER and
+returns 1; it is not represented as an exact-output PASS. O3 objects are exact.
 CWG 2352 changes a frozen set<const ClassInfo*>::insert(info) call from the old
 incorrect && overload to const&. GCC/Clang and a reduced behavioral oracle
 confirm the corrected selection. The old and new objects and all raw counts
@@ -63,8 +63,8 @@ actual accepted parent. With unchanged measure.pl/input/default repetitions,
 its ratios areO 0=1.000568 andO 3=1.000176,
 with identical objects at both levels. Normal current-source seed/self,
 inception, quick and kernel gates pass unchanged. See the complete adjudication
-and raw manifest in batches/gcc-02/performance-adjudication-v 1.txt and
-perf-raw-v 1/manifest.json under the evidence root.
+and raw manifest in batches/gcc-02/performance-adjudication-v1.txt and
+perf-raw-v1/manifest.json under the evidence root.
 
 Upstream suite timing (same declared manifests and workers)
 
@@ -77,17 +77,17 @@ recorded under the run's load; they are not cross-run speedup estimates.
 
 Newly passing GCC files
 
-  fntmpdefarg 8.C
-  initlist-array 3.C
-  initlist-array 7.C
+  fntmpdefarg8.C
+  initlist-array3.C
+  initlist-array7.C
   initlist-explicit-sfinae.C
-  pr 33930.C
-  ref-bind 2.C
-  scoped_enum 10.C
-  sfinae 28.C
-  sfinae 41.C
-  sfinae 68.C
-  sfinae 7.C
+  pr33930.C
+  ref-bind2.C
+  scoped_enum10.C
+  sfinae28.C
+  sfinae41.C
+  sfinae68.C
+  sfinae7.C
 
 Remaining work packages (files/configurations)
 
@@ -104,4 +104,4 @@ Remaining work packages (files/configurations)
 standards/policy/adapter adjudication. Counts are sources, not independent bugs.
 Next block: declaration grammar and class invariants, 18 files.
 
-Evidence: /mnt/vizier/cppgm-cxx 11-upstream/batches/gcc-02/acceptance-v 1.json
+Evidence: /mnt/vizier/cppgm-cxx 11-upstream/batches/gcc-02/acceptance-v1.json
