@@ -302,6 +302,8 @@ for my $record (@records)
 		if $assembly_writer !~ /"[^"\n]*\b\Q$record\E\b/;
 }
 # Raw assembly definitions retain a typed declaration and a separate body.
+push @errors, "assembly function initial unwind mode has no reader or writer"
+    if $assembly_parser !~ /FunctionUnwind::Initial/ || $writer !~ /function\.unwind/;
 my @raw_rows = grep { $_->{category} eq 'structure' && $_->{surface} eq 'assembly_function' } @retained;
 push @errors, "assembly functions have no retained ledger structure row" if !@raw_rows;
 push @errors, "assembly_function has no public keyword" if !$keyword{assembly_function};
@@ -326,7 +328,7 @@ for my $row (@global_rows)
 	my $text = join '', map { read_file($_) } split /;/, $row->{owner};
 	push @errors, "assembly_global is absent from its owner documentation" if $text !~ /\bassembly_global\b/;
 }
-for my $table ('kDialects', 'kMemories')
+for my $table ('kDialects', 'kMemories', 'kFunctionUnwinds')
 {
 	for my $word (table_strings($assembly_vocabulary, $table, 'asm_model.h'))
 	{

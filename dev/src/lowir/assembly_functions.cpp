@@ -11,13 +11,14 @@ const AssemblyFunction* find_assembly_function(const Program& program, SymbolId 
 	return nullptr;
 }
 
-void retain_assembly_function(Program& program, SymbolId symbol)
+void retain_assembly_function(Program& program, SymbolId symbol, asm_model::FunctionUnwind unwind)
 {
 	if (!program.assembly)
 		program.assembly.reset(new AssemblyModule());
 	Symbol& declaration = program.symbols[symbol];
 	AssemblyFunction function;
 	function.symbol = symbol;
+	function.unwind = unwind;
 	function.body = std::move(program.functions[declaration.detail].body);
 	declaration.kind = SymbolKind::FunctionDeclaration;
 	program.assembly->functions.push_back(std::move(function));
@@ -34,6 +35,8 @@ bool validate_assembly_functions(const Program& program, const char*& error)
 	std::vector<bool> seen(program.symbols.size(), false);
 	for (const AssemblyFunction& function : program.assembly->functions)
 	{
+		if (static_cast<unsigned>(function.unwind) > static_cast<unsigned>(asm_model::FunctionUnwind::Initial))
+			return fail("invalid assembly function unwind mode");
 		if (function.symbol >= program.symbols.size() || seen[function.symbol])
 			return fail("invalid or duplicate assembly function symbol");
 		seen[function.symbol] = true;

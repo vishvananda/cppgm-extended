@@ -151,6 +151,7 @@ void check_assembly()
 	round_trip<Record>("assembly record", kRecordCount);
 	round_trip<Dialect>("assembly dialect", kDialectCount);
 	round_trip<Memory>("assembly memory", kMemoryCount);
+	round_trip<FunctionUnwind>("assembly function unwind", kFunctionUnwindCount);
 	std::size_t count = 0;
 	const x86_asm_model::Form* forms = x86_asm_model::forms(count);
 	expect(forms != 0 && count != 0, "assembly forms", 0);

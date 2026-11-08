@@ -820,7 +820,7 @@ void ProgramLowering::emit_definition(
 			demand(analyzer_->argument_demand(i).function);
 	if (function->naked)
 	{
-		lowir::retain_assembly_function(program_, symbol);
+		lowir::retain_assembly_function(program_, symbol, asm_model::FunctionUnwind::Initial);
 		++counters_.functions;
 		return;
 	}

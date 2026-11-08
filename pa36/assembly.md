@@ -185,8 +185,8 @@ its parameters are available in their ABI registers or stack locations,
 not as runtime LowIR operands in this body.
 
 The assembly owns the complete entry/exit sequence, preserved registers, stack
-alignment and result. There is no automatic prologue, epilogue, return value or
-unwind description. Arrange an explicit return, tail transfer or other terminal
+alignment and result. There is no automatic prologue, epilogue or return value. By default there
+is no unwind description. Arrange an explicit return, tail transfer or other terminal
 path; reaching the end traps. Local labels belong to each template invocation;
 put cooperating labels and instructions in one template.
 
@@ -195,7 +195,13 @@ constant result, remove its ABI parameters, inline its raw body or infer
 `noreturn` from the LowIR `unreachable` marker. Explicit declaration effects
 still apply. Normal symbol binding, sections and object-name metadata apply to
 its definition. Reject duplicate bodies and attempts to mix raw and ordinary
-function definitions. Unwind directives are a separate extension goal.
+function definitions. An optional `initial` word after the function name requests entry/exit unwind
+records for that raw body. The default (`none` in the vocabulary) supplies no
+records. For example, `assembly_function @add_23 initial { ... }` starts with
+CFA = `rsp + 8` and the return address at `CFA - 8`. It emits no frame code.
+The body supplies CFI for subsequent register/stack changes. A bare body can
+provide its own `.cfi_startproc`/`.cfi_endproc` instead. Keep this function-level
+choice distinct from property 16, which permits unwinding from a packet.
 
 ## Ordered module assembly
 
@@ -229,10 +235,12 @@ The current module subset emits code, data, BSS, strings, alignment, symbol
 attributes and aliases into ELF or Mach-O objects. `lowir2native` uses the existing
 object linker for module-containing standalone programs. A module has no
 ordinary MIR function body; a requested ordinary MIR dump must fail clearly.
-Assembly-defined code owns its ABI and has no automatic unwind description.
+Assembly-defined code owns its ABI and supplies its own CFI start/end and
+frame rules when it needs an unwind description.
 Module macros, repetition and conditionals expand supplied source before its
 instruction parse. Typed symbol spans must survive argument substitution and
 remain distinct at definitions and references. Definitions persist across
 ordered module invocations. See the handout for supported directives and
-absolute expressions. Sharing that environment with inline invocations, CFI
-and wider directive coverage remain further goals.
+absolute expressions. The supported CFI rules and symbol-pointer encodings are listed in the
+handout. Sharing that environment with inline invocations and wider directive
+coverage remain further goals.

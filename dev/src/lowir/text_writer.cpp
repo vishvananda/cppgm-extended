@@ -657,6 +657,11 @@ void Writer::assembly_functions()
 		names_.reset(*body_);
 		word(spelling(Keyword::AssemblyFunction));
 		symbol(function.symbol);
+		if (function.unwind != asm_model::FunctionUnwind::None)
+		{
+			text(" ");
+			text(asm_model::spelling(function.unwind));
+		}
 		text(" {\n");
 		function_body();
 	}

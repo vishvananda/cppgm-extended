@@ -63,6 +63,18 @@ struct LsdaScratch
 // CFA - 8). With `personality` its augmentation adds the personality
 // (pc-relative indirect, 4 bytes) and the LSDA pointer encoding; returns
 // the personality field's offset in `out` (0 without).
+struct CieDescription
+{
+	bool personality = false;
+	bool initial = true;
+	bool signal = false;
+	uint32_t return_column = 16;
+	uint8_t personality_encoding = 0x9b;
+	uint8_t lsda_encoding = 0xff;
+	std::vector<uint8_t> initial_rules;
+};
+uint32_t encode_cie(const CieDescription& description, std::vector<uint8_t>& out);
+
 uint32_t encode_cie(bool personality, std::vector<uint8_t>& out);
 
 // The call frame instructions of a function's FDE: the frame setup
@@ -75,6 +87,16 @@ void encode_frame_instructions(const UnwindFacts& facts, bool lsda, std::vector<
 // An FDE for CIE `cie` (an offset in .eh_frame, where the FDE starts at
 // out.size()): returns the offsets of its pc-begin field and, with
 // `lsda`, of its LSDA pointer field, for the caller's relocations.
+unsigned unwind_pointer_bytes(uint8_t encoding);
+struct FdeDescription
+{
+	uint32_t cie = 0;
+	uint32_t code_bytes = 0;
+	uint8_t lsda_encoding = 0xff;
+};
+void encode_fde(const FdeDescription& description, const uint8_t* instructions, size_t count, std::vector<uint8_t>& out,
+	uint32_t& pc_field, uint32_t& lsda_field);
+
 void encode_fde(uint32_t cie, uint32_t code_bytes, bool lsda, const uint8_t* instructions, size_t count,
 	std::vector<uint8_t>& out, uint32_t& pc_field, uint32_t& lsda_field);
 

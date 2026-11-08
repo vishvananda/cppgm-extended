@@ -148,8 +148,6 @@ std::shared_ptr<AssemblyPlan> prepare_assembly_source(const lowir::AssemblyModul
 	std::vector<assembly::SymbolUse>& symbols, std::vector<assembly::LabelUse>& labels)
 {
 	const lowir::AssemblyTemplate& definition = module.templates[id];
-	if ((definition.properties & AP_UNWIND) != 0)
-		unsupported("unwinding assembly");
 	std::shared_ptr<AssemblyPlan> plan(new AssemblyPlan());
 	plan->definition = id;
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
@@ -191,6 +189,8 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 	std::vector<assembly::LabelUse> labels;
 	std::shared_ptr<AssemblyPlan> plan = prepare_assembly_source(module, id, body, arguments, source, symbols, labels);
 	const lowir::AssemblyTemplate& definition = module.templates[id];
+	if ((definition.properties & AP_UNWIND) != 0)
+		unsupported("unwinding inline assembly");
 	try
 	{
 		plan->instructions = assembly::parse(source, definition.dialect, symbols, labels);

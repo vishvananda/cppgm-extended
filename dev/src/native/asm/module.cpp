@@ -4,12 +4,13 @@
 #include "asm/module_expand.h"
 #include "native/asm/binding.h"
 #include "native/asm/encoding.h"
+#include "native/asm/functions.h"
 #include "native/backend_error.h"
 
 namespace native {
 
 ModuleAssembler::ModuleAssembler(object::ObjectFile& out, Target target)
-	: out_(out), target_(target), symbols_(out, target)
+	: out_(out), target_(target), symbols_(out, target), unwind_(out, target)
 {
 	section(".text", object::SectionKind::Text);
 }
@@ -33,7 +34,11 @@ void ModuleAssembler::section(const std::string& name, object::SectionKind kind)
 void ModuleAssembler::flush()
 {
 	if (code_.empty())
+	{
+		if (unwind_.pending())
+			unwind_.flush(section_, {}, {}, static_cast<uint32_t>(offset()));
 		return;
+	}
 	object::Section& section = out_.sections[section_];
 	if (section.kind != object::SectionKind::Text)
 		throw BackendError("module instructions require a text section");
@@ -48,6 +53,9 @@ void ModuleAssembler::flush()
 																				  : error.line;
 		throw BackendError("module assembly line " + std::to_string(line) + ": " + error.message);
 	}
+	std::vector<uint32_t> buffer_lines;
+	for (const assembly::Instruction& instruction : instructions)
+		buffer_lines.push_back(instruction.line);
 	for (assembly::Instruction& instruction : instructions)
 		if (instruction.line != 0 && instruction.line <= code_lines_.size())
 			instruction.line = code_lines_[instruction.line - 1];
@@ -78,6 +86,7 @@ void ModuleAssembler::flush()
 												: object::R_X86_64_PC32;
 		section.relocations.push_back(relocation);
 	}
+	unwind_.flush(section_, buffer_lines, positions, static_cast<uint32_t>(section.size));
 	code_.clear();
 	uses_.clear();
 	code_lines_.clear();
@@ -98,6 +107,13 @@ void ModuleAssembler::append(const assembly::ModuleLine& line)
 	assembly::ModuleCursor cursor(line);
 	const std::string name = cursor.word();
 	const bool label = cursor.take(':');
+	if (!label && name.compare(0, 5, ".cfi_") == 0)
+	{
+		if (out_.sections[section_].kind != object::SectionKind::Text)
+			cursor.fail("CFI requires a code section");
+		unwind_.record(line, static_cast<uint32_t>(code_lines_.size() + 1), &symbols_);
+		return;
+	}
 	if (name[0] == '.' && !label)
 	{
 		flush();
@@ -135,18 +151,19 @@ void ModuleAssembler::begin(asm_model::Dialect dialect)
 void ModuleAssembler::finish()
 {
 	flush();
+	unwind_.finish();
 	if (!section_stack_.empty())
 		throw BackendError("unbalanced module section stack");
 	symbols_.finish();
 }
-void emit_assembly_globals(object::ObjectFile& out, const lowir::Program& program, Target target)
+void emit_assembly_items(
+	object::ObjectFile& out, const lowir::Program& program, Target target, const std::vector<uint32_t>& mapping)
 {
-	if (!program.assembly || program.assembly->globals.empty())
+	if (!program.assembly || (program.assembly->globals.empty() && program.assembly->functions.empty()))
 		return;
 	try
 	{
 		std::vector<std::vector<assembly::ModuleLine>> sources;
-		ModuleSymbols mapping(out, target);
 		assembly::ModuleExpander expander;
 		for (const lowir::AssemblyGlobal& item : program.assembly->globals)
 		{
@@ -157,14 +174,16 @@ void emit_assembly_globals(object::ObjectFile& out, const lowir::Program& progra
 			std::vector<assembly::LabelUse> labels;
 			prepare_assembly_source(
 				*program.assembly, item.definition, constants, item.arguments, source, symbols, labels);
-			for (assembly::SymbolUse& use : symbols)
-				use.reference.symbol = mapping.program_symbol(program, use.reference.symbol);
+			remap_assembly_symbols(symbols, mapping);
 			sources.push_back(expander.expand(assembly::module_lines(source, symbols)));
 		}
 		ModuleAssembler assembler(out, target);
 		for (const std::vector<assembly::ModuleLine>& source : sources)
 			for (const assembly::ModuleLine& line : source)
 				assembler.declare(line);
+		for (const lowir::AssemblyFunction& function : program.assembly->functions)
+			emit_assembly_function(assembler, program, function, mapping);
+		assembler.module_start();
 		for (uint32_t i = 0; i < sources.size(); ++i)
 		{
 			assembler.begin(program.assembly->templates[program.assembly->globals[i].definition].dialect);

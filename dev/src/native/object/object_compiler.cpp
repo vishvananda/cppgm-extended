@@ -1,10 +1,11 @@
 #include "native/object/object_compiler.h"
 
+#include "lowir/assembly.h"
+
 #include <chrono>
 #include <cstring>
 
 #include "native/backend_error.h"
-#include "native/asm/functions.h"
 #include "native/asm/module.h"
 #include "native/image/global_data.h"
 #include "native/image/image.h"
@@ -137,6 +138,7 @@ private:
 	void add_unwind_relocations();
 	uint32_t section_symbol(uint32_t section);
 	void add_symbols();
+	void add_assembly_symbols();
 	void add_aliases();
 	void add_relocations();
 	void add_groups();
@@ -493,18 +495,13 @@ void ObjectCompiler::emit_remaining()
 		function(s);
 		program_.functions[symbol.detail].body.reset();
 	}
-	if (program_.assembly)
-		for (const lowir::AssemblyFunction& function : program_.assembly->functions)
-		{
-			emit_assembly_function(image_, program_, function);
-			ranges_.push_back(
-				CodeRange{ function.symbol, image_.symbol(function.symbol).offset, image_.text().size(), 0, 0, false });
-		}
 	stats_.select = selector_.stats();
 	// A declared thread-local wrapper returns its object's address.
 	for (lowir::SymbolId s = 0; s < program_.symbols.size(); ++s)
 	{
 		const lowir::Symbol& symbol = program_.symbols[s];
+		if (lowir::find_assembly_function(program_, s))
+			continue;
 		if (symbol.kind == lowir::SymbolKind::FunctionDeclaration &&
 			(symbol.metadata.role == ir_model::SR_CPU_QUERY || symbol.metadata.role == ir_model::SR_XSTATE_QUERY))
 		{
@@ -577,7 +574,8 @@ void ObjectCompiler::prune_functions()
 	};
 	for (const CodeRange& range : ranges_)
 	{
-		if (!local_function(range.symbol) || (program_.assembly && !program_.assembly->globals.empty()))
+		if (!local_function(range.symbol) ||
+			(program_.assembly && (!program_.assembly->globals.empty() || !program_.assembly->functions.empty())))
 			reach(range.symbol);
 	}
 	for (size_t i = 0; i < program_.order.size(); ++i)
@@ -974,10 +972,9 @@ uint32_t ObjectCompiler::object_symbol(uint32_t image_symbol)
 	// where no object defines it (the object-mode lowering declares
 	// vague-linkage entities strong: see ProgramLowering::finish).
 	symbol.binding = binding == ir_model::SBM_WEAK ? Binding::Weak : Binding::Global;
-	if (defined &&
-		(binding == ir_model::SBM_INTERNAL ||
-			(s.kind == lowir::SymbolKind::FunctionDeclaration &&
-				!lowir::find_assembly_function(program_, image_symbol))))
+	const bool raw = lowir::find_assembly_function(program_, image_symbol) != nullptr;
+	if (((defined || raw) && binding == ir_model::SBM_INTERNAL) ||
+		(defined && s.kind == lowir::SymbolKind::FunctionDeclaration && !raw))
 		symbol.binding = Binding::Local;
 	const lowir::NameId name = object_name(image_symbol);
 	// One object symbol per non-local name: a definition completes an
@@ -1058,7 +1055,26 @@ void ObjectCompiler::add_symbols()
 		if (placement_[slot(program_.order[i])].section != 0)
 			object_symbol(program_.order[i]);
 	}
-	add_aliases();
+	add_assembly_symbols();
+	if (!program_.assembly || program_.assembly->functions.empty())
+		add_aliases();
+}
+
+void ObjectCompiler::add_assembly_symbols()
+{
+	if (!program_.assembly)
+		return;
+	for (const lowir::AssemblyFunction& function : program_.assembly->functions)
+	{
+		object_symbol(function.symbol);
+		for (const lowir::Value value : function.body->operands)
+			if (value.kind == lowir::ValueKind::Symbol)
+				object_symbol(value.index);
+	}
+	for (const lowir::AssemblyGlobal& item : program_.assembly->globals)
+		for (const lowir::Value value : item.arguments)
+			if (value.kind == lowir::ValueKind::Symbol)
+				object_symbol(value.index);
 }
 
 void ObjectCompiler::add_aliases()
@@ -1068,7 +1084,7 @@ void ObjectCompiler::add_aliases()
 	for (lowir::SymbolId s = 0; s < program_.symbols.size(); ++s)
 	{
 		const lowir::Symbol& symbol = program_.symbols[s];
-		if (placement_[slot(s)].section == 0)
+		if (placement_[slot(s)].section == 0 && !lowir::find_assembly_function(program_, s))
 			continue;
 		if ((symbol.metadata.flags & lowir::SF_KEEP_ALIAS) != 0 && symbol.metadata.object != 0 &&
 			symbol.metadata.object != symbol.name)
@@ -1251,7 +1267,9 @@ void ObjectCompiler::finish(ObjectFile& out)
 	add_unwind_relocations();
 	add_groups();
 	place_debug();
-	emit_assembly_globals(out, program_, image_.target);
+	emit_assembly_items(out, program_, image_.target, object_symbol_);
+	if (program_.assembly && !program_.assembly->functions.empty())
+		add_aliases();
 	stats_.sections = out.sections.size() - 1;
 	stats_.symbols = out.symbols.size() - 1;
 	for (const object::Section& section : out.sections)

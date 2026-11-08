@@ -221,6 +221,10 @@ class AssemblyContractAudit(unittest.TestCase):
              "assembly record 'unique' is not written"),
             ("pa36/assembly.md", '`unique`', '`unique2`',
              "assembly record 'unique' is absent from its owner documentation"),
+            ("dev/src/lowir/text_parser_assembly.cpp", 'FunctionUnwind::Initial', 'FunctionUnwind::None',
+             "assembly function initial unwind mode has no reader or writer"),
+            ("dev/src/lowir/text_writer.cpp", 'function.unwind', 'function.frame_mode',
+             "assembly function initial unwind mode has no reader or writer"),
         ]
         for relative, before, after, expected in mutations:
             with self.subTest(relative=relative):

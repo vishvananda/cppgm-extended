@@ -1,5 +1,7 @@
 #include "native/backend.h"
 
+#include "lowir/assembly.h"
+
 #include <chrono>
 #include <cstdio>
 #include <cstring>
@@ -7,7 +9,6 @@
 #include <sys/resource.h>
 
 #include "native/backend_error.h"
-#include "native/asm/functions.h"
 #include "native/image/global_data.h"
 #include "native/image/image.h"
 #include "native/mir/mir_writer.h"
@@ -110,11 +111,11 @@ Startup find_startup(const lowir::Program& program)
 bool compile_program(
 	lowir::Program& program, const BackendOptions& options, std::string& error, std::string* stats_line)
 {
-	if (program.assembly && !program.assembly->globals.empty())
+	if (program.assembly && (!program.assembly->globals.empty() || !program.assembly->functions.empty()))
 	{
 		if (!options.machine_ir.empty())
 		{
-			error = "module assembly has no ordinary machine-IR function body";
+			error = "opaque assembly definitions have no ordinary machine-IR body";
 			return false;
 		}
 		std::vector<object::ObjectFile> objects(1);
@@ -130,8 +131,7 @@ bool compile_program(
 		if (stats_line != nullptr)
 		{
 			std::ostringstream line;
-			line << "native module_assembly=1 sections=" << object_stats.sections
-				 << " symbols=" << object_stats.symbols;
+			line << "native assembly_items=1 sections=" << object_stats.sections << " symbols=" << object_stats.symbols;
 			*stats_line = line.str();
 		}
 		return true;
@@ -210,14 +210,7 @@ bool compile_program(
 					encode_ms += milliseconds_since(phase);
 			}
 		}
-		if (program.assembly)
-		{
-			if (mir_file != nullptr && !program.assembly->functions.empty())
-				throw BackendError("raw assembly functions have no ordinary machine-IR body");
-			if (!options.output.empty())
-				for (const lowir::AssemblyFunction& function : program.assembly->functions)
-					emit_assembly_function(image, program, function);
-		}
+
 		if (mir_file != nullptr && !writer.finish())
 		{
 			error = "cannot write " + options.machine_ir;

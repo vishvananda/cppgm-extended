@@ -105,8 +105,8 @@ labels can span basic statements. The assembly owns all ABI inputs, results,
 stack changes and preserved registers. Emit no automatic frame or return.
 Use the shared `assembly_function` contract for this and other frontends' raw
 functions; callers retain ordinary typed declarations. Keep raw bodies opaque
-to inlining and return/argument inference. No automatic unwind description is
-promised by this subset.
+to inlining and return/argument inference. Request initial unwind state for GNU naked functions; describe subsequent
+stack and saved-register changes explicitly with the directives below.
 
 LowIR selects the dialect; the current GNU source adapter uses AT&T. Choose one
 alternative column jointly across operands. Respect register aliases
@@ -152,8 +152,37 @@ Numeric conditions and repetition counts accept absolute integer expressions,
 using GNU assembler precedence and truth values. Expansion must have bounded
 nesting, work and output size; malformed blocks and runaway recursion fail.
 
-Sharing macros with inline statements, symbol-dependent expressions and unwind
-directives remain extension goals.
+Sharing macros with inline statements and symbol-dependent expressions remain
+extension goals.
+
+### Unwind descriptions
+
+Module assembly supports `.cfi_startproc` (including `simple`) and
+`.cfi_endproc`. Raw functions may instead request the shared boundary's
+`initial` mode: it supplies the entry/exit unwind records, with the initial
+x86-64 CFA at `rsp + 8` and the return address at `CFA - 8`. GNU naked functions
+use that mode. It adds no frame instructions. The producer describes its own
+stack changes and saved registers; omit explicit start/end directives in an
+`initial` body.
+
+Support CFA definition/register/offset/adjustment, saved-register offset,
+relative offset and value offset, register transfers, restore/undefined/same
+value, remember/restore state, return column and signal-frame directives.
+CFI does not interrupt assembly-local label scope. `.cfi_escape` emits the
+supplied bytes without changing the assembler's logical CFA bookkeeping, as
+in GNU assembly. It permits explicit DWARF expressions and vendor extensions.
+
+Preserve `.cfi_personality` and `.cfi_lsda` symbol identities and pointer
+encodings, including omission (255), absolute or PC-relative 32/64-bit fields
+and personality indirection. Respect the target's relocation rules; on Darwin
+an indirect PC-relative personality uses its GOT slot. `.cfi_sections .eh_frame`
+selects the supported runtime-unwind section. Reject malformed procedure/state
+nesting, impossible offsets and unsupported encodings or sections clearly.
+Native tests unwind host exceptions through both module and raw frames and
+observe personality and exception-data addresses.
+
+These directives currently describe module and raw-function assembly. Combining
+user CFI with an ordinary compiler-owned inline frame remains an extension goal.
 
 ### Suggested implementation order
 
@@ -198,7 +227,7 @@ included in those reports or in the required course completion criteria.
 
 ### Further extensions
 
-Shared module/inline environments, broader directives/expressions, further relocations, unwind state and broader
+Shared module/inline environments, broader directives/expressions, further relocations, inline-frame unwind state and broader
 x86/VEX/EVEX coverage remain extension goals. Original Rust assembly is a useful
 cross-frontend consumer. These goals require additional contracts and tests;
 the current suite does not establish their completion. Header vocabulary for
