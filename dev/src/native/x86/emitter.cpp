@@ -78,11 +78,12 @@ RM FunctionEmitter::frame_rm(int32_t disp) const
 }
 
 // Without a frame pointer: a frame displacement from RSP. [virtual rbp +
-// disp] is CFA - 16 + disp, and the frame's objects (disp < 0) lie
-// save_shift_ lower, below the saves.
+// disp] is CFA - 16 + disp, and the frame's objects lie save_shift_
+// lower, below the saves. Zero can name the one-past address of the
+// last object; incoming stack arguments start above that boundary.
 int32_t FunctionEmitter::rsp_disp(int32_t disp) const
 {
-	return disp + frame_top_ - 16 + rsp_shift_ - (disp < 0 ? save_shift_ : 0);
+	return disp + frame_top_ - 16 + rsp_shift_ - (disp <= 0 ? save_shift_ : 0);
 }
 
 int32_t FunctionEmitter::frame_base() const

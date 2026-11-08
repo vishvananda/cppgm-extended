@@ -106,7 +106,10 @@ bool Analyzer::type_dependent(const syntax::Expr* expr, Scope* scope)
 			return true;
 		for (const syntax::NameComponent& component : member->member->components)
 		{
-			if (component.kind != syntax::NameComponentKind::Identifier || component.has_arguments)
+			if (component.kind != syntax::NameComponentKind::Identifier ||
+				(component.has_arguments &&
+					(!precise_dependence_ || &component != &member->member->last() ||
+						!fixed_template_arguments(component, scope))))
 				return true;
 		}
 		return false;
@@ -221,7 +224,7 @@ bool Analyzer::dependent_name_expression(const syntax::Name& name, Scope* scope)
 		return !found.found() && !name.qualified();
 	const Binding* binding = found.binding;
 	const Entity* entity = binding->entity;
-	if (entity->owner != nullptr && TemplatedClassScope(entity->owner))
+	if (entity->owner != nullptr && entity->owner->kind == ScopeKind::Class && TemplatedClassScope(entity->owner))
 		return true;
 	switch (binding->kind)
 	{
