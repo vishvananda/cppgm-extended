@@ -13,7 +13,7 @@ ModuleLine argument(const ModuleLine& line, uint32_t first, uint32_t end)
 	ModuleLine input = module_slice(line, first, end - first), result;
 	result.line = line.line;
 	bool quoted = false;
-	size_t use = 0;
+	size_t use = 0, label = 0;
 	for (uint32_t i = 0; i < input.text.size(); ++i)
 	{
 		if (use < input.symbols.size() && input.symbols[use].first == i)
@@ -23,6 +23,12 @@ ModuleLine argument(const ModuleLine& line, uint32_t first, uint32_t end)
 			span.first = static_cast<uint32_t>(result.text.size());
 			result.symbols.push_back(span);
 			result.text.append(input.text, i, count);
+			i += count - 1;
+		}
+		else if (label < input.labels.size() && input.labels[label].first == i)
+		{
+			const uint32_t count = input.labels[label++].count;
+			append_module_line(result, module_slice(input, i, count));
 			i += count - 1;
 		}
 		else if (input.text[i] == '"')

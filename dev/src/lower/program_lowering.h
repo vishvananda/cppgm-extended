@@ -497,6 +497,7 @@ public:
 	void null_member_pointers(const sema::Type* type, StaticData& data);
 
 	// ------------------------------------------ services for bodies
+	uint32_t assembly_environment(uint32_t source) const { return assembly_environment_base_ + source; }
 	lowir::Program& program() { return program_; }
 	LoweringCounters& counters() { return counters_; }
 	sema::SemanticGraph& graph() { return *graph_; }
@@ -923,6 +924,7 @@ private:
 	// Declarations and definitions of one unit.
 	void declarations(const syntax::Slice<syntax::Decl*>& list);
 	void declaration(const syntax::Decl& decl);
+	void assembly_declarations(const syntax::Slice<syntax::Decl*>& declarations);
 	void asm_declaration(const syntax::AsmDecl& decl);
 	void name_deferred_members(const syntax::Decl& decl);
 	void name_member_classes(const syntax::ClassSpecifier& specifier);
@@ -1408,6 +1410,7 @@ private:
 	void finalizer_function();
 	void finalize(lowir::SymbolId symbol, const sema::Type* type, uint32_t location, lowir::SymbolId guard);
 
+	uint32_t assembly_environment_base_ = 0;
 	lowir::Program& program_;
 	LoweringCounters counters_;
 	// The unit being lowered.

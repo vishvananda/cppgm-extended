@@ -3,14 +3,25 @@
 #include <map>
 #include <memory>
 #include "asm/module_text.h"
+#include "asm/persistent_map.h"
 
 namespace assembly {
+
+struct ExpansionBudget
+{
+	uint64_t unique = 0;
+	uint64_t work = 0;
+	uint64_t bytes = 0;
+};
 
 // Source-only expansion; typed symbol spans survive every argument substitution.
 // Instructions are still parsed exactly once by the downstream assembler.
 class ModuleExpander
 {
 public:
+	explicit ModuleExpander(std::shared_ptr<ExpansionBudget> budget = std::make_shared<ExpansionBudget>())
+		: budget_(std::move(budget))
+	{}
 	std::vector<ModuleLine> expand(const std::vector<ModuleLine>& input);
 
 private:
@@ -39,17 +50,14 @@ private:
 		std::vector<ModuleLine>& output, unsigned depth);
 	void account(uint64_t bytes, const ModuleLine& line);
 	void emit(const ModuleLine& line, std::vector<ModuleLine>& output);
-	std::map<std::string, std::shared_ptr<Macro>> macros_;
-	uint64_t unique_ = 0;
-	uint64_t work_ = 0;
-	uint64_t bytes_ = 0;
+	PersistentMap<std::shared_ptr<Macro>> macros_;
+	std::shared_ptr<ExpansionBudget> budget_;
 };
 
 std::string module_macro_name(std::string name);
 size_t module_block_end(const std::vector<ModuleLine>& input, size_t first, size_t last);
 bool module_condition(const std::string& kind, ModuleCursor& cursor, const ModuleLine& line);
 
-ModuleLine module_slice(const ModuleLine& line, uint32_t first, uint32_t count);
 std::vector<ModuleLine> module_arguments(
 	const ModuleLine& line, uint32_t first, std::vector<uint32_t>* starts = nullptr);
 ModuleLine substitute_module(

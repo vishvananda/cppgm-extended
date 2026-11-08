@@ -192,7 +192,15 @@ Decl* Parser::parse_asm_declaration()
 	}
 	decl->text = tok().spelling;
 	next();
-	return expect(TokenKind::OP_RPAREN) && expect(TokenKind::OP_SEMICOLON) ? decl : nullptr;
+	if (!expect(TokenKind::OP_RPAREN) || !expect(TokenKind::OP_SEMICOLON))
+		return nullptr;
+	if (assembly_environment_ == UINT32_MAX)
+	{
+		fail();
+		return nullptr;
+	}
+	++assembly_environment_;
+	return decl;
 }
 
 Stmt* Parser::parse_asm()
@@ -200,6 +208,7 @@ Stmt* Parser::parse_asm()
 	// asm volatile? inline? ( string-literal [: outputs [: inputs
 	// [: clobbers]]] ) ; -- `::` stands for two colons.
 	AsmStmt* stmt = make<AsmStmt>(StmtKind::Asm, location());
+	stmt->assembly_environment = assembly_environment_;
 	stmt->is_volatile = false;
 	next();
 	for (;;)

@@ -208,6 +208,9 @@ void ProgramLowering::lower_unit(
 		init_->begin_unit();
 	++counters_.units;
 	const size_t first_pending = pending_.size();
+	assembly_environment_base_ = program_.assembly ? static_cast<uint32_t>(program_.assembly->globals.size()) : 0;
+	if (unit.assembly_declarations != 0)
+		assembly_declarations(unit.declarations);
 	for (const syntax::Decl* decl : unit.declarations)
 	{
 		declaration(*decl);
@@ -567,7 +570,9 @@ void ProgramLowering::declaration(const syntax::Decl& decl)
 	switch (decl.kind)
 	{
 	case syntax::DeclKind::Asm:
-		return asm_declaration(static_cast<const syntax::AsmDecl&>(decl));
+		if (static_cast<const syntax::AsmDecl&>(decl).full_source == nullptr)
+			asm_declaration(static_cast<const syntax::AsmDecl&>(decl));
+		return;
 	case syntax::DeclKind::Namespace:
 		declarations(static_cast<const syntax::NamespaceDecl&>(decl).declarations);
 		return;

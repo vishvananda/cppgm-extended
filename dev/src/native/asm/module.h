@@ -7,6 +7,8 @@
 
 namespace native {
 
+class AssemblyEnvironment;
+
 class ModuleAssembler
 {
 public:
@@ -48,7 +50,7 @@ private:
 	bool raw_initial_ = false;
 };
 
-void emit_assembly_items(
-	object::ObjectFile& out, const lowir::Program& program, Target target, const std::vector<uint32_t>& symbols);
+void emit_assembly_items(object::ObjectFile& out, const lowir::Program& program, Target target,
+	const std::vector<uint32_t>& symbols, AssemblyEnvironment& environment);
 
 } // namespace native

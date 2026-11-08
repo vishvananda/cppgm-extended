@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "asm/registers.h"
+#include "native/asm/environment.h"
 #include "native/backend_error.h"
 #include "native/asm/constraints.h"
 
@@ -182,7 +183,7 @@ std::shared_ptr<AssemblyPlan> prepare_assembly_source(const lowir::AssemblyModul
 }
 
 std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& module, uint32_t id,
-	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments)
+	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments, AssemblyEnvironment& environment)
 {
 	std::string source;
 	std::vector<assembly::SymbolUse> symbols;
@@ -193,7 +194,14 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 		unsupported("unwinding inline assembly");
 	try
 	{
-		plan->instructions = assembly::parse(source, definition.dialect, symbols, labels);
+		auto expander = environment.fork(definition.environment);
+		assembly::ModuleLine expanded;
+		for (const auto& line : expander.expand(assembly::module_lines(source, symbols, labels)))
+		{
+			assembly::append_module_line(expanded, line);
+			expanded.text += '\n';
+		}
+		plan->instructions = assembly::parse(expanded.text, definition.dialect, expanded.symbols, expanded.labels);
 	}
 	catch (const assembly::AssemblyError& error)
 	{

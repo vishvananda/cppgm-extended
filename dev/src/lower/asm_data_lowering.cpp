@@ -9,6 +9,23 @@
 
 namespace lower {
 
+void ProgramLowering::assembly_declarations(const syntax::Slice<syntax::Decl*>& list)
+{
+	for (const syntax::Decl* decl : list)
+	{
+		if (decl->kind == syntax::DeclKind::Asm)
+		{
+			const auto& source = static_cast<const syntax::AsmDecl&>(*decl);
+			if (source.full_source != nullptr)
+				asm_declaration(source);
+		}
+		else if (decl->kind == syntax::DeclKind::Namespace)
+			assembly_declarations(static_cast<const syntax::NamespaceDecl&>(*decl).declarations);
+		else if (decl->kind == syntax::DeclKind::Linkage)
+			assembly_declarations(static_cast<const syntax::LinkageDecl&>(*decl).declarations);
+	}
+}
+
 void ProgramLowering::asm_declaration(const syntax::AsmDecl& decl)
 {
 	if (decl.full_source != nullptr)

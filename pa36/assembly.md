@@ -34,7 +34,17 @@ operand type. Register names otherwise specify their architectural view;
 
 The template header gives dialect (`att` or `intel`), memory effect (`none`,
 `read`, `write`, `readwrite`), property bits, state-read bits, state-write bits,
-and invocation argument count. The vocabulary is in `dev/src/asm_model.h`:
+and invocation argument count. An optional `environment N` before `{` selects
+macro definitions after the first N ordered `assembly_global` invocations for
+ordinary or raw-function packets; omission selects the empty environment.
+The index must be within the module's invocation count. Module invocations
+themselves always expand in their declared order. A packet's local definitions
+remain within that packet (or consecutive packets of one raw body with the
+same environment). Snapshots preserve definitions across later redefinition or
+purging; expansion numbers share the unit's bounded work budget. Typed symbol
+and outgoing-label pieces remain typed through macro argument substitution.
+
+The vocabulary is in `dev/src/asm_model.h`:
 
 | Property bit | Meaning |
 |---|---|
@@ -240,7 +250,7 @@ frame rules when it needs an unwind description.
 Module macros, repetition and conditionals expand supplied source before its
 instruction parse. Typed symbol spans must survive argument substitution and
 remain distinct at definitions and references. Definitions persist across
-ordered module invocations. See the handout for supported directives and
+ordered module invocations; `environment` selects a snapshot for inline and raw
+invocations. See the handout for supported directives and
 absolute expressions. The supported CFI rules and symbol-pointer encodings are listed in the
-handout. Sharing that environment with inline invocations and wider directive
-coverage remain further goals.
+handout. Wider directive coverage remains a further goal.

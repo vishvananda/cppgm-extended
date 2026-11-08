@@ -145,6 +145,11 @@ void Parser::parse_assembly()
 	definition.state_read = assembly_number(63, "assembly state reads");
 	definition.state_write = assembly_number(63, "assembly state writes");
 	definition.argument_count = assembly_number(kNoId - 1, "assembly argument count");
+	if (at_word("environment"))
+	{
+		advance();
+		definition.environment = assembly_number(kNoId - 1, "assembly environment");
+	}
 	definition.first_operand = static_cast<uint32_t>(module.operands.size());
 	definition.first_piece = static_cast<uint32_t>(module.pieces.size());
 	definition.first_clobber = static_cast<uint32_t>(module.clobbers.size());

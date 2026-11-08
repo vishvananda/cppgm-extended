@@ -2,6 +2,7 @@
 
 #include "asm/packet.h"
 #include "lowir/assembly_builder.h"
+#include "lowir/assembly.h"
 #include "sema/asm_statements.h"
 #include "sema/expression_facts.h"
 #include "sema/constant_values.h"
@@ -97,6 +98,8 @@ void FunctionLowering::full_asm_statement(const syntax::AsmStmt& stmt)
 	lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::Asm, lowir::Type::scalar(lowir::TypeKind::Void));
 	inst.immediate = lowir::add_assembly(
 		lowering_.program(), packet, types.data(), lowering_.debug_location(stmt.location));
+	lowering_.program().assembly->templates[inst.immediate].environment = lowering_.assembly_environment(
+		stmt.assembly_environment);
 	inst.extra_count = static_cast<uint32_t>(values.size());
 	inst.extra_first = builder_.add_operands(values.data(), inst.extra_count);
 	builder_.append(inst);

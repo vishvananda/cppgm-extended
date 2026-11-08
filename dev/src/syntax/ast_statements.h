@@ -192,6 +192,7 @@ struct AsmOperand
 // (7.4) its simplest form: the template, operands and clobbers as written.
 struct AsmStmt : Stmt
 {
+	uint32_t assembly_environment = 0;
 	TokenSpelling text;
 	bool is_volatile;
 	bool is_extended = false;

@@ -4,6 +4,7 @@
 #include "asm/module_expand.h"
 #include "native/asm/binding.h"
 #include "native/asm/encoding.h"
+#include "native/asm/environment.h"
 #include "native/asm/functions.h"
 #include "native/backend_error.h"
 
@@ -156,33 +157,23 @@ void ModuleAssembler::finish()
 		throw BackendError("unbalanced module section stack");
 	symbols_.finish();
 }
-void emit_assembly_items(
-	object::ObjectFile& out, const lowir::Program& program, Target target, const std::vector<uint32_t>& mapping)
+void emit_assembly_items(object::ObjectFile& out, const lowir::Program& program, Target target,
+	const std::vector<uint32_t>& mapping, AssemblyEnvironment& environment)
 {
 	if (!program.assembly || (program.assembly->globals.empty() && program.assembly->functions.empty()))
 		return;
 	try
 	{
-		std::vector<std::vector<assembly::ModuleLine>> sources;
-		assembly::ModuleExpander expander;
-		for (const lowir::AssemblyGlobal& item : program.assembly->globals)
-		{
-			lowir::FunctionBody constants;
-			constants.literals = item.literals;
-			std::string source;
-			std::vector<assembly::SymbolUse> symbols;
-			std::vector<assembly::LabelUse> labels;
-			prepare_assembly_source(
-				*program.assembly, item.definition, constants, item.arguments, source, symbols, labels);
-			remap_assembly_symbols(symbols, mapping);
-			sources.push_back(expander.expand(assembly::module_lines(source, symbols)));
-		}
+		auto sources = environment.globals();
+		for (auto& source : sources)
+			for (auto& line : source)
+				remap_assembly_symbols(line.symbols, mapping);
 		ModuleAssembler assembler(out, target);
 		for (const std::vector<assembly::ModuleLine>& source : sources)
 			for (const assembly::ModuleLine& line : source)
 				assembler.declare(line);
 		for (const lowir::AssemblyFunction& function : program.assembly->functions)
-			emit_assembly_function(assembler, program, function, mapping);
+			emit_assembly_function(assembler, program, function, mapping, environment);
 		assembler.module_start();
 		for (uint32_t i = 0; i < sources.size(); ++i)
 		{

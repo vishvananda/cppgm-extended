@@ -35,6 +35,13 @@ unsigned capture_bytes(lowir::Type type, Reg reg)
 
 } // namespace
 
+AssemblyEnvironment& FunctionSelector::assembly_environment() const
+{
+	if (!assembly_environment_)
+		assembly_environment_.reset(new AssemblyEnvironment(program_));
+	return *assembly_environment_;
+}
+
 const std::shared_ptr<const AssemblyPlan>& FunctionSelector::assembly_plan(const lowir::Instruction& inst) const
 {
 	const uint32_t index = static_cast<uint32_t>(&inst - body_->instructions.data());
@@ -44,7 +51,8 @@ const std::shared_ptr<const AssemblyPlan>& FunctionSelector::assembly_plan(const
 		std::vector<lowir::Value> arguments(inst.extra_count);
 		for (uint32_t i = 0; i < inst.extra_count; ++i)
 			arguments[i] = resolve(body_->operands[inst.extra_first + i]);
-		plan = bind_assembly(*program_.assembly, static_cast<uint32_t>(inst.immediate), *body_, arguments);
+		plan = bind_assembly(
+			*program_.assembly, static_cast<uint32_t>(inst.immediate), *body_, arguments, assembly_environment());
 	}
 	return plan;
 }

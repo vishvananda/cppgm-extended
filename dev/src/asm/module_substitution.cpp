@@ -10,40 +10,17 @@ bool identifier(char c)
 }
 void append(ModuleLine& to, const ModuleLine& from)
 {
-	const uint32_t first = static_cast<uint32_t>(to.text.size());
 	if (to.text.size() + from.text.size() > 64u * 1024u * 1024u)
 		throw AssemblyError{ "macro substitution exceeds byte limit", to.line, 1 };
-	to.text += from.text;
-	for (SymbolUse use : from.symbols)
-	{
-		use.first += first;
-		to.symbols.push_back(use);
-	}
+	append_module_line(to, from);
 }
-}
-ModuleLine module_slice(const ModuleLine& line, uint32_t first, uint32_t count)
-{
-	ModuleLine result;
-	result.line = line.line;
-	result.text = line.text.substr(first, count);
-	for (const SymbolUse& use : line.symbols)
-		if (use.first < uint64_t(first) + count && uint64_t(use.first) + use.count > first &&
-			!(use.first >= first && uint64_t(use.first) + use.count <= uint64_t(first) + count))
-			throw AssemblyError{ "macro argument splits a typed symbol", line.line, first + 1 };
-	for (SymbolUse use : line.symbols)
-		if (use.first >= first && uint64_t(use.first) + use.count <= uint64_t(first) + count)
-		{
-			use.first -= first;
-			result.symbols.push_back(use);
-		}
-	return result;
 }
 ModuleLine substitute_module(
 	const ModuleLine& line, const std::map<std::string, ModuleLine>& bindings, uint64_t unique, uint64_t iteration)
 {
 	ModuleLine result;
 	result.line = line.line;
-	size_t use = 0;
+	size_t use = 0, label = 0;
 	for (uint32_t i = 0; i < line.text.size();)
 	{
 		if (use < line.symbols.size() && line.symbols[use].first == i)
@@ -51,6 +28,13 @@ ModuleLine substitute_module(
 			const SymbolUse& symbol = line.symbols[use++];
 			append(result, module_slice(line, i, symbol.count));
 			i += symbol.count;
+			continue;
+		}
+		if (label < line.labels.size() && line.labels[label].first == i)
+		{
+			const uint32_t count = line.labels[label++].count;
+			append(result, module_slice(line, i, count));
+			i += count;
 			continue;
 		}
 		if (line.text[i] != '\\' || i + 1 == line.text.size())

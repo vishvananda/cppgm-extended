@@ -57,6 +57,7 @@ struct SelectStats
 };
 
 class FunctionSelector;
+class AssemblyEnvironment;
 
 // How a host object's code reaches `symbol` (pa27 README 1, 5): directly
 // (pc-relative), through its GOT entry, or a thread-local form; from the
@@ -90,6 +91,7 @@ public:
 	void set_optimization_level(int level);
 
 	const SelectStats& stats() const { return stats_; }
+	AssemblyEnvironment& assembly_environment();
 
 private:
 	SelectStats stats_;

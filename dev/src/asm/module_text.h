@@ -8,11 +8,15 @@ struct ModuleLine
 {
 	std::string text;
 	std::vector<SymbolUse> symbols;
+	std::vector<LabelUse> labels;
 	uint32_t line = 1;
 };
 
 // Retain source bytes and typed placeholder spans while splitting statements.
-std::vector<ModuleLine> module_lines(const std::string& text, const std::vector<SymbolUse>& symbols);
+std::vector<ModuleLine> module_lines(
+	const std::string& text, const std::vector<SymbolUse>& symbols, const std::vector<LabelUse>& labels = {});
+ModuleLine module_slice(const ModuleLine& line, uint32_t first, uint32_t count);
+void append_module_line(ModuleLine& target, const ModuleLine& source);
 
 class ModuleCursor
 {

@@ -17,6 +17,7 @@ TranslationUnit* Parser::parse_translation_unit()
 		return nullptr;
 	TranslationUnit* unit = make<TranslationUnit>();
 	unit->declarations = list.take(arena_);
+	unit->assembly_declarations = assembly_environment_;
 	return unit;
 }
 

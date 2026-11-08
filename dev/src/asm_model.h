@@ -76,7 +76,8 @@ enum class PieceKind : uint8_t
 {
 	Text,
 	Operand,
-	Unique
+	Unique,
+	Environment
 };
 
 enum class FunctionUnwind : uint8_t
@@ -100,17 +101,18 @@ enum class Record : uint8_t
 	Clobber,
 	Text,
 	Use,
-	Unique
+	Unique,
+	Environment
 };
 
-const unsigned kRecordCount = static_cast<unsigned>(Record::Unique) + 1;
+const unsigned kRecordCount = static_cast<unsigned>(Record::Environment) + 1;
 const unsigned kDialectCount = static_cast<unsigned>(Dialect::Intel) + 1;
 const unsigned kMemoryCount = static_cast<unsigned>(Memory::ReadWrite) + 1;
 
 inline const char* spelling(Record record)
 {
 	static const char* const kRecords[kRecordCount] = { "operand", "alternative", "group", "range", "clobber", "text",
-		"use", "unique" };
+		"use", "unique", "environment" };
 	return kRecords[static_cast<unsigned>(record)];
 }
 
@@ -277,6 +279,7 @@ struct Template
 	uint32_t first_operand = 0;
 	uint32_t operand_count = 0;
 	uint32_t argument_count = 0;
+	uint32_t environment = 0;
 	uint32_t first_piece = 0;
 	uint32_t piece_count = 0;
 	uint32_t first_clobber = 0;

@@ -4,6 +4,7 @@
 
 #include "asm/module_expand.h"
 #include "native/asm/binding.h"
+#include "native/asm/environment.h"
 #include "native/asm/module.h"
 #include "native/backend_error.h"
 
@@ -59,7 +60,7 @@ void ModuleAssembler::end_raw()
 	raw_symbol_ = 0;
 }
 void emit_assembly_function(ModuleAssembler& assembler, const lowir::Program& program,
-	const lowir::AssemblyFunction& function, const std::vector<uint32_t>& mapping)
+	const lowir::AssemblyFunction& function, const std::vector<uint32_t>& mapping, AssemblyEnvironment& environment)
 {
 	const auto& body = *function.body;
 	struct Source
@@ -68,7 +69,8 @@ void emit_assembly_function(ModuleAssembler& assembler, const lowir::Program& pr
 		std::vector<assembly::ModuleLine> lines;
 	};
 	std::vector<Source> sources;
-	assembly::ModuleExpander expander;
+	uint32_t prefix = UINT32_MAX;
+	assembly::ModuleExpander expander = environment.fork(0);
 	for (const lowir::Instruction& instruction : body.instructions)
 	{
 		if (instruction.op != lowir::Opcode::Asm)
@@ -80,10 +82,17 @@ void emit_assembly_function(ModuleAssembler& assembler, const lowir::Program& pr
 		std::vector<assembly::LabelUse> labels;
 		prepare_assembly_source(
 			*program.assembly, static_cast<uint32_t>(instruction.immediate), body, arguments, text, symbols, labels);
-		remap_assembly_symbols(symbols, mapping);
+		const auto& definition = program.assembly->templates[instruction.immediate];
+		if (prefix != definition.environment)
+		{
+			prefix = definition.environment;
+			expander = environment.fork(prefix);
+		}
 		Source source;
 		source.dialect = program.assembly->templates[instruction.immediate].dialect;
-		source.lines = expander.expand(assembly::module_lines(text, symbols));
+		source.lines = expander.expand(assembly::module_lines(text, symbols, labels));
+		for (auto& line : source.lines)
+			remap_assembly_symbols(line.symbols, mapping);
 		for (const auto& line : source.lines)
 			assembler.declare(line);
 		sources.push_back(std::move(source));
