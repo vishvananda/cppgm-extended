@@ -558,3 +558,40 @@ sources are unchanged and every C++ object is compiled by cppgm. The complete
 build and the three downstream comparisons are still pending. Immutable tools:
 compiler-block11-captures-lookup. Receipt outside the checkout:
 block11-captures-lookup-validation.json.
+
+
+Block 12: one-past frame addresses and fixed local object types (accepted)
+------------------------------------------------------------------------
+An address exactly one past the last frame object has displacement zero.
+When omitting the frame pointer, the encoder now shifts this boundary along
+with local storage below saved registers. Incoming stack arguments remain
+above it. Previously an empty SmallVector's inline-storage pointer could point
+into its caller's frame, and numeric formatting could overwrite caller data
+through a misplaced buffer-end pointer. Both failures reduce to the same
+boundary. A standalone C++11 PA33:400 fixture fails at O1/O2/O3 before the fix;
+the normal harness covers direct, object, native-link and LowIR routes.
+
+Precise template dependence recognizes fixed member-template arguments, and
+fixed parameters/local variables are not treated as dependent merely because
+their function is inside a class template. Five failed Clang bytecode and
+serialization source files now compile. Required positive/negative local auto
+regressions are in PA20:100. The initial placement audit correctly found that
+auto deduction is later than member-template ownership; the fixtures were
+moved and the strict report, placement, native oracles and fresh export rerun.
+
+Strict 9891/9891, debug, modern, architecture/format/file/placement/CWG audits,
+PA5 self-host, root inception, harness, PA35 quick and smoke pass. Course and
+student full releases each pass all 17 gates and extra margins. Frozen
+parent/candidate instruction ratios are O0 0.999960 and O3 1.000002, with
+byte-identical frozen objects. All 18 final cppgm/GCC/Clang O0/O3 observations
+pass. The final fresh export passes all 213 documents, 42 wrappers and three
+new fixtures. Compiler source hashes still match the immutable snapshot.
+
+The fresh LLVM build completes all generators and reaches 3105/3163 available
+steps. Its OpenCL and X86 GlobalISel outputs are byte-identical to native LLVM's
+outputs. Of the prior 24 failed compilations, five clear; one newly reached
+OpenACC constexpr empty-list case crashes, leaving 20 failed C++ compilations
+and zero generator failures. The complete LLVM build and downstream comparisons
+remain pending. Sources remain unchanged and every C++ object uses cppgm.
+Immutable tools: compiler-block12-frame-fixed-types. Receipt outside checkout:
+block12-frame-fixed-types-validation.json. All initial observations are retained.
