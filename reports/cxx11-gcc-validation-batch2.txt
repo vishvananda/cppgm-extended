@@ -1,0 +1,107 @@
+GCC C++11 validation batch 2
+2026-11-08 | repair/cxx 11-gcc-validation-batch 2
+
+Accepted source: 329d 459f 412ca 4890dba 57bbdf 7336f 4bdcdc 61c
+Compiler SHA 256: 6f 4b 519453e 001051696800271e 206dcc 85076ef 82c 5774cf 24094bb 0b 78f 0f 0
+
+GCC advances from 3800/4092 to 3822/4092 (93.40%). Twenty-two
+configurations from 11 source files pass newly, with no previously passing case
+regressing. The manifest and runner are unchanged. Clang remains 815/815.
+270 GCC configurations from 135 sources remain.
+
+Grouped fixes
+
+- Copy-list initialization selecting an explicit constructor, incomplete class
+  temporary formation, invalid scalar new initialization, and invalid decltype
+  names reject a candidate in immediate substitution. Ordinary expressions and
+  instantiated bodies still diagnose those errors.
+- An invalid array bound in an unused substituted default type still fails;
+  the signed-offset implementation bound is checked before array construction.
+- An empty non-type parameter pack still substitutes its dependent parameter
+  type. An empty expansion of outer parameter types creates no parameter.
+- Adopted CWG 1307 prefers the smaller viable array bound for list initialization;
+  ordinary array bindings and different element types retain their ranking.
+- Adopted CWG 1601 preserves the preference for a fixed enum's underlying type.
+- Adopted CWG 2352 rejects binding an lvalue to an rvalue reference to a similar
+  pointer type, while preserving compatible direct const-reference binding.
+- CXX 11-127: scalar captured sizeof-pack alias arguments match Clang's ABI in
+  mixed producer/consumer translation units. Semantic Pack identity, ordinary
+  sizeof(T), actual packs and the generic ABI encoder remain intact. This is
+  a separate ABI correctness follow-up, not an extra GCC pass-count gain.
+
+Regressions and validation
+
+20 required controls are in earliest owning PA 10: 100, PA 11: 100, PA 17: 300 and
+PA 18: 300 lanes. Three PA 17: 200 ABI fixtures include the two-TU case. Immediate
+substitution is paired with instantiated-body rejection and valid neighbors.
+The parent fails the intended new witnesses. cppgm/GCC/Clang each pass 80 root
+configuration cells (two dialects atO 0/O 2); the combined candidate passes 12 ABI
+language cells and 8 mixed Clang links/runtimes. Eight direct ABI-neighbor
+objects remain identical to the accepted parent. Fixture hashes are verified.
+
+All 9564 strict tests pass, together with affected PA 9/10/11/17/18 suites,
+debug info, modern C++ checks, self-host throughPA 5, inception, architecture,
+format/file/placement audits, harness, document checks and PA 35 quick/smoke.
+The student export validates 42 reference wrappers and 119 accumulated required
+fixtures. Two new plain-text decisions (1307/1601), provenance and index/export
+entries bring the offline catalog to 107 files (93 issues, 12 papers, 2 catalogs).
+
+Performance and expected corrected output
+
+The actual accepted-parent instruction ratios areO 0=1.001064,
+O 3=1.000369, within the unchanged 1.005 budget.
+The original measure invocation correctly reports O 0 objects DIFFER and
+returns 1; it is not represented as an exact-output PASS. O 3 objects are exact.
+CWG 2352 changes a frozen set<const ClassInfo*>::insert(info) call from the old
+incorrect && overload to const&. GCC/Clang and a reduced behavioral oracle
+confirm the corrected selection. The old and new objects and all raw counts
+are retained. No workload, expected symbol or threshold was rewritten.
+
+A control containing ONLY the two 2352 binding functions on accepted 6bf/31b
+checks the rest of the block at constant work. It is not substituted for the
+actual accepted parent. With unchanged measure.pl/input/default repetitions,
+its ratios areO 0=1.000568 andO 3=1.000176,
+with identical objects at both levels. Normal current-source seed/self,
+inception, quick and kernel gates pass unchanged. See the complete adjudication
+and raw manifest in batches/gcc-02/performance-adjudication-v 1.txt and
+perf-raw-v 1/manifest.json under the evidence root.
+
+Upstream suite timing (same declared manifests and workers)
+
+GCC: cppgm 25.731s, upstream 67.108s;
+ratio 0.38343, non-comparable because 270 candidate cases fail.
+Clang: cppgm 3.703s, upstream 25.835s;
+ratio 0.14334, 815/815 pass with both compilers.
+These elapsed times include required language/link/runtime checks and are
+recorded under the run's load; they are not cross-run speedup estimates.
+
+Newly passing GCC files
+
+  fntmpdefarg 8.C
+  initlist-array 3.C
+  initlist-array 7.C
+  initlist-explicit-sfinae.C
+  pr 33930.C
+  ref-bind 2.C
+  scoped_enum 10.C
+  sfinae 28.C
+  sfinae 41.C
+  sfinae 68.C
+  sfinae 7.C
+
+Remaining work packages (files/configurations)
+
+  T: 16/32  Templates: validation, substitution, deduction and identity
+  D: 18/36  Declaration grammar and class invariants
+  I: 13/26  Initialization, reference binding, overload ranking and lifetime
+  C: 11/22  Constant evaluation, object facts and cast validation
+  E: 8/16  Implicit object, exception specifications and TU linkage
+  P: 5/10  Declarators, parser disambiguation and literal operator IDs
+  R: 45/90  Standards, source expectations and IFNDR adjudication
+  X: 19/38  Course, language-mode, vendor-extension and adapter policy
+
+68 files remain likely language repairs, 3 are conditional leads and 64 require
+standards/policy/adapter adjudication. Counts are sources, not independent bugs.
+Next block: declaration grammar and class invariants, 18 files.
+
+Evidence: /mnt/vizier/cppgm-cxx 11-upstream/batches/gcc-02/acceptance-v 1.json
