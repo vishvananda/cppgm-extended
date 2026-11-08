@@ -92,15 +92,16 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
+		const lowir::AssemblyOperand& source_operand = module.operands[definition.first_operand + plan->sources[i]];
 		const bool memory = plan->locations[i] == AL_MEMORY;
-		const bool immediate = plan->locations[i] == AL_IMMEDIATE;
+		const bool immediate = (plan->locations[i] & (AL_IMMEDIATE | AL_SYMBOL)) != 0;
 		if (!immediate && (operand.input != lowir::kNoId || memory))
 		{
-			const uint32_t input = memory && !operand.input_storage ? operand.output : operand.input;
+			const uint32_t input = memory && !source_operand.input_storage ? operand.output : source_operand.input;
 			const lowir::Value value = resolve(body_->operands[inst.extra_first + input]);
 			const Reg reg = plan->registers[i];
-			const lowir::Type source_type = memory || operand.input_storage ? lowir::Type::scalar(TypeKind::Ptr)
-																			: operand.type;
+			const lowir::Type source_type = memory || source_operand.input_storage ? lowir::Type::scalar(TypeKind::Ptr)
+																				   : operand.type;
 			const Operand original = memory_value_operand(value, source_type);
 			if ((initialized & reg_bit(reg)) != 0 && !(initial[reg] == original))
 				throw BackendError("assembly matching operands supply distinct input values to one register");
@@ -108,7 +109,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 			{
 				Move move;
 				move.dst = Operand::make_reg(reg);
-				move.src = assembly_input(operand, value, reg, memory);
+				move.src = assembly_input(source_operand, value, reg, memory);
 				move.type = memory ? TypeKind::Ptr : transfer_type(operand.type, reg);
 				moves_.push_back(move);
 				initial[reg] = original;
@@ -142,7 +143,8 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	effect.aux = plan->reads;
 	effect.aux2 = plan->writes;
 	effect.sub = static_cast<uint8_t>(((definition.state_read & AS_CONDITION_FLAGS) != 0 ? 1 : 0) |
-		((definition.state_write & AS_CONDITION_FLAGS) != 0 ? 2 : 0));
+		((definition.state_write & AS_CONDITION_FLAGS) != 0 ? 2 : 0) |
+		((definition.properties & (AP_STACK | AP_RED_ZONE)) != 0 ? 4 : 0));
 	written_ |= plan->writes;
 	used_callee_saved_ |= plan->writes & kCalleeSavedGprs;
 	// First capture every physical result without changing flags or using

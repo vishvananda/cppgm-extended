@@ -13,7 +13,23 @@ enum class OperandKind : uint8_t
 	Register,
 	Memory,
 	Immediate,
-	Label
+	Label,
+	Symbol
+};
+
+enum class Relocation : uint8_t
+{
+	Address,
+	Got,
+	GotTpOff,
+	Tlv
+};
+
+struct SymbolUse
+{
+	uint32_t first;
+	uint32_t count;
+	asm_model::SymbolReference reference;
 };
 
 struct Address
@@ -24,6 +40,9 @@ struct Address
 	bool has_index = false;
 	uint8_t scale = 1;
 	int32_t displacement = 0;
+	bool rip = false;
+	asm_model::SymbolReference symbol;
+	Relocation relocation = Relocation::Address;
 };
 
 struct Operand
@@ -56,6 +75,7 @@ struct AssemblyError
 
 // The input is user assembly after its frontend's placeholder expansion.
 // This is its only instruction parse; ordinary compiler code never uses it.
-std::vector<Instruction> parse(const std::string& source, asm_model::Dialect dialect);
+std::vector<Instruction> parse(
+	const std::string& source, asm_model::Dialect dialect, const std::vector<SymbolUse>& symbols = {});
 
 } // namespace assembly

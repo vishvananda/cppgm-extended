@@ -12,7 +12,9 @@ namespace {
 class Parser
 {
 public:
-	Parser(const std::string& source, asm_model::Dialect dialect) : source_(source), dialect_(dialect) {}
+	Parser(const std::string& source, asm_model::Dialect dialect, const std::vector<SymbolUse>& symbols)
+		: source_(source), symbols_(symbols), dialect_(dialect)
+	{}
 	std::vector<Instruction> run();
 
 private:
@@ -49,6 +51,8 @@ private:
 	[[noreturn]] void fail(const std::string& message) const { throw AssemblyError{ message, line_, column_ }; }
 	std::string word(bool fold = true);
 	Operand target();
+	bool symbol(Operand& operand);
+	void rip_register(Address& address);
 	void resolve_labels(std::vector<Instruction>& instructions);
 	uint64_t integer();
 	asm_model::Register reg();
@@ -58,6 +62,7 @@ private:
 	void address_register(const asm_model::Register& reg) const;
 
 	const std::string& source_;
+	const std::vector<SymbolUse>& symbols_;
 	asm_model::Dialect dialect_;
 	std::size_t pos_ = 0;
 	uint32_t line_ = 1;
@@ -157,7 +162,22 @@ Operand Parser::intel_memory(uint16_t bits)
 				expect('+');
 		}
 		space();
-		if (alpha(current()))
+		Operand bound;
+		if (symbol(bound))
+		{
+			if (minus || result.address.symbol.symbol != asm_model::kNoId)
+				fail("invalid assembly symbol expression");
+			result.address.symbol = bound.address.symbol;
+			result.address.relocation = bound.address.relocation;
+			displacement += bound.address.displacement;
+		}
+		else if (source_.compare(pos_, 3, "rip") == 0)
+		{
+			if (minus)
+				fail("an assembly address cannot subtract RIP");
+			rip_register(result.address);
+		}
+		else if (alpha(current()))
 		{
 			if (minus)
 				fail("an assembly address cannot subtract a register");
@@ -192,10 +212,14 @@ Operand Parser::intel_memory(uint16_t bits)
 			if (displacement < INT32_MIN || displacement > INT32_MAX)
 				fail("assembly address displacement exceeds 32 bits");
 		}
+		if (displacement < INT32_MIN || displacement > INT32_MAX)
+			fail("assembly address displacement exceeds 32 bits");
 		first = false;
 		space();
 	} while (current() != ']' && current() != '\0' && current() != '\n');
 	expect(']');
+	if (displacement < INT32_MIN || displacement > INT32_MAX)
+		fail("assembly address displacement exceeds 32 bits");
 	result.address.displacement = static_cast<int32_t>(displacement);
 	return result;
 }
@@ -212,9 +236,17 @@ Operand Parser::att_memory(int64_t displacement)
 	space();
 	if (current() == '%')
 	{
-		result.address.base = reg();
-		address_register(result.address.base);
-		result.address.has_base = true;
+		if (source_.compare(pos_, 4, "%rip") == 0)
+		{
+			step();
+			rip_register(result.address);
+		}
+		else
+		{
+			result.address.base = reg();
+			address_register(result.address.base);
+			result.address.has_base = true;
+		}
 	}
 	if (take(','))
 	{
@@ -232,7 +264,7 @@ Operand Parser::att_memory(int64_t displacement)
 		}
 	}
 	expect(')');
-	if (!result.address.has_base && !result.address.has_index)
+	if (!result.address.has_base && !result.address.has_index && !result.address.rip)
 		fail("empty assembly address");
 	return result;
 }
@@ -244,7 +276,17 @@ Operand Parser::operand()
 	if (dialect_ == asm_model::Dialect::Att)
 	{
 		if (take('$'))
-			result.immediate = integer();
+		{
+			if (!symbol(result))
+				result.immediate = integer();
+		}
+		else if (symbol(result))
+		{
+			const Address binding = result.address;
+			result = att_memory(binding.displacement);
+			result.address.symbol = binding.symbol;
+			result.address.relocation = binding.relocation;
+		}
 		else if (current() == '%')
 		{
 			result.kind = OperandKind::Register;
@@ -257,6 +299,8 @@ Operand Parser::operand()
 	}
 	if (current() == '[')
 		return intel_memory(0);
+	if (symbol(result))
+		return result;
 	if (alpha(current()))
 	{
 		const std::string name = word();
@@ -281,9 +325,61 @@ Operand Parser::operand()
 	return result;
 }
 
+void Parser::rip_register(Address& address)
+{
+	if (word() != "rip" || address.rip)
+		fail("invalid RIP-relative assembly address");
+	address.rip = true;
+}
+
+bool Parser::symbol(Operand& operand)
+{
+	space();
+	const auto found = std::lower_bound(symbols_.begin(), symbols_.end(), pos_,
+		[](const SymbolUse& use, size_t position) { return use.first < position; });
+	if (found == symbols_.end() || found->first != pos_)
+		return false;
+	operand.kind = OperandKind::Symbol;
+	operand.address.symbol = found->reference;
+	int64_t displacement = found->reference.addend;
+	for (uint32_t i = 0; i < found->count; ++i)
+		step();
+	space();
+	if (take('@'))
+	{
+		const std::string relocation = word();
+		operand.address.relocation = relocation == "gotpcrel" ? Relocation::Got
+			: relocation == "gottpoff"                        ? Relocation::GotTpOff
+			: relocation == "tlvp"                            ? Relocation::Tlv
+															  : Relocation::Address;
+		if (operand.address.relocation == Relocation::Address)
+			fail("unsupported assembly symbol relocation");
+	}
+	space();
+	if (current() == '+' || current() == '-')
+	{
+		size_t next = pos_ + 1;
+		while (next < source_.size() && (source_[next] == ' ' || source_[next] == '\t'))
+			++next;
+		if (next < source_.size() && source_[next] >= '0' && source_[next] <= '9')
+		{
+			const int64_t term = static_cast<int64_t>(integer());
+			if (term < INT32_MIN || term > INT32_MAX)
+				fail("assembly symbol displacement exceeds 32 bits");
+			displacement += term;
+		}
+	}
+	if (displacement < INT32_MIN || displacement > INT32_MAX)
+		fail("assembly symbol displacement exceeds 32 bits");
+	operand.address.displacement = static_cast<int32_t>(displacement);
+	return true;
+}
+
 Operand Parser::target()
 {
 	Operand result;
+	if (symbol(result))
+		return result;
 	result.kind = OperandKind::Label;
 	result.target = word(false);
 	return result;
@@ -388,9 +484,10 @@ std::vector<Instruction> Parser::run()
 
 } // namespace
 
-std::vector<Instruction> parse(const std::string& source, asm_model::Dialect dialect)
+std::vector<Instruction> parse(
+	const std::string& source, asm_model::Dialect dialect, const std::vector<SymbolUse>& symbols)
 {
-	return Parser(source, dialect).run();
+	return Parser(source, dialect, symbols).run();
 }
 
 } // namespace assembly

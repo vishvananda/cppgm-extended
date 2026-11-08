@@ -53,6 +53,8 @@ bool immediate(PacketBuilder& packet, Alternative& alt, char code)
 		packet.immediates.push_back(value);
 		++alt.immediate_count;
 		alt.locations |= AL_IMMEDIATE;
+		if (code != 'n')
+			alt.locations |= AL_SYMBOL;
 		return true;
 	}
 	std::size_t count = 0;
@@ -203,9 +205,9 @@ void constraints(PacketBuilder& packet, const std::vector<GnuOperand>& source)
 					fail(std::string("GNU assembly constraint is not implemented yet: ") + c);
 			}
 			alternative.early_write = early;
-			if (input.output && (alternative.locations & AL_IMMEDIATE) != 0)
+			if (input.output && (alternative.locations & (AL_IMMEDIATE | AL_SYMBOL)) != 0)
 			{
-				alternative.locations &= ~AL_IMMEDIATE;
+				alternative.locations &= ~(AL_IMMEDIATE | AL_SYMBOL);
 				alternative.immediate_count = 0;
 				if (alternative.locations == 0)
 					fail("assembly output cannot use an immediate location");

@@ -75,6 +75,34 @@ bool immediate_domain(const lowir::AssemblyModule& module, const Alternative& al
 	return false;
 }
 
+bool symbol_value(const lowir::FunctionBody& body, lowir::Value value, SymbolReference& result, unsigned depth = 0)
+{
+	if (value.is(lowir::ValueKind::Symbol))
+	{
+		result.symbol = value.index;
+		return true;
+	}
+	if (!value.is(lowir::ValueKind::Temp) || depth == 64)
+		return false;
+	const lowir::InstId def = body.temps[value.index].def;
+	if (def == lowir::kNoId)
+		return false;
+	const lowir::Instruction& inst = body.instructions[def];
+	if (inst.op == lowir::Opcode::Addr || inst.op == lowir::Opcode::Copy)
+		return symbol_value(body, inst.ops[0], result, depth + 1);
+	if (inst.op != lowir::Opcode::Index || !inst.ops[1].is(lowir::ValueKind::Integer) ||
+		!symbol_value(body, inst.ops[0], result, depth + 1))
+		return false;
+	const lowir::Literal& bits = body.literals[inst.ops[1].index];
+	const int64_t index = static_cast<int64_t>(bits.low);
+	const uint64_t scale = (inst.type.is_object() ? inst.type.bytes : lowir::data_alignment(inst.type));
+	if (scale == 0 || scale > INT32_MAX || bits.high != (index < 0 ? ~uint64_t(0) : 0) ||
+		index < INT32_MIN / static_cast<int64_t>(scale) || index > INT32_MAX / static_cast<int64_t>(scale))
+		return false;
+	result.addend += index * static_cast<int64_t>(scale);
+	return result.addend >= INT32_MIN && result.addend <= INT32_MAX;
+}
+
 struct Group
 {
 	uint32_t registers = ~uint32_t(0);
@@ -82,6 +110,7 @@ struct Group
 	uint8_t access = 0;
 	bool early = false;
 	bool immediate = false;
+	bool symbol = false;
 	uint8_t location = 0;
 	Reg assigned = kNoReg;
 };
@@ -127,7 +156,8 @@ bool search(std::vector<Group>& groups, uint32_t left, uint32_t& work)
 		group.location = AL_REGISTER;
 		unsigned n = static_cast<unsigned>(__builtin_popcount(available(groups, i, group.registers)));
 		group.location = AL_MEMORY;
-		n += static_cast<unsigned>(__builtin_popcount(available(groups, i, group.addresses))) + group.immediate;
+		n += static_cast<unsigned>(__builtin_popcount(available(groups, i, group.addresses))) + group.immediate +
+			group.symbol;
 		group.location = 0;
 		if (n == 0)
 			return false;
@@ -138,9 +168,9 @@ bool search(std::vector<Group>& groups, uint32_t left, uint32_t& work)
 		}
 	}
 	Group& group = groups[selected];
-	if (group.immediate)
+	if (group.immediate || group.symbol)
 	{
-		group.location = AL_IMMEDIATE;
+		group.location = group.symbol ? AL_SYMBOL : AL_IMMEDIATE;
 		if (search(groups, left - 1, work))
 			return true;
 	}
@@ -163,11 +193,12 @@ bool search(std::vector<Group>& groups, uint32_t left, uint32_t& work)
 
 bool column(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& definition, uint32_t column,
 	uint32_t clobbers, const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments,
-	AssemblyBinding& result, uint32_t& work)
+	AssemblyBinding& result, const std::vector<uint32_t>& sources, uint32_t& work)
 {
 	std::vector<uint32_t> roots(definition.operand_count), vertices(definition.operand_count, asm_model::kNoId);
 	std::vector<uint8_t> matched(definition.operand_count, 0);
 	result.constants.assign(definition.operand_count, lowir::Literal{});
+	result.symbols.assign(definition.operand_count, SymbolReference{});
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& op = module.operands[definition.first_operand + i];
@@ -197,14 +228,19 @@ bool column(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& 
 		group.early |= alt.early_write;
 		if (!matched[root])
 		{
+			const lowir::AssemblyOperand& source = module.operands[definition.first_operand + sources[i]];
 			const bool shared_storage = op.output == asm_model::kNoId ||
-				(op.input != asm_model::kNoId && arguments[op.input] == arguments[op.output]);
-			const bool address = (op.input_storage && op.input != asm_model::kNoId && shared_storage) ||
+				(op.input != asm_model::kNoId && arguments[source.input] == arguments[op.output]);
+			const bool address = (source.input_storage && source.input != asm_model::kNoId && shared_storage) ||
 				((op.flags & AO_READ) == 0 && op.output != asm_model::kNoId);
 			if ((alt.locations & AL_MEMORY) != 0 && (op.flags & AO_NO_MEMORY) == 0 && address)
 				group.addresses = 0xffcfu & ~clobbers;
-			if ((op.flags & (AO_READ | AO_WRITE)) == AO_READ && !op.input_storage)
-				group.immediate = immediate_domain(module, alt, body, arguments[op.input], result.constants[i]);
+			if ((op.flags & (AO_READ | AO_WRITE)) == AO_READ && !source.input_storage)
+			{
+				group.immediate = immediate_domain(module, alt, body, arguments[source.input], result.constants[i]);
+				group.symbol = (alt.locations & AL_SYMBOL) != 0 &&
+					symbol_value(body, arguments[source.input], result.symbols[i]);
+			}
 		}
 	}
 	if (!search(groups, static_cast<uint32_t>(groups.size()), work))
@@ -218,6 +254,7 @@ bool column(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& 
 			result.registers[i] = group.assigned;
 			result.locations[i] = group.location;
 		}
+	result.sources = sources;
 	return true;
 }
 
@@ -235,9 +272,39 @@ AssemblyBinding assign_assembly_operands(const lowir::AssemblyModule& module, co
 	}
 	uint32_t work = 0;
 	AssemblyBinding result;
-	for (uint32_t c = 0; c < columns; ++c)
-		if (column(module, definition, c, clobbers, body, arguments, result, work))
-			return result;
+	std::vector<uint32_t> sources(definition.operand_count), pairs;
+	for (uint32_t i = 0; i < definition.operand_count; ++i)
+	{
+		sources[i] = i;
+		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
+		if ((operand.flags & AO_COMMUTATIVE) != 0)
+		{
+			const lowir::AssemblyOperand& other = module.operands[definition.first_operand + i + 1];
+			if (operand.type == other.type)
+				pairs.push_back(i);
+		}
+	}
+	std::vector<bool> swapped(pairs.size(), false);
+	for (;;)
+	{
+		for (uint32_t c = 0; c < columns; ++c)
+		{
+			if (++work > 100000)
+				throw BackendError("assembly constraint search exceeded its work limit");
+			if (column(module, definition, c, clobbers, body, arguments, result, sources, work))
+				return result;
+		}
+		size_t pair = 0;
+		for (; pair < pairs.size(); ++pair)
+		{
+			std::swap(sources[pairs[pair]], sources[pairs[pair] + 1]);
+			swapped[pair] = !swapped[pair];
+			if (swapped[pair])
+				break;
+		}
+		if (pair == pairs.size())
+			break;
+	}
 	throw BackendError("assembly constraints are unsupported or have no valid joint assignment");
 }
 

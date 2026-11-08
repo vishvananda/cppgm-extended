@@ -47,13 +47,20 @@ hosts are Linux and Intel macOS; qualify their object formats separately.
 ### Assignment boundary
 
 The current subset covers GNU basic/extended statements with register, memory
-and integer-immediate operands, fixed GPR and XMM domains, alternative columns,
+and integer-immediate or symbol operands, fixed GPR and XMM domains, alternative columns,
 matching constraints, early writes, read/write operands, flag outputs and
 declared register clobbers. Support `m`/`o` memory constraints, `i`/`n`
 constants, `g` mixed locations and the integer ranges in `x86_asm_model.h`.
 Letters within a constraint alternative describe a union; select one alternative
-column jointly across every operand. GNU immediate constraints see the
+column jointly across every operand. A commutative pair may exchange its captured
+inputs to satisfy the joint constraints, preserving each value and storage
+identity. Overlapping pairs are invalid. GNU immediate constraints see the
 operand's machine-mode bits, including sign extension of narrow constants.
+GNU `i` accepts link-time symbol addresses; `n` requires a numeric constant.
+Transport symbol identities and byte addends through LowIR. Support
+RIP-relative symbol addresses/loads, GOT-relative addresses and direct symbol
+calls. Preserve declared stack effects and ABI alignment at assembly calls;
+the producer must declare all registers and machine state its call can change.
 Output places include scalar/vector lvalues and bit-fields. Capture each
 selected place once, then assign register results in operand order, preserving
 neighboring bits and volatile accesses. Constraints requiring a bit-field's
@@ -122,7 +129,7 @@ included in those reports or in the required course completion criteria.
 
 ### Further extensions
 
-Symbol constraints, outgoing labels, GNU goto,
+Outgoing labels, GNU goto,
 global/naked assembly, directives, relocations, unwind state and broader
 x86/VEX/EVEX coverage remain extension goals. Original Rust assembly is a useful
 cross-frontend consumer. These goals require additional contracts and tests;

@@ -11,6 +11,7 @@
 
 #include "lex/identifier_table.h"
 #include "sema/asm_statements.h"
+#include "sema/constant_interpreter.h"
 
 namespace sema {
 
@@ -38,11 +39,12 @@ assembly::View<T> preserve(Arena& arena, const std::vector<T>& values)
 	return view;
 }
 
-const char* prepare_operands(
-	Analyzer& analyzer, const syntax::AsmStmt& stmt, Scope* scope, assembly::PacketBuilder& packet)
+const char* prepare_operands(Analyzer& analyzer, const syntax::AsmStmt& stmt, Scope* scope,
+	assembly::PacketBuilder& packet, std::vector<ConstValue>& addresses)
 {
 	using namespace asm_model;
 	packet.constants.resize(packet.operands.size());
+	addresses.resize(packet.operands.size());
 	bool captured_outputs = false;
 	for (const syntax::AsmOperand& output : stmt.outputs)
 		captured_outputs = captured_outputs || (output.expression->facts->flags & kBitField) != 0;
@@ -85,14 +87,23 @@ const char* prepare_operands(
 				}
 			}
 		}
+		if (!output && !constant.present && (locations & AL_SYMBOL) != 0)
+		{
+			ConstantInterpreter interpreter(analyzer);
+			ConstValue value = ConstValue();
+			if (interpreter.evaluate(expr, true, value) && value.kind == ValueKind::Pointer &&
+				value.root != RootKind::Null && value.root != RootKind::Object)
+				addresses[i] = value;
+		}
+		const bool symbol = addresses[i].kind == ValueKind::Pointer;
 		const bool addressable = expr.facts->category == ValueCategory::LValue && (expr.facts->flags & kBitField) == 0;
 		operand.input_storage = (operand.flags & AO_READ) != 0 && (locations & AL_MEMORY) != 0 &&
-			(operand.flags & AO_NO_MEMORY) == 0 && addressable && !constant.present;
+			(operand.flags & AO_NO_MEMORY) == 0 && addressable && !constant.present && !symbol;
 		const Type* type = expr.facts->type->unqualified;
 		const bool scalar = IsScalar(type) || type->kind == TypeKind::Vector;
-		if (!scalar && ((locations & AL_MEMORY) == 0 || !addressable))
+		if (!scalar && !symbol && ((locations & AL_MEMORY) == 0 || !addressable))
 			return "assembly operand requires scalar/vector data or addressable memory";
-		if (!output && !constant.present && !operand.input_storage && (locations & AL_REGISTER) == 0)
+		if (!output && !constant.present && !symbol && !operand.input_storage && (locations & AL_REGISTER) == 0)
 			return "assembly operand requires an addressable memory object or compile-time constant";
 		if ((locations & AL_MEMORY) != 0)
 		{
@@ -347,10 +358,11 @@ void Analyzer::full_asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 		clobbers.push_back(name);
 	}
 	assembly::PacketBuilder built;
+	std::vector<ConstValue> addresses;
 	try
 	{
 		built = assembly::gnu_packet(text, operands, clobbers, stmt.is_volatile, !stmt.is_extended);
-		if (const char* message = prepare_operands(*this, stmt, scope, built))
+		if (const char* message = prepare_operands(*this, stmt, scope, built, addresses))
 			error(stmt.location, message);
 	}
 	catch (const assembly::AssemblyError& failure)
@@ -374,6 +386,7 @@ void Analyzer::full_asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 	AsmProgram* program = arena_.allocate_array<AsmProgram>(1);
 	*program = AsmProgram();
 	program->full = packet;
+	program->addresses = addresses.empty() ? nullptr : arena_.copy_array(addresses.data(), addresses.size());
 	stmt.program = program;
 }
 

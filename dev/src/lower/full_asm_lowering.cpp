@@ -4,6 +4,7 @@
 #include "lowir/assembly_builder.h"
 #include "sema/asm_statements.h"
 #include "sema/expression_facts.h"
+#include "sema/constant_values.h"
 
 namespace lower {
 
@@ -71,6 +72,12 @@ void FunctionLowering::full_asm_statement(const syntax::AsmStmt& stmt)
 			continue;
 		if (argument.input_storage)
 			values[argument.input] = destination;
+		else if (stmt.program->addresses != nullptr && stmt.program->addresses[i].kind == sema::ValueKind::Pointer)
+		{
+			if (!constant_address(stmt.program->addresses[i], values[argument.input], expr.location))
+				throw LoweringError(expr.location, "assembly symbol requires a link-time address");
+			types.back() = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		}
 		else if (packet.constants.size != 0 && packet.constants.data[i].present)
 		{
 			const asm_model::Bits& bits = packet.constants.data[i].bits;

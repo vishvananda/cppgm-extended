@@ -174,7 +174,7 @@ bool operand(const AssemblyModule& module, const AssemblyTemplate& site, uint32_
 	}
 	if ((op.flags & AO_COMMUTATIVE) != 0 &&
 		(index + 1 == site.operand_count || (op.flags & (AO_READ | AO_WRITE)) != AO_READ ||
-			(module.operands[site.first_operand + index + 1].flags & (AO_READ | AO_WRITE)) != AO_READ))
+			(module.operands[site.first_operand + index + 1].flags & (AO_READ | AO_WRITE | AO_COMMUTATIVE)) != AO_READ))
 		return invalid("invalid assembly commutative pair", error);
 	const Type ptr = Type::scalar(TypeKind::Ptr);
 	if (!argument(arguments, op.input, op.input_storage ? ptr : op.type, error) ||

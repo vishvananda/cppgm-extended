@@ -16,6 +16,7 @@ struct Packet;
 }
 
 namespace sema {
+struct ConstValue;
 
 // How an operand is bound (its constraint's class): an object in memory,
 // a value in a register, an integral constant.
@@ -123,6 +124,7 @@ struct AsmInstruction
 struct AsmProgram
 {
 	const assembly::Packet* full = nullptr;
+	const ConstValue* addresses = nullptr;
 	const AsmInstruction* instructions;
 	uint32_t count;
 	uint32_t registers;
