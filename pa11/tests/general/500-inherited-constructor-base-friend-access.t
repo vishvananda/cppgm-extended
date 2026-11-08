@@ -18,8 +18,8 @@ public:
 };
 class PrivateDerived:public PrivateBase { using PrivateBase::PrivateBase; };
 struct Factory {
-  static Derived first() { return Derived(7); }
-  static Further second() { return Further(8); }
-  static PrivateDerived third() { return PrivateDerived(9); }
+  static int first() { Derived value(7); return value.get(); }
+  static int second() { Further value(8); return value.get(); }
+  static int third() { PrivateDerived value(9); return value.get(); }
 };
-int main() { return Factory::first().get()+Factory::second().get()+Factory::third().get()==24?0:1; }
+int main() { return Factory::first()+Factory::second()+Factory::third()==24?0:1; }
