@@ -1,4 +1,4 @@
-// expect-exit: 0
+// expect exit 0
 #include <initializer_list>
 struct OnlyList {
   int n;
