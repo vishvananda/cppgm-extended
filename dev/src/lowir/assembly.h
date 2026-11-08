@@ -38,6 +38,15 @@ struct AssemblyFunction
 	std::unique_ptr<FunctionBody> body;
 };
 
+// Ordered module source, independent of any function. Values are constants
+// or typed symbol identities; no runtime storage or register setup is implied.
+struct AssemblyGlobal
+{
+	uint32_t definition;
+	std::vector<Value> arguments;
+	std::vector<Literal> literals;
+};
+
 // Allocated only for a program containing assembly. Flat tables retain source
 // ownership and keep the ordinary instruction and function-body records small.
 struct AssemblyModule
@@ -52,10 +61,12 @@ struct AssemblyModule
 	std::vector<AssemblyRegister> registers;
 	std::vector<AssemblyRegister> clobbers;
 	std::vector<AssemblyFunction> functions;
+	std::vector<AssemblyGlobal> globals;
 };
 
 const AssemblyFunction* find_assembly_function(const Program& program, SymbolId symbol);
 void retain_assembly_function(Program& program, SymbolId symbol);
 bool validate_assembly_functions(const Program& program, const char*& error);
+bool validate_assembly_globals(const Program& program, const char*& error);
 
 } // namespace lowir

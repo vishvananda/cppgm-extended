@@ -8,7 +8,7 @@ that same contract directly as LowIR. Generate native instructions and object
 fixups with your own encoder.
 
 PA36 is optional and outside the required 35-assignment ladder. The current
-contract covers operands, local control flow and raw functions below. The broader extensions at the end
+contract covers operands, local control flow, raw functions and module assembly below. The broader extensions at the end
 are separate goals. PA29's bounded GNU compatibility remains unchanged.
 
 ### Prerequisites and starter kit
@@ -118,6 +118,29 @@ after binding its placeholders, then emit bytes and fixups directly. Production
 compilation must not invoke an external assembler or depend on an encoding
 library. A compiler memory barrier must not introduce a hardware fence.
 
+### Module assembly
+
+Under `--full-asm`, namespace asm uses the shared `assembly_global` boundary.
+Keep module invocations ordered and preserve their symbol/section state. Emit
+code, scalar data, pointer relocations, BSS, strings and alignment directly.
+Support `.text`, `.data`, `.bss`, `.rodata`, `.section`, the section stack and
+`.previous`; `.byte`/`.short`/`.word`/`.long`/`.quad`, `.zero`/`.space`/`.skip`,
+`.ascii`/`.asciz`/`.string`, and `.p2align`/`.balign`/`.align`. Respect target
+alignment and section spelling differences.
+
+Preserve global/weak/local binding, hidden visibility, `.type`, `.size` and
+symbol aliases with `.set`/`.equ`. Support symbol addresses and constant addends,
+direct/conditional symbol branches, PLT references and calls to other objects.
+A weak definition must be replaceable even for a nearby call in its assembly
+buffer. Typed symbol pieces may define or reference linker symbols without
+reconstructing frontend names. Reject duplicate definitions, invalid section
+state, cyclic aliases and unbounded storage requests.
+
+The same module records work in host-linkable objects and standalone
+`lowir2native` executables. Ordinary function MIR dumps do not represent module
+items; reject that unsupported combination. Module macros shared with inline
+statements, unwind directives and broader expressions remain extension goals.
+
 ### Suggested implementation order
 
 1. Represent, validate and roundtrip templates and typed invocations.
@@ -161,7 +184,7 @@ included in those reports or in the required course completion criteria.
 
 ### Further extensions
 
-Global assembly items, directives, further relocations, unwind state and broader
+Module macros, broader directives/expressions, further relocations, unwind state and broader
 x86/VEX/EVEX coverage remain extension goals. Original Rust assembly is a useful
 cross-frontend consumer. These goals require additional contracts and tests;
 the current suite does not establish their completion. Header vocabulary for

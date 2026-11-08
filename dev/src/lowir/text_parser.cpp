@@ -226,6 +226,8 @@ void Parser::parse_top_level_item()
 		parse_alias();
 	else if (accept_keyword(Keyword::EquivalentEntry))
 		parse_equivalent_entry();
+	else if (accept_keyword(Keyword::AssemblyGlobal))
+		parse_assembly_global();
 	else if (accept_keyword(Keyword::AssemblyFunction))
 		parse_assembly_function();
 	else if (accept_keyword(Keyword::Assembly))

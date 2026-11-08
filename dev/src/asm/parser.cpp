@@ -13,8 +13,8 @@ class Parser
 {
 public:
 	Parser(const std::string& source, asm_model::Dialect dialect, const std::vector<SymbolUse>& symbols,
-		const std::vector<LabelUse>& labels)
-		: source_(source), symbols_(symbols), labels_(labels), dialect_(dialect)
+		const std::vector<LabelUse>& labels, SymbolLookup* lookup)
+		: source_(source), symbols_(symbols), labels_(labels), dialect_(dialect), lookup_(lookup)
 	{}
 	std::vector<Instruction> run();
 
@@ -66,6 +66,7 @@ private:
 	const std::vector<SymbolUse>& symbols_;
 	const std::vector<LabelUse>& labels_;
 	asm_model::Dialect dialect_;
+	SymbolLookup* lookup_;
 	std::size_t pos_ = 0;
 	uint32_t line_ = 1;
 	uint32_t column_ = 1;
@@ -339,13 +340,33 @@ bool Parser::symbol(Operand& operand)
 	space();
 	const auto found = std::lower_bound(symbols_.begin(), symbols_.end(), pos_,
 		[](const SymbolUse& use, size_t position) { return use.first < position; });
-	if (found == symbols_.end() || found->first != pos_)
-		return false;
+	asm_model::SymbolReference reference;
+	if (found != symbols_.end() && found->first == pos_)
+	{
+		reference = found->reference;
+		for (uint32_t i = 0; i < found->count; ++i)
+			step();
+	}
+	else
+	{
+		if (lookup_ == nullptr || !alpha(current()))
+			return false;
+		const size_t begin = pos_;
+		size_t end = begin;
+		while (end < source_.size() && (alpha(source_[end]) || (source_[end] >= '0' && source_[end] <= '9')))
+			++end;
+		const std::string name = source_.substr(begin, end - begin);
+		asm_model::Register reg;
+		if (name == "rip" || name == "byte" || name == "word" || name == "dword" || name == "qword" ||
+			name == "xmmword" || name == "ymmword" || name == "zmmword" || name == "tbyte" ||
+			parse_register(name.data(), name.size(), reg) || !lookup_->lookup(name, reference))
+			return false;
+		while (pos_ < end)
+			step();
+	}
 	operand.kind = OperandKind::Symbol;
-	operand.address.symbol = found->reference;
-	int64_t displacement = found->reference.addend;
-	for (uint32_t i = 0; i < found->count; ++i)
-		step();
+	operand.address.symbol = reference;
+	int64_t displacement = reference.addend;
 	space();
 	if (take('@'))
 	{
@@ -353,6 +374,7 @@ bool Parser::symbol(Operand& operand)
 		operand.address.relocation = relocation == "gotpcrel" ? Relocation::Got
 			: relocation == "gottpoff"                        ? Relocation::GotTpOff
 			: relocation == "tlvp"                            ? Relocation::Tlv
+			: relocation == "plt"                             ? Relocation::Plt
 															  : Relocation::Address;
 		if (operand.address.relocation == Relocation::Address)
 			fail("unsupported assembly symbol relocation");
@@ -392,12 +414,23 @@ Operand Parser::target()
 			step();
 		return result;
 	}
-	if (symbol(result))
-		return result;
+	if (lookup_ == nullptr ||
+		(symbols_.size() != 0 &&
+			std::any_of(symbols_.begin(), symbols_.end(), [&](const SymbolUse& use) { return use.first == pos_; })))
+		if (symbol(result))
+			return result;
 	result.kind = OperandKind::Label;
 	if (dialect_ == asm_model::Dialect::Intel && current() == '[')
 		return intel_memory(0);
 	result.target = word(false);
+	if (lookup_ != nullptr && take('@'))
+	{
+		if (word() != "plt" || !lookup_->lookup(result.target, result.address.symbol))
+			fail("unsupported direct module branch relocation");
+		result.kind = OperandKind::Symbol;
+		result.address.relocation = Relocation::Plt;
+		return result;
+	}
 	if (dialect_ == asm_model::Dialect::Intel)
 	{
 		if (parse_register(result.target.data(), result.target.size(), result.reg))
@@ -422,7 +455,7 @@ void Parser::resolve_labels(std::vector<Instruction>& instructions)
 	for (uint32_t i = 0; i < instructions.size(); ++i)
 	{
 		const Instruction& inst = instructions[i];
-		if (!inst.label)
+		if (!inst.label || inst.symbol_definition != asm_model::kNoId)
 			continue;
 		if (inst.mnemonic.find_first_not_of("0123456789") == std::string::npos)
 			numbered[inst.mnemonic].push_back(i);
@@ -435,6 +468,11 @@ void Parser::resolve_labels(std::vector<Instruction>& instructions)
 			if (operand.kind != OperandKind::Label || operand.external_label)
 				continue;
 			const std::string& name = operand.target;
+			if (lookup_ != nullptr && lookup_->interposable(name) && lookup_->lookup(name, operand.address.symbol))
+			{
+				operand.kind = OperandKind::Symbol;
+				continue;
+			}
 			uint32_t selected = UINT32_MAX;
 			if (name.size() >= 2 && (name.back() == 'f' || name.back() == 'b') &&
 				name.find_first_not_of("0123456789") == name.size() - 1)
@@ -451,6 +489,11 @@ void Parser::resolve_labels(std::vector<Instruction>& instructions)
 				const auto found = named.find(name);
 				if (found != named.end())
 					selected = found->second;
+			}
+			if (selected == UINT32_MAX && lookup_ != nullptr && lookup_->lookup(name, operand.address.symbol))
+			{
+				operand.kind = OperandKind::Symbol;
+				continue;
 			}
 			if (selected == UINT32_MAX)
 				throw AssemblyError{ "undefined assembly-local label: " + name, instructions[i].line,
@@ -481,6 +524,7 @@ std::vector<Instruction> Parser::run()
 		Instruction inst;
 		inst.line = line_;
 		inst.column = column_;
+		const size_t definition_first = pos_;
 		inst.mnemonic = word(false);
 		space();
 		if (take(':'))
@@ -488,6 +532,14 @@ std::vector<Instruction> Parser::run()
 			if (pending_prefix != 0)
 				fail("assembly prefix cannot precede a label");
 			inst.label = true;
+			if (lookup_ != nullptr)
+				for (const SymbolUse& use : symbols_)
+					if (use.first == definition_first)
+					{
+						if (use.reference.addend != 0)
+							fail("module label cannot define an address addend");
+						inst.symbol_definition = use.reference.symbol;
+					}
 			result.push_back(inst);
 			continue;
 		}
@@ -534,9 +586,9 @@ std::vector<Instruction> Parser::run()
 } // namespace
 
 std::vector<Instruction> parse(const std::string& source, asm_model::Dialect dialect,
-	const std::vector<SymbolUse>& symbols, const std::vector<LabelUse>& labels)
+	const std::vector<SymbolUse>& symbols, const std::vector<LabelUse>& labels, SymbolLookup* lookup)
 {
-	return Parser(source, dialect, symbols, labels).run();
+	return Parser(source, dialect, symbols, labels, lookup).run();
 }
 
 } // namespace assembly

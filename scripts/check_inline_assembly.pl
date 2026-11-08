@@ -49,6 +49,7 @@ my ($app, $selection) = @ARGV;
 $app = File::Spec->rel2abs($app); # preserve a reference wrapper's basename
 my $lowir = $ENV{CPPGM_ASSEMBLY_LOWIR_APP} // '../dev/lowir';
 $lowir = File::Spec->rel2abs($lowir);
+my $native = File::Spec->rel2abs($ENV{CPPGM_ASSEMBLY_NATIVE_APP} // '../dev/lowir2native');
 my @host = shellwords($ENV{CPPGM_HOST_CXX} // $ENV{CXX} // 'c++');
 my @stdlib = shellwords($ENV{CPPGM_STDLIB_FLAGS} // '');
 my @levels = split /,/, ($ENV{CPPGM_ASSEMBLY_LEVELS} // 'O0,O3');
@@ -84,6 +85,18 @@ sub fixture_link_options
 	return $^O eq 'darwin' ? ('-Wl,-no_pie') : ('-no-pie');
 }
 
+sub canonical_inputs
+{
+	my ($directory, $source) = @_;
+	my $original = "$directory/original.lowir";
+	copy($source, $original) or die "Unable to copy $source: $!\n";
+	command($directory, 'roundtrip-first', $lowir, '-o', "$directory/first.lowir", $source);
+	command($directory, 'roundtrip-second', $lowir, '-o', "$directory/second.lowir", "$directory/first.lowir");
+	die "$source: unstable LowIR roundtrip\n"
+		if read_file("$directory/first.lowir") ne read_file("$directory/second.lowir");
+	return ($original, "$directory/first.lowir");
+}
+
 sub observe
 {
 	my ($directory, $label, $object, $driver) = @_;
@@ -99,7 +112,7 @@ for my $test (@tests)
 	@fixture_link = fixture_link_options($test);
 	my $profile = read_file(profile_path($test));
 	$profile =~ s/\s+\z//;
-	die "$test: unknown assembly profile '$profile'\n" if $profile !~ /\A(?:(?:lowir|gnu)(?:-reject)?|gnu-native)\z/;
+	die "$test: unknown assembly profile '$profile'\n" if $profile !~ /\A(?:(?:lowir|gnu)(?:-reject)?|gnu-native|lowir-native)\z/;
 	my $directory = File::Spec->rel2abs(tempdir('case-XXXXXX', DIR => $out, CLEANUP => 0));
 	if ($profile =~ /-reject\z/)
 	{
@@ -115,6 +128,23 @@ for my $test (@tests)
 		print "$test: assembly rejection passed\n" unless $ENV{CPPGM_REPORT_QUIET};
 		next;
 	}
+	if ($profile eq 'lowir-native')
+	{
+		my $index = 0;
+		for my $input (canonical_inputs($directory, $source))
+		{
+			for my $level (@levels)
+			{
+				my $program = "$directory/native-$index-$level.program";
+				command($directory, "native-$index-$level.compile", $native, "-$level", '-o', $program, $input);
+				my $output = command($directory, "native-$index-$level.run", $program);
+				die "$test: unexpected native output\n" if $output ne '';
+			}
+			++$index;
+		}
+		print "$test: standalone assembly properties passed\n" unless $ENV{CPPGM_REPORT_QUIET};
+		next;
+	}
 	(my $driver = $source) =~ s/\.t$/.driver.cpp/;
 	die "$test: missing native observer $driver\n" if !-f $driver;
 	my @observations;
@@ -122,13 +152,7 @@ for my $test (@tests)
 	if ($profile eq 'lowir')
 	{
 		note_progress_state('roundtrip', $test);
-		my $original = "$directory/original.lowir";
-		copy($source, $original) or die "Unable to copy $source: $!\n";
-		command($directory, 'roundtrip-first', $lowir, '-o', "$directory/first.lowir", $source);
-		command($directory, 'roundtrip-second', $lowir, '-o', "$directory/second.lowir", "$directory/first.lowir");
-		die "$test: unstable LowIR roundtrip\n"
-			if read_file("$directory/first.lowir") ne read_file("$directory/second.lowir");
-		@inputs = ($original, "$directory/first.lowir");
+		@inputs = canonical_inputs($directory, $source);
 	}
 	my $index = 0;
 	for my $input (@inputs)

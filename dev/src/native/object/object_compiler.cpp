@@ -5,6 +5,7 @@
 
 #include "native/backend_error.h"
 #include "native/asm/functions.h"
+#include "native/asm/module.h"
 #include "native/image/global_data.h"
 #include "native/image/image.h"
 #include "native/object/function_census.h"
@@ -576,7 +577,7 @@ void ObjectCompiler::prune_functions()
 	};
 	for (const CodeRange& range : ranges_)
 	{
-		if (!local_function(range.symbol))
+		if (!local_function(range.symbol) || (program_.assembly && !program_.assembly->globals.empty()))
 			reach(range.symbol);
 	}
 	for (size_t i = 0; i < program_.order.size(); ++i)
@@ -1250,6 +1251,7 @@ void ObjectCompiler::finish(ObjectFile& out)
 	add_unwind_relocations();
 	add_groups();
 	place_debug();
+	emit_assembly_globals(out, program_, image_.target);
 	stats_.sections = out.sections.size() - 1;
 	stats_.symbols = out.symbols.size() - 1;
 	for (const object::Section& section : out.sections)

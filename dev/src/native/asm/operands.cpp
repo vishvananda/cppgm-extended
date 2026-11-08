@@ -30,6 +30,8 @@ RM rm(const Operand& op, const assembly::Instruction& inst)
 	if (op.kind != OperandKind::Memory)
 		fail(inst, "expected register or memory operand");
 	const assembly::Address& address = op.address;
+	if (address.relocation == assembly::Relocation::Plt)
+		fail(inst, "PLT relocation requires a direct branch target");
 	if (address.symbol.symbol != asm_model::kNoId || address.rip)
 	{
 		if (!address.rip || address.symbol.symbol == asm_model::kNoId || address.has_base || address.has_index)

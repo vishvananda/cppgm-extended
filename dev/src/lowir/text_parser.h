@@ -121,6 +121,7 @@ private:
 	void parse_top_level_item();
 	void parse_assembly();
 	void parse_assembly_function();
+	void parse_assembly_global();
 	asm_model::Register parse_assembly_register();
 	void parse_assembly_operand();
 	void parse_assembly_alternative();

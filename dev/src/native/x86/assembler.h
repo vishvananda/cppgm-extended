@@ -150,6 +150,7 @@ public:
 	void call_symbol(uint32_t symbol);
 	void call_label(uint32_t label);
 	void jmp_symbol(uint32_t symbol);
+	void jcc_symbol(Cond condition, uint32_t symbol);
 	void call_rm(const RM& target);
 	void jmp_rm(const RM& target);
 	// A 32-bit entry holding label - base (a jump table's, after both bind).

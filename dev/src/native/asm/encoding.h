@@ -8,7 +8,7 @@ namespace native {
 // Source assembly uses the same prefix/ModRM/fixup encoder as selected MIR.
 // A failure names an unsupported or invalid instruction form; no host
 // assembler is consulted by production compilation.
-void encode_assembly(
-	Assembler& out, const std::vector<assembly::Instruction>& instructions, const RM& exit_frame = RM());
+void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& instructions,
+	const RM& exit_frame = RM(), std::vector<uint32_t>* positions = nullptr);
 
 } // namespace native

@@ -24,6 +24,10 @@ struct AssemblySites
 	std::vector<std::shared_ptr<const AssemblyPlan>> plans;
 };
 
+std::shared_ptr<AssemblyPlan> prepare_assembly_source(const lowir::AssemblyModule& module, uint32_t definition,
+	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments, std::string& source,
+	std::vector<assembly::SymbolUse>& symbols, std::vector<assembly::LabelUse>& labels);
+
 void append_assembly_exits(AssemblyPlan& plan, const lowir::AssemblyTemplate& definition);
 
 std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& module, uint32_t definition,

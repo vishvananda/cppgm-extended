@@ -3,12 +3,29 @@
 #include <cstring>
 
 #include "sema/asm_data.h"
+#include "lowir/assembly_builder.h"
+#include "lowir/assembly.h"
 #include "support/internal_error.h"
 
 namespace lower {
 
 void ProgramLowering::asm_declaration(const syntax::AsmDecl& decl)
 {
+	if (decl.full_source != nullptr)
+	{
+		assembly::Packet packet;
+		packet.text = decl.full_source;
+		packet.text_size = decl.full_size;
+		packet.definition.piece_count = 1;
+		asm_model::Piece piece;
+		piece.count = decl.full_size;
+		packet.pieces.data = &piece;
+		packet.pieces.size = 1;
+		lowir::AssemblyGlobal item;
+		item.definition = lowir::add_assembly(program_, packet, nullptr, debug_location(decl.location));
+		program_.assembly->globals.push_back(std::move(item));
+		return;
+	}
 	if (decl.sections == nullptr)
 		throw InternalError("namespace asm has no analyzed section facts", decl.location);
 	for (uint32_t i = 0; i < decl.section_count; ++i)

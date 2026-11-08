@@ -508,6 +508,21 @@ void Assembler::call_symbol(uint32_t symbol)
 	imm(0, 4);
 }
 
+void Assembler::jcc_symbol(Cond condition, uint32_t symbol)
+{
+	byte(0x0f);
+	byte(static_cast<uint8_t>(0x80 + condition));
+	CodeFixup fixup;
+	fixup.offset = size();
+	fixup.target = symbol;
+	fixup.addend = 0;
+	fixup.end = 4;
+	fixup.absolute = false;
+	fixup.branch = true;
+	fixups_.push_back(fixup);
+	imm(0, 4);
+}
+
 void Assembler::jmp_symbol(uint32_t symbol)
 {
 	byte(0xe9);

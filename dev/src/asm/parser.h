@@ -22,7 +22,8 @@ enum class Relocation : uint8_t
 	Address,
 	Got,
 	GotTpOff,
-	Tlv
+	Tlv,
+	Plt
 };
 
 struct SymbolUse
@@ -67,6 +68,7 @@ struct Operand
 struct Instruction
 {
 	bool label = false;
+	uint32_t symbol_definition = asm_model::kNoId; // typed module label, if present
 	uint8_t prefix = 0;
 	bool is_exit = false;
 	uint32_t exit_tag = 0;
@@ -84,9 +86,19 @@ struct AssemblyError
 	uint32_t column;
 };
 
+// Module assembly can name linker symbols literally. Inline operand symbols
+// still arrive as typed spans; this hook never reconstructs frontend names.
+struct SymbolLookup
+{
+	virtual ~SymbolLookup() {}
+	virtual bool lookup(const std::string& name, asm_model::SymbolReference& reference) = 0;
+	virtual bool interposable(const std::string&) const { return false; }
+};
+
 // The input is user assembly after its frontend's placeholder expansion.
 // This is its only instruction parse; ordinary compiler code never uses it.
 std::vector<Instruction> parse(const std::string& source, asm_model::Dialect dialect,
-	const std::vector<SymbolUse>& symbols = {}, const std::vector<LabelUse>& labels = {});
+	const std::vector<SymbolUse>& symbols = {}, const std::vector<LabelUse>& labels = {},
+	SymbolLookup* lookup = nullptr);
 
 } // namespace assembly

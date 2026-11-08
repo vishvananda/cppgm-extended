@@ -143,8 +143,9 @@ void expand(std::string& source, const lowir::AssemblyModule& module, const lowi
 
 } // namespace
 
-std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& module, uint32_t id,
-	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments)
+std::shared_ptr<AssemblyPlan> prepare_assembly_source(const lowir::AssemblyModule& module, uint32_t id,
+	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments, std::string& source,
+	std::vector<assembly::SymbolUse>& symbols, std::vector<assembly::LabelUse>& labels)
 {
 	const lowir::AssemblyTemplate& definition = module.templates[id];
 	if ((definition.properties & AP_UNWIND) != 0)
@@ -178,10 +179,18 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 		if ((operand.flags & AO_READ) != 0 || plan->locations[i] == AL_MEMORY)
 			plan->reads |= bit;
 	}
+	expand(source, module, definition, *plan, symbols, labels);
+	return plan;
+}
+
+std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& module, uint32_t id,
+	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments)
+{
 	std::string source;
 	std::vector<assembly::SymbolUse> symbols;
 	std::vector<assembly::LabelUse> labels;
-	expand(source, module, definition, *plan, symbols, labels);
+	std::shared_ptr<AssemblyPlan> plan = prepare_assembly_source(module, id, body, arguments, source, symbols, labels);
+	const lowir::AssemblyTemplate& definition = module.templates[id];
 	try
 	{
 		plan->instructions = assembly::parse(source, definition.dialect, symbols, labels);

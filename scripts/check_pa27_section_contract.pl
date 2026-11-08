@@ -20,10 +20,17 @@ sub read_file
 }
 
 my $selection = qr/section-[^.]+\.(?:cpp|t)$/;
+sub owns_section_control
+{
+	my ($test) = @_;
+	(my $assembly = $test) =~ s/\.(?:cpp|t)$/.assembly-profile/;
+	return !-f $assembly;
+}
+
 if (@ARGV && $ARGV[0] eq '--list')
 {
 	shift @ARGV;
-	print "$_\n" for map { collect_tests($_, $selection) } @ARGV;
+	print "$_\n" for grep { owns_section_control($_) } map { collect_tests($_, $selection) } @ARGV;
 	exit 0;
 }
 
@@ -34,7 +41,7 @@ if (scalar(@ARGV) != 2)
 }
 
 my ($app, $root) = @ARGV;
-my @tests = collect_tests($root, $selection);
+my @tests = grep { owns_section_control($_) } collect_tests($root, $selection);
 die "No PA27 section controls found under $root\n" if !@tests;
 
 for my $test (@tests)

@@ -531,3 +531,40 @@ was interrupted and repeated as a fresh pair; both completed measurements and
 the interrupted raw logs remain retained. Fresh export and CI follow this
 checkpoint. Module assembly, directives/CFI, wider ISA/classes and Rust producer
 qualification remain incomplete; Godot is paused.
+
+
+## 2026-11-08 checkpoint: ordered module code and data
+
+`assembly_global` imports ordered module invocations with constant/symbol inputs.
+The optional C++ namespace adapter retains original source fragments. Module
+assembly emits directly into the object model: it is not a synthetic ordinary
+function. Code/data/BSS, scalar/address data, strings, alignment, section state,
+binding/visibility, size/type and aliases have native behavior checks. Literal
+names use the target linker namespace; typed pieces retain identity at uses and
+definitions. Object-symbol references and nearby weak calls retain interposition,
+including binding declarations placed after the code. Attribute declarations
+apply to the unit; code, data and section transitions remain ordered.
+
+The existing object compiler/linker also serves module-containing standalone
+`lowir2native` programs. The optional Perl lane now tests that path and builds
+all three tools it requires. Ordinary MIR function dumps explicitly reject
+module items. Instruction syntax is parsed once after typed placeholder
+expansion. Static arguments, malformed section state, duplicate definitions,
+alias cycles and storage bounds have normal rejection checks. An older PA27
+filename detector now defers to explicit assembly-profile sidecars, with a
+focused discovery regression check; standard parallel ownership stays unique.
+
+110 optional cases pass at O0/O2/O3 with host-built/self-built compilers and
+GCC/Clang observers. Strict report8099/8099, debug checks, selfhost through PA5,
+inception compiler/object equality, PA35 smoke and mandatory audits pass.
+The independent encoding corpus remains19394 cases per dialect with zero
+mismatches after112 legal prefix variants. The frozen final compiler changes
+compile instruction work by+0.00763% at O0 and+0.01595% at O3 versus the original
+pre-assembly compiler, with byte-identical output objects. Observations and
+immutable hashes are retained privately; these are not wall-time claims.
+
+Remaining: macros/repetition/conditional assembly and source environments shared
+with inline statements; CFI/unwind; broader expressions, registers and ISA;
+capability manifest and original Rust source/body transport/backend-lock
+qualification. Student material names the supported subset. Godot remains
+paused until assembly closure is complete.
