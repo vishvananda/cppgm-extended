@@ -1,0 +1,2559 @@
+{
+  "schema": 1,
+  "date": "2026-11-08",
+  "title": "Remaining GCC C++11 gaps after validation batch 5",
+  "compiler_sha256": "f1076e02fe02dad1e13facbedf815f1195b040f0f0d7e93ba1efb7910f3630a8",
+  "validated_source_revision": "54d6865fce94e580fd77bf5e511ae6a1d206ba57",
+  "selected_configurations": 4092,
+  "passed_configurations": 3958,
+  "pass_percentage": 96.72531769305962,
+  "failed_configurations": 134,
+  "failed_sources": 67,
+  "repair_candidate_sources": 2,
+  "conditional_repair_candidate_sources": 1,
+  "other_review_sources": 64,
+  "expectation_or_manifest_changes": false,
+  "groups": {
+    "T": {
+      "title": "Templates: validation, substitution, deduction and identity",
+      "priority": 1,
+      "modules": [
+        "sema/template_packs.cpp",
+        "sema/analyzer_declarations.cpp",
+        "sema/function_templates.cpp",
+        "sema/template_names.cpp",
+        "sema/class_templates.cpp"
+      ],
+      "strategy": "Four cooperating subtasks: validate active pack uses at the owning typed boundary; preserve substitution failure and erased-signature obligations; repair deduction/ordering/canonical identity; finish dependent facts before lowering. This is a validation batch, not a claim of one shared code defect.",
+      "tests": "Required PA15/17/18 lanes, refined per source. Pair immediate-context rejection with a successful fallback and an invalid instantiated-body control. Pair singleton and multi-element packs, explicit-prefix extension, empty packs, named/unnamed NTTPs and positive partial-ordering neighbors. Do not instantiate otherwise unused bodies merely to find errors.",
+      "sources": 0,
+      "configurations": 0,
+      "repair_candidates": 0,
+      "conditional_repair_candidates": 0,
+      "members": []
+    },
+    "D": {
+      "title": "Declaration grammar and class invariants",
+      "priority": 3,
+      "modules": [
+        "syntax/parser_declarations.cpp",
+        "syntax/parser_declarators.cpp",
+        "sema/analyzer_declarations.cpp",
+        "sema/analyzer_classes.cpp",
+        "sema/analyzer_access.cpp",
+        "sema/analyzer_construction.cpp"
+      ],
+      "strategy": "Separate declaration-purpose checks from class ownership/access checks. Reuse typed declaration kind, owner, access and direct-base facts; validate once when the fact becomes known. Strong subfamilies are union references, inherited constructors and enum access. No global reject predicate.",
+      "tests": "Use each source's earliest owning PA, rather than one late catch-all directory. Pair reference members with legal static/pointer union members, direct and indirect inherited constructors, public/private enumerators, and legal versus illegal attribute/declaration placement. Ordinary malformed declarations remain diagnostic obligations even when a nearby template is unused.",
+      "sources": 0,
+      "configurations": 0,
+      "repair_candidates": 0,
+      "conditional_repair_candidates": 0,
+      "members": []
+    },
+    "I": {
+      "title": "Initialization, reference binding, overload ranking and lifetime",
+      "priority": 2,
+      "modules": [
+        "sema/conversions.cpp",
+        "sema/analyzer_construction.cpp",
+        "sema/analyzer_initialization.cpp",
+        "sema/analyzer_conversions.cpp",
+        "sema/analyzer_copy.cpp"
+      ],
+      "strategy": "Keep viability, ranking and selected-candidate validation distinct. Add the missing narrow array/enum/function-reference ranking facts; repair reference-related binding and temporary formation; preserve explicit/deleted/access/destructor obligations. Lifetime cleanup is a separate subtask from forming the conversion.",
+      "tests": "Required PA11/12/15/18 lanes as reduced. Include empty/short/exact lists, differently sized arrays, cv/ref neighbors, copy versus direct list initialization, deleted/private candidate selection, and runtime destruction/lifetime checks. Do not infer correctness from choosing the expected overload alone.",
+      "sources": 0,
+      "configurations": 0,
+      "repair_candidates": 0,
+      "conditional_repair_candidates": 0,
+      "members": []
+    },
+    "C": {
+      "title": "Constant evaluation, object facts and cast validation",
+      "priority": 4,
+      "modules": [
+        "sema/constant_evaluator.cpp",
+        "sema/constant_expressions.cpp",
+        "sema/constant_interpreter.cpp",
+        "sema/analyzer_conversions.cpp"
+      ],
+      "strategy": "Carry typed storage, lifetime, provenance and known/unknown-value facts. Permit an unknown reference/this until an operation actually reads a value. Validate source category and complete-class requirements before folding a cast. Three positive sources need wording or initializer_list-carrier review before their proposed repair is authorized by the language contract.",
+      "tests": "Primarily required PA16 plus the earliest cast-owning PA. Pair unknown-reference size queries with forbidden value reads, static/lifetime-extended objects with automatic objects, complete and incomplete member-pointer casts, glvalue and prvalue reinterpretation, and valid const_cast class-rvalue neighbors.",
+      "sources": 1,
+      "configurations": 2,
+      "repair_candidates": 0,
+      "conditional_repair_candidates": 1,
+      "members": [
+        "constexpr-template12.C"
+      ]
+    },
+    "E": {
+      "title": "Implicit object, exception specifications and TU linkage",
+      "priority": 5,
+      "modules": [
+        "sema/analyzer_exceptions.cpp",
+        "sema/analyzer_exception_sets.cpp",
+        "sema/constant_evaluator.cpp",
+        "sema/analyzer_range_for.cpp",
+        "sema/analyzer_declarations.cpp"
+      ],
+      "strategy": "Preserve implicit-object cv and lexical exception context, reuse deferred exception-demand machinery, allow enum range ADL, and validate canonical C linkage and no-linkage-signature definition obligations. These are independent small fixes grouped for validation. One source already has a private prepared fix.",
+      "tests": "Use the earliest PA6/11/15/exception-owning lanes indicated per source. Include mutable/reference members and static/nonconst neighbors, compatible/incompatible friend exception declarations, nested function parameter declarations, enum begin/end ADL, distinct C++ overloads versus C linkage, and same-TU definitions for signatures using local types.",
+      "sources": 0,
+      "configurations": 0,
+      "repair_candidates": 0,
+      "conditional_repair_candidates": 0,
+      "members": []
+    },
+    "P": {
+      "title": "Declarators, parser disambiguation and literal operator IDs",
+      "priority": 6,
+      "modules": [
+        "syntax/parser_declarations.cpp",
+        "syntax/parser_declarators.cpp",
+        "syntax/parser_names.cpp",
+        "syntax/parser_expressions.cpp"
+      ],
+      "strategy": "Five focused parser repairs sharing one validation batch: function-type NTTP adjustment, decltype base mem-initializers, concatenated empty literal-operator strings, trailing-return member pointers and declaration/expression disambiguation. Reuse parsed/typed nodes and bounded existing disambiguation.",
+      "tests": "Required PA7/11/12/14/17 lanes after handout review. Keep named versus unnamed function parameters, ordinary and decltype base names, literal suffix constraints, cv/ref member pointers and declaration/expression neighbors. Never repair parsing by reparsing rendered text.",
+      "sources": 0,
+      "configurations": 0,
+      "repair_candidates": 0,
+      "conditional_repair_candidates": 0,
+      "members": []
+    },
+    "R": {
+      "title": "Standards, source expectations and IFNDR adjudication",
+      "priority": 7,
+      "modules": [],
+      "strategy": "Resolve the exact source and current adopted rule before changing compiler or grading. Keep open/drafting proposals distinct from adopted decisions; NAD can affirm that a program is valid. Fifteen negative TUs need source-specific IFNDR adjudication, not automatic exclusion of every unused template.",
+      "tests": "For each adjudicated source, retain the original observed result and provenance. Add an ordinary or actually instantiated witness and positive neighbors for the meaningful rule. Change a suite expectation only with a recorded language basis; do not count unresolved cases as passes.",
+      "sources": 47,
+      "configurations": 94,
+      "repair_candidates": 1,
+      "conditional_repair_candidates": 0,
+      "members": [
+        "alias-decl-22.C",
+        "constexpr-initlist7.C",
+        "conv-tmpl1.C",
+        "decltype76.C",
+        "defaulted19.C",
+        "defaulted19a.C",
+        "deleted3.C",
+        "error2.C",
+        "forw_enum4.C",
+        "forw_enum9.C",
+        "friend2.C",
+        "friend3.C",
+        "gen-attrs-9.C",
+        "initlist-explicit3.C",
+        "initlist-ref1.C",
+        "initlist-ref3.C",
+        "initlist-value4.C",
+        "linkage2.C",
+        "new4.C",
+        "noexcept28.C",
+        "noexcept81.C",
+        "noexcept89.C",
+        "noexcept90.C",
+        "nondeduced7.C",
+        "nsdmi10.C",
+        "pr34061.C",
+        "pr58563.C",
+        "pr61924.C",
+        "pr70538.C",
+        "pr71737.C",
+        "pr85437-3.C",
+        "pr85437-4.C",
+        "range-for26.C",
+        "static_assert10.C",
+        "static_assert11.C",
+        "static_assert14.C",
+        "static_assert15.C",
+        "udlit-operator-neg.C",
+        "udlit-overflow-neg.C",
+        "variadic-nested1.C",
+        "variadic-nondeduce2.C",
+        "variadic127.C",
+        "variadic151.C",
+        "variadic152.C",
+        "variadic168.C",
+        "variadic188.C",
+        "vt-34102.C"
+      ]
+    },
+    "X": {
+      "title": "Course, language-mode, vendor-extension and adapter policy",
+      "priority": 8,
+      "modules": [],
+      "strategy": "Decide the declared contract for GNU builtins/designators/statement expressions, macro-literal recovery, numeric linemarkers, later attributes, constexpr superset and library carrier layout. Prefer a faithful adapter correction where possible. These are not automatic ISO C++11 implementation defects.",
+      "tests": "Preserve independent core-language obligations when projecting an extension test. Test supported extensions explicitly in their proper course lane. Any applicability or expectation change must be reasoned, versioned and visible, rather than selected according to whether cppgm passes.",
+      "sources": 19,
+      "configurations": 38,
+      "repair_candidates": 1,
+      "conditional_repair_candidates": 0,
+      "members": [
+        "attr-fallthrough2.C",
+        "constexpr-arith-overflow2.C",
+        "constexpr-builtin2.C",
+        "constexpr-ctor19.C",
+        "constexpr-data1.C",
+        "constexpr-diag5.C",
+        "constexpr-memchr.C",
+        "constexpr-stmtexpr2.C",
+        "constexpr-strchr.C",
+        "constexpr-strstr.C",
+        "constexpr-trivial2.C",
+        "decltype77.C",
+        "depr-copy2.C",
+        "desig2.C",
+        "desig3.C",
+        "fallthrough1.C",
+        "initlist93.C",
+        "udlit-macros.C",
+        "warn_cxx0x4.C"
+      ]
+    }
+  },
+  "entries": [
+    {
+      "name": "constexpr-template12.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-template12.C",
+      "source_sha256": "e35fea8ca274860ccf3420b90b9045ccffef213f49fa1d60cd6dc7f949b804e8",
+      "configurations": [
+        "constexpr-template12-c++11",
+        "constexpr-template12-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "C",
+      "disposition": "compiler-gap-with-library-model-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": true,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA16",
+      "modules": [
+        "sema/analyzer_initializer_lists.cpp",
+        "sema/constant_expressions.cpp"
+      ],
+      "analysis": "initializer_list backing-array conversion fails before later static/local template constants are reached. Test global/local/static-template objects together, checking the course initializer_list carrier contract.",
+      "primary_basis": [],
+      "cause_hypothesis": "initializer-list-constant-backing-storage",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-template12.C:14:43: invalid implicit conversion"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "linkage2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/linkage2.C",
+      "source_sha256": "b1f0195ba75eedaf6685a758755287092f11edf4e6e59eeb470fdb7c8d4efdc8",
+      "configurations": [
+        "linkage2-c++11",
+        "linkage2-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "no-required-diagnostic-after-CWG2059",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA14:100 local type template instance; PA6 ordinary linkage reduction",
+      "modules": [
+        "sema/analyzer_declarations.cpp",
+        "sema/analyzer_bodies.cpp",
+        "sema/analyzer.cpp"
+      ],
+      "analysis": "CWG2059 accepted DR March2018 removes same-TU definition diagnostic obligation; ordinary ODR still requires a definition but no compile-time diagnostic is required. Original raw negative stays selected in this frozen batch.",
+      "primary_basis": [
+        "N3485 3.2 plus adopted CWG2059 (doc/cwg/cwg-2059.txt)"
+      ],
+      "cause_hypothesis": "No end-of-unit check connecting odr-use, signature type linkage and definition availability.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "B8",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/linkage2.C:13:12: error: \u2018f()::A B<f()::A>::t1\u2019, declared using local type \u2018f()::A\u2019, is used but never defined [-fpermissive]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/linkage2.C:11:8: error: \u2018void B<T>::h(T) [with T = f()::A]\u2019, declared using local type \u2018f()::A\u2019, is used but never defined [-fpermissive]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/linkage2.C:20:20: error: \u2018<unnamed enum> e2\u2019, declared using an unnamed type, is used but never defined [-fpermissive]"
+      ]
+    },
+    {
+      "name": "pr61924.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/pr61924.C",
+      "source_sha256": "2f97cf9c49a335a4845a6925499a09df2af2eabbe3df1612895653a347a241e7",
+      "configurations": [
+        "pr61924-c++11",
+        "pr61924-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "no-required-diagnostic-after-CWG2059",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA20:100 lambda signature no-linkage; simpler PA14/PA6 guard",
+      "modules": [
+        "sema/analyzer_declarations.cpp",
+        "sema/analyzer_bodies.cpp",
+        "sema/analyzer.cpp"
+      ],
+      "analysis": "CWG2059 accepted DR March2018 removes same-TU definition diagnostic obligation; ordinary ODR still requires a definition but no compile-time diagnostic is required. Original raw negative stays selected in this frozen batch.",
+      "primary_basis": [
+        "N3485 3.2 plus adopted CWG2059 (doc/cwg/cwg-2059.txt)"
+      ],
+      "cause_hypothesis": "Same end-of-TU no-linkage signature demand as linkage2, closure-owned variant.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "B8",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/pr61924.C:6:34: error: \u2018function::function(_Functor) [with _Functor = fn()::<lambda()>]\u2019, declared using local type \u2018fn()::<lambda()>\u2019, is used but never defined [-fpermissive]"
+      ]
+    },
+    {
+      "name": "initlist-explicit3.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/initlist-explicit3.C",
+      "source_sha256": "cef6c3d047f6d0b8b881545bc4ce8f94a3fc36933ec3134e4347e9b53915f454",
+      "configurations": [
+        "initlist-explicit3-c++11",
+        "initlist-explicit3-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "open-core-issue-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA15",
+      "modules": [
+        "sema/function_templates.cpp",
+        "sema/analyzer_initialization.cpp"
+      ],
+      "analysis": "Exact overload-ranking question is OPEN CWG 2735. Its proposed preference is not an adopted rule; preserve the original selected test and observed result. Do not implement an unadopted tie-break solely to match GCC.",
+      "primary_basis": [
+        "https://cplusplus.github.io/CWG/issues/2735.html: OPEN; original immutable source retained",
+        "/mnt/vizier/cppgm-cxx11-upstream/batches/initialization-I13/preparation-v1/open-2735-review-v1.json"
+      ],
+      "cause_hypothesis": "list-argument-deduction-and-explicit-selection",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/initlist-explicit3.C:13:33: copy-list-initialization selects an explicit constructor"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "alias-decl-22.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/alias-decl-22.C",
+      "source_sha256": "0a4497cdeed3df0bd2ffefd5065921c8b63a25aa34db37da45e1718e7787e548",
+      "configurations": [
+        "alias-decl-22-c++11",
+        "alias-decl-22-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-or-baseline-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA17:200 alias-template access",
+      "modules": [],
+      "analysis": "Exact alias-access-context question remains drafting CWG1554. Definition-context consensus notes are not an adopted resolution; do not require GCC access rejection from that status alone.",
+      "primary_basis": [
+        "N3485 11 / 14.5.7",
+        "CWG1554 drafting"
+      ],
+      "cause_hypothesis": "Separate alias substitution access context from ordinary class private access.",
+      "instantiation_review": "foo<B> is concretely used inside B; not an unused-template IFNDR argument",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-22.C:6:7: error: \u2018typedef int B::bar\u2019 is private within this context"
+      ]
+    },
+    {
+      "name": "constexpr-initlist7.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-initlist7.C",
+      "source_sha256": "3c27eab13425df7751de3b37ea5cd5ac37864e95def90c8279a5c823dfdd14f1",
+      "configurations": [
+        "constexpr-initlist7-c++11",
+        "constexpr-initlist7-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA16 constant local initialization; PA14 template control",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "Unused foo<N> always initializes constexpr array from ordinary function parameter i. No specialization can make that parameter a constant expression. Whole TU has no required diagnostic under template no-valid-specialization rule.",
+      "primary_basis": [
+        "N3485 14.6p8 / 7.1.5 / 5.19"
+      ],
+      "cause_hypothesis": "Deferred body yields empty object; add instantiated and non-template controls before any validator repair.",
+      "instantiation_review": "foo template never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-initlist7.C:6:25: error: \u2018i\u2019 is not a constant expression [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "conv-tmpl1.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/conv-tmpl1.C",
+      "source_sha256": "0b9739760bee3830855e4160430c5b5c7e69039e13f1e6e5af6919f08b927781",
+      "configurations": [
+        "conv-tmpl1-c++11",
+        "conv-tmpl1-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "sema/analyzer_calls.cpp"
+      ],
+      "analysis": "This is the exact still-open CWG2189 example. Do not implement an unadopted surrogate-call-template rule merely to match GCC; Clang also rejects.",
+      "primary_basis": [
+        "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#2189"
+      ],
+      "cause_hypothesis": "unadopted-surrogate-template-call",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/conv-tmpl1.C:15:3: called object is not a function or pointer to function"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "decltype76.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/decltype76.C",
+      "source_sha256": "95de44d02ddfc8e4109e5c857bbfcd89c2d86334ba7bb6da2ec9cd0365b76635",
+      "configurations": [
+        "decltype76-c++11",
+        "decltype76-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA17:200 default template argument; PA11 actual bad construction",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "The unused default template argument decltype(a(0)) has no valid specialization. Adopted2746 explicitly makes an unused permanently bad default template argument IFNDR, even where other explicit template arguments could bypass it.",
+      "primary_basis": [
+        "CWG2746 adopted March 2024",
+        "N3485 14.6p8"
+      ],
+      "cause_hypothesis": "Default argument deferral is not itself a compiler defect.",
+      "instantiation_review": "function template and its default never used",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/decltype76.C:6:34: error: no matching function for call to \u2018a::a(int)\u2019"
+      ]
+    },
+    {
+      "name": "defaulted19.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/defaulted19.C",
+      "source_sha256": "009a766f3f49646ceabdee584663a869c747c0af6d56bf998c710f6539963c71",
+      "configurations": [
+        "defaulted19-c++11",
+        "defaulted19-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "run",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA21",
+      "modules": [
+        "sema/analyzer_construction.cpp"
+      ],
+      "analysis": "GCC accepts allocation with inaccessible/deleted destructors, whereas cppgm and Clang reject. Analyze scalar versus array allocation, potential destructor invocation and ABI cookies separately; one diagnostic does not prove all three are a compiler defect.",
+      "primary_basis": [],
+      "cause_hypothesis": "allocated-object-destructor-demand",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/defaulted19.C:19:11: use of a deleted function"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "defaulted19a.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/defaulted19a.C",
+      "source_sha256": "3a5966031df0d7caf42820c25e3649898a4854e0654f43654e887acff540f0b7",
+      "configurations": [
+        "defaulted19a-c++11",
+        "defaulted19a-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "run",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA21",
+      "modules": [
+        "sema/analyzer_construction.cpp"
+      ],
+      "analysis": "GCC accepts allocation with inaccessible/deleted destructors, whereas cppgm and Clang reject. Analyze scalar versus array allocation, potential destructor invocation and ABI cookies separately; one diagnostic does not prove all three are a compiler defect.",
+      "primary_basis": [],
+      "cause_hypothesis": "allocated-object-destructor-demand",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/defaulted19a.C:21:11: use of a deleted function"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "deleted3.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/deleted3.C",
+      "source_sha256": "4a8b645c8b2cf1714f77f5c30b680975be6f21c4a6c6cebe2eb03143299179e8",
+      "configurations": [
+        "deleted3-c++11",
+        "deleted3-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "syntax/parser_names.cpp",
+        "sema/template_specializations.cpp"
+      ],
+      "analysis": "GCC accepts explicit A::A<int> specialization syntax; Clang and cppgm reject. Distinguish valid deleted-template specialization from permitted constructor naming syntax before a parser fix.",
+      "primary_basis": [],
+      "cause_hypothesis": "constructor-specialization-template-id",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/deleted3.C:9:16: syntax error"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "error2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/error2.C",
+      "source_sha256": "8135c369ed62c91fccc9d25295da6803f1541b5641588ae6acda9c512e0a3f4d",
+      "configurations": [
+        "error2-c++11",
+        "error2-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA15:200 expansion pattern validation",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "Unused bar has an expansion containing no parameter pack, and assignment to foo<N>() prvalue. Every N leaves invalid code, hence unused no-valid-specialization IFNDR.",
+      "primary_basis": [
+        "N3485 14.6p8 / 14.5.3 / 5.17"
+      ],
+      "cause_hypothesis": "Separate instantiated expansion/error controls from eager template-definition diagnostic parity.",
+      "instantiation_review": "bar never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/error2.C:8:17: error: expansion pattern \u2018(foo<N>)()=0\u2019 contains no parameter packs [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "forw_enum4.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/forw_enum4.C",
+      "source_sha256": "d8fe2fd5f08ea7fbe1a363e6a14238fac5f73ead63458765cc988cf1acda6175",
+      "configurations": [
+        "forw_enum4-c++11",
+        "forw_enum4-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "sema/analyzer_classes.cpp",
+        "sema/class_templates.cpp"
+      ],
+      "analysis": "Qualified member enum definitions/repeated opaque declarations and explicit specializations need a language-epoch review; GCC accepts, Clang rejects. Do not lump with simple non-template enum redeclaration.",
+      "primary_basis": [],
+      "cause_hypothesis": "qualified-member-enum-definition",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/forw_enum4.C:37:5: enumeration redefinition"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "forw_enum9.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/forw_enum9.C",
+      "source_sha256": "7f11a7a41b7a2de0b48b2300cdf69018b532bd678a78f78b6487a2186f0054ef",
+      "configurations": [
+        "forw_enum9-c++11",
+        "forw_enum9-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "sema/analyzer_classes.cpp",
+        "sema/class_templates.cpp"
+      ],
+      "analysis": "Qualified member enum definitions/repeated opaque declarations and explicit specializations need a language-epoch review; GCC accepts, Clang rejects. Do not lump with simple non-template enum redeclaration.",
+      "primary_basis": [],
+      "cause_hypothesis": "qualified-member-enum-definition",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/forw_enum9.C:13:12: enumeration redefinition"
+      ],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/forw_enum9.C:10:27: warning: \u2018enum S1<T>::E1\u2019 is an enumeration template [-Wpedantic]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/forw_enum9.C:11:33: warning: \u2018enum S1<T>::E2\u2019 is an enumeration template [-Wpedantic]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/forw_enum9.C:13:40: warning: template specialization of \u2018enum S1<int>::E1\u2019 not allowed by ISO C++ [-Wpedantic]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/forw_enum9.C:14:46: warning: template specialization of \u2018enum class S1<int>::E2\u2019 not allowed by ISO C++ [-Wpedantic]"
+      ]
+    },
+    {
+      "name": "friend2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/friend2.C",
+      "source_sha256": "cd173f355b4f71d1c8386fdcbb40698e83998333aa58006402d94ef50a37896b",
+      "configurations": [
+        "friend2-c++11",
+        "friend2-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "sema/template_names.cpp",
+        "sema/analyzer_access.cpp"
+      ],
+      "analysis": "Valid friend W; prefix is mixed with questionable template<class T> friend class W; where W is a template-template parameter. GCC accepts, Clang rejects shadowing. Preserve valid prefix independently.",
+      "primary_basis": [],
+      "cause_hypothesis": "template-template-parameter-friend",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/friend2.C:30:35: a template parameter redeclared within its scope"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "friend3.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/friend3.C",
+      "source_sha256": "0e20c7f82df0c78468c17ba6d3d34fd2c5b8ee6402e34cb50eff9df83e55b194",
+      "configurations": [
+        "friend3-c++11",
+        "friend3-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA20 lambda / PA11 local friend boundary",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "Unused a<T> has a nondependent NSDMI lambda containing a forbidden friend definition in a local/anonymous-union context. The hypothetical nondependent-instantiation rule is relevant; no instantiated class/member use establishes an ordinary mandatory negative here.",
+      "primary_basis": [
+        "N3485 14.6p8 / 11.3"
+      ],
+      "cause_hypothesis": "Review exact hypothetical-instantiation rule, not blanket eager lambda-body processing.",
+      "instantiation_review": "a<T> and its NSDMI are unused; rely on nondependent hypothetical-instantiation analysis, not claimed actual use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/friend3.C:8:19: error: cannot define friend function \u2018c\u2019 in a local class definition [-Wtemplate-body]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/friend3.C:9:6: warning: anonymous union with no members"
+      ]
+    },
+    {
+      "name": "gen-attrs-9.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/gen-attrs-9.C",
+      "source_sha256": "908e220b5a1d7bbfc4c18561f71c8d82d9b501c8998e925e52db0bce62951d61",
+      "configurations": [
+        "gen-attrs-9-c++11",
+        "gen-attrs-9-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA6",
+      "modules": [
+        "sema/analyzer_classes.cpp",
+        "syntax/parser_declarations.cpp"
+      ],
+      "analysis": "Whole source mixes GNU attributes on elaborated-type declarations with a repeated enum declaration; GCC diagnoses extensions while accepting and Clang rejects attribute placement. Acceptance is not automatically a core obligation.",
+      "primary_basis": [],
+      "cause_hypothesis": "attribute-elaborated-enum-redeclaration",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/gen-attrs-9.C:7:1: enumeration redeclared differently"
+      ],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/gen-attrs-9.C:7:22: warning: type attributes ignored after type is already defined [-Wattributes]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/gen-attrs-9.C:9:24: warning: attributes ignored on elaborated-type-specifier that is not a forward declaration [-Wattributes]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/gen-attrs-9.C:12:24: warning: attributes ignored on template instantiation [-Wattributes]"
+      ]
+    },
+    {
+      "name": "initlist-ref1.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/initlist-ref1.C",
+      "source_sha256": "39f4375ac14a1a2d77d88579c834daf3c178e56be65de1a49464bac194358fc7",
+      "configurations": [
+        "initlist-ref1-c++11",
+        "initlist-ref1-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA11",
+      "modules": [
+        "sema/analyzer_initialization.cpp",
+        "sema/analyzer_conversions.cpp"
+      ],
+      "analysis": "Reference list initialization through conversion functions is the still-drafting CWG1996 problem; Clang also rejects or disagrees with the asserted binding. Do not silently adopt proposed wording.",
+      "primary_basis": [
+        "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#1996"
+      ],
+      "cause_hypothesis": "unadopted-reference-list-conversion",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/initlist-ref1.C:14:7: an lvalue reference to a type that is not const bound to a list's temporary"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "initlist-ref3.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/initlist-ref3.C",
+      "source_sha256": "f912d44ff8dfe148fefb213abb9e9bfaebd90f37a06d7172919508c5d1517ff3",
+      "configurations": [
+        "initlist-ref3-c++11",
+        "initlist-ref3-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA11",
+      "modules": [
+        "sema/analyzer_initialization.cpp",
+        "sema/analyzer_conversions.cpp"
+      ],
+      "analysis": "Reference list initialization through conversion functions is the still-drafting CWG1996 problem; Clang also rejects or disagrees with the asserted binding. Do not silently adopt proposed wording.",
+      "primary_basis": [
+        "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#1996"
+      ],
+      "cause_hypothesis": "unadopted-reference-list-conversion",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/initlist-ref3.C:13:1: static assertion failed"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "initlist-value4.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/initlist-value4.C",
+      "source_sha256": "d86bb07c048d31ccab0560bf47660b89a76cdf11bca32ca9b21d56418fe7d0ed",
+      "configurations": [
+        "initlist-value4-c++11",
+        "initlist-value4-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA11 ordinary call; PA15 template neighbor",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "Unused bar<N> makes nondependent foo({}) call with a missing second argument; N cannot repair it. Whole template definition is unused no-valid-specialization IFNDR.",
+      "primary_basis": [
+        "N3485 14.6p8 / 13.3"
+      ],
+      "cause_hypothesis": "Empty object is body deferral, not proof calls were validated.",
+      "instantiation_review": "bar never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/initlist-value4.C:11:7: error: too few arguments to function \u2018void foo(const S&, int)\u2019 [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "new4.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/new4.C",
+      "source_sha256": "ffb7824e866bdc0278de3caf9aaf0d4cd1bad8548d582a14a4ec541e484869a7",
+      "configurations": [
+        "new4-c++11",
+        "new4-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA21",
+      "modules": [
+        "sema/analyzer_construction.cpp"
+      ],
+      "analysis": "GCC accepts allocation with inaccessible/deleted destructors, whereas cppgm and Clang reject. Analyze scalar versus array allocation, potential destructor invocation and ABI cookies separately; one diagnostic does not prove all three are a compiler defect.",
+      "primary_basis": [],
+      "cause_hypothesis": "allocated-object-destructor-demand",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/new4.C:6:8: use of a deleted function"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "noexcept28.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/noexcept28.C",
+      "source_sha256": "e32e206a0c6e7b39a593cd8183a22f4588a3535807ebd612275681b42a331d36",
+      "configurations": [
+        "noexcept28-c++11",
+        "noexcept28-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "required-pattern-exception-equivalence",
+      "repair_candidate": true,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA18:300 dependent redeclaration comparison",
+      "modules": [
+        "sema/analyzer_exception_sets.cpp",
+        "sema/analyzer_exceptions.cpp",
+        "sema/analyzer_declarations.cpp",
+        "sema/analyzer_types.cpp",
+        "sema/analyzer_bodies.cpp"
+      ],
+      "analysis": "N3485 15.4p3/p4 requires equivalent dependent noexcept expressions at redeclaration, even for ordinary members of class templates. Functional equality alone is insufficient. Bounded true/false/member/function-template guards expose a grouped B6 fix; CWG1330 makes comparison a demand trigger.",
+      "primary_basis": [
+        "N3485 15.4p3-p4 / 14.6p8",
+        "CWG1330"
+      ],
+      "cause_hypothesis": "Missing structural deferred comparison is plausible, but an unused pattern diagnostic alone does not prove the required whole-TU oracle.",
+      "instantiation_review": "X is never instantiated; two dependent exception patterns are not evaluated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "B7",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/noexcept28.C:19:3: error: declaration of \u2018X<T>& X<T>::operator=(X<T>&&) noexcept ((traits<T>::foo() && traits<T>::bar()))\u2019 has a different exception specifier [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "noexcept81.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/noexcept81.C",
+      "source_sha256": "304585f0ea1e11d1f8ea258285747a2fc93242b38d3d752f0c21aaffd8daadc9",
+      "configurations": [
+        "noexcept81-c++11",
+        "noexcept81-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "expectation-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA12",
+      "modules": [
+        "sema/analyzer_construction.cpp"
+      ],
+      "analysis": "Final assertion expects no call of a trivial default constructor; adopted CWG2820 changes that rule. cppgm and Clang reject the old assertion. Preserve ordinary constructor checks and review the source expectation; do not undo current behavior.",
+      "primary_basis": [
+        "https://cplusplus.github.io/CWG/issues/2820.html"
+      ],
+      "cause_hypothesis": "obsolete-trivial-value-init-assertion",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/noexcept81.C:21:1: static assertion failed"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "noexcept89.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/noexcept89.C",
+      "source_sha256": "ccd8f7d60b74b97c80444da6699c48f7aeadeb062bf2009e398325f4d86d60d4",
+      "configurations": [
+        "noexcept89-c++11",
+        "noexcept89-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-or-baseline-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA18:300 needed exception in complete-class context",
+      "modules": [],
+      "analysis": "GCC and Clang reject needing member-template exception specification before class close. Adopted1330 makes exception specifications complete-class contexts and defines demand; prove an actual cycle or a separate ill-formed use before enforcing a compiler timing limitation.",
+      "primary_basis": [
+        "CWG1330 adopted April 2013",
+        "N3485 9.2 / 15.4"
+      ],
+      "cause_hypothesis": "Potential native complete-class scheduling limitation; body member lookup x itself is nonthrowing.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/noexcept89.C:8:36: error: exception specification of \u2018void A::foo() [with <template-parameter-1-1> = int]\u2019 is not available until end of class definition"
+      ]
+    },
+    {
+      "name": "noexcept90.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/noexcept90.C",
+      "source_sha256": "9f2c4bfcee41e8b74c7dee862aa0581a84f52273aaf38399c4644e91b9f6735d",
+      "configurations": [
+        "noexcept90-c++11",
+        "noexcept90-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-or-baseline-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA18:300 nested class exception demand",
+      "modules": [],
+      "analysis": "S5<int> is a nested completed specialization before the outer static_assert. Native end-of-outer-class unavailability alone is not a language rule; distinguish complete-class lookup from prohibited constant evaluation of a body.",
+      "primary_basis": [
+        "CWG1330",
+        "N3485 9.2 / 15.4"
+      ],
+      "cause_hypothesis": "Potential deferred-completion scheduling/baseline issue; keep source selected pending primary resolution.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/noexcept90.C:11:32: error: exception specification of \u2018void S::S5<T>::f1() [with T = int]\u2019 is not available until end of class definition",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/noexcept90.C:11:18: error: static assertion failed"
+      ]
+    },
+    {
+      "name": "nondeduced7.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/nondeduced7.C",
+      "source_sha256": "4da5a791627b2c516f48b0476074a0dd8b264e103553e947493ccd548f20fa3d",
+      "configurations": [
+        "nondeduced7-c++11",
+        "nondeduced7-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-or-baseline-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA17:100 class partial ordering / NTTP type",
+      "modules": [],
+      "analysis": "Adopted1315 removes the old simple-identifier restriction; T is deducible from first argument. GCC now diagnoses not-more-specialized, Clang dependent NTTP type. Distinguish adopted1495 ordering from unresolved1647 type-agreement/conversion before declaring a required negative.",
+      "primary_basis": [
+        "CWG1315 adopted February 2016",
+        "CWG1495",
+        "CWG1647 drafting"
+      ],
+      "cause_hypothesis": "Potential partial-ordering guard or stale vendor restriction; no unadopted conversion policy may be imposed.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/nondeduced7.C:5:29: warning: partial specialization \u2018struct A<T, T{}>\u2019 is not more specialized than"
+      ]
+    },
+    {
+      "name": "nsdmi10.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/nsdmi10.C",
+      "source_sha256": "862e4eeb10ec97dc5031bdfad516697f8c4512cf7a209f6c81f0b896549456fa",
+      "configurations": [
+        "nsdmi10-c++11",
+        "nsdmi10-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-or-baseline-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA11:200 nested default member initializer demand",
+      "modules": [],
+      "analysis": "Default argument constructs a completed nested B with literal NSDMI;1397 bans an NSDMI causing its own enclosing default constructor/exception definition, not every nested-class constructor used before outer close. Native diagnostic may be a scheduling limitation; exact cycle proof is absent.",
+      "primary_basis": [
+        "CWG1397",
+        "N3485 9.2p2 / 12.6.2 / 8.3.6"
+      ],
+      "cause_hypothesis": "Keep actual recursive NSDMI negatives from099 distinct; do not blanket-ban nested default-argument construction.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/nsdmi10.C:9:26: error: default member initializer for \u2018A1::B1::y1\u2019 required before the end of its enclosing class",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/nsdmi10.C:17:26: error: default member initializer for \u2018A2::B2::y2\u2019 required before the end of its enclosing class"
+      ]
+    },
+    {
+      "name": "pr34061.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/pr34061.C",
+      "source_sha256": "7b0f18b4030dcdc4719778fdc3e3342834ff4eac59a817d4004f28c94a3b672b",
+      "configurations": [
+        "pr34061-c++11",
+        "pr34061-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA17:200 template-template pack base",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "Unused A declares unexpanded template-template pack in a base-specifier; no valid specialization of this written definition.",
+      "primary_basis": [
+        "N3485 14.6p8 / 14.5.3"
+      ],
+      "cause_hypothesis": "Retain active class instantiation counterpart; no mandatory eager whole-TU diagnostic.",
+      "instantiation_review": "A never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/pr34061.C:4:47: error: parameter packs not expanded with \u2018...\u2019: [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "pr58563.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/pr58563.C",
+      "source_sha256": "7994114081d3c68bde74677e373d4ad81ecb6f451fe3e711d1b947a964660ffe",
+      "configurations": [
+        "pr58563-c++11",
+        "pr58563-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA11 pseudo-destructor; PA15 unused-template control",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "Unused foo<N> contains fixed invalid pseudo-destructor/name syntax independent of N; hypothetical instantiation is ill-formed for every N.",
+      "primary_basis": [
+        "N3485 14.6p8 / 5.2.4"
+      ],
+      "cause_hypothesis": "No required diagnostic from unused permanently invalid body; ordinary counterpart remains required.",
+      "instantiation_review": "foo never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/pr58563.C:7:11: error: \u2018enum foo()::E\u2019 is not a class [-Wtemplate-body]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/pr58563.C:7:11: error: \u2018enum foo()::E\u2019 is not a class [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "pr70538.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/pr70538.C",
+      "source_sha256": "44900efa9ea0abd7cad40b40b1449fe24d05a4c83aa39bc7e3ed4be7218afcd5",
+      "configurations": [
+        "pr70538-c++11",
+        "pr70538-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "syntax/parser_declarations.cpp"
+      ],
+      "analysis": "Uses obsolete base_type::base_type; access-declaration syntax without using. GCC warns and accepts; Clang and cppgm reject. Not automatically a required C++11 parser capability.",
+      "primary_basis": [],
+      "cause_hypothesis": "removed-access-declaration-extension",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/pr70538.C:13:3: syntax error"
+      ],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/pr70538.C:13:3: warning: access declarations are deprecated in favor of using-declarations; suggestion: add the \u2018using\u2019 keyword [-Wdeprecated]"
+      ]
+    },
+    {
+      "name": "pr71737.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/pr71737.C",
+      "source_sha256": "fed725b01b1a045d827d28c0cbf59a78a568ebb699ad4ca47125b7d2d20d0488",
+      "configurations": [
+        "pr71737-c++11",
+        "pr71737-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "valid-source-oracle-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA17:200 alias template-template specialization",
+      "modules": [],
+      "analysis": "Nested apply aliases have a concrete valid specialization yielding int. Old1430 fixed-head alias-pack prohibition is not an adopted contract; this is alias specialization substitution, not alias-template identity equivalence037.",
+      "primary_basis": [
+        "N3485 14.5.3 / 14.5.7",
+        "adopted CWG1558",
+        "CWG1430 open"
+      ],
+      "cause_hypothesis": "Likely stale GCC required-diagnostic oracle after121; retain entire TU plus int type witness before any source-pinned disposition.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/pr71737.C:7:9: error: pack expansion argument for non-pack parameter \u2018<template-parameter-1-1>\u2019 of alias template \u2018template<class> using to_int_t = int\u2019"
+      ]
+    },
+    {
+      "name": "pr85437-3.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/pr85437-3.C",
+      "source_sha256": "2ce13965f20a283e2fab0c93aa5af295157db3cb02392990c73b56894e39be90",
+      "configurations": [
+        "pr85437-3-c++11",
+        "pr85437-3-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA16",
+      "modules": [
+        "sema/analyzer_conversions.cpp",
+        "sema/constant_expressions.cpp"
+      ],
+      "analysis": "C-to-A member-pointer cast retains a B member; GCC treats it as constexpr while Clang rejects and cppgm rejects the type relation. Review cast validity versus constant-expression representability; never flatten provenance merely to match GCC.",
+      "primary_basis": [],
+      "cause_hypothesis": "cross-base-member-pointer-constant",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/pr85437-3.C:8:25: a pointer to member cast to a class unrelated to the member's"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "pr85437-4.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/pr85437-4.C",
+      "source_sha256": "8532c81f05a1ec9175441a0e9f6979a88593a77247275e83fba2a728f6987002",
+      "configurations": [
+        "pr85437-4-c++11",
+        "pr85437-4-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA16",
+      "modules": [
+        "sema/analyzer_conversions.cpp",
+        "sema/constant_expressions.cpp"
+      ],
+      "analysis": "C-to-A member-pointer cast retains a B member; GCC treats it as constexpr while Clang rejects and cppgm rejects the type relation. Review cast validity versus constant-expression representability; never flatten provenance merely to match GCC.",
+      "primary_basis": [],
+      "cause_hypothesis": "cross-base-member-pointer-constant",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/pr85437-4.C:8:25: a pointer to member cast to a class unrelated to the member's"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "range-for26.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/range-for26.C",
+      "source_sha256": "a76de22b22004d3718f0abecff1a2ec37a4aa80bf30e2ccb23b6c5359589bf2c",
+      "configurations": [
+        "range-for26-c++11",
+        "range-for26-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA14 type template / PA7 ordinary range check",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "Unused foo has a nondependent range-for over integer literal0; no specialization can supply begin/end.",
+      "primary_basis": [
+        "N3485 14.6p8 / 6.5.4"
+      ],
+      "cause_hypothesis": "Actual instantiated and ordinary invalid ranges are required; this unused TU is IFNDR.",
+      "instantiation_review": "foo never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/range-for26.C:6:17: error: there are no arguments to \u2018begin\u2019 that depend on a template parameter, so a declaration of \u2018begin\u2019 must be available [-Wtemplate-body]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/range-for26.C:6:17: error: there are no arguments to \u2018end\u2019 that depend on a template parameter, so a declaration of \u2018end\u2019 must be available [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "static_assert10.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/static_assert10.C",
+      "source_sha256": "c10d5f505614f885f37baa42a30fa78435e788aa42675d7c54c763ad753d33b8",
+      "configurations": [
+        "static_assert10-c++11",
+        "static_assert10-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-or-baseline-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA15:100 static_assert in templates; PA16 constant evaluation",
+      "modules": [],
+      "analysis": "Unused template assertion uses non-constexpr foo(i), also uninitialized automatic i. Adopted2518 still requires a constant converted expression but exempts failed assertions from template no-valid-specialization analysis. Resolve the nonconstant-expression versus failed-assertion boundary explicitly; do not treat these as static_assert(false), and do not infer required eager diagnosis merely from both native errors.",
+      "primary_basis": [
+        "N3485 7p4 / 14.6p8",
+        "CWG2518 adopted February 2023",
+        "CWG2746"
+      ],
+      "cause_hypothesis": "Likely missing nondependent static_assert constant validation, but whole-TU NDR/adopted2518 adjudication must precede a required original-source oracle.",
+      "instantiation_review": "enclosing function/member/class template never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/static_assert10.C:7:20: error: non-constant condition for static assertion [-Wtemplate-body]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/static_assert10.C:7:20: error: call to non-\u2018constexpr\u2019 function \u2018bool foo(T) [with T = int]\u2019 [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "static_assert11.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/static_assert11.C",
+      "source_sha256": "5142d9c6785cbc559501c2b48e09420695a3ce80f33fbca5d6f684cb651d0637",
+      "configurations": [
+        "static_assert11-c++11",
+        "static_assert11-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-or-baseline-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA15:100 static_assert in templates; PA16 constant evaluation",
+      "modules": [],
+      "analysis": "Unused template assertion uses non-constexpr member foo(0) and this. Adopted2518 still requires a constant converted expression but exempts failed assertions from template no-valid-specialization analysis. Resolve the nonconstant-expression versus failed-assertion boundary explicitly; do not treat these as static_assert(false), and do not infer required eager diagnosis merely from both native errors.",
+      "primary_basis": [
+        "N3485 7p4 / 14.6p8",
+        "CWG2518 adopted February 2023",
+        "CWG2746"
+      ],
+      "cause_hypothesis": "Likely missing nondependent static_assert constant validation, but whole-TU NDR/adopted2518 adjudication must precede a required original-source oracle.",
+      "instantiation_review": "enclosing function/member/class template never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/static_assert11.C:8:22: error: non-constant condition for static assertion [-Wtemplate-body]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/static_assert11.C:8:22: error: \u2018this\u2019 is not a constant expression [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "static_assert14.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/static_assert14.C",
+      "source_sha256": "3358d72cabe50fb00ab3c8c31dacef01ffdc312bbaaea5c1f3f649c6300b9a51",
+      "configurations": [
+        "static_assert14-c++11",
+        "static_assert14-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-or-baseline-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA15:100 static_assert in templates; PA16 constant evaluation",
+      "modules": [],
+      "analysis": "Unused template assertion uses ordinary function parameter c. Adopted2518 still requires a constant converted expression but exempts failed assertions from template no-valid-specialization analysis. Resolve the nonconstant-expression versus failed-assertion boundary explicitly; do not treat these as static_assert(false), and do not infer required eager diagnosis merely from both native errors.",
+      "primary_basis": [
+        "N3485 7p4 / 14.6p8",
+        "CWG2518 adopted February 2023",
+        "CWG2746"
+      ],
+      "cause_hypothesis": "Likely missing nondependent static_assert constant validation, but whole-TU NDR/adopted2518 adjudication must precede a required original-source oracle.",
+      "instantiation_review": "enclosing function/member/class template never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/static_assert14.C:6:18: error: non-constant condition for static assertion [-Wtemplate-body]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/static_assert14.C:6:18: error: \u2018c\u2019 is not a constant expression [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "static_assert15.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/static_assert15.C",
+      "source_sha256": "3c0397363ec91f91885d9fb288c9b469595c8f8b33555c4a9b3021f47f7068cd",
+      "configurations": [
+        "static_assert15-c++11",
+        "static_assert15-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-or-baseline-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA15:100 static_assert in templates; PA16 constant evaluation",
+      "modules": [],
+      "analysis": "Unused template assertion uses uninitialized c modified by c%=1. Adopted2518 still requires a constant converted expression but exempts failed assertions from template no-valid-specialization analysis. Resolve the nonconstant-expression versus failed-assertion boundary explicitly; do not treat these as static_assert(false), and do not infer required eager diagnosis merely from both native errors.",
+      "primary_basis": [
+        "N3485 7p4 / 14.6p8",
+        "CWG2518 adopted February 2023",
+        "CWG2746"
+      ],
+      "cause_hypothesis": "Likely missing nondependent static_assert constant validation, but whole-TU NDR/adopted2518 adjudication must precede a required original-source oracle.",
+      "instantiation_review": "enclosing function/member/class template never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/static_assert15.C:8:21: error: non-constant condition for static assertion [-Wtemplate-body]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/static_assert15.C:8:21: error: expression \u2018c %=1\u2019 is not a constant expression [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "udlit-operator-neg.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/udlit-operator-neg.C",
+      "source_sha256": "148177c66bc97373ac29a84f35a9292b164600d0e26f1dc93918182af4fdbd27",
+      "configurations": [
+        "udlit-operator-neg-c++11",
+        "udlit-operator-neg-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "valid-source-oracle-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA15:300 raw/template literal overload neighbors",
+      "modules": [],
+      "analysis": "Source only declares raw and template literal overloads; N3485 13.5.8 makes them ordinary overloads, while the not-both rule of2.14.8p3/p4 applies to the lookup set of an actual literal. No such literal occurs here. Clang21 accepts silently; ordinary explicit calls can be valid.",
+      "primary_basis": [
+        "N3485 13.5.8p2-p7 / 2.14.8p2-p4"
+      ],
+      "cause_hypothesis": "GCC enforces a use-site literal-selection restriction at declaration time; do not copy that restriction without a separate adopted rule.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R3",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/udlit-operator-neg.C:13:3: error: literal operator \u2018template<char ...<anonymous> > int operator\"\"_abc()\u2019 conflicts with raw literal operator",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/udlit-operator-neg.C:26:1: error: raw literal operator \u2018int operator\"\"_def(const char*)\u2019 conflicts with literal operator template"
+      ]
+    },
+    {
+      "name": "udlit-overflow-neg.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/udlit-overflow-neg.C",
+      "source_sha256": "661adfd01d9c8c4a217a30b6e4c4027a05c451c0eb0a9d59622123a3d0ae0207",
+      "configurations": [
+        "udlit-overflow-neg-c++11",
+        "udlit-overflow-neg-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "expectation-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA2",
+      "modules": [
+        "lex/number_literal.cpp"
+      ],
+      "analysis": "File expects acceptance with overflow warnings; rejecting the enormous cooked integer UDL already supplies a required diagnostic. Check each literal rule and grade language behavior rather than GCC recovery.",
+      "primary_basis": [],
+      "cause_hypothesis": "oversized-literal-acceptance-expectation",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/udlit-overflow-neg.C:12:9: a user-defined integer literal beyond unsigned long long"
+      ],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/udlit-overflow-neg.C:12:9: warning: integer literal exceeds range of \u2018long long unsigned int\u2019 type [-Woverflow]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/udlit-overflow-neg.C:13:9: warning: floating literal exceeds range of \u2018long double\u2019 type [-Woverflow]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/udlit-overflow-neg.C:14:9: warning: floating literal truncated to zero [-Woverflow]"
+      ]
+    },
+    {
+      "name": "variadic-nested1.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/variadic-nested1.C",
+      "source_sha256": "b15709ba774e739f83b4891bf198f1ed2c68adb3405f83fe4c0ab484ef064f68",
+      "configurations": [
+        "variadic-nested1-c++11",
+        "variadic-nested1-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "sema/class_templates.cpp",
+        "sema/template_names.cpp"
+      ],
+      "analysis": "An outer pack expands inner NTTP/TT parameters before later inner parameters; current unconditional pack-last check rejects at definition. Share head-expansion analysis, but resolve the boundary with still-open/drafting2395/2994 before adopting a new rule.",
+      "primary_basis": [
+        "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#2395",
+        "https://cplusplus.github.io/CWG/issues/2994.html"
+      ],
+      "cause_hypothesis": "outer-pack-expanded-template-head",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/variadic-nested1.C:6:47: a class template parameter pack is not last"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "variadic-nondeduce2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/variadic-nondeduce2.C",
+      "source_sha256": "25e5286dc2cdde9fdca51bbb6ed609b4e8fce28cd6468071463770764630c387",
+      "configurations": [
+        "variadic-nondeduce2-c++11",
+        "variadic-nondeduce2-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "sema/template_specializations.cpp"
+      ],
+      "analysis": "Unused partial specialization contains a non-deducible parameter and should not be selected for the asserted primary fallback. GCC accepts, Clang and cppgm reject the declaration; distinguish partial ordering requirements from optional unusable-specialization diagnostics.",
+      "primary_basis": [],
+      "cause_hypothesis": "unusable-partial-specialization-declaration",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/variadic-nondeduce2.C:16:8: a partial specialization's template parameter that its arguments do not deduce"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "variadic127.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/variadic127.C",
+      "source_sha256": "3100c1d89684451804c2eb73ed1cf5f4b14541606ac2c0c31906be2cbf809298",
+      "configurations": [
+        "variadic127-c++11",
+        "variadic127-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA17:300 friend template pack use",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "Unused T<Types...> has friend class S<Types> without expanding Types; no specialization makes an unexpanded use legal.",
+      "primary_basis": [
+        "N3485 14.6p8 / 14.5.3"
+      ],
+      "cause_hypothesis": "Active instantiated friend declaration needs validation; original whole TU is unused IFNDR.",
+      "instantiation_review": "T never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/variadic127.C:11:16: error: parameter packs not expanded with \u2018...\u2019: [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "variadic151.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/variadic151.C",
+      "source_sha256": "f3008d64b98edc335f5647886efbcc197a176a6138bffb2862a545bff8c485b0",
+      "configurations": [
+        "variadic151-c++11",
+        "variadic151-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "sema/class_templates.cpp",
+        "sema/template_names.cpp"
+      ],
+      "analysis": "An outer pack expands inner NTTP/TT parameters before later inner parameters; current unconditional pack-last check rejects at definition. Share head-expansion analysis, but resolve the boundary with still-open/drafting2395/2994 before adopting a new rule.",
+      "primary_basis": [
+        "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#2395",
+        "https://cplusplus.github.io/CWG/issues/2994.html"
+      ],
+      "cause_hypothesis": "outer-pack-expanded-template-head",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/variadic151.C:6:37: a class template parameter pack is not last"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "variadic152.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/variadic152.C",
+      "source_sha256": "e72605ce42332d57b1589fc1264a25979ada12f9819f8795273d52366ceadd0d",
+      "configurations": [
+        "variadic152-c++11",
+        "variadic152-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "sema/class_templates.cpp",
+        "sema/template_names.cpp"
+      ],
+      "analysis": "An outer pack expands inner NTTP/TT parameters before later inner parameters; current unconditional pack-last check rejects at definition. Share head-expansion analysis, but resolve the boundary with still-open/drafting2395/2994 before adopting a new rule.",
+      "primary_basis": [
+        "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#2395",
+        "https://cplusplus.github.io/CWG/issues/2994.html"
+      ],
+      "cause_hypothesis": "outer-pack-expanded-template-head",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/variadic152.C:6:55: a class template parameter pack is not last"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "variadic168.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/variadic168.C",
+      "source_sha256": "17ea96da0b539db0576707378f59b49579fd1afb8c89f78c186fcdf9528179c8",
+      "configurations": [
+        "variadic168-c++11",
+        "variadic168-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA17:300 member template defaults and pack use",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "Unused B1/insert1 default template arguments contain sizeof(Args) without expansion; no valid default exists and none is used, giving explicit2746 IFNDR. B2/insert2 function defaults are separate; do not claim every function specialization is invalid because a default can be bypassed.",
+      "primary_basis": [
+        "CWG2746 adopted March 2024",
+        "N3485 14.5.3"
+      ],
+      "cause_hypothesis": "Whole-TU NDR is established by the unused invalid template defaults, not broad function body deferral.",
+      "instantiation_review": "all four templates and defaults unused",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/variadic168.C:5:56: error: parameter packs not expanded with \u2018...\u2019:",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/variadic168.C:11:31: error: parameter packs not expanded with \u2018...\u2019:",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/variadic168.C:14:54: error: parameter packs not expanded with \u2018...\u2019:",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/variadic168.C:18:30: error: parameter packs not expanded with \u2018...\u2019:"
+      ]
+    },
+    {
+      "name": "variadic188.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/variadic188.C",
+      "source_sha256": "12fe17bdb2299b6eecc7dac4d943ad5ef7b74bf147be39d5488a213bb6f9d8a2",
+      "configurations": [
+        "variadic188-c++11",
+        "variadic188-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "R",
+      "disposition": "standards-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA17",
+      "modules": [
+        "sema/template_specializations.cpp"
+      ],
+      "analysis": "Unused partial specialization contains a non-deducible parameter and should not be selected for the asserted primary fallback. GCC accepts, Clang and cppgm reject the declaration; distinguish partial ordering requirements from optional unusable-specialization diagnostics.",
+      "primary_basis": [],
+      "cause_hypothesis": "unusable-partial-specialization-declaration",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/variadic188.C:20:8: a partial specialization's template parameter that its arguments do not deduce"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "vt-34102.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/vt-34102.C",
+      "source_sha256": "e71362071e9fb1b5fd87c1243131687d71c6ca5e920edd507fd605f59f69b611",
+      "configurations": [
+        "vt-34102-c++11",
+        "vt-34102-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "R",
+      "disposition": "IFNDR-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA15:200 class pack base",
+      "modules": [
+        "sema/analyzer.cpp",
+        "sema/template_packs.cpp"
+      ],
+      "analysis": "Unused C<T...>:B<T> contains unexpanded pack in base type; permanently invalid unused template.",
+      "primary_basis": [
+        "N3485 14.6p8 / 14.5.3"
+      ],
+      "cause_hypothesis": "Reuse instantiated class base guards without claiming an original required diagnostic.",
+      "instantiation_review": "C never instantiated",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R1",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/vt-34102.C:7:35: error: parameter packs not expanded with \u2018...\u2019: [-Wtemplate-body]"
+      ]
+    },
+    {
+      "name": "attr-fallthrough2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/attr-fallthrough2.C",
+      "source_sha256": "1f779e10ddf9ff61d197f65e1b15770ff37035a10ebb5a2932e7155bf5147eff",
+      "configurations": [
+        "attr-fallthrough2-c++11",
+        "attr-fallthrough2-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "X",
+      "disposition": "course-or-mode-policy-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA29 optional later-language attributes",
+      "modules": [
+        "sema/constant_interpreter.cpp",
+        "driver/toolchain.cpp",
+        "sema/analyzer_classes.cpp"
+      ],
+      "analysis": "File explicitly tests C++26 P2552R3. Standard fallthrough is a C++17 attribute, not a C++11 core attribute; an unknown attribute outside switch is not a mandatory C++11 negative merely because GCC recognizes it.",
+      "primary_basis": [
+        "N3485 7.6.1",
+        "P2552R3 new C++26 feature"
+      ],
+      "cause_hypothesis": "Attribute-version and supported-attribute policy, not diagnostic wording.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R2",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/attr-fallthrough2.C:7:18: error: invalid use of attribute \u2018fallthrough\u2019"
+      ]
+    },
+    {
+      "name": "constexpr-arith-overflow2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-arith-overflow2.C",
+      "source_sha256": "a092bf40f30214df60fdd8516b6378c3fc032b6c19863f14433d305754b258d4",
+      "configurations": [
+        "constexpr-arith-overflow2-c++11",
+        "constexpr-arith-overflow2-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "X",
+      "disposition": "course-or-mode-policy-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA16 evaluation superset; PA29 GNU builtins",
+      "modules": [
+        "sema/constant_interpreter.cpp",
+        "driver/toolchain.cpp",
+        "sema/analyzer_classes.cpp"
+      ],
+      "analysis": "GCC rejects mutation during original C++11 constexpr evaluation; PA16 expressly allows local variables and assignment in the evaluator. Builtin overflow semantics also need course policy, not an empty-body/mutation rejection added for this source.",
+      "primary_basis": [
+        "pa16/README.md:267-289",
+        "N3485 5.19"
+      ],
+      "cause_hypothesis": "Documented evaluation superset plus vendor builtin applicability.",
+      "instantiation_review": "add/sub/mul are actually called in static_asserts; NOT unused-template IFNDR",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R2",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-arith-overflow2.C:26:11: error: non-constant condition for static assertion",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-arith-overflow2.C:11:33: error: \u2018((z = 0), false)\u2019 is not a constant expression",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-arith-overflow2.C:27:11: error: non-constant condition for static assertion",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-arith-overflow2.C:17:33: error: \u2018((z = 0), false)\u2019 is not a constant expression",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-arith-overflow2.C:28:11: error: non-constant condition for static assertion",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-arith-overflow2.C:23:33: error: \u2018((z = 0), false)\u2019 is not a constant expression"
+      ]
+    },
+    {
+      "name": "constexpr-builtin2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-builtin2.C",
+      "source_sha256": "b76ceeed7d2c0f3cd404ca818a29e2f9bc8ac3350c00537573aaa6876f6d83ae",
+      "configurations": [
+        "constexpr-builtin2-c++11",
+        "constexpr-builtin2-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "X",
+      "disposition": "extension-or-adapter",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA29",
+      "modules": [
+        "sema/constant_evaluator.cpp",
+        "sema/analyzer_builtins.cpp"
+      ],
+      "analysis": "GCC-specific __builtin_constant_p behavior across a nested constexpr call. Declare supported vendor-extension contract separately from ISO C++11 correctness.",
+      "primary_basis": [],
+      "cause_hypothesis": "constexpr-vendor-builtins",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-builtin2.C:13:50: a call of a function that is not constexpr"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "constexpr-ctor19.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-ctor19.C",
+      "source_sha256": "b515646df682e2d56bf837c6b5dae91a0a09efa4f5662cd0bd2bef82ba400358",
+      "configurations": [
+        "constexpr-ctor19-c++11",
+        "constexpr-ctor19-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "X",
+      "disposition": "course-or-mode-policy-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA16 constexpr declarations; PA14/15 template neighbors",
+      "modules": [
+        "sema/constant_interpreter.cpp",
+        "driver/toolchain.cpp",
+        "sema/analyzer_classes.cpp"
+      ],
+      "analysis": "Expected errors are C++11 constructor-body restrictions inside unused class templates. PA16 permits a constexpr evaluation superset; distinguish that policy and possible unused no-valid-template rules before requesting rejections.",
+      "primary_basis": [
+        "N3485 7.1.5 / 14.6p8",
+        "pa16/README.md:267-289"
+      ],
+      "cause_hypothesis": "Do not add a blanket empty-body rule for template constructors.",
+      "instantiation_review": "S/S2/S3/S4/S5 templates unused",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R2",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-ctor19.C:22:3: warning: \u2018constexpr\u2019 constructor does not have empty body [-Wc++14-extensions]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-ctor19.C:29:3: warning: \u2018constexpr\u2019 constructor does not have empty body [-Wc++14-extensions]"
+      ]
+    },
+    {
+      "name": "constexpr-data1.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-data1.C",
+      "source_sha256": "f22ea1c0f434a837aaf5a21472ef2b3ec63bee63b09454721bdb79f8bc7b0df2",
+      "configurations": [
+        "constexpr-data1-c++11",
+        "constexpr-data1-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "X",
+      "disposition": "course-or-mode-policy-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "medium",
+      "owning_pa_candidate": "PA16:100 constexpr declaration mode boundary",
+      "modules": [
+        "sema/constant_interpreter.cpp",
+        "driver/toolchain.cpp",
+        "sema/analyzer_classes.cpp"
+      ],
+      "analysis": "The sole GCC message is non-literal enclosing class for a constexpr nonstatic member declaration. CWG1684 removes that restriction in C++14 wording; determine the documented C++11/adopted-correction policy instead of confusing it with literal return/parameter validation.",
+      "primary_basis": [
+        "N3485 7.1.5p8",
+        "CWG1684 applied to C++14 WP",
+        "pa16/README.md:267-289"
+      ],
+      "cause_hypothesis": "Potential missing old-mode diagnosis or intentional adopted correction, not established implementation bug.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R2",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-data1.C:39:19: warning: enclosing class of \u2018constexpr\u2019 non-static member function \u2018bool debug_flag::is_on() const\u2019 is not a literal type [-Wpedantic]"
+      ]
+    },
+    {
+      "name": "constexpr-diag5.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-diag5.C",
+      "source_sha256": "02b0f0ea2200fb8810bff6af1db9199ad74dce895ca4252c8aa4412632e7476e",
+      "configurations": [
+        "constexpr-diag5-c++11",
+        "constexpr-diag5-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "X",
+      "disposition": "course-or-mode-policy-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA16 constexpr declaration/evaluation policy",
+      "modules": [
+        "sema/constant_interpreter.cpp",
+        "driver/toolchain.cpp",
+        "sema/analyzer_classes.cpp"
+      ],
+      "analysis": "GCC messages concern return statements in constexpr constructor bodies. The documented evaluation superset must be respected; nontrivial destructor alone does not prohibit declaring a constexpr constructor.",
+      "primary_basis": [
+        "N3485 7.1.5p4",
+        "pa16/README.md:267-289"
+      ],
+      "cause_hypothesis": "C++11-only constructor-body restriction versus explicit course superset.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R2",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-diag5.C:26:28: warning: \u2018constexpr\u2019 constructor does not have empty body [-Wc++14-extensions]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-diag5.C:32:29: warning: \u2018constexpr\u2019 constructor does not have empty body [-Wc++14-extensions]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-diag5.C:39:29: warning: \u2018constexpr\u2019 constructor does not have empty body [-Wc++14-extensions]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-diag5.C:47:29: warning: \u2018constexpr\u2019 constructor does not have empty body [-Wc++14-extensions]"
+      ]
+    },
+    {
+      "name": "constexpr-memchr.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-memchr.C",
+      "source_sha256": "8cf33c37e74ca98a7ddc7b5b3579a3415b8a99eb8da27742c73fcdd3e4147696",
+      "configurations": [
+        "constexpr-memchr-c++11",
+        "constexpr-memchr-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "X",
+      "disposition": "extension-or-adapter",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA29",
+      "modules": [
+        "sema/constant_evaluator.cpp",
+        "sema/analyzer_builtins.cpp"
+      ],
+      "analysis": "Missing constexpr evaluation of GNU string/memory-search builtins. Share bounded typed byte-search semantics if this extension remains in the declared coverage; do not treat builtin support as ISO core conformance.",
+      "primary_basis": [],
+      "cause_hypothesis": "constexpr-vendor-builtins",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-memchr.C:4:58: a builtin function that is not a constant expression"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "constexpr-stmtexpr2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-stmtexpr2.C",
+      "source_sha256": "a62e75120bf71f9884f5cd043219d25e9ecb05730dac824d7c6ac4e78749fe31",
+      "configurations": [
+        "constexpr-stmtexpr2-c++11",
+        "constexpr-stmtexpr2-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "X",
+      "disposition": "extension-or-adapter",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA29",
+      "modules": [
+        "sema/constant_expressions.cpp"
+      ],
+      "analysis": "GNU statement expression inside constexpr return is outside ISO C++11. Either cover the supported GNU extension explicitly or review its placement in the conformance cohort.",
+      "primary_basis": [],
+      "cause_hypothesis": "constexpr-statement-expression",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-stmtexpr2.C:9:10: an expression that is not a constant expression"
+      ],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-stmtexpr2.C:9:10: warning: ISO C++ forbids braced-groups within expressions [-Wpedantic]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-stmtexpr2.C:9:11: warning: compound-statement in \u2018constexpr\u2019 function [-Wpedantic]"
+      ]
+    },
+    {
+      "name": "constexpr-strchr.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-strchr.C",
+      "source_sha256": "4e987f80625b93773edd14fbe5d862f2ee9aae3960f8db545c788618e1980518",
+      "configurations": [
+        "constexpr-strchr-c++11",
+        "constexpr-strchr-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "X",
+      "disposition": "extension-or-adapter",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA29",
+      "modules": [
+        "sema/constant_evaluator.cpp",
+        "sema/analyzer_builtins.cpp"
+      ],
+      "analysis": "Missing constexpr evaluation of GNU string/memory-search builtins. Share bounded typed byte-search semantics if this extension remains in the declared coverage; do not treat builtin support as ISO core conformance.",
+      "primary_basis": [],
+      "cause_hypothesis": "constexpr-vendor-builtins",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-strchr.C:3:58: a builtin function that is not a constant expression"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "constexpr-strstr.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-strstr.C",
+      "source_sha256": "54ec7f8fc4a381cddbd3fa9d0e62e4ecbf0fa458314408644cf30654157bcad5",
+      "configurations": [
+        "constexpr-strstr-c++11",
+        "constexpr-strstr-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "X",
+      "disposition": "extension-or-adapter",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA29",
+      "modules": [
+        "sema/constant_evaluator.cpp",
+        "sema/analyzer_builtins.cpp"
+      ],
+      "analysis": "Missing constexpr evaluation of GNU string/memory-search builtins. Share bounded typed byte-search semantics if this extension remains in the declared coverage; do not treat builtin support as ISO core conformance.",
+      "primary_basis": [],
+      "cause_hypothesis": "constexpr-vendor-builtins",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-strstr.C:3:66: a builtin function that is not a constant expression"
+      ],
+      "native_messages": []
+    },
+    {
+      "name": "constexpr-trivial2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-trivial2.C",
+      "source_sha256": "1d262980714520002cfea26c32e733977dfa12db1b1db400c87d8f6baae9c638",
+      "configurations": [
+        "constexpr-trivial2-c++11",
+        "constexpr-trivial2-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "X",
+      "disposition": "course-or-mode-policy-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA16 evaluator; PA12 assignment neighbor",
+      "modules": [
+        "sema/constant_interpreter.cpp",
+        "driver/toolchain.cpp",
+        "sema/analyzer_classes.cpp"
+      ],
+      "analysis": "Assignment of temporaries during constant evaluation is a documented PA16 extension. Do not restore an original-C++11 rejection solely because GCC diagnoses its constexpr initializer.",
+      "primary_basis": [
+        "pa16/README.md:267-289",
+        "N3485 5.19"
+      ],
+      "cause_hypothesis": "Evaluation superset versus language-version restriction.",
+      "instantiation_review": "ordinary main with actual constexpr assignment",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R2",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-trivial2.C:13:31: error: expression \u2018(*(unsigned char (*)[5])(&__builtin_memcpy(&<unnamed>, & <unnamed>.T()(), <unnamed>)) = *(unsigned char (*)[5])((T&&)&__builtin_memcpy(&<unnamed>, & <unnamed>.T()(), <unnamed>)))\u2019 is not a constant expression"
+      ]
+    },
+    {
+      "name": "decltype77.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/decltype77.C",
+      "source_sha256": "afaf4f8db482751744381595d181567c0ebb9ebd81f6b90cfbcf5a0da5dbd617",
+      "configurations": [
+        "decltype77-c++11",
+        "decltype77-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "X",
+      "disposition": "required-cxx11-dialect-diagnostic",
+      "repair_candidate": true,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA29 modern-cxx mode boundary",
+      "modules": [
+        "sema/constant_interpreter.cpp",
+        "driver/toolchain.cpp",
+        "sema/analyzer_classes.cpp"
+      ],
+      "analysis": "C++14 decltype(auto) is silently accepted in11. PA29 optional modern fixtures are mode14; PA20 excludes this placeholder. Follow-up B6 will gate existing typed specifier by cxx14_ with required early PA6 controls. Documented PA16 constexpr-body superset is a separate policy.",
+      "primary_basis": [
+        "pa29/README.md:280-310",
+        "N3638 C++14 feature"
+      ],
+      "cause_hypothesis": "Likely driver/parser dialect gate omission; keep distinct from deliberate variable-template C++11 extension.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R2",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/decltype77.C:4:1: error: \u2018decltype(auto)\u2019 type specifier only available with \u2018-std=c++14\u2019 or \u2018-std=gnu++14\u2019",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/decltype77.C:9:3: error: \u2018decltype(auto)\u2019 type specifier only available with \u2018-std=c++14\u2019 or \u2018-std=gnu++14\u2019"
+      ]
+    },
+    {
+      "name": "depr-copy2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/depr-copy2.C",
+      "source_sha256": "95d393cea489c53a3930c411cebee0f63e3c23cc525f614ba1897c4d90836ff2",
+      "configurations": [
+        "depr-copy2-c++11",
+        "depr-copy2-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "X",
+      "disposition": "adapter-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA4",
+      "modules": [
+        "preprocess/preprocessor.cpp",
+        "scripts/build_gcc_cxx11_ci_manifest.py"
+      ],
+      "analysis": "Numeric GCC linemarkers with enter/system-header flags are rejected. This is a preprocessing-interface projection issue; semantic copy/deprecation behavior must be tested independently.",
+      "primary_basis": [],
+      "cause_hypothesis": "gcc-preprocessed-line-markers",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/depr-copy2.C:4:3: invalid preprocessing directive"
+      ],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/depr-copy2.C:4:3: warning: style of line directive is a GCC extension [-Wpedantic]",
+        "deprcopy.cc:1:3: warning: style of line directive is a GCC extension [-Wpedantic]"
+      ]
+    },
+    {
+      "name": "desig2.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/desig2.C",
+      "source_sha256": "4ce5eee7677bf938f5c2f6fa44a2a4d2009d6867e7d7246cf99e3d458c72f3b3",
+      "configurations": [
+        "desig2-c++11",
+        "desig2-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "X",
+      "disposition": "extension-or-adapter",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA29",
+      "modules": [
+        "syntax/parser_expressions.cpp"
+      ],
+      "analysis": "Indexed array designators [INDEX] = ... are a GNU extension, not C++11 or ordinary C++20 member designators. Same feature with enum versus const-index spelling; one extension decision covers both.",
+      "primary_basis": [],
+      "cause_hypothesis": "gnu-array-designated-initializers",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/desig2.C:19:13: syntax error"
+      ],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/desig2.C:19:4: warning: ISO C++ does not allow C99 designated initializers [-Wpedantic]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/desig2.C:19:17: warning: C++ designated initializers only available with \u2018-std=c++20\u2019 or \u2018-std=gnu++20\u2019 [-Wc++20-extensions]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/desig2.C:20:4: warning: ISO C++ does not allow C99 designated initializers [-Wpedantic]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/desig2.C:20:17: warning: C++ designated initializers only available with \u2018-std=c++20\u2019 or \u2018-std=gnu++20\u2019 [-Wc++20-extensions]"
+      ]
+    },
+    {
+      "name": "desig3.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/desig3.C",
+      "source_sha256": "7faca389d64dee94b96962439c04b4e9a93386ec12e0f74cb60db34c36edf84d",
+      "configurations": [
+        "desig3-c++11",
+        "desig3-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "X",
+      "disposition": "extension-or-adapter",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA29",
+      "modules": [
+        "syntax/parser_expressions.cpp"
+      ],
+      "analysis": "Indexed array designators [INDEX] = ... are a GNU extension, not C++11 or ordinary C++20 member designators. Same feature with enum versus const-index spelling; one extension decision covers both.",
+      "primary_basis": [],
+      "cause_hypothesis": "gnu-array-designated-initializers",
+      "clang_secondary_syntax": "success",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/desig3.C:17:13: syntax error"
+      ],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/desig3.C:17:4: warning: ISO C++ does not allow C99 designated initializers [-Wpedantic]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/desig3.C:17:17: warning: C++ designated initializers only available with \u2018-std=c++20\u2019 or \u2018-std=gnu++20\u2019 [-Wc++20-extensions]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/desig3.C:18:4: warning: ISO C++ does not allow C99 designated initializers [-Wpedantic]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/desig3.C:18:17: warning: C++ designated initializers only available with \u2018-std=c++20\u2019 or \u2018-std=gnu++20\u2019 [-Wc++20-extensions]"
+      ]
+    },
+    {
+      "name": "fallthrough1.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/fallthrough1.C",
+      "source_sha256": "024b7673e27031715977bdc93d1b7ba2270c92a8abc8d68c1aefa5a17bad8940",
+      "configurations": [
+        "fallthrough1-c++11",
+        "fallthrough1-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "X",
+      "disposition": "course-or-mode-policy-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA29 supported GNU attribute policy",
+      "modules": [
+        "sema/constant_interpreter.cpp",
+        "driver/toolchain.cpp",
+        "sema/analyzer_classes.cpp"
+      ],
+      "analysis": "GNU fallthrough attribute effects are vendor semantics; generic C++11 attribute grammar does not require GCC placement/effect diagnostics. Determine explicit course support before adding this vendor obligation.",
+      "primary_basis": [
+        "N3485 7.6.1",
+        "pa29/README.md supported attributes"
+      ],
+      "cause_hypothesis": "Keep optional warnings and vendor effect validation separate from core attribute grammar.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R2",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/fallthrough1.C:9:28: warning: \u2018fallthrough\u2019 attribute ignored [-Wattributes]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/fallthrough1.C:17:25: warning: statement will never be executed [-Wswitch-unreachable]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/fallthrough1.C:33:27: warning: attribute \u2018fallthrough\u2019 not preceding a case label or default label",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/fallthrough1.C:12:25: error: invalid use of attribute \u2018fallthrough\u2019",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/fallthrough1.C:14:23: error: invalid use of attribute \u2018fallthrough\u2019",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/fallthrough1.C:56:23: error: invalid use of attribute \u2018fallthrough\u2019"
+      ]
+    },
+    {
+      "name": "initlist93.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/initlist93.C",
+      "source_sha256": "909f83fc283ddfdfe34f24fe8f4ce0507f5afccccc6c7f221e54867fc9677c05",
+      "configurations": [
+        "initlist93-c++11",
+        "initlist93-gnu++11"
+      ],
+      "observed_status": "diagnostic-missing",
+      "expectation": "diagnostic",
+      "action": "compile",
+      "group": "X",
+      "disposition": "course-or-mode-policy-review",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "high",
+      "owning_pa_candidate": "PA29 hosted std::initializer_list contract",
+      "modules": [
+        "sema/constant_interpreter.cpp",
+        "driver/toolchain.cpp",
+        "sema/analyzer_classes.cpp"
+      ],
+      "analysis": "User defines an incompatible primary std::initializer_list representation. GCC emits a fatal library-layout intrinsic error. Core C++ does not mandate GCC layout and adding primary declarations to std falls under library restrictions; do not implement a universal required core diagnostic from this test.",
+      "primary_basis": [
+        "N3485 17.6.4.2.1 / 18.9"
+      ],
+      "cause_hypothesis": "Compiler/library ABI reservation review, not candidate/native empty-stderr confusion.",
+      "instantiation_review": "ordinary or active concrete use",
+      "shared_root_claim": "hypothesis, not reduced or compiler-proven by this read-only review",
+      "original_negative_family": "R2",
+      "candidate_messages": [],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/initlist93.C:6:24: fatal error: definition of \u2018class std::initializer_list< <template-parameter-1-1> >\u2019 does not match \u2018#include <initializer_list>\u2019"
+      ]
+    },
+    {
+      "name": "udlit-macros.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/udlit-macros.C",
+      "source_sha256": "c96ae8e048a9dae274c5139290673c967c4b3c6ebe41ce7f167d1aa925f12374",
+      "configurations": [
+        "udlit-macros-c++11",
+        "udlit-macros-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "run",
+      "group": "X",
+      "disposition": "extension-or-adapter",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA4",
+      "modules": [
+        "preprocess/preprocessor.cpp",
+        "lex/post_tokenizer.cpp"
+      ],
+      "analysis": "Whole TU relies on missing whitespace before __FILE__/PRId64; GCC diagnoses and accepts an extension, Clang/cppgm reject. Preserve independent valid suffix-macro nonexpansion checks in reduced controls.",
+      "primary_basis": [],
+      "cause_hypothesis": "literal-macro-token-spacing",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/udlit-macros.C:19:8: variable of incomplete type"
+      ],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/udlit-macros.C:19:16: warning: invalid suffix on literal; C++11 requires a space between literal and string macro [-Wliteral-suffix]",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/udlit-macros.C:20:16: warning: invalid suffix on literal; C++11 requires a space between literal and string macro [-Wliteral-suffix]"
+      ]
+    },
+    {
+      "name": "warn_cxx0x4.C",
+      "path": "gcc/testsuite/g++.dg/cpp0x/warn_cxx0x4.C",
+      "source_sha256": "6b36f8ad80863a23aec1175f1bd16862c93d3c81d131fd6f6a523c0eaa0bc37c",
+      "configurations": [
+        "warn_cxx0x4-c++11",
+        "warn_cxx0x4-gnu++11"
+      ],
+      "observed_status": "compile-failed",
+      "expectation": "accept",
+      "action": "compile",
+      "group": "X",
+      "disposition": "extension-or-adapter",
+      "repair_candidate": false,
+      "conditional_repair_candidate": false,
+      "confidence": "source-reviewed; reduction required",
+      "owning_pa_candidate": "PA4",
+      "modules": [
+        "preprocess/preprocessor.cpp",
+        "lex/post_tokenizer.cpp"
+      ],
+      "analysis": "Missing space between string literal and macro identifier creates a user-defined literal token in C++11. GCC recovery is not mandatory acceptance; rejection is conforming.",
+      "primary_basis": [],
+      "cause_hypothesis": "literal-macro-token-spacing",
+      "clang_secondary_syntax": "rejection",
+      "candidate_messages": [
+        "ERROR: /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/warn_cxx0x4.C:4:25: no literal operator for the user-defined string literal"
+      ],
+      "native_messages": [
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/warn_cxx0x4.C:4:17: warning: invalid suffix on literal; C++11 requires a space between literal and string macro [-Wliteral-suffix]"
+      ]
+    }
+  ],
+  "closed_entries": [
+    {
+      "name": "alias-decl-72.C",
+      "batch": 5
+    },
+    {
+      "name": "constexpr-46336.C",
+      "batch": 5
+    },
+    {
+      "name": "constexpr-89599.C",
+      "batch": 5
+    },
+    {
+      "name": "constexpr-array-ptr6.C",
+      "batch": 5
+    },
+    {
+      "name": "constexpr-const2.C",
+      "batch": 5
+    },
+    {
+      "name": "constexpr-nsdmi2.C",
+      "batch": 5
+    },
+    {
+      "name": "constexpr-ref14.C",
+      "batch": 5
+    },
+    {
+      "name": "constexpr-static6.C",
+      "batch": 5
+    },
+    {
+      "name": "decltype-mem-initializer1.C",
+      "batch": 5
+    },
+    {
+      "name": "decltype30.C",
+      "batch": 5
+    },
+    {
+      "name": "decltype41.C",
+      "batch": 5
+    },
+    {
+      "name": "noexcept39.C",
+      "batch": 5
+    },
+    {
+      "name": "noexcept58.C",
+      "batch": 5
+    },
+    {
+      "name": "noexcept59.C",
+      "batch": 5
+    },
+    {
+      "name": "nontype1.C",
+      "batch": 5
+    },
+    {
+      "name": "nsdmi-list10.C",
+      "batch": 5
+    },
+    {
+      "name": "pr60209.C",
+      "batch": 5
+    },
+    {
+      "name": "ptrmem-cst1.C",
+      "batch": 5
+    },
+    {
+      "name": "range-for17.C",
+      "batch": 5
+    },
+    {
+      "name": "reinterpret_cast2.C",
+      "batch": 5
+    },
+    {
+      "name": "rv-cast6.C",
+      "batch": 5
+    },
+    {
+      "name": "trailing13.C",
+      "batch": 5
+    },
+    {
+      "name": "trailing7.C",
+      "batch": 5
+    },
+    {
+      "name": "variadic-crash5.C",
+      "batch": 5
+    },
+    {
+      "name": "variadic-explicit1.C",
+      "batch": 5
+    },
+    {
+      "name": "variadic-nondeduce1.C",
+      "batch": 5
+    }
+  ],
+  "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/batches/gcc-05/acceptance-v1.json",
+  "prior_inventory": "reports/cxx11-gcc-remaining-after-batch4.json",
+  "additional_active_demand_gap": "The unused variadic127 source is NDR, but forcing T<int,char> exposes silently accepted unexpanded friend packs. B6 required PA15 zero/one/multi controls, ordinary field/alias boundaries and valid expanded friendship guard."
+}

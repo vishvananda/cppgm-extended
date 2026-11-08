@@ -1,0 +1,46 @@
+C++11 correctness grouped repair batch 5
+
+Accepted compiler f1076e02fe02dad1e13facbedf815f1195b040f0f0d7e93ba1efb7910f3630a8.
+GCC frozen original cohort: 3958/4092 (96.73%); +52 configurations across
+26 exact sources, zero prior pass losses. 134 configurations / 67 sources
+remain selected failures pending standards, extension or library-interface review.
+Clang frozen cohort: 815/815. No manifest, expectation or grading changes.
+
+Grouped fixes cover unknown references/this (P2280), constexpr casts and object
+storage, initializer_list backing storage, fixed class-valued constants,
+explicit-prefix zipped deduction, parameter-scope lookup, nontrailing packs,
+reference NTTP identity, fixed decltype access/SFINAE, C linkage identity,
+implicit-object cv, decltype mem-initializers, trailing declarators, enum range
+ADL, nested noexcept validation and concatenated literal-operator tokens.
+
+98 new required fixtures plus one existing SFINAE guard: 396/396 focused
+candidate configurations. Actual accepted parent passes 252/396. Native GCC
+passes380/396; Clang348/396: each difference retained with primary-source
+adjudication, never treated as vendor-unanimous proof. All99 source copies,
+commands, output and object/runtime observations are retained.
+
+The unaccepted no-linkage definition scan was removed in full: adopted CWG2059
+removes the diagnostic obligation. Four new mandatory-negative fixtures were
+retired. The old GCC linkage2/pr61924 expectations remain raw selected failures,
+not counted as compiler defects or passes. Valid positive late-definition,
+typedef, member and pure-virtual guards remain. A legacy alias fixture's missing
+operator= body was supplied and validated by three compile/link/run oracles.
+
+Normal checks: all26 stages pass; strict9763/9763, affected assignments,
+modern, debug information, selfhost throughPA5, inception, architecture,
+placement, file/format/document audits, harness, quick and smoke. Export checks
+319 accumulated required controls/companions,42 wrappers,131 offline catalog
+files (111 full issues,18 full papers,index/manifest) and changed fixture bytes.
+
+Normal actual accepted59->f107 retired-instruction mean-three ratios:
+O0 1.000817, O3 1.000358; exact frozen object equality, original0.5% budgets.
+No new calibration or runtime/codegen benchmark campaign. Paired whole-suite
+GCC times26.876630/65.013314s, ratio0.413402 remains NON-COMPARABLE because
+134 cases fail. Clang times3.645610/26.546802s, ratio0.137. Exact observations
+are in acceptance-v1.json; these times are CI observations, not a new gate.
+
+Further bounded review found genuine active friend-pack and dependent exception
+comparison gaps plus the C++11 decltype(auto) mode boundary. These are grouped
+in batch6 rather than waived by unused-template or vendor-baseline arguments.
+The goal remains active through those fixes, final declared coverage, two CI
+jobs with matching native times, offline decisions and final PA35 release.

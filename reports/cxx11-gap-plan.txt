@@ -569,3 +569,21 @@ All explicitly supported CWG decisions have readable offline texts and necessary
 adopted wording in doc/cwg/, exported for students with coverage/provenance checks.
 Publish the supported coverage and limitations without claiming unavailable
 interfaces or unexecuted tests passed. Keep historical observations intact.
+
+2026-11-08: grouped GCC repair batch 5 accepted
+
+See reports/cxx11-gcc-batch5.txt and cxx11-gcc-remaining-after-batch5.json.
+Frozen GCC3958/4092 (96.73%), +52 configurations /26 sources, no prior losses;
+Clang815/815. Normal9763 strict tests,26 stages,396 focused candidate cells,
+319 accumulated export controls,131 offline decision catalog files. Actual
+accepted-parent instruction ratios1.000817/O0 and1.000358/O3, exact objects.
+CWG2059 obsolete diagnostic scan removed; raw two-source failures preserved.
+
+Next grouped block: active unexpanded friend declaration packs, ordinary class
+template member noexcept expression equivalence, fixed true function-template
+noexcept compatibility, and C++11 decltype(auto) mode rejection. Then finish
+source-pinned standards/extension/library-interface dispositions with active
+required neighbors; retain raw historical cohort and report exclusions honestly.
+Complete final CI reproducibility/reporting fixes, both matched passing suite
+runs/times, the final PA35 ref-test and export checks, and requirement audit.
+No diagnostic-text parity or public runtime/codegen regression campaign.
