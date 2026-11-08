@@ -21,6 +21,10 @@ struct FunctionTemplateFacts
 	TemplateHead* head;
 	const Type* const* arguments;
 	FunctionEntity* pattern;
+	// A redeclaration's definition can retain substitution obligations
+	// erased from the first declaration's canonical signature (CWG 1558).
+	// A specialization records the definition type it already checked.
+	const Type* definition_type;
 	// The depth of the instantiation that made the function (its
 	// definition's instantiation runs one deeper).
 	uint32_t depth;

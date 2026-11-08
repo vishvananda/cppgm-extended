@@ -1527,6 +1527,10 @@ int Analyzer::reference_ordering(
 	{
 		const Type* p = ordering_parameter(first, i, a_inserted)->canonical;
 		const Type* q = ordering_parameter(second, i, b_inserted)->canonical;
+		if (p->kind == TypeKind::Expansion)
+			p = p->element->canonical;
+		if (q->kind == TypeKind::Expansion)
+			q = q->element->canonical;
 		if (!p->is_reference() || !q->is_reference())
 			continue;
 		int step = 0;
@@ -1598,9 +1602,10 @@ FunctionEntity* Analyzer::specialize(FunctionEntity* primary, const TypeList& gi
 	// Its function type in lexical order (14.8.2p7).
 	const Substitution substitution = substitution_of(HeadOf(primary), arguments.data());
 	specializing_.push_back(ActiveSpecialization{ probe, classes });
-	const Type* type = primary->type->kind == TypeKind::Function
-		? substitute_function(primary->type, substitution, !primary->templ->trailing_result)
-		: substitute(primary->type, substitution);
+	const Type* pattern = primary->templ->definition_type != nullptr ? primary->templ->definition_type : primary->type;
+	const Type* type = pattern->kind == TypeKind::Function
+		? substitute_function(pattern, substitution, !primary->templ->trailing_result)
+		: substitute(pattern, substitution);
 	specializing_.pop_back();
 	if (type == nullptr || type->kind != TypeKind::Function)
 		return nullptr;
@@ -1669,6 +1674,7 @@ FunctionEntity* Analyzer::specialize(FunctionEntity* primary, const TypeList& gi
 	function->primary = primary;
 	function->instantiated = true;
 	function_template_facts(function)->arguments = arena_.copy_array(arguments.data(), arguments.size());
+	function->templ->definition_type = primary->templ->definition_type;
 	SpecializationKey key = probe;
 	key.arguments = ArgumentsOf(function);
 	specializations_.insert(key, function);

@@ -246,7 +246,7 @@ void SyntaxCloner::shadow_template_packs(const TemplateParameterList* list)
 	for (uint32_t i = 0; expander_ != nullptr && list != nullptr && i < list->parameters.size; ++i)
 	{
 		const TemplateParameter* parameter = list->parameters[i];
-		if (!parameter->pack)
+		if (!IsParameterPack(*parameter))
 			continue;
 		if (parameter->kind == TemplateParameterKind::NonType)
 			shadow(parameter->declarator, -2);

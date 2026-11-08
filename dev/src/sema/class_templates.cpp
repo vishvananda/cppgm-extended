@@ -718,7 +718,9 @@ const Type* Analyzer::argument_target(const TemplateHead* head, uint32_t index, 
 			return nullptr;
 	}
 	type = substitute(type, Substitution{ parameter->depth, earlier, index });
-	return type;
+	// 14.1p8 also adjusts a type that becomes a function or array only
+	// after substituting an earlier parameter.
+	return type != nullptr ? types_.adjusted_parameter(type) : nullptr;
 }
 
 bool Analyzer::value_argument(const Type* argument)
@@ -884,7 +886,7 @@ const Type* Analyzer::converted_value(const TemplateParameterEntity* parameter, 
 		if (dependent_type(target))
 			return argument;
 	}
-	target = target->unqualified;
+	target = types_.adjusted_parameter(target);
 	// An object designated before its parameter was known (see
 	// template_value), for an integral or enumeration parameter: its value
 	// when it is usable in constant expressions (5.19p2-p3).
@@ -3058,6 +3060,18 @@ bool Analyzer::instantiate_definition(const FunctionEntity* entity)
 	if (definition == nullptr || !definition->defined || definition->body == nullptr ||
 		(definition->scope == nullptr && !copied))
 		return false;
+	// A call can form a specialization before its template's later
+	// definition supplies an erased alias constraint. Check that retained
+	// signature once when the definition is actually needed.
+	if (definition == function->primary && definition->templ->definition_type != nullptr &&
+		function->templ->definition_type != definition->templ->definition_type)
+	{
+		const Type* type = substitute_function(definition->templ->definition_type,
+			substitution_of(HeadOf(definition), ArgumentsOf(function)), !definition->templ->trailing_result);
+		if (type == nullptr)
+			return false;
+		function->templ->definition_type = definition->templ->definition_type;
+	}
 	function->instantiation = FactState::InProgress;
 	Scope* parent = nullptr;
 	if (own_copy)

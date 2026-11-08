@@ -2173,6 +2173,8 @@ void Analyzer::redeclare_function(FunctionEntity* function, const Specifiers& sp
 	}
 	if (info.asm_label != nullptr && graph_.asm_label(function) == nullptr)
 		graph_.set_asm_label(function, info.asm_label);
+	if (definition && function->templated && info.type != function->type)
+		function_template_facts(function)->definition_type = info.type;
 }
 
 FunctionEntity* Analyzer::new_function(const Specifiers& specifiers, const DeclaratorInfo& info,

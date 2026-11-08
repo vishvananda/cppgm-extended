@@ -582,6 +582,24 @@
       "adopted_papers": []
     },
     {
+      "issue": 1495,
+      "title": "Partial specialization of variadic class template",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1495.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1495.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1495.html",
+      "source_html_sha256": "9807eb614c4856ce4e90179d9233a912d1472ac6cf4b17fbdcf97bf368eb9cc4",
+      "text_sha256": "85c659b276ec9f4b50f3fad3ceadec1bda4c55890a963010a7299d69125824e6",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08"
+    },
+    {
       "issue": 1512,
       "title": "Pointer comparison vs qualification conversions",
       "status": "CD3",

@@ -647,7 +647,7 @@ TemplateParameter* Parser::parse_template_parameter()
 	const Name* name = declarator_name(parameter->declarator);
 	if (name != nullptr && !name->qualified() && name->last().kind == NameComponentKind::Identifier)
 		scopes_.declare(scopes_.current(), name->last().identifier,
-			NameBinding{ NameCategory::Value, parameter->pack, nullptr, true });
+			NameBinding{ NameCategory::Value, IsParameterPack(*parameter), nullptr, true });
 	return parameter;
 }
 

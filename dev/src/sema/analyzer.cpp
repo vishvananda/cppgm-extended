@@ -1052,9 +1052,7 @@ bool Analyzer::TemplateParameterPack(const syntax::TemplateParameter& parameter)
 {
 	// A template parameter pack: `...` after the decl-specifiers, or (a
 	// non-type parameter's `T&... r`) in its declarator.
-	return parameter.pack ||
-		(parameter.kind == syntax::TemplateParameterKind::NonType && parameter.declarator != nullptr &&
-			parameter.declarator->pack != syntax::PackPosition::None);
+	return syntax::IsParameterPack(parameter);
 }
 
 const Type* Analyzer::non_type_parameter_type(const syntax::TemplateParameter& parameter, Scope* scope)

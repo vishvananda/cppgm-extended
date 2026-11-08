@@ -108,6 +108,8 @@ CWG 1473 | CD3 | cwg-1473.txt
   Syntax of literal-operator-id
 CWG 1490 | CD4 | cwg-1490.txt
   List-initialization from a string literal
+CWG 1495 | CD3 | cwg-1495.txt
+  Partial specialization of variadic class template
 CWG 1512 | CD3 | cwg-1512.txt
   Pointer comparison vs qualification conversions
 CWG 1550 | CD3 | cwg-1550.txt

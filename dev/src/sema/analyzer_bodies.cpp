@@ -1528,6 +1528,11 @@ void Analyzer::expression(const syntax::Expr* expr, Scope* scope)
 		check_temporary_destruction(facts, expr->location);
 		return;
 	}
+	// An instantiation's cloner can replace a singleton pack by one
+	// element. Validate the complete expression before that replacement
+	// so a missing expansion cannot become an ordinary call (14.5.3p5).
+	if (template_depth_ != 0 && semantic() && expression_packs(*expr, scope) != nullptr)
+		error(expr->location, "an expression names an unexpanded parameter pack");
 	expression_walk(expr, scope);
 }
 

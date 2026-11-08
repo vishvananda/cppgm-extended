@@ -1456,15 +1456,25 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 	}
 	if (type->unqualified == types_.fundamental(FundamentalType::StorageHalf))
 		substitution_error(location, "function return type cannot be __fp16; use a pointer or reference");
+	bool bound_packs = false;
 	for (size_t i = base; i < parameter_scratch_.size(); ++i)
+	{
+		bound_packs = bound_packs || parameter_scratch_[i]->kind == TypeKind::Pack;
 		if (parameter_scratch_[i]->unqualified == types_.fundamental(FundamentalType::StorageHalf))
 			substitution_error(location, "function parameter cannot be __fp16; use a pointer or reference");
+	}
 	const Type* exception = cxx17_ && HasExceptionSpecification(&suffix) ? &suffix == placeholder_suffix_
 			? NonThrowingSpecification(&suffix) ? types_.value(types_.fundamental(FundamentalType::Bool), 1) : nullptr
 			: function_exception_type(suffix, scope, parameter_scratch_.data() + base, count)
 																		 : nullptr;
-	const Type* result = types_.function(
-		type, parameter_scratch_.data() + base, count, clause.ellipsis, cv, ref, exception);
+	// A shared member-template head can name a pack already bound by
+	// its enclosing class. Its expansion supplies parameters, not one
+	// parameter whose type is an argument pack (14.5.3p4).
+	TypeList expanded;
+	if (bound_packs)
+		flattened_arguments(parameter_scratch_.data() + base, count, expanded);
+	const Type* result = types_.function(type, bound_packs ? expanded.data() : parameter_scratch_.data() + base,
+		bound_packs ? static_cast<uint32_t>(expanded.size()) : count, clause.ellipsis, cv, ref, exception);
 	parameter_scratch_.resize(base);
 	return result;
 }

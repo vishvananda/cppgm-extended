@@ -271,7 +271,19 @@ bool Analyzer::template_heads_match(const TemplateHead* parameter, const Templat
 		if (next == parameter->count)
 			return false;
 		const TemplateParameterEntity* p = parameter->parameters[next];
-		if (!template_parameters_match(p, a) || (a->pack && !p->pack))
+		bool matching = template_parameters_match(p, a);
+		if (!matching && p->non_type && a->non_type && !p->template_template && !a->template_template)
+		{
+			// 14.3.3p3: corresponding parameters of the two lists denote
+			// each other even under a pointer or reference in an NTTP type.
+			TypeList corresponding;
+			for (uint32_t j = 0; j < argument->count; ++j)
+				corresponding.push_back(argument->parameters[j]->canonical->type);
+			const Type* rebound = substitute(p->value_type,
+				Substitution{ p->depth, corresponding.data(), static_cast<uint32_t>(corresponding.size()) });
+			matching = rebound != nullptr && rebound->canonical == a->value_type->canonical;
+		}
+		if (!matching || (a->pack && !p->pack))
 			return false;
 		if (!p->pack)
 			++next;
@@ -677,7 +689,18 @@ bool Analyzer::deduce_stand_in(const ClassTemplateFacts* pattern, const Type* a,
 	if (!deduce_type(pattern->pattern->templ->template_name->type, templ, depth, arguments, false))
 		return false;
 	TypeList given;
-	flattened_arguments(actual->arguments, actual->argument_count, given);
+	uint32_t count = actual->argument_count;
+	if (!IsStandIn(actual->pattern) && count > pattern->argument_count &&
+		(pattern->argument_count == 0 || pattern->arguments[pattern->argument_count - 1]->kind != TypeKind::Expansion))
+	{
+		// Once TT deduces the actual template, TT<V> supplies that
+		// template's omitted defaults. Extra actual arguments match only
+		// when they equal those defaults, not arbitrary trailing types.
+		const uint32_t required = qualifier_arguments(actual->pattern->templ->head, actual->arguments, count);
+		if (required <= pattern->argument_count)
+			count = pattern->argument_count;
+	}
+	flattened_arguments(actual->arguments, count, given);
 	// 14.8.2.5p17 as GCC applies it: an integral value the specialization
 	// holds for a non-type parameter of the template template-parameter's
 	// own list is of that parameter's type (a list that matched only as

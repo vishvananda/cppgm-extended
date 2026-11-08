@@ -1,0 +1,88 @@
+CWG 1495: Partial specialization of variadic class template
+Source: https://cplusplus.github.io/CWG/issues/1495.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1495. Partial specialization of variadic class template
+Section: 13.7.6 [temp.spec.partial [1]] Status: CD3 Submitter: Jason Merrill Date:
+2012-04-16
+
+[Moved to DR at the April, 2013 meeting.]
+
+Consider an example like
+
+
+  template <int B, typename Type1, typename... Types>
+  struct A;
+
+  template<typename... Types>
+  struct A<0, Types...> { };
+
+  A<0,int,int> t;
+
+
+In this case, the partial specialization seems well-formed by the rules in 13.7.6
+[temp.spec.partial [1]], but it is not more specialized than the primary template.
+However, 13.7.6.2 [temp.spec.partial.match [2]] says that if exactly one matching
+specialization is found, it is used, which suggests that the testcase is well-formed.
+That seems undesirable; I think a partial specialization that is not more specialized
+than the primary template should be ill-formed.
+
+If the example is rewritten so that both versions are partial specializations, i.e.,
+
+
+  template <int B, typename... Types>
+  struct A;
+
+  template <int B, typename Type1, typename... Types>
+  struct A<B, Type1, Types...> { }
+
+  template<typename... Types>
+  struct A<0, Types...> { };
+
+  A<0,int,int> t;
+
+
+There is implementation variance, with gcc and clang reporting an ambiguity and EDG
+choosing the second specialization.
+
+Proposed resolution (October, 2012):
+
+Add the following as a new bullet in 13.7.6.1 [temp.spec.partial.general [3]] paragraph
+9:
+
+-
+
+...
+
+-
+
+The argument list of the specialization shall not be identical to the implicit argument
+list of the primary template.
+
+-
+
+[INSERT: The specialization shall be more specialized than the primary template
+(13.7.6.3 [temp.spec.partial.order [4]]).]
+
+-
+
+...
+
+Source links:
+[1] https://wg21.link/temp.spec.partial
+[2] https://wg21.link/temp.spec.partial.match
+[3] https://wg21.link/temp.spec.partial.general#9
+[4] https://wg21.link/temp.spec.partial.order

@@ -1149,6 +1149,11 @@ const Type* Analyzer::decltype_type(const syntax::Expr& operand, Scope* scope)
 			break;
 		case BindingKind::Parameter:
 			type = binding->type;
+			// A selected element's rebuilt prototype can retain its
+			// parameter-pack expansion wrapper. decltype names that one
+			// parameter's declared type, not the surrounding expansion.
+			if (type->kind == TypeKind::Expansion)
+				type = type->element;
 			break;
 		case BindingKind::Function:
 		{

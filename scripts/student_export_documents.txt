@@ -40,6 +40,7 @@ doc/cwg/cwg-1467.txt
 doc/cwg/cwg-1472.txt
 doc/cwg/cwg-1473.txt
 doc/cwg/cwg-1490.txt
+doc/cwg/cwg-1495.txt
 doc/cwg/cwg-1512.txt
 doc/cwg/cwg-1550.txt
 doc/cwg/cwg-1558.txt

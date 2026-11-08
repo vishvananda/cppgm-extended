@@ -833,6 +833,11 @@ void Analyzer::check_partial_arguments(const TemplateHead* primary, const Templa
 				unexpanded_packs(element, kAnyDepth, packs);
 			else if (i + 1 != count || j + 1 != elements)
 				error(location, "a pack expansion other than a partial specialization's last argument");
+			else if (i < primary->trailing_pack)
+				// CWG 1495: an expansion that consumes a fixed primary
+				// parameter cannot deduce that required parameter from the
+				// transformed partial's possibly empty expansion.
+				error(location, "a partial specialization that is not more specialized than its primary");
 			if (!packs.empty())
 				error(location, "a partial specialization's argument names an unexpanded parameter pack");
 		}

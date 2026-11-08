@@ -299,4 +299,16 @@ struct TemplateParameterList
 	uint32_t location;
 };
 
+inline bool IsParameterPack(const TemplateParameter& parameter)
+{
+	if (parameter.pack)
+		return true;
+	for (const Declarator* declarator = parameter.kind == TemplateParameterKind::NonType ? parameter.declarator
+																						 : nullptr;
+		declarator != nullptr; declarator = declarator->nested)
+		if (declarator->pack != PackPosition::None)
+			return true;
+	return false;
+}
+
 } // namespace syntax
