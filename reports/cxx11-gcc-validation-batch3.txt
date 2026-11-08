@@ -1,0 +1,97 @@
+GCC C++11 validation batch 3
+2026-11-08 | repair/cxx11-gcc-validation-batch3
+
+Validated source: 2fcb4aace3c5cbe45494670b1c6ecda467a28678
+Compiler SHA256: 9c64578ebcb7faca01e221668971c4ffd1ec0d2fdf611f01f9d53aca7e90ba3d
+
+GCC advances from 3822/4092 to 3858/4092 (94.28%). All 18 declaration-group
+sources pass newly in both dialects: 36 configurations, with no lost passes.
+Clang remains 815/815. Manifests, expectations and suite runners are unchanged.
+Remaining: 234 GCC configurations from 117 sources; 50 likely language-repair
+sources, 3 conditional leads and 64 standards/course/extension/adapter reviews.
+These are source counts, not independent defect counts.
+
+Grouped repairs
+
+- Standard attribute grammar preserves the boundary after a type, including
+  ignored/empty standard attributes. Attribute-only class members reject;
+  permitted namespace/block declarations remain valid. Duplicate function
+  ref-qualifiers, UDL linkage strings and unqualified typename decltype reject.
+- Conditions and range declarations permit their specified type/constexpr
+  specifiers and reject storage/function specifiers or inline type definitions.
+- Enum redeclarations retain access, including out-of-class enumerators;
+  qualified definitions require an enclosing namespace. Enums cannot be templates.
+- Extra template heads reject at class/alias declarations. Qualified deleted
+  friend definitions and default template arguments on nondefining friends reject.
+- Explicitly defaulted special functions cannot be variadic.
+
+Regressions and validation
+
+35 required fixtures in PA5:200, PA6:100/300, PA10:100, PA11:100, PA12:100,
+PA16:100, PA17:100/300 and PA20:100 pair invalid cases with valid neighbors.
+The actual 6f parent misses 22 negative witnesses; 13 accepted neighbors guard
+permitted behavior. cppgm, GCC and Clang each pass all 140 final-path cells
+(two dialects at O0/O2), including links and execution for accepted controls.
+Fourteen early AST/type references were generated through normal ref-test.
+A placement-audit unit regression distinguishes forbidden static condition
+specifiers from local-static lowering and preserves real static/init statements.
+
+All 9599 strict tests and all 20 normal validation stages pass: affected suites,
+debug info, modern C++, self-host through PA5, inception, all architecture,
+format/file/placement and document audits, harness, and PA35 quick/smoke.
+The student export passes 42 wrapper checks and 154 accumulated required
+controls; all 107 offline CWG catalog files retain exact source hashes.
+No additional CWG decision was needed for these original C++11 rules.
+
+Performance
+
+Actual accepted 6f parent -> 9c candidate, unchanged frozen inputs, measure.pl,
+default repetitions and 1.005 instruction budget: O0=1.000236, O3=1.000091.
+Both levels produce identical objects. All original raw observations are kept
+under perf-raw-v1 with a hashed manifest. Normal quick/self-compile ratios are
+O0=0.997049, O3=1.028821; behavior failures=0, all kernel gates pass unchanged.
+
+Upstream suite timing
+
+GCC: cppgm 26.839s, upstream 66.937s.
+Clang: cppgm 3.966s, upstream 26.787s.
+The job receipts contain the ratios. GCC's timing is non-comparable while any
+selected candidate case fails. Clang passes the same 815 tests with both tools.
+Elapsed times include the declared language/link/runtime checks under current
+load; they are not cross-run speedup claims.
+
+Newly passing GCC sources
+
+  constexpr-condition.C
+  defaulted8.C
+  deleted13.C
+  enum2.C
+  enum32.C
+  enum33.C
+  forw_enum12.C
+  forw_enum15.C
+  gen-attrs-39-1.C
+  gen-attrs-74.C
+  gen-attrs-84.C
+  pr71251.C
+  pr71832.C
+  range-for31.C
+  ref-qual-multi-neg.C
+  temp_default4.C
+  udlit-linkage-neg.C
+  variadic176.C
+
+Remaining groups (sources/configurations)
+
+  T: 16/32  Templates: validation, substitution, deduction and identity
+  D: 0/0  Declaration grammar and class invariants
+  I: 13/26  Initialization, reference binding, overload ranking and lifetime
+  C: 11/22  Constant evaluation, object facts and cast validation
+  E: 8/16  Implicit object, exception specifications and TU linkage
+  P: 5/10  Declarators, parser disambiguation and literal operator IDs
+  R: 45/90  Standards, source expectations and IFNDR adjudication
+  X: 19/38  Course, language-mode, vendor-extension and adapter policy
+
+Next integrated block: template substitution/deduction/identity and
+initialization/reference/lifetime repairs, with one combined normal gate.
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/batches/gcc-03/acceptance-v1.json
