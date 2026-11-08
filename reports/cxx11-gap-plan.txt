@@ -1,3 +1,7 @@
+Current status: COMPLETE for the declared correctness profiles.
+See reports/cxx11-completion.txt for final counts, coverage limits, timings and
+validation. Earlier observations and next-step sections below are historical.
+
 C++11 correctness CI and compiler repair plan
 2026-11-08 | investigate/upstream-cxx11
 Worktree: /mnt/vizier/cppgm-upstream-cxx11
@@ -587,3 +591,78 @@ required neighbors; retain raw historical cohort and report exclusions honestly.
 Complete final CI reproducibility/reporting fixes, both matched passing suite
 runs/times, the final PA35 ref-test and export checks, and requirement audit.
 No diagnostic-text parity or public runtime/codegen regression campaign.
+
+Final grouped block and CI completion
+
+C++11 correctness: final grouped repair and CI completion
+
+Validated compiler 4f8c245970010748ff03f0ad841994ae7ad3d60b98a75020565470eaad6cbdf3.
+GCC declared profile: 3968/3968 (100%).
+Clang declared profile: 815/815 (100%).
+Confirmed compiler gaps within the declared profiles: zero.
+
+The immutable historical GCC cohort is 3964/4092 (96.87%), improving by six
+configurations across three sources over accepted batch 5, with zero prior pass
+losses. Its remaining 128 configurations /64 sources are preserved raw outcomes,
+not counted as passes or silently removed. The final independently reviewed
+profile excludes 62 exact sources /124 configurations for documented standards,
+vendor-extension, epoch and library-interface limitations; applies a standard
+#line projection to one source identically for both compilers; and requires
+ordinary diagnostics for two previously misgraded sources. All source hashes,
+full explanations and primary bases are in cxx11-language-dispositions.json and
+cxx11-final-source-review.txt. Open/drafting issues remain coverage limitations.
+Eight of these historical source questions remain standards-review limitations;
+they are not claimed resolved. The original Clang 815 configurations are unchanged.
+
+Final grouped fixes cover ordinary member and function-template noexcept
+compatibility, known integral class constants without eager unused-member work,
+actual friend-pack constraints, C++11 decltype(auto) rejection and outer/inner
+TT-pack head matching. Required fixtures live in the earliest owning PA6, PA14,
+PA16, PA17 and PA18 lanes. Vendor differences on adopted inner-pack head constraints
+are explicitly adjudicated and retained, rather than weakening the oracle.
+58 new required fixtures produce 232 focused configurations per compiler.
+The accepted parent passes 124/232; the final compiler passes 232/232.
+GCC passes 220/232 and Clang 224/232, with exact native lag cases adjudicated.
+Export validation covers 377 accumulated required controls and their companions.
+
+Normal validation: 9821/9821 strict tests; all 20 stages
+pass, including affected assignments, debug information, selfhost through PA5,
+inception, architecture/format/file/placement/doc audits, harness, quick, smoke
+and final PA35 ref-test. Student export validates 42 reference wrappers,
+150 offline catalog files (130 full issue texts, 18 papers,
+index/manifest), required control execution and exact shipped fixture bytes.
+
+Actual accepted-parent f107 -> final normal mean-three retired-instruction ratios:
+O0 0.999338; O3 0.999669. Frozen output objects are byte-identical;
+original 0.5% regression budgets pass. Normal quick ratios:
+O0 0.999163; O3 1.029496, zero behavior
+failures and all kernels within their unchanged budgets. Every observation is
+retained. No public runtime/codegen benchmark investigation was performed here.
+
+Matched whole-suite timing observations (cppgm / upstream, lower is faster):
+GCC: 26.231834s / 65.238389s;
+ratio 0.402092.
+Clang: 3.567726s / 24.877309s;
+ratio 0.143413.
+Both roles passed identical selected work; setup/builds/staging excluded,
+required compile/link/runtime and result checks included. Two workers and fresh
+outputs per role, cppgm first, OS caches unchanged. These are CI observations,
+not a statistical wall-time performance gate.
+
+The workflow creates two independently reported GCC/Clang jobs with pinned
+corpora, signed package snapshot, compiler versions, container/action digests,
+native Clang applicability qualification, matched suite timing, counts and raw
+artifacts even on failure. Local paired runs, runner/builder tests, workflow shell
+syntax, source projection and actual-base-package snapshot closure pass.
+No GitHub-hosted workflow execution is claimed: this change has not been pushed.
+
+Coverage is acceptance/required-diagnostic/static-assertion plus 162 GCC runtime
+configurations. Clang 815 are compile-only language checks; IR/FileCheck/AST/ABI
+parity, all upstream tests, all GNU extensions and a proof of every C++11 program
+are outside this profile. Negative cases require an ordinary diagnostic, never
+matching diagnostic text/severity/count; crashes/ICE/timeouts never pass.
+
+Full evidence: /mnt/vizier/cppgm-cxx11-upstream/batches/gcc-06/acceptance-v2.json
+with immutable binary/source manifests, commands, raw streams, focused controls,
+whole-suite results, instruction measurements, quick artifacts, export and
+release checks. Superseded failed prototypes remain separately recorded.
