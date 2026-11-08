@@ -517,6 +517,193 @@ void Analyzer::check_fixed_template_noexcept(size_t index)
 	names_.set_limit(limit);
 }
 
+void Analyzer::defer_contextual_exception_comparison(
+	const FunctionEntity* function, const DeclaratorInfo& info, Scope* scope, uint32_t location)
+{
+	uint32_t index = contextual_exception_index_.find(function);
+	if (index == PointerMap::kMissing)
+	{
+		index = static_cast<uint32_t>(contextual_exception_comparisons_.size());
+		contextual_exception_index_.set(function, index);
+		contextual_exception_comparisons_.emplace_back();
+	}
+	contextual_exception_comparisons_[index].push_back(PendingExceptionComparison{
+		function, info.function_suffix, info.parameters, scope, location, definition_point(), lexical_limit_ });
+}
+
+void Analyzer::check_contextual_exception_comparisons(FunctionEntity* function)
+{
+	// The specification of an actual member also needs any pattern
+	// comparison that waited for its specialization's friendship (CWG1273).
+	// Keep the first declaration's lazy value; replay the other declarations.
+	SmallList<uint32_t, 4> groups;
+	uint32_t count = 0;
+	for (const FunctionEntity* pattern = PatternOf(function); pattern != nullptr; pattern = PatternOf(pattern))
+	{
+		const uint32_t index = contextual_exception_index_.find(pattern);
+		if (index != PointerMap::kMissing)
+		{
+			groups.push_back(index);
+			count += static_cast<uint32_t>(contextual_exception_comparisons_[index].size());
+		}
+	}
+	if (count == 0 || checked_contextual_exceptions_.find(function) == count)
+		return;
+	// Evaluation may recursively ask for this specification or instantiate
+	// another class and append records. Memoize first and copy each entry.
+	checked_contextual_exceptions_.set(function, count);
+	for (uint32_t group : groups)
+	{
+		for (size_t i = 0; i < contextual_exception_comparisons_[group].size(); ++i)
+		{
+			const PendingExceptionComparison pending = contextual_exception_comparisons_[group][i];
+			Scope* scope = function->owner;
+			Scope* header = pending.scope;
+			while (header != nullptr && header->kind != ScopeKind::TemplateParameters)
+				header = header->parent;
+			if (header != nullptr)
+				scope = outside_frames(
+					header, nullptr, 0, static_cast<const ClassEntity*>(function->owner->entity), scope, pending.scope);
+			FrameExpander expander(*this, scope);
+			syntax::SyntaxCloner cloner(arena_, true, expander.get());
+			syntax::DeclaratorSuffix* suffix = arena_.copy_array(pending.suffix, 1);
+			suffix->qualifiers.data = arena_.copy_array(suffix->qualifiers.data, suffix->qualifiers.size);
+			for (syntax::FunctionQualifier& qualifier : suffix->qualifiers)
+				if (qualifier.kind == syntax::FunctionQualifierKind::Noexcept && qualifier.noexcept_operand != nullptr)
+					qualifier.noexcept_operand = cloner.expr(qualifier.noexcept_operand);
+			DeclaratorInfo info = {};
+			info.function_suffix = suffix;
+			info.parameters = cloner.parameter_clause(pending.parameters);
+			const uint32_t depth = template_depth_;
+			const uint32_t limit = names_.limit();
+			const bool lexical = lexical_limit_;
+			template_depth_ = 0;
+			names_.set_limit(pending.ordinal);
+			lexical_limit_ = pending.lexical;
+			check_redeclared_exceptions(function, info, scope, pending.location);
+			lexical_limit_ = lexical;
+			names_.set_limit(limit);
+			template_depth_ = depth;
+		}
+	}
+}
+
+bool Analyzer::fixed_noexcept_constant(const Binding* binding, bool* contextual_access)
+{
+	VariableEntity* variable = static_cast<VariableEntity*>(binding->entity);
+	if (variable->constant == ConstantState::Value && !variable->constant_deferred && !dependent_type(variable->type) &&
+		IsIntegralOrUnscopedEnum(variable->type))
+		return true;
+	const syntax::Initializer* initializer = variable->member_initializer;
+	const syntax::Expr* value = initializer != nullptr ? initializer->expression : nullptr;
+	if (initializer != nullptr && initializer->kind == syntax::InitializerKind::Parenthesized)
+		value = initializer->arguments.size == 1 ? initializer->arguments[0] : nullptr;
+	if (variable->constant == ConstantState::Evaluating || !variable->is_static || !templated_class(variable->owner) ||
+		dependent_type(variable->type) || !IsIntegralOrUnscopedEnum(variable->type) ||
+		(variable->type->cv & (kConst | kVolatile)) != kConst || value == nullptr)
+		return false;
+	// Demand only this initializer, in its declaration's namespace context.
+	// Structural value dependence includes fixed class-constant chains; prove
+	// their initializers recursively instead of treating that mark as a value.
+	const ConstantState state = variable->constant;
+	const uint32_t limit = names_.limit();
+	const bool lexical = lexical_limit_;
+	const bool precise = precise_dependence_;
+	names_.set_limit(binding->ordinal);
+	lexical_limit_ = true;
+	precise_dependence_ = true;
+	variable->constant = ConstantState::Evaluating;
+	const bool fixed = fixed_noexcept_operand(*value, variable->owner, contextual_access);
+	variable->constant = state;
+	precise_dependence_ = precise;
+	if (fixed && !failed())
+	{
+		const uint32_t depth = template_depth_;
+		template_depth_ = 0;
+		initialize_variable(variable, variable->type, initializer, variable->owner, initializer->location);
+		if (fixed_access_probe_ == nullptr || !*fixed_access_probe_)
+			record_constant_initializer(variable, initializer, variable->owner);
+		template_depth_ = depth;
+	}
+	lexical_limit_ = lexical;
+	names_.set_limit(limit);
+	return variable->constant == ConstantState::Value && !variable->constant_deferred;
+}
+
+bool Analyzer::fixed_noexcept_operand(const syntax::Expr& operand, Scope* scope, bool* contextual_access)
+{
+	check_stack(operand.location);
+	const QualifiedNameFrame qualified(qualified_names_);
+	bool access = false;
+	bool* saved_probe = fixed_access_probe_;
+	const uint32_t saved_depth = fixed_access_depth_;
+	fixed_access_probe_ = &access;
+	fixed_access_depth_ = instantiation_depth_;
+	const auto classify = [&]() {
+		if (fixed_expression(operand, scope))
+			return true;
+		// Structural keys conservatively retain class members. A demanded
+		// integral constant can still establish nonthrowing compatibility.
+		SmallList<const syntax::Expr*, 16> pending;
+		pending.push_back(&operand);
+		for (uint32_t i = 0; i < pending.size(); ++i)
+		{
+			const syntax::Expr* expr = WithoutParentheses(pending[i]);
+			switch (expr->kind)
+			{
+			case syntax::ExprKind::Literal:
+			case syntax::ExprKind::KeywordLiteral:
+				break;
+			case syntax::ExprKind::Id:
+			{
+				const NamePrefix saved = last_prefix_;
+				const LookupResult found = lookup_name(
+					*static_cast<const syntax::IdExpr*>(expr)->name, scope, LookupFilter::Ordinary);
+				last_prefix_ = saved;
+				if (failed() || access || !found.found() || found.ambiguous || found.binding->entity == nullptr)
+					return false;
+				if (found.binding->kind == BindingKind::Enumerator)
+				{
+					if (static_cast<const EnumeratorEntity*>(found.binding->entity)->value_dependent ||
+						dependent_type(found.binding->type))
+						return false;
+					break;
+				}
+				if (found.binding->kind != BindingKind::Variable || !fixed_noexcept_constant(found.binding, &access))
+					return false;
+				break;
+			}
+			case syntax::ExprKind::Unary:
+				pending.push_back(static_cast<const syntax::UnaryExpr*>(expr)->operand);
+				break;
+			case syntax::ExprKind::Binary:
+				pending.push_back(static_cast<const syntax::BinaryExpr*>(expr)->left);
+				pending.push_back(static_cast<const syntax::BinaryExpr*>(expr)->right);
+				break;
+			case syntax::ExprKind::Conditional:
+			{
+				const syntax::ConditionalExpr* conditional = static_cast<const syntax::ConditionalExpr*>(expr);
+				pending.push_back(conditional->condition);
+				pending.push_back(conditional->then_expr);
+				pending.push_back(conditional->else_expr);
+				break;
+			}
+			default:
+				if (!fixed_expression(*expr, scope))
+					return false;
+				break;
+			}
+		}
+		return true;
+	};
+	const bool fixed = classify();
+	fixed_access_probe_ = saved_probe;
+	fixed_access_depth_ = saved_depth;
+	if (access && contextual_access != nullptr)
+		*contextual_access = true;
+	return fixed && !access;
+}
+
 void Analyzer::check_redeclared_exceptions(
 	const FunctionEntity* function, const DeclaratorInfo& info, Scope* scope, uint32_t location)
 {
@@ -554,8 +741,14 @@ void Analyzer::check_redeclared_exceptions(
 			// has to agree when its operand is already independent of its head.
 			if (info.parameters != nullptr)
 				scope = prototype_scope(*info.parameters, function->type->params, function->type->param_count, scope);
-			if (!fixed_expression(*operand, scope) || failed() ||
-				noexcept_value(function, operand, scope) != function_nothrow(function))
+			bool contextual_access = false;
+			const bool fixed = fixed_noexcept_operand(*operand, scope, &contextual_access);
+			if (contextual_access && !function->templated)
+			{
+				defer_contextual_exception_comparison(function, info, scope, location);
+				return;
+			}
+			if (!fixed || failed() || noexcept_value(function, operand, scope) != function_nothrow(function))
 				error(location, "redeclaration with an incompatible exception-specification");
 			return;
 		}
@@ -569,8 +762,17 @@ void Analyzer::check_redeclared_exceptions(
 		// Known nonthrowing specifications are compatible regardless of form.
 		// Otherwise a dependent specification must have an equivalent pattern,
 		// including on an ordinary member of a class template (15.4p3-p4).
-		const bool first_fixed = fixed_expression(*first.operand, earlier) && !failed();
-		const bool next_fixed = operand == nullptr || (fixed_expression(*operand, scope) && !failed());
+		bool contextual_access = false;
+		const bool first_fixed = fixed_noexcept_operand(*first.operand, earlier, &contextual_access) && !failed();
+		const bool next_fixed = operand == nullptr ||
+			(fixed_noexcept_operand(*operand, scope, &contextual_access) && !failed());
+		// A fixed expression may still require specialization-specific access
+		// (CWG1273). Its concrete redeclaration retains the comparison.
+		if (contextual_access && !function->templated)
+		{
+			defer_contextual_exception_comparison(function, info, scope, location);
+			return;
+		}
 		if (first_fixed && next_fixed)
 		{
 			const bool before = noexcept_value(function, first.operand, earlier);
@@ -701,6 +903,8 @@ bool Analyzer::function_nothrow(const FunctionEntity* entity)
 	// 15.4p12: the noexcept-specification's value, the expression
 	// contextually converted to bool (15.4p1) and evaluated once.
 	FunctionEntity* function = const_cast<FunctionEntity*>(entity);
+	if (!contextual_exception_comparisons_.empty() && PatternOf(function) != nullptr)
+		check_contextual_exception_comparisons(function);
 	if (!function->noexcept_pending || function->templated || TemplatedClassScope(function->owner))
 		return record_function_exception_type(function);
 	function->noexcept_pending = false;

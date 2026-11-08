@@ -1465,6 +1465,11 @@ private:
 	// ---------------------------- exception facts (analyzer_exceptions.cpp)
 	void pending_noexcept(FunctionEntity* function, const syntax::DeclaratorSuffix* suffix,
 		const syntax::ParameterClause* parameters, Scope* scope);
+	void defer_contextual_exception_comparison(
+		const FunctionEntity* function, const DeclaratorInfo& info, Scope* scope, uint32_t location);
+	void check_contextual_exception_comparisons(FunctionEntity* function);
+	bool fixed_noexcept_constant(const Binding* binding, bool* contextual_access);
+	bool fixed_noexcept_operand(const syntax::Expr& operand, Scope* scope, bool* contextual_access = nullptr);
 	bool noexcept_value(const FunctionEntity* function, const syntax::Expr* operand, Scope* scope);
 	const Type* function_exception_type(
 		const syntax::DeclaratorSuffix& suffix, Scope* scope, const Type* const* parameters, uint32_t count);
@@ -2484,6 +2489,11 @@ private:
 	std::vector<PendingMemberInitializer> pending_member_scopes_;
 	std::vector<PendingNoexcept> noexcepts_;
 	std::vector<PendingExceptionComparison> exception_comparisons_;
+	// Pattern comparisons blocked only by specialization-specific access.
+	// Their actual members replay them when the exception specification is needed.
+	PointerMap contextual_exception_index_;
+	std::vector<std::vector<PendingExceptionComparison>> contextual_exception_comparisons_;
+	PointerMap checked_contextual_exceptions_;
 	// Special member functions defaulted and declared constexpr on their
 	// first declaration, checked at the end of the unit (8.4.2p2).
 	struct DefaultedConstexpr

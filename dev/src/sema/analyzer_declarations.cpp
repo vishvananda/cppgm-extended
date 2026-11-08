@@ -1397,6 +1397,10 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 		const uint64_t values = names_.value_parameter_uses();
 		const uint64_t uses = names_.dependent_uses();
 		bool deferred = false;
+		// Retain the parsed in-class initializer for a demanded pattern
+		// constant, without evaluating unused static members.
+		if (template_depth_ != 0 && where->kind == ScopeKind::Class && variable->is_static && !qualified)
+			variable->member_initializer = initializer;
 		if (typed_initialization)
 		{
 			if (where->kind == ScopeKind::Class && !qualified)
