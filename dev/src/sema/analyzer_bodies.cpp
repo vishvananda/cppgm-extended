@@ -385,7 +385,7 @@ bool Analyzer::condition(const syntax::Condition& condition, Scope* scope)
 
 void Analyzer::handlers(const syntax::Slice<syntax::Handler>& list, Scope* scope)
 {
-	if (!exceptions_ && list.size != 0)
+	if (!exceptions_ && body_ != nullptr && !body_->pattern && list.size != 0)
 		error(list[0].body->location, "catch is disabled by -fno-exceptions");
 	// 15.3p5: a `...` handler is its try block's last.
 	bool catch_all = false;
@@ -681,7 +681,7 @@ void Analyzer::scoped_statement(const syntax::Stmt& stmt, Scope* scope, BodyCont
 		return expression(static_cast<const syntax::ValueStmt&>(stmt).value, scope);
 	case syntax::StmtKind::Throw:
 	{
-		if (!exceptions_)
+		if (!exceptions_ && body != nullptr && !body->pattern)
 			error(stmt.location, "throw is disabled by -fno-exceptions");
 		const syntax::Expr* operand = static_cast<const syntax::ValueStmt&>(stmt).value;
 		if (body == nullptr || body->pattern || operand == nullptr)

@@ -1073,8 +1073,8 @@ const Type* Analyzer::non_type_parameter_type(const syntax::TemplateParameter& p
 	bare.pack = syntax::PackPosition::None;
 	const bool saved_auto = auto_declarator_;
 	auto_declarator_ = cxx17_ && holds_auto(specifiers.type);
-	const DeclaratorInfo info = declarator(
-		parameter.declarator != nullptr ? &bare : nullptr, specifiers.type, scope, parameter.location, nullptr, DeclaratorUse::Parameter);
+	const DeclaratorInfo info = declarator(parameter.declarator != nullptr ? &bare : nullptr, specifiers.type, scope,
+		parameter.location, nullptr, DeclaratorUse::Parameter);
 	auto_declarator_ = saved_auto;
 	// 8.3.5p2: a trailing return resolves the leading auto before 14.1p8
 	// adjusts the declared function type. Unresolved placeholders still
