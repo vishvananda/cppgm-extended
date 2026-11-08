@@ -6241,5 +6241,17 @@
     "owning_pa": "PA17 alias template; preservePA9genericpackgrammar",
     "checks": "All4tinyrolescompile/link/run0; ordinarydirectformsJexact; alias-onlycrossClangsymbolmismatchremainsopen. No broadJremoval or outcome-basedmanifestchange.",
     "next": "Requirednormalreducedregression+parentfailure,typedlocalizedfix,normalgate/fullvalidation"
+  },
+  {
+    "id": "CXX11-128",
+    "status": "open",
+    "compiler_language_gap": true,
+    "symptom": "ImplicitthisinmembernoexceptspecificationusesType.cv insteadoffunction_cv,losingconst/volatileandselectingwrongoverloads.",
+    "owning_pa": "PA6:300 ordinarymemberexception-specificationlookup",
+    "regression_worktree": "/mnt/vizier/cppgm-cxx11-noexcept-object-cv",
+    "fixture_revision": "bfc296b2b",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-128",
+    "checks": "8requirednormalgeneralfixtures32configs actualacceptedc5parent16/32,GCC32/32,Clang32/32; const/volatile/CVpositive,actualdeletednegative,nonconst/static/mutable/reference neighbors. NoCPPeditsyet.",
+    "next": "Fixexistingtypedfunction_cvfield;scopedchecks+normalactualc5perf thenrelease127onactual128parent;jointfullnormal/export/paired."
   }
 ]

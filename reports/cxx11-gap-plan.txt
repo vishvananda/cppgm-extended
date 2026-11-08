@@ -544,14 +544,18 @@ goal active. Configuration failures are not deduplicated compiler-bug counts.
 
 Immediate next work
 
-1. Resolve127 scalar-alias variadic-target ABI compatibility with the Clang
+1. Repair128 implicit-object cv qualification in member noexcept specifications.
+   Eight required PA6:300 fixtures prove accepted-parent16/32 vs both upstreams32.
+   Use existing function_cv typed facts, verify owning behavior and the normal
+   actual-parent performance gate; then rebase/release the127 worker on128.
+2. Resolve127 scalar-alias variadic-target ABI compatibility with the Clang
    course oracle, preserving generic Itanium pack grouping for ordinary types.
    The exact source, both vendor names and narrow primary-source review are
    retained under issues/CXX11-124/pack-wrapper-review-v1 in the evidence root.
-2. Continue148 compile-failure/170 missing-diagnostic GCC configurations;
+3. Continue148 compile-failure/170 missing-diagnostic GCC configurations;
    deduplicate demonstrated root causes and use required owning-PA regressions,
    typed implementation fixes and the normal actual-parent performance gate.
-3. Complete declared coverage validation and the final PA35 release check.
+4. Complete declared coverage validation and the final PA35 release check.
 
 Completion
 
