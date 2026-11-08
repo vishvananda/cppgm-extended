@@ -59,6 +59,7 @@ struct Operand
 struct Instruction
 {
 	bool label = false;
+	uint8_t prefix = 0;
 	std::string mnemonic;
 	std::vector<Operand> operands; // destination first in either source dialect
 	uint32_t line = 1;

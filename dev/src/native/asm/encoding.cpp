@@ -1,6 +1,8 @@
 #include "native/asm/encoding.h"
 
 #include "native/asm/forms.h"
+#include "native/asm/integer_forms.h"
+#include "native/asm/operands.h"
 #include "native/backend_error.h"
 
 namespace native {
@@ -12,79 +14,11 @@ using asm_model::RegisterBank;
 using assembly::Operand;
 using assembly::OperandKind;
 
-[[noreturn]] void fail(const assembly::Instruction& inst, const char* why)
-{
-	throw BackendError("assembly line " + std::to_string(inst.line) + ": " + inst.mnemonic + ": " + why);
-}
-
-Reg physical(const asm_model::Register& reg, const assembly::Instruction& inst)
-{
-	if (reg.number >= 16 || (reg.bank != RegisterBank::Gpr && reg.bank != RegisterBank::Vector) ||
-		(reg.bank == RegisterBank::Vector && reg.bits != 128))
-		fail(inst, "register requires an instruction encoding capability not implemented yet");
-	if (reg.offset != 0)
-		return static_cast<Reg>(reg.number + 4); // validated high-byte alias
-	return static_cast<Reg>(reg.number + (reg.bank == RegisterBank::Vector ? 16 : 0));
-}
-
-RM rm(const Operand& op, const assembly::Instruction& inst)
-{
-	if (op.kind == OperandKind::Register)
-		return RM::r(physical(op.reg, inst));
-	if (op.kind != OperandKind::Memory)
-		fail(inst, "expected register or memory operand");
-	const assembly::Address& address = op.address;
-	if (address.symbol.symbol != asm_model::kNoId || address.rip)
-	{
-		if (!address.rip || address.symbol.symbol == asm_model::kNoId || address.has_base || address.has_index)
-			fail(inst, "symbol memory requires an unindexed RIP-relative address");
-		return RM::rip(address.symbol.symbol, address.displacement);
-	}
-	return RM::m(address.has_base ? physical(address.base, inst) : kNoReg, address.displacement,
-		address.has_index ? physical(address.index, inst) : kNoReg, address.scale);
-}
-
-bool rex_required(const Operand& op)
-{
-	if (op.kind == OperandKind::Register)
-		return op.reg.number >= 8 ||
-			(op.reg.bank == RegisterBank::Gpr && op.reg.offset == 0 && op.bits == 8 && op.reg.number >= 4);
-	return op.kind == OperandKind::Memory &&
-		((op.address.has_base && op.address.base.number >= 8) ||
-			(op.address.has_index && op.address.index.number >= 8));
-}
-
-unsigned integer_width(const assembly::Instruction& inst, uint16_t suffix)
-{
-	unsigned bits = suffix;
-	bool high = false, rex = suffix == 64;
-	for (const Operand& operand : inst.operands)
-	{
-		if (operand.kind == OperandKind::Register && operand.reg.bank != RegisterBank::Gpr)
-			fail(inst, "expected general register");
-		if (operand.kind != OperandKind::Immediate && operand.bits != 0)
-		{
-			if (bits != 0 && bits != operand.bits)
-				fail(inst, "operand widths disagree");
-			bits = operand.bits;
-		}
-		high |= operand.kind == OperandKind::Register && operand.reg.offset != 0;
-		rex |= rex_required(operand);
-	}
-	if (bits != 8 && bits != 16 && bits != 32 && bits != 64)
-		fail(inst, "integer operand width is absent or unsupported");
-	if (high && (rex || bits == 64))
-		fail(inst, "high-byte registers cannot be encoded with a REX prefix");
-	return bits;
-}
-
-bool byte_rex(const assembly::Instruction& inst)
-{
-	for (const Operand& operand : inst.operands)
-		if (operand.kind == OperandKind::Register && operand.reg.offset != 0)
-			return false;
-	return true;
-}
+using asm_detail::byte_rex;
+using asm_detail::fail;
+using asm_detail::integer_width;
+using asm_detail::physical;
+using asm_detail::rm;
 
 void integer(Assembler& out, const assembly::Instruction& inst, const Form& form, uint16_t suffix)
 {
@@ -216,7 +150,23 @@ void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 	const Form* form = asm_detail::assembly_form(inst.mnemonic, suffix);
 	if (form == nullptr)
 		fail(inst, "instruction form is not implemented");
-	if (form->encoding == Encoding::Zero)
+	if (form->encoding >= Encoding::Unary && form->encoding != Encoding::String)
+	{
+		encode_integer_form(out, inst, *form, integer_width(inst, suffix, form->encoding == Encoding::Shift ? 1 : 5));
+		return;
+	}
+	if (form->encoding == Encoding::String &&
+		(inst.prefix == 0xf0 ||
+			(inst.prefix == 0xf2 && (form->opcode & 0xfe) != 0xa6 && (form->opcode & 0xfe) != 0xae)))
+		fail(inst, "prefix is invalid for this string instruction");
+	if (inst.prefix != 0 && form->encoding != Encoding::String && !(inst.prefix == 0xf3 && inst.mnemonic == "nop") &&
+		!(inst.prefix == 0xf0 &&
+			(form->encoding == Encoding::Exchange || (form->encoding == Encoding::Alu && form->opcode != 7)) &&
+			!inst.operands.empty() && inst.operands[0].kind == OperandKind::Memory))
+		fail(inst, "prefix is invalid for this instruction form");
+	if (inst.prefix != 0)
+		out.byte(inst.prefix);
+	if (form->encoding == Encoding::Zero || form->encoding == Encoding::String)
 	{
 		if (!inst.operands.empty())
 			fail(inst, "instruction takes no operands");
@@ -246,7 +196,7 @@ void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& i
 		const int condition = asm_detail::branch_condition(inst.mnemonic);
 		if (inst.mnemonic == "jmp" || condition >= 0)
 		{
-			if (inst.operands.size() != 1 || inst.operands[0].kind != OperandKind::Label)
+			if (inst.prefix != 0 || inst.operands.size() != 1 || inst.operands[0].kind != OperandKind::Label)
 				fail(inst, "expected one assembly-local branch target");
 			const uint32_t label = labels[inst.operands[0].label];
 			if (condition < 0)
@@ -256,7 +206,7 @@ void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& i
 		}
 		else if (inst.mnemonic == "call" || inst.mnemonic == "callq")
 		{
-			if (inst.operands.size() != 1 || inst.operands[0].kind != OperandKind::Symbol ||
+			if (inst.prefix != 0 || inst.operands.size() != 1 || inst.operands[0].kind != OperandKind::Symbol ||
 				inst.operands[0].address.relocation != assembly::Relocation::Address)
 				fail(inst, "expected one symbol call target");
 			out.call_symbol(inst.operands[0].address.symbol.symbol);

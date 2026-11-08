@@ -40,7 +40,10 @@ const Form* assembly_form(const std::string& mnemonic, uint16_t& suffix)
 	if (suffix == 0)
 		return nullptr;
 	const Form* form = find(mnemonic.substr(0, mnemonic.size() - 1));
-	return form != nullptr && form->encoding >= E::Move && form->encoding <= E::Alu ? form : nullptr;
+	return form != nullptr && form->encoding >= E::Move &&
+			(form->encoding <= E::Alu || (form->encoding >= E::Unary && form->encoding <= E::Atomic))
+		? form
+		: nullptr;
 }
 
 } // namespace asm_detail

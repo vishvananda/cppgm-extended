@@ -75,6 +75,10 @@ unrequested read of an output-only memory operand.
 
 Support the initial integer/SSE forms described by the supplied encoding facts,
 in Intel and AT&T syntax, including their register widths and addressing forms.
+Include unary arithmetic, shifts/rotates, `test`, multiply forms and
+`xadd`/`cmpxchg`. Validate `lock` against a lockable memory destination and
+repeat prefixes against string instructions. Implicit register operands and
+their clobbers remain the producer's responsibility.
 Support named and numeric local labels, forward/backward numeric references,
 GNU `%=` labels, and direct `jmp`/condition-code branches within one template.
 Keep label identities distinct when optimization clones or inlines a template.
