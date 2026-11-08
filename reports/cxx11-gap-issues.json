@@ -6139,5 +6139,87 @@
     "owning_pa": "PA11:300;PA12:400;PA15:200;PA16:100",
     "fix_revision": "e67399a50",
     "checks": "10controls40/40 vsactualparent4/40; natives40each; actual439->8801.000012/1.000004exactobjects"
+  },
+  {
+    "id": "CXX11-121",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-121",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-121123-acceptance-v2.json",
+    "integrated_candidate_revision": "7dc38e65fabb9ce2eefa45dd991b9bcb71cc1a11",
+    "compiler_sha256": "9db067b285f646c1b4abb183dced784cd865aed158bee0a08d2550d90b3a363a",
+    "compiler_language_gap": true,
+    "owning_pa": "PA15:200;PA17:200/300;PA18:200",
+    "symptom": "Unknown fixed-head alias argument correspondence was rejected; initial repair also exposed transparent ABI and namespace identity bugs.",
+    "fix_revision": "77acad3a5",
+    "checks": "18cases72candidate/40parent/GCC60/Clang32;24ABIcrossstages; actualed504->95c1.000290/1.000079exactnormalobjects; allscoped/jointchecks passed",
+    "offline_decisions": [
+      "doc/cwg/cwg-1558.txt"
+    ],
+    "background": [
+      "doc/cwg/cwg-1286.txt",
+      "doc/cwg/cwg-1430.txt"
+    ]
+  },
+  {
+    "id": "CXX11-122",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-122",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-121123-acceptance-v2.json",
+    "integrated_candidate_revision": "7dc38e65fabb9ce2eefa45dd991b9bcb71cc1a11",
+    "compiler_sha256": "9db067b285f646c1b4abb183dced784cd865aed158bee0a08d2550d90b3a363a",
+    "compiler_language_gap": true,
+    "owning_pa": "PA17:200/300;PA18:300",
+    "symptom": "Parameters syntactically used only inside possibly-empty inner expansions were incorrectly considered retained by alias substitution.",
+    "fix_revision": "ded3999b6",
+    "checks": "8cases32candidate/GCC/Clang vsactualparent20; actuale5df->ed5041.000069/.999995exactobjects"
+  },
+  {
+    "id": "CXX11-123",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-123",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-121123-acceptance-v2.json",
+    "integrated_candidate_revision": "7dc38e65fabb9ce2eefa45dd991b9bcb71cc1a11",
+    "compiler_sha256": "9db067b285f646c1b4abb183dced784cd865aed158bee0a08d2550d90b3a363a",
+    "compiler_language_gap": true,
+    "owning_pa": "PA17:200;PA18:200",
+    "symptom": "Expression pack substitution retained residual Expansion wrappers and confused selected scalar arguments with original positional pack identities.",
+    "fix_revision": "217b72a19",
+    "checks": "8cases32candidate/GCC/Clang vsactual95cparent8;95c->9db.999925/.999931exactobjects; completeoriginalGCCalias-decl-variadic2 repaired"
+  },
+  {
+    "id": "CXX11-126",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-126",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-121123-acceptance-v2.json",
+    "integrated_candidate_revision": "7dc38e65fabb9ce2eefa45dd991b9bcb71cc1a11",
+    "compiler_sha256": "9db067b285f646c1b4abb183dced784cd865aed158bee0a08d2550d90b3a363a",
+    "compiler_language_gap": false,
+    "kind": "Exact-source current-valid and IFNDR expectation review",
+    "decision": "Exactly33/37 validbaseline limitations andvariadic178/vt57626 IFNDR;8configs removedbothroles,notpasses. Bothvalidoriginals+runtimeguards and concretebad/validneighbors retained8requiredcontrols32/32.",
+    "offline_decisions": [
+      "doc/cwg/cwg-2746.txt"
+    ],
+    "checks": "144rawcells verified;24IFNDRungraded;105catalogfiles/42newrequiredfixtures/42wrappers freshstudentexport"
+  },
+  {
+    "id": "CXX11-124",
+    "status": "open",
+    "compiler_language_gap": true,
+    "symptom": "Dependent selected elements lose the original whole pack needed by sizeof... and nested expansions.",
+    "owning_pa": "PA17:200/300;PA18:300;PA9:500 captured ABI expression",
+    "regression_worktree": "/mnt/vizier/cppgm-cxx11-pending-whole-pack-cardinality",
+    "fixture_revision": "0e8e25123",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-124",
+    "checks": "9requiredfixtures108cells actual9dbparent8/36,GCC36/36,Clang36/36. SeparateABIhalf hasrequiredPA9fixtures; implementation in progress, not integrated."
+  },
+  {
+    "id": "CXX11-125",
+    "status": "open",
+    "compiler_language_gap": false,
+    "phase": "primary review complete, normal fixture/selection integration pending",
+    "symptom": "Exactalias-decl-63 acceptance expectation conflicts with adoptedP1787 lookup and unused invalid constructor parameter type.",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-125",
+    "review_receipt": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-125/independent-primary-review-v1.json",
+    "decision": "CurrentadoptedP1787IFNDR; do not resolve historicalN3485type-only ambiguity by silently applying newwording. No125manifestchangeapplied. Native/parent48cell evidence is oldd7f,notfresh9db."
   }
 ]

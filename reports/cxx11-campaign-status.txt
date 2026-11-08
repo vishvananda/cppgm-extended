@@ -1771,3 +1771,88 @@ regressions are in preparation. Exact121 alias-equivalence/fixed-head cases
 intersect unresolved1430/drafting1286 and need separate source review; they
 are not automatically required GCC behavior. Remaining GCC failure triage and
 the final PA35 release check keep the overall goal active.
+
+Accepted alias substitution, ABI identity and source-specific language review
+2026-11-08
+
+Validated source7dc38e65f; compiler code epoch217b72a19, SHA256
+9db067b285f646c1b4abb183dced784cd865aed158bee0a08d2550d90b3a363a.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-121123-acceptance-v2.json
+The origin/main7dbe6549e integration remains included.
+
+122 preserves alias arguments that a possibly empty inner expansion can erase.
+The definition-time typed walk marks controlling packs and retains other
+argument substitution through the existing adopted1558 stand-in. Eight required
+PA17/PA18 controls cover empty/nonempty, outside uses and immediate failures.
+
+121 defers unknown argument correspondence until written expansions are known,
+including residual expansions after fixed slots. It retains the original alias
+for concrete arity/kind checks and projects exact direct class-forwarding
+patterns for transparent ABI/deduction. Pending alias identities keep their real
+namespace. A prototype compiled language tests but had wrong function symbols
+and namespace collisions; required two-TU/global/namespace controls and eight
+mixed/same GCC-cppgm links/runs caught these before acceptance. All raw prototype
+observations remain. No unresolved1286 template-identity proposal or1430 ban was
+implemented; those complete texts are explicitly background references.
+
+123 substitutes residual expansion patterns as selected elements and prevents
+the positional identity shortcut from confusing a scalar element with a whole
+pack. Eight required controls include the complete original GCC translation
+unit. The actual121 parent fails24 of32 configurations; the candidate passes32.
+A broader whole-pack cardinality probe remains a separately tracked124 gap,
+with its required red regression committed in a private owning-PA worktree.
+
+126 adjudicates exactly alias-decl-33.C,alias-decl-37.C,variadic178.C and
+vt-57626.C. The first two are valid ordinary alias specializations under the
+supported wording; both entire originals and defined runtime witnesses are
+required internally. D<C> binds an alias as a template-template argument; it
+does not compare alias-template identities. The latter two impose no mandatory
+diagnostic: an empty-only variadic partial and an unused permanently invalid
+default template argument. Adopted CWG2746 explicitly covers that default.
+Concrete excess-argument/wrong-kind negatives and valid nonempty/member-pointer
+neighbors remain required. The exact four sources are excluded from BOTH paired
+roles with primary evidence; they are not paired-suite passes.
+
+Full CWG2746 wording/provenance is now offline. The student catalog contains91
+issue texts and12 complete papers,105 files including index/manifest. Two issue
+texts (1286 drafting/1430 open) are background, not implemented decisions.
+Fresh export matches every catalog file, all42 new required fixtures and
+companions,42 reference wrappers and2198 changed test artifacts plusLLVMlicense.
+
+Validation:9487 strict tests,168 focused configurations,44 harness suites/717
+checks, affectedPA14/15/17/18/22,modern C++,debug info,self-host throughPA5,
+inception,architecture/file/full placement/document audits,quick andsmoke pass.
+The full compiler checks ran before fixture-only126 integration; its additional
+placement/owning/fullstrict/document checks and full harness also pass with the
+identical compiler. All final42 focused cases and export checks pass.
+
+Normal actual-parent retired-instruction ratios O0/O3:
+  122 e5df->ed504:1.000069/.999995
+  121 ed504->95c37:1.000290/1.000079
+  123 95c37->9db:.999925/.999931
+Every frozen output object is byte-identical. Quick self/seed .996766/1.028777,
+zero behavior failures and all kernels below1.30. No extra cumulative cap,
+calibration or public runtime benchmark campaign was introduced.
+
+Paired GCC3774/4094 (92.18%),upstream4094/4094. Remaining selected configurations:
+150 compile failures and170 missing diagnostics. Eighteen genuine improvements,
+zero retained passing losses. Eight formerly passing mandatory-negative
+configurations were removed under126; this is a separate denominator change,
+not eight new passes. All4094 retained manifest records are unchanged. The full
+earlier4102 run and its eight apparent diagnostic regressions remain preserved.
+GCC26.342488/65.793104s,ratio.400384,NON-COMPARABLE because failures remain.
+
+Paired Clang815/815 (100%),upstream815/815; manifest bytes identical to the
+previous815 cohort. Native applicability562/562. Clang3.855721/25.513241s,
+ratio.151126 on the same passing suite. These are observed CI-suite times.
+
+The authoritative receipt isv2: v1 verified the same checks/counts but a verifier
+variable shadowed three performance receipt filenames. Corrected paths and a
+fresh hash verification are inv2; no compiler, measurement or outcome changed.
+
+Next:124 must retain selected and whole packs through deferred expression
+substitution, including captured-pack ABI expressions.125 has a read-only
+adopted-P1787 IFNDR review ready for separate regression/selection integration;
+its original historical-wording ambiguity and old d7f observations remain.
+The GCC counts are configurations, not deduplicated compiler-bug counts.
+Remaining language repairs and the final PA35 release keep the goal active.
