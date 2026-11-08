@@ -29,3 +29,9 @@ emits symbols in PA10. The standalone `abimangle` tool adapts normalized fact
 files into that model. Compiler stages construct typed targets and call the
 same encoder directly; the fact text format is not an internal compiler
 transport.
+
+## Optional extensions
+
+[PA36](pa36/README.md) develops general inline assembly and a shared backend
+contract for other language frontends. It is outside the required 35-assignment
+ladder and currently has a partial reference implementation.

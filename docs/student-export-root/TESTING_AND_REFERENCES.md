@@ -13,8 +13,9 @@ make inception                # PA34 completion
 The through report includes PA N; no separate PA N check is needed.
 PA35 ends with `make -C pa35 test`, which is not part of the report: its gates compare your compiler with the host and
 its own seed.
-`make test` builds once and runs all assignment suites; `make test-report`
-keeps going and summarizes failures. Use `ACTIVE_TEST_REPORT_PAS='pa8 pa10'`
+Optional [PA36](pa36/README.md) ends with `make -C pa36 test` and is outside
+the cumulative reports. `make test` builds once and runs PA1–PA33;
+`make test-report` keeps going and summarizes failures. Use `ACTIVE_TEST_REPORT_PAS='pa8 pa10'`
 to narrow a report.
 
 Suites select platform-specific checks automatically and list skips separately

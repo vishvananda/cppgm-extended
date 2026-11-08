@@ -6,6 +6,7 @@
 
 #include "lowir/program.h"
 #include "native/mir/mir.h"
+#include "native/asm/binding.h"
 #include "native/select/call_abi.h"
 #include "native/select/selector.h"
 #include "native/select/selector_facts.h"
@@ -77,6 +78,10 @@ public:
 	void for_each_inst(F f);
 	void note_use(lowir::Value value, uint32_t inst, uint32_t block, int32_t pos, bool value_use);
 	bool address_expr(uint32_t inst, AddrExpr& expr) const;
+
+	const std::shared_ptr<const AssemblyPlan>& assembly_plan(uint32_t definition) const;
+	void emit_assembly(const lowir::Instruction& inst);
+	mutable std::vector<std::shared_ptr<const AssemblyPlan>> assembly_plans_;
 
 	// ---- allocation.cpp
 	void inst_clobbers(uint32_t inst, uint32_t& clobber, uint32_t& early) const;

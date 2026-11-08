@@ -1,4 +1,6 @@
 #include "native/x86/emitter.h"
+#include "native/asm/binding.h"
+#include "native/asm/encoding.h"
 
 #include <algorithm>
 #include <cstring>
@@ -367,6 +369,12 @@ bool flags_read_after(const Function& function, uint32_t index)
 		case Op::Zext:
 			// A bit's is an `and`, which sets them.
 			if (function.insts[k].type == TypeKind::I1)
+				return false;
+			break;
+		case Op::Asm:
+			if ((function.insts[k].sub & 1) != 0)
+				return true;
+			if ((function.insts[k].sub & 2) != 0)
 				return false;
 			break;
 		case Op::Cmov:
@@ -1126,6 +1134,10 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	const Operand& b = inst.ops[1];
 	switch (inst.op)
 	{
+	case Op::Asm:
+		for (const assembly::Instruction& source : function.assembly->plans[static_cast<uint32_t>(a.imm)]->instructions)
+			encode_assembly(asm_, source);
+		break;
 	case Op::Mov:
 		mov(a, b, flags_read_after(function, index));
 		break;

@@ -1,6 +1,6 @@
 # Full inline assembly across frontends
 
-Status: proposed, 2026-11-07. This is a maintainer plan, outside the student
+Status: implementation in progress, 2026-11-07. This is a maintainer plan, outside the student
 export. It changes neither the current 35-assignment contract nor the backend
 capabilities advertised to other frontends.
 
@@ -124,21 +124,20 @@ external backend bridge.
 
 ## 2. Parse assembly once and emit objects directly
 
-[spec.md section 7](../spec.md) currently forbids parsing assembly on the default
-object path. Amend it explicitly for **user-supplied assembly templates**:
-parse their assembly source once into a typed assembly representation, then bind
-operands and emit bytes/fixups through the native backend. Retain the prohibition
-on rendering compiler-generated code to assembly and parsing it back, or invoking
-an external assembler as an implementation fallback.
+[spec.md section 7](../spec.md) now explicitly permits **user-supplied assembly
+templates**. Bind their typed placeholders, then parse each resulting source
+instance once into typed assembly operands and encode bytes/fixups directly.
+Rendering ordinary compiler-generated instructions to assembly and parsing them
+back, and external-assembler fallbacks, remain prohibited.
 
-Frontend parsers handle their own string escapes and placeholder grammar.
-The backend assembler handles instructions and directives. Represent placeholders
-as typed holes, not substitution followed by relexing: register views, immediate
-formatting, GNU dialect alternatives and type-dependent mnemonic suffixes need
-late binding. Cache the parsed representation for emitted template instances;
-unused inline bodies retain the existing demanded-emission boundary for native
-limitations. Macro/repetition expansion must have explicit work limits and parse
-each resulting occurrence once.
+Frontend parsers handle their own string escapes and placeholder grammar. Keep
+those references typed through LowIR; the backend performs their language-defined
+expansion after binding, then owns the only instruction/directive parse. This
+also handles placeholders embedded in mnemonic suffixes or symbol spellings
+without an early speculative instruction parse. Cache the parsed representation
+where bindings are identical. Unused inline bodies retain the existing
+demanded-emission boundary for native limitations. Macro/repetition expansion
+must have explicit work limits and parse each resulting occurrence once.
 
 Keep opaque assembly intact through optimization. The optimizer may use its
 declared effects, but must not replace an explicitly requested instruction with
@@ -188,24 +187,14 @@ inserted after allocation would evade those correctness checks.
 
 Prefer a table-driven integrated parser/encoder, emitting into our existing
 object/symbol/fixup machinery and leaving ordinary instruction selection fast.
-Do a short component spike before committing to hand-writing a complete x86
-instruction catalogue:
+The production encoder remains entirely in cppgm, as explicitly selected by
+the user. Extend our existing x86 encoder with reviewed instruction-form tables.
+Do not add XED or LLVM as a build, link or runtime dependency. Their encoders,
+and GNU as, may be independent private test oracles; oracle availability must
+not be required to build or use cppgm. Keep any oracle measurements separate
+from evidence for our own encoder's correctness and cost.
 
-| Approach | Assessment |
-|---|---|
-| Extend our encoder with reviewed declarative instruction data | Best architectural fit; broad instruction-form coverage and maintaining the data are substantial work |
-| Use Intel XED as an encoding component | Evaluate coverage, dependencies, licensing/NOTICE, build size and self-hosting. It supplies instruction encoding, not our template semantics, constraints or complete assembler/object pipeline |
-| Embed LLVM MC | A useful completeness reference and oracle. A production dependency would need an explicit decision about its build size, supported LLVM versions, C++ compatibility and self-hosting contract |
-| Spawn GNU as/clang/llvm-mc | Suitable independent test oracles; conflicts with the current production architecture as an implementation fallback |
-
-The [XED API](https://intelxed.github.io/ref-manual/) accepts structured
-instruction descriptions. LLVM describes its assembler/object layers in the
-[MC layer documentation](https://llvm.org/docs/CodeGenerator.html#the-mc-layer).
-Measure both representative assembly and ordinary no-assembly startup/compile
-costs before selecting a production dependency. Do not replace the ordinary
-compiler backend merely to obtain an assembler.
-
-Whichever encoder is selected, close the remaining assembler work explicitly:
+Close the remaining assembler work explicitly:
 expressions, addressing and prefixes; symbols/aliases/visibility/weakness;
 local branches and relaxation; data/alignment/section directives; GOT/PLT/TLS
 and supported ELF/Mach-O relocations; macros and conditional/repeated assembly;
@@ -311,3 +300,22 @@ become routine costs for source that contains no assembly.
 Implementation should begin with stage A and the shared LowIR contract, then
 stage B's original Rust consumer. The major risk is the combined assembler and
 allocation surface, not recognition of the Rust macro or one more mnemonic.
+
+## Implementation checkpoint (2026-11-07)
+
+The `compat/inline-assembly` branch contains the initial shared packet, LowIR
+reader/writer/validator, opaque native effect, constrained GPR/XMM binding and
+in-tree integer/SSE form tables. The optional PA36 lane currently checks ten
+runtime fixtures and six malformed-contract fixtures through the shared Perl
+parallel runner. It makes 40 native/LowIR-roundtrip observations plus host
+comparisons, including C++ source through `--full-asm`,
+128-bit streaming stores, Godot's original CPUID sequence, aliased outputs,
+flag outputs, early writes, read/write operands and named matching constraints.
+A private corpus compared 6,429 Intel and 6,429 AT&T encodings with LLVM 22;
+all matched. These are initial supported forms, not full ISA qualification.
+The required strict report passed 8,099/8,099 at this checkpoint.
+
+The encoder has no production XED/LLVM dependency. Rust source lowering and its
+qualified backend pin, memory/immediate/symbol operands, control flow/global
+assembly, directives, wider register classes and broad ISA closure remain open.
+See PA36's current-subset declaration before interpreting its passing tests.

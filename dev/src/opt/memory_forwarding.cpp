@@ -1203,7 +1203,8 @@ void MemoryForwarding::drop_overwritten_stores()
 // any other use of its address.
 bool MemoryForwarding::may_read_slot(const Instruction& inst, uint32_t slot, uint64_t bytes) const
 {
-	if (inst.op == Opcode::Call || is_eh_instruction(inst.op) || inst.op == Opcode::Throw || inst.op == Opcode::Resume)
+	if (inst.op == Opcode::Asm || inst.op == Opcode::Call || is_eh_instruction(inst.op) || inst.op == Opcode::Throw ||
+		inst.op == Opcode::Resume)
 		return true;
 	// Forming an address reads nothing (its uses are what count).
 	if (inst.op == Opcode::Addr || inst.op == Opcode::Index || (inst.op == Opcode::Copy && inst.type.is_pointer()))
@@ -1241,6 +1242,8 @@ bool MemoryForwarding::may_read_slot(const Instruction& inst, uint32_t slot, uin
 // copy or zeroing whose target may be in it.
 bool MemoryForwarding::may_write_slot(const Instruction& inst, uint32_t slot, uint64_t bytes) const
 {
+	if (inst.op == Opcode::Asm)
+		return true;
 	Value target = Value::none();
 	uint64_t size = 0;
 	if (inst.op == Opcode::Store)

@@ -207,6 +207,7 @@ enum class Opcode : std::uint8_t
 	Exception,
 	ExceptionSelector,
 	// Effects.
+	Asm, // optional frontend-neutral assembly invocation
 	Store,
 	AtomicStore,
 	AtomicThreadFence,
@@ -255,7 +256,7 @@ inline const char* spelling(Opcode op)
 {
 	static const char* const kOpcodes[kOpcodeCount] = { "const", "copy", "phi", "addr", "load", "atomic_load", "index",
 		"unary", "binary", "cmp", "select", "convert", "vector", "atomic_add_fetch", "atomic_exchange",
-		"atomic_compare_exchange", "va_arg", "stack_alloc", "call", "exception", "exception_selector", "store",
+		"atomic_compare_exchange", "va_arg", "stack_alloc", "call", "exception", "exception_selector", "asm", "store",
 		"atomic_store", "atomic_thread_fence", "atomic_signal_fence", "va_start", "copyobj", "zeroinit", "eh_try",
 		"eh_cleanup", "eh_catch", "eh_filter", "eh_catch_all", "eh_end", "throw", "resume", "jump", "branch", "switch",
 		"return", "unreachable" };
@@ -975,6 +976,7 @@ enum class Keyword : std::uint8_t
 	DebugType,
 	DebugScope,
 	DebugLocal,
+	Assembly,       // optional assembly template
 	EquivalentEntry // equivalent_entry @entry = @target
 };
 
@@ -983,7 +985,7 @@ const unsigned kKeywordCount = static_cast<unsigned>(Keyword::EquivalentEntry) +
 inline const char* spelling(Keyword keyword)
 {
 	static const char* const kKeywords[kKeywordCount] = { "declare", "global", "function", "alias", "object", "slot",
-		"block", "zero", "as", "debug_type", "debug_scope", "debug_local", "equivalent_entry" };
+		"block", "zero", "as", "debug_type", "debug_scope", "debug_local", "assembly", "equivalent_entry" };
 	return kKeywords[static_cast<unsigned>(keyword)];
 }
 

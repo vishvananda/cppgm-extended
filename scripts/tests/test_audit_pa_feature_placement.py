@@ -1403,7 +1403,8 @@ function @main() -> i32 {
         self.assertEqual(audit.COURSE_PAS[0], "pa1")
         self.assertEqual(audit.COURSE_PAS[-1], "pa35")
         self.assertEqual(len(audit.COURSE_PAS), 35)
-        self.assertEqual(audit.LOCAL_TEST_HYGIENE_PAS, audit.COURSE_PAS)
+        self.assertEqual(audit.LOCAL_TEST_HYGIENE_PAS, audit.COURSE_PAS + audit.OPTIONAL_PAS)
+        self.assertIn("pa36", audit.LOCAL_TEST_HYGIENE_PAS)
 
     def test_feature_owners_exclude_assignments_without_language_features(self) -> None:
         def table(*owners: str) -> dict[str, object]:
@@ -1418,16 +1419,39 @@ function @main() -> i32 {
                 for owner in owners
             }
 
-        self.assertEqual(audit.feature_owner_errors(table("pa1", "pa29", "pa33")), [])
-        errors = audit.feature_owner_errors(table("pa34", "pa35", "pa36"))
+        self.assertEqual(audit.feature_owner_errors(table("pa1", "pa29", "pa33", "pa36")), [])
+        errors = audit.feature_owner_errors(table("pa34", "pa35", "pa37"))
         self.assertEqual(len(errors), 3)
         self.assertIn("feature feature.pa34 names owner pa34, which adds no language feature", errors)
         self.assertIn("feature feature.pa35 names owner pa35, which adds no language feature", errors)
-        self.assertTrue(any("pa36" in error and "35 assignments" in error for error in errors))
+        self.assertTrue(any("pa37" in error and "35 required or optional assignments" in error for error in errors))
 
     def test_live_feature_table_names_only_feature_owning_assignments(self) -> None:
         features = audit.load_feature_table(REPO_ROOT / audit.DEFAULT_TRACKER)
         self.assertEqual(audit.feature_owner_errors(features), [])
+
+    def test_optional_assembly_fixtures_keep_numbering_and_input_contracts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "pa36/tests/source/501-bad-number.t"
+            lowir = root / "pa36/tests/spec/100-model.t"
+            write(source, "void f() { asm volatile(\"nop\"); }\n")
+            write(lowir, "assembly @packet intel none 1 0 0 0 { text \"nop\" }\n")
+            write(lowir.with_suffix(".assembly-profile"), "lowir\n")
+            self.assertEqual(audit.iter_test_files(root, ["pa36"]), [source, lowir])
+            findings = audit.scan_test_hygiene(root, ["pa36"])
+            self.assertTrue(any(f.kind == "test-number" and "501-bad-number" in f.path for f in findings))
+            features = audit.load_feature_table(REPO_ROOT / audit.DEFAULT_TRACKER)
+            self.assertEqual(audit.row_for(lowir, root, features)["input_contract"], "lowir-backend")
+            self.assertIn("assembly.shared_boundary", audit.row_for(lowir, root, features)["detected_features"])
+            self.assertEqual(audit.row_for(source, root, features)["input_contract"], "cpp-source")
+            moved = root / "pa27/tests/general/100-moved-assembly.t"
+            write(moved, lowir.read_text())
+            write(moved.with_suffix(".assembly-profile"), "lowir\n")
+            row = audit.row_for(moved, root, features)
+            self.assertEqual(row["input_contract"], "lowir-backend")
+            self.assertTrue(any(p["feature"] == "assembly.shared_boundary" and p["status"] == "violation"
+                                for p in row["placements"]))
 
     def test_pa35_selection_scans_its_tests_without_findings(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:

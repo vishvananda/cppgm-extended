@@ -145,6 +145,7 @@ inline bool may_write_memory(const lowir::Program& program, const lowir::Instruc
 {
 	switch (inst.op)
 	{
+	case lowir::Opcode::Asm: // opaque effects until narrower assembly promises are consumed
 	case lowir::Opcode::Store:
 	case lowir::Opcode::AtomicStore:
 	case lowir::Opcode::AtomicAddFetch:

@@ -63,6 +63,13 @@ class ExportedDevMakefileTests(unittest.TestCase):
         fixtures = {
             'scripts/check_macho.py': '# optional public target checker\n',
             'scripts/run_resource_limited.py': '# public resource wrapper\n',
+            'scripts/check_inline_assembly.pl': '# optional assembly checker\n',
+            'dev/src/asm_model.h': '// shared assembly vocabulary\n',
+            'dev/src/x86_asm_model.h': '// architectural encoding facts\n',
+            'pa36/Makefile': '# optional assignment\n',
+            'pa36/tests/source/100-stream.t': 'source fixture\n',
+            'pa36/tests/source/100-stream.assembly-profile': 'gnu\n',
+            'pa36/tests/source/100-stream.driver.cpp': 'native observer\n',
             'pa8/tests/general/100-valid.t': 'program input\n',
             'pa27/tests/behavior/100-layout.ref.inspect.plan': 'object contract\n',
             'pa27/tests/controls/200-section-token-safe.t': 'graded control\n',

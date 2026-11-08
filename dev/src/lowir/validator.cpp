@@ -1,4 +1,6 @@
 #include "lowir/validator.h"
+#include "lowir/assembly_validation.h"
+#include "lowir/assembly.h"
 
 #include <cstring>
 
@@ -221,6 +223,7 @@ const OperandRule kOperandRules[] = {
 	{ { kTempOperand | kSymbolOperand, kNoOperand, kNoOperand }, ExtraOperands::Values, 1 }, // Call
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // Exception
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // ExceptionSelector
+	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::Values, 1 },                    // Asm
 	{ { kValueOperand, kStorageOperand, kNoOperand }, ExtraOperands::None, 1 },              // Store
 	{ { kValueOperand, kValueOperand, kNoOperand }, ExtraOperands::None, 1 },                // AtomicStore
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // AtomicThreadFence
@@ -300,6 +303,7 @@ private:
 	bool check_uses(InstId id, const Instruction& inst);
 	bool check_phi(const Instruction& inst, BlockId block);
 	bool check_call(const Instruction& inst);
+	bool check_assembly(const Instruction& inst);
 	bool check_return(const Instruction& inst);
 	// The type of a temporary, slot or symbol operand; false for others.
 	bool value_type(Value value, Type& type) const;
@@ -343,6 +347,15 @@ bool Validator::fail(const char* message, NameId detail)
 
 bool Validator::run()
 {
+	if (program_.assembly)
+	{
+		const char* error = nullptr;
+		if (!validate_assembly_module(*program_.assembly, error))
+			return fail(error);
+		for (const AssemblyTemplate& definition : program_.assembly->templates)
+			if (definition.name >= program_.names.size() || definition.location.file >= program_.names.size())
+				return fail("invalid assembly name or source location");
+	}
 	if (!check_symbols())
 		return false;
 	for (SymbolId symbol = 0; symbol < program_.symbols.size(); ++symbol)
@@ -590,6 +603,16 @@ bool Validator::check_construction(bool spellings)
 		return false;
 	name_marks_.assign(program_.names.size(), 0);
 	name_epoch_ = 0;
+	if (spellings && program_.assembly)
+	{
+		for (const AssemblyTemplate& definition : program_.assembly->templates)
+			if (definition.name >= program_.names.size())
+				return fail("invalid assembly template name");
+		if (!check_spellings(
+				static_cast<uint32_t>(program_.assembly->templates.size()),
+				[&](uint32_t i) { return program_.assembly->templates[i].name; }, "duplicate assembly template name"))
+			return false;
+	}
 	for (const Signature& signature : program_.signatures)
 	{
 		const Parameter* parameters = program_.parameters_of(signature);
@@ -783,6 +806,37 @@ bool Validator::check_uses(InstId id, const Instruction& inst)
 	return true;
 }
 
+bool Validator::check_assembly(const Instruction& inst)
+{
+	if (!program_.assembly || static_cast<uint64_t>(inst.immediate) >= program_.assembly->templates.size())
+		return fail("invalid assembly template reference");
+	const AssemblyModule& module = *program_.assembly;
+	const AssemblyTemplate& definition = module.templates[static_cast<uint32_t>(inst.immediate)];
+	if (!inst.type.is_void() || inst.extra_count != definition.argument_count)
+		return fail("assembly invocation argument count or effect type mismatch");
+	for (uint32_t i = 0; i < definition.operand_count; ++i)
+	{
+		const AssemblyOperand& operand = module.operands[definition.first_operand + i];
+		auto argument = [&](uint32_t index, Type expected) {
+			if (index == kNoId)
+				return true;
+			const Value value = body_->operands[inst.extra_first + index];
+			Type actual;
+			if (value_type(value, actual))
+				return actual == expected;
+			if (value.kind == ValueKind::Integer)
+				return expected.is_integer() ||
+					(expected.is_vector() && body_->literals[value.index].low == 0 &&
+						body_->literals[value.index].high == 0);
+			return value.kind == ValueKind::Float && value.float_kind == expected.kind();
+		};
+		if (!argument(operand.input, operand.input_storage ? Type::scalar(TypeKind::Ptr) : operand.type) ||
+			!argument(operand.output, Type::scalar(TypeKind::Ptr)))
+			return fail("assembly invocation argument type mismatch");
+	}
+	return true;
+}
+
 bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId block)
 {
 	if (!check_uses(id, inst))
@@ -853,6 +907,8 @@ bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId bl
 		if (inst.type.is_vector() && !vector_value(inst.ops[0]))
 			return fail("vector literal must be zero");
 		return true;
+	case Opcode::Asm:
+		return check_assembly(inst);
 	case Opcode::Call:
 		return check_call(inst);
 	case Opcode::Return:

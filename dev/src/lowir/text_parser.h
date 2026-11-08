@@ -14,6 +14,10 @@
 #include "lowir/text_lexer.h"
 #include "lowir/validator.h"
 
+namespace asm_model {
+struct Register;
+}
+
 namespace lowir {
 namespace text {
 
@@ -115,6 +119,13 @@ private:
 
 	// Top level (text_parser.cpp).
 	void parse_top_level_item();
+	void parse_assembly();
+	asm_model::Register parse_assembly_register();
+	void parse_assembly_operand();
+	void parse_assembly_alternative();
+	uint32_t assembly_number(uint32_t limit, const char* what, bool absent = false);
+	void parse_assembly_call(FunctionBuilder& builder, Instruction& inst);
+	std::vector<uint32_t> assemblies_;
 	void parse_debug_type();
 	void parse_debug_local();
 	void parse_debug_scope();

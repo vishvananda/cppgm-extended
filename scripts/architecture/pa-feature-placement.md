@@ -3,11 +3,13 @@
 This is the live feature table read by `scripts/audit_pa_feature_placement.py`.
 Owners and clusters use the current 35-assignment sequence. PA34 (self-hosting)
 and PA35 (optimizing the compiler) add no language feature, so no row names
-either as its owner; the auditor rejects a table that does. N3485 references
+either as its owner; the auditor rejects a table that does. Optional PA36 owns
+the shared assembly extension outside that sequence. N3485 references
 refer to `../../doc/n3485.txt`.
 
 | Feature Family | Canonical Owner PA | Owner Cluster | N3485 Reference | Auditor Status | Required Detections |
 | --- | --- | ---: | --- | --- | --- |
+| `assembly.shared_boundary` | `pa36` | 100 | N/A: optional frontend-neutral assembly contract | covered | `.assembly-profile` selects GNU source or LowIR assembly, including malformed-contract tests; independent of directory and assignment numbering. |
 | `lowir.procedural` | `pa10` | 100 | N/A: CPPGM LowIR lowering contract | pending | `--emit-lowir` source tests, functions/globals, procedural statements, scalar expressions. |
 | `stmt.condition_declaration` | `pa10` | 100 | 6.4 `[stmt.select]`, 6.7 `[stmt.dcl]` | pending | `if`/`switch` condition declarations and condition-scope lifetime. |
 | `expr.reference` | `pa10` | 100 | 8.3.2 `[dcl.ref]`, 8.5.3 `[dcl.init.ref]` | pending | lvalue references, reference parameters/locals, reference calls, reference aliasing. |

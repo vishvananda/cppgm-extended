@@ -11,6 +11,10 @@
 // performs on the statement's operands, which the lowering emits as LowIR;
 // any other template is rejected.
 
+namespace assembly {
+struct Packet;
+}
+
 namespace sema {
 
 // How an operand is bound (its constraint's class): an object in memory,
@@ -118,6 +122,7 @@ struct AsmInstruction
 // only where odr-used, whose emission reports it (Analyzer::asm_statement).
 struct AsmProgram
 {
+	const assembly::Packet* full = nullptr;
 	const AsmInstruction* instructions;
 	uint32_t count;
 	uint32_t registers;

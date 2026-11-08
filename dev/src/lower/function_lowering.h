@@ -749,6 +749,7 @@ private:
 	void asm_set_flag(const sema::AsmInstruction& instruction, AsmState& state);
 	// A GNU asm statement's lifted operations (sema/asm_statements.h).
 	void asm_statement(const syntax::AsmStmt& stmt);
+	void full_asm_statement(const syntax::AsmStmt& stmt);
 	void condition_branch(
 		const syntax::Expr& expr, lowir::BlockId if_true, lowir::BlockId if_false, bool fold_literals);
 	void switch_statement(const syntax::ConditionalLoopStmt& stmt);

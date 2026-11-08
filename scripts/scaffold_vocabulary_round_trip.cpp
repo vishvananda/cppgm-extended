@@ -8,6 +8,7 @@
 // dev/src.
 
 #include "abi/itanium/abi_mangle.h"
+#include "asm_model.h"
 #include "ir_symbol_model.h"
 #include "lowir_model.h"
 #include "mir_model.h"
@@ -16,6 +17,7 @@
 #include "preprocess/tokens/IPPTokenStream.h"
 #include "support/not_implemented.h"
 #include "support/tool_help_text.h"
+#include "x86_asm_model.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -143,6 +145,22 @@ void check_mir()
 	}
 }
 
+void check_assembly()
+{
+	using namespace asm_model;
+	round_trip<Record>("assembly record", kRecordCount);
+	round_trip<Dialect>("assembly dialect", kDialectCount);
+	round_trip<Memory>("assembly memory", kMemoryCount);
+	std::size_t count = 0;
+	const x86_asm_model::Form* forms = x86_asm_model::forms(count);
+	expect(forms != 0 && count != 0, "assembly forms", 0);
+	for (std::size_t i = 0; i < count; ++i)
+	{
+		expect(forms[i].mnemonic != 0 && forms[i].mnemonic[0] != 0, "assembly mnemonic", i);
+		expect(forms[i].encoding <= x86_asm_model::Encoding::VectorMR, "assembly encoding", i);
+	}
+}
+
 void check_abi()
 {
 	using namespace abi_mangle;
@@ -193,6 +211,7 @@ int main()
 	check_metadata();
 	check_lowir();
 	check_mir();
+	check_assembly();
 	check_abi();
 	expect(CPPGM_EXIT_NOT_IMPLEMENTED == 86, "CPPGM_EXIT_NOT_IMPLEMENTED", 0);
 	return failures == 0 ? 0 : 1;

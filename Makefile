@@ -63,7 +63,7 @@ DEBUGINFO_TEST_PAS ?= pa8 pa32 pa33
 MODERN_CXX_TEST_PAS ?= pa29 pa31
 
 ALL_PAS = $(patsubst %/Makefile,%,$(wildcard pa*/Makefile))
-EXPERIMENTAL_PAS ?= pa34 pa35
+EXPERIMENTAL_PAS ?= pa34 pa35 pa36
 PAS = $(filter-out $(EXPERIMENTAL_PAS),$(ALL_PAS))
 SORTED_PAS = $(shell printf '%s\n' $(PAS) | sort -t a -k 2,2n)
 TEST_REPORT_PAS ?= $(SORTED_PAS)

@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 EXPORT_SCRIPT = ROOT / "scripts" / "export_student_repo.sh"
 USAGE_AUDIT = ROOT / "scripts" / "audit_scaffold_usage.pl"
 SPELLING_AUDIT = ROOT / "scripts" / "audit_scaffold_spellings.pl"
+CONTRACT_AUDIT = ROOT / "scripts" / "audit_lowir_contract.pl"
 LAYOUT_AUDIT = ROOT / "scripts" / "audit_compiler_layout.pl"
 ROUND_TRIP = ROOT / "scripts" / "scaffold_vocabulary_round_trip.cpp"
 
@@ -121,14 +122,16 @@ class ScaffoldSpellingAudit(unittest.TestCase):
         write(root, "dev/src/ir_symbol_model.h",
               'static const char * const kStorages[2] = { "", "readonly" };\n')
         write(root, "dev/src/mir_model.h", 'static const char * const kOps[1] = { "mov" };\n')
+        write(root, "dev/src/asm_model.h", 'static const char * const kRecords[1] = { "operand" };\n')
         write(root, "dev/src/native/mir/registers.h",
               'static const char * const kGprs[1] = { "rax" };\n')
         write(root, "dev/src/lowir/text_writer.cpp",
               f'void write() {{ text("{writer_literal}"); internal_error("not a word: zz"); }}\n')
         write(root, "dev/src/lowir/literals.cpp", "\n")
+        write(root, "dev/src/lowir/assembly_writer.cpp", 'void write_asm() { text("operand "); }\n')
         write(root, "dev/src/native/mir/mir_writer.cpp",
               'void dump() { text("  mov "); text("frame "); text(" rax"); }\n')
-        for relative in ("text_parser.cpp", "text_parser_body.cpp", "text_lexer.cpp"):
+        for relative in ("text_parser.cpp", "text_parser_body.cpp", "text_parser_assembly.cpp", "text_lexer.cpp"):
             write(root, f"dev/src/lowir/{relative}", 'bool f() { return at_word("readonly"); }\n')
 
     def test_passes_when_writer_words_are_vocabulary_spellings(self):
@@ -176,6 +179,59 @@ class LayoutAuditScaffoldComments(unittest.TestCase):
             self.assertIn("dev/src/shipped.h:2: unclassified diagnostic PA reference 'pa8_key'",
                           result.stdout)
             self.assertNotIn("dev/src/shipped.h:1:", result.stdout)
+
+
+class AssemblyContractAudit(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory(prefix="assembly-contract.")
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name)
+        paths = set(re.findall(r"read_file\('([^']+)'\)", CONTRACT_AUDIT.read_text()))
+        ledger = ROOT / "scripts/architecture/lowir-contract-ledger.tsv"
+        for line in ledger.read_text().splitlines()[1:]:
+            fields = line.split("\t")
+            if len(fields) == 8 and fields[6] == "keep":
+                paths.update(fields[4].split(";"))
+                paths.update(fields[5].split(";"))
+        for relative in paths:
+            target = self.root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / relative, target)
+
+    def audit(self):
+        return run("perl", CONTRACT_AUDIT, "--root", self.root)
+
+    def test_current_contract_passes(self):
+        result = self.audit()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_missing_assembly_ledger_row_fails(self):
+        ledger = self.root / "scripts/architecture/lowir-contract-ledger.tsv"
+        ledger.write_text("".join(line for line in ledger.read_text().splitlines(keepends=True)
+                                  if not line.startswith("structure\tassembly\t")))
+        result = self.audit()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("assembly templates have no retained ledger structure row", result.stderr)
+
+    def test_reader_writer_and_documentation_drift_fail(self):
+        mutations = [
+            ("dev/src/lowir/text_parser_assembly.cpp", 'at_word("unique")', 'at_word("unique2")',
+             "assembly record 'unique' is not recognized by the reader"),
+            ("dev/src/lowir/assembly_writer.cpp", '"  unique"', '"  unique2"',
+             "assembly record 'unique' is not written"),
+            ("pa36/assembly.md", '`unique`', '`unique2`',
+             "assembly record 'unique' is absent from its owner documentation"),
+        ]
+        for relative, before, after, expected in mutations:
+            with self.subTest(relative=relative):
+                path = self.root / relative
+                original = path.read_text()
+                self.assertIn(before, original)
+                path.write_text(original.replace(before, after))
+                result = self.audit()
+                path.write_text(original)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected, result.stderr)
 
 
 class ScaffoldVocabularyRoundTrip(unittest.TestCase):

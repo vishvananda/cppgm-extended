@@ -2,10 +2,14 @@
 
 #include <cstring>
 
+#include "lowir/assembly.h"
+
 namespace lowir {
 
 Program::Program() : names(arena)
 {}
+
+Program::~Program() = default;
 
 bool Program::same_entry_abi(SymbolId first, SymbolId second) const
 {

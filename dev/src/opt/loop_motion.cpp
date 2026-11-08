@@ -133,7 +133,7 @@ bool LoopMotion::sweep(uint32_t loop, bool apply)
 	bool calls = false;
 	for (BlockId b : l.blocks)
 		for (InstId i = body_.blocks[b].first; i != kNoId && !calls; i = body_.instructions[i].next)
-			calls = body_.instructions[i].op == Opcode::Call;
+			calls = body_.instructions[i].op == Opcode::Call || body_.instructions[i].op == Opcode::Asm;
 	const BlockId pre = l.preheader;
 	InstId tail = apply ? previous_in_block(body_, pre, body_.blocks[pre].last) : kNoId;
 	bool any = false;

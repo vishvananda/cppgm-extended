@@ -313,6 +313,9 @@ void FunctionSelector::emit_inst(uint32_t id)
 	case Opcode::Vector:
 		emit_vector(inst);
 		break;
+	case Opcode::Asm:
+		emit_assembly(inst);
+		break;
 	case Opcode::Call:
 		emit_call(id);
 		break;

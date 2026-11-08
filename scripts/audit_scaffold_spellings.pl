@@ -2,7 +2,7 @@
 
 # The LowIR text writer and reader and the MIR dumper spell their words from
 # the shipped vocabulary headers (lowir_model.h, ir_symbol_model.h,
-# mir_model.h, native/mir/registers.h): a word chosen by a value (an opcode
+# asm_model.h, mir_model.h, native/mir/registers.h): a word chosen by a value (an opcode
 # head, an operation, a metadata key or value, a register) always comes from
 # a header's table.  A fixed word at a fixed call site may stay a literal
 # ("declare global ", "  slot $"), provided it is a header spelling; the
@@ -25,7 +25,7 @@ my $root = abs_path("$FindBin::Bin/..");
 GetOptions('root=s' => \$root) or die "usage: $0 [--root DIR]\n";
 my $src = "$root/dev/src";
 
-my @vocabulary = qw(ir_symbol_model.h lowir_model.h mir_model.h native/mir/registers.h);
+my @vocabulary = qw(ir_symbol_model.h lowir_model.h asm_model.h mir_model.h native/mir/registers.h);
 
 # Fixed format words, not vocabulary: LowIR's `!dbg(file, line, column)`
 # marker, and the MIR dump's section and field words.
@@ -76,7 +76,7 @@ sub literals
 sub words_of
 {
 	my ($literal) = @_;
-	$literal =~ s/\\[nt]/ /g;
+	$literal =~ s/\\[ntr]/ /g;
 	return $literal =~ /([A-Za-z_][A-Za-z0-9_-]*)/g;
 }
 
@@ -126,12 +126,12 @@ sub output_literals
 	return @found;
 }
 
-check_words('LowIR writer', \%fixed_lowir, output_literals('lowir/text_writer.cpp', 'lowir/literals.cpp'));
+check_words('LowIR writer', \%fixed_lowir, output_literals('lowir/text_writer.cpp', 'lowir/literals.cpp', 'lowir/assembly_writer.cpp'));
 check_words('MIR dumper', \%fixed_mir, output_literals('native/mir/mir_writer.cpp'));
 
 # The reader's matches outside the vocabulary tables.
 my @reader;
-for my $file ('lowir/text_parser.cpp', 'lowir/text_parser_body.cpp', 'lowir/text_lexer.cpp')
+for my $file ('lowir/text_parser.cpp', 'lowir/text_parser_body.cpp', 'lowir/text_parser_assembly.cpp', 'lowir/text_lexer.cpp')
 {
 	my $text = read_text("$src/$file");
 	push @reader, $text =~ /at_word\("([^"]*)"\)/g;

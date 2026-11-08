@@ -31,6 +31,8 @@ no separate PA N check is needed.
 comparing the self and inception generations.
 [PA35](pa35/README.md) makes the compiler fast and ends with
 `make -C pa35 test`, its own gates on generated code and compile speed.
+[PA36](pa36/README.md) is an optional assembly extension, checked separately
+with `make -C pa36 test`. It adds no requirement to the 35-assignment ladder.
 Later milestones extend your existing compiler; do not reset to the initial
 scaffolds.
 
