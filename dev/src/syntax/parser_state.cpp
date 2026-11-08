@@ -155,6 +155,7 @@ ParserState::Checkpoint ParserState::save()
 	checkpoint.pending_template = pending_template_;
 	checkpoint.definite_type = definite_type_;
 	checkpoint.special_member_clause = special_member_clause_;
+	checkpoint.assembly_environment = assembly_environment_;
 	checkpoint.pack_mentions = pack_mentions_;
 	checkpoint.parameter_mentions = parameter_mentions_;
 	checkpoint.conflict = conflicts_.statement;
@@ -178,6 +179,7 @@ void ParserState::restore(const Checkpoint& checkpoint)
 	pending_template_ = checkpoint.pending_template;
 	definite_type_ = checkpoint.definite_type;
 	special_member_clause_ = checkpoint.special_member_clause;
+	assembly_environment_ = checkpoint.assembly_environment;
 	pack_mentions_ = checkpoint.pack_mentions;
 	parameter_mentions_ = checkpoint.parameter_mentions;
 	conflicts_.statement = checkpoint.conflict;

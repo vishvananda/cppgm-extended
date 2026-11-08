@@ -626,3 +626,21 @@ until the full assembly change is ready, as requested. Shared source
 environments, wider expressions/ISA/register bindings and original Rust
 integration remain open. Ordinary compiler-owned inline-frame unwinding is
 still a separately rejected capability.
+
+## 2026-11-08 checkpoint: shared source environments
+
+Namespace source fragments are lowered before streamed definitions, with each
+inline or naked source packet retaining its original prefix of module macro
+definitions. Optional LowIR `environment N` headers preserve that choice through
+transport, instantiation and cloning. Native expansion snapshots use immutable
+map paths rather than copying all definitions. A shared budget bounds work and
+keeps macro unique labels distinct across module, raw and inline expansions.
+
+Macro arguments retain outgoing-label spans as well as typed symbol spans.
+Program symbol identities in captured macro bodies are remapped only when
+objects are emitted. Focused O0/O2/O3 checks cover source and LowIR snapshots,
+redefinition, deferred members, template instantiation, inlining, typed symbol
+loads/addresses, asm-goto exits and raw functions. An invalid environment prefix
+has a normal rejection test. Full qualification remains deferred to assembly
+closure; expression/ISA/register coverage and original Rust integration remain
+open.

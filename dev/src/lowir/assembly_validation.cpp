@@ -215,7 +215,8 @@ bool template_packet(const AssemblyModule& module, const AssemblyTemplate& site,
 		AS_DIRECTION_FLAG;
 	if (static_cast<unsigned>(site.dialect) > static_cast<unsigned>(Dialect::Intel) ||
 		static_cast<unsigned>(site.memory) > static_cast<unsigned>(Memory::ReadWrite) ||
-		(site.properties & ~properties) != 0 || ((site.state_read | site.state_write) & ~states) != 0 ||
+		site.environment > module.globals.size() || (site.properties & ~properties) != 0 ||
+		((site.state_read | site.state_write) & ~states) != 0 ||
 		!slice(site.first_operand, site.operand_count, module.operands.size()) ||
 		!slice(site.first_piece, site.piece_count, module.pieces.size()) ||
 		!slice(site.first_clobber, site.clobber_count, module.clobbers.size()))

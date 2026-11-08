@@ -66,7 +66,7 @@ bool module_condition(const std::string& kind, ModuleCursor& cursor, const Modul
 	}
 	if (kind == ".ifc" || kind == ".ifnc" || kind == ".ifeqs" || kind == ".ifnes")
 	{
-		if (!line.symbols.empty())
+		if ((!line.symbols.empty() || !line.labels.empty()))
 			cursor.fail("typed symbol is not an absolute string expression");
 		return strings(kind, cursor);
 	}

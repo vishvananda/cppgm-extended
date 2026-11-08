@@ -1267,7 +1267,8 @@ void ObjectCompiler::finish(ObjectFile& out)
 	add_unwind_relocations();
 	add_groups();
 	place_debug();
-	emit_assembly_items(out, program_, image_.target, object_symbol_);
+	if (program_.assembly && (!program_.assembly->globals.empty() || !program_.assembly->functions.empty()))
+		emit_assembly_items(out, program_, image_.target, object_symbol_, selector_.assembly_environment());
 	if (program_.assembly && !program_.assembly->functions.empty())
 		add_aliases();
 	stats_.sections = out.sections.size() - 1;

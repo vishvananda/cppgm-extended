@@ -297,6 +297,7 @@ struct EnumSpecifier
 struct TranslationUnit
 {
 	Slice<Decl*> declarations;
+	uint32_t assembly_declarations = 0;
 };
 
 } // namespace syntax

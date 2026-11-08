@@ -17,6 +17,11 @@ void Selector::select(lowir::SymbolId function, Function& out, uint32_t extra_pr
 	state_->select(function, out, extra_preserved_gprs);
 }
 
+AssemblyEnvironment& Selector::assembly_environment()
+{
+	return state_->assembly_environment();
+}
+
 void Selector::set_eh_model(EhModel model)
 {
 	state_->set_eh_model(model);

@@ -10,6 +10,8 @@
 
 namespace native {
 
+class AssemblyEnvironment;
+
 struct AssemblyPlan : AssemblyBinding
 {
 	uint32_t definition = 0;
@@ -31,6 +33,6 @@ std::shared_ptr<AssemblyPlan> prepare_assembly_source(const lowir::AssemblyModul
 void append_assembly_exits(AssemblyPlan& plan, const lowir::AssemblyTemplate& definition);
 
 std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& module, uint32_t definition,
-	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments);
+	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments, AssemblyEnvironment& environment);
 
 } // namespace native

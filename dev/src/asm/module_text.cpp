@@ -35,7 +35,54 @@ unsigned digit(char c)
 }
 }
 
-std::vector<ModuleLine> module_lines(const std::string& text, const std::vector<SymbolUse>& symbols)
+namespace {
+template<typename Use>
+std::vector<Use> slice_spans(const std::vector<Use>& input, uint32_t first, uint32_t count, uint32_t line)
+{
+	const uint64_t end = uint64_t(first) + count;
+	auto begin = std::lower_bound(
+		input.begin(), input.end(), first, [](const Use& use, uint32_t offset) { return use.first < offset; });
+	if (begin != input.begin() && uint64_t((begin - 1)->first) + (begin - 1)->count > first)
+		throw AssemblyError{ "assembly slice splits a typed operand", line, 1 };
+	std::vector<Use> output;
+	for (auto at = begin; at != input.end() && at->first < end; ++at)
+	{
+		if (uint64_t(at->first) + at->count > end)
+			throw AssemblyError{ "assembly slice splits a typed operand", line, 1 };
+		Use use = *at;
+		use.first -= first;
+		output.push_back(use);
+	}
+	return output;
+}
+}
+ModuleLine module_slice(const ModuleLine& line, uint32_t first, uint32_t count)
+{
+	ModuleLine result;
+	result.line = line.line;
+	result.text = line.text.substr(first, count);
+	result.symbols = slice_spans(line.symbols, first, count, line.line);
+	result.labels = slice_spans(line.labels, first, count, line.line);
+	return result;
+}
+void append_module_line(ModuleLine& target, const ModuleLine& source)
+{
+	const uint32_t offset = static_cast<uint32_t>(target.text.size());
+	target.text += source.text;
+	for (SymbolUse use : source.symbols)
+	{
+		use.first += offset;
+		target.symbols.push_back(use);
+	}
+	for (LabelUse use : source.labels)
+	{
+		use.first += offset;
+		target.labels.push_back(use);
+	}
+}
+
+std::vector<ModuleLine> module_lines(
+	const std::string& text, const std::vector<SymbolUse>& symbols, const std::vector<LabelUse>& labels)
 {
 	std::vector<ModuleLine> result;
 	size_t first = 0;
@@ -45,16 +92,10 @@ std::vector<ModuleLine> module_lines(const std::string& text, const std::vector<
 		ModuleLine entry;
 		entry.text = text.substr(first, end - first);
 		entry.line = first_line;
-		const auto begin = std::lower_bound(symbols.begin(), symbols.end(), first,
-			[](const SymbolUse& use, size_t position) { return use.first < position; });
-		for (auto use = begin; use != symbols.end() && use->first < end; ++use)
-		{
-			if (uint64_t(use->first) + use->count > end)
-				throw AssemblyError{ "module statement splits a typed symbol", first_line, 1 };
-			SymbolUse shifted = *use;
-			shifted.first -= static_cast<uint32_t>(first);
-			entry.symbols.push_back(shifted);
-		}
+		entry.symbols = slice_spans(
+			symbols, static_cast<uint32_t>(first), static_cast<uint32_t>(end - first), first_line);
+		entry.labels = slice_spans(
+			labels, static_cast<uint32_t>(first), static_cast<uint32_t>(end - first), first_line);
 		if (entry.text.find_first_not_of(" \t\r") != std::string::npos)
 			result.push_back(std::move(entry));
 	};

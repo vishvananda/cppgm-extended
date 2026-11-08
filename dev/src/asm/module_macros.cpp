@@ -10,7 +10,7 @@ void ModuleExpander::define(
 	ModuleCursor cursor(declaration);
 	cursor.word();
 	const std::string name = module_macro_name(cursor.word());
-	if (macros_.count(name))
+	if (macros_.find(name))
 		cursor.fail("macro is already defined");
 	std::shared_ptr<Macro> macro(new Macro);
 	for (const ModuleLine& part : module_arguments(declaration, cursor.position()))
@@ -43,7 +43,7 @@ void ModuleExpander::define(
 	for (size_t i = first; i < last; ++i)
 		account(input[i].text.size() + 1, input[i]);
 	macro->body.assign(input.begin() + first, input.begin() + last);
-	macros_.emplace(name, std::move(macro));
+	macros_.set(name, macro);
 }
 void ModuleExpander::invoke(const ModuleLine& invocation, uint32_t first, std::shared_ptr<Macro> macro,
 	std::vector<ModuleLine>& output, unsigned depth)
@@ -110,7 +110,7 @@ void ModuleExpander::invoke(const ModuleLine& invocation, uint32_t first, std::s
 		if (bound->second.text.empty())
 			bound->second = formal.fallback;
 	}
-	substituted(macro->body, bindings, unique_++, macro->executions++, output, depth);
+	substituted(macro->body, bindings, budget_->unique++, macro->executions++, output, depth);
 }
 bool ModuleExpander::substituted(const std::vector<ModuleLine>& body, const Bindings& bindings, uint64_t unique,
 	uint64_t iteration, std::vector<ModuleLine>& output, unsigned depth)
@@ -120,7 +120,7 @@ bool ModuleExpander::substituted(const std::vector<ModuleLine>& body, const Bind
 	{
 		const ModuleLine result = substitute_module(line, bindings, unique, iteration);
 		account(result.text.size() + 1, line);
-		for (ModuleLine item : module_lines(result.text, result.symbols))
+		for (ModuleLine item : module_lines(result.text, result.symbols, result.labels))
 		{
 			item.line = line.line;
 			expanded.push_back(std::move(item));
@@ -161,11 +161,11 @@ void ModuleExpander::repeat(const std::string& kind, const ModuleLine& declarati
 			values.push_back(ModuleLine{});
 		count = values.size();
 	}
-	if (count > 1000000 || count > 1000000 - work_)
+	if (count > 1000000 || count > 1000000 - budget_->work)
 		cursor.fail("module repetition exceeds work limit");
 	for (uint64_t i = 0; i < count; ++i)
 	{
-		++work_;
+		++budget_->work;
 		if (kind == ".rept")
 		{
 			if (range(body, 0, body.size(), output, depth))
@@ -175,7 +175,7 @@ void ModuleExpander::repeat(const std::string& kind, const ModuleLine& declarati
 		{
 			Bindings bindings;
 			bindings.emplace(name, values[i]);
-			if (substituted(body, bindings, unique_, i, output, depth))
+			if (substituted(body, bindings, budget_->unique, i, output, depth))
 				return;
 		}
 	}

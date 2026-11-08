@@ -152,8 +152,12 @@ Numeric conditions and repetition counts accept absolute integer expressions,
 using GNU assembler precedence and truth values. Expansion must have bounded
 nesting, work and output size; malformed blocks and runaway recursion fail.
 
-Sharing macros with inline statements and symbol-dependent expressions remain
-extension goals.
+Namespace macro definitions are available to later inline and naked assembly.
+Capture the source environment at each statement: subsequent redefinition or
+purging must not change earlier code, including deferred members, template
+instances and inlined copies. Preserve typed operands and outgoing labels
+through expansion. Definitions inside one inline packet remain local to it.
+Symbol-dependent expressions remain an extension goal.
 
 ### Unwind descriptions
 
@@ -227,7 +231,7 @@ included in those reports or in the required course completion criteria.
 
 ### Further extensions
 
-Shared module/inline environments, broader directives/expressions, further relocations, inline-frame unwind state and broader
+Broader directives/expressions, further relocations, inline-frame unwind state and broader
 x86/VEX/EVEX coverage remain extension goals. Original Rust assembly is a useful
 cross-frontend consumer. These goals require additional contracts and tests;
 the current suite does not establish their completion. Header vocabulary for

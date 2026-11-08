@@ -79,6 +79,7 @@ protected:
 		bool pending_template;
 		bool definite_type;
 		bool special_member_clause;
+		uint32_t assembly_environment;
 		uint32_t pack_mentions;
 		uint32_t parameter_mentions;
 		StatementConflict conflict;
@@ -342,6 +343,8 @@ protected:
 	// clause's ellipsis (8.3.5p14).
 	uint32_t pack_mentions_;
 	uint32_t parameter_mentions_;
+	// Number of namespace assembly fragments preceding the current statement.
+	uint32_t assembly_environment_ = 0;
 	// Names of template parameters parsed so far: a base-specifier naming
 	// one is a dependent base.
 	uint32_t template_parameter_mentions_;

@@ -59,9 +59,9 @@ std::vector<ModuleLine> ModuleExpander::expand(const std::vector<ModuleLine>& in
 void ModuleExpander::account(uint64_t bytes, const ModuleLine& line)
 {
 	const uint64_t limit = 64u * 1024u * 1024u;
-	if (bytes > limit || bytes_ > limit - bytes)
+	if (bytes > limit || budget_->bytes > limit - bytes)
 		throw AssemblyError{ "module expansion exceeds byte budget", line.line, 1 };
-	bytes_ += bytes;
+	budget_->bytes += bytes;
 }
 void ModuleExpander::emit(const ModuleLine& line, std::vector<ModuleLine>& output)
 {
@@ -76,7 +76,7 @@ bool ModuleExpander::range(
 	for (size_t i = first; i < last; ++i)
 	{
 		const ModuleLine& line = input[i];
-		if (++work_ > 1000000)
+		if (++budget_->work > 1000000)
 			throw AssemblyError{ "module expansion work exceeds limit", line.line, 1 };
 		ModuleCursor cursor(line);
 		const std::string name = cursor.word();
@@ -162,9 +162,9 @@ bool ModuleExpander::range(
 		}
 		else
 		{
-			const auto found = macros_.find(module_macro_name(name));
-			if (found != macros_.end() && !cursor.take(':'))
-				invoke(line, cursor.position(), found->second, output, depth + 1);
+			const auto macro = macros_.find(module_macro_name(name));
+			if (macro && !cursor.take(':'))
+				invoke(line, cursor.position(), macro, output, depth + 1);
 			else
 				emit(line, output);
 		}

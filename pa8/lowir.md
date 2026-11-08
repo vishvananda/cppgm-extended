@@ -2152,6 +2152,7 @@ ordinary LowIR control flow. Opaque `assembly_function` definitions retain
 typed call signatures while assembly owns the complete ABI entry and exit;
 the optional `initial` mode supplies entry/exit unwind records.
 Ordered `assembly_global` invocations describe module code/data, linker symbols
-and source macro expansion while retaining typed symbol references. See
+and source macro expansion while retaining typed symbol references. Template
+`environment` prefixes select module macro snapshots for inline and raw bodies. See
 [the assembly boundary](../pa36/assembly.md). These forms add no required PA8
 work and do not change PA29's bounded GNU compatibility contract.

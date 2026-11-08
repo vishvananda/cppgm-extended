@@ -134,6 +134,11 @@ void append_assembly_definitions(std::string& out, const Program& program)
 		number(out, definition.state_read);
 		number(out, definition.state_write);
 		number(out, definition.argument_count);
+		if (definition.environment != 0)
+		{
+			out += "environment ";
+			number(out, definition.environment);
+		}
 		out += "{\n";
 		for (uint32_t i = 0; i < definition.operand_count; ++i)
 		{
