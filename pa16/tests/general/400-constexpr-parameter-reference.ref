@@ -1,0 +1,19 @@
+function @classify(%mode : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_Z8classifyRK3Tag] {
+  slot $mode : ptr
+  slot $value : i32
+
+  block ^entry:
+    store typed ptr %mode, $mode
+    %t1 = load typed ptr $mode
+    %t2 = call i32 @Tag__get(%t1)
+    store typed i32 %t2, $value
+    %t3 = load typed i32 $value
+    return i32 %t3
+}
+function @Tag__get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK3Tag3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 42
+}

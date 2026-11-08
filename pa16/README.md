@@ -85,6 +85,21 @@ The subobjects share the initialized variable's storage identity. This does
 not permit nonliteral initializer temporaries in constant expressions or
 constexpr variables of nonliteral type.
 
+### Unknown references and persistent constant objects
+
+Apply adopted P2280R4 when a constant evaluation passes an unknown reference
+or uses `this` for implicit or explicit member access. The referred object's
+type and subobject layout are known even when its stored values are not.
+A constexpr member returning a fixed property can be called through that
+reference; reading an unknown member value, an ordinary pointer value or a
+non-constexpr reference-producing call still fails. An unspecified object's
+address cannot escape as the result of a constant expression.
+
+Under CWG 2126, a const literal temporary whose lifetime a usable reference
+extends can supply its nonmutable values. Keep the temporary's identity,
+including pointers to itself or its subobjects, when publishing constant
+storage. Other local objects do not gain static lifetime from that publication.
+
 ### Output Format
 
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit

@@ -111,6 +111,13 @@ Private or protected access, including an inherited declaration's access path,
 can depend on specialization-specific friendship. Preserve these checks for the
 actual specialization; a value computed in another context grants no access.
 
+A static constexpr member of a fixed literal class can supply a nondependent
+value even inside a class template. A fixed value-initialization through a
+public constexpr default constructor and a public unique constexpr conversion
+does not become dependent merely because of that enclosing template. Retain
+private constructor and conversion checks for the specialization when friendship
+can affect their accessibility; genuinely dependent initializers still wait.
+
 ### Qualified template-name hiding
 
 Function and variable templates declared directly in a class participate in
