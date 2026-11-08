@@ -602,6 +602,7 @@ private:
 	const Type* deduce_class_declaration(
 		const Specifiers& specifiers, const syntax::InitDeclarator& init, Scope* scope, uint32_t location);
 	TemplateHead* class_deduction_head(ClassEntity* owner, const TemplateHead* inner, TypeList& remap);
+	void class_deduction_defaults(FunctionEntity* guide, const FunctionEntity* constructor);
 	FunctionEntity* class_deduction_guide(ClassEntity* cls, const FunctionEntity* constructor, bool copy);
 	void deduction_guide_declaration(const syntax::DeductionGuideDecl& decl, Scope* scope);
 	void class_deduction_candidates(ClassEntity* cls, std::vector<FunctionEntity*>& out);

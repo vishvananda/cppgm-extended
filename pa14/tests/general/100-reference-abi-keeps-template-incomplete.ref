@@ -1,0 +1,60 @@
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+
+declare function @__cxa_pure_virtual(%arg0 : ptr [object_bytes=8], %arg1 : ptr [pass=by_address]) -> void [unwind=no, return=noreturn, role=pure_virtual, binding=strong]
+
+global @__typeinfo_name__struct_Abstract [storage=readonly, binding=weak, object=_ZTS8Abstract] = {
+  i8 56
+  i8 65
+  i8 98
+  i8 115
+  i8 116
+  i8 114
+  i8 97
+  i8 99
+  i8 116
+  i8 0
+}
+global @__rtti_struct_Abstract [storage=readonly, binding=weak, object=_ZTI8Abstract] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Abstract
+}
+global @Abstract__vtable [storage=readonly, binding=weak, object=_ZTV8Abstract] = {
+  i64 0
+  ptr addr @__rtti_struct_Abstract
+  ptr addr @__cxa_pure_virtual
+}
+
+function @accept(%__param0 : ptr [pass=by_address]) -> void [binding=strong, object=_Z6acceptR8DeferredI7MissingE] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    return void
+}
+function @Abstract__Abstract__base_entry(%this : ptr [object_bytes=8]) -> void [binding=strong, object=_ZN8AbstractC2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Abstract__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+function @Abstract__Abstract(%this : ptr [object_bytes=8]) -> void [binding=strong, object=_ZN8AbstractC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Abstract__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}
+equivalent_entry @Abstract__Abstract = @Abstract__Abstract__base_entry

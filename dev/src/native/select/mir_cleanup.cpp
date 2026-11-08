@@ -346,7 +346,20 @@ TailCopies duplicate_short_tails(Function& f)
 		for (uint32_t i = block.first; i + 1 < block.first + block.count; ++i)
 			f.insts.push_back(f.insts[i]);
 		for (uint32_t i = tail.first; i < tail.first + tail.count; ++i)
-			f.insts.push_back(f.insts[i]);
+		{
+			Inst copy = f.insts[i];
+			if (copy.op == Op::JumpTable)
+			{
+				// Each dispatch owns the targets that later frame splitting
+				// and block renumbering rewrite. Sharing a slice would apply
+				// a block-index permutation once for every copied instruction.
+				const uint32_t first_target = static_cast<uint32_t>(f.jump_targets.size());
+				for (uint32_t k = 0; k < copy.aux2; ++k)
+					f.jump_targets.push_back(f.jump_targets[copy.aux + k]);
+				copy.aux = first_target;
+			}
+			f.insts.push_back(copy);
+		}
 		f.blocks[b].first = first;
 		f.blocks[b].count = static_cast<uint32_t>(f.insts.size()) - first;
 		if (dispatch)

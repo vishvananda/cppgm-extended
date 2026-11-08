@@ -3050,7 +3050,14 @@ lowir::Parameter ProgramLowering::parameter_for(const sema::Type* type, lowir::N
 	{
 		parameter.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
 		parameter.pass = ir_model::PPM_BY_ADDRESS;
-		if (type->element->kind != sema::TypeKind::Function &&
+		const sema::Type* element = type->element;
+		while (element->kind == sema::TypeKind::Array)
+			element = element->element;
+		const sema::ClassEntity* cls = sema::ClassOf(element);
+		// A reference ABI needs only an address. Object-size metadata may
+		// describe an already complete referent, but must not instantiate a
+		// class template (or an array's element class) just to annotate it.
+		if (element->kind != sema::TypeKind::Function && (cls == nullptr || cls->complete) &&
 			analyzer_->object_layout(type->element, size, alignment) && size != 0)
 			parameter.object_bytes = size;
 		return parameter;

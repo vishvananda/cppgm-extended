@@ -91,6 +91,8 @@ FunctionEntity* Analyzer::class_deduction_guide(ClassEntity* cls, const Function
 	guide->is_explicit = constructor != nullptr && constructor->is_explicit;
 	guide->default_arguments = constructor != nullptr ? constructor->default_arguments : nullptr;
 	guide->parameters = constructor != nullptr ? constructor->parameters : nullptr;
+	if (constructor != nullptr)
+		class_deduction_defaults(guide, constructor);
 	FunctionTemplateFacts* facts = function_template_facts(guide);
 	facts->head = head;
 	facts->class_deduction_parameters = outer->count;
@@ -98,6 +100,32 @@ FunctionEntity* Analyzer::class_deduction_guide(ClassEntity* cls, const Function
 		: inner != nullptr        ? DeductionGuideKind::TemplateConstructor
 								  : DeductionGuideKind::Constructor;
 	return guide;
+}
+
+void Analyzer::class_deduction_defaults(FunctionEntity* guide, const FunctionEntity* constructor)
+{
+	// A class template's ordinary constructor keeps its defaults in the
+	// parsed parameter clause until class instantiation. Its implicit guide
+	// needs their presence for viability, without evaluating those defaults
+	// or completing the class before deduction selects a specialization.
+	if (guide->default_arguments != nullptr || constructor->parameters == nullptr)
+		return;
+	const syntax::Slice<syntax::ParameterDeclaration*>& parameters = constructor->parameters->parameters;
+	if (parameters.size != guide->type->canonical->param_count)
+		return;
+	for (uint32_t i = 0; i < parameters.size; ++i)
+	{
+		const syntax::Initializer* initializer = parameters[i]->default_argument;
+		if (initializer == nullptr || initializer->expression == nullptr)
+			continue;
+		if (guide->default_arguments == nullptr)
+		{
+			guide->default_arguments = arena_.allocate_array<const syntax::Expr*>(parameters.size);
+			for (uint32_t j = 0; j < parameters.size; ++j)
+				guide->default_arguments[j] = nullptr;
+		}
+		guide->default_arguments[i] = initializer->expression;
+	}
 }
 
 Analyzer::ClassDeductionSet& Analyzer::class_deduction_set(ClassEntity* cls)
