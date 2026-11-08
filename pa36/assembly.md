@@ -155,8 +155,13 @@ invocation types. Native capability checks are separate: a packet can be
 structurally valid while requiring an unsupported register class, instruction
 form or control-flow feature. Such cases must fail clearly. The current native
 subset is listed in the [handout](README.md). VEX instruction operands can use
-literal XMM/YMM views independently of ordinary LowIR value types. Wider typed
-operand bindings and further register classes remain separate capabilities.
+literal XMM/YMM views independently of ordinary LowIR value types. A 256-bit payload uses existing `obj<32xalign>` storage with YMM alternatives,
+including stored input values or explicit input-storage pointers. Object
+alignment describes its storage; transfers must preserve all 32 bytes even
+when unaligned. XMM and YMM views of one register share an allocation unit.
+Capture full results before ordered output stores. This does not add a wide
+vector call ABI; larger values and further register classes remain separate
+capabilities.
 
 ## Nonreturning invocations
 

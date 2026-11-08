@@ -27,6 +27,8 @@ Reg physical(const Register& reg)
 
 unsigned width(lowir::Type type)
 {
+	if (wide_assembly_operand(type))
+		return type.bytes * 8;
 	if (type.kind() == lowir::TypeKind::V128)
 		return 128;
 	if (type.kind() == lowir::TypeKind::F32)
@@ -126,7 +128,9 @@ void expand(std::string& source, const lowir::AssemblyModule& module, const lowi
 		}
 		Register reg{ r < 16 ? RegisterBank::Gpr : RegisterBank::Vector, static_cast<uint8_t>(r < 16 ? r : r - 16),
 			static_cast<uint16_t>(
-				r >= 16 ? 128 : width(module.operands[definition.first_operand + piece.operand].type)),
+				r >= 16 && !wide_assembly_operand(module.operands[definition.first_operand + piece.operand].type)
+					? 128
+					: width(module.operands[definition.first_operand + piece.operand].type)),
 			0 };
 		if (piece.bits != 0)
 			reg.bits = piece.bits;

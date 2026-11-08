@@ -1,6 +1,7 @@
 #include "native/asm/vex_forms.h"
 
 #include "native/asm/operands.h"
+#include "native/backend_error.h"
 #include "x86_asm_model.h"
 
 namespace native {
@@ -188,6 +189,14 @@ void encode(Assembler& out, const Instruction& inst, const VexForm& form)
 	emit(out, form, bits, reg, source, other, opcode, has_immediate, control);
 }
 }
+void encode_assembly_vector_transfer(Assembler& out, const asm_model::Register& reg, const RM& memory, bool store)
+{
+	if (reg.bank != RegisterBank::Vector || reg.number >= 16 || reg.bits != 256 || reg.offset != 0 || memory.is_reg)
+		throw BackendError("invalid assembly vector transfer");
+	const VexForm form = { "vmovdqu", L::Move, 0x6f, 1, 2, 0, 3, 0, 0, 0 };
+	emit(out, form, reg.bits, reg.number, 0, memory, store ? 0x7f : 0x6f, false, 0);
+}
+
 bool encode_vex_form(Assembler& out, const assembly::Instruction& inst)
 {
 	if (inst.mnemonic == "vzeroupper" || inst.mnemonic == "vzeroall")

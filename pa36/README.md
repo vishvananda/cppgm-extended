@@ -96,8 +96,11 @@ insertion/extraction, broadcasts, mask extraction and fused arithmetic. Preserve
 scalar memory widths and merged upper lanes. Explicit XMM/YMM views must agree
 with the form; reject mixed widths, oversized control bytes and legacy prefixes
 before VEX. Support `vzeroupper` and `vzeroall`. Native observers check CPU support
-before executing feature-dependent forms. Literal wider registers and their
-clobbers do not yet establish wider typed operand or ABI support.
+before executing feature-dependent forms. Use `obj<32xalign>` storage for 256-bit operand payloads and YMM register
+alternatives. Capture every input byte before setting assembly registers and
+every output byte before assigning output places. Preserve XMM/YMM aliases,
+ties, early writes, volatile places and over-aligned local storage. This adds
+assembly transfers, not a general wide-vector call ABI.
 
 Support named and numeric local labels, forward/backward numeric references,
 GNU `%=` labels, and direct `jmp`/condition-code branches within one template.
