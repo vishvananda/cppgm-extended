@@ -1021,6 +1021,7 @@ FunctionEntity* Analyzer::deduce_for_call(
 	}
 	bool zipped_prefix = false;
 	TypeList zipped_arguments;
+	TypeList zipped_prefixes;
 	if (!prefixes.empty() && type->param_count != 0 && type->params[type->param_count - 1]->kind == TypeKind::Expansion)
 	{
 		PackList packs;
@@ -1038,9 +1039,13 @@ FunctionEntity* Analyzer::deduce_for_call(
 			// substitute T as a whole argument pack. Match the fixed prefix
 			// at each position while deducing the other packs in lockstep.
 			zipped_arguments = arguments;
-			for (uint32_t i = 0; i < prefixes.size(); ++i)
-				if (prefixes[i] != nullptr)
-					zipped_arguments[i] = nullptr;
+			zipped_prefixes.resize(head->count, nullptr);
+			for (uint32_t index : packs)
+				if (prefixes[index] != nullptr)
+				{
+					zipped_arguments[index] = nullptr;
+					zipped_prefixes[index] = prefixes[index];
+				}
 		}
 	}
 	// Parameters whose types involve explicitly specified arguments only
@@ -1119,7 +1124,7 @@ FunctionEntity* Analyzer::deduce_for_call(
 	}
 	if (trailing && call_arguments.size > fixed &&
 		!deduce_call_pack(parameters[total - 1]->element->canonical, call_arguments, fixed, depth, arguments,
-			zipped_prefix ? &prefixes : nullptr))
+			zipped_prefix ? &zipped_prefixes : nullptr))
 		return nullptr;
 	for (uint32_t index = 0; index < prefixes.size(); ++index)
 	{

@@ -791,9 +791,10 @@ bool Analyzer::deduce_call_pack(const Type* pattern, const syntax::Slice<syntax:
 				for (uint32_t i = 0; i < prefixes->size(); ++i)
 					if ((*prefixes)[i] != nullptr && j < (*prefixes)[i]->param_count)
 						fixed[i] = (*prefixes)[i]->params[j];
+				SoftSubstitution soft(*this);
 				parameter = substitute(
 					pattern, Substitution{ depth, fixed.data(), static_cast<uint32_t>(fixed.size()) });
-				if (parameter == nullptr)
+				if (parameter == nullptr || soft.failed())
 					return false;
 			}
 			const syntax::Expr* argument = call_arguments[first + j];

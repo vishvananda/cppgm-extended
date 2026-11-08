@@ -201,6 +201,10 @@ PA15 supports the following in addition to the PA14 subset:
 - a translation unit may instantiate dozens of distinct argument partitions
   for a function template with multiple parameter packs; every partition keeps
   its own argument-to-pack boundaries when specializations are reused
+- an explicitly supplied pack is a prefix that deduction can extend (14.8.1p9).
+  When another pack is deduced in lockstep, preserve each fixed prefix element
+  at its own position rather than substituting the entire pack as one type.
+  A pack already deduced elsewhere must still agree in every element
 - pack expansions in supported declarations, direct calls, and instantiated
   body shapes; an empty expanded parenthesized local initializer
   value-initializes its object, including zero initialization of scalars and
