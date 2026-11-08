@@ -1,0 +1,5 @@
+preproc 1
+sof tests/preproc/300-gnu-deprecated-attribute-probe.t
+identifier gnu_deprecated_available
+identifier unknown_attribute_still_absent
+eof

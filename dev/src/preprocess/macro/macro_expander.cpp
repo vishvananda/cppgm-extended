@@ -45,8 +45,8 @@ bool IsReportedAttribute(const char* spelling, uint32_t length, bool gnu)
 		length -= 4;
 	}
 	static const char* const kStandard[] = { "no_unique_address" };
-	static const char* const kGnu[] = { "always_inline", "noinline", "noreturn", "pure", "const", "used", "weak",
-		"packed", "aligned", "section", "vector_size", "gnu_inline", "abi_tag", "may_alias", "using_if_exists",
+	static const char* const kGnu[] = { "always_inline", "noinline", "noreturn", "deprecated", "pure", "const", "used",
+		"weak", "packed", "aligned", "section", "vector_size", "gnu_inline", "abi_tag", "may_alias", "using_if_exists",
 		"exclude_from_explicit_instantiation", "mode" };
 	const char* const* reported = gnu ? kGnu : kStandard;
 	const unsigned count = gnu ? sizeof(kGnu) / sizeof(kGnu[0]) : sizeof(kStandard) / sizeof(kStandard[0]);

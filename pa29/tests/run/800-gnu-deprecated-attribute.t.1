@@ -1,0 +1,8 @@
+#if !__has_attribute(deprecated) || !__has_attribute(__deprecated__)
+#error GNU deprecation attribute unavailable
+#endif
+__attribute__((deprecated)) int old_value() { return 3; }
+inline __attribute__((__deprecated__("old " "template"))) int old_inline() { return 5; }
+template<class T> inline __attribute__((deprecated())) int old_template(T value) { return value; }
+[[gnu::__deprecated__("old scoped")]] int old_scoped() { return 7; }
+int main() { return old_value()+old_inline()+old_template(11)+old_scoped()!=26; }

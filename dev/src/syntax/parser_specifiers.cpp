@@ -80,6 +80,11 @@ bool IsKeywordSpecifier(TokenKind kind)
 	}
 }
 
+bool IsDeprecatedAttribute(const char* spelling)
+{
+	return std::strcmp(spelling, "deprecated") == 0 || std::strcmp(spelling, "__deprecated__") == 0;
+}
+
 bool IsClassKey(TokenKind kind)
 {
 	return kind == TokenKind::KW_CLASS || kind == TokenKind::KW_STRUCT || kind == TokenKind::KW_UNION;
@@ -205,6 +210,16 @@ bool Parser::collect_attribute_specifiers(Attribute*& list, bool* standard)
 		*tail = node;
 		tail = &node->next;
 	};
+	// GNU deprecated: zero arguments, or one string message. Warning
+	// emission is optional; retain no object/type/ABI effect or AST node.
+	const auto deprecated_operand = [&]() {
+		if (!accept(TokenKind::OP_LPAREN) || accept(TokenKind::OP_RPAREN))
+			return true;
+		if (tok().kind != ParseTokenKind::Literal || (tok().flags & kStringLiteral) == 0)
+			return fail();
+		next();
+		return expect(TokenKind::OP_RPAREN);
+	};
 	// abi_tag ( string-literal , ... ): one node per literal (GCC and
 	// Clang reject any other argument, and an empty list); abi_tag alone
 	// one node without a literal (an inline namespace's name is its tag).
@@ -258,7 +273,12 @@ bool Parser::collect_attribute_specifiers(Attribute*& list, bool* standard)
 					: gnu && token.const_keyword                    ? "const"
 																	: "";
 				bool skipped = false;
-				if (std::strcmp(spelling, "section") == 0 || std::strcmp(spelling, "__section__") == 0)
+				if (IsDeprecatedAttribute(spelling))
+				{
+					if (!deprecated_operand())
+						return false;
+				}
+				else if (std::strcmp(spelling, "section") == 0 || std::strcmp(spelling, "__section__") == 0)
 				{
 					if (!section_operand(attribute))
 						return false;
@@ -341,7 +361,12 @@ bool Parser::collect_attribute_specifiers(Attribute*& list, bool* standard)
 			Attribute attribute = Attribute();
 			attribute.location = where;
 			bool kept = false;
-			if (!gnu_attribute(spelling, attribute, kept))
+			if (IsDeprecatedAttribute(spelling))
+			{
+				if (!deprecated_operand())
+					return false;
+			}
+			else if (!gnu_attribute(spelling, attribute, kept))
 			{
 				// Its operand did not parse; else a kind of the parsers here,
 				// or one skipped.
