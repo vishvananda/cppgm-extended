@@ -171,8 +171,10 @@ bool Analyzer::initializer_list_sequence(
 				? !list_sequence(static_cast<const syntax::BracedInitList&>(*item), element, step)
 				: !implicit_sequence(*item, element, step))
 			return false;
+		const bool ambiguous = sequence.ambiguous || step.ambiguous;
 		if (conversions_.compare(step, sequence) < 0)
 			sequence = step;
+		sequence.ambiguous = ambiguous;
 	}
 	sequence.form = ConversionForm::Standard;
 	sequence.constructor = nullptr;
@@ -386,6 +388,10 @@ bool Analyzer::deduce_list_elements(
 		return true;
 	if (array != nullptr && array->owner != nullptr && !deduce_array_bound(array, list.elements.size, depth, arguments))
 		return false;
+	// CWG1591: a fixed element type performs no deduction. Its elements
+	// convert after the deduced bound has completed the parameter type.
+	if (!dependent_type(element))
+		return true;
 	for (const syntax::Expr* item : list.elements)
 	{
 		if (item->kind == syntax::ExprKind::BracedInit)

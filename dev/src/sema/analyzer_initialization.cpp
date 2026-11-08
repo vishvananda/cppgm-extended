@@ -1006,8 +1006,10 @@ bool Analyzer::list_sequence(const syntax::BracedInitList& list, const Type* par
 						? !list_sequence(static_cast<const syntax::BracedInitList&>(*element), target->element, step)
 						: !implicit_sequence(*element, target->element, step))
 					return false;
+				const bool ambiguous = sequence.ambiguous || step.ambiguous;
 				if (conversions_.compare(step, sequence) < 0)
 					sequence = step;
+				sequence.ambiguous = ambiguous;
 			}
 		sequence.form = ConversionForm::Standard;
 		sequence.result = target;
@@ -1064,8 +1066,10 @@ bool Analyzer::list_sequence(const syntax::BracedInitList& list, const Type* par
 					? !list_sequence(static_cast<const syntax::BracedInitList&>(*element), part, step)
 					: !implicit_sequence(*element, part, step))
 				return false;
+			const bool ambiguous = sequence.ambiguous || step.ambiguous;
 			if (conversions_.compare(step, sequence) < 0)
 				sequence = step;
+			sequence.ambiguous = ambiguous;
 		}
 		// A part converted by a user-defined conversion makes the list's a
 		// user-defined conversion sequence of no one conversion function,
@@ -1073,8 +1077,10 @@ bool Analyzer::list_sequence(const syntax::BracedInitList& list, const Type* par
 		// conversion, as 13.3.3.1.5p4 ranks an aggregate's list).
 		if (sequence.rank == ConversionRank::UserDefined)
 		{
+			const bool ambiguous = sequence.ambiguous;
 			sequence = Conversion();
 			sequence.rank = ConversionRank::UserDefined;
+			sequence.ambiguous = ambiguous;
 		}
 		sequence.form = ConversionForm::Standard;
 		sequence.result = target->unqualified;

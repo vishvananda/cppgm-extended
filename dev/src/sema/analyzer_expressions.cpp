@@ -109,7 +109,7 @@ size_t HashConversion(const Conversion& c)
 		static_cast<size_t>(c.rank) << 12 | static_cast<size_t>(c.qualification) << 16 |
 		static_cast<size_t>(c.initialization) << 17 | static_cast<size_t>(c.rvalue_reference) << 18 |
 		static_cast<size_t>(c.temporary) << 19 | static_cast<size_t>(c.function_lvalue) << 20 |
-		static_cast<size_t>(c.initializer_list) << 21;
+		static_cast<size_t>(c.initializer_list) << 21 | static_cast<size_t>(c.ambiguous) << 22;
 	hash ^= reinterpret_cast<uintptr_t>(c.target) * 0x9E3779B97F4A7C15ull;
 	hash ^= reinterpret_cast<uintptr_t>(c.result) * 0xC2B2AE3D27D4EB4Full;
 	hash ^= reinterpret_cast<uintptr_t>(c.constructor) * 0x165667B19E3779F9ull;
@@ -123,8 +123,8 @@ bool SameConversion(const Conversion& a, const Conversion& b)
 	return a.form == b.form && a.first == b.first && a.second == b.second && a.qualification == b.qualification &&
 		a.rank == b.rank && a.initialization == b.initialization && a.rvalue_reference == b.rvalue_reference &&
 		a.temporary == b.temporary && a.function_lvalue == b.function_lvalue &&
-		a.initializer_list == b.initializer_list && a.target == b.target && a.result == b.result &&
-		a.constructor == b.constructor && a.argument == b.argument && a.after == b.after;
+		a.initializer_list == b.initializer_list && a.ambiguous == b.ambiguous && a.target == b.target &&
+		a.result == b.result && a.constructor == b.constructor && a.argument == b.argument && a.after == b.after;
 }
 
 // The object expression `this` of E1->E2, or `*this` of E1.E2.
@@ -2296,7 +2296,14 @@ ExprFacts* Analyzer::subscript(const syntax::SubscriptExpr& expr, Scope* scope)
 	else
 		convert_operand(array, bt);
 	convert_operand(commuted ? *expr.base : *expr.index, promoted(it));
-	ExprFacts* facts = new_facts(expr, bt->element, ValueCategory::LValue);
+	const ExprFacts* original = facts_of(array);
+	// CWG1213: subscripting an array preserves its value category, unlike
+	// subscripting the pointer obtained after an actual decay.
+	const ValueCategory category = original->type->kind == TypeKind::Array &&
+			original->category != ValueCategory::LValue
+		? ValueCategory::XValue
+		: ValueCategory::LValue;
+	ExprFacts* facts = new_facts(expr, bt->element, category);
 	facts->potential_result = potential;
 	if (commuted)
 		facts->flags |= kCommuted;
@@ -2829,6 +2836,24 @@ ExprFacts* Analyzer::functional_cast(const syntax::FunctionalCastExpr& expr, Sco
 	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_)
 		error(expr.location, "functional cast without a type");
 	const Type* target = specifiers.type;
+	if (expr.braced != nullptr && target->is_reference())
+	{
+		// CWG2894: T{...} for a reference has the effect and category of
+		// initializing an invented reference, not a prvalue reference.
+		list_argument(*expr.braced, target, scope, expr.location);
+		if (failed())
+			return nullptr;
+		ExprFacts* list = facts_of(*expr.braced);
+		if (!list->type->is_reference() && convert(*expr.braced, target, false) == nullptr)
+			return nullptr;
+		ValueCategory category;
+		const Type* result = result_category(target, category);
+		ExprFacts* facts = new_facts(expr, result, category);
+		facts->flags |= kReferenceCast;
+		facts->target = target;
+		check_temporary_destruction(list, expr.location);
+		return facts;
+	}
 	if (target->unqualified->kind == TypeKind::Class)
 	{
 		// 5.2.3: `T(args)` direct-initializes a prvalue of the class, `T{...}`
@@ -2850,8 +2875,19 @@ ExprFacts* Analyzer::functional_cast(const syntax::FunctionalCastExpr& expr, Sco
 	}
 	if (expr.braced != nullptr && target->kind == TypeKind::Array)
 	{
+		// 8.5.1p4: an unknown bound is deduced from a nonempty list;
+		// an empty list cannot form a zero-length array temporary.
+		if (target->bound == 0 && expr.braced->elements.empty())
+		{
+			substitution_error(expr.location, "empty initializer for an array of unknown bound");
+			return nullptr;
+		}
 		const ExprFacts* list = braced_list(*expr.braced, target, scope);
-		return failed() ? nullptr : new_facts(expr, list->type, ValueCategory::PRValue);
+		if (failed())
+			return nullptr;
+		ExprFacts* facts = new_facts(expr, list->type, ValueCategory::PRValue);
+		check_temporary_destruction(facts, expr.location);
+		return facts;
 	}
 	if (expr.braced != nullptr)
 	{
@@ -2999,6 +3035,20 @@ ExprFacts* Analyzer::explicit_conversion(
 			substitution_error(expr.location,
 				glvalue_cast ? "invalid cast to a reference type" : "cast of an rvalue to an lvalue reference");
 			return nullptr;
+		}
+		if (static_kind && rvalue && (source->flags & kBitField) != 0)
+		{
+			// 5.2.9p3: after compatibility is checked, copy the bit-field's
+			// value into a temporary; a reference cannot designate its bits.
+			conversion.form = ConversionForm::Reference;
+			conversion.rank = ConversionRank::Exact;
+			conversion.first = LvalueTransform::LvalueToRvalue;
+			conversion.target = target;
+			conversion.result = referenced;
+			conversion.temporary = true;
+			conversion.rvalue_reference = true;
+			record_conversion(source, conversion);
+			converted = true;
 		}
 		odr_use_constants(*operand, converted ? &conversion : nullptr);
 		const ValueCategory category = !rvalue || referenced->kind == TypeKind::Function ? ValueCategory::LValue

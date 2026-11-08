@@ -68,6 +68,8 @@ const syntax::Expr* ReferenceCastOperand(const syntax::Expr* expr)
 	if (expr->kind == syntax::ExprKind::FunctionalCast)
 	{
 		const syntax::FunctionalCastExpr* cast = static_cast<const syntax::FunctionalCastExpr*>(expr);
+		if (cast->braced != nullptr && (expr->facts->flags & sema::kReferenceCast) != 0)
+			return cast->braced;
 		return cast->arguments.size == 1 ? cast->arguments[0] : nullptr;
 	}
 	if (expr->kind == syntax::ExprKind::Call)
@@ -720,6 +722,8 @@ Place FunctionLowering::glvalue(const syntax::Expr& expr)
 	case syntax::ExprKind::FunctionalCast:
 	{
 		const syntax::FunctionalCastExpr& functional = static_cast<const syntax::FunctionalCastExpr&>(*e);
+		if (functional.braced != nullptr && (facts->flags & sema::kReferenceCast) != 0)
+			return reference_cast(*e, *functional.braced);
 		if (functional.arguments.size == 1)
 			return reference_cast(*e, *functional.arguments[0]);
 		// An array prvalue: the temporary array (12.2p1).
@@ -756,10 +760,11 @@ Place FunctionLowering::reference_cast(const syntax::Expr& expr, const syntax::E
 	// 5.2.9p2, 5.2.11, 5.4: a cast to a reference type designates the
 	// operand's object; 5.2.9p4: or the temporary its binding makes.
 	const sema::Conversion* binding = WithoutParentheses(&operand_expr)->facts->conversion;
-	if ((facts->flags & sema::kReferenceCast) != 0 && binding != nullptr &&
-		binding->form == sema::ConversionForm::Reference &&
-		(binding->constructor != nullptr || binding->temporary ||
-			binding->second == sema::ValueConversion::DerivedToBase))
+	if ((facts->flags & sema::kReferenceCast) != 0 &&
+		(operand_expr.kind == syntax::ExprKind::BracedInit ||
+			(binding != nullptr && binding->form == sema::ConversionForm::Reference &&
+				(binding->constructor != nullptr || binding->temporary ||
+					binding->second == sema::ValueConversion::DerivedToBase))))
 	{
 		place.storage = bind_reference(operand_expr, facts->target, ConversionContext::Cast);
 		return place;
@@ -2844,6 +2849,13 @@ void FunctionLowering::extension_path(const syntax::Expr* expr)
 		else if (e->kind == syntax::ExprKind::Subscript && (facts->flags & sema::kOperatorCall) == 0 &&
 			ArrayOperand(static_cast<const syntax::SubscriptExpr*>(e)) != nullptr)
 			expr = ArrayOperand(static_cast<const syntax::SubscriptExpr*>(e));
+		else if (const syntax::Expr* made = CastTemporaryOperand(e))
+		{
+			// A glvalue conditional can select a converting reference cast's
+			// temporary just as it can select an ordinary class prvalue.
+			persistent_path_.push_back(WithoutParentheses(made));
+			return;
+		}
 		else if ((facts->flags & sema::kReferenceCast) != 0 && facts->target != nullptr &&
 			facts->target->is_reference() && ReferenceCastOperand(e) != nullptr &&
 			BindsDirectly(WithoutParentheses(ReferenceCastOperand(e))))
@@ -2980,7 +2992,8 @@ bool FunctionLowering::extends_temporary(const syntax::Expr* expr)
 	extension_path(expr);
 	bool found = false;
 	for (size_t i = mark; i < persistent_path_.size() && !found; ++i)
-		found = destroyed_temporary(persistent_path_[i]->facts->type) || destroyed_list_array(*persistent_path_[i]);
+		found = destroyed_temporary(persistent_path_[i]->facts->type) || destroyed_list_array(*persistent_path_[i]) ||
+			binding_temporary(*persistent_path_[i]) != nullptr;
 	persistent_path_.resize(mark);
 	return found;
 }
@@ -3061,7 +3074,15 @@ lowir::Value FunctionLowering::bind_converted(const syntax::Expr& expr, const se
 		open_deferred_region();
 		call_constructor(conversion->constructor, object, expr, conversion->argument, expr.location);
 		if (destroyed)
-			temporary_alive(object, conversion->result);
+		{
+			const bool alive = temporary_alive(object, conversion->result);
+			for (size_t i = 0; alive && scope_extension_ != nullptr && i < persistent_path_.size(); ++i)
+				if (persistent_path_[i] == e)
+				{
+					extend_temporary(scope_extension_);
+					break;
+				}
+		}
 		else if (persistent)
 			persistent_alive(temporary.storage, conversion->result);
 		return object;

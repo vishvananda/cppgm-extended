@@ -523,6 +523,14 @@ bool Analyzer::user_conversion(const ExprFacts* from, const Type* target, Conver
 	if (!unique)
 	{
 		user_candidates_.resize(base);
+		if (count != 0)
+		{
+			out = Conversion();
+			out.ambiguous = true;
+			out.rank = ConversionRank::UserDefined;
+			out.target = target;
+			out.result = reference ? object : object->unqualified;
+		}
 		return false;
 	}
 	const UserCandidate chosen = candidates[best];
@@ -718,6 +726,7 @@ bool Analyzer::direct_reference_conversion(
 	const FunctionEntity* best = nullptr;
 	Conversion best_first = Conversion(), best_second = Conversion();
 	bool ambiguous = false;
+	const bool function_reference = target->is_reference() && target->element->kind == TypeKind::Function;
 	for (size_t k = functions; k < conversion_scratch_.size(); ++k)
 	{
 		const FunctionEntity* function = conversion_scratch_[k];
@@ -727,7 +736,9 @@ bool Analyzer::direct_reference_conversion(
 					: (function = deduce_for_conversion(conversion_scratch_[k], target))) == nullptr)
 			continue;
 		const Type* returned = function->type->canonical->element;
-		if ((function->is_explicit && !direct) || returned->kind != TypeKind::LValueReference)
+		if ((function->is_explicit && !direct) ||
+			(returned->kind != TypeKind::LValueReference &&
+				(!function_reference || returned->kind != TypeKind::RValueReference)))
 			continue;
 		Conversion first = Conversion(), second = Conversion();
 		if (!object_sequence(from, function, true, first) ||
@@ -794,6 +805,17 @@ int Analyzer::user_candidate_order(const FunctionEntity* a, const Conversion& a_
 			if (ca != cb)
 				order = conversions_.is_base_of(ca, cb) ? -1 : conversions_.is_base_of(cb, ca) ? 1 : 0;
 		}
+	}
+	// CWG1328: for direct function-reference binding, matching the declared
+	// reference kind wins before the non-template/template preference.
+	if (order == 0 && a_second.target != nullptr && a_second.target->is_reference() &&
+		a_second.target->element->kind == TypeKind::Function && !a->constructor && !b->constructor)
+	{
+		const TypeKind target_kind = a_second.target->kind;
+		const bool a_match = a->type->canonical->element->kind == target_kind;
+		const bool b_match = b->type->canonical->element->kind == target_kind;
+		if (a_match != b_match)
+			order = a_match ? 1 : -1;
 	}
 	if (order == 0 && (a->primary != nullptr) != (b->primary != nullptr))
 		order = a->primary == nullptr ? 1 : -1;

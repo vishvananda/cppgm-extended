@@ -994,8 +994,16 @@ const Type* Analyzer::deduced_type(const Specifiers& specifiers, const Type* dec
 		return result;
 	}
 	if (expression->kind == syntax::ExprKind::BracedInit)
-		return list_deduced_type(
-			specifiers, declared, static_cast<const syntax::BracedInitList&>(*expression), scope, location);
+	{
+		const auto& list = static_cast<const syntax::BracedInitList&>(*expression);
+		if (initializer->kind != syntax::InitializerKind::Braced)
+			return list_deduced_type(specifiers, declared, list, scope, location);
+		// N3922: direct-list auto deduces from its sole initializer-clause;
+		// only copy-list auto invents std::initializer_list<U>.
+		if (list.elements.size != 1 || list.elements[0]->kind == syntax::ExprKind::BracedInit)
+			error(location, "direct-list auto requires one expression");
+		expression = list.elements[0];
+	}
 	const Type* p = replaced_auto(declared, auto_placeholder_, specifiers.cv);
 	TypeList deduced;
 	deduced.push_back(nullptr);
@@ -1717,12 +1725,15 @@ void Analyzer::note_user_provided(const FunctionEntity* function, const syntax::
 	// assignment operator is a non-template operator= of one parameter of
 	// type X, X&, const X&, volatile X& or const volatile X& (12.8p17).
 	const Scope* owner = function->owner;
-	if (owner->kind != ScopeKind::Class ||
-		(initializer != nullptr &&
-			(initializer->kind == syntax::InitializerKind::Default ||
-				initializer->kind == syntax::InitializerKind::Delete)))
+	if (owner->kind != ScopeKind::Class)
 		return;
 	ClassEntity* entity = static_cast<ClassEntity*>(owner->entity);
+	// CWG1518: an explicit constructor excludes aggregate initialization,
+	// including one defaulted on its first declaration.
+	entity->not_aggregate = entity->not_aggregate || (function->constructor && function->is_explicit);
+	if (initializer != nullptr &&
+		(initializer->kind == syntax::InitializerKind::Default || initializer->kind == syntax::InitializerKind::Delete))
+		return;
 	bool special = function->constructor || function->name == destructor_key_;
 	if (function->name == assign_key_ && !function->templated)
 	{

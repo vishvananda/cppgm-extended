@@ -495,11 +495,12 @@ FunctionEntity* Analyzer::subobject_copy(ClassEntity* cls, CopyKind kind, uint8_
 	FunctionEntity* selected = chosen.function;
 	if (!selected->implicit && cls->scope != nullptr)
 	{
+		const FunctionEntity* declaration = selected->primary != nullptr ? selected->primary : selected;
 		const NameEntry* entry = names_.find(cls->scope, assignment ? assign_key_ : constructor_key_);
 		for (const FunctionList* node = entry != nullptr ? entry->functions : nullptr; node != nullptr;
 			node = node->next)
 		{
-			if (node->binding->entity != selected)
+			if (node->binding->entity != declaration)
 				continue;
 			const ClassEntity* via = nullptr;
 			const ClassEntity* acted = member ? cls : from;

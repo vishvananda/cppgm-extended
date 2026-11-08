@@ -973,7 +973,8 @@ bool Analyzer::implicit_sequence(const syntax::Expr& argument, const Type* param
 	// functions.
 	const bool direct = direct_class_ != nullptr && parameter->is_reference() &&
 		parameter->element->unqualified == direct_class_->type;
-	return user_conversion(facts, parameter, out, direct);
+	// 13.3.3.1p10: ambiguity does not remove an overload candidate.
+	return user_conversion(facts, parameter, out, direct) || out.ambiguous;
 }
 
 bool Analyzer::object_sequence(const ExprFacts* object, const FunctionEntity* function, bool ranking, Conversion& out)

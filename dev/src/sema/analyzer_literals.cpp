@@ -123,13 +123,17 @@ ExprFacts* Analyzer::user_numeric_literal(const syntax::LiteralExpr& expr, const
 			: FundamentalType::LongDouble);
 	FunctionEntity* function = nullptr;
 	uint64_t form = kLiteralCallCooked;
-	for (const FunctionList* node = found.functions; node != nullptr && function == nullptr; node = node->next)
+	for (const FunctionList* node = found.functions; node != nullptr; node = node->next)
 	{
 		FunctionEntity* candidate = static_cast<FunctionEntity*>(node->binding->entity);
 		const Type* type = candidate->type->canonical;
 		if (!node->binding->invisible && !candidate->templated && type->param_count == 1 && !type->variadic &&
 			type->params[0]->unqualified == cooked)
+		{
+			if (function != nullptr && function != candidate)
+				substitution_error(expr.location, "ambiguous literal operator lookup");
 			function = candidate;
+		}
 	}
 	const Type* raw = types_.pointer(types_.qualified(types_.fundamental(FundamentalType::Char), kConst));
 	for (const FunctionList* node = found.functions; node != nullptr && function == nullptr; node = node->next)

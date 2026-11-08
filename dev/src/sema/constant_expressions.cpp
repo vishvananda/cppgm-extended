@@ -854,6 +854,8 @@ bool ConstantInterpreter::glvalue(const syntax::Expr& expr, ConstPlace& out)
 	case syntax::ExprKind::FunctionalCast:
 	{
 		const syntax::FunctionalCastExpr& functional = static_cast<const syntax::FunctionalCastExpr&>(*e);
+		if (functional.braced != nullptr && (facts->flags & kReferenceCast) != 0)
+			return reference_cast(*e, *functional.braced, out);
 		if (functional.arguments.size == 1)
 			return reference_cast(*e, *functional.arguments[0], out);
 		break;
@@ -2289,8 +2291,11 @@ bool ConstantInterpreter::reference_cast(const syntax::Expr& expr, const syntax:
 		return fail(expr.location, "a reinterpret_cast or dynamic_cast in a constant expression");
 	const ExprFacts* operand_facts = WithoutParentheses(&operand_expr)->facts;
 	const Conversion* binding = operand_facts->conversion;
-	if ((facts->flags & kReferenceCast) != 0 && binding != nullptr && binding->form == ConversionForm::Reference &&
-		(binding->constructor != nullptr || binding->temporary || binding->second == ValueConversion::DerivedToBase))
+	if ((facts->flags & kReferenceCast) != 0 &&
+		(operand_expr.kind == syntax::ExprKind::BracedInit ||
+			(binding != nullptr && binding->form == ConversionForm::Reference &&
+				(binding->constructor != nullptr || binding->temporary ||
+					binding->second == ValueConversion::DerivedToBase))))
 		return bind(operand_expr, binding, facts->target, out);
 	if (!object_place(operand_expr, out))
 		return false;
@@ -2359,9 +2364,14 @@ bool ConstantInterpreter::binds_temporary(const syntax::Expr& expr, const Conver
 		{
 			if (e->kind == syntax::ExprKind::Cast)
 				work.push_back(static_cast<const syntax::CastExpr*>(e)->operand);
-			else if (e->kind == syntax::ExprKind::FunctionalCast &&
-				static_cast<const syntax::FunctionalCastExpr*>(e)->arguments.size == 1)
-				work.push_back(static_cast<const syntax::FunctionalCastExpr*>(e)->arguments[0]);
+			else if (e->kind == syntax::ExprKind::FunctionalCast)
+			{
+				const auto* cast = static_cast<const syntax::FunctionalCastExpr*>(e);
+				if (cast->braced != nullptr)
+					work.push_back(cast->braced);
+				else if (cast->arguments.size == 1)
+					work.push_back(cast->arguments[0]);
+			}
 		}
 		else if (e->kind == syntax::ExprKind::Conditional)
 		{

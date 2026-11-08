@@ -115,6 +115,9 @@ struct Conversion
 	bool initializer_list;
 	// CWG1307's extent tie-break applies only to array list-initialization.
 	bool array_list;
+	// 13.3.3.1p10: viable for ranking, ill-formed if selected. Kept
+	// independently of form so array/list wrappers preserve the fact.
+	bool ambiguous;
 	// The type converted to (the reference type for a binding).
 	const Type* target;
 	// The type the standard conversion yields (for a binding, the referenced

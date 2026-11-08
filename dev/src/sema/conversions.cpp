@@ -617,6 +617,8 @@ int ConversionRules::compare(const Conversion& a, const Conversion& b)
 	const bool b_user = b.rank == ConversionRank::UserDefined;
 	if (a_user != b_user)
 		return a_user ? -1 : 1;
+	if (a.ambiguous || b.ambiguous)
+		return 0;
 	// p3: of two list-initialization sequences, one converting to
 	// std::initializer_list<X> beats one that does not.
 	if (a.initializer_list != b.initializer_list)

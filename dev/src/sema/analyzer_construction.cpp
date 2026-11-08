@@ -399,7 +399,8 @@ void Analyzer::check_temporary_destruction(const ExprFacts* facts, uint32_t loca
 	// member of it is named or it is discarded (see the callers); in a
 	// substitution that is its failure (14.8.2p8).
 	if (facts == nullptr || facts->type == nullptr || facts->category != ValueCategory::PRValue ||
-		(facts->flags & (kOverloadSet | kBoundMember)) != 0 || facts->type->unqualified->kind != TypeKind::Class)
+		(facts->flags & (kOverloadSet | kBoundMember)) != 0 ||
+		(facts->type->unqualified->kind != TypeKind::Class && facts->type->kind != TypeKind::Array))
 		return;
 	check_destruction(facts->type, expression_scope_, location);
 }
@@ -1208,6 +1209,9 @@ FunctionEntity* Analyzer::initialize_class(
 		if (list->elements.empty() && (implicit_constructor(entity) != nullptr || failed()))
 		{
 			facts->entity = value_initialize(entity, location);
+			if (init.kind == syntax::InitializerKind::Assign && facts->entity != nullptr &&
+				static_cast<const FunctionEntity*>(facts->entity)->is_explicit)
+				substitution_error(location, "copy-list-initialization selects an explicit constructor");
 			return static_cast<FunctionEntity*>(const_cast<Entity*>(facts->entity));
 		}
 		// Each element typed once (a call's braced argument's were, for

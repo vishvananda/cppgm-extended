@@ -210,6 +210,11 @@ bool Analyzer::member_subobject(const syntax::Expr& expr, const Entity* member, 
 void Analyzer::check_conversion_access(
 	const ExprFacts* from, const Conversion& conversion, uint32_t location, bool access)
 {
+	if (conversion.ambiguous)
+	{
+		substitution_error(location, "the selected argument conversion is ambiguous");
+		return;
+	}
 	// 4.10p3, 8.5.3p5, 13.3.3.1.4p1: a conversion to a base (of a pointer,
 	// a reference binding or an object) needs an accessible unambiguous
 	// base; 4.11p2: a pointer to member's conversion to a derived class's,
