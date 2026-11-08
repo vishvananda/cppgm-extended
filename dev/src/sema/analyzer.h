@@ -789,6 +789,10 @@ private:
 		bool dependent, const int32_t* elements = nullptr);
 	bool element_renames(const Scope* scope, uint32_t depth, const int32_t* elements, uint32_t count,
 		const Type* nested, std::vector<std::pair<const Identifier*, const Identifier*>>& out);
+	Scope* selected_scope(Scope* scope, const TemplateParameterEntity* operand, uint32_t depth,
+		const Type* const* selected, uint32_t count, const Type* whole,
+		std::vector<std::pair<const Identifier*, const Identifier*>>& renames);
+	bool pack_has_expansion(const Type* pack);
 	static uint8_t HeadDepth(const Scope* scope);
 	bool unsubstituted_depth(
 		const TemplateParameterEntity* placeholder, const PendingSubstitution* earlier, uint32_t depth);
@@ -798,7 +802,7 @@ private:
 		const syntax::Expr& operand, Scope* scope, const Scope* home, bool value, const Type* target);
 	bool instantiation_dependent(const syntax::Expr& expr, Scope* scope, bool contextual_access = false);
 	const Type* pending_value(const TemplateParameterEntity* placeholder, uint32_t depth, const Type* const* canonical,
-		uint32_t count, const PendingSubstitution* earlier);
+		uint32_t count, const PendingSubstitution* earlier, const Type* whole = nullptr);
 	const Type* substitute_pending(const Type* type, const Substitution& substitution);
 	Scope* enclosing_frame(Scope* scope, const Substitution& substitution);
 	void bind_argument(Scope* frame, Binding* binding, const Type* argument, int32_t element = -1);
@@ -1831,7 +1835,8 @@ private:
 	bool keyed_dependent_ = false;
 	bool keyed_sizeof_pack_ = false;
 	const Type* equivalent_placeholder(const TemplateParameterEntity* placeholder, uint32_t depth,
-		const Type* const* canonical, uint32_t count, DecltypeKey& key, bool& shared, bool& independent);
+		const Type* const* canonical, uint32_t count, DecltypeKey& key, bool& shared, bool& independent,
+		const Type* whole = nullptr);
 	bool names_placeholder(const Type* type, uint32_t level) const;
 	bool names_ordering_argument(const Type* type) const;
 	bool ordering_argument_components(const Type* type) const;
@@ -1839,6 +1844,10 @@ private:
 	// Shared subgraphs are visited once, including negative answers.
 	mutable PointerMap ordering_argument_memo_;
 	FlatMap<SubstitutionKey, const Type*, SubstitutionHash> decltype_substitutions_;
+	// Rare pending expressions which need both an element and its whole pack.
+	std::vector<const Type*> pending_whole_arguments_;
+	PointerMap pack_expansion_memo_;
+	PointerMap captured_pack_bindings_;
 	uint32_t anonymous_enums_;
 	// Inside a class object's initializer (see initializer_names).
 	bool suppress_implicit_;

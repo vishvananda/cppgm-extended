@@ -520,6 +520,53 @@ const Type* const* Analyzer::effective_arguments(const Substitution& substitutio
 	return scratch.data();
 }
 
+Scope* Analyzer::selected_scope(Scope* scope, const TemplateParameterEntity* operand, uint32_t depth,
+	const Type* const* selected, uint32_t count, const Type* whole,
+	std::vector<std::pair<const Identifier*, const Identifier*>>& renames)
+{
+	// Bind the whole pack for sizeof... and nested expansions, and a distinct
+	// name for its selected value. The synthetic index is outside this whole
+	// pack, never a historical position in a partially expanded argument list.
+	SmallList<int32_t, 8> elements(count, -1);
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		if (whole->params[i] != selected[i] && whole->params[i]->kind == TypeKind::Pack)
+			elements[i] = static_cast<int32_t>(whole->params[i]->param_count);
+	}
+	const bool nested = element_renames(
+		operand->expression_scope, depth, elements.data(), count, operand->nested_packs, renames);
+	// Without a nested expansion, only the BoundPack is needed, not all of
+	// its element bindings for every selected element.
+	scope = substituted_scope(
+		scope, Substitution{ depth, whole->params, count, nested ? nullptr : elements.data() }, operand);
+	Scope* frame = new_scope(ScopeKind::TemplateParameters, scope, nullptr, nullptr, nullptr);
+	frame->dumped = false;
+	frame->lists = 0;
+	const Scope* parameters = operand->expression_scope;
+	while (parameters != nullptr && !DeclaresDepth(parameters, depth))
+		parameters = parameters->parent;
+	for (const Binding* binding = parameters != nullptr ? parameters->bindings : nullptr; binding != nullptr;
+		binding = binding->next)
+	{
+		if (!DeclaresParameter(binding))
+			continue;
+		const TemplateParameterEntity* parameter = static_cast<const TemplateParameterEntity*>(binding->entity);
+		if (parameter->depth != depth || parameter->index >= count || parameter->name == nullptr ||
+			elements[parameter->index] < 0)
+			continue;
+		const Identifier* name = pack_element_name(parameter->name, static_cast<uint32_t>(elements[parameter->index]));
+		const LookupResult pack = names_.unqualified(scope, parameter->name, LookupFilter::Ordinary);
+		if (pack.found() && pack.binding->type != nullptr && pack.binding->type->kind == TypeKind::BoundPack)
+			captured_pack_bindings_.set(pack.binding, 1);
+		const Type* value = selected[parameter->index];
+		Binding* alias = parameter->value_type != nullptr ? value_binding(parameter, value, frame, name)
+														  : new_binding(BindingKind::TypeAlias, name, nullptr, value);
+		alias->hidden = true;
+		declare_in(frame, alias);
+	}
+	return frame;
+}
+
 void Analyzer::flattened_arguments(const Type* const* arguments, uint32_t count, TypeList& out)
 {
 	// A specialization's arguments as a template-id would give them: each
@@ -767,6 +814,20 @@ Scope* Analyzer::function_pack_scope(Scope* parent, const syntax::ParameterClaus
 	return scope;
 }
 
+bool Analyzer::pack_has_expansion(const Type* pack)
+{
+	// A canonical argument pack's cardinality is unknown only while a
+	// direct expansion remains. Dependent scalar arguments still count once.
+	const uint32_t known = pack_expansion_memo_.find(pack);
+	if (known != PointerMap::kMissing)
+		return known != 0;
+	bool expansion = false;
+	for (uint32_t i = 0; i < pack->param_count && !expansion; ++i)
+		expansion = pack->params[i]->kind == TypeKind::Expansion;
+	pack_expansion_memo_.set(pack, expansion ? 1 : 0);
+	return expansion;
+}
+
 bool Analyzer::pack_size(const Identifier* pack, Scope* scope, uint64_t& count)
 {
 	// 5.3.3p5: sizeof... of a pack an instantiation binds to an argument
@@ -777,6 +838,8 @@ bool Analyzer::pack_size(const Identifier* pack, Scope* scope, uint64_t& count)
 	if (type != nullptr && type->kind == TypeKind::BoundPack)
 		type = type->element;
 	if (type == nullptr || type->kind != TypeKind::Pack)
+		return false;
+	if (pack_has_expansion(type))
 		return false;
 	count = type->param_count;
 	return true;

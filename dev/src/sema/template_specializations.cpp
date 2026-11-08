@@ -1385,6 +1385,10 @@ bool Analyzer::same_ordering_type(const Type* first, const Type* second)
 		// rather than the final operand's, and must retain their identity.
 		if (a->key == nullptr || b->key == nullptr || a->pending == nullptr || b->pending == nullptr ||
 			a->pending->earlier != nullptr || b->pending->earlier != nullptr || a->non_type != b->non_type ||
+			(a->pending->whole_index != 0 &&
+				names_placeholder(pending_whole_arguments_[a->pending->whole_index - 1], 0)) ||
+			(b->pending->whole_index != 0 &&
+				names_placeholder(pending_whole_arguments_[b->pending->whole_index - 1], 0)) ||
 			names_placeholder(a->pending->arguments, 0) || names_placeholder(b->pending->arguments, 0))
 			return false;
 		return DecltypeKey{ a->key + 1, static_cast<uint32_t>(a->key[0]) } ==

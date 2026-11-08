@@ -273,6 +273,9 @@ struct PendingSubstitution
 	// The canonical arguments, as a Pack.
 	const Type* arguments;
 	uint32_t depth;
+	// One-based index of captured whole arguments in the analyzer, or zero.
+	// The selected arguments above remain the ordinary operand bindings.
+	uint32_t whole_index;
 	// The substitution of another depth applied before this one (its
 	// expression names parameters of both), or null.
 	const PendingSubstitution* earlier;

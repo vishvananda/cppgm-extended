@@ -721,9 +721,28 @@ bool Analyzer::decltype_words(const syntax::Expr* expr, Scope* scope)
 		// by its position, a function parameter pack as named, flagged).
 		const LookupResult found = names_.unqualified(
 			scope, static_cast<const syntax::SizeofPackExpr*>(expr)->pack, LookupFilter::Ordinary);
-		if (!found.found() || found.ambiguous || found.binding->entity == nullptr)
+		if (!found.found() || found.ambiguous)
 			return false;
 		keyed_sizeof_pack_ = true;
+		if (found.binding->type != nullptr && found.binding->type->kind == TypeKind::BoundPack)
+		{
+			const Type* captured = found.binding->type->element;
+			if (captured_pack_bindings_.find(found.binding) == PointerMap::kMissing)
+			{
+				words.push_back(Word(kWordNode, kind));
+				words.push_back(PointerWord(found.binding->type->entity));
+				keyed_dependent_ = true;
+				return true;
+			}
+			// A captured alias pack can mix residual expansions and fixed
+			// arguments. Its full typed argument list is part of the key.
+			words.push_back(Word(kWordNode, kind | 2u << 8));
+			words.push_back(PointerWord(captured));
+			keyed_dependent_ = true;
+			return true;
+		}
+		if (found.binding->entity == nullptr)
+			return false;
 		if (found.binding->kind == BindingKind::Parameter && found.binding->type != nullptr &&
 			PrototypeScope(found.binding->entity->owner))
 		{
@@ -1254,7 +1273,7 @@ bool Analyzer::placeholder_words(
 }
 
 const Type* Analyzer::equivalent_placeholder(const TemplateParameterEntity* placeholder, uint32_t depth,
-	const Type* const* canonical, uint32_t count, DecltypeKey& key, bool& shared, bool& independent)
+	const Type* const* canonical, uint32_t count, DecltypeKey& key, bool& shared, bool& independent, const Type* whole)
 {
 	const QualifiedNameFrame qualified(qualified_names_);
 	// A placeholder substituted with dependent arguments is equivalent to
@@ -1277,14 +1296,18 @@ const Type* Analyzer::equivalent_placeholder(const TemplateParameterEntity* plac
 	// The copy names no declarator parameters of an operand being keyed.
 	uint64_t* const enclosing = named_parameters_;
 	named_parameters_ = nullptr;
-	Scope* scope = substituted_scope(
-		placeholder->expression_scope, Substitution{ depth, canonical, count, nullptr }, placeholder);
+	std::vector<std::pair<const Identifier*, const Identifier*>> renames;
+	Scope* scope = whole != nullptr
+		? selected_scope(placeholder->expression_scope, placeholder, depth, canonical, count, whole, renames)
+		: substituted_scope(
+			  placeholder->expression_scope, Substitution{ depth, canonical, count, nullptr }, placeholder);
 	const syntax::Expr* copy = nullptr;
 	if (!failed())
 	{
 		FrameExpander expander(*this, scope);
 		syntax::SyntaxCloner cloner(arena_, true, expander.get());
-		copy = cloner.expr(placeholder->expression);
+		copy = whole != nullptr ? cloner.element_expr(placeholder->expression, renames)
+								: cloner.expr(placeholder->expression);
 	}
 	// Keyed without a `this` (the placeholder has none), not the one of the
 	// body being analyzed.
@@ -1312,6 +1335,7 @@ const Type* Analyzer::equivalent_placeholder(const TemplateParameterEntity* plac
 		{
 			for (uint32_t i = 0; i < count && !independent; ++i)
 				independent = names_ordering_argument(canonical[i]);
+			independent = independent || (whole != nullptr && names_ordering_argument(whole));
 		}
 		if (TemplateParameterEntity** entry = decltype_placeholders_.find(probe))
 		{
@@ -1334,7 +1358,8 @@ const Type* Analyzer::equivalent_placeholder(const TemplateParameterEntity* plac
 		else
 		{
 			key = kept_key(probe);
-			shared = !names_placeholder(types_.pack(canonical, count), 0);
+			shared = !names_placeholder(types_.pack(canonical, count), 0) &&
+				(whole == nullptr || !names_placeholder(whole, 0));
 		}
 	}
 	decltype_words_.resize(base);
@@ -1425,6 +1450,8 @@ bool Analyzer::ordering_argument_components(const Type* type) const
 		{
 			if (names_ordering_argument(p->arguments))
 				return true;
+			if (p->whole_index != 0 && names_ordering_argument(pending_whole_arguments_[p->whole_index - 1]))
+				return true;
 		}
 		return false;
 	}
@@ -1509,12 +1536,15 @@ const Type* Analyzer::substitute_value(const Type* type, const Substitution& giv
 	// too (after the arguments), which its substitution binds.
 	SmallList<int32_t, 8> elements;
 	bool element_packs = false;
-	for (uint32_t i = 0; placeholder->sizeof_packs && given.elements != nullptr && !dependent && i < given.count; ++i)
+	for (uint32_t i = 0; placeholder->sizeof_packs && given.elements != nullptr && i < given.count; ++i)
 	{
 		const bool element = given.elements[i] >= 0 && given.arguments[i]->kind == TypeKind::Pack;
 		elements.push_back(element ? given.elements[i] : -1);
 		if (element)
+		{
 			canonical.push_back(given.arguments[i]->canonical);
+			dependent = dependent || dependent_type(given.arguments[i]);
+		}
 		element_packs = element_packs || element;
 	}
 	return substituted_value(placeholder, placeholder, nullptr, substitution.depth, canonical.data(),
@@ -1578,6 +1608,22 @@ const Type* Analyzer::substituted_value(const TemplateParameterEntity* keyed,
 	uint32_t keyed_count = count;
 	for (uint32_t i = 0; elements != nullptr && i < count; ++i)
 		keyed_count += elements[i] >= 0 ? 1 : 0;
+	TypeList whole;
+	bool synthetic = false;
+	for (uint32_t i = 0, next = count; elements != nullptr && i < count; ++i)
+	{
+		whole.push_back(elements[i] >= 0 ? canonical[next++] : canonical[i]);
+		synthetic = synthetic ||
+			(elements[i] >= 0 && whole.back()->kind == TypeKind::Pack &&
+				static_cast<uint32_t>(elements[i]) >= whole.back()->param_count);
+	}
+	for (const PendingSubstitution* level = earlier; level != nullptr; level = level->earlier)
+	{
+		if (level->whole_index != 0)
+			dependent = dependent || dependent_type(pending_whole_arguments_[level->whole_index - 1]);
+	}
+	const Type* whole_type = elements != nullptr && (dependent || synthetic) ? types_.pack(whole.data(), count)
+																			 : nullptr;
 	// A deduction's substitution checks access in the context of the
 	// template deduced (14.8.2p8, 11p4), not in the scope of the operand's
 	// first declaration (an equivalent operand of another template, or of
@@ -1595,30 +1641,35 @@ const Type* Analyzer::substituted_value(const TemplateParameterEntity* keyed,
 		// The expression's own scope substituted first (its parameters of
 		// the positions named, see substituted_scope).
 		const Substitution substitution = Substitution{ depth, canonical, count, nullptr };
-		TypeList whole;
 		std::vector<std::pair<const Identifier*, const Identifier*>> renames;
-		for (uint32_t i = 0, next = count; elements != nullptr && i < count; ++i)
-			whole.push_back(elements[i] >= 0 ? canonical[next++] : canonical[i]);
-		const bool whole_names = elements != nullptr &&
+		const bool whole_names = elements != nullptr && !synthetic &&
 			element_renames(placeholder->expression_scope, depth, elements, count, placeholder->nested_packs, renames);
 		Scope* scope = placeholder->expression_scope;
 		const TemplateParameterEntity* operand = placeholder;
 		for (const PendingSubstitution* level = earlier; level != nullptr; level = level->earlier, operand = nullptr)
-			scope = substituted_scope(scope,
-				Substitution{ level->depth, level->arguments->params, level->arguments->param_count, nullptr },
-				operand);
+		{
+			const Type* captured = level->whole_index != 0 ? pending_whole_arguments_[level->whole_index - 1] : nullptr;
+			scope = captured != nullptr
+				? selected_scope(scope, placeholder, level->depth, level->arguments->params,
+					  level->arguments->param_count, captured, renames)
+				: substituted_scope(scope,
+					  Substitution{ level->depth, level->arguments->params, level->arguments->param_count, nullptr },
+					  operand);
+		}
 		// One element of an expansion binds its packs' names and that
 		// element's (linear in the elements), unless the operand also
 		// expands such a pack whole (`A<I...>` in `S<(I + A<I...>::n)...>`).
-		scope = substituted_scope(scope,
-			elements != nullptr ? Substitution{ depth, whole.data(), count, whole_names ? nullptr : elements }
-								: substitution,
-			operand);
+		scope = synthetic
+			? selected_scope(scope, placeholder, depth, canonical, count, whole_type, renames)
+			: substituted_scope(scope,
+				  elements != nullptr ? Substitution{ depth, whole.data(), count, whole_names ? nullptr : elements }
+									  : substitution,
+				  operand);
 		const bool open = unsubstituted_depth(placeholder, earlier, depth);
 		FrameExpander expander(*this, scope);
 		syntax::SyntaxCloner cloner(arena_, true, expander.get());
-		const syntax::Expr* copy = elements != nullptr ? cloner.element_expr(placeholder->expression, renames)
-													   : cloner.expr(placeholder->expression);
+		const syntax::Expr* copy = !renames.empty() ? cloner.element_expr(placeholder->expression, renames)
+													: cloner.expr(placeholder->expression);
 		// Packs of different lengths expanded together (14.5.3p5).
 		if (failed())
 			return nullptr;
@@ -1698,7 +1749,7 @@ const Type* Analyzer::substituted_value(const TemplateParameterEntity* keyed,
 		bool shared = false;
 		bool independent = false;
 		if (dependent && earlier == nullptr)
-			result = equivalent_placeholder(placeholder, depth, canonical, count, key, shared, independent);
+			result = equivalent_placeholder(placeholder, depth, canonical, count, key, shared, independent, whole_type);
 		// Evaluate a proven independent operand through the ordinary path,
 		// with its deduction access and instantiation context. That path
 		// owns the memo entry, including a genuine substitution failure.
@@ -1706,7 +1757,9 @@ const Type* Analyzer::substituted_value(const TemplateParameterEntity* keyed,
 			return substituted_value(keyed, placeholder, earlier, depth, canonical, count, false, elements);
 		if (result == nullptr)
 		{
-			result = pending_value(placeholder, depth, canonical, count, earlier);
+			if (whole_type == nullptr && elements != nullptr)
+				whole_type = types_.pack(whole.data(), count);
+			result = pending_value(placeholder, depth, canonical, count, earlier, whole_type);
 			if (key.words != nullptr)
 			{
 				TemplateParameterEntity* made = static_cast<TemplateParameterEntity*>(result->entity);
@@ -1809,7 +1862,7 @@ bool Analyzer::OwnParameter(const Type* argument, uint32_t depth, uint32_t index
 }
 
 const Type* Analyzer::pending_value(const TemplateParameterEntity* placeholder, uint32_t depth,
-	const Type* const* canonical, uint32_t count, const PendingSubstitution* earlier)
+	const Type* const* canonical, uint32_t count, const PendingSubstitution* earlier, const Type* whole)
 {
 	// A value (or decltype) placeholder for `placeholder` with dependent
 	// arguments, or whose expression names parameters no substitution has
@@ -1857,7 +1910,13 @@ const Type* Analyzer::pending_value(const TemplateParameterEntity* placeholder, 
 	entity->packs = named.empty() ? nullptr : types_.pack(named.data(), static_cast<uint32_t>(named.size()));
 	PendingSubstitution* pending = static_cast<PendingSubstitution*>(
 		arena_.allocate(sizeof(PendingSubstitution), alignof(PendingSubstitution)));
-	*pending = PendingSubstitution{ placeholder, arguments, depth, earlier };
+	uint32_t whole_index = 0;
+	if (whole != nullptr)
+	{
+		pending_whole_arguments_.push_back(whole);
+		whole_index = static_cast<uint32_t>(pending_whole_arguments_.size());
+	}
+	*pending = PendingSubstitution{ placeholder, arguments, depth, whole_index, earlier };
 	entity->pending = pending;
 	entity->type = types_.named(TypeKind::TemplateParameter, entity);
 	return entity->type;
@@ -1877,12 +1936,16 @@ const Type* Analyzer::substitute_pending(const Type* type, const Substitution& g
 	// starts[i] to starts[i + 1]); a substitution's failure fails it.
 	TypeList arguments;
 	SmallList<uint32_t, 4> starts;
+	SmallList<const Type*, 4> wholes;
 	bool changed = false;
 	bool covered = false;
 	for (size_t i = 0; i < levels.size(); ++i)
 	{
 		starts.push_back(static_cast<uint32_t>(arguments.size()));
 		const Type* recorded = levels[i]->arguments;
+		const Type* captured = levels[i]->whole_index != 0 ? pending_whole_arguments_[levels[i]->whole_index - 1]
+														   : nullptr;
+		TypeList whole;
 		for (uint32_t k = 0; k < recorded->param_count; ++k)
 		{
 			const Type* argument = substitute(recorded->params[k], given);
@@ -1890,12 +1953,24 @@ const Type* Analyzer::substitute_pending(const Type* type, const Substitution& g
 				return nullptr;
 			arguments.push_back(argument->canonical);
 			changed = changed || argument->canonical != recorded->params[k];
+			if (captured != nullptr)
+			{
+				const Type* original = captured->params[k];
+				const Type* value = original == recorded->params[k] ? argument : substitute(original, given);
+				if (value == nullptr)
+					return nullptr;
+				whole.push_back(value->canonical);
+				changed = changed || value->canonical != original;
+			}
 		}
+		wholes.push_back(
+			captured != nullptr ? types_.pack(whole.data(), static_cast<uint32_t>(whole.size())) : nullptr);
 		covered = covered || levels[i]->depth == given.depth;
 	}
 	starts.push_back(static_cast<uint32_t>(arguments.size()));
 	const TemplateParameterEntity* placeholder = pending->placeholder;
 	TypeList added;
+	const Type* added_whole = nullptr;
 	bool declared = false;
 	for (const Scope* scope = placeholder->expression_scope; scope != nullptr && !declared; scope = scope->parent)
 		declared = DeclaresDepth(scope, given.depth);
@@ -1911,6 +1986,19 @@ const Type* Analyzer::substitute_pending(const Type* type, const Substitution& g
 				break;
 			}
 			added.push_back(effective[i]->canonical);
+		}
+		if (!added.empty() && placeholder->sizeof_packs && given.elements != nullptr)
+		{
+			TypeList whole;
+			bool selected = false;
+			for (uint32_t i = 0; i < given.count; ++i)
+			{
+				const bool element = given.elements[i] >= 0 && given.arguments[i]->kind == TypeKind::Pack;
+				whole.push_back(element ? given.arguments[i]->canonical : added[i]);
+				selected = selected || element;
+			}
+			if (selected)
+				added_whole = types_.pack(whole.data(), static_cast<uint32_t>(whole.size()));
 		}
 	}
 	if (!changed && added.empty())
@@ -1928,8 +2016,28 @@ const Type* Analyzer::substitute_pending(const Type* type, const Substitution& g
 		bool dependent = false;
 		for (uint32_t k = 0; k < count; ++k)
 			dependent = dependent || dependent_type(canonical[k]);
-		result = substituted_value(
-			keyed, placeholder, earlier, last ? given.depth : levels[i]->depth, canonical, count, dependent);
+		const Type* whole = last ? added_whole : wholes[i];
+		TypeList complete;
+		SmallList<int32_t, 8> elements;
+		if (whole != nullptr)
+		{
+			for (uint32_t k = 0; k < count; ++k)
+			{
+				complete.push_back(canonical[k]);
+				elements.push_back(whole->params[k] != canonical[k] && whole->params[k]->kind == TypeKind::Pack
+						? static_cast<int32_t>(whole->params[k]->param_count)
+						: -1);
+			}
+			for (uint32_t k = 0; k < count; ++k)
+			{
+				if (elements[k] >= 0)
+					complete.push_back(whole->params[k]);
+				dependent = dependent || dependent_type(whole->params[k]);
+			}
+			canonical = complete.data();
+		}
+		result = substituted_value(keyed, placeholder, earlier, last ? given.depth : levels[i]->depth, canonical, count,
+			dependent, whole != nullptr ? elements.data() : nullptr);
 		if (result == nullptr)
 			return nullptr;
 		const TemplateParameterEntity* entity = static_cast<const TemplateParameterEntity*>(result->entity);

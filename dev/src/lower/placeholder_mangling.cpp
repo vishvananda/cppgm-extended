@@ -863,6 +863,22 @@ private:
 		}
 		case syntax::ExprKind::SizeofPack:
 		{
+			if ((above & 2) != 0)
+			{
+				const sema::Type* captured = TypeWord(next());
+				if (captured == nullptr || captured->kind != sema::TypeKind::Pack)
+					return fail();
+				std::vector<AbiNode> arguments;
+				arguments.reserve(captured->param_count);
+				for (uint32_t i = 0; i < captured->param_count; ++i)
+				{
+					const AbiNode argument = lowering_.abi_type(captured->params[i]);
+					if (argument == ABI_NONE)
+						return fail();
+					arguments.push_back(argument);
+				}
+				return graph_.operation(Code('s', 'P'), arguments.data(), arguments.size());
+			}
 			// sZ of a template parameter pack (T_) or a function parameter
 			// pack (fp_).
 			AbiNode pack = ABI_NONE;
