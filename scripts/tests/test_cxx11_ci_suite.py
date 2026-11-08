@@ -336,6 +336,35 @@ class Suite(unittest.TestCase):
 
 
 class Workflow(unittest.TestCase):
+    def test_snapshot_bootstrap_has_trusted_ca_before_installing_packages(self):
+        text = (Path(__file__).resolve().parents[2]/'.github/workflows/upstream-cxx11.yml').read_text()
+        import re
+        mount = re.search(r'options: --volume (\S+):(\S+):ro', text)
+        self.assertIsNotNone(mount)
+        self.assertEqual(mount[1], '/etc/ssl/certs/ca-certificates.crt')
+        step = text.split('      - name: Install snapshot-pinned compiler and metadata tools\n', 1)[1]
+        step = step.split('      - name:', 1)[0].split('        run: |\n', 1)[1]
+        script = '\n'.join(line[10:] for line in step.splitlines() if line.startswith('          '))
+        script = script.replace('${{ matrix.suite }}', 'gcc')
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root/'cxx11/environment').mkdir(parents=True)
+            # Reproduce the hosted bootstrap boundary: no image trust store
+            # exists until installation, so the initial update needs host trust.
+            fake = ('apt-get() { printf "%s\\n" "$@" >> "$TRACE"; '
+                    'case " $* " in *" Acquire::https::CaInfo=$TRUST "*) return 0;; '
+                    '*) return 60;; esac; }; dpkg-query() { :; };\n')
+            env = dict(os.environ, RUNNER_TEMP=tmp, TRACE=str(root/'args'), TRUST=mount[2])
+            result = subprocess.run(['bash', '-c', fake+script], env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            args = (root/'args').read_text().splitlines()
+            self.assertEqual(args.count('Acquire::https::CaInfo='+mount[2]), 2)
+            sources = (root/'cxx11/environment/ubuntu.sources').read_text()
+            self.assertIn('URIs: https://snapshot.ubuntu.com/', sources)
+            self.assertIn('Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg', sources)
+            self.assertNotIn('Verify-Peer=false', script)
+            self.assertNotIn('trusted=yes', sources)
+
     def test_failed_package_setup_still_retains_environment_and_archive(self):
         text = (Path(__file__).resolve().parents[2]/'.github/workflows/upstream-cxx11.yml').read_text()
 

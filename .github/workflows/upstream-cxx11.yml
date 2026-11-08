@@ -14,7 +14,11 @@ jobs:
     # These are two independently reported jobs; a failure cannot cancel its peer.
     name: ${{ matrix.suite }} C++11 correctness and suite timing
     runs-on: ubuntu-24.04
-    container: ubuntu@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c # 26.04
+    container:
+      image: ubuntu@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c # 26.04
+      # The minimal image has no CA bundle. Bootstrap HTTPS with the runner's
+      # trust store; installing ca-certificates can then populate the image's.
+      options: --volume /etc/ssl/certs/ca-certificates.crt:/usr/local/share/cppgm-ci/host-ca-certificates.crt:ro
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -59,14 +63,15 @@ jobs:
           # the named compiler packages. Release expiry is irrelevant to a fixed snapshot.
           cat > "$RUNNER_TEMP/cxx11/environment/ubuntu.sources" <<'SOURCES'
           Types: deb
-          URIs: http://snapshot.ubuntu.com/ubuntu/20261107T000000Z/
+          URIs: https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/
           Suites: resolute resolute-updates resolute-security
           Components: main universe
           Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
           Check-Valid-Until: no
           SOURCES
           apt_options=(-o "Dir::Etc::sourcelist=$RUNNER_TEMP/cxx11/environment/ubuntu.sources"
-                       -o Dir::Etc::sourceparts=-)
+                       -o Dir::Etc::sourceparts=-
+                       -o Acquire::https::CaInfo=/usr/local/share/cppgm-ci/host-ca-certificates.crt)
           apt-get "${apt_options[@]}" update
           apt-get "${apt_options[@]}" install -y --no-install-recommends \
             ca-certificates git make python3 \
