@@ -1,0 +1,35 @@
+{
+  "public": {
+    "sha256": "6f75e5a608cd49989e0379c8363fb464eef1dc23070da57cc146788f05fe1784",
+    "evidence_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476437424"
+  },
+  "self-build": {
+    "sha256": "12b2f554df3f248ef541ffbd4130f59dbb0d291afcf26b348989b34ffa3e6488",
+    "evidence_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476437424"
+  },
+  "index-cpp": {
+    "sha256": "140e3bcede775075925c76d8c372f84824052f23d028c94ef0a8155453c00fed",
+    "evidence_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476441208"
+  },
+  "simdjson": {
+    "sha256": "25cf93feb2b421a725a3c2c7e0200c1794886f3e8685c4c6ee4016b6fc421337",
+    "evidence_url": "https://github.com/vishvananda/cppgm-extended/tree/e150174bec5a0fde19b53e2e76b7d48c4b35c4a9/simdjson"
+  },
+  "internal-receipt": {
+    "sha256": "34ebcb50d048ad24834d7c888ec51d7e8e8e16e36b24c874fee941160add80da",
+    "evidence_url": "../../../reports/internal-native-comparison.txt"
+  },
+  "gcc-cxx11": {
+    "sha256": "e1dc8a2e89b390a73cc5006eadd5818ef17d3b3971eab93cbf6b71d301b8b358",
+    "evidence_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476441294"
+  },
+  "clang-cxx11": {
+    "sha256": "2c79d12d7cc9bce4351d65b73e746c5ab7e80a37e10f78b702c2d1b7cf16867c",
+    "evidence_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476441294"
+  },
+  "preview": {
+    "source_head": "783dbfcf01360d923ff590d2048a0c1764761cc3",
+    "generated_for": "README layout review",
+    "notes": "Data snapshots, not a migrated automatic publication pipeline."
+  }
+}

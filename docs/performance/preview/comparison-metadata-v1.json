@@ -1,0 +1,21 @@
+{
+  "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
+  "architecture": "x86_64",
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "compiler_identities": {
+    "cppgm": "ae6fa4d1924eebb926e1757846cc758a862636c3e65dfc422bf4ee076d0ed09f",
+    "gcc": "e6718f7e0c7d057c3ff77b550c603da9bc4030e3ede3c053705acce1293dbe4d",
+    "clang": "412bbe8c60571a1eb06f48fde89635033621caeb01a9b4ee76d46711bae8e932"
+  },
+  "cohort_sha256": "ab20a75a3dac5443e23c73781b2b2b09823fc218b284c3203df744f3f5dca82e",
+  "runtime_cohort_sha256": "44e1f0baf5f5ed1acbb4165e27da375297696e395cf04e2d8c2277a847b3e9d2",
+  "resources": {
+    "cpu_seconds": 30,
+    "address_space_bytes": 2147483648,
+    "file_bytes": 268435456,
+    "stack_bytes": 67108864
+  },
+  "workers": 4,
+  "affinity": "unrestricted; shared host",
+  "interpretation": "CPU sums from one complete identical-input run percompiler/optimization; process startup included. Observations under load, not paired statistical benchmark or regression gate."
+}

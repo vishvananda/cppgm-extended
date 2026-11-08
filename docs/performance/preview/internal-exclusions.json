@@ -1,0 +1,242 @@
+[
+  {
+    "path": "pa10/tests/controls/100-default-parameter-future-prefix-snapshot.t",
+    "id": "1b18b84b66a4400920ce",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa10/tests/controls/100-default-parameter-self-sizeof.t",
+    "id": "2afa8d79977ae59e964d",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa11/tests/controls/100-unrelated-member-decltype-has-no-implicit-object.t",
+    "id": "e031cb2e2dc7a12938ff",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa11/tests/controls/400-bitfield-rvalue-cast-materializes-value.t",
+    "id": "975a078b1286c3421bcd",
+    "reasons": [
+      "clang O0 does not satisfy this course execution oracle",
+      "clang O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa12/tests/controls/200-return-implicit-move-sinks.t",
+    "id": "320438e740fe833cb91f",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa12/tests/controls/300-new-object-size-above-2g.t",
+    "id": "db0e227559ff97ed5740",
+    "reasons": [
+      "clang O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa12/tests/controls/400-array-cookie-trivial-dtor-class.t",
+    "id": "45768078937b06ed6f11",
+    "reasons": [
+      "clang O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa12/tests/controls/400-return-implicit-conversion-move.t",
+    "id": "1905d10c5a2836388ffd",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa14/tests/controls/100-default-parameter-template-future-prefix.t",
+    "id": "fec9bd2395622d7e7452",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa16/tests/controls/300-potential-result-static-array-value.t",
+    "id": "18f3397577f9c3bf6518",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-terminate.t",
+    "id": "179ba94efc85c2240d91",
+    "reasons": [
+      "Termination semantics verified separately; not a normal-exit execution timing"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-new-array-size-overflow.t",
+    "id": "4b01d303f5c5b5574b7d",
+    "reasons": [
+      "clang O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-potential-result-default-copy-original-value.t",
+    "id": "193b2b8cc261b3d39304",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "clang O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle",
+      "clang O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-replaced-array-allocation-only.t",
+    "id": "9d8241110d87f47796df",
+    "reasons": [
+      "clang O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-replaced-scalar-and-array-allocation.t",
+    "id": "4404c282c6e21212cf9c",
+    "reasons": [
+      "clang O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-throw-const-value-parameter.t",
+    "id": "4c70f254ed541c511d5e",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-throw-constructor-function-try-initializer-move.t",
+    "id": "794d4e8e9677b48ccd95",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-throw-constructor-initializer-move.t",
+    "id": "63568a27d91532a4c183",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-throw-function-try-handler-move.t",
+    "id": "5a4cfb02c1b254cf5734",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-throw-local-rvalue-reference.t",
+    "id": "3c0802ae7c1dd8bc99cc",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-throw-nested-handler-parameter-move.t",
+    "id": "a34f367a8ebc5cc066c7",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-throw-parenthesized-parameter.t",
+    "id": "04fcf4b30888d23b39a6",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-throw-prototype-substitution-move.t",
+    "id": "7bb46ae47f85f0b020ed",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-throw-rvalue-reference-parameter.t",
+    "id": "8e12a481c50d38faaad9",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/100-throw-value-parameter-selection.t",
+    "id": "99c817a2176783ac150e",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/200-catch-retirement-second-throw.t",
+    "id": "8bd638f461c8c15a01d5",
+    "reasons": [
+      "Termination semantics verified separately; not a normal-exit execution timing"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/200-initializer-list-const-reference-conditional-unwind-throwing.t",
+    "id": "9ff46e70c570df8f73d1",
+    "reasons": [
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/200-local-static-completion-before-temporary-destruction.t",
+    "id": "91fdb9b26dcad32f3f7a",
+    "reasons": [
+      "clang O0 does not satisfy this course execution oracle",
+      "clang O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/200-synthesized-copy-move-construction-prefix.t",
+    "id": "a53d4a51d3865916e7cd",
+    "reasons": [
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa21/tests/controls/300-runtime-array-tail-unwind.t",
+    "id": "d46a689073544671cddf",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle",
+      "gcc O3 does not satisfy this course execution oracle"
+    ]
+  },
+  {
+    "path": "pa22/tests/controls/300-potential-result-member-function-array.t",
+    "id": "b678adf94ab7b39df906",
+    "reasons": [
+      "gcc O0 does not satisfy this course execution oracle"
+    ]
+  }
+]
