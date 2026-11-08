@@ -1055,9 +1055,15 @@ FunctionEntity* Analyzer::closure_call(ClassEntity* closure, const syntax::Lambd
 	suffix.parameters = expr.parameters != nullptr ? expr.parameters : &none;
 	suffix.qualifiers = syntax::Slice<syntax::FunctionQualifier>{ qualifiers, count };
 	const PendingPrototype saved_prototype = pending_prototype_;
+	// C++14 permits a placeholder in the call operator's trailing return
+	// type. Only this suffix owns deduction, not nested function types.
+	const syntax::DeclaratorSuffix* saved_placeholder = placeholder_suffix_;
+	if (cxx14_)
+		placeholder_suffix_ = &suffix;
 	const Type* type = apply_suffix(suffix,
 		expr.trailing != nullptr ? auto_placeholder_ : types_.fundamental(FundamentalType::Void), scope, expr.location,
 		closure);
+	placeholder_suffix_ = saved_placeholder;
 	pending_prototype_ = saved_prototype;
 	// A deferred reserved builtin call in its declarator (see
 	// deferrable_statement): no call operator.

@@ -96,3 +96,45 @@ Integration findings, 2026-11-08:
    generated configuration. CMake then compiles/links its actual ABI probe:
    ELF, 8-byte pointers, little endian. Fresh candidate configuration passes
    with explicit native C GCC-15 selection and successful PIC/atomic probes.
+
+First validated fix block
+-------------------------
+Required PA16 regression replaces an obsolete rejection of constexpr members
+of nonliteral classes (CWG 1684, already retained in doc/cwg/cwg-1684.txt).
+Optional PA29 C++14 regression covers an ordinary lambda's explicit -> auto
+return deduction, alongside generic and decltype(auto) reference controls.
+Both actual translation units reject with the immutable parent and compile
+with GCC 15 and Clang 22. LLVM DynamicAPInt.cpp and IntrinsicEmitter.cpp now
+compile. No LLVM source edits are involved.
+
+Strict report: 9860/9860. Debug info, modern-C++, PA5 self-host, all architecture,
+format/file/placement/CWG audits, harness and regenerated student export pass.
+The first export was superseded after correcting the new runtime fixture to
+use the harness's .t marker / .t.1 source layout. The retained v2 export checks
+23678 portable reference files; all new runtime references require status 0.
+Normal PA35 parent/candidate perf counters: O0 0.999917, O3 1.000004.
+Normal self/seed counters: O0 0.999727, O3 1.029080. Frozen objects are identical;
+behavior failures are 0; quick kernel ratios remain below 1.30. These are the
+normal gate's hardware instruction measurements under concurrent native build.
+Raw logs, immutable binaries and source hashes are retained outside the tree.
+
+Next grouped gaps and integration follow-up
+------------------------------------------
+The first configured batch stops after 223 build steps with 22 compilation
+failures, not 22 independent language gaps. Two are fixed above. Five failures
+share constexpr-lambda syntax, four report deduction failure directly, and
+several ArrayRef-derived type/member/conversion failures may share the missing
+explicit-guide support. The parser currently discards explicit guides; a tiny
+forwarding-constructor reducer confirms cppgm failure and both native successes.
+Other observed families include nested generic-lambda captures, base access
+and __builtin_frame_address. Retain all original failures in the evidence JSON;
+new errors can surface after each earlier blocker is fixed.
+
+The Valgrind source compiles with the assembly branch's --full-asm mode. Enable
+that mode in CMake's C++ compile rule only; do not pass it to the host linker.
+The native build's initial no-PIC feature-probe result caused a shared-library
+link failure. Its corrected C probe now passes with explicit GCC-15 selection
+in CMAKE_C_FLAGS, and the native libraries are being rebuilt as PIC. A later
+change to CMAKE_C_COMPILER_ARG1 alone cannot override the value CMake already
+persisted in its compiler file. Keep these qualification failures separate
+from compiler gaps and from the final paired timing runs.

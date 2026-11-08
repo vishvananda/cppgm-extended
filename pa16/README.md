@@ -79,6 +79,11 @@ values of each actual object.
 
 ### Constant initialization of nonliteral objects
 
+A constexpr member function's enclosing class need not be a literal type
+(CWG 1684; see `doc/cwg/cwg-1684.txt` under the repository root). Its own
+parameter and result types still satisfy the constexpr rules. Calling it
+does not make an ordinary object's stored values constant expressions.
+
 A static object's constexpr constructor can initialize nonliteral base and
 member subobjects, including array elements, before dynamic initialization.
 The subobjects share the initialized variable's storage identity. This does

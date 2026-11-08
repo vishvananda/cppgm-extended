@@ -296,6 +296,9 @@ parameters (including packs and forwarding), initialized lambda captures, and
 pack-expanded using-declarations. An initialized capture deduces its type from
 its initializer in the enclosing scope; its new name is visible in the lambda
 body. Preserve reference binding, moves, and cleanup if a later capture throws.
+An explicit lambda trailing return type can itself be `auto` in C++14 and
+later; deduce it from the body while preserving `decltype(auto)`'s reference
+semantics and the restrictions on nested function types.
 In C++14 and later, contextual conversions such as array bounds and switch
 conditions can select among cv-qualified conversion overloads when all viable
 conversions lead to one permitted type. Distinct result types remain ambiguous.

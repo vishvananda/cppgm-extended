@@ -596,8 +596,8 @@ const ClassEntity* Analyzer::ObjectClassOf(const Type* type)
 void Analyzer::check_constexpr_function(const FunctionEntity* function, const Type* type, uint32_t location)
 {
 	// 7.1.5p3: a constexpr function's return type and parameter types are
-	// literal types (not void); p8: a non-static member function's class is
-	// a literal type (a templated class's is known in its instances). p6: a
+	// literal types (not void in C++11). CWG 1684 removes p8's restriction
+	// on the enclosing class. p6: a
 	// function template's or a class template's member's specialization
 	// that fails them is merely no constexpr function, so neither a
 	// template nor a member of a templated class or of an instance is
@@ -612,10 +612,9 @@ void Analyzer::check_constexpr_function(const FunctionEntity* function, const Ty
 		// void is a literal type under -std=c++14 (N3652, see set_cxx14).
 		if (!literal_type(canonical->element) && !(cxx14_ && IsVoid(canonical->element)))
 			error(location, "a constexpr function's return type is not a literal type");
-		if (function->member && !function->is_static && function->owner != nullptr &&
-			function->owner->kind == ScopeKind::Class && !templated_class(function->owner) &&
-			!literal_type(function->owner->entity->type))
-			error(location, "a constexpr member function of a class that is not a literal type");
+		// CWG 1684 removes the enclosing-class literal-type requirement,
+		// for non-static members as well as static ones. The function's
+		// own parameter and result types still have to be literal.
 	}
 	for (uint32_t i = 0; i < canonical->param_count; ++i)
 	{
