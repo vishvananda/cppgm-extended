@@ -79,7 +79,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 	}
 	excluded_ |= reserved_gprs(out);
 	rbp_free_ = level_ >= 1 && eh_model_ == EhModel::Host && signature_->boundary.arity != ir_model::CAM_VARIADIC &&
-		out.aligned_base == 0;
+		out.aligned_base == 0 && !frame_addressed_;
 	for_each_inst([&](uint32_t id, uint32_t) {
 		const lowir::Instruction& inst = body_->instructions[id];
 		if (!rbp_free_ || (marks_[id] & IM_DEAD))

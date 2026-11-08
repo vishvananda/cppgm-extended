@@ -66,6 +66,7 @@ void FunctionSelector::reset(lowir::SymbolId symbol, Function& out)
 	frame_size_ = 0;
 	frame_objects_.clear();
 	frame_pinned_ = false;
+	frame_addressed_ = false;
 	block_ = 0;
 	position_ = 0;
 	location_ = 0;
@@ -1205,6 +1206,7 @@ bool is_pure(const Instruction& inst)
 	case Opcode::Copy:
 	case Opcode::Phi:
 	case Opcode::Addr:
+	case Opcode::FrameAddress:
 	case Opcode::Index:
 	case Opcode::Unary:
 	case Opcode::Binary:

@@ -49,6 +49,7 @@ enum class GnuBuiltin : uint8_t
 	BitCount,
 	GenericBitCount,
 	Alloca,
+	FrameAddress,
 	VaList,
 	Prefetch,
 	AssumeAligned,

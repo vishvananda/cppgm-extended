@@ -78,6 +78,13 @@ hosted headers depend on:
   dependent definitions are checked when instantiated
 - `_Atomic` is not `volatile`: a class with an `_Atomic` member is still a
   literal type and may have a `constexpr` constructor
+- `__builtin_frame_address(level)` takes a nonnegative constant frame level
+  and returns a `void*` to the physical activation frame. On x86-64, level zero
+  reads a retained RBP frame even in optimized leaf functions. A nonzero level
+  follows saved caller frame pointers and requires a valid caller chain;
+  callers that omit frame pointers cannot be traversed reliably. Inlining
+  uses the containing activation's frame. The query is not a C++ constant
+  expression, and `__has_builtin` advertises it through the builtin registry
 
 The tests assume a Linux shell environment with `make`, `bash`, `perl`, and a
 working host C++ compiler with hosted C++ headers installed.

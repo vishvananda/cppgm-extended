@@ -204,6 +204,8 @@ struct SelectorState
 	// O1+, host model, RSP fixed past the prologue (Function::omit_frame_pointer):
 	// RBP is a sixth callee-saved register.
 	bool rbp_free_ = false;
+	// A live frame_address instruction requires the actual RBP frame.
+	bool frame_addressed_ = false;
 	std::vector<Operand> pm_src_at_; // parallel_moves: each move's source before redirection
 	std::vector<GlobalEntry> block_entries_;
 	std::vector<uint32_t> block_def_gregs_;

@@ -1,0 +1,31 @@
+// GCC's frame-address builtin on x86-64: a real activation frame, also
+// with optimized leaf functions and an inlined query in the caller.
+#if !__has_builtin(__builtin_frame_address)
+#error frame address builtin must be advertised
+#endif
+
+__attribute__((always_inline)) inline void* inlined_frame() {
+  return __builtin_frame_address(0);
+}
+
+template<unsigned Level> void* query_frame() {
+  return __builtin_frame_address(Level);
+}
+
+__attribute__((noinline)) int check_frame(void* parent) {
+  void* frame = __builtin_frame_address(0);
+  if (!frame || frame == parent || __builtin_frame_address(0) != frame) return 1;
+  if (__builtin_frame_address(1) != parent) return 2;
+  if (*static_cast<void**>(frame) != parent) return 3;
+  volatile int local = 7;
+  if (reinterpret_cast<unsigned long>(&local) >= reinterpret_cast<unsigned long>(frame)) return 4;
+  return local == 7 ? 0 : 5;
+}
+
+int main() {
+  void* frame = __builtin_frame_address(0);
+  if (!frame || inlined_frame() != frame) return 6;
+  if (query_frame<0>() == 0) return 7;
+  volatile int result = check_frame(frame);
+  return result;
+}

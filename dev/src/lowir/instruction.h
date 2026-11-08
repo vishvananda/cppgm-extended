@@ -115,6 +115,7 @@ struct DebugLocation
 //   ReadMxcsr         no operands; current u32 SSE control/status register
 //   WriteMxcsr        ops[0] u32 control/status bits
 //   StackSave         no operands; current dynamic stack mark
+//   FrameAddress      no operands; current physical activation's frame pointer
 //   StackRestore      ops[0] mark returned by a dominating StackSave
 //   StackAlloc        ops[0] size
 //   Call              ops[0] callee; extra: arguments; immediate =

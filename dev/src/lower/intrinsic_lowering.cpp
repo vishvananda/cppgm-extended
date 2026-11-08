@@ -171,6 +171,22 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		result.type = pointer;
 		return result;
 	}
+	case sema::Intrinsic::FrameAddress:
+	{
+		const lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::FrameAddress, pointer);
+		RValue result = RValue{ emit_value(inst, pointer), pointer };
+		// x86-64's saved frame pointer is the first word of each frame.
+		// A nonzero level requires callers to retain their frame pointers,
+		// just as with GCC's builtin.
+		for (uint64_t level = expr.facts->value >> 8; level != 0; --level)
+		{
+			Place frame = Place();
+			frame.storage = result.value;
+			frame.untyped = true;
+			result = load(pointer, frame);
+		}
+		return result;
+	}
 	case sema::Intrinsic::Alloca:
 	{
 		const RValue size = operand(*expr.arguments[0], ConversionContext::Argument);

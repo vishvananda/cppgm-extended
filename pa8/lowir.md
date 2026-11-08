@@ -1502,6 +1502,19 @@ Inlining preserves each callee's normal-return boundary; exception unwinding
 restores the enclosing handler's saved stack independently. PA8 carries these
 forms; PA29's stack builtins and required inlining exercise their native behavior.
 
+```text
+%frame = frame_address
+```
+
+`frame_address` produces a `ptr` to the current physical activation's frame.
+On x86-64 this is the value of RBP after the normal frame prologue. A live
+instruction requires a frame pointer, even at optimized levels; it does not
+allocate an object or report the current dynamic stack position. Inlining
+uses the containing activation's frame. The first pointer-sized word is the
+saved caller frame pointer. PA29 lowers `__builtin_frame_address` through this
+operation and ordinary pointer loads for a constant nonzero ancestor level;
+such walks require the caller chain to retain valid frame pointers.
+
 ### Variadic Argument Access
 
 ```text

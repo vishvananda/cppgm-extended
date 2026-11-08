@@ -382,6 +382,13 @@ void FunctionSelector::emit_inst(uint32_t id)
 		}
 		break;
 	}
+	case Opcode::FrameAddress:
+	{
+		const Reg d = result_reg(inst);
+		emit2(Op::Mov, TypeKind::Ptr, Operand::make_reg(d), Operand::make_reg(RBP));
+		finish_result(inst, d);
+		break;
+	}
 	case Opcode::StackSave:
 	{
 		const Reg d = result_reg(inst);

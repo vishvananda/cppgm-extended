@@ -83,6 +83,7 @@ inline bool is_pure(const lowir::Instruction& inst)
 	case lowir::Opcode::Copy:
 	case lowir::Opcode::Phi:
 	case lowir::Opcode::Addr:
+	case lowir::Opcode::FrameAddress:
 	case lowir::Opcode::Index:
 	case lowir::Opcode::Unary:
 	case lowir::Opcode::Binary:

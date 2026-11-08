@@ -204,6 +204,7 @@ enum class Opcode : std::uint8_t
 	VaArg,
 	StackAlloc,
 	StackSave,
+	FrameAddress,
 	ReadMxcsr,
 	Call, // a value unless its result type is void
 	Exception,
@@ -266,10 +267,10 @@ inline const char* spelling(Opcode op)
 {
 	static const char* const kOpcodes[kOpcodeCount] = { "const", "copy", "phi", "addr", "load", "atomic_load", "index",
 		"unary", "binary", "cmp", "select", "convert", "vector", "atomic_add_fetch", "atomic_exchange",
-		"atomic_compare_exchange", "va_arg", "stack_alloc", "stack_save", "read_mxcsr", "call", "exception",
-		"exception_selector", "asm", "store", "atomic_store", "atomic_thread_fence", "atomic_signal_fence", "va_start",
-		"stack_restore", "write_mxcsr", "copyobj", "zeroinit", "eh_try", "eh_cleanup", "eh_catch", "eh_filter",
-		"eh_catch_all", "eh_end", "throw", "resume", "jump", "branch", "switch", "indirect_jump", "return",
+		"atomic_compare_exchange", "va_arg", "stack_alloc", "stack_save", "frame_address", "read_mxcsr", "call",
+		"exception", "exception_selector", "asm", "store", "atomic_store", "atomic_thread_fence", "atomic_signal_fence",
+		"va_start", "stack_restore", "write_mxcsr", "copyobj", "zeroinit", "eh_try", "eh_cleanup", "eh_catch",
+		"eh_filter", "eh_catch_all", "eh_end", "throw", "resume", "jump", "branch", "switch", "indirect_jump", "return",
 		"unreachable" };
 	return kOpcodes[static_cast<unsigned>(op)];
 }

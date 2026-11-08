@@ -1,0 +1,15 @@
+// Optimized hosted functions must keep a real frame when its address is
+// observed. An inlined query describes the containing activation.
+__attribute__((always_inline)) inline void* inlined_frame() {
+  return __builtin_frame_address(0);
+}
+__attribute__((noinline)) int child(void* parent) {
+  void* frame = __builtin_frame_address(0);
+  return !frame || frame == parent || __builtin_frame_address(1) != parent
+    || *static_cast<void**>(frame) != parent || inlined_frame() != frame;
+}
+int main() {
+  void* frame = __builtin_frame_address(0);
+  volatile int result = child(frame);
+  return result;
+}

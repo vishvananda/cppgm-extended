@@ -775,6 +775,7 @@ bool Writer::write_value_instruction(const Instruction& inst)
 		return true;
 	case Opcode::ReadMxcsr:
 	case Opcode::StackSave:
+	case Opcode::FrameAddress:
 		spelled(kHeads[static_cast<unsigned>(inst.op)]);
 		return true;
 	case Opcode::WriteMxcsr:

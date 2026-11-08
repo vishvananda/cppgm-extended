@@ -90,7 +90,7 @@ public:
 	mutable std::unique_ptr<AssemblyEnvironment> assembly_environment_;
 
 	// ---- allocation.cpp
-	void inst_clobbers(uint32_t inst, uint32_t& clobber, uint32_t& early) const;
+	void inst_clobbers(uint32_t inst, uint32_t& clobber, uint32_t& early);
 	bool compare_scratch(const lowir::Instruction& inst) const;
 	void prepass_block(uint32_t block);
 	void compute_clobbers();

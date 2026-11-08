@@ -171,12 +171,17 @@ void share_object_slots(const SelectorState& state, std::vector<uint32_t>& owner
 
 } // namespace
 
-void FunctionSelector::inst_clobbers(uint32_t id, uint32_t& clobber, uint32_t& early) const
+void FunctionSelector::inst_clobbers(uint32_t id, uint32_t& clobber, uint32_t& early)
 {
 	const Instruction& inst = body_->instructions[id];
 	clobber = early = 0;
 	switch (inst.op)
 	{
+	case Opcode::FrameAddress:
+		// Reading the frame reserves RBP for this activation. Record the
+		// requirement in the existing register-constraint dispatch.
+		frame_addressed_ = true;
+		break;
 	case Opcode::Asm:
 		clobber = assembly_plan(inst)->writes;
 		break;
@@ -886,7 +891,7 @@ void FunctionSelector::finish_frame()
 	out_->stack_size = (frame_size_ + 15) & ~15u;
 	out_->duplicate_epilogues = level_ >= 1;
 	out_->omit_frame_pointer = level_ >= 1 && eh_model_ == EhModel::Host && !out_->variadic &&
-		!out_->eh_records_pushed && out_->aligned_base == 0 && fixed_stack(*out_);
+		!out_->eh_records_pushed && !frame_addressed_ && out_->aligned_base == 0 && fixed_stack(*out_);
 	if ((used_callee_saved_ & (1u << RBP)) && !out_->omit_frame_pointer)
 		throw InternalError(std::string("RBP allocated in a function that keeps its frame pointer: ") +
 			program_.spelling(program_.symbols[symbol_].name));

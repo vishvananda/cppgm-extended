@@ -674,6 +674,7 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 	}
 	case GnuBuiltin::Mxcsr:
 	case GnuBuiltin::FltRounds:
+	case GnuBuiltin::FrameAddress:
 		return control_intrinsic(expr, builtin, variant, scope);
 	case GnuBuiltin::VectorTruncate:
 	{
@@ -820,7 +821,23 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 ExprFacts* Analyzer::control_intrinsic(const syntax::CallExpr& expr, GnuBuiltin builtin, uint8_t variant, Scope* scope)
 {
 	ExprFacts* facts;
-	if (builtin == GnuBuiltin::FltRounds)
+	if (builtin == GnuBuiltin::FrameAddress)
+	{
+		if (expr.arguments.size != 1)
+			error(expr.location, "__builtin_frame_address takes one argument");
+		const ExprFacts* argument = typed_value(*expr.arguments[0], scope);
+		if (argument == nullptr)
+			return nullptr;
+		Constant level = Constant();
+		const bool constant = integral_constant(*expr.arguments[0], scope, level);
+		if ((!constant && (template_depth_ == 0 || (argument->flags & (kDependentUse | kValueDependentUse)) == 0)) ||
+			(constant && level.bits > UINT32_MAX))
+			error(expr.arguments[0]->location, "a frame level must be a nonnegative constant unsigned integer");
+		convert(*expr.arguments[0], types_.fundamental(FundamentalType::UnsignedInt), false);
+		facts = new_facts(expr, types_.pointer(types_.fundamental(FundamentalType::Void)), ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(Intrinsic::FrameAddress) | (level.bits << 8);
+	}
+	else if (builtin == GnuBuiltin::FltRounds)
 	{
 		if (!expr.arguments.empty())
 			error(expr.location, "__builtin_flt_rounds takes no arguments");

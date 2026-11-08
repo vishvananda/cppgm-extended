@@ -154,6 +154,9 @@ enum class Intrinsic : uint8_t
 	GenericPopCount,
 	// __builtin_alloca(size): stack storage of the function's frame.
 	Alloca,
+	// __builtin_frame_address(level): the physical activation's frame,
+	// followed by `level` saved frame pointers (facts bits 8 and above).
+	FrameAddress,
 	// __builtin_va_start(list, last), __builtin_va_end(list) and
 	// __builtin_va_copy(to, from) of a variadic function's arguments.
 	VaStart,

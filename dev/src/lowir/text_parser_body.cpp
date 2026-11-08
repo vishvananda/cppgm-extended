@@ -456,7 +456,8 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Opcode keyword, I
 		inst.type = result = Type::scalar(TypeKind::U32);
 		return true;
 	case Opcode::StackSave:
-		inst.op = Opcode::StackSave;
+	case Opcode::FrameAddress:
+		inst.op = keyword;
 		inst.type = result = kPtr;
 		return true;
 	case Opcode::StackAlloc:

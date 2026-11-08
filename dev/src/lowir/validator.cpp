@@ -223,6 +223,7 @@ const OperandRule kOperandRules[] = {
 	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // VaArg
 	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // StackAlloc
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // StackSave
+	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // FrameAddress
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // ReadMxcsr
 	{ { kTempOperand | kSymbolOperand, kNoOperand, kNoOperand }, ExtraOperands::Values, 1 }, // Call
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // Exception
@@ -979,6 +980,8 @@ bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId bl
 			fail("write_mxcsr requires a u32 value");
 	case Opcode::StackSave:
 		return inst.type.is_pointer() || fail("stack_save requires a pointer result");
+	case Opcode::FrameAddress:
+		return inst.type.is_pointer() || fail("frame_address requires a pointer result");
 	case Opcode::StackRestore:
 		return (value_type(inst.ops[0], type) && type.is_pointer()) || fail("stack_restore requires a pointer mark");
 	case Opcode::StackAlloc:

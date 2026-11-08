@@ -54,6 +54,7 @@ const struct
 	{ "__builtin_ffsll", { GnuBuiltin::BitCount, 14, nullptr, 0 } },
 	{ "__builtin_flt_rounds", { GnuBuiltin::FltRounds, 0, nullptr, 0 } },
 	{ "__builtin_fpclassify", { GnuBuiltin::FloatClassify, 4, nullptr, 0 } },
+	{ "__builtin_frame_address", { GnuBuiltin::FrameAddress, 0, nullptr, 0 } },
 	{ "__builtin_free", { GnuBuiltin::Library, 0, "vv*", 0 } },
 	{ "__builtin_huge_val", { GnuBuiltin::FloatConstant, 6, nullptr, 0 } },
 	{ "__builtin_huge_valf", { GnuBuiltin::FloatConstant, 7, nullptr, 0 } },
