@@ -6,6 +6,7 @@
 #include "native/asm/extend_forms.h"
 #include "native/asm/integer_forms.h"
 #include "native/asm/operands.h"
+#include "native/asm/vex_forms.h"
 #include "native/backend_error.h"
 
 namespace native {
@@ -156,6 +157,8 @@ void vector(Assembler& out, const assembly::Instruction& inst, const Form& form)
 
 void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 {
+	if (!inst.mnemonic.empty() && inst.mnemonic[0] == 'v' && encode_vex_form(out, inst))
+		return;
 	uint16_t suffix = 0;
 	const Form* form = asm_detail::assembly_form(inst.mnemonic, suffix, static_cast<uint32_t>(inst.operands.size()));
 	if (form == nullptr)

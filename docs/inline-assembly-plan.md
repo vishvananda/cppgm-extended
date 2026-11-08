@@ -657,3 +657,25 @@ prefix and AT&T noprefix, so portable source fixtures use their common modes
 and independent LowIR observers exercise all four combinations. The retained
 private GNU source probe covers the additional modes. Malformed modes reject.
 Whole qualification is still deferred; wider ISA and register support follow.
+
+## 2026-11-08 checkpoint: VEX encoding families
+
+237 architectural VEX form descriptors plus vzeroupper/vzeroall now use the
+in-tree prefix, ModRM/SIB, displacement and fixup path. Bidirectional moves
+select the shorter equivalent two-byte prefix where possible. The ordinary
+assembler path, MIR register sets and LowIR value representation are unchanged.
+The scaffold separates fused arithmetic from the other form families.
+
+The independent corpus has 18126 forms per dialect: zero LLVM MC mismatches
+and complete GNU as text-byte equality. It covers high registers, SIB/base-only
+addresses, memory and scalar widths, NDS/non-NDS layouts, control bytes, lane
+operations, immediate/variable shifts and fused arithmetic. Focused O0/O2/O3
+source and independent LowIR cases pass native checks for 256-bit wrapping
+arithmetic, lane ordering, broadcasts, scalar merging, guard bytes and FMA;
+feature-dependent execution is CPU-gated. Invalid widths, control bytes and
+legacy prefixes reject normally. These tests establish literal-register and
+clobber support, not wider typed-value allocation or AVX-512 support.
+
+Whole-course, performance, export, selfhost and native Mac checks remain
+deferred to full closure. Broader expressions/directives, wider typed bindings,
+x87/MMX/EVEX coverage and original Rust source/backend integration remain open.
