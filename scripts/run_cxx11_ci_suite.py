@@ -20,6 +20,7 @@ import subprocess
 import time
 
 from upstream_clang_language import elf_object
+from upstream_source_projection import projection_identity, project_source
 from upstream_dg_proxy import execute, sha256, write_json
 
 
@@ -44,6 +45,14 @@ def validate_manifest(manifest, root):
             raise ValueError('Source outside corpus')
         if sha256(root / path) != case['sha256']:
             raise ValueError('Source hash mismatch: ' + str(path))
+        if '_prepared_source' in case:
+            raise ValueError('Prepared source paths are owned by the runner')
+        if case.get('source_projection'):
+            expected = projection_identity((root / path).read_bytes(), case['source_projection']['kind'])
+            if case['source_projection'] != expected:
+                raise ValueError('Source projection hash mismatch')
+            if case['action'] != 'compile' or case['expect'] != 'accept':
+                raise ValueError('Source projection requires a compile acceptance check')
         for dependency in case.get('input_files', []):
             path = Path(dependency['path'])
             if (path.is_absolute() or '..' in path.parts or
@@ -114,7 +123,7 @@ def run_case(arguments):
         directory.mkdir()
         os.chdir(directory)
         os.environ['TMPDIR'] = str(directory)
-        source = str(Path(root) / case['path'])
+        source = case.get('_prepared_source', str(Path(root) / case['path']))
         obj = directory / 'test.o'
         flags = case['candidate_flags' if role == 'cppgm' else 'upstream_flags']
         include_flags = ['-I' + str(Path(root) / path) for path in case.get('include_directories', [])]
@@ -152,10 +161,12 @@ def run_case(arguments):
             os.environ['TMPDIR'] = previous_temporary
 
 
-def run_suite(cases, root, compiler, linker, role, output, workers):
+def run_suite(cases, root, compiler, linker, role, output, workers, prepared_sources=None):
     before = dict(load_average=os.getloadavg(), unix_seconds=time.time())
     start = time.monotonic()
-    tasks = [(case, str(root), compiler, linker, role, str(output)) for case in cases]
+    tasks = [(dict(case, _prepared_source=prepared_sources[case['id']])
+              if prepared_sources and case['id'] in prepared_sources else case,
+              str(root), compiler, linker, role, str(output)) for case in cases]
     results, error = [], None
     try:
         output.mkdir()
@@ -180,9 +191,12 @@ def describe(command):
     binary = shutil.which(command)
     if not binary:
         raise ValueError('Compiler not found: ' + command)
-    binary = str(Path(binary).resolve())
+    # Driver behavior can depend on argv[0]: clang++ commonly links to clang.
+    # Preserve the invocation spelling while hashing its actual executable.
+    binary = str(Path(binary).absolute())
+    resolved = str(Path(binary).resolve())
     version = subprocess.run([binary, '--version'], check=True, capture_output=True, text=True).stdout
-    return dict(path=binary, sha256=sha256(binary), version=version)
+    return dict(path=binary, resolved_path=resolved, sha256=sha256(resolved), version=version)
 
 
 def comparison(cppgm, upstream, total):
@@ -196,14 +210,17 @@ def comparison(cppgm, upstream, total):
 
 def markdown(report):
     lines = ['### ' + report['suite'].upper() + ' C++11 language checks', '',
-             '| Compiler | Passed / selected | Suite elapsed (s) |',
-             '|---|---:|---:|']
+             '| Compiler | Executed / selected | Passed | Suite elapsed (s) |',
+             '|---|---:|---:|---:|']
     for role in ['cppgm', 'upstream']:
         row = report[role]
-        lines.append(f"| {role} | {row['passed']} / {row['selected']} | {row['elapsed_seconds']:.3f} |")
+        lines.append(f"| {role} | {row['executed']} / {row['selected']} | {row['passed']} | {row['elapsed_seconds']:.3f} |")
     lines += ['', f"cppgm / upstream elapsed ratio: {report['comparison']['cppgm_over_upstream']:.3f} "
               '(lower is faster). ' + report['comparison']['interpretation'] + '.', '',
               report['coverage'], '',
+              f"Selected: {report['selection']['acceptance']} acceptance, "
+              f"{report['selection']['required_diagnostic']} required-diagnostic configurations; "
+              f"{report['selection']['runtime']} acceptance configurations include linking/execution.", '',
               f"{report['excluded']} source/RUN exclusions are recorded in manifest.json; they are not passes.",
               f"Workers: {report['workers']}; order: cppgm, upstream; fresh output files, OS caches unchanged.",
               'Setup and builds excluded; compilation, required linking/execution and result checks included.', '']
@@ -231,13 +248,29 @@ def main():
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     write_json(output / 'manifest.json', manifest)
+    # Freeze adapted inputs once, outside both timed runs. Both roles receive
+    # exactly these files; the original corpus is never rewritten.
+    prepared_sources, projections = {}, []
+    for case in manifest['cases']:
+        if not case.get('source_projection'):
+            continue
+        target = output / 'projected-sources' / (case['id'] + '.C')
+        target.parent.mkdir(exist_ok=True)
+        target.write_bytes(project_source((root / case['path']).read_bytes(), case['source_projection']['kind']))
+        prepared_sources[case['id']] = str(target)
+        projections.append(dict(id=case['id'], path=str(target.relative_to(output)),
+                                **case['source_projection']))
     script_directory = Path(__file__).resolve().parent
     scripts = {name: sha256(script_directory / name) for name in
-               ['run_cxx11_ci_suite.py', 'upstream_dg_proxy.py', 'upstream_clang_language.py']}
+               ['run_cxx11_ci_suite.py', 'upstream_dg_proxy.py', 'upstream_clang_language.py',
+                'upstream_source_projection.py']}
     report = dict(schema=1, suite=manifest['suite'], revision=manifest['revision'],
                   manifest_sha256=sha256(args.manifest), binaries=binaries,
-                  runner_scripts=scripts,
+                  runner_scripts=scripts, source_projections=projections,
                   workers=args.workers, platform=platform.platform(),
+                  selection=dict(acceptance=sum(c['expect'] == 'accept' for c in manifest['cases']),
+                                 required_diagnostic=sum(c['expect'] == 'diagnostic' for c in manifest['cases']),
+                                 runtime=sum(c['action'] == 'run' for c in manifest['cases'])),
                   coverage=manifest['coverage'], limitations=manifest['limitations'],
                   excluded=len(manifest['exclusions']),
                   environment={name: os.environ.get(name) for name in
@@ -245,10 +278,13 @@ def main():
                                 'CPLUS_INCLUDE_PATH', 'LIBRARY_PATH', 'LD_LIBRARY_PATH']})
     for role in ['cppgm', 'upstream']:
         report[role] = run_suite(manifest['cases'], root, binaries[role]['path'],
-                                 binaries['upstream']['path'], role, output / role, args.workers)
+                                 binaries['upstream']['path'], role, output / role, args.workers, prepared_sources)
         write_json(output / 'results.json', report)
     try:
         validate_manifest(manifest, root)
+        for projection in projections:
+            if sha256(output / projection['path']) != projection['sha256']:
+                raise ValueError('Prepared source changed during execution')
     except (ValueError, OSError) as error:
         report['input_verification_error'] = str(error)
     report['comparison'] = comparison(report['cppgm'], report['upstream'], len(manifest['cases']))

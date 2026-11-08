@@ -1,0 +1,124 @@
+CWG 581: Can a templated constructor be explicitly instantiated or specialized?
+Source: https://cplusplus.github.io/CWG/issues/581.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: CD5
+Catalog role: interpretation-reference
+
+This full issue supports interpretation of source-specific correctness cases.
+Inclusion does not claim every example or later language feature is implemented.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+581. Can a templated constructor be explicitly instantiated or specialized?
+Section: 13.10.2 [temp.arg.explicit [1]] Status: CD5 Submitter: Mark Mitchell Date: 19
+May 2006
+
+[Accepted as a DR at the February, 2019 meeting.]
+
+Although it is not possible to specify a constructor's template arguments in a
+constructor invocation (because the constructor has no name but is invoked by use of the
+constructor's class's name), it is possible to “name” the constructor in declarative
+contexts: per 6.5.5.2 [class.qual [2]] paragraph 2,
+
+In a lookup in which the constructor is an acceptable lookup result, if the
+nested-name-specifier nominates a class C, and the name specified after the
+nested-name-specifier, when looked up in C, is the injected-class-name of C ( Clause 11
+[class [3]]), the name is instead considered to name the constructor of class C... Such
+a constructor name shall be used only in the declarator-id of a declaration that names a
+constructor.
+
+Should it therefore be possible to specify template-arguments for a templated
+constructor in an explicit instantiation or specialization? For example,
+
+
+    template <int dim> struct T {};
+    struct X {
+      template <int dim> X (T<dim> &) {};
+    };
+
+    template X::X<> (T<2> &);
+
+
+If so, that should be clarified in the text. In particular, 11.4.5 [class.ctor [4]]
+paragraph 1 says,
+
+Constructors do not have names. A special declarator syntax using an optional sequence
+of function-specifiers (9.2.3 [dcl.fct.spec [5]]) followed by the constructor's class
+name followed by a parameter list is used to declare or define the constructor.
+
+This certainly sounds as if the parameter list must immediately follow the class name,
+with no allowance for a template argument list.
+
+It would be worthwhile in any event to revise this wording to utilize the “considered to
+name” approach of 6.5.5.2 [class.qual [6]]; as it stands, this wording sounds as if the
+following would be acceptable:
+
+
+    struct S {
+        S();
+    };
+    S() { }    // qualified-id not required?
+
+
+Notes from the October, 2006 meeting:
+
+It was observed that explicitly specifying the template arguments in a constructor
+declaration is never actually necessary because the arguments are, by definition, all
+deducible and can thus be omitted.
+
+Additional notes, October, 2018:
+
+The wording in 13.10.2 [temp.arg.explicit [7]] paragraph 1 refers to a “function name,”
+which constructors do not have, and so presumably the current wording does not permit an
+explicit specialization of a constructor template. Nevertheless, there is implementation
+divergence in the treatment of an example like:
+
+
+  class C {
+    template <typename T>
+    C(const T &) {}
+  };
+  template C::C<double>(const double &);
+
+
+with some accepting and some rejecting.
+
+Notes from the October, 2018 teleconference:
+
+The consensus was to allow template arguments on the constructor name but not something
+like C<int>::C<float>::f.
+
+Proposed resolution (February, 2019):
+
+1.
+
+Cbange 13.10.2 [temp.arg.explicit [7]] paragraph 1 as follows:
+
+Template arguments can be specified when referring to a function template specialization
+[INSERT: that is not a specialization of a constructor template] by qualifying the
+function template name with the list of template-arguments in the same way as
+template-arguments are specified in uses of a class template specialization. [Example:
+
+2.
+
+Add the following as a new paragraph following 13.10.2 [temp.arg.explicit [7]] paragraph
+1:
+
+[INSERT: Template arguments shall not be specified when referring to a specialization of
+a constructor template (11.4.5 [class.ctor [8]], 6.5.5.2 [class.qual [6]]).]
+
+Source links:
+[1] https://wg21.link/temp.arg.explicit
+[2] https://wg21.link/class.qual#2
+[3] https://wg21.link/class
+[4] https://wg21.link/class.ctor#1
+[5] https://wg21.link/dcl.fct.spec
+[6] https://wg21.link/class.qual
+[7] https://wg21.link/temp.arg.explicit#1
+[8] https://wg21.link/class.ctor

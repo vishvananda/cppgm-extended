@@ -1,0 +1,47 @@
+CWG 1792: Incorrect example of explicit specialization of member enumeration
+Source: https://cplusplus.github.io/CWG/issues/1792.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: NAD
+Catalog role: interpretation-reference
+
+This full issue supports interpretation of source-specific correctness cases.
+Inclusion does not claim every example or later language feature is implemented.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1792. Incorrect example of explicit specialization of member enumeration
+Section: 13.9.4 [temp.expl.spec [1]] Status: NAD Submitter: John Spicer Date: 2013-10-01
+
+The example in 13.9.4 [temp.expl.spec [2]] paragraph 6 reads, in part,
+
+
+  template<class T> struct A {
+    enum E : T;
+    enum class S : T;
+  };
+  template<> enum A<int>::E : int { eint };         // OK
+  template<> enum class A<int>::S : int { sint };   // OK
+  template<class T> enum A<T>::E : T { eT };
+  template<class T> enum class A<T>::S : T { sT };
+  template<> enum A<char>::E : int { echar };       // ill-formed, A<char>::E was instantiated
+                                                    // when A<char> was instantiated
+  template<> enum class A<char>::S : int { schar }; // OK
+
+
+The int enum-base in the last two lines appears to be incorrect; the reference to
+A<char> in the nested-name-specifier will have instantiated the declarations of E and S
+with an enum-base of char, and the explicit specializations must agree.
+
+Rationale (February, 2014):
+
+The problem was fixed editorially in N3797.
+
+Source links:
+[1] https://wg21.link/temp.expl.spec
+[2] https://wg21.link/temp.expl.spec#6

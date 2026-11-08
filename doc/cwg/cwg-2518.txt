@@ -1,0 +1,294 @@
+CWG 2518: Conformance requirements and #error/#warning
+Source: https://cplusplus.github.io/CWG/issues/2518.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: C++23
+Catalog role: interpretation-reference
+
+This full issue supports interpretation of source-specific correctness cases.
+Inclusion does not claim every example or later language feature is implemented.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2518. Conformance requirements and #error/#warning
+Section: 4.1.1 [intro.compliance.general [1]] Status: C++23 Submitter: CWG Date:
+2022-01-13 Liaison: (EWG)
+
+[Accepted as a DR at the February, 2023 meeting.]
+
+According to 4.1.1 [intro.compliance.general [2]] bullet 2.2,
+
+a conforming implementation shall issue at least one diagnostic message
+
+for an ill-formed program that is not “no diagnostic required.” The relationship between
+this diagnostic message and the ones required by the #error and #warning preprocessor
+directives is not clear. For example, is an implementation required to emit multiple
+diagnostics if multiple #error directives are encountered, even though conformance
+requires only one? Could an implementation count the diagnostic emitted by #warning as
+satisfying the requirement for an ill-formed program?
+
+See also issue 745 [3].
+
+[INSERT: Suggested resolution [SUPERSEDED]:]
+
+Add a new paragraph after 4.1.1 [intro.compliance.general [4]] paragraph 2 as follows:
+
+Although this document states only requirements on C++ implementations, those
+requirements are often easier to understand if they are phrased as requirements on
+programs, parts of programs, or execution of programs. Such requirements have the
+following meaning:
+
+-  If a program contains no violations of the rules in Clause Clause 5 [lex [5]] through
+Clause Clause 32 [thread [6]] and Annex D, a conforming implementation shall, within its
+resource limits as described in Annex B, accept and correctly execute [ Footnote: ... ]
+that program.
+
+-  If a program contains a violation of any diagnosable rule or an occurrence of a
+construct described in this document as “conditionally-supported” when the
+implementation does not support that construct, a conforming implementation shall issue
+at least one diagnostic message.
+
+-  If a program contains a violation of a rule for which no diagnostic is required, this
+document places no requirement on implementations with respect to that program.
+
+[Note: ... — end note]
+
+[INSERT: Furthermore, a conforming implementation]
+
+-  [INSERT: shall not accept a translation unit containing a #error preprocessing
+directive (15.9 [cpp.error [7]]) unless it is part of a group skipped by conditional
+inclusion (15.2 [cpp.cond [8]]) and]
+
+-  [INSERT: shall issue at least one diagnostic message for each #warning or #error
+preprocessing directive not following a #error preprocessing directive, ignoring
+#warning and #error preprocessing directives appearing in groups skipped by conditional
+inclusion.]
+
+For classes and class templates, ...
+
+Notes from the November, 2022 meeting
+
+EWG review solicited via cplusplus/papers#1366 [9].
+
+EWG 2023-02-06
+
+EWG agreed with the suggested resolution, but resolved to amend it to treat
+static_assert similarly.
+
+Proposed resolution (February, 2023) [SUPERSEDED]:
+
+1.
+
+Change and add a new paragraph after 4.1.1 [intro.compliance.general [4]] paragraph 2 as
+follows:
+
+Although this document states only requirements on C++ implementations, those
+requirements are often easier to understand if they are phrased as requirements on
+programs, parts of programs, or execution of programs. Such requirements have the
+following meaning:
+
+-  If a program contains no violations of the rules in Clause Clause 5 [lex [5]] through
+Clause Clause 32 [thread [6]] and Annex D, a conforming implementation shall, within its
+resource limits as described in Annex B, accept and correctly execute [ Footnote: ... ]
+that program.
+
+- [INSERT:  If a program contains a violation of a rule for which no diagnostic is
+required, this document places no requirement on implementations with respect to that
+program. ]
+
+-  [INSERT: Otherwise, if] [DELETE: If] a program contains a violation of any
+diagnosable rule or an occurrence of a construct described in this document as
+“conditionally-supported” when the implementation does not support that construct, a
+conforming implementation shall issue at least one diagnostic message.
+
+-  [DELETE: If a program contains a violation of a rule for which no diagnostic is
+required, this document places no requirement on implementations with respect to that
+program.] [Note: During template argument deduction and substitution, certain constructs
+that in other contexts require a diagnostic are treated differently; see [temp.deduct] —
+end note]
+
+[INSERT: Furthermore, a conforming implementation]
+
+[INSERT:
+-  shall not accept a preprocessing translation unit containing a #error preprocessing
+directive (15.9 [cpp.error [7]]),
+
+-  shall issue at least one diagnostic message for each #warning or #error preprocessing
+directive not following a #error preprocessing directive in a preprocessing translation
+unit, and
+
+-  shall not accept a translation unit with a failed static_assert-declaration (9.1
+[dcl.pre [10]]) [INSERT: outside an uninstantiated template].
+]
+
+For classes and class templates, ...
+
+2.
+
+Change in 5.1 [lex.separate [11]] paragraph 1 as follows:
+
+The text of the program is kept in units called source files in this document. A source
+file together with all the headers (16.4.2.3 [headers [12]]) and source files included
+(15.3 [cpp.include [13]]) via the preprocessing directive #include, less any source
+lines skipped by any of the conditional inclusion (15.2 [cpp.cond [8]]) preprocessing
+directives, is called a [INSERT: preprocessing] translation unit.
+
+3.
+
+Change in 5.2 [lex.phases [14]] paragraph 7 as follows:
+
+... The resulting tokens [INSERT: constitute a translation unit and] are syntactically
+and semantically analyzed and translated [DELETE: as a translation unit].
+
+4.
+
+Change in 9.1 [dcl.pre [15]] paragraph 10 as follows:
+
+In a static_assert-declaration, the constant-expression is contextually converted to
+bool and the converted expression shall be a constant expression (7.7 [expr.const
+[16]]). If the value of the expression when so converted is true, the declaration has no
+effect. Otherwise, [INSERT: the static_assert-declaration has failed,] the program is
+ill-formed, and the resulting diagnostic message (4.1 [intro.compliance [17]]) should
+include the text of the string-literal, if one is supplied.
+
+CWG 2023-02-10
+
+CWG decided to fold P2593R1 (static_assert(false)) into the proposed resolution.
+
+Proposed resolution (approved by CWG 2023-02-10):
+
+1.
+
+Change and add a new paragraph after 4.1.1 [intro.compliance.general [4]] paragraph 2 as
+follows:
+
+Although this document states only requirements on C++ implementations, those
+requirements are often easier to understand if they are phrased as requirements on
+programs, parts of programs, or execution of programs. Such requirements have the
+following meaning:
+
+-  If a program contains no violations of the rules in Clause Clause 5 [lex [5]] through
+Clause Clause 32 [thread [6]] and Annex D, a conforming implementation shall, within its
+resource limits as described in Annex B, accept and correctly execute [ Footnote: ... ]
+that program.
+
+- [INSERT:  If a program contains a violation of a rule for which no diagnostic is
+required, this document places no requirement on implementations with respect to that
+program. ]
+
+-  [INSERT: Otherwise, if] [DELETE: If] a program contains a violation of any
+diagnosable rule or an occurrence of a construct described in this document as
+“conditionally-supported” when the implementation does not support that construct, a
+conforming implementation shall issue at least one diagnostic message.
+
+-  [DELETE: If a program contains a violation of a rule for which no diagnostic is
+required, this document places no requirement on implementations with respect to that
+program.] [Note: During template argument deduction and substitution, certain constructs
+that in other contexts require a diagnostic are treated differently; see [temp.deduct] —
+end note]
+
+[INSERT: Furthermore, a conforming implementation]
+
+[INSERT:
+-  shall not accept a preprocessing translation unit containing a #error preprocessing
+directive (15.9 [cpp.error [7]]),
+
+-  shall issue at least one diagnostic message for each #warning or #error preprocessing
+directive not following a #error preprocessing directive in a preprocessing translation
+unit, and
+
+-  shall not accept a translation unit with a static_assert-declaration that fails (9.1
+[dcl.pre [10]]).
+]
+
+For classes and class templates, ...
+
+2.
+
+Change in 5.1 [lex.separate [11]] paragraph 1 as follows:
+
+The text of the program is kept in units called source files in this document. A source
+file together with all the headers (16.4.2.3 [headers [12]]) and source files included
+(15.3 [cpp.include [13]]) via the preprocessing directive #include, less any source
+lines skipped by any of the conditional inclusion (15.2 [cpp.cond [8]]) preprocessing
+directives, is called a [INSERT: preprocessing] translation unit.
+
+3.
+
+Change in 5.2 [lex.phases [14]] paragraph 7 as follows:
+
+... The resulting tokens [INSERT: constitute a translation unit and] are syntactically
+and semantically analyzed and translated [DELETE: as a translation unit].
+
+4.
+
+Change in 9.1 [dcl.pre [15]] paragraph 10 as follows:
+
+In a static_assert-declaration, the constant-expression is contextually converted to
+bool and the converted expression shall be a constant expression (7.7 [expr.const
+[16]]). If the value of the expression when so converted is true [INSERT: or the
+expression is evaluated in the context of a template definition], the declaration has no
+effect. Otherwise, [INSERT: the static_assert-declaration fails,] the program is
+ill-formed, and the resulting diagnostic message (4.1 [intro.compliance [17]]) should
+include the text of the string-literal, if one is supplied. [ Example:
+
+  static_assert(sizeof(int) == sizeof(void*), "wrong pointer size");
+  static_assert(sizeof(int[2]));   // OK, narrowing allowed
+
+
+[INSERT: 
+  template <class T>
+  void f(T t) {
+    if constexpr (sizeof(T) == sizeof(int)) {
+      use(t);
+    } else {
+      static_assert(false, "must be int-sized");
+    }
+  }
+  
+  void g(char c) {
+    f(0); // OK
+    f(c); // error: must be int-sized
+  }
+  ]
+
+
+-- end example ]
+
+5.
+
+Change in 13.8 [temp.res [18]] paragraph 6 as follows:
+
+... The program is ill-formed, no diagnostic required, if:
+
+-  no valid specialization[INSERT: , ignoring static_assert-declarations that fail,] can
+be generated for a template or a substatement of a constexpr if statement (8.5.2
+[stmt.if [19]]) within a template and the template is not instantiated, or
+
+- ...
+
+Source links:
+[1] https://wg21.link/intro.compliance.general
+[2] https://wg21.link/intro.compliance.general#2.2
+[3] https://cplusplus.github.io/CWG/issues/745.html
+[4] https://wg21.link/intro.compliance.general#2
+[5] https://wg21.link/lex
+[6] https://wg21.link/thread
+[7] https://wg21.link/cpp.error
+[8] https://wg21.link/cpp.cond
+[9] https://github.com/cplusplus/papers/issues/1366
+[10] https://wg21.link/dcl.pre
+[11] https://wg21.link/lex.separate#1
+[12] https://wg21.link/headers
+[13] https://wg21.link/cpp.include
+[14] https://wg21.link/lex.phases#7
+[15] https://wg21.link/dcl.pre#10
+[16] https://wg21.link/expr.const
+[17] https://wg21.link/intro.compliance
+[18] https://wg21.link/temp.res#6
+[19] https://wg21.link/stmt.if

@@ -1,0 +1,34 @@
+CWG 2173: Partial specialization with non-deduced contexts
+Source: https://cplusplus.github.io/CWG/issues/2173.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: open
+Catalog role: background-only
+
+This open/drafting issue documents a precise source-coverage boundary, not an
+adopted rule or implemented proposal. Historical edits are retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2173. Partial specialization with non-deduced contexts
+Section: 13.7.6 [temp.spec.partial [1]] Status: open Submitter: Mike Miller Date:
+2015-09-14
+
+During the discussion of issue 1315 [2], it was observed that the example
+
+
+  template <int I, int J> struct B {};
+  template <int I> struct B<I, I*2> {};
+
+
+is ill-formed because the deduction succeeds in both directions. This seems surprising.
+It was suggested that perhaps a non-deduced context should be considered more
+specialized than a deduced context.
+
+Source links:
+[1] https://wg21.link/temp.spec.partial
+[2] https://cplusplus.github.io/CWG/issues/1315.html

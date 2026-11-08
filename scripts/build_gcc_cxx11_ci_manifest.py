@@ -15,6 +15,7 @@ import subprocess
 
 from run_upstream_dg import parse_metadata
 from upstream_dg_proxy import sha256, write_json
+from upstream_source_projection import projection_identity
 from build_clang_cxx11_ci_manifest import code_only
 
 
@@ -136,9 +137,14 @@ def reviewed_projection(directives, text, digest, disposition):
     if disposition:
         if disposition['sha256'] != digest:
             raise ValueError('Stale language disposition')
-        if disposition['status'] != 'required-diagnostic':
+        if disposition['status'] not in {'required-diagnostic', 'standard-line-projection'}:
             raise Excluded(disposition['status'] + ': ' + disposition['reason'])
     action, expect, flags, adaptations = project(directives, text)
+    if disposition and disposition['status'] == 'standard-line-projection':
+        if action != 'compile' or expect != 'accept':
+            raise ValueError('Line-marker projection requires an acceptance translation')
+        adaptations.append('Both compilers use source-pinned standard #line projection: ' + disposition['reason'])
+        return action, expect, flags, adaptations
     if disposition:
         if action != 'compile':
             raise Excluded('Required-diagnostic review cannot retain runtime obligations')
@@ -176,10 +182,13 @@ def build(root, library, dispositions):
             exclusions.append(dict(path=path, reason=str(error)))
             continue
         for dialect in ['c++11', 'gnu++11']:
-            cases.append(dict(id=source.stem + '-' + dialect, path=path, sha256=digest,
-                              dialect=dialect, action=action, expect=expect,
-                              candidate_flags=flags, upstream_flags=['-pedantic', *flags],
-                              original=metadata[str(source)], adaptations=adaptations))
+            case = dict(id=source.stem + '-' + dialect, path=path, sha256=digest,
+                        dialect=dialect, action=action, expect=expect,
+                        candidate_flags=flags, upstream_flags=['-pedantic', *flags],
+                        original=metadata[str(source)], adaptations=adaptations)
+            if disposition and disposition['status'] == 'standard-line-projection':
+                case['source_projection'] = projection_identity(source.read_bytes(), 'gnu-line-markers')
+            cases.append(case)
     return dict(schema=1, suite='gcc', revision=REVISION, cases=cases, exclusions=exclusions,
                 coverage='Self-contained GCC g++.dg/cpp0x language translations and zero-exit runtime checks; '
                          'native diagnostic text, counts and recovery are not correctness obligations.',

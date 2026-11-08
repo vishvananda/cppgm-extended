@@ -1,0 +1,67 @@
+CWG 941: Explicit specialization of deleted function template
+Source: https://cplusplus.github.io/CWG/issues/941.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: C++11
+Catalog role: interpretation-reference
+
+This full issue supports interpretation of source-specific correctness cases.
+Inclusion does not claim every example or later language feature is implemented.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+941. Explicit specialization of deleted function template
+Section: 13.9.4 [temp.expl.spec [1]] Status: C++11 Submitter: Spicer Date: 14 July, 2009
+
+[Voted into WP at August, 2010 meeting.]
+
+According to 13.9.4 [temp.expl.spec [2]] paragraph 1, only non-deleted function
+templates may be explicitly specialized. There doesn't appear to be a compelling need
+for this restriction, however, and it could be useful to forbid use of
+implicitly-instantiated specializations while still allowing use of
+explicitly-specialized versions.
+
+Proposed resolution (February, 2010):
+
+Change 13.9.4 [temp.expl.spec [2]] paragraph 1 as follows:
+
+An explicit specialization of any of the following:
+
+-
+
+[DELETE: non-deleted] function template
+
+-
+
+class template
+
+-
+
+[DELETE: non-deleted] member function of a class template
+
+-
+
+static data member of a class template
+
+-
+
+member class of a class template
+
+-
+
+member class template of a class or class template
+
+-
+
+[DELETE: non-deleted] member function template of a class or class template
+
+can be declared...
+
+Source links:
+[1] https://wg21.link/temp.expl.spec
+[2] https://wg21.link/temp.expl.spec#1

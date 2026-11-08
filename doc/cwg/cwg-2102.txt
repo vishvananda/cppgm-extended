@@ -1,0 +1,142 @@
+CWG 2102: Constructor checking in new-expression
+Source: https://cplusplus.github.io/CWG/issues/2102.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: CD7
+Catalog role: interpretation-reference
+
+This full issue supports interpretation of source-specific correctness cases.
+Inclusion does not claim every example or later language feature is implemented.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2102. Constructor checking in new-expression
+Section: 7.6.2.8 [expr.new [1]] Status: CD7 Submitter: Richard Smith Date: 2015-03-16
+
+[Accepted as a DR at the November, 2023 meeting.]
+
+According to 7.6.2.8 [expr.new [2]] paragraph 25,
+
+If the new-expression creates an object or an array of objects of class type, access and
+ambiguity control are done for the allocation function, the deallocation function
+(11.4.11 [class.free [3]]), and the constructor (11.4.5 [class.ctor [4]]).
+
+The mention of “the constructor” here is strange. For the “object of class type” case,
+access and ambiguity control are done when we perform initialization in paragraph 17,
+and we might not be calling a constructor anyway (for aggregate initialization). This
+seems wrong.
+
+For the “array of objects of class type” case, it makes slightly more sense (we need to
+check the trailing array elements can be default-initialized) but again (a) we aren't
+necessarily using a constructor, (b) we should say which constructor — and we may need
+overload resolution to find it, and (c) shouldn't this be part of initialization, so we
+can distinguish between the cases where we should copy-initialize from {} and the cases
+where we should default-initialize?
+
+Additional notes (May, 2023):
+
+It is unclear whether default-initialization is required to be well-formed even for an
+array with no elements.
+
+Proposed resolution (approved by CWG 2023-06-16):
+
+1.
+
+Insert a new paragraph before 7.6.2.8 [expr.new [5]] paragraph 9:
+
+[INSERT: If the allocated type is an array, the new-initializer is a braced-init-list,
+and the expression is potentially-evaluated and not a core constant expression, the
+semantic constraints of copy-initializing a hypothetical element of the array from an
+empty initializer list are checked (9.5.5 [dcl.init.list [6]]). [ Note: The array can
+contain more elements than there are elements in the braced-init-list, requiring
+initialization of the remainder of the array elements from an empty initializer list. --
+end note ]]
+
+Objects created by a new-expression have dynamic storage duration (6.8.6.5
+[basic.stc.dynamic [7]]). ...
+
+2.
+
+Change in 7.6.2.8 [expr.new [2]] paragraph 25 as follows:
+
+[DELETE: If the new-expression creates an object or an array of objects of class type,
+access and ambiguity control are done for the allocation function, the deallocation
+function (6.8.6.5.3 [basic.stc.dynamic.deallocation [8]]), and the constructor (11.4.5
+[class.ctor [4]]) selected for the initialization (if any).] If the new-expression
+creates an array of objects of class type, the destructor is potentially invoked (11.4.7
+[class.dtor [9]]).
+
+3.
+
+Change in 7.6.2.8 [expr.new [10]] paragraph 28 as follows:
+
+A declaration of a placement deallocation function matches the declaration of a
+placement allocation function if it has the same number of parameters and, after
+parameter transformations (9.3.4.6 [dcl.fct [11]]), all parameter types except the first
+are identical. If the lookup finds a single matching deallocation function, that
+function will be called; otherwise, no deallocation function will be called. If the
+lookup finds a usual deallocation function and that function, considered as a placement
+deallocation function, would have been selected as a match for the allocation function,
+the program is ill-formed. For a non-placement allocation function, the normal
+deallocation function lookup is used to find the matching deallocation function (7.6.2.9
+[expr.delete [12]]). [INSERT: In any case, the matching deallocation function (if any)
+shall be non-deleted and accessible from the point where the new-expression appears.]
+
+4.
+
+Change in 9.5.1 [dcl.init.general [13]] paragraph 7 as follows:
+
+To default-initialize an object of type T means:
+
+- ...
+
+- If T is an array type, [INSERT: the semantic constraints of default-initializing a
+hypothetical element shall be met and] each element is default-initialized.
+
+- ...
+
+5.
+
+Change in 9.5.1 [dcl.init.general [14]] paragraph 9 as follows:
+
+To value-initialize an object of type T means:
+
+-  [DELETE: if] [INSERT: If] T is a (possibly cv-qualified) class type (Clause 11 [class
+[15]]), then
+
+- if T has either no default constructor (11.4.5.2 [class.default.ctor [16]]) or a
+default constructor that is user-provided or deleted, then the object is
+default-initialized;
+
+-  otherwise, the object is zero-initialized and the semantic constraints for
+default-initialization are checked, and if T has a non-trivial default constructor, the
+object is default-initialized[DELETE: ;][INSERT: .]
+
+-  [DELETE: if] [INSERT: If] T is an array type, [INSERT: the semantic constraints of
+value-initializing a hypothetical element shall be met and] each element is
+value-initialized[DELETE: ;][INSERT: .]
+
+-  [DELETE: otherwise][INSERT: Otherwise], the object is zero-initialized.
+
+Source links:
+[1] https://wg21.link/expr.new
+[2] https://wg21.link/expr.new#25
+[3] https://wg21.link/class.free
+[4] https://wg21.link/class.ctor
+[5] https://wg21.link/expr.new#9
+[6] https://wg21.link/dcl.init.list
+[7] https://wg21.link/basic.stc.dynamic
+[8] https://wg21.link/basic.stc.dynamic.deallocation
+[9] https://wg21.link/class.dtor
+[10] https://wg21.link/expr.new#28
+[11] https://wg21.link/dcl.fct
+[12] https://wg21.link/expr.delete
+[13] https://wg21.link/dcl.init.general#7
+[14] https://wg21.link/dcl.init.general#9
+[15] https://wg21.link/class
+[16] https://wg21.link/class.default.ctor

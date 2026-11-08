@@ -1,0 +1,30 @@
+CWG 1996: Reference list-initialization ignores conversion functions
+Source: https://cplusplus.github.io/CWG/issues/1996.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: drafting
+Catalog role: background-only
+
+This issue provides background for a source-specific suite review. Open or
+drafting proposals are not adopted rules and are not implementation claims.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1996. Reference list-initialization ignores conversion functions
+Section: 9.5.5 [dcl.init.list [1]] Status: drafting Submitter: Richard Smith Date:
+2014-09-04
+
+The specification for list-initialization of a reference does not consider the existence
+of conversion functions. Consequently, the following example is ill-formed:
+
+
+  struct S { operator struct D &(); } s;
+  D &d{s};
+
+Source links:
+[1] https://wg21.link/dcl.init.list

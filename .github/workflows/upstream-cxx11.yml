@@ -14,7 +14,7 @@ jobs:
     # These are two independently reported jobs; a failure cannot cancel its peer.
     name: ${{ matrix.suite }} C++11 correctness and suite timing
     runs-on: ubuntu-24.04
-    container: ubuntu:26.04
+    container: ubuntu@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c # 26.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -43,33 +43,78 @@ jobs:
       CPPGM_WARNINGS_AS_ERRORS: "1"
 
     steps:
-      - name: Install pinned compiler and metadata tools
+      - name: Initialize retained setup evidence
+        run: |
+          mkdir -p "$RUNNER_TEMP/cxx11/environment"
+          uname -a > "$RUNNER_TEMP/cxx11/environment/platform.txt"
+          cat /etc/os-release > "$RUNNER_TEMP/cxx11/environment/os-release.txt"
+          printf '%s\n' 'ubuntu@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c' \
+            > "$RUNNER_TEMP/cxx11/environment/container.txt"
+
+      - name: Install snapshot-pinned compiler and metadata tools
         run: |
           set -euo pipefail
-          apt-get update
-          apt-get install -y --no-install-recommends \
+          exec > >(tee -a "$RUNNER_TEMP/cxx11/environment/setup.log") 2>&1
+          # The signed snapshot fixes the complete dependency universe, not just
+          # the named compiler packages. Release expiry is irrelevant to a fixed snapshot.
+          cat > "$RUNNER_TEMP/cxx11/environment/ubuntu.sources" <<'SOURCES'
+          Types: deb
+          URIs: http://snapshot.ubuntu.com/ubuntu/20261107T000000Z/
+          Suites: resolute resolute-updates resolute-security
+          Components: main universe
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          Check-Valid-Until: no
+          SOURCES
+          apt_options=(-o "Dir::Etc::sourcelist=$RUNNER_TEMP/cxx11/environment/ubuntu.sources"
+                       -o Dir::Etc::sourceparts=-)
+          apt-get "${apt_options[@]}" update
+          apt-get "${apt_options[@]}" install -y --no-install-recommends \
             ca-certificates git make python3 \
             g++-15=15.2.0-16ubuntu1 \
             tcl=8.6.16build1 dejagnu=1.6.3-2
           if [ '${{ matrix.suite }}' = clang ]; then
-            apt-get install -y --no-install-recommends clang-21=1:21.1.8-6ubuntu1
+            apt-get "${apt_options[@]}" install -y --no-install-recommends clang-21=1:21.1.8-6ubuntu1
           fi
-          mkdir -p "$RUNNER_TEMP/cxx11/environment"
           dpkg-query -W > "$RUNNER_TEMP/cxx11/environment/packages.txt"
-          uname -a > "$RUNNER_TEMP/cxx11/environment/platform.txt"
           env | sort | sed -n '/^CPPGM_/p; /^CXX=/p' > "$RUNNER_TEMP/cxx11/environment/build.txt"
 
       - name: Check out compiler
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Check out pinned upstream tests and native metadata parser
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: ${{ matrix.repository }}
           ref: ${{ matrix.revision }}
           path: upstream-sources
           sparse-checkout: ${{ matrix.sparse }}
           persist-credentials: false
+
+      - name: Retain source license notices
+        run: |
+          python3 - <<'PYCODE'
+          import hashlib, json, os, shutil
+          from pathlib import Path
+          output = Path(os.environ['RUNNER_TEMP'])/'cxx11/licenses'
+          output.mkdir()
+          records = []
+          for root, names in [(Path('.'), ['NOTICE', 'LICENSE', 'LICENSE.txt', 'COPYING']),
+                              (Path('upstream-sources'), ['COPYING', 'COPYING3', 'COPYING.RUNTIME',
+                                                        'LICENSE.TXT', 'clang/LICENSE.TXT', 'llvm/LICENSE.TXT'])]:
+              found = 0
+              for name in names:
+                  source = root/name
+                  if source.is_file():
+                      target = output/root.name/name if root.name else output/'compiler'/name
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      shutil.copyfile(source, target)
+                      records.append(dict(source=str(source), artifact=str(target.relative_to(output)),
+                                          sha256=hashlib.sha256(target.read_bytes()).hexdigest()))
+                      found += 1
+              if not found:
+                  raise RuntimeError('No source license notice found in '+str(root))
+          (output/'manifest.json').write_text(json.dumps(records, indent=2)+'\n')
+          PYCODE
 
       - name: Build cppgm
         run: |
@@ -118,6 +163,7 @@ jobs:
       - name: Publish counts and elapsed-time ratio
         if: always()
         run: |
+          mkdir -p "$RUNNER_TEMP/cxx11/environment"
           if [ -f "$RUNNER_TEMP/cxx11/qualification/summary.md" ]; then
             cat "$RUNNER_TEMP/cxx11/qualification/summary.md" >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -130,7 +176,7 @@ jobs:
 
       - name: Retain manifest, commands, raw output and results for both compilers
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: cxx11-${{ matrix.suite }}-${{ github.sha }}
           path: ${{ runner.temp }}/cxx11-${{ matrix.suite }}.tar.gz

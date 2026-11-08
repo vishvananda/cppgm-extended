@@ -1,0 +1,184 @@
+CWG 1206: Defining opaque enumeration members of class templates
+Source: https://cplusplus.github.io/CWG/issues/1206.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: C++11
+Catalog role: interpretation-reference
+
+This full issue supports interpretation of source-specific correctness cases.
+Inclusion does not claim every example or later language feature is implemented.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1206. Defining opaque enumeration members of class templates
+Section: 13.7.2 [temp.class [1]] Status: C++11 Submitter: Jason Merrill Date: 2010-10-06
+
+[Voted into the WP at the March, 2011 meeting as part of paper N3262.]
+
+Presumably an out-of-class definition for an opaque enumeration member of a class
+template is intended to be allowed; however, the current wording of 13.7.2 [temp.class
+[1]] provides only for out-of-class definitions of member functions, member classes,
+static data members, and member templates, not for opaque enumerations.
+
+Proposed resolution (November, 2010) [SUPERSEDED]:
+
+1.
+
+Change Clause 13 [temp [2]] paragraph 1 as follows:
+
+...The declaration in a template-declaration shall
+
+-
+
+declare or define a function or class, or
+
+-
+
+define a member function, a member class[INSERT: , a member enumeration,] or a static
+data member of a class template or of a class nested within a class template, or
+
+-
+
+...
+
+2.
+
+Change 13.7.2 [temp.class [3]] paragraph 3 as follows:
+
+When a member function, a member class, [INSERT: a member enumeration,] a static data
+member or a member template of a class template is defined outside of the class template
+definition...
+
+3.
+
+Add a new section following 13.7.2.5 [temp.static [4]]:
+
+[INSERT: 14.5.1.4 Enumeration members of class templates [temp.mem.enum]]
+
+[INSERT: An enumeration member of a class template may be defined outside the class
+template definition. [Example:]
+
+
+[INSERT:   template<class T> struct A {
+    enum E: T;
+  };
+  A<int> a;
+  template<class T> enum A<T>::E: T { e1, e2 };
+  A<int>::E e = A<int>::e1;]
+
+
+[INSERT: —end example]]
+
+4.
+
+Change 13.9 [temp.spec [5]] paragraph 2 as follows:
+
+A function instantiated from a function template is called an instantiated function. A
+class instantiated from a class template is called an instantiated class. A member
+function, a member class, [INSERT: a member enumeration,] or a static data member of a
+class template instantiated from the member definition of the class template is called,
+respectively, an instantiated member function, member class[INSERT: , member
+enumeration,] or static data member. A member function...
+
+5.
+
+Change 13.9.2 [temp.inst [6]] paragraph 1 as follows:
+
+...The implicit instantiation of a class template specialization causes the implicit
+instantiation of the declarations, but not of the definitions or default arguments, of
+the class member functions, member classes, [INSERT: scoped member enumerations,] static
+data members and member templates; and it causes the implicit instantiation of the
+definitions of [INSERT: unscoped member enumerations and] member anonymous unions.
+Unless a member...
+
+6.
+
+Change 13.9.4 [temp.expl.spec [7]] paragraph 1 as follows:
+
+An explicit specialization of any of the following:
+
+-
+
+function template
+
+-
+
+class template
+
+-
+
+member function of a class template
+
+-
+
+static data member of a class template
+
+-
+
+member class of a class template
+
+-
+
+[INSERT: member enumeration of a class template]
+
+-
+
+member class template of a class or class template
+
+-
+
+member function template of a class or class template
+
+can be declared by a declaration introduced by template<>...
+
+7.
+
+Change 13.9.4 [temp.expl.spec [8]] paragraph 4 as follows:
+
+A member function, a member class[INSERT: , a member enumeration,] or a static data
+member of a class template may be explicitly specialized for a class specialization that
+is implicitly instantiated...
+
+8.
+
+Add the indicated text to the example in 13.9 [temp.spec [9]] paragraph 6:
+
+
+  template<> void sort<>(Array(<char*>& v);        // OK: sort<char*> not yet used
+[INSERT:   template<class T> struct A {
+    enum E: T;
+    enum class S: T;
+  };
+  template<> enum A<int>::E: int { eint };         // OK
+  template<> enum class A<int>::S: int { sint };   // OK
+  template<class T> enum A<T>::E: T { eT };
+  template<class T> enum class A<T>::S: T { sT };
+  template<> enum A<char>::E: int { echar };       // ill-formed, A<char>::E was instantiated when A<char> was instantiated
+  template<> enum class A<char>::S: int { schar }; // OK]
+
+
+9.
+
+Change 13.9.4 [temp.expl.spec [10]] paragraph 7 as follows:
+
+The placement of explicit specialization declarations for function templates, class
+templates, member functions of class templates, static data members of class templates,
+member classes of class templates, [INSERT: member enumerations of class templates,]
+member class templates of class templates, member function templates...
+
+Source links:
+[1] https://wg21.link/temp.class
+[2] https://wg21.link/temp#1
+[3] https://wg21.link/temp.class#3
+[4] https://wg21.link/temp.static
+[5] https://wg21.link/temp.spec#2
+[6] https://wg21.link/temp.inst#1
+[7] https://wg21.link/temp.expl.spec#1
+[8] https://wg21.link/temp.expl.spec#4
+[9] https://wg21.link/temp.spec#6
+[10] https://wg21.link/temp.expl.spec#7

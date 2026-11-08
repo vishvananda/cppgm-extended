@@ -1,0 +1,78 @@
+CWG 585: Friend template template parameters
+Source: https://cplusplus.github.io/CWG/issues/585.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: NAD
+Catalog role: interpretation-reference
+
+This full issue supports interpretation of source-specific correctness cases.
+Inclusion does not claim every example or later language feature is implemented.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+585. Friend template template parameters
+Section: 11.8.4 [class.friend [1]] Status: NAD Submitter: James Widman Date: 15 June
+2006
+
+After the adoption of the wording for extended friend declarations, we now have this new
+paragraph in 11.8.4 [class.friend [1]]:
+
+A friend declaration that does not declare a function shall have one of the following
+forms:
+
+friend elaborated-type-specifier ;
+friend simple-type-specifier ;
+friend typename-specifier ;
+
+But what about friend class templates? Should the following examples compile in C++0x?
+
+
+    template< template <class> class T >
+         struct A{ friend T; };
+
+    template< class > struct C;
+    struct B{ friend C; };
+
+
+Proposed resolution (June, 2008):
+
+Change 11.8.4 [class.friend [2]] paragraph 3 as follows:
+
+A friend declaration that does not declare a function shall have one of the following
+forms:
+
+friend elaborated-type-specifier ;
+
+friend simple-type-specifier ;
+
+friend typename-specifier ;
+
+[INSERT: friend ::opt nested-name-specifieropt template-name ;]
+
+[INSERT: friend identifier ;]
+
+[INSERT: In the last alternative, the identifier shall name a template
+template-parameter.] [Note: a friend declaration may be the declaration in a
+template-declaration (Clause 13 [temp [3]], 13.7.5 [temp.friend [4]]). —end note] If the
+[DELETE: type specifier in a] friend declaration designates a (possibly cv-qualified)
+class type [INSERT: or a class template], that class [INSERT: or template] is declared
+as a friend; otherwise, the friend declaration is ignored. [Example:...
+
+Rationale (September, 2008):
+
+The proposed extension is not needed. The template case can be handled simply by
+providing a template header:
+
+
+    template <typename T> friend class X<T>;
+
+Source links:
+[1] https://wg21.link/class.friend
+[2] https://wg21.link/class.friend#3
+[3] https://wg21.link/temp
+[4] https://wg21.link/temp.friend

@@ -1,0 +1,209 @@
+CWG 1435: template-id as the declarator for a class template constructor
+Source: https://cplusplus.github.io/CWG/issues/1435.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: CD3
+Catalog role: interpretation-reference
+
+This full issue supports interpretation of source-specific correctness cases.
+Inclusion does not claim every example or later language feature is implemented.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1435. template-id as the declarator for a class template constructor
+Section: 9.3.4 [dcl.meaning [1]] Status: CD3 Submitter: Johannes Schaub Date: 2011-12-24
+
+[Moved to DR at the April, 2013 meeting.]
+
+The status of a declaration like the following is unclear:
+
+
+  template<typename T> struct A {
+    A<T>();
+  };
+
+
+9.3.4 [dcl.meaning [2]] paragraph 1 appears to say that it is not allowed, but it is not
+clear.
+
+Proposed resolution (October, 2012):
+
+1.
+
+Change 9.3.4 [dcl.meaning [2]] paragraph 1 as follows:
+
+A list of declarators appears after an optional (9.1 [dcl.pre [3]]) decl-specifier-seq
+(9.2 [dcl.spec [4]]). Each declarator contains exactly one declarator-id; it names the
+identifier that is declared. An unqualified-id occurring in a declarator-id shall be a
+simple identifier except for the declaration of some special functions ([INSERT: 11.4.5
+[class.ctor [5]],] 11.4.8 [class.conv [6]], 11.4.7 [class.dtor [7]], 12.4 [over.oper
+[8]]) and for the declaration of template specializations or partial specializations
+(13.9 [temp.spec [9]]). A declarator-id shall not...
+
+2.
+
+Change 11.4.5 [class.ctor [10]] paragraph 1 as follows:
+
+Constructors do not have names. [DELETE: A special declarator syntax is used to declare
+or define the constructor. The syntax uses:]
+
+-
+
+[DELETE: an optional decl-specifier-seq in which each decl-specifier is either a
+function-specifier or constexpr,]
+
+-
+
+[DELETE: the constructor's class name, and]
+
+-
+
+[DELETE: a parameter list]
+
+[DELETE: in that order. In such a declaration, optional parentheses around the
+constructor class name are ignored.] [INSERT: A declaration of a constructor uses a
+function declarator (9.3.4.6 [dcl.fct [11]]) of the form]
+
+[INSERT: ptr-declarator ( parameter-declaration-clause ) exception-specificationopt
+attribute-specifier-seqopt]
+
+[INSERT: where the ptr-declarator consists solely of an id-expression, an optional
+attribute-specifier-seq, and optional surrounding parentheses, and the id-expression has
+one of the following forms:]
+
+-
+
+[INSERT: in a member-declaration that belongs to the member-specification of a class but
+is not a friend declaration (11.8.4 [class.friend [12]]), the id-expression is the
+injected-class-name (Clause 11 [class [13]]) of the immediately-enclosing class;]
+
+-
+
+[INSERT: in a member-declaration that belongs to the member-specification of a class
+template but is not a friend declaration, the id-expression is a class-name that names
+the current instantiation (13.8.3.2 [temp.dep.type [14]]) of the immediately-enclosing
+class template; or]
+
+-
+
+[INSERT: in a declaration at namespace scope or in a friend declaration, the
+id-expression is a qualified-id that names a constructor (6.5.5.2 [class.qual [15]]).]
+
+[INSERT: The class-name shall not be a typedef-name. In a constructor declaration, each
+decl-specifier in the optional decl-specifier-seq shall be friend, inline, explicit, or
+constexpr.] [Example:...
+
+3.
+
+Delete 11.4.5 [class.ctor [16]] paragraph 3:
+
+[DELETE: A typedef-name shall not be used as the class-name in the declarator-id for a
+constructor declaration.]
+
+4.
+
+Change 11.4.5 [class.ctor [17]] paragraph 4 as follows:
+
+[DELETE: A constructor shall not be virtual (11.7.3 [class.virtual [18]]) or static
+(11.4.9 [class.static [19]]).] A constructor can be invoked for a const, volatile or
+const volatile object. [DELETE: A constructor shall not be declared const, volatile, or
+const volatile (_N4868_.11.4.3.2 [class.this [20]]).] const and volatile semantics
+(9.2.9.2 [dcl.type.cv [21]]) are not applied on an object under construction. They come
+into effect when the constructor for the most derived object (6.8.2 [intro.object [22]])
+ends. [DELETE: A constructor shall not be declared with a ref-qualifier.]
+
+5.
+
+Change 11.4.5 [class.ctor [23]] paragraph 9 as follows:
+
+[DELETE: No return type (not even void) shall be specified for a constructor.] A return
+statement in the body of a constructor shall not specify a return value. The address of
+a constructor shall not be taken.
+
+6.
+
+Change 11.4.7 [class.dtor [7]] paragraphs 1-2 as follows:
+
+[DELETE: A special declarator syntax using an optional function-specifier (9.2.3
+[dcl.fct.spec [24]]) followed by ~ followed by the destructor's class name followed by
+an empty parameter list is used to declare the destructor in a class definition. In such
+a declaration, the ~ followed by the destructor's class name can be enclosed in optional
+parentheses; such parentheses are ignored. A typedef-name shall not be used as the
+class-name following the ~ in the declarator for a destructor declaration.] [INSERT: A
+declaration of a destructor uses a function declarator (9.3.4.6 [dcl.fct [11]]) of the
+form]
+
+[INSERT: ptr-declarator ( parameter-declaration-clause ) exception-specificationopt
+attribute-specifier-seqopt]
+
+[INSERT: where the ptr-declarator consists solely of an id-expression, an optional
+attribute-specifier-seq, and optional surrounding parentheses, and the id-expression has
+one of the following forms:]
+
+-
+
+[INSERT: in a member-declaration that belongs to the member-specification of a class but
+is not a friend declaration (11.8.4 [class.friend [12]]), the id-expression is
+~class-name and the class-name is the injected-class-name (Clause 11 [class [13]]) of
+the immediately-enclosing class;]
+
+-
+
+[INSERT: in a member-declaration that belongs to the member-specification of a class
+template but is not a friend declaration, the id-expression is ~class-name and the
+class-name names the current instantiation (13.8.3.2 [temp.dep.type [14]]) of the
+immediately-enclosing class template; or]
+
+-
+
+[INSERT: in a declaration at namespace scope or in a friend declaration, the
+id-expression is nested-name-specifier ~class-name and the class-name names the same
+class as the nested-name-specifier.]
+
+[INSERT:  The class-name shall not be a typedef-name. A destructor shall take no
+arguments (9.3.4.6 [dcl.fct [11]]). In a destructor declaration, each decl-specifier of
+the optional decl-specifier-seq shall be friend, inline, or virtual.]
+
+A destructor is used to destroy objects of its class type. [DELETE: A destructor takes
+no parameters, and no return type can be specified for it (not even void).] The address
+of a destructor shall not be taken. [DELETE: A destructor shall not be static.] A
+destructor can be invoked for a const, volatile or const volatile object. [DELETE: A
+destructor shall not be declared const, volatile or const volatile (_N4868_.11.4.3.2
+[class.this [20]]).] const and volatile semantics (9.2.9.2 [dcl.type.cv [21]]) are not
+applied on an object under destruction. They stop being in effect when the destructor
+for the most derived object (6.8.2 [intro.object [22]]) starts. [DELETE: A destructor
+shall not be declared with a ref-qualifier.]
+
+This resolution also resolves issue 344 [25].
+
+Source links:
+[1] https://wg21.link/dcl.meaning
+[2] https://wg21.link/dcl.meaning#1
+[3] https://wg21.link/dcl.pre
+[4] https://wg21.link/dcl.spec
+[5] https://wg21.link/class.ctor
+[6] https://wg21.link/class.conv
+[7] https://wg21.link/class.dtor
+[8] https://wg21.link/over.oper
+[9] https://wg21.link/temp.spec
+[10] https://wg21.link/class.ctor#1
+[11] https://wg21.link/dcl.fct
+[12] https://wg21.link/class.friend
+[13] https://wg21.link/class
+[14] https://wg21.link/temp.dep.type
+[15] https://wg21.link/class.qual
+[16] https://wg21.link/class.ctor#3
+[17] https://wg21.link/class.ctor#4
+[18] https://wg21.link/class.virtual
+[19] https://wg21.link/class.static
+[20] https://wg21.link/class.this
+[21] https://wg21.link/dcl.type.cv
+[22] https://wg21.link/intro.object
+[23] https://wg21.link/class.ctor#9
+[24] https://wg21.link/dcl.fct.spec
+[25] https://cplusplus.github.io/CWG/issues/344.html

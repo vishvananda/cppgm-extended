@@ -1,0 +1,43 @@
+CWG 2395: Parameters following a pack expansion
+Source: https://cplusplus.github.io/CWG/issues/2395.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: drafting
+Catalog role: background-only
+
+This issue provides background for a source-specific suite review. Open or
+drafting proposals are not adopted rules and are not implementation claims.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2395. Parameters following a pack expansion
+Section: 13.2 [temp.param [1]] Status: drafting Submitter: Richard Smith Date:
+2018-12-03
+
+The Standard is not clear, and there is implementation divergence, for an example like
+the following:
+
+
+  template<class ...Types> struct Tuple_ { // _VARIADIC_TEMPLATE 
+    template<Types ...T, int I> int f() {
+      return sizeof...(Types);
+    }
+  };
+  int main() {
+    Tuple_<char,int> a;
+    int b = a.f<1, 2, 3>();
+  }
+
+
+The question is whether the 3 is accepted as the argument for I or an error, exceeding
+the number of arguments for T, which is set as 2 by the template arguments for Tuple_.
+See also issue 2383 [2] for a related example.
+
+Source links:
+[1] https://wg21.link/temp.param
+[2] https://cplusplus.github.io/CWG/issues/2383.html

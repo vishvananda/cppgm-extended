@@ -485,5 +485,692 @@
     "reason": "Under adopted P1787R6 [basic.lookup.qual], type-only lookup applies to an identifier immediately followed by ::. The first B in B<B>::type is followed by < and ordinary lookup finds the bool template parameter; [temp.names] expressly excludes nested-name-specifiers from its forced template parsing in type-only contexts. typename does not recover outer ::B. No substitution can make enable_if_t produce the required type. The unused variant constructor has a mandatory unnamed non-type template parameter whose TYPE uses this alias, not merely an invalid default, so no specialization can be valid. main uses only the ordinary default constructor; N3485 14.6p8 therefore makes the source ill-formed, no diagnostic required. This adopted-rule conclusion is distinct from the historical N3485 3.4.3p1 broad 'name preceding ::' type-only-lookup question; incomplete forward declarations alone and assumptions that dependent alias uses never substitute are not relied on. Exclude this exact source hash from BOTH timed roles without counting it as a pass; retain all raw original/native observations. Required PA17:200 controls200-alias-hidden-template-renamed-parameter.t,200-alias-hidden-template-global-qualification.t,200-alias-hidden-template-instantiated-member-bad.t preserve valid lookup/substitution and concrete missing-member diagnosis. Full P1787R6 and CWG1839 adoption evidence are already shipped under doc/cwg/.",
     "issue": "CXX11-125",
     "sha256": "20599d63c46efcda86e43101cf124db441a2254f40ffd551c6c7a5399135e71e"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/attr-fallthrough2.C": {
+    "status": "later-attribute-diagnostics",
+    "reason": "This is explicitly the C++26 P2552R3 fallthrough rule, applied by a vendor in11 mode. In original11 an unknown standard attribute may be ignored; mandatory later attribute-placement diagnostics are not an original11 obligation. Core switch control-flow remains ordinary required coverage.",
+    "issue": "CXX11-FINAL-attr-fallthrough2",
+    "sha256": "1f779e10ddf9ff61d197f65e1b15770ff37035a10ebb5a2932e7155bf5147eff",
+    "primary_basis": [
+      "N3485 7.6.1; original source P2552R3 note"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-arith-overflow2.C": {
+    "status": "course-constexpr-superset",
+    "reason": "The expected negative is assignment during constexpr evaluation through GNU overflow builtins. PA16 expressly permits local variables, assignments and loops as a strict evaluation superset. Reintroducing an old body restriction is not a course correctness repair. Actual invalid/overflow constant uses remain checked.",
+    "issue": "CXX11-FINAL-constexpr-arith-overflow2",
+    "sha256": "a092bf40f30214df60fdd8516b6378c3fc032b6c19863f14433d305754b258d4",
+    "primary_basis": [
+      "PA16 README evaluation-superset paragraph; N3485 7.1.5 original body restriction"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-builtin2.C": {
+    "status": "unmapped-vendor-constexpr-query",
+    "reason": "The GCC constant_p query folds differently when its caller is known during nested constexpr invocation. PA7 promises queries over propagated integral expressions, not every GCC context-sensitive interprocedural query behavior. This source tests a GNU intrinsic extension, not an ISO constexpr identity obligation. Its ordinary identity arithmetic is separately required.",
+    "issue": "CXX11-FINAL-constexpr-builtin2",
+    "sha256": "b76ceeed7d2c0f3cd404ca818a29e2f9bc8ac3350c00537573aaa6876f6d83ae",
+    "primary_basis": [
+      "PA7 README GNU constant_p query boundary; PA29 selected hosted concessions"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-ctor19.C": {
+    "status": "course-constexpr-superset",
+    "reason": "The only demanded errors forbid local enum/class typedef declarations in unused constexpr constructor bodies. PA16 permits nonempty evaluation bodies. The decision does not rely merely on these templates being unused, and does not waive any actual invalid constant object.",
+    "issue": "CXX11-FINAL-constexpr-ctor19",
+    "sha256": "b515646df682e2d56bf837c6b5dae91a0a09efa4f5662cd0bd2bef82ba400358",
+    "primary_basis": [
+      "PA16 README evaluation-superset paragraph"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-data1.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "The sole old negative bans merely declaring a constexpr member in a nonliteral enclosing class. Adopted CWG1684 removes that enclosing-class constraint. This compiler follows the adopted correction; GCC15 in11 retains the earlier restriction. The ordinary literal pixel/Length examples remain covered; no nonliteral constexpr object is made valid.",
+    "issue": "CXX11-FINAL-constexpr-data1",
+    "sha256": "f22ea1c0f434a837aaf5a21472ef2b3ec63bee63b09454721bdb79f8bc7b0df2",
+    "primary_basis": [
+      "N3485 7.1.5p8; full doc/cwg/cwg-1684.txt, applied WP February2014 (statusC++14, not mislabeled a DR)"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-diag5.C": {
+    "status": "course-constexpr-superset",
+    "reason": "The marked errors demand that constexpr constructor bodies be empty and reject a bare return. PA16 explicitly supports a wider body model. The nonliteral subobjects do not create an actual constexpr object in this source; invalid actual objects still diagnose.",
+    "issue": "CXX11-FINAL-constexpr-diag5",
+    "sha256": "02b0f0ea2200fb8810bff6af1db9199ad74dce895ca4252c8aa4412632e7476e",
+    "primary_basis": [
+      "PA16 README evaluation-superset paragraph"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-memchr.C": {
+    "status": "unmapped-vendor-constexpr-search",
+    "reason": "This source requires GNU builtin memchr to be a constexpr byte-search operation. ISO11 neither defines the intrinsic nor makes the ordinary library function constexpr; PA29 does not promise this entire vendor constexpr builtin set. Pointer arithmetic and array identity remain independent ordinary required controls.",
+    "issue": "CXX11-FINAL-constexpr-memchr",
+    "sha256": "8cf33c37e74ca98a7ddc7b5b3579a3415b8a99eb8da27742c73fcdd3e4147696",
+    "primary_basis": [
+      "PA29 selected hosted concessions; N3485 5.19 and library search functions"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-stmtexpr2.C": {
+    "status": "unmapped-vendor-constexpr-statement-expression",
+    "reason": "GNU braced statement-expression inside a constexpr function is a vendor combination, absent from ISO11 expression grammar. Parsing/executing selected GNU statement-expressions does not promise GNU constant evaluation for this form. This is an explicit unsupported capability boundary, not a claim that the original passed.",
+    "issue": "CXX11-FINAL-constexpr-stmtexpr2",
+    "sha256": "a62e75120bf71f9884f5cd043219d25e9ecb05730dac824d7c6ac4e78749fe31",
+    "primary_basis": [
+      "N3485 5 primary/expression grammar; PA29 selected concessions"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-strchr.C": {
+    "status": "unmapped-vendor-constexpr-search",
+    "reason": "The demanded constant string search uses GNU constexpr strchr intrinsic semantics; this is not an ISO11 constexpr library requirement or a declared complete hosted intrinsic promise. Independent string/array storage and pointer comparisons remain covered.",
+    "issue": "CXX11-FINAL-constexpr-strchr",
+    "sha256": "4e987f80625b93773edd14fbe5d862f2ee9aae3960f8db545c788618e1980518",
+    "primary_basis": [
+      "PA29 selected hosted concessions; N3485 5.19"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-strstr.C": {
+    "status": "unmapped-vendor-constexpr-search",
+    "reason": "The demanded constant substring search uses GNU constexpr strstr intrinsic semantics; this is not an ISO11 constexpr library requirement or a declared complete hosted intrinsic promise. Independent string/array storage and pointer comparisons remain covered.",
+    "issue": "CXX11-FINAL-constexpr-strstr",
+    "sha256": "54ec7f8fc4a381cddbd3fa9d0e62e4ecbf0fa458314408644cf30654157bcad5",
+    "primary_basis": [
+      "PA29 selected hosted concessions; N3485 5.19"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-trivial2.C": {
+    "status": "course-constexpr-superset",
+    "reason": "The source assigns a temporary during constexpr evaluation. PA16 explicitly permits assignment in its evaluation superset; the initialized object values are valid under that course contract. Requiring the C++11 body restriction would conflict with the handout.",
+    "issue": "CXX11-FINAL-constexpr-trivial2",
+    "sha256": "1d262980714520002cfea26c32e733977dfa12db1b1db400c87d8f6baae9c638",
+    "primary_basis": [
+      "PA16 README evaluation-superset paragraph"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/depr-copy2.C": {
+    "status": "standard-line-projection",
+    "reason": "The ordinary copy/destructor program is valid. GNU numeric line-marker flags supply system-header/warning metadata, not a required core copy operation. Project exact reviewed numeric directives into standard #line directives, preserving file/line and dropping optional include/system-header flags, for BOTH compiler roles before timing. Pin original and projected bytes; do not discard its core acceptance check.",
+    "issue": "CXX11-FINAL-depr-copy2",
+    "sha256": "95d393cea489c53a3930c411cebee0f63e3c23cc525f614ba1897c4d90836ff2",
+    "primary_basis": [
+      "N3485 16.4 line control; original source numeric line markers; optional deprecated-copy warning"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/desig2.C": {
+    "status": "unmapped-vendor-indexed-designator",
+    "reason": "GNU [INDEX] array designators combined with .member constructors are not C++11 initialization grammar, nor merely the later standard member-designator feature. Course selected hosted extensions do not promise all indexed-array designator combinations. This is a vendor syntax boundary, not an ISO compiler repair.",
+    "issue": "CXX11-FINAL-desig2",
+    "sha256": "4ce5eee7677bf938f5c2f6fa44a2a4d2009d6867e7d7246cf99e3d458c72f3b3",
+    "primary_basis": [
+      "N3485 8.5 initializer grammar; PA29 selected concessions"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/desig3.C": {
+    "status": "unmapped-vendor-indexed-designator",
+    "reason": "Same GNU indexed array/member designator combination as desig2, here with constant index names. Neither ISO11 nor the declared selected hosted concessions requires this syntax. Keep ordinary aggregate/array initialization controls.",
+    "issue": "CXX11-FINAL-desig3",
+    "sha256": "7faca389d64dee94b96962439c04b4e9a93386ec12e0f74cb60db34c36edf84d",
+    "primary_basis": [
+      "N3485 8.5 initializer grammar; PA29 selected concessions"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/fallthrough1.C": {
+    "status": "optional-vendor-attribute-oracle",
+    "reason": "The file demands placement diagnostics for the GNU fallthrough attribute, which ISO11 does not define. Optional unknown attributes may be ignored. These vendor diagnostic-effect tests do not establish a mandatory ISO11 diagnostic, while the core control-flow semantics remain required.",
+    "issue": "CXX11-FINAL-fallthrough1",
+    "sha256": "024b7673e27031715977bdc93d1b7ba2270c92a8abc8d68c1aefa5a17bad8940",
+    "primary_basis": [
+      "N3485 7.6.1 unknown attributes; original gnu::fallthrough annotations"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/initlist93.C": {
+    "status": "incompatible-bootstrap-library-interface",
+    "reason": "This defines an artificial std::initializer_list with public int pointer/int-size fields and demands GCC internal library-bootstrap layout validation despite no actual list use. Namespace std extension is reserved, and ISO does not require eager GCC carrier-layout diagnosis. This does not waive real list-initialization or backing-array semantics, covered by proper nonaggregate carrier guards.",
+    "issue": "CXX11-FINAL-initlist93",
+    "sha256": "909f83fc283ddfdfe34f24fe8f4ce0507f5afccccc6c7f221e54867fc9677c05",
+    "primary_basis": [
+      "N3485 17.6.4.2.1 namespace std restrictions; 18.9 initializer_list implementation contract"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/udlit-macros.C": {
+    "status": "vendor-tokenization-recovery",
+    "reason": "The expected successful object relies on GCC recovery for a string token immediately followed by macro spellings with no whitespace. Translation-phase tokenization forms UDL suffix tokens before macro expansion. cppgm/Clang diagnosis is compliant; valid spaced macro/UDL forms are separate required controls. No literal suffix wording/count parity.",
+    "issue": "CXX11-FINAL-udlit-macros",
+    "sha256": "c96ae8e048a9dae274c5139290673c967c4b3c6ebe41ce7f167d1aa925f12374",
+    "primary_basis": [
+      "N3485 2.2,2.14.8,16.3; original GCC recovery warnings"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/warn_cxx0x4.C": {
+    "status": "vendor-tokenization-recovery",
+    "reason": "The adjacent string and FOO spelling forms a UDL token before FOO macro expansion. GCC accepts through warned recovery, while cppgm diagnoses it. Matching GCC warning recovery is not mandatory core C++ acceptance.",
+    "issue": "CXX11-FINAL-warn_cxx0x4",
+    "sha256": "6b36f8ad80863a23aec1175f1bd16862c93d3c81d131fd6f6a523c0eaa0bc37c",
+    "primary_basis": [
+      "N3485 2.2,2.14.8,16.3"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/initlist-explicit3.C": {
+    "status": "standards-review",
+    "reason": "Exact CWG2735 example: copy-list initialization with competing explicit/nonexplicit constructor candidates depends on a proposed, unadopted ranking tie-breaker. The desired GCC acceptance must not become a compiler requirement solely from this test. Current source remains visible; resolve the published ranking independently from any proposal before changing its oracle.",
+    "issue": "CXX11-FINAL-initlist-explicit3",
+    "sha256": "cef6c3d047f6d0b8b881545bc4ce8f94a3fc36933ec3134e4347e9b53915f454",
+    "primary_basis": [
+      "N3485 8.5.4p3 / 13.3.1.7 / 13.3.3",
+      "CWG2735 is OPEN; its proposed extra preference is not adopted"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-22.C": {
+    "status": "standards-review",
+    "reason": "This is the exact private typedef access example in CWG1554. The alias-associated-type substitution can be viewed in the alias definition context or the use in B; the issue records agreement but no adopted resolution. This audit does not turn consensus notes into an adopted access rule. Unlike an unused bad template, the alias is actually used in B, so do not justify an exclusion by IFNDR/no instantiation.",
+    "issue": "CXX11-FINAL-alias-decl-22",
+    "sha256": "0a4497cdeed3df0bd2ffefd5065921c8b63a25aa34db37da45e1718e7787e548",
+    "primary_basis": [
+      "N3485 11p1 / 14.5.7p2 alias associated type and substitution",
+      "CWG1554 status drafting; definition-context consensus is not approved wording"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-initlist7.C": {
+    "status": "not-required",
+    "reason": "Unused foo<typename>(int i) initializes a constexpr int array from an ordinary int parameter. No template argument can make that parameter a constant expression in its function definition. Passing a literal at a later call does not make a function parameter constexpr. This proves no valid specialization for the unused body, rather than merely noticing it is unused.",
+    "issue": "CXX11-FINAL-constexpr-initlist7",
+    "sha256": "3c27eab13425df7751de3b37ea5cd5ac37864e95def90c8279a5c823dfdd14f1",
+    "primary_basis": [
+      "N3485 7.1.5p9 / 5.19 / 14.6p8",
+      "P2280 unknown-reference allowance does not permit reading an unknown int parameter"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/conv-tmpl1.C": {
+    "status": "standards-review",
+    "reason": "Exact CWG2189 surrogate-call-template example. N3485 describes concrete surrogate functions for conversion functions to function pointers, but provides no generic surrogate-template formation/deduction rule for this conversion function template. The active issue identifies that missing rule and has no approved resolution. Thus GCC acceptance is not established as a required rule by the open proposal; do not invent surrogate templates just to satisfy the file.",
+    "issue": "CXX11-FINAL-conv-tmpl1",
+    "sha256": "0b9739760bee3830855e4160430c5b5c7e69039e13f1e6e5af6919f08b927781",
+    "primary_basis": [
+      "N3485 13.3.1.1.2p2 / 14.8.2.3",
+      "CWG2189 OPEN, describes absence of conversion-function-template surrogate rule"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/decltype76.C": {
+    "status": "not-required",
+    "reason": "The bad decltype(a(0)) is an UNUSED default template argument. a has no viable constructor from int; no substitution can repair the nondependent expression. Explicitly supplying T may produce valid f specializations, so the older no-valid-function-specialization argument is insufficient. Adopted CWG2746 explicitly covers never-used default template arguments with no valid specialization.",
+    "issue": "CXX11-FINAL-decltype76",
+    "sha256": "95de44d02ddfc8e4109e5c857bbfcd89c2d86334ba7bb6da2ec9cd0365b76635",
+    "primary_basis": [
+      "N3485 14.6p8 as corrected by adopted CWG2746",
+      "N3485 5.2.3 / 12.1"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/defaulted19.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "Ordinary new A[5] names an element type with deleted destructor. Array new potentially invokes the element destructor even when construction/deallocation-cookie choices seem trivial; deletion/access is checked. The difference between trivial and nontrivial B does not remove this obligation. The run/cookie expectation cannot override the ordinary ill-formed declaration. The pinned GCC15.2 in11 produces no ordinary diagnostic in either frozen configuration, so it cannot be the matching required-diagnostic baseline for this exact TU. Both roles exclude this source; cppgm actual rejection and all original raw outputs remain recorded. This exclusion does not change the required rule or label the program well-formed.",
+    "issue": "CXX11-FINAL-defaulted19",
+    "sha256": "009a766f3f49646ceabdee584663a869c747c0af6d56bf998c710f6539963c71",
+    "primary_basis": [
+      "N3485 5.3.4p17 / 12.4",
+      "CWG1424 DR September 2013; CWG2102 DR November 2023 explicitly retain array-new potentially-invoked destructor"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/defaulted19a.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "Ordinary new A[5] names an element type with deleted destructor. Array new potentially invokes the element destructor even when construction/deallocation-cookie choices seem trivial; deletion/access is checked. The difference between trivial and nontrivial B does not remove this obligation. The run/cookie expectation cannot override the ordinary ill-formed declaration. The pinned GCC15.2 in11 produces no ordinary diagnostic in either frozen configuration, so it cannot be the matching required-diagnostic baseline for this exact TU. Both roles exclude this source; cppgm actual rejection and all original raw outputs remain recorded. This exclusion does not change the required rule or label the program well-formed.",
+    "issue": "CXX11-FINAL-defaulted19a",
+    "sha256": "3a5966031df0d7caf42820c25e3649898a4854e0654f43654e887acff540f0b7",
+    "primary_basis": [
+      "N3485 5.3.4p17 / 12.4",
+      "CWG1424 DR September 2013; CWG2102 DR November 2023 explicitly retain array-new potentially-invoked destructor"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/deleted3.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "The explicit specialization writes A::A<int>(int). Adopted CWG581 expressly forbids specifying template arguments when referring to a constructor-template specialization, including declarative contexts. The primary being deleted is not itself the reason to reject: CWG941 allows specializing deleted function templates. A deduced A::A(int) specialization is the meaningful valid neighbor. Do not confuse this with CWG2237, which explicitly changes only C++20 in-class constructor spelling. The pinned GCC15.2 in11 produces no ordinary diagnostic in either frozen configuration, so it cannot be the matching required-diagnostic baseline for this exact TU. Both roles exclude this source; cppgm actual rejection and all original raw outputs remain recorded. This exclusion does not change the required rule or label the program well-formed.",
+    "issue": "CXX11-FINAL-deleted3",
+    "sha256": "4a8b645c8b2cf1714f77f5c30b680975be6f21c4a6c6cebe2eb03143299179e8",
+    "primary_basis": [
+      "N3485 12.1 / 14.7.3 / 14.8.1, corrected by CWG581",
+      "CWG581 DR February 2019 explicitly prohibits constructor template arguments",
+      "CWG941 C++11 permits specialization of a deleted function template; CWG2237 is C++20-only"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/error2.C": {
+    "status": "not-required",
+    "reason": "Unused bar contains (foo<N>()=0)... although no parameter pack occurs in that pattern; foo<N>() is also an int prvalue, not a modifiable lvalue. Neither F nor N substitution repairs these fixed errors. A silent empty template object is not evidence that an active invalid expression was checked.",
+    "issue": "CXX11-FINAL-error2",
+    "sha256": "8135c369ed62c91fccc9d25295da6803f1541b5641588ae6acda9c512e0a3f4d",
+    "primary_basis": [
+      "N3485 14.5.3 pack-expansion pattern / 5.17p1 / 14.6p8"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/forw_enum4.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "The valid opaque enum declarations and object declarations are followed by qualified enum DEFINITIONS inside the enclosing class S1. N3485 requires such a definition in an enclosing namespace; adopted P1787 makes the boundary explicit: a qualified enum definition shall not inhabit a class scope. Explicit instantiation of S1<int> exposes the invalid definitions, so no unused-template waiver is needed. Any normal diagnostic satisfies the whole TU; its exact enum-redefinition wording is irrelevant. The pinned GCC15.2 in11 produces no ordinary diagnostic in either frozen configuration, so it cannot be the matching required-diagnostic baseline for this exact TU. Both roles exclude this source; cppgm actual rejection and all original raw outputs remain recorded. This exclusion does not change the required rule or label the program well-formed.",
+    "issue": "CXX11-FINAL-forw_enum4",
+    "sha256": "d8fe2fd5f08ea7fbe1a363e6a14238fac5f73ead63458765cc988cf1acda6175",
+    "primary_basis": [
+      "N3485 7.2p4",
+      "Adopted P1787R6 [dcl.enum]p4: qualified enum definition shall not inhabit a class scope"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/forw_enum9.C": {
+    "status": "not-required",
+    "reason": "Generic unscoped S1<T>::E1 is defined before an explicit S1<int>::E1 specialization. Referring to S1<int> instantiates its unscoped member-enum definition (CWG1206/N3485 14.7.1p1), so the later E1 specialization is after instantiation. CWG1792 NAD specifically affirms the example underlying that rule. 14.7.3p6 states the specialization-before-instantiation requirement with no diagnostic required. Scoped E2 is a separate valid prefix and must not be discarded as if every enum definition were invalid.",
+    "issue": "CXX11-FINAL-forw_enum9",
+    "sha256": "7f11a7a41b7a2de0b48b2300cdf69018b532bd678a78f78b6487a2186f0054ef",
+    "primary_basis": [
+      "N3485 14.7.1p1 / 14.7.3p6",
+      "CWG1206 C++11; CWG1792 NAD rationale affirms unscoped-enum example"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/friend3.C": {
+    "status": "not-required",
+    "reason": "Unused a<T> has a lambda closure as an unsigned NSDMI, without invoking that lambda. It cannot initialize unsigned. The nondependent local anonymous-union body also defines a friend function in forbidden local-class context. No T changes either construct. This supplies specific no-valid-specialization / hypothetical nondependent-construct reasoning, not an unused-template blanket waiver.",
+    "issue": "CXX11-FINAL-friend3",
+    "sha256": "0e20c7f82df0c78468c17ba6d3d34fd2c5b8ee6402e34cb50eff9df83e55b194",
+    "primary_basis": [
+      "N3485 14.6p8 / 5.1.2 / 11.3p2 / 9.5 anonymous unions"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/gen-attrs-9.C": {
+    "status": "required-diagnostic",
+    "reason": "One ordinary declaration is enum [[gnu::unused]] e; after unscoped nonfixed enum e was defined. In C++11 an opaque unscoped enum requires an enum-base; a nonfixed definition cannot be redeclared fixed. This is an independent core error regardless of GNU unused processing. GCC already emits ordinary diagnostics in the frozen run; requiring acceptance was the wrong whole-TU grade. Optional attribute warnings are not used as the normative basis.",
+    "issue": "CXX11-FINAL-gen-attrs-9",
+    "sha256": "908e220b5a1d7bbfc4c18561f71c8d82d9b501c8998e925e52db0bce62951d61",
+    "primary_basis": [
+      "N3485 7.2p2 and enum redeclaration rules; vendor attribute effects do not override enum grammar"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/initlist-ref1.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "Braced initialization of the int& member from ConvToRef is the exact non-const reference conversion gap in drafting CWG1996. Published list-reference initialization does not simply perform parenthesized direct reference initialization; the source cannot rely on the unadopted repair to bind the existing int lvalue. The pinned GCC15.2 in11 produces no ordinary diagnostic in either frozen configuration, so it cannot be the matching required-diagnostic baseline for this exact TU. Both roles exclude this source; cppgm actual rejection and all original raw outputs remain recorded. This exclusion does not change the required rule or label the program well-formed.",
+    "issue": "CXX11-FINAL-initlist-ref1",
+    "sha256": "39f4375ac14a1a2d77d88579c834daf3c178e56be65de1a49464bac194358fc7",
+    "primary_basis": [
+      "N3485 8.5.4p3 reference list-initialization bullets / 8.5.3",
+      "CWG1996 status drafting explicitly says reference list-initialization ignores conversion functions"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/initlist-ref3.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "Parenthesized dr1 can bind via the conversion function. Under the published list-reference rule dr2{s} does not inherit that direct-binding guarantee; the class-reference list path creates a separate D temporary where allowed. The final identity assertion &dr2==&d therefore is not a required true assertion. Drafting CWG1996 describes this ignored-conversion-function defect, but supplies no adopted new direct-binding rule. A normal diagnosis of this complete TU is compliant; no body or message parity is needed. The pinned GCC15.2 in11 produces no ordinary diagnostic in either frozen configuration, so it cannot be the matching required-diagnostic baseline for this exact TU. Both roles exclude this source; cppgm actual rejection and all original raw outputs remain recorded. This exclusion does not change the required rule or label the program well-formed.",
+    "issue": "CXX11-FINAL-initlist-ref3",
+    "sha256": "f912d44ff8dfe148fefb213abb9e9bfaebd90f37a06d7172919508c5d1517ff3",
+    "primary_basis": [
+      "N3485 8.5.4p3 reference list-initialization bullets / 8.5.3",
+      "CWG1996 status drafting explicitly says reference list-initialization ignores conversion functions"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/initlist-value4.C": {
+    "status": "not-required",
+    "reason": "Unused bar<int N> calls the nondependent foo({}) with a missing required second argument. N does not occur in the expression; no specialization can repair its arity. This is not an initializer-list runtime problem and does not warrant eager instantiation of all template bodies.",
+    "issue": "CXX11-FINAL-initlist-value4",
+    "sha256": "d86bb07c048d31ccab0560bf47660b89a76cdf11bca32ca9b21d56418fe7d0ed",
+    "primary_basis": [
+      "N3485 13.3.2 viable function arity / 14.6p8"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/new4.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "The whole TU mixes valid scalar new of objects with private/deleted destructors and forbidden ARRAY new of the same types. Array allocation potentially invokes the element destructor; access/deletion must be checked even if no explicit delete appears. Scalar allocation does not potentially invoke the allocated object destructor merely for returning its pointer. Preserve that distinction instead of requiring this mixed TU to compile. The pinned GCC15.2 in11 produces no ordinary diagnostic in either frozen configuration, so it cannot be the matching required-diagnostic baseline for this exact TU. Both roles exclude this source; cppgm actual rejection and all original raw outputs remain recorded. This exclusion does not change the required rule or label the program well-formed.",
+    "issue": "CXX11-FINAL-new4",
+    "sha256": "ffb7824e866bdc0278de3caf9aaf0d4cd1bad8548d582a14a4ec541e484869a7",
+    "primary_basis": [
+      "N3485 5.3.4p17 / 12.4; CWG1424 and CWG2102"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/noexcept81.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "The old assertion noexcept(yesthrow_t()) assumes trivial value-initialization never invokes a defaulted noexcept(false) constructor. Adopted CWG2820 invokes the selected default constructor during value-initialization even in this trivial case, and the explicit throwing specification remains effective. Thus that ordinary static_assert is false. CWG1360/P2448 constexpr suitability does not erase noexcept(false). The pinned GCC15.2 in11 produces no ordinary diagnostic in either frozen configuration, so it cannot be the matching required-diagnostic baseline for this exact TU. Both roles exclude this source; cppgm actual rejection and all original raw outputs remain recorded. This exclusion does not change the required rule or label the program well-formed.",
+    "issue": "CXX11-FINAL-noexcept81",
+    "sha256": "304585f0ea1e11d1f8ea258285747a2fc93242b38d3d752f0c21aaffd8daadc9",
+    "primary_basis": [
+      "N3485 5.3.7 / 8.5 value-initialization as corrected by CWG2820",
+      "CWG2820 DR March 2024; constexpr suitability and exception specification are distinct"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/noexcept89.C": {
+    "status": "upstream-baseline-limitation",
+    "reason": "The member-template exception operand uses an already declared int field, and the trailing return type asks the type of a call, not a constant evaluation of an unfinished function body. CWG1330 makes exception specifications complete-class contexts and instantiates them as needed. There is no recursive default initializer or unknown constexpr body here. Native timing rejection until the end of A is an implementation limitation, not a reason to force cppgm rejection. The source is required valid behavior, but the pinned GCC15.2 source metadata/native result does not provide that positive oracle. Both roles exclude it from this matching-baseline job; existing compiler acceptance is retained, not counted as an unexplained compiler failure. Independent scoped controls preserve its valid core behavior.",
+    "issue": "CXX11-FINAL-noexcept89",
+    "sha256": "ccd8f7d60b74b97c80444da6699c48f7aeadeb062bf2009e398325f4d86d60d4",
+    "primary_basis": [
+      "N3485 9.2p2 / 5.1.1 this in trailing return; adopted CWG1330 complete-class exception context"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/noexcept90.C": {
+    "status": "upstream-baseline-limitation",
+    "reason": "Nested S5<int> is complete before s5.f1() is queried. Its f1 exception operand may see the later int i in its complete-class context; noexcept(i) does not read an object and is true. Querying s5.f1() is unevaluated and does not require the outer S to be complete merely because s5 is a nonstatic member. No recursive body evaluation is involved. The source is required valid behavior, but the pinned GCC15.2 source metadata/native result does not provide that positive oracle. Both roles exclude it from this matching-baseline job; existing compiler acceptance is retained, not counted as an unexplained compiler failure. Independent scoped controls preserve its valid core behavior.",
+    "issue": "CXX11-FINAL-noexcept90",
+    "sha256": "9f2c4bfcee41e8b74c7dee862aa0581a84f52273aaf38399c4644e91b9f6735d",
+    "primary_basis": [
+      "N3485 5.3.7 / 9.2p2; CWG613 unevaluated member naming; CWG1330"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/nsdmi10.C": {
+    "status": "upstream-baseline-limitation",
+    "reason": "B1 and B2 are completed nested classes when their default constructors occur in the enclosing constructor default argument. Literal NSDMIs 1 do not recursively require their OWN default constructor or exception specification. CWG1397 prohibits such cycles, not every nested-class default construction before the outer closing brace. B2 value-initialization zeroes omitted x2 before using its ordinary defaulted constructor. Rejecting these nonrecursive defaults until the outer class ends is a timing limitation. The source is required valid behavior, but the pinned GCC15.2 source metadata/native result does not provide that positive oracle. Both roles exclude it from this matching-baseline job; existing compiler acceptance is retained, not counted as an unexplained compiler failure. Independent scoped controls preserve its valid core behavior.",
+    "issue": "CXX11-FINAL-nsdmi10",
+    "sha256": "862e4eeb10ec97dc5031bdfad516697f8c4512cf7a209f6c81f0b896549456fa",
+    "primary_basis": [
+      "N3485 9.2p2 / 12.1 / 8.5 value-initialization",
+      "CWG1397 bans NSDMI requiring own ctor definition; CWG1330 complete-class contexts"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/pr34061.C": {
+    "status": "not-required",
+    "reason": "Unused A<template<class...> class...T> derives from T<0> without expanding T. The syntactic unexpanded pack is not repaired by substituting one element or an empty pack. No specialization of that declaration is valid under the required expansion grammar.",
+    "issue": "CXX11-FINAL-pr34061",
+    "sha256": "7b0f18b4030dcdc4719778fdc3e3342834ff4eac59a817d4004f28c94a3b672b",
+    "primary_basis": [
+      "N3485 14.5.3 / 14.6p8"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/pr58563.C": {
+    "status": "not-required",
+    "reason": "Unused foo<int N> has a nondependent pseudo-destructor expression E().E::~T() with no declaration of T and invalid enum qualifier structure. N does not participate. A no-valid-specialization/hypothetical nondependent construct argument is available; do not infer a missing active enum destructor check from the empty template object.",
+    "issue": "CXX11-FINAL-pr58563",
+    "sha256": "7994114081d3c68bde74677e373d4ad81ecb6f451fe3e711d1b947a964660ffe",
+    "primary_basis": [
+      "N3485 5.2.4 / 14.6p8"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/pr70538.C": {
+    "status": "removed-syntax-extension",
+    "reason": "base_type::base_type; is an old access-declaration, removed from C++11 grammar. It is not the supported using base_type::base_type inherited-constructor syntax. GCC accepts it as an extension with a warning; cppgm and Clang syntax diagnosis is consistent with standard C++11. Do not count the unused C<T> member body/private base constructor as the decisive error, since that member need not be instantiated.",
+    "issue": "CXX11-FINAL-pr70538",
+    "sha256": "44900efa9ea0abd7cad40b40b1449fe24d05a4c83aa39bc7e3ed4be7218afcd5",
+    "primary_basis": [
+      "N3485 9.2 member-declaration grammar / 7.3.3 using-declaration; removed C++03 access-declaration",
+      "No handout policy found authorizing the removed access-declaration spelling"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/pr71737.C": {
+    "status": "upstream-baseline-limitation",
+    "reason": "quote<to_int_t> binds a fixed one-parameter alias template to a variadic template-template parameter, and the later apply<int> has a valid concrete one-argument specialization. Its written TT<Ts...> expansion must be retained until concrete arity is known; rejecting it by the old expansion-into-fixed-head restriction is the same ordinary alias SPECIALIZATION issue already adjudicated in CXX11-121. This does not require unadopted alias TEMPLATE identity equivalence from CWG1286. The result is int, and no erased argument has an independently invalid substitution. The source is required valid behavior, but the pinned GCC15.2 source metadata/native result does not provide that positive oracle. Both roles exclude it from this matching-baseline job; existing compiler acceptance is retained, not counted as an unexplained compiler failure. Independent scoped controls preserve its valid core behavior.",
+    "issue": "CXX11-FINAL-pr71737",
+    "sha256": "fed725b01b1a045d827d28c0cbf59a78a568ebb699ad4ca47125b7d2d20d0488",
+    "primary_basis": [
+      "N3485 14.3.3p3 template-template matching / 14.5.7p2 alias associated type / 14.5.3",
+      "Adopted CWG1558; CXX11-121 ordinary specialization deferral; CWG1430/1286 background is not a blanket ban"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/pr85437-3.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "An original B member pointer is converted through C (derived from A and B) to A::*. N3485 5.2.9p12 makes the conversion result itself undefined when A neither contains that original B member nor is appropriately related to B; this is not only an eventual dereference issue. A constexpr initializer cannot contain that undefined cast. Ordinary namespace constexpr declarations provide the required diagnostic obligation. The pinned GCC15.2 in11 produces no ordinary diagnostic in either frozen configuration, so it cannot be the matching required-diagnostic baseline for this exact TU. Both roles exclude this source; cppgm actual rejection and all original raw outputs remain recorded. This exclusion does not change the required rule or label the program well-formed.",
+    "issue": "CXX11-FINAL-pr85437-3",
+    "sha256": "2ce13965f20a283e2fab0c93aa5af295157db3cb02392990c73b56894e39be90",
+    "primary_basis": [
+      "N3485 5.2.9p12 member-pointer inverse conversion / 5.19p2 undefined behavior in core constant expression"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/pr85437-4.C": {
+    "status": "upstream-epoch-limitation",
+    "reason": "An original B member pointer is converted through C (derived from A and B) to A::*. N3485 5.2.9p12 makes the conversion result itself undefined when A neither contains that original B member nor is appropriately related to B; this is not only an eventual dereference issue. A constexpr initializer cannot contain that undefined cast. Ordinary namespace constexpr declarations provide the required diagnostic obligation. The pinned GCC15.2 in11 produces no ordinary diagnostic in either frozen configuration, so it cannot be the matching required-diagnostic baseline for this exact TU. Both roles exclude this source; cppgm actual rejection and all original raw outputs remain recorded. This exclusion does not change the required rule or label the program well-formed.",
+    "issue": "CXX11-FINAL-pr85437-4",
+    "sha256": "8532c81f05a1ec9175441a0e9f6979a88593a77247275e83fba2a728f6987002",
+    "primary_basis": [
+      "N3485 5.2.9p12 member-pointer inverse conversion / 5.19p2 undefined behavior in core constant expression"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/range-for26.C": {
+    "status": "not-required",
+    "reason": "Unused foo<int N> ranges over the fixed integer literal 0. No N changes its type into an array or a range with begin/end; no valid specialization can be generated for the body. Source-specific IFNDR is not a general license to ignore an instantiated bad range-for.",
+    "issue": "CXX11-FINAL-range-for26",
+    "sha256": "a76de22b22004d3718f0abecff1a2ec37a4aa80bf30e2ccb23b6c5359589bf2c",
+    "primary_basis": [
+      "N3485 6.5.4 / 14.6p8"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/static_assert10.C": {
+    "status": "not-required",
+    "reason": "The source has no actual instantiation demanding the bad body; ordinary local int i is passed to a non-constexpr foo. These are nonconstant assertions, not simply literal static_assert(false) templates. The required constant-expression constraint cannot be repaired by a template argument, and the general unused-templated-entity no-valid-specialization/hypothetical nondependent rule applies. Adopted CWG2518 also removes eager failed-assertion requirements in template definitions; this audit does not use it to make a nonconstant expression a constant. Either deferred assertion checking or IFNDR prevents requiring an eager diagnostic from this unused TU.",
+    "issue": "CXX11-FINAL-static_assert10",
+    "sha256": "c10d5f505614f885f37baa42a30fa78435e788aa42675d7c54c763ad753d33b8",
+    "primary_basis": [
+      "N3485 7p4 static assertion / 5.19 / 14.6p8",
+      "CWG2518 DR February 2023: template-definition failed assertions are not an eager rejection oracle; constant-expression constraint remains"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/static_assert11.C": {
+    "status": "not-required",
+    "reason": "The source has no actual instantiation demanding the bad body; member-template foo(0) is non-constexpr and requires an unknown this. These are nonconstant assertions, not simply literal static_assert(false) templates. The required constant-expression constraint cannot be repaired by a template argument, and the general unused-templated-entity no-valid-specialization/hypothetical nondependent rule applies. Adopted CWG2518 also removes eager failed-assertion requirements in template definitions; this audit does not use it to make a nonconstant expression a constant. Either deferred assertion checking or IFNDR prevents requiring an eager diagnostic from this unused TU.",
+    "issue": "CXX11-FINAL-static_assert11",
+    "sha256": "5142d9c6785cbc559501c2b48e09420695a3ce80f33fbca5d6f684cb651d0637",
+    "primary_basis": [
+      "N3485 7p4 static assertion / 5.19 / 14.6p8",
+      "CWG2518 DR February 2023: template-definition failed assertions are not an eager rejection oracle; constant-expression constraint remains"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/static_assert14.C": {
+    "status": "not-required",
+    "reason": "The source has no actual instantiation demanding the bad body; ordinary int function parameter c is not a constant expression. These are nonconstant assertions, not simply literal static_assert(false) templates. The required constant-expression constraint cannot be repaired by a template argument, and the general unused-templated-entity no-valid-specialization/hypothetical nondependent rule applies. Adopted CWG2518 also removes eager failed-assertion requirements in template definitions; this audit does not use it to make a nonconstant expression a constant. Either deferred assertion checking or IFNDR prevents requiring an eager diagnostic from this unused TU.",
+    "issue": "CXX11-FINAL-static_assert14",
+    "sha256": "3358d72cabe50fb00ab3c8c31dacef01ffdc312bbaaea5c1f3f649c6300b9a51",
+    "primary_basis": [
+      "N3485 7p4 static assertion / 5.19 / 14.6p8",
+      "CWG2518 DR February 2023: template-definition failed assertions are not an eager rejection oracle; constant-expression constraint remains"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/static_assert15.C": {
+    "status": "not-required",
+    "reason": "The source has no actual instantiation demanding the bad body; c %= 1 reads an uninitialized ordinary local and cannot satisfy the constant-expression requirement. These are nonconstant assertions, not simply literal static_assert(false) templates. The required constant-expression constraint cannot be repaired by a template argument, and the general unused-templated-entity no-valid-specialization/hypothetical nondependent rule applies. Adopted CWG2518 also removes eager failed-assertion requirements in template definitions; this audit does not use it to make a nonconstant expression a constant. Either deferred assertion checking or IFNDR prevents requiring an eager diagnostic from this unused TU.",
+    "issue": "CXX11-FINAL-static_assert15",
+    "sha256": "3c0397363ec91f91885d9fb288c9b469595c8f8b33555c4a9b3021f47f7068cd",
+    "primary_basis": [
+      "N3485 7p4 static assertion / 5.19 / 14.6p8",
+      "CWG2518 DR February 2023: template-definition failed assertions are not an eager rejection oracle; constant-expression constraint remains"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/udlit-operator-neg.C": {
+    "status": "upstream-baseline-limitation",
+    "reason": "The TU only DECLARES/DEFINES raw and character-pack literal operator templates with the same suffix; it does not contain a numeric literal lookup using that suffix. N3485 2.14.8 disallows finding BOTH raw and literal-template forms in the lookup set for an actual literal conversion, not declaring those namespace overloads in isolation. 13.5.8 permits the declarations. Rejecting this complete TU solely for future potential lookup ambiguity is unjustified. The source is required valid behavior, but the pinned GCC15.2 source metadata/native result does not provide that positive oracle. Both roles exclude it from this matching-baseline job; existing compiler acceptance is retained, not counted as an unexplained compiler failure. Independent scoped controls preserve its valid core behavior.",
+    "issue": "CXX11-FINAL-udlit-operator-neg",
+    "sha256": "148177c66bc97373ac29a84f35a9292b164600d0e26f1dc93918182af4fdbd27",
+    "primary_basis": [
+      "N3485 2.14.8p3-p4 actual user-defined literal lookup / 13.5.8p6-p7 permitted operators"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/udlit-overflow-neg.C": {
+    "status": "required-diagnostic",
+    "reason": "The TU has an enormous integer numeric UDL but only a cooked unsigned-long-long literal operator, so 2.14.8 forms the required integer literal argument before calling it. The value exceeds both unsigned long long and the course maximum supported extended integer, requiring a normal diagnostic. Native overflow warnings already provide it. Floating overflow/underflow alone need not be decided to establish this whole-TU diagnostic obligation.",
+    "issue": "CXX11-FINAL-udlit-overflow-neg",
+    "sha256": "661adfd01d9c8c4a217a30b6e4c4027a05c451c0eb0a9d59622123a3d0ae0207",
+    "primary_basis": [
+      "N3485 2.14.8p3 cooked integer UDL / 2.14.2p3 unrepresentable integer literal"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/variadic-nested1.C": {
+    "status": "standards-review",
+    "reason": "N3485 14.1p11 expressly requires a primary class-template parameter pack last. 14.1p15 calls these outer-dependent forms template parameter packs even when they are also pack expansions. No adopted exception for a following member-class template parameter was found.2395 records the fixed-length parameter-allocation ambiguity;2994 proposes an explicit exception for function templates and is OPEN, not a general adopted class-template permission. Thus the exact following-parameter source cannot impose a GCC/Clang-extension acceptance requirement under the current course contract. This does not justify rejecting a trailing expanded head: the valid trailing TT-head slice exposes a real f107 bug and is being repaired independently.",
+    "issue": "CXX11-FINAL-variadic-nested1",
+    "sha256": "b15709ba774e739f83b4891bf198f1ed2c68adb3405f83fe4c0ab484ef064f68",
+    "primary_basis": [
+      "N3485 14.1p11,p15 /14.5.3p4",
+      "CWG2395 drafting fixed-length allocation;2994 OPEN proposed function-template exception"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/variadic127.C": {
+    "status": "not-required",
+    "reason": "Unused T<Types...> grants friend S<Types> without expanding Types. No specialization repairs the written unexpanded pack. Empty substitution does not transform an unexpanded use into a legal expansion; no valid declaration instance exists.",
+    "issue": "CXX11-FINAL-variadic127",
+    "sha256": "3100c1d89684451804c2eb73ed1cf5f4b14541606ac2c0c31906be2cbf809298",
+    "primary_basis": [
+      "N3485 14.5.3 / 14.6p8"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/variadic151.C": {
+    "status": "standards-review",
+    "reason": "N3485 14.1p11 expressly requires a primary class-template parameter pack last. 14.1p15 calls these outer-dependent forms template parameter packs even when they are also pack expansions. No adopted exception for a following member-class template parameter was found.2395 records the fixed-length parameter-allocation ambiguity;2994 proposes an explicit exception for function templates and is OPEN, not a general adopted class-template permission. Thus the exact following-parameter source cannot impose a GCC/Clang-extension acceptance requirement under the current course contract. This does not justify rejecting a trailing expanded head: the valid trailing TT-head slice exposes a real f107 bug and is being repaired independently.",
+    "issue": "CXX11-FINAL-variadic151",
+    "sha256": "f3008d64b98edc335f5647886efbcc197a176a6138bffb2862a545bff8c485b0",
+    "primary_basis": [
+      "N3485 14.1p11,p15 /14.5.3p4",
+      "CWG2395 drafting fixed-length allocation;2994 OPEN proposed function-template exception"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/variadic152.C": {
+    "status": "standards-review",
+    "reason": "N3485 14.1p11 expressly requires a primary class-template parameter pack last. 14.1p15 calls these outer-dependent forms template parameter packs even when they are also pack expansions. No adopted exception for a following member-class template parameter was found.2395 records the fixed-length parameter-allocation ambiguity;2994 proposes an explicit exception for function templates and is OPEN, not a general adopted class-template permission. Thus the exact following-parameter source cannot impose a GCC/Clang-extension acceptance requirement under the current course contract. This does not justify rejecting a trailing expanded head: the valid trailing TT-head slice exposes a real f107 bug and is being repaired independently.",
+    "issue": "CXX11-FINAL-variadic152",
+    "sha256": "e72605ce42332d57b1589fc1264a25979ada12f9819f8795273d52366ceadd0d",
+    "primary_basis": [
+      "N3485 14.1p11,p15 /14.5.3p4",
+      "CWG2395 drafting fixed-length allocation;2994 OPEN proposed function-template exception"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/variadic168.C": {
+    "status": "not-required",
+    "reason": "This mixed TU contains B1 and insert1 UNUSED default TEMPLATE arguments sizeof(Args) with an unexpanded pack, explicitly within adopted CWG2746 no-valid-default rule. That is enough to remove whole-program mandatory requirements. Do not incorrectly extend this argument to B2/insert2 DEFAULT FUNCTION arguments: those can be bypassed by supplying the second argument, and their instantiation is demand-driven. Retain separate active-default and bypassed-default witnesses rather than claiming every function specialization is invalid.",
+    "issue": "CXX11-FINAL-variadic168",
+    "sha256": "17ea96da0b539db0576707378f59b49579fd1afb8c89f78c186fcdf9528179c8",
+    "primary_basis": [
+      "N3485 14.5.3 / 14.6p8 as corrected by CWG2746 / 14.7.1p12-p13 default function arguments"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/vt-34102.C": {
+    "status": "not-required",
+    "reason": "Unused C<T...> derives from B<T> without expansion. No substitution makes a written unexpanded type-pack use valid. Distinguish this from actual singleton instantiation accidentally losing pack metadata; the source has no such use.",
+    "issue": "CXX11-FINAL-vt-34102",
+    "sha256": "e71362071e9fb1b5fd87c1243131687d71c6ca5e920edd507fd605f59f69b611",
+    "primary_basis": [
+      "N3485 14.5.3 / 14.6p8"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-template12.C": {
+    "status": "incompatible-bootstrap-library-interface",
+    "reason": "This self-defined std::initializer_list is a public aggregate. N3485 8.5.4p3 selects aggregate initialization before the std-list-specialization branch; gnum{2} attempts to initialize its pointer field from2, and Foo tries incompatible pointer/list fields. It is not the declared private nonaggregate bootstrap carrier. Namespace std additions are reserved (17.6.4.2.1). Do not reorder general aggregate rules to emulate GCC special carrier privilege. Proper nonaggregate constexpr initializer_list backing storage and values are required PA21:200 regressions from batch5. Both compiler roles exclude only this source SHA; its frozen original remains a failure, never a pass.",
+    "issue": "CXX11-FINAL-constexpr-template12",
+    "sha256": "e35fea8ca274860ccf3420b90b9045ccffef213f49fa1d60cd6dc7f949b804e8",
+    "primary_basis": [
+      "N3485 8.5.4p3,17.6.4.2.1,18.9",
+      "pa21/tests/controls/200-constexpr-initializer-list-template-storage.t",
+      "pa21/tests/controls/200-constexpr-initializer-list-nsdmi-array.t"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/linkage2.C": {
+    "status": "not-required",
+    "reason": "CWG2059 accepted as a DR March2018 deletes the same-TU definition diagnostic obligation in basic.link. The ODR still requires definitions, so the program is not made well-formed; its missing definition does not require a compile-time diagnostic. Both compiler roles exclude this exact obsolete negative oracle. Valid late definitions, pure virtual dispatch and ordinary active constraints remain required.",
+    "issue": "CXX11-FINAL-2059-linkage2.C",
+    "sha256": "b1f0195ba75eedaf6685a758755287092f11edf4e6e59eeb470fdb7c8d4efdc8",
+    "primary_basis": [
+      "doc/cwg/cwg-2059.txt",
+      "N3485 3.2 ODR"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/pr61924.C": {
+    "status": "not-required",
+    "reason": "CWG2059 accepted as a DR March2018 deletes the same-TU definition diagnostic obligation in basic.link. The ODR still requires definitions, so the program is not made well-formed; its missing definition does not require a compile-time diagnostic. Both compiler roles exclude this exact obsolete negative oracle. Valid late definitions, pure virtual dispatch and ordinary active constraints remain required.",
+    "issue": "CXX11-FINAL-2059-pr61924.C",
+    "sha256": "2f97cf9c49a335a4845a6925499a09df2af2eabbe3df1612895653a347a241e7",
+    "primary_basis": [
+      "doc/cwg/cwg-2059.txt",
+      "N3485 3.2 ODR"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/variadic-nondeduce2.C": {
+    "status": "no-required-acceptance",
+    "reason": "The nontrailing Head... in Tuple<Head...,T> makes that template-argument-list a nondeduced context under 14.8.2.5p9. Head has no occurrence outside it, violating the explicit adopted1315 declaration constraint. The original constructs primary is_last specializations, not a usable instance of this member partial. One cannot rescue the written declaration by assuming an empty deduced Head; the declaration constraint requires the parameter to occur outside a nondeduced context. CWG549 status is not a waiver: its 2021 note says the original issue was resolved by1315/P0127R2. The invalid never-selected partial supplies a no-valid-specialization/NDR argument, but the paired disposition need claim only that whole-TU acceptance is not required.",
+    "issue": "CXX11-FINAL-variadic-nondeduce2",
+    "sha256": "25e5286dc2cdde9fdca51bbb6ed609b4e8fce28cd6468071463770764630c387",
+    "primary_basis": [
+      "N3485 14.8.2.5p9",
+      "adopted CWG1315 replaces14.5.5p8 first restriction",
+      "N3485 14.6p8 for never-instantiated unusable partial"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/variadic188.C": {
+    "status": "no-required-acceptance",
+    "reason": "At the member-partial declaration, Vals occurs only in the dependent typename-specifier ValListWithTypes<ValTypes...>::WithVals<Vals...>. The nested-name-specifier is a nondeduced context, and14.8.2.5p6 makes the enclosing specified type nondeduced. Vals has no independently deducible occurrence, contrary to adopted1315. Instantiating the enclosing class creates the partial declaration; it does not add a new written deducible occurrence to its parameter pattern. The original only uses Impl<> and never demonstrates selecting the partial. A bounded actual-selection attempt also fails on GCC (selected member absent); that observation supports the distinction but is not the normative proof. A concrete nondependent Owner::List<N...> partial is a different declaration and passes all three, so retain it as an independent valid control. Drafting1755 addresses instantiation timing, not an adopted exception to1315.",
+    "issue": "CXX11-FINAL-variadic188",
+    "sha256": "12fe17bdb2299b6eecc7dac4d943ad5ef7b74bf147be39d5488a213bb6f9d8a2",
+    "primary_basis": [
+      "N3485 14.8.2.5p5-p6",
+      "adopted CWG1315 each partial parameter outside nondeduced context",
+      "N3485 14.5.5.3p2 member partial declaration instantiation",
+      "CWG1755 drafting background, not adopted exception"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/friend2.C": {
+    "status": "standards-review",
+    "reason": "The Q<B>/friend W type-parameter prefix is valid. The later template<class T> friend class W declaration finds the outer template-template parameter through type-only elaborated-type lookup. P1787 removes a name-binding shadow ban but does not transfer the friend-FUNCTION no-lookup rule to this CLASS specifier, nor establish a fresh namespace W when lookup already succeeds. Whether this form can designate the actual template argument, or instead fails the class-declaration/kind rules, is not settled by the proposed namespace-owner argument. CWG585 NAD gives historical suggested syntax, not adopted wording resolving this exact form. GCC15 accepts with argument-A friendship, Clang21 rejects, and neither consensus nor the old shadowing message establishes a required course oracle. Both roles exclude only this exact source SHA as bounded standards review; ordinary type-parameter friendship, explicit namespace friend templates and actual unrelated private-access constraints remain required.",
+    "issue": "CXX11-FINAL-friend2",
+    "sha256": "cd173f355b4f71d1c8386fdcbb40698e83998333aa58006402d94ef50a37896b",
+    "primary_basis": [
+      "N3485 7.1.6.3,11.3,14.5.4",
+      "doc/cwg/paper-p1787r6.txt basic.lookup.elab, dcl.type.elab, temp.local6",
+      "doc/cwg/cwg-0585.txt NAD historical background"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/nondeduced7.C": {
+    "status": "standards-review",
+    "reason": "The primary NTTP type is fixed int, so14.5.5p8 second restriction does NOT reject it merely because the argument expression has dependent type T. Adopted1315 removes the old simple-identifier ban and T occurs deducibly in the first argument. The remaining precise question is the1495 transformed-template ordering trace for A<T,T{}>, including conversion of a dependent argument typed T to fixed int. Primary2173 explicitly identifies a currently ill-formed B<I,I*2> example because deduction succeeds in both directions; that means semantic subset intuition or1315 alone is insufficient to prove strict specialization. Drafting1647 covers whether NTTP type agreement/conversions affect that transformed deduction; no approved blanket dependent-type ban was found. Fixed int(T{}) and int(sizeof(T)-sizeof(T)) witnesses pass all3; GCC only warns on the exact original and Clang rejects. Those observations do not settle the exact transformed deduction. This is a specific published-rule interaction, not an unbounded TODO or an outcome-based exclusion.",
+    "issue": "CXX11-FINAL-nondeduced7",
+    "sha256": "4da5a791627b2c516f48b0476074a0dd8b264e103553e947493ccd548f20fa3d",
+    "primary_basis": [
+      "N3485 14.5.5p8 as corrected by1315 and1495",
+      "N3485 14.5.5.2 /14.5.6.2 transformed partial ordering",
+      "CWG2173 OPEN exact dependent-expression ordering defect; CWG1647 drafting type agreement/conversions"
+    ],
+    "review": "reports/cxx11-final-source-review.txt"
   }
 }

@@ -379,3 +379,46 @@ CWG 2059 | CD5 | cwg-2059.txt
   Adopted as a defect resolution in March 2018. Removes the same-TU
   definition diagnostic obligation from linkage rules; the ODR still applies.
   Old GCC missing-definition diagnostics are not mandatory C++ correctness tests.
+
+Additional suite interpretation references
+
+CWG 585 | NAD | cwg-0585.txt
+  Friend template template parameters (interpretation-reference).
+CWG 1206 | C++11 | cwg-1206.txt
+  Defining opaque enumeration members of class templates (interpretation-reference).
+CWG 1435 | CD3 | cwg-1435.txt
+  template-id as the declarator for a class template constructor (interpretation-reference).
+CWG 1554 | drafting | cwg-1554.txt
+  Access and alias templates (background-only).
+CWG 1792 | NAD | cwg-1792.txt
+  Incorrect example of explicit specialization of member enumeration (interpretation-reference).
+CWG 1996 | drafting | cwg-1996.txt
+  Reference list-initialization ignores conversion functions (background-only).
+CWG 2102 | CD7 | cwg-2102.txt
+  Constructor checking in new-expression (interpretation-reference).
+CWG 2189 | open | cwg-2189.txt
+  Surrogate call template (background-only).
+CWG 2237 | CD5 | cwg-2237.txt
+  Can a template-id name a constructor? (interpretation-reference).
+CWG 2395 | drafting | cwg-2395.txt
+  Parameters following a pack expansion (background-only).
+CWG 2518 | C++23 | cwg-2518.txt
+  Conformance requirements and #error/#warning (interpretation-reference).
+CWG 2735 | open | cwg-2735.txt
+  List-initialization and conversions in overload resolution (background-only).
+CWG 2994 | open | cwg-2994.txt
+  Allowing template parameters following template parameter packs that are pack expansions (background-only).
+CWG 581 | CD5 | cwg-0581.txt
+  Can a templated constructor be explicitly instantiated or specialized? (interpretation-reference).
+CWG 941 | C++11 | cwg-0941.txt
+  Explicit specialization of deleted function template (interpretation-reference).
+CWG 613 | CD1 | cwg-0613.txt
+  Unevaluated uses of non-static class members (interpretation-reference).
+CWG 1684 | C++14 | cwg-1684.txt
+  Static constexpr member functions for non-literal classes (interpretation-reference).
+
+Open/drafting entries above document coverage boundaries, not adopted fixes.
+CWG 1755 | drafting | cwg-1755.txt
+  Out-of-class partial specializations of member templates (background-only; no adoption claim).
+CWG 2173 | open | cwg-2173.txt
+  Partial specialization with non-deduced contexts (background-only; no adoption claim).

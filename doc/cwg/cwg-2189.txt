@@ -1,0 +1,51 @@
+CWG 2189: Surrogate call template
+Source: https://cplusplus.github.io/CWG/issues/2189.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: open
+Catalog role: background-only
+
+This issue provides background for a source-specific suite review. Open or
+drafting proposals are not adopted rules and are not implementation claims.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2189. Surrogate call template
+Section: 12.2.2.2.3 [over.call.object [1]] Status: open Submitter: Jason Merrill Date:
+2015-10-22
+
+Consider:
+
+
+  template <class T>
+  using Fn = void (*)(T);
+
+  struct A
+  {
+    template <class T>
+    operator Fn<T>();
+  };
+
+  int main()
+  {
+    A()(42);
+  }
+
+12.2.2.2.3 [over.call.object [1]] describes how conversion functions to
+pointer/reference to function work in overload resolution, but is silent about
+conversion function templates. Generalizing the wording there, in this case we could
+generate a surrogate conversion template
+
+template <class T>
+  void /surrogate/ (Fn<T> f, T a) { return f(a); }
+
+which would work as expected. But it seems that implementations don't actually do this
+currently.
+
+Source links:
+[1] https://wg21.link/over.call.object

@@ -1,0 +1,141 @@
+CWG 2735: List-initialization and conversions in overload resolution
+Source: https://cplusplus.github.io/CWG/issues/2735.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: open
+Catalog role: background-only
+
+This issue provides background for a source-specific suite review. Open or
+drafting proposals are not adopted rules and are not implementation claims.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2735. List-initialization and conversions in overload resolution
+Section: 12.2.4 [over.match.best [1]] Status: open Submitter: Jason Merrill Date:
+2023-03-23
+
+There is implementation divergence in handling the following example:
+
+
+  template <typename _Tp> struct optional {
+    template <typename _Up> explicit optional(_Up);
+    template <typename _Up = _Tp> void operator=(_Up);
+  };
+  struct SourceBrush {
+    struct Brush {
+     int brush;
+    };
+    void setPattern() { m_brush = {42}; }
+    optional<Brush> m_brush;
+  };
+
+
+The following example is ambiguous per issue 1228 [2]:
+
+
+  #include <unordered_set>
+  #include <string>
+
+  template<typename T> struct wrap {
+    template<typename ...Ts> explicit wrap(Ts &&...args) : v(std::forward<Ts>(args)...) {}
+    explicit wrap(const T &v) : v(v) {}
+    explicit wrap(T &&v) : v(v) {}
+    wrap(const wrap&) = delete;
+    T v;
+  };
+
+  void f() {
+    wrap<std::unordered_set<std::string>> wrapped_set({"foo", "bar", "baz"});
+  }
+
+
+The copy constructor of wrap<...> becomes viable, by way of constructing another wrap
+object from the given initializer list using the explicit constructor template. It looks
+like a deleted copy constructor is used to remove a level of braces, and then picking an
+explicit constructor to construct the source of the copy.
+
+Another example:
+
+
+  #include <string>
+  #include <map>
+
+  struct X {
+    explicit X(const std::map<std::string, std::string> &map);
+  };
+
+  struct Y {
+    Y() : x({{"foo", "bar"}}) {}
+    X x;
+  };
+
+
+The intent is to construct the map with a single key-value pair, but the
+list-initialization is ambiguous with invoking the copy constructor and creating a map
+from a pair of iterators given by {"foo", "bar"}.
+
+And another example:
+
+
+  struct Z {};
+
+  struct X {          
+    explicit X(const Z &z = {});
+  };
+
+  struct Y {   
+    Y() : x({}) {}                                            
+    X x;
+  };
+
+
+The ambiguity is between
+
+- calling the X(const Z&) constructor with {} and
+
+- calling the X(const X&) constructor and using the explicit default constructor to
+construct a temporary X.
+
+Core issue 2267 [3] is also related.
+
+[INSERT: Suggested resolution:]
+
+Insert before 12.2.4.1 [over.match.best.general [4]] bullet 2.4 as follows:
+
+- ...
+
+- [INSERT:  F2 is a copy or move special member function where the implicit conversion
+sequence for its (non-object) argument is a user-defined conversion sequence specified
+by a non-converting constructor (considered under 12.2.2.8 [over.match.list [5]]) and F1
+is not, or, if not that, [ Example:
+
+  struct Z {};
+
+  struct X {
+    explicit X();            // #1
+    explicit X(const Z &z);  // #2
+  };
+
+  struct Y {
+    Y() : x({}) {}  // OK, calls #2, not ambiguous with the copy constructor of X using a temporary initialized by #1
+    X x;
+  };
+
+-- end example ] ]
+
+- F1 is not a function template specialization and F2 is a function template
+specialization, or, if not that,
+
+- ...
+
+Source links:
+[1] https://wg21.link/over.match.best
+[2] https://cplusplus.github.io/CWG/issues/1228.html
+[3] https://cplusplus.github.io/CWG/issues/2267.html
+[4] https://wg21.link/over.match.best.general#2.4
+[5] https://wg21.link/over.match.list

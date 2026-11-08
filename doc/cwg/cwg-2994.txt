@@ -1,0 +1,64 @@
+CWG 2994: Allowing template parameters following template parameter packs that are pack expansions
+Source: https://cplusplus.github.io/CWG/issues/2994.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: open
+Catalog role: background-only
+
+This issue provides background for a source-specific suite review. Open or
+drafting proposals are not adopted rules and are not implementation claims.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2994. Allowing template parameters following template parameter packs that are pack
+expansions
+Section: 13.2 [temp.param [1]] Status: open Submitter: Jan Schultke Date: 2025-01-20
+
+(From submission #666 [2].)
+
+Consider:
+
+
+  template <class Head, class... Tail>
+  struct test {
+    template <Tail..., Head>
+    static void make() {}       // clang accepts, MSVC rejects
+  };
+
+  int main() {
+    test<char, int, float>::make<4, 6.f, 'a'>();
+  }
+
+
+There is implementation divergence for the treatment of this example. It ought to be
+allowed.
+
+[INSERT: Suggested resolution:]
+
+Change in 13.2 [temp.param [3]] paragraph 14 as follows:
+
+... [DELETE: If a] [INSERT: A] template-parameter [INSERT: pack] of a function template
+[DELETE: declares a template parameter pack, it] shall not be followed by another
+template-parameter [INSERT: P] unless
+
+-  [DELETE: that template parameter] [INSERT: P] is deducible from the
+parameter-type-list (9.3.4.6 [dcl.fct [4]]) of the function template [DELETE: or]
+[INSERT: ,]
+
+-  [INSERT: P] has a default argument (13.10.3 [temp.deduct [5]])[INSERT: , or]
+
+-  [INSERT: that template parameter pack is also a pack expansion].
+
+...
+
+Source links:
+[1] https://wg21.link/temp.param
+[2] https://github.com/cplusplus/CWG/issues/666
+[3] https://wg21.link/temp.param#14
+[4] https://wg21.link/dcl.fct
+[5] https://wg21.link/temp.deduct

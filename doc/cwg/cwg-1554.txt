@@ -1,0 +1,97 @@
+CWG 1554: Access and alias templates
+Source: https://cplusplus.github.io/CWG/issues/1554.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: drafting
+Catalog role: background-only
+
+This issue provides background for a source-specific suite review. Open or
+drafting proposals are not adopted rules and are not implementation claims.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1554. Access and alias templates
+Section: 13.7.8 [temp.alias [1]] Status: drafting Submitter: Jason Merrill Date:
+2012-09-17
+
+The interaction of alias templates and access control is not clear from the current
+wording of 13.7.8 [temp.alias [1]]. For example:
+
+
+  template <class T> using foo = typename T::foo;
+
+  class B {
+    typedef int foo;
+    friend struct C;
+  };
+
+  struct C {
+    foo<B> f;    // Well-formed?
+  };
+
+
+Is the substitution of B::foo for foo<B> done in the context of the befriended class C,
+making the reference well-formed, or is the access determined independently of the
+context in which the alias template specialization appears?
+
+If the answer to this question is that the access is determined independently from the
+context, care must be taken to ensure that an access failure is still considered to be
+“in the immediate context of the function type” (13.10.3 [temp.deduct [2]] paragraph 8)
+so that it results in a deduction failure rather than a hard error.
+
+Notes from the October, 2012 meeting:
+
+The consensus of CWG was that instantiation (lookup and access) for alias templates
+should be as for other templates, in the definition context rather than in the context
+where they are used. They should still be expanded immediately, however.
+
+Additional note (February, 2014):
+
+A related problem is raised by the definition of std::enable_if_t (21.3.3
+[meta.type.synop [3]]):
+
+
+  template <bool b, class T = void>
+  using enable_if_t = typename enable_if<b,T>::type;
+
+
+If b is false, there will be no type member. The intent is that such a substitution
+failure is to be considered as being “in the immediate context” where the alias template
+specialization is used, but the existing wording does not seem to accomplish that goal.
+
+Additional note, November, 2014:
+
+Concern has been expressed that the intent to analyze access in the context of the alias
+template definition is at odds with the fact that friendship cannot be granted to alias
+templates; if it could, the access violation in the original example could be avoided by
+making foo a friend of class B, but that is not possible.
+
+Additional node, February, 2016:
+
+The issue has been returned to "open" status to facilitate further discussion by CWG as
+to whether the direction in the October, 2012 note is still desirable.
+
+Notes from the February, 2016 meeting:
+
+CWG reaffirmed the direction described in the October, 2012 note above. With regard to
+the November, 2014 note regarding granting of friendship, it was observed that the same
+problem occurs with enumerators, which might refer to inaccessible names in the
+enumerator volue. The solution in both cases is to embed the declaration in a class and
+grant the class friendship. See issue 1844 [4], dealing with the definition of
+“immediate context.”
+
+CWG 2024-06-28
+
+See issue 2296 [5] for the definition of "immediate context".
+
+Source links:
+[1] https://wg21.link/temp.alias
+[2] https://wg21.link/temp.deduct#8
+[3] https://wg21.link/meta.type.synop
+[4] https://cplusplus.github.io/CWG/issues/1844.html
+[5] https://cplusplus.github.io/CWG/issues/2296.html

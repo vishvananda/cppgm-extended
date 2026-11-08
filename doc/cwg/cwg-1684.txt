@@ -1,0 +1,45 @@
+CWG 1684: Static constexpr member functions for non-literal classes
+Source: https://cplusplus.github.io/CWG/issues/1684.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: C++14
+Catalog role: interpretation-reference
+
+This full issue supports interpretation of source-specific correctness cases.
+Inclusion does not claim every example or later language feature is implemented.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1684. Static constexpr member functions for non-literal classes
+Section: 9.2.6 [dcl.constexpr [1]] Status: C++14 Submitter: Richard Smith Date:
+2013-05-15
+
+[Applied to WP at the February, 2014 meeting.]
+
+The current wording of 9.2.6 [dcl.constexpr [2]] paragraph 8 is:
+
+The constexpr specifier has no effect on the type of a constexpr function or a constexpr
+constructor. The class of which a constexpr function is a member shall be a literal type
+(6.9 [basic.types [3]]).
+
+The previous version of this wording made clear that the restriction on the class type
+applied only to non-static member functions; consequently, the new formulation has
+inadvertently banned static constexpr member functions of non-literal classes.
+
+Proposed resolution (November, 2013):
+
+Change 9.2.6 [dcl.constexpr [2]] paragraph 8 as follows:
+
+The constexpr specifier has no effect on the type of a constexpr function or a constexpr
+constructor. [DELETE: The class of which a constexpr function is a member shall be a
+literal type (6.9 [basic.types [3]]).] [Example:...
+
+Source links:
+[1] https://wg21.link/dcl.constexpr
+[2] https://wg21.link/dcl.constexpr#8
+[3] https://wg21.link/basic.types

@@ -5,11 +5,13 @@ import struct
 import subprocess
 import sys
 import tempfile
+import tarfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from run_cxx11_ci_suite import comparison, run_case, run_suite, validate_manifest
+from run_cxx11_ci_suite import comparison, describe, run_case, run_suite, validate_manifest
 from upstream_dg_proxy import sha256
+from upstream_source_projection import projection_identity, project_source
 from qualify_clang_cxx11_ci_manifest import qualification_cases
 
 
@@ -47,6 +49,53 @@ else:
 
 
 class Suite(unittest.TestCase):
+    def test_line_marker_projection_is_pinned_shared_and_staged_before_both_roles(self):
+        case = self.case('# 1 "unit.cc"\n# 1 "header.h" 1 3\nint x;\n# 2 "unit.cc" 2\n')
+        case['source_projection'] = projection_identity((self.root/'test.C').read_bytes(), 'gnu-line-markers')
+        data = dict(schema=1, suite='gcc', revision='test', cases=[case], exclusions=[],
+                    coverage='projected language acceptance', limitations=[])
+        validate_manifest(data, self.root)
+        case['source_projection']['sha256'] = 'changed'
+        with self.assertRaisesRegex(ValueError, 'projection hash'):
+            validate_manifest(data, self.root)
+        case['source_projection'] = projection_identity((self.root/'test.C').read_bytes(), 'gnu-line-markers')
+        manifest = self.root/'manifest.json'
+        manifest.write_text(json.dumps(data))
+        output = self.root/'paired'
+        script = Path(__file__).resolve().parents[1]/'run_cxx11_ci_suite.py'
+        result = subprocess.run([sys.executable, str(script), '--manifest', str(manifest),
+                                 '--source-root', str(self.root), '--candidate', str(self.compiler),
+                                 '--upstream', str(self.compiler), '--upstream-version', '21.1.8',
+                                 '--output', str(output)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads((output/'results.json').read_text())
+        projection, = report['source_projections']
+        prepared = output/projection['path']
+        self.assertEqual(prepared.read_bytes(), b'#line 1 "unit.cc"\n#line 1 "header.h"\nint x;\n#line 2 "unit.cc"\n')
+        self.assertEqual(sha256(prepared), case['source_projection']['sha256'])
+        for role in ['cppgm', 'upstream']:
+            self.assertIn(str(prepared), report[role]['results'][0]['stages'][0]['command'])
+        self.assertEqual((self.root/'test.C').read_text(), '# 1 "unit.cc"\n# 1 "header.h" 1 3\nint x;\n# 2 "unit.cc" 2\n')
+        with self.assertRaisesRegex(ValueError, 'line-marker syntax'):
+            project_source(b'# 1 "unit.cc" 9\n', 'gnu-line-markers')
+
+    def test_compiler_identity_preserves_cxx_driver_symlink_for_linking(self):
+        driver = self.root/'clang++'
+        driver.symlink_to(self.compiler)
+        self.compiler.write_text(FAKE.replace("else:\n    obj =", "else:\n    assert pathlib.Path(sys.argv[0]).name == 'clang++', 'C++ driver spelling lost'\n    obj ="))
+        identity = describe(str(driver))
+        self.assertEqual(identity['path'], str(driver))
+        self.assertEqual(identity['resolved_path'], str(self.compiler.resolve()))
+        self.assertEqual(identity['sha256'], sha256(self.compiler))
+        case = self.case()
+        case['action'] = 'run'
+        (self.root/'output').mkdir()
+        result = run_case((case, str(self.root), identity['path'], identity['path'],
+                           'cppgm', str(self.root/'output')))
+
+        self.assertEqual(result['status'], 'passed', result)
+        self.assertEqual(result['stages'][1]['command'][0], str(driver))
+
     def test_transitive_input_hashes_and_identical_include_arguments(self):
         case = self.case()
         headers = self.root/'Inputs'
@@ -287,6 +336,28 @@ class Suite(unittest.TestCase):
 
 
 class Workflow(unittest.TestCase):
+    def test_failed_package_setup_still_retains_environment_and_archive(self):
+        text = (Path(__file__).resolve().parents[2]/'.github/workflows/upstream-cxx11.yml').read_text()
+
+        def body(name):
+            step = text.split('      - name: '+name+'\n', 1)[1].split('      - name:', 1)[0]
+            script = step.split('        run: |\n', 1)[1]
+            return '\n'.join(line[10:] for line in script.splitlines() if line.startswith('          ')).replace('${{ matrix.suite }}', 'gcc')
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            env = dict(os.environ, RUNNER_TEMP=directory, GITHUB_STEP_SUMMARY=str(root/'summary.md'))
+            subprocess.run(['bash', '-c', body('Initialize retained setup evidence')], env=env, check=True)
+            setup = 'apt-get() { return 9; }\n'+body('Install snapshot-pinned compiler and metadata tools')
+            failed = subprocess.run(['bash', '-c', setup], env=env, capture_output=True, text=True)
+            self.assertEqual(failed.returncode, 9)
+            self.assertTrue((root/'cxx11/environment/setup.log').is_file())
+            subprocess.run(['bash', '-c', body('Publish counts and elapsed-time ratio')], env=env, check=True)
+            with tarfile.open(root/'cxx11-gcc.tar.gz') as archive:
+                self.assertIn('cxx11/environment/os-release.txt', archive.getnames())
+                self.assertIn('cxx11/environment/setup.log', archive.getnames())
+            self.assertIn('did not produce a complete timing report', (root/'summary.md').read_text())
+
     def test_strict_qualification_failure_remains_visible_after_normal_pair(self):
         workflow = Path(__file__).resolve().parents[2]/'.github/workflows/upstream-cxx11.yml'
         text = workflow.read_text()

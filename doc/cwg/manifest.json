@@ -127,6 +127,57 @@
       "adopted_papers": []
     },
     {
+      "issue": 581,
+      "title": "Can a templated constructor be explicitly instantiated or specialized?",
+      "status": "CD5",
+      "role": "interpretation-reference",
+      "file": "cwg-0581.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/581.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/581.html",
+      "source_html_sha256": "c0fa859d1ca14d9544512a38e7a78ac928633f7f2189fb1585bfc3c15262485a",
+      "text_sha256": "cd6dd69f9fa931f7e2caa62db718ed1c37c862587ef94d74326314ef3a97a0ef",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
+      "issue": 585,
+      "title": "Friend template template parameters",
+      "status": "NAD",
+      "role": "interpretation-reference",
+      "file": "cwg-0585.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/585.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/585.html",
+      "source_html_sha256": "48954d05803b9e6523ccbba3e1c667d56a267b981d9fffba58c501509dc15d13",
+      "text_sha256": "b08e4a547ea2ddfad79ae5ce9dd9d02f4fadb6d318807d24e785079ff6992087",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
+      "issue": 613,
+      "title": "Unevaluated uses of non-static class members",
+      "status": "CD1",
+      "role": "interpretation-reference",
+      "file": "cwg-0613.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/613.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/613.html",
+      "source_html_sha256": "26fff4b26deed2d242c8c822f303f1d4b849909b6d7cb0f04e572f75be4ca197",
+      "text_sha256": "defbf7befb305d9d84c892c054975cf20423e9c0d0035bdc2a6b1ae42aaa01e6",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
       "issue": 616,
       "title": "Definition of \u201cindeterminate value\u201d",
       "status": "CD3",
@@ -201,6 +252,23 @@
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/903.html",
       "source_html_sha256": "31fbb27abd2bfc02933e8a436f6bd6ddeec15206635b18fb7bfe3e7942146a77",
       "text_sha256": "559ab5ca6519c52e8700c65a4a779f4505ff130f84e6b59c38a5a2b766a75025",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
+      "issue": 941,
+      "title": "Explicit specialization of deleted function template",
+      "status": "C++11",
+      "role": "interpretation-reference",
+      "file": "cwg-0941.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/941.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/941.html",
+      "source_html_sha256": "e3f00bbf950f25fe6a58cddbe1fc272d88f1f3cd961c4b509041f5839d01d42a",
+      "text_sha256": "e01d616e12504c872798df3ebaacc19e8f963cc7264d2aa77909d36d8bc19f63",
       "adopted_papers": [],
       "text_renderer": {
         "path": "scripts/cwg_html_text.py",
@@ -318,6 +386,23 @@
         "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
       },
       "retrieved": "2026-11-08"
+    },
+    {
+      "issue": 1206,
+      "title": "Defining opaque enumeration members of class templates",
+      "status": "C++11",
+      "role": "interpretation-reference",
+      "file": "cwg-1206.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1206.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1206.html",
+      "source_html_sha256": "78c3a48120c35ca8166092843febeef00bb10ca7ef443e2b93994a5ca6f5d81b",
+      "text_sha256": "cb10a380ab720b8cedd485da27ddc6e882455880dccbb58b02ce4fdf6bd0c719",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 1213,
@@ -616,6 +701,23 @@
       }
     },
     {
+      "issue": 1435,
+      "title": "template-id as the declarator for a class template constructor",
+      "status": "CD3",
+      "role": "interpretation-reference",
+      "file": "cwg-1435.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1435.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1435.html",
+      "source_html_sha256": "f7a15008c6d792e77a6734b9f8de5ea368e1fe1567b42de02b4cbb3abbbe4291",
+      "text_sha256": "d730a3c55e905304ea801b05d79fe341dbd732731a88a07e899d0144e1ce45ca",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
       "issue": 1437,
       "title": "alignas in alias-declaration",
       "status": "CD3",
@@ -781,6 +883,23 @@
       "source_html_sha256": "7a456081f224d4d6b1209f7c592b5d4e1914e1419109da1dd7fef63dffa08cd0",
       "text_sha256": "43ed6919b1ed4530bb9050786759a84521c2394f37fc8162dd5c96efbf3e89af",
       "adopted_papers": []
+    },
+    {
+      "issue": 1554,
+      "title": "Access and alias templates",
+      "status": "drafting",
+      "role": "background-only",
+      "file": "cwg-1554.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1554.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1554.html",
+      "source_html_sha256": "b969287a2c6ce63b1075873480e3d67ba189081a63b0c12075e8816f4ee8b3d8",
+      "text_sha256": "e1916a68bc0dc6cd47c274160555819b3e3b503c9cb645dd3d99344ef49b86a3",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 1558,
@@ -961,6 +1080,23 @@
       "adopted_papers": []
     },
     {
+      "issue": 1684,
+      "title": "Static constexpr member functions for non-literal classes",
+      "status": "C++14",
+      "role": "interpretation-reference",
+      "file": "cwg-1684.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1684.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1684.html",
+      "source_html_sha256": "85b5c2757f287b40359e3b5c6be96abbaa95718afb0a5b5e497385a1f607539c",
+      "text_sha256": "b6813d603bbd96c7ee45ccf51b5fd29ed993c5c091f4558f4e007299494e777d",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
       "issue": 1696,
       "title": "Temporary lifetime and non-static data member initializers",
       "status": "CD4",
@@ -1025,6 +1161,40 @@
       "local_papers": [
         "paper-p1099r5.txt"
       ]
+    },
+    {
+      "issue": 1755,
+      "title": "Out-of-class partial specializations of member templates",
+      "status": "drafting",
+      "role": "background-only",
+      "file": "cwg-1755.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1755.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1755.html",
+      "source_html_sha256": "155589a1b445f24402db4cd2e2bedd62ddcefbaf58c538dff2ea5e6452c669c0",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "text_sha256": "a8e5e8e2bfb5be825f4cfa9cb2632f0c91304bab67a6be562730a587c66a4a70"
+    },
+    {
+      "issue": 1792,
+      "title": "Incorrect example of explicit specialization of member enumeration",
+      "status": "NAD",
+      "role": "interpretation-reference",
+      "file": "cwg-1792.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1792.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1792.html",
+      "source_html_sha256": "af7e9741b8127706d12903c882e59e8f6dcb66e8fcf67be3b47ca8bbd35d0c08",
+      "text_sha256": "1d6f5839c583e662b4b3304bf6242427aee74fc280b0771372eebdba8ae333f4",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 1793,
@@ -1152,6 +1322,23 @@
       "adopted_papers": []
     },
     {
+      "issue": 1996,
+      "title": "Reference list-initialization ignores conversion functions",
+      "status": "drafting",
+      "role": "background-only",
+      "file": "cwg-1996.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1996.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1996.html",
+      "source_html_sha256": "a5d557b6b949c742129242ccc98cca0f1876350193223c1149e32b710afaa80b",
+      "text_sha256": "b16f1514d4198ea075f648cf3d32232058872709277c7b009180f1843e055209",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
       "issue": 2004,
       "title": "Unions with mutable members in constant expressions",
       "status": "CD4",
@@ -1255,6 +1442,23 @@
       "adopted_papers": []
     },
     {
+      "issue": 2102,
+      "title": "Constructor checking in new-expression",
+      "status": "CD7",
+      "role": "interpretation-reference",
+      "file": "cwg-2102.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2102.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2102.html",
+      "source_html_sha256": "f6b8b6e80a5c8d6d0114592612d5181b23794406b3c14d031f7c1ee285608baf",
+      "text_sha256": "7c164822b6e53e5ff037ea1557c157198c8796ebce296d261337d1c107cd375c",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
       "file": "cwg-2126.txt",
       "source_url": "https://cplusplus.github.io/CWG/issues/2126.html",
       "source_html_sha256": "081ffdf8e5409095bdca31fe6e60628261ff57a0c569fd3cc809b87f2d0a00db",
@@ -1310,6 +1514,23 @@
       "local_papers": []
     },
     {
+      "issue": 2173,
+      "title": "Partial specialization with non-deduced contexts",
+      "status": "open",
+      "role": "background-only",
+      "file": "cwg-2173.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2173.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2173.html",
+      "source_html_sha256": "3cab2495ddd383222fa6c41e605262e98ca209999ff0de2c06582e005823ddcb",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "text_sha256": "3b173b5f2869dc8a19c9b015c9fe56172316520a46e293373f8bd5a90b16084c"
+    },
+    {
       "issue": 2176,
       "title": "Destroying the returned object when a destructor throws",
       "status": "CD4",
@@ -1320,6 +1541,40 @@
       "source_html_sha256": "7db6ea7ff96f0e67229ce25c1af7c6ee2be4ed0567d4e42491c4bb8727f4d23b",
       "text_sha256": "d03c5863307c727864740bee93d64b892d45ad5651cba1f51deb47e54bbc36ed",
       "adopted_papers": []
+    },
+    {
+      "issue": 2189,
+      "title": "Surrogate call template",
+      "status": "open",
+      "role": "background-only",
+      "file": "cwg-2189.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2189.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2189.html",
+      "source_html_sha256": "17d073eef6a182597643f86001da33315bba423d2bb07dfeea2fb21a2530b65f",
+      "text_sha256": "df00059342a66d5936f419a365c07410d5ebe96ef880d93992fffce8a249191a",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
+      "issue": 2237,
+      "title": "Can a template-id name a constructor?",
+      "status": "CD5",
+      "role": "interpretation-reference",
+      "file": "cwg-2237.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2237.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2237.html",
+      "source_html_sha256": "4a79eec690d75fb7304bf95bcda10a522c0743ee23f353640bf48ab343c323d5",
+      "text_sha256": "cd2f5ad01fe0d9bc64aae3ba1388129e4a60ce98a465cbe3e98cb4d6e4043c4c",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "file": "cwg-2267.txt",
@@ -1444,6 +1699,23 @@
       "adopted_papers": []
     },
     {
+      "issue": 2395,
+      "title": "Parameters following a pack expansion",
+      "status": "drafting",
+      "role": "background-only",
+      "file": "cwg-2395.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2395.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2395.html",
+      "source_html_sha256": "6850f4792f9a08225b79143b2fa2c95eb46ac0dc57bc991d47c0877eacc9cd76",
+      "text_sha256": "7d873b84f935e9350b713757ac78fbc89ae34fcfad3f276ce788dceaf7a20987",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
       "issue": 2397,
       "title": "auto specifier for pointers and references to arrays",
       "status": "CD6",
@@ -1465,6 +1737,23 @@
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2476.html",
       "source_html_sha256": "168f0f791d5c8cf20ffe96053b0f8eabf9f2704f45dfdfc024060df591d2639a",
       "text_sha256": "b5f3f68082feec634628c130708afd18a6c5c92e3bdd2b50588ae734ebfe62a0",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
+      "issue": 2518,
+      "title": "Conformance requirements and #error/#warning",
+      "status": "C++23",
+      "role": "interpretation-reference",
+      "file": "cwg-2518.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2518.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2518.html",
+      "source_html_sha256": "82bd089b7c9872e8b1f890dc4a1c9e084e9d5d517cf724f509db47d521c26b44",
+      "text_sha256": "a0cfc536a1a6adb58727c9461022a2a5874a0d60b102101e6efdfab68f6113d5",
       "adopted_papers": [],
       "text_renderer": {
         "path": "scripts/cwg_html_text.py",
@@ -1513,6 +1802,23 @@
       "adopted_papers": [
         "P2720R0"
       ],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
+      "issue": 2735,
+      "title": "List-initialization and conversions in overload resolution",
+      "status": "open",
+      "role": "background-only",
+      "file": "cwg-2735.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2735.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2735.html",
+      "source_html_sha256": "a22d850a73d403b69a8eb0483b1a8672dc18f05c530a23fb3b195a08ffc3ab69",
+      "text_sha256": "6e05b84a0c7502566dd43fa5d1b930cbba3ba8e9c6ea8b7bc41bed98116ad067",
+      "adopted_papers": [],
       "text_renderer": {
         "path": "scripts/cwg_html_text.py",
         "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
@@ -1625,6 +1931,23 @@
       "role": "course-reference",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2941.html",
       "adopted_papers": []
+    },
+    {
+      "issue": 2994,
+      "title": "Allowing template parameters following template parameter packs that are pack expansions",
+      "status": "open",
+      "role": "background-only",
+      "file": "cwg-2994.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2994.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2994.html",
+      "source_html_sha256": "719491a41ef3d28a9c3a4fa22b21abdb35fd951864b467853c6290b5ff010392",
+      "text_sha256": "5b5c2f9ba0df871e0288c0b77d79faf7a91c75907ac9036c03164f328b61f5ae",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     }
   ],
   "supplemental_papers": [

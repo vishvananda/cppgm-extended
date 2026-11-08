@@ -1,0 +1,67 @@
+CWG 1755: Out-of-class partial specializations of member templates
+Source: https://cplusplus.github.io/CWG/issues/1755.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: drafting
+Catalog role: background-only
+
+This open/drafting issue documents a precise source-coverage boundary, not an
+adopted rule or implemented proposal. Historical edits are retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1755. Out-of-class partial specializations of member templates
+Section: 13.7.6.4 [temp.spec.partial.member [1]] Status: drafting Submitter: Richard
+Smith Date: 2013-09-19
+
+According to 13.7.6.4 [temp.spec.partial.member [2]] paragraph 2,
+
+If a member template of a class template is partially specialized, the member template
+partial specializations are member templates of the enclosing class template; if the
+enclosing class template is instantiated (13.9.2 [temp.inst [3]], 13.9.3 [temp.explicit
+[4]]), a declaration for every member template partial specialization is also
+instantiated as part of creating the members of the class template specialization.
+
+Does this imply that only partial specializations of member templates that are declared
+before the enclosing class is instantiated are considered? For example, in
+
+
+  template<typename A> struct X { template<typename B> struct Y; };
+  template struct X<int>;
+  template<typename A> template<typename B> struct X<A>::Y<B*> { int n; };
+  int k = X<int>::Y<int*>().n;
+
+
+is the last line valid? There is implementation variance on this point. Similarly, for
+an example like
+
+
+  template<typename A> struct Outer {
+   template<typename B, typename C> struct Inner;
+  };
+  Outer<int> outer;
+  template<typename A> template<typename B>
+    struct Outer<A>::Inner<typename A::error, B> {};
+
+
+at what point, if at all, is the declaration of the partial specialization instantiated?
+Again, there is implementation variance in the treatment of this example.
+
+Notes from the February, 2014 meeting:
+
+CWG decided that partial specialization declarations should be instantiated only when
+needed to determine whether the partial specialization matches or not.
+
+Additional note, November, 2014:
+
+See also paper N4090.
+
+Source links:
+[1] https://wg21.link/temp.spec.partial.member
+[2] https://wg21.link/temp.spec.partial.member#2
+[3] https://wg21.link/temp.inst
+[4] https://wg21.link/temp.explicit

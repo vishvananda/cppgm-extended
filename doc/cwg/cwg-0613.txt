@@ -1,0 +1,60 @@
+CWG 613: Unevaluated uses of non-static class members
+Source: https://cplusplus.github.io/CWG/issues/613.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: CD1
+Catalog role: interpretation-reference
+
+This full issue supports interpretation of source-specific correctness cases.
+Inclusion does not claim every example or later language feature is implemented.
+Historical [DELETE: ...] and [INSERT: ...] markup is retained, not applied.
+The complete pinned issue follows.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+613. Unevaluated uses of non-static class members
+Section: 11.4 [class.mem [1]] Status: CD1 Submitter: Herb Sutter Date: 28 October 2006
+
+[Voted into WP at April, 2007 meeting.]
+
+According to 11.4 [class.mem [2]] paragraph 9, the name of a non-static data member can
+only be used with an object reference (explicit or implied by the this pointer of a
+non-static member function) or to form a pointer to member. This restriction applies
+even in the operand of sizeof, although the operand is not evaluated and thus no object
+is needed to perform the operation. Consequently, determining the size of a non-static
+class member often requires a circumlocution like
+
+
+    sizeof ((C*) 0)->m
+
+
+instead of the simpler and more obvious (but incorrect)
+
+
+    sizeof (C::m)
+
+
+The CWG considered this question as part of issue 198 [3] and decided at that time to
+retain the restriction on consistency grounds: the rule was viewed as applying uniformly
+to expressions, and making an exception for sizeof would require introducing a
+special-purpose “wart.”
+
+The issue has recently resurfaced, in part due to the fact that the restriction would
+also apply to the decltype operator. Like the unary & operator to form a pointer to
+member, sizeof and decltype need neither an lvalue nor an rvalue, requiring solely the
+declarative information of the named operand. One possible approach would be to define
+the concept of “unevaluated operand” or the like, exempt unevaluated operands from the
+requirement for an object reference in 11.4 [class.mem [2]] paragraph 9, and then define
+the operands of these operators as “unevaluated.”
+
+Proposed resolution (April, 2007):
+
+The wording is given in paper J16/07-0113 = WG21 N2253.
+
+Source links:
+[1] https://wg21.link/class.mem
+[2] https://wg21.link/class.mem#9
+[3] https://cplusplus.github.io/CWG/issues/198.html
