@@ -1707,8 +1707,12 @@ void Analyzer::expression_names(const syntax::Expr& expr, Scope* scope, bool une
 			static_cast<const TemplateParameterEntity*>(binding->entity)->pack;
 		const bool function_pack = binding != nullptr && binding->kind == BindingKind::Parameter &&
 			binding->type != nullptr && binding->type->kind == TypeKind::Expansion;
+		const bool bound_pack = binding != nullptr && binding->type != nullptr &&
+			binding->type->kind == TypeKind::BoundPack;
 		uint64_t count = 0;
-		if (!template_pack && !function_pack && !pack_size(pack, scope, count))
+		// A captured argument pack is a valid operand even when a residual
+		// expansion leaves its cardinality unknown until substitution.
+		if (!template_pack && !function_pack && !bound_pack && !pack_size(pack, scope, count))
 			error(expr.location, "sizeof... of a name that is no parameter pack");
 		return;
 	}

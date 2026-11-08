@@ -1037,6 +1037,11 @@ void Analyzer::declare_alias_template(const syntax::AliasDecl& decl, Scope* scop
 	AliasTemplateEntity* entity = new_entity<AliasTemplateEntity>(
 		EntityKind::AliasTemplate, decl.name, where, info.type);
 	entity->head = head;
+	for (uint32_t i = 0; i < head->count; ++i)
+	{
+		if (head->parameters[i]->pack)
+			alias_pack_parameters_.set(head->parameters[i], 1);
+	}
 	// The parameters its type may discard, including names inside empty
 	// expansions (none known for expressions the walk cannot inspect).
 	uint64_t named = 0;

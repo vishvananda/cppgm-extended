@@ -240,6 +240,8 @@ void Analyzer::bind_pack(Scope* frame, const TemplateParameterEntity* parameter,
 	const Type* bound = types_.bound_pack(
 		argument, parameter->canonical, parameter->depth + InstanceLevels(frame->parent));
 	Binding* alias = new_binding(BindingKind::TypeAlias, parameter->name, nullptr, bound);
+	if (alias_pack_parameters_.find(parameter) != PointerMap::kMissing)
+		captured_pack_bindings_.set(alias, 1);
 	alias->hidden = true;
 	print_in(frame, alias);
 	declare_in(frame, alias);

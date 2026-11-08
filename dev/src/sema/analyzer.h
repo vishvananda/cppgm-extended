@@ -1847,6 +1847,7 @@ private:
 	// Rare pending expressions which need both an element and its whole pack.
 	std::vector<const Type*> pending_whole_arguments_;
 	PointerMap pack_expansion_memo_;
+	PointerMap alias_pack_parameters_;
 	PointerMap captured_pack_bindings_;
 	uint32_t anonymous_enums_;
 	// Inside a class object's initializer (see initializer_names).
