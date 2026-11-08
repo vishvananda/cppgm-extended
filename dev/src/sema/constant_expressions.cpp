@@ -2265,7 +2265,7 @@ bool ConstantInterpreter::member_base(const syntax::MemberExpr& expr, ConstPlace
 	// unknown this only as the object of an explicit member access.
 	const syntax::Expr* base = WithoutParentheses(expr.base);
 	if (base->facts == nullptr)
-		return true;
+		return out == nullptr || fail(expr.location, "a member object outside constant evaluation");
 	const syntax::Expr* self = base;
 	if (expr.op != TokenKind::OP_ARROW && self->kind == syntax::ExprKind::Unary &&
 		static_cast<const syntax::UnaryExpr*>(self)->op == TokenKind::OP_STAR)
