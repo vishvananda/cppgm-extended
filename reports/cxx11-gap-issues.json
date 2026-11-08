@@ -6203,23 +6203,43 @@
   },
   {
     "id": "CXX11-124",
-    "status": "open",
+    "status": "closed",
     "compiler_language_gap": true,
     "symptom": "Dependent selected elements lose the original whole pack needed by sizeof... and nested expansions.",
     "owning_pa": "PA17:200/300;PA18:300;PA9:500 captured ABI expression",
     "regression_worktree": "/mnt/vizier/cppgm-cxx11-pending-whole-pack-cardinality",
     "fixture_revision": "0e8e25123",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-124",
-    "checks": "9requiredfixtures108cells actual9dbparent8/36,GCC36/36,Clang36/36. SeparateABIhalf hasrequiredPA9fixtures; implementation in progress, not integrated."
+    "checks": "17C++programs68candidate/68Clang/32actualparent/64GCC (4validGCCICEretained);8PA9facts;24crossClangstages; actual9dbnormalO0/O31.000224/1.000062exactobjects;9515strict;80newfocused;normalfull/export/pairedpass;adjacentJwrapperfollowup127separate",
+    "fix_revision": "dc6373682",
+    "integrated_candidate_revision": "e56957b7737a07e7b5ca10e4a85c9316097443bc",
+    "compiler_sha256": "c5da240c296dd5c08b7c1b577454db2a8219652ff7fa84ca889b7ee791dc876e",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-124125-acceptance-v1.json",
+    "scope": "Selectedandwholeargumentcontexts,key/replay/ordering, residualcardinalityvalidation,shareddeclarationscopeandscalarcapture; ordinaryclasssZ/capturedsPtypedABI"
   },
   {
     "id": "CXX11-125",
-    "status": "open",
+    "status": "closed",
     "compiler_language_gap": false,
-    "phase": "primary review complete, normal fixture/selection integration pending",
+    "phase": "exactsourceprimaryreviewandnormalfixture/selectionintegrationaccepted",
     "symptom": "Exactalias-decl-63 acceptance expectation conflicts with adoptedP1787 lookup and unused invalid constructor parameter type.",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-125",
     "review_receipt": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-125/independent-primary-review-v1.json",
-    "decision": "CurrentadoptedP1787IFNDR; do not resolve historicalN3485type-only ambiguity by silently applying newwording. No125manifestchangeapplied. Native/parent48cell evidence is oldd7f,notfresh9db."
+    "decision": "CurrentadoptedP1787IFNDR; originalhistoricalN3485type-onlyambiguity retained, noalias-never-instantiatedassumption",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-124125-acceptance-v1.json",
+    "integrated_candidate_revision": "e56957b7737a07e7b5ca10e4a85c9316097443bc",
+    "checks": "ThreePA17requiredguards12/12 integrated; fresh9db48rawrolecells reviewed; exact2previouscompile-failureconfigsremovedbothroles; retained4092recordsbyteidentical; fullnormal/export/paired accepted"
+  },
+  {
+    "id": "CXX11-127",
+    "status": "open",
+    "compiler_language_gap": false,
+    "kind": "Course Clang ABI compatibility for scalar-alias variadic target",
+    "symptom": "sizeof... capturedscalaroperandmatchesClangsZT_, but variadicclassargumentpack retainsgenericItaniumJ/EwhereClangaliasapproximationomitsit.",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-124/pack-wrapper-review-v1",
+    "review_receipt": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-124/pack-wrapper-review-v1/adjudication-v1.json",
+    "owning_pa": "PA17 alias template; preservePA9genericpackgrammar",
+    "checks": "All4tinyrolescompile/link/run0; ordinarydirectformsJexact; alias-onlycrossClangsymbolmismatchremainsopen. No broadJremoval or outcome-basedmanifestchange.",
+    "next": "Requirednormalreducedregression+parentfailure,typedlocalizedfix,normalgate/fullvalidation"
   }
 ]

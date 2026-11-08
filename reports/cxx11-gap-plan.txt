@@ -456,18 +456,102 @@ its original historical-wording ambiguity and old d7f observations remain.
 The GCC counts are configurations, not deduplicated compiler-bug counts.
 Remaining language repairs and the final PA35 release keep the goal active.
 
+Accepted whole-pack expression substitution and adopted lookup review
+2026-11-08
+
+Source e56957b7737a07e7b5ca10e4a85c9316097443bc; compiler code epoch dc6373682, SHA256
+c5da240c296dd5c08b7c1b577454db2a8219652ff7fa84ca889b7ee791dc876e.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-124125-acceptance-v1.json
+Accepted parent774f6f944/code217b72a19/compiler9db and origin/main7dbe6549e
+remain included. User checkout and unrelated public runtime work are untouched.
+
+124 retains both a selected argument and its whole argument pack in pending
+expression substitutions, memo/rekey identity, dependence, ordering and replay.
+A separate whole-pack frame preserves sizeof... and nested expansions without
+shadowing the selected value. Scalar-only sizeof queries avoid enumerating every
+whole element for every selected value. Cardinality queries cache whether a
+canonical pack still contains a residual expansion; dependent scalar arguments
+still each count once. PendingSubstitution uses existing padding for an index,
+with rare whole-context storage kept in the analyzer.
+
+Typed captured-pack operands lower to Itanium sP and the flat template argument
+list; PA9's fact reader/encoder has eight required fixtures. Ordinary class
+parameter packs retain sZ. Actual alias parameter registration and nonidentity
+dependent argument capture also handle shared expression scopes borrowed from
+earlier templates. A single plain scalar parameter keeps its actual canonical
+identity and Clang's sZ spelling. No AST origin flags or source-text reparsing.
+
+Seventeen required PA17/PA18 C++ programs cover prefixes/suffixes, empty and
+nonempty packs, scalar/non-type arguments, nested expansions, enclosing depths,
+repeated/reversed contexts, immediate failures and both declaration orders.
+Candidate and Clang68/68; actual parent32/68. GCC64/68; its four valid two-TU
+explicit-instantiation ICEs remain recorded and do not satisfy any diagnostic.
+Cross-Clang objects have four checked O0 signatures and eight mixed links/runs
+across ISO/GNU11 and O0/O2 (24 proof stages). One existing constructor reference
+changed only two ABI symbol occurrences; the new name exactly matches Clang,
+where the old reference did not. Both affected references were regenerated
+through normal ref-test targets.
+
+Initial probes exposed actual regressions in residual pack existence checks,
+shared expression scopes and known-length dependent scalar capture. Required
+regressions were added before their corrections; every failed prototype and
+paired run remains in the evidence tree. The accepted candidate restores all
+retained upstream outcomes. A separate variadic-target scalar-alias pack-wrapper
+ABI disagreement is preserved as127; generic Itanium groups the pack with J/E,
+while Clang's alias approximation omits that group. This case remains an open
+course-Clang compatibility follow-up, not a claimed passing cross-link.
+
+125 integrates three required renamed/qualified/actually-invalid guards and an
+exact source-pinned IFNDR disposition for alias-decl-63.C in both paired roles.
+Adopted P1787 lookup makes its mandatory constructor parameter type permanently
+invalid. The historical N3485 type-only lookup ambiguity remains documented;
+no claim rests on the unproved assumption that its alias is never instantiated.
+The two removed configurations were previously compile failures, not new passes.
+All4092 retained GCC manifest records are unchanged; the entire Clang815 manifest
+is byte-identical. Applicable Clang native qualification remains562/562, with
+identical runner hashes. No outcome-dependent selection or diagnostic parity.
+
+Validation:9515 strict tests;80 focused configurations for this batch;
+44 harness suites/717 checks; affectedPA9/15/17/18;modern C++,debug info,
+self-host throughPA5,inception,all architecture/file/placement/document audits,
+normal quick/smoke. Fresh export checks all70 batch-plus-prior required fixtures
+and companions,42 reference wrappers,2254 changed test artifacts,
+and all105 offline CWG catalog files (91 issues,12 complete papers,index/manifest).
+No new adopted decision was introduced by124; existing1558 and adopted P1787
+references remain offline and exported.
+
+Actual-parent normal mean-three retired-instruction O0/O3 ratios:
+  9db -> c5da240c:1.000224/1.000062, frozen objects byte-identical.
+These are increases of0.0224%/0.0062%, below the existing0.5% limits.
+Normal quick ratios 0.996835/1.028736,
+zero behavior failures, all kernels within normal limits. No new cumulative cap,
+calibration/RSS queue or public runtime/codegen benchmark campaign.
+
+Paired GCC3774/4092 (92.23%),upstream4092/4092.
+Remaining318 configurations:148 compile failures and170 missing diagnostics.
+Zero retained pass losses or gains in this batch; the new internal124 cases
+are outside the currently selected GCC cohort. Whole-suite times
+26.766442/67.690294s,
+cppgm/upstream ratio 0.395425, NON-COMPARABLE
+because failures remain.
+
+Paired Clang815/815 (100%),upstream815/815. Whole-suite times
+3.732246/26.196374s,
+ratio 0.142472 on the identical passing suite.
+The reported times are CI observations, not a new performance acceptance gate.
+Remaining GCC language repairs,127 ABI review and final PA35 release keep the
+goal active. Configuration failures are not deduplicated compiler-bug counts.
+
 Immediate next work
 
-1. Repair124 deferred whole-pack context in the shared semantic implementation;
-   preserve selected values, whole cardinality, canonical memo identity and ABI.
-   Nine required private PA17/PA18 fixtures already prove parent8/36 versus
-   GCC36/36 andClang36/36. Add normal PA9 captured-pack ABI coverage as needed.
-2. Integrate125 source-specific adopted-P1787 review with normal required
-   renamed/qualified/concrete-invalid guards and a fresh matched manifest run.
-   Its read-only review is complete; no125 selection change is applied yet.
-3. Continue the150 compile-failure/170 missing-diagnostic GCC configurations,
-   deduplicating demonstrated causes and using normal regression/fix/perf gates.
-4. Complete declared coverage validation and the final PA35 release check.
+1. Resolve127 scalar-alias variadic-target ABI compatibility with the Clang
+   course oracle, preserving generic Itanium pack grouping for ordinary types.
+   The exact source, both vendor names and narrow primary-source review are
+   retained under issues/CXX11-124/pack-wrapper-review-v1 in the evidence root.
+2. Continue148 compile-failure/170 missing-diagnostic GCC configurations;
+   deduplicate demonstrated root causes and use required owning-PA regressions,
+   typed implementation fixes and the normal actual-parent performance gate.
+3. Complete declared coverage validation and the final PA35 release check.
 
 Completion
 
