@@ -84,7 +84,7 @@
     "matrix-public-compile-gcc-intel": {
       "speedup": 4.475025021172567,
       "processor": "intel",
-      "short_cpu": "E5-2696v4",
+      "short_cpu": "E5 v4",
       "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
       "environment": "Dedicated Intel",
       "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
@@ -92,7 +92,7 @@
       "message": "4.48\u00d7",
       "label": "public O3 compile vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; Dedicated Intel; revision 08bba949b4a0c3f2a728bf52c6e7089a38b44797",
       "color": "14532d",
-      "left_label": "E5-2696v4"
+      "left_label": "E5 v4"
     },
     "matrix-public-compile-gcc-hosted-intel": {
       "message": "n/m",
@@ -119,7 +119,7 @@
     "matrix-public-compile-clang-intel": {
       "speedup": 4.581165521245548,
       "processor": "intel",
-      "short_cpu": "E5-2696v4",
+      "short_cpu": "E5 v4",
       "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
       "environment": "Dedicated Intel",
       "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
@@ -127,7 +127,7 @@
       "message": "4.58\u00d7",
       "label": "public O3 compile vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; Dedicated Intel; revision 08bba949b4a0c3f2a728bf52c6e7089a38b44797",
       "color": "14532d",
-      "left_label": "E5-2696v4"
+      "left_label": "E5 v4"
     },
     "matrix-public-compile-clang-hosted-intel": {
       "message": "n/m",
@@ -154,7 +154,7 @@
     "matrix-public-runtime-gcc-intel": {
       "speedup": 0.9925256043222309,
       "processor": "intel",
-      "short_cpu": "E5-2696v4",
+      "short_cpu": "E5 v4",
       "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
       "environment": "Dedicated Intel",
       "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
@@ -162,7 +162,7 @@
       "message": "0.99\u00d7",
       "label": "public O3 runtime vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; Dedicated Intel; revision 08bba949b4a0c3f2a728bf52c6e7089a38b44797",
       "color": "1f582b",
-      "left_label": "E5-2696v4"
+      "left_label": "E5 v4"
     },
     "matrix-public-runtime-gcc-hosted-intel": {
       "message": "n/m",
@@ -189,7 +189,7 @@
     "matrix-public-runtime-clang-intel": {
       "speedup": 0.9805782905521783,
       "processor": "intel",
-      "short_cpu": "E5-2696v4",
+      "short_cpu": "E5 v4",
       "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
       "environment": "Dedicated Intel",
       "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
@@ -197,7 +197,7 @@
       "message": "0.98\u00d7",
       "label": "public O3 runtime vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; Dedicated Intel; revision 08bba949b4a0c3f2a728bf52c6e7089a38b44797",
       "color": "305f28",
-      "left_label": "E5-2696v4"
+      "left_label": "E5 v4"
     },
     "matrix-public-runtime-clang-hosted-intel": {
       "message": "n/m",
@@ -640,7 +640,7 @@
     "matrix-native-compile-gcc-intel": {
       "speedup": 4.461470669269994,
       "processor": "intel",
-      "short_cpu": "E5-2696v4",
+      "short_cpu": "E5 v4",
       "cpu": "Intel Xeon E5-2696 v4",
       "environment": "Local shared host",
       "revision": "783dbfcf01360d923ff590d2048a0c1764761cc3",
@@ -648,7 +648,7 @@
       "message": "4.46\u00d7",
       "label": "native O3 compile vs gcc; Intel Xeon E5-2696 v4; Local shared host; revision 783dbfcf01360d923ff590d2048a0c1764761cc3",
       "color": "14532d",
-      "left_label": "E5-2696v4"
+      "left_label": "E5 v4"
     },
     "matrix-native-compile-gcc-hosted-intel": {
       "message": "n/m",
@@ -671,7 +671,7 @@
     "matrix-native-compile-clang-intel": {
       "speedup": 6.849275009722701,
       "processor": "intel",
-      "short_cpu": "E5-2696v4",
+      "short_cpu": "E5 v4",
       "cpu": "Intel Xeon E5-2696 v4",
       "environment": "Local shared host",
       "revision": "783dbfcf01360d923ff590d2048a0c1764761cc3",
@@ -679,7 +679,7 @@
       "message": "6.85\u00d7",
       "label": "native O3 compile vs clang; Intel Xeon E5-2696 v4; Local shared host; revision 783dbfcf01360d923ff590d2048a0c1764761cc3",
       "color": "14532d",
-      "left_label": "E5-2696v4"
+      "left_label": "E5 v4"
     },
     "matrix-native-compile-clang-hosted-intel": {
       "message": "n/m",
@@ -706,12 +706,12 @@
     "matrix-cppgm-compile-gcc-intel": {
       "speedup": 4.033795201081446,
       "processor": "intel",
-      "short_cpu": "E5-2696v4",
+      "short_cpu": "E5 v4",
       "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
       "environment": "Local shared host",
       "revision": "17a21ad27ace6eda20b948e57c2e78ab3d568374",
       "target": "docs/performance/preview/cppgm-local.md",
-      "left_label": "E5-2696v4",
+      "left_label": "E5 v4",
       "message": "4.03\u00d7",
       "color": "14532d",
       "label": "cppgm O3 compile vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; local shared host; revision 17a21ad27ace6eda20b948e57c2e78ab3d568374",
@@ -746,12 +746,12 @@
     "matrix-cppgm-runtime-gcc-intel": {
       "speedup": 0.9822438017628521,
       "processor": "intel",
-      "short_cpu": "E5-2696v4",
+      "short_cpu": "E5 v4",
       "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
       "environment": "Local shared host",
       "revision": "17a21ad27ace6eda20b948e57c2e78ab3d568374",
       "target": "docs/performance/preview/cppgm-local.md",
-      "left_label": "E5-2696v4",
+      "left_label": "E5 v4",
       "message": "0.98\u00d7",
       "color": "2d5e29",
       "label": "cppgm O3 runtime vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; local shared host; revision 17a21ad27ace6eda20b948e57c2e78ab3d568374",
@@ -782,12 +782,12 @@
     "matrix-cppgm-compile-clang-intel": {
       "speedup": 3.722879351132139,
       "processor": "intel",
-      "short_cpu": "E5-2696v4",
+      "short_cpu": "E5 v4",
       "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
       "environment": "Local shared host",
       "revision": "17a21ad27ace6eda20b948e57c2e78ab3d568374",
       "target": "docs/performance/preview/cppgm-local.md",
-      "left_label": "E5-2696v4",
+      "left_label": "E5 v4",
       "message": "3.72\u00d7",
       "color": "14532d",
       "label": "cppgm O3 compile vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; local shared host; revision 17a21ad27ace6eda20b948e57c2e78ab3d568374",
@@ -818,12 +818,12 @@
     "matrix-cppgm-runtime-clang-intel": {
       "speedup": 1.0030151679110915,
       "processor": "intel",
-      "short_cpu": "E5-2696v4",
+      "short_cpu": "E5 v4",
       "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
       "environment": "Local shared host",
       "revision": "17a21ad27ace6eda20b948e57c2e78ab3d568374",
       "target": "docs/performance/preview/cppgm-local.md",
-      "left_label": "E5-2696v4",
+      "left_label": "E5 v4",
       "message": "1.00\u00d7",
       "color": "14532d",
       "label": "cppgm O3 runtime vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; local shared host; revision 17a21ad27ace6eda20b948e57c2e78ab3d568374",
@@ -850,9 +850,9 @@
     "Xeon 8370C (hosted)"
   ],
   "badge_dimensions": {
-    "width": 160,
+    "width": 120,
     "height": 24,
-    "processor_width": 96,
-    "value_width": 64
+    "processor_width": 64,
+    "value_width": 56
   }
 }

@@ -26,8 +26,8 @@ def badge_svg(data):
     luminance = sum(v * weight for v, weight in zip(linear, (.2126, .7152, .0722)))
     text_color = '#000' if luminance > .179 else '#fff'
     left = data.get('left_label', '')
-    width = 160
-    left_width = 96 if left else 0
+    width = 120
+    left_width = 64 if left else 0
     message_width = width - left_width
     text_width = min(max(8, len(message) * 8 - 1), message_width - 12)
     left_text_width = min(max(8, len(left) * 8 - 1), max(8, left_width - 12))
