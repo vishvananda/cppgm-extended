@@ -117,6 +117,8 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	}
 	uint64_t initialized = 0;
 	Operand initial[48];
+	unsigned initial_bytes[48] = {};
+	bool initial_storage[48] = {};
 	moves_.clear();
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
@@ -132,8 +134,11 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 			const lowir::Type source_type = memory || source_operand.input_storage ? lowir::Type::scalar(TypeKind::Ptr)
 																				   : operand.type;
 			const Operand original = memory_value_operand(value, source_type);
-			if ((initialized & assembly_register_bit(reg)) != 0 && !(initial[reg] == original))
-				throw BackendError("assembly matching operands supply distinct input values to one register");
+			const unsigned bytes = memory ? 8 : capture_bytes(source_operand.type, reg);
+			const bool storage = memory || source_operand.input_storage;
+			if ((initialized & assembly_register_bit(reg)) != 0 &&
+				(!(initial[reg] == original) || initial_bytes[reg] != bytes || initial_storage[reg] != storage))
+				throw BackendError("assembly matching operands require distinct input captures");
 			if ((initialized & assembly_register_bit(reg)) == 0)
 			{
 				const Operand captured = assembly_input(source_operand, value, reg, memory);
@@ -148,6 +153,8 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 					moves_.push_back(move);
 				}
 				initial[reg] = original;
+				initial_bytes[reg] = bytes;
+				initial_storage[reg] = storage;
 				initialized |= assembly_register_bit(reg);
 			}
 		}
