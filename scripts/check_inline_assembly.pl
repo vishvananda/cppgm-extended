@@ -201,8 +201,12 @@ for my $test (@tests)
 				my @inspect = $^O eq 'darwin' ? ('otool', '-tvV') : ('objdump', '-d');
 				my $dump = command($directory, "$label.inspect", @inspect, $object);
                 for my $instruction (@requested) {
+                    my $spelling = $instruction eq 'int1' ? '(?:int1|icebp)' : quotemeta($instruction);
+                    # Apple's disassembler renders the one-byte ICEBP opcode
+                    # as data. Require that exact decoded byte in this case.
+                    my $undecoded_int1 = $instruction eq 'int1' && $dump =~ /\.byte\s+0xf1\b/i;
                     die "$test: native object lacks the requested $instruction instruction\n"
-                        if $dump !~ /\b\Q$instruction\E\b/i;
+                        if !$undecoded_int1 && $dump !~ /\b$spelling\b/i;
                 }
 			}
 		}

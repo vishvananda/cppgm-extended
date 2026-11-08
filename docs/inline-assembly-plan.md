@@ -7,9 +7,14 @@ assembly profile; the required 35-assignment contract remains unchanged.
 The current branch implements the shared LowIR boundary, GNU operands and goto,
 raw/module assembly, macro environments, unwind descriptions, VEX/EVEX forms,
 wide-vector and mask transfers, inline data/alignment and computed goto. Its
-181-case optional suite passes alongside the 9,858-case required report. An
+182-case optional suite passes alongside the 9,860-case required report. An
 unmodified full headless Godot 4.7.2 release build now compiles and links.
 Godot's CI lane also checks native engine workloads against independent results.
+
+The default macOS report passes 9,837 cases with LLVM 18 and 21. The optional
+assembly follow-up separates GNU-specific host oracles, fixes the Darwin unwind
+observer type and disassembler spelling, and restricts unsupported personality
+encodings to Linux. Native confirmation of that follow-up is pending.
 
 The broader plan below remains open for x87/MMX operand allocation, additional
 ISA/directive/relocation forms and the actual RustGM source/body/backend-pin

@@ -7,7 +7,7 @@ int bad_data = 0;
 extern "C" _Unwind_Reason_Code assembly_absolute_personality(int version, _Unwind_Action,
     _Unwind_Exception_Class, _Unwind_Exception*, _Unwind_Context* context) {
     ++personality_calls;
-    const unsigned char* data = static_cast<const unsigned char*>(_Unwind_GetLanguageSpecificData(context));
+    const unsigned char* data = reinterpret_cast<const unsigned char*>(_Unwind_GetLanguageSpecificData(context));
     if (version != 1 || data != assembly_absolute_exception_data || data[0] != 69 || data[3] != 53) ++bad_data;
     return _URC_CONTINUE_UNWIND;
 }

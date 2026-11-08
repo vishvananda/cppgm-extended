@@ -226,7 +226,10 @@ in GNU assembly. It permits explicit DWARF expressions and vendor extensions.
 Preserve `.cfi_personality` and `.cfi_lsda` symbol identities and pointer
 encodings, including omission (255), absolute or PC-relative 32/64-bit fields
 and personality indirection. Respect the target's relocation rules; on Darwin
-an indirect PC-relative personality uses its GOT slot. `.cfi_sections .eh_frame`
+an indirect PC-relative personality uses its GOT slot. Native Darwin unwind tests
+use personality encoding `0x9b`; direct absolute and 64-bit PC-relative
+personality tests require Linux because Darwin linkers do not support them.
+`.cfi_sections .eh_frame`
 selects the supported runtime-unwind section. Reject malformed procedure/state
 nesting, impossible offsets and unsupported encodings or sections clearly.
 Native tests unwind host exceptions through both module and raw frames and

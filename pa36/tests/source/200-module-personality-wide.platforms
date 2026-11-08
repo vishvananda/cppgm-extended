@@ -1,0 +1,1 @@
+linux # Darwin linkers do not support this direct 64-bit PC-relative personality encoding
