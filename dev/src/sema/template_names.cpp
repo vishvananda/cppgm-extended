@@ -220,6 +220,7 @@ const TemplateHead* Analyzer::TemplateHeadOf(const Type* templ)
 
 void Analyzer::template_head_packs(const TemplateHead* head, TypeList& bound)
 {
+	check_stack(0);
 	// The outer packs expanded by a template template-parameter pack's
 	// head (14.1p15). An expansion nested in the head consumes its own packs.
 	PackList parameters;
