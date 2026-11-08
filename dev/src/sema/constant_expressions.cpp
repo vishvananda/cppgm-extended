@@ -2129,7 +2129,7 @@ bool ConstantInterpreter::cast(const syntax::Expr& expr, const syntax::Expr& ope
 	ConstValue value;
 	if (!rvalue(operand_expr, value))
 		return false;
-	if (value.kind == ValueKind::Pointer && IsPointer(type) &&
+	if (value.kind == ValueKind::Pointer && IsPointer(value.type) && IsPointer(type) &&
 		(value.type->element->kind == TypeKind::Function) != (type->unqualified->element->kind == TypeKind::Function))
 		return fail(expr.location, "a function/object pointer reinterpretation in a constant expression");
 	if ((expr.facts->flags & kBaseCast) != 0 && value.kind == ValueKind::MemberPointer)
