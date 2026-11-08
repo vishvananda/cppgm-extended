@@ -1,0 +1,160 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Cwd qw(abs_path);
+use File::Basename qw(basename dirname);
+use File::Copy qw(copy);
+use File::Path qw(make_path);
+use File::Spec;
+use File::Temp qw(tempdir);
+use FindBin;
+use Text::ParseWords qw(shellwords);
+use lib $FindBin::Bin;
+
+use CppgmBatchWorker qw(collect_tests run_command_capture ensure_test_app_available
+	get_timeout_from_env note_progress_state clear_progress_state);
+
+sub read_file
+{
+	my ($path) = @_;
+	open(my $fh, '<', $path) or die "Unable to read $path: $!\n";
+	binmode($fh);
+	local $/;
+	my $text = <$fh>;
+	close($fh) or die "Unable to close $path: $!\n";
+	return defined($text) ? $text : '';
+}
+
+sub profile_path
+{
+	my ($test) = @_;
+	$test =~ s/\.t$/.assembly-profile/;
+	return $test;
+}
+
+# The sidecar identifies this control independently of its assignment number
+# or directory. The common runner owns discovery, parallelism and reporting.
+if (@ARGV && $ARGV[0] eq '--list')
+{
+	shift @ARGV;
+	print "$_\n" for grep { -f profile_path($_) }
+		map { collect_tests($_, qr/\.t$/) } @ARGV;
+	exit 0;
+}
+
+@ARGV == 2 or die "Usage: check_inline_assembly.pl <cppgm++> <test-or-directory>\n";
+my ($app, $selection) = @ARGV;
+$app = File::Spec->rel2abs($app); # preserve a reference wrapper's basename
+my $lowir = $ENV{CPPGM_ASSEMBLY_LOWIR_APP} // '../dev/lowir';
+$lowir = File::Spec->rel2abs($lowir);
+my @host = shellwords($ENV{CPPGM_HOST_CXX} // $ENV{CXX} // 'c++');
+my @stdlib = shellwords($ENV{CPPGM_STDLIB_FLAGS} // '');
+my @levels = split /,/, ($ENV{CPPGM_ASSEMBLY_LEVELS} // 'O0,O3');
+die "Invalid assembly optimization levels\n" if !@levels || grep { !/^O[0-3]$/ } @levels;
+my @tests = collect_tests($selection, qr/\.t$/);
+die "No assembly fixtures found under $selection\n" if !@tests;
+ensure_test_app_available($app, 'my', $selection);
+my $out = $ENV{CPPGM_ASSEMBLY_OUT} // 'obj/assembly';
+make_path($out);
+
+sub command
+{
+	my ($directory, $step, @argv) = @_;
+	my $status = run_command_capture(
+		cmd => \@argv, stdout => "$directory/$step.stdout", stderr => "$directory/$step.stderr",
+		timeout => get_timeout_from_env('CPPGM_BUILD_TEST_TIMEOUT_SEC', 30));
+	die "$step failed with status $status; results: $directory\n" .
+		read_file("$directory/$step.stdout") . read_file("$directory/$step.stderr") if $status != 0;
+	return read_file("$directory/$step.stdout");
+}
+
+sub observe
+{
+	my ($directory, $label, $object, $driver) = @_;
+	my $program = "$directory/$label.program";
+	command($directory, "$label.link", @host, '-std=c++11', '-O2', @stdlib,
+		$driver, $object, '-o', $program);
+	return command($directory, "$label.run", $program);
+}
+
+for my $test (@tests)
+{
+	my $source = abs_path($test);
+	my $profile = read_file(profile_path($test));
+	$profile =~ s/\s+\z//;
+	die "$test: unknown assembly profile '$profile'\n" if $profile !~ /\A(?:lowir|gnu)(?:-reject)?\z/;
+	my $directory = File::Spec->rel2abs(tempdir('case-XXXXXX', DIR => $out, CLEANUP => 0));
+	if ($profile =~ /-reject\z/)
+	{
+		note_progress_state('reject', $test);
+		my @cmd = $profile eq 'lowir-reject'
+			? ($lowir, '-o', "$directory/rejected.lowir", $source)
+			: ($app, '--full-asm', '-O0', '-c', $source, '-o', "$directory/rejected.o");
+		my $status = run_command_capture(cmd => \@cmd,
+			stdout => "$directory/reject.stdout", stderr => "$directory/reject.stderr",
+			timeout => get_timeout_from_env('CPPGM_BUILD_TEST_TIMEOUT_SEC', 30));
+		die "$test: expected a normal compiler rejection, got status $status; results: $directory\n"
+			if $status != 1;
+		print "$test: assembly rejection passed\n" unless $ENV{CPPGM_REPORT_QUIET};
+		next;
+	}
+	(my $driver = $source) =~ s/\.t$/.driver.cpp/;
+	die "$test: missing native observer $driver\n" if !-f $driver;
+	my @observations;
+	my @inputs = ($source);
+	if ($profile eq 'lowir')
+	{
+		note_progress_state('roundtrip', $test);
+		my $original = "$directory/original.lowir";
+		copy($source, $original) or die "Unable to copy $source: $!\n";
+		command($directory, 'roundtrip-first', $lowir, '-o', "$directory/first.lowir", $source);
+		command($directory, 'roundtrip-second', $lowir, '-o', "$directory/second.lowir", "$directory/first.lowir");
+		die "$test: unstable LowIR roundtrip\n"
+			if read_file("$directory/first.lowir") ne read_file("$directory/second.lowir");
+		@inputs = ($original, "$directory/first.lowir");
+	}
+	my $index = 0;
+	for my $input (@inputs)
+	{
+		for my $level (@levels)
+		{
+			note_progress_state('compile', $test);
+			my $label = "input-$index-$level";
+			my $object = "$directory/$label.o";
+			my @flags = $profile eq 'gnu' ? ('--full-asm') : ();
+			command($directory, "$label.compile", $app, @flags, "-$level", '-c', $input, '-o', $object);
+			push @observations, observe($directory, $label, $object, $driver);
+			if ($profile eq 'gnu')
+			{
+				my $lowered = "$directory/$label.lowir";
+				my $canonical = "$directory/$label.canonical.lowir";
+				command($directory, "$label.lower", $app, '--full-asm', '--emit-lowir', "-$level", '-o', $lowered, $source);
+				command($directory, "$label.read", $lowir, '-o', $canonical, $lowered);
+				command($directory, "$label.roundtrip-compile", $app, "-$level", '-c', $canonical, '-o', "$directory/$label.roundtrip.o");
+				push @observations, observe($directory, "$label.roundtrip", "$directory/$label.roundtrip.o", $driver);
+			}
+			if (basename($source) =~ /stream/)
+			{
+				my @inspect = $^O eq 'darwin' ? ('otool', '-tvV') : ('objdump', '-d');
+				my $dump = command($directory, "$label.inspect", @inspect, $object);
+				die "$test: native object lacks the requested movntps instruction\n" if $dump !~ /\bmovntps\b/i;
+			}
+		}
+		++$index;
+	}
+	if ($profile eq 'gnu')
+	{
+		command($directory, 'host-compile', @host, '-std=c++11', '-O3', @stdlib,
+			'-x', 'c++', $source, $driver, '-o', "$directory/host.program");
+		push @observations, command($directory, 'host-run', "$directory/host.program");
+	}
+	for my $output (@observations)
+	{
+		die "$test: native, roundtrip or host observations differ; results: $directory\n"
+			if $output ne $observations[0];
+	}
+	print "$test: assembly properties passed\n" unless $ENV{CPPGM_REPORT_QUIET};
+}
+clear_progress_state();

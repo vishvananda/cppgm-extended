@@ -660,7 +660,7 @@ bool read_before_loop(
 				inst.type == type &&
 				same_place(locate(body, inst.ops[inst.op == Opcode::Load ? 0 : 1]), inst.type, at, type))
 				read = true;
-			else if (inst.op == Opcode::Call)
+			else if (inst.op == Opcode::Call || inst.op == Opcode::Asm)
 				read = false, call = true;
 		}
 		if (!read)
@@ -680,7 +680,7 @@ bool read_before_loop(
 				return false;
 			const BlockId x = between[n];
 			for (InstId i = body.blocks[x].first; i != kNoId; i = body.instructions[i].next)
-				if (body.instructions[i].op == Opcode::Call)
+				if (body.instructions[i].op == Opcode::Call || body.instructions[i].op == Opcode::Asm)
 					return false;
 			for (uint32_t k = cfg.pred_first[x]; k < cfg.pred_first[x + 1]; ++k)
 			{

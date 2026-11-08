@@ -62,6 +62,7 @@ my %explicit_throw_type = (
 	'SemanticError' => 'dev/src/sema/',
 	'LoweringError' => 'dev/src/lower/',
 	'Failure' => 'dev/src/lowir/',
+	'AssemblyError' => 'dev/src/asm/',
 	'FactError' => 'dev/src/abi/facts/',
 	'EncodingError' => 'dev/src/abi/itanium/',
 	'BackendError' => 'dev/src/native/',

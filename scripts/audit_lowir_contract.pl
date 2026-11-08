@@ -18,8 +18,10 @@ use warnings;
 
 use Cwd qw(abs_path);
 use FindBin;
+use Getopt::Long;
 
 my $root = abs_path("$FindBin::Bin/..");
+GetOptions('root=s' => \$root) or die "usage: $0 [--root DIR]\n";
 
 sub read_file
 {
@@ -33,9 +35,12 @@ sub read_file
 
 my $scaffold = read_file('dev/src/ir_symbol_model.h');
 my $vocabulary = read_file('dev/src/lowir_model.h');
+my $assembly_vocabulary = read_file('dev/src/asm_model.h');
 my $parser = read_file('dev/src/lowir/text_parser.cpp') .
 	read_file('dev/src/lowir/text_parser_body.cpp');
 my $writer = read_file('dev/src/lowir/text_writer.cpp');
+my $assembly_parser = read_file('dev/src/lowir/text_parser_assembly.cpp');
+my $assembly_writer = read_file('dev/src/lowir/assembly_writer.cpp');
 my $documentation = read_file('pa8/lowir.md');
 my $ledger = read_file('scripts/architecture/lowir-contract-ledger.tsv');
 
@@ -272,6 +277,37 @@ for my $row (@retained)
 for my $name (sort keys %type)
 {
 	push @errors, "type '$name' has no retained ledger row" if !$ledger_type{$name};
+}
+
+# 6. The optional assembly vocabulary belongs to the owners recorded in the
+# ledger. Do not tie its documentation or tests to an assignment number.
+my @assembly_rows = grep { $_->{category} eq 'structure' && $_->{surface} eq 'assembly' } @retained;
+push @errors, "assembly templates have no retained ledger structure row" if !@assembly_rows;
+my $assembly_documentation = '';
+for my $row (@assembly_rows)
+{
+	for my $owner (split /;/, $row->{owner})
+	{
+		$assembly_documentation .= read_file($owner) if -f "$root/$owner";
+	}
+}
+my @records = table_strings($assembly_vocabulary, 'kRecords', 'asm_model.h');
+for my $record (@records)
+{
+	push @errors, "assembly record '$record' is absent from its owner documentation"
+		if $assembly_documentation !~ /\b\Q$record\E\b/;
+	push @errors, "assembly record '$record' is not recognized by the reader"
+		if $assembly_parser !~ /at_word\("\Q$record\E"\)/;
+	push @errors, "assembly record '$record' is not written"
+		if $assembly_writer !~ /"[^"\n]*\b\Q$record\E\b/;
+}
+for my $table ('kDialects', 'kMemories')
+{
+	for my $word (table_strings($assembly_vocabulary, $table, 'asm_model.h'))
+	{
+		push @errors, "assembly word '$word' is absent from its owner documentation"
+			if $assembly_documentation !~ /\b\Q$word\E\b/;
+	}
 }
 
 if (@errors)

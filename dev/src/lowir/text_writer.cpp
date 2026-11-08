@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "lowir/literals.h"
+#include "lowir/assembly_writer.h"
 #include "lowir/local_names.h"
 #include "ir_symbol_model.h"
 #include "support/internal_error.h"
@@ -383,6 +384,7 @@ void Writer::location(const DebugLocation& location)
 
 void Writer::write()
 {
+	append_assembly_definitions(out_, program_);
 	const SymbolKind phases[] = { SymbolKind::GlobalDeclaration, SymbolKind::FunctionDeclaration,
 		SymbolKind::GlobalDefinition, SymbolKind::FunctionDefinition };
 	bool written = false;
@@ -999,6 +1001,13 @@ void Writer::write_effect(const Instruction& inst)
 {
 	switch (inst.op)
 	{
+	case Opcode::Asm:
+		head(inst.op);
+		append_assembly_reference(out_, program_, static_cast<uint32_t>(inst.immediate));
+		out_.push_back('(');
+		operand_list(inst.extra_first, inst.extra_count);
+		out_.push_back(')');
+		return;
 	case Opcode::AtomicThreadFence:
 	case Opcode::AtomicSignalFence:
 		head(inst.op);

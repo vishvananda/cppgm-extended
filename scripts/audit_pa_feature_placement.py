@@ -27,12 +27,14 @@ from audit_test_requirements import scan_optimization_requirements
 
 DEFAULT_TRACKER = Path("scripts/architecture/pa-feature-placement.md")
 COURSE_PA_COUNT = 35
+OPTIONAL_PAS = ("pa36",)
 COURSE_PAS = tuple(f"pa{i}" for i in range(1, COURSE_PA_COUNT + 1))
+AUDITED_PAS = COURSE_PAS + OPTIONAL_PAS
 # Self-hosting (PA34) and optimizing the compiler (PA35) add no language
 # feature, so no feature table row may name either as its owner.
 NO_FEATURE_PAS = frozenset({"pa34", "pa35"})
 DEFAULT_PAS = tuple(f"pa{i}" for i in range(10, 24))
-LOCAL_TEST_HYGIENE_PAS = COURSE_PAS
+LOCAL_TEST_HYGIENE_PAS = AUDITED_PAS
 STRICT_TEMPLATE_PAS = ("pa14", "pa15", "pa17", "pa18", "pa19")
 SEMANTIC_ONLY_PA_MAX = 7
 PRE_LOWIR_SEMANTIC_PA_MIN = 5
@@ -386,6 +388,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("exception.handler_branch_cleanup", ()),
     FeatureRule("host.eh_object", ()),
     FeatureRule("host.object_interop", ()),
+    FeatureRule("assembly.shared_boundary", ()),
     FeatureRule("host.object_attribute", ()),
     FeatureRule("host.function_effect_attribute", ()),
     FeatureRule("host.abi_name_attribute", ()),
@@ -638,10 +641,10 @@ def load_feature_table(path: Path) -> dict[str, FeatureMeta]:
 def feature_owner_errors(features: dict[str, FeatureMeta]) -> list[str]:
     errors: list[str] = []
     for feature_id, meta in sorted(features.items()):
-        if meta.owner_pa not in COURSE_PAS:
+        if meta.owner_pa not in AUDITED_PAS:
             errors.append(
                 f"feature {feature_id} names owner {meta.owner_pa}, "
-                f"which is not one of the course's {COURSE_PA_COUNT} assignments"
+                f"which is not one of the course's {COURSE_PA_COUNT} required or optional assignments"
             )
         elif meta.owner_pa in NO_FEATURE_PAS:
             errors.append(
@@ -2481,6 +2484,8 @@ def row_for(path: Path,
     relative_path = path.relative_to(root)
     current_pa = current_pa_for(relative_path)
     current_cluster = cluster_for(path)
+    profile_path = path.with_suffix(".assembly-profile")
+    assembly_profile = read_text(profile_path).strip() if profile_path.is_file() else ""
     # Token processing can contain arbitrary C++-looking text. Introductory
     # LowIR fixtures describe IR records, not the C++ constructs that later
     # lower to them. Their contracts are checked by their own suites and the
@@ -2489,12 +2494,16 @@ def row_for(path: Path,
     input_contract = (
         "preprocessing" if current_number in {1, 2, 3, 4} else
         "lowir-introduction" if current_pa == "pa8" else
-        "lowir-backend" if current_pa == "pa24" and path.suffix != ".cpp" else
+        "lowir-backend" if (current_pa == "pa24" and path.suffix != ".cpp")
+        or assembly_profile in {"lowir", "lowir-reject"} else
         "abi-facts" if current_pa == "pa9" else
         "cpp-source"
     )
     raw_hits = (detect_features(detection_source, ref_text, relative_path.as_posix())
                 if input_contract == "cpp-source" else {})
+    if assembly_profile in {"lowir", "gnu", "lowir-reject", "gnu-reject"}:
+        raw_hits["assembly.shared_boundary"] = FeatureHit(
+            "assembly.shared_boundary", [f"source:assembly-profile={assembly_profile}"])
     host_eh_evidence = host_eh_object_evidence(path, current_pa, detection_source)
     if host_eh_evidence:
         raw_hits["host.eh_object"] = FeatureHit(
@@ -3082,7 +3091,7 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--tracker", type=Path, default=DEFAULT_TRACKER)
-    parser.add_argument("--pa", action="append", choices=COURSE_PAS)
+    parser.add_argument("--pa", action="append", choices=AUDITED_PAS)
     parser.add_argument("--feature", action="append", help="only report tests matching this feature id")
     parser.add_argument(
         "--include-ok",
@@ -3138,7 +3147,7 @@ def main(argv: list[str]) -> int:
     tests = iter_test_files(root, pas)
     if not args.pa:
         # Every required control participates, including backend and host PAs.
-        for pa in COURSE_PAS:
+        for pa in AUDITED_PAS:
             if pa not in pas:
                 tests.extend(suite_test_files(root / pa / "tests" / "controls"))
     rows = [row_for(path, root, features) for path in tests]

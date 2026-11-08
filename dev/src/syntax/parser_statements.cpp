@@ -206,7 +206,9 @@ Stmt* Parser::parse_asm()
 	{
 		if (accept(TokenKind::KW_VOLATILE))
 			stmt->is_volatile = true;
-		else if (!accept(TokenKind::KW_INLINE))
+		else if (accept(TokenKind::KW_INLINE))
+			stmt->is_inline = true;
+		else
 			break;
 	}
 	if (!expect(TokenKind::OP_LPAREN) || !tok().is_literal() || (tok().flags & kStringLiteral) == 0)
@@ -284,6 +286,7 @@ Stmt* Parser::parse_asm()
 	}
 	if (!expect(TokenKind::OP_RPAREN) || !expect(TokenKind::OP_SEMICOLON))
 		return nullptr;
+	stmt->is_extended = section != 0;
 	stmt->outputs = Slice<AsmOperand>{
 		outputs.empty() ? nullptr : arena_.copy_array(outputs.data(), static_cast<uint32_t>(outputs.size())),
 		static_cast<uint32_t>(outputs.size())

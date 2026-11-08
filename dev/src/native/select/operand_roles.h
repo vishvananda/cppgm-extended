@@ -76,6 +76,10 @@ void for_each_operand(const lowir::FunctionBody& body, const lowir::Instruction&
 		f(inst.ops[0], OperandRole::Address);
 		f(inst.ops[1], OperandRole::Address);
 		return;
+	case Opcode::Asm:
+		for (uint32_t k = 0; k < inst.extra_count; ++k)
+			f(body.operands[inst.extra_first + k], OperandRole::Value);
+		return;
 	case Opcode::Call:
 		if (inst.ops[0].kind != lowir::ValueKind::Symbol)
 			f(inst.ops[0], OperandRole::Value);

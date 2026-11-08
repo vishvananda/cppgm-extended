@@ -744,7 +744,7 @@ if ($mode eq 'control_t')
 	for my $checker (qw(check_controls.pl check_scalar_lowir_properties.pl
 		check_value_survivor_properties.pl check_pa11_string_literal_storage.pl
 		check_pa11_lifecycle_policy.pl check_pa11_unreachable_terminator.pl
-		check_pa27_section_contract.pl))
+		check_pa27_section_contract.pl check_inline_assembly.pl))
 	{
 		open(my $listing, '-|', $^X, "$FindBin::Bin/$checker", '--list', $tests)
 			or die "Unable to list $checker controls: $!";

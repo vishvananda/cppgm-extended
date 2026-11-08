@@ -55,7 +55,19 @@ void materialize_storage_arguments(Program& program, FunctionBody& body)
 	for (BlockId b : body.layout)
 		for (InstId i = body.blocks[b].first, prev = kNoId; i != kNoId; prev = i, i = body.instructions[i].next)
 		{
-			if (body.instructions[i].op == Opcode::Call)
+			if (body.instructions[i].op == Opcode::Asm)
+			{
+				const uint32_t count = body.instructions[i].extra_count;
+				const uint32_t first = body.instructions[i].extra_first;
+				for (uint32_t k = 0; k < count; ++k)
+				{
+					const Value value = body.operands[first + k];
+					if (value.is(ValueKind::Slot))
+						body.operands[first + k] = materialize_slot_read(
+							body, b, prev, value, body.slots[value.index].type, body.instructions[i].location);
+				}
+			}
+			else if (body.instructions[i].op == Opcode::Call)
 				materialize_call_arguments(program, body, b, prev, i);
 			else if (body.instructions[i].ops[0].is(ValueKind::Slot) ||
 				body.instructions[i].ops[1].is(ValueKind::Slot) || body.instructions[i].ops[2].is(ValueKind::Slot))

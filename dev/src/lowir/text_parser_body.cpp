@@ -539,6 +539,9 @@ void Parser::parse_effect(FunctionBuilder& builder)
 	Instruction inst = make_instruction(Opcode::Store, kVoid);
 	switch (keyword)
 	{
+	case Opcode::Asm:
+		parse_assembly_call(builder, inst);
+		break;
 	case Opcode::Store:
 		if (accept_word(WordClass::Fact, IF_VOLATILE))
 			inst.flags |= IF_VOLATILE;

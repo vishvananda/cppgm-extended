@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 #include "lowir/program.h"
@@ -16,6 +17,8 @@
 // Two exception models (native/mir/eh_tables.h): the course's
 // handler-stack runtime ABI and the host's Itanium tables.
 namespace native {
+
+struct AssemblySites;
 
 // The condition codes (Cond), operations (Op, ConvKind, WideOp), instruction
 // flags (InstFlag) and frame binding kinds (BindingKind) are the shipped
@@ -107,6 +110,7 @@ struct Function
 	// The blocks' instruction ranges, ascending (laid-out MIR leaves the
 	// branches it dropped between them).
 	std::vector<Inst> insts;
+	std::shared_ptr<AssemblySites> assembly; // allocated only for user assembly
 	std::vector<lowir::DebugLocation> locations;
 	// The blocks the jump_table instructions name, each table a range.
 	std::vector<uint32_t> jump_targets;
@@ -166,6 +170,7 @@ struct Function
 		debug_slots.clear();
 		blocks.clear();
 		insts.clear();
+		assembly.reset();
 		locations.clear();
 		jump_targets.clear();
 		variadic = false;

@@ -120,6 +120,7 @@ enum class Op : std::uint8_t
 	JumpTable, // jump_table idx, [^a, ^b, ...]
 	MulWide,   // mul src: rdx:rax = rax * src, unsigned
 	ImulWide,  // imul src: the signed form
+	Asm,       // opaque user assembly: operand = site; aux/aux2 = reads/clobbers
 	Prologue,  // a shrink-wrapped function's frame setup
 	Nop        // a removed instruction: no code, not dumped
 };
@@ -139,7 +140,7 @@ inline const char* spelling(Op op)
 		"f", "", "fret", "fstp", "", "set", "cmp_branch", "lock_xadd", "xchg", "lock_cmpxchg", "lock_cmpxchg16b",
 		"mfence", "va_start", "va_arg", "stack_alloc", "eh_push", "eh_pop", "throw", "resume", "load_exception",
 		"eh_mark", "eh_catch", "load_selector", "landing", "eh_select", "catch_all", "tls_addr", "exit", "trap",
-		"jump_table", "mul", "imul", "prologue", "" };
+		"jump_table", "mul", "imul", "asm", "prologue", "" };
 	return kOps[static_cast<unsigned>(op)];
 }
 

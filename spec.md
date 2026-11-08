@@ -245,8 +245,12 @@ object compiler to build a representation that only a tool reads.
 ## 7. Backend and object generation
 
 - The default object path MUST use a compact per-function machine IR and direct
-  ELF or Mach-O emission. It MUST NOT emit assembly text, parse assembly text, or invoke
-  an external assembler.
+  ELF or Mach-O emission. It MUST NOT render compiler-generated instructions to
+  assembly and parse them back, or invoke an external assembler. User-supplied
+  assembly is source input: parse each bound template instance once into typed
+  assembly operands, then encode it directly through cppgm's own encoder.
+  Frontend placeholder expansion is part of that source language; it MUST NOT
+  become a transport for ordinary compiler-generated instructions.
 - Instruction selection, register allocation, local relaxation, and encoding
   SHOULD complete for one function before the next begins, and that
   function's transient state SHOULD then be released or reset for reuse

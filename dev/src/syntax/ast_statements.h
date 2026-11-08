@@ -194,6 +194,8 @@ struct AsmStmt : Stmt
 {
 	TokenSpelling text;
 	bool is_volatile;
+	bool is_extended = false;
+	bool is_inline = false;
 	Slice<AsmOperand> outputs;
 	Slice<AsmOperand> inputs;
 	Slice<TokenSpelling> clobbers;

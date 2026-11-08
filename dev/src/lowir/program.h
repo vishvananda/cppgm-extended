@@ -19,6 +19,8 @@
 // cross references never go through spellings.
 namespace lowir {
 
+struct AssemblyModule;
+
 // ---------------------------------------------------------------------------
 // Function bodies
 
@@ -266,6 +268,7 @@ struct JumpThunk
 struct Program
 {
 	Program();
+	~Program();
 
 	Program(const Program&) = delete;
 	Program& operator=(const Program&) = delete;
@@ -344,6 +347,7 @@ struct Program
 	bool trap_function(SymbolId symbol) const;
 
 	std::unique_ptr<DebugInfo> debug;
+	std::unique_ptr<AssemblyModule> assembly;
 	Arena arena;
 	NameTable names;
 	std::vector<Symbol> symbols;

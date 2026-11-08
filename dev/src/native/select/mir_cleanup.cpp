@@ -484,6 +484,8 @@ bool narrow_kind(lowir::TypeKind type)
 // and other operations with implicit registers count as touching it.
 bool reads_or_writes(const Inst& inst, Reg r)
 {
+	if (inst.op == Op::Asm)
+		return ((inst.aux | inst.aux2) & reg_bit(r)) != 0;
 	switch (inst.op)
 	{
 	case Op::Mov:
@@ -651,6 +653,8 @@ bool reads_destination(const Inst& inst)
 // operand, or a destination it also reads).
 bool reads_reg(const Inst& inst, Reg r)
 {
+	if (inst.op == Op::Asm)
+		return (inst.aux & reg_bit(r)) != 0;
 	for (unsigned k = 0; k < inst.nops; ++k)
 	{
 		const Operand& op = inst.ops[k];

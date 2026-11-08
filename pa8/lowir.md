@@ -2143,3 +2143,10 @@ coordinates and display names do not identify scopes. Optimizers may retain
 scope origins after removing their function, and inlined instructions use the
 caller's scope. Native DWARF uses the recorded transitions to emit possibly
 discontiguous lexical block ranges and nests source locals under their block.
+
+## Optional assembly extension
+
+Optional PA36 adds `assembly` template definitions and `asm` invocations with
+typed arguments, constraints, outputs and effects. See
+[the assembly boundary](../pa36/assembly.md). These forms add no required PA8
+work and do not change PA29's bounded GNU compatibility contract.

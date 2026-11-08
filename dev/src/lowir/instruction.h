@@ -117,6 +117,7 @@ struct DebugLocation
 //                     SignatureId when IF_SIGNATURE; type = result type
 //   Exception,
 //   ExceptionSelector (no operands)
+//   Asm               immediate = assembly template id; extra: invocation arguments
 //   Store             ops[0] value, ops[1] storage; IF_VOLATILE
 //   AtomicStore       ops[0] value, ops[1] pointer; order
 //   AtomicThreadFence,

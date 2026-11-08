@@ -3,6 +3,8 @@
 // lowering emits.
 
 #include "sema/analyzer.h"
+#include "asm/packet.h"
+#include "asm/parser.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -27,6 +29,15 @@ bool LiteralText(const TokenSpelling& spelling, std::string& out)
 	return true;
 }
 
+template<typename T>
+assembly::View<T> preserve(Arena& arena, const std::vector<T>& values)
+{
+	assembly::View<T> view;
+	view.size = static_cast<uint32_t>(values.size());
+	view.data = values.empty() ? nullptr : arena.copy_array(values.data(), values.size());
+	return view;
+}
+
 } // namespace
 
 void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
@@ -40,6 +51,11 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 			expression(operand.expression, scope);
 		for (const syntax::AsmOperand& operand : stmt.inputs)
 			expression(operand.expression, scope);
+		return;
+	}
+	if (full_asm_)
+	{
+		full_asm_statement(stmt, scope);
 		return;
 	}
 	std::string text;
@@ -165,6 +181,7 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 	std::vector<AsmInstruction> instructions;
 	std::string message;
 	AsmProgram* program = static_cast<AsmProgram*>(arena_.allocate(sizeof(AsmProgram), alignof(AsmProgram)));
+	program->full = nullptr;
 	program->unlifted = nullptr;
 	if (!LiftAsmTemplate(text, operands.data(), count, instructions, message))
 	{
@@ -211,6 +228,82 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 		std::string name;
 		program->barrier = program->barrier || (LiteralText(clobber, name) && name == "memory");
 	}
+	stmt.program = program;
+}
+
+void Analyzer::full_asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
+{
+	std::string text;
+	if (!LiteralText(stmt.text, text))
+		error(stmt.location, "assembly template requires an ordinary string literal");
+	std::vector<assembly::GnuOperand> operands;
+	const uint32_t count = stmt.outputs.size + stmt.inputs.size;
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		const bool output = i < stmt.outputs.size;
+		const syntax::AsmOperand& source = output ? stmt.outputs[i] : stmt.inputs[i - stmt.outputs.size];
+		assembly::GnuOperand operand;
+		operand.output = output;
+		if (source.name != nullptr)
+			operand.name = source.name->spelling;
+		for (const assembly::GnuOperand& prior : operands)
+			if (!operand.name.empty() && prior.name == operand.name)
+				error(source.location, "duplicate named assembly operand");
+		if (!LiteralText(source.constraint, operand.constraint))
+			error(source.location, "assembly constraint requires an ordinary string literal");
+		const ExprFacts* facts = typed(*source.expression, scope);
+		if (facts == nullptr)
+			return;
+		if (output && (!modifiable_lvalue(facts) || facts->category != ValueCategory::LValue))
+			error(source.location, "assembly output requires a modifiable lvalue");
+		const Type* type = facts->type->unqualified;
+		IntegralKind flag_kind;
+		if (operand.constraint.compare(0, 4, "=@cc") == 0 && !IntegralKindOf(type, flag_kind))
+			error(source.location, "assembly flag output requires an integer type");
+		if (!IsScalar(type) && type->kind != TypeKind::Vector)
+			error(source.location, "this assembly operand requires a scalar or vector type");
+		uint64_t bytes = 0, alignment = 0;
+		if (!type_size(type, bytes, alignment, source.location) || bytes > UINT16_MAX / 8)
+			error(source.location, "assembly operand has incomplete or unsupported size");
+		operand.bits = static_cast<unsigned>(bytes * 8);
+		operand.is_volatile = output && (facts->type->cv & kVolatile) != 0;
+		if (!output)
+			convert_operand(*source.expression, type);
+		operands.push_back(operand);
+	}
+	std::vector<std::string> clobbers;
+	for (const TokenSpelling& spelling : stmt.clobbers)
+	{
+		std::string name;
+		if (!LiteralText(spelling, name))
+			error(stmt.location, "assembly clobber requires an ordinary string literal");
+		clobbers.push_back(name);
+	}
+	assembly::PacketBuilder built;
+	try
+	{
+		built = assembly::gnu_packet(text, operands, clobbers, stmt.is_volatile, !stmt.is_extended);
+	}
+	catch (const assembly::AssemblyError& failure)
+	{
+		error(stmt.location, copy_label(failure.message.data(), failure.message.size()));
+	}
+	assembly::Packet* packet = arena_.allocate_array<assembly::Packet>(1);
+	packet->definition = built.definition;
+	if (stmt.is_inline)
+		packet->definition.properties |= asm_model::AP_INLINE_COST_SMALL;
+	packet->text = arena_.copy_string(built.text.data(), built.text.size());
+	packet->text_size = static_cast<uint32_t>(built.text.size());
+	packet->operands = preserve(arena_, built.operands);
+	packet->alternatives = preserve(arena_, built.alternatives);
+	packet->groups = preserve(arena_, built.groups);
+	packet->immediates = preserve(arena_, built.immediates);
+	packet->pieces = preserve(arena_, built.pieces);
+	packet->registers = preserve(arena_, built.registers);
+	packet->clobbers = preserve(arena_, built.clobbers);
+	AsmProgram* program = arena_.allocate_array<AsmProgram>(1);
+	*program = AsmProgram();
+	program->full = packet;
 	stmt.program = program;
 }
 

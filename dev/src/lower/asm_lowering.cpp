@@ -340,6 +340,8 @@ void FunctionLowering::asm_statement(const syntax::AsmStmt& stmt)
 	const sema::AsmProgram* program = stmt.program;
 	if (program == nullptr)
 		throw LoweringError(stmt.location, "an asm statement the analysis did not lift");
+	if (program->full != nullptr)
+		return full_asm_statement(stmt);
 	if (program->unlifted != nullptr)
 		throw LoweringError(stmt.location, program->unlifted);
 	AsmState state = AsmState();

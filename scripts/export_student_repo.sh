@@ -427,6 +427,8 @@ dev_support_files=(
   dev/src/abi/itanium/abi_mangle.h
   dev/src/ir_symbol_model.h
   dev/src/lowir_model.h
+  dev/src/asm_model.h
+  dev/src/x86_asm_model.h
   dev/src/mir_model.h
   dev/src/native/mir/registers.h
   dev/src/preprocess/tokens/DebugPPTokenStream.h

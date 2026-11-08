@@ -199,6 +199,7 @@ struct SourceOutputInvocation
 	// always preprocesses so; its object dialect is the object half's, see
 	// run_emit_lowir_mode). `-I`, `-D` and `-U` as the driver takes them.
 	bool hosted = false;
+	bool full_asm = false;
 	bool plain_char_unsigned = false;
 	bool popcnt = false;
 	bool strict_aliasing = true;
@@ -283,6 +284,11 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 			}
 			else
 				invocation.standard = args[i].substr(5);
+			continue;
+		}
+		if (args[i] == "--full-asm")
+		{
+			invocation.full_asm = true;
 			continue;
 		}
 		if (args[i] == "--hosted")
@@ -453,6 +459,8 @@ bool consume_dependency_option(const vector<string>& args, size_t& i)
 
 bool consume_toolchain_option(const vector<string>& args, size_t& i)
 {
+	if (args[i] == "--full-asm")
+		return true;
 	if (is_debug_info_flag(args[i]))
 	{
 		return true;
@@ -755,6 +763,7 @@ int run_emit_types_mode(vector<string> args)
 			{
 				sema::Analyzer analyzer(graph, unit.identifiers());
 				analyzer.set_hosted(options.hosted);
+				analyzer.set_full_asm(invocation.full_asm);
 				analyzer.set_cxx14(options.cplusplus != "201103L");
 				analyzer.set_cxx17(options.cplusplus == "201703L");
 				analyzer.set_source_positions(&unit.positions());
@@ -837,6 +846,7 @@ int run_emit_semantics_mode(vector<string> args)
 			{
 				sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
 				analyzer.set_hosted(options.hosted);
+				analyzer.set_full_asm(invocation.full_asm);
 				analyzer.set_cxx14(options.cplusplus != "201103L");
 				analyzer.set_cxx17(options.cplusplus == "201703L");
 				analyzer.set_source_positions(&unit.positions());
@@ -984,6 +994,7 @@ int run_emit_lowir_mode(vector<string> args)
 			graph.names.reserve(unit.counters().bindings);
 			sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
 			analyzer.set_hosted(options.hosted);
+			analyzer.set_full_asm(invocation.full_asm);
 			analyzer.set_cxx14(options.cplusplus != "201103L");
 			analyzer.set_cxx17(options.cplusplus == "201703L");
 			analyzer.set_source_positions(&unit.positions());
