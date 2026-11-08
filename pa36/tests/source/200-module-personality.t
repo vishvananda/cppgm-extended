@@ -2,14 +2,17 @@
 #define SYMBOL(name) "_" name
 #define RODATA ".section __TEXT,__const\n"
 #define PERSONALITY SYMBOL("assembly_personality")
+// Use Darwin's native pointer-width LSDA form for the host assembler.
+#define LSDA_ENCODING "0x10"
 #else
 #define SYMBOL(name) name
 #define RODATA ".section .rodata\n"
 #define PERSONALITY "assembly_personality_cell"
+#define LSDA_ENCODING "0x1b"
 asm(".data\n.balign 8\nassembly_personality_cell:\n.quad assembly_personality\n");
 #endif
 asm(RODATA ".globl " SYMBOL("assembly_exception_data") "\n" SYMBOL("assembly_exception_data") ":\n.byte 69,103,17,53\n");
 asm(".text\n.cfi_sections .eh_frame\n.globl " SYMBOL("assembly_personality_call") "\n"
     SYMBOL("assembly_personality_call") ":\n.cfi_startproc\n"
-    ".cfi_personality 0x9b," PERSONALITY "\n.cfi_lsda 0x1b," SYMBOL("assembly_exception_data") "\n"
+    ".cfi_personality 0x9b," PERSONALITY "\n.cfi_lsda " LSDA_ENCODING "," SYMBOL("assembly_exception_data") "\n"
     "sub $8,%rsp\n.cfi_adjust_cfa_offset 8\ncall *%rdi\nadd $8,%rsp\n.cfi_adjust_cfa_offset -8\nret\n.cfi_endproc\n");
