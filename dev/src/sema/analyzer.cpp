@@ -226,6 +226,7 @@ Scope* Analyzer::new_scope(ScopeKind kind, Scope* parent, Scope* print_parent, E
 	scope->lists = kind == ScopeKind::TemplateParameters ? 1 : 0;
 	scope->id = graph_.scopes++;
 	scope->parent = parent;
+	scope->has_parameter_packs = parent != nullptr && parent->has_parameter_packs;
 	scope->entity = entity;
 	scope->label = label;
 	if (kind == ScopeKind::Block && parent != nullptr)
@@ -1018,6 +1019,7 @@ void Analyzer::template_parameters(const syntax::TemplateParameterList& list, Sc
 		}
 		// 14.1p11: a parameter pack has no default argument.
 		const bool pack = TemplateParameterPack(*parameter);
+		scope->has_parameter_packs = scope->has_parameter_packs || pack;
 		if (pack && (parameter->default_type != nullptr || parameter->default_value != nullptr))
 			error(parameter->location, "a template parameter pack with a default argument");
 		TemplateParameterEntity* entity = new_entity<TemplateParameterEntity>(

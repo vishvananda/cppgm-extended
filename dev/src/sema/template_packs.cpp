@@ -231,6 +231,7 @@ uint32_t InstanceLevels(const Scope* scope)
 
 void Analyzer::bind_pack(Scope* frame, const TemplateParameterEntity* parameter, const Type* argument, int32_t element)
 {
+	frame->has_parameter_packs = true;
 	// A parameter pack's name bound to its argument pack as a BoundPack
 	// (whose elements sizeof... counts and a copy's expansions take,
 	// enumerable in the frame for FrameExpander, and which an expansion
@@ -812,6 +813,7 @@ Scope* Analyzer::function_pack_scope(Scope* parent, const syntax::ParameterClaus
 		{
 			Binding* binding = new_binding(
 				BindingKind::TypeAlias, pack.first, nullptr, types_.pack(type->params + position, pack.second));
+			scope->has_parameter_packs = true;
 			binding->hidden = true;
 			declare_in(scope, binding);
 		}

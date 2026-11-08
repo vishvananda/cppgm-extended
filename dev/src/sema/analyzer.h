@@ -514,7 +514,7 @@ private:
 	bool condition(const syntax::Condition& condition, Scope* scope);
 	void condition_specifiers(const syntax::Slice<syntax::DeclSpecifier>& specifiers);
 	void handlers(const syntax::Slice<syntax::Handler>& list, Scope* scope);
-	void expression(const syntax::Expr* expr, Scope* scope);
+	void expression(const syntax::Expr* expr, Scope* scope, bool expanded = false);
 	bool typed_initializer(VariableEntity* variable, const Type* type, const syntax::Initializer* initializer,
 		Scope* scope, uint32_t location);
 	void expression_walk(const syntax::Expr* expr, Scope* scope, bool unevaluated = false);

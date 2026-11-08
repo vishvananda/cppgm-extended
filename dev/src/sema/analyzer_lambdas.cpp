@@ -434,6 +434,8 @@ Scope* Analyzer::explicit_captures(LambdaFrame& frame, Scope* scope)
 			inner = new_scope(ScopeKind::Block, scope, nullptr, nullptr, nullptr);
 			inner->dumped = false;
 			frame.closure->scope->parent = inner;
+			frame.closure->scope->has_parameter_packs = frame.closure->scope->has_parameter_packs ||
+				inner->has_parameter_packs;
 		}
 	for (const syntax::LambdaCapture& capture : expr.captures)
 	{

@@ -88,6 +88,7 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 			const Identifier* name = id != nullptr ? id->last().identifier : nullptr;
 			Entity* parameter = new_entity<Entity>(EntityKind::Parameter, name, scope, type->params[i]);
 			Binding* binding = new_binding(BindingKind::Parameter, name, parameter, type->params[i]);
+			scope->has_parameter_packs = scope->has_parameter_packs || type->params[i]->kind == TypeKind::Expansion;
 			binding->dependent = all_dependent ||
 				(pattern != nullptr ? dependent_type(pattern->params[i])
 									: template_depth_ != 0 && dependent_type(type->params[i]));
@@ -208,7 +209,7 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 		for (const syntax::MemInitializer& initializer : body.ctor_initializer->initializers)
 		{
 			for (const syntax::Expr* argument : initializer.arguments)
-				expression(argument, scope);
+				expression(argument, scope, initializer.pack);
 			if (initializer.list != nullptr)
 				expression_walk(initializer.list, scope);
 		}
@@ -1512,7 +1513,7 @@ void Analyzer::value_initialized_class(const Type* type)
 		define_implicit_default_constructor(static_cast<ClassEntity*>(type->entity));
 }
 
-void Analyzer::expression(const syntax::Expr* expr, Scope* scope)
+void Analyzer::expression(const syntax::Expr* expr, Scope* scope, bool expanded)
 {
 	if (expr == nullptr)
 		return;
@@ -1531,7 +1532,8 @@ void Analyzer::expression(const syntax::Expr* expr, Scope* scope)
 	// An instantiation's cloner can replace a singleton pack by one
 	// element. Validate the complete expression before that replacement
 	// so a missing expansion cannot become an ordinary call (14.5.3p5).
-	if (template_depth_ != 0 && semantic() && expression_packs(*expr, scope) != nullptr)
+	if (!expanded && template_depth_ != 0 && semantic() && scope->has_parameter_packs &&
+		expression_packs(*expr, scope) != nullptr)
 		error(expr->location, "an expression names an unexpanded parameter pack");
 	expression_walk(expr, scope);
 }

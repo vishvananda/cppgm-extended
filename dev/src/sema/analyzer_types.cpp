@@ -1531,6 +1531,7 @@ void Analyzer::declare_parameter(
 		: nullptr;
 	Entity* parameter = new_entity<Entity>(EntityKind::Parameter, name, prototype, type);
 	Binding* binding = new_binding(BindingKind::Parameter, name, parameter, type);
+	prototype->has_parameter_packs = prototype->has_parameter_packs || type->kind == TypeKind::Expansion;
 	print_in(prototype, binding);
 	if (name != nullptr)
 		declare_in(prototype, binding);

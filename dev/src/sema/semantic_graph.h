@@ -123,7 +123,10 @@ struct Scope
 	ScopeKind kind;
 	// Printed by the dump (the parameter scope of a template
 	// template-parameter is not).
-	bool dumped;
+	bool dumped : 1;
+	// A lexical parameter pack is visible here. Inherited when a child
+	// scope is made; declarations and pack frames set it once.
+	bool has_parameter_packs : 1;
 	// The outermost block of a function body, handler or substatement: it
 	// cannot redeclare the enclosing construct's names (3.3.3p2, 3.3.3p4).
 	// A declarator's function parameter scope (Function, no entity): one
