@@ -198,6 +198,14 @@ void Assembler::op_plus(uint8_t prefix, bool rex_w, uint8_t opcode, Reg reg)
 	byte(static_cast<uint8_t>(opcode + (reg & 7)));
 }
 
+void Assembler::bswap(Reg reg, bool wide)
+{
+	if (wide || (reg & 8))
+		byte(static_cast<uint8_t>(0x40 | (wide ? 8 : 0) | ((reg & 8) ? 1 : 0)));
+	byte(0x0f);
+	byte(static_cast<uint8_t>(0xc8 + (reg & 7)));
+}
+
 void Assembler::mov_rr(Reg dst, Reg src)
 {
 	if (dst != src)

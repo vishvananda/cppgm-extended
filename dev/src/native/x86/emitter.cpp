@@ -1210,13 +1210,7 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 		if (register_bytes(inst.type) == 2)
 			asm_.shift_ri(0, rm(a), 8, 2); // rol r16, 8
 		else
-		{
-			const bool wide = register_bytes(inst.type) == 8;
-			if (wide || (a.reg & 8))
-				asm_.byte(static_cast<uint8_t>(0x40 | (wide ? 8 : 0) | ((a.reg & 8) ? 1 : 0)));
-			asm_.byte(0x0f);
-			asm_.byte(static_cast<uint8_t>(0xc8 + (a.reg & 7)));
-		}
+			asm_.bswap(a.reg, register_bytes(inst.type) == 8);
 		break;
 	case Op::Popcnt:
 		asm_.op(0xf3, register_bytes(inst.type) == 8, 0x0fb8, 2, a.reg, rm(b));

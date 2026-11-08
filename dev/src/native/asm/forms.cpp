@@ -42,7 +42,8 @@ const Form* assembly_form(const std::string& mnemonic, uint16_t& suffix)
 	const Form* form = find(mnemonic.substr(0, mnemonic.size() - 1));
 	return form != nullptr && form->encoding >= E::Move &&
 			(form->encoding <= E::Alu || (form->encoding >= E::Unary && form->encoding <= E::Atomic) ||
-				form->encoding == E::Control)
+				form->encoding == E::Control ||
+				(form->encoding >= E::ConditionMove && form->encoding <= E::DoubleShift))
 		? form
 		: nullptr;
 }

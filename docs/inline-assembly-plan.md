@@ -467,3 +467,36 @@ directives/macros/repetition and unwind/CFI; wider register/ISA encoding and its
 pinned coverage inventory; original Rust source/body transport, backend lock
 and clean-install qualification. Raw functions do not establish those broader
 capabilities. Godot remains paused until assembly support is finished.
+
+
+## 2026-11-08 checkpoint: conditional, bit and extension forms
+
+Added conditional moves and byte results, bit scans/counts, byte reversal,
+bit tests/updates, double shifts, wide compare/exchange and mixed-width
+sign/zero-extension moves. Their widths, prefixes and operand roles are explicit
+architectural facts. BSWAP shares the existing native encoder primitive.
+The corpus covers 19033 Intel and 19033 AT&T cases against LLVM 22, with zero
+mismatches after 112 legal prefix-order variants. Native observers guard optional
+CPU instructions before execution and exercise flags, memory boundaries, shifts,
+high-byte views and wide atomic success/failure. Invalid width/prefix/REX forms
+have normal rejection checks. The subset has 88 optional cases.
+
+All 88 pass at O0/O2/O3 using host-built and self-built compilers, with GCC and
+Clang observers. The strict report remains 8099/8099; debug information,
+self-host PA5, inception compiler/object equality, PA35 smoke, harness and audits
+pass. A larger literal opcode table exposed a false positive in the header-body
+heuristic. The audit now excludes literal constant-array initializer rows from
+that heuristic, while retaining file/function limits and keeping calls, lambdas
+and side effects visible. Focused positive/negative audit controls pass; the
+shipped header passes the export-style audit without warnings.
+
+Frozen compile instruction work versus the pre-assembly baseline changes by
++0.00655% at O0 and +0.02492% at O3, with byte-identical output objects. The
+immutable compiler, hashes and observations are retained privately. Fresh
+student export and CI qualification follow this checkpoint.
+
+Module-ordering evidence: a GCC source probe keeps a later namespace macro
+definition after an earlier function using it; Clang's integrated path behaves
+differently. Preserve explicit module ordering/environment epochs rather than
+hoisting all global assembly into every function's environment. This work,
+directives/CFI, wider ISA/register support and Rust qualification remain open.

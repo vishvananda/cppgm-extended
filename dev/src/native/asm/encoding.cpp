@@ -2,6 +2,8 @@
 
 #include "native/asm/forms.h"
 #include "native/asm/control_forms.h"
+#include "native/asm/bit_forms.h"
+#include "native/asm/extend_forms.h"
 #include "native/asm/integer_forms.h"
 #include "native/asm/operands.h"
 #include "native/backend_error.h"
@@ -154,6 +156,16 @@ void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 	if (form->encoding == Encoding::Control)
 	{
 		encode_control_form(out, inst, *form, suffix);
+		return;
+	}
+	if (form->encoding == Encoding::ExtendMove)
+	{
+		encode_extend_form(out, inst, *form);
+		return;
+	}
+	if (form->encoding >= Encoding::ConditionMove)
+	{
+		encode_bit_form(out, inst, *form, suffix);
 		return;
 	}
 	if (form->encoding >= Encoding::Unary && form->encoding != Encoding::String)

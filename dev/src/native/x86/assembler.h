@@ -157,6 +157,7 @@ public:
 	void push(Reg reg);
 	void pop(Reg reg);
 	void ret() { byte(0xc3); }
+	void bswap(Reg reg, bool wide);
 	// SSE scalar: prefix F3 (ss) or F2 (sd), 0F op.
 	void sse(uint8_t prefix, uint8_t opcode, Reg dst, const RM& src, bool rex_w = false);
 	void sse_store(uint8_t prefix, uint8_t opcode, const RM& dst, Reg src);
