@@ -568,6 +568,9 @@ AbiNode CaseReader::read_expression_definition(std::uint32_t line, const FactWor
 		const AbiNode operand = reference(operands[0], ABI_FACT_DEFINITION_EXPRESSION, "expression");
 		return graph_.operation(abi_pack_operation_code('s', 'p'), &operand, 1);
 	}
+	case ABI_FACT_EXPRESSION_CAPTURED_PACK_SIZE:
+		argument_list(operands, n, scratch_);
+		return graph_.operation(abi_pack_operation_code('s', 'P'), scratch_.data(), scratch_.size());
 	case ABI_FACT_EXPRESSION_ENTITY_REFERENCE:
 		if (n != 1)
 			break;

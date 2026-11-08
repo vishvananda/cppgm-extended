@@ -753,16 +753,17 @@ enum AbiFactExpressionForm : std::uint8_t
 	ABI_FACT_EXPRESSION_UNARY,
 	ABI_FACT_EXPRESSION_BINARY,
 	ABI_FACT_EXPRESSION_CONDITIONAL,
-	ABI_FACT_EXPRESSION_CALL
+	ABI_FACT_EXPRESSION_CALL,
+	ABI_FACT_EXPRESSION_CAPTURED_PACK_SIZE
 };
 
-const unsigned ABI_FACT_EXPRESSION_COUNT = ABI_FACT_EXPRESSION_CALL + 1;
+const unsigned ABI_FACT_EXPRESSION_COUNT = ABI_FACT_EXPRESSION_CAPTURED_PACK_SIZE + 1;
 
 inline const char* spelling(AbiFactExpressionForm value)
 {
 	static const char* const kWords[ABI_FACT_EXPRESSION_COUNT] = { "template-param", "function-param", "literal",
 		"sizeof-type", "pack", "entity-reference", "member", "source-name", "template-id", "type-trait", "cast",
-		"object-member", "unary", "binary", "conditional", "call" };
+		"object-member", "unary", "binary", "conditional", "call", "sizeof-captured-pack" };
 	return kWords[value];
 }
 

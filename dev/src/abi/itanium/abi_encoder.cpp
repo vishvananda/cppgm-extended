@@ -778,6 +778,15 @@ void AbiEncoder::encode_expression(AbiNode expression)
 	case ABI_NODE_OPERATION:
 		put(static_cast<char>(data.code >> 8));
 		put(static_cast<char>(data.code & 0xff));
+		// A captured alias pack's sizeof... is sP <template-arg>* E,
+		// rather than sZ of the original parameter or expression operands.
+		if (data.code == abi_pack_operation_code('s', 'P'))
+		{
+			for (std::uint32_t i = 0; i < data.list_size; ++i)
+				encode_template_arg(items[i]);
+			put('E');
+			return;
+		}
 		if ((data.flags & ABI_FLAG_PREFIX) != 0)
 			put('_');
 		for (std::uint32_t i = 0; i < data.list_size; ++i)

@@ -171,6 +171,14 @@ qualified dependent name, including a member template's argument list. Use
 `yes` for a written qualifier level closed by `E`; use `no` for an unresolved
 type owner such as `T_`. A qualified call wraps this expression in `call`.
 
+`let-expr <id> sizeof-captured-pack [<argument-ref>...]` describes `sizeof...`
+of a template argument pack captured by alias substitution (Itanium 5.1.6).
+Its arguments are template-argument facts, including types, values and residual
+expansions; the list may be empty. Encode it as `sP <template-arg>* E`, without
+an enclosing argument-pack `J ... E`. This is distinct from `unary sZ` of an
+original template or function parameter pack, and from the `pack` expression
+form that expands an expression with `sp`.
+
 - `let-type <id> ...`: a type fact
 - `let-arg <id> ...`: a template-argument fact
 - `let-expr <id> ...`: a dependent-expression fact

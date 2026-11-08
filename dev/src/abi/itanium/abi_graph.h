@@ -84,7 +84,8 @@ enum AbiNodeKind : std::uint8_t
 
 	// Expressions.
 	ABI_NODE_FUNCTION_PARAM,    // a = index, b = level (fL<b-1>p), flags = THIS (fpT)
-	ABI_NODE_OPERATION,         // code = packed operation, list = operands, flags = PREFIX (pp_, mm_)
+	ABI_NODE_OPERATION,         // code = packed operation, list = operands (template args for sP),
+								//   flags = PREFIX (pp_, mm_)
 	ABI_NODE_CALL,              // list = callee, arguments; flags = PARENTHESIZED (cp: a parenthesized
 								//   <base-unresolved-name> callee)
 	ABI_NODE_CAST,              // code = packed cast operation, a = type, b = operand
