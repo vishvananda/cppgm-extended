@@ -84,7 +84,7 @@ public:
 	void emit_assembly(const lowir::Instruction& inst);
 	Operand assembly_input(const lowir::AssemblyOperand& operand, lowir::Value value, Reg reg, bool memory);
 	Operand wide_assembly_input(const lowir::AssemblyOperand& operand, lowir::Value value);
-	void assembly_transfer(Reg reg, const Operand& memory, bool store);
+	void assembly_transfer(Reg reg, const Operand& memory, bool store, unsigned bytes);
 	mutable std::map<uint32_t, std::shared_ptr<const AssemblyPlan>> assembly_plans_;
 	AssemblyEnvironment& assembly_environment() const;
 	mutable std::unique_ptr<AssemblyEnvironment> assembly_environment_;

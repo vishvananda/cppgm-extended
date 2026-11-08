@@ -96,8 +96,8 @@ insertion/extraction, broadcasts, mask extraction and fused arithmetic. Preserve
 scalar memory widths and merged upper lanes. Explicit XMM/YMM views must agree
 with the form; reject mixed widths, oversized control bytes and legacy prefixes
 before VEX. Support `vzeroupper` and `vzeroall`. Native observers check CPU support
-before executing feature-dependent forms. Use `obj<32xalign>` storage for 256-bit operand payloads and YMM register
-alternatives. Capture every input byte before setting assembly registers and
+before executing feature-dependent forms. Use `obj<32xalign>` or `obj<64xalign>` storage for 256/512-bit operand payloads
+and YMM/ZMM register alternatives in registers 0..15. Capture every input byte before setting assembly registers and
 every output byte before assigning output places. Preserve XMM/YMM aliases,
 ties, early writes, volatile places and over-aligned local storage. This adds
 assembly transfers, not a general wide-vector call ABI.
@@ -126,8 +126,9 @@ compressed displacement scaling. Several families have no mask encoding;
 reject unsupported decorations rather than ignoring them. `kmovb/w/d/q`
 transports mask values between mask registers, matching memory and GPR views.
 Static rounding, suppression modifiers, mask-valued comparisons and additional
-ISA forms remain further goals. Literal extended views do not yet establish
-extended-register or 512-bit typed operand bindings.
+ISA forms remain further goals. Declared upper-vector and opmask clobbers are caller-saved and need no ordinary
+allocator spill. Typed alternatives above vector register 15 and typed opmask
+operands remain further goals.
 
 LowIR selects the initial dialect; the GNU source adapter starts in AT&T.
 Honor `.intel_syntax` and `.att_syntax` with `prefix`/`noprefix` register modes.

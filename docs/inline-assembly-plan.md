@@ -726,3 +726,23 @@ on ordinary arithmetic. The existing streaming inspection control still passes.
 No aggregate qualification repeated. 512-bit/extended typed bindings, further
 register classes, rounding/SAE, mask-result instructions, broader directives
 and original Rust integration remain open. Godot stays paused.
+
+## 2026-11-08 checkpoint: 512-bit operand payloads
+
+Sized-object assembly transfers now preserve 32- or 64-byte payloads using
+YMM/ZMM alternatives in registers0..15. Full value capture and alias units reuse
+the existing narrow register allocator; the emitter owns the typed VEX/EVEX
+transfers. No new ordinary LowIR type, wide call ABI or MIR register set was
+introduced. Upper-vector and opmask clobbers are accepted: those caller-saved
+banks have no ordinary allocated values, so they require no invented spill.
+
+Focused O0/O2/O3 source and LowIR checks pass with GCC/Clang observers for
+explicit storage, object values, ties, early writes, aliased outputs, aligned
+locals and fixed upper ZMM/opmask clobbers. The 512-bit observer bodies remain
+CPU-skipped on this AVX2 host while requested emitted instructions are inspected.
+The existing 256-bit operand case still executes and passes after generalizing
+transfers. Runtime AVX-512 coverage requires a capable host.
+
+Aggregate qualification remains deferred. Typed upper-register alternatives,
+mask operands, x87/MMX and other forms/directives, rounding/SAE and original
+Rust source/backend integration remain unfinished.
