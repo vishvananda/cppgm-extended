@@ -905,8 +905,8 @@ private:
 	void expanded_argument(const syntax::TemplateArgument& argument, Scope* scope, uint32_t location, TypeList& out);
 	const Type* pack_expansion_type(const Type* pattern, uint32_t location);
 	template<typename Deduce>
-	bool deduce_elements(
-		const Type* pattern, uint32_t count, bool counted, uint32_t depth, TypeList& arguments, Deduce deduce);
+	bool deduce_elements(const Type* pattern, uint32_t count, bool counted, uint32_t depth, TypeList& arguments,
+		Deduce deduce, const TypeList* prefixes = nullptr);
 	bool deduce_pack(const Type* p, const Type* a, uint32_t depth, TypeList& arguments);
 	bool deduce_list(const Type* const* p, uint32_t count, const Type* const* a, uint32_t a_count, uint32_t depth,
 		TypeList& arguments);
@@ -916,7 +916,7 @@ private:
 	Scope* function_pack_scope(Scope* parent, const syntax::ParameterClause& clause,
 		const std::pair<const Identifier*, uint32_t>* packs, size_t count, const Type* type);
 	bool deduce_call_pack(const Type* pattern, const syntax::Slice<syntax::Expr*>& call_arguments, uint32_t first,
-		uint32_t depth, TypeList& arguments);
+		uint32_t depth, TypeList& arguments, const TypeList* prefixes = nullptr);
 	void bind_pack(Scope* frame, const TemplateParameterEntity* parameter, const Type* argument, int32_t element = -1);
 
 	// ------------------------------------------- function templates

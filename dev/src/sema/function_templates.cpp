@@ -1019,6 +1019,30 @@ FunctionEntity* Analyzer::deduce_for_call(
 			arguments[i] = types_.pack(elements.data(), static_cast<uint32_t>(elements.size()));
 		}
 	}
+	bool zipped_prefix = false;
+	TypeList zipped_arguments;
+	if (!prefixes.empty() && type->param_count != 0 && type->params[type->param_count - 1]->kind == TypeKind::Expansion)
+	{
+		PackList packs;
+		unexpanded_packs(type->params[type->param_count - 1]->element, depth, packs);
+		bool fixed = false, unknown = false;
+		for (uint32_t index : packs)
+		{
+			fixed = fixed || prefixes[index] != nullptr;
+			unknown = unknown || arguments[index] == nullptr;
+		}
+		zipped_prefix = fixed && unknown;
+		if (zipped_prefix)
+		{
+			// A<T,U>... with an explicit T prefix and unknown U cannot
+			// substitute T as a whole argument pack. Match the fixed prefix
+			// at each position while deducing the other packs in lockstep.
+			zipped_arguments = arguments;
+			for (uint32_t i = 0; i < prefixes.size(); ++i)
+				if (prefixes[i] != nullptr)
+					zipped_arguments[i] = nullptr;
+		}
+	}
 	// Parameters whose types involve explicitly specified arguments only
 	// (14.8.1p6) are substituted first, so their arguments convert (an
 	// expansion of a pack given explicitly expands).
@@ -1033,7 +1057,16 @@ FunctionEntity* Analyzer::deduce_for_call(
 		const Substitution substitution = Substitution{ depth, arguments.data(), head->count, nullptr };
 		const bool result = primary->templ->trailing_result || substitute(type->element, substitution) != nullptr;
 		if (result)
-			substitute_list(type->params, type->param_count, substitution, parameters);
+		{
+			if (!zipped_prefix)
+				substitute_list(type->params, type->param_count, substitution, parameters);
+			else
+			{
+				substitute_list(type->params, type->param_count - 1, substitution, parameters);
+				const Substitution zipped = Substitution{ depth, zipped_arguments.data(), head->count, nullptr };
+				substitute_list(type->params + type->param_count - 1, 1, zipped, parameters);
+			}
+		}
 		substitution_context_ = saved;
 		if (!result || soft.failed() || AnyNull(parameters))
 			return nullptr;
@@ -1085,7 +1118,8 @@ FunctionEntity* Analyzer::deduce_for_call(
 			return nullptr;
 	}
 	if (trailing && call_arguments.size > fixed &&
-		!deduce_call_pack(parameters[total - 1]->element->canonical, call_arguments, fixed, depth, arguments))
+		!deduce_call_pack(parameters[total - 1]->element->canonical, call_arguments, fixed, depth, arguments,
+			zipped_prefix ? &prefixes : nullptr))
 		return nullptr;
 	for (uint32_t index = 0; index < prefixes.size(); ++index)
 	{

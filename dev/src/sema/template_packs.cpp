@@ -652,8 +652,8 @@ const Type* Analyzer::pack_expansion_type(const Type* pattern, uint32_t location
 }
 
 template<typename Deduce>
-bool Analyzer::deduce_elements(
-	const Type* pattern, uint32_t count, bool counted, uint32_t depth, TypeList& arguments, Deduce deduce)
+bool Analyzer::deduce_elements(const Type* pattern, uint32_t count, bool counted, uint32_t depth, TypeList& arguments,
+	Deduce deduce, const TypeList* prefixes)
 {
 	// A pack expansion's pattern against each of `count` arguments
 	// (14.8.2.1p1, 14.8.2.5p8): each deduces an element of each pack the
@@ -670,6 +670,10 @@ bool Analyzer::deduce_elements(
 		return true;
 	if (!bound.empty() && counted && BoundLength(bound) != static_cast<int32_t>(count))
 		return false;
+	for (uint32_t index : packs)
+		if (prefixes != nullptr && index < prefixes->size() && (*prefixes)[index] != nullptr &&
+			(*prefixes)[index]->param_count > count)
+			return false;
 	std::vector<TypeList> collected(packs.size());
 	TypeList trial;
 	const int32_t saved_element = deduced_element_;
@@ -679,8 +683,11 @@ bool Analyzer::deduce_elements(
 		for (uint32_t index : packs)
 		{
 			const Type* known = arguments[index];
-			trial[index] = known != nullptr && known->kind == TypeKind::Pack && j < known->param_count
-				? known->params[j]
+			const Type* prefix = prefixes != nullptr && index < prefixes->size() ? (*prefixes)[index] : nullptr;
+			const uint32_t fixed = prefix != nullptr ? prefix->param_count : 0;
+			trial[index] = j < fixed ? prefix->params[j]
+				: known != nullptr && known->kind == TypeKind::Pack && j - fixed < known->param_count
+				? known->params[j - fixed]
 				: nullptr;
 		}
 		deduced_element_ = bound.empty() ? -1 : static_cast<int32_t>(j);
@@ -692,7 +699,9 @@ bool Analyzer::deduce_elements(
 		{
 			if (trial[packs[k]] == nullptr)
 				return false;
-			collected[k].push_back(trial[packs[k]]->canonical);
+			const Type* prefix = prefixes != nullptr && packs[k] < prefixes->size() ? (*prefixes)[packs[k]] : nullptr;
+			if (prefix == nullptr || j >= prefix->param_count)
+				collected[k].push_back(trial[packs[k]]->canonical);
 		}
 		for (uint32_t i = 0; i < arguments.size(); ++i)
 		{
@@ -765,13 +774,28 @@ bool Analyzer::deduce_pack_types(
 }
 
 bool Analyzer::deduce_call_pack(const Type* pattern, const syntax::Slice<syntax::Expr*>& call_arguments, uint32_t first,
-	uint32_t depth, TypeList& arguments)
+	uint32_t depth, TypeList& arguments, const TypeList* prefixes)
 {
 	// 14.8.2.1p1: a function parameter pack ending the parameter list
 	// against each remaining argument (a braced-init-list deduces nothing,
 	// so its pack elements stay undeduced).
 	return deduce_elements(
-		pattern, call_arguments.size - first, true, depth, arguments, [&](uint32_t j, TypeList& trial) {
+		pattern, call_arguments.size - first, true, depth, arguments,
+		[&](uint32_t j, TypeList& trial) {
+			const Type* parameter = pattern;
+			if (prefixes != nullptr)
+			{
+				// Only the explicitly supplied elements become fixed types.
+				// Other packs still deduce their corresponding element here.
+				TypeList fixed(arguments.size(), nullptr);
+				for (uint32_t i = 0; i < prefixes->size(); ++i)
+					if ((*prefixes)[i] != nullptr && j < (*prefixes)[i]->param_count)
+						fixed[i] = (*prefixes)[i]->params[j];
+				parameter = substitute(
+					pattern, Substitution{ depth, fixed.data(), static_cast<uint32_t>(fixed.size()) });
+				if (parameter == nullptr)
+					return false;
+			}
 			const syntax::Expr* argument = call_arguments[first + j];
 			if (argument->kind == syntax::ExprKind::BracedInit)
 				return true;
@@ -780,11 +804,12 @@ bool Analyzer::deduce_call_pack(const Type* pattern, const syntax::Slice<syntax:
 				return false;
 			if ((facts->flags & kOverloadSet) != 0)
 			{
-				deduce_overloaded(pattern, facts->functions, depth, trial);
+				deduce_overloaded(parameter, facts->functions, depth, trial);
 				return true;
 			}
-			return facts->type != nullptr && deduce_argument(pattern, facts->type, facts->category, depth, trial);
-		});
+			return facts->type != nullptr && deduce_argument(parameter, facts->type, facts->category, depth, trial);
+		},
+		prefixes);
 }
 
 Scope* Analyzer::function_pack_scope(Scope* parent, const syntax::ParameterClause& clause,

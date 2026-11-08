@@ -371,10 +371,10 @@ bool Parser::parse_declarator_suffixes(DeclaratorMode mode, Declarator* declarat
 		if (named && suffixes.size() == 0)
 			function_scope_ = parameter_scope_;
 		ListFrame<FunctionQualifier> qualifiers(qualifiers_);
-		// After a qualified declarator-id, its exception-specification and
-		// trailing return type see the class's or namespace's names, as its
-		// parameters do (3.4.3p3).
-		Scope* outer = member_of != nullptr && suffixes.size() == 0 ? scopes_.enter(parameter_scope_) : nullptr;
+		// 3.3.3: parameter names remain in scope in exception specifications
+		// and trailing returns. Qualified declarations also retain the
+		// parameter scope's member lookup context (3.4.3p3).
+		Scope* outer = scopes_.enter(parameter_scope_);
 		const bool qualified = parse_function_qualifiers(
 			qualifiers, mode == DeclaratorMode::Named ? &declarator->attributes : nullptr);
 		if (outer != nullptr)
