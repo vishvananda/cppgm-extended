@@ -1,0 +1,98 @@
+LLVM/Clang 22.1.2 correctness and performance campaign
+===================================================
+
+Compiler worktree: /mnt/vizier/cppgm-llvm
+Branch: compat/llvm
+Accepted starting point: 180d8252e4f48656c7c5f955547ebcd5f2c9ea81
+This is the committed compat/godot head, containing the integrated assembly
+work and the C++17/Godot repairs. The originating worktrees remain independent.
+
+Local native compiler: Ubuntu clang 22.1.2 (1ubuntu1), x86_64-pc-linux-gnu.
+Installed source package: llvm-toolchain-22, version 1:22.1.2-1ubuntu1.
+Use that exact Ubuntu source package, including its shipped patches, for
+both native and cppgm builds. Retain source descriptor and archive hashes.
+Evidence, third-party sources and build outputs live outside this checkout:
+ /mnt/vizier/cppgm-llvm-evidence/
+
+1. Compile LLVM and Clang with cppgm.
+   - Declare one reproducible Release/C++17 Linux x86-64 build configuration:
+     LLVM + Clang, X86 backend, ordinary compiler tools, no optional test,
+     example, documentation or benchmark builds. Keep the source unmodified.
+   - Configure/build the native reference with installed Clang 22.1.2 first;
+     retain CMake caches, compile commands, generated inputs and tool identities.
+   - Build the same configuration with cppgm as the C++ compiler. Native C,
+     assembly, generation/build tools and linker roles must be explicit.
+     Bootstrap tooling is a staging aid, not a completed cppgm compilation.
+   - Group failures by semantic/driver/backend ownership. Reduce each real
+     gap to a required regression in the earliest owning PA and feature cluster;
+     read that handout before modifying behavior. Add current CWG decision texts
+     to doc/ when implementing a decision not already retained there.
+   - Fix reusable typed compiler logic; do not special-case LLVM source paths,
+     fake feature probes, delegate C++ translation units or hide failed inputs.
+   - Validate grouped fixes together: owning suites, strict full report, debug
+     info, self-host through PA5, architecture/file/placement/format audits,
+     inception when affected, and optimizer/backend/release gates as applicable.
+   - Run the normal accepted-parent frozen/self compile performance gate for
+     compiler changes. Freeze binaries and inputs and retain all observations.
+
+2. Compare LLVM compilation performance.
+   - Once the same target set builds correctly with both compilers, freeze the
+     source, headers, generated inputs, build configuration and tool binaries.
+   - Use fresh equivalent build directories and identical workers/resources.
+     Record both end-to-end build time and isolated C++ compilation CPU time;
+     keep generation, C/assembly work and linking identifiable.
+   - Use the normal calibrated/paired method and available reliable counters;
+     retain every observation and included/excluded target, never count failure
+     as speed. Publish native Clang time / cppgm time, higher is better.
+
+3. Require byte-identical outputs compiling cppgm.
+   - Native reference means LLVM/Clang built from the same pinned source and
+     configuration with installed Clang. Compare it with cppgm-built Clang.
+     Retain the installed compiler separately as the original bootstrap seed.
+   - Freeze cppgm source/header inputs, C++ mode, optimization levels, target,
+     paths, resource directory, flags and build/version configuration.
+   - Compile every selected cppgm translation unit with both resulting Clang
+     binaries. Compare complete emitted object bytes, with no after-the-fact
+     stripping, output normalization or replacement of mismatching files.
+   - Diagnose metadata/configuration mismatches separately from generated-code
+     differences; correct actual compiler defects through the same PA/perf gates.
+     Validate the resulting cppgm builds with the normal course checks.
+
+4. Measure generated LLVM compiler performance.
+   - With output equality already established, freeze the two Clang binaries
+     and the same cppgm input set, and time compiling cppgm with each.
+   - Use paired blocks and calibration; record CPU, elapsed time, workers,
+     affinity/resources, exact processor, toolchain and input/binary hashes.
+   - Report native-built Clang time / cppgm-built Clang time, higher is better.
+     Keep this codegen/runtime result separate from step 2's LLVM build time.
+
+Integration findings, 2026-11-08:
+ - PR #117 was fast-forwarded into local and remote main at 67f175d75 on
+   explicit user instruction. Core tests, export, C++11, simdjson and Boost
+   passed; long public/index-cpp jobs were still running at that point.
+ - All nine baseline cppgm tools build with g++ 15.2.0. Immutable accepted-parent
+   binaries and all tracked dev source hashes are retained in compiler-parent/.
+ - Installed Ubuntu clang is 22.1.2 (1ubuntu1). Exact package source archives
+   were fetched from the official Ubuntu archive, checked against the source
+   descriptor's SHA256 values and unpacked with the Ubuntu patches applied.
+ - Native CMake configure passes and native LLVM qualification build is running.
+ - Direct cppgm link-mode configuration failed only because the course linker
+   cannot resolve host -lm. The C++ atomic probe itself compiles successfully.
+   CMAKE_USER_MAKE_RULES_OVERRIDE_CXX supplies explicit native link-only rules;
+   all C++ compilation remains cppgm. Both atomic probes then pass, with no
+   cached feature answers forced. Candidate CMake configuration now passes.
+ - Clang C probes exposed a local GCC-installation-selection warning under
+   -Werror (GCC 16 lacks installed C++ headers, GCC 15 has them). Final paired
+   configurations must specify GCC 15 explicitly for native C as already done
+   by clang++.cfg for native C++, and re-run affected probes. Initial builds
+   are qualification runs, not benchmark measurements.
+
+ - First candidate build's standard-header failures reproduced identically
+   with GCC 15 and Clang 22 under -isystem /usr/include. This is CMake's
+   missing default-path metadata, not a cppgm include-order language bug.
+   cppgm intentionally supports direct -v queries, while CMake's ABI probe
+   adds -v to compilation. The rules file disables that verbose probe flag
+   and initializes the exact default include paths read from the built-in
+   generated configuration. CMake then compiles/links its actual ABI probe:
+   ELF, 8-byte pointers, little endian. Fresh candidate configuration passes
+   with explicit native C GCC-15 selection and successful PIC/atomic probes.
