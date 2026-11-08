@@ -230,4 +230,9 @@ attributes and aliases into ELF or Mach-O objects. `lowir2native` uses the exist
 object linker for module-containing standalone programs. A module has no
 ordinary MIR function body; a requested ordinary MIR dump must fail clearly.
 Assembly-defined code owns its ABI and has no automatic unwind description.
-Macros, CFI and wider directive coverage remain further goals.
+Module macros, repetition and conditionals expand supplied source before its
+instruction parse. Typed symbol spans must survive argument substitution and
+remain distinct at definitions and references. Definitions persist across
+ordered module invocations. See the handout for supported directives and
+absolute expressions. Sharing that environment with inline invocations, CFI
+and wider directive coverage remain further goals.

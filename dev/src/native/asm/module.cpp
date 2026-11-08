@@ -1,6 +1,7 @@
 #include "native/asm/module.h"
 
 #include "lowir/assembly.h"
+#include "asm/module_expand.h"
 #include "native/asm/binding.h"
 #include "native/asm/encoding.h"
 #include "native/backend_error.h"
@@ -146,6 +147,7 @@ void emit_assembly_globals(object::ObjectFile& out, const lowir::Program& progra
 	{
 		std::vector<std::vector<assembly::ModuleLine>> sources;
 		ModuleSymbols mapping(out, target);
+		assembly::ModuleExpander expander;
 		for (const lowir::AssemblyGlobal& item : program.assembly->globals)
 		{
 			lowir::FunctionBody constants;
@@ -157,7 +159,7 @@ void emit_assembly_globals(object::ObjectFile& out, const lowir::Program& progra
 				*program.assembly, item.definition, constants, item.arguments, source, symbols, labels);
 			for (assembly::SymbolUse& use : symbols)
 				use.reference.symbol = mapping.program_symbol(program, use.reference.symbol);
-			sources.push_back(assembly::module_lines(source, symbols));
+			sources.push_back(expander.expand(assembly::module_lines(source, symbols)));
 		}
 		ModuleAssembler assembler(out, target);
 		for (const std::vector<assembly::ModuleLine>& source : sources)
