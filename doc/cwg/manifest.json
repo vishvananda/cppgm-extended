@@ -860,6 +860,24 @@
       "adopted_papers": []
     },
     {
+      "file": "cwg-1595.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1595.html",
+      "source_html_sha256": "89f4fdcbacc6d3b60d9c38f56f5af638fa8bbe8efa57896336f70fc65aeae413",
+      "text_sha256": "63253aeb39c1abb65b87b8573180bdf9331d0dfcf02beccea618f19b9eeed8e1",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 1595,
+      "title": "Constructors \u201cinvolved in\u201d subobject initialization",
+      "status": "C++14",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1595.html",
+      "adopted_papers": []
+    },
+    {
       "issue": 1601,
       "title": "Promotion of enumeration with fixed underlying type",
       "status": "C++14",
@@ -1104,6 +1122,24 @@
       "local_papers": []
     },
     {
+      "file": "cwg-1965.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1965.html",
+      "source_html_sha256": "ebe8a544b6ad9207415c7e7c1e47fd08a8a2d583c5e74063375f8b98495fc21f",
+      "text_sha256": "6128aff204264ccff6e464d302684f2bfc0aa8523517e095fd42ba7ae51b21d8",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 1965,
+      "title": "Explicit casts to reference types",
+      "status": "CD7",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1965.html",
+      "adopted_papers": []
+    },
+    {
       "issue": 1992,
       "title": "new (std::nothrow) int[N] can throw",
       "status": "CD4",
@@ -1198,6 +1234,24 @@
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2101.html",
       "source_html_sha256": "0e32a99f39eed1c895550f04aec937ab04f55574db7663c6bdffe013c9202ee4",
       "text_sha256": "28c864ab4706615345cc91b0463f6b87230a6d154dbea83ef0072e8da3cfa1d7",
+      "adopted_papers": []
+    },
+    {
+      "file": "cwg-2126.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2126.html",
+      "source_html_sha256": "081ffdf8e5409095bdca31fe6e60628261ff57a0c569fd3cc809b87f2d0a00db",
+      "text_sha256": "ee673dcc4b65d2ca0ac19507d56f8d856eb63ce4ae44fc855f27352b18ddc9a2",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 2126,
+      "title": "Lifetime-extended temporaries in constant expressions",
+      "status": "C++20",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2126.html",
       "adopted_papers": []
     },
     {
@@ -1466,6 +1520,42 @@
       "retrieved": "2026-11-08"
     },
     {
+      "file": "cwg-2820.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2820.html",
+      "source_html_sha256": "dcf5d028e3c7ca49232eb9ac72db2a7baa7d826e9f5c157c6b952d47ec9f234d",
+      "text_sha256": "a2e31a77da082b0211d82aeb9dd6c646a81c95f7dda63bb8e1d20cd63888328b",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 2820,
+      "title": "Value-initialization and default constructors",
+      "status": "CD7",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2820.html",
+      "adopted_papers": []
+    },
+    {
+      "file": "cwg-2879.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2879.html",
+      "source_html_sha256": "51e9cf0833e7c0ce82ffefcb9f566f7c875741127ec7d5e6534f6bd25bf701c4",
+      "text_sha256": "f92a85179b7d9f5496304179dcbdfd9cae3c148bfb468fcf74d38c52460d1f48",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 2879,
+      "title": "Undesired outcomes with const_cast",
+      "status": "CD7",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2879.html",
+      "adopted_papers": []
+    },
+    {
       "file": "cwg-2894.txt",
       "source_url": "https://cplusplus.github.io/CWG/issues/2894.html",
       "source_html_sha256": "1a0a1e0a5b7b22e6805f1a566231b6ba2168e0788dd5875f04a0b08173743c1a",
@@ -1719,6 +1809,32 @@
         "kind": "Working paper wording",
         "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/n4918.html"
       }
+    },
+    {
+      "file": "paper-p2280r4.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2280r4.html",
+      "source_html_sha256": "4fc00f4d66e6293f30af7ce878231e5fde02fb3f7b60f7f0e597948a1100a45b",
+      "text_sha256": "cb91183ddceabf076868907ab069535592d6ea98af0903fca21e9c7eac13af95",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "paper": "P2280R4"
+    },
+    {
+      "file": "paper-n4918.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/n4918.html",
+      "source_html_sha256": "fbbebdc37c9a2bceebf384e13608ff2e57a665cad9faa04c9c99ae2b5c8e8034",
+      "text_sha256": "5e3e00a85833869e63cf781cd2bacf0eb13b4c947664a9264483fc7427d051ba",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "paper": "N4918"
     }
   ]
 }

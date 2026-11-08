@@ -1,0 +1,63 @@
+Source: https://cplusplus.github.io/CWG/issues/2126.html
+Full historical text follows; DELETE/INSERT markers preserve, rather than apply, edits.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2126. Lifetime-extended temporaries in constant expressions
+Section: 7.7 [expr.const [1]] Status: C++20 Submitter: Richard Smith Date: 2015-05-20
+
+[Adopted as a DR at the November, 2019 meeting.]
+
+Consider an example like the following:
+
+
+  typedef const int CI[3];
+  constexpr CI &ci = CI{11, 22, 33};
+  static_assert(ci[1] == 22, "");
+
+
+This is ill-formed because the lifetime of the array temporary did not start within the
+current evaluation. Perhaps we should treat all lifetime-extended temporaries of
+const-qualified literal type that are initialized by constant expressions as if they are
+constexpr objects?
+
+Proposed resolution (October, 2019):
+
+Change 7.7 [expr.const [2]] paragraph 3 as follows:
+
+A variable is usable in constant expressions after its initializing declaration is
+encountered if it is a constexpr variable, or it is a constant-initialized variable of
+reference type or of const-qualified integral or enumeration type. An object or
+reference is usable in constant expressions if it is
+
+-
+
+a variable that is usable in constant expressions, or
+
+-
+
+a template parameter object (13.2 [temp.param [3]]), or
+
+-
+
+a string literal object (5.13.5 [lex.string [4]]), or
+
+-
+
+[INSERT: a temporary object of non-volatile const-qualified literal type whose lifetime
+is extended (6.8.7 [class.temporary [5]]) to that of a variable that is usable in
+constant expressions, or]
+
+-
+
+a non-mutable subobject or reference member of any of the above[DELETE: , or][INSERT: .]
+
+-
+
+[DELETE: a complete temporary object of non-volatile const-qualified integral or
+enumeration type that is initialized with a constant expression.]
+
+This resolution also resolves issue 2439 [6].

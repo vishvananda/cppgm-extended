@@ -1,0 +1,371 @@
+Source: https://cplusplus.github.io/CWG/issues/2879.html
+Full historical text follows; DELETE/INSERT markers preserve, rather than apply, edits.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2879. Undesired outcomes with const_cast
+Section: 7.6.1.11 [expr.const.cast [1]] Status: CD7 Submitter: Brian Bi Date: 2024-04-15
+
+[Accepted as a DR at the November, 2024 meeting.]
+
+(From submissions #526 [2], #232 [3], and #342 [4].)
+
+The resolution of issue 891 [5] intended to make const_cast<int&&>(2) ill-formed.
+However, combined with the temporary materialization conversion turning prvalues into
+glvalues (7.1 [expr.pre [6]] paragraph 7, this is now well-formed.
+
+Also, the current rules regrettably allow const_cast<int>(0) and const_casts involving
+function pointers and pointers to member functions. The latter is non-normatively
+considered disallowed by the note in 7.6.1.11 [expr.const.cast [7]] paragraph 9.
+
+Major implementations except MSVC agree with the proposed direction of this issue.
+
+[INSERT: Suggested resolution [SUPERSEDED]:]
+
+1.
+
+Change in 7.6.1.11 [expr.const.cast [8]] paragraph 3 as follows:
+
+[DELETE: For two similar types T1 and T2 (7.3.6 [conv.qual [9]]), a prvalue of type T1
+may be explicitly converted to the type T2 using a const_cast if, considering the
+qualification-decompositions of both types, each Pi1 is the same as Pi2 for all i. The
+result of a const_cast refers to the original entity.]
+
+[INSERT:  If T is an object pointer type or pointer to data member type, the type of v
+shall be similar to T and the corresponding Pi components of the qualification
+decompositions of T and the type of v shall be the same (7.3.6 [conv.qual [9]]). If v is
+a null pointer or null member pointer, the result is a null pointer or null member
+pointer, respectively. Otherwise, the result points to or past the end of the same
+object or member, respectively, as v. ]
+
+[ Example: ... ]
+
+2.
+
+Change in 7.6.1.11 [expr.const.cast [10]] paragraph 4 as follows:
+
+[DELETE:  For two object types T1 and T2, if a pointer to T1 can be explicitly converted
+to the type “pointer to T2” using a const_cast, then the following conversions can also
+be made:]
+
+[DELETE:
+- an lvalue of type T1 can be explicitly converted to an lvalue of type T2 using the
+cast const_cast<T2&>;
+
+- a glvalue of type T1 can be explicitly converted to an xvalue of type T2 using the
+cast const_cast<T2&&>; and
+
+- if T1 is a class type, a prvalue of type T1 can be explicitly converted to an xvalue
+of type T2 using the cast const_cast<T2&&>.
+]
+
+[DELETE: The result of a reference const_cast refers to the original object if the
+operand is a glvalue and to the result of applying the temporary materialization
+conversion (7.3.5 [conv.rval [11]]) otherwise. ]
+
+[INSERT:  Otherwise, T shall be a reference type. Let T1 be the type of v and T2 be the
+type referred to by T. A const_cast from "pointer to T1" to "pointer to T2" shall be
+valid. If T is an lvalue reference type, v shall be an lvalue. Otherwise, if T2 is a
+class type and v is a prvalue, the temporary materialization conversion (7.3.5
+[conv.rval [11]]) is applied. Otherwise, the temporary materialization conversion is not
+applied and v shall be a glvalue. The result refers to the same object as the (possibly
+converted) operand. ]
+
+3.
+
+Remove 7.6.1.11 [expr.const.cast [12]] paragraph 5:
+
+[DELETE:  A null pointer value (6.9.5 [basic.compound [13]]) is converted to the null
+pointer value of the destination type. The null member pointer value (7.3.13 [conv.mem
+[14]]) is converted to the null member pointer value of the destination type. ]
+
+[INSERT: Suggested resolution [SUPERSEDED]:]
+
+1.
+
+Change in 7.6.1.11 [expr.const.cast [15]] paragraph 1 as follows:
+
+The result of the expression const_cast<T>(v) is of type T. If T is an lvalue reference
+to object type, the result is an lvalue; if T is an rvalue reference to object type, the
+result is an xvalue; otherwise, the result is a prvalue and the lvalue-to-rvalue (7.3.2
+[conv.lval [16]]), array-to-pointer (7.3.3 [conv.array [17]]), and function-to-pointer
+(7.3.4 [conv.func [18]]) standard conversions are performed on the expression v.
+[INSERT: The temporary materialization conversion (7.3.5 [conv.rval [11]]) is not
+performed on v, other than as specified below.] Conversions that can be performed
+explicitly using const_cast are listed below. No other conversion shall be performed
+explicitly using const_cast.
+
+2.
+
+Change in 7.6.1.11 [expr.const.cast [8]] paragraph 3 as follows:
+
+For two similar [INSERT: object pointer or pointer to data member] types T1 and T2
+(7.3.6 [conv.qual [9]]), a prvalue of type T1 [DELETE: may] [INSERT: can] be explicitly
+converted to the type T2 using a const_cast if, considering the
+qualification-decompositions of both types, each Pi1 is the same as Pi2 for all i.
+[DELETE: The result of a const_cast refers to the original entity.] [INSERT: If v is a
+null pointer or null member pointer, the result is a null pointer or null member
+pointer, respectively. Otherwise, the result points to or past the end of the same
+object, or points to the same member, respectively, as v.]
+
+3.
+
+Change in 7.6.1.11 [expr.const.cast [10]] paragraph 4 as follows:
+
+For two object types T1 and T2, if a pointer to T1 can be explicitly converted to the
+type “pointer to T2” using a const_cast, then the following conversions can also be
+made:
+
+- an lvalue of type T1 can be explicitly converted to an lvalue of type T2 using the
+cast const_cast<T2&>;
+
+- a glvalue of type T1 can be explicitly converted to an xvalue of type T2 using the
+cast const_cast<T2&&>; and
+
+- if T1 is a class type, a prvalue of type T1 can be explicitly converted to an xvalue
+of type T2 using the cast const_cast<T2&&>. [INSERT: The temporary materialization
+conversion is performed on v].
+
+The result [DELETE: of a reference const_cast] refers to the [DELETE: original] [INSERT:
+same] object [DELETE: if] [INSERT: as] the [INSERT: (possibly converted)] operand
+[DELETE: is a glvalue and to the result of applying the temporary materialization
+conversion (7.3.5 [conv.rval [11]]) otherwise].
+
+4.
+
+Remove 7.6.1.11 [expr.const.cast [12]] paragraph 5:
+
+[DELETE:  A null pointer value (6.9.5 [basic.compound [13]]) is converted to the null
+pointer value of the destination type. The null member pointer value (7.3.13 [conv.mem
+[14]]) is converted to the null member pointer value of the destination type. ]
+
+CWG 2024-05-31
+
+The existing example in 7.6.1.11 [expr.const.cast [8]] paragraph 3 shows the temporary
+materialization conversion applied to an array type. The example would be made
+ill-formed by the suggested resolution above. More investigation is advised.
+
+[INSERT: Suggested resolution [SUPERSEDED]:]
+
+1.
+
+Change in 7.6.1.11 [expr.const.cast [15]] paragraph 1 as follows:
+
+The result of the expression const_cast<T>(v) is of type T. If T is an lvalue reference
+to object type, the result is an lvalue; if T is an rvalue reference to object type, the
+result is an xvalue; otherwise, the result is a prvalue and the lvalue-to-rvalue (7.3.2
+[conv.lval [16]]), array-to-pointer (7.3.3 [conv.array [17]]), and function-to-pointer
+(7.3.4 [conv.func [18]]) standard conversions are performed on the expression v.
+[INSERT: The temporary materialization conversion (7.3.5 [conv.rval [11]]) is not
+performed on v, other than as specified below.] Conversions that can be performed
+explicitly using const_cast are listed below. No other conversion shall be performed
+explicitly using const_cast.
+
+2.
+
+Change in 7.6.1.11 [expr.const.cast [8]] paragraph 3 as follows:
+
+For two similar [INSERT: object pointer or pointer to data member] types T1 and T2
+(7.3.6 [conv.qual [9]]), a prvalue of type T1 [DELETE: may] [INSERT: can] be explicitly
+converted to the type T2 using a const_cast if, considering the
+qualification-decompositions of both types, each Pi1 is the same as Pi2 for all i.
+[DELETE: The result of a const_cast refers to the original entity.] [INSERT: If v is a
+null pointer or null member pointer, the result is a null pointer or null member
+pointer, respectively. Otherwise, the result points to or past the end of the same
+object, or points to the same member, respectively, as v.] [DELETE: [Example 1:]
+[DELETE:
+  typedef int *A[3];                // array of 3 pointer to int
+  typedef const int *const CA[3];   // array of 3 const pointer to const int
+  CA &&r = A{};        // OK, reference binds to temporary array object
+                       // after qualification conversion to type CA
+  A &&r1 = const_cast<A>(CA{});     // error: temporary array decayed to pointer
+
+  A &&r2 = const_cast<A&&>(CA{});    // OK
+]
+[DELETE: -- end example]]
+
+3.
+
+Change in 7.6.1.11 [expr.const.cast [10]] paragraph 4 as follows:
+
+For two object types T1 and T2, if a pointer to T1 can be explicitly converted to the
+type “pointer to T2” using a const_cast, then the following conversions can also be
+made:
+
+- an lvalue of type T1 can be explicitly converted to an lvalue of type T2 using the
+cast const_cast<T2&>;
+
+- a glvalue of type T1 can be explicitly converted to an xvalue of type T2 using the
+cast const_cast<T2&&>; and
+
+- if T1 is a class [INSERT: or array] type, a prvalue of type T1 can be explicitly
+converted to an xvalue of type T2 using the cast const_cast<T2&&>. [INSERT: The
+temporary materialization conversion is performed on v].
+
+The result [DELETE: of a reference const_cast] refers to the [DELETE: original] [INSERT:
+same] object [DELETE: if] [INSERT: as] the [INSERT: (possibly converted)] operand
+[DELETE: is a glvalue and to the result of applying the temporary materialization
+conversion (7.3.5 [conv.rval [11]]) otherwise].
+
+[INSERT: [Example 2:]
+
+[INSERT:
+  typedef int *A[3];                // array of 3 pointer to int
+  typedef const int *const CA[3];   // array of 3 const pointer to const int
+
+  auto &&r2 = const_cast<A&&>(CA{}); // OK, temporary materialization conversion is performed
+]
+
+[INSERT: -- end example]]
+
+4.
+
+Remove 7.6.1.11 [expr.const.cast [12]] paragraph 5:
+
+[DELETE:  A null pointer value (6.9.5 [basic.compound [13]]) is converted to the null
+pointer value of the destination type. The null member pointer value (7.3.13 [conv.mem
+[14]]) is converted to the null member pointer value of the destination type. ]
+
+5.
+
+Change in 9.5.4 [dcl.init.ref [19]] bullet 5.3 as follows:
+
+[Example 5: ...
+
+  constexpr int f() {
+    const int &x = 42;
+    const_cast<int &>(x) = 1;  // undefined behavior
+    return x;
+  }
+  constexpr int z = f();          // error: not a constant expression
+
+
+[INSERT:
+  typedef int *AP[3];        // array of 3 pointer to int
+  typedef const int *const ACPC[3]; // array of 3 const pointer to const int
+  ACPC &&r = AP{};          // binds directly
+]
+-- end example]
+
+This resolution also resolve issue 1965 [20].
+
+CWG 2024-10-11
+
+Subclause 7.2.1 [basic.lval [21]] paragraph 7 should be amended with "unless otherwise
+specified" and cross-references to the exceptions.
+
+Proposed resolution (approved by CWG 2024-10-25)
+
+1.
+
+Change in 7.2.1 [basic.lval [21]] paragraph 7 as follows:
+
+[DELETE: Whenever] [INSERT: Unless otherwise specified (7.6.1.11 [expr.const.cast [1]]),
+whenever] a prvalue appears as an operand of an operator that expects a glvalue for that
+operand, the temporary materialization conversion (7.3.5 [conv.rval [11]]) is applied to
+convert the expression to an xvalue.
+
+2.
+
+Change in 7.6.1.11 [expr.const.cast [15]] paragraph 1 as follows:
+
+The result of the expression const_cast<T>(v) is of type T. If T is an lvalue reference
+to object type, the result is an lvalue; if T is an rvalue reference to object type, the
+result is an xvalue; otherwise, the result is a prvalue and the lvalue-to-rvalue (7.3.2
+[conv.lval [16]]), array-to-pointer (7.3.3 [conv.array [17]]), and function-to-pointer
+(7.3.4 [conv.func [18]]) standard conversions are performed on the expression v.
+[INSERT: The temporary materialization conversion (7.3.5 [conv.rval [11]]) is not
+performed on v, other than as specified below.] Conversions that can be performed
+explicitly using const_cast are listed below. No other conversion shall be performed
+explicitly using const_cast.
+
+3.
+
+Change in 7.6.1.11 [expr.const.cast [8]] paragraph 3 as follows:
+
+For two similar [INSERT: object pointer or pointer to data member] types T1 and T2
+(7.3.6 [conv.qual [9]]), a prvalue of type T1 [DELETE: may] [INSERT: can] be explicitly
+converted to the type T2 using a const_cast if, considering the
+qualification-decompositions of both types, each Pi1 is the same as Pi2 for all i.
+[DELETE: The result of a const_cast refers to the original entity.] [INSERT: If v is a
+null pointer or null member pointer, the result is a null pointer or null member
+pointer, respectively. Otherwise, the result points to or past the end of the same
+object, or points to the same member, respectively, as v.] [DELETE: [Example 1:]
+[DELETE:
+  typedef int *A[3];                // array of 3 pointer to int
+  typedef const int *const CA[3];   // array of 3 const pointer to const int
+  CA &&r = A{};        // OK, reference binds to temporary array object
+                       // after qualification conversion to type CA
+  A &&r1 = const_cast<A>(CA{});     // error: temporary array decayed to pointer
+
+  A &&r2 = const_cast<A&&>(CA{});    // OK
+]
+[DELETE: -- end example]]
+
+4.
+
+Change in 7.6.1.11 [expr.const.cast [10]] paragraph 4 as follows:
+
+For two object types T1 and T2, if a pointer to T1 can be explicitly converted to the
+type “pointer to T2” using a const_cast, then the following conversions can also be
+made:
+
+- an lvalue of type T1 can be explicitly converted to an lvalue of type T2 using the
+cast const_cast<T2&>;
+
+- a glvalue of type T1 can be explicitly converted to an xvalue of type T2 using the
+cast const_cast<T2&&>; and
+
+- if T1 is a class [INSERT: or array] type, a prvalue of type T1 can be explicitly
+converted to an xvalue of type T2 using the cast const_cast<T2&&>. [INSERT: The
+temporary materialization conversion is performed on v].
+
+The result [DELETE: of a reference const_cast] refers to the [DELETE: original] [INSERT:
+same] object [DELETE: if] [INSERT: as] the [INSERT: (possibly converted)] operand
+[DELETE: is a glvalue and to the result of applying the temporary materialization
+conversion (7.3.5 [conv.rval [11]]) otherwise].
+
+[INSERT: [Example 2:]
+
+[INSERT:
+  typedef int *A[3];                // array of 3 pointer to int
+  typedef const int *const CA[3];   // array of 3 const pointer to const int
+
+  auto &&r2 = const_cast<A&&>(CA{}); // OK, temporary materialization conversion is performed
+]
+
+[INSERT: -- end example]]
+
+5.
+
+Remove 7.6.1.11 [expr.const.cast [12]] paragraph 5:
+
+[DELETE:  A null pointer value (6.9.5 [basic.compound [13]]) is converted to the null
+pointer value of the destination type. The null member pointer value (7.3.13 [conv.mem
+[14]]) is converted to the null member pointer value of the destination type. ]
+
+6.
+
+Change in 9.5.4 [dcl.init.ref [19]] bullet 5.3 as follows:
+
+[Example 5: ...
+
+  constexpr int f() {
+    const int &x = 42;
+    const_cast<int &>(x) = 1;  // undefined behavior
+    return x;
+  }
+  constexpr int z = f();          // error: not a constant expression
+
+
+[INSERT:
+  typedef int *AP[3];        // array of 3 pointer to int
+  typedef const int *const ACPC[3]; // array of 3 const pointer to const int
+  ACPC &&r = AP{};          // binds directly
+]
+-- end example]
+
+This resolution also resolve issue 1965 [20].

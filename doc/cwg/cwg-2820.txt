@@ -1,0 +1,43 @@
+Source: https://cplusplus.github.io/CWG/issues/2820.html
+Full historical text follows; DELETE/INSERT markers preserve, rather than apply, edits.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2820. Value-initialization and default constructors
+Section: 9.5.1 [dcl.init.general [1]] Status: CD7 Submitter: Shafik Yaghmour Date:
+2023-10-31
+
+[Accepted as a DR at the March, 2024 meeting.]
+
+Subclause 9.5.1 [dcl.init.general [2]] paragraph 9 specifies:
+
+To value-initialize an object of type T means:
+
+- if T is a (possibly cv-qualified) class type (Clause Clause 11 [class [3]]), then
+
+-  if T has either no default constructor (11.4.5.2 [class.default.ctor [4]]) or a
+default constructor that is user-provided or deleted, then the object is
+default-initialized;
+
+-  otherwise, the object is zero-initialized and the semantic constraints for
+default-initialization are checked, and if T has a non-trivial default constructor, the
+object is default-initialized;
+
+- if T is an array type, ...
+
+The specification about checking the semantic constraints and invoking only non-trivial
+default constructors is overly convoluted. Omitting a call to a trivial constructor is
+an as-if optimization that should not be prescribed by the standard.
+
+Proposed resolution (approved by CWG 2024-01-19):
+
+Change in 9.5.1 [dcl.init.general [5]] bullet 9.1.2 as follows:
+
+- ...
+
+-  otherwise, the object is zero-initialized and [DELETE: the semantic constraints for
+default-initialization are checked, and if T has a non-trivial default constructor, the
+object is] [INSERT: then] default-initialized;

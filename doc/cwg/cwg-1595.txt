@@ -1,0 +1,76 @@
+Source: https://cplusplus.github.io/CWG/issues/1595.html
+Full historical text follows; DELETE/INSERT markers preserve, rather than apply, edits.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1595. Constructors “involved in” subobject initialization
+Section: 9.2.6 [dcl.constexpr [1]] Status: C++14 Submitter: Daveed Vandevoorde Date:
+2012-12-19
+
+[Moved to DR at the September, 2013 meeting.]
+
+According to 9.2.6 [dcl.constexpr [2]] paragraph 5
+
+For a constexpr constructor, if no argument values exist such that after function
+invocation substitution, every constructor call and full-expression in the
+mem-initializers would be a constant expression (including conversions), the program is
+ill-formed; no diagnostic required.
+
+However, paragraph 4 also says,
+
+every constructor involved in initializing non-static data members and base class
+sub-objects shall be a constexpr constructor;
+
+violation of which requires a diagnostic. The question is whether a constructor call
+appearing in a mem-initializer expression is “involved in” the initialization of X::m.
+Given the “no diagnostic required” status of constructor calls in paragraph 5, the
+intent of the “involved in” phrasing would appear to be referring to constructors of
+members with class types and of base-class subobjects, but the wording should be
+clarified. For example, in a constructor definition like
+
+
+  constexpr X(): m(f(S())) { }
+
+
+if S::S() is not constexpr, is a diagnostic required? For another example,
+
+
+  struct S {
+    constexpr S() {}
+    S(int);
+  };
+
+  struct A { S s; };
+
+  struct C {
+    A x;
+    constexpr C(): x{ 1 } {}
+  };
+
+
+Is S::S(int) “involved?”
+
+Proposed resolution (August, 2013):
+
+Change 9.2.6 [dcl.constexpr [3]] paragraph 4 as follows:
+
+...In addition, either its function-body shall be = delete, or it shall satisfy the
+following constraints:
+
+-
+
+...
+
+-
+
+[INSERT: for a non-delegating constructor,] every constructor [DELETE: involved in
+initializing] [INSERT: selected to initialize] non-static data members and base class
+sub-objects shall be a constexpr constructor[DELETE: .][INSERT: ;]
+
+-
+
+[INSERT: for a delegating constructor, the target constructor shall be a constexpr
+constructor.]

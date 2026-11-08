@@ -310,6 +310,32 @@ CWG 1386 | NAD | cwg-1386.txt
   Explicit prefixes can extend while multiple parameter packs are deduced.
   NAD affirms existing behavior, not a new defect resolution.
 
+Constant values, casts and unknown references
+--------------------------------------------
+
+CWG 1595 | C++14 | cwg-1595.txt
+  Constructors “involved in” subobject initialization
+CWG 1965 | CD7 | cwg-1965.txt
+  Explicit casts to reference types
+CWG 2126 | C++20 | cwg-2126.txt
+  Lifetime-extended temporaries in constant expressions
+CWG 2820 | CD7 | cwg-2820.txt
+  Value-initialization and default constructors
+CWG 2879 | CD7 | cwg-2879.txt
+  Undesired outcomes with const_cast
+
+P2280R4 | paper-p2280r4.txt
+  Using unknown pointers and references in constant expressions.
+N4918 | paper-n4918.txt
+  CWG poll 13 adopts P2280R4 as a Defect Report; the paper's revision
+  history explicitly records application to C++11 through C++20. Unknown
+  references/this can be used to establish constant properties without
+  reading a value. Unknown pointer values cannot escape as constants.
+
+These cast and constant-evaluation repairs implement the tested C++11
+obligations and adopted corrections. Catalog inclusion does not assert
+implementation of every later-language example in an issue or paper.
+
 Adding a decision
 -----------------
 

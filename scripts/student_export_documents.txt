@@ -57,6 +57,7 @@ doc/cwg/cwg-1579.txt
 doc/cwg/cwg-1584.txt
 doc/cwg/cwg-1590.txt
 doc/cwg/cwg-1591.txt
+doc/cwg/cwg-1595.txt
 doc/cwg/cwg-1601.txt
 doc/cwg/cwg-1632.txt
 doc/cwg/cwg-1634.txt
@@ -75,6 +76,7 @@ doc/cwg/cwg-1850.txt
 doc/cwg/cwg-1866.txt
 doc/cwg/cwg-1913.txt
 doc/cwg/cwg-1926.txt
+doc/cwg/cwg-1965.txt
 doc/cwg/cwg-1992.txt
 doc/cwg/cwg-2004.txt
 doc/cwg/cwg-2076.txt
@@ -83,6 +85,7 @@ doc/cwg/cwg-2082.txt
 doc/cwg/cwg-2083.txt
 doc/cwg/cwg-2084.txt
 doc/cwg/cwg-2101.txt
+doc/cwg/cwg-2126.txt
 doc/cwg/cwg-2137.txt
 doc/cwg/cwg-2140.txt
 doc/cwg/cwg-2170.txt
@@ -101,6 +104,8 @@ doc/cwg/cwg-2476.txt
 doc/cwg/cwg-2549.txt
 doc/cwg/cwg-2631.txt
 doc/cwg/cwg-2746.txt
+doc/cwg/cwg-2820.txt
+doc/cwg/cwg-2879.txt
 doc/cwg/cwg-2894.txt
 doc/cwg/cwg-2907.txt
 doc/cwg/cwg-2941.txt
@@ -108,6 +113,7 @@ doc/cwg/manifest.json
 doc/cwg/paper-n1626.txt
 doc/cwg/paper-n3638.txt
 doc/cwg/paper-n3922.txt
+doc/cwg/paper-n4918.txt
 doc/cwg/paper-p0135r1.txt
 doc/cwg/paper-p0136r1.txt
 doc/cwg/paper-p0398r0.txt
@@ -120,6 +126,7 @@ doc/cwg/paper-p1155r3.txt
 doc/cwg/paper-p1787r6.txt
 doc/cwg/paper-p1825r0.txt
 doc/cwg/paper-p2266r2.txt
+doc/cwg/paper-p2280r4.txt
 doc/cwg/paper-p2448r2.txt
 doc/itanium-mangling.txt
 doc/llvm-license.txt

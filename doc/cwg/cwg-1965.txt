@@ -1,0 +1,57 @@
+Source: https://cplusplus.github.io/CWG/issues/1965.html
+Full historical text follows; DELETE/INSERT markers preserve, rather than apply, edits.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1965. Explicit casts to reference types
+Section: 7.6.1.7 [expr.dynamic.cast [1]] Status: CD7 Submitter: Richard Smith Date:
+2014-07-07
+
+[Resolved by issue 2879 [2], accepted as a DR at the November, 2024 meeting.]
+
+The specification of dynamic_cast in 7.6.1.7 [expr.dynamic.cast [3]] paragraph 2 (and
+const_cast in 7.6.1.11 [expr.const.cast [4]] is the same) says that the operand of a
+cast to an lvalue reference type must be an lvalue, so that
+
+
+  struct A { virtual ~A(); }; A &&make_a();
+
+  A &&a = dynamic_cast<A&&>(make_a());   // ok
+  const A &b = dynamic_cast<const A&>(make_a()); // ill-formed
+
+
+The behavior of static_cast is an odd hybrid:
+
+
+  struct B : A { }; B &&make_b();
+  A &&c = static_cast<A&&>(make_b()); // ok
+  const A &d = static_cast<const A&>(make_b()); // ok
+  const B &e = static_cast<const B&>(make_a()); // ill-formed
+
+
+(Binding a const lvalue reference to an rvalue is permitted by 7.6.1.9 [expr.static.cast
+[5]] paragraph 4 but not by paragraphs 2 and 3.)
+
+There is implementation divergence on the treatment of these examples.
+
+Also, const_cast permits binding an rvalue reference to a class prvalue but not to any
+other kind of prvalue, which seems like an unnecessary restriction.
+
+Finally, 7.6.1.9 [expr.static.cast [6]] paragraph 3 allows binding an rvalue reference
+to a class or array prvalue, but not to other kinds of prvalues; those are covered in
+paragraph 4. This would be less confusing if paragraph 3 only dealt with binding rvalue
+references to glvalues and left all discussion of prvalues to paragraph 4, which
+adequately handles the class and array cases as well.
+
+Notes from the May, 2015 meeting:
+
+CWG reaffirmed the status quo for dynamic_cast but felt that const_cast should be
+changed to permit binding an rvalue reference to types that have associated memory
+(class and array types).
+
+CWG 2024-11-19
+
+The last of the concerns is resolved by the resolution of issue 2879 [2].
