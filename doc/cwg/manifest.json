@@ -1217,6 +1217,24 @@
       }
     },
     {
+      "issue": 2746,
+      "title": "Checking of default template arguments",
+      "status": "CD7",
+      "role": "course-reference",
+      "file": "cwg-2746.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2746.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2746.html",
+      "source_html_sha256": "34c24381b3c713903a5b4e4c416bdc86e133229bb1c0b2a241fdf736bf4f2289",
+      "text_sha256": "a95ce3a0b502a9ec3b89c4c4bc40b20c3fa97adecc52257d8e167b98cbc25777",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08"
+    },
+    {
       "issue": 2907,
       "title": "Constant lvalue-to-rvalue conversion on uninitialized std::nullptr_t",
       "status": "CD7",

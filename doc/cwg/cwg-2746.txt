@@ -1,0 +1,75 @@
+CWG 2746: Checking of default template arguments
+Source: https://cplusplus.github.io/CWG/issues/2746.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: CD7
+Catalog role: course-reference
+
+Approved as a defect report in March 2024. An unused default template argument
+with no valid specialization is ill-formed, no diagnostic required. This does
+not remove required checks on an ordinary invalid concrete template argument.
+
+The complete source issue is reproduced below. [DELETE: ...] and [INSERT: ...]
+preserve historical edits rather than applying them.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2746. Checking of default template arguments
+Section: 13.8.1 [temp.res.general [1]] Status: CD7 Submitter: Shafik Yaghmour Date:
+2022-12-13
+
+[Accepted as a DR at the March, 2024 meeting.]
+
+Consider:
+
+
+  static int x = 1;
+  template<auto y = x> void f() {}
+
+
+Is the definition of f well-formed? Since x is not a constant expression, any use of the
+default template argument is ill-formed, but for example f<5>() does not actually use
+it.
+
+Are implementations allowed or required to reject this situation, even if the template
+is never instantiated? If the default template argument is dependent, checking may need
+to be deferred to instantiations in any case.
+
+Proposed resolution (approved by CWG 2024-03-01):
+
+Change in 13.8.1 [temp.res.general [2]] paragraph 6 as follows:
+
+The validity of a template may be checked prior to any instantiation. [Note : ... —end
+note]
+
+The program is ill-formed, no diagnostic required, if:
+
+- no valid specialization, ignoring static_assert-declarations that fail, can be
+generated for a template or a substatement of a constexpr if statement (8.5.2 [stmt.if
+[3]]) within a template and the template is not instantiated, or
+
+- [INSERT:  no valid specialization, ignoring static_assert-declarations that fail, can
+be generated for a default template-argument and the default template-argument is not
+used in any instantiation, or ]
+
+- any constraint-expression in the program, introduced or otherwise, has (in its normal
+form) an atomic constraint A where no satisfaction check of A could be well-formed and
+no satisfaction check of A is performed, or
+
+- every valid specialization of a variadic template requires an empty template parameter
+pack, or
+
+- a hypothetical instantiation of a template immediately following its definition would
+be ill-formed due to a construct that does not depend on a template parameter, or
+
+- the interpretation of such a construct in the hypothetical instantiation is different
+from the interpretation of the corresponding construct in any actual instantiation of
+the template.
+
+Source links:
+[1] https://wg21.link/temp.res.general
+[2] https://wg21.link/temp.res.general#6
+[3] https://wg21.link/stmt.if

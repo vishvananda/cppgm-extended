@@ -200,6 +200,8 @@ CWG 2549 | CD7 | cwg-2549.txt
   Local paper: paper-p0527r1.txt, paper-p1155r3.txt, paper-p1825r0.txt, paper-p2266r2.txt
 CWG 2631 | C++23 | cwg-2631.txt
   Immediate function evaluations in default arguments
+CWG 2746 | CD7 | cwg-2746.txt
+  Checking of unused default template arguments (March 2024 DR)
 CWG 2907 | CD7 | cwg-2907.txt
   Constant lvalue-to-rvalue conversion on uninitialized std::nullptr_t
 
