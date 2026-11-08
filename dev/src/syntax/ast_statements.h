@@ -196,6 +196,8 @@ struct AsmStmt : Stmt
 	bool is_volatile;
 	bool is_extended = false;
 	bool is_inline = false;
+	bool is_goto = false;
+	Slice<GotoStmt*> labels;
 	Slice<AsmOperand> outputs;
 	Slice<AsmOperand> inputs;
 	Slice<TokenSpelling> clobbers;

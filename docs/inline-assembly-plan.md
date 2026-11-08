@@ -399,3 +399,35 @@ with byte-identical output objects. This is not a wall-time measurement.
 Outgoing exits, global/naked assembly, directives/unwind state, wider register/ISA
 coverage and Rust source/immutable-pin qualification remain open. Godot is
 paused. The implementation is still a supported subset, not full assembly.
+
+### Outgoing control-flow checkpoint (2026-11-08)
+
+GNU asm goto now lowers named/numeric labels, read/write outputs, backward
+edges and C++ scope-exit cleanup through ordinary LowIR control flow. The shared
+packet carries positive constant i32 label tags and one special exit-tag output;
+zero means fallthrough. A normal LowIR switch dispatches the result. This makes
+SSA, liveness and cleanup edges visible without a language-specific backend
+opcode. Other producers can construct the same packet and dispatch.
+
+The backend binds label uses as typed source spans and emits typed exit nodes,
+without rendering generated assembly for reparsing. The exit storage is an
+explicit MIR frame operand, so frame layout can see and rewrite it. It needs
+no spare GPR, including when a packet clobbers every allocatable GPR.
+
+A pressure probe exposed a separate reserved-frame-register bug: overwriting a
+compiler frame base corrupted over-aligned locals. Declared writes now preserve
+the function's reserved register set around the effect, capture physical outputs
+before restoration, and preserve flags. Independent LowIR tests exercise the
+reserved register as an output as well as a clobber.
+
+The optional suite now has 67 fixtures, including rejected label/selector
+contracts and nonconstant, zero or oversized tags. All pass at O0/O2/O3; the
+64-case suite before the final three malformed-tag cases also passed Clang
+observers. A direct observer checks C++ cleanup because the current host GCC
+skips destruction on the asm-goto scope exit (observed results 111/1, expected
+111/11). The required strict report remains 8,099/8,099. Debug info, self-host
+through PA5, inception equality, self-built optional checks, PA35 smoke and the
+mandatory audits pass. The LowIR handout's exit example was read and compiled.
+
+Global/naked assembly, directives/unwind, wider register/ISA coverage and Rust
+source/pin qualification still remain before claiming full assembly support.

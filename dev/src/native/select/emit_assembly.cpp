@@ -2,6 +2,7 @@
 
 #include "lowir/assembly.h"
 #include "native/backend_error.h"
+#include <utility>
 
 namespace native {
 namespace {
@@ -86,6 +87,14 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	const lowir::AssemblyModule& module = *program_.assembly;
 	const lowir::AssemblyTemplate& definition = module.templates[plan->definition];
 	std::vector<Capture> captures(definition.operand_count);
+	std::vector<std::pair<Reg, int32_t>> reserved;
+	for (uint32_t mask = plan->writes & reserved_gprs(*out_); mask != 0; mask &= mask - 1)
+	{
+		const Reg reg = static_cast<Reg>(__builtin_ctz(mask));
+		const int32_t frame = frame_alloc(8, 8);
+		reserved.push_back(std::make_pair(reg, frame));
+		emit2(Op::Store, TypeKind::Ptr, Operand::make_frame(frame), Operand::make_reg(reg));
+	}
 	uint32_t initialized = 0;
 	Operand initial[32];
 	moves_.clear();
@@ -94,7 +103,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
 		const lowir::AssemblyOperand& source_operand = module.operands[definition.first_operand + plan->sources[i]];
 		const bool memory = plan->locations[i] == AL_MEMORY;
-		const bool immediate = (plan->locations[i] & (AL_IMMEDIATE | AL_SYMBOL)) != 0;
+		const bool immediate = (plan->locations[i] & (AL_IMMEDIATE | AL_SYMBOL | AL_LABEL)) != 0;
 		if (!immediate && (operand.input != lowir::kNoId || memory))
 		{
 			const uint32_t input = memory && !source_operand.input_storage ? operand.output : source_operand.input;
@@ -139,7 +148,9 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 		out_->assembly.reset(new AssemblySites());
 	const uint32_t site = static_cast<uint32_t>(out_->assembly->plans.size());
 	out_->assembly->plans.push_back(plan);
-	Inst& effect = emit1(Op::Asm, TypeKind::Void, Operand::make_imm(site));
+	Inst& effect = plan->exit_operand == lowir::kNoId ? emit1(Op::Asm, TypeKind::Void, Operand::make_imm(site))
+													  : emit2(Op::Asm, TypeKind::Void, Operand::make_imm(site),
+															Operand::make_frame(captures[plan->exit_operand].value));
 	effect.aux = plan->reads;
 	effect.aux2 = plan->writes;
 	effect.sub = static_cast<uint8_t>(((definition.state_read & AS_CONDITION_FLAGS) != 0 ? 1 : 0) |
@@ -153,11 +164,17 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
-		if (operand.output != lowir::kNoId && (operand.flags & AO_FLAG) == 0 && plan->locations[i] != AL_MEMORY)
+		if (operand.output != lowir::kNoId && (operand.flags & (AO_FLAG | AO_EXIT_TAG)) == 0 &&
+			plan->locations[i] != AL_MEMORY)
 			emit2(floating(operand.type) || is_xmm(plan->registers[i]) ? Op::FMov : Op::Store,
 				transfer_type(operand.type, plan->registers[i]), Operand::make_frame(captures[i].value),
 				Operand::make_reg(plan->registers[i]));
 	}
+	// Private captures lie outside the over-aligned area. Capture every
+	// physical output first, then restore compiler-reserved frame bases
+	// before assigning user places. MOV loads preserve the assembly flags.
+	for (const std::pair<Reg, int32_t>& saved : reserved)
+		emit2(Op::Load, TypeKind::Ptr, Operand::make_reg(saved.first), Operand::make_frame(saved.second));
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];

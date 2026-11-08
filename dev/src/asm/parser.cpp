@@ -12,8 +12,9 @@ namespace {
 class Parser
 {
 public:
-	Parser(const std::string& source, asm_model::Dialect dialect, const std::vector<SymbolUse>& symbols)
-		: source_(source), symbols_(symbols), dialect_(dialect)
+	Parser(const std::string& source, asm_model::Dialect dialect, const std::vector<SymbolUse>& symbols,
+		const std::vector<LabelUse>& labels)
+		: source_(source), symbols_(symbols), labels_(labels), dialect_(dialect)
 	{}
 	std::vector<Instruction> run();
 
@@ -63,6 +64,7 @@ private:
 
 	const std::string& source_;
 	const std::vector<SymbolUse>& symbols_;
+	const std::vector<LabelUse>& labels_;
 	asm_model::Dialect dialect_;
 	std::size_t pos_ = 0;
 	uint32_t line_ = 1;
@@ -377,7 +379,19 @@ bool Parser::symbol(Operand& operand)
 
 Operand Parser::target()
 {
+	space();
 	Operand result;
+	const auto label = std::lower_bound(labels_.begin(), labels_.end(), pos_,
+		[](const LabelUse& use, size_t position) { return use.first < position; });
+	if (label != labels_.end() && label->first == pos_)
+	{
+		result.kind = OperandKind::Label;
+		result.label = label->operand;
+		result.external_label = true;
+		for (uint32_t i = 0; i < label->count; ++i)
+			step();
+		return result;
+	}
 	if (symbol(result))
 		return result;
 	result.kind = OperandKind::Label;
@@ -402,7 +416,7 @@ void Parser::resolve_labels(std::vector<Instruction>& instructions)
 	for (uint32_t i = 0; i < instructions.size(); ++i)
 		for (Operand& operand : instructions[i].operands)
 		{
-			if (operand.kind != OperandKind::Label)
+			if (operand.kind != OperandKind::Label || operand.external_label)
 				continue;
 			const std::string& name = operand.target;
 			uint32_t selected = UINT32_MAX;
@@ -502,10 +516,10 @@ std::vector<Instruction> Parser::run()
 
 } // namespace
 
-std::vector<Instruction> parse(
-	const std::string& source, asm_model::Dialect dialect, const std::vector<SymbolUse>& symbols)
+std::vector<Instruction> parse(const std::string& source, asm_model::Dialect dialect,
+	const std::vector<SymbolUse>& symbols, const std::vector<LabelUse>& labels)
 {
-	return Parser(source, dialect, symbols).run();
+	return Parser(source, dialect, symbols, labels).run();
 }
 
 } // namespace assembly

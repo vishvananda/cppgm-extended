@@ -120,7 +120,7 @@ enum class Op : std::uint8_t
 	JumpTable, // jump_table idx, [^a, ^b, ...]
 	MulWide,   // mul src: rdx:rax = rax * src, unsigned
 	ImulWide,  // imul src: the signed form
-	Asm,       // opaque assembly: site; aux/aux2 reads/writes; sub flags read/write, stack use
+	Asm,       // opaque assembly: site, optional exit frame; aux/aux2 reads/writes; sub flags read/write, stack use
 	Prologue,  // a shrink-wrapped function's frame setup
 	Nop        // a removed instruction: no code, not dumped
 };

@@ -111,6 +111,7 @@ struct Group
 	bool early = false;
 	bool immediate = false;
 	bool symbol = false;
+	bool label = false;
 	uint8_t location = 0;
 	Reg assigned = kNoReg;
 };
@@ -157,7 +158,7 @@ bool search(std::vector<Group>& groups, uint32_t left, uint32_t& work)
 		unsigned n = static_cast<unsigned>(__builtin_popcount(available(groups, i, group.registers)));
 		group.location = AL_MEMORY;
 		n += static_cast<unsigned>(__builtin_popcount(available(groups, i, group.addresses))) + group.immediate +
-			group.symbol;
+			group.symbol + group.label;
 		group.location = 0;
 		if (n == 0)
 			return false;
@@ -168,9 +169,9 @@ bool search(std::vector<Group>& groups, uint32_t left, uint32_t& work)
 		}
 	}
 	Group& group = groups[selected];
-	if (group.immediate || group.symbol)
+	if (group.immediate || group.symbol || group.label)
 	{
-		group.location = group.symbol ? AL_SYMBOL : AL_IMMEDIATE;
+		group.location = group.label ? AL_LABEL : group.symbol ? AL_SYMBOL : AL_IMMEDIATE;
 		if (search(groups, left - 1, work))
 			return true;
 	}
@@ -202,7 +203,9 @@ bool column(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& 
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& op = module.operands[definition.first_operand + i];
-		roots[i] = (op.flags & AO_FLAG) != 0 ? i : module.alternatives[op.first_alternative + column].matching;
+		roots[i] = (op.flags & (AO_FLAG | AO_EXIT_TAG)) != 0
+			? i
+			: module.alternatives[op.first_alternative + column].matching;
 		if (roots[i] == asm_model::kNoId)
 			roots[i] = i;
 		else if (roots[i] != i)
@@ -212,7 +215,7 @@ bool column(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& 
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& op = module.operands[definition.first_operand + i];
-		if ((op.flags & AO_FLAG) != 0)
+		if ((op.flags & (AO_FLAG | AO_EXIT_TAG)) != 0)
 			continue;
 		const Alternative& alt = module.alternatives[op.first_alternative + column];
 		const uint32_t root = roots[i];
@@ -223,6 +226,17 @@ bool column(const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& 
 			groups.push_back(Group());
 		}
 		Group& group = groups[vertex];
+		if (alt.locations == AL_LABEL)
+		{
+			const lowir::Value value = arguments[op.input];
+			if (!value.is(lowir::ValueKind::Integer) || body.literals[value.index].high != 0 ||
+				body.literals[value.index].low == 0 || body.literals[value.index].low > INT32_MAX)
+				throw BackendError("assembly label requires a positive i32 exit tag");
+			result.constants[i] = body.literals[value.index];
+			group.registers = 0;
+			group.label = true;
+			continue;
+		}
 		group.registers &= register_domain(module, op, alt) & ~clobbers;
 		group.access |= op.flags & (AO_READ | AO_WRITE);
 		group.early |= alt.early_write;
@@ -267,7 +281,7 @@ AssemblyBinding assign_assembly_operands(const lowir::AssemblyModule& module, co
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
-		if ((operand.flags & AO_FLAG) == 0)
+		if ((operand.flags & (AO_FLAG | AO_EXIT_TAG)) == 0)
 			columns = operand.alternative_count;
 	}
 	uint32_t work = 0;

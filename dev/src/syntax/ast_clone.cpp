@@ -1457,6 +1457,11 @@ Stmt* SyntaxCloner::stmt(const Stmt* stmt)
 	{
 		AsmStmt* result = copy(static_cast<const AsmStmt*>(stmt));
 		result->program = nullptr;
+		GotoStmt** labels = result->labels.size == 0 ? nullptr
+													 : arena_.copy_array(result->labels.data, result->labels.size);
+		for (uint32_t i = 0; i < result->labels.size; ++i)
+			labels[i] = copy(labels[i]);
+		result->labels.data = labels;
 		for (Slice<AsmOperand>* operands : { &result->outputs, &result->inputs })
 		{
 			AsmOperand* copies = operands->size == 0 ? nullptr : arena_.copy_array(operands->data, operands->size);

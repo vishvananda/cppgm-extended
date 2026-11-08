@@ -74,6 +74,28 @@ void constraints(PacketBuilder& packet, const std::vector<GnuOperand>& source)
 	for (uint32_t index = 0; index < source.size(); ++index)
 	{
 		const GnuOperand& input = source[index];
+		if (input.label)
+		{
+			asm_model::Operand label;
+			label.input = packet.definition.argument_count++;
+			label.flags = AO_READ;
+			label.first_alternative = static_cast<uint32_t>(packet.alternatives.size());
+			label.alternative_count = 1;
+			for (const asm_model::Operand& prior : packet.operands)
+				if (prior.alternative_count != 0)
+				{
+					label.alternative_count = prior.alternative_count;
+					break;
+				}
+			for (uint32_t column = 0; column < label.alternative_count; ++column)
+			{
+				Alternative alternative;
+				alternative.locations = AL_LABEL;
+				packet.alternatives.push_back(alternative);
+			}
+			packet.operands.push_back(label);
+			continue;
+		}
 		const std::string& constraint = input.constraint;
 		asm_model::Operand operand;
 		operand.flags = input.output ? AO_WRITE : AO_READ;
@@ -229,6 +251,16 @@ void constraints(PacketBuilder& packet, const std::vector<GnuOperand>& source)
 void gnu_constraints(PacketBuilder& packet, const std::vector<GnuOperand>& operands)
 {
 	constraints(packet, operands);
+	bool labels = false;
+	for (const GnuOperand& operand : operands)
+		labels = labels || operand.label;
+	if (labels)
+	{
+		asm_model::Operand selector;
+		selector.flags = AO_WRITE | AO_EXIT_TAG;
+		selector.output = packet.definition.argument_count++;
+		packet.operands.push_back(selector);
+	}
 }
 
 } // namespace assembly

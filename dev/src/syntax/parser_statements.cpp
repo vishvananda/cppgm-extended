@@ -208,6 +208,8 @@ Stmt* Parser::parse_asm()
 			stmt->is_volatile = true;
 		else if (accept(TokenKind::KW_INLINE))
 			stmt->is_inline = true;
+		else if (accept(TokenKind::KW_GOTO))
+			stmt->is_goto = true;
 		else
 			break;
 	}
@@ -220,6 +222,7 @@ Stmt* Parser::parse_asm()
 	next();
 	// Rare: collected locally rather than on the scratch stacks.
 	std::vector<AsmOperand> outputs, inputs;
+	std::vector<GotoStmt*> labels;
 	std::vector<TokenSpelling> clobbers;
 	uint32_t section = 0;
 	uint32_t pending_colons = 0;
@@ -235,7 +238,7 @@ Stmt* Parser::parse_asm()
 				break;
 		}
 		--pending_colons;
-		if (++section > 3)
+		if (++section > (stmt->is_goto ? 4u : 3u))
 		{
 			fail();
 			return nullptr;
@@ -244,6 +247,19 @@ Stmt* Parser::parse_asm()
 			continue;
 		do
 		{
+			if (section == 4)
+			{
+				if (!at_identifier())
+				{
+					fail();
+					return nullptr;
+				}
+				GotoStmt* label = make<GotoStmt>(StmtKind::Goto, location());
+				label->label = tok().identifier;
+				labels.push_back(label);
+				next();
+				continue;
+			}
 			if (section == 3)
 			{
 				if (!tok().is_literal() || (tok().flags & kStringLiteral) == 0)
@@ -287,6 +303,8 @@ Stmt* Parser::parse_asm()
 	if (!expect(TokenKind::OP_RPAREN) || !expect(TokenKind::OP_SEMICOLON))
 		return nullptr;
 	stmt->is_extended = section != 0;
+	stmt->labels = Slice<GotoStmt*>{ labels.empty() ? nullptr : arena_.copy_array(labels.data(), labels.size()),
+		static_cast<uint32_t>(labels.size()) };
 	stmt->outputs = Slice<AsmOperand>{
 		outputs.empty() ? nullptr : arena_.copy_array(outputs.data(), static_cast<uint32_t>(outputs.size())),
 		static_cast<uint32_t>(outputs.size())

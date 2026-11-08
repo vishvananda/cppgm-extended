@@ -131,7 +131,7 @@ cppgm++ runtime measures **codegen performance**: self-built versus GCC-built or
 
 - C++11 is the baseline; other dialects have only partial extension support.
 - Targets are Linux x86-64 and optional Intel macOS; other architectures are unsupported.
-- General inline assembly is unsupported; a few GNU forms are recognized.
+- Inline assembly has an [optional PA36 profile](pa36/README.md) (`--full-asm`); global/naked assembly and broader ISA coverage remain in progress.
 - No C++ standard library is bundled; use a host-installed library.
 - The compiler may contain bugs.
 - Code generation may be poor for unfamiliar program shapes.

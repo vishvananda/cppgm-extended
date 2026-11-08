@@ -106,7 +106,7 @@ void Parser::parse_assembly_operand()
 	operand.type = parse_type();
 	operand.input = assembly_number(kNoId - 1, "assembly input argument", true);
 	operand.output = assembly_number(kNoId - 1, "assembly output argument", true);
-	operand.flags = static_cast<uint8_t>(assembly_number(63, "assembly operand flags"));
+	operand.flags = static_cast<uint8_t>(assembly_number(127, "assembly operand flags"));
 	operand.input_storage = assembly_number(1, "assembly storage flag") != 0;
 	operand.condition = static_cast<uint8_t>(assembly_number(15, "assembly flag condition"));
 	operand.first_alternative = static_cast<uint32_t>(module.alternatives.size());
