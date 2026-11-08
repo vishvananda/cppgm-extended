@@ -46,6 +46,8 @@ bool ConstantInterpreter::zero_array_tail(const Type* type, uint32_t depth)
 	{
 		if (member->variable->kind != EntityKind::Variable || (member->bit_field && member->variable->name == nullptr))
 			continue;
+		if (static_cast<const VariableEntity*>(member->variable)->member_initializer != nullptr)
+			return false;
 		const bool zero = zero_array_tail(member->variable->type, depth + 1);
 		if (!zero)
 			return false;

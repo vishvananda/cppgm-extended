@@ -334,11 +334,12 @@ Placeholder non-type template parameters (`auto`, `auto*`, `auto&` and
 function and object identities, reference binding and heterogeneous packs;
 the deduced type must still be a permitted C++17 template-argument type.
 
-Hosted C++17 allocation uses `<new>`'s `std::align_val_t` declarations for
+Hosted C++17 allocation uses `std::align_val_t` declarations for
 objects aligned beyond `__STDCPP_DEFAULT_NEW_ALIGNMENT__`. Select alignment-aware
 allocation and deallocation overloads, including arrays, class fallback forms
 and constructor-failure cleanup. Preserve placement arguments and pass the
-object's alignment to the selected ABI.
+object's alignment to the selected ABI. PA31's optional lane checks these
+operations with the host's `<new>` header.
 
 C++17 aggregates can include public, non-virtual bases. Initialize those bases
 before direct members, with the same brace elision, constant evaluation and

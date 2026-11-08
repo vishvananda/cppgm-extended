@@ -1044,6 +1044,7 @@ FunctionEntity* Analyzer::select_constructor(ClassEntity* entity, const syntax::
 	// `elide` then says whether it was. In a substitution no viable or an
 	// ambiguous constructor is its failure (null; 14.8.2p8).
 	Candidate chosen = selection != nullptr ? *selection : Candidate();
+	bool conversion_result = false;
 	if (selection == nullptr)
 	{
 		std::vector<FunctionEntity*>& set = overload_set_;
@@ -1059,10 +1060,11 @@ FunctionEntity* Analyzer::select_constructor(ClassEntity* entity, const syntax::
 		direct_class_ = kind == ConstructionKind::Direct && arguments.size == 1 ? entity : nullptr;
 		standard_only_ = kind == ConstructionKind::Converting;
 		chosen = best_viable(arguments, location, set, nullptr, true, entity);
+		conversion_result = elided_direct_sequence(chosen) != nullptr;
 		direct_class_ = saved_direct;
 		standard_only_ = saved_standard;
 	}
-	if (elided_direct_sequence(chosen) != nullptr)
+	if (conversion_result)
 	{
 		ExprFacts* source = facts_of(*WithoutParentheses(arguments[0]));
 		Conversion conversion = sequences_[chosen.first];
