@@ -36,6 +36,8 @@ and [GitHub Intel](https://github.com/vishvananda/cppgm-extended/blob/benchmark-
 Separate library comparisons: [index-cpp](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/index-cpp/report.md) and
 [simdjson scalar/SSE](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/simdjson/report.md)
 ([methodology](benchmarks/simdjson/README.md)).
+[Godot full headless builds and runtime](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/godot/report.md)
+([methodology](benchmarks/godot/README.md)) exercise the complete engine.
 
 ## Caveats
 

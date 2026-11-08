@@ -1,0 +1,101 @@
+name: Godot benchmarks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmarks:
+    name: Godot full headless build and performance
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 150
+    defaults:
+      run:
+        shell: bash
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_STDLIB_FLAGS: ""
+      CPPGM_WARNINGS_AS_ERRORS: "1"
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential binutils ca-certificates clang git python3 python3-pip time
+          python3 -m pip install --break-system-packages scons==4.10.1
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Trust the mounted checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Build compiler
+        run: make -C dev cppgm++ -j "$(nproc)"
+      - name: Build Godot with all three compilers and compare checked workloads
+        run: python3 scripts/godot_ci.py run --output obj/godot
+      - name: Report
+        if: always()
+        run: |
+          if [ -f obj/godot/details.md ]; then
+            cat obj/godot/details.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Retain results and raw observations
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: godot-${{ github.sha }}-${{ github.run_id }}
+          path: |
+            obj/godot/*.json
+            obj/godot/*.jsonl
+            obj/godot/*.md
+            obj/godot/*.stdout
+            obj/godot/*.stderr
+            obj/godot/*.time
+            obj/godot/*.log
+          if-no-files-found: warn
+          retention-days: 14
+
+  publish:
+    name: publish Godot results
+    needs: benchmarks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-branch
+      - uses: actions/download-artifact@v7
+        with:
+          name: godot-${{ github.sha }}-${{ github.run_id }}
+          path: artifact
+      - name: Publish comparison and retained history
+        env:
+          REVISION: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 tools/scripts/godot_ci.py publish artifact badge-branch \
+            --revision "$REVISION" --run-url "$RUN_URL"
+          cd badge-branch
+          git add godot
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Publish Godot benchmarks of $REVISION"
+          git push origin HEAD:benchmark-badges
