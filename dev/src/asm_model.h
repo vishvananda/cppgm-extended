@@ -152,7 +152,8 @@ enum OperandFlag : uint8_t
 	AO_COMMUTATIVE = 4,
 	AO_FLAG = 8,
 	AO_VOLATILE = 16,
-	AO_NO_MEMORY = 32
+	AO_NO_MEMORY = 32,
+	AO_EXIT_TAG = 64 // i32 output selecting fallthrough (0) or a label's tag
 };
 
 enum Property : uint16_t
@@ -176,9 +177,6 @@ enum State : uint32_t
 	AS_DIRECTION_FLAG = 32
 };
 
-// A view of one architectural register. Overlap is determined by bank and
-// number, not by spelling: e.g. AH and RAX, or XMM3 and ZMM3. Zero width in a
-// constraint domain means the operand's width; encoded operands have a width.
 // A producer's symbol identity and constant byte displacement.
 struct SymbolReference
 {
@@ -186,6 +184,9 @@ struct SymbolReference
 	int64_t addend = 0;
 };
 
+// A view of one architectural register. Overlap is determined by bank and
+// number, not by spelling: e.g. AH and RAX, or XMM3 and ZMM3. Zero width in a
+// constraint domain means the operand's width; encoded operands have a width.
 struct Register
 {
 	RegisterBank bank;

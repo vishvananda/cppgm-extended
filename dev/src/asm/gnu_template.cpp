@@ -27,7 +27,7 @@ void text(PacketBuilder& packet, const std::string& value)
 	packet.pieces.push_back(piece);
 }
 
-uint32_t reference(const std::string& source, std::size_t& pos, const std::vector<GnuOperand>& operands)
+uint32_t reference(const std::string& source, std::size_t& pos, const std::vector<GnuOperand>& operands, bool label)
 {
 	if (pos == source.size())
 		fail("missing assembly operand reference");
@@ -44,17 +44,28 @@ uint32_t reference(const std::string& source, std::size_t& pos, const std::vecto
 				return i;
 		fail("unknown named assembly operand: " + name);
 	}
+	uint32_t extra = 0;
+	if (label)
+		for (const GnuOperand& operand : operands)
+			if (operand.output && !operand.constraint.empty() && operand.constraint[0] == '+')
+				++extra;
 	uint64_t index = 0;
 	bool any = false;
 	while (pos < source.size() && source[pos] >= '0' && source[pos] <= '9')
 	{
 		index = index * 10 + static_cast<unsigned>(source[pos++] - '0');
-		if (index >= operands.size())
+		if (index >= uint64_t(operands.size()) + extra)
 			fail("assembly operand reference is out of range");
 		any = true;
 	}
 	if (!any)
 		fail("invalid assembly operand reference");
+	if (label)
+	{
+		if (index < extra)
+			fail("assembly label reference is out of range");
+		index -= extra;
+	}
 	return static_cast<uint32_t>(index);
 }
 
@@ -140,7 +151,9 @@ void pieces(PacketBuilder& packet, const std::string& source, const std::vector<
 					fail(std::string("assembly operand modifier is not implemented yet: ") + next);
 				}
 			}
-			piece.operand = reference(source, pos, operands);
+			piece.operand = reference(source, pos, operands, piece.format == Format::Label);
+			if (operands[piece.operand].label != (piece.format == Format::Label))
+				fail("assembly label references require the label modifier");
 		}
 		packet.pieces.push_back(piece);
 	}
@@ -167,7 +180,8 @@ PacketBuilder gnu_packet(const std::string& source, const std::vector<GnuOperand
 	{
 		const asm_model::Operand& operand = packet.operands[i];
 		if ((operand.flags & AO_COMMUTATIVE) != 0 &&
-			((operand.flags & (AO_READ | AO_WRITE)) != AO_READ || i + 1 == operands.size() || operands[i + 1].output))
+			((operand.flags & (AO_READ | AO_WRITE)) != AO_READ || i + 1 == operands.size() || operands[i + 1].output ||
+				operands[i + 1].label))
 			fail("assembly commutative modifier requires two read-only inputs");
 		if (operand.alternative_count != 0)
 		{

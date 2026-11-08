@@ -32,6 +32,13 @@ struct SymbolUse
 	asm_model::SymbolReference reference;
 };
 
+struct LabelUse
+{
+	uint32_t first;
+	uint32_t count;
+	uint32_t operand;
+};
+
 struct Address
 {
 	asm_model::Register base = {};
@@ -54,12 +61,15 @@ struct Operand
 	uint16_t bits = 0;
 	std::string target;
 	uint32_t label = 0;
+	bool external_label = false;
 };
 
 struct Instruction
 {
 	bool label = false;
 	uint8_t prefix = 0;
+	bool is_exit = false;
+	uint32_t exit_tag = 0;
 	std::string mnemonic;
 	std::vector<Operand> operands; // destination first in either source dialect
 	uint32_t line = 1;
@@ -76,7 +86,7 @@ struct AssemblyError
 
 // The input is user assembly after its frontend's placeholder expansion.
 // This is its only instruction parse; ordinary compiler code never uses it.
-std::vector<Instruction> parse(
-	const std::string& source, asm_model::Dialect dialect, const std::vector<SymbolUse>& symbols = {});
+std::vector<Instruction> parse(const std::string& source, asm_model::Dialect dialect,
+	const std::vector<SymbolUse>& symbols = {}, const std::vector<LabelUse>& labels = {});
 
 } // namespace assembly

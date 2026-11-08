@@ -93,6 +93,7 @@ void FunctionLowering::full_asm_statement(const syntax::AsmStmt& stmt)
 		else
 			values[argument.input] = operand(expr, ConversionContext::Argument).value;
 	}
+	const lowir::Value exits = full_asm_exit_arguments(stmt, types, values);
 	lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::Asm, lowir::Type::scalar(lowir::TypeKind::Void));
 	inst.immediate = lowir::add_assembly(
 		lowering_.program(), packet, types.data(), lowering_.debug_location(stmt.location));
@@ -104,6 +105,8 @@ void FunctionLowering::full_asm_statement(const syntax::AsmStmt& stmt)
 			finish_asm_output(capture);
 	destroy_temporaries(cleanup_base);
 	end_full_expression(region);
+	if (stmt.is_goto)
+		branch_asm_exits(stmt, exits);
 }
 
 } // namespace lower

@@ -38,7 +38,7 @@ unsigned width(lowir::Type type)
 }
 
 void expand(std::string& source, const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& definition,
-	const AssemblyPlan& plan, std::vector<assembly::SymbolUse>& symbols)
+	const AssemblyPlan& plan, std::vector<assembly::SymbolUse>& symbols, std::vector<assembly::LabelUse>& labels)
 {
 	for (uint32_t i = 0; i < definition.piece_count; ++i)
 	{
@@ -72,6 +72,16 @@ void expand(std::string& source, const lowir::AssemblyModule& module, const lowi
 			if (suffix == 0)
 				throw BackendError("invalid assembly mnemonic width modifier");
 			source += suffix;
+			continue;
+		}
+		if (plan.locations[piece.operand] == AL_LABEL)
+		{
+			if (piece.format != Format::Default && piece.format != Format::Label)
+				unsupported("this outgoing label formatting modifier");
+			const std::string marker = "__cppgm_label";
+			labels.push_back(assembly::LabelUse{
+				static_cast<uint32_t>(source.size()), static_cast<uint32_t>(marker.size()), piece.operand });
+			source += marker;
 			continue;
 		}
 		if (plan.locations[piece.operand] == AL_SYMBOL)
@@ -142,6 +152,9 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 	std::shared_ptr<AssemblyPlan> plan(new AssemblyPlan());
 	plan->definition = id;
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
+		if ((module.operands[definition.first_operand + i].flags & AO_EXIT_TAG) != 0)
+			plan->exit_operand = i;
+	for (uint32_t i = 0; i < definition.operand_count; ++i)
 		if ((module.operands[definition.first_operand + i].flags & AO_FLAG) != 0 &&
 			module.operands[definition.first_operand + i].type.kind() == lowir::TypeKind::I128)
 			unsupported("128-bit flag outputs");
@@ -167,15 +180,17 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 	}
 	std::string source;
 	std::vector<assembly::SymbolUse> symbols;
-	expand(source, module, definition, *plan, symbols);
+	std::vector<assembly::LabelUse> labels;
+	expand(source, module, definition, *plan, symbols, labels);
 	try
 	{
-		plan->instructions = assembly::parse(source, definition.dialect, symbols);
+		plan->instructions = assembly::parse(source, definition.dialect, symbols, labels);
 	}
 	catch (const assembly::AssemblyError& error)
 	{
 		throw BackendError("assembly line " + std::to_string(error.line) + ": " + error.message);
 	}
+	append_assembly_exits(*plan, definition);
 	return plan;
 }
 

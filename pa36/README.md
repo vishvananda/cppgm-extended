@@ -82,6 +82,11 @@ their clobbers remain the producer's responsibility.
 Support named and numeric local labels, forward/backward numeric references,
 GNU `%=` labels, and direct `jmp`/condition-code branches within one template.
 Keep label identities distinct when optimization clones or inlines a template.
+Support GNU `asm goto`, named/numeric outgoing label references, outputs on
+outgoing edges and normal C++ scope-exit cleanup. Numeric label references
+count a `+` output twice. Represent destinations as real LowIR control flow;
+the shared boundary's exit-tag output can feed an ordinary `switch`.
+Preserve over-aligned local storage across declared register clobbers.
 LowIR selects the dialect; the current GNU source adapter uses AT&T. Choose one
 alternative column jointly across operands. Respect register aliases
 and lifetimes, preserve the host ABI, and capture outputs before assigning
@@ -133,8 +138,7 @@ included in those reports or in the required course completion criteria.
 
 ### Further extensions
 
-Outgoing labels, GNU goto,
-global/naked assembly, directives, relocations, unwind state and broader
+Global/naked assembly, directives, further relocations, unwind state and broader
 x86/VEX/EVEX coverage remain extension goals. Original Rust assembly is a useful
 cross-frontend consumer. These goals require additional contracts and tests;
 the current suite does not establish their completion. Header vocabulary for

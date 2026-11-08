@@ -48,7 +48,7 @@ const char* prepare_operands(Analyzer& analyzer, const syntax::AsmStmt& stmt, Sc
 	bool captured_outputs = false;
 	for (const syntax::AsmOperand& output : stmt.outputs)
 		captured_outputs = captured_outputs || (output.expression->facts->flags & kBitField) != 0;
-	for (uint32_t i = 0; i < packet.operands.size(); ++i)
+	for (uint32_t i = 0; i < stmt.outputs.size + stmt.inputs.size; ++i)
 	{
 		asm_model::Operand& operand = packet.operands[i];
 		const syntax::Expr& expr = *(
@@ -123,6 +123,15 @@ const char* prepare_operands(Analyzer& analyzer, const syntax::AsmStmt& stmt, Sc
 void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 {
 	const uint32_t count = stmt.outputs.size + stmt.inputs.size;
+	if (stmt.is_goto)
+	{
+		if (!full_asm_)
+			error(stmt.location, "asm goto requires the optional full assembly profile");
+		if (stmt.labels.empty())
+			error(stmt.location, "asm goto requires outgoing labels");
+		for (const syntax::GotoStmt* label : stmt.labels)
+			statement(*label, scope);
+	}
 	// A template's definition checks the operands' names; its instances,
 	// and other code, type them.
 	if (body_ == nullptr || body_->pattern || !semantic() || template_depth_ != 0)
@@ -349,6 +358,16 @@ void Analyzer::full_asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 			convert_operand(*source.expression, type);
 		operands.push_back(operand);
 	}
+	for (const syntax::GotoStmt* target : stmt.labels)
+	{
+		assembly::GnuOperand label;
+		label.label = true;
+		label.name = target->label->spelling;
+		for (const assembly::GnuOperand& prior : operands)
+			if (prior.name == label.name)
+				error(target->location, "duplicate assembly operand or label name");
+		operands.push_back(label);
+	}
 	std::vector<std::string> clobbers;
 	for (const TokenSpelling& spelling : stmt.clobbers)
 	{
@@ -361,7 +380,7 @@ void Analyzer::full_asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 	std::vector<ConstValue> addresses;
 	try
 	{
-		built = assembly::gnu_packet(text, operands, clobbers, stmt.is_volatile, !stmt.is_extended);
+		built = assembly::gnu_packet(text, operands, clobbers, stmt.is_volatile || stmt.is_goto, !stmt.is_extended);
 		if (const char* message = prepare_operands(*this, stmt, scope, built, addresses))
 			error(stmt.location, message);
 	}

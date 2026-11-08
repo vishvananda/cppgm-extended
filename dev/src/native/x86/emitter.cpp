@@ -1139,7 +1139,8 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	switch (inst.op)
 	{
 	case Op::Asm:
-		encode_assembly(asm_, function.assembly->plans[static_cast<uint32_t>(a.imm)]->instructions);
+		encode_assembly(
+			asm_, function.assembly->plans[static_cast<uint32_t>(a.imm)]->instructions, inst.nops == 2 ? rm(b) : RM());
 		break;
 	case Op::Mov:
 		mov(a, b, flags_read_after(function, index));

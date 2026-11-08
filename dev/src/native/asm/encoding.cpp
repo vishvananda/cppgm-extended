@@ -180,7 +180,7 @@ void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 		integer(out, inst, *form, suffix);
 }
 
-void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& instructions)
+void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& instructions, const RM& exit_frame)
 {
 	std::vector<uint32_t> labels(instructions.size(), kNoLabel);
 	for (size_t i = 0; i < instructions.size(); ++i)
@@ -188,6 +188,11 @@ void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& i
 			labels[i] = out.new_label();
 	for (const assembly::Instruction& inst : instructions)
 	{
+		if (inst.is_exit)
+		{
+			out.mov_store_imm(exit_frame, inst.exit_tag, 4);
+			continue;
+		}
 		if (inst.label)
 		{
 			out.bind(labels[&inst - instructions.data()]);

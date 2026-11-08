@@ -57,6 +57,7 @@ struct GnuOperand
 	std::string constraint;
 	unsigned bits = 0;
 	bool output = false;
+	bool label = false;
 	bool is_volatile = false;
 };
 

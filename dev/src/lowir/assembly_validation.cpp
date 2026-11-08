@@ -150,7 +150,7 @@ bool operand(const AssemblyModule& module, const AssemblyTemplate& site, uint32_
 {
 	const AssemblyOperand& op = module.operands[site.first_operand + index];
 	if (static_cast<unsigned>(op.type.kind()) > static_cast<unsigned>(TypeKind::Obj) ||
-		(op.flags & ~(AO_READ | AO_WRITE | AO_COMMUTATIVE | AO_FLAG | AO_VOLATILE | AO_NO_MEMORY)) != 0 ||
+		(op.flags & ~(AO_READ | AO_WRITE | AO_COMMUTATIVE | AO_FLAG | AO_VOLATILE | AO_NO_MEMORY | AO_EXIT_TAG)) != 0 ||
 		!slice(op.first_alternative, op.alternative_count, module.alternatives.size()) ||
 		(op.input != lowir::kNoId && op.input >= site.argument_count) ||
 		(op.output != lowir::kNoId && op.output >= site.argument_count))
@@ -160,9 +160,16 @@ bool operand(const AssemblyModule& module, const AssemblyTemplate& site, uint32_
 		return invalid("inconsistent assembly operand access", error);
 	if ((op.flags & AO_FLAG) != 0)
 	{
-		if ((op.flags & (AO_READ | AO_WRITE)) != AO_WRITE || op.alternative_count != 0 || op.condition >= 16 ||
-			op.type.kind() < TypeKind::I1 || op.type.kind() > TypeKind::I128)
+		if ((op.flags & AO_EXIT_TAG) != 0 || (op.flags & (AO_READ | AO_WRITE)) != AO_WRITE ||
+			op.alternative_count != 0 || op.condition >= 16 || op.type.kind() < TypeKind::I1 ||
+			op.type.kind() > TypeKind::I128)
 			return invalid("invalid assembly flag output", error);
+	}
+	else if ((op.flags & AO_EXIT_TAG) != 0)
+	{
+		if (op.flags != (AO_WRITE | AO_EXIT_TAG) || op.type.kind() != TypeKind::I32 || op.output == lowir::kNoId ||
+			op.alternative_count != 0 || op.input_storage || op.condition != 0)
+			return invalid("invalid assembly exit-tag output", error);
 	}
 	else if (op.alternative_count == 0)
 		return invalid("assembly operand has no alternatives", error);
@@ -183,6 +190,10 @@ bool operand(const AssemblyModule& module, const AssemblyTemplate& site, uint32_
 	for (uint32_t i = 0; i < op.alternative_count; ++i)
 	{
 		const Alternative& alt = module.alternatives[op.first_alternative + i];
+		if ((alt.locations & AL_LABEL) != 0 &&
+			(alt.locations != AL_LABEL || op.flags != AO_READ || op.type.kind() != TypeKind::I32 || op.input_storage ||
+				alt.matching != asm_model::kNoId || alt.early_write))
+			return invalid("invalid assembly label operand", error);
 		if (alt.matching != asm_model::kNoId &&
 			(alt.matching >= site.operand_count || alt.matching == index ||
 				(op.flags & (AO_READ | AO_WRITE)) != AO_READ ||
@@ -218,6 +229,26 @@ bool template_packet(const AssemblyModule& module, const AssemblyTemplate& site,
 	for (uint32_t i = 0; i < site.operand_count; ++i)
 		if (!operand(module, site, i, arguments, columns, error))
 			return false;
+	uint32_t labels = 0, selectors = 0;
+	for (uint32_t i = 0; i < site.operand_count; ++i)
+	{
+		const AssemblyOperand& op = module.operands[site.first_operand + i];
+		selectors += (op.flags & AO_EXIT_TAG) != 0;
+		bool label = false, other = false;
+		for (uint32_t a = 0; a < op.alternative_count; ++a)
+		{
+			const uint8_t locations = module.alternatives[op.first_alternative + a].locations;
+			label = label || locations == AL_LABEL;
+			other = other || locations != AL_LABEL;
+		}
+		if (label &&
+			(other || (op.flags & AO_COMMUTATIVE) != 0 ||
+				(i != 0 && (module.operands[site.first_operand + i - 1].flags & AO_COMMUTATIVE) != 0)))
+			return invalid("assembly labels cannot mix locations or commutative pairs", error);
+		labels += label;
+	}
+	if ((labels != 0 && selectors != 1) || (labels == 0 && selectors != 0))
+		return invalid("assembly labels require exactly one exit-tag output", error);
 	for (const Argument& arg : arguments)
 		if (!arg.present)
 			return invalid("unreferenced assembly invocation argument", error);
@@ -231,8 +262,19 @@ bool template_packet(const AssemblyModule& module, const AssemblyTemplate& site,
 			return invalid("assembly text piece is out of bounds", error);
 		if (piece.kind == PieceKind::Operand &&
 			(piece.operand >= site.operand_count ||
-				(module.operands[site.first_operand + piece.operand].flags & AO_FLAG) != 0))
+				(module.operands[site.first_operand + piece.operand].flags & (AO_FLAG | AO_EXIT_TAG)) != 0))
 			return invalid("invalid assembly operand reference", error);
+		if (piece.kind == PieceKind::Operand)
+		{
+			const AssemblyOperand& op = module.operands[site.first_operand + piece.operand];
+			const bool label = op.alternative_count != 0 &&
+				module.alternatives[op.first_alternative].locations == AL_LABEL;
+			if ((piece.format == Format::Label && !label) ||
+				(label &&
+					((piece.format != Format::Default && piece.format != Format::Label) || piece.bits != 0 ||
+						piece.offset != 0)))
+				return invalid("invalid assembly label formatting", error);
+		}
 	}
 	return true;
 }

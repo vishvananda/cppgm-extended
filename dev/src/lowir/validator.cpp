@@ -833,6 +833,14 @@ bool Validator::check_assembly(const Instruction& inst)
 		if (!argument(operand.input, operand.input_storage ? Type::scalar(TypeKind::Ptr) : operand.type) ||
 			!argument(operand.output, Type::scalar(TypeKind::Ptr)))
 			return fail("assembly invocation argument type mismatch");
+		if (operand.alternative_count != 0 &&
+			module.alternatives[operand.first_alternative].locations == asm_model::AL_LABEL)
+		{
+			const Value value = body_->operands[inst.extra_first + operand.input];
+			if (value.kind != ValueKind::Integer || body_->literals[value.index].high != 0 ||
+				body_->literals[value.index].low == 0 || body_->literals[value.index].low > 2147483647u)
+				return fail("assembly label requires a positive constant i32 exit tag");
+		}
 	}
 	return true;
 }
