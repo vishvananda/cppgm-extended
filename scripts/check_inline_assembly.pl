@@ -85,6 +85,22 @@ sub fixture_link_options
 	return $^O eq 'darwin' ? ('-Wl,-no_pie') : ('-no-pie');
 }
 
+sub requested_instructions
+{
+    my ($source) = @_;
+    (my $path = $source) =~ s/\.t$/.assembly-instructions/;
+    my @names = basename($source) =~ /stream/ ? ('movntps') : ();
+    if (-f $path) {
+        for my $name (split /\n/, read_file($path)) {
+            $name =~ s/^\s+|\s+$//g;
+            next if $name eq '';
+            die "$path: invalid instruction name '$name'\n" if $name !~ /\A[a-z][a-z0-9]*\z/;
+            push @names, $name;
+        }
+    }
+    return @names;
+}
+
 sub canonical_inputs
 {
 	my ($directory, $source) = @_;
@@ -174,11 +190,14 @@ for my $test (@tests)
 				command($directory, "$label.roundtrip-compile", $app, "-$level", '-c', $canonical, '-o', "$directory/$label.roundtrip.o");
 				push @observations, observe($directory, "$label.roundtrip", "$directory/$label.roundtrip.o", $driver);
 			}
-			if (basename($source) =~ /stream/)
+			if (my @requested = requested_instructions($source))
 			{
 				my @inspect = $^O eq 'darwin' ? ('otool', '-tvV') : ('objdump', '-d');
 				my $dump = command($directory, "$label.inspect", @inspect, $object);
-				die "$test: native object lacks the requested movntps instruction\n" if $dump !~ /\bmovntps\b/i;
+                for my $instruction (@requested) {
+                    die "$test: native object lacks the requested $instruction instruction\n"
+                        if $dump !~ /\b\Q$instruction\E\b/i;
+                }
 			}
 		}
 		++$index;

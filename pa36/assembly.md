@@ -108,6 +108,10 @@ view. The frontend handles its own string escapes and placeholder syntax. The
 backend parses the resulting assembly source once and retains typed operands.
 Source `.intel_syntax`/`.att_syntax` directives can change dialect and register
 prefix mode within a packet; its local-label scope survives those switches.
+EVEX source decorations remain part of supplied assembly: destination masks
+`{k1}`..`{k7}`, optional `{z}` and supported memory broadcasts such as `{1to16}`.
+The native form determines their validity and displacement scaling. Unsupported
+forms or modifiers must fail, including decorations on ordinary instructions.
 Named/numeric labels and branches stay within the template. Numeric `1f`/`1b`
 references select the nearest matching label in that direction. A `unique`
 piece supplies a label suffix; every emitted occurrence has its own label

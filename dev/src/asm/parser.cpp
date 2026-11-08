@@ -61,6 +61,7 @@ private:
 	bool syntax(const std::string& name);
 	asm_model::Register reg();
 	Operand operand();
+	void decorators(Operand& operand);
 	Operand intel_memory(uint16_t bits);
 	Operand att_memory(int64_t displacement);
 	void address_register(const asm_model::Register& reg) const;
@@ -345,6 +346,44 @@ Operand Parser::operand()
 	return result;
 }
 
+void Parser::decorators(Operand& operand)
+{
+	while (take('{'))
+	{
+		take('%');
+		const std::string name = word();
+		asm_model::Register reg;
+		if (parse_register(name.data(), name.size(), reg) && reg.bank == asm_model::RegisterBank::Mask)
+		{
+			if (reg.number == 0 || operand.mask != 0)
+				fail("invalid or repeated assembly write mask");
+			operand.mask = reg.number;
+		}
+		else if (name == "z")
+		{
+			if (operand.zero)
+				fail("repeated zero-mask modifier");
+			operand.zero = true;
+		}
+		else
+		{
+			const char* counts[] = { "1to2", "1to4", "1to8", "1to16", "1to32", "1to64" };
+			bool found = false;
+			for (unsigned i = 0; i < 6; ++i)
+				if (name == counts[i])
+				{
+					if (operand.broadcast)
+						fail("repeated broadcast modifier");
+					operand.broadcast = static_cast<uint8_t>(2u << i);
+					found = true;
+				}
+			if (!found)
+				fail("assembly decorator is not implemented: " + name);
+		}
+		expect('}');
+	}
+}
+
 void Parser::rip_register(Address& address)
 {
 	if (word() != "rip" || address.rip)
@@ -617,7 +656,9 @@ std::vector<Instruction> Parser::run()
 			do
 			{
 				const bool indirect = branch && dialect_ == asm_model::Dialect::Att && take('*');
-				inst.operands.push_back(branch && !indirect ? target() : operand());
+				Operand value = branch && !indirect ? target() : operand();
+				decorators(value);
+				inst.operands.push_back(std::move(value));
 				if (inst.operands.size() > 5)
 					fail("too many assembly instruction operands");
 			} while (take(','));

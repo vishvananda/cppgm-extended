@@ -698,3 +698,31 @@ The GNU source observer uses a target attribute and pointer-only ABI, keeping
 execution CPU-gated. Whole qualification is deferred as before. 512-bit and
 extended register bindings, x87/MMX/mask classes, further directives/ISA and
 original Rust integration remain open.
+
+## 2026-11-08 checkpoint: EVEX encoding and literal masks
+
+Shared vector operand planning now feeds VEX and EVEX emission. Architectural
+EVEX variants cover 127 existing families, 60 fused forms and 23 new names.
+Literal XMM/YMM/ZMM0..31, mask/zero modifiers, supported memory broadcasts and
+compressed displacement scaling emit directly. Four KMOV forms handle mask,
+GPR and memory transfers with their distinct width/prefix rules. Invalid
+decorations on ordinary instructions are rejected rather than discarded.
+
+155160 independent cases per dialect match LLVM MC exactly and GNU as text
+bytes. Additional 252 mask-move cases per dialect match LLVM. Oracle feedback
+removed invalid mask promises for SAD and whole-byte lane shifts. GNU as
+requires explicit DS syntax for absolute EVEX memory where LLVM accepts plain
+brackets; the independent GNU input adds that equivalent syntax without any
+segment-prefix byte. Inputs, diagnostics and outputs remain retained.
+
+Native LowIR observer checks masks, merge/zero, high registers, broadcasts,
+displacement boundaries and guards, and passes O0/O2/O3 with GCC/Clang observers.
+This Broadwell host lacks AVX-512, so execution is explicitly CPU-skipped;
+requested instructions are still inspected. A private missing-instruction
+control confirms that a CPU skip cannot hide absent code. New negative cases
+cover missing masks, invalid broadcasts, unmaskable operations and decorations
+on ordinary arithmetic. The existing streaming inspection control still passes.
+
+No aggregate qualification repeated. 512-bit/extended typed bindings, further
+register classes, rounding/SAE, mask-result instructions, broader directives
+and original Rust integration remain open. Godot stays paused.

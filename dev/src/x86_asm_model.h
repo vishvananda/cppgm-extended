@@ -583,4 +583,195 @@ inline const VexForm* vex_fma_forms(std::size_t& count)
 	return kVexFmaForms;
 }
 
+// EVEX supplements: flags permit masking (1), zero masking (2), memory
+// broadcast (4). Element widths determine broadcast and compressed disp8.
+struct EvexVariant
+{
+	const char* mnemonic;
+	std::uint8_t w, lengths, element_bits, flags;
+};
+inline const EvexVariant* evex_variants(std::size_t& count)
+{
+	static const EvexVariant kEvexVariants[] = {
+		{ "vaddps", 0, 7, 32, 7 },
+		{ "vaddpd", 1, 7, 64, 7 },
+		{ "vaddss", 0, 1, 32, 3 },
+		{ "vaddsd", 1, 1, 64, 3 },
+		{ "vsubps", 0, 7, 32, 7 },
+		{ "vsubpd", 1, 7, 64, 7 },
+		{ "vsubss", 0, 1, 32, 3 },
+		{ "vsubsd", 1, 1, 64, 3 },
+		{ "vmulps", 0, 7, 32, 7 },
+		{ "vmulpd", 1, 7, 64, 7 },
+		{ "vmulss", 0, 1, 32, 3 },
+		{ "vmulsd", 1, 1, 64, 3 },
+		{ "vdivps", 0, 7, 32, 7 },
+		{ "vdivpd", 1, 7, 64, 7 },
+		{ "vdivss", 0, 1, 32, 3 },
+		{ "vdivsd", 1, 1, 64, 3 },
+		{ "vminps", 0, 7, 32, 7 },
+		{ "vminpd", 1, 7, 64, 7 },
+		{ "vminss", 0, 1, 32, 3 },
+		{ "vminsd", 1, 1, 64, 3 },
+		{ "vmaxps", 0, 7, 32, 7 },
+		{ "vmaxpd", 1, 7, 64, 7 },
+		{ "vmaxss", 0, 1, 32, 3 },
+		{ "vmaxsd", 1, 1, 64, 3 },
+		{ "vandps", 0, 7, 32, 7 },
+		{ "vandpd", 1, 7, 64, 7 },
+		{ "vandnps", 0, 7, 32, 7 },
+		{ "vandnpd", 1, 7, 64, 7 },
+		{ "vorps", 0, 7, 32, 7 },
+		{ "vorpd", 1, 7, 64, 7 },
+		{ "vxorps", 0, 7, 32, 7 },
+		{ "vxorpd", 1, 7, 64, 7 },
+		{ "vunpcklps", 0, 7, 32, 7 },
+		{ "vunpcklpd", 1, 7, 64, 7 },
+		{ "vunpckhps", 0, 7, 32, 7 },
+		{ "vunpckhpd", 1, 7, 64, 7 },
+		{ "vsqrtps", 0, 7, 32, 7 },
+		{ "vsqrtss", 0, 1, 32, 3 },
+		{ "vsqrtpd", 1, 7, 64, 7 },
+		{ "vsqrtsd", 1, 1, 64, 3 },
+		{ "vmovaps", 0, 7, 32, 3 },
+		{ "vmovups", 0, 7, 32, 3 },
+		{ "vmovapd", 1, 7, 64, 3 },
+		{ "vmovupd", 1, 7, 64, 3 },
+		{ "vmovss", 0, 1, 32, 3 },
+		{ "vmovsd", 1, 1, 64, 3 },
+		{ "vmovntps", 0, 7, 32, 0 },
+		{ "vmovntpd", 1, 7, 64, 0 },
+		{ "vmovntdq", 0, 7, 32, 0 },
+		{ "vpaddb", 0, 7, 8, 3 },
+		{ "vpaddw", 0, 7, 16, 3 },
+		{ "vpaddd", 0, 7, 32, 7 },
+		{ "vpaddq", 1, 7, 64, 7 },
+		{ "vpsubb", 0, 7, 8, 3 },
+		{ "vpsubw", 0, 7, 16, 3 },
+		{ "vpsubd", 0, 7, 32, 7 },
+		{ "vpsubq", 1, 7, 64, 7 },
+		{ "vpaddsb", 0, 7, 8, 3 },
+		{ "vpaddsw", 0, 7, 16, 3 },
+		{ "vpaddusb", 0, 7, 8, 3 },
+		{ "vpaddusw", 0, 7, 16, 3 },
+		{ "vpsubsb", 0, 7, 8, 3 },
+		{ "vpsubsw", 0, 7, 16, 3 },
+		{ "vpsubusb", 0, 7, 8, 3 },
+		{ "vpsubusw", 0, 7, 16, 3 },
+		{ "vpacksswb", 0, 7, 8, 3 },
+		{ "vpackssdw", 0, 7, 16, 3 },
+		{ "vpackuswb", 0, 7, 8, 3 },
+		{ "vpunpcklbw", 0, 7, 16, 3 },
+		{ "vpunpcklwd", 0, 7, 8, 3 },
+		{ "vpunpckldq", 0, 7, 8, 3 },
+		{ "vpunpcklqdq", 1, 7, 64, 7 },
+		{ "vpunpckhbw", 0, 7, 16, 3 },
+		{ "vpunpckhwd", 0, 7, 8, 3 },
+		{ "vpunpckhdq", 0, 7, 8, 3 },
+		{ "vpunpckhqdq", 1, 7, 64, 7 },
+		{ "vpmullw", 0, 7, 16, 3 },
+		{ "vpmulhw", 0, 7, 16, 3 },
+		{ "vpmulhuw", 0, 7, 16, 3 },
+		{ "vpmuludq", 1, 7, 64, 7 },
+		{ "vpmaddwd", 0, 7, 8, 3 },
+		{ "vpavgb", 0, 7, 8, 3 },
+		{ "vpavgw", 0, 7, 16, 3 },
+		{ "vpmaxsw", 0, 7, 16, 3 },
+		{ "vpmaxub", 0, 7, 8, 3 },
+		{ "vpminsw", 0, 7, 16, 3 },
+		{ "vpminub", 0, 7, 8, 3 },
+		{ "vpsadbw", 0, 7, 16, 0 },
+		{ "vpshufb", 0, 7, 8, 3 },
+		{ "vpmaddubsw", 0, 7, 16, 3 },
+		{ "vpmulhrsw", 0, 7, 16, 3 },
+		{ "vpmuldq", 1, 7, 64, 7 },
+		{ "vpackusdw", 0, 7, 16, 3 },
+		{ "vpminsb", 0, 7, 8, 3 },
+		{ "vpminsd", 0, 7, 32, 7 },
+		{ "vpminuw", 0, 7, 16, 3 },
+		{ "vpminud", 0, 7, 32, 7 },
+		{ "vpmaxsb", 0, 7, 8, 3 },
+		{ "vpmaxsd", 0, 7, 32, 7 },
+		{ "vpmaxuw", 0, 7, 16, 3 },
+		{ "vpmaxud", 0, 7, 32, 7 },
+		{ "vpmulld", 0, 7, 32, 7 },
+		{ "vpabsb", 0, 7, 8, 3 },
+		{ "vpabsw", 0, 7, 16, 3 },
+		{ "vpabsd", 0, 7, 32, 7 },
+		{ "vshufps", 0, 7, 32, 7 },
+		{ "vshufpd", 1, 7, 64, 7 },
+		{ "vpshufd", 0, 7, 32, 7 },
+		{ "vpshufhw", 0, 7, 16, 3 },
+		{ "vpshuflw", 0, 7, 16, 3 },
+		{ "vpalignr", 0, 7, 8, 3 },
+		{ "vbroadcastss", 0, 7, 32, 3 },
+		{ "vbroadcastsd", 1, 6, 64, 3 },
+		{ "vpsllw", 0, 7, 16, 3 },
+		{ "vpslld", 0, 7, 32, 3 },
+		{ "vpsllq", 1, 7, 64, 3 },
+		{ "vpsrlw", 0, 7, 16, 3 },
+		{ "vpsrld", 0, 7, 32, 3 },
+		{ "vpsrlq", 1, 7, 64, 3 },
+		{ "vpsraw", 0, 7, 16, 3 },
+		{ "vpsrad", 0, 7, 32, 3 },
+		{ "vpslldq", 0, 7, 16, 0 },
+		{ "vpsrldq", 0, 7, 16, 0 },
+		{ "vpbroadcastb", 0, 7, 8, 3 },
+		{ "vpbroadcastw", 0, 7, 16, 3 },
+		{ "vpbroadcastd", 0, 7, 32, 3 },
+		{ "vpbroadcastq", 1, 7, 64, 3 },
+	};
+	count = sizeof kEvexVariants / sizeof kEvexVariants[0];
+	return kEvexVariants;
+}
+struct EvexForm
+{
+	VexForm form;
+	std::uint8_t element_bits, flags;
+};
+inline const EvexForm* evex_forms(std::size_t& count)
+{
+	using L = VexLayout;
+	static const EvexForm kEvexForms[] = {
+		{ { "vmovdqa32", L::Move, 0x6f, 1, 1, 0, 7, 0, 0, 0 }, 32, 3 },
+		{ { "vmovdqa64", L::Move, 0x6f, 1, 1, 1, 7, 0, 0, 0 }, 64, 3 },
+		{ { "vmovdqu32", L::Move, 0x6f, 1, 2, 0, 7, 0, 0, 0 }, 32, 3 },
+		{ { "vmovdqu64", L::Move, 0x6f, 1, 2, 1, 7, 0, 0, 0 }, 64, 3 },
+		{ { "vmovdqu8", L::Move, 0x6f, 1, 3, 0, 7, 0, 0, 0 }, 8, 3 },
+		{ { "vmovdqu16", L::Move, 0x6f, 1, 3, 1, 7, 0, 0, 0 }, 16, 3 },
+		{ { "vpandd", L::Nds, 0xdb, 1, 1, 0, 7, 0, 0, 0 }, 32, 7 },
+		{ { "vpandq", L::Nds, 0xdb, 1, 1, 1, 7, 0, 0, 0 }, 64, 7 },
+		{ { "vpandnd", L::Nds, 0xdf, 1, 1, 0, 7, 0, 0, 0 }, 32, 7 },
+		{ { "vpandnq", L::Nds, 0xdf, 1, 1, 1, 7, 0, 0, 0 }, 64, 7 },
+		{ { "vpord", L::Nds, 0xeb, 1, 1, 0, 7, 0, 0, 0 }, 32, 7 },
+		{ { "vporq", L::Nds, 0xeb, 1, 1, 1, 7, 0, 0, 0 }, 64, 7 },
+		{ { "vpxord", L::Nds, 0xef, 1, 1, 0, 7, 0, 0, 0 }, 32, 7 },
+		{ { "vpxorq", L::Nds, 0xef, 1, 1, 1, 7, 0, 0, 0 }, 64, 7 },
+		{ { "vinsertf32x4", L::Insert, 0x18, 3, 1, 0, 6, 128, 0, 0 }, 32, 3 },
+		{ { "vinsertf64x2", L::Insert, 0x18, 3, 1, 1, 6, 128, 0, 0 }, 64, 3 },
+		{ { "vinserti32x4", L::Insert, 0x38, 3, 1, 0, 6, 128, 0, 0 }, 32, 3 },
+		{ { "vinserti64x2", L::Insert, 0x38, 3, 1, 1, 6, 128, 0, 0 }, 64, 3 },
+		{ { "vextractf32x4", L::Extract, 0x19, 3, 1, 0, 6, 128, 0, 0 }, 32, 3 },
+		{ { "vextractf64x2", L::Extract, 0x19, 3, 1, 1, 6, 128, 0, 0 }, 64, 3 },
+		{ { "vextracti32x4", L::Extract, 0x39, 3, 1, 0, 6, 128, 0, 0 }, 32, 3 },
+		{ { "vextracti64x2", L::Extract, 0x39, 3, 1, 1, 6, 128, 0, 0 }, 64, 3 },
+		{ { "vpabsq", L::Unary, 0x1f, 2, 1, 1, 7, 0, 0, 0 }, 64, 7 },
+	};
+	count = sizeof kEvexForms / sizeof kEvexForms[0];
+	return kEvexForms;
+}
+
+struct MaskMoveForm
+{
+	const char* mnemonic;
+	std::uint8_t bits, pp, w, gpr_pp, gpr_w;
+};
+inline const MaskMoveForm* mask_move_forms(std::size_t& count)
+{
+	static const MaskMoveForm kMaskMoveForms[] = { { "kmovb", 8, 1, 0, 1, 0 }, { "kmovw", 16, 0, 0, 0, 0 },
+		{ "kmovd", 32, 1, 1, 3, 0 }, { "kmovq", 64, 0, 1, 3, 1 } };
+	count = sizeof kMaskMoveForms / sizeof kMaskMoveForms[0];
+	return kMaskMoveForms;
+}
+
 } // namespace x86_asm_model
