@@ -79,9 +79,9 @@ public:
 	void note_use(lowir::Value value, uint32_t inst, uint32_t block, int32_t pos, bool value_use);
 	bool address_expr(uint32_t inst, AddrExpr& expr) const;
 
-	const std::shared_ptr<const AssemblyPlan>& assembly_plan(uint32_t definition) const;
+	const std::shared_ptr<const AssemblyPlan>& assembly_plan(const lowir::Instruction& inst) const;
 	void emit_assembly(const lowir::Instruction& inst);
-	mutable std::vector<std::shared_ptr<const AssemblyPlan>> assembly_plans_;
+	mutable std::map<uint64_t, std::shared_ptr<const AssemblyPlan>> assembly_plans_;
 
 	// ---- allocation.cpp
 	void inst_clobbers(uint32_t inst, uint32_t& clobber, uint32_t& early) const;

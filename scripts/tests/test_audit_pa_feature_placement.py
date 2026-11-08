@@ -1468,6 +1468,21 @@ function @main() -> i32 {
             self.assertEqual(status, 0)
             self.assertIn("- tests scanned: 0", out.read_text())
 
+    def test_default_audit_includes_optional_assembly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "pa36/tests/source/100-basic.t"
+            write(source, 'void f() { asm volatile("nop"); }\n')
+            write(source.with_suffix(".assembly-profile"), "gnu\n")
+            report = root / "report.md"
+            status = audit.main([
+                "--root", str(root), "--tracker", str(REPO_ROOT / audit.DEFAULT_TRACKER),
+                "--fail-on-early", "--include-ok", "--markdown-out", str(report),
+            ])
+            self.assertEqual(status, 0)
+            self.assertIn("- tests scanned: 1", report.read_text())
+            self.assertIn("assembly.shared_boundary", report.read_text())
+
 
 if __name__ == "__main__":
     unittest.main()

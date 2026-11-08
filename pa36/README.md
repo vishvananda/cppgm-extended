@@ -46,13 +46,21 @@ hosts are Linux and Intel macOS; qualify their object formats separately.
 
 ### Assignment boundary
 
-The current subset covers GNU basic/extended statements with register operands,
-fixed GPR and XMM domains, alternative columns, matching constraints, early
-writes, read/write operands, flag outputs and declared register clobbers.
+The current subset covers GNU basic/extended statements with register, memory
+and integer-immediate operands, fixed GPR and XMM domains, alternative columns,
+matching constraints, early writes, read/write operands, flag outputs and
+declared register clobbers. Support `m`/`o` memory constraints, `i`/`n`
+constants, `g` mixed locations and the integer ranges in `x86_asm_model.h`.
+Letters within a constraint alternative describe a union; select one alternative
+column jointly across every operand. GNU immediate constraints see the
+operand's machine-mode bits, including sign extension of narrow constants.
 Output places are addressable scalar or vector lvalues; bit-field output
 places are a further extension.
 Preserve named operands, supported width modifiers, volatility and memory/state
 effects through the [documented LowIR records](assembly.md).
+Evaluate each memory address once. A register alternative may load from that
+captured address; a memory alternative names its storage directly. Do not add an
+unrequested read of an output-only memory operand.
 
 Support the initial integer/SSE forms described by the supplied encoding facts,
 in Intel and AT&T syntax, including their register widths and addressing forms.
@@ -105,7 +113,7 @@ included in those reports or in the required course completion criteria.
 
 ### Further extensions
 
-Memory/immediate/symbol constraints, internal and outgoing labels, GNU goto,
+Symbol constraints, internal and outgoing labels, GNU goto,
 global/naked assembly, directives, relocations, unwind state and broader
 x86/VEX/EVEX coverage remain extension goals. Original Rust assembly is a useful
 cross-frontend consumer. These goals require additional contracts and tests;

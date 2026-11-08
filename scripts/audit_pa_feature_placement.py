@@ -33,7 +33,7 @@ AUDITED_PAS = COURSE_PAS + OPTIONAL_PAS
 # Self-hosting (PA34) and optimizing the compiler (PA35) add no language
 # feature, so no feature table row may name either as its owner.
 NO_FEATURE_PAS = frozenset({"pa34", "pa35"})
-DEFAULT_PAS = tuple(f"pa{i}" for i in range(10, 24))
+DEFAULT_PAS = tuple(f"pa{i}" for i in range(10, 24)) + OPTIONAL_PAS
 LOCAL_TEST_HYGIENE_PAS = AUDITED_PAS
 STRICT_TEMPLATE_PAS = ("pa14", "pa15", "pa17", "pa18", "pa19")
 SEMANTIC_ONLY_PA_MAX = 7

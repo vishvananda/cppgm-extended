@@ -316,6 +316,35 @@ all matched. These are initial supported forms, not full ISA qualification.
 The required strict report passed 8,099/8,099 at this checkpoint.
 
 The encoder has no production XED/LLVM dependency. Rust source lowering and its
-qualified backend pin, memory/immediate/symbol operands, control flow/global
-assembly, directives, wider register classes and broad ISA closure remain open.
+qualified backend pin, symbol operands, control flow/global assembly,
+directives, wider register classes and broad ISA closure remain open.
 See PA36's current-subset declaration before interpreting its passing tests.
+
+### Memory and immediate checkpoint (2026-11-08)
+
+GNU `m`/`o`, `i`/`n`, mixed locations and target integer ranges now use the same
+LowIR boundary. Allocation chooses a location and register jointly across one
+alternative column. Explicit memory inputs retain their storage addresses;
+register alternatives load their values once. Output-only memory has no
+invented load. A read/write memory location names one place; distinct input and
+output places can choose a register alternative. Binding caches distinguish
+invocations, including different constants supplied to one template.
+
+The optional suite has 26 fixtures covering these rules, aggregate and volatile
+memory, aliases, effects across optimization/inlining and malformed domains.
+All pass at O0/O2/O3 with host and self-built compilers; portable source cases
+were also checked with GCC and Clang. The number reader now accepts every
+unsigned 64-bit range word while rejecting overflow. The default placement
+audit includes the optional lane as well as its numbering checks.
+
+The required strict report remains 8,099/8,099. Debug information, self-host
+through PA5, inception object/compiler equality, PA35 smoke and architecture
+audits pass. Frozen compile instruction work changes by -0.0024% at O0 and
++0.0130% at O3 against the pre-assembly baseline; output objects are identical.
+This is an instruction-work sanity check, not a wall-time measurement.
+
+The initial register subset also passed native Intel macOS CI under LLVM 18 and
+21. That run predates this operand extension. Remaining operand work includes
+full register-class transfers, commutative swaps, symbols and bit-field output
+places. The later control-flow, module assembly, unwind, ISA and Rust release
+stages are still required before claiming full assembly support.

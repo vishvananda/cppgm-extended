@@ -177,7 +177,7 @@ void FunctionSelector::inst_clobbers(uint32_t id, uint32_t& clobber, uint32_t& e
 	switch (inst.op)
 	{
 	case Opcode::Asm:
-		clobber = assembly_plan(static_cast<uint32_t>(inst.immediate))->writes;
+		clobber = assembly_plan(inst)->writes;
 		break;
 	case Opcode::Call:
 	{

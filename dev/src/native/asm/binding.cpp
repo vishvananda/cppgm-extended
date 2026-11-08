@@ -46,24 +46,49 @@ void expand(std::string& source, const lowir::AssemblyModule& module, const lowi
 		}
 		if (piece.kind != PieceKind::Operand)
 			unsupported("assembly-local unique labels");
-		const Reg r = plan.registers[piece.operand];
-		Register reg{ r < 16 ? RegisterBank::Gpr : RegisterBank::Vector, static_cast<uint8_t>(r < 16 ? r : r - 16),
-			static_cast<uint16_t>(width(module.operands[definition.first_operand + piece.operand].type)), 0 };
-		if (piece.bits != 0)
-			reg.bits = piece.bits;
-		reg.offset = piece.offset;
 		if (piece.format == Format::Suffix)
 		{
-			const char suffix = reg.bits == 8 ? 'b'
-				: reg.bits == 16              ? 'w'
-				: reg.bits == 32              ? 'l'
-				: reg.bits == 64              ? 'q'
-											  : 0;
+			const unsigned bits = piece.bits != 0
+				? piece.bits
+				: width(module.operands[definition.first_operand + piece.operand].type);
+			const char suffix = bits == 8 ? 'b' : bits == 16 ? 'w' : bits == 32 ? 'l' : bits == 64 ? 'q' : 0;
 			if (suffix == 0)
 				throw BackendError("invalid assembly mnemonic width modifier");
 			source += suffix;
 			continue;
 		}
+		if (plan.locations[piece.operand] == AL_IMMEDIATE)
+		{
+			lowir::Literal bits = plan.constants[piece.operand];
+			if (piece.format == Format::Negated)
+			{
+				bits.low = uint64_t(0) - bits.low;
+				bits.high = ~bits.high + (bits.low == 0);
+			}
+			if (bits.high != 0 && (bits.high != ~uint64_t(0) || static_cast<int64_t>(bits.low) >= 0))
+				unsupported("immediates exceeding 64 bits");
+			if (piece.format != Format::Default && piece.format != Format::Bare && piece.format != Format::Negated)
+				unsupported("this immediate formatting modifier");
+			if (definition.dialect == Dialect::Att && piece.format == Format::Default)
+				source += '$';
+			source += bits.high != 0 ? std::to_string(static_cast<int64_t>(bits.low)) : std::to_string(bits.low);
+			continue;
+		}
+		const Reg r = plan.registers[piece.operand];
+		if (plan.locations[piece.operand] == AL_MEMORY)
+		{
+			if (piece.format != Format::Default)
+				unsupported("this memory formatting modifier");
+			const Register address{ RegisterBank::Gpr, r, 64, 0 };
+			const std::string name = assembly::register_name(address);
+			source += definition.dialect == Dialect::Att ? "(%" + name + ")" : "[" + name + "]";
+			continue;
+		}
+		Register reg{ r < 16 ? RegisterBank::Gpr : RegisterBank::Vector, static_cast<uint8_t>(r < 16 ? r : r - 16),
+			static_cast<uint16_t>(width(module.operands[definition.first_operand + piece.operand].type)), 0 };
+		if (piece.bits != 0)
+			reg.bits = piece.bits;
+		reg.offset = piece.offset;
 		if (piece.format != Format::Default && piece.format != Format::Bare)
 			unsupported("this register formatting modifier");
 		const std::string name = assembly::register_name(reg);
@@ -77,7 +102,8 @@ void expand(std::string& source, const lowir::AssemblyModule& module, const lowi
 
 } // namespace
 
-std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& module, uint32_t id)
+std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& module, uint32_t id,
+	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments)
 {
 	const lowir::AssemblyTemplate& definition = module.templates[id];
 	if ((definition.properties & (AP_UNWIND | AP_NORETURN)) != 0)
@@ -96,7 +122,7 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 			unsupported("stack or frame register clobbers");
 		clobbers |= reg_bit(reg);
 	}
-	plan->registers = assign_assembly_registers(module, definition, clobbers);
+	static_cast<AssemblyBinding&>(*plan) = assign_assembly_operands(module, definition, clobbers, body, arguments);
 	plan->writes = clobbers;
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
@@ -105,7 +131,7 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 			continue;
 		const uint32_t bit = reg_bit(plan->registers[i]);
 		plan->writes |= bit; // input setup also overwrites its selected register
-		if ((operand.flags & AO_READ) != 0)
+		if ((operand.flags & AO_READ) != 0 || plan->locations[i] == AL_MEMORY)
 			plan->reads |= bit;
 	}
 	std::string source;

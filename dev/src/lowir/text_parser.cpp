@@ -482,10 +482,16 @@ uint64_t Parser::parse_positive(const char* text, uint32_t length) const
 	bool valid = length > 0 && text[0] != '0';
 	for (uint32_t i = 0; valid && i < length; ++i)
 	{
-		if (text[i] < '0' || text[i] > '9' || value > (~static_cast<uint64_t>(0) - 9) / 10)
+		if (text[i] < '0' || text[i] > '9')
 			valid = false;
 		else
-			value = value * 10 + static_cast<uint64_t>(text[i] - '0');
+		{
+			const uint64_t digit = static_cast<uint64_t>(text[i] - '0');
+			if (value > (UINT64_MAX - digit) / 10)
+				valid = false;
+			else
+				value = value * 10 + digit;
+		}
 	}
 	if (!valid)
 		fail("invalid positive integer: " + std::string(text, length));
