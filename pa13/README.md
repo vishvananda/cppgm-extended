@@ -80,6 +80,11 @@ PA13 writes a single concatenated LowIR program consisting of:
 - zero or more `global` definitions
 - zero or more `function` definitions
 
+The `__cxa_pure_virtual` runtime handler has the ABI's `void()` signature,
+with `unwind=no` and `return=noreturn`. A pure virtual slot points to that
+handler; its source parameter and result types need not be complete just to
+emit the class's vtable. See the [Itanium pure virtual function API](https://itanium-cxx-abi.github.io/cxx-abi/abi.html#vcall).
+
 LowIR top-level declaration/definition order is a presentation convention, not
 a dependency order. Reference outputs and canonical dumps use the order defined
 in `../pa8/lowir.md`: `declare global`, `declare function`, `global`, then

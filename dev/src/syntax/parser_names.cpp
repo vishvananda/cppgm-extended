@@ -61,6 +61,28 @@ bool IsTemplateCategory(NameCategory category)
 	return category == NameCategory::TypeTemplate || category == NameCategory::FunctionTemplate;
 }
 
+bool MemberTemplateSuffix(const ParseToken& token)
+{
+	// Calls and qualification continue a template-id. A delimiter can
+	// instead end a reference to a static member template: at these tokens
+	// a relational '>' would have no right operand.
+	if (token.kind != ParseTokenKind::Simple)
+		return false;
+	switch (token.simple)
+	{
+	case TokenKind::OP_LPAREN:
+	case TokenKind::OP_COLON2:
+	case TokenKind::OP_COMMA:
+	case TokenKind::OP_RPAREN:
+	case TokenKind::OP_RSQUARE:
+	case TokenKind::OP_RBRACE:
+	case TokenKind::OP_SEMICOLON:
+		return true;
+	default:
+		return false;
+	}
+}
+
 } // namespace
 
 bool Parser::names_type_hint(const Identifier* identifier) const
@@ -433,7 +455,7 @@ Parser::TemplateIdChoice Parser::template_id_follows(
 		return TemplateIdChoice::Yes;
 	// After `.` or `->` the name is looked up in the object's class
 	// (3.4.5p1), which the parser does not know: a member name followed by
-	// a template argument list and a call is taken as a member template --
+	// a template argument list and a call or delimiter is a member template --
 	// when some declaration made the name a template at all. A name no
 	// declaration so far made one (`x.imm < INT32_MIN || x.imm > (max)`)
 	// compares, whatever follows its `>`.
@@ -553,7 +575,7 @@ bool Parser::parse_name_component(NameMode mode, ListFrame<NameComponent>& compo
 						Tentative tentative(*this);
 						if (!parse_template_arguments(component.arguments) || abandoning_lists_ ||
 							(call_follows &&
-								((!at(TokenKind::OP_LPAREN) && !at(TokenKind::OP_COLON2)) ||
+								(!MemberTemplateSuffix(tok()) ||
 									!member_template_arguments_plausible(component.arguments))))
 						{
 							abandon_template_lists();
@@ -820,9 +842,7 @@ bool Parser::try_outermost_template_arguments(
 	{
 		Tentative tentative(*this);
 		parsed = parse_template_arguments(arguments) && !abandoning_lists_ &&
-			(!call_follows ||
-				((at(TokenKind::OP_LPAREN) || at(TokenKind::OP_COLON2)) &&
-					member_template_arguments_plausible(arguments)));
+			(!call_follows || (MemberTemplateSuffix(tok()) && member_template_arguments_plausible(arguments)));
 		if (parsed)
 			tentative.commit();
 	}

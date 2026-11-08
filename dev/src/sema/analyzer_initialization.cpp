@@ -1252,7 +1252,7 @@ bool Analyzer::designated_list(
 
 bool Analyzer::members_accept(const syntax::BracedInitList& list, uint32_t& next, const ClassEntity* cls)
 {
-	for (const BaseClass* base = cls->bases; base != nullptr; base = base->next)
+	for (const BaseClass* base = cls->bases; base != nullptr && next < list.elements.size; base = base->next)
 		if (!element_accepts(list, next, base->base->type))
 			return false;
 	// The members from the list at `next` in declaration order: an unnamed
@@ -1446,6 +1446,7 @@ void Analyzer::type_default_arguments(FunctionEntity* function, const syntax::Pa
 		if (initializer == nullptr)
 			continue;
 		Scope* parameters = default_argument_scope(initializer->expression, scope);
+		DefaultArgumentDemand demands(*this, initializer->expression);
 		default_argument_scope_ = parameters;
 		context.closure_context = function;
 		context.default_argument = i;
@@ -1473,6 +1474,46 @@ void Analyzer::type_default_arguments(FunctionEntity* function, const syntax::Pa
 	}
 	default_argument_scope_ = saved_defaults;
 	body_ = saved;
+}
+
+Analyzer::DefaultArgumentDemand::DefaultArgumentDemand(Analyzer& a, const syntax::Expr* expr)
+	: analyzer(a), previous(a.default_argument_demand_), expression(expr)
+{
+	analyzer.default_argument_demand_ = this;
+}
+
+Analyzer::DefaultArgumentDemand::~DefaultArgumentDemand()
+{
+	analyzer.default_argument_demand_ = previous;
+	if (head == nullptr)
+		return;
+	const uint32_t index = static_cast<uint32_t>(analyzer.default_argument_demands_.size());
+	analyzer.default_argument_demands_.push_back(head);
+	analyzer.default_argument_demand_index_.set(expression, index);
+}
+
+bool Analyzer::defer_default_function(FunctionEntity* function, bool call)
+{
+	if (default_argument_demand_ == nullptr)
+		return false;
+	DemandList* node = static_cast<DemandList*>(arena_.allocate(sizeof(DemandList), alignof(DemandList)));
+	*node = DemandList{ function, call, nullptr };
+	DefaultArgumentDemand& demands = *default_argument_demand_;
+	if (demands.tail == nullptr)
+		demands.head = node;
+	else
+		demands.tail->next = node;
+	demands.tail = node;
+	return true;
+}
+
+void Analyzer::use_default_argument(const syntax::Expr* expression)
+{
+	const uint32_t index = default_argument_demand_index_.find(expression);
+	if (index == PointerMap::kMissing)
+		return;
+	for (const DemandList* use = default_argument_demands_[index]; use != nullptr; use = use->next)
+		odr_use(use->function, use->call);
 }
 
 void Analyzer::name_local_type(ClassEntity* entity)

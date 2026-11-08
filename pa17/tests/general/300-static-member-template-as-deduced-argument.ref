@@ -1,0 +1,168 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  ptr addr @Graph__check
+  ptr addr @Graph__check__2
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $graph : obj<1x1>
+  slot $pointer : ptr
+  slot $pointers : obj<16x8>
+  slot $counter : obj<4x4>
+  slot $land__1 : i64
+  slot $cond__2 : i32
+  slot $land__3 : i64
+  slot $land__4 : i64
+  slot $land__5 : i64
+  slot $land__6 : i64
+
+  block ^entry:
+    %t1 = addr $graph
+    %t2 = addr @Graph__check
+    store typed ptr %t2, $pointer
+    %t3 = addr $pointers
+    copyobj 16x8 @__constexpr_template__1, %t3
+    %t4 = addr $counter
+    %t5 = addr $counter
+    %t6 = index i8 [projection=field] %t5, 0
+    store typed i32 3, %t6
+    %t7 = addr $counter
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = load typed i32 %t8
+    %t10 = cmp lt i32 %t9, 4
+    branch %t10, ^land_rhs_3, ^land_short_4
+
+  block ^land_rhs_3:
+    %t11 = addr $counter
+    %t12 = index i8 [projection=field] %t11, 0
+    %t13 = load typed i32 %t12
+    %t14 = cmp gt i32 %t13, 2
+    %t15 = cmp ne i64 %t14, 0
+    store typed i64 %t15, $land__1
+    jump ^land_end_5
+
+  block ^land_short_4:
+    store typed i64 0, $land__1
+    jump ^land_end_5
+
+  block ^land_end_5:
+    %t16 = load typed i64 $land__1
+    %t17 = cmp eq i64 %t16, 0
+    branch %t17, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t18 = load typed ptr $pointer
+    %t19 = call u8 %t18(7) as (%arg0 : i32) -> u8
+    branch %t19, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t20 = addr $pointers
+    %t21 = index ptr [projection=array_element] %t20, 0
+    %t22 = load typed ptr %t21
+    %t23 = call u8 %t22(7) as (%arg0 : i32) -> u8
+    %t24 = cmp ne u8 %t23, 0
+    store typed i64 %t24, $land__3
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store typed i64 0, $land__3
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t25 = load typed i64 $land__3
+    branch %t25, ^land_rhs_13, ^land_short_14
+
+  block ^land_rhs_13:
+    %t26 = addr $pointers
+    %t27 = index ptr [projection=array_element] %t26, 1
+    %t28 = load typed ptr %t27
+    %t29 = call u8 %t28(7) as (%arg0 : i32) -> u8
+    %t30 = cmp eq u8 %t29, 0
+    %t31 = cmp ne i64 %t30, 0
+    store typed i64 %t31, $land__4
+    jump ^land_end_15
+
+  block ^land_short_14:
+    store typed i64 0, $land__4
+    jump ^land_end_15
+
+  block ^land_end_15:
+    %t32 = load typed i64 $land__4
+    branch %t32, ^land_rhs_16, ^land_short_17
+
+  block ^land_rhs_16:
+    %t33 = addr @Graph__check
+    %t34 = call u8 @apply(%t33)
+    %t35 = cmp ne u8 %t34, 0
+    store typed i64 %t35, $land__5
+    jump ^land_end_18
+
+  block ^land_short_17:
+    store typed i64 0, $land__5
+    jump ^land_end_18
+
+  block ^land_end_18:
+    %t36 = load typed i64 $land__5
+    branch %t36, ^land_rhs_19, ^land_short_20
+
+  block ^land_rhs_19:
+    %t37 = addr @Graph__check
+    %t38 = call u8 @apply(%t37)
+    %t39 = cmp ne u8 %t38, 0
+    store typed i64 %t39, $land__6
+    jump ^land_end_21
+
+  block ^land_short_20:
+    store typed i64 0, $land__6
+    jump ^land_end_21
+
+  block ^land_end_21:
+    %t40 = load typed i64 $land__6
+    branch %t40, ^cond_then_7, ^cond_else_8
+
+  block ^cond_then_7:
+    store typed i32 0, $cond__2
+    jump ^cond_end_9
+
+  block ^cond_else_8:
+    store typed i32 2, $cond__2
+    jump ^cond_end_9
+
+  block ^cond_end_9:
+    %t41 = load typed i32 $cond__2
+    return i32 %t41
+}
+function @Graph__check(%value : i32) -> u8 [binding=weak, object=_ZN5Graph5checkILi7EEEbi, inline_hint=yes] {
+  slot $value : i32
+
+  block ^entry:
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = cmp eq i32 %t1, 7
+    %t3 = convert trunc u8 i64 %t2
+    return u8 %t3
+}
+function @Graph__check__2(%value : i32) -> u8 [binding=weak, object=_ZN5Graph5checkILi8EEEbi, inline_hint=yes] {
+  slot $value : i32
+
+  block ^entry:
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = cmp eq i32 %t1, 8
+    %t3 = convert trunc u8 i64 %t2
+    return u8 %t3
+}
+function @apply(%predicate : ptr) -> u8 [binding=weak, object=_Z5applyIPFbiEEbT_] {
+  slot $predicate : ptr
+
+  block ^entry:
+    store typed ptr %predicate, $predicate
+    %t1 = load typed ptr $predicate
+    %t2 = call u8 %t1(7) as (%arg0 : i32) -> u8
+    return u8 %t2
+}

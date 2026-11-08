@@ -2,7 +2,7 @@ declare global @__external_rtti_vtable____class_type_info [role=rtti_class, bind
 declare global @C__vtable [binding=strong, object=_ZTV1C]
 declare global @B__vtable [binding=strong, object=_ZTV1B]
 
-declare function @__cxa_pure_virtual(%arg0 : ptr [object_bytes=8]) -> void [unwind=no, return=noreturn, role=pure_virtual, binding=strong]
+declare function @__cxa_pure_virtual() -> void [unwind=no, return=noreturn, role=pure_virtual, binding=strong]
 declare function @take(%arg0 : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z4take1C]
 declare function @C___C(%arg0 : ptr [object_bytes=16]) -> void [unwind=no, binding=strong, object=_ZN1CD1Ev]
 

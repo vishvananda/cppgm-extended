@@ -1,0 +1,12 @@
+function @forward(%value : ptr [pass=by_address]) -> ptr [binding=strong, object=_Z7forwardR8DeferredI7MissingE] {
+  slot $value : ptr
+
+  block ^entry:
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
+    return ptr %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

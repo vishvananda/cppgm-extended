@@ -324,7 +324,13 @@ ExprFacts* Analyzer::call(const syntax::CallExpr& expr, Scope* scope)
 		}
 	}
 	else if (!undeclared)
+	{
+		const syntax::Expr* saved = member_callee_;
+		if (member_template_call)
+			member_callee_ = access;
 		callee = typed(*expr.callee, scope);
+		member_callee_ = saved;
+	}
 	if (failed())
 		return nullptr;
 	const ClassEntity* naming = naming_class_;

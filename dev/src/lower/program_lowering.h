@@ -1324,7 +1324,7 @@ private:
 	lowir::SymbolId rtti_vtable(TypeInfoKind kind);
 	lowir::SymbolId type_name_object(const sema::Type* type, const std::string& label, bool internal);
 	std::string type_object(const sema::Type* type, abi_mangle::AbiTargetKind kind);
-	lowir::SymbolId pure_virtual_symbol(const sema::FunctionEntity* function);
+	lowir::SymbolId pure_virtual_symbol();
 	lowir::SignatureId argument_signature(const sema::FunctionEntity* function);
 	lowir::SymbolId class_global(
 		const sema::ClassEntity* entity, abi_mangle::AbiTargetKind kind, const char* prefix, bool internal = false);

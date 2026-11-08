@@ -428,7 +428,8 @@ syntax::Expr* Decomposer::tuple_get(uint64_t index)
 	name->components.data[0].has_arguments = true;
 	name->components.data[0].arguments = syntax::Slice<syntax::TemplateArgument>{ argument, 1 };
 	bool member = false;
-	if (const ClassEntity* cls = ClassOf(type))
+	const ClassEntity* cls = ClassOf(type);
+	if (cls != nullptr && analyzer_.require_complete(cls) && cls->scope != nullptr)
 	{
 		const LookupResult found = analyzer_.names_.qualified(cls->scope, get, LookupFilter::Ordinary);
 		for (const FunctionList* node = found.found() && found.binding->kind == BindingKind::Function ? found.functions

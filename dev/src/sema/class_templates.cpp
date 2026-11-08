@@ -3041,8 +3041,13 @@ void Analyzer::instantiate_default_argument(FunctionEntity* function, uint32_t i
 	// (9.2p2).
 	const FunctionEntity* primary = function->primary;
 	const syntax::Expr* pattern = function->default_arguments[index];
-	if (pattern == nullptr || pattern->facts != nullptr)
+	if (pattern == nullptr)
 		return;
+	if (pattern->facts != nullptr)
+	{
+		use_default_argument(pattern);
+		return;
+	}
 	Scope* frame = nullptr;
 	const syntax::Expr* copy = pattern;
 	uint32_t limit = 0;

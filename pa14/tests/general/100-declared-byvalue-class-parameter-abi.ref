@@ -1,6 +1,6 @@
-declare function @dep__resolve(%arg0 : ptr [pass=by_address, object_bytes=4], %arg1 : obj<8x8>, %arg2 : ptr [pass=by_address, object_bytes=8], %arg3 : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=strong, object=_ZN3dep7resolveERN3api8ServicesENS0_6HandleERK3BoxI4TypeERS6_]
+declare function @dep__resolve(%arg0 : ptr [pass=by_address, object_bytes=4], %arg1 : obj<8x8>, %arg2 : ptr [pass=by_address], %arg3 : ptr [pass=by_address]) -> u8 [binding=strong, object=_ZN3dep7resolveERN3api8ServicesENS0_6HandleERK3BoxI4TypeERS6_]
 
-function @wrapper(%services : ptr [pass=by_address, object_bytes=4], %raw_scope : ptr [pass=by_address, object_bytes=4], %type : ptr [pass=by_address, object_bytes=8], %out : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=strong, object=_Z7wrapperRN3api8ServicesER5ScopeRK3BoxI4TypeERS6_] {
+function @wrapper(%services : ptr [pass=by_address, object_bytes=4], %raw_scope : ptr [pass=by_address, object_bytes=4], %type : ptr [pass=by_address], %out : ptr [pass=by_address]) -> u8 [binding=strong, object=_Z7wrapperRN3api8ServicesER5ScopeRK3BoxI4TypeERS6_] {
   slot $services : ptr
   slot $raw_scope : ptr
   slot $type : ptr

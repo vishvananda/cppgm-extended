@@ -1265,6 +1265,18 @@ private:
 		FunctionEntity* function, const syntax::ParameterClause& clause, Scope* scope);
 	void instantiate_default_argument(FunctionEntity* function, uint32_t index);
 	void type_default_arguments(FunctionEntity* function, const syntax::ParameterClause* clause, Scope* scope);
+	struct DefaultArgumentDemand
+	{
+		Analyzer& analyzer;
+		DefaultArgumentDemand* previous;
+		const syntax::Expr* expression;
+		DemandList* head = nullptr;
+		DemandList* tail = nullptr;
+		DefaultArgumentDemand(Analyzer& analyzer, const syntax::Expr* expression);
+		~DefaultArgumentDemand();
+	};
+	bool defer_default_function(FunctionEntity* function, bool call);
+	void use_default_argument(const syntax::Expr* expression);
 	Scope* default_argument_scope(const syntax::Expr* expression, Scope* fallback) const;
 	void name_local_type(ClassEntity* entity);
 
@@ -1880,6 +1892,11 @@ private:
 	// and object types, even after a differently named redeclaration.
 	PointerMap default_argument_scope_index_;
 	std::vector<Scope*> default_argument_scopes_;
+	// A declaration checks a default's initializer now, but its function
+	// definitions are required only when a call uses that default.
+	DefaultArgumentDemand* default_argument_demand_ = nullptr;
+	PointerMap default_argument_demand_index_;
+	std::vector<DemandList*> default_argument_demands_;
 	// A specialization shares already-substituted default-parameter
 	// prefixes. Demanding each of N defaults does not rebuild N prefixes.
 	FlatMap<DefaultKey, Scope*, DefaultKeyHash> default_argument_frames_;
@@ -2095,6 +2112,7 @@ private:
 	// A call's callee name is being analyzed (its function is checked and
 	// odr-used once the call's resolution selects it).
 	bool callee_name_ = false;
+	const syntax::Expr* member_callee_ = nullptr;
 	// Nonzero while a substitution whose failure is a result runs (14.8.2p8:
 	// a function template's deduced specialization, a partial
 	// specialization's argument list): an invalid type or expression in it

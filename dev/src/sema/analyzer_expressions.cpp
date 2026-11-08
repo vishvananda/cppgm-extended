@@ -164,9 +164,10 @@ ExprFacts* Analyzer::new_facts(const syntax::Expr& expr, const Type* type, Value
 	facts->type = type != nullptr ? type->canonical : nullptr;
 	facts->category = category;
 	expr.facts = facts;
-	// An object of a class template instance: its definition may matter
-	// (not a decltype operand's call, 5.2.2p11).
-	if (type != nullptr && type->unqualified->kind == TypeKind::Class &&
+	// A class prvalue needs its complete object type (except a decltype
+	// operand's call, 5.2.2p11). Merely naming a glvalue does not require
+	// instantiation; operations that need its definition request it there.
+	if (category == ValueCategory::PRValue && type != nullptr && type->unqualified->kind == TypeKind::Class &&
 		static_cast<const ClassEntity*>(type->unqualified->entity)->templ != nullptr && &expr != decltype_call_)
 		require_complete(static_cast<const ClassEntity*>(type->unqualified->entity));
 	++graph_.expressions;
@@ -184,6 +185,8 @@ bool Analyzer::check_not_deleted(const FunctionEntity* function, uint32_t locati
 
 void Analyzer::require_function_definition(FunctionEntity* function)
 {
+	if (default_argument_demand_ != nullptr && defer_default_function(function, true))
+		return;
 	// The caller has an instantiated definition not yet demanded. Sharing
 	// the queue insertion keeps ordinary odr-use's no-work path local.
 	function->definition_demanded = true;
@@ -205,6 +208,8 @@ void Analyzer::odr_use(FunctionEntity* function, bool call)
 				DeferredUse{ DeferredUse::Kind::Function, call, nullptr, nullptr, function, nullptr, nullptr, 0 });
 		return;
 	}
+	if (default_argument_demand_ != nullptr && defer_default_function(function, call))
+		return;
 	if (function->temporary_reference_initializer)
 		error(0, "an odr-used constructor binds a reference subobject to a temporary (CWG1696)");
 	// Its exception-specification is needed now (15.4p13).
@@ -2409,10 +2414,17 @@ ExprFacts* Analyzer::member_access(const syntax::MemberExpr& expr, Scope* scope)
 	}
 	// A template-id names the member function templates of its name (their
 	// call takes its arguments as explicit ones, 14.8.1).
+	const FunctionList* functions = result.functions;
 	if (last.has_arguments)
 	{
-		result.functions = member_templates(result, name.location);
-		result.binding = result.functions->binding;
+		functions = member_templates(result, name.location);
+		// Outside a call, explicit arguments can already determine a
+		// static member template's function type for argument deduction.
+		if (&expr != member_callee_)
+			functions = explicit_specializations(last, functions, scope);
+		if (functions == nullptr)
+			return nullptr;
+		result.binding = functions->binding;
 	}
 	// 11.2p5: named in the class searched; a member function's access is
 	// its call's (after overload resolution).
@@ -2434,7 +2446,7 @@ ExprFacts* Analyzer::member_access(const syntax::MemberExpr& expr, Scope* scope)
 	object_view.type = type;
 	if (expr.op == TokenKind::OP_ARROW)
 		object_view.category = ValueCategory::LValue;
-	return member_of_object(expr, &object_view, result.binding, result.functions, false);
+	return member_of_object(expr, &object_view, result.binding, functions, false);
 }
 
 FunctionList* Analyzer::member_templates(const LookupResult& result, uint32_t location)

@@ -1552,7 +1552,8 @@ RValue FunctionLowering::binary_expression(const syntax::BinaryExpr& expr)
 		// float, rounded once: bfloat_arithmetic) is a leaf of the chain.
 		const syntax::Expr* left = WithoutParentheses(node->left);
 		if (left->kind != syntax::ExprKind::Binary || !IsChainable(static_cast<const syntax::BinaryExpr*>(left)->op) ||
-			(left->facts->flags & (sema::kOperatorCall | sema::kTypeIdentity)) != 0 || bfloat_operation(*left))
+			(left->facts->flags & (sema::kOperatorCall | sema::kTypeIdentity | sema::kUserConverted)) != 0 ||
+			bfloat_operation(*left))
 			break;
 		node = static_cast<const syntax::BinaryExpr*>(left);
 	}

@@ -313,7 +313,7 @@ lowir::SymbolId ProgramLowering::table_entry(const sema::FunctionEntity* functio
 	if (adjustment.unused)
 		return lowir::kNoId;
 	if (function->pure || function->deleted)
-		return pure_virtual_symbol(function);
+		return pure_virtual_symbol();
 	ResultAdjustment result = ResultAdjustment();
 	const bool covariant = covariant_entry(function, kind, introducer, through, result);
 	if (kind == sema::SlotKind::CompleteDestructor)
@@ -1120,15 +1120,18 @@ bool ProgramLowering::local_type_information(const sema::Type* type)
 	}
 }
 
-lowir::SymbolId ProgramLowering::pure_virtual_symbol(const sema::FunctionEntity* function)
+lowir::SymbolId ProgramLowering::pure_virtual_symbol()
 {
-	// The runtime's __cxa_pure_virtual fills a pure function's slots; its
-	// declaration takes the boundary of the first slot it fills (the
-	// course's form).
+	// The runtime handler has its own void() boundary. A pure slot's source
+	// parameter types may be incomplete, and need no layout until an actual
+	// function definition or call requires their ABI.
 	if (pure_virtual_ != lowir::kNoId)
 		return pure_virtual_;
 	pure_virtual_ = new_symbol("__cxa_pure_virtual");
-	const lowir::SignatureId signature = argument_signature(function);
+	lowir::Signature handler = lowir::Signature();
+	handler.first_parameter = static_cast<uint32_t>(program_.parameters.size());
+	handler.result = lowir::Type::scalar(lowir::TypeKind::Void);
+	const lowir::SignatureId signature = program_.add_signature(handler);
 	program_.signatures[signature].boundary.unwind = ir_model::CUM_NO;
 	program_.signatures[signature].boundary.returns = ir_model::CRM_NORETURN;
 	program_.declare_function(pure_virtual_, lowir::SymbolKind::FunctionDeclaration, signature);
