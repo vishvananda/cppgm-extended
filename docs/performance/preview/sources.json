@@ -31,5 +31,12 @@
     "source_head": "783dbfcf01360d923ff590d2048a0c1764761cc3",
     "generated_for": "README layout review",
     "notes": "Data snapshots, not a migrated automatic publication pipeline."
+  },
+  "godot": {
+    "sha256": "926206102b3ca7751668d4cda99d077aeba9008110b03997368385e0e24f25fa",
+    "evidence_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/42496249277",
+    "artifact_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/42496249277/artifacts/13624916058",
+    "revision": "b866774e011bf6be996f089185079adbbde87b19",
+    "normalized_records": "godot-v1/records.json"
   }
 }

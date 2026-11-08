@@ -10,9 +10,16 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import godot_ci as ci
+import godot_results
+import benchmark_report
 
 
 class GodotCITests(unittest.TestCase):
+    def observations(self):
+        return [dict(workload=name, phase='AB-' + ref, label=label, cpu=cpu, measured_wall=cpu / 2)
+                for name in ci.WORKLOADS for ref in ('gcc', 'clang')
+                for label, cpu in [(ref, 2), ('cppgm', 1)]]
+
     def document(self):
         interval = dict(speed=2, blocks=[2], calibration_before=dict(speed=1, blocks=[1]),
                         calibration_after=dict(speed=1, blocks=[1]))
@@ -20,8 +27,11 @@ class GodotCITests(unittest.TestCase):
                 for ref in ('gcc', 'clang')}
         return dict(status='complete', source_commit=ci.COMMIT,
                     metadata=dict(revision='a' * 40, dirty=False, cpu='AMD EPYC example',
+                                  cpus='0,1', runtime_cpu='0', flags=ci.BUILD_FLAGS,
+                                  workload_hashes={'workload.gd': 'b' * 64},
                                   toolchains={label: 'example compiler' for label in ci.LABELS}),
-                    compilation={label: dict(status=0, cpu=100, wall=50) for label in ci.LABELS},
+                    compilation={label: dict(status=0, cpu=100, wall=50, command=['scons', '-j2'])
+                                 for label in ci.LABELS},
                     runtime={name: copy.deepcopy(pair) for name in ci.WORKLOADS},
                     correctness={name: {label: ci.expected(name, 100000) for label in ci.LABELS}
                                  for name in ci.WORKLOADS})
@@ -96,8 +106,9 @@ class GodotCITests(unittest.TestCase):
             document['metadata']['cpu'] = 'Intel Xeon Platinum 8370C'
             ci.save(artifact / 'results.json', document)
             ci.save(artifact / 'metadata.json', document['metadata'])
-            for name in ('compile-observations.jsonl', 'runtime-observations.jsonl'):
-                (artifact / name).write_text('{}\n')
+            (artifact / 'compile-observations.jsonl').write_text('')
+            (artifact / 'runtime-observations.jsonl').write_text(
+                ''.join(json.dumps(row) + '\n' for row in self.observations()))
             target = root / 'published'
             previous = target / 'godot/epyc/report.md'
             previous.parent.mkdir(parents=True)
@@ -107,6 +118,46 @@ class GodotCITests(unittest.TestCase):
             self.assertEqual(previous.read_text(), 'last EPYC')
             for path in ('godot/github-intel/results.json', 'godot/history/' + 'a' * 40 + '/github-intel/results.json'):
                 self.assertEqual((target / path).read_bytes(), (artifact / 'results.json').read_bytes())
+            shared = json.loads((target / 'godot/github-intel/standard/records.json').read_text())
+            self.assertEqual(len(shared['records']), 28)
+            self.assertTrue((target / 'godot/github-intel/standard/godot.md').is_file())
+
+    def test_shared_records_preserve_phase_metric_method_and_exact_host(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            ci.save(root / 'results.json', self.document())
+            rows = self.observations()
+            (root / 'runtime-observations.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in rows))
+            def normalized(environment='test host'):
+                return godot_results.normalize(root, environment, *(['https://example.test/evidence'] * 3))
+            doc = normalized()
+            catalog = json.loads((ci.ROOT / 'benchmarks/catalog.json').read_text())
+            benchmark_report.validate(catalog, doc)
+            self.assertEqual(len(doc['records']), 28)
+            builds = [r for r in doc['records'] if r['phase'] == 'build']
+            self.assertEqual(len(builds), 4)
+            self.assertTrue(all(r['test'] == 'full-build' and r['context']['workers'] == 2 for r in builds))
+            run = next(r for r in doc['records'] if r['test'] == 'scene' and r['baseline'] == 'gcc'
+                       and r['metric'] == 'cpu_seconds')
+            self.assertEqual((run['speedup'], run['candidate_seconds'], run['reference_seconds']), (2, 1, 2))
+            aggregate = next(r for r in doc['records'] if r['test'] == 'checked-workloads')
+            self.assertEqual(aggregate['coverage']['selected'], 5)
+            self.assertIsNone(aggregate['candidate_seconds'])
+            self.assertIn('Equal-weight geometric mean', aggregate['method'])
+            self.assertIn('system', aggregate['provenance']['historical_unknowns'])
+            self.assertNotEqual(doc['records'][0]['host']['id'], normalized('another host')['records'][0]['host']['id'])
+            changed = self.document()
+            changed['metadata']['cpu'] = 'another EPYC model'
+            ci.save(root / 'results.json', changed)
+            self.assertNotEqual(doc['records'][0]['host']['id'], normalized()['records'][0]['host']['id'])
+            changed['correctness']['scene']['cppgm'] += 1
+            ci.save(root / 'results.json', changed)
+            with self.assertRaises(ValueError):
+                normalized()
+            ci.save(root / 'results.json', self.document())
+            (root / 'runtime-observations.jsonl').write_text('')
+            with self.assertRaisesRegex(ValueError, 'missing raw runtime'):
+                normalized()
 
 
 if __name__ == '__main__':

@@ -33,6 +33,11 @@ Successful main runs publish alongside the other benchmark reports, retaining
 history by compiler commit and host. EPYC and GitHub Intel results are separate.
 PR results appear in the job summary and downloadable artifact. Artifacts retain
 commands, compiler/workload hashes, build flags, raw times and calibration.
+The `standard/` directory contains [shared version-1 records](../../docs/performance/results-format.md),
+a host-specific summary and per-workload tables. Full builds use the `build`
+phase; CPU and elapsed time stay separate. The runtime summary is an equal-weight
+geometric mean of all five workloads; individual results and A/A warnings remain
+in the detail report.
 
 To reproduce on Linux x86-64 with GCC, Clang and SCons 4.10.1 installed:
 

@@ -39,10 +39,19 @@ jobs:
         run: make -C dev cppgm++ -j "$(nproc)"
       - name: Build Godot with all three compilers and compare checked workloads
         run: python3 scripts/godot_ci.py run --output obj/godot
+      - name: Generate standard benchmark records and tables
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 scripts/godot_results.py obj/godot --output obj/godot/standard \
+            --environment 'GitHub hosted; Ubuntu 26.04 container' \
+            --run-url "$RUN_URL" --details-url "$RUN_URL" --raw-url "$RUN_URL"
       - name: Report
         if: always()
         run: |
-          if [ -f obj/godot/details.md ]; then
+          if [ -f obj/godot/standard/summary.md ]; then
+            cat obj/godot/standard/summary.md >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f obj/godot/details.md ]; then
             cat obj/godot/details.md >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Retain results and raw observations
@@ -58,6 +67,7 @@ jobs:
             obj/godot/*.stderr
             obj/godot/*.time
             obj/godot/*.log
+            obj/godot/standard/
           if-no-files-found: warn
           retention-days: 14
 

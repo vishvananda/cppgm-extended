@@ -67,7 +67,7 @@ independently summarized absolute times.
 A record identifies workload, named configuration, test or explicit aggregate,
 host (including CPU model and environment), optimization level, baseline compiler,
 phase and metric. A named configuration has arbitrary parameters: for example
-simdjson's backend and ISA, or a future Godot build preset. Tests/inputs are children
+simdjson's backend and ISA, or Godot's headless release preset. Tests/inputs are children
 of that configuration. Compiling one library is one measurement even when several
 runtime inputs use it.
 
@@ -122,7 +122,7 @@ translation or performance score for a course-specific contract.
 ## Add Godot or another workload
 
 1. Add one catalog entry with its status, documentation and named configurations.
-   Godot is registered as planned; its presets and test inputs are not invented.
+   Godot declares `headless-release`, one full build and five checked workloads.
 2. The workload runner builds and validates every declared compiler/configuration,
    freezes the inputs and records raw observations using the appropriate method.
 3. Emit version-1 records for each measured phase/test/baseline. Missing compiler,
@@ -138,8 +138,11 @@ translation or performance score for a course-specific contract.
    trusted benchmark publisher. Regenerate the README's catalog-driven rows when
    adding a configuration. No workload-specific branches belong in the renderer.
 
-This contract and prototype are ready for review. It does not claim that the
-existing publishers have already migrated or that Godot has been measured.
+Godot emits this format through `scripts/godot_results.py`: full-build CPU and
+elapsed observations remain separate from paired runtime measurements. Its runtime
+summary weights all five checked workloads equally. The job artifact and trusted
+publisher retain the shared tables, records and original measurements. The other
+existing publishers still require adapters.
 
 ## Producer migration checks
 

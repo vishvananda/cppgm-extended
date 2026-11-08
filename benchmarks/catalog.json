@@ -171,8 +171,35 @@
       "id": "godot",
       "name": "Godot build and benchmark",
       "kind": "build",
-      "status": "planned",
-      "configurations": []
+      "status": "active",
+      "configurations": [
+        {
+          "id": "headless-release",
+          "name": "Full headless release and five checked GDScript workloads",
+          "optimizations": [
+            "O3"
+          ],
+          "parameters": {
+            "source_commit": "ed1daf0bf001b61586d9930840f2f1394092c079",
+            "language": "GNU C++17",
+            "target_isa": [
+              "x86-64",
+              "SSE4.2",
+              "POPCNT"
+            ],
+            "modules": "all default modules, 3D and physics",
+            "graphics": "headless; window and graphics dependencies disabled",
+            "workloads": [
+              "dispatch",
+              "arrays",
+              "strings",
+              "geometry",
+              "scene"
+            ]
+          }
+        }
+      ],
+      "documentation": "benchmarks/godot/README.md"
     }
   ]
 }

@@ -61,10 +61,12 @@ class Results(unittest.TestCase):
             report.validate(self.catalog,self.document())
 
     def test_missing_results_remain_visible_and_never_become_zero(self):
+        self.catalog['workloads'].append(dict(id='future', name='Future workload', status='planned', configurations=[]))
         with tempfile.TemporaryDirectory() as directory:
             target=Path(directory)/'report';report.render(self.catalog,self.document([]),target)
             text=(target/'summary.md').read_text();self.assertIn('planned',text);self.assertIn('not measured',text)
             self.assertNotIn('0.000×',text)
+            self.assertFalse((target/'godot.md').exists())
 
     def test_host_id_cannot_merge_different_epyc_models(self):
         row=copy.deepcopy(self.row);row['host']['cpu']='AMD EPYC 9V74';row['baseline']='clang'

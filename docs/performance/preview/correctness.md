@@ -1,6 +1,6 @@
 ## Correctness and external builds
 
-Results below are a preview snapshot for `783dbfcf0`. Performance rows name their own measured revision; older measurements are labeled separately.
+Results below are preview snapshots. The original suites describe `783dbfcf0`; Godot describes `b866774e0`. Performance rows name their own measured revision; older measurements are labeled separately.
 
 | Suite / configuration | Result | What is checked | Evidence |
 |---|---|---|---|
@@ -14,7 +14,7 @@ Results below are a preview snapshot for `783dbfcf0`. Performance rows name thei
 | Boost | Pinned advisory suites pass | Upstream build, run and rejection actions | [CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476437427) |
 | Self-build and inception | Pass | Complete rebuild; identical self/inception compiler binaries | [CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476437424) |
 | Student export | Pass | Exported compiler, fixtures and reference wrappers | [CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476441242) |
-| Godot | Planned | Configurations and benchmark inputs not yet declared | Not measured |
+| Godot / headless release | 5 / 5 per compiler | Full engine builds; independent checksums for cppgm, GCC and Clang (`b866774e0`) | [Workloads and provenance](godot.md) |
 
 Upstream counts describe selected C++11 profiles. Exclusions remain visible and are not passes. The internal native overlap is a source/object projection, separate from the complete course harness. The [original GCC audit and source dispositions](../../../reports/cxx11-final-source-review.txt) retain the broader scope limits.
 

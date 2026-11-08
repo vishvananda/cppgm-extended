@@ -4,12 +4,14 @@ import argparse
 import json
 import math
 import os
+import platform
 from pathlib import Path
 import re
 import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 
 import benchmark_hosts
 import benchmark_timing as timing
@@ -173,7 +175,8 @@ def validate(document):
                 interval = document['runtime'][name][ref][key]
                 values = [interval, interval['calibration_before'], interval['calibration_after']]
                 for value in values:
-                    if not value['blocks'] or not math.isfinite(value['speed']) or value['speed'] <= 0:
+                    if (not value['blocks'] or any(not math.isfinite(v) or v <= 0
+                                                  for v in [value['speed'], *value['blocks']])):
                         raise ValueError('invalid Godot timing evidence')
     if set(document['compilation']) != set(LABELS):
         raise ValueError('missing full build evidence')
@@ -232,10 +235,16 @@ def run(args):
         compilers = dict(cppgm=compiler, gcc=common.compiler_path(args.gcc), clang=common.compiler_path(args.clang))
         cpus = ','.join(map(str, sorted(os.sched_getaffinity(0))))
         hashes = {label: timing.sha(path) for label, path in compilers.items()}
+        library = Path(subprocess.check_output([str(compilers['gcc']), '-print-file-name=libstdc++.so'],
+                                               text=True).strip()).resolve(strict=True)
         metadata = dict(revision=subprocess.check_output(['git', '-C', ROOT, 'rev-parse', 'HEAD'], text=True).strip(),
                         dirty=bool(subprocess.check_output(['git', '-C', ROOT, 'status', '--porcelain'])),
                         cpu=public_benchmarks.cpu_model(), cpus=cpus, runtime_cpu=args.runtime_cpu,
                         flags=BUILD_FLAGS, compiler_hashes=hashes,
+                        jobs=args.jobs, system=dict(platform=platform.platform(),
+                                                  os_release=Path('/etc/os-release').read_text(),
+                                                  libc=platform.libc_ver()),
+                        standard_library=f'libstdc++: {library}; sha256={timing.sha(library)}',
                         workload_hashes={name: timing.sha(ROOT / 'benchmarks/godot' / name)
                                          for name in ('project.godot', 'workload.gd')},
                         toolchains={label: subprocess.check_output([str(path), '--version'], text=True).strip()
@@ -269,14 +278,25 @@ def publish(args):
         raise ValueError('results do not describe the clean measured revision')
     files = ('results.json', 'metadata.json', 'compile-observations.jsonl', 'runtime-observations.jsonl')
     payloads = {name: (args.artifact / name).read_bytes() for name in files}
+    payloads.update({p.name: p.read_bytes() for p in args.artifact.glob('commands-*.json')})
     if json.loads(payloads['metadata.json']) != metadata:
         raise ValueError('provenance differs from the measured results')
     platform = benchmark_hosts.hosted_platform(metadata['cpu'])
-    for dest in (args.target / 'godot' / platform, args.target / 'godot/history' / args.revision / platform):
-        dest.mkdir(parents=True, exist_ok=True)
-        for name, value in payloads.items():
-            (dest / name).write_bytes(value)
-        (dest / 'report.md').write_text(report(document) + '\n[CI run and artifacts](' + args.run_url + ')\n')
+    import godot_results
+    base = 'https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/godot/'
+    history = 'history/' + args.revision + '/' + platform
+    with tempfile.TemporaryDirectory() as temporary:
+        normalized = Path(temporary) / 'standard'
+        godot_results.generate(args.artifact, normalized, 'GitHub hosted; Ubuntu 26.04 container',
+                               args.run_url, base + history + '/report.md', base + history + '/results.json')
+        for dest in (args.target / 'godot' / platform, args.target / 'godot' / history):
+            dest.mkdir(parents=True, exist_ok=True)
+            for name, value in payloads.items():
+                (dest / name).write_bytes(value)
+            shutil.copytree(normalized, dest / 'standard', dirs_exist_ok=True)
+            (dest / 'report.md').write_text(report(document) + '\n[Shared comparison tables](standard/summary.md) · '
+                                           '[Versioned records](standard/records.json) · '
+                                           '[CI run and artifacts](' + args.run_url + ')\n')
     benchmark_hosts.library_index(args.target / 'godot', 'Godot benchmark hosts')
 
 

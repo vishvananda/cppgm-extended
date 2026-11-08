@@ -62,7 +62,7 @@ The export's references are generated from this compiler.
 </tr>
 <tr>
 <td>Godot</td>
-<td width="152"><a href="docs/performance/preview/correctness.md"><img alt="Godot: planned" width="120" height="24" src="docs/performance/preview/badges/tests-godot.svg"></a></td>
+<td width="152"><a href="docs/performance/preview/godot.md"><img alt="Godot: 5 / 5 checked workloads, all three compilers" width="120" height="24" src="docs/performance/preview/badges/tests-godot.svg"></a></td>
 </tr>
 </tbody>
 </table>
@@ -76,7 +76,7 @@ The export's references are generated from this compiler.
 Badges show **EPYC / Intel / hosted Intel**, top to bottom. `n/m` means not measured. Swipe sideways for other columns.
 
 <table>
-<thead><tr><th width="120">Workload</th><th width="152">Compile&nbsp;vs&nbsp;GCC&nbsp;↑</th><th width="152">Compile&nbsp;vs&nbsp;Clang&nbsp;↑</th><th width="152">Runtime&nbsp;vs&nbsp;GCC&nbsp;↑</th><th width="152">Runtime&nbsp;vs&nbsp;Clang&nbsp;↑</th></tr></thead>
+<thead><tr><th width="120">Workload</th><th width="152">Compile/build&nbsp;vs&nbsp;GCC&nbsp;↑</th><th width="152">Compile/build&nbsp;vs&nbsp;Clang&nbsp;↑</th><th width="152">Runtime&nbsp;vs&nbsp;GCC&nbsp;↑</th><th width="152">Runtime&nbsp;vs&nbsp;Clang&nbsp;↑</th></tr></thead>
 <tbody>
 <tr>
 <td>Public programs</td>
@@ -114,6 +114,13 @@ Badges show **EPYC / Intel / hosted Intel**, top to bottom. `n/m` means not meas
 <td width="152">n/a</td>
 </tr>
 <tr>
+<td>Godot headless†</td>
+<td width="152"><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; Ubuntu 26.04 container; revision b866774e011bf6be996f089185079adbbde87b19: 3.76×" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-gcc-epyc.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs gcc: intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-gcc-intel.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs gcc: hosted-intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-gcc-hosted-intel.svg"></a></td>
+<td width="152"><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs clang; AMD EPYC 9V45 96-Core Processor; GitHub hosted; Ubuntu 26.04 container; revision b866774e011bf6be996f089185079adbbde87b19: 2.99×" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-clang-epyc.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs clang: intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-clang-intel.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs clang: hosted-intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-clang-hosted-intel.svg"></a></td>
+<td width="152"><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 runtime CPU vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; Ubuntu 26.04 container; revision b866774e011bf6be996f089185079adbbde87b19: 0.86×" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-runtime-gcc-epyc.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 runtime CPU vs gcc: intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-runtime-gcc-intel.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 runtime CPU vs gcc: hosted-intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-runtime-gcc-hosted-intel.svg"></a></td>
+<td width="152"><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 runtime CPU vs clang; AMD EPYC 9V45 96-Core Processor; GitHub hosted; Ubuntu 26.04 container; revision b866774e011bf6be996f089185079adbbde87b19: 0.81×" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-runtime-clang-epyc.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 runtime CPU vs clang: intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-runtime-clang-intel.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 runtime CPU vs clang: hosted-intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-runtime-clang-hosted-intel.svg"></a></td>
+</tr>
+<tr>
 <td>cppgm++</td>
 <td width="152"><a href="docs/performance/preview/public.md#building-the-compiler"><img alt="cppgm O3 compile vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: 4.24×" width="120" height="24" src="docs/performance/preview/badges/matrix-cppgm-compile-gcc-epyc.svg"></a><br><a href="docs/performance/preview/cppgm-local.md"><img alt="cppgm O3 compile vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; local shared host; revision 17a21ad27ace6eda20b948e57c2e78ab3d568374: 4.03×" width="120" height="24" src="docs/performance/preview/badges/matrix-cppgm-compile-gcc-intel.svg"></a><br><a href="docs/performance/preview/performance.md"><img alt="cppgm O3 compile vs gcc: hosted-intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-cppgm-compile-gcc-hosted-intel.svg"></a></td>
 <td width="152"><a href="docs/performance/preview/performance.md"><img alt="cppgm O3 compile vs clang: epyc not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-cppgm-compile-clang-epyc.svg"></a><br><a href="docs/performance/preview/cppgm-local.md"><img alt="cppgm O3 compile vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; local shared host; revision 17a21ad27ace6eda20b948e57c2e78ab3d568374: 3.72×" width="120" height="24" src="docs/performance/preview/badges/matrix-cppgm-compile-clang-intel.svg"></a><br><a href="docs/performance/preview/performance.md"><img alt="cppgm O3 compile vs clang: hosted-intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-cppgm-compile-clang-hosted-intel.svg"></a></td>
@@ -125,7 +132,7 @@ Badges show **EPYC / Intel / hosted Intel**, top to bottom. `n/m` means not meas
 
 cppgm++ runtime measures **codegen performance**: self-built versus GCC-built or Clang-built compiler.
 
-[O0, CPU models, revisions and per-test results](docs/performance/preview/performance.md). CPU time, except index-cpp runtime uses elapsed time. † Single-run compilation on a shared host.
+[O0, CPU models, revisions and per-test results](docs/performance/preview/performance.md). CPU time, except index-cpp runtime uses elapsed time. Godot reports a full build, including SCons and linking. † Single-run build/compile observations; small differences need repeats.
 
 ## Caveats
 

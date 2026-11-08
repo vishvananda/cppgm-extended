@@ -51,9 +51,21 @@ These are the labeled earlier published snapshots. Runtime aggregates give twitt
 
 This is one complete observation under load, using four workers and identical resource limits. The 5,614 fixture groups contain 5,724 translation units. Execution totals include process startup and appear in detail rather than as an application-runtime score.
 
+
+### AMD EPYC 9V45 96-Core Processor · GitHub hosted, Ubuntu 26.04 container
+
+| Workload / configuration | Opt | Phase / metric | vs GCC | vs Clang | Coverage | Revision / details |
+|---|---|---|---:|---:|---|---|
+| Godot / headless release | O3 | build / cpu_seconds | 3.760× | 2.986× | one full build | [`b866774e0`](godot.md) |
+| Godot / headless release | O3 | build / elapsed_seconds | 3.670× | 2.960× | one full build | [`b866774e0`](godot.md) |
+| Godot / headless release | O3 | runtime / cpu_seconds | 0.857× | 0.805× | 5 / 5 checked workloads | [`b866774e0`](godot.md) |
+| Godot / headless release | O3 | runtime / elapsed_seconds | 0.844× | 0.790× | 5 / 5 checked workloads | [`b866774e0`](godot.md) |
+
+Build observations include SCons and GCC linking. Runtime gives all five workloads equal weight; CPU includes startup and elapsed time measures only the work loop. A/A warnings and individual results remain visible in the linked detail.
+
 ### Adding a workload or configuration
 
-Add a named configuration to the [workload catalog](../../../benchmarks/catalog.json), emit [versioned correctness and comparison records](../results-format.md), and regenerate the summary and linked tables. Tests/inputs are children of a configuration; compiling one library is counted once. Godot can add build presets and benchmark scenes using this same contract.
+Add a named configuration to the [workload catalog](../../../benchmarks/catalog.json), emit [versioned correctness and comparison records](../results-format.md), and regenerate the summary and linked tables. Tests/inputs are children of a configuration; compiling one library is counted once. Godot's headless release preset uses this contract, including complete-build and checked-workload records.
 
 This preview uses pinned snapshots. Existing automatic publishers still need migration to the [shared reporting contract](../results-format.md#producer-migration-checks). [Snapshot provenance](sources.json).
 

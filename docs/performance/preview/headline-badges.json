@@ -63,10 +63,10 @@
       "target": "https://github.com/vishvananda/cppgm-extended/actions/runs/42476441242"
     },
     "tests-godot": {
-      "label": "Godot",
-      "message": "planned",
-      "color": "475569",
-      "target": "docs/performance/preview/correctness.md"
+      "label": "Godot: five checked workloads per compiler",
+      "message": "5 / 5 \u00d7 3",
+      "color": "166534",
+      "target": "docs/performance/preview/godot.md"
     },
     "matrix-public-compile-gcc-epyc": {
       "speedup": 4.020792074411886,
@@ -841,6 +841,130 @@
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "label": "cppgm O3 runtime vs clang: hosted-intel not measured"
+    },
+    "matrix-godot-build-gcc-epyc": {
+      "speedup": 3.7602925833782375,
+      "processor": "epyc",
+      "short_cpu": "9V45",
+      "cpu": "AMD EPYC 9V45 96-Core Processor",
+      "environment": "GitHub hosted; Ubuntu 26.04 container",
+      "revision": "b866774e011bf6be996f089185079adbbde87b19",
+      "target": "docs/performance/preview/godot.md",
+      "message": "3.76\u00d7",
+      "label": "Godot headless O3 build CPU vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; Ubuntu 26.04 container; revision b866774e011bf6be996f089185079adbbde87b19",
+      "color": "14532d",
+      "left_label": "9V45"
+    },
+    "matrix-godot-build-gcc-intel": {
+      "message": "n/m",
+      "label": "Godot headless O3 build CPU vs gcc: intel not measured",
+      "color": "475569",
+      "target": "docs/performance/preview/godot.md",
+      "status": "not-measured",
+      "processor": "intel",
+      "left_label": "E5"
+    },
+    "matrix-godot-build-gcc-hosted-intel": {
+      "message": "n/m",
+      "label": "Godot headless O3 build CPU vs gcc: hosted-intel not measured",
+      "color": "475569",
+      "target": "docs/performance/preview/godot.md",
+      "status": "not-measured",
+      "processor": "hosted-intel",
+      "left_label": "8370C"
+    },
+    "matrix-godot-build-clang-epyc": {
+      "speedup": 2.9856459878701718,
+      "processor": "epyc",
+      "short_cpu": "9V45",
+      "cpu": "AMD EPYC 9V45 96-Core Processor",
+      "environment": "GitHub hosted; Ubuntu 26.04 container",
+      "revision": "b866774e011bf6be996f089185079adbbde87b19",
+      "target": "docs/performance/preview/godot.md",
+      "message": "2.99\u00d7",
+      "label": "Godot headless O3 build CPU vs clang; AMD EPYC 9V45 96-Core Processor; GitHub hosted; Ubuntu 26.04 container; revision b866774e011bf6be996f089185079adbbde87b19",
+      "color": "14532d",
+      "left_label": "9V45"
+    },
+    "matrix-godot-build-clang-intel": {
+      "message": "n/m",
+      "label": "Godot headless O3 build CPU vs clang: intel not measured",
+      "color": "475569",
+      "target": "docs/performance/preview/godot.md",
+      "status": "not-measured",
+      "processor": "intel",
+      "left_label": "E5"
+    },
+    "matrix-godot-build-clang-hosted-intel": {
+      "message": "n/m",
+      "label": "Godot headless O3 build CPU vs clang: hosted-intel not measured",
+      "color": "475569",
+      "target": "docs/performance/preview/godot.md",
+      "status": "not-measured",
+      "processor": "hosted-intel",
+      "left_label": "8370C"
+    },
+    "matrix-godot-runtime-gcc-epyc": {
+      "speedup": 0.8567867072385041,
+      "processor": "epyc",
+      "short_cpu": "9V45",
+      "cpu": "AMD EPYC 9V45 96-Core Processor",
+      "environment": "GitHub hosted; Ubuntu 26.04 container",
+      "revision": "b866774e011bf6be996f089185079adbbde87b19",
+      "target": "docs/performance/preview/godot.md",
+      "message": "0.86\u00d7",
+      "label": "Godot headless O3 runtime CPU vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; Ubuntu 26.04 container; revision b866774e011bf6be996f089185079adbbde87b19",
+      "color": "e0af0a",
+      "left_label": "9V45"
+    },
+    "matrix-godot-runtime-gcc-intel": {
+      "message": "n/m",
+      "label": "Godot headless O3 runtime CPU vs gcc: intel not measured",
+      "color": "475569",
+      "target": "docs/performance/preview/godot.md",
+      "status": "not-measured",
+      "processor": "intel",
+      "left_label": "E5"
+    },
+    "matrix-godot-runtime-gcc-hosted-intel": {
+      "message": "n/m",
+      "label": "Godot headless O3 runtime CPU vs gcc: hosted-intel not measured",
+      "color": "475569",
+      "target": "docs/performance/preview/godot.md",
+      "status": "not-measured",
+      "processor": "hosted-intel",
+      "left_label": "8370C"
+    },
+    "matrix-godot-runtime-clang-epyc": {
+      "speedup": 0.8050778682441011,
+      "processor": "epyc",
+      "short_cpu": "9V45",
+      "cpu": "AMD EPYC 9V45 96-Core Processor",
+      "environment": "GitHub hosted; Ubuntu 26.04 container",
+      "revision": "b866774e011bf6be996f089185079adbbde87b19",
+      "target": "docs/performance/preview/godot.md",
+      "message": "0.81\u00d7",
+      "label": "Godot headless O3 runtime CPU vs clang; AMD EPYC 9V45 96-Core Processor; GitHub hosted; Ubuntu 26.04 container; revision b866774e011bf6be996f089185079adbbde87b19",
+      "color": "eda50b",
+      "left_label": "9V45"
+    },
+    "matrix-godot-runtime-clang-intel": {
+      "message": "n/m",
+      "label": "Godot headless O3 runtime CPU vs clang: intel not measured",
+      "color": "475569",
+      "target": "docs/performance/preview/godot.md",
+      "status": "not-measured",
+      "processor": "intel",
+      "left_label": "E5"
+    },
+    "matrix-godot-runtime-clang-hosted-intel": {
+      "message": "n/m",
+      "label": "Godot headless O3 runtime CPU vs clang: hosted-intel not measured",
+      "color": "475569",
+      "target": "docs/performance/preview/godot.md",
+      "status": "not-measured",
+      "processor": "hosted-intel",
+      "left_label": "8370C"
     }
   },
   "performance_badge_method": "Continuous gradient of unrounded speedups; full red at 0.50x or below; gray processor labels with colored values",

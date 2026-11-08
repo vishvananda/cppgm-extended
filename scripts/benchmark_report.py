@@ -177,9 +177,10 @@ def render(catalog, document, output):
              '| Workload / configuration | Optimization levels | Availability | Details |', '|---|---|---|---|']
     for key, entry in entries.items():
         for config in entry['configurations'] or [dict(id='', name='configuration not yet declared', optimizations=[])]:
-            present = [r for r in by_workload[key] if r['configuration'] == config['id']]
-            validated = [r for r in by_validation[key] if r['configuration'] == config['id']]
-            available = 'recorded' if present else 'correctness recorded; timing not measured' if validated else entry.get('status', 'not measured')
+            present = [r for r in by_workload.get(key, []) if r['configuration'] == config['id']]
+            validated = [r for r in by_validation.get(key, []) if r['configuration'] == config['id']]
+            available = ('recorded' if present else 'correctness recorded; timing not measured' if validated
+                         else 'planned' if entry.get('status') == 'planned' else 'not measured')
             name = cell(entry['name']+' / '+config['name'])
             link = f'[{name}]({key}.md)' if present or validated else name
             levels = ', '.join(config.get('optimizations', [])) or 'not yet declared'
