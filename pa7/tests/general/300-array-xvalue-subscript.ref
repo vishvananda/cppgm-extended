@@ -17,7 +17,7 @@ translation-unit
           literal prvalue int 7
       return-statement
         binary-expression prvalue int OP_MINUS:-
-          subscript-expression lvalue int
+          subscript-expression xvalue int
             call-expression xvalue rvalue-reference to array of 2 int
               callee get function of () returning rvalue-reference to array of 2 int
             literal prvalue int 0
