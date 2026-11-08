@@ -1,5 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="123" height="24" viewBox="0 0 123 24" role="img" aria-label="native O3 compile vs clang; Intel Xeon E5-2696 v4; Local shared host; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: local E5 6.85×">
-  <title>native O3 compile vs clang; Intel Xeon E5-2696 v4; Local shared host; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: local E5 6.85×</title>
-  <rect width="123" height="24" rx="4" fill="#14532d"/>
-  <text x="61.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="111" lengthAdjust="spacingAndGlyphs">local E5 6.85×</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="126" height="24" viewBox="0 0 126 24" role="img" aria-label="native O3 compile vs clang; Intel Xeon E5-2696 v4; Local shared host; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: 6.85×">
+  <title>native O3 compile vs clang; Intel Xeon E5-2696 v4; Local shared host; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: 6.85×</title>
+  <defs><clipPath id="badge"><rect width="126" height="24" rx="4"/></clipPath></defs>
+  <g clip-path="url(#badge)">
+    <rect width="75" height="24" fill="#555"/>
+    <rect x="75" width="51" height="24" fill="#14532d"/>
+  </g>
+  <text x="37.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" textLength="63" lengthAdjust="spacingAndGlyphs">local E5</text>
+  <text x="100.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">6.85×</text>
 </svg>

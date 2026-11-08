@@ -76,9 +76,10 @@
       "environment": "GitHub hosted",
       "revision": "783dbfcf01360d923ff590d2048a0c1764761cc3",
       "target": "docs/performance/preview/public.md",
-      "message": "9V45 4.02\u00d7",
+      "message": "4.02\u00d7",
       "label": "public O3 compile vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "9V45"
     },
     "matrix-public-compile-gcc-intel": {
       "speedup": 4.475025021172567,
@@ -88,17 +89,19 @@
       "environment": "Dedicated Intel",
       "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
       "target": "docs/performance/preview/public-intel.md",
-      "message": "E5-2696v4 4.48\u00d7",
+      "message": "4.48\u00d7",
       "label": "public O3 compile vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; Dedicated Intel; revision 08bba949b4a0c3f2a728bf52c6e7089a38b44797",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "E5-2696v4"
     },
     "matrix-public-compile-gcc-hosted-intel": {
-      "message": "8370C n/m",
+      "message": "n/m",
       "label": "public O3 compile vs gcc: hosted-intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "hosted-intel"
+      "processor": "hosted-intel",
+      "left_label": "8370C"
     },
     "matrix-public-compile-clang-epyc": {
       "speedup": 3.49236324418553,
@@ -108,9 +111,10 @@
       "environment": "GitHub hosted",
       "revision": "783dbfcf01360d923ff590d2048a0c1764761cc3",
       "target": "docs/performance/preview/public.md",
-      "message": "9V45 3.49\u00d7",
+      "message": "3.49\u00d7",
       "label": "public O3 compile vs clang; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "9V45"
     },
     "matrix-public-compile-clang-intel": {
       "speedup": 4.581165521245548,
@@ -120,17 +124,19 @@
       "environment": "Dedicated Intel",
       "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
       "target": "docs/performance/preview/public-intel.md",
-      "message": "E5-2696v4 4.58\u00d7",
+      "message": "4.58\u00d7",
       "label": "public O3 compile vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; Dedicated Intel; revision 08bba949b4a0c3f2a728bf52c6e7089a38b44797",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "E5-2696v4"
     },
     "matrix-public-compile-clang-hosted-intel": {
-      "message": "8370C n/m",
+      "message": "n/m",
       "label": "public O3 compile vs clang: hosted-intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "hosted-intel"
+      "processor": "hosted-intel",
+      "left_label": "8370C"
     },
     "matrix-public-runtime-gcc-epyc": {
       "speedup": 0.9912148984393135,
@@ -140,9 +146,10 @@
       "environment": "GitHub hosted",
       "revision": "783dbfcf01360d923ff590d2048a0c1764761cc3",
       "target": "docs/performance/preview/public.md",
-      "message": "9V45 0.99\u00d7",
+      "message": "0.99\u00d7",
       "label": "public O3 runtime vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3",
-      "color": "3a6426"
+      "color": "21592b",
+      "left_label": "9V45"
     },
     "matrix-public-runtime-gcc-intel": {
       "speedup": 0.9925256043222309,
@@ -152,17 +159,19 @@
       "environment": "Dedicated Intel",
       "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
       "target": "docs/performance/preview/public-intel.md",
-      "message": "E5-2696v4 0.99\u00d7",
+      "message": "0.99\u00d7",
       "label": "public O3 runtime vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; Dedicated Intel; revision 08bba949b4a0c3f2a728bf52c6e7089a38b44797",
-      "color": "346127"
+      "color": "1f582b",
+      "left_label": "E5-2696v4"
     },
     "matrix-public-runtime-gcc-hosted-intel": {
-      "message": "8370C n/m",
+      "message": "n/m",
       "label": "public O3 runtime vs gcc: hosted-intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "hosted-intel"
+      "processor": "hosted-intel",
+      "left_label": "8370C"
     },
     "matrix-public-runtime-clang-epyc": {
       "speedup": 0.9985122472431855,
@@ -172,9 +181,10 @@
       "environment": "GitHub hosted",
       "revision": "783dbfcf01360d923ff590d2048a0c1764761cc3",
       "target": "docs/performance/preview/public.md",
-      "message": "9V45 1.00\u00d7",
+      "message": "1.00\u00d7",
       "label": "public O3 runtime vs clang; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3",
-      "color": "1a562c"
+      "color": "16542d",
+      "left_label": "9V45"
     },
     "matrix-public-runtime-clang-intel": {
       "speedup": 0.9805782905521783,
@@ -184,17 +194,19 @@
       "environment": "Dedicated Intel",
       "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
       "target": "docs/performance/preview/public-intel.md",
-      "message": "E5-2696v4 0.98\u00d7",
+      "message": "0.98\u00d7",
       "label": "public O3 runtime vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; Dedicated Intel; revision 08bba949b4a0c3f2a728bf52c6e7089a38b44797",
-      "color": "67781f"
+      "color": "305f28",
+      "left_label": "E5-2696v4"
     },
     "matrix-public-runtime-clang-hosted-intel": {
-      "message": "8370C n/m",
+      "message": "n/m",
       "label": "public O3 runtime vs clang: hosted-intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "hosted-intel"
+      "processor": "hosted-intel",
+      "left_label": "8370C"
     },
     "matrix-index-compile-gcc-epyc": {
       "speedup": 6.765306122448979,
@@ -204,17 +216,19 @@
       "environment": "GitHub hosted",
       "revision": "c9774d6a969d0e28c251e35f4ad9a005c6cafcc6",
       "target": "docs/performance/preview/index-cpp.md",
-      "message": "9V74 6.77\u00d7",
+      "message": "6.77\u00d7",
       "label": "index O3 compile vs gcc; AMD EPYC 9V74 80-Core Processor; GitHub hosted; revision c9774d6a969d0e28c251e35f4ad9a005c6cafcc6",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "9V74"
     },
     "matrix-index-compile-gcc-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "index O3 compile vs gcc: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-index-compile-gcc-hosted-intel": {
       "speedup": 6.697885196374622,
@@ -224,9 +238,10 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/index-cpp-hosted-intel.md",
-      "message": "8370C 6.70\u00d7",
+      "message": "6.70\u00d7",
       "label": "index O3 compile vs gcc; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "8370C"
     },
     "matrix-index-compile-clang-epyc": {
       "speedup": 5.888513513513513,
@@ -236,17 +251,19 @@
       "environment": "GitHub hosted",
       "revision": "c9774d6a969d0e28c251e35f4ad9a005c6cafcc6",
       "target": "docs/performance/preview/index-cpp.md",
-      "message": "9V74 5.89\u00d7",
+      "message": "5.89\u00d7",
       "label": "index O3 compile vs clang; AMD EPYC 9V74 80-Core Processor; GitHub hosted; revision c9774d6a969d0e28c251e35f4ad9a005c6cafcc6",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "9V74"
     },
     "matrix-index-compile-clang-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "index O3 compile vs clang: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-index-compile-clang-hosted-intel": {
       "speedup": 5.673716012084593,
@@ -256,9 +273,10 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/index-cpp-hosted-intel.md",
-      "message": "8370C 5.67\u00d7",
+      "message": "5.67\u00d7",
       "label": "index O3 compile vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "8370C"
     },
     "matrix-index-runtime-gcc-epyc": {
       "speedup": 0.9943965563909242,
@@ -268,17 +286,19 @@
       "environment": "GitHub hosted",
       "revision": "c9774d6a969d0e28c251e35f4ad9a005c6cafcc6",
       "target": "docs/performance/preview/index-cpp.md",
-      "message": "9V74 0.99\u00d7",
+      "message": "0.99\u00d7",
       "label": "index O3 runtime vs gcc; AMD EPYC 9V74 80-Core Processor; GitHub hosted; revision c9774d6a969d0e28c251e35f4ad9a005c6cafcc6",
-      "color": "2c5e29"
+      "color": "1c572c",
+      "left_label": "9V74"
     },
     "matrix-index-runtime-gcc-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "index O3 runtime vs gcc: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-index-runtime-gcc-hosted-intel": {
       "speedup": 1.0299647943371306,
@@ -288,9 +308,10 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/index-cpp-hosted-intel.md",
-      "message": "8370C 1.03\u00d7",
+      "message": "1.03\u00d7",
       "label": "index O3 runtime vs gcc; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "8370C"
     },
     "matrix-index-runtime-clang-epyc": {
       "speedup": 0.9887067896745086,
@@ -300,17 +321,19 @@
       "environment": "GitHub hosted",
       "revision": "c9774d6a969d0e28c251e35f4ad9a005c6cafcc6",
       "target": "docs/performance/preview/index-cpp.md",
-      "message": "9V74 0.99\u00d7",
+      "message": "0.99\u00d7",
       "label": "index O3 runtime vs clang; AMD EPYC 9V74 80-Core Processor; GitHub hosted; revision c9774d6a969d0e28c251e35f4ad9a005c6cafcc6",
-      "color": "446925"
+      "color": "245a2a",
+      "left_label": "9V74"
     },
     "matrix-index-runtime-clang-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "index O3 runtime vs clang: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-index-runtime-clang-hosted-intel": {
       "speedup": 1.0129297070687153,
@@ -320,9 +343,10 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/index-cpp-hosted-intel.md",
-      "message": "8370C 1.01\u00d7",
+      "message": "1.01\u00d7",
       "label": "index O3 runtime vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "8370C"
     },
     "matrix-scalar-compile-gcc-epyc": {
       "speedup": 4.467391304347826,
@@ -332,17 +356,19 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "7763 4.47\u00d7",
+      "message": "4.47\u00d7",
       "label": "scalar O3 compile vs gcc; AMD EPYC 7763 64-Core Processor; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "7763"
     },
     "matrix-scalar-compile-gcc-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "scalar O3 compile vs gcc: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-scalar-compile-gcc-hosted-intel": {
       "speedup": 4.430508474576271,
@@ -352,9 +378,10 @@
       "environment": "GitHub hosted",
       "revision": "adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "8370C 4.43\u00d7",
+      "message": "4.43\u00d7",
       "label": "scalar O3 compile vs gcc; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "8370C"
     },
     "matrix-scalar-compile-clang-epyc": {
       "speedup": 2.3285714285714283,
@@ -364,17 +391,19 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "7763 2.33\u00d7",
+      "message": "2.33\u00d7",
       "label": "scalar O3 compile vs clang; AMD EPYC 7763 64-Core Processor; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "7763"
     },
     "matrix-scalar-compile-clang-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "scalar O3 compile vs clang: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-scalar-compile-clang-hosted-intel": {
       "speedup": 2.1013986013986012,
@@ -384,9 +413,10 @@
       "environment": "GitHub hosted",
       "revision": "adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "8370C 2.10\u00d7",
+      "message": "2.10\u00d7",
       "label": "scalar O3 compile vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "8370C"
     },
     "matrix-scalar-runtime-gcc-epyc": {
       "speedup": 0.8137598594570282,
@@ -396,17 +426,19 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "7763 0.81\u00d7",
+      "message": "0.81\u00d7",
       "label": "scalar O3 runtime vs gcc; AMD EPYC 7763 64-Core Processor; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "f87915"
+      "color": "eda70b",
+      "left_label": "7763"
     },
     "matrix-scalar-runtime-gcc-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "scalar O3 runtime vs gcc: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-scalar-runtime-gcc-hosted-intel": {
       "speedup": 0.8513968142397502,
@@ -416,9 +448,10 @@
       "environment": "GitHub hosted",
       "revision": "adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "8370C 0.85\u00d7",
+      "message": "0.85\u00d7",
       "label": "scalar O3 runtime vs gcc; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
-      "color": "f48911"
+      "color": "e8b208",
+      "left_label": "8370C"
     },
     "matrix-scalar-runtime-clang-epyc": {
       "speedup": 0.8005651314266378,
@@ -428,17 +461,19 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "7763 0.80\u00d7",
+      "message": "0.80\u00d7",
       "label": "scalar O3 runtime vs clang; AMD EPYC 7763 64-Core Processor; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "f97316"
+      "color": "eea30b",
+      "left_label": "7763"
     },
     "matrix-scalar-runtime-clang-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "scalar O3 runtime vs clang: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-scalar-runtime-clang-hosted-intel": {
       "speedup": 0.8488783974414257,
@@ -448,9 +483,10 @@
       "environment": "GitHub hosted",
       "revision": "adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "8370C 0.85\u00d7",
+      "message": "0.85\u00d7",
       "label": "scalar O3 runtime vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
-      "color": "f48811"
+      "color": "eab308",
+      "left_label": "8370C"
     },
     "matrix-sse-compile-gcc-epyc": {
       "speedup": 4.4924012158054705,
@@ -460,17 +496,19 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "7763 4.49\u00d7",
+      "message": "4.49\u00d7",
       "label": "sse O3 compile vs gcc; AMD EPYC 7763 64-Core Processor; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "7763"
     },
     "matrix-sse-compile-gcc-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "sse O3 compile vs gcc: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-sse-compile-gcc-hosted-intel": {
       "speedup": 4.34402332361516,
@@ -480,9 +518,10 @@
       "environment": "GitHub hosted",
       "revision": "adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "8370C 4.34\u00d7",
+      "message": "4.34\u00d7",
       "label": "sse O3 compile vs gcc; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "8370C"
     },
     "matrix-sse-compile-clang-epyc": {
       "speedup": 2.557926829268293,
@@ -492,17 +531,19 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "7763 2.56\u00d7",
+      "message": "2.56\u00d7",
       "label": "sse O3 compile vs clang; AMD EPYC 7763 64-Core Processor; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "7763"
     },
     "matrix-sse-compile-clang-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "sse O3 compile vs clang: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-sse-compile-clang-hosted-intel": {
       "speedup": 2.2209302325581395,
@@ -512,9 +553,10 @@
       "environment": "GitHub hosted",
       "revision": "adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "8370C 2.22\u00d7",
+      "message": "2.22\u00d7",
       "label": "sse O3 compile vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "8370C"
     },
     "matrix-sse-runtime-gcc-epyc": {
       "speedup": 0.9000603431387565,
@@ -524,17 +566,19 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "7763 0.90\u00d7",
+      "message": "0.90\u00d7",
       "label": "sse O3 runtime vs gcc; AMD EPYC 7763 64-Core Processor; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "ef9e0d"
+      "color": "a39314",
+      "left_label": "7763"
     },
     "matrix-sse-runtime-gcc-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "sse O3 runtime vs gcc: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-sse-runtime-gcc-hosted-intel": {
       "speedup": 0.9880342784821133,
@@ -544,9 +588,10 @@
       "environment": "GitHub hosted",
       "revision": "adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "8370C 0.99\u00d7",
+      "message": "0.99\u00d7",
       "label": "sse O3 runtime vs gcc; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
-      "color": "476a24"
+      "color": "255b2a",
+      "left_label": "8370C"
     },
     "matrix-sse-runtime-clang-epyc": {
       "speedup": 0.8914454359887916,
@@ -556,17 +601,19 @@
       "environment": "GitHub hosted",
       "revision": "7dbe6549e963e023f8fa4deca3f4e77211771e15",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "7763 0.89\u00d7",
+      "message": "0.89\u00d7",
       "label": "sse O3 runtime vs clang; AMD EPYC 7763 64-Core Processor; GitHub hosted; revision 7dbe6549e963e023f8fa4deca3f4e77211771e15",
-      "color": "f09a0d"
+      "color": "af9812",
+      "left_label": "7763"
     },
     "matrix-sse-runtime-clang-intel": {
-      "message": "E5 n/m",
+      "message": "n/m",
       "label": "sse O3 runtime vs clang: intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "intel"
+      "processor": "intel",
+      "left_label": "E5"
     },
     "matrix-sse-runtime-clang-hosted-intel": {
       "speedup": 0.9597522504338293,
@@ -576,17 +623,19 @@
       "environment": "GitHub hosted",
       "revision": "adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
       "target": "docs/performance/preview/simdjson.md",
-      "message": "8370C 0.96\u00d7",
+      "message": "0.96\u00d7",
       "label": "sse O3 runtime vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; GitHub hosted; revision adb8a65ad5137658bf87d446e9fd90e8b1dac65e",
-      "color": "c0a00f"
+      "color": "4d6d23",
+      "left_label": "8370C"
     },
     "matrix-native-compile-gcc-epyc": {
-      "message": "EPYC n/m",
+      "message": "n/m",
       "label": "native O3 compile vs gcc: epyc not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "epyc"
+      "processor": "epyc",
+      "left_label": "EPYC"
     },
     "matrix-native-compile-gcc-intel": {
       "speedup": 4.461470669269994,
@@ -596,25 +645,28 @@
       "environment": "Local shared host",
       "revision": "783dbfcf01360d923ff590d2048a0c1764761cc3",
       "target": "docs/performance/preview/internal.md",
-      "message": "local E5 4.46\u00d7",
+      "message": "4.46\u00d7",
       "label": "native O3 compile vs gcc; Intel Xeon E5-2696 v4; Local shared host; revision 783dbfcf01360d923ff590d2048a0c1764761cc3",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "local E5"
     },
     "matrix-native-compile-gcc-hosted-intel": {
-      "message": "8370C n/m",
+      "message": "n/m",
       "label": "native O3 compile vs gcc: hosted-intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "hosted-intel"
+      "processor": "hosted-intel",
+      "left_label": "8370C"
     },
     "matrix-native-compile-clang-epyc": {
-      "message": "EPYC n/m",
+      "message": "n/m",
       "label": "native O3 compile vs clang: epyc not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "epyc"
+      "processor": "epyc",
+      "left_label": "EPYC"
     },
     "matrix-native-compile-clang-intel": {
       "speedup": 6.849275009722701,
@@ -624,17 +676,19 @@
       "environment": "Local shared host",
       "revision": "783dbfcf01360d923ff590d2048a0c1764761cc3",
       "target": "docs/performance/preview/internal.md",
-      "message": "local E5 6.85\u00d7",
+      "message": "6.85\u00d7",
       "label": "native O3 compile vs clang; Intel Xeon E5-2696 v4; Local shared host; revision 783dbfcf01360d923ff590d2048a0c1764761cc3",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "local E5"
     },
     "matrix-native-compile-clang-hosted-intel": {
-      "message": "8370C n/m",
+      "message": "n/m",
       "label": "native O3 compile vs clang: hosted-intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "hosted-intel"
+      "processor": "hosted-intel",
+      "left_label": "8370C"
     },
     "matrix-cppgm-compile-gcc-epyc": {
       "speedup": 4.2368301199332015,
@@ -644,9 +698,10 @@
       "environment": "GitHub hosted",
       "revision": "783dbfcf01360d923ff590d2048a0c1764761cc3",
       "target": "docs/performance/preview/public.md#building-the-compiler",
-      "message": "9V45 4.24\u00d7",
+      "message": "4.24\u00d7",
       "label": "cppgm O3 compile vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "9V45"
     },
     "matrix-cppgm-compile-gcc-intel": {
       "speedup": 4.864171864171864,
@@ -656,17 +711,19 @@
       "environment": "Dedicated Intel",
       "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
       "target": "docs/performance/preview/public-intel.md#building-the-compiler",
-      "message": "E5-2696v4 4.86\u00d7",
+      "message": "4.86\u00d7",
       "label": "cppgm O3 compile vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; Dedicated Intel; revision 08bba949b4a0c3f2a728bf52c6e7089a38b44797",
-      "color": "14532d"
+      "color": "14532d",
+      "left_label": "E5-2696v4"
     },
     "matrix-cppgm-compile-gcc-hosted-intel": {
-      "message": "8370C n/m",
+      "message": "n/m",
       "label": "cppgm O3 compile vs gcc: hosted-intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "hosted-intel"
+      "processor": "hosted-intel",
+      "left_label": "8370C"
     },
     "matrix-cppgm-runtime-gcc-epyc": {
       "speedup": 0.9693896949444509,
@@ -676,9 +733,10 @@
       "environment": "GitHub hosted",
       "revision": "783dbfcf01360d923ff590d2048a0c1764761cc3",
       "target": "docs/performance/preview/public.md#paired-self-built-compiler-measurements",
-      "message": "9V45 0.97\u00d7",
+      "message": "0.97\u00d7",
       "label": "cppgm O3 runtime vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3; cppgm codegen: self-built versus GCC-built compiler",
-      "color": "978e16"
+      "color": "406725",
+      "left_label": "9V45"
     },
     "matrix-cppgm-runtime-gcc-intel": {
       "speedup": 0.9993684458050168,
@@ -688,20 +746,22 @@
       "environment": "Dedicated Intel",
       "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
       "target": "docs/performance/preview/public-intel.md#paired-self-built-compiler-measurements",
-      "message": "E5-2696v4 1.00\u00d7",
+      "message": "1.00\u00d7",
       "label": "cppgm O3 runtime vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; Dedicated Intel; revision 08bba949b4a0c3f2a728bf52c6e7089a38b44797; cppgm codegen: self-built versus GCC-built compiler",
-      "color": "17542d"
+      "color": "15532d",
+      "left_label": "E5-2696v4"
     },
     "matrix-cppgm-runtime-gcc-hosted-intel": {
-      "message": "8370C n/m",
+      "message": "n/m",
       "label": "cppgm O3 runtime vs gcc: hosted-intel not measured",
       "color": "475569",
       "target": "docs/performance/preview/performance.md",
       "status": "not-measured",
-      "processor": "hosted-intel"
+      "processor": "hosted-intel",
+      "left_label": "8370C"
     }
   },
-  "performance_badge_method": "Continuous interpolation of unrounded speedups; shared public_benchmarks.badge_color",
+  "performance_badge_method": "Continuous gradient of unrounded speedups; full red at 0.50x or below; gray processor labels with colored values",
   "processor_slots": [
     "EPYC (hosted)",
     "Xeon E5 (dedicated or local, identified per badge)",

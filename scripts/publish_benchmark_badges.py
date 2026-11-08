@@ -25,13 +25,29 @@ def badge_svg(data):
     luminance = sum(v * weight for v, weight in zip(linear, (.2126, .7152, .0722)))
     text_color = '#000' if luminance > .179 else '#fff'
     text_width = max(8, len(message) * 8 - 1)
-    width = text_width + 12
+    message_width = text_width + 12
+    left = data.get('left_label', '')
+    left_text_width = max(8, len(left) * 8 - 1)
+    left_width = left_text_width + 12 if left else 0
+    width = left_width + message_width
+    background = f'  <rect width="{width}" height="24" rx="4" fill="#{color}"/>\n'
+    left_text = ''
+    if left:
+        background = (f'  <defs><clipPath id="badge"><rect width="{width}" height="24" rx="4"/></clipPath></defs>\n'
+                      '  <g clip-path="url(#badge)">\n'
+                      f'    <rect width="{left_width}" height="24" fill="#555"/>\n'
+                      f'    <rect x="{left_width}" width="{message_width}" height="24" fill="#{color}"/>\n'
+                      '  </g>\n')
+        left_text = (f'  <text x="{left_width / 2:g}" y="16.5" fill="#fff" text-anchor="middle" '
+                     'font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" '
+                     f'font-weight="700" textLength="{left_text_width}" '
+                     f'lengthAdjust="spacingAndGlyphs">{escape(left)}</text>\n')
     title = escape(f"{data['label']}: {message}", quote=True)
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="24" '
             f'viewBox="0 0 {width} 24" role="img" aria-label="{title}">\n'
             f'  <title>{title}</title>\n'
-            f'  <rect width="{width}" height="24" rx="4" fill="#{color}"/>\n'
-            f'  <text x="{width / 2:g}" y="16.5" fill="{text_color}" text-anchor="middle" '
+            f'{background}{left_text}'
+            f'  <text x="{left_width + message_width / 2:g}" y="16.5" fill="{text_color}" text-anchor="middle" '
             'font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" '
             f'font-weight="700" letter-spacing="1" textLength="{text_width}" '
             f'lengthAdjust="spacingAndGlyphs">{escape(message)}</text>\n'

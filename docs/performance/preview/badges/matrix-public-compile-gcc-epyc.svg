@@ -1,5 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="91" height="24" viewBox="0 0 91 24" role="img" aria-label="public O3 compile vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: 9V45 4.02×">
-  <title>public O3 compile vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: 9V45 4.02×</title>
-  <rect width="91" height="24" rx="4" fill="#14532d"/>
-  <text x="45.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="79" lengthAdjust="spacingAndGlyphs">9V45 4.02×</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="94" height="24" viewBox="0 0 94 24" role="img" aria-label="public O3 compile vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: 4.02×">
+  <title>public O3 compile vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: 4.02×</title>
+  <defs><clipPath id="badge"><rect width="94" height="24" rx="4"/></clipPath></defs>
+  <g clip-path="url(#badge)">
+    <rect width="43" height="24" fill="#555"/>
+    <rect x="43" width="51" height="24" fill="#14532d"/>
+  </g>
+  <text x="21.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" textLength="31" lengthAdjust="spacingAndGlyphs">9V45</text>
+  <text x="68.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">4.02×</text>
 </svg>

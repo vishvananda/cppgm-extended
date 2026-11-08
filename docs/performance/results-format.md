@@ -23,9 +23,10 @@ also separate profiles. The target ISA is an additional configuration property.
 The compact README keeps one row per workload/configuration. Each metric cell
 can stack three processor-labeled badges: EPYC, local/dedicated Intel, and hosted
 Intel. A badge retains its own exact CPU, environment, source revision and evidence
-link. Missing processor results are gray and say not measured. Performance colors
-vary continuously using `public_benchmarks.badge_color`; yellow and orange badges
-use dark text for readability.
+link. Each badge has a gray processor label on the left and the numeric value
+on a colored right panel. Missing values use a gray `n/m` panel. Performance
+colors vary continuously using `public_benchmarks.badge_color`, reaching full
+red at 0.50× or below; yellow and orange panels use dark text for readability.
 
 Within each host table, use:
 

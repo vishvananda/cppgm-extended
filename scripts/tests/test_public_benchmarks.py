@@ -375,28 +375,42 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(badge['schemaVersion'], 1)
         self.assertEqual(badge['label'], '-O3 generated speed vs gcc')
         self.assertEqual(badge['message'], '0.80×')
-        self.assertEqual(badge['color'], 'f97316')
+        self.assertEqual(badge['color'], pb.badge_color(.80))
         badge = pb.badge(results, '-O3 compile speed vs gcc', 'compile_cpu_O3', 1)
         self.assertEqual(badge['message'], '5.0×')
         self.assertEqual(badge['color'], '14532d')
 
     def test_badge_color_follows_the_speed(self):
         for speed, color in [(1.2, '14532d'), (1.0, '14532d'),
-                             (0.95, 'eab308'), (0.80, 'f97316'), (0.5, 'b91c1c')]:
+                             (0.85, 'eab308'), (0.65, 'f97316'), (0.5, 'b91c1c'), (0.4, 'b91c1c')]:
             with self.subTest(speed=speed):
                 self.assertEqual(pb.badge_color(speed), color)
         # Neighboring measurements vary smoothly, including around each anchor.
-        colors = {pb.badge_color(n / 1000) for n in range(600, 1001)}
+        colors = {pb.badge_color(n / 1000) for n in range(500, 1001)}
         self.assertGreater(len(colors), 200)
-        for anchor in [.60, .80, .95, 1.0]:
+        for anchor in [.50, .65, .85, 1.0]:
             a, b = pb.badge_color(anchor - .0001), pb.badge_color(anchor + .0001)
             self.assertLessEqual(max(abs(int(a[n:n+2],16)-int(b[n:n+2],16)) for n in (0,2,4)), 2)
 
     def test_badges_keep_yellow_text_readable(self):
-        yellow = publication.badge_svg(dict(label='speed', message='0.95×', color=pb.badge_color(.95)))
+        yellow = publication.badge_svg(dict(label='speed', message='0.85×', color=pb.badge_color(.85)))
         green = publication.badge_svg(dict(label='speed', message='1.00×', color=pb.badge_color(1)))
         self.assertIn('fill="#000" text-anchor', yellow)
         self.assertIn('fill="#fff" text-anchor', green)
+
+    def test_split_badge_keeps_processor_gray_and_value_colored(self):
+        import xml.etree.ElementTree as ET
+        svg = publication.badge_svg(dict(label='compile speed', left_label='E5 <model>',
+                                        message='0.80×', color=pb.badge_color(.80)))
+        root = ET.fromstring(svg)
+        ns = '{http://www.w3.org/2000/svg}'
+        text = root.findall(ns+'text')
+        self.assertEqual([node.text for node in text], ['E5 <model>', '0.80×'])
+        panels = root.find(ns+'g').findall(ns+'rect')
+        self.assertEqual(panels[0].attrib['fill'], '#555')
+        self.assertEqual(panels[1].attrib['fill'], '#'+pb.badge_color(.80))
+        self.assertEqual(int(panels[1].attrib['x']), int(panels[0].attrib['width']))
+        self.assertEqual(int(root.attrib['width']), sum(int(node.attrib['width']) for node in panels))
 
     def test_badge_turns_red_on_a_failure(self):
         results = [outcome('p', dict(compile_cpu_O0=1.0, run_cpu_O0=1.0),

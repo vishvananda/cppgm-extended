@@ -1,5 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="83" height="24" viewBox="0 0 83 24" role="img" aria-label="cppgm O3 compile vs gcc: hosted-intel not measured: 8370C n/m">
-  <title>cppgm O3 compile vs gcc: hosted-intel not measured: 8370C n/m</title>
-  <rect width="83" height="24" rx="4" fill="#475569"/>
-  <text x="41.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="71" lengthAdjust="spacingAndGlyphs">8370C n/m</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="86" height="24" viewBox="0 0 86 24" role="img" aria-label="cppgm O3 compile vs gcc: hosted-intel not measured: n/m">
+  <title>cppgm O3 compile vs gcc: hosted-intel not measured: n/m</title>
+  <defs><clipPath id="badge"><rect width="86" height="24" rx="4"/></clipPath></defs>
+  <g clip-path="url(#badge)">
+    <rect width="51" height="24" fill="#555"/>
+    <rect x="51" width="35" height="24" fill="#475569"/>
+  </g>
+  <text x="25.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" textLength="39" lengthAdjust="spacingAndGlyphs">8370C</text>
+  <text x="68.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="23" lengthAdjust="spacingAndGlyphs">n/m</text>
 </svg>

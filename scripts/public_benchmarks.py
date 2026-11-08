@@ -575,7 +575,7 @@ def mean_ratio(results, metric, reference):
 
 def badge_color(speed):
     """Interpolate continuously from parity green through yellow/orange to red."""
-    stops = ((1.0, '14532d'), (0.95, 'eab308'), (0.80, 'f97316'), (0.60, 'b91c1c'))
+    stops = ((1.0, '14532d'), (0.85, 'eab308'), (0.65, 'f97316'), (0.50, 'b91c1c'))
     if speed >= stops[0][0]:
         return stops[0][1]
     for (upper, first), (lower, last) in zip(stops, stops[1:]):
