@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "native/backend_error.h"
+#include "native/asm/binding.h"
 
 namespace native {
 namespace {
@@ -13,7 +14,7 @@ using namespace mir_model;
 unsigned width(lowir::Type type, RegisterBank bank)
 {
 	if (bank == RegisterBank::Vector)
-		return 128;
+		return wide_assembly_operand(type) ? 256 : 128;
 	return type.is_vector()                                        ? 128
 		: type.kind() == lowir::TypeKind::F32                      ? 32
 		: type.kind() == lowir::TypeKind::F64 || type.is_pointer() ? 64
@@ -23,11 +24,11 @@ unsigned width(lowir::Type type, RegisterBank bank)
 uint32_t register_domain(
 	const lowir::AssemblyModule& module, const lowir::AssemblyOperand& operand, const Alternative& alt)
 {
-	if (operand.type.is_object() || operand.type.is_void() || operand.type.kind() == lowir::TypeKind::I128 ||
-		operand.type.kind() == lowir::TypeKind::F80)
+	if ((operand.type.is_object() && !wide_assembly_operand(operand.type)) || operand.type.is_void() ||
+		operand.type.kind() == lowir::TypeKind::I128 || operand.type.kind() == lowir::TypeKind::F80)
 		return 0;
 	if (alt.matching != asm_model::kNoId)
-		return kAllXmms | (operand.type.is_vector() ? 0 : 0xffcfu);
+		return kAllXmms | (operand.type.is_vector() || wide_assembly_operand(operand.type) ? 0 : 0xffcfu);
 	if ((alt.locations & AL_REGISTER) == 0)
 		return 0;
 	uint32_t mask = 0;
@@ -39,7 +40,7 @@ uint32_t register_domain(
 		const Register& reg = module.registers[group.first_register];
 		if (reg.offset != 0 || reg.number >= 16 ||
 			(reg.bank != RegisterBank::Gpr && reg.bank != RegisterBank::Vector) ||
-			(reg.bank == RegisterBank::Gpr && operand.type.is_vector()) ||
+			(reg.bank == RegisterBank::Gpr && (operand.type.is_vector() || operand.type.is_object())) ||
 			(reg.bits != 0 && reg.bits != width(operand.type, reg.bank)))
 			continue;
 		const Reg r = static_cast<Reg>(reg.number + (reg.bank == RegisterBank::Vector ? 16 : 0));

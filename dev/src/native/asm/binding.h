@@ -12,9 +12,17 @@ namespace native {
 
 class AssemblyEnvironment;
 
+inline bool wide_assembly_operand(lowir::Type type)
+{
+	return type.is_object() && type.bytes == 32;
+}
+
 struct AssemblyPlan : AssemblyBinding
 {
 	uint32_t definition = 0;
+	asm_model::Register transfer_register;
+	uint16_t transfer_bytes = 0;
+	bool transfer_store = false;
 	uint32_t exit_operand = lowir::kNoId;
 	uint32_t reads = 0;
 	uint32_t writes = 0; // declared clobbers and operand setup destinations

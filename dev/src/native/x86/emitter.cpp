@@ -1,6 +1,7 @@
 #include "native/x86/emitter.h"
 #include "native/asm/binding.h"
 #include "native/asm/encoding.h"
+#include "native/asm/vex_forms.h"
 
 #include <algorithm>
 #include <cstring>
@@ -1139,9 +1140,14 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	switch (inst.op)
 	{
 	case Op::Asm:
-		encode_assembly(
-			asm_, function.assembly->plans[static_cast<uint32_t>(a.imm)]->instructions, inst.nops == 2 ? rm(b) : RM());
+	{
+		const AssemblyPlan& plan = *function.assembly->plans[static_cast<uint32_t>(a.imm)];
+		if (plan.transfer_bytes != 0)
+			encode_assembly_vector_transfer(asm_, plan.transfer_register, rm(b), plan.transfer_store);
+		else
+			encode_assembly(asm_, plan.instructions, inst.nops == 2 ? rm(b) : RM());
 		break;
+	}
 	case Op::Mov:
 		mov(a, b, flags_read_after(function, index));
 		break;

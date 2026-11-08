@@ -679,3 +679,22 @@ clobber support, not wider typed-value allocation or AVX-512 support.
 Whole-course, performance, export, selfhost and native Mac checks remain
 deferred to full closure. Broader expressions/directives, wider typed bindings,
 x87/MMX/EVEX coverage and original Rust source/backend integration remain open.
+
+## 2026-11-08 checkpoint: complete 256-bit operand transfers
+
+Existing sized-object LowIR values now supply 32-byte assembly payloads to
+YMM register alternatives. They retain one alias unit with the corresponding
+XMM register. Ordinary MIR register sets and call ABIs stay unchanged. Typed
+assembly transfer sites expose frame locations and read/write masks to MIR;
+the emitter directly encodes their moves without rendering or reparsing code.
+Complete input captures precede register installation; complete output captures
+precede ordered stores, including aliased places. Private captures stay outside
+the over-aligned frame area until its clobbered base is restored.
+
+Focused O0/O2/O3 checks pass with GCC and Clang observers for explicit storage
+inputs, object values, early writes, ties, aliased output order, all 32 result
+bytes, guards and over-aligned C++ locals across a declared frame-base clobber.
+The GNU source observer uses a target attribute and pointer-only ABI, keeping
+execution CPU-gated. Whole qualification is deferred as before. 512-bit and
+extended register bindings, x87/MMX/mask classes, further directives/ISA and
+original Rust integration remain open.

@@ -29,7 +29,9 @@ lowir::TypeKind transfer_type(lowir::Type type, Reg reg)
 
 unsigned capture_bytes(lowir::Type type, Reg reg)
 {
-	const unsigned bytes = type.is_vector() ? 16 : register_bytes(type.kind());
+	const unsigned bytes = wide_assembly_operand(type) ? type.bytes
+		: type.is_vector()                             ? 16
+													   : register_bytes(type.kind());
 	return is_xmm(reg) && bytes < 4 ? 4 : bytes;
 }
 
@@ -61,6 +63,8 @@ Operand FunctionSelector::assembly_input(
 	const lowir::AssemblyOperand& operand, lowir::Value value, Reg reg, bool memory)
 {
 	using lowir::TypeKind;
+	if (!memory && wide_assembly_operand(operand.type))
+		return wide_assembly_input(operand, value);
 	const lowir::Type input_type = memory || operand.input_storage ? lowir::Type::scalar(TypeKind::Ptr) : operand.type;
 	Operand source = memory_value_operand(value, input_type);
 	if (operand.input_storage && !memory)
@@ -95,6 +99,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	const lowir::AssemblyModule& module = *program_.assembly;
 	const lowir::AssemblyTemplate& definition = module.templates[plan->definition];
 	std::vector<Capture> captures(definition.operand_count);
+	std::vector<std::pair<Reg, Operand>> wide_inputs;
 	std::vector<std::pair<Reg, int32_t>> reserved;
 	for (uint32_t mask = plan->writes & reserved_gprs(*out_); mask != 0; mask &= mask - 1)
 	{
@@ -124,11 +129,17 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 				throw BackendError("assembly matching operands supply distinct input values to one register");
 			if ((initialized & reg_bit(reg)) == 0)
 			{
-				Move move;
-				move.dst = Operand::make_reg(reg);
-				move.src = assembly_input(source_operand, value, reg, memory);
-				move.type = memory ? TypeKind::Ptr : transfer_type(operand.type, reg);
-				moves_.push_back(move);
+				const Operand captured = assembly_input(source_operand, value, reg, memory);
+				if (!memory && wide_assembly_operand(operand.type))
+					wide_inputs.emplace_back(reg, captured);
+				else
+				{
+					Move move;
+					move.dst = Operand::make_reg(reg);
+					move.src = captured;
+					move.type = memory ? TypeKind::Ptr : transfer_type(operand.type, reg);
+					moves_.push_back(move);
+				}
 				initial[reg] = original;
 				initialized |= reg_bit(reg);
 			}
@@ -141,7 +152,8 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 			Capture& capture = captures[i];
 			capture.address = frame_alloc(8, 8);
 			capture.value = frame_alloc(capture_bytes(operand.type, plan->registers[i]),
-				operand.type.is_vector() ? 16 : lowir::data_alignment(operand.type));
+				operand.type.is_vector() || wide_assembly_operand(operand.type) ? 16
+																				: lowir::data_alignment(operand.type));
 			Move move;
 			move.dst = Operand::make_frame(capture.address);
 			const lowir::Value address = resolve(body_->operands[inst.extra_first + operand.output]);
@@ -152,6 +164,8 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	}
 	for (const Move& move : moves_)
 		emit_move(move);
+	for (const auto& move : wide_inputs)
+		assembly_transfer(move.first, move.second, false);
 	if (!out_->assembly)
 		out_->assembly.reset(new AssemblySites());
 	const uint32_t site = static_cast<uint32_t>(out_->assembly->plans.size());
@@ -174,9 +188,14 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
 		if (operand.output != lowir::kNoId && (operand.flags & (AO_FLAG | AO_EXIT_TAG)) == 0 &&
 			plan->locations[i] != AL_MEMORY)
-			emit2(floating(operand.type) || is_xmm(plan->registers[i]) ? Op::FMov : Op::Store,
-				transfer_type(operand.type, plan->registers[i]), Operand::make_frame(captures[i].value),
-				Operand::make_reg(plan->registers[i]));
+		{
+			if (wide_assembly_operand(operand.type))
+				assembly_transfer(plan->registers[i], Operand::make_frame(captures[i].value), true);
+			else
+				emit2(floating(operand.type) || is_xmm(plan->registers[i]) ? Op::FMov : Op::Store,
+					transfer_type(operand.type, plan->registers[i]), Operand::make_frame(captures[i].value),
+					Operand::make_reg(plan->registers[i]));
+		}
 	}
 	// Private captures lie outside the over-aligned area. Capture every
 	// physical output first, then restore compiler-reserved frame bases
@@ -200,6 +219,12 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 		if (operand.output == lowir::kNoId || plan->locations[i] == AL_MEMORY)
 			continue;
 		load_into(R10, Operand::make_frame(captures[i].address), TypeKind::Ptr);
+		if (wide_assembly_operand(operand.type))
+		{
+			assembly_transfer(XMM15, Operand::make_frame(captures[i].value), false);
+			assembly_transfer(XMM15, Operand::make_mem(R10, 0), true);
+			continue;
+		}
 		const Reg value = floating(operand.type) ? XMM15 : R11;
 		load_into(value, Operand::make_frame(captures[i].value), operand.type.kind());
 		Inst& store = emit2(floating(operand.type) ? Op::FMov : Op::Store, operand.type.kind(),
