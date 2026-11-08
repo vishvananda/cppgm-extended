@@ -474,11 +474,15 @@ bool Analyzer::constexpr_default_subobject(
 	}
 	if (variant)
 		return true;
-	// Default-initialized: a class object by its default constructor; a
-	// scalar or reference is left uninitialized.
+	// CWG1360/P2448R2: an uninitialized scalar does not disqualify a
+	// defaulted constructor. The actual constant evaluation still rejects
+	// an indeterminate result/read; value-initialization zeroes it first.
+	// An uninitialized reference still makes the constructor deleted.
 	const Type* type = init.base != nullptr ? init.base->base->type : init.member->variable->type;
-	if (ObjectClassOf(type) == nullptr || type->is_reference())
+	if (type->is_reference())
 		return false;
+	if (ObjectClassOf(type) == nullptr)
+		return true;
 	++initialized;
 	return constexpr_constructor(init.constructor, depth + 1);
 }
