@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Register a temporary Intel runner, dispatch one trusted benchmark, then remove it."""
+"""Run trusted Intel benchmarks sequentially, with one temporary runner per job."""
 import argparse
 import hashlib
 import json
@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import signal
 import subprocess
+import sys
 import tarfile
 import tempfile
 import urllib.request
@@ -15,6 +16,27 @@ import urllib.request
 
 def github(*arguments):
     return json.loads(subprocess.check_output(['gh', 'api', *arguments], text=True))
+
+
+def run_suites(args, revision, directory):
+    """An ephemeral runner accepts one job, so give each suite its own runner."""
+    for suite in ('public', 'self-build'):
+        command = [sys.executable, str(Path(__file__).resolve()), '--suite', suite,
+                   '--repo', args.repo, '--ref', args.ref, '--revision', revision,
+                   '--directory', str(directory / suite)]
+        if suite == 'public' and args.course_quality:
+            command.append('--course-quality')
+        subprocess.run(command, check=True)
+
+
+def dispatch_command(args, revision, label):
+    workflow = 'self-build-benchmarks.yml' if args.suite == 'self-build' else 'public-benchmarks.yml'
+    command = ['gh', 'workflow', 'run', workflow, '--repo', args.repo,
+               '--ref', args.ref, '-f', 'platform=intel', '-f', f'revision={revision}',
+               '-f', f'runner_label={label}']
+    if args.course_quality and args.suite == 'public':
+        command += ['-f', 'course_quality=true']
+    return command
 
 
 def main():
@@ -25,6 +47,8 @@ def main():
     parser.add_argument('--directory', type=Path, help='new directory for runner files and logs')
     parser.add_argument('--listen', action='store_true', help='accept one manually queued job instead of dispatching')
     parser.add_argument('--course-quality', action='store_true', help='also measure the optional course exercises')
+    parser.add_argument('--suite', choices=['all', 'public', 'self-build'], default='all',
+                        help='run both suites sequentially (default), or just one')
     args = parser.parse_args()
     if not Path('/proc/cpuinfo').exists() or 'GenuineIntel' not in Path('/proc/cpuinfo').read_text():
         parser.error('this helper requires Intel Linux hardware')
@@ -35,7 +59,10 @@ def main():
     if args.directory:
         directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     directory = directory.resolve()
-    label = 'cppgm-intel-' + directory.name.removeprefix('cppgm-intel-runner-')
+    if args.suite == 'all' and not args.listen:
+        run_suites(args, revision, directory)
+        return
+    label = 'cppgm-intel-' + hashlib.sha256(str(directory).encode()).hexdigest()[:16]
     name = label
     release = github('repos/actions/runner/releases/latest')
     asset = next(a for a in release['assets'] if a['name'].startswith('actions-runner-linux-x64-'))
@@ -63,12 +90,7 @@ def main():
         registered = True
         if not args.listen:
             # Queue the job for this runner's unique label, not any other runner.
-            command = ['gh', 'workflow', 'run', 'public-benchmarks.yml', '--repo', args.repo,
-                '--ref', args.ref, '-f', 'platform=intel', '-f', f'revision={revision}',
-                '-f', f'runner_label={label}']
-            if args.course_quality:
-                command += ['-f', 'course_quality=true']
-            subprocess.run(command, check=True)
+            subprocess.run(dispatch_command(args, revision, label), check=True)
             print(f'Queued Intel measurement of {revision}', flush=True)
         else:
             print('Listening for one job with runner_label=cppgm-intel', flush=True)
@@ -76,7 +98,7 @@ def main():
             process = subprocess.Popen([str(directory / 'run.sh')], cwd=directory,
                 stdout=log, stderr=log, start_new_session=True)
             try:
-                status = process.wait(timeout=7200)
+                status = process.wait(timeout=10800)
             except BaseException:
                 os.killpg(process.pid, signal.SIGINT)
                 try:

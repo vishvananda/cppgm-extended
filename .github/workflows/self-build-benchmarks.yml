@@ -1,0 +1,234 @@
+name: Self-build benchmarks
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Benchmark host
+        type: choice
+        options: [github, intel]
+        default: github
+      revision:
+        description: Intel run's trusted commit or ref (empty means this workflow's revision)
+        type: string
+        default: ''
+      runner_label:
+        description: Intel runner label (the temporary-runner helper supplies a unique label)
+        type: string
+        default: cppgm-intel
+
+permissions:
+  contents: read
+
+concurrency:
+  group: self-build-benchmarks-${{ github.ref }}-${{ inputs.platform || 'github' }}
+  cancel-in-progress: true
+
+env:
+  CXX: g++
+  CPPGM_HOST_CXX: g++
+  CPPGM_STDLIB_FLAGS: ""
+  CPPGM_WARNINGS_AS_ERRORS: "1"
+
+jobs:
+  benchmarks:
+    name: compiler build and codegen
+    if: inputs.platform != 'intel'
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential ca-certificates clang git libgmp-dev python3 time
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+          sparse-checkout: |
+            scripts
+            benchmarks
+      - uses: actions/checkout@v6
+        with:
+          path: source
+          persist-credentials: false
+      - name: Compare compiler build and codegen against GCC and Clang
+        run: |
+          python3 tools/scripts/public_benchmarks.py selfhost \
+            --repo-root source \
+            --work "$GITHUB_WORKSPACE/source/obj/self-build-benchmarks/work" \
+            --output source/obj/self-build-benchmarks/selfhost.json \
+            --jobs "$(nproc)"
+      - name: Report
+        if: always() && hashFiles('source/obj/self-build-benchmarks/selfhost.json') != ''
+        run: |
+          python3 tools/scripts/public_benchmarks.py report-selfhost \
+            source/obj/self-build-benchmarks/selfhost.json \
+            --summary "$GITHUB_STEP_SUMMARY" \
+            --details source/obj/self-build-benchmarks/details.md \
+            --badges source/obj/self-build-benchmarks/badges
+      - name: Retain results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: self-build-benchmarks-${{ github.sha }}
+          path: |
+            source/obj/self-build-benchmarks/selfhost.json
+            source/obj/self-build-benchmarks/details.md
+            source/obj/self-build-benchmarks/work/paired-*/*.jsonl
+            source/obj/self-build-benchmarks/work/paired-*/*.log
+            source/obj/self-build-benchmarks/work/paired-*/*.stderr
+            source/obj/self-build-benchmarks/badges/
+          if-no-files-found: warn
+          retention-days: 14
+
+  badges:
+    name: publish self-build badges
+    needs: benchmarks
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-branch
+      - uses: actions/download-artifact@v7
+        with:
+          name: self-build-benchmarks-${{ github.sha }}
+          path: artifact
+      - name: Publish to the badge branch
+        env:
+          REVISION: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 tools/scripts/publish_benchmark_badges.py artifact badge-branch \
+            --component self-build --platform github --revision "$REVISION" --run-url "$RUN_URL" --legacy-epyc
+          cd badge-branch
+          git add .
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Publish hosted self-build benchmarks of $REVISION"
+          git push origin HEAD:benchmark-badges
+
+  intel:
+    name: Intel compiler build and codegen (manual)
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'intel' && github.actor == github.repository_owner
+    runs-on: [self-hosted, Linux, X64, '${{ inputs.runner_label }}']
+    timeout-minutes: 150
+    outputs:
+      revision: ${{ steps.revision.outputs.sha }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+          sparse-checkout: |
+            scripts
+            benchmarks
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.revision || github.sha }}
+          path: source
+          persist-credentials: false
+      - name: Record the measured revision and check Intel hardware
+        id: revision
+        run: |
+          python3 -c 'import pathlib; assert "GenuineIntel" in pathlib.Path("/proc/cpuinfo").read_text(), "Intel CPU required"'
+          echo "sha=$(git -C source rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Run compiler measurements in Ubuntu 26.04
+        run: |
+          engine=$(command -v podman || command -v docker)
+          "$engine" run --rm \
+            -v "$GITHUB_WORKSPACE:/work" -w /work/source \
+            -e CXX -e CPPGM_HOST_CXX -e CPPGM_STDLIB_FLAGS -e CPPGM_WARNINGS_AS_ERRORS \
+            ubuntu:26.04 bash -euo pipefail -c '
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                build-essential ca-certificates clang git libgmp-dev python3 time
+              git config --global --add safe.directory /work/source
+              python3 ../tools/scripts/public_benchmarks.py selfhost \
+                --repo-root . --work /work/source/obj/self-build-benchmarks/work \
+                --output obj/self-build-benchmarks/selfhost.json --jobs 16
+            '
+      - name: Report
+        if: always() && hashFiles('source/obj/self-build-benchmarks/selfhost.json') != ''
+        run: |
+          python3 tools/scripts/public_benchmarks.py report-selfhost \
+            source/obj/self-build-benchmarks/selfhost.json \
+            --summary "$GITHUB_STEP_SUMMARY" \
+            --details source/obj/self-build-benchmarks/details.md \
+            --badges source/obj/self-build-benchmarks/badges
+      - name: Retain Intel results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: self-build-benchmarks-intel-${{ steps.revision.outputs.sha }}
+          path: |
+            source/obj/self-build-benchmarks/selfhost.json
+            source/obj/self-build-benchmarks/details.md
+            source/obj/self-build-benchmarks/work/paired-*/*.jsonl
+            source/obj/self-build-benchmarks/work/paired-*/*.log
+            source/obj/self-build-benchmarks/work/paired-*/*.stderr
+            source/obj/self-build-benchmarks/badges/
+          if-no-files-found: warn
+          retention-days: 14
+
+  intel-badges:
+    name: publish Intel self-build badges
+    needs: intel
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'intel' && needs.intel.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-branch
+      - uses: actions/download-artifact@v7
+        with:
+          name: self-build-benchmarks-intel-${{ needs.intel.outputs.revision }}
+          path: artifact
+      - name: Publish Intel self-build measurements
+        env:
+          REVISION: ${{ needs.intel.outputs.revision }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 tools/scripts/publish_benchmark_badges.py artifact badge-branch \
+            --component self-build --platform intel --revision "$REVISION" --run-url "$RUN_URL"
+          cd badge-branch
+          git add .
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Publish Intel self-build benchmarks of $REVISION"
+          git push origin HEAD:benchmark-badges

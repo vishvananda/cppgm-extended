@@ -55,21 +55,37 @@ def badge_svg(data):
             '</svg>\n')
 
 
-def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
+def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False, component='all'):
     if not re.fullmatch(r'[0-9a-f]{40}', revision):
         raise ValueError('the measured revision must be a full commit hash')
+    if component not in ('all', 'public', 'self-build'):
+        raise ValueError('unknown benchmark component')
     artifact, target = Path(artifact), Path(target)
-    document = json.loads((artifact / 'results.json').read_text())
-    environment = document['environment']
+    document = None
+    builds = None
+    if component != 'self-build':
+        document = json.loads((artifact / 'results.json').read_text())
+    if component != 'public' and (artifact / 'selfhost.json').is_file():
+        builds = json.loads((artifact / 'selfhost.json').read_text())
+    if component == 'self-build':
+        if not builds:
+            raise ValueError('self-build publication requires selfhost.json')
+        environment = builds['metadata']
+        if environment.get('revision') != revision:
+            raise ValueError('self-build artifact does not match the measured revision')
+    else:
+        environment = document['environment']
     cpu = environment.get('cpu') or ''
     if platform == 'github':
         platform = benchmark_hosts.hosted_platform(cpu)
     expected = 'Intel' if platform in ('intel', 'github-intel') else 'AMD EPYC'
     if expected not in cpu:
         raise ValueError(f'{platform} badges require {expected} hardware; measured {cpu!r}')
-    # Validate the whole set before replacing any previous measurement.
+    names = (BADGES[:4] if component == 'public' else
+             BADGES[4:] + CLANG_BADGES if component == 'self-build' else BADGES + CLANG_BADGES)
+    # Validate and render everything before replacing any previous measurement.
     badges = {}
-    for name in BADGES + CLANG_BADGES:
+    for name in names:
         path = artifact / 'badges' / f'{name}.json'
         data = (dict(schemaVersion=1, label=name, message='no data', color='475569')
                 if name in CLANG_BADGES and not path.exists() else json.loads(path.read_text()))
@@ -77,40 +93,50 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
             raise ValueError(f'invalid badge: {name}')
         badges[name] = data
     destinations = [target / platform]
-    # Only main's automatic run updates the original, unqualified URLs.
     if platform == 'epyc' and legacy_epyc:
         destinations.append(target)
     provenance = dict(revision=revision, cpu=cpu, run_url=run_url,
                       published_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                       environment=environment)
-    badges['revision'] = dict(schemaVersion=1, label='commit', message=revision[:9], color='1e40af')
-    _, count = public_benchmarks.mean_ratio(document['programs'], 'run_cpu_O3', 'gcc')
-    badges['o3-programs'] = dict(schemaVersion=1, label='programs', message=str(count), color='475569')
-    builds = None
-    if (artifact / 'selfhost.json').is_file():
-        builds = json.loads((artifact / 'selfhost.json').read_text())
-    report = public_benchmarks.summary(document, [], builds)
+    revision_badge = dict(schemaVersion=1, label='commit', message=revision[:9], color='1e40af')
+    if document is not None:
+        badges['revision'] = revision_badge
+        _, count = public_benchmarks.mean_ratio(document['programs'], 'run_cpu_O3', 'gcc')
+        badges['o3-programs'] = dict(schemaVersion=1, label='programs', message=str(count), color='475569')
+    if builds is not None:
+        badges['self-revision'] = revision_badge
+    rendered = {name: badge_svg(data) for name, data in badges.items()}
     heading = {'intel': 'Intel Xeon (dedicated)', 'github-intel': 'Intel (GitHub)', 'epyc': 'AMD EPYC'}[platform]
     source = 'https://github.com/vishvananda/cppgm-extended/commit/' + revision
-    report = report.replace('# Public benchmarks\n\n',
-                            f'# Public benchmarks: {heading}\n\n'
-                            f'Measured compiler: [`{revision[:9]}`]({source}) · '
-                            f'[CI run]({run_url}) · [Raw program results](results.json)'
-                            + (' · [Raw rebuild results](selfhost.json)' if builds else '') + '\n\n', 1)
-    report += ('\n## Toolchains\n\n' + '\n'.join(
-        f'- **{name}**: {value}' for name, value in environment.items() if name != 'cpu') + '\n')
+    note = (f'Measured compiler: [`{revision[:9]}`]({source}) · [CI run]({run_url})')
+    files = {}
+    if document is not None:
+        report = public_benchmarks.summary(document, [], builds)
+        report = report.replace('# Public benchmarks\n\n',
+                                f'# Public benchmarks: {heading}\n\n' + note
+                                + ' · [Raw program results](results.json)'
+                                + (' · [Raw rebuild results](selfhost.json)' if builds else '')
+                                + '\n\n', 1)
+        report += ('\n## Toolchains\n\n' + '\n'.join(
+            f'- **{name}**: {value}' for name, value in environment.items() if name != 'cpu') + '\n')
+        report += '\n[Compiler build and codegen results](self-build.md) have their own measured revision.\n'
+        files.update({'provenance.json': json.dumps(provenance, indent=1) + '\n',
+                      'report.md': report, 'results.json': (artifact / 'results.json').read_text()})
+    if builds is not None:
+        report = public_benchmarks.selfhost_summary(builds)
+        report = report.replace('# Compiler build and codegen benchmarks\n\n',
+                                f'# Compiler build and codegen benchmarks: {heading}\n\n' + note
+                                + ' · [Raw rebuild results](selfhost.json)\n\n', 1)
+        report += '\n[Public program results](report.md) have their own measured revision.\n'
+        files.update({'self-build-provenance.json': json.dumps(provenance, indent=1) + '\n',
+                      'self-build.md': report, 'selfhost.json': (artifact / 'selfhost.json').read_text()})
     for destination in destinations:
         destination.mkdir(parents=True, exist_ok=True)
         for name, data in badges.items():
             (destination / f'{name}.json').write_text(json.dumps(data, indent=1) + '\n')
-            (destination / f'{name}.svg').write_text(badge_svg(data))
-        (destination / 'provenance.json').write_text(json.dumps(provenance, indent=1) + '\n')
-        (destination / 'report.md').write_text(report)
-        (destination / 'results.json').write_bytes((artifact / 'results.json').read_bytes())
-        if builds:
-            (destination / 'selfhost.json').write_bytes((artifact / 'selfhost.json').read_bytes())
-        else:
-            (destination / 'selfhost.json').unlink(missing_ok=True)
+            (destination / f'{name}.svg').write_text(rendered[name])
+        for name, content in files.items():
+            (destination / name).write_text(content)
 
 
 def main():
@@ -121,8 +147,10 @@ def main():
     parser.add_argument('--revision', required=True)
     parser.add_argument('--run-url', required=True)
     parser.add_argument('--legacy-epyc', action='store_true', help='also update main\'s original EPYC URLs')
+    parser.add_argument('--component', choices=['all', 'public', 'self-build'], default='all',
+                        help='update only this benchmark component, retaining the other measurements')
     args = parser.parse_args()
-    prepare(args.artifact, args.target, args.platform, args.revision, args.run_url, args.legacy_epyc)
+    prepare(args.artifact, args.target, args.platform, args.revision, args.run_url, args.legacy_epyc, args.component)
 
 
 if __name__ == '__main__':

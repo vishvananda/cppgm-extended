@@ -77,20 +77,12 @@ jobs:
             --output obj/public-benchmarks/results.json \
             --jobs "$(nproc)"
 
-      - name: Compare compiler build and codegen against GCC and Clang
-        run: |
-          python3 scripts/public_benchmarks.py selfhost \
-            --work obj/public-benchmarks/selfhost \
-            --output obj/public-benchmarks/selfhost.json \
-            --jobs "$(nproc)"
-
       - name: Report
         run: |
           python3 scripts/public_benchmarks.py report obj/public-benchmarks/results.json \
             --summary "$GITHUB_STEP_SUMMARY" \
             --details obj/public-benchmarks/details.md \
-            --badges obj/public-benchmarks/badges \
-            --selfhost obj/public-benchmarks/selfhost.json
+            --badges obj/public-benchmarks/badges
 
       - name: Measure optional course exercises
         if: github.event_name == 'workflow_dispatch' && inputs.course_quality
@@ -107,12 +99,8 @@ jobs:
           name: public-benchmarks-${{ github.sha }}
           path: |
             obj/public-benchmarks/results.json
-            obj/public-benchmarks/selfhost.json
             obj/public-benchmarks/details.md
             obj/public-benchmarks/work/timing/
-            obj/public-benchmarks/selfhost/paired-*/*.jsonl
-            obj/public-benchmarks/selfhost/paired-*/*.log
-            obj/public-benchmarks/selfhost/paired-*/*.stderr
             obj/public-benchmarks/badges/
             obj/public-benchmarks/course-quality/
           if-no-files-found: warn
@@ -152,7 +140,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           python3 tools/scripts/publish_benchmark_badges.py artifact badge-branch \
-            --platform github --revision "$REVISION" --run-url "$RUN_URL" --legacy-epyc
+            --component public --platform github --revision "$REVISION" --run-url "$RUN_URL" --legacy-epyc
           cd badge-branch
           git add .
           if git diff --cached --quiet; then exit 0; fi
@@ -202,14 +190,10 @@ jobs:
               python3 scripts/public_benchmarks.py run \
                 --cache obj/public-benchmarks/src --work obj/public-benchmarks/work \
                 --output obj/public-benchmarks/results.json --jobs "$jobs"
-              python3 scripts/public_benchmarks.py selfhost \
-                --work obj/public-benchmarks/selfhost \
-                --output obj/public-benchmarks/selfhost.json --jobs "$jobs"
               python3 scripts/public_benchmarks.py report obj/public-benchmarks/results.json \
                 --summary obj/public-benchmarks/summary.md \
                 --details obj/public-benchmarks/details.md \
-                --badges obj/public-benchmarks/badges \
-                --selfhost obj/public-benchmarks/selfhost.json
+                --badges obj/public-benchmarks/badges
               if [ "$COURSE_QUALITY" = true ]; then
                 python3 scripts/check_optimization_quality.py pa32/tests/improvements \
                   --mode native --compiler dev/cppgm++ --report-only \
@@ -225,12 +209,8 @@ jobs:
           name: public-benchmarks-intel-${{ steps.revision.outputs.sha }}
           path: |
             obj/public-benchmarks/results.json
-            obj/public-benchmarks/selfhost.json
             obj/public-benchmarks/details.md
             obj/public-benchmarks/work/timing/
-            obj/public-benchmarks/selfhost/paired-*/*.jsonl
-            obj/public-benchmarks/selfhost/paired-*/*.log
-            obj/public-benchmarks/selfhost/paired-*/*.stderr
             obj/public-benchmarks/badges/
             obj/public-benchmarks/course-quality/
           if-no-files-found: warn
@@ -266,7 +246,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           python3 tools/scripts/publish_benchmark_badges.py artifact badge-branch \
-            --platform intel --revision "$REVISION" --run-url "$RUN_URL"
+            --component public --platform intel --revision "$REVISION" --run-url "$RUN_URL"
           cd badge-branch
           git add .
           if git diff --cached --quiet; then exit 0; fi

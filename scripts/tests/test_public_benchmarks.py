@@ -14,6 +14,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import public_benchmarks as pb
 import publish_benchmark_badges as publication
+import run_intel_benchmarks_once as intel_runner
 
 
 def outcome(name, gcc, cppgm, status='ok', **extra):
@@ -557,6 +558,58 @@ class ReportTests(unittest.TestCase):
         written = json.loads(output.read_text())
         self.assertEqual(written['status'], 'self build failed')
 
+    def test_selfhost_measures_the_selected_checkout(self):
+        source = self.root / 'measured-source'
+        (source / 'dev').mkdir(parents=True)
+        (source / 'dev/cppgm++').write_bytes(b'compiler')
+        (source / 'dev/example.cpp').write_text('int main() {}\n')
+        output = self.root / 'selfhost.json'
+        arguments = SimpleNamespace(work=self.root / 'work', output=output,
+                                    repo_root=source, jobs=1)
+        with mock.patch.object(pb, 'build_cpu', side_effect=[3., None]) as build, \
+                mock.patch.object(pb, 'tool_version', return_value='a' * 40):
+            pb.selfhost(arguments)
+        self.assertTrue(all(call.args[2] == source for call in build.call_args_list))
+        written = json.loads(output.read_text())
+        self.assertEqual(written['metadata']['revision'], 'a' * 40)
+        self.assertEqual(written['metadata']['source_sha256'],
+                         {'dev/example.cpp': pb.timing.sha(source / 'dev/example.cpp')})
+
+    def test_standalone_selfhost_report_has_paired_ratios_and_only_build_badges(self):
+        paired = dict(AA=dict(ratio=1.001), comparison=dict(ratio=.8, blocks=[
+            dict(reference_cpu=20., candidate_cpu=16., ratio=.8)]))
+        builds = dict(status='ok', gcc=100., clang=80., self=20., inception=22.,
+                      paired_self=paired, paired_clang=paired,
+                      metadata=dict(cpu='Intel Xeon', revision='a' * 40))
+        path = self.root / 'selfhost.json'
+        path.write_text(json.dumps(builds))
+        arguments = SimpleNamespace(results=path, summary=self.root / 'summary.md',
+                                    details=self.root / 'details.md', badges=self.root / 'badges')
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = pb.report_selfhost(arguments)
+        self.assertEqual(code, 0)
+        self.assertEqual(arguments.summary.read_bytes(), arguments.details.read_bytes())
+        text = arguments.details.read_text()
+        self.assertIn('| Building cppgm++ | 5.00× | 4.00× |', text)
+        self.assertIn('| Self-built compiler speed | 1.25× | 1.25× |', text)
+        self.assertIn('| 1 | 20.000 | 16.000 | 1.25× |', text)
+        self.assertIn('A/A CPU ratio: 1.001', text)
+        self.assertIn('CPU: Intel Xeon', text)
+        self.assertNotIn('0 of 0 programs', text)
+        self.assertEqual({p.stem for p in arguments.badges.iterdir()},
+                         {row[2] for row in pb.BUILDS})
+
+    def test_standalone_selfhost_report_fails_and_retains_failure_badges(self):
+        path = self.root / 'selfhost.json'
+        path.write_text(json.dumps(dict(status='gcc build failed')))
+        arguments = SimpleNamespace(results=path, summary=None, details=None,
+                                    badges=self.root / 'badges')
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(pb.report_selfhost(arguments), 1)
+        self.assertIn('gcc build failed', output.getvalue())
+        self.assertEqual(json.loads((arguments.badges / 'self-built.json').read_text())['message'],
+                         '1 failing')
+
     def report(self, results):
         path = self.root / 'results.json'
         path.write_text(json.dumps(dict(programs=results)))
@@ -682,6 +735,96 @@ class BadgePublicationTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             self.prepare('intel', 'Intel Xeon')
         self.assertEqual(list(self.target.iterdir()), [])
+
+    def self_build(self, revision='b' * 40):
+        builds = dict(status='ok', gcc=100, clang=80, self=20, inception=21,
+                      metadata=dict(cpu='Intel Xeon', revision=revision))
+        (self.artifact / 'selfhost.json').write_text(json.dumps(builds))
+        publication.prepare(self.artifact, self.target, 'intel', revision,
+                            'https://github.com/owner/repo/actions/runs/2', component='self-build')
+
+    def test_public_update_preserves_every_self_build_file(self):
+        self.self_build()
+        previous = {p.name: p.read_bytes() for p in (self.target / 'intel').iterdir()}
+        (self.artifact / 'selfhost.json').unlink()
+        for name in publication.BADGES[4:] + publication.CLANG_BADGES:
+            (self.artifact / 'badges' / f'{name}.json').unlink(missing_ok=True)
+        (self.artifact / 'results.json').write_text(json.dumps(dict(environment=dict(cpu='Intel Xeon'),
+            programs=[outcome('p', dict(run_cpu_O3=1), dict(run_cpu_O3=2))])))
+        publication.prepare(self.artifact, self.target, 'intel', 'c' * 40,
+                            'https://github.com/owner/repo/actions/runs/3', component='public')
+        for name, content in previous.items():
+            self.assertEqual((self.target / 'intel' / name).read_bytes(), content, name)
+        text = (self.target / 'intel/report.md').read_text()
+        self.assertIn('self-build.md', text)
+        self.assertNotIn('Building the compiler', text)
+        self.assertEqual(json.loads((self.target / 'intel/provenance.json').read_text())['revision'],
+                         'c' * 40)
+
+    def test_self_build_update_preserves_every_public_file(self):
+        self.prepare('intel', 'Intel Xeon')
+        paths = ['report.md', 'provenance.json', 'results.json', 'revision.svg',
+                 'o3-programs.json'] + [name + '.svg' for name in publication.BADGES[:4]]
+        previous = {name: (self.target / 'intel' / name).read_bytes() for name in paths}
+        (self.artifact / 'results.json').unlink()
+        for name in publication.BADGES[:4]:
+            (self.artifact / 'badges' / f'{name}.json').unlink()
+        self.self_build()
+        for name, content in previous.items():
+            self.assertEqual((self.target / 'intel' / name).read_bytes(), content, name)
+        report = (self.target / 'intel/self-build.md').read_text()
+        self.assertIn('commit/' + 'b' * 40, report)
+        self.assertIn('[Raw rebuild results](selfhost.json)', report)
+        self.assertEqual(json.loads((self.target / 'intel/self-build-provenance.json').read_text())['revision'],
+                         'b' * 40)
+
+    def test_self_build_revision_mismatch_fails_before_writing(self):
+        self.self_build()
+        previous = {p.name: p.read_bytes() for p in (self.target / 'intel').iterdir()}
+        with self.assertRaisesRegex(ValueError, 'does not match'):
+            publication.prepare(self.artifact, self.target, 'intel', 'c' * 40,
+                                'https://github.com/owner/repo/actions/runs/3', component='self-build')
+        self.assertEqual({p.name: p.read_bytes() for p in (self.target / 'intel').iterdir()}, previous)
+
+    def test_invalid_badge_color_fails_before_any_replacement(self):
+        self.prepare('intel', 'Intel Xeon')
+        previous = {p.name: p.read_bytes() for p in (self.target / 'intel').iterdir()}
+        path = self.artifact / 'badges/self-built.json'
+        data = json.loads(path.read_text())
+        data['color'] = 'invalid'
+        path.write_text(json.dumps(data))
+        with self.assertRaisesRegex(ValueError, 'color'):
+            self.self_build()
+        self.assertEqual({p.name: p.read_bytes() for p in (self.target / 'intel').iterdir()}, previous)
+
+
+class IntelRunnerTests(unittest.TestCase):
+    def test_suites_use_separate_sequential_runners_at_one_pinned_revision(self):
+        args = SimpleNamespace(repo='owner/repo', ref='main', course_quality=True)
+        calls = []
+
+        def run(command, check):
+            suite = command[command.index('--suite') + 1]
+            calls.append(suite)
+            self.assertIn('--revision', command)
+            self.assertEqual(command[command.index('--revision') + 1], 'a' * 40)
+            self.assertEqual(command[command.index('--directory') + 1], '/tmp/runners/' + suite)
+            self.assertEqual('--course-quality' in command, suite == 'public')
+
+        with mock.patch.object(intel_runner.subprocess, 'run', side_effect=run):
+            intel_runner.run_suites(args, 'a' * 40, Path('/tmp/runners'))
+        self.assertEqual(calls, ['public', 'self-build'])
+
+    def test_suites_dispatch_distinct_workflows(self):
+        args = SimpleNamespace(repo='owner/repo', ref='main', course_quality=True, suite='public')
+        public = intel_runner.dispatch_command(args, 'a' * 40, 'unique-label')
+        args.suite = 'self-build'
+        build = intel_runner.dispatch_command(args, 'a' * 40, 'unique-label')
+        self.assertEqual(public[3], 'public-benchmarks.yml')
+        self.assertEqual(build[3], 'self-build-benchmarks.yml')
+        self.assertIn('course_quality=true', public)
+        self.assertNotIn('course_quality=true', build)
+        self.assertIn('runner_label=unique-label', build)
 
 
 if __name__ == '__main__':

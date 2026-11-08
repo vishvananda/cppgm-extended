@@ -1,7 +1,8 @@
 # Public benchmarks
 
 The benchmarks build third-party programs with `cppgm++`, `g++` and `clang++`
-and compare the results. The **Public benchmarks** workflow runs on every push.
+and compare the results. **Public benchmarks** and **Self-build benchmarks**
+run independently on every push, with separate time budgets, reports and artifacts.
 
 ## Files
 
@@ -87,10 +88,11 @@ The [EPYC report](https://github.com/vishvananda/cppgm-extended/blob/benchmark-b
 [dedicated Intel report](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/intel/report.md)
 and [GitHub Intel report](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/github-intel/report.md)
 list every program's O0, O3 and frontend compile CPU times for all three
-compilers, with higher-is-better speed ratios. They include compiler rebuild
-times, paired self-build blocks, toolchains and links to the exact CI run and
-raw measurements. The same tables appear in each new workflow run's summary
-and its `details.md` artifact.
+compilers, with higher-is-better speed ratios. Each links its separate
+`self-build.md` report for compiler rebuild times and paired self-build blocks.
+Both reports identify their own measured commit, toolchains, CI run and raw
+measurements. The tables also appear in their workflow summaries and
+`details.md` artifacts (`public-benchmarks-*` and `self-build-benchmarks-*`).
 
 Program speed is `GCC CPU time / cppgm++ CPU time`: 1× is equal, and higher
 is faster. Compile speed measures compilation, excluding linking;
@@ -128,6 +130,14 @@ toolchain identities, commands and bootstrap logs are retained. Pairing reduces
 order effects; A/A variation still limits claims about small differences.
 The results JSON and workflow artifacts retain the calibration, block ratios,
 raw observations and output hashes.
+
+To report a local self-build comparison:
+
+```sh
+python3 scripts/public_benchmarks.py selfhost --work obj/self-build-benchmarks/work \
+  --output obj/self-build-benchmarks/selfhost.json
+python3 scripts/public_benchmarks.py report-selfhost obj/self-build-benchmarks/selfhost.json
+```
 
 EPYC and Intel columns retain their latest separate measurements, which can be
 from different commits. The measured commit row and the provenance links below
@@ -177,6 +187,9 @@ publishing any host preserves the other hosts and the legacy EPYC URLs.
 and [Intel provenance](https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/intel/provenance.json) record the exact CPU,
 compiler commit, toolchains and workflow URL. The README shows the measured
 commit because the hosts' latest measurements can be from different commits.
+Self-build measurements retain their own `self-revision.svg` badge and
+`self-build-provenance.json`; publication by either workflow preserves the
+other workflow's last measurements.
 
 On the Intel Linux host, with `gh` authenticated and Podman or Docker installed:
 
@@ -185,17 +198,20 @@ python3 scripts/run_intel_benchmarks_once.py --ref main --revision main
 ```
 
 This downloads the official GitHub runner, verifies its SHA-256 digest,
-registers it for one job, dispatches Public benchmarks with `platform=intel`,
-and removes its registration after the job. It keeps logs and measurements
+registers one temporary runner per job, and dispatches Public benchmarks followed
+by Self-build benchmarks with `platform=intel`. The jobs run sequentially to
+avoid timing interference. Use `--suite public` or `--suite self-build` to run
+only one. It removes each registration after the job and keeps logs and measurements
 in the printed temporary directory, removes the runner credentials, and
 installs no service. Choose only a trusted compiler revision.
 
 To trigger from the Actions UI instead, start the helper with `--listen`,
-then choose Public benchmarks → Run workflow → `platform=intel`. Keep
+then choose either workflow → Run workflow → `platform=intel`. This listener
+accepts one job. Keep
 `runner_label=cppgm-intel` and select the compiler revision to measure. An
 Intel job waits for this temporary runner; ordinary pushes never queue it.
-The Intel job uses Ubuntu 26.04 and the same benchmark, GCC, Clang, serial
-timing and self-host measurements as the automatic run. Run it while the
+Both Intel jobs use Ubuntu 26.04 and the same measurements as their automatic
+counterparts. Run them while the
 host is otherwise idle.
 
 For the optional course exercise measurements, enable `course_quality` in

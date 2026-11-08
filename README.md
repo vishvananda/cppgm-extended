@@ -76,7 +76,7 @@ The export's references are generated from this compiler.
 Badges show **EPYC / Intel / hosted Intel**, top to bottom. `n/m` means not measured. Swipe sideways for other columns.
 
 <table>
-<thead><tr><th width="120">Workload</th><th width="152">Compile/build&nbsp;vs&nbsp;GCC&nbsp;↑</th><th width="152">Compile/build&nbsp;vs&nbsp;Clang&nbsp;↑</th><th width="152">Runtime&nbsp;vs&nbsp;GCC&nbsp;↑</th><th width="152">Runtime&nbsp;vs&nbsp;Clang&nbsp;↑</th></tr></thead>
+<thead><tr><th width="120">Workload</th><th width="152">Compile&nbsp;vs&nbsp;GCC&nbsp;↑</th><th width="152">Compile&nbsp;vs&nbsp;Clang&nbsp;↑</th><th width="152">Runtime&nbsp;vs&nbsp;GCC&nbsp;↑</th><th width="152">Runtime&nbsp;vs&nbsp;Clang&nbsp;↑</th></tr></thead>
 <tbody>
 <tr>
 <td>Public programs</td>
