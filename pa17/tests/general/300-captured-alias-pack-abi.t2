@@ -1,0 +1,15 @@
+// CXX11-124: a separate caller must link to the captured-pack template signatures.
+namespace captured {
+template<int...> struct Values {};
+template<class... T> using Counted = Values<(sizeof(T)+sizeof...(T))...>;
+template<class... T> using Append = Counted<T..., char>;
+template<class... T> int mixed(Append<T...>*);
+template<class Unused,class... T> int indexed(Counted<T...>*);
+}
+int provide();
+int main() {
+ return provide()!=31 || captured::mixed<int>(nullptr)!=7 || captured::indexed<int,char>(nullptr)!=11;
+}
+
+extern template int captured::mixed<int>(captured::Append<int>*);
+extern template int captured::indexed<int,char>(captured::Counted<char>*);
