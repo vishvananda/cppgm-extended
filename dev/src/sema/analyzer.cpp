@@ -601,8 +601,13 @@ void Analyzer::using_declaration(const syntax::UsingDecl& decl, Scope* scope)
 		Scope* where = declaration_scope(scope);
 		if (where->kind != ScopeKind::Class)
 			error(decl.location, "a constructor using-declaration outside a class");
-		if (where->kind == ScopeKind::Class && where->entity != nullptr)
-			static_cast<ClassEntity*>(where->entity)->inherits_constructors = static_cast<ClassEntity*>(prefix.entity);
+		ClassEntity* derived = static_cast<ClassEntity*>(where->entity);
+		ClassEntity* base = static_cast<ClassEntity*>(prefix.entity);
+		// 7.3.3p3: inheriting constructors names a direct base, even when
+		// ordinary member lookup could reach an indirect or virtual base.
+		if (direct_base(derived, base) == nullptr)
+			error(decl.location, "a constructor using-declaration must name a direct base");
+		derived->inherits_constructors = base;
 		return;
 	}
 	LookupResult result = LookupResult();
@@ -839,7 +844,7 @@ void Analyzer::alias_declaration(const syntax::AliasDecl& decl, Scope* scope)
 	const DeclaratorInfo info = declarator(decl.type->declarator, specifiers.type, scope, decl.location,
 		specifiers.mode_specifiers.empty() ? nullptr : &specifiers, DeclaratorUse::TypeId);
 	const Type* type = info.type;
-	check_alias_packs(type, decl.location);
+	check_type_packs(type, decl.location);
 	// 9.2p9, 7.1.2p1: no virt-specifier or function-specifier here.
 	if (info.virt_suffix != nullptr || specifiers.is_virtual)
 		error(decl.location, "a virt-specifier or virtual in an alias-declaration");

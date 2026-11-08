@@ -847,6 +847,7 @@ void Analyzer::declare_declarator(
 			error(info.location, "an exception-specification in a typedef declaration");
 		if (info.type == auto_placeholder_ || info.type == decltype_auto_placeholder_)
 			error(info.location, "typedef of auto");
+		check_type_packs(info.type, info.location);
 		Binding* binding = declare_typedef(
 			declared_name(*info.name, declaration_scope(scope)), info.type, scope, info.location);
 		if (declaration_scope(scope)->kind == ScopeKind::Block)
@@ -1222,6 +1223,8 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	if (type->unqualified == types_.fundamental(FundamentalType::Void))
 		error(location, "variable of type void");
 	const bool member = where->kind == ScopeKind::Class && !specifiers.is_static;
+	if (member)
+		check_type_packs(type, location);
 	// A class variable template is a static data member template, not a
 	// non-static field. An enclosing class template's ordinary fields do
 	// not introduce their own template-head.
@@ -1507,6 +1510,11 @@ bool Analyzer::typed_initializer(
 void Analyzer::check_variable_specifiers(const Specifiers& specifiers, const Type* type, const Scope* where,
 	bool qualified, bool member, bool definition, bool initialized, uint32_t location)
 {
+	// 9.5p2: a union's non-static data member cannot have reference type.
+	// Static references and references in ordinary classes remain valid.
+	if (member && !qualified && type->is_reference() &&
+		static_cast<const ClassEntity*>(where->entity)->key == TokenKind::KW_UNION)
+		error(location, "a union data member cannot have reference type");
 	if (specifiers.is_static && where->kind == ScopeKind::Class)
 	{
 		// 9.8p3,p4: a local class, including one nested in another local
@@ -1845,12 +1853,10 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 		!MemberTemplateLists(info.qualifier, scope);
 	const bool templated = scope->kind == ScopeKind::TemplateParameters && scope == template_scope_ && !pattern_member;
 	// 14.5.3p5: a parameter pack is named only in the pattern of a pack
-	// expansion; a variadic function template's function parameter that is
-	// no function parameter pack (and its return type) expands none, so
-	// neither names one outside the expansions in it.
-	if (templated && info.type->kind == TypeKind::Function &&
-		std::any_of(template_entities_.begin(), template_entities_.end(),
-			[](const TemplateParameterEntity* parameter) { return parameter->pack; }))
+	// expansion. This applies to outer class-template packs too, not only
+	// the function's own template parameters. Nested parameter expansions
+	// consume their own packs; an ordinary parameter or return type does not.
+	if (dependent_type(info.type))
 	{
 		PackList packs;
 		for (uint32_t i = 0; i < info.type->param_count && packs.empty(); ++i)
