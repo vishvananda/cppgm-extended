@@ -84,7 +84,7 @@ struct function<R(Args...)> {
                         is_not_same<F, R>>::value>;
 
   template<class F, class = enable_callable<F>>
-  function & operator=(F);
+  function & operator=(F) { return *this; }
 };
 
 struct S {
