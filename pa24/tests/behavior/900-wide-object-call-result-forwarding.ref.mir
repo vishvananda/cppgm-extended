@@ -58,12 +58,10 @@ function @main
     copy_bytes 16x8, [rbp-16], [rbp-32]
     load.i64 r8, [rbp-16]
     load.i64 r9, [rbp-8]
-    mov rdx, 11
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 11
     sete r8
     movzx r8, r8
-    mov rdx, 22
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 22
     sete r9
     movzx r9, r9
     and r8, r9

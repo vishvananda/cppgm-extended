@@ -42,7 +42,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 	out.wide_bulk = level_ >= 1;
 	out.align_loops = level_ >= 2;
 	classify_signature(*signature_, entry_layout_);
-	note_parameter_classes();
+	excluded_ = 0;
 	build_cfg();
 	if (eh_model_ == EhModel::Host)
 		analyze_host_eh();

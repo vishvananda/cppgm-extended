@@ -20,11 +20,8 @@ function @main
     store.i64 [rbp-8], 7
     copy_bytes 8x8, [rbp-16], [rbp-8]
     load.i64 r8, [rbp-8]
-    mov r9, 10
-    add r9, 20
-    add r9, r8
-    mov rdx, 37
-    cmp.i64 r9, rdx
-    setne r9
-    movzx r9, r9
-    ret r9
+    add r8, 30
+    cmp.i64 r8, 37
+    setne r8
+    movzx r8, r8
+    ret r8

@@ -15,12 +15,8 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, 10
-    add r8, 20
-    add r8, 30
-    add r8, 40
-    mov rdx, 100
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    ret r8
+    mov r10, 100
+    cmp.i64 r10, 100
+    setne rax
+    movzx rax, rax
+    ret rax

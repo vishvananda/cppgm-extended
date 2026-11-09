@@ -1,0 +1,9 @@
+typedef unsigned long size_t;
+unsigned variadic_effects;
+void* operator new(size_t, void* p, ...) noexcept { ++variadic_effects; return p; }
+struct Value { long value; };
+int variadic_copy() {
+    alignas(Value) unsigned char storage[sizeof(Value)];
+    Value* result = new(storage, 17) Value{83};
+    return result->value != 83 || variadic_effects != 1;
+}

@@ -37,23 +37,21 @@ function @run
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
     slot $scratch -> [rbp-40] : obj<40x8>
 
   block ^entry
     lea rdi, [rbp-40]
     call @touch [args=(rdi)]
-    mov r8, @buffer
-    load.i64 r9, @which
-    lea rbx, [r8+r9*8]
-    lea r8, [r8+16]
-    cmp.ptr rbx, r8
+    mov r9, @buffer
+    load.i64 rdi, @which
+    lea r8, [r9+rdi*8]
+    lea r9, [r9+16]
+    cmp.ptr r8, r9
     je ^check_value
     jmp ^bad
 
   block ^check_value
-    mov rdx, 30
-    cmp.i64 [rbx], rdx
+    cmp.i64 [r8], 30
     sete r8
     movzx r8, r8
     cmp.i64 r8, 0

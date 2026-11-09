@@ -45,8 +45,7 @@ function @main
     mov rcx, 5
     call @encode [args=(rcx,rdx,rsi,rdi)]
     zext.i32 rax
-    mov rdx, 213
-    cmp.u32 rax, rdx
+    cmp.u32 rax, 213
     setne rax
     movzx rax, rax
     ret rax

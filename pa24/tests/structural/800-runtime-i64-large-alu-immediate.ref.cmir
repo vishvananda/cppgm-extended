@@ -15,9 +15,8 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, 0
-    add r8, 3472328296227680304
-    cmp.i64 r8, 3472328296227680304
+    mov <gpr0>, 3472328296227680304
+    cmp.i64 <gpr0>, 3472328296227680304
     jne ^bad_add
     jmp ^check_sub
 
@@ -26,9 +25,8 @@ function @main
     ret rax
 
   block ^check_sub
-    mov r8, 3472328296227680304
-    sub r8, 3472328296227680304
-    cmp.i64 r8, 0
+    mov <gpr0>, 0
+    cmp.i64 <gpr0>, 0
     jne ^bad_sub
     jmp ^ok
 

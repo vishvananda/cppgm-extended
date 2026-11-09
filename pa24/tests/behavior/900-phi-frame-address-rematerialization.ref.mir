@@ -55,12 +55,10 @@ function @main
     mov rdi, 0
     call @select_local_address [args=(rdi)]
     sext.i32 rax
-    mov rdx, 77
-    cmp.i32 rbx, rdx
+    cmp.i32 rbx, 77
     setne rbx
     movzx rbx, rbx
-    mov rdx, 77
-    cmp.i32 rax, rdx
+    cmp.i32 rax, 77
     setne rax
     movzx rax, rax
     or rbx, rax

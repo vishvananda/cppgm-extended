@@ -35,8 +35,7 @@ function @main
   block ^entry
     mov rdi, @value
     call @read [args=(rdi)]
-    mov rdx, 47
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 47
     setne rax
     movzx rax, rax
     ret rax

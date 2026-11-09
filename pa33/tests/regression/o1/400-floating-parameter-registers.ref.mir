@@ -96,8 +96,7 @@ function @scaled_sum
   block ^body
     fmul.f64 xmm2, [rdi+r8*8], xmm1
     fadd.f64 xmm0, xmm0, xmm2
-    lea r9, [r8+1]
-    mov r8, r9
+    add r8, 1
     cmp.i64 r8, rsi
     jl ^body
     ret xmm0
@@ -121,9 +120,9 @@ function @mixed
 
   block ^entry
     fpext.f32.f64 xmm1, xmm1
-    lea r9, [rdi+rsi]
-    add r9, rdx
-    sitofp.i64.f64 xmm2, r9
+    add rdi, rsi
+    add rdi, rdx
+    sitofp.i64.f64 xmm2, rdi
     fmul.f64 xmm2, xmm2, xmm0
     fadd.f64 xmm2, xmm2, xmm1
     ret xmm2

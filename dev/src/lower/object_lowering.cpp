@@ -78,17 +78,9 @@ void FunctionLowering::call_special(const sema::FunctionEntity* function, EntryV
 		call_conversion(*e, e->facts, e->facts->conversion->constructor, object);
 		return;
 	}
-	// A local's direct-initialization calls an explicitly defaulted move
-	// constructor even when trivial (the course's form).
-	const bool local_direct = local_direct_init_;
-	local_direct_init_ = false;
 	const bool declared = declaring_;
 	declaring_ = false;
-	const bool allocation_copy = allocation_copy_;
-	allocation_copy_ = false;
-	const bool defaulted_move = local_direct && function->copy_kind == sema::CopyKind::MoveConstructor &&
-		!function->implicit;
-	if (written.size == 1 && copies_storage(function) && !defaulted_move &&
+	if (written.size == 1 && copies_storage(function) &&
 		!conversion_function(WithoutParentheses(written[0])->facts->conversion))
 	{
 		// A trivial copy of a prvalue of the class (a conditional's) is the
@@ -100,10 +92,10 @@ void FunctionLowering::call_special(const sema::FunctionEntity* function, EntryV
 			return;
 		}
 	}
-	// A new-expression's object copied from a glvalue calls the copy
-	// constructor, trivial or not (the course's form).
-	if (written.size == 1 && copies_storage(function) && !defaulted_move && !allocation_copy &&
-		!conversion_function(WithoutParentheses(written[0])->facts->conversion) && !copy_called(function))
+	// A trivial copy transfers storage; empty objects still evaluate any
+	// effects of their source expression.
+	if (written.size == 1 && copies_storage(function) &&
+		!conversion_function(WithoutParentheses(written[0])->facts->conversion))
 	{
 		// An empty class copies nothing: a source without side effects is
 		// not evaluated (the course's form).
@@ -155,17 +147,6 @@ bool FunctionLowering::elidable_source(const syntax::Expr& expr, const sema::Fun
 		sema::ClassOf(e->facts->type) == sema::ClassOf(constructor->owner->entity->type);
 }
 
-bool FunctionLowering::copy_called(const sema::FunctionEntity* function)
-{
-	// A trivial copy or move constructor of an empty class whose destructor
-	// is not trivial: a copy from a glvalue calls it all the same (the
-	// course's form); a prvalue of the class still initializes the object.
-	const sema::ClassEntity* owner = sema::ClassOf(function->owner->entity->type);
-	return function->trivial && owner != nullptr && owner->empty && needs_destruction(owner->type) &&
-		(function->copy_kind == sema::CopyKind::CopyConstructor ||
-			function->copy_kind == sema::CopyKind::MoveConstructor);
-}
-
 bool FunctionLowering::copies_storage(const sema::FunctionEntity* function)
 {
 	// A trivial copy or move constructor: its call is the source's bytes
@@ -201,14 +182,11 @@ void FunctionLowering::call_constructor(const sema::FunctionEntity* constructor,
 			materialize(*e, object, location);
 			return;
 		}
-		if (!copy_called(constructor))
-		{
-			const lowir::Value source = bind_converted(
-				argument, conversion, signature->params[0], ConversionContext::Argument, false);
-			if (!owner->empty)
-				copy_object(owner->type, source, object, location);
-			return;
-		}
+		const lowir::Value source = bind_converted(
+			argument, conversion, signature->params[0], ConversionContext::Argument, false);
+		if (!owner->empty)
+			copy_object(owner->type, source, object, location);
+		return;
 	}
 	const bool throws = call_may_throw(constructor);
 	begin_call(throws);
@@ -236,7 +214,7 @@ void FunctionLowering::construct_from(
 	// move is the source's bytes (12.8p16).
 	const sema::Type* signature = constructor->type->canonical;
 	const sema::ClassEntity* owner = sema::ClassOf(constructor->owner->entity->type);
-	if (copies_storage(constructor) && !copy_called(constructor))
+	if (copies_storage(constructor))
 	{
 		if (!owner->empty)
 			copy_object(owner->type, source, object, location);
@@ -494,7 +472,7 @@ void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::V
 		const sema::FunctionEntity* constructor = capture.constructor;
 		const sema::Type* type = capture.member->type;
 		return constructor != nullptr && !type->is_reference() && call_may_throw(constructor) &&
-			!(copies_storage(constructor) && (type->kind == sema::TypeKind::Array || !copy_called(constructor)));
+			!copies_storage(constructor);
 	};
 	uint32_t last_throwing = 0;
 	for (uint32_t i = first; i < count; ++i)
@@ -1637,10 +1615,8 @@ void FunctionLowering::local_object(const sema::VariableEntity* variable, const 
 	}
 	else
 	{
-		local_direct_init_ = initializer != nullptr && initializer->kind == syntax::InitializerKind::Parenthesized;
 		declaring_ = true;
 		construct(type, object, initializer, variable->constructor, EntryVariant::Complete, location);
-		local_direct_init_ = false;
 		declaring_ = false;
 	}
 	aggregate_extension_ = saved_extension;

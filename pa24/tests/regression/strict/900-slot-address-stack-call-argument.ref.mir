@@ -48,12 +48,10 @@ function @check_bulk_scalar_uses
     sub rdi, r8
     mov rsi, r8
     sub rsi, r9
-    mov rdx, 10
-    cmp.i64 rdi, rdx
+    cmp.i64 rdi, 10
     setne rdi
     movzx rdi, rdi
-    mov rdx, -10
-    cmp.i64 rsi, rdx
+    cmp.i64 rsi, -10
     setne rsi
     movzx rsi, rsi
     or rdi, rsi
@@ -95,8 +93,7 @@ function @main
     call @write_seventh [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
     load.u8 r8, [rbp-8]
-    mov rdx, 1
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 1
     setne rbx
     movzx rbx, rbx
     call @check_bulk_scalar_uses [args=()]

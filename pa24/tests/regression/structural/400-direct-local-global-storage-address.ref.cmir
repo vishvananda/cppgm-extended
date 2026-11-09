@@ -53,16 +53,13 @@ function @main
     mov <gpr0>, rax
     load.i64 <gpr1>, @value
     call @observe_address [args=(), unwind=no]
-    mov rdx, 41
-    cmp.i64 <gpr0>, rdx
+    cmp.i64 <gpr0>, 41
     setne <gpr0>
     movzx <gpr0>, <gpr0>
-    mov rdx, 42
-    cmp.i64 <gpr1>, rdx
+    cmp.i64 <gpr1>, 42
     setne <gpr1>
     movzx <gpr1>, <gpr1>
-    mov rdx, 0
-    cmp.ptr rax, rdx
+    cmp.ptr rax, 0
     sete rax
     movzx rax, rax
     or <gpr0>, <gpr1>

@@ -84,16 +84,13 @@ function @main
     zext.i8 r12
     call @widen_result [args=()]
     sext.i32 rax
-    mov rdx, 173
-    cmp.i32 rbx, rdx
+    cmp.i32 rbx, 173
     setne rbx
     movzx rbx, rbx
-    mov rdx, 173
-    cmp.i32 r12, rdx
+    cmp.i32 r12, 173
     setne r12
     movzx r12, r12
-    mov rdx, 173
-    cmp.i32 rax, rdx
+    cmp.i32 rax, 173
     setne rax
     movzx rax, rax
     or rbx, r12

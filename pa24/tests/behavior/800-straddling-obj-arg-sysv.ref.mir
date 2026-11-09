@@ -49,12 +49,10 @@ function @main
     mov r8, 5
     call @read_pair [args=(rcx,rdx,rsi,rdi,r8), stack=16]
     add rsp, 16
-    mov rdx, 123
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 123
     sete rax
     movzx rax, rax
-    mov rdx, 0
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 0
     sete rax
     movzx rax, rax
     ret rax

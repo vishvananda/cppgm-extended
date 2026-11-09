@@ -68,12 +68,10 @@ function @main
     store.i64 [rbp-8], rax
     load.i64 rdi, [rbp-8]
     call @copy_after_call [args=(rdi)]
-    mov rdx, 77
-    cmp.i64 @copied, rdx
+    cmp.i64 @copied, 77
     sete r8
     movzx r8, r8
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

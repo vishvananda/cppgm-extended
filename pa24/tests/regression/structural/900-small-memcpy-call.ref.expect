@@ -1,0 +1,8 @@
+# Constant small builtin copies are selected directly at the baseline level.
+# Ordinary calls and a dynamic copy whose pointer result is used stay calls.
+has(copy_bytes) in @copy_used
+none(call) in @copy_used
+has(copy_bytes) in @copy_unused
+none(call) in @copy_unused
+count(call) == 1 in @copy_dynamic
+count(call) == 1 in @ordinary_call

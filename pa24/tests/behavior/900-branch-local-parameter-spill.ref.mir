@@ -54,8 +54,7 @@ function @probe
 
   block ^entry
     mov rbx, rsi
-    load.i64 rdi, [rdi]
-    cmp.i64 rdi, 0
+    cmp.i64 [rdi], 0
     jne ^pressure
     jmp ^merge
 
@@ -78,8 +77,7 @@ function @probe_temporary
     epilogues shared
 
   block ^entry
-    load.i64 rdi, [rdi]
-    cmp.i64 rdi, 0
+    cmp.i64 [rdi], 0
     jne ^pressure
     jmp ^merge
 
@@ -116,16 +114,13 @@ function @probe_forwarded_alias
     load.i64 rbx, [rbx]
     load.i64 r12, [r12]
     load.i64 r13, [r13]
-    mov rdx, 11
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 11
     sete rbx
     movzx rbx, rbx
-    mov rdx, 22
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 22
     sete r12
     movzx r12, r12
-    mov rdx, 33
-    cmp.i64 r13, rdx
+    cmp.i64 r13, 33
     sete r13
     movzx r13, r13
     and rbx, r12
@@ -227,28 +222,22 @@ function @main
     mov rcx, 4
     mov r8, 5
     call @dead_parameter_pressure [args=(rcx,rdx,rsi,rdi,r8)]
-    mov rdx, 7
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 7
     setne r12
     movzx r12, r12
-    mov rdx, 7
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 7
     setne rbx
     movzx rbx, rbx
-    mov rdx, 0
-    cmp.i64 r13, rdx
+    cmp.i64 r13, 0
     sete r13
     movzx r13, r13
-    mov rdx, 77
-    cmp.i64 r14, rdx
+    cmp.i64 r14, 77
     setne r14
     movzx r14, r14
-    mov rdx, 13
-    cmp.i64 r15, rdx
+    cmp.i64 r15, 13
     setne r15
     movzx r15, r15
-    mov rdx, 15
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 15
     setne rax
     movzx rax, rax
     or r12, rbx

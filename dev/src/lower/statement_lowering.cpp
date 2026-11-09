@@ -24,54 +24,6 @@ const syntax::Expr* WithoutParentheses(const syntax::Expr* expr)
 	return expr;
 }
 
-// Whether an expression names a member (a class member access or `this`),
-// or is of a form not examined.
-bool NamesMember(const syntax::Expr& expr, uint32_t depth)
-{
-	const syntax::Expr* e = WithoutParentheses(&expr);
-	if (depth > 64)
-		return true;
-	switch (e->kind)
-	{
-	case syntax::ExprKind::Literal:
-	case syntax::ExprKind::Id:
-	case syntax::ExprKind::Sizeof:
-	case syntax::ExprKind::SizeofPack:
-	case syntax::ExprKind::TypeTrait:
-	case syntax::ExprKind::BuiltinTrait:
-		return false;
-	case syntax::ExprKind::KeywordLiteral:
-		return static_cast<const syntax::KeywordLiteralExpr*>(e)->keyword == TokenKind::KW_THIS;
-	case syntax::ExprKind::Binary:
-		return NamesMember(*static_cast<const syntax::BinaryExpr*>(e)->left, depth + 1) ||
-			NamesMember(*static_cast<const syntax::BinaryExpr*>(e)->right, depth + 1);
-	case syntax::ExprKind::Unary:
-		return NamesMember(*static_cast<const syntax::UnaryExpr*>(e)->operand, depth + 1);
-	case syntax::ExprKind::Conditional:
-	{
-		const syntax::ConditionalExpr* choice = static_cast<const syntax::ConditionalExpr*>(e);
-		return NamesMember(*choice->condition, depth + 1) || NamesMember(*choice->then_expr, depth + 1) ||
-			NamesMember(*choice->else_expr, depth + 1);
-	}
-	case syntax::ExprKind::Cast:
-		return NamesMember(*static_cast<const syntax::CastExpr*>(e)->operand, depth + 1);
-	case syntax::ExprKind::Call:
-	{
-		const syntax::CallExpr* call = static_cast<const syntax::CallExpr*>(e);
-		if (NamesMember(*call->callee, depth + 1))
-			return true;
-		for (const syntax::Expr* argument : call->arguments)
-		{
-			if (NamesMember(*argument, depth + 1))
-				return true;
-		}
-		return false;
-	}
-	default:
-		return true;
-	}
-}
-
 // Whether bfloat16 arithmetic is evaluated in the expression (see
 // FunctionLowering::bfloat_operation).
 bool BFloatArithmeticIn(const syntax::Expr& expr, uint32_t depth)
@@ -343,8 +295,6 @@ struct FunctionLowering::ExpressionScope
 		split_block = f.split_block_;
 		declaring = f.declaring_;
 		declared_construction = f.declared_construction_;
-		local_direct_init = f.local_direct_init_;
-		allocation_copy = f.allocation_copy_;
 		zero_data_only = f.zero_data_only_;
 		passing_empty = f.passing_empty_;
 		eager_call = f.eager_call_;
@@ -369,7 +319,7 @@ struct FunctionLowering::ExpressionScope
 		f.full_expression_ = f.region_segment_ = f.nothrow_segment_ = f.segment_temporaries_ = false;
 		f.deferred_region_ = f.hidden_eh_ = f.hidden_context_ = f.construction_ = false;
 		f.split_block_ = lowir::kNoId;
-		f.declaring_ = f.declared_construction_ = f.local_direct_init_ = f.allocation_copy_ = false;
+		f.declaring_ = f.declared_construction_ = false;
 		f.zero_data_only_ = f.passing_empty_ = f.eager_call_ = f.static_local_ = false;
 		f.aggregate_extension_ = f.scope_extension_ = nullptr;
 		f.aggregate_members_ = SIZE_MAX;
@@ -417,8 +367,6 @@ struct FunctionLowering::ExpressionScope
 		f.split_block_ = split_block;
 		f.declaring_ = declaring;
 		f.declared_construction_ = declared_construction;
-		f.local_direct_init_ = local_direct_init;
-		f.allocation_copy_ = allocation_copy;
 		f.zero_data_only_ = zero_data_only;
 		f.passing_empty_ = passing_empty;
 		f.eager_call_ = eager_call;
@@ -452,7 +400,7 @@ struct FunctionLowering::ExpressionScope
 	bool construction;
 	size_t construction_depth;
 	lowir::BlockId split_block;
-	bool declaring, declared_construction, local_direct_init, allocation_copy, zero_data_only, passing_empty;
+	bool declaring, declared_construction, zero_data_only, passing_empty;
 	bool eager_call, static_local;
 	const sema::Entity* aggregate_extension;
 	const sema::Entity* scope_extension;
@@ -722,12 +670,12 @@ void FunctionLowering::local_object_variable(const sema::VariableEntity* variabl
 			return;
 		}
 	}
-	// A constexpr or const integral scalar's value is its evaluation's
-	// (7.1.5p9, 5.19p2), stored rather than computed again when its
-	// initializer names no member (the course's form: one calling member
-	// functions computes it).
+	// Consume the scalar initializer's recorded constant value (7.1.5p9,
+	// 5.19p2), including member calls and functional casts. Semantic analysis
+	// has already established that evaluation needs no runtime effects;
+	// lowering must not repeat that work or classify the expression again.
 	const bool storable = !local.reference && !unreachable_storage_ && type->kind != sema::TypeKind::Array &&
-		single != nullptr && !NamesMember(*single, 0);
+		single != nullptr;
 	const sema::ConstValue* evaluated = storable &&
 			(variable->is_constexpr || variable->constant == sema::ConstantState::Value)
 		? lowering_.evaluated_value(variable)

@@ -86,12 +86,10 @@ struct SelectorState
 	uint32_t named_xmms_ = 0;
 	uint32_t named_stack_ = 0;
 	bool needs_scratch_area_ = false;
-	// The frame reserves the conversion scratch area: functions handling a
-	// floating value, variadic functions, and keep_alias functions that call.
+	// Extra ABI storage for variadic and keep_alias functions that call;
+	// conversion scratch is otherwise requested by its actual emission.
 	bool scratch_area_ = false;
-	// Vector parameters (note_parameter_classes) and the registers block-
-	// local values then avoid.
-	bool vector_params_ = false;
+	// Registers reserved by actual frame and ABI requirements.
 	uint32_t excluded_ = 0;
 	std::vector<uint32_t> dying_; // freed this instruction
 	// Clobber facts per instruction id (allocation.cpp).

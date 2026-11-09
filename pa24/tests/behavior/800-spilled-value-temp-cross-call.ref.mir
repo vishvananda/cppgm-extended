@@ -92,13 +92,11 @@ function @main
     cmp.ptr rax, rbx
     sete rbx
     movzx rbx, rbx
-    mov rdx, 7
-    cmp.i64 [rax], rdx
+    cmp.i64 [rax], 7
     sete r8
     movzx r8, r8
     and rbx, r8
-    mov rdx, 0
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 0
     sete rbx
     movzx rbx, rbx
     ret rbx

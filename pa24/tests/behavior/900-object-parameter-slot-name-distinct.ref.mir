@@ -53,12 +53,10 @@ function @main
     store.i64 [rbp-8], rax
     load.i64 rdi, [rbp-8]
     call @read_parameter [args=(rdi)]
-    mov rdx, 77
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 77
     sete rax
     movzx rax, rax
-    mov rdx, 0
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 0
     sete rax
     movzx rax, rax
     ret rax

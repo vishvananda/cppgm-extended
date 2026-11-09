@@ -1,0 +1,13 @@
+typedef unsigned long size_t;
+inline void* operator new(size_t, void* p) noexcept { return p; }
+struct Trivial { long value; Trivial() = default; Trivial(Trivial&&) = default; };
+struct Plain { long value; };
+void consume(const void*);
+void* pointer_effect(void*);
+void move_local(Trivial* p) { Trivial x(static_cast<Trivial&&>(*p)); consume(&x); }
+Plain* place_copy(void* storage, const Plain* p) { return new(pointer_effect(storage)) Plain(*p); }
+struct Custom {
+    long value;
+    static void* operator new(size_t, void*) noexcept;
+};
+Custom* custom_copy(void* storage, const Custom* p) { return new(storage) Custom(*p); }

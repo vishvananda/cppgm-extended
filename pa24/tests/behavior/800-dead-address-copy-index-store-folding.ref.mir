@@ -45,12 +45,10 @@ function @main
     mov rdi, @values
     mov rsi, 25
     call @write_second [args=(rsi,rdi)]
-    mov rdx, 25
-    cmp.i64 @values+8, rdx
+    cmp.i64 @values+8, 25
     setne r8
     movzx r8, r8
-    mov rdx, 25
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 25
     setne rax
     movzx rax, rax
     or r8, rax

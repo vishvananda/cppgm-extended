@@ -140,47 +140,40 @@ function @main
   block ^entry
     mov rdi, -9223372036854775808
     call @div3 [args=(rdi)]
-    mov rdx, -3074457345618258602
-    cmp.i64 rax, rdx
+    cmp.i64 rax, -3074457345618258602
     setne rbx
     movzx rbx, rbx
     mov rdi, 9223372036854775807
     call @div7 [args=(rdi)]
-    mov rdx, 1317624576693539401
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 1317624576693539401
     setne r12
     movzx r12, r12
     mov rdi, 9223372036854775807
     call @div_large [args=(rdi)]
-    mov rdx, 4294967298
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 4294967298
     setne r13
     movzx r13, r13
     mov rdi, -9223372036854775808
     call @div_negative3 [args=(rdi)]
-    mov rdx, 3074457345618258602
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 3074457345618258602
     setne r14
     movzx r14, r14
     mov rdi, 9223372036854775807
     call @div_negative5 [args=(rdi)]
-    mov rdx, -1844674407370955161
-    cmp.i64 rax, rdx
+    cmp.i64 rax, -1844674407370955161
     setne r15
     movzx r15, r15
     mov rdi, -128
     call @div_narrow3 [args=(rdi)]
     sext.i8 rax
-    mov rdx, -42
-    cmp.i8 rax, rdx
+    cmp.i8 rax, -42
     setne r10
     movzx r10, r10
     store.i64 [rbp-8], r10
     mov rdi, 127
     call @div_narrow_negative3 [args=(rdi)]
     sext.i8 rax
-    mov rdx, -42
-    cmp.i8 rax, rdx
+    cmp.i8 rax, -42
     setne rax
     movzx rax, rax
     or rbx, r12

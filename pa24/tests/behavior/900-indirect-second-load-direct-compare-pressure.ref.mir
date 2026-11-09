@@ -78,8 +78,7 @@ function @main
     mov r8, 4
     mov r9, 5
     call @probe [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    mov rdx, 1
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 1
     setne rax
     movzx rax, rax
     ret rax

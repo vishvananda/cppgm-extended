@@ -54,8 +54,7 @@ function @main
   block ^entry
     mov rdi, 5
     call @keep_across_edge [args=(rdi)]
-    mov rdx, 43
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 43
     setne rax
     movzx rax, rax
     ret rax

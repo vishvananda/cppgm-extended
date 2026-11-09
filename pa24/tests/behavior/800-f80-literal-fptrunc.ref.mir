@@ -17,8 +17,7 @@ function @main
   block ^entry
     fptrunc.f80.f64 xmm0, 1.0L
     feq.f64 r8, xmm0, 1.0
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

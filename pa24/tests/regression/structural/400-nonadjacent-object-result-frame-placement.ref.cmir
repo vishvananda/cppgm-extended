@@ -64,12 +64,10 @@ function @main
     copy_bytes 16x8, @result, [rbp-<off0>]
     load.i64 r8, @result
     load.i64 r9, @result+8
-    mov rdx, 17
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 17
     setne r8
     movzx r8, r8
-    mov rdx, 23
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 23
     setne r9
     movzx r9, r9
     or r8, r9

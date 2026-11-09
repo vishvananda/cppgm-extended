@@ -79,8 +79,7 @@ function @main
     store.i64 [rsp+8], r11
     call @mid [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov rdx, 3111
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 3111
     sete rax
     movzx rax, rax
     cmp.i64 rax, 0

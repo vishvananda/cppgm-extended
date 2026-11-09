@@ -31,9 +31,7 @@ function @main
 
   block ^left
     call @touch [args=()]
-    mov r9, 40
-    add r9, 2
-    mov r8, r9
+    mov r8, 42
     jmp ^join
 
   block ^right

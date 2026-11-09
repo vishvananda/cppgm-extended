@@ -61,8 +61,7 @@ function @main
   block ^entry
     mov rdi, 10
     call @pressure [args=(rdi)]
-    mov rdx, 65
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 65
     setne rax
     movzx rax, rax
     ret rax

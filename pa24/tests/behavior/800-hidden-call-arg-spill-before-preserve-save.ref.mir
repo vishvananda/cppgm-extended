@@ -60,17 +60,14 @@ function @main
     mov rsi, @b
     call @run [args=(rsi,rdi)]
     mov r10, 1234605616436508552
-    mov rdx, 1234605616436508552
-    cmp.i64 r10, rdx
+    cmp.i64 r10, 1234605616436508552
     sete r8
     movzx r8, r8
-    mov rdx, 7
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 7
     sete rax
     movzx rax, rax
     and r8, rax
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

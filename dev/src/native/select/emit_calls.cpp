@@ -108,28 +108,6 @@ const CallLayout& FunctionSelector::emission_layout(uint32_t inst, const lowir::
 // ---------------------------------------------------------------------------
 // Entry
 
-// Register conventions of a function with vector parameters, as the
-// reference allocates them: its integer parameters' registers are not
-// taken over by a result at their last use, and with two or more integer
-// parameters r8 holds no value.
-void FunctionSelector::note_parameter_classes()
-{
-	unsigned gprs = 0;
-	unsigned xmms = 0;
-	for (size_t p = 0; p < entry_layout_.args.size(); ++p)
-	{
-		const ArgLayout& arg = entry_layout_.args[p];
-		if (arg.part_count != 1 || entry_layout_.parts[arg.first_part].reg == kNoReg)
-			continue;
-		if (arg.cls == ArgClass::Gpr)
-			++gprs;
-		else if (arg.cls == ArgClass::Xmm)
-			++xmms;
-	}
-	vector_params_ = xmms != 0;
-	excluded_ = vector_params_ && gprs >= 2 ? 1u << R8 : 0;
-}
-
 namespace {
 
 // The bits of a narrow integer type, 0 for another.
@@ -881,6 +859,8 @@ void FunctionSelector::emit_call(uint32_t id)
 		emit2(Op::Mov, TypeKind::Void, Operand::make_reg(kEmitScratch), move.src);
 		emit2(Op::Store, move.type, move.dst, Operand::make_reg(kEmitScratch));
 	}
+	if (cell == kNoId && !variadic && emit_fixed_memcpy(inst, callee, *sig, layout))
+		return;
 	// The course runtime's builtin memcpy is the string copy itself
 	// (runtime/runtime.cpp): a direct call whose result is unused copies
 	// in place, its arguments in the call's registers (host objects call

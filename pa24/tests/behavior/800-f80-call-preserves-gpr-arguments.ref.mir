@@ -33,8 +33,8 @@ function @check
     param %second -> rsi : ptr
     return i64 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -59,8 +59,8 @@ function @forward
     param %second -> rsi : ptr
     return i64 -> rax
   frame
-    stack_size 96
-    scratch_bytes 48
+    stack_size 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx
@@ -84,8 +84,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 

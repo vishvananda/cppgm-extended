@@ -14,8 +14,8 @@ function @clobber_xmm_from_integer
     param %value -> rdi : i32
     return i32 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -33,8 +33,8 @@ function @preserve_across_integer_call
     param %value -> xmm0 : f64
     return f64 -> xmm0
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     param-slot %value -> [rbp-8] : f64
@@ -67,8 +67,7 @@ function @main
     fmov.f64 xmm0, @observed
     feq.f64 r9, xmm0, 22.5
     and r8, r9
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

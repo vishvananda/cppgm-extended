@@ -10,8 +10,8 @@ function @root64
     param %x -> xmm0 : f64
     return f64 -> xmm0
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     param-slot %x -> [rbp-8] : f64
@@ -27,8 +27,8 @@ function @root32
     param %x -> xmm0 : f32
     return f32 -> xmm0
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     param-slot %x -> [rbp-8] : f32
@@ -43,8 +43,8 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 

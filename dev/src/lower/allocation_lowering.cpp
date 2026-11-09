@@ -49,8 +49,9 @@ bool ReservedPlacement(const sema::FunctionEntity* function)
 	const sema::Scope* owner = function->owner;
 	const bool global = !function->member && owner != nullptr && owner->kind == sema::ScopeKind::Namespace &&
 		owner->entity != nullptr && static_cast<const sema::NamespaceEntity*>(owner->entity)->depth == 0;
-	return global && parameters->param_count == 2 && parameters->params[1]->kind == sema::TypeKind::Pointer &&
-		sema::IsVoid(parameters->params[1]->element) && parameters->params[1]->element->cv == 0;
+	return global && !function->templated && !parameters->variadic && parameters->param_count == 2 &&
+		parameters->params[1]->kind == sema::TypeKind::Pointer && sema::IsVoid(parameters->params[1]->element) &&
+		parameters->params[1]->element->cv == 0;
 }
 
 } // namespace
@@ -67,6 +68,21 @@ void FunctionLowering::allocation_arguments(const syntax::NewExpr& expr, const s
 	// allocation function's call with its usual default arguments.
 	for (uint32_t i = first + expr.placement.size; i < signature->param_count; ++i)
 		push_default_argument(function, i, signature->params[i], expr.location);
+}
+
+lowir::Value FunctionLowering::allocation_result(const sema::FunctionEntity* function, size_t base)
+{
+	// 18.6.1.3: standard placement new returns the supplied pointer. Its
+	// arguments have already been evaluated, including their side effects.
+	if (ReservedPlacement(function))
+	{
+		const lowir::Value result = arguments_[base + 1];
+		arguments_.resize(base);
+		return result;
+	}
+	lowering_.demand(function, EntryVariant::Complete);
+	return emit_call(lowir::Type::scalar(lowir::TypeKind::Ptr),
+		lowir::Value::symbol(lowering_.function_symbol(function)), base, lowir::kNoId, call_may_throw(function));
 }
 
 RValue FunctionLowering::allocation(const syntax::NewExpr& expr)
@@ -100,11 +116,9 @@ RValue FunctionLowering::allocation(const syntax::NewExpr& expr)
 		placement_values = static_cast<uint32_t>(element_values_.size()) + 1;
 		element_values_.insert(element_values_.end(), arguments_.begin() + base + 1, arguments_.end());
 	}
-	lowering_.demand(function, EntryVariant::Complete);
-	const lowir::Value callee = lowir::Value::symbol(lowering_.function_symbol(function));
 	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
 	RValue object;
-	object.value = emit_call(pointer, callee, base, lowir::kNoId, call_may_throw(function));
+	object.value = allocation_result(function, base);
 	object.type = pointer;
 	const bool placement = ReservedPlacement(function);
 	lowir::BlockId end = lowir::kNoId;
@@ -265,9 +279,7 @@ void FunctionLowering::allocation_initializer(
 			value_initialize(type, object.value, expr.constructor, EntryVariant::Complete, expr.location);
 		else
 		{
-			allocation_copy_ = true;
 			construct(type, object.value, init, expr.constructor, EntryVariant::Complete, expr.location);
-			allocation_copy_ = false;
 		}
 	}
 	else if (init != nullptr)
@@ -496,11 +508,9 @@ RValue FunctionLowering::array_allocation(const syntax::NewExpr& expr)
 		placement_values = static_cast<uint32_t>(element_values_.size()) + 1;
 		element_values_.insert(element_values_.end(), arguments_.begin() + base + 1, arguments_.end());
 	}
-	lowering_.demand(function, EntryVariant::Complete);
 	RValue raw;
 	raw.type = pointer;
-	raw.value = emit_call(pointer, lowir::Value::symbol(lowering_.function_symbol(function)), base, lowir::kNoId,
-		call_may_throw(function));
+	raw.value = allocation_result(function, base);
 	// 5.3.4p13: a non-throwing allocation function's null is the value,
 	// with no cookie and no initialization (the reserved placement form
 	// returns its argument).

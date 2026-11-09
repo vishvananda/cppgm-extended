@@ -449,13 +449,11 @@ function @Analyzer__populate
     store.ptr [rbp-56], rax
     load.ptr rax, [rbp+72]
     store.ptr [rbp-64], rax
-    mov rdi, rdx
-    mov rdx, 0
-    cmp.ptr [rbp-40], rdx
-    setne rdx
-    movzx rdx, rdx
-    store.u8 [rsi], rdx
-    store.u8 [rsi+1], rdi
+    cmp.ptr [rbp-40], 0
+    setne rdi
+    movzx rdi, rdi
+    store.u8 [rsi], rdi
+    store.u8 [rsi+1], rdx
     store.u8 [rsi+2], rcx
     store.i32 [rsi+4], r8
     store.u8 [rsi+12], r9

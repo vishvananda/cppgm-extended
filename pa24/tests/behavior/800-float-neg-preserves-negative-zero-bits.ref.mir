@@ -9,8 +9,8 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $box -> [rbp-8] : f64
@@ -18,12 +18,10 @@ function @main
   block ^entry
     fneg.f64 xmm0, 0.0
     fmov.f64 [rbp-8], xmm0
-    mov rdx, -9223372036854775808
-    cmp.i64 [rbp-8], rdx
+    cmp.i64 [rbp-8], -9223372036854775808
     sete r8
     movzx r8, r8
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

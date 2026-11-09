@@ -429,7 +429,7 @@ lowir::Value FunctionLowering::copied_parameter(
 	Place temporary = Place();
 	temporary.storage = lowir::Value::slot(slot);
 	const lowir::Value object = address_of(temporary);
-	if (!copies_storage(constructor) || copy_called(constructor))
+	if (!copies_storage(constructor))
 		call_copy(constructor, EntryVariant::Complete, object, source, call_may_throw(constructor), location);
 	else if (!cls->empty)
 		copy_object(cls->type, source, object, location);

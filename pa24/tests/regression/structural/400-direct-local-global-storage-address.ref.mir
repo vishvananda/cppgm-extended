@@ -53,16 +53,13 @@ function @main
     mov rbx, rax
     load.i64 r12, @value
     call @observe_address [args=(), unwind=no]
-    mov rdx, 41
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 41
     setne rbx
     movzx rbx, rbx
-    mov rdx, 42
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 42
     setne r12
     movzx r12, r12
-    mov rdx, 0
-    cmp.ptr rax, rdx
+    cmp.ptr rax, 0
     sete rax
     movzx rax, rax
     or rbx, r12

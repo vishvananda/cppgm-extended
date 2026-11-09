@@ -1,0 +1,3 @@
+absent_relocation_class_canonical 1 branch_call memcpy 0
+relocation_class_canonical 2 branch_call memcpy 1
+relocation_class_canonical 2 branch_call memmove 1

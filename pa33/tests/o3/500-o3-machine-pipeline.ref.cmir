@@ -15,11 +15,10 @@ function @main
     epilogues duplicated
 
   block ^entry
-    mov r8, 40
-    add r8, 2
 
   block ^next
-    cmp.i64 r8, 42
+    mov <gpr0>, 42
+    cmp.i64 <gpr0>, 42
     setne rax
     movzx rax, rax
     ret rax

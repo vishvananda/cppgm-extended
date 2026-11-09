@@ -44,8 +44,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -54,8 +54,7 @@ function @main
     fmov.f64 xmm0, 42.0
     mov rax, 1
     call @read_f64 [args=(rax,rdi,xmm0), variadic]
-    mov rdx, 42
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 42
     sete rax
     movzx rax, rax
     cmp.i64 rax, 0

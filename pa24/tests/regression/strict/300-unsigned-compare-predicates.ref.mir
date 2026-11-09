@@ -16,23 +16,19 @@ function @main
 
   block ^entry
     mov r10, 1
-    mov rdx, -1
-    cmp.i64 r10, rdx
+    cmp.i64 r10, -1
     setb r8
     movzx r8, r8
     mov r10, 5
-    mov rdx, 5
-    cmp.i64 r10, rdx
+    cmp.i64 r10, 5
     setbe r9
     movzx r9, r9
     mov r10, -1
-    mov rdx, 1
-    cmp.i64 r10, rdx
+    cmp.i64 r10, 1
     seta rdi
     movzx rdi, rdi
     mov r10, 5
-    mov rdx, 5
-    cmp.i64 r10, rdx
+    cmp.i64 r10, 5
     setae rsi
     movzx rsi, rsi
     add r8, r9

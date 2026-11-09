@@ -76,36 +76,30 @@ function @main
     load.u16 r9, @short_value
     load.u32 rbx, [rbx+8]
     load.i64 rdi, @wide_value
-    mov rdx, 171
-    cmp.u8 r8, rdx
+    cmp.u8 r8, 171
     setne r8
     movzx r8, r8
-    mov rdx, 4660
-    cmp.u16 r9, rdx
+    cmp.u16 r9, 4660
     setne r9
     movzx r9, r9
-    mov rdx, 305419896
-    cmp.u32 rbx, rdx
+    cmp.u32 rbx, 305419896
     setne rbx
     movzx rbx, rbx
     mov r10, 2147483647
-    mov rdx, 2147483647
-    cmp.i64 r10, rdx
+    cmp.i64 r10, 2147483647
     setne rsi
     movzx rsi, rsi
     mov r10, 4294967296
-    mov rdx, 4294967296
-    cmp.i64 r10, rdx
-    setne rcx
-    movzx rcx, rcx
-    mov rdx, -2147483648
-    cmp.i64 rdi, rdx
+    cmp.i64 r10, 4294967296
+    setne rdx
+    movzx rdx, rdx
+    cmp.i64 rdi, -2147483648
     setne rdi
     movzx rdi, rdi
     or r8, r9
     or rbx, rsi
-    or rcx, rdi
+    or rdx, rdi
     or r8, rbx
-    or r8, rcx
+    or r8, rdx
     sext.i32 r8
     ret r8

@@ -47,16 +47,13 @@ function @main
     call @write_second [args=(rsi,rdi)]
     load.i64 r8, @values+8
     load.i64 r9, @values+16
-    mov rdx, 25
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 25
     setne r8
     movzx r8, r8
-    mov rdx, 25
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 25
     setne r9
     movzx r9, r9
-    mov rdx, 25
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 25
     setne rax
     movzx rax, rax
     or r8, r9

@@ -1,0 +1,4 @@
+# The first unit has only constant small copies; the second retains controls.
+absent_relocation_class_canonical 1 branch_call memcpy
+relocation_class_canonical 2 branch_call memcpy
+relocation_class_canonical 2 branch_call memmove

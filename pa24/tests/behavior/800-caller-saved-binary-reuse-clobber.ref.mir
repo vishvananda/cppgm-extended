@@ -24,12 +24,9 @@ function @main
     idiv r11
     copy_bytes 8x8, [rbp-16], [rbp-8]
     load.i64 r8, [rbp-16]
-    mov r9, 10
-    add r9, 20
-    add r9, rax
-    add r9, r8
-    mov rdx, 40
-    cmp.i64 r9, rdx
-    setne r9
-    movzx r9, r9
-    ret r9
+    add rax, 30
+    add rax, r8
+    cmp.i64 rax, 40
+    setne rax
+    movzx rax, rax
+    ret rax

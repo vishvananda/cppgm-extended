@@ -98,8 +98,7 @@ function @main
     mov rdx, @third_value
     mov rcx, 19
     call @reduced [args=(rcx,rdx,rsi,rdi)]
-    mov rdx, 60
-    cmp.i64 @observed, rdx
+    cmp.i64 @observed, 60
     setne rax
     movzx rax, rax
     ret rax

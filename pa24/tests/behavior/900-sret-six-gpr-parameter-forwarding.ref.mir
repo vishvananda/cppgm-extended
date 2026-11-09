@@ -50,14 +50,12 @@ function @target
     setne rsi
     movzx rsi, rsi
     cmp.ptr rdx, rbx
-    setne rbx
-    movzx rbx, rbx
-    mov rdx, 7
-    cmp.i32 rcx, rdx
+    setne rdx
+    movzx rdx, rdx
+    cmp.i32 rcx, 7
     setne rcx
     movzx rcx, rcx
-    mov rdx, 1
-    cmp.u8 r8, rdx
+    cmp.u8 r8, 1
     setne r8
     movzx r8, r8
     cmp.ptr r9, r12
@@ -66,7 +64,7 @@ function @target
     cmp.ptr [rbp-8], r13
     setne r13
     movzx r13, r13
-    add rsi, rbx
+    add rsi, rdx
     add rsi, rcx
     add rsi, r8
     add rsi, r9

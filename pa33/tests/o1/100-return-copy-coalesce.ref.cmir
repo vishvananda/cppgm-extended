@@ -15,8 +15,5 @@ function @main
     epilogues duplicated
 
   block ^entry
-    mov rax, 1
-    add rax, 2
-    imul rax, 4
-    sub rax, 12
+    mov rax, 0
     ret rax

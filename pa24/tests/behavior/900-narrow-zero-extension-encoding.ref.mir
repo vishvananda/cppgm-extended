@@ -15,14 +15,12 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, 255
-    mov rdx, 255
-    cmp.i64 r8, rdx
+    mov r10, 255
+    cmp.i64 r10, 255
     setne r8
     movzx r8, r8
-    mov r9, 65535
-    mov rdx, 65535
-    cmp.i64 r9, rdx
+    mov r10, 65535
+    cmp.i64 r10, 65535
     setne r9
     movzx r9, r9
     or r8, r9

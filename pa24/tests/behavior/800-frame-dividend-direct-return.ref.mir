@@ -87,8 +87,7 @@ function @main
     mov rcx, 40
     mov r8, 50
     call @divide_frame_value [args=(rcx,rdx,rsi,rdi,r8)]
-    mov rdx, 32
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 32
     setne rax
     movzx rax, rax
     ret rax

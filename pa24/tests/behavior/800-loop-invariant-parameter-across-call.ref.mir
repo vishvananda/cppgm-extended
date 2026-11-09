@@ -103,12 +103,10 @@ function @main
     call @loop_store [args=(rdx,rsi,rdi)]
     load.i64 rbx, [rbx]
     load.i64 r12, [r12]
-    mov rdx, 1
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 1
     setne rbx
     movzx rbx, rbx
-    mov rdx, 0
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 0
     setne r12
     movzx r12, r12
     or rbx, r12

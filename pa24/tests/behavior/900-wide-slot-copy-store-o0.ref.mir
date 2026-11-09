@@ -32,8 +32,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 208
-    scratch_bytes 48
+    stack_size 160
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $wide_source -> [rbp-16] : i128
@@ -68,19 +68,17 @@ function @main
     store.i64 [rbp-72], 73
     copy_bytes 8x8, [rbp-152], [rbp-72]
     copy_bytes 8x8, [rbp-80], [rbp-152]
-    mov rdx, 73
-    cmp.i64 [rbp-80], rdx
-    setne rcx
-    movzx rcx, rcx
-    store.i64 [rbp-72], 97
-    copy_bytes 8x8, [rbp-80], [rbp-72]
-    mov rdx, 97
-    cmp.i64 [rbp-80], rdx
+    cmp.i64 [rbp-80], 73
     setne rdx
     movzx rdx, rdx
+    store.i64 [rbp-72], 97
+    copy_bytes 8x8, [rbp-80], [rbp-72]
+    cmp.i64 [rbp-80], 97
+    setne rcx
+    movzx rcx, rcx
     or r8, r9
     or rdi, rsi
-    or rcx, rdx
+    or rdx, rcx
     or r8, rdi
-    or r8, rcx
+    or r8, rdx
     ret r8

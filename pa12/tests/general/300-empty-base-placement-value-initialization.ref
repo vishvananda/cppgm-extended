@@ -17,7 +17,6 @@ function @initialize(%address : ptr) -> void [binding=strong, object=_Z10initial
     store typed ptr %address, $address
     %t1 = convert sext i64 i32 1
     %t2 = load typed ptr $address
-    %t3 = call ptr @operatornew__ov2(%t1, %t2)
     return void
 }
 function @initialize_list(%address : ptr) -> void [binding=strong, object=_Z15initialize_listP5Empty] {
@@ -27,7 +26,6 @@ function @initialize_list(%address : ptr) -> void [binding=strong, object=_Z15in
     store typed ptr %address, $address
     %t1 = convert sext i64 i32 1
     %t2 = load typed ptr $address
-    %t3 = call ptr @operatornew__ov2(%t1, %t2)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -44,12 +42,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = convert sext i64 i32 1
     %t5 = addr $bucket
     %t6 = call ptr @Bucket__second(%t5)
-    %t7 = call ptr @operatornew__ov2(%t4, %t6)
-    %t8 = addr $bucket
-    %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load typed i64 %t9
-    %t11 = cmp ne i64 %t10, 1311768467463790320
-    branch %t11, ^if_then_1, ^if_else_2
+    %t7 = addr $bucket
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = load typed i64 %t8
+    %t10 = cmp ne i64 %t9, 1311768467463790320
+    branch %t10, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     return i32 1
@@ -58,14 +55,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_3
 
   block ^if_end_3:
-    %t12 = addr $bucket
-    %t13 = call ptr @Bucket__second(%t12)
-    call void @initialize(%t13)
-    %t14 = addr $bucket
-    %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load typed i64 %t15
-    %t17 = cmp ne i64 %t16, 1311768467463790320
-    branch %t17, ^if_then_4, ^if_else_5
+    %t11 = addr $bucket
+    %t12 = call ptr @Bucket__second(%t11)
+    call void @initialize(%t12)
+    %t13 = addr $bucket
+    %t14 = index i8 [projection=field] %t13, 0
+    %t15 = load typed i64 %t14
+    %t16 = cmp ne i64 %t15, 1311768467463790320
+    branch %t16, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     return i32 2
@@ -74,14 +71,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_6
 
   block ^if_end_6:
-    %t18 = addr $bucket
-    %t19 = call ptr @Bucket__second(%t18)
-    call void @initialize_list(%t19)
-    %t20 = addr $bucket
-    %t21 = index i8 [projection=field] %t20, 0
-    %t22 = load typed i64 %t21
-    %t23 = cmp ne i64 %t22, 1311768467463790320
-    branch %t23, ^if_then_7, ^if_else_8
+    %t17 = addr $bucket
+    %t18 = call ptr @Bucket__second(%t17)
+    call void @initialize_list(%t18)
+    %t19 = addr $bucket
+    %t20 = index i8 [projection=field] %t19, 0
+    %t21 = load typed i64 %t20
+    %t22 = cmp ne i64 %t21, 1311768467463790320
+    branch %t22, ^if_then_7, ^if_else_8
 
   block ^if_then_7:
     return i32 3
@@ -90,27 +87,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_9
 
   block ^if_end_9:
+    %t23 = addr $counted
+    call void @CountedBucket__CountedBucket(%t23)
     %t24 = addr $counted
-    call void @CountedBucket__CountedBucket(%t24)
-    %t25 = addr $counted
-    %t26 = index i8 [projection=field] %t25, 0
-    store typed i64 -81985529216486896, %t26
-    %t27 = convert sext i64 i32 1
-    %t28 = addr $counted
-    %t29 = index i8 %t28, 0
-    %t30 = call ptr @operatornew__ov2(%t27, %t29)
-    call void @Counted__Counted(%t30)
-    %t31 = addr $counted
-    %t32 = index i8 [projection=field] %t31, 0
-    %t33 = load typed i64 %t32
-    %t34 = cmp eq i64 %t33, -81985529216486896
-    branch %t34, ^land_rhs_13, ^land_short_14
+    %t25 = index i8 [projection=field] %t24, 0
+    store typed i64 -81985529216486896, %t25
+    %t26 = convert sext i64 i32 1
+    %t27 = addr $counted
+    %t28 = index i8 %t27, 0
+    call void @Counted__Counted(%t28)
+    %t29 = addr $counted
+    %t30 = index i8 [projection=field] %t29, 0
+    %t31 = load typed i64 %t30
+    %t32 = cmp eq i64 %t31, -81985529216486896
+    branch %t32, ^land_rhs_13, ^land_short_14
 
   block ^land_rhs_13:
-    %t35 = load typed i32 @constructors
-    %t36 = cmp eq i32 %t35, 2
-    %t37 = cmp ne i64 %t36, 0
-    store typed i64 %t37, $land__2
+    %t33 = load typed i32 @constructors
+    %t34 = cmp eq i32 %t33, 2
+    %t35 = cmp ne i64 %t34, 0
+    store typed i64 %t35, $land__2
     jump ^land_end_15
 
   block ^land_short_14:
@@ -118,8 +114,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_15
 
   block ^land_end_15:
-    %t38 = load typed i64 $land__2
-    branch %t38, ^cond_then_10, ^cond_else_11
+    %t36 = load typed i64 $land__2
+    branch %t36, ^cond_then_10, ^cond_else_11
 
   block ^cond_then_10:
     store typed i32 0, $cond__1
@@ -130,8 +126,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_12
 
   block ^cond_end_12:
-    %t39 = load typed i32 $cond__1
-    return i32 %t39
+    %t37 = load typed i32 $cond__1
+    return i32 %t37
 }
 function @Bucket__second(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN6Bucket6secondEv, inline_hint=yes] {
   slot $this : ptr

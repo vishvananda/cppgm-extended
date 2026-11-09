@@ -10,8 +10,8 @@ function @bits32
     param %x -> xmm0 : f32
     return i32 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     param-slot %x -> [rbp-8] : f32
@@ -28,8 +28,8 @@ function @bits64
     param %x -> xmm0 : f64
     return i64 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     param-slot %x -> [rbp-8] : f64
@@ -45,8 +45,8 @@ function @roundtrip
     param %x -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -60,8 +60,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 80
-    scratch_bytes 48
+    stack_size 32
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx r12 r13 r14
@@ -70,33 +70,28 @@ function @main
     fmov.f32 xmm0, -0.5f
     call @bits32 [args=(xmm0)]
     sext.i32 rax
-    mov rdx, -1082130432
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -1082130432
     setne rbx
     movzx rbx, rbx
     fmov.f32 xmm0, -0.0f
     call @bits32 [args=(xmm0)]
     sext.i32 rax
-    mov rdx, -2147483648
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -2147483648
     setne r12
     movzx r12, r12
     fmov.f64 xmm0, 1.0
     call @bits64 [args=(xmm0)]
-    mov rdx, 4611686018427387904
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 4611686018427387904
     setne r13
     movzx r13, r13
     fmov.f64 xmm0, -0.0
     call @bits64 [args=(xmm0)]
-    mov rdx, -9223372036854775808
-    cmp.i64 rax, rdx
+    cmp.i64 rax, -9223372036854775808
     setne r14
     movzx r14, r14
     mov rdi, 4607182418800017408
     call @roundtrip [args=(rdi)]
-    mov rdx, -4616189618054758400
-    cmp.i64 rax, rdx
+    cmp.i64 rax, -4616189618054758400
     setne rax
     movzx rax, rax
     or rbx, r12

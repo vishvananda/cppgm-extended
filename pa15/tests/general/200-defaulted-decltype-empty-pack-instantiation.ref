@@ -1,5 +1,3 @@
-declare function @operatornew__ov2(%arg0 : i64, %arg1 : ptr) -> ptr [binding=strong, object=_ZnwmPv]
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $storage : obj<4x1>
   slot $box : ptr
@@ -21,9 +19,8 @@ function @construct_at(%ptr : ptr) -> ptr [binding=weak, object=_Z12construct_at
     store typed ptr %ptr, $ptr
     %t1 = convert sext i64 i32 4
     %t2 = load typed ptr $ptr
-    %t3 = call ptr @operatornew__ov2(%t1, %t2)
-    call void @Box__Box(%t3)
-    return ptr %t3
+    call void @Box__Box(%t2)
+    return ptr %t2
 }
 function @Box__Box(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3BoxC1Ev, inline_hint=yes] {
   slot $this : ptr

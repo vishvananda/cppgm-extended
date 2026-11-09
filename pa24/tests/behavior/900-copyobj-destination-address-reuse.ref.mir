@@ -21,8 +21,7 @@ function @main
     store.i64 [rbp-8], 42
     copy_bytes 8x8, [rbp-16], [rbp-8]
     copy_bytes 8x8, [rbp-24], [rbp-16]
-    mov rdx, 42
-    cmp.i64 [rbp-24], rdx
+    cmp.i64 [rbp-24], 42
     setne rax
     movzx rax, rax
     ret rax

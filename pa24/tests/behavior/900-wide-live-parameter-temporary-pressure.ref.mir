@@ -129,12 +129,10 @@ function @main
     cmp.ptr [rbx+8], r12
     setne r12
     movzx r12, r12
-    mov rdx, 11
-    cmp.i32 [rbx+16], rdx
+    cmp.i32 [rbx+16], 11
     setne r9
     movzx r9, r9
-    mov rdx, 99
-    cmp.u8 [rbx+72], rdx
+    cmp.u8 [rbx+72], 99
     setne rdi
     movzx rdi, rdi
     or r8, r12

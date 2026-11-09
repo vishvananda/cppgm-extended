@@ -1,0 +1,10 @@
+# Require compact baseline work without fixing register numbers or frame offsets.
+none(mov) in @immediate
+has(cmp) in @immediate
+none(load) in @boolean_branch
+has(load) in @volatile_boolean
+stack_size <= 16 in @floating_identity
+stack_size <= 16 in @mixed
+preserve == 0 in @mixed
+# Extended conversions still execute; their required scratch is not suppressed.
+has(fptrunc) in @extended_to_double

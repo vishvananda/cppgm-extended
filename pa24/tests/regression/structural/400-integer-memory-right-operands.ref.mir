@@ -321,59 +321,48 @@ function @main
     mov rdx, 4
     call @add_byte_indexed [args=(rdx,rsi,rdi)]
     sext.i8 rax
-    mov rdx, 14
-    cmp.i64 r14, rdx
+    cmp.i64 r14, 14
     setne r14
     movzx r14, r14
-    mov rdx, 17
-    cmp.i64 r15, rdx
+    cmp.i64 r15, 17
     setne r15
     movzx r15, r15
-    mov rdx, 9
-    cmp.i64 [rbp-8], rdx
+    cmp.i64 [rbp-8], 9
     setne r8
     movzx r8, r8
-    mov rdx, 5
-    cmp.i64 [rbp-16], rdx
+    cmp.i64 [rbp-16], 5
     setne r9
     movzx r9, r9
-    mov rdx, 255
-    cmp.i64 [rbp-24], rdx
+    cmp.i64 [rbp-24], 255
     setne rdi
     movzx rdi, rdi
-    mov rdx, 42
-    cmp.i32 [rbp-32], rdx
+    cmp.i32 [rbp-32], 42
     setne rsi
     movzx rsi, rsi
-    mov rdx, 1
-    cmp.i64 r13, rdx
+    cmp.i64 r13, 1
     setne r13
     movzx r13, r13
-    mov rdx, 9
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 9
     setne rbx
     movzx rbx, rbx
-    mov rdx, 12
-    cmp.i64 [rbp-40], rdx
+    cmp.i64 [rbp-40], 12
+    setne rdx
+    movzx rdx, rdx
+    cmp.i8 [rbp-48], 15
     setne rcx
     movzx rcx, rcx
-    mov rdx, 15
-    cmp.i8 [rbp-48], rdx
-    setne r12
-    movzx r12, r12
-    mov rdx, 7
-    cmp.i8 rax, rdx
+    cmp.i8 rax, 7
     setne rax
     movzx rax, rax
     or r14, r15
     or r8, r9
     or rdi, rsi
     or r13, rbx
-    or r12, rax
-    or rcx, r12
+    or rcx, rax
+    or rdx, rcx
     or r14, r8
     or rdi, r13
     or r14, rdi
-    or r14, rcx
+    or r14, rdx
     sext.i32 r14
     ret r14

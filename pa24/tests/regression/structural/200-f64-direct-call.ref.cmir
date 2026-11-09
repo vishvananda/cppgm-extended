@@ -12,7 +12,7 @@ function @add
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     param-slot %a -> [rbp-<off0>] : f64
@@ -29,7 +29,7 @@ function @main
     return i64 -> rax
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 

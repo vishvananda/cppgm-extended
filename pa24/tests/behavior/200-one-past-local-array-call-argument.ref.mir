@@ -78,8 +78,7 @@ function @main
     store.ptr [rdi+8], 0
     store.ptr [rdi+16], 0
     call @build [args=(rdi), unwind=no]
-    mov rdx, 16
-    cmp.i64 @probe_result, rdx
+    cmp.i64 @probe_result, 16
     setne rax
     movzx rax, rax
     ret rax

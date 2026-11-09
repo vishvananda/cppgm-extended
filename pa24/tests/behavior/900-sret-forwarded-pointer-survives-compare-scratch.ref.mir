@@ -56,8 +56,7 @@ function @check_forwarded
     and rsi, rdx
     and rcx, r8
     and rsi, rcx
-    mov rdx, 0
-    cmp.i64 rsi, rdx
+    cmp.i64 rsi, 0
     sete rsi
     movzx rsi, rsi
     store.i32 [rdi], rsi
@@ -98,8 +97,7 @@ function @forward_after_compare
     jmp ^rhs
 
   block ^rhs
-    mov rdx, 0
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 0
     setne r8
     movzx r8, r8
     store.i64 [rbp-8], r8
@@ -113,7 +111,6 @@ function @forward_after_compare
     load.i64 r8, [rbp-8]
     store.u8 [rbx], r8
     load.ptr rsi, [rbp-24]
-    load.ptr rdx, [rbp-32]
     load.ptr r8, [rbp-48]
     call @check_forwarded [args=(rcx,rdx,rsi,rdi,r8)]
     store.u8 [rbx], r12

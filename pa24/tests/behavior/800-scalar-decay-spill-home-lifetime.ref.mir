@@ -79,8 +79,7 @@ function @observe
     cmp.ptr [rbp-24], rsi
     sete rsi
     movzx rsi, rsi
-    mov rdx, 12
-    cmp.i64 [rbp-32], rdx
+    cmp.i64 [rbp-32], 12
     sete rdx
     movzx rdx, rdx
     and r9, r8
@@ -181,8 +180,7 @@ function @main
   block ^entry
     mov rdi, @bytes
     call @exercise [args=(rdi)]
-    mov rdx, 100
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 100
     setne rax
     movzx rax, rax
     ret rax

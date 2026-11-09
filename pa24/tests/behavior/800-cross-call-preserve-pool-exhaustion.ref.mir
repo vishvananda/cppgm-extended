@@ -91,12 +91,10 @@ function @main
 
   block ^entry
     call @run [args=()]
-    mov rdx, 210
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 210
     sete rax
     movzx rax, rax
-    mov rdx, 0
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 0
     sete rax
     movzx rax, rax
     ret rax

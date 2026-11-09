@@ -109,8 +109,7 @@ function @main
     jmp ^short
 
   block ^rhs
-    mov rdx, 13
-    cmp.i32 @g_type, rdx
+    cmp.i32 @g_type, 13
     sete r8
     movzx r8, r8
     cmp.i64 r8, 0
@@ -118,8 +117,7 @@ function @main
     jmp ^short
 
   block ^rhs2
-    mov rdx, 1
-    cmp.i64 @g_nbytes, rdx
+    cmp.i64 @g_nbytes, 1
     sete r8
     movzx r8, r8
     cmp.i64 r8, 0

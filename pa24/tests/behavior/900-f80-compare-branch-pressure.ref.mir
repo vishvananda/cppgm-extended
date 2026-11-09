@@ -51,8 +51,8 @@ function @reduced
     param %second -> rsi : ptr
     return void -> void
   frame
-    stack_size 112
-    scratch_bytes 48
+    stack_size 64
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx
@@ -104,8 +104,7 @@ function @main
     mov rdi, @g1
     mov rsi, rdi
     call @reduced [args=(rsi,rdi)]
-    mov rdx, 1
-    cmp.u8 @observed, rdx
+    cmp.u8 @observed, 1
     setne rax
     movzx rax, rax
     ret rax

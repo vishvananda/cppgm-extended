@@ -75,13 +75,8 @@ void FunctionSelector::reset(lowir::SymbolId symbol, Function& out)
 	va_save_area_ = 0;
 	named_gprs_ = named_xmms_ = named_stack_ = 0;
 	needs_scratch_area_ = false;
-	// -O0: every floating function reserves the area. Above it, the emission
-	// that uses the area asks for it (needs_scratch_area_).
-	scratch_area_ = (level_ == 0 && signature_->result.is_float()) ||
-		signature_->boundary.arity == ir_model::CAM_VARIADIC;
-	for (uint32_t p = 0; level_ == 0 && p < signature_->parameter_count; ++p)
-		if (program_.parameters_of(*signature_)[p].type.is_float())
-			scratch_area_ = true;
+	// Floating operations request scratch only when their emission needs it.
+	scratch_area_ = signature_->boundary.arity == ir_model::CAM_VARIADIC;
 	out.locations = body.locations;
 }
 
@@ -113,28 +108,6 @@ Value FunctionSelector::add_literal(const Literal& bits)
 
 // Whether an instruction handles a floating value: its type, an operand, or
 // the parameters or result of the signature it calls.
-bool FunctionSelector::floating_inst(const Instruction& inst) const
-{
-	if (inst.type.is_float())
-		return true;
-	bool floating = false;
-	for_each_operand(*body_, inst, [&](Value v, OperandRole) {
-		if (v.kind == ValueKind::Float || (v.kind == ValueKind::Temp && body_->temps[v.index].type.is_float()))
-			floating = true;
-	});
-	const lowir::Signature* sig = inst.op == Opcode::Call ? program_.call_boundary(inst) : nullptr;
-	if (sig != nullptr)
-	{
-		floating = floating || sig->result.is_float();
-		for (uint32_t p = 0; p < sig->parameter_count; ++p)
-			floating = floating || program_.parameters_of(*sig)[p].type.is_float();
-	}
-	return floating;
-}
-
-// ---------------------------------------------------------------------------
-// CFG
-
 void FunctionSelector::build_cfg()
 {
 	const lowir::FunctionBody& body = *body_;
@@ -165,8 +138,6 @@ void FunctionSelector::build_cfg()
 				blocks_[b].has_phi = true;
 			if ((inst.op == Opcode::EhTry || inst.op == Opcode::EhCleanup) && inst.ops[0].kind == ValueKind::Block)
 				handlers.push_back(layout_of_[inst.ops[0].index]);
-			if (!scratch_area_ && level_ == 0 && floating_inst(inst))
-				scratch_area_ = true;
 			if (inst.op == Opcode::Call && (program_.symbols[symbol_].metadata.flags & lowir::SF_KEEP_ALIAS))
 				scratch_area_ = true;
 		}
@@ -426,6 +397,105 @@ Literal normalize_literal(TypeKind kind, Literal bits)
 }
 
 } // namespace
+
+// Machine operands that are entirely literal need no run-time arithmetic,
+// including at the baseline level. Stay within register-width integers;
+// leave division and out-of-range shifts to their ordinary selection.
+Value FunctionSelector::literal_operation(const Instruction& inst)
+{
+	if (!inst.type.is_integer() || inst.type.kind() == TypeKind::I128)
+		return Value::none();
+	const Value a = resolve(inst.ops[0]);
+	if (a.kind != ValueKind::Integer)
+		return Value::none();
+	uint64_t value = literal(a).low;
+	if (inst.op == Opcode::Unary)
+	{
+		switch (static_cast<lowir::UnaryOp>(inst.sub))
+		{
+		case lowir::UnaryOp::Neg:
+			value = 0 - value;
+			break;
+		case lowir::UnaryOp::BitNot:
+			value = ~value;
+			break;
+		default:
+			return Value::none();
+		}
+	}
+	else if (inst.op == Opcode::Binary)
+	{
+		const Value b = resolve(inst.ops[1]);
+		if (b.kind != ValueKind::Integer)
+			return Value::none();
+		const uint64_t right = literal(b).low;
+		const unsigned width = lowir::integer_bits(inst.type.kind());
+		const uint64_t mask = width == 64 ? ~uint64_t(0) : (uint64_t(1) << width) - 1;
+		switch (static_cast<lowir::BinaryOp>(inst.sub))
+		{
+		case lowir::BinaryOp::Add:
+			value += right;
+			break;
+		case lowir::BinaryOp::Sub:
+			value -= right;
+			break;
+		case lowir::BinaryOp::Mul:
+			value *= right;
+			break;
+		case lowir::BinaryOp::And:
+			value &= right;
+			break;
+		case lowir::BinaryOp::Or:
+			value |= right;
+			break;
+		case lowir::BinaryOp::Xor:
+			value ^= right;
+			break;
+		case lowir::BinaryOp::Shl:
+			if (right >= width)
+				return Value::none();
+			value <<= right;
+			break;
+		case lowir::BinaryOp::UShr:
+			if (right >= width)
+				return Value::none();
+			value = (value & mask) >> right;
+			break;
+		case lowir::BinaryOp::Shr:
+			if (right >= width)
+				return Value::none();
+			value = static_cast<uint64_t>((static_cast<int64_t>(value << (64 - width)) >> (64 - width)) >> right);
+			break;
+		default:
+			return Value::none();
+		}
+	}
+	else if (inst.op == Opcode::Convert)
+	{
+		const Type source = lowir::convert_source_type(inst);
+		if (!source.is_integer() || source.kind() == TypeKind::I128)
+			return Value::none();
+		const unsigned width = lowir::integer_bits(source.kind());
+		switch (static_cast<lowir::ConvertOp>(inst.sub))
+		{
+		case lowir::ConvertOp::SExt:
+			value = static_cast<uint64_t>(static_cast<int64_t>(value << (64 - width)) >> (64 - width));
+			break;
+		case lowir::ConvertOp::ZExt:
+			if (width != 64)
+				value &= (uint64_t(1) << width) - 1;
+			break;
+		case lowir::ConvertOp::Trunc:
+			break;
+		default:
+			return Value::none();
+		}
+	}
+	else
+		return Value::none();
+	const Literal bits = { value, static_cast<int64_t>(value) < 0 ? ~uint64_t(0) : 0 };
+	return add_literal(normalize_literal(inst.type.kind(), bits));
+}
 
 // True if the temp's value is 0 or 1: a compare or compare-exchange result
 // or an i1 value.
@@ -985,7 +1055,9 @@ void FunctionSelector::resolve_aliases()
 			const bool ints = (inst.type.is_integer() || inst.type.is_pointer()) && dest != TypeKind::I128 &&
 				from != TypeKind::I128 &&
 				(lowir::convert_source_type(inst).is_integer() || lowir::convert_source_type(inst).is_pointer());
-			if (src.kind == ValueKind::Temp && ints)
+			if (src.kind == ValueKind::Integer && ints)
+				to = literal_operation(inst);
+			else if (src.kind == ValueKind::Temp && ints)
 			{
 				// Sign-extending an i1 makes 1 all ones.
 				const bool boolean = known_boolean(src.index) &&
@@ -1016,6 +1088,8 @@ void FunctionSelector::resolve_aliases()
 					to = src;
 			}
 		}
+		else if (inst.op == Opcode::Unary || inst.op == Opcode::Binary)
+			to = literal_operation(inst);
 		if (to.kind == ValueKind::None)
 			return;
 		alias_[r] = to;
@@ -1997,9 +2071,9 @@ void FunctionSelector::find_folds()
 			test_fold(self, user_id);
 			return;
 		}
-		// O1+: a load only the next instruction's branch tests compares in
+		// A load only the next instruction's branch tests compares in
 		// memory (cmp byte [m], 0).
-		const bool branch_test = level_ >= 1 && user.op == Opcode::Branch && left;
+		const bool branch_test = user.op == Opcode::Branch && left;
 		// (O1+: a pointer read as an i64 through a retyping copy, the copy
 		// an alias, reads the same eight bytes.)
 		const bool retyped = level_ >= 1 &&
@@ -2012,8 +2086,6 @@ void FunctionSelector::find_folds()
 			return;
 		const TypeKind k = inst.type.kind();
 		bool ok = branch_test && k != TypeKind::I128 && !floating;
-		// (A Boolean's byte compares in memory at O1+; -O0 keeps the
-		// reference's shapes.)
 		if (floating)
 		{
 			// (The operand `ucomis` reads second, where memory is allowed;
@@ -2030,7 +2102,7 @@ void FunctionSelector::find_folds()
 					op == lowir::BinaryOp::Div;
 		}
 		else if (user.op == Opcode::Compare)
-			ok = (k != TypeKind::I1 || level_ >= 1) && !sunk_compare(user_id);
+			ok = !sunk_compare(user_id);
 		else if (user.op == Opcode::Binary)
 		{
 			const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(user.sub);

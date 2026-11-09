@@ -15,6 +15,5 @@ function @main
     epilogues duplicated
 
   block ^entry
-    mov rax, 1 !dbg(test.cpp, 3, 1)
-    add rax, 2 !dbg(test.cpp, 3, 1)
+    mov rax, 3 !dbg(test.cpp, 4, 1)
     ret rax !dbg(test.cpp, 4, 1)

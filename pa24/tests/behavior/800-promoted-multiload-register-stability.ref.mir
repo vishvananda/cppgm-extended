@@ -34,12 +34,10 @@ function @main
   block ^entry
     mov rdi, 10
     call @calc [args=(rdi)]
-    mov rdx, 22
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 22
     sete rax
     movzx rax, rax
-    mov rdx, 0
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 0
     sete rax
     movzx rax, rax
     ret rax

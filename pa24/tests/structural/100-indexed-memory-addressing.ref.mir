@@ -62,8 +62,7 @@ function @main
     mov rdi, rbx
     mov rsi, 2
     call @load_at [args=(rsi,rdi)]
-    mov rdx, 77
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 77
     setne rax
     movzx rax, rax
     ret rax

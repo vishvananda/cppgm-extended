@@ -22,9 +22,8 @@ function @build() -> void [binding=strong, object=_Z5buildv] {
     call void @guard__guard(%t1)
     %t2 = convert sext i64 i32 1
     %t3 = addr @storage
-    %t4 = call ptr @operatornew__ov2(%t2, %t3)
     eh_try ^cleanup_action_2
-    call void @item__item(%t4)
+    call void @item__item(%t3)
     eh_end
     jump ^call_unwind_end_3
 
@@ -32,12 +31,12 @@ function @build() -> void [binding=strong, object=_Z5buildv] {
     resume
 
   block ^cleanup_action_2:
-    %t5 = addr $cleanup
-    call void @guard___guard(%t5)
+    %t4 = addr $cleanup
+    call void @guard___guard(%t4)
     jump ^cleanup_resume_1
 
   block ^call_unwind_end_3:
-    %t6 = addr $cleanup
-    call void @guard___guard(%t6)
+    %t5 = addr $cleanup
+    call void @guard___guard(%t5)
     return void
 }

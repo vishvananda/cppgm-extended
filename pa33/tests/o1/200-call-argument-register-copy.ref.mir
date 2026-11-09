@@ -28,8 +28,7 @@ function @main
     epilogues duplicated
 
   block ^entry
-    mov rdi, 20
-    add rdi, 22
+    mov rdi, 42
     call @sink [args=(rdi)]
     mov rax, 0
     ret rax

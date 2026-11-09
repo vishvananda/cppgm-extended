@@ -35,8 +35,7 @@ function @main
     cmp.ptr rbx, rbx
     sete rbx
     movzx rbx, rbx
-    mov rdx, 0
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 0
     sete rbx
     movzx rbx, rbx
     ret rbx

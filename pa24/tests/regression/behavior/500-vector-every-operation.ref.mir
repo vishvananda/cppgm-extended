@@ -4656,8 +4656,8 @@ function @op_fromf32
     param %p -> rdi : ptr
     return void -> void
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -4672,8 +4672,8 @@ function @op_fromf64
     param %p -> rdi : ptr
     return void -> void
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -4720,8 +4720,8 @@ function @op_tof32
     param %p -> rdi : ptr
     return void -> void
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -4736,8 +4736,8 @@ function @op_tof64
     param %p -> rdi : ptr
     return void -> void
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -4799,8 +4799,7 @@ function @same
     load.i64 rdi, [rdi+8]
     xor rdi, [rsi+8]
     or r8, rdi
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

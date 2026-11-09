@@ -56,12 +56,10 @@ function @main
   block ^entry
     mov rdi, @result
     call @write [args=(rdi)]
-    mov rdx, 17
-    cmp.i64 @result, rdx
+    cmp.i64 @result, 17
     setne r8
     movzx r8, r8
-    mov rdx, 42
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 42
     setne rax
     movzx rax, rax
     or r8, rax

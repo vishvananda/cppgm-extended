@@ -1,0 +1,160 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @memory_copy
+  abi
+    param %destination -> rdi : ptr
+    param %source -> rsi : ptr
+    param %count -> rdx : i64
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov r8, 0
+    jmp ^test
+
+  block ^test
+    cmp.i64 r8, rdx
+    je ^return
+    jmp ^body
+
+  block ^body
+    load.u8 r9, [rsi+r8]
+    store.u8 [rdi+r8], r9
+    mov r9, r8
+    add r9, 1
+    mov r8, r9
+    jmp ^test
+
+  block ^return
+    ret rdi
+
+function @copy_used
+  abi
+    param %destination -> rdi : ptr
+    param %source -> rsi : ptr
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rdx, 8
+    copy_bytes 8x1, rdi, rsi
+    ret rdi
+
+function @copy_unused
+  abi
+    param %destination -> rdi : ptr
+    param %source -> rsi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rdx, 13
+    copy_bytes 13x1, rdi, rsi
+    ret
+
+function @copy_dynamic
+  abi
+    param %destination -> rdi : ptr
+    param %source -> rsi : ptr
+    param %count -> rdx : i64
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    call @memory_copy [args=(rdx,rsi,rdi), unwind=no]
+    ret rax
+
+function @ordinary_copy
+  abi
+    param %destination -> rdi : ptr
+    param %source -> rsi : ptr
+    param %count -> rdx : i64
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    ret rdi
+
+function @ordinary_call
+  abi
+    param %destination -> rdi : ptr
+    param %source -> rsi : ptr
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rdx, 8
+    call @ordinary_copy [args=(rdx,rsi,rdi), unwind=no]
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve <gpr0> <gpr1> <gpr2>
+    slot $source -> [rbp-<off0>] : obj<40x1>
+    slot $destination -> [rbp-<off1>] : obj<40x1>
+
+  block ^entry
+    zero_bytes 40x1, [rbp-<off0>]
+    zero_bytes 40x1, [rbp-<off1>]
+    lea <gpr0>, [rbp-<off2>]
+    lea <gpr1>, [rbp-<off3>]
+    store.i64 [<gpr0>], 42
+    store.u8 [<gpr0>+<off0>], 77
+    store.u8 [<gpr1>+<off0>], 99
+    mov rdi, <gpr1>
+    mov rsi, <gpr0>
+    call @copy_used [args=(rsi,rdi), unwind=no]
+    cmp.ptr rax, <gpr1>
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    mov rdi, <gpr1>
+    mov rsi, <gpr0>
+    call @copy_unused [args=(rsi,rdi), unwind=no]
+    cmp.i64 [<gpr1>], 42
+    setne r8
+    movzx r8, r8
+    cmp.u8 [<gpr1>+<off1>], 77
+    setne r9
+    movzx r9, r9
+    cmp.u8 [<gpr1>+<off0>], 99
+    setne rdi
+    movzx rdi, rdi
+    or <gpr2>, r8
+    or r9, rdi
+    or <gpr2>, r9
+    ret <gpr2>

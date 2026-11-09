@@ -52,8 +52,7 @@ function @main
     lea rdi, [rbp-8]
     lea rsi, [rbp-16]
     call @copy_ref [args=(rsi,rdi)]
-    mov rdx, 7
-    cmp.i64 [rbp-8], rdx
+    cmp.i64 [rbp-8], 7
     sete r8
     movzx r8, r8
     cmp.i64 r8, 0

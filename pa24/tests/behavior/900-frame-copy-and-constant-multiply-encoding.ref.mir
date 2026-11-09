@@ -64,9 +64,8 @@ function @multiply_wraps
     epilogues shared
 
   block ^entry
-    mov r8, 2305843009213693953
-    imul r8, 8
-    ret r8
+    mov rax, 8
+    ret rax
 
 function @main
   abi
@@ -85,16 +84,13 @@ function @main
     call @multiply_struct_strides [args=(rdi)]
     mov r12, rax
     call @multiply_wraps [args=()]
-    mov rdx, 66
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 66
     setne rbx
     movzx rbx, rbx
-    mov rdx, -462
-    cmp.i64 r12, rdx
+    cmp.i64 r12, -462
     setne r12
     movzx r12, r12
-    mov rdx, 8
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 8
     setne rax
     movzx rax, rax
     or rbx, r12

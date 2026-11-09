@@ -38,12 +38,10 @@ function @main
     call @make_tag_spilled [args=()]
     store.i64 [rbp-8], rax
     copy_bytes 8x8, @copied, [rbp-8]
-    mov rdx, 77
-    cmp.i64 @copied, rdx
+    cmp.i64 @copied, 77
     sete r8
     movzx r8, r8
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

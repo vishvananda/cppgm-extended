@@ -321,59 +321,48 @@ function @main
     mov rdx, 4
     call @add_byte_indexed [args=(rdx,rsi,rdi)]
     sext.i8 rax
-    mov rdx, 14
-    cmp.i64 <gpr3>, rdx
+    cmp.i64 <gpr3>, 14
     setne <gpr3>
     movzx <gpr3>, <gpr3>
-    mov rdx, 17
-    cmp.i64 <gpr4>, rdx
+    cmp.i64 <gpr4>, 17
     setne <gpr4>
     movzx <gpr4>, <gpr4>
-    mov rdx, 9
-    cmp.i64 [rbp-<off0>], rdx
+    cmp.i64 [rbp-<off0>], 9
     setne r8
     movzx r8, r8
-    mov rdx, 5
-    cmp.i64 [rbp-<off1>], rdx
+    cmp.i64 [rbp-<off1>], 5
     setne r9
     movzx r9, r9
-    mov rdx, 255
-    cmp.i64 [rbp-<off2>], rdx
+    cmp.i64 [rbp-<off2>], 255
     setne rdi
     movzx rdi, rdi
-    mov rdx, 42
-    cmp.i32 [rbp-<off3>], rdx
+    cmp.i32 [rbp-<off3>], 42
     setne rsi
     movzx rsi, rsi
-    mov rdx, 1
-    cmp.i64 <gpr2>, rdx
+    cmp.i64 <gpr2>, 1
     setne <gpr2>
     movzx <gpr2>, <gpr2>
-    mov rdx, 9
-    cmp.i64 <gpr0>, rdx
+    cmp.i64 <gpr0>, 9
     setne <gpr0>
     movzx <gpr0>, <gpr0>
-    mov rdx, 12
-    cmp.i64 [rbp-<off4>], rdx
+    cmp.i64 [rbp-<off4>], 12
+    setne rdx
+    movzx rdx, rdx
+    cmp.i8 [rbp-<off5>], 15
     setne rcx
     movzx rcx, rcx
-    mov rdx, 15
-    cmp.i8 [rbp-<off5>], rdx
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
-    mov rdx, 7
-    cmp.i8 rax, rdx
+    cmp.i8 rax, 7
     setne rax
     movzx rax, rax
     or <gpr3>, <gpr4>
     or r8, r9
     or rdi, rsi
     or <gpr2>, <gpr0>
-    or <gpr1>, rax
-    or rcx, <gpr1>
+    or rcx, rax
+    or rdx, rcx
     or <gpr3>, r8
     or rdi, <gpr2>
     or <gpr3>, rdi
-    or <gpr3>, rcx
+    or <gpr3>, rdx
     sext.i32 <gpr3>
     ret <gpr3>

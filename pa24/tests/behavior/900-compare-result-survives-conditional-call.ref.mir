@@ -35,8 +35,7 @@ function @classify
     preserve rbx
 
   block ^entry
-    mov rdx, 1
-    cmp.i32 rdi, rdx
+    cmp.i32 rdi, 1
     setne rbx
     movzx rbx, rbx
     cmp.i64 rbx, 0
@@ -69,8 +68,7 @@ function @main
     call @classify [args=(rdi)]
     mov rdi, 0
     call @classify [args=(rdi)]
-    mov rdx, 1
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 1
     setne rax
     movzx rax, rax
     ret rax

@@ -17,79 +17,67 @@ function @main
 
   block ^entry
     mov r8, -1
-    mov rdx, -1
-    cmp.i64 r8, rdx
+    cmp.i64 r8, -1
     setne r8
     movzx r8, r8
     mov r9, -1
     shr r9, 1
-    mov rdx, 9223372036854775807
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 9223372036854775807
     setne r9
     movzx r9, r9
     mov rdi, -1
     and rdi, 7
-    mov rdx, 7
-    cmp.i64 rdi, rdx
+    cmp.i64 rdi, 7
     setne rdi
     movzx rdi, rdi
     mov r11, -9223372036854775808
     mov rax, -1
     mov rdx, 0
     div r11
-    mov rdx, 1
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 1
     setne rsi
     movzx rsi, rsi
     mov r11, -9223372036854775808
     mov rax, -1
     mov rdx, 0
     div r11
-    mov rcx, rdx
-    mov rdx, 9223372036854775807
-    cmp.i64 rcx, rdx
+    cmp.i64 rdx, 9223372036854775807
     setne rcx
     movzx rcx, rcx
-    mov rax, 255
-    shr rax, 2
-    mov rdx, 63
-    cmp.u8 rax, rdx
+    mov rdx, 255
+    shr rdx, 2
+    cmp.u8 rdx, 63
     setne rbx
     movzx rbx, rbx
-    mov rax, 65535
-    and rax, 255
-    mov rdx, 255
-    cmp.u16 rax, rdx
+    mov rdx, 65535
+    and rdx, 255
+    cmp.u16 rdx, 255
     setne r12
     movzx r12, r12
-    mov rax, 4294967295
-    shr rax, 16
-    mov rdx, 65535
-    cmp.u32 rax, rdx
+    mov rdx, 4294967295
+    shr rdx, 16
+    cmp.u32 rdx, 65535
     setne r13
     movzx r13, r13
     mov r11, 7
     mov rax, 100
     mov rdx, 0
     div r11
-    mov rdx, 14
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 14
     setne r14
     movzx r14, r14
     mov r11, 7
     mov rax, 100
     mov rdx, 0
     div r11
-    mov rax, rdx
-    mov rdx, 2
-    cmp.i64 rax, rdx
-    setne rax
-    movzx rax, rax
+    cmp.i64 rdx, 2
+    setne rdx
+    movzx rdx, rdx
     or r8, r9
     or rdi, rsi
     or rcx, rbx
     or r12, r13
-    or r14, rax
+    or r14, rdx
     or r8, rdi
     or rcx, r12
     or r8, rcx

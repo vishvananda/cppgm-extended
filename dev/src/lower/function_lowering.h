@@ -840,7 +840,6 @@ private:
 	void call_special(const sema::FunctionEntity* function, EntryVariant variant, lowir::Value object,
 		const syntax::Slice<syntax::Expr*>& written, uint32_t location, bool elision = false);
 	bool copies_storage(const sema::FunctionEntity* function);
-	bool copy_called(const sema::FunctionEntity* function);
 	void call_constructor(const sema::FunctionEntity* constructor, lowir::Value object, const syntax::Expr& argument,
 		const sema::Conversion* conversion, uint32_t location, bool elision = false);
 	void construct_from(
@@ -1669,6 +1668,7 @@ private:
 	// ------------------ new and delete (lower/allocation_lowering.cpp)
 	RValue allocation(const syntax::NewExpr& expr);
 	void allocation_arguments(const syntax::NewExpr& expr, const sema::FunctionEntity* function);
+	lowir::Value allocation_result(const sema::FunctionEntity* function, size_t base);
 	// A single object's new-expression tests the allocated pointer before
 	// initializing it (5.3.4p13).
 	bool tests_allocation(const syntax::NewExpr& expr) const;
@@ -1950,8 +1950,6 @@ private:
 	uint32_t source_site_ = kNoSourceSite;
 	// A local's direct-initialization is constructing it, or a
 	// new-expression its object (see call_special).
-	bool local_direct_init_ = false;
-	bool allocation_copy_ = false;
 	// A constructor of a class whose implicit assignment operator the unit
 	// odr-uses initializes bit-fields in the course's other order.
 	// Regions opened so far (a conditional's second operand reopens one

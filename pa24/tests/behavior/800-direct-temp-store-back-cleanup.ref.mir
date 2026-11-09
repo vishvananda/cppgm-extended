@@ -57,8 +57,7 @@ function @__cppgm_406d61696e
   block ^entry
     mov rdi, 41
     call @f [args=(rdi)]
-    mov rdx, 41
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 41
     setne rax
     movzx rax, rax
     ret rax

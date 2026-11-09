@@ -69,8 +69,7 @@ function @main
   block ^entry
     mov rdi, 1
     call @select_smaller [args=(rdi)]
-    mov rdx, 4
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 4
     setne rax
     movzx rax, rax
     ret rax

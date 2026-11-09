@@ -26,35 +26,28 @@ function @main
     store.i8 @bytes+257, 55
     store.i8 @bytes+383, 66
     store.i8 @bytes+384, 77
-    mov rdx, 11
-    cmp.i8 @bytes+127, rdx
+    cmp.i8 @bytes+127, 11
     setne r8
     movzx r8, r8
-    mov rdx, 22
-    cmp.i8 @bytes+128, rdx
+    cmp.i8 @bytes+128, 22
     setne r9
     movzx r9, r9
     or r8, r9
-    mov rdx, 33
-    cmp.i8 @bytes+255, rdx
+    cmp.i8 @bytes+255, 33
     setne r9
     movzx r9, r9
-    mov rdx, 44
-    cmp.i8 @bytes+256, rdx
+    cmp.i8 @bytes+256, 44
     setne rdi
     movzx rdi, rdi
     or r9, rdi
-    mov rdx, 55
-    cmp.i8 @bytes+257, rdx
+    cmp.i8 @bytes+257, 55
     setne rdi
     movzx rdi, rdi
-    mov rdx, 66
-    cmp.i8 @bytes+383, rdx
+    cmp.i8 @bytes+383, 66
     setne rsi
     movzx rsi, rsi
     or rdi, rsi
-    mov rdx, 77
-    cmp.i8 @bytes+384, rdx
+    cmp.i8 @bytes+384, 77
     setne rsi
     movzx rsi, rsi
     or r8, r9

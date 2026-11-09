@@ -68,16 +68,13 @@ function @main
     load.i64 r8, @single_result
     load.i64 r9, @pair_result
     load.i64 rdi, @pair_result+8
-    mov rdx, 23
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 23
     setne r8
     movzx r8, r8
-    mov rdx, 29
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 29
     setne r9
     movzx r9, r9
-    mov rdx, 31
-    cmp.i64 rdi, rdx
+    cmp.i64 rdi, 31
     setne rdi
     movzx rdi, rdi
     or r9, rdi

@@ -14,8 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = convert sext i64 i32 4
     %t2 = addr $storage
-    %t3 = call ptr @operatornew__ov2(%t1, %t2)
-    call void @table__table__aggregate(%t3, 1)
+    call void @table__table__aggregate(%t2, 1)
     return i32 0
 }
 function @table__table__aggregate(%this : ptr [object_bytes=4], %size : u32) -> void [unwind=no, binding=internal] {

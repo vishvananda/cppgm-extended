@@ -16,18 +16,16 @@ function @pressure
     param %gate -> [rbp+16] : i64
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
     slot $selected -> [rbp-8] : i64
     param-slot %gate -> [rbp-16] : i64
 
   block ^entry
     load.i64 rax, [rbp+16]
     store.i64 [rbp-16], rax
-    mov rbx, rdx
     cmp.i64 [rbp-16], 0
     jne ^compare
     jmp ^short
@@ -35,8 +33,7 @@ function @pressure
   block ^compare
     mov rax, rdi
     and rax, 7
-    mov rdx, 4
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 4
     setae rax
     movzx rax, rax
     store.i64 [rbp-8], rax
@@ -47,13 +44,13 @@ function @pressure
     jmp ^merge
 
   block ^merge
-    load.i64 rdx, [rbp-8]
+    load.i64 rax, [rbp-8]
     add rdi, rsi
-    add rbx, rcx
+    add rdx, rcx
     add r8, r9
-    add rdi, rbx
-    add rdi, r8
     add rdi, rdx
+    add rdi, r8
+    add rdi, rax
     ret rdi
 
 function @main
@@ -77,8 +74,7 @@ function @main
     store.i64 [rsp], r11
     call @pressure [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov rdx, 27
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 27
     setne rax
     movzx rax, rax
     ret rax

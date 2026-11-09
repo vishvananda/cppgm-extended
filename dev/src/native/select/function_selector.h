@@ -46,6 +46,7 @@ public:
 	void reachable_preds();
 	void analyze_slots();
 	void resolve_aliases();
+	lowir::Value literal_operation(const lowir::Instruction& inst);
 	void find_scaled_offsets();
 	void count_uses();
 	void eliminate_dead();
@@ -71,7 +72,6 @@ public:
 	bool canonical_step(lowir::Value v) const;
 	bool low_read(uint32_t temp) const { return temp < low_read_.size() && low_read_[temp] != 0; }
 	void normalize_result(const lowir::Instruction& inst, Reg reg, lowir::TypeKind type);
-	bool floating_inst(const lowir::Instruction& inst) const;
 	bool sunk_compare(uint32_t inst) const;
 	int32_t read_pos(uint32_t inst) const;
 	bool live(uint32_t inst) const { return (marks_[inst] & (IM_DEAD | IM_REACHABLE)) == IM_REACHABLE; }
@@ -91,7 +91,6 @@ public:
 
 	// ---- allocation.cpp
 	void inst_clobbers(uint32_t inst, uint32_t& clobber, uint32_t& early);
-	bool compare_scratch(const lowir::Instruction& inst) const;
 	void prepass_block(uint32_t block);
 	void compute_clobbers();
 	void retained_uses(uint32_t block, const int32_t* first_clobber, const int32_t* first_early);
@@ -187,6 +186,8 @@ public:
 	void emit_int_convert(const lowir::Instruction& inst);
 	void emit_atomic(const lowir::Instruction& inst);
 	void emit_bulk(const lowir::Instruction& inst);
+	bool emit_fixed_memcpy(const lowir::Instruction& inst, lowir::Value callee, const lowir::Signature& signature,
+		const CallLayout& layout);
 	void emit_wide(const lowir::Instruction& inst);
 	void normalize(Reg reg, lowir::TypeKind type);
 	uint32_t read_registers(const lowir::Instruction& inst, unsigned depth) const;
@@ -198,7 +199,6 @@ public:
 	Reg dying_reg(lowir::Value value) const;
 
 	// ---- emit_calls.cpp
-	void note_parameter_classes();
 	void emit_entry();
 	void fold_entry_extensions(size_t first);
 	void narrow_params_observed(std::vector<uint8_t>& observed);

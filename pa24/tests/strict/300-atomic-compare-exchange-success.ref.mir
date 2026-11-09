@@ -29,16 +29,13 @@ function @main
     movzx r8, r8
     load.i64 r9, @g
     load.i64 rdi, [rbp-8]
-    mov rdx, 1
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 1
     sete r8
     movzx r8, r8
-    mov rdx, 9
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 9
     sete r9
     movzx r9, r9
-    mov rdx, 7
-    cmp.i64 rdi, rdx
+    cmp.i64 rdi, 7
     sete rdi
     movzx rdi, rdi
     and r8, r9

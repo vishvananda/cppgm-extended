@@ -41,12 +41,10 @@ function @probe
     add rsi, rdx
     add r9, rsi
     load.i64 r8, @observed
-    mov rsi, 100
-    add rsi, 200
     add rdi, r8
-    add rsi, rdi
-    add rsi, r9
-    ret rsi
+    add rdi, 300
+    add rdi, r9
+    ret rdi
 
 function @main
   abi
@@ -64,8 +62,7 @@ function @main
     mov rcx, 3
     mov r8, 4
     call @probe [args=(rcx,rdx,rsi,rdi,r8)]
-    mov rdx, 350
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 350
     setne rax
     movzx rax, rax
     ret rax

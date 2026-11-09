@@ -47,18 +47,14 @@ function @main
     sext.i32 rbx
     call @unsigned_source [args=()]
     zext.i8 rax
-    mov r8, 17
-    sext.i32 r8
-    mov rdx, -17
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, -17
     setne rbx
     movzx rbx, rbx
-    mov rdx, 250
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 250
     setne rax
     movzx rax, rax
-    mov rdx, 17
-    cmp.i32 r8, rdx
+    mov r10, 17
+    cmp.i32 r10, 17
     setne r8
     movzx r8, r8
     or rbx, rax

@@ -1,3 +1,7 @@
+global @seed = {
+  i64 40
+}
+
 function @identity(%value : i64) -> i64 [unwind=no] {
   block ^entry:
     return i64 %value !dbg(test.cpp, 2, 3)
@@ -5,7 +9,9 @@ function @identity(%value : i64) -> i64 [unwind=no] {
 
 function @main() -> i64 [role=entry] {
   block ^entry:
-    %stable = binary add i64 40, 2 !dbg(test.cpp, 7, 5)
+    %seed = addr @seed
+    %input = load volatile i64 %seed
+    %stable = binary add i64 %input, 2 !dbg(test.cpp, 7, 5)
     jump ^loop !dbg(test.cpp, 8, 5)
 
   block ^loop:

@@ -58,12 +58,10 @@ function @distance_two
     add rsi, rdx
     add r9, rsi
     load.i64 r8, @observed_two
-    mov rsi, 100
-    add rsi, 200
     add rdi, r8
-    add rsi, rdi
-    add rsi, r9
-    ret rsi
+    add rdi, 300
+    add rdi, r9
+    ret rdi
 
 function @distance_five
   abi
@@ -92,12 +90,10 @@ function @distance_five
     add rsi, rdx
     add r9, rsi
     load.i64 r8, @observed_five
-    mov rsi, 100
-    add rsi, 200
     add rdi, r8
-    add rsi, rdi
-    add rsi, r9
-    ret rsi
+    add rdi, 300
+    add rdi, r9
+    ret rdi
 
 function @distance_six
   abi
@@ -126,12 +122,10 @@ function @distance_six
     add rsi, rdx
     add r9, rsi
     load.i64 r8, @observed_six
-    mov rsi, 100
-    add rsi, 200
     add rdi, r8
-    add rsi, rdi
-    add rsi, r9
-    ret rsi
+    add rdi, 300
+    add rdi, r9
+    ret rdi
 
 function @source_redefinition_barrier
   abi
@@ -160,12 +154,10 @@ function @source_redefinition_barrier
     add rsi, rdx
     add r9, rsi
     load.i64 r8, @observed_barrier
-    mov rsi, 100
-    add rsi, 200
     add rdi, r8
-    add rsi, rdi
-    add rsi, r9
-    ret rsi
+    add rdi, 300
+    add rdi, r9
+    ret rdi
 
 function @main
   abi
@@ -206,20 +198,16 @@ function @main
     mov rcx, 3
     mov r8, 4
     call @source_redefinition_barrier [args=(rcx,rdx,rsi,rdi,r8)]
-    mov rdx, 354
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 354
     setne r12
     movzx r12, r12
-    mov rdx, 368
-    cmp.i64 r13, rdx
+    cmp.i64 r13, 368
     setne r13
     movzx r13, r13
-    mov rdx, 372
-    cmp.i64 r14, rdx
+    cmp.i64 r14, 372
     setne r14
     movzx r14, r14
-    mov rdx, 348
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 348
     setne rax
     movzx rax, rax
     or r12, r13

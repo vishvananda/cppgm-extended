@@ -1,0 +1,208 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @immediate
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    cmp.i32 rdi, 7
+    sete rdi
+    movzx rdi, rdi
+    ret rdi
+
+function @large_immediate
+  abi
+    param %x -> rdi : i64
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    cmp.i64 rdi, 4294967297
+    sete rdi
+    movzx rdi, rdi
+    ret rdi
+
+function @boolean_branch
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    cmp.i1 [rdi], 0
+    jne ^yes
+    jmp ^no
+
+  block ^yes
+    mov rax, 17
+    ret rax
+
+  block ^no
+    mov rax, 29
+    ret rax
+
+function @volatile_boolean
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    load.i1 rdi, [rdi]
+    cmp.i1 rdi, 0
+    jne ^yes
+    jmp ^no
+
+  block ^yes
+    mov rax, 17
+    ret rax
+
+  block ^no
+    mov rax, 29
+    ret rax
+
+function @floating_identity
+  abi
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    param-slot %x -> [rbp-<off0>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    fmov.f64 xmm0, [rbp-<off0>]
+    ret xmm0
+
+function @mixed
+  abi
+    param %f -> xmm0 : f32
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    param-slot %f -> [rbp-<off0>] : f32
+
+  block ^entry
+    fmov.f32 [rbp-<off0>], xmm0
+    mov r8, rdi
+    add r8, rsi
+    xor rdi, rsi
+    imul r8, rdi
+    fptosi.f32.i64 r9, [rbp-<off0>]
+    add r8, r9
+    ret r8
+
+function @extended_to_double
+  abi
+    param %v -> [rbp+<off0>] : f80
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    fptrunc.f80.f64 xmm0, [rbp+<off0>]
+    ret xmm0
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $flag -> [rbp-<off0>] : i1
+    temp %f -> [rbp-<off1>] : f64
+
+  block ^entry
+    store.i1 [rbp-<off0>], 1
+    lea <gpr0>, [rbp-<off0>]
+    mov rdi, 7
+    call @immediate [args=(rdi)]
+    mov <gpr1>, rax
+    sext.i32 <gpr1>
+    mov rdi, 4294967297
+    call @large_immediate [args=(rdi)]
+    mov <gpr2>, rax
+    sext.i32 <gpr2>
+    mov rdi, <gpr0>
+    call @boolean_branch [args=(rdi)]
+    mov <gpr3>, rax
+    sext.i32 <gpr3>
+    mov rdi, <gpr0>
+    call @volatile_boolean [args=(rdi)]
+    mov <gpr0>, rax
+    sext.i32 <gpr0>
+    fmov.f64 xmm0, 1.5
+    call @floating_identity [args=(xmm0)]
+    fmov.f64 xmm14, xmm0
+    fmov.f64 [rbp-<off1>], xmm14
+    mov rdi, 3
+    mov rsi, 5
+    fmov.f32 xmm0, 2.0f
+    call @mixed [args=(rsi,rdi,xmm0)]
+    mov <gpr4>, rax
+    sub rsp, 16
+    fmov.f80 [rsp], 1.5L
+    call @extended_to_double [args=(), stack=16]
+    add rsp, 16
+    fne.f64 r8, xmm0, 1.5
+    cmp.i32 <gpr1>, 1
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    or <gpr1>, r8
+    cmp.i32 <gpr2>, 1
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    cmp.i32 <gpr3>, 17
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    cmp.i32 <gpr0>, 17
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    fne.f64 r8, [rbp-<off1>], 1.5
+    cmp.i64 <gpr4>, 50
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    or <gpr1>, <gpr2>
+    or <gpr3>, <gpr0>
+    or r8, <gpr4>
+    or <gpr1>, <gpr3>
+    or <gpr1>, r8
+    sext.i32 <gpr1>
+    ret <gpr1>

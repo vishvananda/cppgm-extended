@@ -25,12 +25,10 @@ function @main
     mov rdi, r9
     sub rdi, r8
     load.i64 r9, [r9]
-    mov rdx, 1
-    cmp.i64 rdi, rdx
+    cmp.i64 rdi, 1
     sete rdi
     movzx rdi, rdi
-    mov rdx, 13
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 13
     sete r9
     movzx r9, r9
     and rdi, r9

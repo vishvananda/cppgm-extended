@@ -37,8 +37,7 @@ function @main
     call @identity [args=(rdi)]
     load.i64 rax, [rax+8]
     add rax, @values
-    mov rdx, 42
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 42
     setne rax
     movzx rax, rax
     ret rax

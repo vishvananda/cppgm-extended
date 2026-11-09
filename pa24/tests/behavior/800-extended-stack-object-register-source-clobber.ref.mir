@@ -56,8 +56,7 @@ function @main
     mov rdi, 0
     mov rsi, 42
     call @forward [args=(rsi,rdi)]
-    mov rdx, 42
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 42
     setne rax
     movzx rax, rax
     ret rax

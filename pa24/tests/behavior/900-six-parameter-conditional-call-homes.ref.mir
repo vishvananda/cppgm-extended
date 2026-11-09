@@ -81,8 +81,7 @@ function @main
     mov r8, 0
     mov r9, 3
     call @select_width [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    mov rdx, 108
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 108
     setne rax
     movzx rax, rax
     ret rax

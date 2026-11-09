@@ -83,8 +83,7 @@ function @main
     jmp ^condition
 
   block ^done
-    mov rdx, 7
-    cmp.i64 @state, rdx
+    cmp.i64 @state, 7
     setne rbx
     movzx rbx, rbx
     mov r12, @shift_state
@@ -92,8 +91,7 @@ function @main
     mov rsi, 118046
     mov rdx, 3
     call @loop_shift [args=(rdx,rsi,rdi)]
-    mov rdx, 1
-    cmp.i64 [r12], rdx
+    cmp.i64 [r12], 1
     setne r8
     movzx r8, r8
     or rbx, r8

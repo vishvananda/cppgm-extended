@@ -10,8 +10,8 @@ function @raw32
     param %bits -> rdi : i32
     return f32 -> xmm0
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -24,8 +24,8 @@ function @raw64
     param %bits -> rdi : i64
     return f64 -> xmm0
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -37,8 +37,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     temp %a -> [rbp-8] : f32

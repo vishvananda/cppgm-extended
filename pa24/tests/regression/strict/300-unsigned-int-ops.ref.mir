@@ -17,25 +17,20 @@ function @main
   block ^entry
     mov r8, -1
     shr r8, 1
-    mov rdx, 9223372036854775807
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 9223372036854775807
     sete r8
     movzx r8, r8
     mov r11, 7
     mov rax, -1
     mov rdx, 0
     div r11
-    mov r9, rdx
-    mov rdx, 1
-    cmp.i64 r9, rdx
+    cmp.i64 rdx, 1
+    sete rdx
+    movzx rdx, rdx
+    mov r10, 4611686018427387900
+    cmp.i64 r10, 4611686018427387900
     sete r9
     movzx r9, r9
-    mov rdi, -16
-    shr rdi, 2
-    mov rdx, 4611686018427387900
-    cmp.i64 rdi, rdx
-    sete rdi
-    movzx rdi, rdi
+    add r8, rdx
     add r8, r9
-    add r8, rdi
     ret r8

@@ -68,12 +68,10 @@ function @main
   block ^entry
     mov rdi, @cell
     call @victim [args=(rdi)]
-    mov rdx, 77
-    cmp.i64 @cell, rdx
+    cmp.i64 @cell, 77
     sete r8
     movzx r8, r8
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

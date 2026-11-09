@@ -62,13 +62,8 @@ function @main
     jmp ^else
 
   block ^then
-    mov r8, 10
-    add r8, 11
-    mov r9, 12
-    add r9, 13
-    add r8, r9
-    add r8, 14
-    ret r8
+    mov rax, 60
+    ret rax
 
   block ^else
     mov rax, 0

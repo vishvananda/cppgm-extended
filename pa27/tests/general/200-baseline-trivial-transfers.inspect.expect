@@ -1,0 +1,6 @@
+absent_relocation_class_canonical 1 branch_call _ZN7TrivialC1EOS_
+absent_relocation_class_canonical 1 branch_call _ZN5PlainC1ERKS_
+absent_relocation_class_canonical 1 branch_call _ZnwmPv
+relocation_class_canonical 1 branch_call _Z14pointer_effectPv
+relocation_class_canonical 1 branch_call _ZN6CustomnwEmPv
+relocation_class_canonical 3 branch_call _ZnwmPvz

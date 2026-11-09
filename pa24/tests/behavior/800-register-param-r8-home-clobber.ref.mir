@@ -77,12 +77,10 @@ function @main
     mov rdx, 0
     mov rcx, 0
     call @target [args=(rcx,rdx,rsi,rdi,r8)]
-    mov rdx, 77
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 77
     sete rax
     movzx rax, rax
-    mov rdx, 0
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 0
     sete rax
     movzx rax, rax
     ret rax

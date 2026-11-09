@@ -16,8 +16,7 @@ function @main
 
   block ^entry
     mov r10, 1
-    mov rdx, 2
-    cmp.u32 r10, rdx
+    cmp.u32 r10, 2
     setb r8
     movzx r8, r8
     add r8, r8

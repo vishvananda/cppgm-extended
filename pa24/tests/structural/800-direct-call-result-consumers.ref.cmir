@@ -114,12 +114,10 @@ function @main
     call @observe_reference [args=(rdi)]
     mov rdi, <gpr1>
     call @load_saved [args=(rdi)]
-    mov rdx, 41
-    cmp.i64 <gpr0>, rdx
+    cmp.i64 <gpr0>, 41
     setne <gpr0>
     movzx <gpr0>, <gpr0>
-    mov rdx, 41
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 41
     setne rax
     movzx rax, rax
     or <gpr0>, rax

@@ -70,8 +70,8 @@ function @choose_float
     param %value -> rdi : i64
     return f64 -> xmm0
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx
@@ -105,8 +105,8 @@ function @choose_extended
     param %value -> rdi : i64
     return f80 -> st0
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx
@@ -204,34 +204,29 @@ function @main
     mov rdi, 2
     call @choose_void [args=(rdi)]
     load.i64 r8, @void_result
-    mov rdx, 11
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 11
     setne rbx
     movzx rbx, rbx
-    mov rdx, 22
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 22
     setne r12
     movzx r12, r12
-    mov rdx, 33
-    cmp.i64 r13, rdx
+    cmp.i64 r13, 33
     setne r13
     movzx r13, r13
-    mov rdx, 44
-    cmp.i64 r14, rdx
+    cmp.i64 r14, 44
     setne r14
     movzx r14, r14
     fne.f64 r9, [rbp-8], 1.25
     fne.f64 rdi, [rbp-16], 2.5
     fne.f64 rsi, [rbp-24], 3.75
-    fne.f80 rcx, [rbp-48], 5.5L
-    mov rdx, 53
-    cmp.i64 r8, rdx
+    fne.f80 rdx, [rbp-48], 5.5L
+    cmp.i64 r8, 53
     setne r8
     movzx r8, r8
     or rbx, r12
     or r13, r14
     or r9, rdi
-    or rsi, rcx
+    or rsi, rdx
     or rsi, r8
     or rbx, r13
     or r9, rsi

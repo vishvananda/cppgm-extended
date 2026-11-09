@@ -67,8 +67,7 @@ function @main
   block ^entry
     mov rdi, 42
     call @forward [args=(rdi)]
-    mov rdx, 42
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 42
     setne rax
     movzx rax, rax
     ret rax

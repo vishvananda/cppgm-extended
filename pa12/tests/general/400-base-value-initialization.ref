@@ -40,32 +40,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @fill()
     %t1 = convert sext i64 i32 12
     %t2 = addr @buffer
-    %t3 = call ptr @operatornew__ov2(%t1, %t2)
-    call void @Builds__Builds(%t3)
-    store typed ptr %t3, $built
-    %t4 = load typed ptr $built
-    %t5 = index i8 %t4, 0
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load typed i32 %t6
-    %t8 = cmp ne i32 %t7, 0
-    branch %t8, ^if_then_1, ^lor_rhs_4
+    call void @Builds__Builds(%t2)
+    store typed ptr %t2, $built
+    %t3 = load typed ptr $built
+    %t4 = index i8 %t3, 0
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = load typed i32 %t5
+    %t7 = cmp ne i32 %t6, 0
+    branch %t7, ^if_then_1, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t9 = load typed ptr $built
-    %t10 = index i8 %t9, 0
-    %t11 = index i8 [projection=field] %t10, 4
-    %t12 = load i8 %t11
-    %t13 = convert sext i32 i8 %t12
-    %t14 = cmp ne i32 %t13, 0
-    branch %t14, ^if_then_1, ^lor_rhs_3
+    %t8 = load typed ptr $built
+    %t9 = index i8 %t8, 0
+    %t10 = index i8 [projection=field] %t9, 4
+    %t11 = load i8 %t10
+    %t12 = convert sext i32 i8 %t11
+    %t13 = cmp ne i32 %t12, 0
+    branch %t13, ^if_then_1, ^lor_rhs_3
 
   block ^lor_rhs_3:
-    %t15 = load typed ptr $built
-    %t16 = index i8 [projection=field] %t15, 8
-    %t17 = load i8 %t16
-    %t18 = convert sext i32 i8 %t17
-    %t19 = cmp ne i32 %t18, 7
-    branch %t19, ^if_then_1, ^if_else_2
+    %t14 = load typed ptr $built
+    %t15 = index i8 [projection=field] %t14, 8
+    %t16 = load i8 %t15
+    %t17 = convert sext i32 i8 %t16
+    %t18 = cmp ne i32 %t17, 7
+    branch %t18, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     return i32 1
@@ -75,32 +74,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_5:
     call void @fill()
-    %t20 = convert sext i64 i32 12
-    %t21 = addr @buffer
-    %t22 = call ptr @operatornew__ov2(%t20, %t21)
-    call void @Aggregates__Aggregates(%t22)
-    store typed ptr %t22, $aggregate
-    %t23 = load typed ptr $aggregate
-    %t24 = index i8 %t23, 0
-    %t25 = index i8 [projection=field] %t24, 0
-    %t26 = load typed i32 %t25
-    %t27 = cmp ne i32 %t26, 0
-    branch %t27, ^if_then_6, ^lor_rhs_9
+    %t19 = convert sext i64 i32 12
+    %t20 = addr @buffer
+    call void @Aggregates__Aggregates(%t20)
+    store typed ptr %t20, $aggregate
+    %t21 = load typed ptr $aggregate
+    %t22 = index i8 %t21, 0
+    %t23 = index i8 [projection=field] %t22, 0
+    %t24 = load typed i32 %t23
+    %t25 = cmp ne i32 %t24, 0
+    branch %t25, ^if_then_6, ^lor_rhs_9
 
   block ^lor_rhs_9:
-    %t28 = load typed ptr $aggregate
-    %t29 = index i8 %t28, 0
-    %t30 = index i8 [projection=field] %t29, 4
-    %t31 = load typed i32 %t30
-    %t32 = cmp ne i32 %t31, 0
-    branch %t32, ^if_then_6, ^lor_rhs_8
+    %t26 = load typed ptr $aggregate
+    %t27 = index i8 %t26, 0
+    %t28 = index i8 [projection=field] %t27, 4
+    %t29 = load typed i32 %t28
+    %t30 = cmp ne i32 %t29, 0
+    branch %t30, ^if_then_6, ^lor_rhs_8
 
   block ^lor_rhs_8:
-    %t33 = load typed ptr $aggregate
-    %t34 = index i8 [projection=field] %t33, 8
-    %t35 = load typed i32 %t34
-    %t36 = cmp ne i32 %t35, 8
-    branch %t36, ^if_then_6, ^if_else_7
+    %t31 = load typed ptr $aggregate
+    %t32 = index i8 [projection=field] %t31, 8
+    %t33 = load typed i32 %t32
+    %t34 = cmp ne i32 %t33, 8
+    branch %t34, ^if_then_6, ^if_else_7
 
   block ^if_then_6:
     return i32 2
@@ -110,16 +108,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_10:
     return i32 0
-}
-function @operatornew__ov2(%__param0 : i64, %place : ptr) -> ptr [unwind=no, binding=weak, object=_ZnwmPv, inline_hint=yes] {
-  slot $__param0 : i64
-  slot $place : ptr
-
-  block ^entry:
-    store typed i64 %__param0, $__param0
-    store typed ptr %place, $place
-    %t1 = load typed ptr $place
-    return ptr %t1
 }
 function @Builds__Builds(%this : ptr [object_bytes=12]) -> void [binding=weak, object=_ZN6BuildsC1Ev, inline_hint=yes] {
   slot $this : ptr

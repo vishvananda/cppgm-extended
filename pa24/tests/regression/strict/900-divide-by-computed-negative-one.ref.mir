@@ -16,12 +16,10 @@ function @divide
     epilogues shared
 
   block ^entry
-    mov r8, 1
-    neg r8
-    sext.i32 r8
+    mov r11, -1
     mov rax, rdi
     cqo
-    idiv r8
+    idiv r11
     sext.i32 rax
     ret rax
 

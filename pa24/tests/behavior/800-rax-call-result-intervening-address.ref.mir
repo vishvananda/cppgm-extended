@@ -110,8 +110,7 @@ function @main
     mov rcx, 4
     mov r8, 5
     call @exercise [args=(rcx,rdx,rsi,rdi,r8)]
-    mov rdx, 81
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 81
     setne rax
     movzx rax, rax
     ret rax

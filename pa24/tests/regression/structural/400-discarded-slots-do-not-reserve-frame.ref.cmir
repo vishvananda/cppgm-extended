@@ -16,8 +16,7 @@ function @main
 
   block ^entry
     mov <gpr0>, 42
-    mov rdx, 42
-    cmp.i64 <gpr0>, rdx
+    cmp.i64 <gpr0>, 42
     setne rax
     movzx rax, rax
     ret rax

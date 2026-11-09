@@ -15,28 +15,20 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, -1
-    zext.i8 r8
-    mov rdx, 255
-    cmp.i64 r8, rdx
+    mov r10, 255
+    cmp.i64 r10, 255
     setne r8
     movzx r8, r8
-    mov r9, 255
-    sext.i8 r9
-    mov rdx, -1
-    cmp.i64 r9, rdx
+    mov r10, -1
+    cmp.i64 r10, -1
     setne r9
     movzx r9, r9
-    mov rdi, -1
-    zext.i16 rdi
-    mov rdx, 65535
-    cmp.i32 rdi, rdx
+    mov r10, 65535
+    cmp.i32 r10, 65535
     setne rdi
     movzx rdi, rdi
-    mov rsi, 65535
-    sext.i16 rsi
-    mov rdx, -1
-    cmp.i32 rsi, rdx
+    mov r10, -1
+    cmp.i32 r10, -1
     setne rsi
     movzx rsi, rsi
     or r8, r9

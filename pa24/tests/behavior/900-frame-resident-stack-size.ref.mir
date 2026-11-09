@@ -36,8 +36,7 @@ function @allocate
     setne r8
     movzx r8, r8
     store.i64 [r9], 73
-    mov rdx, 73
-    cmp.i64 [r9], rdx
+    cmp.i64 [r9], 73
     setne r9
     movzx r9, r9
     or r8, r9

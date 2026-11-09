@@ -19,8 +19,7 @@ function @main
   block ^entry
     store.i64 [rbp-8], 42
     copy_bytes 8x8, [rbp-16], [rbp-8]
-    mov rdx, 42
-    cmp.i64 [rbp-16], rdx
+    cmp.i64 [rbp-16], 42
     setne rax
     movzx rax, rax
     ret rax

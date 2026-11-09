@@ -52,8 +52,7 @@ function @main
     mov rcx, rsi
     call @write_fields [args=(rcx,rdx,rsi,rdi)]
     load.ptr <gpr0>, [<gpr0>+<off0>]
-    mov rdx, 99
-    cmp.i64 [<gpr0>], rdx
+    cmp.i64 [<gpr0>], 99
     setne rax
     movzx rax, rax
     ret rax

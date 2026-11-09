@@ -20,67 +20,56 @@ function @main
     mov rax, 100
     cqo
     idiv r11
-    mov rdx, -50
-    cmp.i64 rax, rdx
+    cmp.i64 rax, -50
     setne r8
     movzx r8, r8
     mov r11, -4
     mov rax, -99
     cqo
     idiv r11
-    mov rdx, 24
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 24
     setne r9
     movzx r9, r9
     mov r11, -4
     mov rax, -99
     cqo
     idiv r11
-    mov rdi, rdx
-    mov rdx, -3
-    cmp.i64 rdi, rdx
+    cmp.i64 rdx, -3
     setne rdi
     movzx rdi, rdi
     mov r11, -9223372036854775808
     mov rax, -9223372036854775808
     cqo
     idiv r11
-    mov rdx, 1
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 1
     setne rsi
     movzx rsi, rsi
     mov r11, -9223372036854775808
     mov rax, 9223372036854775807
     cqo
     idiv r11
-    mov rcx, rdx
-    mov rdx, 9223372036854775807
-    cmp.i64 rcx, rdx
+    cmp.i64 rdx, 9223372036854775807
     setne rcx
     movzx rcx, rcx
     mov r11, -7
     mov rax, -100
     cqo
     idiv r11
-    mov rdx, 14
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 14
     setne rbx
     movzx rbx, rbx
     mov r11, -7
     mov rax, -100
     cqo
     idiv r11
-    mov rax, rdx
-    mov rdx, -2
-    cmp.i64 rax, rdx
+    cmp.i64 rdx, -2
     setne r12
     movzx r12, r12
     mov r11, -1
     mov rax, 100
     cqo
     idiv r11
-    mov rdx, -100
-    cmp.i64 rax, rdx
+    cmp.i64 rax, -100
     setne rax
     movzx rax, rax
     or r8, r9

@@ -15,7 +15,5 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, 300
-    add r8, 40
-    sext.i16 r8
-    ret r8
+    mov rax, 340
+    ret rax

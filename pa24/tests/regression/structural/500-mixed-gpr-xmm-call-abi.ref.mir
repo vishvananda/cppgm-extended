@@ -13,31 +13,29 @@ function @mix
     param %d -> xmm1 : f64
     return i64 -> rax
   frame
-    stack_size 80
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
     param-slot %b -> [rbp-8] : f64
     param-slot %d -> [rbp-16] : f64
 
   block ^entry
     fmov.f64 [rbp-8], xmm0
     fmov.f64 [rbp-16], xmm1
-    fptosi.f64.i64 r9, [rbp-8]
-    fptosi.f64.i64 rbx, [rbp-16]
-    mov r12, rdi
-    add r12, rsi
-    add r9, rbx
-    add r12, r9
-    ret r12
+    fptosi.f64.i64 r8, [rbp-8]
+    fptosi.f64.i64 r9, [rbp-16]
+    add rdi, rsi
+    add r8, r9
+    add rdi, r8
+    ret rdi
 
 function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 

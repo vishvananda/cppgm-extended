@@ -63,8 +63,7 @@ function @main
     store.i64 [rsp], r11
     call @sum_object_and_scalars [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov rdx, 360
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 360
     sete rax
     movzx rax, rax
     cmp.i64 rax, 0

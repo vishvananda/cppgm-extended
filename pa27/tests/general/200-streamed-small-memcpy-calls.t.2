@@ -1,0 +1,22 @@
+extern "C" void* memcpy(void*, const void*, decltype(sizeof(0)));
+extern "C" void* memmove(void*, const void*, decltype(sizeof(0)));
+long load_word(const void*);
+void* copy_odd(void*, const void*);
+
+void* copy_dynamic(void* to, const void* from, decltype(sizeof(0)) n) {
+    return memcpy(to, from, n);
+}
+
+int main() {
+    unsigned char from[48], to[48];
+    for (unsigned i = 0; i < 48; ++i) { from[i] = static_cast<unsigned char>(i); to[i] = 0xa5; }
+    unsigned bad = load_word(from + 1) != 0x0807060504030201L;
+    bad += copy_odd(to + 3, from + 1) != to + 3;
+    for (unsigned i = 0; i < 48; ++i)
+        bad += to[i] != (i >= 3 && i < 16 ? from[i - 2] : 0xa5);
+    bad += copy_dynamic(to, from, 3) != to;
+    for (unsigned i = 0; i < 3; ++i) bad += to[i] != from[i];
+    bad += memmove(from + 2, from, 13) != from + 2;
+    for (unsigned i = 0; i < 13; ++i) bad += from[i + 2] != i;
+    return bad != 0;
+}

@@ -17,8 +17,8 @@ function @check
     param %a7 -> xmm7 : f32
     return i64 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     param-slot %a1 -> [rbp-8] : f32
@@ -42,8 +42,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 

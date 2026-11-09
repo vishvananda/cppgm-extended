@@ -37,8 +37,7 @@ function @main
     mov rsi, 2
     mov rdx, 14
     call @preserve_third [args=(rdx,rsi,rdi)]
-    mov rdx, 14
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 14
     setne rax
     movzx rax, rax
     ret rax

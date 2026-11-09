@@ -16,8 +16,8 @@ function @arithmetic
     param %d -> xmm6 : f64
     return i64 -> rax
   frame
-    stack_size 112
-    scratch_bytes 48
+    stack_size 64
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     param-slot %one -> [rbp-8] : f64
@@ -55,8 +55,8 @@ function @extended
     param %small -> [rbp+32] : f80
     return i64 -> rax
   frame
-    stack_size 80
-    scratch_bytes 48
+    stack_size 32
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     temp %sum -> [rbp-16] : f80
@@ -72,8 +72,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx

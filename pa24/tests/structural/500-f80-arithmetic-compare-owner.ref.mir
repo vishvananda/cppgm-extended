@@ -9,8 +9,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     temp %sum -> [rbp-16] : f80

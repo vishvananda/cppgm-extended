@@ -44,12 +44,10 @@ function @main
     copy_bytes 9x1, @copied, [rbp-16]
     load.i8 r8, @copied
     load.i8 r9, @copied+8
-    mov rdx, 11
-    cmp.i8 r8, rdx
+    cmp.i8 r8, 11
     sete r8
     movzx r8, r8
-    mov rdx, 22
-    cmp.i8 r9, rdx
+    cmp.i8 r9, 22
     sete r9
     movzx r9, r9
     and r8, r9

@@ -367,6 +367,13 @@ storage. Nonconstant initializers retain runtime evaluation, and volatile
 arrays retain their required stores. Class construction and destruction stay
 on their typed lifetime paths.
 
+For automatic scalar initializers, use the constant value already recorded by
+semantic analysis whenever the scalar can represent it, including at `-O0`.
+This includes member calls and functional casts as well as free-function calls.
+Keep the local's storage addressable and preserve required volatile stores.
+Evaluate initializers without a proven constant value at runtime, preserving
+their side effects.
+
 ### Design Notes (Non-Normative)
 
 The useful shape for PA16 is one typed constant-evaluation layer shared by

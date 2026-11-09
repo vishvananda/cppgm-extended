@@ -68,33 +68,27 @@ function @main
     load.i64 r9, @dest
     load.i64 rdi, @dest+8
     load.i64 rsi, @dest+16
-    load.i64 rcx, @dest+24
-    mov rdx, 99
-    cmp.i64 r8, rdx
+    load.i64 rdx, @dest+24
+    cmp.i64 r8, 99
     sete r8
     movzx r8, r8
-    mov rdx, 11
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 11
     sete r9
     movzx r9, r9
-    mov rdx, 22
-    cmp.i64 rdi, rdx
+    cmp.i64 rdi, 22
     sete rdi
     movzx rdi, rdi
-    mov rdx, 33
-    cmp.i64 rsi, rdx
+    cmp.i64 rsi, 33
     sete rsi
     movzx rsi, rsi
-    mov rdx, 0
-    cmp.i64 rcx, rdx
-    sete rcx
-    movzx rcx, rcx
+    cmp.i64 rdx, 0
+    sete rdx
+    movzx rdx, rdx
     and r8, r9
     and rdi, rsi
     and r8, rdi
-    and r8, rcx
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    and r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

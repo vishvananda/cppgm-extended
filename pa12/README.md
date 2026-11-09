@@ -249,6 +249,15 @@ copy/move construction step itself directly as `copyobj <span> <src>, <dst>` ins
 spelling a call to a synthesized trivial copy/move constructor helper. The references use
 that direct value-transfer form, and the comparison does not absorb the alternative.
 
+This includes explicitly defaulted trivial move constructors in direct local
+initialization and trivial copies in new-expressions. An empty class's trivial
+copy needs no helper call even when its destructor is nontrivial. Preserve the
+source expression's effects, the destination object's lifetime, and required
+destruction. Transfers into base subobjects must preserve reused tail padding.
+The reserved global placement allocation functions `(size_t, void*)` return
+their pointer argument directly after its evaluation; class-specific, variadic
+and other custom allocation overloads retain their calls.
+
 A synthesized constructor, destructor or copy/move assignment operator, and
 one defaulted on its first declaration, states `unwind=no` when every function
 it directly invokes is non-throwing (15.4p14); the comparison checks it.

@@ -60,12 +60,10 @@ function @main
     mov rdi, rbx
     call @constant_address [args=(rdi)]
     load.i64 rax, [rax]
-    mov rdx, 30
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 30
     setne r12
     movzx r12, r12
-    mov rdx, 40
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 40
     setne rax
     movzx rax, rax
     or r12, rax

@@ -135,22 +135,18 @@ function @main
     add rsp, 32
     load.i64 r8, @copied
     load.i64 r9, @copied+8
-    mov rdx, 118
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 118
     sete rax
     movzx rax, rax
-    mov rdx, 11
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 11
     sete r8
     movzx r8, r8
-    mov rdx, 22
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 22
     sete r9
     movzx r9, r9
     and r8, r9
     and rax, r8
-    mov rdx, 0
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 0
     sete rax
     movzx rax, rax
     ret rax

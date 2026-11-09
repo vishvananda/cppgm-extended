@@ -149,8 +149,7 @@ function @main
     mov r8, 2
     mov r9, 3
     call @pressure [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    mov rdx, 48
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 48
     setne rax
     movzx rax, rax
     ret rax

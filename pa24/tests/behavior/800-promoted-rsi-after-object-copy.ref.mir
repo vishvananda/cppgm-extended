@@ -57,8 +57,7 @@ function @main
     lea rdi, [rbp-16]
     mov rsi, 42
     call @copy_then_use [args=(rsi,rdi)]
-    mov rdx, 42
-    cmp.i64 @observed, rdx
+    cmp.i64 @observed, 42
     setne rax
     movzx rax, rax
     ret rax

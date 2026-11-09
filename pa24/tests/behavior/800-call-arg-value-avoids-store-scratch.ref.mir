@@ -87,22 +87,18 @@ function @main
     store.i64 [rsp], r11
     call @run [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov rdx, 42
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 42
     sete rax
     movzx rax, rax
-    mov rdx, 5
-    cmp.i64 @sink, rdx
+    cmp.i64 @sink, 5
     sete r8
     movzx r8, r8
-    mov rdx, 123456789
-    cmp.i64 @object+8, rdx
+    cmp.i64 @object+8, 123456789
     sete r9
     movzx r9, r9
     and rax, r8
     and rax, r9
-    mov rdx, 0
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 0
     sete rax
     movzx rax, rax
     ret rax

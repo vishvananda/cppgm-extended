@@ -64,16 +64,13 @@ function @main
     mov r12, rax
     call @return_u32 [args=()]
     zext.i32 rax
-    mov rdx, 4294967295
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 4294967295
     setne rbx
     movzx rbx, rbx
-    mov rdx, 4294967295
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 4294967295
     setne r12
     movzx r12, r12
-    mov rdx, 4294967295
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 4294967295
     setne rax
     movzx rax, rax
     or rbx, r12

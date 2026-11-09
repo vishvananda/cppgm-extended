@@ -55,13 +55,8 @@ function @main
     jmp ^bad
 
   block ^good
-    mov r8, 1
-    add r8, 2
-    add r8, 3
-    add r8, 4
-    add r8, 5
-    mov rdx, 15
-    cmp.i64 r8, rdx
+    mov r10, 15
+    cmp.i64 r10, 15
     sete r8
     movzx r8, r8
     cmp.i64 r8, 0

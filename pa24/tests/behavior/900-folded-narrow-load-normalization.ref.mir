@@ -71,9 +71,7 @@ function @reduced
     mov r8, rax
     eh_push ^unwind, 0
     load.u8 rdi, [r8+8]
-    mov r8, 20
-    add r8, 22
-    store.i64 @sink, r8
+    store.i64 @sink, 42
     call @accept [args=(rdi)]
     sext.i32 rax
     eh_pop

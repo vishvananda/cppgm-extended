@@ -1,0 +1,12 @@
+# A constant mask is an immediate operand at the baseline level.
+none(shl) in @masked
+none(sub) in @masked
+none(not) in @masked
+instructions <= 6 in @masked
+instructions <= 3 in @unsigned_shift
+instructions <= 3 in @signed_shift
+instructions <= 3 in @narrow
+instructions <= 3 in @truncated
+instructions <= 3 in @boolean
+# The unsupported count remains ordinary machine selection, not a fold.
+has(shl) in @out_of_range

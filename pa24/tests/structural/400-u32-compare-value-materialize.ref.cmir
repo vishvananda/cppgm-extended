@@ -16,8 +16,7 @@ function @main
 
   block ^entry
     mov <gpr0>, 1
-    mov rdx, 2
-    cmp.u32 <gpr0>, rdx
+    cmp.u32 <gpr0>, 2
     setb r8
     movzx r8, r8
     add r8, r8

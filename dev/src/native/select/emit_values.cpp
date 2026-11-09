@@ -888,25 +888,16 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 		std::swap(a, b);
 		right_to_register();
 	}
-	// A dying operand's register takes the result, except an integer
-	// parameter's in a function with vector parameters.
+	// A dying operand's register can take the result.
 	auto reusable = [&](const Operand& op) {
-		return op.kind == OperandKind::Reg && op.reg < 16 && owner_[op.reg] != kNoId && dies_here(owner_[op.reg]) &&
-			!(vector_params_ && owner_[op.reg] < body_->parameter_count);
+		return op.kind == OperandKind::Reg && op.reg < 16 && owner_[op.reg] != kNoId && dies_here(owner_[op.reg]);
 	};
 	const Reg dying_a = reusable(a) ? a.reg : kNoReg;
 	const Reg dying_b = commutative && reusable(b) ? b.reg : kNoReg;
 	uint32_t exclude = mem_regs(b);
 	if (dying_b != kNoReg)
 		exclude &= ~(1u << dying_b);
-	if (vector_params_)
-	{
-		// Those parameters' registers become free only after this use.
-		const Operand ops2[2] = { a, b };
-		for (unsigned k = 0; k < 2; ++k)
-			if (ops2[k].kind == OperandKind::Reg && ops2[k].reg < 16 && owner_[ops2[k].reg] < body_->parameter_count)
-				exclude |= 1u << ops2[k].reg;
-	}
+
 	// A result without a register goes to r11 when the right operand (the
 	// former left one, after a swap) reads r10.
 	const Reg d = result_reg(inst, dying_a, dying_b, exclude);
@@ -1094,11 +1085,6 @@ void FunctionSelector::emit_compare(const Instruction& inst)
 		load_into(kSelectScratch, a, kind == TypeKind::Ptr ? TypeKind::Ptr : kind);
 		a = Operand::make_reg(kSelectScratch);
 	}
-	if (b.kind == OperandKind::Imm && compare_scratch(inst))
-	{
-		load_into(kCompareScratch, b, TypeKind::I64);
-		b = Operand::make_reg(kCompareScratch);
-	}
 	const Reg d = result_reg(inst, dying_reg(inst.ops[0]), dying_reg(inst.ops[1]));
 	emit2(Op::Cmp, compare_width(inst, a), a, b);
 	Inst& set = emit1(Op::Setcc, TypeKind::Void, Operand::make_reg(d));
@@ -1216,14 +1202,7 @@ void FunctionSelector::emit_select(const Instruction& inst)
 	const Operand ts = t == f ? Operand::make_imm(0) : source(t);
 	const Reg own_t = ts.kind == OperandKind::Reg && ts.reg != kEmitScratch ? ts.reg : kNoReg;
 	uint32_t exclude = ts.kind == OperandKind::Reg && ts.reg == kEmitScratch ? 1u << kEmitScratch : 0;
-	if (vector_params_)
-	{
-		// Those parameters' registers become free only after this use.
-		const Value ops2[2] = { t, f };
-		for (const Value& v : ops2)
-			if (v.kind == ValueKind::Temp && v.index < body_->parameter_count && temps_[v.index].reg < 16)
-				exclude |= 1u << temps_[v.index].reg;
-	}
+
 	const Reg d = result_reg(inst, dying_reg(f), dying_reg(t), exclude);
 	if (!(t == f) && d == own_t)
 	{

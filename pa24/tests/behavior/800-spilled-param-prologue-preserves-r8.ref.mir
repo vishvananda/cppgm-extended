@@ -76,12 +76,10 @@ function @main
     store.ptr [rsp], r11
     call @target [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov rdx, 42
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 42
     sete rax
     movzx rax, rax
-    mov rdx, 0
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 0
     sete rax
     movzx rax, rax
     ret rax

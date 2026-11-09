@@ -1,0 +1,11 @@
+extern "C" void* memcpy(void*, const void*, decltype(sizeof(0)));
+
+long load_word(const void* p) {
+    long result = 0;
+    memcpy(&result, p, sizeof(result));
+    return result;
+}
+
+void* copy_odd(void* to, const void* from) {
+    return memcpy(to, from, 13);
+}

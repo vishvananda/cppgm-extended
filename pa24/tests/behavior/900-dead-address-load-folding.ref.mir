@@ -22,8 +22,7 @@ function @main
   block ^entry
     load.i64 r8, @values+8
     add r8, @values
-    mov rdx, 42
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 42
     setne r8
     movzx r8, r8
     ret r8

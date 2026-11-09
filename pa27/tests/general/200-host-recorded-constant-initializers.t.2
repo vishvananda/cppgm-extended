@@ -1,0 +1,17 @@
+struct Property { constexpr int value() const { return 42; } };
+unsigned calls;
+Property side_object() { ++calls; return Property(); }
+int runtime_value() { calls += 4; return 17; }
+int observe(const long* value, unsigned which) {
+    return *value == (which ? 0x7fffffffffffffffL : -0x7fffffffffffffffL - 1);
+}
+long direct();
+int addressed();
+int effects();
+int main() {
+    unsigned bad = direct() != -0x7fffffffffffffffL - 1;
+    bad += addressed() != 2;
+    bad += effects() != 59;
+    bad += calls != 5;
+    return bad != 0;
+}

@@ -34,27 +34,26 @@ function @run
     param %base -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 64
+    stack_size 48
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
+    preserve rbx
     slot $scratch -> [rbp-40] : obj<40x8>
 
   block ^entry
-    mov r12, rdi
+    mov rbx, rdi
     lea rdi, [rbp-40]
     call @touch [args=(rdi)]
-    load.i64 r8, @which
-    lea rbx, [r12+r8*8]
-    lea r12, [r12+16]
-    cmp.ptr rbx, r12
+    load.i64 r9, @which
+    lea r8, [rbx+r9*8]
+    lea rbx, [rbx+16]
+    cmp.ptr r8, rbx
     je ^check_value
     jmp ^bad
 
   block ^check_value
-    mov rdx, 30
-    cmp.i64 [rbx], rdx
+    cmp.i64 [r8], 30
     sete r8
     movzx r8, r8
     cmp.i64 r8, 0

@@ -236,6 +236,37 @@ void FunctionSelector::emit_bulk(const Instruction& inst)
 	mir.aux2 = align;
 }
 
+// A fixed small memcpy is a machine copy even without the optimizer.
+// Its call arguments are already staged, so ordinary call clobbers
+// conservatively cover the copy's reserved scratch registers. Through
+// 32 bytes the emitter uses direct chunks and preserves rdi/rsi.
+bool FunctionSelector::emit_fixed_memcpy(
+	const Instruction& inst, Value callee, const lowir::Signature& sig, const CallLayout& layout)
+{
+	if (callee.kind != ValueKind::Symbol || inst.extra_count != 3 || sig.parameter_count != 3 ||
+		!sig.result.is_pointer() || layout.stack_bytes != 0 || layout.stack_align > 16 ||
+		!program_.memcpy_function(callee.index))
+		return false;
+	const lowir::Parameter* params = program_.parameters_of(sig);
+	if (!params[0].type.is_pointer() || !params[1].type.is_pointer() || params[2].type.kind() != TypeKind::I64 ||
+		params[0].pass != ir_model::PPM_DIRECT || params[1].pass != ir_model::PPM_DIRECT ||
+		params[2].pass != ir_model::PPM_DIRECT)
+		return false;
+	const Value bytes = resolve(body_->operands[inst.extra_first + 2]);
+	if (bytes.kind != ValueKind::Integer || literal(bytes).high != 0 || literal(bytes).low > 32)
+		return false;
+	Inst& copy = emit2(Op::CopyBytes, TypeKind::Void, Operand::make_reg(RDI), Operand::make_reg(RSI));
+	copy.aux = static_cast<uint32_t>(literal(bytes).low);
+	copy.aux2 = 1;
+	if (inst.result != kNoId && !(temps_[inst.result].flags & TF_DEAD) && temps_[inst.result].uses != 0)
+	{
+		const Reg d = result_reg(inst, RDI);
+		load_into(d, Operand::make_reg(RDI), TypeKind::Ptr);
+		finish_result(inst, d);
+	}
+	return true;
+}
+
 void FunctionSelector::emit_wide(const Instruction& inst)
 {
 	WideOp op = WideOp::Move;

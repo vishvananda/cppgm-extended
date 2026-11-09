@@ -24,8 +24,7 @@ function @main
     sext.i8 r8
     store.i8 @g, r8
     load.i8 r8, @g
-    mov rdx, 8
-    cmp.i8 r8, rdx
+    cmp.i8 r8, 8
     sete r8
     movzx r8, r8
     ret r8

@@ -85,17 +85,14 @@ function @main
     call @reset [args=(rdi)]
     load.i64 r8, @good
     load.i64 r9, @bad
-    mov rdx, 99
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 99
     sete r8
     movzx r8, r8
-    mov rdx, 0
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 0
     sete r9
     movzx r9, r9
     and r8, r9
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

@@ -1,0 +1,22 @@
+typedef unsigned long size_t;
+struct Trivial { long value; Trivial() = default; Trivial(Trivial&&) = default; };
+struct Plain { long value; };
+struct Custom { long value; static void* operator new(size_t, void*) noexcept; };
+unsigned effects;
+long observed;
+void consume(const void* p) { observed = static_cast<const Trivial*>(p)->value; }
+void* pointer_effect(void* p) { ++effects; return p; }
+void* Custom::operator new(size_t, void* p) noexcept { effects += 2; return p; }
+void move_local(Trivial*);
+Plain* place_copy(void*, const Plain*);
+Custom* custom_copy(void*, const Custom*);
+int variadic_copy();
+int main() {
+    Trivial value; value.value = 47; move_local(&value);
+    Plain source = {73}; alignas(Plain) unsigned char storage[sizeof(Plain)];
+    Plain* result = place_copy(storage, &source);
+    Custom custom = {91}; alignas(Custom) unsigned char custom_storage[sizeof(Custom)];
+    Custom* custom_result = custom_copy(custom_storage, &custom);
+    return observed != 47 || result->value != 73 || custom_result->value != 91
+        || effects != 3 || variadic_copy();
+}

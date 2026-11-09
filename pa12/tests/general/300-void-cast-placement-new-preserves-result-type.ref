@@ -15,8 +15,7 @@ function @construct(%p : ptr) -> void [binding=strong, object=_Z9constructP1S] {
     store typed ptr %p, $p
     %t1 = convert sext i64 i32 4
     %t2 = load typed ptr $p
-    %t3 = call ptr @operatornew__ov2(%t1, %t2)
-    call void @S__S(%t3, 16)
+    call void @S__S(%t2, 16)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

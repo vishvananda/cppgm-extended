@@ -153,8 +153,7 @@ function @main
     store.ptr [rsp], rax
     call @forward [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov rdx, 6
-    cmp.i64 @observed, rdx
+    cmp.i64 @observed, 6
     setne rax
     movzx rax, rax
     ret rax

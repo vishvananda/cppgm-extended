@@ -1,0 +1,23 @@
+struct Bounds {
+    static constexpr long low() { return -0x7fffffffffffffffL - 1; }
+    static constexpr long high() { return 0x7fffffffffffffffL; }
+};
+struct Property { constexpr int value() const { return 42; } };
+Property side_object();
+int runtime_value();
+int observe(const long*, unsigned);
+
+long direct() {
+    const long value = long(Bounds::low());
+    return value;
+}
+int addressed() {
+    const long low = long(Bounds::low());
+    const long high = long(Bounds::high());
+    return observe(&low, 0) + observe(&high, 1);
+}
+int effects() {
+    const long first = side_object().value();
+    const int second = int(runtime_value());
+    return int(first) + second;
+}

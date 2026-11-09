@@ -556,7 +556,13 @@ void ProgramLowering::state_forward_boundaries(lowir::SymbolId symbol)
 		if (pending.signature == lowir::kNoId && pending.entity != nullptr)
 			pending.signature = function_signature(pending.entity, false, pending.variant);
 		if (pending.signature != lowir::kNoId)
+		{
 			program_.set_forward_boundary(callee, pending.signature);
+			// Streamed selection consumes the pending declaration's typed
+			// identity too; declaring it still waits for finish's ordering.
+			program_.symbols[callee].metadata.linkage = pending.metadata.linkage;
+			program_.symbols[callee].metadata.object = pending.metadata.object;
+		}
 	}
 }
 

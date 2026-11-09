@@ -163,7 +163,9 @@ bool Program::memset_function(SymbolId symbol) const
 bool Program::memcpy_function(SymbolId symbol) const
 {
 	const Symbol& callee = symbols[symbol];
-	if (!is_function_kind(callee.kind))
+	// A streamed body can call a typed forward declaration whose final
+	// declaration has not yet been appended to the program.
+	if (!is_function_kind(callee.kind) && (callee.kind != SymbolKind::Unresolved || forward_boundary(symbol) == kNoId))
 		return false;
 	const char* spelling = this->spelling(callee.metadata.object != 0 ? callee.metadata.object : callee.name);
 	return (callee.metadata.object != 0 && std::strcmp(spelling, "cppgm_builtin_memcpy") == 0) ||

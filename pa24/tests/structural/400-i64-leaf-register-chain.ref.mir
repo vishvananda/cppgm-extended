@@ -15,8 +15,5 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, 1
-    add r8, 2
-    imul r8, 4
-    sub r8, 12
-    ret r8
+    mov rax, 0
+    ret rax

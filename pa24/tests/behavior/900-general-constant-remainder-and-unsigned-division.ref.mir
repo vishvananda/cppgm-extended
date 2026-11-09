@@ -341,133 +341,115 @@ function @main
   block ^entry
     mov rdi, -9223372036854775808
     call @smod3 [args=(rdi)]
-    mov rdx, -2
-    cmp.i64 rax, rdx
+    cmp.i64 rax, -2
     setne rbx
     movzx rbx, rbx
     mov rdi, 9223372036854775807
     call @smod_negative5 [args=(rdi)]
-    mov rdx, 2
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 2
     setne r12
     movzx r12, r12
     mov rdi, -128
     call @smod_narrow3 [args=(rdi)]
     sext.i8 rax
-    mov rdx, -2
-    cmp.i8 rax, rdx
+    cmp.i8 rax, -2
     setne r13
     movzx r13, r13
     mov rdi, -32768
     call @sdiv_i16_7 [args=(rdi)]
     sext.i16 rax
-    mov rdx, -4681
-    cmp.i16 rax, rdx
+    cmp.i16 rax, -4681
     setne r14
     movzx r14, r14
     mov rdi, -32768
     call @smod_i16_7 [args=(rdi)]
     sext.i16 rax
-    mov rdx, -1
-    cmp.i16 rax, rdx
+    cmp.i16 rax, -1
     setne r15
     movzx r15, r15
     mov rdi, -2147483648
     call @sdiv_i32_negative31 [args=(rdi)]
     sext.i32 rax
-    mov rdx, 69273666
-    cmp.i32 rax, rdx
+    cmp.i32 rax, 69273666
     setne r10
     movzx r10, r10
     store.i64 [rbp-8], r10
     mov rdi, -2147483648
     call @smod_i32_negative31 [args=(rdi)]
     sext.i32 rax
-    mov rdx, -2
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -2
     setne r10
     movzx r10, r10
     store.i64 [rbp-16], r10
     mov rdi, -1
     call @udiv3 [args=(rdi)]
-    mov rdx, 6148914691236517205
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 6148914691236517205
     setne r10
     movzx r10, r10
     store.i64 [rbp-24], r10
     mov rdi, -1
     call @udiv7 [args=(rdi)]
-    mov rdx, 2635249153387078802
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 2635249153387078802
     setne r10
     movzx r10, r10
     store.i64 [rbp-32], r10
     mov rdi, -1
     call @umod7 [args=(rdi)]
-    mov rdx, 1
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 1
     setne r10
     movzx r10, r10
     store.i64 [rbp-40], r10
     mov rdi, -1
     call @udiv_high [args=(rdi)]
-    mov rdx, 1
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 1
     setne r10
     movzx r10, r10
     store.i64 [rbp-48], r10
     mov rdi, -2
     call @umod_max [args=(rdi)]
-    mov rdx, -2
-    cmp.i64 rax, rdx
+    cmp.i64 rax, -2
     setne r10
     movzx r10, r10
     store.i64 [rbp-56], r10
     mov rdi, 255
     call @udiv_u8_7 [args=(rdi)]
     zext.i8 rax
-    mov rdx, 36
-    cmp.u8 rax, rdx
+    cmp.u8 rax, 36
     setne r10
     movzx r10, r10
     store.i64 [rbp-64], r10
     mov rdi, 255
     call @umod_u8_7 [args=(rdi)]
     zext.i8 rax
-    mov rdx, 3
-    cmp.u8 rax, rdx
+    cmp.u8 rax, 3
     setne r10
     movzx r10, r10
     store.i64 [rbp-72], r10
     mov rdi, 65535
     call @udiv_u16_1000 [args=(rdi)]
     zext.i16 rax
-    mov rdx, 65
-    cmp.u16 rax, rdx
+    cmp.u16 rax, 65
     setne r10
     movzx r10, r10
     store.i64 [rbp-80], r10
     mov rdi, 65535
     call @umod_u16_1000 [args=(rdi)]
     zext.i16 rax
-    mov rdx, 535
-    cmp.u16 rax, rdx
+    cmp.u16 rax, 535
     setne r10
     movzx r10, r10
     store.i64 [rbp-88], r10
     mov rdi, 4294967295
     call @udiv_u32_31 [args=(rdi)]
     zext.i32 rax
-    mov rdx, 138547332
-    cmp.u32 rax, rdx
+    cmp.u32 rax, 138547332
     setne r10
     movzx r10, r10
     store.i64 [rbp-96], r10
     mov rdi, 4294967295
     call @umod_u32_31 [args=(rdi)]
     zext.i32 rax
-    mov rdx, 3
-    cmp.u32 rax, rdx
+    cmp.u32 rax, 3
     setne rax
     movzx rax, rax
     or rbx, r12

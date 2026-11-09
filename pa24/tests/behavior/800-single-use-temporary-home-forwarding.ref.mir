@@ -41,17 +41,13 @@ function @pressure
     add rdi, rsi
     add r9, rdi
     add r9, rcx
-    mov r8, 13
-    add r8, 2
-    load.i64 rdi, @single_observed
-    load.i64 rsi, @shared_observed
-    mov rdx, 100
-    add rdx, 200
-    add rdi, rsi
-    add rdi, r8
-    add rdx, rdi
-    add rdx, r9
-    ret rdx
+    load.i64 r8, @single_observed
+    load.i64 rdi, @shared_observed
+    add r8, rdi
+    add r8, 15
+    add r8, 300
+    add r8, r9
+    ret r8
 
 function @main
   abi
@@ -69,8 +65,7 @@ function @main
     mov rcx, 4
     mov r8, 5
     call @pressure [args=(rcx,rdx,rsi,rdi,r8)]
-    mov rdx, 369
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 369
     setne rax
     movzx rax, rax
     ret rax

@@ -35,9 +35,6 @@ namespace {
 // (rbp_free_).
 const Reg kGprOrder[] = { R8, R9, RDI, RSI, RDX, RCX, RAX, RBX, R12, R13, R14, R15, RBP };
 const Reg kCalleeFirstOrder[] = { RBX, R12, R13, R14, R15, RBP, R8, R9, RDI, RSI, RDX, RCX, RAX };
-// Functions with vector parameters follow the reference order, which keeps
-// the fixed registers of comparisons, division and shifts last.
-const Reg kVectorBoundaryOrder[] = { R8, R9, RDI, RSI, RBX, R12, R13, R14, R15, RBP, RDX, RCX, RAX };
 
 // The conversion scratch area (x87 transfers, saved rbx), sized as the
 // reference frame layout sizes it.
@@ -246,10 +243,6 @@ void FunctionSelector::inst_clobbers(uint32_t id, uint32_t& clobber, uint32_t& e
 		if (lowir::shape_of(static_cast<lowir::VectorOp>(inst.sub)) == lowir::VectorShape::Blend)
 			clobber = early = 1u << XMM0;
 		break;
-	case Opcode::Compare:
-		if (compare_scratch(inst))
-			clobber = early = 1u << kCompareScratch;
-		break;
 	case Opcode::Convert:
 		// The high half of a 64-bit product multiplies in rdx:rax
 		// (find_high_products).
@@ -301,31 +294,6 @@ void FunctionSelector::inst_clobbers(uint32_t id, uint32_t& clobber, uint32_t& e
 	default:
 		break;
 	}
-}
-
-// An integer comparison materializing its 0/1 result reads an immediate
-// operand from the fixed compare scratch register, except for a result of
-// at least 32 bits returned directly.
-bool FunctionSelector::compare_scratch(const Instruction& inst) const
-{
-	// The reference compiler's convention, which PA24's exact-shape
-	// fixtures pin at O0; at O1+ the compare takes its immediate directly.
-	if (level_ >= 1)
-		return false;
-	const TypeKind kind = inst.type.kind();
-	if (inst.type.is_float() || kind == TypeKind::I128 || (temps_[inst.result].flags & (TF_FUSED | TF_DEAD)))
-		return false;
-	if (resolve(inst.ops[0]).kind != ValueKind::Integer && resolve(inst.ops[1]).kind != ValueKind::Integer)
-		return false;
-	const TempInfo& t = temps_[inst.result];
-	if (t.uses == 1 && t.user != kNoId &&
-		(kind == TypeKind::I32 || kind == TypeKind::U32 || kind == TypeKind::I64 || kind == TypeKind::Ptr))
-	{
-		const Instruction& user = body_->instructions[t.user];
-		if (user.op == Opcode::Return && user.ops[0] == Value::temp(inst.result))
-			return false;
-	}
-	return true;
 }
 
 // Backward scan of one block: the forbidden-register mask of every value
@@ -736,7 +704,6 @@ Reg FunctionSelector::allocate(uint32_t temp, uint32_t exclude, Reg prefer0, Reg
 		return kNoReg;
 	}
 	const Reg* order = (t.forbid & kCallerSavedGprs) == (kCallerSavedGprs & kAllocatableGprs) ? kCalleeFirstOrder
-		: vector_params_                                                                      ? kVectorBoundaryOrder
 																							  : kGprOrder;
 	for (unsigned k = 0; k < 13; ++k)
 		if (allowed & (1u << order[k]))

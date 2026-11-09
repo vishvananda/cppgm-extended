@@ -36,8 +36,7 @@ function @main
   block ^entry
     call @read_local_address [args=()]
     sext.i32 rax
-    mov rdx, 77
-    cmp.i32 rax, rdx
+    cmp.i32 rax, 77
     setne rax
     movzx rax, rax
     ret rax

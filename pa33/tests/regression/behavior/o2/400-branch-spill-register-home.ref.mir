@@ -27,12 +27,9 @@ function @accumulate
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx
     slot $digit -> [rbp-8] : i8
 
   block ^entry
-    mov rbx, 2
-    imul rbx, 10
     cmp.i64 rdi, 0
     jne ^call
 
@@ -41,7 +38,7 @@ function @accumulate
 
   block ^join
     load.i8 r8, [rbp-8]
-    lea rax, [rbx+r8]
+    lea rax, [r8+20]
     ret rax
 
   block ^call

@@ -181,35 +181,28 @@ function @main
     mov rdi, 50
     call @return_remainder [args=(rdi)]
     mov r8, @value
-    mov rdx, 11
-    cmp.i32 <gpr1>, rdx
+    cmp.i32 <gpr1>, 11
     setne <gpr1>
     movzx <gpr1>, <gpr1>
-    mov rdx, 17
-    cmp.i32 <gpr2>, rdx
+    cmp.i32 <gpr2>, 17
     setne <gpr2>
     movzx <gpr2>, <gpr2>
     cmp.ptr <gpr3>, r8
     setne <gpr3>
     movzx <gpr3>, <gpr3>
-    mov rdx, 1
-    cmp.i64 <gpr4>, rdx
+    cmp.i64 <gpr4>, 1
     setne <gpr4>
     movzx <gpr4>, <gpr4>
-    mov rdx, 7
-    cmp.i64 <gpr5>, rdx
+    cmp.i64 <gpr5>, 7
     setne <gpr5>
     movzx <gpr5>, <gpr5>
-    mov rdx, 1
-    cmp.i32 [rbp-<off0>], rdx
+    cmp.i32 [rbp-<off0>], 1
     setne r8
     movzx r8, r8
-    mov rdx, 7
-    cmp.i64 [rbp-<off1>], rdx
+    cmp.i64 [rbp-<off1>], 7
     setne r9
     movzx r9, r9
-    mov rdx, 1
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 1
     setne rax
     movzx rax, rax
     or <gpr1>, <gpr2>

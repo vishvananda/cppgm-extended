@@ -171,8 +171,8 @@ function @sum_under_float_pressure
   abi
     return i64 -> rax
   frame
-    stack_size 224
-    scratch_bytes 48
+    stack_size 160
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx r12 r13 r14 r15
@@ -289,12 +289,10 @@ function @main
     call @sum_under_pressure [args=()]
     mov rbx, rax
     call @sum_under_float_pressure [args=()]
-    mov rdx, 272
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 272
     setne rbx
     movzx rbx, rbx
-    mov rdx, 272
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 272
     setne rax
     movzx rax, rax
     or rbx, rax

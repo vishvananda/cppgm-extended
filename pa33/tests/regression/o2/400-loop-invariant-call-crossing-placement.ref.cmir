@@ -5,6 +5,10 @@ startup
     mov rdi, rax
     exit
 
+global @seed
+  storage data
+  item i64 40
+
 function @identity
   abi
     param %value -> rdi : i64
@@ -49,7 +53,7 @@ function @main
     preserve <gpr0>
 
   block ^entry
-    mov <gpr0>, 40
+    load.i64 <gpr0>, @seed
     add <gpr0>, 2
 
   block ^loop

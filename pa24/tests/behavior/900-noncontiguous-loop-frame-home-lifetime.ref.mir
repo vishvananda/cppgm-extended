@@ -89,8 +89,7 @@ function @main
 
   block ^entry
     call @probe [args=()]
-    mov rdx, 182
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 182
     setne rax
     movzx rax, rax
     ret rax

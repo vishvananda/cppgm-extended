@@ -59,8 +59,7 @@ function @main
   block ^entry
     mov rdi, @cell
     call @forward [args=(rdi)]
-    mov rdx, 73
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 73
     setne rax
     movzx rax, rax
     ret rax

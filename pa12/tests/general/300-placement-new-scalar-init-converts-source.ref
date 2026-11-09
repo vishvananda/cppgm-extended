@@ -17,9 +17,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 7, $i
     %t1 = convert sext i64 i32 4
     %t2 = addr $f
-    %t3 = call ptr @operatornew__ov2(%t1, %t2)
-    %t4 = load typed i32 $i
-    %t5 = convert sitofp f32 i32 %t4
-    store typed f32 %t5, %t3
+    %t3 = load typed i32 $i
+    %t4 = convert sitofp f32 i32 %t3
+    store typed f32 %t4, %t2
     return i32 0
 }

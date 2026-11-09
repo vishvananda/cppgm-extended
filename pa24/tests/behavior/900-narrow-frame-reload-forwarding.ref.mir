@@ -16,7 +16,6 @@ function @return_i8
 
   block ^entry
     mov rax, -1
-    sext.i8 rax
     ret rax
 
 function @extend_i8
@@ -29,10 +28,8 @@ function @extend_i8
     epilogues shared
 
   block ^entry
-    mov r8, -1
-    sext.i8 r8
-    zext.i8 r8
-    ret r8
+    mov rax, 255
+    ret rax
 
 function @extend_u16
   abi
@@ -45,7 +42,6 @@ function @extend_u16
 
   block ^entry
     mov rax, 48879
-    zext.i16 rax
     ret rax
 
 function @extend_i32
@@ -58,10 +54,8 @@ function @extend_i32
     epilogues shared
 
   block ^entry
-    mov r8, -1
-    sext.i32 r8
-    zext.i32 r8
-    ret r8
+    mov rax, 4294967295
+    ret rax
 
 function @main
   abi
@@ -83,20 +77,16 @@ function @main
     call @extend_u16 [args=()]
     mov r13, rax
     call @extend_i32 [args=()]
-    mov rdx, 255
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 255
     setne rbx
     movzx rbx, rbx
-    mov rdx, 255
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 255
     setne r12
     movzx r12, r12
-    mov rdx, 48879
-    cmp.i64 r13, rdx
+    cmp.i64 r13, 48879
     setne r13
     movzx r13, r13
-    mov rdx, 4294967295
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 4294967295
     setne rax
     movzx rax, rax
     or rbx, r12

@@ -28,9 +28,8 @@ function @reload_to_same_register
     epilogues shared
 
   block ^entry
-    mov r8, 29
-    add r8, 1
-    ret r8
+    mov rax, 30
+    ret rax
 
 function @main
   abi
@@ -46,12 +45,10 @@ function @main
     call @reload_to_return_register [args=()]
     mov rbx, rax
     call @reload_to_same_register [args=()]
-    mov rdx, 13
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 13
     setne rbx
     movzx rbx, rbx
-    mov rdx, 30
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 30
     setne rax
     movzx rax, rax
     or rbx, rax

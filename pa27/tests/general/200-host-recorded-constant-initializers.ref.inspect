@@ -1,0 +1,5 @@
+absent_relocation_class_canonical 1 branch_call _ZN6Bounds3lowEv 0
+absent_relocation_class_canonical 1 branch_call _ZN6Bounds4highEv 0
+relocation_class_canonical 1 branch_call _Z11side_objectv 1
+relocation_class_canonical 1 branch_call _Z13runtime_valuev 1
+relocation_class_canonical 1 branch_call _Z7observePKlj 1

@@ -114,12 +114,10 @@ function @main
     call @observe_reference [args=(rdi)]
     mov rdi, r12
     call @load_saved [args=(rdi)]
-    mov rdx, 41
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 41
     setne rbx
     movzx rbx, rbx
-    mov rdx, 41
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 41
     setne rax
     movzx rax, rax
     or rbx, rax

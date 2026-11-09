@@ -457,6 +457,9 @@ To complete PA24, implement these goals:
    machine compare plus conditional branch rather than materializing a boolean temporary
    and branching on that temporary afterward.
 
+   An ordinary adjacent Boolean load may be folded into its consuming comparison
+   or branch. Preserve required volatile accesses when selecting memory operands.
+
 8. Keep simple scalar and floating work on the appropriate machine path.
    Small leaf scalar expressions should normally stay in registers, and ordinary `f32` /
    `f64` operations should stay on the floating-register path. A conservative stack spill
@@ -465,6 +468,10 @@ To complete PA24, implement these goals:
    Lowering operations with fixed scratch registers, including integer comparisons,
    division, and shifts, must preserve still-live frame addresses and incoming parameters
    before reusing those registers.
+
+   Choose available registers from the ABI and instruction clobber facts, including
+   in functions with both integer and floating parameters. Reserve conversion
+   scratch only when the generated operations need it.
 
    Each `f32` or `f64` arithmetic operation rounds directly to its IEEE binary32
    or binary64 format, matching the LowIR contract and constant evaluation.

@@ -72,18 +72,15 @@ function @main
     movzx r8, r8
     load.i64 r9, [rbx]
     load.i64 rbx, [rbx+8]
-    mov rdx, 11
-    cmp.i64 r9, rdx
+    cmp.i64 r9, 11
     sete r9
     movzx r9, r9
-    mov rdx, 22
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 22
     sete rbx
     movzx rbx, rbx
     and r9, rbx
     and r8, r9
-    mov rdx, 0
-    cmp.i64 r8, rdx
+    cmp.i64 r8, 0
     sete r8
     movzx r8, r8
     ret r8

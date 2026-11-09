@@ -71,8 +71,7 @@ function @main
     mov rdi, 7
     mov rsi, 1
     call @choose [args=(rsi,rdi)]
-    mov rdx, 7
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 7
     setne rax
     movzx rax, rax
     ret rax

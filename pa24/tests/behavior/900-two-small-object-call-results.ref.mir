@@ -64,8 +64,7 @@ function @main
     load.i64 rdi, [rbp-8]
     load.i64 rsi, [rbp-16]
     call @combine [args=(rsi,rdi)]
-    mov rdx, 1122
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 1122
     sete rax
     movzx rax, rax
     cmp.i64 rax, 0

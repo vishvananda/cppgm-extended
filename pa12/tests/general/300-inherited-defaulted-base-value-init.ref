@@ -41,16 +41,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_4:
     %t10 = convert sext i64 i32 8
     %t11 = addr $storage
-    %t12 = call ptr @operatornew__ov2(%t10, %t11)
-    call void @holder__holder(%t12)
-    store typed ptr %t12, $object
-    %t13 = load typed ptr $object
-    %t14 = index i8 [projection=field] %t13, 0
-    %t15 = index i8 %t14, 0
-    %t16 = index i8 [projection=field] %t15, 0
-    %t17 = load typed ptr %t16
-    %t18 = cmp eq ptr %t17, 0
-    branch %t18, ^cond_then_5, ^cond_else_6
+    call void @holder__holder(%t11)
+    store typed ptr %t11, $object
+    %t12 = load typed ptr $object
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = index i8 %t13, 0
+    %t15 = index i8 [projection=field] %t14, 0
+    %t16 = load typed ptr %t15
+    %t17 = cmp eq ptr %t16, 0
+    branch %t17, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
     store typed i32 0, $cond__1
@@ -61,8 +60,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_7
 
   block ^cond_end_7:
-    %t19 = load typed i32 $cond__1
-    return i32 %t19
+    %t18 = load typed i32 $cond__1
+    return i32 %t18
 }
 function @holder__holder(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6holderC1Ev, inline_hint=yes] {
   slot $this : ptr

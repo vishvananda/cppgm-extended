@@ -11,8 +11,8 @@ function @add
     param %b -> xmm1 : f64
     return f64 -> xmm0
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     param-slot %a -> [rbp-8] : f64
@@ -28,8 +28,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 

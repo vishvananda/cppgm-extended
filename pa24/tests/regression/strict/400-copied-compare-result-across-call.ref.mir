@@ -48,8 +48,7 @@ function @main
 
   block ^entry
     call @zero [args=()]
-    mov rdx, 0
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 0
     setne rbx
     movzx rbx, rbx
     mov rdi, 1
