@@ -745,6 +745,7 @@ class BadgePublicationTests(unittest.TestCase):
 
     def test_public_update_preserves_every_self_build_file(self):
         self.self_build()
+        self.assertIn('>Intel</text>', (self.target / 'intel/self-built.svg').read_text())
         previous = {p.name: p.read_bytes() for p in (self.target / 'intel').iterdir()
                     if p.name.startswith('self')}
         (self.artifact / 'selfhost.json').unlink()

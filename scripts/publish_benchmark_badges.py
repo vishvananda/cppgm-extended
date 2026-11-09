@@ -91,6 +91,7 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False, co
                 if name in CLANG_BADGES and not path.exists() else json.loads(path.read_text()))
         if data.get('schemaVersion') != 1 or not isinstance(data.get('message'), str):
             raise ValueError(f'invalid badge: {name}')
+        data['left_label'] = {'epyc': 'EPYC', 'intel': 'Intel', 'github-intel': 'CI Intel'}[platform]
         badges[name] = data
     destinations = [target / platform]
     if platform == 'epyc' and legacy_epyc:
