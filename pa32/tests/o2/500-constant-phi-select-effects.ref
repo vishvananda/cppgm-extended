@@ -1,0 +1,35 @@
+function @select(%condition : u8, %port : ptr) -> u32 {
+  block ^entry:
+    branch %condition, ^yes, ^no
+
+  block ^yes:
+    %yes_value = load volatile u32 %port
+    jump ^merge
+
+  block ^no:
+    %discarded = load volatile u32 %port
+    jump ^merge
+
+  block ^merge:
+    %result = phi u32 [^yes: %yes_value, ^no: 3]
+    return u32 %result
+}
+function @unknown(%condition : u8, %tag_input : u8, %input : u32) -> u32 {
+  block ^entry:
+    %t1 = select u8 %condition, 1, %tag_input
+    %t2 = select u32 %condition, %input, 17
+    %result = select u32 %t1, %t2, 3
+    return u32 %result
+}
+function @late_value(%condition : u8, %input : u32) -> u32 {
+  block ^entry:
+    %t1 = select u8 %condition, 1, 0
+    %computed = binary add u32 %input, 7
+    %result = select u32 %t1, %computed, 3
+    return u32 %result
+}
+function @truncated(%condition : u8, %input : u32) -> u32 {
+  block ^entry:
+    %t1 = select u32 %condition, 3, 17
+    return u32 %t1
+}

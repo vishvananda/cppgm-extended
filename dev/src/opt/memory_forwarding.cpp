@@ -1908,6 +1908,11 @@ bool MemoryForwarding::pre_load(BlockId block, InstId prev, InstId id)
 	// answers for (and recomputes) the location at that step from its own
 	// input.
 	InstId base_phi = kNoId;
+	const AddressFacts want = facts_of(address);
+	// A fixed location needs no address instruction when every predecessor
+	// already knows its value. Keep unknown values here unless the ordinary
+	// one-step path below can reproduce their load's address.
+	const bool fixed = !available(address) && (want.base == ValueKind::Slot || want.base == ValueKind::Symbol);
 	if (!available(address))
 	{
 		if (!address.is(ValueKind::Temp))
@@ -1922,13 +1927,15 @@ bool MemoryForwarding::pre_load(BlockId block, InstId prev, InstId id)
 					def.ops[0].index >= body_.parameter_count
 				? body_.temps[def.ops[0].index].def
 				: kNoId;
-			if (bd == kNoId || body_.instructions[bd].op != Opcode::Phi || bd >= c_.block_of.size() ||
-				c_.block_of[bd] != block)
+			if (bd != kNoId && body_.instructions[bd].op == Opcode::Phi && bd < c_.block_of.size() &&
+				c_.block_of[bd] == block)
+				base_phi = bd;
+			else if (!fixed)
 				return false;
-			base_phi = bd;
+			else
+				step = kNoId;
 		}
 	}
-	const AddressFacts want = facts_of(address);
 	if (base_phi != kNoId && (want.base != ValueKind::Temp || want.index != body_.instructions[base_phi].result))
 		return false;
 	std::vector<Value> pairs;
@@ -1955,6 +1962,8 @@ bool MemoryForwarding::pre_load(BlockId block, InstId prev, InstId id)
 		}
 		if (v.is(ValueKind::None))
 		{
+			if (fixed && step == kNoId)
+				return false;
 			const InstId last = body_.blocks[pred].last;
 			if (cfg_.succ_count(pred) != 1 || (cfg_.flags[pred] & BF_HANDLER) != 0 || last == kNoId ||
 				body_.instructions[last].op != Opcode::Jump)

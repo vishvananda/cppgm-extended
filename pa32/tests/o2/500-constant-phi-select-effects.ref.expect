@@ -1,0 +1,11 @@
+# budget from 500-constant-phi-select-effects.ref: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 20
+blocks <= 10
+count(call) <= 3
+count(load) <= 5
+count(store) <= 3
+count(phi) <= 4
+instructions <= 10 in @select
+instructions <= 7 in @unknown
+instructions <= 7 in @late_value
+instructions <= 5 in @truncated

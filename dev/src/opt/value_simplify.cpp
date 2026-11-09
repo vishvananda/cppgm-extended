@@ -279,6 +279,7 @@ private:
 	void edge_facts(BlockId block);
 	bool edge_equality(BlockId from, BlockId to, Value& x, Value& y) const;
 	bool select_identity(const Instruction& phi, BlockId block, Value& out) const;
+	bool select_phi(BlockId block, InstId prev, InstId id);
 	bool merge_diamonds();
 	bool known_nonzero(Value v) const
 	{
@@ -533,6 +534,62 @@ bool Simplifier::fold(const Instruction& inst, Value& out)
 		return false;
 	}
 	out = literal(r);
+	return true;
+}
+
+// A select whose condition is constant on every incoming edge chooses
+// just that edge's input of its value phi. No computation moves to an edge.
+bool Simplifier::select_phi(BlockId block, InstId prev, InstId id)
+{
+	const Instruction select = body_.instructions[id];
+	if (select.op != Opcode::Select || select.type.is_object() || handler_reached_[block] ||
+		first_opener_[block] != kNoId)
+		return false;
+	const Instruction* condition = producer(select.ops[0]);
+	if (condition == nullptr || condition->op != Opcode::Phi || !condition->type.is_integer() ||
+		condition->extra_count == 0 || condition->extra_count > 16 ||
+		body_.temps[condition->result].def >= c_.block_of.size() ||
+		c_.block_of[body_.temps[condition->result].def] != block)
+		return false;
+	std::vector<Value> pairs;
+	for (uint32_t k = 0; k < condition->extra_count; k += 2)
+	{
+		const BlockId pred = body_.operands[condition->extra_first + k].index;
+		Constant input, normalized;
+		if (!literal_constant(body_, resolve(body_.operands[condition->extra_first + k + 1]), input) ||
+			input.kind != ValueKind::Integer || !fold_copy(condition->type, input, normalized))
+			return false;
+		Value value = select.ops[(normalized.bits.low | normalized.bits.high) != 0 ? 1 : 2];
+		const Instruction* definition = producer(value);
+		if (definition != nullptr &&
+			(body_.temps[value.index].def >= c_.block_of.size() || c_.block_of[body_.temps[value.index].def] == kNoId))
+			return false;
+		if (definition != nullptr && c_.block_of[body_.temps[definition->result].def] == block)
+		{
+			if (definition->op != Opcode::Phi)
+				return false;
+			value = resolve(phi_incoming(body_, *definition, pred));
+		}
+		else if (value.is(ValueKind::Temp) &&
+			(!available_in(value.index, pred) ||
+				(definition != nullptr && !c_.cfg.dominates(c_.block_of[body_.temps[value.index].def], pred))))
+			return false;
+		if (value.is(ValueKind::None))
+			return false;
+		pairs.push_back(Value::block(pred));
+		pairs.push_back(value);
+	}
+	Instruction merged = make_instruction(Opcode::Phi, select.type);
+	merged.result = select.result;
+	merged.location = select.location;
+	merged.extra_first = append_operands(body_, pairs.data(), static_cast<uint32_t>(pairs.size()));
+	merged.extra_count = static_cast<uint32_t>(pairs.size());
+	for (uint32_t k = 1; k < pairs.size(); k += 2)
+		if (pairs[k].is(ValueKind::Temp) && uses_[pairs[k].index] != 0xffffffffu)
+			++uses_[pairs[k].index];
+	unlink_after(body_, block, prev, id);
+	body_.instructions[id] = merged;
+	insert_after(body_, block, kNoId, id);
 	return true;
 }
 
@@ -2752,6 +2809,12 @@ void Simplifier::process_block(BlockId block)
 			continue;
 		}
 		substitute(inst);
+		if (inst.op == Opcode::Select && select_phi(block, prev, id))
+		{
+			changed_ = true;
+			id = next;
+			continue;
+		}
 		// The rewrite appends instructions (`inst` may move): the call,
 		// now a conversion, is taken up again.
 		if (inst.op == Opcode::Call && (equality_memcmp(block, prev, id) || math_call(block, prev, id)))
