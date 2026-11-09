@@ -1332,13 +1332,15 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 		asm_.op(0xf3, register_bytes(inst.type) == 8, 0x0fb8, 2, a.reg, rm(b));
 		break;
 	case Op::Bsf:
+		// Count-trailing-zero lowering does not observe flags and permits
+		// any result for zero. REP BSF uses TZCNT where available, with
+		// the same nonzero result on older CPUs that ignore the prefix.
+		asm_.op(0xf3, register_bytes(inst.type) == 8, 0x0fbc, 2, a.reg, rm(b));
+		break;
 	case Op::Bsr:
 	case Op::Cmov:
 		asm_.op(0, inst.op == Op::Cmov || register_bytes(inst.type) == 8,
-			inst.op == Op::Bsf       ? 0x0fbc
-				: inst.op == Op::Bsr ? 0x0fbd
-									 : 0x0f40u + (inst.sub & 15u),
-			2, a.reg, rm(b));
+			inst.op == Op::Bsr ? 0x0fbd : 0x0f40u + (inst.sub & 15u), 2, a.reg, rm(b));
 		break;
 	case Op::Shl:
 	case Op::Shr:
