@@ -139,6 +139,8 @@ enum class Intrinsic : uint8_t
 	// __builtin_addressof(lvalue): its address, never an overloaded
 	// operator& (std::addressof).
 	AddressOf,
+	// __builtin_bitreverse8/16/32/64(x): reverse all bits of its unsigned type.
+	BitReverse,
 	// __builtin_bswap16/32/64 (x): x's bytes reversed, of its unsigned type.
 	ByteSwap,
 	// __builtin_clz/ctz/popcount[l|ll] (x): an int, of x's unsigned type.

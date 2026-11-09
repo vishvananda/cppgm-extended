@@ -55,6 +55,36 @@ FundamentalType FloatingOf(uint32_t index)
 	return index == 0 ? FundamentalType::Double : index == 1 ? FundamentalType::Float : FundamentalType::LongDouble;
 }
 
+// Fixed-width bit builtins describe their converted operand and operation.
+struct BitOperation
+{
+	Intrinsic kind;
+	FundamentalType argument;
+};
+
+BitOperation BitOperationOf(GnuBuiltin builtin, uint8_t variant)
+{
+	static const FundamentalType kReversed[] = { FundamentalType::UnsignedChar, FundamentalType::UnsignedShortInt,
+		FundamentalType::UnsignedInt, FundamentalType::UnsignedLongInt };
+	if (builtin == GnuBuiltin::BitReverse)
+		return BitOperation{ Intrinsic::BitReverse, kReversed[variant] };
+	// bswap16/32/64; clz, ctz, popcount of unsigned int/long/long long;
+	// ffs of signed int/long/long long.
+	static const Intrinsic kKinds[] = { Intrinsic::ByteSwap, Intrinsic::CountLeadingZeros,
+		Intrinsic::CountTrailingZeros, Intrinsic::PopCount, Intrinsic::FindFirstSet };
+	static const FundamentalType kSwapped[] = { FundamentalType::UnsignedShortInt, FundamentalType::UnsignedInt,
+		FundamentalType::UnsignedLongInt };
+	static const FundamentalType kCounted[] = { FundamentalType::UnsignedInt, FundamentalType::UnsignedLongInt,
+		FundamentalType::UnsignedLongLongInt };
+	static const FundamentalType kFirstSet[] = { FundamentalType::Int, FundamentalType::LongInt,
+		FundamentalType::LongLongInt };
+	const Intrinsic kind = kKinds[variant / 3];
+	const FundamentalType argument = kind == Intrinsic::ByteSwap ? kSwapped[variant % 3]
+		: kind == Intrinsic::FindFirstSet                        ? kFirstSet[variant % 3]
+																 : kCounted[variant % 3];
+	return BitOperation{ kind, argument };
+}
+
 } // namespace
 
 FunctionEntity* Analyzer::builtin_function(const Identifier* name)
@@ -462,30 +492,19 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts->value = static_cast<uint64_t>(Intrinsic::AddressOf);
 		break;
 	}
+	case GnuBuiltin::BitReverse:
 	case GnuBuiltin::BitCount:
 	{
-		// The operand's unsigned type by the name's suffix: bswap16/32/64,
-		// clz (unsigned int), clzl (unsigned long), clzll (unsigned long
-		// long), likewise ctz and popcount; ffs uses the signed types.
-		static const Intrinsic kKinds[] = { Intrinsic::ByteSwap, Intrinsic::CountLeadingZeros,
-			Intrinsic::CountTrailingZeros, Intrinsic::PopCount, Intrinsic::FindFirstSet };
-		static const FundamentalType kSwapped[] = { FundamentalType::UnsignedShortInt, FundamentalType::UnsignedInt,
-			FundamentalType::UnsignedLongInt };
-		static const FundamentalType kCounted[] = { FundamentalType::UnsignedInt, FundamentalType::UnsignedLongInt,
-			FundamentalType::UnsignedLongLongInt };
-		static const FundamentalType kFirstSet[] = { FundamentalType::Int, FundamentalType::LongInt,
-			FundamentalType::LongLongInt };
-		const Intrinsic kind = kKinds[variant / 3];
 		if (count != 1)
 			error(expr.location, "wrong number of arguments to a bit builtin");
 		if (typed_value(*expr.arguments[0], scope) == nullptr)
 			return nullptr;
-		const Type* type = types_.fundamental(kind == Intrinsic::ByteSwap ? kSwapped[variant % 3]
-				: kind == Intrinsic::FindFirstSet                         ? kFirstSet[variant % 3]
-																		  : kCounted[variant % 3]);
+		const BitOperation operation = BitOperationOf(builtin, variant);
+		const Type* type = types_.fundamental(operation.argument);
 		convert(*expr.arguments[0], type, false);
-		facts = new_facts(expr, kind == Intrinsic::ByteSwap ? type : int_type, ValueCategory::PRValue);
-		facts->value = static_cast<uint64_t>(kind);
+		const bool same_type = operation.kind == Intrinsic::BitReverse || operation.kind == Intrinsic::ByteSwap;
+		facts = new_facts(expr, same_type ? type : int_type, ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(operation.kind);
 		break;
 	}
 	case GnuBuiltin::GenericBitCount:

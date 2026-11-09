@@ -47,6 +47,7 @@ enum class GnuBuiltin : uint8_t
 	FloatConstant,
 	AddressOf,
 	BitCount,
+	BitReverse, // 8/16/32/64-bit unsigned argument and result, variants 0..3
 	GenericBitCount,
 	Alloca,
 	FrameAddress,

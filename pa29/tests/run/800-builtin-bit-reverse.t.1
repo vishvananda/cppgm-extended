@@ -1,0 +1,31 @@
+unsigned calls;
+unsigned next_byte() { ++calls; return 0x196; }
+unsigned long reverse_reference(unsigned long value, unsigned width) {
+  unsigned long result = 0;
+  for (unsigned i = 0; i < width; ++i) {
+    result = (result << 1) | (value & 1);
+    value >>= 1;
+  }
+  return result;
+}
+__attribute__((noinline)) bool check(unsigned long value) {
+  return __builtin_bitreverse8(value) == reverse_reference(value, 8)
+      && __builtin_bitreverse16(value) == reverse_reference(value, 16)
+      && __builtin_bitreverse32(value) == reverse_reference(value, 32)
+      && __builtin_bitreverse64(value) == reverse_reference(value, 64);
+}
+int main() {
+  volatile unsigned long input = 0;
+  if (!check(input)) return 1;
+  for (unsigned bit = 0; bit != 64; ++bit) {
+    input = 1UL << bit;
+    if (!check(input)) return 2;
+    input = ~(1UL << bit);
+    if (!check(input)) return 3;
+  }
+  for (unsigned i = 0; i != 256; ++i) {
+    input = static_cast<unsigned long>(i) * 0x123456789abcdefUL;
+    if (!check(input)) return 4;
+  }
+  return __builtin_bitreverse8(next_byte()) != 0x69 || calls != 1;
+}

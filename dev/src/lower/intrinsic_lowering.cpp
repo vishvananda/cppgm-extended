@@ -219,6 +219,26 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		copy_object(list, source, destination, expr.location);
 		return RValue();
 	}
+	case sema::Intrinsic::BitReverse:
+	{
+		RValue value = operand(*expr.arguments[0], ConversionContext::Argument);
+		const lowir::Type type = value.type;
+		const unsigned width = lowir::integer_bits(type.kind());
+		const uint64_t width_mask = ~uint64_t(0) >> (64 - width);
+		// Reverse each byte with three fixed mask/shift stages, then reverse
+		// the byte order. These are ordinary typed LowIR operations at O0 too.
+		static const uint64_t kMasks[] = { 0x5555555555555555ULL, 0x3333333333333333ULL, 0x0f0f0f0f0f0f0f0fULL };
+		for (unsigned i = 0; i < 3; ++i)
+		{
+			const RValue mask = integer(type, kMasks[i] & width_mask);
+			const RValue shift = integer(type, uint64_t(1) << i);
+			const RValue low = binary(lowir::BinaryOp::And, type, value, mask);
+			const RValue high = binary(
+				lowir::BinaryOp::And, type, binary(lowir::BinaryOp::Shr, type, value, shift), mask);
+			value = binary(lowir::BinaryOp::Or, type, binary(lowir::BinaryOp::Shl, type, low, shift), high);
+		}
+		return type.kind() == lowir::TypeKind::U8 ? value : unary(lowir::UnaryOp::ByteSwap, value);
+	}
 	case sema::Intrinsic::ByteSwap:
 		return unary(lowir::UnaryOp::ByteSwap, operand(*expr.arguments[0], ConversionContext::Argument));
 	case sema::Intrinsic::Prefetch:
