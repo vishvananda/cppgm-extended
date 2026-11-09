@@ -190,6 +190,10 @@ To complete PA21, implement these goals:
    resulting closure object should be callable through the existing class/method lowering
    path. A catch parameter declared inside a lambda body is local to that body and is not an
    implicit capture.
+   Follow adopted [P0588R1](../doc/cwg/paper-p0588r1.txt) for implicit captures:
+   a potentially evaluated reference can require a capture even when it is not
+   an odr-use. Preserve observable copy initialization; a non-odr-use in the body
+   still reads the original constant object under [CWG2083](../doc/cwg/cwg-2083.txt).
 
 2. `std::initializer_list` interoperation.
    Supported braced-list calls should materialize deterministic lowered storage and expose

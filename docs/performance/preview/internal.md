@@ -69,6 +69,6 @@ GCC 15 had two internal compiler errors in the initial broad qualification scan;
 - [PA31: 116 groups](details-v1/pa31.md)
 - [PA32: 89 groups](details-v1/pa32.md)
 
-[Input and resource metadata](comparison-metadata-v1.json) · [Scope and local evidence](../../../reports/internal-native-comparison.txt) · [Runtime exclusions](internal-exclusions.json)
+[Input and resource metadata](comparison-metadata-v1.json) · [Scope and local evidence](../../../reports/internal-native-comparison.txt) · [Runtime exclusions](internal-exclusions.json) · [Oracle provenance review](../internal-oracle-review-20261109.md)
 
 These are single complete-run observations under load. They are not ABBA/A-A calibrated estimates and are not the normal frozen/self compiler regression gate.

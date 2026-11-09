@@ -12,10 +12,18 @@ void* operator new[](size_type n) { ++arrays; void* p = pool + used; used += (n 
 void operator delete[](void* p) noexcept { if (p) --arrays; }
 struct E { E() { throw 2; } };
 int main() {
+  // Direct replacement calls must remain observable even when new-expressions
+  // are optimized away by a native compiler.
+  void* raw = ::operator new[](3 * sizeof(int));
+  if (arrays != 1) return 7;
+  ::operator delete[](raw);
+  if (arrays != 0) return 8;
   int* p = new int(5);
   if (arrays != 0) return 1;
   int* q = new int[3];
-  if (arrays != 1) return 2;
+  // A replaceable global allocation may be elided. A retained array call
+  // must still be paired with its matching deallocation.
+  if (arrays < 0 || arrays > 1) return 2;
   delete p;
   delete[] q;
   if (arrays != 0) return 3;

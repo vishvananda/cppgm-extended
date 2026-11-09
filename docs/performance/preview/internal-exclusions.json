@@ -5,7 +5,33 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "8286976e589bd58a0b0f5d2058faabed744d3b6b",
+      "snapshot_source_sha256": "f652d085081846bd10e2811a291b93249051e128dab1228caf650a56873163ba",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution",
+      "sources": [
+        {
+          "document": "CWG 2082",
+          "url": "https://cplusplus.github.io/CWG/issues/2082.html"
+        },
+        {
+          "document": "C++11 basic.scope.pdecl",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/basic.scope.pdecl"
+        }
+      ],
+      "rationale": "CWG2082 permits unevaluated parameter uses. A parameter is in scope in its own default argument; later parameters are not visible in earlier defaults. GCC resolves the self-reference to the outer 31-byte array; Clang and cppgm use sizeof(long).",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 1; O3=exit 1"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa10/tests/controls/100-default-parameter-self-sizeof.t",
@@ -13,7 +39,33 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "0911ea95cb56c29a7b2b18c1f0f7c2397f5a3e3c",
+      "snapshot_source_sha256": "bc710c11b2268408945e19a9bce95114940ccfda91b30573279c15b4c576169e",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution",
+      "sources": [
+        {
+          "document": "CWG 2082",
+          "url": "https://cplusplus.github.io/CWG/issues/2082.html"
+        },
+        {
+          "document": "C++11 basic.scope.pdecl",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/basic.scope.pdecl"
+        }
+      ],
+      "rationale": "CWG2082 permits unevaluated parameter uses. A parameter is in scope in its own default argument; later parameters are not visible in earlier defaults. GCC resolves the self-reference to the outer 31-byte array; Clang and cppgm use sizeof(long).",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 1; O3=exit 1"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa11/tests/controls/100-unrelated-member-decltype-has-no-implicit-object.t",
@@ -21,7 +73,29 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "bd1f689f342623eceb307ed4d11a4fd70514a6c2",
+      "snapshot_source_sha256": "5c99879d34012d0d45aa98e55a1415f58d84782112c5a2890abc1b135d4322c1",
+      "disposition": "retain-course-oracle",
+      "classification": "C++11-wording",
+      "sources": [
+        {
+          "document": "C++11 class.mfct.non-static",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/class.mfct.non-static"
+        }
+      ],
+      "rationale": "9.3.1p3 does not add an implicit object for an unevaluated member of an unrelated class. decltype((Other::value)) is int&, without this function's const qualification. The GCC result chooses the const overload.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 1; O3=exit 1"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa11/tests/controls/400-bitfield-rvalue-cast-materializes-value.t",
@@ -29,7 +103,29 @@
     "reasons": [
       "clang O0 does not satisfy this course execution oracle",
       "clang O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "baf44125e303dc79e4cd3f9b72c172d54c85bf55",
+      "snapshot_source_sha256": "81cf3ae7b955165f352b3d1e30c9f1d950631eb21f9001d93af6976dd84f3dff",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution",
+      "sources": [
+        {
+          "document": "CWG 1447",
+          "url": "https://cplusplus.github.io/CWG/issues/1447.html"
+        }
+      ],
+      "rationale": "CWG1447, adopted October 2012, explicitly converts the bit-field to a prvalue before the rvalue-reference cast. Updating the bound temporary must leave the original bit-field unchanged. Clang22 instead changes the bit-field.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "Clang22.1.2 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa12/tests/controls/200-return-implicit-move-sinks.t",
@@ -37,21 +133,120 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "a3d55e2b44f61453bed32ce8a18db9f0418adceb",
+      "snapshot_source_sha256": "2418a8d93b45ba1f29f7caa07aeb93d10c6d4fa9a58effa3ae4ba6ee38257c26",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical. The const-copy fallback subcase also fails on GCC16.2 in C++20, so a mode change does not resolve this entire fixture.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 2; O3=exit 2",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 2; O3=exit 2",
+        "GCC16.2.0 / gnu++20": "O0=exit 2; O3=exit 2"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa12/tests/controls/300-new-object-size-above-2g.t",
     "id": "db0e227559ff97ed5740",
     "reasons": [
       "clang O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "a8e276a798052745d41caf17056c9171cdce8999",
+      "snapshot_source_sha256": "168e3d0059dce82d2984e13f42e9bebc4ff930a6ab0d9a31dcb6df0c49deb03b",
+      "disposition": "portable-oracle-rewrite-validated",
+      "classification": "oracle-portability",
+      "sources": [
+        {
+          "document": "C++11 expr.new",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/expr.new"
+        },
+        {
+          "document": "C++11 replacement.functions",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/replacement.functions"
+        }
+      ],
+      "rationale": "Original replacement-allocation call counts were optimized away by Clang at O3. The large-object/overflow probes also returned insufficient storage for the requested allocation. Use observable class-specific size probes, a null nonthrowing allocator and direct replacement calls; test routing and balanced cleanup without requiring an optimized global new-expression to survive. Allocation elision is not mislabeled as an original C++11 requirement.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 1",
+        "GCC16.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained.",
+      "current_source_sha256": "8f846d0f9fc1e4548b59e8fd62cb68ee5da763784edfcc7793cd8db8f8d64047",
+      "portable_oracle_recheck": {
+        "cppgm": "O0=exit 0; O3=exit 0",
+        "gcc": "O0=exit 0; O3=exit 0",
+        "clang": "O0=exit 0; O3=exit 0"
+      }
+    }
   },
   {
     "path": "pa12/tests/controls/400-array-cookie-trivial-dtor-class.t",
     "id": "45768078937b06ed6f11",
     "reasons": [
       "clang O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "a8e276a798052745d41caf17056c9171cdce8999",
+      "snapshot_source_sha256": "d9b107c076e9d8ffb7223d33b15b650ff0e77eca06e003a0cf8b2f03db68fbbc",
+      "disposition": "portable-oracle-rewrite-validated",
+      "classification": "oracle-portability",
+      "sources": [
+        {
+          "document": "C++11 expr.new",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/expr.new"
+        },
+        {
+          "document": "C++11 replacement.functions",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/replacement.functions"
+        }
+      ],
+      "rationale": "Original replacement-allocation call counts were optimized away by Clang at O3. The large-object/overflow probes also returned insufficient storage for the requested allocation. Use observable class-specific size probes, a null nonthrowing allocator and direct replacement calls; test routing and balanced cleanup without requiring an optimized global new-expression to survive. Allocation elision is not mislabeled as an original C++11 requirement.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 1",
+        "GCC16.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained.",
+      "current_source_sha256": "ecb7c0352c2f1e963e09de550e7c17cca684f718cea7e3dff422b5df14dabfb9",
+      "portable_oracle_recheck": {
+        "cppgm": "O0=exit 0; O3=exit 0",
+        "gcc": "O0=exit 0; O3=exit 0",
+        "clang": "O0=exit 0; O3=exit 0"
+      }
+    }
   },
   {
     "path": "pa12/tests/controls/400-return-implicit-conversion-move.t",
@@ -59,7 +254,42 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "a3d55e2b44f61453bed32ce8a18db9f0418adceb",
+      "snapshot_source_sha256": "06e2a1794e85ed8edab92c4e356946ca2be1a13ac655dd5e301c7c4526cca3db",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 2; O3=exit 2",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 2; O3=exit 2",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa14/tests/controls/100-default-parameter-template-future-prefix.t",
@@ -67,7 +297,33 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "8286976e589bd58a0b0f5d2058faabed744d3b6b",
+      "snapshot_source_sha256": "a141832d03b89fb6c41e2d426004b15402f15cb54a66986f33fb3690a879334a",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution",
+      "sources": [
+        {
+          "document": "CWG 2082",
+          "url": "https://cplusplus.github.io/CWG/issues/2082.html"
+        },
+        {
+          "document": "C++11 basic.scope.pdecl",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/basic.scope.pdecl"
+        }
+      ],
+      "rationale": "CWG2082 permits unevaluated parameter uses. A parameter is in scope in its own default argument; later parameters are not visible in earlier defaults. GCC resolves the self-reference to the outer 31-byte array; Clang and cppgm use sizeof(long).",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 1; O3=exit 1"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa16/tests/controls/300-potential-result-static-array-value.t",
@@ -75,21 +331,95 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "e7f2afb4962a2d9e2607c4e8ddf706d2af5605b5",
+      "snapshot_source_sha256": "ad21c45b8443c7a05f439938b503e977d1deddfae8ab76bcac522af211607ef0",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution",
+      "sources": [
+        {
+          "document": "CWG 1926",
+          "url": "https://cplusplus.github.io/CWG/issues/1926.html"
+        },
+        {
+          "document": "CWG 2083",
+          "url": "https://cplusplus.github.io/CWG/issues/2083.html"
+        }
+      ],
+      "rationale": "The array operand is a potential result of built-in subscripting. A usable constexpr array read yielding a nonvolatile scalar value does not odr-use its storage. Actual address/decay/reference controls remain distinct. C++20 link success alone is not proof of GCC implementing this rule: C++17 inline variables can supply the otherwise missing definition.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=compile/link failure 1; O3=compile/link failure 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=compile/link failure 1; O3=compile/link failure 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-terminate.t",
     "id": "179ba94efc85c2240d91",
     "reasons": [
       "Termination semantics verified separately; not a normal-exit execution timing"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "a0d41f3803406cf1db04c019a9dbb5fa8a65430d",
+      "snapshot_source_sha256": "d0b4f11c42dd629d90c26a1477d38bea97e3c4055a6f0e7415389e657e8a6ed9",
+      "disposition": "exclude-from-normal-exit-runtime-timing",
+      "classification": "intentional-termination",
+      "sources": [
+        {
+          "document": "C++11 except.terminate",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/except.terminate"
+        }
+      ],
+      "rationale": "This checks termination, not successful normal execution. The course runtime reports exit134 whereas host runtimes can terminate by SIGABRT. Neither result is a compiler conformance failure.",
+      "recheck": {},
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-new-array-size-overflow.t",
     "id": "4b01d303f5c5b5574b7d",
     "reasons": [
       "clang O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "e5b25b60e0849829b24e1fb77fbd0cb8594550b4",
+      "snapshot_source_sha256": "9f8e84c6da90ce713cfd151822e0d2c338151e6aa02a2edeaf0315a32de2f90b",
+      "disposition": "portable-oracle-rewrite-validated",
+      "classification": "oracle-portability",
+      "sources": [
+        {
+          "document": "C++11 expr.new",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/expr.new"
+        },
+        {
+          "document": "C++11 replacement.functions",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/replacement.functions"
+        }
+      ],
+      "rationale": "Original replacement-allocation call counts were optimized away by Clang at O3. The large-object/overflow probes also returned insufficient storage for the requested allocation. Use observable class-specific size probes, a null nonthrowing allocator and direct replacement calls; test routing and balanced cleanup without requiring an optimized global new-expression to survive. Allocation elision is not mislabeled as an original C++11 requirement.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 1",
+        "GCC16.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained.",
+      "current_source_sha256": "76671f4b14e8b610588ecea91746f6bfd77cd1a0a9e559329bae0dd0e6e5882f",
+      "portable_oracle_recheck": {
+        "cppgm": "O0=exit 0; O3=exit 0",
+        "gcc": "O0=exit 0; O3=exit 0",
+        "clang": "O0=exit 0; O3=exit 0"
+      }
+    }
   },
   {
     "path": "pa21/tests/controls/100-potential-result-default-copy-original-value.t",
@@ -99,21 +429,126 @@
       "clang O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle",
       "clang O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "e7f2afb4962a2d9e2607c4e8ddf706d2af5605b5",
+      "snapshot_source_sha256": "7c44a3d008322fbbec518bd564e334bcb13b2f6d0213ae042cf51360ffc7098b",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-vendor-lag",
+      "sources": [
+        {
+          "document": "P0588R1",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0588r1.html"
+        },
+        {
+          "document": "CWG 2083",
+          "url": "https://cplusplus.github.io/CWG/issues/2083.html"
+        },
+        {
+          "document": "C++11 expr.prim.lambda",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/expr.prim.lambda"
+        },
+        {
+          "document": "N4709 CWG motion 4",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4709.pdf"
+        },
+        {
+          "document": "Clang implementation tracking",
+          "url": "https://github.com/llvm/llvm-project/issues/61426"
+        }
+      ],
+      "rationale": "P0588R1 makes a potentially evaluated reference under [=] cause implicit capture, even when the body read is not an odr-use. Capture initialization must preserve this copy constructor's observable increment; CWG2083 makes the body read the original value 17 rather than the copied value 34. The permission to optimize a capture cannot erase observable constructor side effects. GCC15.2/GCC16.2 and Clang22 produce zero copies and value17. This is a documented course DR exception, not evidence that both vendor compilers fail original C++11.",
+      "adoption": "P0588R1 was accepted as a Defect Report by N4709 CWG motion4, November2017. CWG2083 was accepted as a DR in February2019.",
+      "course_policy": "Retain the adopted DR behavior in C++11 mode; do not weaken the copy count merely to match vendor implementations.",
+      "supporting_control": "pa21/tests/controls/100-potential-result-copy-capture-original-value.t",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 1; O3=exit 1"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-replaced-array-allocation-only.t",
     "id": "9d8241110d87f47796df",
     "reasons": [
       "clang O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "e5de8261abbc8de4814fe6df7288c8f316876811",
+      "snapshot_source_sha256": "474433abf4c327b7659ca801764355aea0998715f15739ee5d587d43b258063c",
+      "disposition": "portable-oracle-rewrite-validated",
+      "classification": "oracle-portability",
+      "sources": [
+        {
+          "document": "C++11 expr.new",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/expr.new"
+        },
+        {
+          "document": "C++11 replacement.functions",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/replacement.functions"
+        }
+      ],
+      "rationale": "Original replacement-allocation call counts were optimized away by Clang at O3. The large-object/overflow probes also returned insufficient storage for the requested allocation. Use observable class-specific size probes, a null nonthrowing allocator and direct replacement calls; test routing and balanced cleanup without requiring an optimized global new-expression to survive. Allocation elision is not mislabeled as an original C++11 requirement.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 2",
+        "GCC16.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained.",
+      "current_source_sha256": "0144641b4c486bf266aef1e44fcce1d5206f6b8526d5219f8bf985c82962bb71",
+      "portable_oracle_recheck": {
+        "cppgm": "O0=exit 0; O3=exit 0",
+        "gcc": "O0=exit 0; O3=exit 0",
+        "clang": "O0=exit 0; O3=exit 0"
+      }
+    }
   },
   {
     "path": "pa21/tests/controls/100-replaced-scalar-and-array-allocation.t",
     "id": "4404c282c6e21212cf9c",
     "reasons": [
       "clang O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "e5de8261abbc8de4814fe6df7288c8f316876811",
+      "snapshot_source_sha256": "75af04866ec493efb3fe8a44bf0e50e5b5cb309ad2687df1cce0ed7ea24ed27e",
+      "disposition": "portable-oracle-rewrite-validated",
+      "classification": "oracle-portability",
+      "sources": [
+        {
+          "document": "C++11 expr.new",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/expr.new"
+        },
+        {
+          "document": "C++11 replacement.functions",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/replacement.functions"
+        }
+      ],
+      "rationale": "Original replacement-allocation call counts were optimized away by Clang at O3. The large-object/overflow probes also returned insufficient storage for the requested allocation. Use observable class-specific size probes, a null nonthrowing allocator and direct replacement calls; test routing and balanced cleanup without requiring an optimized global new-expression to survive. Allocation elision is not mislabeled as an original C++11 requirement.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 3",
+        "GCC16.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 4"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained.",
+      "current_source_sha256": "935f4a9a9652f2078b61bbdbc29ae48a0abbd1da35ad46262188f1a86928b6bb",
+      "portable_oracle_recheck": {
+        "cppgm": "O0=exit 0; O3=exit 0",
+        "gcc": "O0=exit 0; O3=exit 0",
+        "clang": "O0=exit 0; O3=exit 0"
+      }
+    }
   },
   {
     "path": "pa21/tests/controls/100-throw-const-value-parameter.t",
@@ -121,7 +556,42 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "d086163d11a97f4c0b24d9bb5c06300b773fc714",
+      "snapshot_source_sha256": "9fbe3e660dc0399554d801fb959a45187a55078d59a3f43768cec31a82a46ba1",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-throw-constructor-function-try-initializer-move.t",
@@ -129,7 +599,46 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "d086163d11a97f4c0b24d9bb5c06300b773fc714",
+      "snapshot_source_sha256": "b1dc4d13a8cca18b2ab99ac11c9ede864af575327a415defdb470cd6e1689a3a",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "CWG 2549",
+          "url": "https://cplusplus.github.io/CWG/issues/2549.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical. These scope cases also use the final February2025 CWG2549 resolution, not its superseded proposal.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-throw-constructor-initializer-move.t",
@@ -137,7 +646,42 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "d086163d11a97f4c0b24d9bb5c06300b773fc714",
+      "snapshot_source_sha256": "9aef1b904785d2bfb0faef963343c5ee273dfa0e63c0102587426724dad7483d",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-throw-function-try-handler-move.t",
@@ -145,7 +689,42 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "d086163d11a97f4c0b24d9bb5c06300b773fc714",
+      "snapshot_source_sha256": "e4cf8b6517d5f20d55ee0b7a6debf2e2adc485d94ffebcb748fd1a0334c15d45",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-throw-local-rvalue-reference.t",
@@ -153,7 +732,42 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "d086163d11a97f4c0b24d9bb5c06300b773fc714",
+      "snapshot_source_sha256": "5f7ddf8e1ad2cca3bf9ec202c3c67004cd070fda39e9a1808d10cbcab89a6ad3",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-throw-nested-handler-parameter-move.t",
@@ -161,7 +775,42 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "d086163d11a97f4c0b24d9bb5c06300b773fc714",
+      "snapshot_source_sha256": "5d3eeb6779cac00c46d531909c671665ff395938bbf0b99500aadb205c05253b",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-throw-parenthesized-parameter.t",
@@ -169,7 +818,42 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "d086163d11a97f4c0b24d9bb5c06300b773fc714",
+      "snapshot_source_sha256": "9a584fb483e79207638a146fa8d1a1f20bcd359e60fd4750a2e39a1d2e1fc12b",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical. GCC16.2 still copies this parenthesized throw operand in C++20; both optimization levels return1.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 1; O3=exit 1"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-throw-prototype-substitution-move.t",
@@ -177,7 +861,46 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "d086163d11a97f4c0b24d9bb5c06300b773fc714",
+      "snapshot_source_sha256": "46fd75f7fe091b3f1492567f6bc3ed7171ac79f2453ebc51f421b687abf49bc4",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "CWG 2549",
+          "url": "https://cplusplus.github.io/CWG/issues/2549.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical. These scope cases also use the final February2025 CWG2549 resolution, not its superseded proposal.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-throw-rvalue-reference-parameter.t",
@@ -185,7 +908,42 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "d086163d11a97f4c0b24d9bb5c06300b773fc714",
+      "snapshot_source_sha256": "98ce055a3f52ddd12291207d3cfeac0f7258cd2ff8ce0566c864c07284d5e21e",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/100-throw-value-parameter-selection.t",
@@ -193,21 +951,102 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "d086163d11a97f4c0b24d9bb5c06300b773fc714",
+      "snapshot_source_sha256": "c5030f7f630a862d0fc27152e660f6508994abdccc8dcc68e5a7f94a388794e6",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution-with-mode-difference",
+      "sources": [
+        {
+          "document": "P1825R0",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html"
+        },
+        {
+          "document": "N4829 CWG motion23",
+          "url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html"
+        },
+        {
+          "document": "GCC mode-specific support",
+          "url": "https://gcc.gnu.org/projects/cxx-status.html"
+        },
+        {
+          "document": "Clang C++11 DR backport",
+          "url": "https://reviews.llvm.org/D104500"
+        }
+      ],
+      "rationale": "The course applies P1825R0's revised implicit-move eligibility and two-stage overload resolution in C++11 mode. GCC16.2 still differs in C++11; many controls pass in C++20. This is not simply an old compiler version. A native GCC test inspired by the same feature does not imply that its C++11 expectation is identical.",
+      "adoption": "P1825R0 accepted as a DR by N4829 CWG motion23, July2019; explicitly required by PA12.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/200-catch-retirement-second-throw.t",
     "id": "8bd638f461c8c15a01d5",
     "reasons": [
       "Termination semantics verified separately; not a normal-exit execution timing"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "b6ebdf57e8fef9c9b9f67c8f8bedf0a6df3c7604",
+      "snapshot_source_sha256": "31f01972c8798cdb8d0c555e267406b3fdb0ba66ba58523be24aea0d7b900702",
+      "disposition": "exclude-from-normal-exit-runtime-timing",
+      "classification": "intentional-termination",
+      "sources": [
+        {
+          "document": "C++11 except.terminate",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/except.terminate"
+        }
+      ],
+      "rationale": "This checks termination, not successful normal execution. The course runtime reports exit134 whereas host runtimes can terminate by SIGABRT. Neither result is a compiler conformance failure.",
+      "recheck": {},
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/200-initializer-list-const-reference-conditional-unwind-throwing.t",
     "id": "9ff46e70c570df8f73d1",
     "reasons": [
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "a3aaf20152898ec68cbd9673098097397923abc1",
+      "snapshot_source_sha256": "03e425e59cb8d4a1c0971aa7f897fae45106ea197883bd5eb53ae8fe3750aa90",
+      "disposition": "retain-course-oracle",
+      "classification": "C++11-wording",
+      "sources": [
+        {
+          "document": "C++11 dcl.init.list",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/dcl.init.list"
+        },
+        {
+          "document": "C++11 class.temporary",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/class.temporary"
+        },
+        {
+          "document": "C++11 except.ctor",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/except.ctor"
+        }
+      ],
+      "rationale": "Binding the outer reference to the conditional initializer_list object does not re-extend its backing array through the copied list. Backing elements die at the initializer full-expression; subsequent injected throws must not repeat their cleanup. GCC16.2 passes O0 but returns2 at O3; Clang and cppgm pass. Assessment is against lifetime wording, not a known GCC issue ID.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 0; O3=exit 2",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 0; O3=exit 2",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 2"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/200-local-static-completion-before-temporary-destruction.t",
@@ -215,14 +1054,66 @@
     "reasons": [
       "clang O0 does not satisfy this course execution oracle",
       "clang O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "ddcec92a2b2aa2376c858ae1aa3a6c18383b1aec",
+      "snapshot_source_sha256": "5c884df5d741e85de85696e5b19e75b7513751011c098584affd6d3dc3200f03",
+      "disposition": "retain-course-oracle",
+      "classification": "C++11-wording",
+      "sources": [
+        {
+          "document": "C++11 stmt.dcl",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/stmt.dcl"
+        },
+        {
+          "document": "C++11 class.temporary",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/class.temporary"
+        }
+      ],
+      "rationale": "6.7p4 completes static initialization when the initializer completes; 12.2p3 associates later temporary destruction with the full-expression. A throwing initializer retries; a throwing argument-temporary destructor after successful initialization must not reconstruct the static. GCC passes; Clang22 terminates after repeating initialization. This is a wording-based assessment, not a cited vendor bug report.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "Clang22.1.2 / gnu++11": "O0=exit -6; O3=exit -6",
+        "GCC16.2.0 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/200-synthesized-copy-move-construction-prefix.t",
     "id": "a53d4a51d3865916e7cd",
     "reasons": [
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "b3dd56d5493448b6206cf2fb6364ef6aceec67ad",
+      "snapshot_source_sha256": "4bea0f8cb7ba6672566698586f24778d556e0c9d81957a56f7f8cfed2bc991bd",
+      "disposition": "retain-course-oracle",
+      "classification": "C++11-wording",
+      "sources": [
+        {
+          "document": "C++11 class.copy",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/class.copy"
+        },
+        {
+          "document": "C++11 except.ctor",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/except.ctor"
+        }
+      ],
+      "rationale": "12.8p15 performs memberwise initialization; 15.2p2 destroys fully constructed subobjects when a later member throws. A trivially copied array element can still have a nontrivial destructor. GCC16.2 O3 fails case8, the 12-element trivially-copyable member prefix; O0, Clang and cppgm pass. Destructor-count expectation follows construction progress, not a fixed assembly layout.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 0; O3=exit 9",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 0; O3=exit 9",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 9"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa21/tests/controls/300-runtime-array-tail-unwind.t",
@@ -230,13 +1121,69 @@
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle",
       "gcc O3 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "721797a60b7031bc81a81cdcd448e5da8dc005f4",
+      "snapshot_source_sha256": "f51f19347bd6c8ccfb48b60efa33e0e8027fa9533d0087154184dcc5c1806fb6",
+      "disposition": "retain-course-oracle",
+      "classification": "C++11-wording",
+      "sources": [
+        {
+          "document": "C++11 dcl.init.aggr",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/dcl.init.aggr"
+        },
+        {
+          "document": "C++11 class.temporary",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/class.temporary"
+        },
+        {
+          "document": "C++11 except.ctor",
+          "url": "https://timsong-cpp.github.io/cppwp/n3337/except.ctor"
+        }
+      ],
+      "rationale": "8.5.1p7 initializes omitted elements; 12.2p4 destroys a default-argument temporary used by an array-element constructor before the next element. 15.2p2 cleans completed elements in reverse order when construction throws. GCC16.2 differs at O0 and O3; Clang and cppgm pass. No newer CWG rule is needed for this expectation.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=exit 1; O3=exit 1",
+        "GCC16.2.0 / gnu++20": "O0=exit 1; O3=exit 1"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   },
   {
     "path": "pa22/tests/controls/300-potential-result-member-function-array.t",
     "id": "b678adf94ab7b39df906",
     "reasons": [
       "gcc O0 does not satisfy this course execution oracle"
-    ]
+    ],
+    "review": {
+      "reviewed": "2026-11-09",
+      "introduced_by": "e7f2afb4962a2d9e2607c4e8ddf706d2af5605b5",
+      "snapshot_source_sha256": "73acf317dd274f6121031a519e05c9ebc3df9de586af4c2a424aae968a995c29",
+      "disposition": "retain-course-oracle",
+      "classification": "adopted-defect-resolution",
+      "sources": [
+        {
+          "document": "CWG 1926",
+          "url": "https://cplusplus.github.io/CWG/issues/1926.html"
+        },
+        {
+          "document": "CWG 2083",
+          "url": "https://cplusplus.github.io/CWG/issues/2083.html"
+        }
+      ],
+      "rationale": "The array operand is a potential result of built-in subscripting. A usable constexpr array read yielding a nonvolatile scalar value does not odr-use its storage. Actual address/decay/reference controls remain distinct. C++20 link success alone is not proof of GCC implementing this rule: C++17 inline variables can supply the otherwise missing definition.",
+      "recheck": {
+        "cppgm b7e1f8d5f / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC15.2.0 / gnu++11": "O0=compile/link failure 1; O3=exit 0",
+        "Clang22.1.2 / gnu++11": "O0=exit 0; O3=exit 0",
+        "GCC16.2.0 / gnu++11": "O0=compile/link failure 1; O3=exit 0",
+        "GCC16.2.0 / gnu++20": "O0=exit 0; O3=exit 0"
+      },
+      "recheck_basis": "Original source identified by snapshot_source_sha256; historical comparison reasons are retained."
+    }
   }
 ]
