@@ -2916,7 +2916,11 @@ void Simplifier::process_block(BlockId block)
 		if (inst.op == Opcode::Branch)
 			simplify_branch(inst);
 		canonicalize(inst);
-		if (shifted_truth_mask(block, prev, id))
+		const Instruction* truth = inst.op == Opcode::Branch || inst.op == Opcode::Select || inst.op == Opcode::Compare
+			? producer(inst.ops[0])
+			: nullptr;
+		if (truth != nullptr && truth->op == Opcode::Binary && static_cast<BinaryOp>(truth->sub) == BinaryOp::And &&
+			shifted_truth_mask(block, prev, id))
 		{
 			changed_ = true;
 			continue;
