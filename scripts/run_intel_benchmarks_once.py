@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import signal
 import subprocess
@@ -13,6 +14,15 @@ import tarfile
 import tempfile
 import urllib.request
 
+SUITES = {
+    'public': 'public-benchmarks.yml',
+    'self-build': 'self-build-benchmarks.yml',
+    'index-cpp': 'index-cpp.yml',
+    'simdjson': 'simdjson.yml',
+    'godot': 'godot.yml',
+    'boost': 'boost.yml',
+}
+
 
 def github(*arguments):
     return json.loads(subprocess.check_output(['gh', 'api', *arguments], text=True))
@@ -20,7 +30,7 @@ def github(*arguments):
 
 def run_suites(args, revision, directory):
     """An ephemeral runner accepts one job, so give each suite its own runner."""
-    for suite in ('public', 'self-build'):
+    for suite in SUITES:
         command = [sys.executable, str(Path(__file__).resolve()), '--suite', suite,
                    '--repo', args.repo, '--ref', args.ref, '--revision', revision,
                    '--directory', str(directory / suite)]
@@ -30,7 +40,7 @@ def run_suites(args, revision, directory):
 
 
 def dispatch_command(args, revision, label):
-    workflow = 'self-build-benchmarks.yml' if args.suite == 'self-build' else 'public-benchmarks.yml'
+    workflow = SUITES[args.suite]
     command = ['gh', 'workflow', 'run', workflow, '--repo', args.repo,
                '--ref', args.ref, '-f', 'platform=intel', '-f', f'revision={revision}',
                '-f', f'runner_label={label}']
@@ -47,14 +57,20 @@ def main():
     parser.add_argument('--directory', type=Path, help='new directory for runner files and logs')
     parser.add_argument('--listen', action='store_true', help='accept one manually queued job instead of dispatching')
     parser.add_argument('--course-quality', action='store_true', help='also measure the optional course exercises')
-    parser.add_argument('--suite', choices=['all', 'public', 'self-build'], default='all',
-                        help='run both suites sequentially (default), or just one')
+    parser.add_argument('--suite', choices=['all', *SUITES], default='all',
+                        help='run all six suites sequentially (default), or just one')
+    parser.add_argument('--plan', action='store_true', help='show the pinned campaign without registering runners or starting jobs')
     args = parser.parse_args()
+    revision = github(f'repos/{args.repo}/commits/{args.revision}')['sha']
+    if args.plan:
+        suites = SUITES if args.suite == 'all' else {args.suite: SUITES[args.suite]}
+        print(json.dumps(dict(revision=revision, workflow_ref=args.ref, suites=suites,
+                              execution='sequential; one temporary runner per suite'), indent=2))
+        return
     if not Path('/proc/cpuinfo').exists() or 'GenuineIntel' not in Path('/proc/cpuinfo').read_text():
         parser.error('this helper requires Intel Linux hardware')
     if not shutil.which('podman') and not shutil.which('docker'):
         parser.error('install Podman or Docker to run the Ubuntu benchmark environment')
-    revision = github(f'repos/{args.repo}/commits/{args.revision}')['sha']
     directory = args.directory or Path(tempfile.mkdtemp(prefix='cppgm-intel-runner-'))
     if args.directory:
         directory.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -78,6 +94,7 @@ def main():
         bundle.extractall(directory, filter='data')
     print(f'Runner files and logs: {directory}', flush=True)
     registered = False
+    run_id = None
     try:
         token = github('--method', 'POST', f'repos/{args.repo}/actions/runners/registration-token')['token']
         with (directory / 'configure.log').open('wb') as log:
@@ -90,7 +107,11 @@ def main():
         registered = True
         if not args.listen:
             # Queue the job for this runner's unique label, not any other runner.
-            subprocess.run(dispatch_command(args, revision, label), check=True)
+            output = subprocess.check_output(dispatch_command(args, revision, label), text=True)
+            print(output, end='', flush=True)
+            match = re.search(r'/actions/runs/(\d+)', output)
+            if match:
+                run_id = match[1]
             print(f'Queued Intel measurement of {revision}', flush=True)
         else:
             print('Listening for one job with runner_label=cppgm-intel', flush=True)
@@ -109,6 +130,12 @@ def main():
                 raise
         if status:
             raise RuntimeError(f'runner exited {status}; see {directory / "runner.log"}')
+        if not args.listen:
+            if run_id is None:
+                raise RuntimeError('gh did not return the run URL; check Actions before starting another suite')
+            # A healthy runner process does not imply a successful benchmark.
+            # Wait for validation and badge publication before the next suite.
+            subprocess.run(['gh', 'run', 'watch', run_id, '--repo', args.repo, '--exit-status'], check=True)
     finally:
         try:
             if registered:

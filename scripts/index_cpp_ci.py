@@ -139,8 +139,7 @@ def run(args):
         compilers = dict(cppgm=cppgm, gcc=compiler_path(args.gcc), clang=compiler_path(args.clang))
         cpus = args.cpus or ','.join(map(str, sorted(os.sched_getaffinity(0))))
         counters, reason = counter_support(directory)
-        metadata = dict(revision=subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip(),
-                        dirty=bool(subprocess.check_output(['git', '-C', str(ROOT), 'status', '--porcelain'])),
+        metadata = dict(**benchmark_hosts.source_metadata(getattr(args, 'repo_root', ROOT)),
                         cpu=public_benchmarks.cpu_model(), cpus=cpus,
                         toolchains={label: subprocess.check_output([str(path), '--version'], text=True).strip()
                                     for label, path in compilers.items()},
@@ -228,7 +227,7 @@ def report(document, directory):
     return text
 
 
-def publish(artifact, target, revision, run_url):
+def publish(artifact, target, revision, run_url, platform='github'):
     if not re.fullmatch('[0-9a-f]{40}', revision):
         raise ValueError('expected a full measured commit hash')
     document = json.loads((artifact / 'results.json').read_text())
@@ -243,7 +242,7 @@ def publish(artifact, target, revision, run_url):
     if json.loads(payloads['metadata.json']) != document['metadata']:
         raise ValueError('provenance differs from the measured results')
     details = report(document, artifact) + '\n[CI run and complete artifacts](' + run_url + ')\n'
-    platform = benchmark_hosts.hosted_platform(document['metadata']['cpu'])
+    platform = benchmark_hosts.publication_platform(document['metadata']['cpu'], platform)
     destinations = [target / 'index-cpp' / platform,
                     target / 'index-cpp/history' / revision / platform]
     for destination in destinations:
@@ -261,6 +260,7 @@ def main():
     commands = parser.add_subparsers(dest='command', required=True)
     runner = commands.add_parser('run')
     runner.add_argument('--compiler', type=Path, default=ROOT / 'dev/cppgm++')
+    runner.add_argument('--repo-root', type=Path, default=ROOT, help='clean source checkout used to build the compiler')
     runner.add_argument('--source', type=Path, help='existing pinned checkout, otherwise fetch upstream')
     runner.add_argument('--output', type=Path, required=True)
     runner.add_argument('--gcc', default='g++')
@@ -273,13 +273,14 @@ def main():
     publisher.add_argument('target', type=Path)
     publisher.add_argument('--revision', required=True)
     publisher.add_argument('--run-url', required=True)
+    publisher.add_argument('--platform', choices=['github', 'intel'], default='github')
     args = parser.parse_args()
     if args.command == 'run':
         if args.blocks < 1 or args.aa_blocks < 1:
             parser.error('block counts must be positive')
         run(args)
     else:
-        publish(args.artifact, args.target, args.revision, args.run_url)
+        publish(args.artifact, args.target, args.revision, args.run_url, args.platform)
 
 
 if __name__ == '__main__':

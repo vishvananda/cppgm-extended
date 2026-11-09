@@ -144,6 +144,29 @@ class BenchmarkTests(unittest.TestCase):
             self.assertTrue((history / 'standard/records.json').is_file())
             self.assertTrue((target / 'boost/epyc/report.md').is_file())
 
+    def test_dedicated_intel_publication_preserves_hosted_o3_history(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            artifact = root / 'artifact'
+            artifact.mkdir()
+            document = self.document()
+            document['metadata']['flags'] += ['optimization=speed']
+            document['metadata']['cpu'] = 'Intel Xeon E5-2696 v4'
+            (artifact / 'results.json').write_text(json.dumps(document))
+            (artifact / 'metadata.json').write_text(json.dumps(document['metadata']))
+            target = root / 'published'
+            for host in ('epyc', 'github-intel'):
+                previous = target / 'boost/o3' / (host + '-compile-gcc.svg')
+                previous.parent.mkdir(parents=True, exist_ok=True)
+                previous.write_text('previous ' + host)
+            boost_benchmarks.publish(argparse.Namespace(artifact=artifact, target=target,
+                revision='a' * 40, run_url='https://example.test/run', platform='intel'))
+            self.assertIn('1.00×', (target / 'boost/o3/intel-compile-gcc.svg').read_text())
+            for host in ('epyc', 'github-intel'):
+                self.assertEqual((target / 'boost/o3' / (host + '-compile-gcc.svg')).read_text(), 'previous ' + host)
+            shared = json.loads((target / 'boost/o3/intel/standard/records.json').read_text())
+            self.assertTrue(all('Dedicated Intel' in r['host']['environment'] for r in shared['records']))
+
     def test_shared_records_preserve_test_execution_phase_and_case_membership(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)

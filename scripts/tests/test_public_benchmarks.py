@@ -815,7 +815,7 @@ class IntelRunnerTests(unittest.TestCase):
 
         with mock.patch.object(intel_runner.subprocess, 'run', side_effect=run):
             intel_runner.run_suites(args, 'a' * 40, Path('/tmp/runners'))
-        self.assertEqual(calls, ['public', 'self-build'])
+        self.assertEqual(calls, ['public', 'self-build', 'index-cpp', 'simdjson', 'godot', 'boost'])
 
     def test_suites_dispatch_distinct_workflows(self):
         args = SimpleNamespace(repo='owner/repo', ref='main', course_quality=True, suite='public')
@@ -827,6 +827,13 @@ class IntelRunnerTests(unittest.TestCase):
         self.assertIn('course_quality=true', public)
         self.assertNotIn('course_quality=true', build)
         self.assertIn('runner_label=unique-label', build)
+        for suite, workflow in intel_runner.SUITES.items():
+            args.suite = suite
+            command = intel_runner.dispatch_command(args, 'a' * 40, 'unique-label')
+            self.assertEqual(command[3], workflow)
+            self.assertEqual(command[command.index('--ref') + 1], 'main')
+            self.assertIn('revision=' + 'a' * 40, command)
+            self.assertIn('runner_label=unique-label', command)
 
 
 if __name__ == '__main__':

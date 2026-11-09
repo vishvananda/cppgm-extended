@@ -237,8 +237,7 @@ def run(args):
         hashes = {label: timing.sha(path) for label, path in compilers.items()}
         library = Path(subprocess.check_output([str(compilers['gcc']), '-print-file-name=libstdc++.so'],
                                                text=True).strip()).resolve(strict=True)
-        metadata = dict(revision=subprocess.check_output(['git', '-C', ROOT, 'rev-parse', 'HEAD'], text=True).strip(),
-                        dirty=bool(subprocess.check_output(['git', '-C', ROOT, 'status', '--porcelain'])),
+        metadata = dict(**benchmark_hosts.source_metadata(getattr(args, 'repo_root', ROOT)),
                         cpu=public_benchmarks.cpu_model(), cpus=cpus, runtime_cpu=args.runtime_cpu,
                         flags=BUILD_FLAGS, compiler_hashes=hashes,
                         jobs=args.jobs, system=dict(platform=platform.platform(),
@@ -281,13 +280,13 @@ def publish(args):
     payloads.update({p.name: p.read_bytes() for p in args.artifact.glob('commands-*.json')})
     if json.loads(payloads['metadata.json']) != metadata:
         raise ValueError('provenance differs from the measured results')
-    platform = benchmark_hosts.hosted_platform(metadata['cpu'])
+    platform = benchmark_hosts.publication_platform(metadata['cpu'], getattr(args, 'platform', 'github'))
     import godot_results
     base = 'https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/godot/'
     history = 'history/' + args.revision + '/' + platform
     with tempfile.TemporaryDirectory() as temporary:
         normalized = Path(temporary) / 'standard'
-        godot_results.generate(args.artifact, normalized, 'GitHub hosted; Ubuntu 26.04 container',
+        godot_results.generate(args.artifact, normalized, benchmark_hosts.environment(platform),
                                args.run_url, base + history + '/report.md', base + history + '/results.json')
         for dest in (args.target / 'godot' / platform, args.target / 'godot' / history):
             dest.mkdir(parents=True, exist_ok=True)
@@ -307,6 +306,7 @@ def main():
     commands = parser.add_subparsers(dest='command', required=True)
     runner = commands.add_parser('run')
     runner.add_argument('--compiler', type=Path, default=ROOT / 'dev/cppgm++')
+    runner.add_argument('--repo-root', type=Path, default=ROOT, help='clean source checkout used to build the compiler')
     runner.add_argument('--source', type=Path)
     runner.add_argument('--output', type=Path, required=True)
     runner.add_argument('--gcc', default='g++')
@@ -325,6 +325,7 @@ def main():
     publisher.add_argument('target', type=Path)
     publisher.add_argument('--revision', required=True)
     publisher.add_argument('--run-url', required=True)
+    publisher.add_argument('--platform', choices=['github', 'intel'], default='github')
     args = parser.parse_args()
     if args.command == 'run':
         if not args.scons or min(args.jobs, args.blocks, args.aa_blocks, args.build_timeout, args.runtime_timeout) < 1 or not math.isfinite(args.seconds) or args.seconds <= 0:

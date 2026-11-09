@@ -252,8 +252,7 @@ def run(args):
         compilers = dict(cppgm=compiler, gcc=common.compiler_path(args.gcc), clang=common.compiler_path(args.clang))
         cpus = args.cpus or str(min(os.sched_getaffinity(0)))
         hashes = {label: timing.sha(path) for label, path in compilers.items()}
-        metadata = dict(revision=subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip(),
-                        dirty=bool(subprocess.check_output(['git', '-C', str(ROOT), 'status', '--porcelain'])),
+        metadata = dict(**benchmark_hosts.source_metadata(getattr(args, 'repo_root', ROOT)),
                         cpu=public_benchmarks.cpu_model(), cpus=cpus, flags={m: flags(source, m) for m in MODES},
                         compiler_hashes=hashes, driver_sha256=timing.sha(ROOT / 'benchmarks/simdjson/parse.cpp'),
                         input_hashes={n: timing.sha(source / 'jsonexamples' / n) for n in INPUTS},
@@ -291,7 +290,7 @@ def publish(args):
     if json.loads(payloads['metadata.json']) != metadata:
         raise ValueError('provenance differs from the measured results')
     details = report(document) + '\n[CI run and complete artifacts](' + args.run_url + ')\n'
-    platform = benchmark_hosts.hosted_platform(metadata['cpu'])
+    platform = benchmark_hosts.publication_platform(metadata['cpu'], getattr(args, 'platform', 'github'))
     destinations = [args.target / 'simdjson' / platform,
                     args.target / 'simdjson/history' / args.revision / platform]
     for dest in destinations:
@@ -309,6 +308,7 @@ def main():
     commands = parser.add_subparsers(dest='command', required=True)
     runner = commands.add_parser('run')
     runner.add_argument('--compiler', type=Path, default=ROOT / 'dev/cppgm++')
+    runner.add_argument('--repo-root', type=Path, default=ROOT, help='clean source checkout used to build the compiler')
     runner.add_argument('--source', type=Path)
     runner.add_argument('--output', type=Path, required=True)
     runner.add_argument('--gcc', default='g++')
@@ -322,6 +322,7 @@ def main():
     publisher.add_argument('target', type=Path)
     publisher.add_argument('--revision', required=True)
     publisher.add_argument('--run-url', required=True)
+    publisher.add_argument('--platform', choices=['github', 'intel'], default='github')
     args = parser.parse_args()
     if args.command == 'run':
         if args.blocks < 1 or args.aa_blocks < 1 or args.seconds <= 0 or not math.isfinite(args.seconds):

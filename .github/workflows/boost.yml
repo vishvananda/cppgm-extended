@@ -5,12 +5,27 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Benchmark host
+        type: choice
+        options: [github, intel]
+        default: github
+      revision:
+        description: Intel run's trusted compiler commit or ref
+        type: string
+        default: ''
+      runner_label:
+        description: Intel runner label supplied by the temporary-runner helper
+        type: string
+        default: cppgm-intel
 
 permissions:
   contents: read
 
 jobs:
   benchmarks:
+    if: inputs.platform != 'intel'
     name: Boost correctness and performance
     runs-on: ubuntu-24.04
     container: ubuntu:26.04
@@ -113,3 +128,13 @@ jobs:
             -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
             commit -q -m "Publish Boost benchmarks of $REVISION"
           git push origin HEAD:benchmark-badges
+
+  intel:
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'intel' && github.actor == github.repository_owner
+    permissions:
+      contents: write
+    uses: ./.github/workflows/intel-library-benchmarks.yml
+    with:
+      suite: boost
+      revision: ${{ inputs.revision || github.sha }}
+      runner_label: ${{ inputs.runner_label }}
