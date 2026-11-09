@@ -1,16 +1,14 @@
 function @shifted(%raw : i64, %base : ptr) -> i64 [binding=strong, no_inline=yes] {
   block ^entry:
     %x = convert trunc u32 i64 %raw
-    %s = binary ushr u32 %x, 7
-    %m = binary and u32 %s, 1
-    %c = cmp eq u32 %m, 1
-    %t5 = convert zext i64 u32 %x
-    %t6 = binary ushr i64 %t5, 3
-    %t7 = binary and i64 %t6, 16
-    %t8 = binary xor i64 %t7, 16
-    %t9 = binary add i64 %t8, 8
-    %t10 = index i8 %base, %t9
-    %v = load typed i64 %t10
+    %t2 = binary and u32 %x, 128
+    %t3 = convert zext i64 u32 %x
+    %t4 = binary ushr i64 %t3, 3
+    %t5 = binary and i64 %t4, 16
+    %t6 = binary xor i64 %t5, 16
+    %t7 = binary add i64 %t6, 8
+    %t8 = index i8 %base, %t7
+    %v = load typed i64 %t8
     return i64 %v
 }
 function @inverted(%raw : i64, %base : ptr) -> i64 [binding=strong, no_inline=yes] {
