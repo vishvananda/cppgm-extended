@@ -896,3 +896,44 @@ LLVM optimization extension audit, 2026-11-09:
    is not proof of a whole-LLVM runtime improvement. The 0.95x goal remains.
  - Allocator freshness, restrict, alignment, minsize and visibility remain
    separate gaps. Evaluate active hot uses and inferred helper work next.
+
+Boolean and integer conversion checkpoint, 2026-11-09
+---------------------------------------------------
+B29 (source f7fa9cbf7, correction 598c0862b, reference refresh 207f2993b)
+adds three measured simplifications: masked truth values across integer
+widths, boolean byte round trips and truncations following integer extensions.
+Source and raw LowIR regressions cover signedness, high bits, shared readers,
+128-bit intermediates, volatile access and floating conversion controls.
+The recurrence matcher follows the resulting zero extensions; the initial
+quality regression is retained, and its exhaustive 256-input regression passes.
+Seven new required PA32 fixtures accompany the group.
+
+The corrected group passes strict 9956/9956, debug/modern, all architecture,
+file/placement/CWG checks, harness, PA5 self-host and inception. Student export,
+42 reference wrappers, all seven exported fixtures, PA35 quick/smoke and the
+official course/student releases pass. The first release passed 17/17 course
+and 16/17 student gates: student scaling 2.57x exceeded the 2.40x headroom
+margin while remaining inside the 3.00x hard limit. An unchanged-build cached
+recheck passes both 17/17, with course scaling 2.12x and student 2.01x.
+Both observations are retained. Frozen O3 compile instructions are +0.00749%,
+RSS 0.99974x; O0 instructions 0.999976x. All compiler output observations repeat.
+
+The full fresh LLVM build succeeds in 359.78 s (all 2577 C++ translation
+units), and all 204 generated dependencies in the audited closure match the
+native build. Native-built and cppgm-built Clang produce byte-identical objects
+and linked compilers for all 323 current inputs, and separately all 323 frozen
+inputs. Every six-observation timing output also matches byte for byte.
+
+Full frozen runtime: native 43.615 s, cppgm-built 53.650 s, ratio 0.8129543x.
+Cppgm-built Clang retires 1,235,107,271,371.5 instructions on average, 0.99717694x
+the B27 checkpoint (-0.2823%); native instructions remain stable (1.0000614x).
+Cppgm-built elapsed time is essentially unchanged from B27's 53.675 s; native
+is faster in this run. Do not present the instruction reduction as a resolved
+elapsed-time gain or treat cross-run ratio movement as an isolated codegen
+regression. The 0.95x objective remains open.
+
+Evidence: /mnt/vizier/cppgm-llvm-evidence/block29-bool-values-r2-*, including
+immutable compiler/LLVM binaries, all raw observations, failed initial strict
+and export attempts, both release results and the final qualification receipt.
+Subsequent tail sharing and inferred helper repeatability are private
+experiments; they are not part of this accepted checkpoint.

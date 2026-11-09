@@ -4,9 +4,11 @@ LLVM optimization extension audit, 2026-11-09
 Three gaps are fixed and fully qualified: repeatable GNU pure/const calls,
 fixed-width bit reversal and non-null pointer return promises. Remaining gaps
 include allocator return-alias promises, restrict, alignment, minsize and
-visibility. The complete LLVM runtime speed ratio is 0.8331x native; retired
-instructions are essentially unchanged, so this group does not explain the
-larger code-generation gap or achieve the 0.95x objective.
+visibility. The extension group alone measured 0.8331x native with essentially unchanged
+retired instructions. A subsequent boolean/conversion group measured 0.8130x
+(native 43.615 s, cppgm-built 53.650 s), with 0.2823% fewer retired instructions
+than the extension checkpoint and essentially unchanged cppgm-built elapsed
+time. Neither group achieves the 0.95x objective.
 
 Scope and evidence
 ------------------
@@ -124,3 +126,12 @@ Semantic references
 https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
 https://clang.llvm.org/docs/LanguageExtensions.html#builtin-bitreverse
 The exact LLVM Builtins.td and Compiler.h inputs are in the pinned source tree.
+
+Later optimizer qualification
+-----------------------------
+The boolean/conversion follow-up passes strict 9956/9956 and the complete
+course/student releases 17/17. Its full LLVM build and all current/frozen
+323-object and linked-compiler byte comparisons pass. The detailed receipts,
+including the initial scaling headroom failure and unchanged-build recheck,
+are recorded in llvm-build-plan.txt under the B29 checkpoint. Remaining
+extension promises listed above have not been implemented by that group.
