@@ -1,6 +1,3 @@
-global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  zero 9
-}
 global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 116
   i8 101
@@ -37,9 +34,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $ordinary
-    copyobj 9x1 @__constexpr_template__1, %t1
+    zeroinit 9x1 %t1
     %t2 = addr $fixed
-    copyobj 9x1 @__constexpr_template__1, %t2
+    zeroinit 9x1 %t2
     %t3 = addr $changing
     store typed i64 0, $constructor_array_index__1
     jump ^constructor_array_cond_1

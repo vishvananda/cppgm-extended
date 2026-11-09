@@ -2,12 +2,6 @@ global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   i32 5
   zero 12
 }
-global @__constexpr_template__2 [storage=readonly, binding=internal] = {
-  zero 32
-}
-global @__constexpr_template__3 [storage=readonly, binding=internal] = {
-  zero 16
-}
 
 function @increment(%value : i32) -> i32 [binding=strong, object=_Z9incrementi] {
   slot $value : i32
@@ -67,9 +61,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $array
     copyobj 16x4 @__constexpr_template__1, %t1
     %t2 = addr $pointer_bytes
-    copyobj 32x4 @__constexpr_template__2, %t2
+    zeroinit 32x4 %t2
     %t3 = addr $value_bytes
-    copyobj 16x4 @__constexpr_template__3, %t3
+    zeroinit 16x4 %t3
     %t4 = addr $array
     %t5 = addr $pointer_bytes
     %t6 = call i32 @adjusted(%t4, %t5)

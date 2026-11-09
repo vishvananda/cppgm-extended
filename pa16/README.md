@@ -242,7 +242,9 @@ C++11 `constexpr` forms that later template and library code expect:
 - `constexpr` variables whose initializers must be fully evaluated at compile time
 - an automatic nonvolatile array of trivial scalar elements whose complete
   initializer is known at compile time is initialized from readonly constant
-  data with one object copy; each automatic array still has distinct storage
+  data with one object copy at any number of dimensions; an entirely zero-byte
+  representation uses a direct bulk zero. Each automatic array still has
+  distinct storage
 - reference-valued constant evaluation and `const T &` / reference parameter passing where
   the implemented object model already defines the underlying semantics
 - reference initialization consumes the typed list's temporary or directly
@@ -362,8 +364,8 @@ So PA16 should leave behind:
 Automatic scalar-array image eligibility depends on the evaluated initializer,
 not on whether the declaration spells `constexpr` or `const`. PA10 establishes
 the literal-initializer case; PA16 adds general constant evaluation. Readonly
-images may be shared, while each automatic array retains its own writable
-storage. Nonconstant initializers retain runtime evaluation, and volatile
+images may be shared, while each automatic array retains its own storage and
+mutable arrays remain writable. Nonconstant initializers retain runtime evaluation, and volatile
 arrays retain their required stores. Class construction and destruction stay
 on their typed lifetime paths.
 

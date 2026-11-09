@@ -59,22 +59,9 @@ function @node__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_ad
   block ^entry:
     store typed ptr %this, $this
     store typed ptr %other, $other
-    %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 4
-    %t3 = load typed i32 %t2
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
-    store typed i32 %t3, %t5
-    %t6 = load typed ptr $this
-    return ptr %t6
-}
-function @box_node___operator_(%this : ptr [object_bytes=1], %other : ptr [pass=by_address, object_bytes=1]) -> ptr [unwind=no, binding=weak, object=_ZN3boxI4nodeEaSERKS1_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
     %t1 = load typed ptr $this
-    return ptr %t1
+    %t2 = load typed ptr $other
+    copyobj 8x4 %t2, %t1
+    %t3 = load typed ptr $this
+    return ptr %t3
 }

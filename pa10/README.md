@@ -343,9 +343,11 @@ This PA10 milestone supports the following:
   and constructors use a loop. Explicit clauses retain their evaluation order
   and each omitted object retains value-initialization semantics
 - automatic nonvolatile scalar arrays with completely known literal initializers
-  use one copy from readonly constant data, including omitted zero elements;
-  mutable arrays still have distinct automatic storage. PA16 extends eligibility
-  to initializers evaluated through general constexpr expressions
+  use one copy from readonly constant data, including omitted zero elements,
+  at any number of dimensions. An entirely zero-byte representation uses a
+  direct bulk zero instead. Mutable arrays still have distinct automatic
+  storage. PA16 extends eligibility to initializers evaluated through general
+  constexpr expressions
 - expression statements
 - `return`
 - `if` / `else`

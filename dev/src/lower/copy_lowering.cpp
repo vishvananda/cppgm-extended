@@ -31,20 +31,6 @@ const sema::ClassEntity* MemberClass(const sema::Type* type)
 	return sema::ClassOf(type);
 }
 
-// A member of an empty class type (not an array of one): an assignment
-// ends its leading storage copy there and names the member's assignment
-// operator without calling it (the course's form, as the reference
-// presents it).
-bool EmptyClassMember(const sema::SubobjectInit& init)
-{
-	if (init.member == nullptr)
-		return false;
-	const sema::Type* type = init.member->variable->type;
-	const sema::ClassEntity* cls = type->is_reference() || type->kind == sema::TypeKind::Array ? nullptr
-																							   : sema::ClassOf(type);
-	return cls != nullptr && cls->empty;
-}
-
 } // namespace
 
 bool FunctionLowering::trivial_subobject(const sema::SubobjectInit& init)
@@ -55,9 +41,16 @@ bool FunctionLowering::trivial_subobject(const sema::SubobjectInit& init)
 	const sema::Type* type = init.base != nullptr ? init.base->base->type : init.member->variable->type;
 	if (type->is_reference())
 		return false;
-	if (MemberClass(type) == nullptr)
+	const sema::Type* leaf = type;
+	while (leaf->kind == sema::TypeKind::Array)
+		leaf = leaf->element;
+	if ((leaf->cv & sema::kVolatile) != 0)
+		return false;
+	const sema::ClassEntity* cls = MemberClass(type);
+	if (cls == nullptr)
 		return true;
-	return init.constructor == nullptr || init.constructor->trivial;
+	// The enclosing object's layout has already completed its subobjects.
+	return !cls->contains_volatile && (init.constructor == nullptr || init.constructor->trivial);
 }
 
 uint64_t FunctionLowering::subobject_offset(const sema::SubobjectInit& init, uint32_t location)
@@ -97,9 +90,21 @@ void FunctionLowering::copy_members(uint32_t location)
 	const sema::ClassEntity* entity = sema::ClassOf(function_->owner->entity->type);
 	const bool assignment = IsAssignment(function_->copy_kind);
 	const uint32_t count = function_->init_count;
+	if (entity->key == TokenKind::KW_UNION && entity->contains_volatile)
+	{
+		copy_volatile_elements(lowir::Type::scalar(lowir::TypeKind::U8), source_object(), this_pointer(location),
+			lowering_.size_of(entity->type, location), 1);
+		if (assignment)
+		{
+			lowir::Instruction ret = lowir::make_instruction(
+				lowir::Opcode::Return, lowir::Type::scalar(lowir::TypeKind::Ptr));
+			ret.ops[0] = this_pointer(location);
+			terminate(ret);
+		}
+		return;
+	}
 	uint32_t first = 0;
-	while (first < count && trivial_subobject(function_->inits[first]) &&
-		!(assignment && EmptyClassMember(function_->inits[first])))
+	while (first < count && trivial_subobject(function_->inits[first]))
 		++first;
 	// A dynamic object's table pointer is its own class's, never the
 	// source's (whose dynamic type may be derived): members one by one.
@@ -298,6 +303,8 @@ void FunctionLowering::copy_subobject(const sema::SubobjectInit& init, bool assi
 		const lowir::Type storage = reference ? pointer : lowering_.storage_type(type);
 		Place target = Place();
 		Place from = Place();
+		qualify(target, type);
+		qualify(from, type);
 		RValue value;
 		if (assignment || reference)
 		{
@@ -339,13 +346,10 @@ void FunctionLowering::copy_subobject(const sema::SubobjectInit& init, bool assi
 		copy_elements(init, type, location);
 		return;
 	}
-	// An empty subobject has no storage to copy (a trivial constructor or
-	// assignment operator is not called for it; an empty member's
-	// assignment operator is still emitted, see EmptyClassMember).
+	// An empty subobject has no value to transfer. Its unused trivial
+	// assignment helper need not be emitted.
 	if (cls->empty && (init.constructor == nullptr || init.constructor->trivial))
 	{
-		if (assignment && init.constructor != nullptr && EmptyClassMember(init))
-			lowering_.demand(init.constructor);
 		// (A synthesized constructor's destructible one: its addresses,
 		// the course's form.)
 		if (construction_chain_ && needs_destruction(type))
@@ -364,7 +368,7 @@ void FunctionLowering::copy_subobject(const sema::SubobjectInit& init, bool assi
 	const lowir::Value source = shared ? virtual_base_address(source_object(), entity, cls)
 									   : subobject_of(source_object(), init, location);
 	{
-		if (!assignment && (init.constructor == nullptr || init.constructor->trivial))
+		if (!assignment && (init.constructor == nullptr || copies_storage(init.constructor)))
 		{
 			// A non-virtual base whose tail padding passes what the copy may
 			// write: its data (see subobject_bit_limit).
@@ -519,6 +523,62 @@ void FunctionLowering::call_copy(const sema::FunctionEntity* function, EntryVari
 		place_construction_handlers();
 		place(next);
 	}
+}
+
+bool FunctionLowering::copy_volatile_array(
+	const sema::Type* type, lowir::Value source, lowir::Value destination, uint32_t location)
+{
+	if (type->kind != sema::TypeKind::Array)
+		return false;
+	uint64_t count = 1;
+	while (type->kind == sema::TypeKind::Array)
+	{
+		count *= type->bound;
+		type = type->element;
+	}
+	if ((type->cv & sema::kVolatile) == 0 || sema::ClassOf(type) != nullptr)
+		return false;
+	copy_volatile_elements(lowering_.storage_type(type), source, destination, count, lowering_.size_of(type, location));
+	return true;
+}
+
+void FunctionLowering::copy_volatile_elements(
+	lowir::Type stored, lowir::Value source, lowir::Value destination, uint64_t count, uint64_t stride)
+{
+	// Copy scalar array elements with their original widths. A union's opaque
+	// representation uses bytes: its active member cannot be selected here.
+	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
+	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const auto transfer = [&](const RValue& offset) {
+		Place from = Place();
+		from.storage = index(i8, ir_model::IPK_ARRAY_ELEMENT, source, offset).value;
+		from.is_volatile = true;
+		Place to = Place();
+		to.storage = index(i8, ir_model::IPK_ARRAY_ELEMENT, destination, offset).value;
+		to.is_volatile = true;
+		store(stored, load(stored, from), to);
+	};
+	if (count <= 8)
+	{
+		for (uint64_t i = 0; i < count; ++i)
+			transfer(integer(i64, i * stride));
+		return;
+	}
+	Place index_slot = Place();
+	index_slot.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::CopyArrayIndex, i64));
+	store(i64, integer(i64, 0), index_slot);
+	const lowir::BlockId condition = new_block(lowir::BlockKind::CopyArrayCond);
+	const lowir::BlockId body = new_block(lowir::BlockKind::CopyArrayBody);
+	const lowir::BlockId end = new_block(lowir::BlockKind::CopyArrayEnd);
+	jump(condition);
+	place(condition);
+	const RValue current = load(i64, index_slot);
+	branch(compare(lowir::ComparePredicate::Ult, i64, current, integer(i64, count)), body, end);
+	place(body);
+	transfer(stride == 1 ? current : binary(lowir::BinaryOp::Mul, i64, current, integer(i64, stride)));
+	store(i64, binary(lowir::BinaryOp::Add, i64, current, integer(i64, 1)), index_slot);
+	jump(condition);
+	place(end);
 }
 
 void FunctionLowering::copy_elements(const sema::SubobjectInit& init, const sema::Type* type, uint32_t location)

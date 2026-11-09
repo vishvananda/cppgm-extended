@@ -63,13 +63,19 @@ bool BFloatArithmeticIn(const syntax::Expr& expr, uint32_t depth)
 }
 
 // Whether a non-constexpr automatic array may be copied from a constant
-// image of its initializer (the course's form): one dimension of
+// image of its initializer: any dimensions of
 // nonvolatile arithmetic, enumeration, pointer or std::nullptr_t elements.
 bool ScalarImageArray(const sema::Type* type)
 {
-	if (type->kind != sema::TypeKind::Array || type->bound == 0 || (type->cv & (sema::kVolatile | sema::kAtomic)) != 0)
+	if (type->kind != sema::TypeKind::Array)
 		return false;
-	const sema::Type* element = type->element;
+	const sema::Type* element = type;
+	while (element->kind == sema::TypeKind::Array)
+	{
+		if (element->bound == 0 || (element->cv & (sema::kVolatile | sema::kAtomic)) != 0)
+			return false;
+		element = element->element;
+	}
 	if ((element->cv & (sema::kVolatile | sema::kAtomic)) != 0)
 		return false;
 	switch (element->unqualified->kind)
@@ -647,8 +653,8 @@ void FunctionLowering::local_object_variable(const sema::VariableEntity* variabl
 		? (written->arguments.size == 1 ? written->arguments[0] : nullptr)
 		: written->expression;
 	// A constexpr array initialized by a braced list or a string literal is
-	// copied from its constant image (the course's form); so is a mutable
-	// one-dimensional array of scalars whose whole initializer is known
+	// copied from its constant image; so is a mutable array of scalars
+	// whose whole initializer is known
 	// (each array keeps its own storage, the image is shared); volatile
 	// elements keep their volatile stores (lowir.md: copyobj has no
 	// volatile form).
@@ -662,11 +668,15 @@ void FunctionLowering::local_object_variable(const sema::VariableEntity* variabl
 			(inner->kind == syntax::ExprKind::Literal && inner->facts->type->kind == sema::TypeKind::Array)) &&
 		!unreachable_storage_)
 	{
-		const lowir::SymbolId image = lowering_.constexpr_image(variable, written);
-		if (image != lowir::kNoId)
+		const ConstantImage image = lowering_.constexpr_image(variable, written);
+		if (image.zero || image.symbol != lowir::kNoId)
 		{
 			imaged_discard_slots(*inner, 0);
-			copy_object(type, lowir::Value::symbol(image), address_of(place), location);
+			if (image.zero)
+				zero_bytes(
+					address_of(place), lowering_.size_of(type, location), lowering_.alignment_of(type, location));
+			else
+				copy_object(type, lowir::Value::symbol(image.symbol), address_of(place), location);
 			return;
 		}
 	}

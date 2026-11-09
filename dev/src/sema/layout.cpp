@@ -376,6 +376,7 @@ bool Analyzer::class_layout(ClassEntity* entity, uint32_t location)
 	bool pod = !entity->non_pod && entity->bases == nullptr && !entity->polymorphic;
 	bool contains_empty = entity->empty;
 	bool volatile_or_union = is_union;
+	bool contains_volatile = false;
 	uint64_t empty_base_limit = 0;
 	const BaseClass* primary = nullptr;
 	for (const BaseClass* base = entity->bases; base != nullptr; base = base->next)
@@ -386,6 +387,7 @@ bool Analyzer::class_layout(ClassEntity* entity, uint32_t location)
 			return false;
 		contains_empty = contains_empty || base_class->contains_empty;
 		volatile_or_union = volatile_or_union || base_class->contains_volatile_or_union;
+		contains_volatile = contains_volatile || base_class->contains_volatile;
 		if (base_class->empty)
 			empty_base_limit = std::max(empty_base_limit, base_class->size);
 	}
@@ -406,14 +408,21 @@ bool Analyzer::class_layout(ClassEntity* entity, uint32_t location)
 			return false;
 		uint64_t count = 0;
 		const Type* scalar = member->variable->type;
+		bool inhabited = true;
 		while (scalar->kind == TypeKind::Array)
+		{
+			inhabited = inhabited && scalar->bound != 0;
 			scalar = scalar->element;
+		}
 		volatile_or_union = volatile_or_union || (scalar->cv & kVolatile) != 0;
+		contains_volatile = contains_volatile ||
+			(inhabited && (!member->bit_field || member->variable->name != nullptr) && (scalar->cv & kVolatile) != 0);
 		if (const ClassEntity* element = ElementClass(member->variable->type, count))
 		{
 			pod = pod && !element->non_pod;
 			contains_empty = contains_empty || (element->contains_empty && count != 0);
 			volatile_or_union = volatile_or_union || element->contains_volatile_or_union;
+			contains_volatile = contains_volatile || (count != 0 && element->contains_volatile);
 			packs_all = packs_all && PackableElement(element);
 			// An empty potentially-overlapping member is tried at 0 too.
 			if (member->overlapping && element->empty && !is_union)
@@ -614,6 +623,7 @@ bool Analyzer::class_layout(ClassEntity* entity, uint32_t location)
 	entity->non_pod = !pod;
 	entity->contains_empty = contains_empty;
 	entity->contains_volatile_or_union = volatile_or_union;
+	entity->contains_volatile = contains_volatile;
 	entity->packed = packed && packs_all;
 	return true;
 }

@@ -1,0 +1,1070 @@
+function @scalar_copy(%s : ptr [pass=by_address, object_bytes=4]) -> obj<4x4> [binding=strong, object=_Z11scalar_copyRK6Scalar] {
+  slot $s : ptr
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store typed ptr %s, $s
+    %t1 = addr $retobj__1
+    %t2 = load typed ptr $s
+    call void @Scalar__Scalar(%t1, %t2)
+    return obj<4x4> $retobj__1
+}
+function @scalar_move(%s : ptr [pass=by_address, object_bytes=4]) -> obj<4x4> [binding=strong, object=_Z11scalar_moveR6Scalar] {
+  slot $s : ptr
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store typed ptr %s, $s
+    %t1 = addr $retobj__1
+    %t2 = load typed ptr $s
+    call void @Scalar__Scalar__2(%t1, %t2)
+    return obj<4x4> $retobj__1
+}
+function @scalar_assign(%d : ptr [pass=by_address, object_bytes=4], %s : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z13scalar_assignR6ScalarRKS_] {
+  slot $d : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %d, $d
+    store typed ptr %s, $s
+    %t1 = load typed ptr $d
+    %t2 = load typed ptr $s
+    %t3 = call ptr @Scalar__operator_(%t1, %t2)
+    return void
+}
+function @scalar_move_assign(%d : ptr [pass=by_address, object_bytes=4], %s : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z18scalar_move_assignR6ScalarS0_] {
+  slot $d : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %d, $d
+    store typed ptr %s, $s
+    %t1 = load typed ptr $d
+    %t2 = load typed ptr $s
+    %t3 = call ptr @Scalar__operator___ov2(%t1, %t2)
+    return void
+}
+function @array_assign(%d : ptr [pass=by_address, object_bytes=40], %s : ptr [pass=by_address, object_bytes=40]) -> void [binding=strong, object=_Z12array_assignR5ArrayRKS_] {
+  slot $d : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %d, $d
+    store typed ptr %s, $s
+    %t1 = load typed ptr $d
+    %t2 = load typed ptr $s
+    %t3 = call ptr @Array__operator_(%t1, %t2)
+    return void
+}
+function @nested_assign(%d : ptr [pass=by_address, object_bytes=12], %s : ptr [pass=by_address, object_bytes=12]) -> void [binding=strong, object=_Z13nested_assignR6NestedRKS_] {
+  slot $d : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %d, $d
+    store typed ptr %s, $s
+    %t1 = load typed ptr $d
+    %t2 = load typed ptr $s
+    %t3 = call ptr @Nested__operator_(%t1, %t2)
+    return void
+}
+function @mixed_assign(%d : ptr [pass=by_address, object_bytes=12], %s : ptr [pass=by_address, object_bytes=12]) -> void [binding=strong, object=_Z12mixed_assignR5MixedRKS_] {
+  slot $d : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %d, $d
+    store typed ptr %s, $s
+    %t1 = load typed ptr $d
+    %t2 = load typed ptr $s
+    %t3 = call ptr @Mixed__operator_(%t1, %t2)
+    return void
+}
+function @union_assign(%d : ptr [pass=by_address, object_bytes=8], %s : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z12union_assignR5UnionRKS_] {
+  slot $d : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %d, $d
+    store typed ptr %s, $s
+    %t1 = load typed ptr $d
+    %t2 = load typed ptr $s
+    %t3 = call ptr @Union__operator_(%t1, %t2)
+    return void
+}
+function @wrapped_assign(%d : ptr [pass=by_address, object_bytes=16], %s : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z14wrapped_assignR7WrappedRKS_] {
+  slot $d : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %d, $d
+    store typed ptr %s, $s
+    %t1 = load typed ptr $d
+    %t2 = load typed ptr $s
+    %t3 = call ptr @Wrapped__operator_(%t1, %t2)
+    return void
+}
+function @pointer_assign(%d : ptr [pass=by_address, object_bytes=8], %s : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z14pointer_assignR7PointerRKS_] {
+  slot $d : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %d, $d
+    store typed ptr %s, $s
+    %t1 = load typed ptr $d
+    %t2 = load typed ptr $s
+    %t3 = call ptr @Pointer__operator_(%t1, %t2)
+    return void
+}
+function @volatile_pointer_assign(%d : ptr [pass=by_address, object_bytes=8], %s : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z23volatile_pointer_assignR15VolatilePointerRKS_] {
+  slot $d : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %d, $d
+    store typed ptr %s, $s
+    %t1 = load typed ptr $d
+    %t2 = load typed ptr $s
+    %t3 = call ptr @VolatilePointer__operator_(%t1, %t2)
+    return void
+}
+function @bits_assign(%d : ptr [pass=by_address, object_bytes=4], %s : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z11bits_assignR4BitsRKS_] {
+  slot $d : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %d, $d
+    store typed ptr %s, $s
+    %t1 = load typed ptr $d
+    %t2 = load typed ptr $s
+    %t3 = call ptr @Bits__operator_(%t1, %t2)
+    return void
+}
+function @run() -> i32 [binding=strong, object=_Z3runv] {
+  slot $a : obj<4x4>
+  slot $b : obj<4x4>
+  slot $c : obj<4x4>
+  slot $d : obj<4x4>
+  slot $bad : i32
+  slot $first : obj<40x4>
+  slot $second : obj<40x4>
+  slot $constructor_array_index__1 : i64
+  slot $copied : obj<40x4>
+  slot $i : i32
+  slot $n : obj<12x4>
+  slot $m : obj<12x4>
+  slot $lor__2 : i64
+  slot $lor__3 : i64
+  slot $x : obj<12x4>
+  slot $y : obj<12x4>
+  slot $lor__4 : i64
+  slot $derived : obj<8x4>
+  slot $source : obj<8x4>
+  slot $lor__5 : i64
+  slot $lor__6 : i64
+  slot $u : obj<8x8>
+  slot $v : obj<8x8>
+  slot $union_copy : obj<8x8>
+  slot $w : obj<16x8>
+  slot $z : obj<16x8>
+  slot $lor__7 : i64
+  slot $value : i32
+  slot $p : obj<8x8>
+  slot $q : obj<8x8>
+  slot $vp : obj<8x8>
+  slot $vq : obj<8x8>
+  slot $lor__8 : i64
+  slot $bits : obj<4x4>
+  slot $bits_copy : obj<4x4>
+  slot $lor__9 : i64
+
+  block ^entry:
+    %t1 = addr $a
+    %t2 = addr $a
+    %t3 = index i8 [projection=field] %t2, 0
+    store volatile i32 17, %t3
+    %t4 = addr $b
+    %t5 = addr $b
+    %t6 = index i8 [projection=field] %t5, 0
+    store volatile i32 0, %t6
+    %t7 = addr $b
+    %t8 = addr $a
+    call void @scalar_assign(%t7, %t8)
+    %t9 = addr $c
+    %t10 = addr $b
+    %t11 = call obj<4x4> @scalar_copy(%t10)
+    copyobj 4x4 %t11, %t9
+    %t12 = addr $d
+    %t13 = addr $c
+    %t14 = call obj<4x4> @scalar_move(%t13)
+    copyobj 4x4 %t14, %t12
+    %t15 = addr $b
+    %t16 = addr $d
+    call void @scalar_move_assign(%t15, %t16)
+    %t17 = addr $b
+    %t18 = index i8 [projection=field] %t17, 0
+    %t19 = load volatile i32 %t18
+    %t20 = cmp ne i32 %t19, 17
+    %t21 = convert trunc i32 i64 %t20
+    store typed i32 %t21, $bad
+    %t22 = addr $first
+    %t23 = addr $first
+    %t24 = index i8 [projection=field] %t23, 0
+    %t25 = index i32 [projection=array_element] %t24, 0
+    store volatile i32 1, %t25
+    %t26 = addr $first
+    %t27 = index i8 [projection=field] %t26, 0
+    %t28 = index i32 [projection=array_element] %t27, 1
+    store volatile i32 2, %t28
+    %t29 = addr $first
+    %t30 = index i8 [projection=field] %t29, 0
+    %t31 = index i32 [projection=array_element] %t30, 2
+    store volatile i32 3, %t31
+    %t32 = addr $first
+    %t33 = index i8 [projection=field] %t32, 0
+    %t34 = index i32 [projection=array_element] %t33, 3
+    store volatile i32 4, %t34
+    %t35 = addr $first
+    %t36 = index i8 [projection=field] %t35, 0
+    %t37 = index i32 [projection=array_element] %t36, 4
+    store volatile i32 5, %t37
+    %t38 = addr $first
+    %t39 = index i8 [projection=field] %t38, 0
+    %t40 = index i32 [projection=array_element] %t39, 5
+    store volatile i32 6, %t40
+    %t41 = addr $first
+    %t42 = index i8 [projection=field] %t41, 0
+    %t43 = index i32 [projection=array_element] %t42, 6
+    store volatile i32 7, %t43
+    %t44 = addr $first
+    %t45 = index i8 [projection=field] %t44, 0
+    %t46 = index i32 [projection=array_element] %t45, 7
+    store volatile i32 8, %t46
+    %t47 = addr $first
+    %t48 = index i8 [projection=field] %t47, 0
+    %t49 = index i32 [projection=array_element] %t48, 8
+    store volatile i32 9, %t49
+    %t50 = addr $first
+    %t51 = index i8 [projection=field] %t50, 0
+    %t52 = index i32 [projection=array_element] %t51, 9
+    store volatile i32 10, %t52
+    %t53 = addr $second
+    %t54 = addr $second
+    %t55 = index i8 [projection=field] %t54, 0
+    store typed i64 0, $constructor_array_index__1
+    jump ^constructor_array_cond_1
+
+  block ^constructor_array_cond_1:
+    %t56 = load typed i64 $constructor_array_index__1
+    %t57 = cmp ult i64 %t56, 10
+    branch %t57, ^constructor_array_body_2, ^constructor_array_end_3
+
+  block ^constructor_array_body_2:
+    %t58 = binary mul i64 %t56, 4
+    %t59 = index i8 [projection=array_element] %t55, %t58
+    store volatile i32 0, %t59
+    %t60 = binary add i64 %t56, 1
+    store typed i64 %t60, $constructor_array_index__1
+    jump ^constructor_array_cond_1
+
+  block ^constructor_array_end_3:
+    %t61 = addr $copied
+    %t62 = addr $first
+    call void @Array__Array(%t61, %t62)
+    %t63 = addr $second
+    %t64 = addr $copied
+    call void @array_assign(%t63, %t64)
+    store typed i32 0, $i
+    jump ^for_cond_4
+
+  block ^for_cond_4:
+    %t65 = load typed i32 $i
+    %t66 = cmp ne i32 %t65, 10
+    branch %t66, ^for_body_5, ^for_end_7
+
+  block ^for_body_5:
+    %t67 = addr $second
+    %t68 = index i8 [projection=field] %t67, 0
+    %t69 = load typed i32 $i
+    %t70 = index i32 [projection=array_element] %t68, %t69
+    %t71 = load volatile i32 %t70
+    %t72 = load typed i32 $i
+    %t73 = binary add nowrap i32 %t72, 1
+    %t74 = cmp ne i32 %t71, %t73
+    %t75 = convert trunc i32 i64 %t74
+    %t76 = load typed i32 $bad
+    %t77 = binary add nowrap i32 %t76, %t75
+    store typed i32 %t77, $bad
+    jump ^for_iter_6
+
+  block ^for_iter_6:
+    %t78 = load typed i32 $i
+    %t79 = binary add nowrap i32 %t78, 1
+    store typed i32 %t79, $i
+    jump ^for_cond_4
+
+  block ^for_end_7:
+    %t80 = addr $n
+    %t81 = addr $n
+    %t82 = index i8 [projection=field] %t81, 0
+    %t83 = index i8 [projection=field] %t82, 0
+    store volatile i32 23, %t83
+    %t84 = addr $n
+    %t85 = index i8 [projection=field] %t84, 4
+    %t86 = index i8 [projection=field] %t85, 0
+    store volatile i32 29, %t86
+    %t87 = index i8 %t85, 4
+    %t88 = index i8 [projection=field] %t87, 0
+    store volatile i32 31, %t88
+    %t89 = addr $m
+    %t90 = addr $m
+    %t91 = index i8 [projection=field] %t90, 0
+    %t92 = index i8 [projection=field] %t91, 0
+    store volatile i32 0, %t92
+    %t93 = addr $m
+    %t94 = index i8 [projection=field] %t93, 4
+    %t95 = index i8 [projection=field] %t94, 0
+    store volatile i32 0, %t95
+    %t96 = index i8 %t94, 4
+    %t97 = index i8 [projection=field] %t96, 0
+    store volatile i32 0, %t97
+    %t98 = addr $m
+    %t99 = addr $n
+    call void @nested_assign(%t98, %t99)
+    %t100 = addr $m
+    %t101 = index i8 [projection=field] %t100, 0
+    %t102 = index i8 [projection=field] %t101, 0
+    %t103 = load volatile i32 %t102
+    %t104 = cmp ne i32 %t103, 23
+    branch %t104, ^lor_short_9, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t105 = addr $m
+    %t106 = index i8 [projection=field] %t105, 4
+    %t107 = binary mul i64 0, 4
+    %t108 = index i8 [projection=array_element] %t106, %t107
+    %t109 = index i8 [projection=field] %t108, 0
+    %t110 = load volatile i32 %t109
+    %t111 = cmp ne i32 %t110, 29
+    %t112 = cmp ne i64 %t111, 0
+    store typed i64 %t112, $lor__2
+    jump ^lor_end_10
+
+  block ^lor_short_9:
+    store typed i64 1, $lor__2
+    jump ^lor_end_10
+
+  block ^lor_end_10:
+    %t113 = load typed i64 $lor__2
+    branch %t113, ^lor_short_12, ^lor_rhs_11
+
+  block ^lor_rhs_11:
+    %t114 = addr $m
+    %t115 = index i8 [projection=field] %t114, 4
+    %t116 = binary mul i64 1, 4
+    %t117 = index i8 [projection=array_element] %t115, %t116
+    %t118 = index i8 [projection=field] %t117, 0
+    %t119 = load volatile i32 %t118
+    %t120 = cmp ne i32 %t119, 31
+    %t121 = cmp ne i64 %t120, 0
+    store typed i64 %t121, $lor__3
+    jump ^lor_end_13
+
+  block ^lor_short_12:
+    store typed i64 1, $lor__3
+    jump ^lor_end_13
+
+  block ^lor_end_13:
+    %t122 = load typed i64 $lor__3
+    %t123 = convert trunc i32 i64 %t122
+    %t124 = load typed i32 $bad
+    %t125 = binary add nowrap i32 %t124, %t123
+    store typed i32 %t125, $bad
+    %t126 = addr $x
+    %t127 = addr $x
+    %t128 = index i8 [projection=field] %t127, 0
+    store typed i32 5, %t128
+    %t129 = addr $x
+    %t130 = index i8 [projection=field] %t129, 8
+    store volatile i32 37, %t130
+    %t131 = addr $y
+    %t132 = addr $y
+    %t133 = index i8 [projection=field] %t132, 0
+    store typed i32 0, %t133
+    %t134 = addr $y
+    %t135 = index i8 [projection=field] %t134, 8
+    store volatile i32 0, %t135
+    %t136 = addr $y
+    %t137 = addr $x
+    call void @mixed_assign(%t136, %t137)
+    %t138 = addr $y
+    %t139 = index i8 [projection=field] %t138, 0
+    %t140 = load typed i32 %t139
+    %t141 = cmp ne i32 %t140, 5
+    branch %t141, ^lor_short_15, ^lor_rhs_14
+
+  block ^lor_rhs_14:
+    %t142 = addr $y
+    %t143 = index i8 [projection=field] %t142, 8
+    %t144 = load volatile i32 %t143
+    %t145 = cmp ne i32 %t144, 37
+    %t146 = cmp ne i64 %t145, 0
+    store typed i64 %t146, $lor__4
+    jump ^lor_end_16
+
+  block ^lor_short_15:
+    store typed i64 1, $lor__4
+    jump ^lor_end_16
+
+  block ^lor_end_16:
+    %t147 = load typed i64 $lor__4
+    %t148 = convert trunc i32 i64 %t147
+    %t149 = load typed i32 $bad
+    %t150 = binary add nowrap i32 %t149, %t148
+    store typed i32 %t150, $bad
+    %t151 = addr $derived
+    %t152 = addr $derived
+    %t153 = index i8 %t152, 0
+    %t154 = index i8 [projection=field] %t153, 0
+    store volatile i32 41, %t154
+    %t155 = addr $derived
+    %t156 = index i8 %t155, 0
+    %t157 = index i8 [projection=field] %t156, 4
+    store i8 7, %t157
+    %t158 = addr $derived
+    %t159 = index i8 [projection=field] %t158, 5
+    store i8 99, %t159
+    %t160 = addr $source
+    %t161 = addr $source
+    %t162 = index i8 [projection=field] %t161, 0
+    store volatile i32 43, %t162
+    %t163 = addr $source
+    %t164 = index i8 [projection=field] %t163, 4
+    store i8 11, %t164
+    %t165 = addr $derived
+    %t166 = index i8 %t165, 0
+    %t167 = addr $source
+    %t168 = call ptr @Base__operator_(%t166, %t167)
+    %t169 = addr $derived
+    %t170 = index i8 %t169, 0
+    %t171 = index i8 [projection=field] %t170, 0
+    %t172 = load volatile i32 %t171
+    %t173 = cmp ne i32 %t172, 43
+    branch %t173, ^lor_short_18, ^lor_rhs_17
+
+  block ^lor_rhs_17:
+    %t174 = addr $derived
+    %t175 = index i8 %t174, 0
+    %t176 = index i8 [projection=field] %t175, 4
+    %t177 = load i8 %t176
+    %t178 = convert sext i32 i8 %t177
+    %t179 = cmp ne i32 %t178, 11
+    %t180 = cmp ne i64 %t179, 0
+    store typed i64 %t180, $lor__5
+    jump ^lor_end_19
+
+  block ^lor_short_18:
+    store typed i64 1, $lor__5
+    jump ^lor_end_19
+
+  block ^lor_end_19:
+    %t181 = load typed i64 $lor__5
+    branch %t181, ^lor_short_21, ^lor_rhs_20
+
+  block ^lor_rhs_20:
+    %t182 = addr $derived
+    %t183 = index i8 [projection=field] %t182, 5
+    %t184 = load i8 %t183
+    %t185 = convert sext i32 i8 %t184
+    %t186 = cmp ne i32 %t185, 99
+    %t187 = cmp ne i64 %t186, 0
+    store typed i64 %t187, $lor__6
+    jump ^lor_end_22
+
+  block ^lor_short_21:
+    store typed i64 1, $lor__6
+    jump ^lor_end_22
+
+  block ^lor_end_22:
+    %t188 = load typed i64 $lor__6
+    %t189 = convert trunc i32 i64 %t188
+    %t190 = load typed i32 $bad
+    %t191 = binary add nowrap i32 %t190, %t189
+    store typed i32 %t191, $bad
+    %t192 = addr $u
+    %t193 = addr $u
+    %t194 = index i8 [projection=field] %t193, 0
+    store volatile i32 47, %t194
+    %t195 = addr $v
+    %t196 = addr $v
+    %t197 = index i8 [projection=field] %t196, 0
+    store volatile i32 0, %t197
+    %t198 = addr $union_copy
+    %t199 = addr $u
+    call void @Union__Union(%t198, %t199)
+    %t200 = addr $v
+    %t201 = addr $union_copy
+    call void @union_assign(%t200, %t201)
+    %t202 = addr $v
+    %t203 = index i8 [projection=field] %t202, 0
+    %t204 = load volatile i32 %t203
+    %t205 = cmp ne i32 %t204, 47
+    %t206 = convert trunc i32 i64 %t205
+    %t207 = load typed i32 $bad
+    %t208 = binary add nowrap i32 %t207, %t206
+    store typed i32 %t208, $bad
+    %t209 = addr $w
+    %t210 = addr $w
+    %t211 = index i8 [projection=field] %t210, 0
+    store typed i32 13, %t211
+    %t212 = addr $w
+    %t213 = index i8 [projection=field] %t212, 8
+    %t214 = index i8 [projection=field] %t213, 0
+    store volatile i32 53, %t214
+    %t215 = addr $z
+    %t216 = addr $z
+    %t217 = index i8 [projection=field] %t216, 0
+    store typed i32 0, %t217
+    %t218 = addr $z
+    %t219 = index i8 [projection=field] %t218, 8
+    %t220 = index i8 [projection=field] %t219, 0
+    store volatile i32 0, %t220
+    %t221 = addr $z
+    %t222 = addr $w
+    call void @wrapped_assign(%t221, %t222)
+    %t223 = addr $z
+    %t224 = index i8 [projection=field] %t223, 0
+    %t225 = load typed i32 %t224
+    %t226 = cmp ne i32 %t225, 13
+    branch %t226, ^lor_short_24, ^lor_rhs_23
+
+  block ^lor_rhs_23:
+    %t227 = addr $z
+    %t228 = index i8 [projection=field] %t227, 8
+    %t229 = index i8 [projection=field] %t228, 0
+    %t230 = load volatile i32 %t229
+    %t231 = cmp ne i32 %t230, 53
+    %t232 = cmp ne i64 %t231, 0
+    store typed i64 %t232, $lor__7
+    jump ^lor_end_25
+
+  block ^lor_short_24:
+    store typed i64 1, $lor__7
+    jump ^lor_end_25
+
+  block ^lor_end_25:
+    %t233 = load typed i64 $lor__7
+    %t234 = convert trunc i32 i64 %t233
+    %t235 = load typed i32 $bad
+    %t236 = binary add nowrap i32 %t235, %t234
+    store typed i32 %t236, $bad
+    store typed i32 59, $value
+    %t237 = addr $p
+    %t238 = addr $value
+    %t239 = addr $p
+    %t240 = index i8 [projection=field] %t239, 0
+    store typed ptr %t238, %t240
+    %t241 = addr $q
+    %t242 = addr $q
+    %t243 = index i8 [projection=field] %t242, 0
+    store typed ptr 0, %t243
+    %t244 = addr $q
+    %t245 = addr $p
+    call void @pointer_assign(%t244, %t245)
+    %t246 = addr $vp
+    %t247 = addr $value
+    %t248 = addr $vp
+    %t249 = index i8 [projection=field] %t248, 0
+    store volatile ptr %t247, %t249
+    %t250 = addr $vq
+    %t251 = addr $vq
+    %t252 = index i8 [projection=field] %t251, 0
+    store volatile ptr 0, %t252
+    %t253 = addr $vq
+    %t254 = addr $vp
+    call void @volatile_pointer_assign(%t253, %t254)
+    %t255 = addr $q
+    %t256 = index i8 [projection=field] %t255, 0
+    %t257 = load typed ptr %t256
+    %t258 = addr $value
+    %t259 = cmp ne ptr %t257, %t258
+    branch %t259, ^lor_short_27, ^lor_rhs_26
+
+  block ^lor_rhs_26:
+    %t260 = addr $vq
+    %t261 = index i8 [projection=field] %t260, 0
+    %t262 = load volatile ptr %t261
+    %t263 = addr $value
+    %t264 = cmp ne ptr %t262, %t263
+    %t265 = cmp ne i64 %t264, 0
+    store typed i64 %t265, $lor__8
+    jump ^lor_end_28
+
+  block ^lor_short_27:
+    store typed i64 1, $lor__8
+    jump ^lor_end_28
+
+  block ^lor_end_28:
+    %t266 = load typed i64 $lor__8
+    %t267 = convert trunc i32 i64 %t266
+    %t268 = load typed i32 $bad
+    %t269 = binary add nowrap i32 %t268, %t267
+    store typed i32 %t269, $bad
+    %t270 = addr $bits
+    %t271 = addr $bits
+    %t272 = index i8 [projection=field] %t271, 0
+    %t273 = binary and u32 7, 6
+    store volatile u32 %t273, %t272
+    %t274 = addr $bits
+    %t275 = index i8 [projection=field] %t274, 0
+    %t276 = binary and u32 31, 19
+    %t277 = binary shl u32 %t276, 3
+    %t278 = load u32 %t275
+    %t279 = binary and u32 %t278, 4294967047
+    %t280 = binary or u32 %t279, %t277
+    store u32 %t280, %t275
+    %t281 = addr $bits_copy
+    %t282 = addr $bits_copy
+    %t283 = index i8 [projection=field] %t282, 0
+    %t284 = binary and u32 7, 0
+    store volatile u32 %t284, %t283
+    %t285 = addr $bits_copy
+    %t286 = index i8 [projection=field] %t285, 0
+    %t287 = binary and u32 31, 0
+    %t288 = binary shl u32 %t287, 3
+    %t289 = load u32 %t286
+    %t290 = binary and u32 %t289, 4294967047
+    %t291 = binary or u32 %t290, %t288
+    store u32 %t291, %t286
+    %t292 = addr $bits_copy
+    %t293 = addr $bits
+    call void @bits_assign(%t292, %t293)
+    %t294 = addr $bits_copy
+    %t295 = index i8 [projection=field] %t294, 0
+    %t296 = load volatile i32 %t295
+    %t297 = binary and i32 %t296, 7
+    %t298 = copy u32 %t297
+    %t299 = copy i32 %t298
+    %t300 = cmp ne i32 %t299, 6
+    branch %t300, ^lor_short_30, ^lor_rhs_29
+
+  block ^lor_rhs_29:
+    %t301 = addr $bits_copy
+    %t302 = index i8 [projection=field] %t301, 0
+    %t303 = load i32 %t302
+    %t304 = binary shr i32 %t303, 3
+    %t305 = binary and i32 %t304, 31
+    %t306 = copy u32 %t305
+    %t307 = copy i32 %t306
+    %t308 = cmp ne i32 %t307, 19
+    %t309 = cmp ne i64 %t308, 0
+    store typed i64 %t309, $lor__9
+    jump ^lor_end_31
+
+  block ^lor_short_30:
+    store typed i64 1, $lor__9
+    jump ^lor_end_31
+
+  block ^lor_end_31:
+    %t310 = load typed i64 $lor__9
+    %t311 = convert trunc i32 i64 %t310
+    %t312 = load typed i32 $bad
+    %t313 = binary add nowrap i32 %t312, %t311
+    store typed i32 %t313, $bad
+    %t314 = load typed i32 $bad
+    %t315 = cmp ne i32 %t314, 0
+    %t316 = convert trunc i32 i64 %t315
+    return i32 %t316
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @run()
+    return i32 %t1
+}
+function @Scalar__Scalar(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6ScalarC1ERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr $other
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load volatile i32 %t4
+    store volatile i32 %t5, %t2
+    return void
+}
+function @Scalar__Scalar__2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6ScalarC1EOS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr $other
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load volatile i32 %t4
+    store volatile i32 %t5, %t2
+    return void
+}
+function @Scalar__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN6ScalaraSERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load volatile i32 %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store volatile i32 %t3, %t5
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Scalar__operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN6ScalaraSEOS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load volatile i32 %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store volatile i32 %t3, %t5
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Array__operator_(%this : ptr [object_bytes=40], %other : ptr [pass=by_address, object_bytes=40]) -> ptr [unwind=no, binding=weak, object=_ZN5ArrayaSERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+  slot $copy_array_index__1 : i64
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store typed i64 0, $copy_array_index__1
+    jump ^copy_array_cond_1
+
+  block ^copy_array_cond_1:
+    %t5 = load typed i64 $copy_array_index__1
+    %t6 = cmp ult i64 %t5, 10
+    branch %t6, ^copy_array_body_2, ^copy_array_end_3
+
+  block ^copy_array_body_2:
+    %t7 = binary mul i64 %t5, 4
+    %t8 = index i8 [projection=array_element] %t2, %t7
+    %t9 = index i8 [projection=array_element] %t4, %t7
+    %t10 = load volatile i32 %t8
+    store volatile i32 %t10, %t9
+    %t11 = binary add i64 %t5, 1
+    store typed i64 %t11, $copy_array_index__1
+    jump ^copy_array_cond_1
+
+  block ^copy_array_end_3:
+    %t12 = load typed ptr $this
+    return ptr %t12
+}
+function @Nested__operator_(%this : ptr [object_bytes=12], %other : ptr [pass=by_address, object_bytes=12]) -> ptr [unwind=no, binding=weak, object=_ZN6NestedaSERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr $other
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = call ptr @Scalar__operator_(%t2, %t4)
+    %t6 = load typed ptr $this
+    %t7 = index i8 [projection=field] %t6, 4
+    %t8 = binary mul i64 0, 4
+    %t9 = index i8 [projection=array_element] %t7, %t8
+    %t10 = load typed ptr $other
+    %t11 = index i8 [projection=field] %t10, 4
+    %t12 = binary mul i64 0, 4
+    %t13 = index i8 [projection=array_element] %t11, %t12
+    %t14 = call ptr @Scalar__operator_(%t9, %t13)
+    %t15 = binary mul i64 1, 4
+    %t16 = index i8 [projection=array_element] %t7, %t15
+    %t17 = binary mul i64 1, 4
+    %t18 = index i8 [projection=array_element] %t11, %t17
+    %t19 = call ptr @Scalar__operator_(%t16, %t18)
+    %t20 = load typed ptr $this
+    return ptr %t20
+}
+function @Mixed__operator_(%this : ptr [object_bytes=12], %other : ptr [pass=by_address, object_bytes=12]) -> ptr [unwind=no, binding=weak, object=_ZN5MixedaSERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
+    copyobj 8x4 %t2, %t1
+    %t3 = load typed ptr $other
+    %t4 = index i8 [projection=field] %t3, 8
+    %t5 = load volatile i32 %t4
+    %t6 = load typed ptr $this
+    %t7 = index i8 [projection=field] %t6, 8
+    store volatile i32 %t5, %t7
+    %t8 = load typed ptr $this
+    return ptr %t8
+}
+function @Union__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [unwind=no, binding=weak, object=_ZN5UnionaSERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
+    %t3 = index i8 [projection=array_element] %t2, 0
+    %t4 = index i8 [projection=array_element] %t1, 0
+    %t5 = load volatile u8 %t3
+    store volatile u8 %t5, %t4
+    %t6 = index i8 [projection=array_element] %t2, 1
+    %t7 = index i8 [projection=array_element] %t1, 1
+    %t8 = load volatile u8 %t6
+    store volatile u8 %t8, %t7
+    %t9 = index i8 [projection=array_element] %t2, 2
+    %t10 = index i8 [projection=array_element] %t1, 2
+    %t11 = load volatile u8 %t9
+    store volatile u8 %t11, %t10
+    %t12 = index i8 [projection=array_element] %t2, 3
+    %t13 = index i8 [projection=array_element] %t1, 3
+    %t14 = load volatile u8 %t12
+    store volatile u8 %t14, %t13
+    %t15 = index i8 [projection=array_element] %t2, 4
+    %t16 = index i8 [projection=array_element] %t1, 4
+    %t17 = load volatile u8 %t15
+    store volatile u8 %t17, %t16
+    %t18 = index i8 [projection=array_element] %t2, 5
+    %t19 = index i8 [projection=array_element] %t1, 5
+    %t20 = load volatile u8 %t18
+    store volatile u8 %t20, %t19
+    %t21 = index i8 [projection=array_element] %t2, 6
+    %t22 = index i8 [projection=array_element] %t1, 6
+    %t23 = load volatile u8 %t21
+    store volatile u8 %t23, %t22
+    %t24 = index i8 [projection=array_element] %t2, 7
+    %t25 = index i8 [projection=array_element] %t1, 7
+    %t26 = load volatile u8 %t24
+    store volatile u8 %t26, %t25
+    %t27 = load typed ptr $this
+    return ptr %t27
+}
+function @Wrapped__operator_(%this : ptr [object_bytes=16], %other : ptr [pass=by_address, object_bytes=16]) -> ptr [unwind=no, binding=weak, object=_ZN7WrappedaSERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
+    copyobj 8x8 %t2, %t1
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 8
+    %t5 = load typed ptr $other
+    %t6 = index i8 [projection=field] %t5, 8
+    %t7 = call ptr @Union__operator_(%t4, %t6)
+    %t8 = load typed ptr $this
+    return ptr %t8
+}
+function @Pointer__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [unwind=no, binding=weak, object=_ZN7PointeraSERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
+    copyobj 8x8 %t2, %t1
+    %t3 = load typed ptr $this
+    return ptr %t3
+}
+function @VolatilePointer__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [unwind=no, binding=weak, object=_ZN15VolatilePointeraSERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load volatile ptr %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store volatile ptr %t3, %t5
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Bits__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN4BitsaSERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load volatile i32 %t2
+    %t4 = binary and i32 %t3, 7
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = binary and i32 %t4, 7
+    %t8 = load volatile i32 %t6
+    %t9 = binary and i32 %t8, -8
+    %t10 = binary or i32 %t9, %t7
+    store volatile i32 %t10, %t6
+    %t11 = load typed ptr $other
+    %t12 = index i8 [projection=field] %t11, 0
+    %t13 = load i32 %t12
+    %t14 = binary shr i32 %t13, 3
+    %t15 = binary and i32 %t14, 31
+    %t16 = load typed ptr $this
+    %t17 = index i8 [projection=field] %t16, 0
+    %t18 = binary and i32 %t15, 31
+    %t19 = binary shl i32 %t18, 3
+    %t20 = load i32 %t17
+    %t21 = binary and i32 %t20, -249
+    %t22 = binary or i32 %t21, %t19
+    store i32 %t22, %t17
+    %t23 = load typed ptr $this
+    return ptr %t23
+}
+function @Array__Array(%this : ptr [alias=noalias, object_bytes=40], %other : ptr [pass=by_address, alias=noalias, object_bytes=40]) -> void [unwind=no, binding=weak, object=_ZN5ArrayC1ERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+  slot $copy_array_index__1 : i64
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr $other
+    %t4 = index i8 [projection=field] %t3, 0
+    store typed i64 0, $copy_array_index__1
+    jump ^copy_array_cond_1
+
+  block ^copy_array_cond_1:
+    %t5 = load typed i64 $copy_array_index__1
+    %t6 = cmp ult i64 %t5, 10
+    branch %t6, ^copy_array_body_2, ^copy_array_end_3
+
+  block ^copy_array_body_2:
+    %t7 = binary mul i64 %t5, 4
+    %t8 = index i8 [projection=array_element] %t4, %t7
+    %t9 = index i8 [projection=array_element] %t2, %t7
+    %t10 = load volatile i32 %t8
+    store volatile i32 %t10, %t9
+    %t11 = binary add i64 %t5, 1
+    store typed i64 %t11, $copy_array_index__1
+    jump ^copy_array_cond_1
+
+  block ^copy_array_end_3:
+    return void
+}
+function @Base__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [unwind=no, binding=weak, object=_ZN4BaseaSERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load volatile i32 %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store volatile i32 %t3, %t5
+    %t6 = load typed ptr $other
+    %t7 = index i8 [projection=field] %t6, 4
+    %t8 = load i8 %t7
+    %t9 = load typed ptr $this
+    %t10 = index i8 [projection=field] %t9, 4
+    store i8 %t8, %t10
+    %t11 = load typed ptr $this
+    return ptr %t11
+}
+function @Union__Union(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5UnionC1ERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
+    %t3 = index i8 [projection=array_element] %t2, 0
+    %t4 = index i8 [projection=array_element] %t1, 0
+    %t5 = load volatile u8 %t3
+    store volatile u8 %t5, %t4
+    %t6 = index i8 [projection=array_element] %t2, 1
+    %t7 = index i8 [projection=array_element] %t1, 1
+    %t8 = load volatile u8 %t6
+    store volatile u8 %t8, %t7
+    %t9 = index i8 [projection=array_element] %t2, 2
+    %t10 = index i8 [projection=array_element] %t1, 2
+    %t11 = load volatile u8 %t9
+    store volatile u8 %t11, %t10
+    %t12 = index i8 [projection=array_element] %t2, 3
+    %t13 = index i8 [projection=array_element] %t1, 3
+    %t14 = load volatile u8 %t12
+    store volatile u8 %t14, %t13
+    %t15 = index i8 [projection=array_element] %t2, 4
+    %t16 = index i8 [projection=array_element] %t1, 4
+    %t17 = load volatile u8 %t15
+    store volatile u8 %t17, %t16
+    %t18 = index i8 [projection=array_element] %t2, 5
+    %t19 = index i8 [projection=array_element] %t1, 5
+    %t20 = load volatile u8 %t18
+    store volatile u8 %t20, %t19
+    %t21 = index i8 [projection=array_element] %t2, 6
+    %t22 = index i8 [projection=array_element] %t1, 6
+    %t23 = load volatile u8 %t21
+    store volatile u8 %t23, %t22
+    %t24 = index i8 [projection=array_element] %t2, 7
+    %t25 = index i8 [projection=array_element] %t1, 7
+    %t26 = load volatile u8 %t24
+    store volatile u8 %t26, %t25
+    return void
+}
+function @Derived___Derived(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Base___Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+alias object _ZN6ScalarC2ERKS_ = @Scalar__Scalar
+alias object _ZN6ScalarC2EOS_ = @Scalar__Scalar__2
+alias object _ZN5ArrayC2ERKS_ = @Array__Array
+alias object _ZN7DerivedD2Ev = @Derived___Derived
+alias object _ZN4BaseD2Ev = @Base___Base
+alias object _ZN5UnionC2ERKS_ = @Union__Union

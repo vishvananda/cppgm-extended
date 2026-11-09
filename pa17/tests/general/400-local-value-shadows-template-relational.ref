@@ -1,8 +1,3 @@
-global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  i64 0
-  i64 0
-}
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $buffer : obj<16x8>
   slot $values : obj<16x8>
@@ -10,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $buffer
     %t2 = addr $values
-    copyobj 16x8 @__constexpr_template__1, %t2
+    zeroinit 16x8 %t2
     %t3 = addr $values
     %t4 = addr $buffer
     %t5 = index i8 [projection=field] %t4, 0

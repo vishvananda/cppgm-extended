@@ -1,0 +1,6 @@
+# Variadic register saves remain, without unused conversion scratch.
+stack_size <= 176 in @variadic_identity
+# A keep_alias call needs only its actual frame and ABI storage.
+stack_size <= 32 in @aliased_caller
+# Actual extended conversion scratch must remain available and execute.
+has(fptosi) in @extended

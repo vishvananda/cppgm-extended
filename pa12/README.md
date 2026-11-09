@@ -214,11 +214,15 @@ any other region. A temporary's destructor is called even when its body is
 empty: PA11's exception for a destructor with no effect covers only a single
 automatic object and a base or member destroyed by another destructor.
 
-For supported synthesized copy/move special members, PA12 lowers a leading trivially
-copyable storage prefix directly as `copyobj <span> <src>, <dst>` instead of spelling that
-prefix as separate field operations or a `__builtin_memcpy` helper call in the emitted
-LowIR. The references use that direct storage-copy form, and the comparison does not
-absorb the alternative.
+For supported synthesized copy/move special members, lower a leading trivially
+copyable storage prefix directly as `copyobj <span> <src>, <dst>`. Trivial
+empty members do not interrupt that prefix. Preserve calls to user-defined
+copy operations, even when their classes have no data members.
+
+Implicit copies must preserve volatile accesses to scalar members, array
+elements and nested subobjects. Such members can belong to a trivially
+copyable class: triviality does not permit dropping volatile accesses.
+Volatile subobjects cannot be included in an ordinary `copyobj` span.
 
 When a synthesized copy/move constructor or assignment body handles adjacent
 nonvolatile bit-fields in one supported 8-, 16-, 32-, or 64-bit allocation
@@ -244,10 +248,9 @@ constructed from that object: the constructor taking the base binds to the
 object's base subobject with the object's value category, so an lvalue is
 copied and a prvalue moved.
 
-For supported trivially copy-constructible class value transfers, PA12 lowers the
-copy/move construction step itself directly as `copyobj <span> <src>, <dst>` instead of
-spelling a call to a synthesized trivial copy/move constructor helper. The references use
-that direct value-transfer form, and the comparison does not absorb the alternative.
+For supported trivially copy-constructible class value transfers without
+volatile subobjects, lower the copy/move construction directly as
+`copyobj <span> <src>, <dst>`, preserving the destination's usable span.
 
 This includes explicitly defaulted trivial move constructors in direct local
 initialization and trivial copies in new-expressions. An empty class's trivial

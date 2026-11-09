@@ -86,9 +86,6 @@ struct SelectorState
 	uint32_t named_xmms_ = 0;
 	uint32_t named_stack_ = 0;
 	bool needs_scratch_area_ = false;
-	// Extra ABI storage for variadic and keep_alias functions that call;
-	// conversion scratch is otherwise requested by its actual emission.
-	bool scratch_area_ = false;
 	// Registers reserved by actual frame and ABI requirements.
 	uint32_t excluded_ = 0;
 	std::vector<uint32_t> dying_; // freed this instruction

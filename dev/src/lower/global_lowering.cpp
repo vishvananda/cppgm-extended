@@ -1122,13 +1122,11 @@ void ProgramLowering::end_owned_temporaries()
 	owned_temporaries_.clear();
 }
 
-lowir::SymbolId ProgramLowering::constexpr_image(
+ConstantImage ProgramLowering::constexpr_image(
 	const sema::VariableEntity* variable, const syntax::Initializer* initializer)
 {
-	// The course's form of a constexpr automatic array initialized by a
-	// braced list: its constant image in a readonly internal global (one
-	// per distinct image) that the object is copied from, from its
-	// evaluated value (else its static form); kNoId when there is none.
+	// Consume the evaluated representation, else its static form. Nonzero
+	// images share readonly storage; zero images need only a direct clear.
 	const sema::Type* type = variable->type;
 	const sema::ConstValue* recorded = analyzer_->evaluated_value(variable);
 	StaticData data;
@@ -1136,8 +1134,16 @@ lowir::SymbolId ProgramLowering::constexpr_image(
 	{
 		data.items.clear();
 		if (!static_object(type, initializer, data))
-			return lowir::kNoId;
+			return ConstantImage{ lowir::kNoId, false };
 	}
+	bool zero = true;
+	for (const lowir::DataItem& item : data.items)
+		zero = zero &&
+			(item.kind == lowir::DataItemKind::Zero ||
+				(item.kind == lowir::DataItemKind::Scalar && item.constant.bits.low == 0 &&
+					item.constant.bits.high == 0));
+	if (zero)
+		return ConstantImage{ lowir::kNoId, true };
 	std::string key;
 	for (const lowir::DataItem& item : data.items)
 	{
@@ -1148,7 +1154,7 @@ lowir::SymbolId ProgramLowering::constexpr_image(
 	}
 	const std::unordered_map<std::string, lowir::SymbolId>::const_iterator found = constexpr_images_.find(key);
 	if (found != constexpr_images_.end())
-		return found->second;
+		return ConstantImage{ found->second, false };
 	const lowir::SymbolId image = new_symbol("__constexpr_template__" + std::to_string(constexpr_images_.size() + 1));
 	lowir::Global storage = lowir::Global();
 	storage.init = lowir::GlobalInit::Data;
@@ -1160,7 +1166,7 @@ lowir::SymbolId ProgramLowering::constexpr_image(
 	program_.symbols[image].metadata.storage = ir_model::GSM_READONLY;
 	++counters_.globals;
 	constexpr_images_.emplace(key, image);
-	return image;
+	return ConstantImage{ image, false };
 }
 
 lowir::SymbolId ProgramLowering::static_temporary_constructed(

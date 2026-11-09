@@ -937,6 +937,9 @@ private:
 	lowir::Value copied_parameter(
 		const sema::FunctionEntity* constructor, const sema::Type* parameter, lowir::Value source, uint32_t location);
 	void copy_elements(const sema::SubobjectInit& init, const sema::Type* type, uint32_t location);
+	bool copy_volatile_array(const sema::Type* type, lowir::Value source, lowir::Value destination, uint32_t location);
+	void copy_volatile_elements(
+		lowir::Type stored, lowir::Value source, lowir::Value destination, uint64_t count, uint64_t stride);
 	uint32_t copy_bit_fields(uint32_t first, uint32_t location);
 	bool unit_transferable(uint32_t first, uint32_t last, const BitField& field, uint32_t location);
 	static bool copied_as_bytes(const sema::SubobjectInit& init);

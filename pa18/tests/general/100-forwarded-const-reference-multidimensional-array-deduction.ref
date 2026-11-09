@@ -3,15 +3,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    store typed i32 0, %t1
-    %t2 = index i8 [projection=array_element] %t1, 4
-    store typed i32 0, %t2
-    %t3 = index i8 %t1, 8
-    store typed i32 0, %t3
-    %t4 = index i8 [projection=array_element] %t3, 4
-    store typed i32 0, %t4
-    %t5 = addr $value
-    call void @outer(%t5)
+    zeroinit 16x4 %t1
+    %t2 = addr $value
+    call void @outer(%t2)
     return i32 0
 }
 function @outer(%value : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_Z5outerIA2_A2_iEvRKT_] {
@@ -30,17 +24,11 @@ function @inner(%__param0 : ptr [pass=by_address, object_bytes=16]) -> void [bin
   block ^entry:
     store typed ptr %__param0, $__param0
     %t1 = addr $copy
-    store typed i32 0, %t1
-    %t2 = index i8 [projection=array_element] %t1, 4
-    store typed i32 0, %t2
-    %t3 = index i8 %t1, 8
-    store typed i32 0, %t3
-    %t4 = index i8 [projection=array_element] %t3, 4
-    store typed i32 0, %t4
-    %t5 = addr $copy
-    %t6 = binary mul i64 0, 8
-    %t7 = index i8 [projection=array_element] %t5, %t6
-    %t8 = index i32 [projection=array_element] %t7, 0
-    store typed i32 1, %t8
+    zeroinit 16x4 %t1
+    %t2 = addr $copy
+    %t3 = binary mul i64 0, 8
+    %t4 = index i8 [projection=array_element] %t2, %t3
+    %t5 = index i32 [projection=array_element] %t4, 0
+    store typed i32 1, %t5
     return void
 }

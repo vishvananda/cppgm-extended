@@ -1456,8 +1456,9 @@ bool ProgramLowering::trivially_copied_elements(const sema::Type* type)
 	if (cls == nullptr)
 		return true;
 	analyzer_->implicit_copy_members(cls);
-	return !cls->polymorphic && cls->copy_constructor != nullptr && cls->copy_constructor->trivial &&
-		(cls->destructor == nullptr || cls->destructor->trivial);
+	size_of(cls->type, 0);
+	return !cls->contains_volatile && !cls->polymorphic && cls->copy_constructor != nullptr &&
+		cls->copy_constructor->trivial && (cls->destructor == nullptr || cls->destructor->trivial);
 }
 
 uint64_t ProgramLowering::base_offset(

@@ -75,8 +75,6 @@ void FunctionSelector::reset(lowir::SymbolId symbol, Function& out)
 	va_save_area_ = 0;
 	named_gprs_ = named_xmms_ = named_stack_ = 0;
 	needs_scratch_area_ = false;
-	// Floating operations request scratch only when their emission needs it.
-	scratch_area_ = signature_->boundary.arity == ir_model::CAM_VARIADIC;
 	out.locations = body.locations;
 }
 
@@ -138,8 +136,6 @@ void FunctionSelector::build_cfg()
 				blocks_[b].has_phi = true;
 			if ((inst.op == Opcode::EhTry || inst.op == Opcode::EhCleanup) && inst.ops[0].kind == ValueKind::Block)
 				handlers.push_back(layout_of_[inst.ops[0].index]);
-			if (inst.op == Opcode::Call && (program_.symbols[symbol_].metadata.flags & lowir::SF_KEEP_ALIAS))
-				scratch_area_ = true;
 		}
 		blocks_[b].count = static_cast<uint32_t>(pos);
 		if (block.last == kNoId)

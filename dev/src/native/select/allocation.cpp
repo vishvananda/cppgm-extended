@@ -853,7 +853,7 @@ void FunctionSelector::finish_frame()
 	// R12 holds the over-aligned objects' base (Function::aligned_base).
 	used_callee_saved_ |= reserved_gprs(*out_);
 	uint32_t count = __builtin_popcount(used_callee_saved_);
-	if (needs_scratch_area_ || scratch_area_)
+	if (needs_scratch_area_)
 	{
 		out_->scratch_offset = frame_alloc(kScratchAreaBytes, 16);
 		out_->scratch_bytes = kScratchAreaBytes;

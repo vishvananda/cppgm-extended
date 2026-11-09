@@ -95,7 +95,7 @@ function @main
     return i32 -> rax
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve <gpr0> <gpr1>

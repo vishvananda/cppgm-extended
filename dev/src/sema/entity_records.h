@@ -263,6 +263,8 @@ struct ClassEntity : Entity
 	// Layout fact: some subobject is volatile or a union (the class itself,
 	// a base or a member), so zeroing it takes separate stores.
 	bool contains_volatile_or_union;
+	// Layout fact: a stored subobject requires volatile accesses when copied.
+	bool contains_volatile;
 	// GNU packed: its members are laid out packed. The layout clears it
 	// when a member of a non-POD class stays unpacked (as GCC does), so no
 	// class containing this one packs it either.

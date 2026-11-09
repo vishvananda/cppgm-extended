@@ -1,9 +1,4 @@
 global @ns__selected : i32 [binding=strong, object=_ZN2ns8selectedE] = 0
-global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  i32 0
-  i32 0
-  i32 0
-}
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $data : obj<12x4>
@@ -11,9 +6,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $data
-    copyobj 12x4 @__constexpr_template__1, %t1
+    zeroinit 12x4 %t1
     %t2 = addr $const_data
-    copyobj 12x4 @__constexpr_template__1, %t2
+    zeroinit 12x4 %t2
     %t3 = addr $data
     %t4 = call ptr @ns__detail__range_begin(%t3)
     %t5 = load typed i32 @ns__selected

@@ -2,14 +2,11 @@ global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   i32 9
 }
 global @__constexpr_template__2 [storage=readonly, binding=internal] = {
-  zero 12
-}
-global @__constexpr_template__3 [storage=readonly, binding=internal] = {
   i32 1
   i32 2
   i32 9
 }
-global @__constexpr_template__4 [storage=readonly, binding=internal] = {
+global @__constexpr_template__3 [storage=readonly, binding=internal] = {
   i32 1
   i32 2
   zero 4
@@ -33,7 +30,7 @@ function @check() -> i32 [binding=weak, object=_Z5checkITpTniJEEiv] {
     %t1 = addr $inferred
     copyobj 4x4 @__constexpr_template__1, %t1
     %t2 = addr $fixed
-    copyobj 12x4 @__constexpr_template__2, %t2
+    zeroinit 12x4 %t2
     %t3 = const i64 4
     %t4 = const i64 4
     %t5 = binary udiv i64 %t3, %t4
@@ -98,9 +95,9 @@ function @check__2() -> i32 [binding=weak, object=_Z5checkIJLi1ELi2EEEiv] {
 
   block ^entry:
     %t1 = addr $inferred
-    copyobj 12x4 @__constexpr_template__3, %t1
+    copyobj 12x4 @__constexpr_template__2, %t1
     %t2 = addr $fixed
-    copyobj 12x4 @__constexpr_template__4, %t2
+    copyobj 12x4 @__constexpr_template__3, %t2
     %t3 = const i64 12
     %t4 = const i64 4
     %t5 = binary udiv i64 %t3, %t4

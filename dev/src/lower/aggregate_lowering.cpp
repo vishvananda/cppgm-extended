@@ -1795,6 +1795,8 @@ bool FunctionLowering::copy_members(const sema::Type* type, lowir::Value source,
 void FunctionLowering::copy_object(
 	const sema::Type* type, lowir::Value source, lowir::Value destination, uint32_t location)
 {
+	if (copy_volatile_array(type, source, destination, location))
+		return;
 	// An empty class has no value; a [[no_unique_address]] one's byte is
 	// another member's.
 	const sema::ClassEntity* empty = overlapping_empty_ && type->kind != sema::TypeKind::Array ? sema::ClassOf(type)

@@ -1,16 +1,12 @@
-global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  u16 0
-}
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lhs : obj<2x2>
   slot $rhs : obj<2x2>
 
   block ^entry:
     %t1 = addr $lhs
-    copyobj 2x2 @__constexpr_template__1, %t1
+    zeroinit 2x2 %t1
     %t2 = addr $rhs
-    copyobj 2x2 @__constexpr_template__1, %t2
+    zeroinit 2x2 %t2
     %t3 = addr $lhs
     %t4 = addr $rhs
     %t5 = convert sext i64 i32 1

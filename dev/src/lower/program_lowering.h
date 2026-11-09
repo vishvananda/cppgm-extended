@@ -41,6 +41,13 @@ struct MovedField
 	lowir::Type type;
 };
 
+// A known initializer's representation: a readonly image or all-zero bytes.
+struct ConstantImage
+{
+	lowir::SymbolId symbol;
+	bool zero;
+};
+
 const size_t kMovedFields = 3;
 
 class SourceInlining;
@@ -715,7 +722,7 @@ public:
 	// internal flag until end_owned_temporaries names it); kNoId for
 	// another temporary.
 	lowir::SymbolId temporary_registration_guard(lowir::SymbolId temporary);
-	lowir::SymbolId constexpr_image(const sema::VariableEntity* variable, const syntax::Initializer* initializer);
+	ConstantImage constexpr_image(const sema::VariableEntity* variable, const syntax::Initializer* initializer);
 	// A function-local static object's global, defined on its first lowering
 	// with its static initialization; `guard` its first-use flag when a
 	// dynamic initialization remains (kNoId otherwise). The C library's

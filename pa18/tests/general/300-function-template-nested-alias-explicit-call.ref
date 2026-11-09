@@ -2,9 +2,6 @@ global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   i8 97
   i8 98
 }
-global @__constexpr_template__2 [storage=readonly, binding=internal] = {
-  zero 2
-}
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $src_buf : obj<2x1>
@@ -17,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $src_buf
     copyobj 2x1 @__constexpr_template__1, %t1
     %t2 = addr $dst_buf
-    copyobj 2x1 @__constexpr_template__2, %t2
+    zeroinit 2x1 %t2
     %t3 = addr $src_buf
     store typed ptr %t3, $src
     %t4 = addr $dst_buf

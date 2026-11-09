@@ -1,8 +1,3 @@
-global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  i32 0
-  i32 0
-}
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     call void @Run___cppgm_class_template_identity_1___cppgm_class_template_identity_2___go()
@@ -19,7 +14,7 @@ function @Run___cppgm_class_template_identity_1___cppgm_class_template_identity_
 
   block ^entry:
     %t1 = addr $a
-    copyobj 8x4 @__constexpr_template__1, %t1
+    zeroinit 8x4 %t1
     %t2 = addr $a
     return void
 }

@@ -1,7 +1,3 @@
-global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  zero 3
-}
-
 function @operator__(%out : ptr [pass=by_address, object_bytes=4], %__param1 : ptr) -> ptr [binding=strong, object=_ZlsR6StreamPKc] {
   slot $out : ptr
   slot $__param1 : ptr
@@ -70,7 +66,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_9:
     %t19 = addr $text
-    copyobj 3x1 @__constexpr_template__1, %t19
+    zeroinit 3x1 %t19
     %t20 = addr $out
     %t21 = addr $text
     call void @parameter(%t20, %t21)
@@ -104,7 +100,7 @@ function @bound(%out : ptr [pass=by_address, object_bytes=4]) -> void [binding=w
   block ^entry:
     store typed ptr %out, $out
     %t1 = addr $text
-    copyobj 3x1 @__constexpr_template__1, %t1
+    zeroinit 3x1 %t1
     %t2 = load typed ptr $out
     %t3 = addr $text
     %t4 = call ptr @operator__(%t2, %t3)
@@ -119,7 +115,7 @@ function @constant(%out : ptr [pass=by_address, object_bytes=4]) -> void [bindin
     store typed ptr %out, $out
     store typed u32 3, $count
     %t1 = addr $text
-    copyobj 3x1 @__constexpr_template__1, %t1
+    zeroinit 3x1 %t1
     %t2 = load typed ptr $out
     %t3 = addr $text
     %t4 = call ptr @operator__(%t2, %t3)
@@ -132,7 +128,7 @@ function @alias(%out : ptr [pass=by_address, object_bytes=4]) -> void [binding=w
   block ^entry:
     store typed ptr %out, $out
     %t1 = addr $text
-    copyobj 3x1 @__constexpr_template__1, %t1
+    zeroinit 3x1 %t1
     %t2 = load typed ptr $out
     %t3 = addr $text
     %t4 = call ptr @operator__(%t2, %t3)

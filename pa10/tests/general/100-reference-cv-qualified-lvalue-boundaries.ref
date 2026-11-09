@@ -6,6 +6,12 @@ global @__constexpr_template__2 [storage=readonly, binding=internal] = {
   i32 3
   i32 4
 }
+global @__constexpr_template__3 [storage=readonly, binding=internal] = {
+  i32 1
+  i32 2
+  i32 3
+  i32 4
+}
 
 function @case_0__check_case() -> i32 [binding=strong, object=_ZN6case_010check_caseEv] {
   slot $a : obj<8x4>
@@ -167,27 +173,21 @@ function @case_5__check_case() -> i32 [binding=strong, object=_ZN6case_510check_
 
   block ^entry:
     %t1 = addr $a
-    store typed i32 1, %t1
-    %t2 = index i8 [projection=array_element] %t1, 4
-    store typed i32 2, %t2
-    %t3 = index i8 %t1, 8
-    store typed i32 3, %t3
-    %t4 = index i8 [projection=array_element] %t3, 4
-    store typed i32 4, %t4
-    %t5 = addr $a
-    store typed ptr %t5, $r
-    %t6 = load typed ptr $r
-    %t7 = binary mul i64 1, 8
-    %t8 = index i8 [projection=array_element] %t6, %t7
-    %t9 = index i32 [projection=array_element] %t8, 1
-    store volatile i32 5, %t9
-    %t10 = addr $a
-    %t11 = binary mul i64 1, 8
-    %t12 = index i8 [projection=array_element] %t10, %t11
-    %t13 = index i32 [projection=array_element] %t12, 1
-    %t14 = load typed i32 %t13
-    %t15 = binary sub nowrap i32 %t14, 5
-    return i32 %t15
+    copyobj 16x4 @__constexpr_template__3, %t1
+    %t2 = addr $a
+    store typed ptr %t2, $r
+    %t3 = load typed ptr $r
+    %t4 = binary mul i64 1, 8
+    %t5 = index i8 [projection=array_element] %t3, %t4
+    %t6 = index i32 [projection=array_element] %t5, 1
+    store volatile i32 5, %t6
+    %t7 = addr $a
+    %t8 = binary mul i64 1, 8
+    %t9 = index i8 [projection=array_element] %t7, %t8
+    %t10 = index i32 [projection=array_element] %t9, 1
+    %t11 = load typed i32 %t10
+    %t12 = binary sub nowrap i32 %t11, 5
+    return i32 %t12
 }
 function @case_6__check_case() -> i32 [binding=strong, object=_ZN6case_610check_caseEv] {
   slot $a : obj<8x4>

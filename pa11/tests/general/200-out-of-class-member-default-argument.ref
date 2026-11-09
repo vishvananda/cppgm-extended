@@ -1,7 +1,3 @@
-global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  zero 4
-}
-
 function @Text__take(%this : ptr [object_bytes=1], %out : ptr, %n : i64, %pos : i64) -> i32 [binding=strong, object=_ZN4Text4takeEPcmm] {
   slot $this : ptr
   slot $out : ptr
@@ -30,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $text
     %t2 = addr $out
-    copyobj 4x1 @__constexpr_template__1, %t2
+    zeroinit 4x1 %t2
     %t3 = addr $text
     %t4 = addr $out
     %t5 = convert sext i64 i32 3

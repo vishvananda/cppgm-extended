@@ -154,7 +154,12 @@ bool FunctionLowering::copies_storage(const sema::FunctionEntity* function)
 	if (function->copy_kind != sema::CopyKind::CopyConstructor &&
 		function->copy_kind != sema::CopyKind::MoveConstructor)
 		return false;
-	return function->trivial;
+	if (!function->trivial)
+		return false;
+	const sema::ClassEntity* owner = sema::ClassOf(function->owner->entity->type);
+	if (owner->layout != sema::FactState::Done)
+		lowering_.size_of(owner->type, 0);
+	return !owner->contains_volatile;
 }
 
 void FunctionLowering::call_constructor(const sema::FunctionEntity* constructor, lowir::Value object,
