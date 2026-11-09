@@ -1,0 +1,26 @@
+# A rewritten truth value remains valid in successor edge facts. Keep the
+# branch rather than forming a select: the true edge has an observable store.
+global @observed : i64 = zero
+function @branch_mask(%x : u32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %shift = binary ushr u32 %x, 7
+    %mask = binary and u32 %shift, 3
+    branch %mask, ^yes, ^no
+  block ^yes:
+    store volatile i64 11, @observed
+    return i64 11
+  block ^no:
+    return i64 29
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %a = call i64 @branch_mask(256)
+    %b = call i64 @branch_mask(512)
+    %c = load volatile i64 @observed
+    %a_bad = cmp ne i64 %a, 11
+    %b_bad = cmp ne i64 %b, 29
+    %c_bad = cmp ne i64 %c, 11
+    %ab = binary or i1 %a_bad, %b_bad
+    %bad = binary or i1 %ab, %c_bad
+    return i64 %bad
+}

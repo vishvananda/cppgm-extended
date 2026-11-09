@@ -2830,6 +2830,9 @@ bool Simplifier::shifted_truth_mask(BlockId block, InstId& prev, InstId id)
 		body_.instructions[id].ops[0] = Value::temp(temp);
 		repl_.resize(body_.temps.size(), Value::none());
 		uses_.resize(body_.temps.size(), 0);
+		// Successor edge facts can name the newly inserted truth value.
+		nonzero_.resize(body_.temps.size(), 0);
+		equal_.resize(body_.temps.size(), Value::none());
 		uses_[temp] = 1;
 		if (direct.ops[0].is(ValueKind::Temp) && uses_[direct.ops[0].index] != 0xffffffffu)
 			++uses_[direct.ops[0].index];
