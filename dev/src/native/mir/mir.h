@@ -80,8 +80,9 @@ struct Block
 	// O2+: mostly reached from the block laid out before it, so padding here
 	// would run each time.
 	bool fallen_into;
-	// O2+: in an innermost loop whose every exit tests a counter stepped by
-	// a literal against a value the loop does not compute.
+	// O2+: candidate repeated code, including transfers between loop blocks.
+	bool loop;
+	// Every exit of the innermost loop tests a stepped counter.
 	bool counted;
 };
 
@@ -123,6 +124,8 @@ struct Function
 	// a block may fall through to the next one, and the encoding follows
 	// the blocks and branches as they are.
 	bool branches_laid_out = false;
+	// Block placement computed the blocks' fallthrough estimates.
+	bool placement_valid = false;
 	// O1+: a return before the function's end has its own epilogue (no
 	// jump to the shared one).
 	bool duplicate_epilogues = false;
@@ -178,6 +181,7 @@ struct Function
 		variadic = false;
 		eh_records_pushed = false;
 		branches_laid_out = false;
+		placement_valid = false;
 		duplicate_epilogues = false;
 		wide_bulk = false;
 		align_loops = false;

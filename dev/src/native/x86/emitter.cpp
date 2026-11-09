@@ -157,15 +157,11 @@ const unsigned kLoopPad = 10;
 // chain_end_ of a block whose jump chain enters a cycle.
 const uint32_t kNoChainEnd = 0xfffffffdu;
 
-// The instruction cache of decoded operations holds a 32-byte window at a time,
-// and a loop that crosses a window costs a cycle more each iteration. An
-// innermost loop of at most this many bytes starts on a 32-byte boundary when
-// that puts it in fewer windows.
+// Compact repeated paths can be sensitive to fetch and decoded-op boundaries.
+// Move a short cycle to a 32-byte boundary only when it occupies fewer windows.
+// The same alignment on the object symbol preserves the choice after linking.
 const unsigned kWindowBytes = 32;
 const int32_t kWindowLoop = 64;
-
-// A loop this long before branches shorten may still reach kWindowLoop.
-const int32_t kWindowLoopLong = 2 * kWindowLoop;
 
 // The windows `bytes` of code at `position` touch.
 unsigned windows_touched(uint64_t position, int32_t bytes)
@@ -173,12 +169,13 @@ unsigned windows_touched(uint64_t position, int32_t bytes)
 	return static_cast<unsigned>((position % kWindowBytes + bytes + kWindowBytes - 1) / kWindowBytes);
 }
 
-// A loop head is what a branch at or after it targets. (Laid-out code: a loop
-// runs through its head and back to it.)
+// Backward branches identify candidate heads in laid-out code. A later slow
+// path can return to the same head without belonging to its compact subcycle.
 void FunctionEmitter::find_loop_heads(const Function& function)
 {
 	loop_heads_.clear();
 	loop_last_.clear();
+	loop_near_.clear();
 	loop_padding_.assign(1, 0);
 	if (!function.align_loops)
 		return;
@@ -194,15 +191,61 @@ void FunctionEmitter::find_loop_heads(const Function& function)
 			heads.push_back(std::make_pair(block_start_[label.block], 0u));
 	std::sort(heads.begin(), heads.end());
 	for (size_t k = 0; k < heads.size(); ++k)
+		if (k == 0 || heads[k - 1].first != heads[k].first)
+		{
+			size_t first = k;
+			while (heads[first].second == 0 && first + 1 < heads.size() && heads[first + 1].first == heads[k].first)
+				++first;
+			loop_heads_.push_back(heads[k].first);
+			loop_near_.push_back(heads[first].second == 0 ? lowir::kNoId : heads[first].second - 1);
+			loop_last_.push_back(loop_near_.back());
+		}
+	loop_limit_.assign(loop_heads_.size(), 0);
+	loop_counted_.assign(loop_heads_.size(), 0);
+	for (size_t b = 0; b < function.blocks.size(); ++b)
+	{
+		const Block& block = function.blocks[b];
+		if (!block.loop || block.fallen_into || (chain_end_[b] != b && chain_end_[b] != kNoChainEnd))
+			continue;
+		const auto head = std::lower_bound(loop_heads_.begin(), loop_heads_.end(), block_start_[b]);
+		if (head != loop_heads_.end() && *head == block_start_[b])
+		{
+			uint8_t& limit = loop_limit_[static_cast<size_t>(head - loop_heads_.begin())];
+			loop_counted_[static_cast<size_t>(head - loop_heads_.begin())] |= block.counted;
+			if (function.placement_valid || block.counted)
+				limit = kWindowLoop;
+		}
+	}
+	// Keep both spans: the full cycle may already fit, while a long slow
+	// continuation can hide a profitable fast subcycle.
+	for (size_t k = 0, head = 0; k < heads.size(); ++k)
 		if (k + 1 == heads.size() || heads[k + 1].first != heads[k].first)
 		{
-			loop_heads_.push_back(heads[k].first);
-			loop_last_.push_back(heads[k].second == 0 ? lowir::kNoId : heads[k].second - 1);
+			const uint32_t far = heads[k].second == 0 ? lowir::kNoId : heads[k].second - 1;
+			loop_last_[head] = far;
+			++head;
 		}
 	for (size_t k = 0; k < loop_heads_.size(); ++k)
 	{
-		const bool short_loop = loop_last_[k] != lowir::kNoId &&
-			branch_offset_[loop_last_[k]] - loop_heads_[k] <= kWindowLoopLong;
+		const uint32_t last = function.placement_valid ? loop_near_[k] : loop_last_[k];
+		bool short_loop = false;
+		if (last != lowir::kNoId)
+		{
+			const size_t before = static_cast<size_t>(
+				std::lower_bound(branch_offset_.begin(), branch_offset_.end(), loop_heads_[k]) -
+				branch_offset_.begin());
+			// Each earlier branch saves at most four bytes; the closing
+			// branch is at least two. This bound also covers dense branches.
+			const int64_t smallest = branch_offset_[last] - loop_heads_[k] + 2 -
+				4 * (static_cast<int64_t>(last) - static_cast<int64_t>(before));
+			short_loop = smallest <= kWindowLoop;
+			// Unplaced functions retain the earlier conservative allowance.
+			// Tightening it can move addressed dispatch code even though its
+			// alignment policy is unchanged. The lower bound still covers
+			// densely branched cycles that the earlier estimate missed.
+			if (!function.placement_valid)
+				short_loop = short_loop || branch_offset_[last] - loop_heads_[k] <= 2 * kWindowLoop;
+		}
 		loop_padding_.push_back(loop_padding_[k] + (short_loop ? kWindowBytes - 1 : kLoopPad));
 	}
 }
@@ -214,37 +257,32 @@ bool FunctionEmitter::measure_short_loops(const Function& function)
 	for (size_t i = 0; i < short_.size(); ++i)
 		relax_saved_[i + 1] = relax_saved_[i] + (short_[i] ? (branch_conditional_[i] ? 4 : 3) : 0);
 	loop_bytes_.assign(loop_heads_.size(), 0);
-	// Only a counted loop's head (Block::counted) may move: padding before
-	// a head runs on each entry, and a loop of few iterations pays more for
-	// it than it saves.
-	std::vector<uint8_t> counted(loop_heads_.size(), 0);
-	for (size_t b = 0; b < function.blocks.size(); ++b)
-	{
-		const Block& block = function.blocks[b];
-		if (!block.counted || block.fallen_into || (chain_end_[b] != b && chain_end_[b] != kNoChainEnd))
-			continue;
-		const std::vector<int32_t>::const_iterator head = std::lower_bound(
-			loop_heads_.begin(), loop_heads_.end(), block_start_[b]);
-		if (head != loop_heads_.end() && *head == block_start_[b])
-			counted[static_cast<size_t>(head - loop_heads_.begin())] = 1;
-	}
 	bool any = false;
 	for (size_t k = 0; k < loop_heads_.size(); ++k)
 	{
-		const uint32_t last = loop_last_[k];
-		if (last == lowir::kNoId || !counted[k])
-			continue;
-		if (k + 1 < loop_heads_.size() && loop_heads_[k + 1] <= branch_offset_[last])
+		if (loop_limit_[k] == 0)
 			continue;
 		const size_t before = static_cast<size_t>(
 			std::lower_bound(branch_offset_.begin(), branch_offset_.end(), loop_heads_[k]) - branch_offset_.begin());
-		const int32_t length = short_[last] ? 2 : (branch_conditional_[last] ? 6 : 5);
-		const int64_t bytes = branch_offset_[last] + length - relax_saved_[last] -
-			(loop_heads_[k] - relax_saved_[before]);
-		if (bytes > kWindowLoop)
-			continue;
-		loop_bytes_[k] = static_cast<int32_t>(bytes);
-		any = true;
+		const auto span = [&](uint32_t last) -> int32_t {
+			if (last == lowir::kNoId || (k + 1 < loop_heads_.size() && loop_heads_[k + 1] <= branch_offset_[last]))
+				return 0;
+			// A call on a slow continuation does not penalize the fast cycle.
+			// With no trip estimate, only add alignment to local repeated work.
+			const auto barrier = std::lower_bound(loop_barriers_.begin(), loop_barriers_.end(), loop_heads_[k]);
+			if (!loop_counted_[k] && barrier != loop_barriers_.end() && *barrier <= branch_offset_[last])
+				return 0;
+			const int32_t length = short_[last] ? 2 : (branch_conditional_[last] ? 6 : 5);
+			const int64_t bytes = branch_offset_[last] + length - relax_saved_[last] -
+				(loop_heads_[k] - relax_saved_[before]);
+			return bytes <= loop_limit_[k] ? static_cast<int32_t>(bytes) : 0;
+		};
+		// Cover all back edges when that fits the existing footprint budget.
+		// A tiny retry path must not hide a larger, already profitable cycle.
+		loop_bytes_[k] = span(loop_last_[k]);
+		if (loop_bytes_[k] == 0 && function.placement_valid)
+			loop_bytes_[k] = span(loop_near_[k]);
+		any = any || loop_bytes_[k] != 0;
 	}
 	return any;
 }
@@ -655,6 +693,7 @@ void FunctionEmitter::encode(const Function& function)
 	{
 		branch_offset_.clear();
 		branch_label_.clear();
+		loop_barriers_.clear();
 	}
 	frame_reserve(function);
 	// A shrink-wrapped function sets its frame up at its prologue blocks.
@@ -1062,9 +1101,16 @@ void FunctionEmitter::tail_jump(const Function& function, const Inst& inst)
 		++stats_.tail_jumps;
 }
 
+void FunctionEmitter::loop_barrier()
+{
+	if (!relax_pass_ && function_->align_loops)
+		loop_barriers_.push_back(static_cast<int32_t>(asm_.size()));
+}
+
 void FunctionEmitter::call(const Inst& inst)
 {
 	const uint32_t done = (inst.flags & MF_STRLEN_PREFIX) ? strlen_prefix() : 0xffffffffu;
+	loop_barrier();
 	const uint32_t begin = asm_.size() - static_cast<uint32_t>(base_);
 	const Operand& target = inst.ops[0];
 	if (target.kind == OperandKind::Symbol)
@@ -1114,6 +1160,7 @@ void FunctionEmitter::resume_terminal(const Function& function)
 	asm_.bind(terminal_);
 	asm_.mov_load(RDI, frame_rm(function.eh.slot), 8, false);
 	const uint32_t begin = asm_.size() - static_cast<uint32_t>(base_);
+	loop_barrier();
 	asm_.call_symbol(runtime_.unwind_resume);
 	unwind_.calls.push_back(UnwindFacts::CallSite{ begin, asm_.size() - static_cast<uint32_t>(base_), 0, 0 });
 }
@@ -1154,6 +1201,7 @@ void FunctionEmitter::mov(const Operand& a, const Operand& b, bool keep_flags)
 		(b.access == SymbolAccess::TlsLocal || b.access == SymbolAccess::TlsInitial))
 	{
 		asm_.mov_tlv(R11, b.symbol);
+		loop_barrier();
 		asm_.call_symbol(runtime_.tlv_lookup);
 		asm_.mov_rr(a.reg, R11);
 		if (b.disp != 0)
@@ -1182,6 +1230,7 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	{
 	case Op::Asm:
 	{
+		loop_barrier();
 		const AssemblyPlan& plan = *function.assembly->plans[static_cast<uint32_t>(a.imm)];
 		if (plan.transfer_bytes != 0)
 		{

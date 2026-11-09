@@ -353,6 +353,7 @@ void FunctionEmitter::wide(const Inst& inst)
 		wide_half(RSI, a, 1);
 		wide_half(RDX, b, 0);
 		wide_half(RCX, b, 1);
+		loop_barrier();
 		asm_.call_symbol(runtime_.wide_division[static_cast<unsigned>(op) - static_cast<unsigned>(WideOp::Div)]);
 		asm_.mov_store(to, RAX, 8);
 		asm_.mov_store(to.displaced(8), RDX, 8);
@@ -891,6 +892,7 @@ void FunctionEmitter::eh(const Inst& inst)
 			asm_.op(0, false, 0x33, 1, RDI, RM::r(RDI)); // xor edi, edi
 		asm_.op_plus(0, false, 0xb8, RSI);               // mov esi, selector
 		asm_.imm(inst.aux, 4);
+		loop_barrier();
 		asm_.call_symbol(runtime_.eh_catch);
 		return;
 	case Op::LoadSelector:

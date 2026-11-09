@@ -297,6 +297,7 @@ void FunctionEmitter::wide_float_convert(const Inst& inst)
 	{
 		wide_half(RDI, s, 0);
 		wide_half(RSI, s, 1);
+		loop_barrier();
 		asm_.call_symbol(runtime_.float_conversion[routine]);
 		if (to == TypeKind::F80)
 			asm_.x87(0xdb, 7, rm(d)); // fstp tbyte
@@ -309,6 +310,7 @@ void FunctionEmitter::wide_float_convert(const Inst& inst)
 		x87_load(s, from);
 		asm_.alu_ri(5, RM::r(RSP), 16, 8);
 		asm_.x87(0xdb, 7, RM::m(RSP, 0));
+		loop_barrier();
 		asm_.call_symbol(runtime_.float_conversion[routine]);
 		asm_.alu_ri(0, RM::r(RSP), 16, 8);
 	}
@@ -316,6 +318,7 @@ void FunctionEmitter::wide_float_convert(const Inst& inst)
 	{
 		if (!is_xmm_reg(s) || s.reg != XMM0)
 			asm_.sse(sse_prefix(from), 0x10, XMM0, s.kind == OperandKind::FImm ? constant_rm(s) : rm(s));
+		loop_barrier();
 		asm_.call_symbol(runtime_.float_conversion[routine]);
 	}
 	asm_.mov_store(rm(d), RAX, 8);

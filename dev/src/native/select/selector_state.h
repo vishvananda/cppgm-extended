@@ -219,6 +219,7 @@ struct SelectorState
 	PressureTree ra_xmm_pressure_;
 	std::vector<uint32_t> ra_exc_first_;
 	std::vector<uint32_t> ra_exc_preds_;
+	bool loop_facts_ready_ = false; // the current function's CFG has not changed
 	std::vector<uint32_t> ra_depth_;
 	std::vector<uint8_t> ra_cold_; // blocks that only lead to a throw, resume or noreturn call
 	std::vector<uint32_t> ra_candidates_;

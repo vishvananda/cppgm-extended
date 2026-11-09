@@ -184,6 +184,10 @@ time for latency and layout changes. Preserve a behavior test for each
 counterexample. Neither the course reference dump nor a speed comparison
 requires a particular instruction, register allocation or block order.
 
+Include data-dependent loops with several back edges in layout experiments.
+Check that padding and branch shortening preserve behavior after linking;
+compare runtime across changes to preceding code as well as instruction counts.
+
 An extension can be redundant when the next calculation reads only the narrow
 bits and writes the full result. Preserve extensions needed by wider readers,
 address operands or operations that can leave the destination unchanged.

@@ -204,7 +204,6 @@ void FunctionSelector::narrow_params_observed(std::vector<uint8_t>& observed)
 			if (bits & 1)
 				observed[p] = 1;
 	};
-	bool depths = false; // loop_depths() run for this function (the allocator's may be another's)
 	for (bool grown = true; grown;)
 	{
 		grown = false;
@@ -317,11 +316,8 @@ void FunctionSelector::narrow_params_observed(std::vector<uint8_t>& observed)
 				safe = level_ >= 1;
 				break;
 			case Opcode::Switch:
-				if (level_ >= 1 && !depths)
-				{
+				if (level_ >= 1)
 					loop_depths();
-					depths = true;
-				}
 				if (level_ >= 1 && b < ra_depth_.size() && ra_depth_[b] == 0)
 				{
 					const Value r = resolve(inst.ops[0]);

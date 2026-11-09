@@ -158,6 +158,16 @@ block order or prologue sequence is a quality requirement.
 Removing code can shift hot loops into less favorable fetch windows even when
 their instruction counts stay the same. Measure runtime as well as size;
 use selective alignment rather than assuming more padding always helps.
+Data-dependent exits do not make a repeated path unimportant. A loop with
+several back edges can contain a compact fast cycle and a longer slow path;
+measure their final encoded spans separately. A short retry path should not
+discard a useful alignment of the larger cycle. Reuse loop facts across passes,
+bound padding and preserve its alignment through object linking. Compare
+several harmless changes to preceding code and linked object placement.
+Distinguish an unmeasured edge from an unlikely one, especially with indirect
+branches; padding a hot fallthrough can add work on every iteration.
+Consider how often a loop can repeat: entry padding may cost more than it
+saves for a short scan over a small immutable table.
 Entry placement can affect direct calls and table-driven indirect calls
 differently. Include both when measuring changes to compact leaf functions.
 

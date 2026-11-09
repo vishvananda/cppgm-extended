@@ -217,8 +217,10 @@ public:
 
 	// ---- emit_control.cpp
 	void emit_blocks();
+	// ---- loop_layout.cpp
+	bool small_table_scan(uint32_t first, uint32_t end) const;
 	bool counter_test(lowir::Value condition, const std::vector<uint32_t>& mark, uint32_t epoch, uint32_t header) const;
-	void mark_counted_loops();
+	void mark_loop_blocks();
 	void emit_block(uint32_t block);
 	void enter_block(uint32_t block);
 	void retain_parameters(uint32_t block);

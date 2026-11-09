@@ -485,6 +485,7 @@ bool Placement::frequencies(std::vector<uint64_t>& frequency)
 
 uint32_t Placement::run()
 {
+	f_.placement_valid = false;
 	std::vector<uint64_t> frequency;
 	if (n_ < 3 || !frequencies(frequency))
 		return 0;
@@ -609,6 +610,7 @@ uint32_t Placement::run()
 					1000;
 		f_.blocks[order[k]].fallen_into = flow >= frequency[order[k]] / 2;
 	}
+	f_.placement_valid = true;
 	uint32_t moved = 0;
 	for (uint32_t k = 0; k < n_; ++k)
 		moved += order[k] != k ? 1 : 0;

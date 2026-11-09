@@ -468,8 +468,13 @@ bool FunctionSelector::exceptional_edges()
 // each header's body once; work-capped (later loops then count less).
 void FunctionSelector::loop_depths()
 {
+	if (loop_facts_ready_)
+		return;
+	loop_facts_ready_ = true;
 	const uint32_t n = static_cast<uint32_t>(blocks_.size());
 	ra_depth_.assign(n, 0);
+	loop_splitter_.loop_first.assign(1, 0);
+	loop_splitter_.loop_blocks.clear();
 	if (n == 0)
 		return;
 	std::vector<uint8_t> state(n, 0);
@@ -502,8 +507,6 @@ void FunctionSelector::loop_depths()
 	std::vector<uint32_t> work;
 	std::vector<uint32_t>& loop_first = loop_splitter_.loop_first;
 	std::vector<uint32_t>& loop_blocks = loop_splitter_.loop_blocks;
-	loop_first.assign(1, 0);
-	loop_blocks.clear();
 	const uint64_t budget = kLoopStepsPerBlock * n + kLoopSlack;
 	uint64_t steps = 0;
 	uint32_t epoch = 0;

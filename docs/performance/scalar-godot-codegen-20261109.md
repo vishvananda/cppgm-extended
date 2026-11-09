@@ -199,3 +199,124 @@ Raw evidence is retained under the data directory above:
 branch and cache simulations. Commands, executable/input hashes, individual
 observations, A/A results and output checks are included. The diagnostic
 compiler and linked executables remain frozen beside the earlier candidates.
+
+## Layout policy follow-up: held for further qualification
+
+The candidate retains return-register coalescing and broadens alignment only at
+O2 and O3. Shared natural-loop facts are computed once per function and consumed
+by allocation, parameter observation and native placement. Data-dependent exits
+can qualify; the encoder compares the full back-edge span and a compact fast
+subcycle after branch relaxation. It checks the actual encoded cycle for calls
+and opaque assembly, so a slow continuation does not exclude its fast path.
+The existing counted-cycle policy is retained.
+
+Placement estimates must be available before extending the data-loop policy.
+A bounded typed provenance check avoids new padding on forward scans over small
+immutable tables. Branch-distance bounds include potential padding; unplaced
+functions keep their prior conservative allowance. Existing 32-byte alignment
+metadata is retained, and coincident labels are still padded once. The remaining
+code-phase limitation is documented below. O0 skips the loop qualification work. There are no workload
+names, source-text patterns, host-CPU switches or benchmark-specific flags.
+
+The earlier broad policies were withdrawn after individual Godot regressions.
+Removing padding from small table scans removed extra executed instructions,
+but did not alone recover runtime. Software CPU-clock samples spread the
+remaining time across interpreter dispatch, construction and conversion. That
+supports a layout explanation; hardware PMU events remain unavailable on the
+cloud hosts, so it does not identify a specific processor mechanism.
+
+The two new PA33 fixtures exercise a data-dependent loop with multiple back
+edges and a call on its slow continuation, plus sentinel scans over selected
+readonly tables. The existing Perl runner checks O1/O2/O3 through four compile
+and link routes. Student guidance describes the tradeoffs without requiring
+specific instructions, addresses or padding. No LowIR syntax or contract changes.
+
+All measurements below use immutable binaries and inputs, output checks, A/A
+calibration and paired ABBA/BAAB blocks. Ratios are reference CPU / candidate CPU;
+higher is better. GCC 15 and Clang 22 reference executables are frozen across
+hosts, so these comparisons isolate host effects rather than CI toolchain
+changes. They are local qualification measurements, not CI badge replacements.
+
+This candidate is **not ready to merge**. The scalar recovery at the default
+link placement is substantial, but an unused 32-byte object prefix still changes
+its speed, and individual Godot regressions remain. The following results
+describe the candidate, not acceptance of the layout policy.
+
+| Host | Workload | vs current main | vs GCC 15 | vs Clang 22 |
+|---|---|---:|---:|---:|
+| EPYC 7B13 | simdjson scalar | 1.2046× | 1.0021× | 1.1523× |
+| EPYC 7B13 | simdjson SSE | 0.9931× | 0.8966× | 0.8942× |
+| EPYC 7B13 | Godot | 1.0033× | 0.9518× | 0.8904× |
+| EPYC 9B14 | simdjson scalar | 1.2981× | 0.9996× | 1.1872× |
+| EPYC 9B14 | simdjson SSE | 0.9974× | 0.9901× | 1.0026× |
+| EPYC 9B14 | Godot | 1.0068× | 0.8840× | 0.8791× |
+| Xeon E5-2696 v4 | simdjson scalar | 1.1833× | 1.2230× | 1.1973× |
+| Xeon E5-2696 v4 | simdjson SSE | 1.0273× | 0.9620× | 0.9857× |
+| Xeon E5-2696 v4 | Godot | 1.0309× | 0.9085× | 0.9021× |
+
+These are equal-weight geometric means of two JSON inputs or five Godot
+workloads. Godot includes process CPU time; its work-loop elapsed time is
+retained separately. Intel runs used the shared development host; their
+calibration and load limit small timing claims. The EPYC final cohorts used
+three paired blocks and A/A blocks before and after, with at least one second
+of JSON work or 1.5 seconds of Godot work per process.
+
+Milan geometry measured about 2% slower in the full cohort; a longer seven-block
+repeat still measured about 1.4% lower work-loop speed. Scene also needs care:
+its longer repeat was about 3.5% slower. Geometry executes essentially the same
+number of instructions and branches as main (within 0.002% in the retained
+hardware-counter comparison), so the remaining gap is not additional useful
+work.
+
+With the exact same scalar library and driver objects, unused link prefixes
+gave these speeds relative to the candidate's normal placement:
+
+| Unused prefix | Twitter | CITM |
+|---|---:|---:|
+| 0 bytes | 0.9976× | 1.0000× |
+| 32 bytes | 0.9196× | 0.9776× |
+| 64 bytes | 0.9982× | 1.0006× |
+
+The 32-byte prefix switches the shared code section's origin modulo 64 while
+preserving its 32-byte alignment. This shows that the current alignment
+guarantee is insufficient to make the gain durable. Merely raising that
+section's minimum alignment can select the slower phase; it is not an accepted
+fix. A separate, instruction-identical VM-section alignment probe recovered
+scene speed but did not fully recover geometry. That probe is diagnostic only.
+
+The next step is to investigate preserving the encoder's code phase when
+packing shared and COMDAT sections, rather than choosing a favorable constant
+offset. Requalify benign link placements and the individual workloads before
+merging. No workload-name or source-shape special cases are proposed.
+
+Compile-cost and validation:
+
+- Frozen-input O3 instruction cost decreased about 0.14–0.20% for the GCC-built
+  compiler, with smaller reductions for its self-built counterpart.
+- The quiet Genoa native O0/O3 and self O3 CPU guards stayed close to baseline
+  and their A/A variation; O0 objects remained byte-identical.
+- Strict report: 9,931/9,931. Debug-info, inception identity, self-host through
+  PA5, PA35 smoke and instruction kernels, and PA36 assembly checks passed.
+- Architecture, formatting, feature placement and file audits passed; the file
+  audit retained seven existing warnings. The source harness passed during this
+  work, and both new fixtures run through the standard Perl driver harness.
+- The final student export and fresh-client installation passed: 219 documents,
+  the 55-file prose audit and all 42 reference wrappers. Both fixtures were
+  compared to the exported copies.
+- Five public smoke programs matched their output oracles with all three
+  compilers. Four executable sizes were unchanged; pugixml grew by one 4 KiB
+  page (about 1%). This is not a full public-suite timing qualification.
+- A full PA35 release calibration on a superseded candidate was stopped after
+  refinement became necessary. It is not counted as a final release pass.
+
+Reproduction data is retained under
+`/mnt/vizier/cppgm-codegen-data/20261109/layout-policy`. The selected compiler is
+`bin/local-cycles-native` (SHA-256
+`be157beb6aeb5501245b2a2d1ab082e46e8f8a832cf58315e38e7bc64cdc2242`);
+`local-cycles.diff` records its compiler source changes. The `godot-local-cycles`,
+`scalar/simd-local-cycles` and `sse/simd-local-cycles` metadata record complete
+build commands and hashes. `milan-local-cycles-final-raw.tar.gz` and
+`genoa-local-cycles-final-raw.tar.gz` retain all final runtime and cloud compile
+guard observations, calibration and checksums; compiler guard objects were
+omitted from archives but their hashes and frozen inputs were retained. Failed
+experiments and their observations remain alongside the final cohorts.

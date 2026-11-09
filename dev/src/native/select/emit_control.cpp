@@ -107,7 +107,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 	for (const lowir::CodeLabel& label : body_->code_labels)
 		out.code_labels.push_back(lowir::CodeLabel{ label.symbol, blocks_[layout_of_[label.block]].mir });
 	if (level_ >= 2)
-		mark_counted_loops();
+		mark_loop_blocks();
 	finish_frame();
 	if (level_ >= 1 && body_->code_labels.empty())
 	{
@@ -174,108 +174,6 @@ bool split_edge(const std::vector<SplitMove>& moves, uint32_t from, uint32_t to)
 
 // ---------------------------------------------------------------------------
 // Blocks
-
-// Whether `condition` compares a counter of the loop `epoch` marks (a phi of
-// its header, or that phi plus or minus a literal) with a literal or a value
-// defined outside the loop.
-bool FunctionSelector::counter_test(
-	Value condition, const std::vector<uint32_t>& mark, uint32_t epoch, uint32_t header) const
-{
-	const lowir::FunctionBody& body = *body_;
-	if (!condition.is(ValueKind::Temp) || body.temps[condition.index].def == kNoId)
-		return false;
-	const Instruction& compare = body.instructions[body.temps[condition.index].def];
-	if (compare.op != Opcode::Compare)
-		return false;
-	const auto outside = [&](Value v) {
-		if (!v.is(ValueKind::Temp))
-			return !v.is(ValueKind::None);
-		const lowir::InstId def = body.temps[v.index].def;
-		return def == kNoId || mark[inst_block_[def]] != epoch;
-	};
-	const auto header_phi = [&](Value v) {
-		if (!v.is(ValueKind::Temp) || body.temps[v.index].def == kNoId)
-			return false;
-		const lowir::InstId def = body.temps[v.index].def;
-		return body.instructions[def].op == Opcode::Phi && inst_block_[def] == header;
-	};
-	const auto stepped = [&](Value v) {
-		// Widening may leave an exact narrowing at the original counter test.
-		if (v.is(ValueKind::Temp) && body.temps[v.index].def != kNoId)
-		{
-			const Instruction& conversion = body.instructions[body.temps[v.index].def];
-			if (conversion.op == Opcode::Convert && conversion.sub == static_cast<uint8_t>(lowir::ConvertOp::Trunc) &&
-				(conversion.flags & lowir::IF_EXACT) != 0)
-				v = conversion.ops[0];
-		}
-		if (!v.is(ValueKind::Temp) || body.temps[v.index].def == kNoId)
-			return false;
-		const Instruction& step = body.instructions[body.temps[v.index].def];
-		if (step.op == Opcode::Binary &&
-			(step.sub == static_cast<uint8_t>(lowir::BinaryOp::Add) ||
-				step.sub == static_cast<uint8_t>(lowir::BinaryOp::Sub)))
-			return (header_phi(step.ops[0]) && step.ops[1].is_literal()) ||
-				(header_phi(step.ops[1]) && step.ops[0].is_literal());
-		return header_phi(v);
-	};
-	return (stepped(compare.ops[0]) && outside(compare.ops[1])) || (stepped(compare.ops[1]) && outside(compare.ops[0]));
-}
-
-// O2+: marks the MIR blocks of counted innermost loops (Block::counted), for
-// the encoder's alignment of their heads.
-void FunctionSelector::mark_counted_loops()
-{
-	const lowir::FunctionBody& body = *body_;
-	loop_depths(); // (the allocator's facts may be another function's)
-	const std::vector<uint32_t>& first = loop_splitter_.loop_first;
-	const std::vector<uint32_t>& members = loop_splitter_.loop_blocks;
-	const uint32_t n = static_cast<uint32_t>(blocks_.size());
-	if (first.size() < 2)
-		return;
-	std::vector<uint32_t> owner(n, kNoId), size(n, 0);
-	for (uint32_t k = 0; k + 1 < first.size(); ++k)
-		for (uint32_t m = first[k]; m < first[k + 1]; ++m)
-		{
-			const uint32_t b = members[m];
-			if (owner[b] == kNoId || first[k + 1] - first[k] < size[b])
-			{
-				owner[b] = k;
-				size[b] = first[k + 1] - first[k];
-			}
-		}
-	std::vector<uint32_t> mark(n, kNoId);
-	std::vector<uint8_t> counted(first.size(), 0);
-	for (uint32_t k = 0; k + 1 < first.size(); ++k)
-	{
-		for (uint32_t m = first[k]; m < first[k + 1]; ++m)
-			mark[members[m]] = k;
-		const uint32_t header = members[first[k]];
-		bool exits = false, all = true;
-		for (uint32_t m = first[k]; m < first[k + 1] && all; ++m)
-		{
-			const uint32_t b = members[m];
-			const lowir::InstId last = body.blocks[blocks_[b].id].last;
-			if (last == kNoId)
-				continue;
-			const Instruction& term = body.instructions[last];
-			bool leaves = false;
-			for (uint32_t e = succ_first_[b]; e < succ_first_[b + 1]; ++e)
-				leaves = leaves || mark[succs_[e]] != k;
-			if (term.op == Opcode::Jump || (term.op == Opcode::Branch && !leaves))
-				continue;
-			all = term.op == Opcode::Branch && counter_test(term.ops[0], mark, k, header);
-			exits = true;
-		}
-		counted[k] = all && exits;
-	}
-	for (uint32_t b = 0; b < n; ++b)
-		if (owner[b] != kNoId && counted[owner[b]] && blocks_[b].mir < out_->blocks.size())
-			out_->blocks[blocks_[b].mir].counted = true;
-	for (const EdgeBlock& edge : edges_)
-		if (owner[edge.from] != kNoId && owner[edge.from] == owner[edge.to] && counted[owner[edge.from]] &&
-			edge.mir < out_->blocks.size())
-			out_->blocks[edge.mir].counted = true;
-}
 
 void FunctionSelector::emit_blocks()
 {

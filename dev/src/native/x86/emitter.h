@@ -184,6 +184,7 @@ private:
 	void va_copy_bytes(const RM& home, int32_t source, uint32_t offset, uint32_t bytes);
 	void eh(const Inst& inst);
 	void call(const Inst& inst);
+	void loop_barrier();
 	void bit_test(const Inst& inst);
 	uint32_t strlen_prefix();
 	void resume_terminal(const Function& function);
@@ -229,11 +230,15 @@ private:
 	std::vector<int32_t> relax_target_;       // per branch: its target's first-encode position
 	std::vector<int64_t> relax_saved_;        // per branch: bytes the short branches before it save
 	bool relax_pass_ = false;
-	std::vector<int32_t> block_start_;  // per block: its first-encode position
-	std::vector<int32_t> loop_heads_;   // sorted: first-encode positions backward branches target
-	std::vector<uint32_t> loop_last_;   // per loop head: the last branch that targets it
-	std::vector<int32_t> loop_padding_; // the padding that may precede each loop head, summed
-	std::vector<int32_t> loop_bytes_;   // per loop head: an innermost short loop's bytes, else 0
+	std::vector<int32_t> block_start_;   // per block: its first-encode position
+	std::vector<int32_t> loop_heads_;    // sorted: first-encode positions backward branches target
+	std::vector<uint32_t> loop_near_;    // nearest back edge, for a fast subcycle
+	std::vector<uint32_t> loop_last_;    // per loop head: the chosen backward branch
+	std::vector<int32_t> loop_padding_;  // the padding that may precede each loop head, summed
+	std::vector<uint8_t> loop_limit_;    // allowed cycle span from loop and placement facts
+	std::vector<uint8_t> loop_counted_;  // retain the existing counted-loop policy
+	std::vector<int32_t> loop_barriers_; // first-encode call and opaque-assembly positions
+	std::vector<int32_t> loop_bytes_;    // per loop head: an innermost short loop's bytes, else 0
 	uint32_t current_ = 0;
 	uint32_t block_first_ = 0; // the block being encoded: its first instruction
 	uint32_t inst_index_ = 0;  // and the instruction being encoded
