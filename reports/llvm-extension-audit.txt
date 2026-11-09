@@ -1,0 +1,119 @@
+LLVM optimization extension audit, 2026-11-09
+============================================
+
+Scope and evidence
+------------------
+Audited the exact 2577 C++ translation units feeding the LLVM 22.1.2
+clang-22 target, plus their 5696 source/generated-header dependency closure.
+The native and cppgm builds use identical source hashes and generated header
+contents. Dependency discovery uses the native build: the cppgm object
+dependency entries are empty and cannot establish header coverage.
+
+Evidence is retained outside the checkout under
+/mnt/vizier/cppgm-llvm-evidence/llvm-extension-audit:
+clang-target-complete-inventory.json, source-feature-queries.json,
+attributes-final.lowir, repeated-effects-results.json and the disassemblies.
+The inventory counts lexical occurrences, including inactive code, comments
+and strings; it is not a count of active annotated declarations. We separately
+compared the 56 source-spelled feature queries and expanded Compiler.h macros
+with the actual LLVM compilation configuration.
+
+Findings at the accepted B26 checkpoint
+--------------------------------------
+* always_inline (142 LLVM macro occurrences) and noinline (54) are retained
+  and consumed. Template instantiations consult their primary/pattern inline
+  attributes. LLVM_LIKELY/UNLIKELY reach branch probability metadata.
+* LLVM_READONLY (589) and LLVM_READNONE (14) become read-only/read-none memory
+  effects. The baseline does not reuse repeated calls: a reduced pure/const
+  example emits two calls with cppgm versus one with GCC 15 and Clang 22.
+  Memory effects alone are insufficient to authorize reuse: read-only LowIR
+  calls can perform IO. A separate repeatability fact is needed for the GNU
+  pure/const promise, with memory writes and opaque/non-memory barriers handled.
+* LLVM_ATTRIBUTE_RETURNS_NONNULL (65) is disabled by our feature query.
+  LLVM_ATTRIBUTE_RETURNS_NOALIAS (6) expands to GNU malloc, which the parser
+  accepts without retaining its return-alias promise. These lose useful
+  pointer facts. A malloc attribute does not imply no global memory writes;
+  it must not be treated as an existing builtin allocator's memory effects.
+* __restrict/__restrict__ are discarded lexically; LLVM_ATTRIBUTE_RESTRICT
+  occurs four times, including the GlobalISel decoder. No parameter no-alias
+  fact reaches the optimizer.
+* LLVM_ASSUME_ALIGNED (10) is advertised, but lowering currently returns the
+  pointer and discards the alignment/offset promise. Its uses are in Endian.h;
+  scalar unaligned x86 accesses may already have the same instruction cost.
+* LLVM_ATTRIBUTE_MINSIZE (5) and visibility macros (15 combined) select
+  fallbacks because our feature queries answer false. Size optimization and
+  symbol visibility need distinct implementation/measurement; accepting their
+  spelling alone would not implement the requested behavior.
+* __builtin_bitreverse8/16/32/64 queries answer false. MathExtras.h therefore
+  selects byte-table reversal with copies and a loop. This is an actual
+  algorithm fallback worth reducing and measuring.
+* LLVM_PREFETCH has two lexical occurrences, both in its macro definition;
+  no actual LLVM source use was found in this closure. Dropping that hint is
+  not evidence of a slowdown in this workload.
+* Other query differences include diagnostic/debug/sanitizer annotations,
+  platform-specific calling conventions and fallthrough annotations. Their
+  lexical presence is not evidence that they affect this X86 Release build.
+  In particular, the cold/hot/flatten spellings found by this scan are in
+  generated Clang attribute tables/documentation, not active GNU annotations
+  on the compiler functions being built.
+
+Priorities and validation
+-------------------------
+First screen repeatable pure/const calls and bit-reversal builtin support.
+Next investigate return non-null/freshness facts and alias/alignment promises
+where hot functions actually use them. Preserve every advertised semantic
+promise, but do not advertise unsupported optimizations merely to select a
+different header branch.
+
+Use earliest-owning fixtures, guards against invalid transformations, output
+equality and immutable private LLVM relinks for quick screening. Group three
+or four supported improvements for a full LLVM rebuild and normal correctness,
+export/self-host and frozen compile/self performance qualification. A private
+relink result is not the whole-LLVM performance score.
+
+The initial four-unit pure/const diagnostic relink completed in 15.55 seconds.
+On the frozen program_lowering sample, retired instructions were +0.0372%,
+within the A/A variation (0.1404%). Output bytes matched. This establishes no
+resolved downstream improvement; retain it as a semantic optimization lead,
+not a claimed runtime win.
+
+Three changes are now implemented on compat/llvm-opt-attributes and undergoing
+full group qualification: GNU repeatable scalar calls (3dd0515ee), fixed-width
+bit reversal (2c26e2566), and non-null pointer return promises (399e1c762).
+Targeted behavior/quality checks pass, as do the harness, early architecture
+and placement checks, and GCC/Clang runtime oracles. The bit-reversal builtins
+are checked against Clang; GCC 15 does not provide those spellings.
+The frozen compile-cost gate for all three changes passes: instructions
+0.9998385x at O0 and 1.0019531x at O3, with RSS below the parent in both cases.
+Same-revision PA5 self-host and inception also pass. Full qualification and
+the next whole-LLVM comparison are still pending; these are not accepted
+whole-LLVM runtime improvements yet.
+
+The non-null reduction removes three redundant pointer comparisons while
+preserving calls and checks on unannotated functions, pointer calls and
+unannotated explicit specializations. The last follows GCC 15; a separate
+oracle shows Clang 22 inherits this particular attribute on an explicit
+function-template specialization. This compiler retains its documented GNU
+attribute ownership policy. Shared runtime fixtures use valid non-null
+results under both interpretations.
+
+The bit-reversal four-unit private relink takes 8.43 seconds and preserves
+downstream object bytes. Its sampled instructions increase 0.1068%, versus
+0.0770% A/A variation: no downstream win is claimed. Partial relinks localize
+changes; only the next full build/timing comparison can establish their
+aggregate effect.
+
+The non-null four-unit private relink takes 24.36 seconds. Its downstream
+instruction ratio is 0.9996344x, again inside A/A variation, with equal output
+bytes. The completed full group checks already include debug/modern, all
+architecture/file/placement/CWG audits, harness, PA5 and inception. The initial
+strict report is 9945/9949: four references require the new repeatable call
+fact, and will be regenerated through the ordinary reference commands. The
+fresh complete LLVM build is running; the final strict/export/release result
+and full downstream performance score remain pending.
+
+Semantic references
+-------------------
+https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
+https://clang.llvm.org/docs/LanguageExtensions.html#builtin-bitreverse
+The exact LLVM Builtins.td and Compiler.h inputs are in the pinned source tree.

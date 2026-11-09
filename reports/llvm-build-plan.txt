@@ -880,3 +880,15 @@ Fast codegen iteration, 2026-11-09 (user-requested batching):
    The compact-memory-test probe showed no resolved instruction-count benefit
    in its downstream sample; its noisy wall-time observation is not a win.
    Raw receipts and observations remain under cppgm-llvm-evidence/block27-*.
+
+LLVM optimization extension audit, 2026-11-09:
+ - Audit the actual target's source/header dependency closure and active macro
+   expansions, not every lexical attribute spelling in generated Clang tables.
+   Record supported/ignored tags and algorithm fallbacks in
+   llvm-extension-audit.txt, with the original source/query evidence retained.
+ - Prioritize pure/const repeated calls and bit-reversal builtin fallbacks;
+   investigate return non-null/freshness facts next. Restrict, alignment,
+   minsize and visibility remain distinct gaps to evaluate on active hot paths.
+ - The first pure/const partial relink has no resolved downstream instruction
+   win. Keep that result; header support or smaller static code is not proof
+   of a whole-LLVM runtime improvement.
