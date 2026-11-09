@@ -88,9 +88,9 @@ function @integer_copy_arithmetic
     lea r9, [r8+<off0>]
     sub r9, 1
     cmp.i64 r9, r8
-    setne r9
-    movzx r9, r9
-    ret r9
+    setne rax
+    movzx rax, rax
+    ret rax
 
 function @copy_and_store_global_address
   abi
@@ -107,9 +107,9 @@ function @copy_and_store_global_address
     mov rdi, 13
     call @identity [args=(rdi), unwind=no]
     cmp.ptr <gpr0>, 0
-    sete <gpr0>
-    movzx <gpr0>, <gpr0>
-    ret <gpr0>
+    sete rax
+    movzx rax, rax
+    ret rax
 
 function @return_global_address
   abi
@@ -141,9 +141,9 @@ function @global_integer_arithmetic
     lea r9, [r8+<off0>]
     sub r9, 1
     cmp.i64 r9, r8
-    setne r9
-    movzx r9, r9
-    ret r9
+    setne rax
+    movzx rax, rax
+    ret rax
 
 function @main
   abi
