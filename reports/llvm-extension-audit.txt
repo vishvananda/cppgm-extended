@@ -8,7 +8,9 @@ visibility. The extension group alone measured 0.8331x native with essentially u
 retired instructions. A subsequent boolean/conversion group measured 0.8130x
 (native 43.615 s, cppgm-built 53.650 s), with 0.2823% fewer retired instructions
 than the extension checkpoint and essentially unchanged cppgm-built elapsed
-time. Neither group achieves the 0.95x objective.
+time. The readable-parameter/tail-sharing follow-up measures 0.8264x, with
+0.0775% fewer instructions than the boolean checkpoint and essentially
+unchanged cppgm-built elapsed time. None achieves the 0.95x objective.
 
 Scope and evidence
 ------------------
@@ -161,10 +163,36 @@ commands and outputs are llvm-extension-audit/remaining-promises* and
   have the same instruction cost. This is a proven lost fact, not a
   measured explanation for the overall runtime gap.
 * [[gnu::const]] is preserved and the reduced repeated call is reused,
-  matching GCC/Clang. Format.h uses this scoped spelling; there is no
+  matching GCC/Clang. clang/Format/Format.h uses this scoped spelling; there is no
   additional missing-attribute gap for it.
 
 These remaining facts are not fixed by B33's readable-parameter propagation
 and machine-tail sharing. They remain candidates for separate normal PA
 regressions and measured fixes. In particular, do not advertise support
 through a feature query merely because the parser accepts an attribute.
+
+Active alignment-use check
+--------------------------
+An additional reduction calls the actual pinned Support/Endian.h aligned
+and unaligned 64-bit little-endian readers and writers. GCC, Clang and B33
+all pass the 4096-value runtime check at O0 and O3 (six successful runs).
+At O3, all four B33 functions have exactly the same scalar mov/ret code as
+Clang. The lost alignment fact is real, but it does not add instructions in
+these representative active LLVM uses. Evidence: endian-active-uses.cpp,
+endian-active-uses-results.json, endian-active-objects-results.json and
+*-endian-active-uses-O3-object.asm in the evidence audit directory. The
+executable-only disassembly is not used: cppgm's standalone executable
+omits its symbol table; the separately compiled objects carry the symbols.
+
+B33 qualification
+-----------------
+The subsequent readable-parameter and machine-tail group passes strict
+9963/9963, debug/modern, all required audits, harness, PA5/inception, student
+export, 42 reference wrappers, seven exported fixtures, quick/smoke and both
+full releases 17/17. Full LLVM takes 356.06 s; all current and frozen 323-unit
+object/link comparisons and timing outputs match byte for byte. Its frozen
+compile instruction gate passes at +0.2172% O3. Native Clang takes 44.325 s
+and cppgm-built Clang 53.635 s in the full runtime comparison (0.8264x).
+A/A wall time is variable; the instruction reduction is only 0.0775% versus
+B29, with native instructions stable. Do not claim a resolved runtime win.
+The remaining extension promises above are still unimplemented.
