@@ -926,7 +926,13 @@ void MemoryForwarding::process(BlockId block)
 		else if (allocation_call(c_.program, inst))
 			forget_int_cells();
 		else if (may_write_memory(c_.program, inst) && !region_marker(inst.op))
-			invalidate(Value::none(), ~static_cast<uint64_t>(0) >> 1); // private slots survive
+		{
+			const FunctionWrites* writes = bounded_call_writes(c_.program, inst);
+			if (writes != nullptr)
+				invalidate(body_.operands[inst.extra_first + writes->parameter], writes->bytes);
+			else
+				invalidate(Value::none(), ~static_cast<uint64_t>(0) >> 1); // private slots survive
+		}
 		prev = i;
 		i = next;
 	}

@@ -1,5 +1,7 @@
 #include "opt/interprocedural.h"
 
+#include <limits>
+
 #include "opt/function_ir.h"
 #include "opt/loops.h"
 #include "opt/scalar_fold.h"
@@ -251,7 +253,61 @@ static bool writes_nothing_outside(const Program& program, const FunctionBody& b
 	return true;
 }
 
-bool infer_read_only_functions(Program& program)
+// A prefix of one incoming pointer covers all caller-visible writes.
+// Reads and aliasing remain unrestricted. Calls compose only already-proved
+// bounded summaries; recursion and opaque effects are handled conservatively.
+static FunctionWrites bounded_writes(const Program& program, const FunctionBody& body)
+{
+	FunctionWrites out;
+	std::vector<uint8_t> escaped;
+	auto record = [&](Value address, uint64_t bytes) {
+		if (bytes == 0)
+			return true;
+		const Located at = locate(body, address);
+		if (!at.known)
+			return false;
+		if (at.root.is(ValueKind::Slot))
+		{
+			if (escaped.empty())
+				escaped = escaped_slots(body, true);
+			return escaped[at.root.index] == 0;
+		}
+		if (!at.root.is(ValueKind::Temp) || at.root.index >= body.parameter_count || at.offset < 0 ||
+			!body.temps[at.root.index].type.is_pointer() ||
+			bytes > static_cast<uint64_t>(std::numeric_limits<int64_t>::max() - at.offset) ||
+			(out.parameter != kNoId && out.parameter != at.root.index))
+			return false;
+		out.parameter = at.root.index;
+		out.bytes = std::max(out.bytes, static_cast<uint64_t>(at.offset) + bytes);
+		return true;
+	};
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			const Instruction& inst = body.instructions[i];
+			if ((inst.flags & IF_VOLATILE) != 0 || inst.op == Opcode::FrameAddress)
+				return FunctionWrites();
+			if (inst.op == Opcode::Store || inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit)
+			{
+				const Value address = inst.ops[inst.op == Opcode::ZeroInit ? 0 : 1];
+				const uint64_t bytes = inst.op == Opcode::Store ? storage_bytes(inst.type)
+																: static_cast<uint64_t>(inst.immediate);
+				if (!record(address, bytes))
+					return FunctionWrites();
+			}
+			else if (inst.op == Opcode::Call && call_may_write_memory(program, inst))
+			{
+				const FunctionWrites* callee = bounded_call_writes(program, inst);
+				if (callee == nullptr || !record(body.operands[inst.extra_first + callee->parameter], callee->bytes))
+					return FunctionWrites();
+			}
+			else if (may_write_memory(program, inst))
+				return FunctionWrites();
+		}
+	return out;
+}
+
+bool infer_function_memory(Program& program)
 {
 	CallGraph graph;
 	build_call_graph(program, graph);
@@ -298,6 +354,16 @@ bool infer_read_only_functions(Program& program)
 			program.read_only_functions[graph.functions[f]] = 1;
 			any = true;
 		}
+	program.function_writes.assign(program.symbols.size(), FunctionWrites());
+	for (uint32_t f : graph.bottom_up)
+	{
+		const SymbolId s = graph.functions[f];
+		const Symbol& symbol = program.symbols[s];
+		if (writes[f] == 0 || graph.recursive[f] || (symbol.metadata.flags & SF_REPLACEABLE) != 0)
+			continue;
+		program.function_writes[s] = bounded_writes(program, *program.functions[symbol.detail].body);
+		any = any || program.function_writes[s].bytes != 0;
+	}
 	return any;
 }
 

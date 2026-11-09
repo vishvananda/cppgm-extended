@@ -381,7 +381,7 @@ bool has_loop(FunctionContext& context)
 	return false;
 }
 
-bool calls_read_only(const FunctionContext& context)
+bool calls_known_memory(const FunctionContext& context)
 {
 	const Program& program = context.program;
 	const FunctionBody& body = context.body;
@@ -389,10 +389,13 @@ bool calls_read_only(const FunctionContext& context)
 		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
 		{
 			const Instruction& inst = body.instructions[i];
-			if (inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) &&
-				inst.ops[0].index < program.read_only_functions.size() &&
-				program.read_only_functions[inst.ops[0].index] != 0)
-				return true;
+			if (inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol))
+			{
+				const SymbolId s = inst.ops[0].index;
+				if ((s < program.read_only_functions.size() && program.read_only_functions[s] != 0) ||
+					(s < program.function_writes.size() && program.function_writes[s].bytes != 0))
+					return true;
+			}
 		}
 	return false;
 }
@@ -532,10 +535,10 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	context.unwritten = &unwritten;
 	context.bit_tables = options.level >= 3 ? &bit_tables : nullptr;
 	enable_verify(context, options);
-	// What a call now known to write nothing no longer hides, and the
+	// What a call's newly proved memory footprint no longer hides, and the
 	// loads of globals the late static initialization gave data (and the
 	// addresses of the stores it removed).
-	bool changed = calls_read_only(context) && RUN_PASS(forward_memory);
+	bool changed = calls_known_memory(context) && RUN_PASS(forward_memory);
 	if (moved != nullptr && names_symbol(context.body, *moved))
 	{
 		RUN_PASS(simplify_values);
@@ -757,6 +760,8 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 	count_program(program, stats.instructions_in, stats.blocks_in);
 	if (options.level > 0)
 	{
+		program.read_only_functions.clear();
+		program.function_writes.clear();
 		find_allocation_functions(program);
 		std::vector<uint32_t> original(program.symbols.size(), 0);
 		for (SymbolId s = 0; s < program.symbols.size(); ++s)
@@ -803,7 +808,7 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 		if (level >= 2 && specialize_arguments(program, stats, simplify))
 			prune_unreachable(program, stats);
 		if (level >= 2)
-			infer_read_only_functions(program);
+			infer_function_memory(program);
 		// The waves inlined the constructors the init function calls: what
 		// they store is now stores the final pass's loads can read.
 		const bool moved_late = level >= 2 && initialize_statically(program, unwritten, &moved);

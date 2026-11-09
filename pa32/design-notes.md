@@ -301,3 +301,27 @@ code. Cache analyses only while their inputs remain valid, check invalidation
 in a verification mode, bound fixed-point work, and avoid scanning an entire
 unit from every function pass. Choose data structures that make edits local;
 the particular containers and thresholds are your design.
+
+## Bounded writes across calls
+
+A helper can write its output argument while leaving unrelated input data
+unchanged. Calling it read-only would be wrong: stores through its output
+must invalidate facts about those bytes. Instead, derive a memory footprint
+from its typed instructions and retain facts the existing alias analysis
+proves disjoint from that footprint. The same proof can support loop-load
+hoisting without inlining the helper.
+
+A conservative starting point is a bounded prefix of one pointer parameter.
+Direct stores, object copies and zeroing contribute spans; a known callee's
+span composes with the actual argument's constant offset. Reject unknown
+offsets, writes through multiple roots, global writes, opaque effects and
+recursive dependencies. Build summaries once in callee-first order rather
+than walking a callee for every call site. A summary bounds writes only: it
+does not promise repeatability, no capture, no aliasing or absence of IO.
+
+Respect any explicit alias promise's extent. An exclusive result's first
+eight bytes do not make a helper's thirty-two-byte write disjoint from other
+inputs. Preserve overlapping-argument and global-write behavior, and ensure
+zero-iteration loops do not gain reads from invalid pointers. These facts
+come from the LowIR definitions, so replaying serialized input can derive
+them without private frontend data.

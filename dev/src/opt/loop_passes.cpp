@@ -2895,7 +2895,8 @@ static bool step_root(const FunctionBody& body, Value root)
 // Whether a load at `at` (bytes, type, typed) may read what `w` writes.
 // `escaped` counts a variable index as a step (locate() follows it).
 static bool may_overlap(const Program& program, const FunctionBody& body, const LoopWrite& w, const Located& at,
-	const Strided& fields, uint64_t bytes, Type type, bool typed, const std::vector<uint8_t>& escaped)
+	const Strided& fields, uint64_t bytes, Type type, bool typed, const std::vector<uint8_t>& escaped,
+	uint64_t result_bytes)
 {
 	if (strided_apart(w.fields, w.bytes, fields, bytes))
 		return false;
@@ -2911,6 +2912,10 @@ static bool may_overlap(const Program& program, const FunctionBody& body, const 
 			(at.root.is(ValueKind::Slot) && !escaped[at.root.index])) &&
 		!step_root(body, w.at.root) && !step_root(body, at.root))
 		return false; // no pointer reaches a slot whose address stays here
+	if ((w.at.known &&
+			exclusive_result_apart(result_bytes, w.at.root, w.at.offset, w.bytes, at.root, body.parameter_count)) ||
+		(at.known && exclusive_result_apart(result_bytes, at.root, at.offset, bytes, w.at.root, body.parameter_count)))
+		return false;
 	if (allocation_apart(program, body, w.at.root, at.root))
 		return false;
 	return !(w.typed && typed && typed_types_apart(w.type, type));
@@ -2928,6 +2933,7 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 	if (apply && l.preheader == kNoId)
 		return false;
 	std::vector<LoopWrite> writes;
+	const uint64_t result_bytes = exclusive_result_bytes(c_.program, c_.symbol);
 	bool quiet = true; // no call: only an exit leaves a pass
 	for (BlockId b : l.blocks)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
@@ -2951,6 +2957,12 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 				unknown.root = Value::none();
 				unknown.known = false;
 				writes.push_back(LoopWrite{ unknown, 4, Type::scalar(TypeKind::I32), true, Strided() });
+			}
+			else if (const FunctionWrites* summary = bounded_call_writes(c_.program, inst))
+			{
+				const Value address = body_.operands[inst.extra_first + summary->parameter];
+				writes.push_back(LoopWrite{ locate(body_, address), summary->bytes, Type::scalar(TypeKind::Void), false,
+					strided_address(body_, address) });
 			}
 			else if (may_write_memory(c_.program, inst) || (inst.op == Opcode::Load && (inst.flags & IF_VOLATILE) != 0))
 				return false; // a call, an atomic, a volatile access: memory may change anywhere
@@ -3087,7 +3099,8 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 				bool clobbered = false;
 				for (const LoopWrite& w : writes)
 					clobbered = clobbered ||
-						may_overlap(c_.program, body_, w, at, fields, bytes, inst.type, typed, hoist_escaped_);
+						may_overlap(
+							c_.program, body_, w, at, fields, bytes, inst.type, typed, hoist_escaped_, result_bytes);
 				// Run on every entry, the load keeps its facts; moved only
 				// because its memory may always be read, it runs where it did
 				// not, and `typed` may not hold there (lowir.md "Instruction Facts").

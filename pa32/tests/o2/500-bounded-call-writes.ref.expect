@@ -1,0 +1,9 @@
+# These loads leave the loop; the bodies need not be inlined.
+has(load) in @bounded_loop
+none(load) in @bounded_loop ^body
+has(call @first) in @bounded_loop
+has(load) in @exclusive_loop
+none(load) in @exclusive_loop ^body
+has(call @first) in @exclusive_loop
+has(load) in @store_loop
+none(load) in @store_loop ^body

@@ -178,6 +178,16 @@ inline bool is_eh_instruction(lowir::Opcode op)
 // Whether a call may write memory visible to other code (its boundary's
 // effects).
 bool call_may_write_memory(const lowir::Program& program, const lowir::Instruction& call);
+// A derived write footprint for an ordinary direct call with matching
+// argument positions. It bounds writes only; reads and other effects remain.
+inline const lowir::FunctionWrites* bounded_call_writes(const lowir::Program& program, const lowir::Instruction& call)
+{
+	if (call.op != lowir::Opcode::Call || (call.flags & lowir::IF_SIGNATURE) != 0 ||
+		!call.ops[0].is(lowir::ValueKind::Symbol) || call.ops[0].index >= program.function_writes.size())
+		return nullptr;
+	const lowir::FunctionWrites& writes = program.function_writes[call.ops[0].index];
+	return writes.bytes != 0 && writes.parameter < call.extra_count ? &writes : nullptr;
+}
 // Whether an instruction may write memory visible to other code.
 inline bool may_write_memory(const lowir::Program& program, const lowir::Instruction& inst)
 {

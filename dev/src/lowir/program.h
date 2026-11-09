@@ -274,6 +274,15 @@ struct JumpThunk
 	int64_t vcall_offset;
 };
 
+// A definition's writes visible to its caller are confined to bytes
+// [0, bytes) of one incoming pointer. No statement about reads, capture,
+// aliasing or non-memory effects; bytes == 0 means no bounded proof.
+struct FunctionWrites
+{
+	uint32_t parameter = kNoId;
+	uint64_t bytes = 0;
+};
+
 struct Program
 {
 	Program();
@@ -310,6 +319,9 @@ struct Program
 	// Per symbol: a defined function the optimizer proved writes no memory
 	// its callers can see (empty until then, and never written out).
 	std::vector<uint8_t> read_only_functions;
+	// Derived from typed definitions, like read_only_functions; not written
+	// out. Calls still write memory, but may invalidate a known byte range.
+	std::vector<FunctionWrites> function_writes;
 	// Per symbol: a declaration of an allocation function; empty until the
 	// optimizer looks the names up once.
 	std::vector<uint8_t> allocation_functions;

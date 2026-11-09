@@ -1119,3 +1119,47 @@ one localization sample, not the full ABBA score; sampled symbol percentages
 must not be read as stable cross-compiler instruction differences because
 inlining changes attribution. The source-extension audit now also covers
 raw pragmas and confirms the remaining promise reductions against B38.
+
+Bounded-call and loop candidate, B39, 2026-11-09
+-----------------------------------------------
+This group builds on accepted B38 (8a4c5d3d5). One direct-call graph derives
+read-only functions as before, then bounded single-parameter write prefixes
+in callee-first order for nonrecursive definitions. Unknown offsets, globals,
+multiple output roots, volatile/atomic/opaque effects and recursive callees
+stay conservative. The summary describes writes, not aliasing or capture;
+no GNU attribute is advertised or weakened by this analysis.
+
+Memory forwarding invalidates the known actual argument span instead of
+forgetting every incoming object. Final simplification now recognizes calls
+with either kind of memory summary. Loop-load hoisting consumes the same
+bounded write spans and the explicit exclusive-result alias fact, respecting
+its extent. Existing rules for whether a load may execute before the loop
+still apply. Other passes continue treating these calls as memory writers.
+The summaries are derived optimizer data, never private frontend transport.
+
+Two normal PA32 fixtures cover direct and nested calls, disjoint fields,
+ordinary overlapping arguments, globals, multiple output roots, dynamic
+offsets, volatile writes, recursion, result stores and zero-iteration loops
+with null source pointers. The raw fixture additionally checks bounded and
+out-of-extent result spans. Both normal reference generation and selected
+checks pass. The parent fails the new optimization quality expectations,
+while preserving runtime behavior. The initial raw span spelling was invalid
+and corrected before generating references; its source is retained. An
+initial broad test invocation encountered the not-yet-generated raw reference;
+the corrected selected checks generate both references first.
+
+Strict 9978/9978, debug/modern, all architecture/file/placement/CWG audits,
+PA5 self-host and inception pass. Frozen compile instructions are 1.00003555x
+O0 and 1.00079157x O3 (+0.0792%); RSS is 1.00072721x O3. The gate passes.
+The immutable compiler-block39-bounded-loop-writes snapshot has cppgm++ SHA256
+86241837281e57f98905250e1171adea1e8475d3afbb319cb019ab588a68688d.
+The earlier forwarding-only private relink takes 13.49 s, with three sample
+instruction ratios 0.99964560x, 0.99955152x and 1.00027738x; the changes are
+within A/A variation. The first frozen probe used relative executable paths
+and failed before compilation; the absolute-path rerun and all observations
+are retained. None of these private screens is a whole-LLVM score.
+
+The full LLVM rebuild and downstream byte/timing checks are pending, as are
+student export and the official releases. This candidate is not accepted;
+the 0.95x goal remains open. Evidence is
+/mnt/vizier/cppgm-llvm-evidence/block39-bounded-*.

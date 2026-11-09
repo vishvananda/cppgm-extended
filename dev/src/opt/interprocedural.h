@@ -13,9 +13,11 @@
 // simplified once (`simplify`).
 namespace opt {
 
-// Marks each defined function whose calls leave memory as it was
-// (Program::read_only_functions); true when it marks one.
-bool infer_read_only_functions(lowir::Program& program);
+// Marks definitions that leave caller memory alone and nonrecursive
+// definitions whose writes stay in one bounded pointer parameter's span
+// (Program::read_only_functions and function_writes). One call graph;
+// bounded summaries are built in callee-first order. True when one is found.
+bool infer_function_memory(lowir::Program& program);
 
 bool specialize_arguments(
 	lowir::Program& program, OptimizerStats& stats, const std::function<void(lowir::SymbolId)>& simplify);

@@ -1,0 +1,7 @@
+# Output-only helpers preserve unrelated input facts without inlining.
+count(call @fill) == 1 in @construct
+count(load typed i64 %input) <= 1 in @construct
+count(call @nested_fill) == 1 in @nested_construct
+count(load typed i64 %input) <= 1 in @nested_construct
+# The helper writes the first field; the last field stays unchanged.
+count(load) <= 1 in @range
