@@ -180,6 +180,19 @@ or block order is required.
 
 ## Validation and further experiments
 
+A register sum consumed by the following load can share that load's indexed
+address. The arithmetic flags must be dead, and the original sum must be
+overwritten before any later reader. A bounded local search can prove this
+without changing the selector's scratch-register contract. Partial and
+conditional writes are not full overwrites; an escaping or live-out address
+still needs its sum. Keep the load's displacement, type and source location.
+
+Logical flags can sometimes survive a change in operand width. An immediate
+AND mask confined below both sign bits gives the same zero, sign, parity,
+carry and overflow flags as a test of the resulting value at either width.
+Masks reaching a sign bit require a separate proof; equality alone does not
+justify reusing flags for signed conditions.
+
 Use a behavior test for each counterexample, then an envelope broad enough to
 accept different registers, offsets and instruction orders. The reference MIR
 is one example. Prefer total work, memory traffic and frame bounds to a

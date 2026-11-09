@@ -1496,6 +1496,14 @@ uint32_t drop_redundant_tests(Function& function)
 			default:
 				break;
 			}
+			// A nonnegative mask fitting both signed widths leaves every
+			// tested bit unchanged and both sign flags clear. Logical AND
+			// and TEST also agree on parity, carry and overflow.
+			const unsigned tested = register_bytes(test.type);
+			const unsigned smaller = std::min(width, tested);
+			if (prior.op == Op::And && width != 0 && width != tested && prior.ops[1].kind == OperandKind::Imm &&
+				prior.ops[1].imm >= 0 && static_cast<uint64_t>(prior.ops[1].imm) < (uint64_t(1) << (smaller * 8 - 1)))
+				width = tested;
 			if (width == 8 && register_bytes(test.type) == 4 && prior.op == Op::And)
 			{
 				for (; known_at < at; ++known_at)
@@ -1703,6 +1711,44 @@ uint32_t drop_redundant_constants(Function& function)
 
 namespace {
 
+// Fold an address sum into its immediately following load only when the
+// original sum is killed locally before any later reader. Bound the search;
+// partial writes and conditional writes do not kill a register's value.
+bool fold_load_address(std::vector<Inst>& insts, uint32_t i, uint32_t end)
+{
+	Inst& add = insts[i];
+	if (add.op != Op::Add || !wide_kind(add.type) || !plain_gpr(add.ops[0]) || !plain_gpr(add.ops[1]))
+		return false;
+	const Reg address = add.ops[0].reg, base = add.ops[1].reg;
+	if (address == base || address == RSP || address == RBP)
+		return false;
+	uint32_t j = i + 1;
+	while (j < end && insts[j].op == Op::Nop)
+		++j;
+	if (j == end)
+		return false;
+	Inst& load = insts[j];
+	const Operand& mem = load.ops[1];
+	if (load.op != Op::Load || !plain_gpr(load.ops[0]) || !simple_inst(load) || (load.flags & MF_VOLATILE) ||
+		mem.kind != OperandKind::Mem || mem.reg != address || mem.index != kNoReg || mem.symbol != lowir::kNoId)
+		return false;
+	bool killed = load.ops[0].reg == address;
+	for (uint32_t k = j + 1; !killed && k < end && k - j <= 16; ++k)
+	{
+		const Inst& next = insts[k];
+		if (!simple_inst(next) || reads_reg(next, address))
+			return false;
+		killed = written_reg(next) == address;
+	}
+	if (!killed || !flags_dead_after(insts, i, end))
+		return false;
+	load.ops[1] = Operand::make_mem(base, mem.disp, address, 1);
+	add.op = Op::Nop;
+	add.nops = 0;
+	add.ops[0] = add.ops[1] = Operand();
+	return true;
+}
+
 // A following 32-bit operation uses only the low half before writing
 // its result. No memory operand may consume the original full-width address.
 bool consumes_low32(const Inst& inst, Reg r)
@@ -1874,6 +1920,11 @@ uint32_t fuse_adds_and_extensions(Function& function)
 		for (uint32_t i = block.first; i < end; ++i)
 		{
 			Inst& inst = insts[i];
+			if (fold_load_address(insts, i, end))
+			{
+				++removed;
+				continue;
+			}
 			const Reg scaled = plain_gpr(inst.ops[0]) ? inst.ops[0].reg : kNoReg;
 			if (fuse_scaled_add(insts, i, end))
 			{

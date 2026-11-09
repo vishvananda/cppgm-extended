@@ -1288,3 +1288,33 @@ than changing scratch-register contracts speculatively. Its and(mask),
 test(narrow) pairs also retain a test when the mask proves the result fits
 both widths with the same flags. These are concrete follow-up candidates;
 neither is implemented or counted as a performance improvement yet.
+
+B41 indexed loads and mask flags (candidate)
+--------------------------------------------
+Two local PA33 changes consume typed MIR operands: fold a 64-bit address
+sum into the immediately following load when a bounded local search proves
+the old sum killed and its flags dead; reuse logical flags for a narrower
+or wider test when an immediate mask fits below both sign bits. The address
+rewrite skips volatile loads, existing indices, live-out/escaping sums,
+partial/conditional kills and opaque instructions. No selector scratch
+contract changes. Both transformations run in existing O1+ passes.
+
+Normal PA33 raw and source regressions cover the global byte-offset table,
+address retained after a load, signed high-bit controls and narrow masks.
+The source regression checks all 65536 short bit patterns. All 16 GCC,
+Clang, parent and candidate O0-through-O3 runtime oracles pass, as do the
+normal raw regression and all 12 source execution/object/LowIR routes.
+Strict 9982/9982 plus auxiliary controls, debug/modern, all required audits,
+harness, PA5 and inception pass. Frozen compile passes: O0 instructions
+1.00001323x, O3 0.99998570x, RSS 0.99993560x O3. Optimized object bytes change
+as expected; the independent LLVM byte-identity checks remain mandatory.
+
+The immutable compiler snapshot is compiler-block41-indexed-loads, cppgm++
+SHA256 4dae2d0811dce7b9ad3efea3f202df781b58bdb540f2b77f552e3bf7a7b764c8.
+Four LLVM units recompiled and privately relinked without changing the base.
+Three AA/ABBA screens pass output equality: candidate/control instructions
+0.99688795x, 0.99922403x and 0.99878398x. A/A ratios are 1.00274766x,
+1.00052374x and 1.00043464x, respectively: small reductions with measurable
+variation, not whole-build runtime evidence. All observations are retained.
+Full LLVM build, current/frozen object comparisons, full runtime and official
+course/student release qualification are next. This candidate is not accepted.
