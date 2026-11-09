@@ -298,7 +298,8 @@ void FunctionSelector::narrow_params_observed(std::vector<uint8_t>& observed)
 				break;
 			case Opcode::Select:
 				// (Its arms stand for it, as a phi's inputs do.)
-				check(inst.ops[0], false);
+				// Like a branch, its condition is tested at its own width.
+				check(inst.ops[0], level_ >= 1);
 				check(inst.ops[1], low_read(inst.result));
 				check(inst.ops[2], low_read(inst.result));
 				return;
