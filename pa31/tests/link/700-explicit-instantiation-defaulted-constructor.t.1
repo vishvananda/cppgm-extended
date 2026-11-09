@@ -1,0 +1,11 @@
+#include <memory>
+#include <utility>
+#include <vector>
+
+template<class T> struct PassList {
+  explicit PassList() = default;
+  PassList(PassList&& other) : passes(std::move(other.passes)) {}
+  std::vector<std::unique_ptr<T> > passes;
+};
+extern template struct PassList<int>;
+template struct PassList<int>;

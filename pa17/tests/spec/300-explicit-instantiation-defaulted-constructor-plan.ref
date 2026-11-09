@@ -1,0 +1,37 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}
+function @Written_Member___Written(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7WrittenI6MemberEC1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @Member__Member(%t2)
+    return void
+}
+function @Outside_Member___Outside(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7OutsideI6MemberEC1Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @Member__Member(%t2)
+    return void
+}
+function @Member__Member(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6MemberC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store typed i32 29, %t2
+    return void
+}
+alias object _ZN7WrittenI6MemberEC2Ev = @Written_Member___Written
+alias object _ZN7OutsideI6MemberEC2Ev = @Outside_Member___Outside
+alias object _ZN6MemberC2Ev = @Member__Member

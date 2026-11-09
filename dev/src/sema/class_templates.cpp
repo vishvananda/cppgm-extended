@@ -2992,8 +2992,11 @@ void Analyzer::explicitly_instantiate_members(ClassEntity* cls)
 				continue;
 			}
 			const FunctionEntity* pattern = PatternOf(function);
+			// First-declaration-defaulted special members are implicitly
+			// defined when needed, not by the class instantiation (14.7.2p9).
+			// Without that definition their subobject plans are still absent.
 			if (!function->instantiated || function->explicit_instantiation || pattern == nullptr ||
-				!pattern->defined || Excluded(function))
+				!pattern->defined || function->defaulted || Excluded(function))
 				continue;
 			function->explicit_instantiation = true;
 			explicit_instantiations_.push_back(function);
