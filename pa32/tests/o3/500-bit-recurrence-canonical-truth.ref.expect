@@ -1,0 +1,2 @@
+instructions <= 12 in @fold_widened
+count(select) >= 4 in @keep_second_bit

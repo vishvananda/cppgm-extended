@@ -1602,6 +1602,7 @@ bool Simplifier::convert_identity(Instruction& inst, Value& out)
 		const unsigned source_bits = lowir::integer_bits(original.kind());
 		const unsigned target_bits = lowir::integer_bits(inst.type.kind());
 		inst.ops[0] = def->ops[0];
+		inst.flags = 0; // The original truncation's exact fact is optional.
 		if (source_bits == target_bits)
 		{
 			inst.op = Opcode::Copy;

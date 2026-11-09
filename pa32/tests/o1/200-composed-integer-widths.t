@@ -9,7 +9,7 @@ function @drop_middle(%x : u32) -> u8 [no_inline=yes] {
 function @keep_sign(%x : i8) -> i32 [no_inline=yes] {
   block ^entry:
     %wide = convert sext i64 i8 %x
-    %narrow = convert trunc i32 i64 %wide
+    %narrow = convert trunc exact i32 i64 %wide
     return i32 %narrow
 }
 function @keep_zero(%x : u8) -> u32 [no_inline=yes] {
@@ -35,7 +35,7 @@ function @shared(%x : u32, %out : ptr) -> i64 [no_inline=yes] {
 function @wide_sign(%x : i8) -> i64 [no_inline=yes] {
   block ^entry:
     %wide = convert sext i128 i8 %x
-    %result = convert trunc i64 i128 %wide
+    %result = convert trunc exact i64 i128 %wide
     return i64 %result
 }
 function @wide_byte(%x : i64) -> u8 [no_inline=yes] {

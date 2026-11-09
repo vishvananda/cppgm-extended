@@ -35,10 +35,9 @@ function @leaves_on_true(%flag : i64, %n : i32) -> i8 [binding=strong] {
   block ^loop_preheader_1:
     %t1 = cmp gt i32 %n, 0
     %t2 = select i32 %t1, %n, 0
-    %t3 = convert zext i64 i32 %t2
-    %t4 = convert trunc i8 i64 %t3
-    %t5 = binary mul i8 %t4, 3
-    return i8 %t5
+    %t3 = convert trunc i8 i32 %t2
+    %t4 = binary mul i8 %t3, 3
+    return i8 %t4
 
   block ^other:
     return i8 1

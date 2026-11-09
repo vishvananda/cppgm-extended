@@ -1,0 +1,117 @@
+global @__bit_table_0 : obj<16x1> [storage=readonly, binding=internal] = {
+  u8 0
+  u8 23
+  u8 46
+  u8 57
+  u8 92
+  u8 75
+  u8 114
+  u8 101
+  u8 184
+  u8 175
+  u8 150
+  u8 129
+  u8 228
+  u8 243
+  u8 202
+  u8 221
+}
+
+function @fold_widened(%x : u8) -> u8 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary and u8 %x, 15
+    %t2 = convert zext i64 u8 %t1
+    %t3 = addr @__bit_table_0
+    %t4 = index u8 %t3, %t2
+    %t5 = load u8 %t4
+    %t6 = binary ushr u8 %x, 4
+    %t7 = binary xor u8 %t5, %t6
+    return u8 %t7
+}
+function @keep_second_bit(%x : u8) -> u8 [no_inline=yes] {
+  block ^entry:
+    %bit0 = binary and u8 %x, 2
+    %cond0 = convert zext i64 u8 %bit0
+    %s0 = binary ushr u8 %x, 1
+    %m0 = binary xor u8 %s0, 184
+    %r0 = select u8 %cond0, %m0, %s0
+    %bit1 = binary and u8 %r0, 2
+    %cond1 = convert zext i64 u8 %bit1
+    %s1 = binary ushr u8 %r0, 1
+    %m1 = binary xor u8 %s1, 184
+    %r1 = select u8 %cond1, %m1, %s1
+    %bit2 = binary and u8 %r1, 2
+    %cond2 = convert zext i64 u8 %bit2
+    %s2 = binary ushr u8 %r1, 1
+    %m2 = binary xor u8 %s2, 184
+    %r2 = select u8 %cond2, %m2, %s2
+    %bit3 = binary and u8 %r2, 2
+    %cond3 = convert zext i64 u8 %bit3
+    %s3 = binary ushr u8 %r2, 1
+    %m3 = binary xor u8 %s3, 184
+    %r3 = select u8 %cond3, %m3, %s3
+    return u8 %r3
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    jump ^outer
+
+  block ^outer:
+    %i = phi i64 [^entry: 0, ^next: %inext]
+    %seed = convert trunc u8 i64 %i
+    %actual_a = call u8 @fold_widened(%seed)
+    %actual_b = call u8 @keep_second_bit(%seed)
+    %t5 = binary and u8 %seed, 1
+    %t6 = binary and u8 %seed, 2
+    %t7 = convert zext i64 u8 %t5
+    %t8 = binary ushr u8 %seed, 1
+    %t9 = binary xor u8 %t8, 184
+    %t10 = select u8 %t7, %t9, %t8
+    %t11 = cmp ne u8 %t6, 0
+    %t12 = select u8 %t11, %t9, %t8
+    %t13 = binary and u8 %t10, 1
+    %t14 = binary and u8 %t12, 2
+    %t15 = convert zext i64 u8 %t13
+    %t16 = binary ushr u8 %t10, 1
+    %t17 = binary ushr u8 %t12, 1
+    %t18 = binary xor u8 %t16, 184
+    %t19 = binary xor u8 %t17, 184
+    %t20 = select u8 %t15, %t18, %t16
+    %t21 = cmp ne u8 %t14, 0
+    %t22 = select u8 %t21, %t19, %t17
+    %t23 = binary and u8 %t20, 1
+    %t24 = binary and u8 %t22, 2
+    %t25 = convert zext i64 u8 %t23
+    %t26 = binary ushr u8 %t20, 1
+    %t27 = binary ushr u8 %t22, 1
+    %t28 = binary xor u8 %t26, 184
+    %t29 = binary xor u8 %t27, 184
+    %t30 = select u8 %t25, %t28, %t26
+    %t31 = cmp ne u8 %t24, 0
+    %t32 = select u8 %t31, %t29, %t27
+    %t33 = binary and u8 %t30, 1
+    %t34 = binary and u8 %t32, 2
+    %t35 = convert zext i64 u8 %t33
+    %t36 = binary ushr u8 %t30, 1
+    %t37 = binary ushr u8 %t32, 1
+    %t38 = binary xor u8 %t36, 184
+    %t39 = binary xor u8 %t37, 184
+    %t40 = select u8 %t35, %t38, %t36
+    %t41 = cmp ne u8 %t34, 0
+    %t42 = select u8 %t41, %t39, %t37
+    %bad_a = cmp ne u8 %actual_a, %t40
+    %bad_b = cmp ne u8 %actual_b, %t42
+    %bad = binary or i64 %bad_a, %bad_b
+    branch %bad, ^fail, ^next
+
+  block ^next:
+    %inext = binary add i64 %i, 1
+    %again = cmp ne i64 %inext, 256
+    branch %again, ^outer, ^done
+
+  block ^fail:
+    return i64 1
+
+  block ^done:
+    return i64 0
+}

@@ -90,6 +90,7 @@ private:
 	const std::vector<BlockId>& blocks();
 	void own(InstId id);
 	void own(Value value);
+	const Instruction* condition_value(Value& value);
 	bool condition(Value value, Value input, bool& true_bit);
 	bool phi_arms(InstId id, Value& condition, Value& yes, Value& no, BlockId& left, BlockId& right);
 	bool step(InstId id, Value& input, uint64_t& polynomial, bool& inverted);
@@ -147,10 +148,26 @@ void BitRecurrences::own(Value value)
 		own(body_.temps[value.index].def);
 }
 
+// Zero extensions preserve both 0 and 1. Accept them only on the path
+// that condition subsequently proves is exactly input & 1.
+const Instruction* BitRecurrences::condition_value(Value& value)
+{
+	const Instruction* inst = definition(value);
+	for (unsigned depth = 0; depth < 6 && inst != nullptr && inst->op == Opcode::Convert && inst->type.is_integer() &&
+		convert_source_type(*inst).is_integer() && static_cast<ConvertOp>(inst->sub) == ConvertOp::ZExt;
+		++depth)
+	{
+		own(value);
+		value = inst->ops[0];
+		inst = definition(value);
+	}
+	return inst;
+}
+
 bool BitRecurrences::condition(Value value, Value input, bool& true_bit)
 {
 	true_bit = true;
-	const Instruction* inst = definition(value);
+	const Instruction* inst = condition_value(value);
 	if (inst != nullptr && inst->op == Opcode::Compare)
 	{
 		uint64_t constant;
@@ -168,7 +185,7 @@ bool BitRecurrences::condition(Value value, Value input, bool& true_bit)
 		true_bit = (inst->sub == static_cast<uint8_t>(ComparePredicate::Eq)) == (constant == 1);
 		own(value);
 		value = test;
-		inst = definition(value);
+		inst = condition_value(value);
 	}
 	if (!binary(inst, BinaryOp::And))
 		return false;
