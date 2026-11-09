@@ -63,6 +63,9 @@ files left after failure are not prescribed.
 Every native fixture checks compilation status and the generated program's
 stdout and exit status. Correct output is required regardless of optimization
 level or allocation strategy.
+Blocks that emit no instructions can share an address. Alignment and branch-size
+changes must preserve all their control-flow targets; no particular padding or
+branch encoding is required.
 
 A one-past pointer can still reach its array through valid backward arithmetic.
 Preserve the array's contents and lifetime when such a pointer crosses a call

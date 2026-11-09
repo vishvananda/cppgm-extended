@@ -726,6 +726,18 @@ void FunctionEmitter::encode(const Function& function)
 			if (head != loop_heads_.end() && *head == block_start_[b] && aligned_head != block_start_[b])
 			{
 				align_loop_head(static_cast<size_t>(head - loop_heads_.begin()));
+				// Empty fallthrough blocks may share this first-encode address.
+				// Keep their labels after the padding too: relaxation assumes
+				// padding at a backward target moves both target and branch.
+				for (size_t prior = b; prior != 0;)
+				{
+					--prior;
+					if (chain_end_[prior] != prior && chain_end_[prior] != kNoChainEnd)
+						continue;
+					if (block_start_[prior] != block_start_[b])
+						break;
+					asm_.bind(labels_[prior]);
+				}
 				aligned_head = block_start_[b];
 			}
 		}
