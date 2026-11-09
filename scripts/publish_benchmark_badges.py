@@ -79,7 +79,7 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False, co
     if platform == 'github':
         platform = benchmark_hosts.hosted_platform(cpu)
     expected = 'Intel' if platform in ('intel', 'github-intel') else 'AMD EPYC'
-    if expected not in cpu:
+    if expected.casefold() not in cpu.casefold():
         raise ValueError(f'{platform} badges require {expected} hardware; measured {cpu!r}')
     names = (BADGES[:4] if component == 'public' else
              BADGES[4:] + CLANG_BADGES if component == 'self-build' else BADGES + CLANG_BADGES)

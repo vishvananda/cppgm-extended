@@ -3,9 +3,10 @@ import json
 
 
 def hosted_platform(cpu):
-    if 'AMD EPYC' in cpu:
+    normalized = cpu.casefold()
+    if 'amd epyc' in normalized:
         return 'epyc'
-    if 'Intel' in cpu:
+    if 'intel' in normalized:
         return 'github-intel'
     raise ValueError(f'unrecognized hosted benchmark CPU: {cpu!r}')
 

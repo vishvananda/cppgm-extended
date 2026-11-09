@@ -670,11 +670,11 @@ class BadgePublicationTests(unittest.TestCase):
         self.prepare('intel', 'Intel Xeon E5-2696 v4')
         paths = ['epyc/report.md', 'intel/report.md', 'o3-generated.svg']
         previous = {name: (self.target / name).read_bytes() for name in paths}
-        self.prepare('github', 'Intel Xeon Platinum 8370C')
+        self.prepare('github', 'INTEL(R) XEON(R) PLATINUM 8573C')
         for name, content in previous.items():
             self.assertEqual((self.target / name).read_bytes(), content)
         provenance = json.loads((self.target / 'github-intel/provenance.json').read_text())
-        self.assertIn('Platinum 8370C', provenance['cpu'])
+        self.assertEqual(provenance['cpu'], 'INTEL(R) XEON(R) PLATINUM 8573C')
         self.assertIn('Intel (GitHub)', (self.target / 'github-intel/report.md').read_text())
 
     def test_hosted_epyc_updates_epyc_and_legacy_badges(self):
