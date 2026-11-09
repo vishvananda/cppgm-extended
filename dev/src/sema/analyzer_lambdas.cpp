@@ -1146,6 +1146,8 @@ FunctionEntity* Analyzer::closure_call(ClassEntity* closure, const syntax::Lambd
 			call->no_inline = true;
 		if (attribute->kind == syntax::AttributeKind::Used)
 			call->used = true;
+		if (attribute->kind == syntax::AttributeKind::ReturnsNonNull)
+			call->returns_nonnull = true;
 		const FunctionEffect effect = attribute->kind == syntax::AttributeKind::Const ? FunctionEffect::ReadNone
 			: attribute->kind == syntax::AttributeKind::Pure                          ? FunctionEffect::ReadOnly
 																					  : FunctionEffect::Default;

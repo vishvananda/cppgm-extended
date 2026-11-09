@@ -98,6 +98,8 @@ enum class AttributeKind : uint8_t
 	Used,
 	// [[noreturn]] and GNU noreturn: calls of the function do not return.
 	NoReturn,
+	// GNU returns_nonnull: every normally returned pointer is non-null.
+	ReturnsNonNull,
 	// GNU mode(identifier): its machine-mode keyword, never an expression.
 	Mode,
 	// Optional shared assembly: a body owns its ABI and frame.

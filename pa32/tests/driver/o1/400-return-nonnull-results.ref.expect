@@ -1,0 +1,7 @@
+count(call @required) >= 1 in @checked
+count(cmp) <= 0 in @checked
+count(cmp) <= 0 in @checked_template
+count(cmp) <= 0 in @checked_virtual
+count(cmp) >= 1 in @unchecked
+count(cmp) >= 1 in @unchecked_specialization
+count(cmp) >= 1 in @unchecked_pointer

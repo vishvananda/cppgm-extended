@@ -1,0 +1,82 @@
+declare function @required(%arg0 : ptr) -> ptr [return=nonnull, linkage=c, binding=strong]
+declare function @optional(%arg0 : ptr) -> ptr [linkage=c, binding=strong]
+declare function @templated(%arg0 : ptr) -> ptr [return=nonnull, binding=weak, object=_Z9templatedIdEPT_S1_]
+declare function @templated__2(%arg0 : ptr) -> ptr [binding=strong, object=_Z9templatedIiEPT_S1_]
+
+function @checked(%p : ptr) -> u8 [linkage=c, binding=strong] {
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = call ptr @required(%t1)
+    %t3 = copy ptr 0
+    %t4 = cmp ne ptr %t2, %t3
+    %t5 = convert trunc u8 i64 %t4
+    return u8 %t5
+}
+function @unchecked(%p : ptr) -> u8 [linkage=c, binding=strong] {
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = call ptr @optional(%t1)
+    %t3 = copy ptr 0
+    %t4 = cmp ne ptr %t2, %t3
+    %t5 = convert trunc u8 i64 %t4
+    return u8 %t5
+}
+function @checked_template(%p : ptr) -> u8 [linkage=c, binding=strong] {
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = call ptr @templated(%t1)
+    %t3 = copy ptr 0
+    %t4 = cmp ne ptr %t2, %t3
+    %t5 = convert trunc u8 i64 %t4
+    return u8 %t5
+}
+function @unchecked_specialization(%p : ptr) -> u8 [linkage=c, binding=strong] {
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = call ptr @templated__2(%t1)
+    %t3 = copy ptr 0
+    %t4 = cmp ne ptr %t2, %t3
+    %t5 = convert trunc u8 i64 %t4
+    return u8 %t5
+}
+function @unchecked_pointer(%fn : ptr, %p : ptr) -> u8 [linkage=c, binding=strong] {
+  slot $fn : ptr
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %fn, $fn
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = load typed ptr $fn
+    %t3 = call ptr %t2(%t1) as (%arg0 : ptr) -> ptr
+    %t4 = copy ptr 0
+    %t5 = cmp ne ptr %t3, %t4
+    %t6 = convert trunc u8 i64 %t5
+    return u8 %t6
+}
+function @checked_virtual(%object : ptr) -> u8 [linkage=c, binding=strong] {
+  slot $object : ptr
+
+  block ^entry:
+    store typed ptr %object, $object
+    %t1 = load typed ptr $object
+    %t2 = load typed ptr %t1
+    %t3 = load typed ptr %t2
+    %t4 = call ptr %t3(%t1) as (%arg0 : ptr [object_bytes=8]) -> ptr [return=nonnull]
+    %t5 = copy ptr 0
+    %t6 = cmp ne ptr %t4, %t5
+    %t7 = convert trunc u8 i64 %t6
+    return u8 %t7
+}

@@ -163,10 +163,11 @@ const unsigned kCallUnwindModeCount = CUM_NO + 1;
 enum CallReturnMode : std::uint8_t
 {
 	CRM_DEFAULT,
-	CRM_NORETURN
+	CRM_NORETURN,
+	CRM_NONNULL
 };
 
-const unsigned kCallReturnModeCount = CRM_NORETURN + 1;
+const unsigned kCallReturnModeCount = CRM_NONNULL + 1;
 
 // ---------------------------------------------------------------------------
 // Parameter and instruction metadata
@@ -371,7 +372,7 @@ inline const char* spelling(CallUnwindMode value)
 
 inline const char* spelling(CallReturnMode value)
 {
-	static const char* const kReturns[kCallReturnModeCount] = { "", "noreturn" };
+	static const char* const kReturns[kCallReturnModeCount] = { "", "noreturn", "nonnull" };
 	return kReturns[value];
 }
 

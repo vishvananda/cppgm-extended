@@ -1,0 +1,18 @@
+#if !__has_attribute(returns_nonnull) || !__has_attribute(__returns_nonnull__)
+#error returns_nonnull must be advertised
+#endif
+__attribute__((returns_nonnull, noinline)) int* identity(int* p) { return p; }
+[[gnu::returns_nonnull]] __attribute__((noinline)) int* other(int* p) { return p; }
+__attribute__((__returns_nonnull__, noinline)) int* reserved(int* p) { return p; }
+template<class T> __attribute__((returns_nonnull, noinline)) T* select(T* p) { return p; }
+template<> int* select<int>(int* p) { return p; }
+int main() {
+  int value = 13;
+  double number = 2;
+  int* (*pointer)(int*) = identity;
+  if (identity(&value) != &value || pointer(&value) != &value) return 1;
+  if (other(&value) != &value || reserved(&value) != &value) return 2;
+  if (select(&number) != &number || select<int>(&value) != &value) return 3;
+  auto lambda = [](int* p) __attribute__((returns_nonnull)) -> int* { return p; };
+  return lambda(&value) != &value;
+}

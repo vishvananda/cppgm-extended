@@ -3208,6 +3208,8 @@ lowir::SignatureId ProgramLowering::function_signature(
 	}
 	if (function->noreturn)
 		signature.boundary.returns = ir_model::CRM_NORETURN;
+	else if (function->returns_nonnull && result->unqualified->kind == sema::TypeKind::Pointer)
+		signature.boundary.returns = ir_model::CRM_NONNULL;
 	if (function->builtin == sema::BuiltinFunction::Strlen || function->effects == sema::FunctionEffect::ReadOnly)
 		signature.boundary.effects = ir_model::CFXM_READONLY;
 	// GNU const (pa28).

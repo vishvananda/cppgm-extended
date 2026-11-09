@@ -564,6 +564,8 @@ bool Validator::check_links()
 			return fail("invalid signature");
 		if (boundary.repeatable && boundary.effects == ir_model::CFXM_DEFAULT)
 			return fail("repeatable metadata requires readnone or readonly effects");
+		if (boundary.returns == ir_model::CRM_NONNULL && !signature.result.is_pointer())
+			return fail("nonnull return metadata requires a pointer result");
 		const Parameter* parameters = program_.parameters_of(signature);
 		for (uint32_t i = 0; i < signature.parameter_count; ++i)
 		{

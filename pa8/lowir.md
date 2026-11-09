@@ -475,8 +475,9 @@ barriers unless a consumer separately proves them irrelevant.
 The currently defined unwind value is `no`. Omission means the call may unwind and has no
 explicit spelling.
 
-The currently defined return value is `noreturn`. Omission means the call returns normally
-and has no explicit spelling.
+The return values are `noreturn` and `nonnull`. The latter requires a `ptr`
+result and promises that every normal return produces a non-null pointer; it
+does not suppress effects or unwinding. Omission states no return promise.
 
 The C++ lowering states `effects`, `unwind` and `return` by the rules in Facts The C++
 Lowering States below.
@@ -1857,6 +1858,14 @@ states it when any declaration of the function carries `[[noreturn]]` or GNU
 A call through a pointer or reference states none: the attribute appertains
 to a function, not to its type (7.6.3p1). A call of a `noreturn` function
 does not end its block; what follows it is lowered as written.
+
+`return=nonnull`: a pointer-returning function whose declaration carries GNU
+`returns_nonnull` states this result promise. Later declarations may add it;
+implicit template instances inherit it, while explicit function-template
+specializations use their own declarations. Virtual call boundaries retain
+the called declaration's promise. It is not a function-type property, so an
+ordinary function-pointer call does not inherit it. `noreturn` takes precedence
+when both attributes apply.
 
 `effects`: a function declaration, definition or call signature states
 `effects=readnone` when any declaration of the function carries GNU `const`,

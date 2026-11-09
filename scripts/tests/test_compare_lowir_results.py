@@ -635,7 +635,7 @@ function @invoke() -> {result_type} {{
                     self.assertNotEqual(self.compare(bad, bad).returncode, 0)
 
     def test_address_only_function_rejects_boundary_metadata(self):
-        for metadata in ("arity=variadic", "effects=readonly", "unwind=no", "return=noreturn",
+        for metadata in ("arity=variadic", "effects=readonly", "unwind=no", "return=noreturn", "return=nonnull",
                          "effects=readnone, repeatable=yes"):
             program = f"declare function @opaque [{metadata}]\n"
             self.assertNotEqual(self.compare(program, program).returncode, 0)
@@ -650,6 +650,24 @@ function @invoke() -> {result_type} {{
         result = self.compare(reference, generated)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("does not match reference", result.stdout)
+
+    def test_source_comparison_preserves_nonnull_result(self):
+        reference = """function @value(%x : ptr) -> ptr [return=nonnull] {
+  block ^entry:
+    return ptr %x
+}
+"""
+        generated = reference.replace(" [return=nonnull]", "")
+        self.assertNotEqual(self.compare(reference, generated).returncode, 0)
+
+    def test_nonnull_indirect_signature_requires_pointer_result(self):
+        program = """function @invoke(%fn : ptr) -> i32 {
+  block ^entry:
+    %result = call i32 %fn() as () -> i32 [return=nonnull]
+    return i32 %result
+}
+"""
+        self.assertNotEqual(self.compare(program, program).returncode, 0)
 
     def test_relaxed_compare_allows_declaration_to_definition_refinement(self):
         reference = "declare function @helper() -> i64\n"

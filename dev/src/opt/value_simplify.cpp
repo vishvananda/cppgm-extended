@@ -285,7 +285,13 @@ private:
 	bool merge_diamonds();
 	bool known_nonzero(Value v) const
 	{
-		return v.is(ValueKind::Temp) && v.index < nonzero_.size() && nonzero_[v.index] != 0;
+		if (v.is(ValueKind::Temp) && v.index < nonzero_.size() && nonzero_[v.index] != 0)
+			return true;
+		const Instruction* call = producer(v);
+		if (call == nullptr || call->op != Opcode::Call || !call->type.is_pointer())
+			return false;
+		const Signature* signature = c_.program.call_boundary(*call);
+		return signature != nullptr && signature->boundary.returns == ir_model::CRM_NONNULL;
 	}
 	void float_bound_facts(const Instruction& test, bool taken);
 	void mark_finite(Value v);

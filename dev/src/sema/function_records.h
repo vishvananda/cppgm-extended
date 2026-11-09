@@ -499,6 +499,8 @@ struct FunctionEntity : Entity
 	// GNU pure and const (pa28): the strongest call effect its declarations
 	// state (a function template's specializations take the template's).
 	FunctionEffect effects;
+	// GNU returns_nonnull: a function result promise, not a function type.
+	bool returns_nonnull;
 	// An inheriting constructor that is the full form of the constructor
 	// it inherits through its bases' inheriting constructors (no trailing
 	// default argument omitted: the one the hosts declare, P0136, which

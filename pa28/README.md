@@ -216,6 +216,12 @@ the supported subset:
   specialization takes only its own declarations' attributes, as GCC reads
   them; `noinline` follows the same rules for `no_inline=yes`, and PA32's
   `-O0` driver lane compares these facts
+- GNU `returns_nonnull`, including its reserved and `gnu::` spellings, is a
+  function result promise retained as `return=nonnull` on pointer-returning
+  declarations, definitions and virtual call boundaries. A template's implicit
+  instances inherit it; an explicit specialization uses its own declarations,
+  following GCC's attribute ownership rules.
+  Function pointers do not acquire the attribute as part of their type
 
 If host link succeeds but the host C++ ABI/runtime behavior is wrong, fix the
 host ABI/runtime lowering, metadata, or object-emission path.

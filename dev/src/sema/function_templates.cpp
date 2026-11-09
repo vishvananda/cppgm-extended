@@ -1705,6 +1705,7 @@ FunctionEntity* Analyzer::specialize(FunctionEntity* primary, const TypeList& gi
 	// GNU used keeps instantiated definitions as emission roots.
 	function->used = primary->used;
 	function->effects = primary->effects;
+	function->returns_nonnull = primary->returns_nonnull;
 	// [[noreturn]] or GNU noreturn on the template (7.6.3p1).
 	function->noreturn = primary->noreturn;
 	function->signature = signature_of(type);

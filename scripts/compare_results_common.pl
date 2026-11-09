@@ -1353,7 +1353,7 @@ sub parse_lowir_symbol_metadata_suffix
 
 sub parse_lowir_function_metadata_suffix
 {
-	my ($suffix) = @_;
+	my ($suffix, $result_type) = @_;
 	my %metadata = (
 		arity => 'fixed',
 		effects => '',
@@ -1411,7 +1411,7 @@ sub parse_lowir_function_metadata_suffix
 			elsif ($key eq 'return')
 			{
 				return (0, "unknown function return mode '$value'")
-					if $value !~ /^(?:noreturn|returns)$/;
+					if $value !~ /^(?:noreturn|nonnull|returns)$/;
 				$metadata{return} = $value;
 			}
 			elsif ($key eq 'role')
@@ -1505,6 +1505,8 @@ sub parse_lowir_function_metadata_suffix
 		if lowir_trim($rest) ne '';
 	return (0, "repeatable metadata requires readnone or readonly effects")
 		if $metadata{repeatable} ne '' && $metadata{effects} !~ /^(?:readnone|readonly)$/;
+	return (0, "nonnull return metadata requires a pointer result")
+		if $metadata{return} eq 'nonnull' && defined($result_type) && $result_type ne 'ptr';
 	return (1, \%metadata);
 }
 
@@ -1525,7 +1527,7 @@ sub parse_lowir_call_signature_suffix
 	my ($params_ok, $params_or_error) = parse_lowir_param_list($params_text);
 	return (0, $params_or_error) if !$params_ok;
 	my ($metadata_ok, $metadata_or_error) =
-		parse_lowir_function_metadata_suffix($metadata_suffix);
+		parse_lowir_function_metadata_suffix($metadata_suffix, $ret_type);
 	return (0, $metadata_or_error) if !$metadata_ok;
 	return (0, "call signature metadata does not allow symbol metadata")
 		if $metadata_or_error->{role} ne '' ||
@@ -2825,7 +2827,7 @@ sub validate_lowir_text
 			next;
 		}
 		my ($metadata_ok, $metadata_or_error) =
-			parse_lowir_function_metadata_suffix($4);
+			parse_lowir_function_metadata_suffix($4, $3);
 		# Invalid metadata is reported, but the signature is still recorded
 		# from the parameter list and return type so that a call to the
 		# function is checked against something instead of nothing.
@@ -2849,7 +2851,7 @@ sub validate_lowir_text
 			next;
 		}
 		my ($metadata_ok, $metadata_or_error) =
-			parse_lowir_function_metadata_suffix($4);
+			parse_lowir_function_metadata_suffix($4, $3);
 		push @errors, "declare function \@$1 has invalid metadata: $metadata_or_error"
 			if !$metadata_ok;
 		$signatures{$1} = {

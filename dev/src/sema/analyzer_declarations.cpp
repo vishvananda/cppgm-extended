@@ -743,6 +743,8 @@ void Analyzer::effect_attributes(
 				function->used = true;
 			if (attribute->kind == syntax::AttributeKind::NoReturn)
 				function->noreturn = true;
+			if (attribute->kind == syntax::AttributeKind::ReturnsNonNull)
+				function->returns_nonnull = true;
 			if (attribute->kind == syntax::AttributeKind::Naked)
 			{
 				if (!full_asm_)
