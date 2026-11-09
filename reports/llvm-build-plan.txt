@@ -1317,7 +1317,7 @@ Three AA/ABBA screens pass output equality: candidate/control instructions
 1.00052374x and 1.00043464x, respectively: small reductions with measurable
 variation, not whole-build runtime evidence. All observations are retained.
 Full LLVM build, current/frozen object comparisons, full runtime and official
-course/student release qualification are next. This candidate is not accepted.
+course/student release qualification are recorded below.
 
 B41 full qualification results
 ------------------------------
@@ -1331,12 +1331,12 @@ Cppgm-built instructions are 1,223,662,398,258.5, 0.99724065x B40 (-0.2759%);
 native instructions remain stable at 1.00001051x. The 0.95x goal is unmet.
 
 All 42 exported wrappers, both exported fixtures and quick/smoke pass.
-The official full release is still running. Its student speed observation
-has scaling 2.54x, within the 3.00 hard limit but short of 2.40 release
-headroom. If this is the only failed release margin, preserve the complete
-initial run and do exactly one speed-only recheck of the unchanged seed/self,
-then use official calibrate.pl --from to judge all cached checks. No gate
-limits or observations are edited. Candidate remains unaccepted pending this.
+The first official release missed only student scaling headroom: 2.54x,
+within the 3.00 hard limit but short of the 2.40 release target. The complete
+initial run is retained. One speed-only recheck of the unchanged seed/self
+measures 2.07x; official calibrate.pl --from passes every course/student gate
+(17/17 each). No gate limits or observations were edited. This checkpoint
+is accepted; the unaccepted frame-origin experiment remains separate.
 
 Private follow-ups retain exact full-binary controls. Disabling pointer
 result tables adds instructions in all three samples, so keep the tables.
