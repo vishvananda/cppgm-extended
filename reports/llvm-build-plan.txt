@@ -851,3 +851,32 @@ Details and remaining performance leads are in llvm-codegen-profile.txt.
 The B22 acceptance receipt is block22-cold-sites-return-hints-validation.json
 outside the checkout. B23's host-only narrow select cleanup is being validated
 separately; it is not included in this accepted checkpoint.
+
+Fast codegen iteration, 2026-11-09 (user-requested batching):
+ - Leave the current full qualification build running. For subsequent work,
+   collect three or four supported improvements before the next full LLVM
+   rebuild and complete repository qualification.
+ - First reduce each suspected gap into a behavior/quality regression in its
+   earliest owning assignment. Compare immutable parent/candidate output and
+   run the affected tests, including cases that invalidate the optimization.
+ - Screen generated instruction counts, memory accesses, copies and frame/code
+   size on the reduction and the relevant LLVM functions. Measure the frozen
+   compile-cost instruction/RSS gate before promoting the group.
+ - Recompile selected hot LLVM translation units and replace their objects in
+   private archive copies; relink a diagnostic Clang. Keep the full reference
+   LLVM build immutable, record all source/compiler hashes and link commands,
+   and verify that the original binary remains unchanged. Build matching
+   control links so unrelated compiler changes do not confound the experiment.
+ - Run those private Clang binaries against frozen cppgm inputs with output
+   byte equality, an A/A check and short paired counter observations. Use
+   instructions for screening under load; retain wall/CPU time and other
+   counters without attributing scheduling/cache variation to a codegen win.
+   A one-object link localizes a change; it is not the final whole-LLVM score.
+ - Once three or four improvements survive these screens, run one complete
+   LLVM build, all downstream object/link byte comparisons, the full cppgm
+   timing comparison, and the normal strict/audit/self-host/export/PA35 gates.
+   A compiler crash or output mismatch is a correctness failure, never speed.
+ - Initial private DeclBase control/candidate links each took about 6 seconds.
+   The compact-memory-test probe showed no resolved instruction-count benefit
+   in its downstream sample; its noisy wall-time observation is not a win.
+   Raw receipts and observations remain under cppgm-llvm-evidence/block27-*.
