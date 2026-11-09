@@ -285,6 +285,26 @@ bool CfgCleanup::remove_unreachable()
 			dead[b] = 1;
 			any = true;
 		}
+	// Keep code identities even when the entry cannot reach them. Their
+	// ordinary and exceptional continuations must remain valid as well.
+	std::vector<BlockId> work;
+	if (any)
+		for (const CodeLabel& label : body_.code_labels)
+			work.push_back(label.block);
+	while (!work.empty())
+	{
+		const BlockId b = work.back();
+		work.pop_back();
+		if (!dead[b])
+			continue;
+		dead[b] = 0;
+		for (uint32_t k = cfg_.succ_first[b]; k < cfg_.succ_first[b + 1]; ++k)
+			work.push_back(cfg_.succs[k]);
+		for (uint32_t k = cfg_.handler_first[b]; k < cfg_.handler_first[b + 1]; ++k)
+			work.push_back(cfg_.handlers[k]);
+	}
+	if (any && !body_.code_labels.empty())
+		any = std::find(dead.begin(), dead.end(), 1) != dead.end();
 	if (!any || !preserve_definitions(dead))
 		return false;
 	for (BlockId b : body_.layout)
@@ -401,7 +421,7 @@ bool CfgCleanup::bypass_empty_blocks()
 	for (BlockId b : body_.layout)
 	{
 		BlockId target;
-		if (b == entry || (cfg_.flags[b] & BF_HANDLER) != 0 || !only_jump(b, target) || target == b ||
+		if (b == entry || (cfg_.flags[b] & (BF_HANDLER | BF_ADDRESS)) != 0 || !only_jump(b, target) || target == b ||
 			!cfg_.reachable(b) || touched[b] || touched[target])
 			continue;
 		if (cfg_.pred_count(target) > kBypassPreds && body_.blocks[target].first != kNoId &&
@@ -490,7 +510,7 @@ bool CfgCleanup::merge_blocks()
 			if (last == kNoId || body_.instructions[last].op != Opcode::Jump)
 				break;
 			const BlockId b = body_.instructions[last].ops[0].index;
-			if (b == a || dead[b] || b == body_.layout[0] || (cfg_.flags[b] & BF_HANDLER) != 0 ||
+			if (b == a || dead[b] || b == body_.layout[0] || (cfg_.flags[b] & (BF_HANDLER | BF_ADDRESS)) != 0 ||
 				cfg_.pred_count(b) != 1)
 				break;
 			// B's phis have one input: A's.

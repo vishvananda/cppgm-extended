@@ -168,6 +168,11 @@ or instruction sequences.
 Dataflow optimizations must include every declared indirect destination.
 A value available on one incoming path need not be available at an addressed
 entry reached from another path.
+Addressed entries need not prevent ordinary value and storage optimizations.
+When simplifying aggregate temporaries, preserve field overlap, escaping
+addresses and values carried across indirect edges. Branch hints remain
+advisory; incorrect hints must not change results.
+Use all incoming paths when deciding whether a shared block is cold.
 
 ### Module assembly
 

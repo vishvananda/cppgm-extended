@@ -46,12 +46,18 @@ void Image::define(uint32_t symbol, Section section, uint64_t offset)
 	defined->offset = offset;
 }
 
-void Image::align_code(uint32_t symbol, uint32_t align)
+void Image::align_code(uint32_t symbol, uint32_t align, uint32_t window)
 {
+	ImageSymbol* code = nullptr;
 	if (symbol >= kLocalSymbols)
-		locals_[symbol - kLocalSymbols].code_align = std::max(locals_[symbol - kLocalSymbols].code_align, align);
+		code = &locals_[symbol - kLocalSymbols];
 	else if (symbol < symbols_.size())
-		symbols_[symbol].code_align = std::max(symbols_[symbol].code_align, align);
+		code = &symbols_[symbol];
+	if (code != nullptr)
+	{
+		code->code_align = std::max(code->code_align, align);
+		code->code_window = std::max(code->code_window, window);
+	}
 }
 
 uint64_t Image::reserve(Section section, uint64_t bytes, uint64_t align)
@@ -130,9 +136,9 @@ bool Image::write_executable(const std::string& path, uint32_t entry, std::strin
 {
 	uint32_t text_alignment = 32;
 	for (const auto& symbol : symbols_)
-		text_alignment = std::max(text_alignment, symbol.code_align);
+		text_alignment = std::max(text_alignment, std::max(symbol.code_align, symbol.code_window));
 	for (const auto& symbol : locals_)
-		text_alignment = std::max(text_alignment, symbol.code_align);
+		text_alignment = std::max(text_alignment, std::max(symbol.code_align, symbol.code_window));
 	const ExecutableLayout layout = layout_executable(
 		text_.size(), rodata_.size(), data_.size(), bss_size_, text_alignment, 1, 1, 64, target);
 	text_address_ = layout.text_address;

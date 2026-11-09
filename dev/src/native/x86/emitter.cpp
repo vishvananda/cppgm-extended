@@ -1,4 +1,6 @@
 #include "native/x86/emitter.h"
+
+#include "native/target.h"
 #include "native/asm/binding.h"
 #include "native/asm/encoding.h"
 #include "native/asm/mask_forms.h"
@@ -212,7 +214,7 @@ void FunctionEmitter::find_loop_heads(const Function& function)
 		{
 			uint8_t& limit = loop_limit_[static_cast<size_t>(head - loop_heads_.begin())];
 			loop_counted_[static_cast<size_t>(head - loop_heads_.begin())] |= block.counted;
-			if (function.placement_valid || block.counted)
+			if ((function.placement_valid && function.code_labels.empty()) || block.counted)
 				limit = kWindowLoop;
 		}
 	}
@@ -246,7 +248,8 @@ void FunctionEmitter::find_loop_heads(const Function& function)
 			if (!function.placement_valid)
 				short_loop = short_loop || branch_offset_[last] - loop_heads_[k] <= 2 * kWindowLoop;
 		}
-		loop_padding_.push_back(loop_padding_[k] + (short_loop ? kWindowBytes - 1 : kLoopPad));
+		const unsigned window = loop_limit_[k] != 0 && !loop_counted_[k] ? kCodeLayoutBytes : kWindowBytes;
+		loop_padding_.push_back(loop_padding_[k] + (short_loop ? window - 1 : kLoopPad));
 	}
 }
 
@@ -254,6 +257,7 @@ void FunctionEmitter::find_loop_heads(const Function& function)
 // window boundary, and whether any may.
 bool FunctionEmitter::measure_short_loops(const Function& function)
 {
+	code_window_ = 1;
 	for (size_t i = 0; i < short_.size(); ++i)
 		relax_saved_[i + 1] = relax_saved_[i] + (short_[i] ? (branch_conditional_[i] ? 4 : 3) : 0);
 	loop_bytes_.assign(loop_heads_.size(), 0);
@@ -282,6 +286,8 @@ bool FunctionEmitter::measure_short_loops(const Function& function)
 		loop_bytes_[k] = span(loop_last_[k]);
 		if (loop_bytes_[k] == 0 && function.placement_valid)
 			loop_bytes_[k] = span(loop_near_[k]);
+		if (loop_bytes_[k] != 0 && !loop_counted_[k])
+			code_window_ = kCodeLayoutBytes;
 		any = any || loop_bytes_[k] != 0;
 	}
 	return any;
@@ -290,10 +296,17 @@ bool FunctionEmitter::measure_short_loops(const Function& function)
 void FunctionEmitter::align_loop_head(size_t head)
 {
 	const uint64_t at = asm_.size();
+	const int32_t bytes = loop_bytes_[head];
+	if (bytes != 0 && !loop_counted_[head])
+	{
+		// End a compact data cycle at a line boundary, keeping its cold
+		// continuation out of that line. Back edges skip the entry padding.
+		asm_.nops((kCodeLayoutBytes - (at + bytes) % kCodeLayoutBytes) % kCodeLayoutBytes);
+		return;
+	}
 	const unsigned to16 = (16 - at % 16) % 16;
 	const unsigned usual = to16 <= kLoopPad ? to16 : to16 - 8;
 	const unsigned to32 = (kWindowBytes - at % kWindowBytes) % kWindowBytes;
-	const int32_t bytes = loop_bytes_[head];
 	const bool fewer = bytes != 0 && windows_touched(at + to32, bytes) < windows_touched(at + usual, bytes);
 	asm_.nops(fewer ? to32 : usual);
 }
@@ -384,7 +397,7 @@ void FunctionEmitter::emit(const Function& function)
 				text.push_back(0xcc);
 			base_ = text.size();
 			image_.define(function.symbol, Section::Text, base_);
-			image_.align_code(function.symbol, kWindowBytes);
+			image_.align_code(function.symbol, kWindowBytes, code_window_);
 		}
 		asm_.fixups().clear();
 		relax_pass_ = true;

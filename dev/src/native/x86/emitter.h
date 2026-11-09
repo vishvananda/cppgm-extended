@@ -239,6 +239,7 @@ private:
 	std::vector<uint8_t> loop_counted_;  // retain the existing counted-loop policy
 	std::vector<int32_t> loop_barriers_; // first-encode call and opaque-assembly positions
 	std::vector<int32_t> loop_bytes_;    // per loop head: an innermost short loop's bytes, else 0
+	uint32_t code_window_ = 1;           // code phase required by the chosen layout
 	uint32_t current_ = 0;
 	uint32_t block_first_ = 0; // the block being encoded: its first instruction
 	uint32_t inst_index_ = 0;  // and the instruction being encoded

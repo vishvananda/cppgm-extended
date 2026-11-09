@@ -29,6 +29,7 @@ struct ImageSymbol
 	Section section = Section::Undefined;
 	uint64_t offset = 0;
 	uint32_t code_align = 16; // a function's: the boundary its code needs
+	uint32_t code_window = 1; // preserve the encoded offset modulo this window
 };
 
 struct DataFixup
@@ -59,7 +60,7 @@ public:
 	static const uint32_t kLocalSymbols = 0x40000000u;
 	uint32_t add_symbol();
 	void define(uint32_t symbol, Section section, uint64_t offset);
-	void align_code(uint32_t symbol, uint32_t align);
+	void align_code(uint32_t symbol, uint32_t align, uint32_t window = 1);
 	const ImageSymbol& symbol(uint32_t symbol) const
 	{
 		if (symbol >= kLocalSymbols)

@@ -141,9 +141,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 		forward_float_homes(out);
 		forward_frame_copies(out, frame_objects_);
 	}
-	const uint32_t mir_instructions = level_ >= 1 && body_->code_labels.empty()
-		? layout_branches()
-		: static_cast<uint32_t>(out.insts.size());
+	const uint32_t mir_instructions = level_ >= 1 ? layout_branches() : static_cast<uint32_t>(out.insts.size());
 	++stats_.functions;
 	stats_.lowir_instructions += body_->instructions.size();
 	stats_.mir_instructions += mir_instructions;

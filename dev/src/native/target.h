@@ -5,6 +5,9 @@
 
 namespace native {
 
+// Preserve the encoder's code phase when functions move into object sections.
+const uint32_t kCodeLayoutBytes = 64;
+
 enum class Target : uint8_t
 {
 	Linux,

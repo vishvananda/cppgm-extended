@@ -55,6 +55,7 @@ bool terminator(const Inst& inst)
 	case Op::Throw:
 	case Op::Resume:
 	case Op::JumpTable:
+	case Op::IndirectJump:
 	case Op::Exit:
 	case Op::WideCmpBranch:
 		return true;
@@ -83,6 +84,7 @@ class Placement
 public:
 	explicit Placement(Function& f) : f_(f), n_(static_cast<uint32_t>(f.blocks.size())) {}
 	uint32_t run();
+	uint32_t cold_blocks();
 	bool frequencies(std::vector<uint64_t>& frequency);
 
 private:
@@ -135,7 +137,7 @@ bool Placement::successors()
 				succs_.push_back(inst.ops[2].symbol);
 				succs_.push_back(inst.aux);
 			}
-			else if (inst.op == Op::JumpTable)
+			else if (inst.op == Op::JumpTable || inst.op == Op::IndirectJump)
 			{
 				++branches;
 				for (uint32_t k = inst.aux; k < inst.aux + inst.aux2; ++k)
@@ -442,6 +444,8 @@ void reorder_blocks(Function& f, const std::vector<uint32_t>& order)
 		}
 	for (uint32_t& target : f.jump_targets)
 		target = index[target];
+	for (lowir::CodeLabel& label : f.code_labels)
+		label.block = index[label.block];
 	for (EhLanding& landing : f.eh.landings)
 	{
 		if (landing.pad != lowir::kNoId)
@@ -481,6 +485,82 @@ bool Placement::frequencies(std::vector<uint64_t>& frequency)
 		}
 	}
 	return true;
+}
+
+// A region is cold only when every incoming edge is explicitly unlikely
+// or comes from another such region. This avoids frequency extrapolation
+// through irreducible indirect-dispatch graphs. Preserve all hot ordering.
+uint32_t Placement::cold_blocks()
+{
+	if (n_ < 3 || !successors())
+		return 0;
+	std::vector<uint32_t> incoming(n_, 0), rare(n_, 0);
+	std::vector<uint8_t> protected_entry(n_, 0), rare_edge(succs_.size(), 0), cold(n_, 0);
+	protected_entry[0] = protected_entry[n_ - 1] = 1;
+	for (const lowir::CodeLabel& label : f_.code_labels)
+		protected_entry[label.block] = 1;
+	for (const EhLanding& landing : f_.eh.landings)
+	{
+		if (landing.pad != lowir::kNoId)
+			protected_entry[landing.pad] = 1;
+		if (landing.select != lowir::kNoId)
+			protected_entry[landing.select] = 1;
+	}
+	for (uint32_t b = 0; b < n_; ++b)
+	{
+		protected_entry[b] |= f_.blocks[b].landing;
+		const Block& block = f_.blocks[b];
+		for (uint32_t i = block.first; i < block.first + block.count; ++i)
+			if (f_.insts[i].op == Op::EhPush)
+				for (unsigned k = 0; k < f_.insts[i].nops; ++k)
+					if (f_.insts[i].ops[k].kind == OperandKind::Label)
+						protected_entry[f_.insts[i].ops[k].symbol] = 1;
+		if (two_way_[b])
+		{
+			const uint32_t p = f_.insts[block.first + block.count - 2].aux;
+			if (p > 0 && p != 500 && p < 1000)
+				rare_edge[succ_first_[b] + (p < 500 ? 0 : 1)] = 1;
+		}
+		for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
+		{
+			++incoming[succs_[k]];
+			rare[succs_[k]] += rare_edge[k];
+		}
+	}
+	std::vector<uint32_t> work;
+	auto visit = [&](uint32_t b) {
+		if (!protected_entry[b] && !cold[b] && incoming[b] != 0 && rare[b] == incoming[b])
+		{
+			cold[b] = 1;
+			work.push_back(b);
+		}
+	};
+	for (uint32_t b = 1; b < n_; ++b)
+		visit(b);
+	for (size_t i = 0; i < work.size(); ++i)
+		for (uint32_t k = succ_first_[work[i]]; k < succ_first_[work[i] + 1]; ++k)
+			if (!rare_edge[k])
+			{
+				++rare[succs_[k]];
+				visit(succs_[k]);
+			}
+	if (work.empty())
+		return 0;
+	std::vector<uint32_t> order;
+	order.reserve(n_);
+	for (uint32_t b = 0; b + 1 < n_; ++b)
+		if (!cold[b])
+			order.push_back(b);
+	for (uint32_t b = 1; b + 1 < n_; ++b)
+		if (cold[b])
+			order.push_back(b);
+	order.push_back(n_ - 1);
+	uint32_t moved = 0;
+	for (uint32_t b = 0; b < n_; ++b)
+		moved += order[b] != b;
+	if (moved != 0)
+		reorder_blocks(f_, order);
+	return moved;
 }
 
 uint32_t Placement::run()
@@ -620,6 +700,11 @@ uint32_t Placement::run()
 }
 
 } // namespace
+
+uint32_t place_cold_blocks(Function& function)
+{
+	return Placement(function).cold_blocks();
+}
 
 uint32_t place_blocks(Function& function)
 {

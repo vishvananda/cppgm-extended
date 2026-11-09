@@ -278,16 +278,22 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 	record_switch_types(context.body);
 	if (addressed)
 	{
-		// Preserve every code entry and its fixed graph. These scalar passes
-		// neither clone entries nor require copies on an indirect edge.
+		// Preserve every code entry. These passes neither clone entries nor
+		// require copies on an indirect edge; CFG cleanup retains addressed blocks.
 		context.level = 1;
 		for (unsigned round = 0; round < kScalarRounds; ++round)
 		{
-			bool changed = RUN_PASS(promote_slots);
+			context.level = level;
+			bool changed = level >= 2 && RUN_PASS(split_aggregate_slots);
+			// Scalar/value passes at O2 preserve addressed entries; reserve
+			// graph-forming O3 rewrites for the ordinary pipeline.
+			context.level = level >= 2 ? 2 : 1;
+			changed = RUN_PASS(promote_slots) || changed;
 			changed = RUN_PASS(propagate_constants) || changed;
 			changed = RUN_PASS(simplify_values) || changed;
 			changed = RUN_PASS(forward_memory) || changed;
 			changed = RUN_PASS(remove_dead_code) || changed;
+			changed = RUN_PASS(cleanup_cfg) || changed;
 			if (!changed)
 				break;
 		}

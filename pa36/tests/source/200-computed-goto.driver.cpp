@@ -3,6 +3,7 @@ extern "C" int computed_dispatch(int, int);
 extern "C" int computed_templates(int);
 extern "C" const void *computed_identity(int);
 extern "C" unsigned computed_live_state(unsigned, unsigned);
+extern "C" unsigned computed_aggregate_state(unsigned, unsigned);
 extern "C" int computed_empty_entries(unsigned);
 extern "C" unsigned host_mix(unsigned value) { return (value ^ 0x93ad7b51u) + 0x8357u; }
 static unsigned expected_state(unsigned state, unsigned rounds) {
@@ -32,6 +33,13 @@ int main() {
     for (unsigned seed = 0; seed < 32; ++seed)
         for (unsigned rounds = 0; rounds < 100; ++rounds)
             if (computed_live_state(seed * 0x139ad1u, rounds) != expected_state(seed * 0x139ad1u, rounds)) return 5;
+    for (unsigned seed = 0; seed < 32; ++seed)
+        for (unsigned rounds = 0; rounds < 100; ++rounds) {
+            unsigned value = seed * 0x139ad1u;
+            for (unsigned left = rounds; left; --left)
+                value = host_mix((value & 1) ? (value ^ 0x7351u) + left : value * 17 + left);
+            if (computed_aggregate_state(seed * 0x139ad1u, rounds) != value) return 7;
+        }
     if (computed_templates(0) != 311 || computed_templates(1) != 1018) return 3;
     const void *first = computed_identity(0), *second = computed_identity(1);
     if (!first || !second || first != computed_identity(0) || second != computed_identity(1)) return 4;

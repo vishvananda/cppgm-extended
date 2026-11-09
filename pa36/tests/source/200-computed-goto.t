@@ -22,8 +22,10 @@ extern "C" int computed_templates(int opcode) {
 extern "C" const void *computed_identity(int choose) {
     static const void *table[] = { &&first, &&second };
     return table[choose];
-first: return table[0];
-second: return table[1];
+first: goto first_tail;
+second: goto second_tail;
+first_tail: return table[0];
+second_tail: return table[1];
 }
 
 extern "C" unsigned host_mix(unsigned);
@@ -46,7 +48,7 @@ extern "C" unsigned computed_live_state(unsigned state, unsigned rounds) {
 even:
     {
         unsigned local = state * 17 + 3;
-        if (local & 16) local ^= 0x7351;
+        if (__builtin_expect((local & 16) != 0, 0)) local ^= 0x7351;
         else local += 29;
         state = host_mix(local);
     }
@@ -61,4 +63,26 @@ odd:
     }
     if (--rounds) goto *entries[state & 1];
     return state;
+}
+
+struct DispatchState { unsigned value, remaining; };
+extern "C" unsigned computed_aggregate_state(unsigned seed, unsigned rounds) {
+    static const void *entries[] = {&&even, &&odd};
+    DispatchState state = {seed, rounds};
+    if (!state.remaining) return state.value;
+    goto *entries[state.value & 1];
+even:
+    {
+        DispatchState saved = state;
+        state.value = host_mix(saved.value * 17 + saved.remaining);
+    }
+    if (--state.remaining) goto *entries[state.value & 1];
+    return state.value;
+odd:
+    {
+        DispatchState saved = state;
+        state.value = host_mix((saved.value ^ 0x7351u) + saved.remaining);
+    }
+    if (--state.remaining) goto *entries[state.value & 1];
+    return state.value;
 }

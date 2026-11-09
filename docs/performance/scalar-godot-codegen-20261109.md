@@ -1,5 +1,7 @@
 # Scalar and indirect-dispatch optimization, 2026-11-09
 
+The selected implementation and current validation are recorded in [Selected implementation for CI](#selected-implementation-for-ci). Earlier qualifications and rejected prototypes below are retained as historical evidence.
+
 At qualification, the final local candidate reached the 0.95× GCC target for both workload
 aggregates. The follow-up below records a later scalar regression and the limits
 of that local result. These are local EPYC measurements, not replacements for CI results.
@@ -200,7 +202,7 @@ branch and cache simulations. Commands, executable/input hashes, individual
 observations, A/A results and output checks are included. The diagnostic
 compiler and linked executables remain frozen beside the earlier candidates.
 
-## Layout policy follow-up: held for further qualification
+## Initial layout-policy prototype (superseded)
 
 The candidate retains return-register coalescing and broadens alignment only at
 O2 and O3. Shared natural-loop facts are computed once per function and consumed
@@ -320,3 +322,147 @@ build commands and hashes. `milan-local-cycles-final-raw.tar.gz` and
 guard observations, calibration and checksums; compiler guard objects were
 omitted from archives but their hashes and frozen inputs were retained. Failed
 experiments and their observations remain alongside the final cohorts.
+
+## Selected implementation for CI
+
+The selected compiler is the frozen `addressed-values` candidate, SHA-256
+`520c570c637d2af34c9a3da0d654bcd1f511fbb11bea3f1548b7b2d20644b2dd`.
+It retains the useful return-register preferences. It uses typed CFG and native
+encoding facts, without workload names, source-text matches or production tuning flags.
+
+The implementation:
+
+- Reuses per-function loop facts and measures complete compact cycles and fast
+  subcycles, excluding new alignment for cycles containing calls or opaque assembly.
+  Short immutable table scans retain the conservative policy.
+- Ends qualifying data cycles at a 64-byte boundary. Object packing preserves
+  each affected function's encoded position modulo 64 for shared and COMDAT text;
+  aligning only the input code without preserving that phase in the object was insufficient.
+  O0 does not request this placement. Ending hot loops at a cache-line boundary
+  follows the tradeoff described in AMD's EPYC 7003 optimization guide, §2.8.3.
+- Simplifies addressed functions without losing code identities. Their prior
+  reduced pipeline skipped CFG cleanup even after constant propagation. Cleanup
+  now preserves addressed entries and their ordinary/exceptional continuations,
+  and cannot bypass or merge away an addressed entry. Field splitting and O2
+  value/store cleanup run while SSA promotion still rejects phis on indirect entries.
+- Separates explicitly cold regions only when all incoming edges are hinted rare
+  or come from an already cold region. Addressed entries and EH entries stay
+  protected, hot-block order stays stable, and every code-label/table/EH target
+  is remapped. It does not extrapolate hot order through an irreducible dispatch graph.
+
+Godot's interpreter function shrank from 172,592 to 80,044 bytes; GCC's function
+is 66,103 bytes and Clang's is 53,255 bytes. These are symbol-range sizes, including
+any inline table data. Raw disassembly instruction counts are not used as dynamic
+work measurements. On a frozen, common-preprocessed interpreter input, compiler
+instructions fell from about 2.692 billion to 2.505 billion (about 7%). This control
+uses the existing portable macro controls recorded in the compile-attribution
+experiment; it is not a claim about default production build wall time.
+
+### Selected runtime measurements
+
+All entries are reference CPU / candidate CPU, higher is better. Main is the
+frozen `30adb3542` compiler. Both EPYC campaigns used full Godot builds, frozen
+inputs/loader/libraries, one pinned CPU, five paired blocks, two A/A blocks at
+each end and at least 1.5 seconds of work per run. Every output is checked against
+an independently calculated checksum. No benchmark measurement is substituted
+for CI results.
+
+| Host | Godot workload | vs main | vs GCC 15 | vs Clang 22 |
+|---|---|---:|---:|---:|
+| EPYC 7B13 | dispatch | 1.0604× | 1.0767× | 0.9233× |
+| EPYC 7B13 | arrays | 0.9923× | 0.8263× | 0.9524× |
+| EPYC 7B13 | strings | 1.0184× | 0.8640× | 0.8636× |
+| EPYC 7B13 | geometry | 1.0453× | 1.3197× | 1.0370× |
+| EPYC 7B13 | scene | 1.0760× | 0.9726× | 0.8650× |
+| EPYC 7B13 | **geometric mean** | **1.0381×** | **0.9973×** | **0.9261×** |
+| EPYC 9B14 | dispatch | 1.0349× | 0.9130× | 0.8663× |
+| EPYC 9B14 | arrays | 0.9836× | 0.7718× | 0.8940× |
+| EPYC 9B14 | strings | 1.0053× | 0.8867× | 0.8757× |
+| EPYC 9B14 | geometry | 1.0056× | 0.8944× | 0.8715× |
+| EPYC 9B14 | scene | 1.0062× | 0.9815× | 0.8973× |
+| EPYC 9B14 | **geometric mean** | **1.0070×** | **0.8869×** | **0.8809×** |
+
+The small arrays and strings changes need caution: individual A/A blocks varied
+by up to 8.2% on Milan arrays and about 5% in some Genoa cells. The Genoa arrays
+median is about 1.6% slower than main; this is retained rather than hidden by the
+aggregate. The selected policy restores the scalar gain, but does not eliminate
+the remaining Genoa Godot gap to GCC or Clang.
+
+The selected scalar/SSE library and executable hashes are identical to the
+phase-preserving candidate used by the retained scalar and link-prefix campaigns.
+Scalar simdjson's equal-weight mean is about 1.027× GCC on Milan and 1.022× GCC
+on Genoa. The Genoa SSE mean is about 0.999× GCC and is essentially unchanged
+from main. Unused 0/32/64-byte link prefixes varied by about 0.4% in the Milan
+scalar phase-preservation control, versus an earlier 8% placement loss.
+
+The initial Intel run overlapped local validation and had unreliable calibration
+(up to roughly 11% before dispatch and 23% before scene). It is retained as an
+invalid timing control. A new CPU was selected from idle-load observations before
+seeing benchmark outcomes. The quiet repeat compares the same frozen binaries on
+CPU 30 of the Xeon E5-2696 v4, with five blocks and two A/A blocks per end:
+
+| Intel Godot workload | vs main |
+|---|---:|
+| dispatch | 0.9414× |
+| arrays | 1.0125× |
+| strings | 1.0188× |
+| geometry | 0.9974× |
+| scene | 0.9916× |
+| **geometric mean** | **0.9919×** |
+
+Intel dispatch remains about 6% slower than main with stable dispatch A/A
+calibration. This is an open performance issue, not a correctness failure or a
+claim that every workload improved.
+
+### Cost, validation and rejected changes
+
+For the three smaller frozen compilation inputs, the GCC-built compiler uses
+about 0.12–0.17% fewer O3 instructions than main. The rebuilt self compiler uses
+about 0.6% more instructions at O0 and O3; local wall timings vary and do not
+establish a precise self-host throughput change. CI's separate self-build job
+will provide a new measurement. The frozen O0 phase-policy control produced
+byte-identical output objects.
+
+The selected source passed strict 9,931/9,931, debug-info, self-host through PA5,
+inception identity, optional assembly at O0/O1/O2/O3 (182 fixtures), PA35 smoke,
+architecture/format/file/placement audits and the five public smoke-program
+output oracles with GCC and Clang. The public outputs are byte-identical to the
+prior phase-preserving candidate: four executable sizes match main, while
+pugixml grows about 2.9%. Two affected binary reference sidecars were regenerated
+with the normal reference runner. Student export, the 219-document inventory,
+55-document prose audit, fresh bundle installation and all 42 reference wrappers
+passed. Portable PA33/PA36 fixtures observe behavior and do not require particular
+instructions, registers or addresses. No LowIR syntax or checker contract changed.
+
+Whole-function 64-byte alignment regressed Milan arrays about 10% relative to the selected candidate; it is excluded.
+Moving internal padding before function entries reduced executed NOPs but regressed
+Genoa strings in the screen; it is excluded. Broad reordering of indirect CFGs and
+extra frame analyses were also excluded. These experiments are retained with their
+original observations, not used as qualification for the selected compiler.
+
+The user requested packaging this set and fast-forwarding main after the exact
+PR head passes all non-benchmark CI checks. Benchmark jobs and the remaining
+performance gaps are reported separately. This round does not claim 0.95× GCC
+on every EPYC model or an improvement on every workload.
+
+### Selected evidence
+
+All paths below are under
+`/mnt/vizier/cppgm-codegen-data/20261109/layout-policy`:
+
+- `addressed-values.diff`, `bin/addressed-values-{native,self}`, build and
+  per-object metadata retain the selected compiler/input identities.
+- `milan-package-final-raw.tar.gz` (SHA-256
+  `2ab5b27e3f22f00ec8ebfb2e84a09d3abff891e33dfc8332694dfe40cf749d7c`)
+  and `genoa-package-final-raw.tar.gz` (SHA-256
+  `d64f5acde29f6e8d97d1fa9c2268addf079b51c41b6bd32351288144b6601a47`)
+  retain the full EPYC observations and rejected candidates. Both archives were
+  downloaded, verified and extracted before stopping the VMs.
+- `intel-values-quiet-final`, `intel-quiet-cpu-selection.json` and the invalid
+  `intel-godot-values-final` preserve all Intel observations and calibration.
+- `vm-compile-cost-control`, `compile-values-{native,self}-O3-final`,
+  `compile-values-self-O0-final`, and `public-values-final.json` retain cost,
+  object-equality and output-oracle evidence. Earlier failed preprocessor-control
+  attempts are retained but are not measurements.
+- `export-package.log`, `export-client-package.log`, the student reference bundle,
+  strict/debug/self/inception logs and the audit logs retain validation evidence.

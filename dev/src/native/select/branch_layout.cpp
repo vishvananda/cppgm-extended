@@ -100,27 +100,39 @@ uint32_t form_tail_jumps(Function& f)
 
 uint32_t FunctionSelector::layout_branches()
 {
-	const TailCopies copies = duplicate_short_tails(*out_);
+	const bool addressed = !out_->code_labels.empty();
+	const TailCopies copies = addressed ? TailCopies{} : duplicate_short_tails(*out_);
 	stats_.rotated_loops += copies.rotations;
 	stats_.dispatch_tails += copies.dispatches;
 	const bool copied = copies.rotations != 0 || copies.dispatches != 0;
-	thread_decided_tests(*out_, program_);
-	place_blocks(*out_);
+	if (!addressed)
+	{
+		thread_decided_tests(*out_, program_);
+		place_blocks(*out_);
+	}
+	else
+		place_cold_blocks(*out_);
 	// A spill moved into a prologue block may meet its reload there, and a
 	// loop's test left only on its entry path (its copy closes the loop)
 	// may read a home the entry's block still holds in a register. A test
 	// copied to a back edge may follow the instruction that set its flags.
-	if (shrink_wrap(*out_) || copied)
+	if ((!addressed && shrink_wrap(*out_)) || copied)
 		forward_home_reloads(*out_);
 	if (copied)
 		drop_redundant_tests(*out_);
-	drop_guarded_integer_extensions(*out_);
-	drop_repeated_compares(*out_);
+	if (!addressed)
+	{
+		drop_guarded_integer_extensions(*out_);
+		drop_repeated_compares(*out_);
+	}
 	Function& f = *out_;
 	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
+	std::vector<uint8_t> entries(addressed ? blocks : 0, 0);
+	for (const lowir::CodeLabel& label : f.code_labels)
+		entries[label.block] = 1;
 	auto jump_only = [&](uint32_t b) {
 		const Block& block = f.blocks[b];
-		return b != 0 && block.count == 1 && f.insts[block.first].op == Op::Jmp;
+		return b != 0 && (!addressed || !entries[b]) && block.count == 1 && f.insts[block.first].op == Op::Jmp;
 	};
 	// A jump to a block that only returns (through jump-only blocks)
 	// returns itself when the return is all its epilogue (a frameless
@@ -160,6 +172,8 @@ uint32_t FunctionSelector::layout_branches()
 			}
 		};
 		reach(0);
+		for (const lowir::CodeLabel& label : f.code_labels)
+			reach(label.block);
 		for (uint32_t b = 0; b < blocks; ++b)
 			if (f.blocks[b].landing)
 				reach(b);
@@ -184,6 +198,7 @@ uint32_t FunctionSelector::layout_branches()
 				case Op::Nop:
 					continue;
 				case Op::JumpTable:
+				case Op::IndirectJump:
 					for (uint32_t k = inst.aux; k < inst.aux + inst.aux2; ++k)
 						reach(f.jump_targets[k]);
 					break;
@@ -203,7 +218,7 @@ uint32_t FunctionSelector::layout_branches()
 				last = inst.op;
 			}
 			if (!(last == Op::Jmp || last == Op::Ret || last == Op::TailJump || last == Op::JumpTable ||
-					last == Op::Trap || last == Op::Resume || last == Op::Throw))
+					last == Op::IndirectJump || last == Op::Trap || last == Op::Resume || last == Op::Throw))
 				reach(b + 1);
 		}
 	}
@@ -241,6 +256,8 @@ uint32_t FunctionSelector::layout_branches()
 		const uint32_t e = end[b];
 		return (e & 0x80000000u) ? e & 0x7fffffffu : end[e] & 0x7fffffffu;
 	};
+	for (lowir::CodeLabel& label : f.code_labels)
+		label.block = target(label.block);
 	for (EhLanding& landing : f.eh.landings)
 	{
 		if (landing.pad != kNoId)
@@ -254,7 +271,9 @@ uint32_t FunctionSelector::layout_branches()
 	// to the less frequent of the two (placement's estimate), so the
 	// likelier path takes only the conditional branch.
 	std::vector<uint64_t>& frequency = layout_frequency_;
-	block_frequencies(f, frequency);
+	frequency.clear();
+	if (!addressed)
+		block_frequencies(f, frequency);
 	uint32_t index = 0;
 	uint32_t laid_out = 0;
 	for (uint32_t b = 0; b < blocks; ++b)
@@ -264,17 +283,21 @@ uint32_t FunctionSelector::layout_branches()
 		Block block = f.blocks[b];
 		bool colder_jcc = false;
 		if (block.count >= 2 && f.insts[block.first + block.count - 1].op == Op::Jmp &&
-			f.insts[block.first + block.count - 2].op == Op::Jcc && !frequency.empty())
+			f.insts[block.first + block.count - 2].op == Op::Jcc && (!frequency.empty() || addressed))
 		{
 			const Operand& a = f.insts[block.first + block.count - 2].ops[0];
 			const Operand& j = f.insts[block.first + block.count - 1].ops[0];
-			colder_jcc = a.kind == OperandKind::Label && j.kind == OperandKind::Label && a.symbol < blocks &&
-				j.symbol < blocks && frequency[a.symbol] < frequency[j.symbol];
+			if (a.kind == OperandKind::Label && j.kind == OperandKind::Label && a.symbol < blocks && j.symbol < blocks)
+			{
+				const uint32_t probability = f.insts[block.first + block.count - 2].aux;
+				colder_jcc = addressed ? probability > 0 && probability < 500
+									   : frequency[a.symbol] < frequency[j.symbol];
+			}
 		}
 		for (uint32_t i = block.first; i < block.first + block.count; ++i)
 		{
 			Inst& inst = f.insts[i];
-			if (inst.op == Op::JumpTable)
+			if (inst.op == Op::JumpTable || inst.op == Op::IndirectJump)
 			{
 				for (uint32_t k = inst.aux; k < inst.aux + inst.aux2; ++k)
 					f.jump_targets[k] = target(f.jump_targets[k]);
@@ -325,7 +348,7 @@ uint32_t FunctionSelector::layout_branches()
 	stats_.threaded_blocks += blocks - kept;
 	f.blocks.resize(kept);
 	f.branches_laid_out = true;
-	if (level_ >= 2 && eh_model_ == EhModel::Host)
+	if (level_ >= 2 && eh_model_ == EhModel::Host && !addressed)
 		laid_out -= form_tail_jumps(f);
 	return laid_out;
 }
