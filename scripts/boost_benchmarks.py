@@ -259,8 +259,7 @@ def run(args):
         hashes = {label: timing.sha(path) for label, path in compilers.items()}
         library = Path(subprocess.check_output([str(compilers['gcc']), '-print-file-name=libstdc++.so'],
                                               text=True).strip()).resolve(strict=True)
-        metadata = dict(revision=subprocess.check_output(['git', '-C', ROOT, 'rev-parse', 'HEAD'], text=True).strip(),
-                        dirty=bool(subprocess.check_output(['git', '-C', ROOT, 'status', '--porcelain'])),
+        metadata = dict(**benchmark_hosts.source_metadata(getattr(args, 'repo_root', ROOT)),
                         cpu=public_benchmarks.cpu_model(), cpus=sorted(os.sched_getaffinity(0)), jobs=args.jobs,
                         platform=platform.platform(), os_release=Path('/etc/os-release').read_text(),
                         standard_library=f'libstdc++ {library}; sha256={timing.sha(library)}',
@@ -316,14 +315,14 @@ def publish(args):
     if json.loads((args.artifact / 'metadata.json').read_text()) != metadata:
         raise ValueError('Boost provenance differs from the measured results')
     import boost_results
-    host = benchmark_hosts.hosted_platform(metadata['cpu'])
+    host = benchmark_hosts.publication_platform(metadata['cpu'], getattr(args, 'platform', 'github'))
     relative = 'boost/o3' if optimized(document) else 'boost'
     directory = args.target / relative
     history = 'history/' + args.revision + '/' + host
     base = 'https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/' + relative + '/' + history
     with tempfile.TemporaryDirectory() as temp:
         standard = Path(temp) / 'standard'
-        boost_results.generate(args.artifact, standard, 'GitHub hosted; Ubuntu 26.04 container',
+        boost_results.generate(args.artifact, standard, benchmark_hosts.environment(host),
                                args.run_url, base + '/report.md', base + '/results.json')
         for dest in (directory / host, directory / history):
             dest.mkdir(parents=True, exist_ok=True)
@@ -386,6 +385,7 @@ def main():
     runner.add_argument('--archive', type=Path, required=True)
     runner.add_argument('--output', type=Path, required=True)
     runner.add_argument('--compiler', default=ROOT / 'dev/cppgm++')
+    runner.add_argument('--repo-root', type=Path, default=ROOT, help='clean source checkout used to build the compiler')
     runner.add_argument('--gcc', default='g++')
     runner.add_argument('--clang', default='clang++')
     runner.add_argument('--jobs', type=int, default=len(os.sched_getaffinity(0)))
@@ -395,6 +395,7 @@ def main():
     publisher.add_argument('target', type=Path)
     publisher.add_argument('--revision', required=True)
     publisher.add_argument('--run-url', required=True)
+    publisher.add_argument('--platform', choices=['github', 'intel'], default='github')
     collector = commands.add_parser('collect')
     collector.add_argument('artifact', type=Path)
     collector.add_argument('target', type=Path)

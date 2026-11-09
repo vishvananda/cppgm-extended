@@ -141,6 +141,8 @@ cppgm++ runtime measures **codegen performance**: self-built versus GCC-built or
 
 [O0 and per-host public results](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/public-hosts.md). CPU time, except index-cpp runtime uses elapsed time. Godot reports a full build, including SCons and linking. [Boost](benchmarks/boost/README.md) measures C++ test compilation and paired native test replays, with assertions enabled. GDB is correctness-only. † Single-run build/compile observations; small differences need repeats.
 
+[Refreshing the dedicated Intel measurements](docs/performance/intel-benchmarks.md).
+
 ## Caveats
 
 - C++11 is the baseline; other dialects have only partial extension support.

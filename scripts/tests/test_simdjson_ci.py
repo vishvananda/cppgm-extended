@@ -77,7 +77,9 @@ class SimdjsonCITests(unittest.TestCase):
         self.assertIn('vs Clang CPU', text)
 
     def test_publication_accepts_hosted_intel_without_replacing_epyc(self):
-        for cpu in ('Intel Xeon Platinum 8370C', 'AMD EPYC 7763'):
+        for cpu, requested, platform in [('Intel Xeon Platinum 8370C', 'github', 'github-intel'),
+                                         ('AMD EPYC 7763', 'github', 'epyc'),
+                                         ('Intel Xeon E5-2696 v4', 'intel', 'intel')]:
             with self.subTest(cpu=cpu), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 artifact = root / 'artifact'
@@ -93,8 +95,7 @@ class SimdjsonCITests(unittest.TestCase):
                 epyc.parent.mkdir(parents=True)
                 epyc.write_text('previous EPYC run')
                 ci.publish(SimpleNamespace(artifact=artifact, target=target, revision='a' * 40,
-                                           run_url='https://example.com/run'))
-                platform = 'epyc' if cpu.startswith('AMD EPYC') else 'github-intel'
+                                           run_url='https://example.com/run', platform=requested))
                 for destination in ('simdjson/' + platform, 'simdjson/history/' + 'a' * 40 + '/' + platform):
                     self.assertEqual((target / destination / 'results.json').read_bytes(),
                                      (artifact / 'results.json').read_bytes())

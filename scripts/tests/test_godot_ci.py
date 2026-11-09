@@ -122,6 +122,30 @@ class GodotCITests(unittest.TestCase):
             self.assertEqual(len(shared['records']), 28)
             self.assertTrue((target / 'godot/github-intel/standard/godot.md').is_file())
 
+    def test_dedicated_intel_preserves_hosted_results_and_labels_environment(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            artifact = root / 'artifact'
+            artifact.mkdir()
+            document = self.document()
+            document['metadata']['cpu'] = 'Intel Xeon E5-2696 v4'
+            ci.save(artifact / 'results.json', document)
+            ci.save(artifact / 'metadata.json', document['metadata'])
+            (artifact / 'compile-observations.jsonl').write_text('')
+            (artifact / 'runtime-observations.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in self.observations()))
+            target = root / 'published'
+            for host in ('epyc', 'github-intel'):
+                path = target / 'godot' / host / 'report.md'
+                path.parent.mkdir(parents=True)
+                path.write_text('last ' + host)
+            ci.publish(SimpleNamespace(artifact=artifact, target=target, revision='a' * 40,
+                                       run_url='https://example.test/run', platform='intel'))
+            for host in ('epyc', 'github-intel'):
+                self.assertEqual((target / 'godot' / host / 'report.md').read_text(), 'last ' + host)
+            shared = json.loads((target / 'godot/intel/standard/records.json').read_text())
+            self.assertTrue(all('Dedicated Intel' in r['host']['environment'] for r in shared['records']))
+            self.assertIn('1.00×', (target / 'godot/intel-build-gcc.svg').read_text())
+
     def test_shared_records_preserve_phase_metric_method_and_exact_host(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

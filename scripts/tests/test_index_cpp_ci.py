@@ -153,6 +153,24 @@ class IndexCppCITests(unittest.TestCase):
             self.assertEqual((target / path / 'results.json').read_bytes(), (self.artifact / 'results.json').read_bytes())
         self.assertIn('Intel Xeon Platinum 8370C', (target / 'index-cpp/report.md').read_text())
 
+    def test_dedicated_intel_publication_keeps_hosted_measurements(self):
+        target = self.root / 'published'
+        for cpu in ('AMD EPYC example', 'Intel Xeon Platinum 8370C'):
+            self.document['metadata']['cpu'] = cpu
+            self.write_document()
+            ci.save(self.artifact / 'metadata.json', self.document['metadata'])
+            ci.publish(self.artifact, target, self.revision, 'https://example.test/run')
+        previous = {host: (target / 'index-cpp' / host / 'results.json').read_bytes()
+                    for host in ('epyc', 'github-intel')}
+        self.document['metadata']['cpu'] = 'Intel Xeon E5-2696 v4'
+        self.write_document()
+        ci.save(self.artifact / 'metadata.json', self.document['metadata'])
+        ci.publish(self.artifact, target, self.revision, 'https://example.test/intel', 'intel')
+        self.assertEqual((target / 'index-cpp/intel/results.json').read_bytes(), (self.artifact / 'results.json').read_bytes())
+        for host, payload in previous.items():
+            self.assertEqual((target / 'index-cpp' / host / 'results.json').read_bytes(), payload)
+        self.assertIn('2.00×', (target / 'index-cpp/intel-runtime-gcc.svg').read_text())
+
     def test_mismatched_provenance_is_rejected_before_publication(self):
         ci.save(self.artifact / 'metadata.json', dict(self.document['metadata'], cpu='Intel Xeon'))
         target = self.root / 'published'

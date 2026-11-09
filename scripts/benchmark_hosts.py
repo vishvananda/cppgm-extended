@@ -1,5 +1,6 @@
 """Keep hosted Intel measurements separate from the dedicated Intel runner."""
 import json
+import subprocess
 
 
 def hosted_platform(cpu):
@@ -9,6 +10,26 @@ def hosted_platform(cpu):
     if 'intel' in normalized:
         return 'github-intel'
     raise ValueError(f'unrecognized hosted benchmark CPU: {cpu!r}')
+
+
+def publication_platform(cpu, requested='github'):
+    if requested == 'intel':
+        if 'intel' not in cpu.casefold():
+            raise ValueError('dedicated Intel publication requires Intel hardware')
+        return 'intel'
+    if requested != 'github':
+        raise ValueError('unknown benchmark platform: ' + requested)
+    return hosted_platform(cpu)
+
+
+def environment(platform):
+    host = 'Dedicated Intel' if platform == 'intel' else 'GitHub hosted'
+    return host + '; Ubuntu 26.04 container'
+
+
+def source_metadata(repo_root):
+    return dict(revision=subprocess.check_output(['git', '-C', str(repo_root), 'rev-parse', 'HEAD'], text=True).strip(),
+                dirty=bool(subprocess.check_output(['git', '-C', str(repo_root), 'status', '--porcelain'])))
 
 
 def library_index(directory, title, metadata_name='metadata.json', report_name='report.md', index_name='report.md'):
