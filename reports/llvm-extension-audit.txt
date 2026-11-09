@@ -237,3 +237,15 @@ elapsed time. The first student scaling observation missed release headroom;
 the same-binary speed-only recheck passes (2.23x, course 2.13x), with both
 observations retained. Acceptance receipt: block38-result-values-qualification-state.json.
 This qualification does not fix the remaining extension promises above.
+
+Remaining promise sites rechecked at B41
+---------------------------------------
+The exact header closure places minsize on the two PassManager::addPass
+overloads and LoopPassManager::addPass; restrict on GlobalISel's
+fastDecodeULEB128 pointer; and returns-noalias on allocate_buffer's
+declaration/definition. Compiler.h also contains definitions, documentation
+and platform fallbacks for these names. The complete site list is retained
+in remaining-promise-sites.json. These sites locate the remaining work;
+header inclusion alone does not prove a template was instantiated or a
+particular function called during the benchmark. No new feature support is
+claimed by this supplemental check.
