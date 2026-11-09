@@ -237,6 +237,11 @@ bool FunctionLowering::may_throw(const syntax::Expr* root)
 				call_may_throw(allocation->constructor) || length_may_throw(*allocation);
 			for (const syntax::Expr* argument : allocation->placement)
 				work.push_back(argument);
+			const sema::FunctionEntity* function = static_cast<const sema::FunctionEntity*>(facts->entity);
+			if (function->default_arguments != nullptr)
+				for (uint32_t i = allocation->placement.size + (allocation->implicit_alignment != 0 ? 2 : 1);
+					i < function->type->canonical->param_count; ++i)
+					work.push_back(lowering_.default_argument(function, i));
 			work.push_back(allocation->count);
 			const syntax::Initializer* init = allocation->initializer;
 			if (init != nullptr && init->kind == syntax::InitializerKind::Parenthesized)
@@ -1283,6 +1288,8 @@ bool FunctionLowering::creates_temporaries(
 			const syntax::NewExpr* allocation = static_cast<const syntax::NewExpr*>(e);
 			for (const syntax::Expr* argument : allocation->placement)
 				work.push_back(argument);
+			scan_default_temporaries(static_cast<const sema::FunctionEntity*>(facts->entity),
+				allocation->placement.size + (allocation->implicit_alignment != 0 ? 2 : 1), &parameter_object);
 			work.push_back(allocation->count);
 			const syntax::Initializer* init = allocation->initializer;
 			if (init != nullptr && init->kind == syntax::InitializerKind::Parenthesized)

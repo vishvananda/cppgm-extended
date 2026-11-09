@@ -106,6 +106,9 @@ FunctionEntity* Analyzer::allocation_function(const syntax::NewExpr& expr, const
 	check_not_deleted(function, expr.location);
 	check_function_access(function, found.functions, naming, nullptr, scope, expr.location);
 	convert_arguments(call_arguments, function->type->canonical, &chosen, 0);
+	for (uint32_t i = call_arguments.size;
+		function->default_arguments != nullptr && i < function->type->canonical->param_count; ++i)
+		instantiate_default_argument(function, i);
 	odr_use(function, true);
 	if (!function->nothrow)
 		++potentially_throwing_;

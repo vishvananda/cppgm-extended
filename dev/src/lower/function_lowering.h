@@ -1668,6 +1668,7 @@ private:
 	void push_converted(const syntax::Expr& argument, const sema::Type* parameter, const sema::Conversion* conversion);
 	// ------------------ new and delete (lower/allocation_lowering.cpp)
 	RValue allocation(const syntax::NewExpr& expr);
+	void allocation_arguments(const syntax::NewExpr& expr, const sema::FunctionEntity* function);
 	// A single object's new-expression tests the allocated pointer before
 	// initializing it (5.3.4p13).
 	bool tests_allocation(const syntax::NewExpr& expr) const;

@@ -1199,6 +1199,15 @@ bool Analyzer::may_throw(const syntax::Expr& expr, uint32_t depth)
 			if (may_throw(*argument, depth + 1))
 				return true;
 		}
+		const FunctionEntity* function = static_cast<const FunctionEntity*>(facts->entity);
+		if (function->default_arguments != nullptr)
+			for (uint32_t i = allocation.placement.size + (allocation.implicit_alignment != 0 ? 2 : 1);
+				i < function->type->canonical->param_count; ++i)
+			{
+				const syntax::Expr* argument = function->default_arguments[i];
+				if (argument != nullptr && may_throw(*argument, depth + 1))
+					return true;
+			}
 		const syntax::Initializer* init = allocation.initializer;
 		if (init != nullptr && init->expression != nullptr && may_throw(*init->expression, depth + 1))
 			return true;

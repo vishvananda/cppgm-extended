@@ -416,6 +416,8 @@ PA12 supports the following in addition to the PA11 subset:
   including class-specific allocation/deallocation selection, explicit global
   qualification, and suppression of scalar initialization after a supported
   non-throwing allocation returns null
+- default arguments complete scalar and array allocation calls after the size
+  and explicit placement arguments, and are evaluated once per allocation
 - array `new` / `delete[]` expressions over the supported object subset; the
   request is a `std::size_t`, and the count is kept in an Itanium C++ ABI
   (2.7) cookie of max(sizeof(size_t), alignof(T)) bytes before the array

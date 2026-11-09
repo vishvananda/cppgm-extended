@@ -55,6 +55,20 @@ bool ReservedPlacement(const sema::FunctionEntity* function)
 
 } // namespace
 
+void FunctionLowering::allocation_arguments(const syntax::NewExpr& expr, const sema::FunctionEntity* function)
+{
+	const sema::Type* signature = function->type->canonical;
+	if (expr.implicit_alignment != 0)
+		arguments_.push_back(integer(lowir::Type::scalar(lowir::TypeKind::I64), expr.implicit_alignment).value);
+	const uint32_t first = expr.implicit_alignment != 0 ? 2 : 1;
+	for (uint32_t i = 0; i < expr.placement.size; ++i)
+		push_argument(*expr.placement[i], i + first < signature->param_count ? signature->params[i + first] : nullptr);
+	// 5.3.4p11: the size and placement arguments complete the selected
+	// allocation function's call with its usual default arguments.
+	for (uint32_t i = first + expr.placement.size; i < signature->param_count; ++i)
+		push_default_argument(function, i, signature->params[i], expr.location);
+}
+
 RValue FunctionLowering::allocation(const syntax::NewExpr& expr)
 {
 	if (expr.count != nullptr)
@@ -72,13 +86,7 @@ RValue FunctionLowering::allocation(const syntax::NewExpr& expr)
 		: integer(i64, bytes);
 	const size_t base = arguments_.size();
 	arguments_.push_back(size.value);
-	const sema::Type* signature = function->type->canonical;
-	if (expr.implicit_alignment != 0)
-		arguments_.push_back(integer(i64, expr.implicit_alignment).value);
-	const uint32_t first_placement = expr.implicit_alignment != 0 ? 2 : 1;
-	for (uint32_t i = 0; i < expr.placement.size; ++i)
-		push_argument(*expr.placement[i],
-			i + first_placement < signature->param_count ? signature->params[i + first_placement] : nullptr);
+	allocation_arguments(expr, function);
 	// 5.3.4p18-p20: an initialization that may throw frees the storage by
 	// the matching deallocation function, a placement one with the same
 	// further arguments (kept from the allocation's).
@@ -479,13 +487,7 @@ RValue FunctionLowering::array_allocation(const syntax::NewExpr& expr)
 	}
 	const size_t base = arguments_.size();
 	arguments_.push_back(size.value);
-	const sema::Type* signature = function->type->canonical;
-	if (expr.implicit_alignment != 0)
-		arguments_.push_back(integer(i64, expr.implicit_alignment).value);
-	const uint32_t first_placement = expr.implicit_alignment != 0 ? 2 : 1;
-	for (uint32_t i = 0; i < expr.placement.size; ++i)
-		push_argument(*expr.placement[i],
-			i + first_placement < signature->param_count ? signature->params[i + first_placement] : nullptr);
+	allocation_arguments(expr, function);
 	// A placement deallocation function takes the same further arguments
 	// (5.3.4p20).
 	uint32_t placement_values = 0;
