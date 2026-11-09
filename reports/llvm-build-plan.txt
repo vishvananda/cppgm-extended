@@ -1177,8 +1177,9 @@ the changed cross-run wall ratio to this optimization. The 0.95x goal is
 not achieved.
 
 Student export, all 42 wrappers, both new exported fixtures and PA35
-quick/smoke pass. Official course/student releases are running. This
-candidate is not accepted until those checks pass. Evidence is
+quick/smoke pass. Both official course/student releases pass all 17 gates
+on the first full run (1208.94 s). This checkpoint is accepted, with no
+resolved global instruction improvement and the 0.95x goal still open. Evidence is
 /mnt/vizier/cppgm-llvm-evidence/block39-bounded-*.
 
 Next dispatch investigation, B40 diagnostics
