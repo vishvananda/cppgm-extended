@@ -1,0 +1,90 @@
+Rebase and frontend review, 2026-11-09
+====================================
+
+The LLVM branch is rebased onto origin/main b7e1f8d5f. The old accepted
+checkpoint remains on compat/llvm-pre-main-20261109; all old binaries and raw
+measurements keep their original labels. The rebased source is 87b6c3b8e.
+The assembly/Godot prefix was already equivalent on main; only the LLVM
+campaign commits were replayed. No conflicts required manual resolution.
+
+Main brings immutable type-dependence caching, cheaper register-home and
+pressure-tree analysis, bounded scalar-field promotion, discarded-mask
+simplification and indirect-dispatch code generation. The prior local
+narrow-select cleanup is retained as a candidate pending final validation.
+
+Frontend review
+---------------
+The C++14/17 additions reuse the same semantic type creation and specialization
+publication paths as main. Template/pattern/partial roles and completed
+specialization argument lists therefore receive main's dependence facts.
+Ordinary nominal types and expression answers whose lookup/completion context
+can still change are not blanket-cached.
+
+Implicit class deduction guides are constructed once per class and retain
+their typed default contexts. A required outer class instance is materialized
+lazily once per deduction-default context. Ordinary lookup checks whether that
+context exists before invoking the feature-specific lookup helper. Default
+argument odr-use deferral has the same inactive-context guard; later demands
+replay recorded typed function uses rather than reanalyzing source.
+
+Closure constant evaluation consumes recorded capture members, initialization
+and selected constructors. Eligibility is accumulated while analyzing the
+body; ineligible bodies short-circuit later literal-type checks. Generic lambda
+capture discovery is restricted to the active capture scan. Local placeholder
+member lookup can still ask expression dependence in its recorded scope; no
+context-free cache is added without proving when that answer becomes fixed.
+
+Measurements
+------------
+On the frozen compile workload, rebased versus pre-rebase instructions are
+-0.495% O0 and -0.844% O3. Against a separately built immutable current-main
+compiler, the complete LLVM feature branch costs +0.025% O0 and +0.113% O3;
+both instruction and RSS comparisons pass the normal gate. Optimizer changes
+intentionally alter O3 output, so output repeatability and same-source
+host/self identity are checked separately.
+
+Three unchanged LLVM translation units were measured with native-host-built
+cppgm before and after the rebase, using identical flags, source and headers.
+Frontend-only instructions after/before:
+  llvm/lib/IR/Value.cpp: 0.996741575
+  clang/lib/AST/DeclBase.cpp: 0.997101581
+  clang/lib/Sema/SemaTemplate.cpp: 0.996278926
+Their unoptimized typed LowIR is byte-identical before and after. The emit
+adapter uses only its supported semantic flags; an initial attempt passed
+unsupported object-only flags and failed, retained separately. Completed
+frontend counter observations were reused rather than repeated. These small
+instruction savings are not claims of resolved sub-percent wall-time gains.
+
+The fresh LLVM build completes in 393.72 s including configuration (a single
+qualification build, not a new paired LLVM construction benchmark). All 2577
+C++ translation units use cppgm. Both Clangs produce byte-identical objects
+and linked compilers on all 323 frozen cppgm sources and all 323 current
+rebased sources. Native/cppgm ABBA wall means are 45.765/53.585 s, score 0.8541;
+C++ child CPU is 495.878/579.347 s, score 0.8559. All timed outputs are identical.
+
+The rebased compiler passes strict 9927/9927, debug/modern, all architecture,
+placement, formatting and CWG audits, PA5 self-host, inception, harness,
+export/reference wrapper inspection and PA35 quick/smoke. Full course checks
+pass 17/17; final student release measurements remain in progress. The normal
+instruction/RSS gate passes against both pre-rebase tools and current main.
+
+Hardware profiles on three heavy cppgm sources retain 100% counter-running
+coverage. The cppgm-built LLVM executes 13.5-15.9% more instructions than native
+and incurs roughly 30-34% more instruction-cache misses in this sample.
+Cache and cycle counts also depend on shared-host scheduling. Its text is
+139.10 MB versus native's 73.30 MB. Group inlined and outlined helper families
+before assigning excess work to an individual symbol.
+
+Remaining reduced examples include shifted-bit truth tests, repeated switch
+tails and nullable pointer adjustment after a dereference. The latter needs
+an explicit proof consistent with the LowIR contract; readable object bytes
+are not silently redefined as new pointer metadata. The next optimizer group
+is isolated on compat/llvm-opt-predicates and is outside this checkpoint.
+
+
+Three common preprocessed frontend controls also check cumulative cost versus
+current main: instructions increase 0.170% on compiler-loop, 0.004% on
+frozen-semantic and 0.208% on boost-flat-map. No resolved wall-time claim is
+made from those sub-percent effects. Frontend instruction profiles remain
+dominated by lexing, lookup and type interning, without a newly dominant
+C++14/17 feature path in the sampled LLVM semantic workload.
