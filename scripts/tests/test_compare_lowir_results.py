@@ -635,9 +635,21 @@ function @invoke() -> {result_type} {{
                     self.assertNotEqual(self.compare(bad, bad).returncode, 0)
 
     def test_address_only_function_rejects_boundary_metadata(self):
-        for metadata in ("arity=variadic", "effects=readonly", "unwind=no", "return=noreturn"):
+        for metadata in ("arity=variadic", "effects=readonly", "unwind=no", "return=noreturn",
+                         "effects=readnone, repeatable=yes"):
             program = f"declare function @opaque [{metadata}]\n"
             self.assertNotEqual(self.compare(program, program).returncode, 0)
+
+    def test_source_comparison_preserves_call_repeatability(self):
+        reference = """function @value(%x : i32) -> i32 [effects=readnone, repeatable=yes] {
+  block ^entry:
+    return i32 %x
+}
+"""
+        generated = reference.replace(", repeatable=yes", "")
+        result = self.compare(reference, generated)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("does not match reference", result.stdout)
 
     def test_relaxed_compare_allows_declaration_to_definition_refinement(self):
         reference = "declare function @helper() -> i64\n"

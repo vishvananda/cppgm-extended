@@ -244,6 +244,7 @@ enum class MetadataKey : std::uint8_t
 	Effects,
 	Unwind,
 	Return,
+	Repeatable,
 	ResultClasses,
 	// Symbol metadata.
 	Storage,
@@ -402,10 +403,10 @@ inline const char* spelling(EightbyteClass value)
 
 inline const char* spelling(MetadataKey key)
 {
-	static const char* const kKeys[kMetadataKeyCount] = { "arity", "effects", "unwind", "return", "result_classes",
-		"storage", "section", "role", "linkage", "binding", "object", "tls_for", "keep_alias", "prefer_local",
-		"object_root", "force_inline", "inline_hint", "no_inline", "replaceable", "pass", "alias", "object_bytes",
-		"classes", "elision", "projection" };
+	static const char* const kKeys[kMetadataKeyCount] = { "arity", "effects", "unwind", "return", "repeatable",
+		"result_classes", "storage", "section", "role", "linkage", "binding", "object", "tls_for", "keep_alias",
+		"prefer_local", "object_root", "force_inline", "inline_hint", "no_inline", "replaceable", "pass", "alias",
+		"object_bytes", "classes", "elision", "projection" };
 	return kKeys[static_cast<unsigned>(key)];
 }
 
@@ -591,6 +592,9 @@ struct FunctionBoundaryMetadata
 	CallEffectsMode effects = CFXM_DEFAULT;
 	CallUnwindMode unwind = CUM_DEFAULT;
 	CallReturnMode returns = CRM_DEFAULT;
+	// A normally completed call can be reused with equal arguments and
+	// unchanged memory dependencies; memory effects alone do not say this.
+	bool repeatable = false;
 	std::uint8_t result_classes = 0; // ObjectClassBits of a direct object result
 };
 

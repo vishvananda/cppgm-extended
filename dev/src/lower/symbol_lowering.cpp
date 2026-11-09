@@ -3213,6 +3213,10 @@ lowir::SignatureId ProgramLowering::function_signature(
 	// GNU const (pa28).
 	if (function->effects == sema::FunctionEffect::ReadNone)
 		signature.boundary.effects = ir_model::CFXM_READNONE;
+	// GNU pure/const promise repeatable results, beyond memory effects.
+	// Keep this distinct from inferred read-only memory behavior.
+	signature.boundary.repeatable = function->effects != sema::FunctionEffect::Default ||
+		function->builtin == sema::BuiltinFunction::Strlen;
 	return program_.add_signature(signature);
 }
 

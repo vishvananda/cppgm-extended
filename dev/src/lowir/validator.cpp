@@ -24,7 +24,8 @@ bool cpu_query_declaration(const Program& program, const Symbol& symbol)
 	const Signature& signature = program.signatures[program.functions[symbol.detail].signature];
 	if (signature.result.kind() != (xstate ? TypeKind::I64 : TypeKind::Void) || signature.parameter_count != count ||
 		signature.boundary.arity != ir_model::CAM_FIXED || signature.boundary.effects != ir_model::CFXM_DEFAULT ||
-		signature.boundary.returns != ir_model::CRM_DEFAULT || signature.boundary.result_classes != 0)
+		signature.boundary.returns != ir_model::CRM_DEFAULT || signature.boundary.repeatable ||
+		signature.boundary.result_classes != 0)
 		return false;
 	const Parameter* parameters = program.parameters_of(signature);
 	for (uint32_t i = 0; i < count; ++i)
@@ -561,6 +562,8 @@ bool Validator::check_links()
 			boundary.arity >= ir_model::kCallArityModeCount || boundary.effects >= ir_model::kCallEffectsModeCount ||
 			boundary.unwind >= ir_model::kCallUnwindModeCount || boundary.returns >= ir_model::kCallReturnModeCount)
 			return fail("invalid signature");
+		if (boundary.repeatable && boundary.effects == ir_model::CFXM_DEFAULT)
+			return fail("repeatable metadata requires readnone or readonly effects");
 		const Parameter* parameters = program_.parameters_of(signature);
 		for (uint32_t i = 0; i < signature.parameter_count; ++i)
 		{

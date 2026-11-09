@@ -746,6 +746,11 @@ void Parser::parse_boundary_value(MetadataKey key, BoundaryMetadata& boundary)
 		if (!word || !ir_model::from_spelling(text, length, &boundary.unwind))
 			fail("invalid unwind metadata");
 		break;
+	case MetadataKey::Repeatable:
+		if (!word || length != 3 || std::memcmp(text, metadata_yes_spelling(), 3) != 0)
+			fail("repeatable metadata requires yes");
+		boundary.repeatable = true;
+		break;
 	default:
 		if (!word || !ir_model::from_spelling(text, length, &boundary.returns))
 			fail("invalid return metadata");

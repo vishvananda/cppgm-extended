@@ -150,6 +150,7 @@ private:
 	void remember(Value address, Type type, Value value, bool typed);
 	void remember_at(const AddressFacts& f, const Key& key, Type type, Value value, bool typed);
 	void copy_facts(const Instruction& copy);
+	bool reuse_call(const Instruction& call);
 	void process(BlockId block);
 	InstId known_copy(BlockId block, InstId prev, InstId id);
 	InstId field_copy(BlockId block, InstId prev, InstId id);
@@ -232,6 +233,20 @@ private:
 	std::vector<BlockId> arms_;         // diamond_join's blocks between the dominator and the join
 	std::vector<uint32_t> arm_mark_;    // per block: arm_epoch_ when in arms_
 	uint32_t arm_epoch_ = 0;
+	// Bounded, block-local value numbering for repeatable scalar calls.
+	// Memory effects alone do not promise repeatability (for example IO).
+	struct RepeatedCall
+	{
+		uint64_t hash, epoch;
+		SignatureId signature;
+		Type type;
+		unsigned arguments;
+		Value operands[5]; // callee and at most four direct arguments
+		TempId result;
+	};
+	RepeatedCall calls_[16];
+	unsigned call_count_ = 0, call_next_ = 0;
+	uint64_t call_epoch_ = 1;
 	bool changed_ = false;
 	bool replaced_ = false; // some repl_ entry is set
 };
@@ -676,9 +691,72 @@ void MemoryForwarding::drop_self_pointers()
 	self_stores_.clear();
 }
 
+bool MemoryForwarding::reuse_call(const Instruction& call)
+{
+	const Signature* boundary = c_.program.call_boundary(call);
+	if (boundary == nullptr || !boundary->boundary.repeatable)
+	{
+		// Even a read-only call can observe or alter non-memory state.
+		call_count_ = call_next_ = 0;
+		return false;
+	}
+	if (call.result == kNoId || call.type.is_void() || call.type.is_object() || call.type.is_vector() ||
+		call.extra_count > 4 || boundary->boundary.arity != ir_model::CAM_FIXED ||
+		boundary->parameter_count != call.extra_count || boundary->boundary.returns == ir_model::CRM_NORETURN)
+		return false;
+	const Parameter* parameters = c_.program.parameters_of(*boundary);
+	for (unsigned i = 0; i < call.extra_count; ++i)
+		if (parameters[i].pass != ir_model::PPM_DIRECT || parameters[i].type.is_object())
+			return false;
+	RepeatedCall entry = {};
+	entry.signature = static_cast<SignatureId>(boundary - c_.program.signatures.data());
+	entry.type = call.type;
+	entry.arguments = call.extra_count;
+	entry.epoch = boundary->boundary.effects == ir_model::CFXM_READNONE ? 0 : call_epoch_;
+	entry.operands[0] = call.ops[0];
+	for (unsigned i = 0; i < call.extra_count; ++i)
+		entry.operands[i + 1] = body_.operands[call.extra_first + i];
+	entry.hash = type_key(call.type) ^ (static_cast<uint64_t>(entry.signature) << 32) ^ entry.epoch;
+	for (unsigned i = 0; i <= entry.arguments; ++i)
+	{
+		const Value value = entry.operands[i];
+		entry.hash = (entry.hash ^ value.index ^ (static_cast<uint64_t>(value.kind) << 32) ^
+						 (static_cast<uint64_t>(value.float_kind) << 40)) *
+			0x100000001b3ULL;
+	}
+	for (unsigned i = 0; i < call_count_; ++i)
+	{
+		const RepeatedCall& known = calls_[i];
+		if (entry.hash != known.hash || entry.signature != known.signature || entry.epoch != known.epoch ||
+			entry.type != known.type || entry.arguments != known.arguments)
+			continue;
+		bool equal = true;
+		for (unsigned k = 0; k <= entry.arguments; ++k)
+			equal = equal && entry.operands[k] == known.operands[k];
+		if (equal)
+		{
+			repl_[call.result] = Value::temp(known.result);
+			replaced_ = changed_ = true;
+			++c_.stats.reused;
+			return true;
+		}
+	}
+	entry.result = call.result;
+	if (call_count_ < 16)
+		calls_[call_count_++] = entry;
+	else
+	{
+		calls_[call_next_] = entry;
+		call_next_ = (call_next_ + 1) % 16;
+	}
+	return false;
+}
+
 void MemoryForwarding::process(BlockId block)
 {
 	unsigned stores = 0;
+	call_count_ = call_next_ = 0;
+	call_epoch_ = 1;
 	InstId prev = kNoId;
 	for (InstId i = body_.blocks[block].first; i != kNoId;)
 	{
@@ -689,6 +767,21 @@ void MemoryForwarding::process(BlockId block)
 				while (v.is(ValueKind::Temp) && v.index < repl_.size() && !repl_[v.index].is(ValueKind::None))
 					v = repl_[v.index];
 			});
+		if (inst.op == Opcode::Call)
+		{
+			if (reuse_call(inst))
+			{
+				unlink_after(body_, block, prev, i);
+				i = next;
+				continue;
+			}
+		}
+		else if ((inst.flags & IF_VOLATILE) != 0)
+			call_count_ = call_next_ = 0;
+		else if (inst.op == Opcode::Store || inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit)
+			++call_epoch_;
+		else if (inst.op != Opcode::Load && !is_pure(inst))
+			call_count_ = call_next_ = 0;
 		if (inst.op == Opcode::Load && (inst.flags & IF_VOLATILE) == 0)
 		{
 			const Key key = key_of(inst.ops[0], inst.type);

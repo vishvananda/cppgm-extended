@@ -1,0 +1,4 @@
+count(call @memory_only) >= 2 in @unmarked
+count(call @repeatable) <= 1 in @reuse
+count(call @repeatable) >= 1 in @reuse
+count(call @repeatable) >= 2 in @opaque_between

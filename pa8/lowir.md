@@ -461,6 +461,17 @@ Omission is the ordinary conservative read/write default and has no explicit spe
 `readnone` means the boundary does not read or write memory. `readonly` means the boundary
 may read memory but does not write it.
 
+The optional boundary fact `repeatable=yes` additionally promises that a call
+that has completed normally may be reused for equal argument values while its
+memory dependencies remain unchanged. It has no other observable effect.
+It requires `effects=readnone` or `effects=readonly`; memory effects alone do
+not establish repeatability. A read-only call depends on memory, whereas a
+read-none call does not. The first call, its evaluation order and its possible
+unwinding must be preserved; the fact does not make it safe to speculate a call
+onto another path. Omission promises no repeatability; there is no explicit
+false spelling. Changes to non-memory control state and opaque operations are
+barriers unless a consumer separately proves them irrelevant.
+
 The currently defined unwind value is `no`. Omission means the call may unwind and has no
 explicit spelling.
 
@@ -471,7 +482,7 @@ The C++ lowering states `effects`, `unwind` and `return` by the rules in Facts T
 Lowering States below.
 
 Call signatures only accept call-boundary metadata such as `arity=...`, `effects=...`,
-`unwind=...`, and `return=...`. Top-level symbol metadata such as `role=...`, `linkage=...`,
+`unwind=...`, `return=...`, and `repeatable=yes`. Top-level symbol metadata such as `role=...`, `linkage=...`,
 `binding=...`, `replaceable=...`, `object=...`, `keep_alias=...`, `prefer_local=...`, `object_root=...`, and
 `force_inline=...`, `inline_hint=...`, and
 `no_inline=...` are not valid on `as (...) -> ...`
@@ -1850,7 +1861,9 @@ does not end its block; what follows it is lowered as written.
 `effects`: a function declaration, definition or call signature states
 `effects=readnone` when any declaration of the function carries GNU `const`,
 and `effects=readonly` when one carries GNU `pure` and none carries `const`;
-`__builtin_strlen` states `effects=readonly`.
+`__builtin_strlen` states `effects=readonly`. These GNU attributes and
+`__builtin_strlen` also state `repeatable=yes`, preserving their value-reuse
+promise independently of their memory effects.
 
 - `__attribute__((pure))`, `__attribute__((const))`, `[[gnu::pure]]` and
   `[[gnu::const]]` on any declaration: a later declaration adds to an earlier

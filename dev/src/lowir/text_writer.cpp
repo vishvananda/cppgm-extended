@@ -267,6 +267,8 @@ void Writer::metadata(const SymbolMetadata* symbol, const BoundaryMetadata* boun
 			item(open, MetadataKey::Unwind, spelling(boundary->unwind));
 		if (boundary->returns != 0)
 			item(open, MetadataKey::Return, spelling(boundary->returns));
+		if (boundary->repeatable)
+			item(open, MetadataKey::Repeatable, metadata_yes_spelling());
 		if (signature != nullptr && signature->boundary.result_classes != 0)
 			classes_item(open, MetadataKey::ResultClasses, signature->boundary.result_classes, signature->result);
 	}

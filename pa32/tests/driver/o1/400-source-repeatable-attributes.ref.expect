@@ -1,0 +1,9 @@
+# Equal pure calls reuse a successful result until a memory write;
+# const calls also reuse it across ordinary stores. Other calls remain.
+count(call @read_value) <= 1 in @repeat_read
+count(call @read_value) >= 2 in @write_between
+count(call @calculate) <= 1 in @constant_across_store
+count(call @ordinary) >= 2 in @ordinary_twice
+count(call @read_value) >= 2 in @volatile_between
+count(call @payload_value) >= 2 in @payload_between
+count(call @can_throw) >= 1 in @repeat_throw

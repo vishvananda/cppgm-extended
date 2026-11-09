@@ -1359,6 +1359,7 @@ sub parse_lowir_function_metadata_suffix
 		effects => '',
 		unwind => '',
 		return => '',
+		repeatable => '',
 		role => '',
 		linkage => '',
 		binding => '',
@@ -1395,6 +1396,11 @@ sub parse_lowir_function_metadata_suffix
 				return (0, "unknown function effects mode '$value'")
 					if $value !~ /^(?:readnone|readonly|readwrite)$/;
 				$metadata{effects} = $value;
+			}
+			elsif ($key eq 'repeatable')
+			{
+				return (0, "repeatable metadata requires yes") if $value ne 'yes';
+				$metadata{repeatable} = $value;
 			}
 			elsif ($key eq 'unwind')
 			{
@@ -1497,6 +1503,8 @@ sub parse_lowir_function_metadata_suffix
 	my $rest = substr($suffix, pos($suffix) || 0);
 	return (0, "invalid trailing function metadata '$rest'")
 		if lowir_trim($rest) ne '';
+	return (0, "repeatable metadata requires readnone or readonly effects")
+		if $metadata{repeatable} ne '' && $metadata{effects} !~ /^(?:readnone|readonly)$/;
 	return (1, \%metadata);
 }
 
@@ -2803,7 +2811,7 @@ sub validate_lowir_text
 		my ($ok, $metadata_or_error) = parse_lowir_function_metadata_suffix($suffix);
 		push @errors, "declare function \@$name has invalid metadata: $metadata_or_error" if !$ok;
 		push @errors, "address-only function \@$name cannot carry boundary metadata"
-			if $suffix =~ /\b(?:arity|effects|unwind|return|result_classes)\s*=/;
+			if $suffix =~ /\b(?:arity|effects|unwind|return|repeatable|result_classes)\s*=/;
 	}
 	my %signatures;
 	while ($data =~ /^function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*) \{$/gm)
@@ -2907,7 +2915,7 @@ my $LOWIR_COMPARE_SOURCE_FACTS = 1;
 sub lowir_metadata_item_is_source_fact
 {
 	my ($key, $value) = @_;
-	return 1 if $key =~ /^(?:effects|unwind|return|inline_hint|no_inline|alias|object_bytes|classes|result_classes|elision)$/;
+	return 1 if $key =~ /^(?:effects|unwind|return|repeatable|inline_hint|no_inline|alias|object_bytes|classes|result_classes|elision)$/;
 	return 1 if $key eq 'storage' && $value eq 'readonly';
 	return 0;
 }
