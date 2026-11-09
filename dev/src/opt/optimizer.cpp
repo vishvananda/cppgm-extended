@@ -265,7 +265,7 @@ ContextPool& context_pool()
 // scalar rounds again over what promotion exposed; the body is then
 // compacted so a caller copies only live code.
 void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats, const OptimizerOptions& options,
-	std::vector<uint8_t>& nounwind, const std::vector<uint8_t>& unwritten)
+	std::vector<uint8_t>& nounwind, const std::vector<uint8_t>& unwritten, uint32_t& return_table_names)
 {
 	const int level = options.level;
 	const bool addressed = !program.functions[program.symbols[symbol].detail].body->code_labels.empty();
@@ -273,6 +273,7 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 	const PooledContext pooled(context, context_pool());
 	context.nounwind = &nounwind;
 	context.unwritten = &unwritten;
+	context.return_table_names = &return_table_names;
 	enable_verify(context, options);
 	verify(context, "inlining");
 	record_switch_types(context.body);
@@ -358,6 +359,8 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 		RUN_PASS(specialize_phi_compares);
 		RUN_PASS(split_branch_compares);
 	}
+	if (level >= 2 && RUN_PASS(form_return_tables))
+		scalar_rounds(context);
 	compact_body(program, context.body);
 }
 
@@ -778,8 +781,9 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 		std::vector<uint8_t> nounwind(program.symbols.size(), 0);
 		std::vector<uint8_t> unwritten, moved;
 		initialize_statically(program, unwritten);
+		uint32_t return_table_names = 0;
 		const std::function<void(SymbolId)> simplify = [&](SymbolId s) {
-			simplify_function(program, s, stats, options, nounwind, unwritten);
+			simplify_function(program, s, stats, options, nounwind, unwritten, return_table_names);
 		};
 		// Pipeline-wide growth: each inlining policy copies at most the
 		// unit's input size (at least 10,240 instructions) in total, the

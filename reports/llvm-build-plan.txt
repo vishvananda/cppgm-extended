@@ -1212,3 +1212,57 @@ and an unreachable default. Its pointer operand carries a preserved non-null
 fact. This is a concrete missing transformation, not a measured global win.
 Implement the general forms with bounded table size, correct sparse holes
 and defaults, typed LowIR data, normal PA32 regressions and the usual gates.
+
+Return-switch candidate, B40 R3, 2026-11-09
+-------------------------------------------
+This group builds on accepted B39 (fa96034ef). A new optimizer module folds
+switches returning integer constants or a common dominating pointer plus
+constant byte offsets into bounded read-only result tables. Compact signed
+elements recover the original result's bits by explicit extension/retyping.
+The pass runs after local simplification, before callers copy a callee, and
+generates ordinary typed LowIR globals and instructions. Table data is capped
+at 512 entries and growth at four times the case operands. The common path
+does no candidate allocation for functions without switches.
+
+Defined defaults, sparse holes, case effects, different pointer bases and
+null-propagating pointer expressions preserve their behavior. Uniform results
+keep a membership/range decision instead of acquiring a data load. That
+quality guard was exposed by the existing zero-bounded signed-range check;
+the checker and its expectations are unchanged. Integer-derived pointers
+retain an explicit word-to-pointer copy before pointer arithmetic.
+
+Three required PA32 fixtures cover scalar and pointer outcomes, signed keys,
+unsigned narrow selectors, signed and unsigned return bit patterns, 8/16/32/64
+bit table elements, booleans, name collisions, holes, default/case effects,
+null pointers, distinct bases and source/serialized-object equality. All 16
+GCC/Clang/parent/candidate O0-through-O3 runtime observations pass, as do four
+O2/O3 per-pass-verified LowIR replay runtimes. The verifier exposed two early
+construction errors (comparison result type and a copy's unused subopcode);
+both are fixed. The old R2 snapshot fails strict per-pass validation while
+the final snapshot passes. Do not count runtime-only success as proof of
+the internal typed contract.
+
+Final strict 9981/9981 and all auxiliary controls, debug/modern, every required
+architecture/file/placement/CWG audit, harness, PA5 and inception pass.
+Snapshot: compiler-block40-switch-results-r3, cppgm++ SHA256
+5a6d4217c919010fd429060d0b616432a64128d825d9720e2eaf9a362dbc1911.
+The frozen compile gate passes: O0 1.00003141x instructions; O3 1.00030185x
+(+0.0302%), RSS 1.00158653x; both frozen objects match the parent exactly.
+
+The four-unit private control reproduces B39's complete LLVM binary byte for
+byte. The final candidate's private relink takes 18.36 s; sample instruction
+ratios are 0.99136159x, 0.99619203x and 0.99733368x, with all outputs identical.
+These are limited screens, not full scores. Cycles vary and do not establish
+an elapsed-time improvement. The actual castFromDeclContext reduction now
+loads one signed byte from a 78-entry table instead of dispatching its 30
+cases; both reduced scalar and pointer forms also lose their switches.
+
+An earlier full LLVM build passed, but is superseded by the quality and
+typed-contract fixes. Its source-hash guard correctly refused to qualify it
+against the modified checkout. All artifacts are retained. A fresh R3 build
+is running and must pass the full byte/timing comparisons. The current
+cppgm qualification includes 324 units, adding the new optimizer module;
+the immutable timing workload remains the same 323 units. Student export
+and official releases are pending. This candidate is not accepted and the
+0.95x objective remains open. Evidence is
+/mnt/vizier/cppgm-llvm-evidence/block40-switch-results-*.

@@ -1,0 +1,16 @@
+# Compact outcomes may use lookup data, arithmetic, selects or other forms.
+instructions <= 14 in @scalar
+blocks <= 3 in @scalar
+none(switch) in @scalar
+instructions <= 14 in @narrow
+blocks <= 3 in @narrow
+none(switch) in @narrow
+instructions <= 14 in @wide
+blocks <= 3 in @wide
+none(switch) in @wide
+instructions <= 16 in @adjust
+blocks <= 3 in @adjust
+none(switch) in @adjust
+instructions <= 16 in @from_word
+blocks <= 3 in @from_word
+none(switch) in @from_word

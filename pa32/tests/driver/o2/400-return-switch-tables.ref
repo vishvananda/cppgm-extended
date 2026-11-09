@@ -1,0 +1,601 @@
+global @effects : i32 [linkage=c, binding=strong] = zero
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i32 -11
+  i32 25
+  i32 19
+  i32 70
+  i32 19
+  i32 -128
+  i32 127
+}
+global @__constexpr_template__2 [storage=readonly, binding=internal] = {
+  u8 255
+  u8 128
+  u8 17
+  u8 200
+}
+global @__constexpr_template__3 [storage=readonly, binding=internal] = {
+  zero 512
+}
+global @__constexpr_template__4 [storage=readonly, binding=internal] = {
+  i32 -40
+  i32 -72
+  i32 -32
+  i32 16
+  i32 -48
+  i32 -32
+  i32 -32
+  i32 8
+}
+global @__switch_results_0 : obj<7x1> [storage=readonly, binding=internal] = {
+  i8 -11
+  i8 25
+  i8 19
+  i8 70
+  i8 19
+  i8 -128
+  i8 127
+}
+global @__switch_results_1 : obj<4x1> [storage=readonly, binding=internal] = {
+  i8 -1
+  i8 -128
+  i8 17
+  i8 -56
+}
+global @__switch_results_2 : obj<4x1> [storage=readonly, binding=internal] = {
+  i8 0
+  i8 1
+  i8 1
+  i8 0
+}
+global @__switch_results_3 : obj<32x8> [storage=readonly, binding=internal] = {
+  i64 -1
+  i64 -9223372036854775808
+  i64 9223372036854775807
+  i64 0
+}
+global @__switch_results_4 : obj<8x1> [storage=readonly, binding=internal] = {
+  i8 -40
+  i8 -72
+  i8 -32
+  i8 16
+  i8 -48
+  i8 -32
+  i8 -32
+  i8 8
+}
+global @__switch_results_5 : obj<4x1> [storage=readonly, binding=internal] = {
+  i8 -40
+  i8 -72
+  i8 16
+  i8 -48
+}
+global @__switch_results_6 : obj<4x1> [storage=readonly, binding=internal] = {
+  i8 31
+  i8 37
+  i8 41
+  i8 43
+}
+
+function @scalar(%x : i32) -> i32 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = convert sext i64 i32 %x
+    %t2 = binary sub i64 %t1, -3
+    %t3 = cmp ult i64 %t2, 7
+    branch %t3, ^switch_case_2, ^switch_default_1
+
+  block ^switch_default_1:
+    return i32 19
+
+  block ^switch_case_2:
+    %t4 = index i8 @__switch_results_0, %t2
+    %t5 = load i8 %t4
+    %t6 = convert sext i32 i8 %t5
+    return i32 %t6
+}
+function @narrow(%x : i32) -> u8 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = convert sext i64 i32 %x
+    %t2 = cmp ult i64 %t1, 4
+    branch %t2, ^switch_case_2, ^switch_default_1
+
+  block ^switch_default_1:
+    return u8 99
+
+  block ^switch_case_2:
+    %t3 = index i8 @__switch_results_1, %t1
+    %t4 = load u8 %t3
+    return u8 %t4
+}
+function @truth(%x : i32) -> u8 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = convert sext i64 i32 %x
+    %t2 = cmp ult i64 %t1, 4
+    branch %t2, ^switch_case_2, ^switch_default_1
+
+  block ^switch_default_1:
+    return u8 1
+
+  block ^switch_case_2:
+    %t3 = index i8 @__switch_results_2, %t1
+    %t4 = load u8 %t3
+    return u8 %t4
+}
+function @wide(%x : i64) -> i64 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub i64 %x, -16
+    %t2 = cmp ult i64 %t1, 4
+    branch %t2, ^switch_case_2, ^switch_default_1
+
+  block ^switch_default_1:
+    return i64 123
+
+  block ^switch_case_2:
+    %t3 = index i64 @__switch_results_3, %t1
+    %t4 = load i64 %t3
+    return i64 %t4
+}
+function @adjust(%p : ptr, %x : u32) -> ptr [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp ult u32 %x, 8
+    branch %t1, ^switch_case_2, ^switch_default_1
+
+  block ^switch_default_1:
+    %t2 = index i8 %p, -32
+    return ptr %t2
+
+  block ^switch_case_2:
+    %t3 = convert zext i64 u32 %x
+    %t4 = index i8 @__switch_results_4, %t3
+    %t5 = load i8 %t4
+    %t6 = convert sext i64 i8 %t5
+    %t7 = index i8 %p, %t6
+    return ptr %t7
+}
+function @nullable(%p : ptr, %x : u32) -> ptr [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    switch %x, ^switch_default_5, 0:^switch_case_1, 1:^switch_case_2, 2:^switch_case_3, 3:^switch_case_4
+
+  block ^switch_case_1:
+    %t1 = index i8 %p, -40
+    %t2 = select ptr %p, %t1, 0
+    return ptr %t2
+
+  block ^switch_case_2:
+    %t3 = index i8 %p, -72
+    %t4 = select ptr %p, %t3, 0
+    return ptr %t4
+
+  block ^switch_case_3:
+    %t5 = index i8 %p, 16
+    %t6 = select ptr %p, %t5, 0
+    return ptr %t6
+
+  block ^switch_case_4:
+    %t7 = index i8 %p, -48
+    %t8 = select ptr %p, %t7, 0
+    return ptr %t8
+
+  block ^switch_default_5:
+    return ptr %p
+}
+function @different(%p : ptr, %q : ptr, %x : u32) -> ptr [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    switch %x, ^switch_default_5, 0:^switch_case_1, 1:^switch_case_2, 2:^switch_case_3, 3:^switch_case_4
+
+  block ^switch_case_1:
+    %t1 = index i8 %p, -40
+    return ptr %t1
+
+  block ^switch_case_2:
+    %t2 = index i8 %q, -72
+    return ptr %t2
+
+  block ^switch_case_3:
+    %t3 = index i8 %p, 16
+    return ptr %t3
+
+  block ^switch_case_4:
+    %t4 = index i8 %q, -48
+    return ptr %t4
+
+  block ^switch_default_5:
+    return ptr %p
+}
+function @from_word(%bits : i64, %x : u32) -> ptr [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp ult u32 %x, 4
+    branch %t1, ^switch_case_2, ^switch_default_1
+
+  block ^switch_default_1:
+    %t2 = copy ptr %bits
+    return ptr %t2
+
+  block ^switch_case_2:
+    %t3 = convert zext i64 u32 %x
+    %t4 = index i8 @__switch_results_5, %t3
+    %t5 = load i8 %t4
+    %t6 = convert sext i64 i8 %t5
+    %t7 = copy ptr %bits
+    %t8 = index i8 %t7, %t6
+    return ptr %t8
+}
+function @holes(%x : i32) -> i32 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    switch %x, ^switch_default_5, 0:^switch_case_1, 2:^switch_case_2, 4:^switch_case_3, 6:^switch_case_4
+
+  block ^switch_case_1:
+    return i32 31
+
+  block ^switch_case_2:
+    return i32 37
+
+  block ^switch_case_3:
+    return i32 41
+
+  block ^switch_case_4:
+    return i32 43
+
+  block ^switch_default_5:
+    %t1 = load typed i32 @effects
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @effects
+    return i32 47
+}
+function @dense_default(%x : i32) -> i32 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = convert sext i64 i32 %x
+    %t2 = cmp ult i64 %t1, 4
+    branch %t2, ^switch_case_2, ^switch_default_1
+
+  block ^switch_default_1:
+    %t3 = load typed i32 @effects
+    %t4 = binary add nowrap i32 %t3, 1
+    store typed i32 %t4, @effects
+    return i32 47
+
+  block ^switch_case_2:
+    %t5 = index i8 @__switch_results_6, %t1
+    %t6 = load i8 %t5
+    %t7 = convert sext i32 i8 %t6
+    return i32 %t7
+}
+function @side_case(%x : i32) -> i32 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    switch %x, ^switch_default_5, 0:^switch_case_1, 1:^switch_case_2, 2:^switch_case_3, 3:^switch_case_4
+
+  block ^switch_case_1:
+    %t1 = load typed i32 @effects
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @effects
+    return i32 31
+
+  block ^switch_case_2:
+    return i32 37
+
+  block ^switch_case_3:
+    return i32 41
+
+  block ^switch_case_4:
+    return i32 43
+
+  block ^switch_default_5:
+    return i32 47
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $storage : obj<512x1>
+
+  block ^entry:
+    %t1 = addr @__constexpr_template__1
+    %t2 = addr @__constexpr_template__2
+    %t3 = addr $storage
+    copyobj 512x1 @__constexpr_template__3, %t3
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t4 = phi i64 [^entry: -128, ^if_end_12: %t25]
+    %t5 = convert trunc exact i32 i64 %t4
+    %t6 = cmp ne i32 %t5, 256
+    branch %t6, ^for_body_2, ^for_end_13
+
+  block ^for_body_2:
+    %t7 = call i32 @scalar(%t5)
+    switch %t5, ^cond_else_4, -3:^cond_then_3, -2:^cond_then_3, -1:^cond_then_3, 0:^cond_then_3, 1:^cond_then_3, 2:^cond_then_3, 3:^cond_then_3
+
+  block ^cond_then_3:
+    %t8 = index i32 [projection=array_element] %t1, %t4
+    %t9 = index i32 [projection=array_element] %t8, 3
+    %t10 = load typed i32 %t9
+    %t11 = cmp ne i32 %t7, %t10
+    branch %t11, ^if_then_5, ^if_end_6
+
+  block ^cond_else_4:
+    %t12 = cmp ne i32 %t7, 19
+    branch %t12, ^if_then_5, ^if_end_6
+
+  block ^if_then_5:
+    return i32 1
+
+  block ^if_end_6:
+    %t13 = call u8 @narrow(%t5)
+    %t14 = cmp ult i32 %t5, 4
+    branch %t14, ^cond_then_7, ^cond_else_8
+
+  block ^cond_then_7:
+    %t15 = index u8 [projection=array_element] %t2, %t4
+    %t16 = load u8 %t15
+    %t17 = cmp ne u8 %t13, %t16
+    branch %t17, ^if_then_9, ^if_end_10
+
+  block ^cond_else_8:
+    %t18 = cmp ne u8 %t13, 99
+    branch %t18, ^if_then_9, ^if_end_10
+
+  block ^if_then_9:
+    return i32 2
+
+  block ^if_end_10:
+    %t19 = call u8 @truth(%t5)
+    %t20 = cmp ne i32 %t5, 3
+    %t21 = select i64 %t5, %t20, 0
+    %t22 = convert zext i32 u8 %t19
+    %t23 = convert trunc i32 i64 %t21
+    %t24 = cmp ne i32 %t22, %t23
+    branch %t24, ^if_then_11, ^if_end_12
+
+  block ^if_then_11:
+    return i32 3
+
+  block ^if_end_12:
+    %t25 = binary add nowrap i64 %t4, 1
+    jump ^for_cond_1
+
+  block ^for_end_13:
+    %t26 = addr @__constexpr_template__4
+    %t27 = index i8 %t3, 160
+    %t28 = index i8 %t3, 400
+    jump ^for_cond_14
+
+  block ^for_cond_14:
+    %t29 = phi u32 [^for_end_13: 0, ^if_end_43: %t72]
+    %t30 = cmp ne u32 %t29, 32
+    branch %t30, ^for_body_15, ^for_end_44
+
+  block ^for_body_15:
+    %t31 = call ptr @adjust(%t27, %t29)
+    %t32 = cmp ult u32 %t29, 8
+    branch %t32, ^cond_then_16, ^cond_end_17
+
+  block ^cond_then_16:
+    %t33 = index i32 [projection=array_element] %t26, %t29
+    %t34 = load typed i32 %t33
+    jump ^cond_end_17
+
+  block ^cond_end_17:
+    %t35 = phi i32 [^cond_then_16: %t34, ^for_body_15: -32]
+    %t36 = convert sext i64 i32 %t35
+    %t37 = index i8 %t27, %t36
+    %t38 = cmp ne ptr %t31, %t37
+    branch %t38, ^if_then_18, ^if_end_19
+
+  block ^if_then_18:
+    return i32 4
+
+  block ^if_end_19:
+    %t39 = call ptr @nullable(0, %t29)
+    %t40 = cmp ne ptr %t39, 0
+    branch %t40, ^if_then_20, ^if_else_21
+
+  block ^if_then_20:
+    return i32 5
+
+  block ^if_else_21:
+    %t41 = cmp eq u32 %t29, 0
+    branch %t41, ^cond_then_22, ^cond_else_23
+
+  block ^cond_then_22:
+    %t42 = index i8 %t3, 120
+    jump ^cond_end_30
+
+  block ^cond_else_23:
+    %t43 = cmp eq u32 %t29, 1
+    branch %t43, ^cond_then_24, ^cond_else_25
+
+  block ^cond_then_24:
+    %t44 = index i8 %t3, 328
+    jump ^cond_end_29
+
+  block ^cond_else_25:
+    %t45 = cmp eq u32 %t29, 2
+    branch %t45, ^cond_then_26, ^cond_else_27
+
+  block ^cond_then_26:
+    %t46 = index i8 %t3, 176
+    jump ^cond_end_28
+
+  block ^cond_else_27:
+    %t47 = cmp eq u32 %t29, 3
+    %t48 = index i8 %t3, 352
+    %t49 = cmp eq u32 %t29, 3
+    %t50 = select ptr %t49, %t48, %t27
+    jump ^cond_end_28
+
+  block ^cond_end_28:
+    %t51 = phi ptr [^cond_then_26: %t46, ^cond_else_27: %t50]
+    jump ^cond_end_29
+
+  block ^cond_end_29:
+    %t52 = phi ptr [^cond_then_24: %t44, ^cond_end_28: %t51]
+    jump ^cond_end_30
+
+  block ^cond_end_30:
+    %t53 = phi ptr [^cond_then_22: %t42, ^cond_end_29: %t52]
+    %t54 = call ptr @different(%t27, %t28, %t29)
+    %t55 = cmp ne ptr %t53, %t54
+    branch %t55, ^if_then_31, ^if_end_32
+
+  block ^if_then_31:
+    return i32 6
+
+  block ^if_end_32:
+    %t56 = cmp eq u32 %t29, 0
+    branch %t56, ^cond_then_33, ^cond_else_34
+
+  block ^cond_then_33:
+    %t57 = index i8 %t3, 120
+    jump ^cond_end_41
+
+  block ^cond_else_34:
+    %t58 = cmp eq u32 %t29, 1
+    branch %t58, ^cond_then_35, ^cond_else_36
+
+  block ^cond_then_35:
+    %t59 = index i8 %t3, 88
+    jump ^cond_end_40
+
+  block ^cond_else_36:
+    %t60 = cmp eq u32 %t29, 2
+    branch %t60, ^cond_then_37, ^cond_else_38
+
+  block ^cond_then_37:
+    %t61 = index i8 %t3, 176
+    jump ^cond_end_39
+
+  block ^cond_else_38:
+    %t62 = cmp eq u32 %t29, 3
+    %t63 = index i8 %t3, 112
+    %t64 = cmp eq u32 %t29, 3
+    %t65 = select ptr %t64, %t63, %t27
+    jump ^cond_end_39
+
+  block ^cond_end_39:
+    %t66 = phi ptr [^cond_then_37: %t61, ^cond_else_38: %t65]
+    jump ^cond_end_40
+
+  block ^cond_end_40:
+    %t67 = phi ptr [^cond_then_35: %t59, ^cond_end_39: %t66]
+    jump ^cond_end_41
+
+  block ^cond_end_41:
+    %t68 = phi ptr [^cond_then_33: %t57, ^cond_end_40: %t67]
+    %t69 = copy i64 %t27
+    %t70 = call ptr @from_word(%t69, %t29)
+    %t71 = cmp ne ptr %t68, %t70
+    branch %t71, ^if_then_42, ^if_end_43
+
+  block ^if_then_42:
+    return i32 14
+
+  block ^if_end_43:
+    %t72 = binary add u32 %t29, 1
+    jump ^for_cond_14
+
+  block ^for_end_44:
+    %t73 = call i64 @wide(-16)
+    %t74 = cmp ne i64 %t73, -1
+    branch %t74, ^if_then_45, ^if_end_46
+
+  block ^if_then_45:
+    return i32 7
+
+  block ^if_end_46:
+    %t75 = call i64 @wide(-15)
+    %t76 = cmp ne i64 %t75, -9223372036854775808
+    branch %t76, ^if_then_47, ^if_else_48
+
+  block ^if_then_47:
+    return i32 8
+
+  block ^if_else_48:
+    %t77 = call i64 @wide(-14)
+    %t78 = cmp ne i64 %t77, 9223372036854775807
+    branch %t78, ^if_then_50, ^lor_rhs_49
+
+  block ^lor_rhs_49:
+    %t79 = call i64 @wide(-13)
+    branch %t79, ^if_then_50, ^if_end_51
+
+  block ^if_then_50:
+    return i32 9
+
+  block ^if_end_51:
+    %t80 = call i64 @wide(0)
+    %t81 = cmp ne i64 %t80, 123
+    branch %t81, ^if_then_53, ^lor_rhs_52
+
+  block ^lor_rhs_52:
+    %t82 = call i64 @wide(-1)
+    %t83 = cmp ne i64 %t82, 123
+    branch %t83, ^if_then_53, ^if_end_54
+
+  block ^if_then_53:
+    return i32 10
+
+  block ^if_end_54:
+    store typed i32 0, @effects
+    %t84 = call i32 @holes(1)
+    %t85 = cmp ne i32 %t84, 47
+    branch %t85, ^if_then_58, ^lor_rhs_55
+
+  block ^lor_rhs_55:
+    %t86 = call i32 @holes(3)
+    %t87 = cmp ne i32 %t86, 47
+    branch %t87, ^if_then_58, ^lor_rhs_56
+
+  block ^lor_rhs_56:
+    %t88 = call i32 @holes(0)
+    %t89 = cmp ne i32 %t88, 31
+    branch %t89, ^if_then_58, ^lor_rhs_57
+
+  block ^lor_rhs_57:
+    %t90 = load typed i32 @effects
+    %t91 = cmp ne i32 %t90, 2
+    branch %t91, ^if_then_58, ^if_end_59
+
+  block ^if_then_58:
+    return i32 11
+
+  block ^if_end_59:
+    %t92 = call i32 @dense_default(-1)
+    %t93 = cmp ne i32 %t92, 47
+    branch %t93, ^if_then_63, ^lor_rhs_60
+
+  block ^lor_rhs_60:
+    %t94 = call i32 @dense_default(4)
+    %t95 = cmp ne i32 %t94, 47
+    branch %t95, ^if_then_63, ^lor_rhs_61
+
+  block ^lor_rhs_61:
+    %t96 = call i32 @dense_default(2)
+    %t97 = cmp ne i32 %t96, 41
+    branch %t97, ^if_then_63, ^lor_rhs_62
+
+  block ^lor_rhs_62:
+    %t98 = load typed i32 @effects
+    %t99 = cmp ne i32 %t98, 4
+    branch %t99, ^if_then_63, ^if_end_64
+
+  block ^if_then_63:
+    return i32 12
+
+  block ^if_end_64:
+    %t100 = call i32 @side_case(0)
+    %t101 = cmp ne i32 %t100, 31
+    branch %t101, ^if_then_67, ^lor_rhs_65
+
+  block ^lor_rhs_65:
+    %t102 = call i32 @side_case(1)
+    %t103 = cmp ne i32 %t102, 37
+    branch %t103, ^if_then_67, ^lor_rhs_66
+
+  block ^lor_rhs_66:
+    %t104 = load typed i32 @effects
+    %t105 = cmp ne i32 %t104, 5
+    branch %t105, ^if_then_67, ^if_end_68
+
+  block ^if_then_67:
+    return i32 13
+
+  block ^if_end_68:
+    return i32 0
+}

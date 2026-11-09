@@ -325,3 +325,27 @@ inputs. Preserve overlapping-argument and global-write behavior, and ensure
 zero-iteration loops do not gain reads from invalid pointers. These facts
 come from the LowIR definitions, so replaying serialized input can derive
 them without private frontend data.
+
+## Result tables for switches
+
+A switch whose arms only return integer constants can select a value from
+read-only data instead of transferring control among return blocks. The
+same representation applies when all arms return one dominating pointer
+plus constant byte offsets: select the offset, then apply it to that pointer.
+Retain any integer-to-pointer bitcast explicitly in the typed instructions.
+
+Check the selector's width and signedness before choosing its range. A
+wrapping subtraction followed by an unsigned range check handles negative
+keys and narrow selectors without signed-overflow assumptions. Sparse holes
+must preserve the default result and its effects. An unreachable default
+does not require a result, but a defined default that writes memory cannot
+silently become a table entry. Cases with effects or different pointer bases
+need their original behavior.
+
+Bound table growth relative to the case operands and cap individual tables.
+Small signed elements can hold offsets or return-value bit patterns, with
+explicit extension or retyping to recover the result. Uniform results need
+only a membership or range decision; adding a table load would waste work.
+Use normal LowIR globals and instructions so the object path and serialized
+replay retain the same facts. Check every new instruction with the existing
+per-pass verifier as well as runtime oracles and replayed-object comparisons.

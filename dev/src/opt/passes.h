@@ -36,6 +36,9 @@ struct FunctionContext
 	OptimizerStats& stats;
 	int level;
 	BitTablePool* bit_tables = nullptr;
+	// Pipeline-owned presentation counter, independent of declaration ids
+	// so source and serialized-input optimization name tables alike.
+	uint32_t* return_table_names = nullptr;
 	bool verify = false;               // OptimizerOptions::verify_passes
 	const char* verify_dump = nullptr; // OptimizerOptions::verify_dump, or null
 	// The CFG and dominator-tree facts, shared by the passes until one
@@ -282,6 +285,11 @@ bool version_fill_loops(FunctionContext& context);
 // default) when that has fewer runs of consecutive values per target than
 // the tests it replaces. O(region blocks x ranges) per head.
 bool form_switches(FunctionContext& context);
+
+// O2+: switches whose cases return integer constants or one dominating
+// pointer plus constant offsets use bounded readonly result tables. Keep
+// defined defaults and side effects; data growth is linear in case operands.
+bool form_return_tables(FunctionContext& context);
 
 // O2+, after the scalar rounds (opt/select_formation.cpp): a branch to a
 // diamond or triangle whose arms only compute (at most two speculatable

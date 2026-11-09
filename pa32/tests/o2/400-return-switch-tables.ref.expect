@@ -1,0 +1,15 @@
+instructions <= 14 in @small
+blocks <= 3 in @small
+none(switch) in @small
+instructions <= 14 in @high
+blocks <= 3 in @high
+none(switch) in @high
+instructions <= 14 in @medium
+none(switch) in @medium
+instructions <= 14 in @large
+none(switch) in @large
+instructions <= 16 in @pointer
+blocks <= 3 in @pointer
+none(switch) in @pointer
+# A uniform accepted range must not acquire a data load.
+none(load) in @uniform
