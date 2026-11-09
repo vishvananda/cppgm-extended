@@ -178,6 +178,14 @@ Measure branch prediction across several layouts; unchanged instruction counts
 can still hide a substantial runtime difference. No particular duplication
 or block order is required.
 
+Sharing identical tails has the opposite tradeoff. Separate conditional
+branches can have different outcome histories even when their instructions
+match; merging them can worsen prediction while saving bytes. In particular,
+sharing can undo a loop test deliberately copied into its back edge. Preserve
+that separation or choose a pass order that retains the intended loop shape.
+Compare predictable and mixed incoming paths across several layouts; no
+particular sharing or duplication strategy is required.
+
 ## Validation and further experiments
 
 A register sum consumed by the following load can share that load's indexed

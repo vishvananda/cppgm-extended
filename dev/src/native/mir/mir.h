@@ -36,6 +36,7 @@ struct Inst
 	uint32_t aux = 0;      // Call: argument register mask; Copy/Zero: bytes; EhPush: kind; EhCatch: selector;
 						   // Jcc: advisory taken probability per mille (0: unspecified)
 	uint32_t aux2 = 0;     // Call: stack bytes; Copy/Zero: alignment; EhPush: frame-slot record offset
+						   // Jcc: nonzero identity of a deliberately copied prediction site
 	uint32_t location = 0; // 1 + index of the LowIR debug location
 	uint32_t eh = 0;       // host EH Call: 1 + its landing (EhTables::landings), 0: none
 	Operand ops[3];

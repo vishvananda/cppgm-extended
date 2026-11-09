@@ -233,6 +233,45 @@ bool plain_gpr(const Operand& op)
 	return op.kind == OperandKind::Reg && op.reg < 16;
 }
 
+// The rotatable tail has at most twelve instructions and no internal
+// control flow. Track local load dependencies through its integer registers
+// and flags; an unrelated load does not make a counter test data-dependent.
+bool loaded_condition(const Function& f, const Block& block)
+{
+	uint32_t loaded = 0;
+	bool loaded_flags = false;
+	for (uint32_t i = block.first; i < block.first + block.count; ++i)
+	{
+		const Inst& inst = f.insts[i];
+		if (inst.op == Op::Nop)
+			continue;
+		if (inst.op == Op::Jcc)
+			return loaded_flags;
+		const bool assignment = inst.op == Op::Mov || inst.op == Op::Load || inst.op == Op::Lea ||
+			inst.op == Op::Movzx || inst.op == Op::Sext || inst.op == Op::Zext;
+		bool depends = inst.op == Op::Load || (inst.op == Op::Setcc && loaded_flags);
+		for (unsigned k = assignment || inst.op == Op::Setcc ? 1 : 0; k < inst.nops; ++k)
+		{
+			const Operand& op = inst.ops[k];
+			if (plain_gpr(op))
+				depends = depends || (loaded & reg_bit(op.reg)) != 0;
+			else if (op.kind == OperandKind::Mem)
+				depends = depends || inst.op != Op::Lea ||
+					(loaded & ((op.reg < 16 ? reg_bit(op.reg) : 0) | (op.index < 16 ? reg_bit(op.index) : 0))) != 0;
+		}
+		const bool compare = inst.op == Op::Cmp || inst.op == Op::Test || inst.op == Op::Bt;
+		if (!compare && inst.nops && plain_gpr(inst.ops[0]))
+		{
+			loaded &= ~reg_bit(inst.ops[0].reg);
+			if (depends)
+				loaded |= reg_bit(inst.ops[0].reg);
+		}
+		if (!assignment && inst.op != Op::Nop && inst.op != Op::Setcc)
+			loaded_flags = depends;
+	}
+	return false;
+}
+
 } // namespace
 
 // O1+: a run of consecutive stores of immediates to adjacent bytes of one
@@ -345,9 +384,15 @@ TailCopies duplicate_short_tails(Function& f)
 			f.insts.reserve(std::max(required, f.insts.capacity() * 2));
 		for (uint32_t i = block.first; i + 1 < block.first + block.count; ++i)
 			f.insts.push_back(f.insts[i]);
+		const bool loaded_test = !dispatch && !tail.counted && loaded_condition(f, tail);
 		for (uint32_t i = tail.first; i < tail.first + tail.count; ++i)
 		{
 			Inst copy = f.insts[i];
+			// A rotated memory test owns its prediction site. Later tail
+			// sharing must not mix its entry and repeated input histories.
+			// Counted loops retain sharing even when their bounds are loaded.
+			if (loaded_test && copy.op == Op::Jcc)
+				copy.aux2 = static_cast<uint32_t>(f.insts.size()) + 1;
 			if (copy.op == Op::JumpTable)
 			{
 				// Each dispatch owns the targets that later frame splitting

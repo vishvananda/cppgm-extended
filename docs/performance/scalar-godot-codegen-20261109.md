@@ -1,6 +1,6 @@
 # Scalar and indirect-dispatch optimization, 2026-11-09
 
-The selected implementation and current validation are recorded in [Selected implementation for CI](#selected-implementation-for-ci). Earlier qualifications and rejected prototypes below are retained as historical evidence.
+The selected implementation and current validation are recorded in [Selected implementation for CI](#selected-implementation-for-ci). Earlier qualifications and rejected prototypes below are retained as historical evidence. The latest scalar regression fix is recorded in [Preserving load-dependent loop tests](#preserving-load-dependent-loop-tests).
 
 At qualification, the final local candidate reached the 0.95× GCC target for both workload
 aggregates. The follow-up below records a later scalar regression and the limits
@@ -466,3 +466,70 @@ All paths below are under
   attempts are retained but are not measurements.
 - `export-package.log`, `export-client-package.log`, the student reference bundle,
   strict/debug/self/inception logs and the audit logs retain validation evidence.
+
+## Preserving load-dependent loop tests
+
+The later compiler at `043e34737` still had a scalar regression. Its compiler
+sources match `93343ea0e`; the recent Boost correctness and defaulted-member
+fixes produce byte-identical scalar and SSE simdjson objects to their immediate
+predecessor, so those fixes did not introduce this loss.
+
+Native tail sharing was folding some deliberately rotated memory tests back
+together. The selected fix retains their separate prediction sites when the
+condition depends on a local load and the existing loop facts do not establish
+a counted loop. A bounded walk over the already limited twelve-instruction
+rotation candidate tracks integer-register and flag dependencies. It reuses an
+existing MIR field for the identity, adds no allocation or global pass, and
+leaves ordinary sharing available. No workload names, CPU models or padding
+constants select the policy.
+
+The initial blanket restriction on conditional-tail sharing recovered scalar
+speed but regressed Ackermann and `lpbench`; it was rejected. The selected
+policy produces byte-identical main executables for Ackermann, `lpbench`,
+method calls and HPCCG. An unrelated load does not qualify a counter test, and
+a loaded bound does not disqualify an already proven counted loop.
+
+On the quiet EPYC 7B13 VM, the final frozen binaries give the following CPU
+ratios. Higher is better; these are local measurements, not CI badge values.
+
+| Scalar input | vs main | vs GCC 15 | vs Clang 22 |
+|---|---:|---:|---:|
+| twitter.json | 1.296× | 1.076× | 1.128× |
+| citm_catalog.json | 1.622× | 1.006× | 1.239× |
+| **Geometric mean** | **1.450×** | **1.040×** | **1.182×** |
+
+Each observation parses 512 times. One A/A block precedes three alternating
+ABBA/BAAB blocks per input/reference; canonical parsed output matches all builds.
+Four harmless link placements retain 1.285–1.300× main speed on Twitter and
+1.620–1.624× on CITM, with A/A within 0.3%. The qualified compiler emits both
+scalar and SSE objects and executables byte-for-byte identical to these measured
+binaries; `qualified-equivalence.json` records that check.
+
+Intel counters corroborate the mechanism: CITM uses about 0.6% more instructions
+but only 0.090× main's branch misses. The Intel host overlapped validation and
+the ongoing Intel campaign, so its noisy A/A CPU timings are not used for a
+precise speed claim. Fresh dedicated Intel simdjson and Godot jobs will measure
+the pushed revision. SSE remains essentially unchanged on Milan, about 0.90×
+GCC; its remaining host-dependent gap is separate from this scalar recovery.
+
+All 81 fixed public programs pass their GCC output checks; 57 executables
+are byte-identical to main. Their native instruction geometric mean falls
+0.043%, while executable size grows 0.042%. The changed Spirit workload uses
+about 2% more instructions but its paired CPU screen improves; Minisat also
+improves in the paired screen. These local loaded-host timings are sanity
+checks rather than precise small-change qualifications.
+
+The three immutable compile inputs at O0/O3 change instruction cost by at most
+0.012%; O0 output objects are byte-identical. Strict 9,996/9,996, debug-info,
+self-host through PA5, PA35 smoke and architecture/format/file/placement audits
+passed. The existing seven file-audit warnings are unchanged. Fresh student export,
+24,168 portable reference comparisons, the document inventory and installation
+of all 42 reference wrappers also passed.
+
+Evidence is under
+`/mnt/vizier/cppgm-codegen-data/20261109/badge-freshness/simdjson-repro/`:
+`qualified-validation/`, `public-sanity-qualified/`, `compile-cost-qualified/`,
+`paired-epyc-final/`, `final-layout-*/paired-epyc/` and
+`loaded-flags-v2-policy-sanity/paired-intel-final/`. Commands, hashes, calibrations
+and every observation are retained. The frozen compiler SHA-256 is
+`09e84af5a4f5d58c3d699cac2dae576f07ac25ded4320be2baee5210ff6ae9a1`.
