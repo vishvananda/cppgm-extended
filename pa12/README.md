@@ -461,6 +461,8 @@ PA12 supports the following in addition to the PA11 subset:
   statement, including braceless nested statements
 - non-template conversion operators that participate in the existing overload
   and conversion machinery
+- class results copy-initialized through conversion operators from conditional
+  glvalues, preserving the selected operand and the result calling convention
 
 Within this milestone, PA12 should produce valid LowIR for ordinary non-polymorphic value
 types over the supported PA11 procedural/class subset. That LowIR is intended

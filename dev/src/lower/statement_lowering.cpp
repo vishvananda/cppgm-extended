@@ -1730,7 +1730,8 @@ void FunctionLowering::initialize_result(const syntax::Expr& expr, const sema::C
 		const sema::Conversion* own = WithoutParentheses(operands[i])->facts->conversion;
 		if (WithoutParentheses(operands[i])->kind == syntax::ExprKind::Throw)
 			discard(*operands[i]);
-		else if (glvalue && conversion != nullptr && conversion->constructor != nullptr)
+		else if (glvalue && conversion != nullptr && conversion->constructor != nullptr &&
+			conversion->constructor->constructor)
 			call_constructor(conversion->constructor, object, *operands[i], conversion->argument, location);
 		else
 			initialize_result(*operands[i], glvalue ? conversion : own, target, object, location);
