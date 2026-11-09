@@ -716,7 +716,7 @@ Reg FunctionSelector::allocate(uint32_t temp, uint32_t exclude, Reg prefer0, Reg
 	// address lea, while an add in its dying operand followed by the
 	// return's copy cannot use that fusion.
 	const bool returned = level_ >= 1 && t.hint == RAX;
-	const Reg prefs[3] = { returned ? RAX
+	const Reg prefs[3] = { returned ? static_cast<Reg>(RAX)
 			: hinted                ? prefer1
 									: prefer0,
 		returned     ? prefer0
