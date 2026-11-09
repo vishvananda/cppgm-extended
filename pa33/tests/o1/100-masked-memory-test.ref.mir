@@ -268,9 +268,9 @@ function @main
     add.i32 rbx, r8
     add.i32 rbx, [rbp-24]
     cmp.i32 rbx, 7
-    setne rbx
-    movzx rbx, rbx
+    setne rax
+    movzx rax, rax
     load.i64 r11, [rbp-16]
-    or rbx, r11
-    or rbx, r15
-    ret rbx
+    or rax, r11
+    or rax, r15
+    ret rax

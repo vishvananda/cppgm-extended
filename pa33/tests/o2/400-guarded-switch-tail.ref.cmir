@@ -36,15 +36,16 @@ function @dispatch
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case0
-    add r8, 1
-    ret r8
+    lea rax, [r8+<off0>]
+    ret rax
 
   block ^skip
     ret rdx
 
   block ^outside
-    xor rdx, rdi
-    ret rdx
+    mov rax, rdx
+    xor rax, rdi
+    ret rax
 
   block ^left
     add rdx, 17
@@ -53,28 +54,31 @@ function @dispatch
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case1
-    sub r8, 7
-    ret r8
+    lea rax, [r8-<off0>]
+    ret rax
 
   block ^table
     mov <gpr0>, rdi
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case2
-    imul r8, 3
-    ret r8
+    lea rax, [r8+r8*2]
+    ret rax
 
   block ^case3
-    xor r8, 19
-    ret r8
+    mov rax, r8
+    xor rax, 19
+    ret rax
 
   block ^case4
-    or r8, 16
-    ret r8
+    mov rax, r8
+    or rax, 16
+    ret rax
 
   block ^case5
-    and r8, 127
-    ret r8
+    mov rax, r8
+    and rax, 127
+    ret rax
 
   block ^impossible
     trap

@@ -38,14 +38,14 @@ function @pressure
     jl ^for_body_2
 
   block ^for_end_4
-    add <gpr1>, <gpr2>
-    add <gpr1>, <gpr3>
-    add <gpr1>, <gpr4>
-    add <gpr1>, [rbp-<off1>]
-    add <gpr1>, [rbp-<off2>]
-    add <gpr1>, [rbp-<off3>]
-    add <gpr1>, [rbp-<off4>]
-    ret <gpr1>
+    lea rax, [<gpr1>+<gpr2>]
+    add rax, <gpr3>
+    add rax, <gpr4>
+    add rax, [rbp-<off1>]
+    add rax, [rbp-<off2>]
+    add rax, [rbp-<off3>]
+    add rax, [rbp-<off4>]
+    ret rax
 
   block ^for_body_2
     mov rdi, <gpr0>
@@ -82,8 +82,8 @@ function @step
     epilogues duplicated
 
   block ^entry
-    add rdi, 1
-    ret rdi
+    lea rax, [rdi+<off0>]
+    ret rax
 
 function @main
   abi

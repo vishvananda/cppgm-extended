@@ -612,33 +612,34 @@ function @main
     cmp.u32 @output+296, 1058306778
     setne r9
     movzx r9, r9
-    or r8, r9
+    mov rax, r8
+    or rax, r9
     cmp.u32 @output+300, 1058306778
-    setne r9
-    movzx r9, r9
-    or r8, r9
+    setne r8
+    movzx r8, r8
+    or rax, r8
     cmp.u32 @output+392, 1058306778
-    setne r9
-    movzx r9, r9
-    or r8, r9
+    setne r8
+    movzx r8, r8
+    or rax, r8
     cmp.u32 @output+304, 1058381343
-    setne r9
-    movzx r9, r9
-    or r8, r9
+    setne r8
+    movzx r8, r8
+    or rax, r8
     cmp.u32 @output+308, 1058381343
-    setne r9
-    movzx r9, r9
-    or r8, r9
+    setne r8
+    movzx r8, r8
+    or rax, r8
     cmp.u32 @output+312, 1058381343
-    setne r9
-    movzx r9, r9
-    or r8, r9
+    setne r8
+    movzx r8, r8
+    or rax, r8
     cmp.u32 @output+316, 1058381343
-    setne r9
-    movzx r9, r9
-    or r8, r9
+    setne r8
+    movzx r8, r8
+    or rax, r8
     cmp.u32 @output+396, 1058381343
-    setne r9
-    movzx r9, r9
-    or r8, r9
-    ret r8
+    setne r8
+    movzx r8, r8
+    or rax, r8
+    ret rax

@@ -21,7 +21,8 @@ function @billions
     mov r11, 19342813113834067
     mul r11
     shr rdx, 11
-    ret rdx
+    mov rax, rdx
+    ret rax
 
 function @main
   abi
@@ -47,6 +48,6 @@ function @main
     mov r11, -6067343680855748867
     mul r11
     shr rdx, 26
-    add rdx, r12
-    sext.i32 rax, rdx
+    lea rax, [rdx+r12]
+    sext.i32 rax
     ret rax

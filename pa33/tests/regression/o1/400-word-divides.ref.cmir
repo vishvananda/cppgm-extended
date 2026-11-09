@@ -43,7 +43,8 @@ function @by_minus_seven
     mov rdx, rdi
     sar rdx, 63
     sub rdx, rax
-    ret rdx
+    mov rax, rdx
+    ret rax
 
 function @rest_of
   abi
@@ -64,7 +65,8 @@ function @rest_of
     imul rax, 139968
     mov rdx, rdi
     sub rdx, rax
-    ret rdx
+    mov rax, rdx
+    ret rax
 
 function @unsigned_by_ten
   abi
@@ -144,4 +146,5 @@ function @main
     imul rax, 100
     mov rdx, <gpr2>
     sub rdx, rax
-    ret rdx
+    mov rax, rdx
+    ret rax

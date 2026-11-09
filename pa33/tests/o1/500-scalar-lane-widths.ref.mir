@@ -100,7 +100,8 @@ function @main
     cmp.i64 @output+8, 0
     setne r8
     movzx r8, r8
-    or r12, r13
+    mov rax, r12
+    or rax, r13
     or rbx, r8
-    or r12, rbx
-    ret r12
+    or rax, rbx
+    ret rax

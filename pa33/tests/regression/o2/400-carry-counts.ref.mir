@@ -54,8 +54,9 @@ function @count_at_least
 
   block ^entry
     cmp.i64 rdi, rsi
-    sbb rdx, -1
-    ret rdx
+    mov rax, rdx
+    sbb rax, -1
+    ret rax
 
 function @down_below
   abi
@@ -71,8 +72,9 @@ function @down_below
 
   block ^entry
     cmp.i64 rdi, rsi
-    sbb rdx, 0
-    ret rdx
+    mov rax, rdx
+    sbb rax, 0
+    ret rax
 
 function @down_at_least
   abi
@@ -88,8 +90,9 @@ function @down_at_least
 
   block ^entry
     cmp.i64 rdi, rsi
-    adc rdx, -1
-    ret rdx
+    mov rax, rdx
+    adc rax, -1
+    ret rax
 
 function @count_float
   abi
@@ -105,8 +108,9 @@ function @count_float
 
   block ^entry
     fcmp.f64 xmm0, xmm1
-    sbb.i32 rdi, -1
-    ret rdi
+    mov rax, rdi
+    sbb.i32 rax, -1
+    ret rax
 
 function @count_signed
   abi
@@ -122,9 +126,10 @@ function @count_signed
 
   block ^entry
     cmp.i64 rdi, rsi
-    lea r11, [rdx+1]
-    cmovl rdx, r11
-    ret rdx
+    mov rax, rdx
+    lea r11, [rax+1]
+    cmovl rax, r11
+    ret rax
 
 function @main
   abi

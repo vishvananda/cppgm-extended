@@ -175,8 +175,8 @@ function @walk
     load.u32 r14, [rbp-120]
 
   block ^found
-    add.u32 r14, 1000
-    ret r14
+    lea.i32 rax, [r14+1000]
+    ret rax
 
 function @main
   abi
@@ -205,5 +205,6 @@ function @main
     mov rdx, 0
     call @walk [args=(rdx,rsi,rdi)]
     add.u32 rbx, rax
-    and rbx, 127
-    ret rbx
+    zext.i32 rax, rbx
+    and rax, 127
+    ret rax

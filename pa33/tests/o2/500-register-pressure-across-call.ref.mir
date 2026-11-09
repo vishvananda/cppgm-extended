@@ -38,14 +38,14 @@ function @pressure
     jl ^for_body_2
 
   block ^for_end_4
-    add r12, r13
-    add r12, r14
-    add r12, r15
-    add r12, [rbp-8]
-    add r12, [rbp-16]
-    add r12, [rbp-24]
-    add r12, [rbp-32]
-    ret r12
+    lea rax, [r12+r13]
+    add rax, r14
+    add rax, r15
+    add rax, [rbp-8]
+    add rax, [rbp-16]
+    add rax, [rbp-24]
+    add rax, [rbp-32]
+    ret rax
 
   block ^for_body_2
     mov rdi, rbx
@@ -82,8 +82,8 @@ function @step
     epilogues duplicated
 
   block ^entry
-    add rdi, 1
-    ret rdi
+    lea rax, [rdi+1]
+    ret rax
 
 function @main
   abi

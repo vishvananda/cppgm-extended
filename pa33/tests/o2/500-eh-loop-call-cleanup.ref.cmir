@@ -52,8 +52,8 @@ function @work
     epilogues duplicated
 
   block ^entry
-    add rdi, 3
-    ret rdi
+    lea rax, [rdi+<off0>]
+    ret rax
 
 function @main
   abi

@@ -21,7 +21,8 @@ function @billions
     mov <gpr0>, 19342813113834067
     mul <gpr0>
     shr rdx, 11
-    ret rdx
+    mov rax, rdx
+    ret rax
 
 function @main
   abi
@@ -47,6 +48,6 @@ function @main
     mov <gpr0>, -6067343680855748867
     mul <gpr0>
     shr rdx, 26
-    add rdx, <gpr2>
-    sext.i32 rax, rdx
+    lea rax, [rdx+<gpr2>]
+    sext.i32 rax
     ret rax

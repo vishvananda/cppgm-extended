@@ -19,11 +19,12 @@ function @pick
 
   block ^entry
     cmp.i64 rdx, 1
-    cmovbe rsi, rdi
+    mov rax, rsi
+    cmovbe rax, rdi
     mov <gpr0>, 128
     cmovbe rdi, <gpr0>
-    xor rsi, rdi
-    ret rsi
+    xor rax, rdi
+    ret rax
 
 function @main
   abi

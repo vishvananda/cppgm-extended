@@ -124,5 +124,6 @@ function @main
     movzx rax, rax
     or <gpr0>, <gpr1>
     or <gpr2>, rax
-    or <gpr0>, <gpr2>
-    ret <gpr0>
+    mov rax, <gpr0>
+    or rax, <gpr2>
+    ret rax

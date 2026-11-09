@@ -1,3 +1,12 @@
+extern "C" unsigned host_mix(unsigned);
+extern "C" __attribute__((noinline)) unsigned add32(unsigned a, unsigned b) { return a+b; }
+extern "C" __attribute__((noinline)) unsigned long long add64(unsigned long long a, unsigned long long b) { return a+b; }
+extern "C" __attribute__((noinline)) int add_signed(int a, int b) { return a+b; }
+extern "C" __attribute__((noinline)) unsigned shifted(unsigned a, unsigned n) { return (a+3u)<<(n&31u); }
+extern "C" __attribute__((noinline)) unsigned divided(unsigned a, unsigned n) { return a/n+a%n; }
+extern "C" __attribute__((noinline)) unsigned called(unsigned a, unsigned b) { return host_mix(a)+b; }
+extern "C" __attribute__((noinline)) int* advanced(int* a, long n) { return a+n; }
+
 extern "C" unsigned add32(unsigned,unsigned), shifted(unsigned,unsigned), divided(unsigned,unsigned), called(unsigned,unsigned);
 extern "C" unsigned long long add64(unsigned long long,unsigned long long);
 extern "C" int add_signed(int,int);

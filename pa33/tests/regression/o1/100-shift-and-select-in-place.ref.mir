@@ -41,8 +41,8 @@ function @walk
     jb ^head
 
   block ^done
-    add r9, rcx
-    ret r9
+    lea rax, [r9+rcx]
+    ret rax
 
 function @in_rcx
   abi
@@ -59,10 +59,10 @@ function @in_rcx
 
   block ^entry
     shr rcx, 1
-    add rdi, rsi
-    add rdi, rdx
-    xor rdi, rcx
-    ret rdi
+    lea rax, [rdi+rsi]
+    add rax, rdx
+    xor rax, rcx
+    ret rax
 
 function @variable
   abi
@@ -77,8 +77,9 @@ function @variable
 
   block ^entry
     mov rcx, rsi
-    shl rdi, rcx
-    ret rdi
+    mov rax, rdi
+    shl rax, rcx
+    ret rax
 
 function @main
   abi

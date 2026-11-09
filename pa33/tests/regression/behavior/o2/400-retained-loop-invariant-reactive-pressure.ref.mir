@@ -61,9 +61,11 @@ function @edge_at
     epilogues duplicated
 
   block ^entry
+    imul rsi, 8
+    mov rax, rsi
     mov r10, @edges
-    lea rsi, [r10+rsi*8]
-    ret rsi
+    add rax, r10
+    ret rax
 
 function @node_at
   abi

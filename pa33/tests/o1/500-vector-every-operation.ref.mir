@@ -4797,9 +4797,9 @@ function @same
     load.i64 r9, [rdi+8]
     xor r9, [rsi+8]
     or r8, r9
-    sete r8
-    movzx r8, r8
-    ret r8
+    sete rax
+    movzx rax, rax
+    ret rax
 
 function @check
   abi

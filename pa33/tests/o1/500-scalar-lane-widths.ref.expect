@@ -1,5 +1,5 @@
 # budget from 500-scalar-lane-widths.ref.mir: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
-instructions <= 48
+instructions <= 49
 blocks <= 7
 count(call) <= 6
 mem <= 11
@@ -9,5 +9,5 @@ instructions <= 8 in @mixed_min
 stack_size <= 32 in @mixed_min
 instructions <= 9 in @multiple_uses
 stack_size <= 32 in @multiple_uses
-instructions <= 29 in @main
+instructions <= 30 in @main
 stack_size <= 68 in @main

@@ -175,8 +175,8 @@ function @walk
     load.u32 <gpr3>, [rbp-<off10>]
 
   block ^found
-    add.u32 <gpr3>, 1000
-    ret <gpr3>
+    lea.i32 rax, [<gpr3>+<off0>]
+    ret rax
 
 function @main
   abi
@@ -205,5 +205,6 @@ function @main
     mov rdx, 0
     call @walk [args=(rdx,rsi,rdi)]
     add.u32 <gpr0>, rax
-    and <gpr0>, 127
-    ret <gpr0>
+    zext.i32 rax, <gpr0>
+    and rax, 127
+    ret rax

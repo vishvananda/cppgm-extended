@@ -37,7 +37,8 @@ function @signed_remainder
     mov rax, rdi
     cqo.i32
     idiv.i32 rsi
-    ret rdx
+    mov rax, rdx
+    ret rax
 
 function @unsigned_quotient
   abi
@@ -71,7 +72,8 @@ function @unsigned_remainder
     mov rax, rdi
     mov rdx, 0
     div.i32 rsi
-    ret rdx
+    mov rax, rdx
+    ret rax
 
 function @signed_memory
   abi
@@ -89,7 +91,8 @@ function @signed_memory
     mov rax, rdi
     cqo.i32
     idiv.i32 rsi
-    ret rdx
+    mov rax, rdx
+    ret rax
 
 function @wide
   abi

@@ -143,8 +143,8 @@ function @main
     load.i64 rdx, @volatiles+8
     load.i64 rcx, @atomics+8
     cmp.i64 r9, 0
-    setne r9
-    movzx r9, r9
+    setne rax
+    movzx rax, rax
     cmp.i64 r8, 0
     setne r8
     movzx r8, r8
@@ -160,9 +160,9 @@ function @main
     cmp.i64 rcx, 0
     setne rcx
     movzx rcx, rcx
-    or r9, r8
+    or rax, r8
     or rdi, rsi
     or rdx, rcx
-    or r9, rdi
-    or r9, rdx
-    ret r9
+    or rax, rdi
+    or rax, rdx
+    ret rax

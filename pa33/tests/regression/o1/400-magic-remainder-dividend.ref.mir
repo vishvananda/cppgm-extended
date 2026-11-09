@@ -40,5 +40,6 @@ function @main
     jl ^loop
 
   block ^done
-    and r8, 255
-    ret r8
+    mov rax, r8
+    and rax, 255
+    ret rax

@@ -41,8 +41,8 @@ function @accumulate
 
   block ^join
     load.i8 r8, [rbp-8]
-    add rbx, r8
-    ret rbx
+    lea rax, [rbx+r8]
+    ret rax
 
   block ^call
     call @fallback [args=(), unwind=no]

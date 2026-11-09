@@ -16,8 +16,8 @@ function @one
     epilogues duplicated
 
   block ^entry
-    add rdi, 1
-    ret rdi
+    lea rax, [rdi+1]
+    ret rax
 
 function @through
   abi

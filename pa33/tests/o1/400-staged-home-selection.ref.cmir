@@ -221,13 +221,13 @@ function @load_with_live_address
     call @identity [args=(rdi), unwind=no]
     eh_pop
     cmp.ptr <gpr0>, 0
-    sete <gpr0>
-    movzx <gpr0>, <gpr0>
+    sete rax
+    movzx rax, rax
     cmp.i64 <gpr1>, 40
     setne <gpr1>
     movzx <gpr1>, <gpr1>
-    or <gpr0>, <gpr1>
-    ret <gpr0>
+    or rax, <gpr1>
+    ret rax
 
   block ^handler
     mov rax, 99
@@ -266,5 +266,6 @@ function @main
     movzx <gpr2>, <gpr2>
     or <gpr0>, <gpr1>
     or <gpr2>, rax
-    or <gpr0>, <gpr2>
-    ret <gpr0>
+    mov rax, <gpr0>
+    or rax, <gpr2>
+    ret rax

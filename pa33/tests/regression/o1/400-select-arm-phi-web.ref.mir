@@ -39,9 +39,10 @@ function @flip
     jne ^head
 
   block ^out
-    imul r8, 16
-    add r8, rsi
-    ret r8
+    mov rax, r8
+    imul rax, 16
+    add rax, rsi
+    ret rax
 
 function @main
   abi

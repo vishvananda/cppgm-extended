@@ -29,8 +29,8 @@ function @frameless_leaf
     epilogues duplicated
 
   block ^entry
-    add rdi, 1
-    ret rdi
+    lea rax, [rdi+<off0>]
+    ret rax
 
 function @frameless_call
   abi
@@ -184,5 +184,6 @@ function @main
     or <gpr4>, [rbp-<off0>]
     or <gpr0>, <gpr2>
     or <gpr4>, rax
-    or <gpr0>, <gpr4>
-    ret <gpr0>
+    mov rax, <gpr0>
+    or rax, <gpr4>
+    ret rax

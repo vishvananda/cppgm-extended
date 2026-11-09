@@ -17,9 +17,9 @@ function @add
     epilogues duplicated
 
   block ^entry
-    sext.i32 rdi
-    add rdi, rsi
-    ret rdi
+    sext.i32 rax, rdi
+    add rax, rsi
+    ret rax
 
 function @sub
   abi
@@ -33,9 +33,9 @@ function @sub
     epilogues duplicated
 
   block ^entry
-    sext.i32 rdi
-    sub rdi, rsi
-    ret rdi
+    sext.i32 rax, rdi
+    sub rax, rsi
+    ret rax
 
 function @mul
   abi
@@ -49,9 +49,9 @@ function @mul
     epilogues duplicated
 
   block ^entry
-    sext.i32 rdi
-    imul rdi, rsi
-    ret rdi
+    sext.i32 rax, rdi
+    imul rax, rsi
+    ret rax
 
 function @element
   abi
@@ -116,5 +116,6 @@ function @main
     movzx rax, rax
     or rbx, r12
     or r13, rax
-    or rbx, r13
-    ret rbx
+    mov rax, rbx
+    or rax, r13
+    ret rax

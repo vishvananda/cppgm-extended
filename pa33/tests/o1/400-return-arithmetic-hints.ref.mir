@@ -1,0 +1,87 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @sum64
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea rax, [rdi+rsi]
+    ret rax
+
+function @step64
+  abi
+    param %a -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea rax, [rdi+3]
+    ret rax
+
+function @sum32
+  abi
+    param %a -> rdi : u32
+    param %b -> rsi : u32
+    return u32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea.i32 rax, [rdi+rsi]
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, 9223372036854775807
+    mov rsi, 1
+    call @sum64 [args=(rsi,rdi)]
+    cmp.i64 rax, -9223372036854775808
+    je ^step
+
+  block ^bad
+    mov rax, 1
+    ret rax
+
+  block ^step
+    mov rdi, -3
+    call @step64 [args=(rdi)]
+    cmp.i64 rax, 0
+    jne ^bad
+
+  block ^narrow
+    mov rdi, 4294967295
+    mov rsi, 2
+    call @sum32 [args=(rsi,rdi)]
+    cmp.u32 rax, 1
+    jne ^bad
+
+  block ^good
+    mov rax, 0
+    ret rax

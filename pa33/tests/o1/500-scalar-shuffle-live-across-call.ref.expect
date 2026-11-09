@@ -1,5 +1,5 @@
 # budget from 500-scalar-shuffle-live-across-call.ref.mir: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
-instructions <= 597
+instructions <= 598
 blocks <= 6
 count(call) <= 5
 mem <= 138
@@ -7,5 +7,5 @@ instructions <= 5 in @clobber
 stack_size <= 32 in @clobber
 instructions <= 150 in @pressure
 stack_size <= 226 in @pressure
-instructions <= 446 in @main
+instructions <= 447 in @main
 stack_size <= 32 in @main

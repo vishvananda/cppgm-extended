@@ -137,4 +137,5 @@ function @main
     imul rax, 200
     mov rdx, r10
     sub rdx, rax
-    ret rdx
+    mov rax, rdx
+    ret rax

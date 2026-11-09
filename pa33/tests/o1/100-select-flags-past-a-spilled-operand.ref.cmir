@@ -284,36 +284,36 @@ function @clamp
     cmp.i32 [rbp-<off21>], 0
     setne r9
     movzx r9, r9
-    add.i32 r8, r9
+    lea.i32 rax, [r8+r9]
     cmp.i32 [rbp-<off22>], 0
-    setne r9
-    movzx r9, r9
-    add.i32 r8, r9
+    setne r8
+    movzx r8, r8
+    add.i32 rax, r8
     cmp.i32 [rbp-<off23>], 0
-    setne r9
-    movzx r9, r9
-    add.i32 r8, r9
+    setne r8
+    movzx r8, r8
+    add.i32 rax, r8
     cmp.i32 [rbp-<off24>], 0
-    setne r9
-    movzx r9, r9
-    add.i32 r8, r9
+    setne r8
+    movzx r8, r8
+    add.i32 rax, r8
     cmp.i32 [rbp-<off25>], 0
-    setne r9
-    movzx r9, r9
-    add.i32 r8, r9
+    setne r8
+    movzx r8, r8
+    add.i32 rax, r8
     cmp.i32 [rbp-<off26>], 0
-    setne r9
-    movzx r9, r9
-    add.i32 r8, r9
+    setne r8
+    movzx r8, r8
+    add.i32 rax, r8
     cmp.i32 <gpr3>, 0
     setne <gpr3>
     movzx <gpr3>, <gpr3>
-    add.i32 r8, <gpr3>
+    add.i32 rax, <gpr3>
     cmp.i32 rdi, 0
     setne rdi
     movzx rdi, rdi
-    add.i32 r8, rdi
-    ret r8
+    add.i32 rax, rdi
+    ret rax
 
 function @main
   abi

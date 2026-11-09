@@ -267,5 +267,5 @@ function @main
     or <gpr0>, <gpr4>
     or <gpr0>, rdi
     or <gpr0>, r8
-    sext.i32 <gpr0>
-    ret <gpr0>
+    sext.i32 rax, <gpr0>
+    ret rax

@@ -124,5 +124,6 @@ function @main
     movzx rax, rax
     or rbx, r12
     or r13, rax
-    or rbx, r13
-    ret rbx
+    mov rax, rbx
+    or rax, r13
+    ret rax

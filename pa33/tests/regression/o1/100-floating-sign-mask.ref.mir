@@ -267,5 +267,5 @@ function @main
     or rbx, r15
     or rbx, rdi
     or rbx, r8
-    sext.i32 rbx
-    ret rbx
+    sext.i32 rax, rbx
+    ret rax

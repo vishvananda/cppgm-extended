@@ -437,45 +437,45 @@ function @rotate
     mov rsi, r9
     sub.i32 rsi, rdi
     imul.i32 r9, 17
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    lea.i32 rax, [r8+r9]
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off23>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 r8, xmm0
+    sext.i32 r8
     fmov.v128 xmm15, [rbp-<off23>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 18
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 r9, xmm15
+    sext.i32 r9
+    mov rdi, r8
+    sub.i32 rdi, r9
+    imul.i32 r8, 18
+    add.i32 rax, r8
+    add.i32 rax, rdi
     fmov.v128 xmm15, [rbp-<off24>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 r8, xmm0
+    sext.i32 r8
     fmov.v128 xmm15, [rbp-<off24>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 19
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 r9, xmm15
+    sext.i32 r9
+    mov rdi, r8
+    sub.i32 rdi, r9
+    imul.i32 r8, 19
+    add.i32 rax, r8
+    add.i32 rax, rdi
     fmov.v128 xmm15, [rbp-<off25>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 r8, xmm0
+    sext.i32 r8
     fmov.v128 xmm15, [rbp-<off25>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 20
-    add.i32 r8, r9
-    add.i32 r8, rsi
-    ret r8
+    vector.toi32 r9, xmm15
+    sext.i32 r9
+    mov rdi, r8
+    sub.i32 rdi, r9
+    imul.i32 r8, 20
+    add.i32 rax, r8
+    add.i32 rax, rdi
+    ret rax
 
 function @main
   abi

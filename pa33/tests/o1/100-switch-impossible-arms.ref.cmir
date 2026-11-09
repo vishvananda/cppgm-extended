@@ -29,28 +29,28 @@ function @dense
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case0
-    imul rsi, 3
-    ret rsi
+    lea rax, [rsi+rsi*2]
+    ret rax
 
   block ^case1
-    imul rsi, 5
-    ret rsi
+    lea rax, [rsi+rsi*4]
+    ret rax
 
   block ^case2
-    imul rsi, 7
-    ret rsi
+    imul rax, rsi, 7
+    ret rax
 
   block ^case3
-    imul rsi, 9
-    ret rsi
+    lea rax, [rsi+rsi*8]
+    ret rax
 
   block ^case4
-    imul rsi, 11
-    ret rsi
+    imul rax, rsi, 11
+    ret rax
 
   block ^case5
-    imul rsi, 13
-    ret rsi
+    imul rax, rsi, 13
+    ret rax
 
   block ^dead
     trap
@@ -71,28 +71,28 @@ function @signed_byte
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case0
-    imul rsi, 3
-    ret rsi
+    lea rax, [rsi+rsi*2]
+    ret rax
 
   block ^case1
-    imul rsi, 5
-    ret rsi
+    lea rax, [rsi+rsi*4]
+    ret rax
 
   block ^case2
-    imul rsi, 7
-    ret rsi
+    imul rax, rsi, 7
+    ret rax
 
   block ^case3
-    imul rsi, 9
-    ret rsi
+    lea rax, [rsi+rsi*8]
+    ret rax
 
   block ^case4
-    imul rsi, 11
-    ret rsi
+    imul rax, rsi, 11
+    ret rax
 
   block ^case5
-    imul rsi, 13
-    ret rsi
+    imul rax, rsi, 13
+    ret rax
 
   block ^dead
     trap
@@ -113,28 +113,28 @@ function @unsigned_byte
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case0
-    imul rsi, 3
-    ret rsi
+    lea rax, [rsi+rsi*2]
+    ret rax
 
   block ^case1
-    imul rsi, 5
-    ret rsi
+    lea rax, [rsi+rsi*4]
+    ret rax
 
   block ^case2
-    imul rsi, 7
-    ret rsi
+    imul rax, rsi, 7
+    ret rax
 
   block ^case3
-    imul rsi, 9
-    ret rsi
+    lea rax, [rsi+rsi*8]
+    ret rax
 
   block ^case4
-    imul rsi, 11
-    ret rsi
+    imul rax, rsi, 11
+    ret rax
 
   block ^case5
-    imul rsi, 13
-    ret rsi
+    imul rax, rsi, 13
+    ret rax
 
   block ^dead
     trap
@@ -157,28 +157,28 @@ function @defined_default
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case0
-    imul rsi, 3
-    ret rsi
+    lea rax, [rsi+rsi*2]
+    ret rax
 
   block ^case1
-    imul rsi, 5
-    ret rsi
+    lea rax, [rsi+rsi*4]
+    ret rax
 
   block ^case2
-    imul rsi, 7
-    ret rsi
+    imul rax, rsi, 7
+    ret rax
 
   block ^case3
-    imul rsi, 9
-    ret rsi
+    lea rax, [rsi+rsi*8]
+    ret rax
 
   block ^case4
-    imul rsi, 11
-    ret rsi
+    imul rax, rsi, 11
+    ret rax
 
   block ^case5
-    imul rsi, 13
-    ret rsi
+    imul rax, rsi, 13
+    ret rax
 
   block ^dead
     trap
@@ -206,28 +206,28 @@ function @throwing_default
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case0
-    imul rsi, 3
-    ret rsi
+    lea rax, [rsi+rsi*2]
+    ret rax
 
   block ^case1
-    imul rsi, 5
-    ret rsi
+    lea rax, [rsi+rsi*4]
+    ret rax
 
   block ^case2
-    imul rsi, 7
-    ret rsi
+    imul rax, rsi, 7
+    ret rax
 
   block ^case3
-    imul rsi, 9
-    ret rsi
+    lea rax, [rsi+rsi*8]
+    ret rax
 
   block ^case4
-    imul rsi, 11
-    ret rsi
+    imul rax, rsi, 11
+    ret rax
 
   block ^case5
-    imul rsi, 13
-    ret rsi
+    imul rax, rsi, 13
+    ret rax
 
   block ^dead
     trap
@@ -272,8 +272,8 @@ function @record_default
     load.i64 r8, @events
     add r8, 1
     store.i64 @events, r8
-    add rdi, 19
-    ret rdi
+    lea rax, [rdi+<off1>]
+    ret rax
 
 function @raise_default
   abi
@@ -434,10 +434,10 @@ function @main
     load_exception r8
     load.i64 r9, @events
     cmp.i64 r8, 99
-    setne r8
-    movzx r8, r8
+    setne rax
+    movzx rax, rax
     cmp.i64 r9, 513
     setne r9
     movzx r9, r9
-    or r8, r9
-    ret r8
+    or rax, r9
+    ret rax

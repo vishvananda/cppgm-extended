@@ -20,8 +20,9 @@ function @pick
 
   block ^entry
     test.i64 rdi, rsi
-    cmovne rcx, rdx
-    ret rcx
+    mov rax, rcx
+    cmovne rax, rdx
+    ret rax
 
 function @bit
   abi
@@ -37,8 +38,9 @@ function @bit
 
   block ^entry
     test.i32 rdi, 1024
-    cmovne rdx, rsi
-    ret rdx
+    mov rax, rdx
+    cmovne rax, rsi
+    ret rax
 
 function @shared
   abi
@@ -54,10 +56,10 @@ function @shared
 
   block ^entry
     and rdi, rsi
-    mov <gpr0>, 7
-    cmove rdx, <gpr0>
-    add rdx, rdi
-    ret rdx
+    mov rax, 7
+    cmovne rax, rdx
+    add rax, rdi
+    ret rax
 
 function @main
   abi
@@ -67,7 +69,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve <gpr1> <gpr2> <gpr3> <gpr4>
+    preserve <gpr0> <gpr1> <gpr2> <gpr3>
 
   block ^entry
     mov rdi, 6
@@ -75,30 +77,30 @@ function @main
     mov rdx, 10
     mov rcx, 20
     call @pick [args=(rcx,rdx,rsi,rdi)]
-    mov <gpr1>, rax
+    mov <gpr0>, rax
     mov rdi, 4
     mov rsi, 3
     mov rdx, 10
     mov rcx, 20
     call @pick [args=(rcx,rdx,rsi,rdi)]
-    mov <gpr2>, rax
+    mov <gpr1>, rax
     mov rdi, 1024
     mov rsi, 1
     mov rdx, 2
     call @bit [args=(rdx,rsi,rdi)]
-    mov <gpr3>, rax
+    mov <gpr2>, rax
     mov rdi, 1023
     mov rsi, 1
     mov rdx, 2
     call @bit [args=(rdx,rsi,rdi)]
-    mov <gpr4>, rax
+    mov <gpr3>, rax
     mov rdi, 6
     mov rsi, 3
     mov rdx, 100
     call @shared [args=(rdx,rsi,rdi)]
-    add <gpr1>, <gpr2>
-    add rax, <gpr1>
-    imul.i32 <gpr3>, 10
-    add.i32 <gpr3>, <gpr4>
-    add.i32 rax, <gpr3>
+    add <gpr0>, <gpr1>
+    add rax, <gpr0>
+    imul.i32 <gpr2>, 10
+    add.i32 <gpr2>, <gpr3>
+    add.i32 rax, <gpr2>
     ret rax

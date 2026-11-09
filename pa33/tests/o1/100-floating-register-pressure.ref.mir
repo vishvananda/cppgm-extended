@@ -253,5 +253,5 @@ function @main
     or r13, r14
     or rbx, r13
     or rbx, r8
-    sext.i32 rbx
-    ret rbx
+    sext.i32 rax, rbx
+    ret rax

@@ -16,8 +16,9 @@ function @negate
     epilogues duplicated
 
   block ^entry
-    neg rdi
-    ret rdi
+    mov rax, rdi
+    neg rax
+    ret rax
 
 function @larger
   abi
@@ -32,8 +33,9 @@ function @larger
 
   block ^entry
     cmp.i32 rdi, rsi
-    cmovg rsi, rdi
-    ret rsi
+    mov rax, rsi
+    cmovg rax, rdi
+    ret rax
 
 function @below
   abi
@@ -48,8 +50,8 @@ function @below
 
   block ^entry
     cmp.i32 rdi, rsi
-    setl rdi
-    ret rdi
+    setl rax
+    ret rax
 
 function @main
   abi

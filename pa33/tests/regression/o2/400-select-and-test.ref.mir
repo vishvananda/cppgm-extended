@@ -20,8 +20,9 @@ function @pick
 
   block ^entry
     test.i64 rdi, rsi
-    cmovne rcx, rdx
-    ret rcx
+    mov rax, rcx
+    cmovne rax, rdx
+    ret rax
 
 function @bit
   abi
@@ -37,8 +38,9 @@ function @bit
 
   block ^entry
     test.i32 rdi, 1024
-    cmovne rdx, rsi
-    ret rdx
+    mov rax, rdx
+    cmovne rax, rsi
+    ret rax
 
 function @shared
   abi
@@ -54,10 +56,10 @@ function @shared
 
   block ^entry
     and rdi, rsi
-    mov r11, 7
-    cmove rdx, r11
-    add rdx, rdi
-    ret rdx
+    mov rax, 7
+    cmovne rax, rdx
+    add rax, rdi
+    ret rax
 
 function @main
   abi

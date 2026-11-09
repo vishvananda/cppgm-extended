@@ -18,16 +18,17 @@ function @sum_bytes
   block ^entry
     load.i8 r8, [rdi]
     shl.u32 r8, 13
-    load.i8 r9, [rdi+1]
-    shl.u32 r9, 11
-    load.i8 rsi, [rdi+2]
-    add.u32 rsi, 91
+    zext.i32 rax, r8
+    load.i8 r8, [rdi+1]
+    shl.u32 r8, 11
+    load.i8 r9, [rdi+2]
+    add.u32 r9, 91
     load.i8 rdi, [rdi+3]
     imul.u32 rdi, 7
-    add r8, r9
-    add rsi, rdi
-    add r8, rsi
-    ret r8
+    add rax, r8
+    add r9, rdi
+    add rax, r9
+    ret rax
 
 function @right
   abi
@@ -41,9 +42,9 @@ function @right
 
   block ^entry
     load.i8 rdi, [rdi]
-    zext.i32 rdi
-    shr rdi, 7
-    ret rdi
+    zext.i32 rax, rdi
+    shr rax, 7
+    ret rax
 
 function @wide
   abi
@@ -74,7 +75,8 @@ function @zero
     load.i8 rdi, [rdi]
     zext.i32 rdi
     shl.u32 rdi, 0
-    ret rdi
+    zext.i32 rax, rdi
+    ret rax
 
 function @identity
   abi
@@ -89,7 +91,8 @@ function @identity
   block ^entry
     load.i8 rdi, [rdi]
     imul.u32 rdi, 1
-    ret rdi
+    zext.i32 rax, rdi
+    ret rax
 
 function @variable
   abi
@@ -107,8 +110,8 @@ function @variable
     zext.i32 rdi
     mov rcx, rsi
     shl rdi, rcx
-    zext.i32 rdi
-    ret rdi
+    zext.i32 rax, rdi
+    ret rax
 
 function @main
   abi
@@ -181,7 +184,8 @@ function @main
     or r13, r14
     or r15, r8
     or r9, rax
-    or rbx, r13
+    mov rax, rbx
+    or rax, r13
     or r15, r9
-    or rbx, r15
-    ret rbx
+    or rax, r15
+    ret rax

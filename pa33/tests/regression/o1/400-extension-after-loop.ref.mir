@@ -33,10 +33,10 @@ function @pack
     jb ^head
 
   block ^out
-    sext.i8 r9
+    sext.i8 rax, r9
     load.i8 rdi, [rdi]
-    add.i32 r9, rdi
-    ret r9
+    add.i32 rax, rdi
+    ret rax
 
 function @main
   abi

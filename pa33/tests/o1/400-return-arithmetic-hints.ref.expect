@@ -1,0 +1,10 @@
+# Arithmetic leaves need only their computation and return, independent of
+# register names or whether the computation uses an add or address form.
+instructions <= 2 in @sum64
+instructions <= 2 in @step64
+instructions <= 2 in @sum32
+
+# ret of another register would hide a third, ABI return-copy instruction.
+none(/^ret (?!rax$)/) in @sum64
+none(/^ret (?!rax$)/) in @step64
+none(/^ret (?!rax$)/) in @sum32

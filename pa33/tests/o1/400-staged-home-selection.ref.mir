@@ -221,13 +221,13 @@ function @load_with_live_address
     call @identity [args=(rdi), unwind=no]
     eh_pop
     cmp.ptr rbx, 0
-    sete rbx
-    movzx rbx, rbx
+    sete rax
+    movzx rax, rax
     cmp.i64 r12, 40
     setne r12
     movzx r12, r12
-    or rbx, r12
-    ret rbx
+    or rax, r12
+    ret rax
 
   block ^handler
     mov rax, 99
@@ -266,5 +266,6 @@ function @main
     movzx r13, r13
     or rbx, r12
     or r13, rax
-    or rbx, r13
-    ret rbx
+    mov rax, rbx
+    or rax, r13
+    ret rax

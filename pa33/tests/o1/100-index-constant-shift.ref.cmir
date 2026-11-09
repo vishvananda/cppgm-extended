@@ -106,8 +106,9 @@ function @other_block
     jne ^read
 
   block ^done
-    sub r8, rdi
-    ret r8
+    mov rax, r8
+    sub rax, rdi
+    ret rax
 
   block ^read
     load.i64 rax, [r8]
@@ -125,10 +126,10 @@ function @read_as_value
     epilogues duplicated
 
   block ^entry
-    add rsi, 1
-    mov rax, rsi
-    add rax, [rdi+rsi*8]
-    ret rax
+    lea rax, [rsi+<off0>]
+    mov r8, rax
+    add r8, [rdi+rax*8]
+    ret r8
 
 function @scale_kept
   abi
@@ -144,9 +145,9 @@ function @scale_kept
   block ^entry
     add rsi, 1
     imul rsi, 3
-    lea rsi, [rdi+rsi*8]
-    sub rsi, rdi
-    ret rsi
+    lea rax, [rdi+rsi*8]
+    sub rax, rdi
+    ret rax
 
 function @narrow_wraps
   abi
@@ -162,9 +163,9 @@ function @narrow_wraps
   block ^entry
     add rsi, 1
     sext.i32 rsi
-    lea rsi, [rdi+rsi]
-    sub rsi, rdi
-    ret rsi
+    lea rax, [rdi+rsi]
+    sub rax, rdi
+    ret rax
 
 function @wide_element
   abi
@@ -179,10 +180,10 @@ function @wide_element
 
   block ^entry
     add rsi, 1
-    lea rsi, [rsi+rsi*2]
-    lea rsi, [rdi+rsi*4]
-    sub rsi, rdi
-    ret rsi
+    lea rax, [rsi+rsi*2]
+    lea rax, [rdi+rax*4]
+    sub rax, rdi
+    ret rax
 
 function @symbol_base
   abi
