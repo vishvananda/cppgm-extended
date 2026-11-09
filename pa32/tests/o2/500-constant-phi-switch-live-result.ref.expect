@@ -6,3 +6,6 @@ count(load) <= 3
 count(store) <= 3
 count(phi) <= 3
 instructions <= 10 in @select
+
+# outcomes from 500-constant-phi-switch-live-result.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(phi)

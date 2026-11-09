@@ -6,3 +6,8 @@ count(load) <= 3
 count(store) <= 3
 count(phi) <= 3
 instructions <= 9 in @select
+
+# outcomes from 500-constant-phi-switch-union.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(load)
+none(store)
+none(phi)
