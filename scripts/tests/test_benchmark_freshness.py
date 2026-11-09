@@ -2,6 +2,7 @@
 """Old revisions remain visible without changing the measured numbers."""
 import json
 from pathlib import Path
+import re
 import sys
 import tempfile
 import unittest
@@ -148,6 +149,23 @@ class FreshnessTests(unittest.TestCase):
                 self.assertIn('>CI Intel</text>', text)
                 self.assertIn('3.00×*', text)
                 self.assertIn('compile &amp; verify', text)
+
+    def test_publication_refreshes_in_existing_write_jobs_without_completion_events(self):
+        workflows = Path(__file__).resolve().parents[2] / '.github/workflows'
+        standalone = (workflows / 'benchmark-freshness.yml').read_text()
+        self.assertNotIn('workflow_run:', standalone)
+        self.assertIn('branches: [main]', standalone)
+        count = 0
+        for path in workflows.glob('*.yml'):
+            for job in re.split(r'\n  [a-zA-Z0-9_-]+:\n', path.read_text()):
+                if 'cd badge-branch' not in job:
+                    continue
+                with self.subTest(workflow=path.name):
+                    self.assertIn('GH_TOKEN: ${{ github.token }}', job)
+                    self.assertLess(job.index('scripts/benchmark_freshness.py'), job.index('cd badge-branch'))
+                    self.assertIn('git add .', job)
+                count += 1
+        self.assertGreaterEqual(count, 10)
 
 
 if __name__ == '__main__':

@@ -31,8 +31,9 @@ Every badge is 120×24 pixels, with 64-pixel processor and 56-pixel value panels
 Labels are `EPYC`, `Intel` (dedicated) and `CI Intel` (GitHub hosted). An asterisk
 marks measurements at least ten commits behind main, or outside its history.
 The badge title and linked freshness table retain the exact measured commit,
-commit date and distance. A lightweight workflow refreshes ages on main pushes
-and after benchmark publication; it never changes measurements or their colors.
+commit date and distance. A lightweight workflow refreshes ages on main pushes;
+benchmark publication refreshes them inside its existing write job. These
+updates never change measurements or their colors.
 The README uses explicit image dimensions and non-wrapping metric headings in
 HTML tables so GitHub scrolls the table on phones instead of shrinking badges
 by different amounts in each column.

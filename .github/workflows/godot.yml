@@ -114,11 +114,16 @@ jobs:
         env:
           REVISION: ${{ github.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           python3 tools/scripts/godot_ci.py publish artifact badge-branch \
             --revision "$REVISION" --run-url "$RUN_URL"
+          freshness_revision=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          python3 tools/scripts/internal_cpp_benchmarks.py seed badge-branch
+          python3 tools/scripts/benchmark_freshness.py badge-branch \
+            --repo "$GITHUB_REPOSITORY" --revision "$freshness_revision"
           cd badge-branch
-          git add godot
+          git add .
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name='github-actions[bot]' \
             -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \

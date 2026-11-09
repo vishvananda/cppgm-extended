@@ -60,6 +60,7 @@ class InternalBenchmarkTests(unittest.TestCase):
             bench.seed(root)
             self.assertEqual(json.loads((directory / 'intel/results.json').read_text())['metadata']['revision'], 'b' * 40)
 
+    @unittest.skipUnless(sys.platform == "linux", "Linux ELF benchmark")
     def test_single_case_records_real_object_cpu_and_source_hash(self):
         if not shutil.which('g++'):
             self.skipTest('g++ is required')

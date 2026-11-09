@@ -3,9 +3,6 @@ name: Benchmark badge freshness
 on:
   push:
     branches: [main]
-  workflow_run:
-    workflows: [Public benchmarks, Self-build benchmarks, index-cpp benchmarks, simdjson benchmarks, Godot benchmarks, Boost benchmarks, Internal C++ benchmarks]
-    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -21,8 +18,8 @@ jobs:
       group: benchmark-badge-publication
       cancel-in-progress: false
     steps:
-      # Always execute trusted main tools, including for a completed PR run.
-      # This job consumes no artifacts and runs no benchmark or foreign code.
+      # Main pushes refresh ages without rebuilding benchmarks.
+      # Benchmark publications refresh them in their existing write jobs.
       - uses: actions/checkout@v6
         with:
           ref: main
