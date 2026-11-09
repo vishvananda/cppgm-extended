@@ -21,6 +21,7 @@ SUITES = {
     'simdjson': 'simdjson.yml',
     'godot': 'godot.yml',
     'boost': 'boost.yml',
+    'internal': 'internal-cpp.yml',
 }
 
 
@@ -58,7 +59,7 @@ def main():
     parser.add_argument('--listen', action='store_true', help='accept one manually queued job instead of dispatching')
     parser.add_argument('--course-quality', action='store_true', help='also measure the optional course exercises')
     parser.add_argument('--suite', choices=['all', *SUITES], default='all',
-                        help='run all six suites sequentially (default), or just one')
+                        help='run all seven suites sequentially (default), or just one')
     parser.add_argument('--plan', action='store_true', help='show the pinned campaign without registering runners or starting jobs')
     args = parser.parse_args()
     revision = github(f'repos/{args.repo}/commits/{args.revision}')['sha']
@@ -119,7 +120,7 @@ def main():
             process = subprocess.Popen([str(directory / 'run.sh')], cwd=directory,
                 stdout=log, stderr=log, start_new_session=True)
             try:
-                status = process.wait(timeout=10800)
+                status = process.wait(timeout=14400)
             except BaseException:
                 os.killpg(process.pid, signal.SIGINT)
                 try:

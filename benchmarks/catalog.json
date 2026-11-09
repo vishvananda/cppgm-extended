@@ -21,7 +21,13 @@
           "optimizations": [
             "O0",
             "O3"
-          ]
+          ],
+          "documentation": "benchmarks/internal/README.md",
+          "parameters": {
+            "source_commit": "783dbfcf01360d923ff590d2048a0c1764761cc3",
+            "fixture_groups": 5614,
+            "translation_units": 5724
+          }
         }
       ]
     },

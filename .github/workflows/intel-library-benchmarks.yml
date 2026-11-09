@@ -20,7 +20,7 @@ jobs:
     runs-on: [self-hosted, Linux, X64, '${{ inputs.runner_label }}']
     permissions:
       contents: read
-    timeout-minutes: 150
+    timeout-minutes: ${{ inputs.suite == 'boost' && 180 || 150 }}
     outputs:
       revision: ${{ steps.revision.outputs.sha }}
     defaults:
@@ -63,7 +63,7 @@ jobs:
                   python3 -m pip install --break-system-packages scons==4.10.1 ;;
                 boost)
                   apt-get install -y --no-install-recommends bzip2 gdb ;;
-                index-cpp|simdjson) ;;
+                index-cpp|simdjson|internal) ;;
                 *) exit 2 ;;
               esac
               git config --global --add safe.directory /work/source

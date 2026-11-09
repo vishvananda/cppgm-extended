@@ -815,7 +815,7 @@ class IntelRunnerTests(unittest.TestCase):
 
         with mock.patch.object(intel_runner.subprocess, 'run', side_effect=run):
             intel_runner.run_suites(args, 'a' * 40, Path('/tmp/runners'))
-        self.assertEqual(calls, ['public', 'self-build', 'index-cpp', 'simdjson', 'godot', 'boost'])
+        self.assertEqual(calls, ['public', 'self-build', 'index-cpp', 'simdjson', 'godot', 'boost', 'internal'])
 
     def test_suites_dispatch_distinct_workflows(self):
         args = SimpleNamespace(repo='owner/repo', ref='main', course_quality=True, suite='public')

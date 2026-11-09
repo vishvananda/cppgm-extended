@@ -13,6 +13,7 @@ SCRIPTS = {
     'simdjson': 'simdjson_ci.py',
     'godot': 'godot_ci.py',
     'boost': 'boost_benchmarks.py',
+    'internal': 'internal_cpp_benchmarks.py',
 }
 DIRECTORY = Path(__file__).resolve().parent
 
@@ -21,7 +22,7 @@ def run_command(suite, source, jobs):
     return [sys.executable, str(DIRECTORY / SCRIPTS[suite]), 'run',
             '--compiler', str(source / 'dev/cppgm++'), '--repo-root', str(source),
             '--output', str(source / 'obj' / suite)] + (
-                ['--jobs', str(jobs)] if suite in ('godot', 'boost') else [])
+                ['--jobs', str(jobs)] if suite in ('godot', 'boost', 'internal') else [])
 
 
 def run(args):

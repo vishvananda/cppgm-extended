@@ -1,0 +1,125 @@
+name: Internal C++ benchmarks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Benchmark host
+        type: choice
+        options: [github, intel]
+        default: github
+      revision:
+        description: Intel run's trusted compiler commit or ref
+        type: string
+        default: ''
+      runner_label:
+        description: Intel runner label supplied by the temporary-runner helper
+        type: string
+        default: cppgm-intel
+
+permissions:
+  contents: read
+
+jobs:
+  benchmarks:
+    if: inputs.platform != 'intel'
+    name: internal C++ compilation
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_STDLIB_FLAGS: ""
+      CPPGM_WARNINGS_AS_ERRORS: "1"
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential binutils ca-certificates clang git python3 time
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Trust the mounted checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Build compiler
+        run: make -C dev cppgm++ -j "$(nproc)"
+      - name: Cache pinned course source archive
+        uses: actions/cache@v4
+        with:
+          path: obj/internal-inputs
+          key: internal-cpp-inputs-${{ hashFiles('benchmarks/internal/cohort.json') }}
+      - name: Compile the complete fixed cohort with all three compilers
+        run: python3 scripts/internal_cpp_benchmarks.py run --output obj/internal --jobs "$(nproc)"
+      - name: Report
+        if: always()
+        run: |
+          if [ -f obj/internal/details.md ]; then
+            cat obj/internal/details.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Collect measurements and diagnostics
+        if: always()
+        run: python3 scripts/intel_library_benchmarks.py collect obj/internal obj/internal-evidence
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: internal-${{ github.sha }}-${{ github.run_id }}
+          path: obj/internal-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
+  publish:
+    name: publish internal C++ results
+    needs: benchmarks
+    # PRs have no publication credentials. Only trusted main results publish.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-branch
+      - uses: actions/download-artifact@v7
+        with:
+          name: internal-${{ github.sha }}-${{ github.run_id }}
+          path: artifact
+      - name: Publish comparison and retained history
+        env:
+          REVISION: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 tools/scripts/internal_cpp_benchmarks.py publish artifact badge-branch \
+            --revision "$REVISION" --run-url "$RUN_URL"
+          cd badge-branch
+          git add internal
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Publish Internal C++ benchmarks of $REVISION"
+          git push origin HEAD:benchmark-badges
+
+  intel:
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'intel' && github.actor == github.repository_owner
+    uses: ./.github/workflows/intel-library-benchmarks.yml
+    with:
+      suite: internal
+      revision: ${{ inputs.revision || github.sha }}
+      runner_label: ${{ inputs.runner_label }}
+    permissions:
+      contents: write

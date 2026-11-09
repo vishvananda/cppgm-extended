@@ -1,0 +1,53 @@
+name: Benchmark badge freshness
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: [Public benchmarks, Self-build benchmarks, index-cpp benchmarks, simdjson benchmarks, Godot benchmarks, Boost benchmarks, Internal C++ benchmarks]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      cancel-in-progress: false
+    steps:
+      # Always execute trusted main tools, including for a completed PR run.
+      # This job consumes no artifacts and runs no benchmark or foreign code.
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          path: tools
+          persist-credentials: false
+          sparse-checkout: |
+            scripts
+            benchmarks/internal
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-branch
+      - name: Refresh host labels and measurement age
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          revision=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          python3 tools/scripts/internal_cpp_benchmarks.py seed badge-branch
+          python3 tools/scripts/benchmark_freshness.py badge-branch \
+            --repo "$GITHUB_REPOSITORY" --revision "$revision"
+          cat badge-branch/freshness.md >> "$GITHUB_STEP_SUMMARY"
+          cd badge-branch
+          git add .
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Refresh benchmark measurement age against $revision"
+          git push origin HEAD:benchmark-badges

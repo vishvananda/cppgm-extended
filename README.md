@@ -73,7 +73,7 @@ The export's references are generated from this compiler.
 
 **O3 speedups; higher is better.** Colors fade from green through yellow and orange, reaching red at 0.50× or below.
 
-Live badges show **EPYC / Intel / hosted Intel**, top to bottom. The internal C++ row is a fixed snapshot. `n/m` means not measured. Swipe sideways for other columns.
+Badges show **EPYC / Intel / CI Intel**, top to bottom; CI Intel means GitHub hosted. `n/m` means unmeasured; `*` marks results 10+ commits behind main or outside its history. [Measurement age](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/freshness.md) lists exact revisions. Swipe sideways for other columns.
 
 <table>
 <thead><tr><th width="120">Workload</th><th width="152">Compile&nbsp;vs&nbsp;GCC&nbsp;↑</th><th width="152">Compile&nbsp;vs&nbsp;Clang&nbsp;↑</th><th width="152">Runtime&nbsp;vs&nbsp;GCC&nbsp;↑</th><th width="152">Runtime&nbsp;vs&nbsp;Clang&nbsp;↑</th></tr></thead>
@@ -108,8 +108,8 @@ Live badges show **EPYC / Intel / hosted Intel**, top to bottom. The internal C+
 </tr>
 <tr>
 <td>Internal C++ subset†</td>
-<td width="152"><a href="docs/performance/preview/performance.md"><img alt="native O3 compile vs gcc: epyc not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-native-compile-gcc-epyc.svg"></a><br><a href="docs/performance/preview/internal.md"><img alt="native O3 compile vs gcc; Intel Xeon E5-2696 v4; Local shared host; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: 4.46×" width="120" height="24" src="docs/performance/preview/badges/matrix-native-compile-gcc-intel.svg"></a><br><a href="docs/performance/preview/performance.md"><img alt="native O3 compile vs gcc: hosted-intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-native-compile-gcc-hosted-intel.svg"></a></td>
-<td width="152"><a href="docs/performance/preview/performance.md"><img alt="native O3 compile vs clang: epyc not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-native-compile-clang-epyc.svg"></a><br><a href="docs/performance/preview/internal.md"><img alt="native O3 compile vs clang; Intel Xeon E5-2696 v4; Local shared host; revision 783dbfcf01360d923ff590d2048a0c1764761cc3: 6.85×" width="120" height="24" src="docs/performance/preview/badges/matrix-native-compile-clang-intel.svg"></a><br><a href="docs/performance/preview/performance.md"><img alt="native O3 compile vs clang: hosted-intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-native-compile-clang-hosted-intel.svg"></a></td>
+<td width="152"><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/internal/report.md"><img alt="internal compile vs gcc: EPYC" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/internal/epyc-compile-gcc.svg"></a><br><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/internal/report.md"><img alt="internal compile vs gcc: Intel" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/internal/intel-compile-gcc.svg"></a><br><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/internal/report.md"><img alt="internal compile vs gcc: CI Intel" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/internal/github-intel-compile-gcc.svg"></a></td>
+<td width="152"><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/internal/report.md"><img alt="internal compile vs clang: EPYC" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/internal/epyc-compile-clang.svg"></a><br><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/internal/report.md"><img alt="internal compile vs clang: Intel" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/internal/intel-compile-clang.svg"></a><br><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/internal/report.md"><img alt="internal compile vs clang: CI Intel" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/internal/github-intel-compile-clang.svg"></a></td>
 <td width="152">n/a</td>
 <td width="152">n/a</td>
 </tr>
@@ -139,7 +139,7 @@ Live badges show **EPYC / Intel / hosted Intel**, top to bottom. The internal C+
 
 cppgm++ runtime measures **codegen performance**: self-built versus GCC-built or Clang-built compiler.
 
-[O0 and per-host public results](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/public-hosts.md). CPU time, except index-cpp runtime uses elapsed time. Godot reports a full build, including SCons and linking. [Boost](benchmarks/boost/README.md) measures C++ test compilation and paired native test replays, with assertions enabled. GDB is correctness-only. † Single-run build/compile observations; small differences need repeats.
+[Internal C++](benchmarks/internal/README.md) measures the fixed qualified course-source compilation cohort. [O0 and per-host public results](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/public-hosts.md). CPU time, except index-cpp runtime uses elapsed time. Godot reports a full build, including SCons and linking. [Boost](benchmarks/boost/README.md) measures C++ test compilation and paired native test replays, with assertions enabled. GDB is correctness-only. † Single-run build/compile observations; small differences need repeats.
 
 [Refreshing the dedicated Intel measurements](docs/performance/intel-benchmarks.md).
 
