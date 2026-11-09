@@ -1,7 +1,8 @@
 # Scalar and indirect-dispatch optimization, 2026-11-09
 
-The final local candidate reaches the 0.95× GCC target for both workload
-aggregates. These are local EPYC measurements, not replacements for CI results.
+At qualification, the final local candidate reached the 0.95× GCC target for both workload
+aggregates. The follow-up below records a later scalar regression and the limits
+of that local result. These are local EPYC measurements, not replacements for CI results.
 All ratios below are reference CPU / cppgm CPU; higher is better.
 
 | Workload | GCC | Clang 22 |
@@ -89,3 +90,106 @@ Local validation passed with all three compilers, including the common,
 hash-recorded debugger and enum portability adaptations. Unchanged suite results
 were retained while affected suites were rerun; these local combined campaigns
 are validation-only. Clean CI runs produce the publishable performance results.
+
+## Follow-up: why the qualification did not describe current CI
+
+The qualified compiler was `b7e1f8d5f`; the later CI compiler was `238923cec`.
+Current main's compiler also includes the coincident-block-label correction
+from `36d65c53c`. The subsequent badge and Boost runner changes do not change
+the compiler. Two different effects need to be separated:
+
+| Workload, vs GCC | Original GCloud qualification | Qualified compiler in CI | Later compiler in CI |
+|---|---:|---:|---:|
+| simdjson scalar | 1.0008× | 1.0124× | 0.8349× |
+| Godot | 0.9772× | 0.8706× | 0.8968× |
+
+The simdjson gain initially reached CI and was subsequently lost. The Godot
+host gap was already present with the qualified compiler; later merges did not
+create it. These are the retained
+[scalar](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/simdjson/history/b7e1f8d5fa08e26637f4de8e241bb27cace292af/epyc/report.md)
+and [Godot](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/godot/history/b7e1f8d5fa08e26637f4de8e241bb27cace292af/epyc/report.md)
+qualified CI results. CI used EPYC 7763 for scalar and EPYC 9V74 for Godot;
+GCloud used EPYC 7B13. GCloud's Clang baseline was version 22; CI used 21.
+These EPYC hosts span generations: [Google identifies 7B13 as Milan](https://docs.cloud.google.com/compute/docs/cpu-platforms),
+while [AMD identifies 9V74 as a 9004 deployment](https://www.amd.com/en/developer/resources/technical-articles/2026/low-latency-cpu-inference-on-amd-epyc-processors.html).
+
+### Same-host rerun
+
+The original GCloud VM was restarted for paired tests of frozen binaries,
+using its original inputs, loader, libraries and GCC/Clang baselines.
+The two scalar library object hashes match their corresponding CI objects
+exactly: `6910c68763df…` for the qualified compiler and `a88e1f5f8395…`
+for the later compiler. Godot was rebuilt completely with the current compiler.
+Every run checked its output; A/A observations bracketed paired ABBA blocks.
+
+| Workload | Current / qualified speed | Current vs GCC | Current vs Clang 22 |
+|---|---:|---:|---:|
+| simdjson scalar: Twitter | 0.8818× | 0.9215× | 0.9655× |
+| simdjson scalar: CITM | 0.7886× | 0.7556× | 0.9328× |
+| simdjson scalar: geometric mean | 0.8339× | 0.8344× | 0.9490× |
+| Godot: geometric mean | 1.0005× | 0.9424× | 0.8888× |
+
+Godot's aggregate is unchanged by the later compiler changes. Individual
+results vary: arrays improved about 5%, while geometry fell about 4%.
+The original Godot binary and all reference/workload hashes are unchanged,
+but today's reference-relative aggregate is lower than the earlier 0.9772×
+point estimate. Its qualification margin was therefore not durable across
+sessions. These experiments do not establish how much of that difference comes
+from physical host placement, virtualization or other execution conditions.
+Maximum Godot A/A deviation in this rerun was 3.3%; the scalar regression
+campaign's maximum was 0.51%.
+
+### Scalar cause: code placement after return-register preferences
+
+Removing only the return-register preference introduced in `5a1ccaf2c`
+recovers 13.7% on Twitter and 25.8% on CITM, matching the qualified binary
+within about 0.2%. Removing only that commit's cold-edge inlining policy does
+not recover the loss. This isolates the triggering allocation change, but
+does not show that its changed arithmetic operations themselves are expensive.
+
+A relocation experiment establishes the layout mechanism. Relink the **same
+current library object and driver object**, inserting an unused 32-byte NOP
+object before the library. No extra instructions execute in the benchmark:
+
+| Current compiler output | Twitter speed vs ordinary link | CITM speed vs ordinary link |
+|---|---:|---:|
+| Unused 32-byte prefix | 1.1320× | 1.2609× |
+
+The relocated current binary matches the qualified binary within about 0.5%.
+A separate control with the cold inlining policy removed has the same
+slowdown; shifting it by 32 bytes also recovers performance, while shifting it
+by 64 bytes stays slow. The hot stage-1 function moves from address `0x8770`
+to `0x8790`, the qualified binary's address. This is a diagnostic experiment,
+not a proposed padding optimization.
+
+Cachegrind reports essentially identical dynamic instructions and branch
+counts before and after the regression: about 102.82 million instructions
+for eight Twitter iterations and 194.04 million for eight CITM iterations.
+An explicit cache simulation also shows essentially unchanged cache misses.
+The evidence points to address-sensitive instruction delivery or branch
+prediction beyond that model, rather than additional compiler-generated work.
+Hardware PMU events are unavailable on this VM, even with root access, so the
+specific processor mechanism remains unmeasured.
+
+### Next optimization and validation
+
+1. Isolate the hot fetch/branch regions affected by placement, using multiple
+   relocations and counters on an EPYC host that exposes them when available.
+   Preserve the useful return-register coalescing where it improves instruction
+   selection; do not choose a prefix that happens to favor this program.
+2. Improve general function/block placement or hot-region layout. Evaluate
+   bounded alignment, branch layout and cold-code separation using typed MIR
+   facts. Compare several placements on both Intel and AMD, including size and
+   compile-cost checks and individual-program regressions, before selecting a policy.
+3. Requalify both workloads against GCC and Clang at the final merged compiler
+   revision. Repeat the existing public and self-build performance checks.
+   Treat 0.95× as an acceptance target across the intended hosts and tested
+   placements, rather than a successful local point estimate.
+
+Raw evidence is retained under the data directory above:
+`codegen-gap-20261109.tar.gz` contains five paired campaigns;
+`epyc-main-layout32.tar.gz` contains the direct current-object relocation test.
+`scalar-gap-cachegrind/` and `scalar-gap-cache-model/` retain the instruction,
+branch and cache simulations. Commands, executable/input hashes, individual
+observations, A/A results and output checks are included. The diagnostic
+compiler and linked executables remain frozen beside the earlier candidates.
