@@ -1,0 +1,2 @@
+count(load) <= 1 in @unpack
+count(load) >= 4 in @ordinary

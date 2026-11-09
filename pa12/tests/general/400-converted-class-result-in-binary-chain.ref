@@ -1,7 +1,7 @@
 global @evaluations : i32 [binding=strong] = zero
 global @destructions : i32 [binding=strong] = zero
 
-function @operator_(%ret : ptr [pass=indirect_result, object_bytes=16], %size : ptr [pass=by_address, object_bytes=16], %factor : i32) -> void [binding=strong, object=_ZmlRK4Sizei] {
+function @operator_(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=16], %size : ptr [pass=by_address, object_bytes=16], %factor : i32) -> void [binding=strong, object=_ZmlRK4Sizei] {
   slot $size : ptr
   slot $factor : i32
 
@@ -23,7 +23,7 @@ function @operator_(%ret : ptr [pass=indirect_result, object_bytes=16], %size : 
     call void @Size__Size(%ret, %t8, %t11)
     return void
 }
-function @get(%ret : ptr [pass=indirect_result, object_bytes=16]) -> void [binding=strong, object=_Z3getv] {
+function @get(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=16]) -> void [binding=strong, object=_Z3getv] {
   block ^entry:
     %t1 = load typed i32 @evaluations
     %t2 = binary add nowrap i32 %t1, 1

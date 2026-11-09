@@ -71,7 +71,7 @@ function @Buffer__Buffer(%this : ptr [object_bytes=4]) -> void [unwind=no, bindi
     store typed i32 0, %t2
     return void
 }
-function @Buffer__begin(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6Buffer5beginEv, inline_hint=yes] {
+function @Buffer__begin(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1], %this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6Buffer5beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -79,7 +79,7 @@ function @Buffer__begin(%ret : ptr [pass=indirect_result, object_bytes=1], %this
     zeroinit 1x1 %ret
     return void
 }
-function @Buffer__end(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6Buffer3endEv, inline_hint=yes] {
+function @Buffer__end(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1], %this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6Buffer3endEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -131,7 +131,7 @@ function @Buffer__assign(%this : ptr [object_bytes=4], %first : ptr [pass=by_add
   block ^call_unwind_end_4:
     return void
 }
-function @make_assign_range(%ret : ptr [pass=indirect_result, object_bytes=16], %first : ptr [pass=by_address, object_bytes=1], %last : ptr [pass=by_address, object_bytes=1], %alloc : ptr [pass=by_address, object_bytes=4]) -> void [unwind=no, binding=weak, object=_Z17make_assign_rangeI8IteratoriE11AssignRangeIT_T0_ERKS2_S6_RS3_] {
+function @make_assign_range(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=16], %first : ptr [pass=by_address, object_bytes=1], %last : ptr [pass=by_address, object_bytes=1], %alloc : ptr [pass=by_address, object_bytes=4]) -> void [unwind=no, binding=weak, object=_Z17make_assign_rangeI8IteratoriE11AssignRangeIT_T0_ERKS2_S6_RS3_] {
   slot $first : ptr
   slot $last : ptr
   slot $alloc : ptr

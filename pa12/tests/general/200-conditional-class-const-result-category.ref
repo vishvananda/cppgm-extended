@@ -15,7 +15,7 @@ function @category__ov2(%__param0 : ptr [pass=by_address, object_bytes=4]) -> i3
     store typed ptr %__param0, $__param0
     return i32 1
 }
-function @make_constant(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [binding=strong, object=_Z13make_constantv] {
+function @make_constant(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4]) -> void [binding=strong, object=_Z13make_constantv] {
   block ^entry:
     call void @Box__Box(%ret, 8)
     return void

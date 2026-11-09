@@ -131,6 +131,13 @@ are readable when the function is entered; it is semantic LowIR metadata,
 compared like the other boundary facts, and must survive text and
 compiler-object replay; it is not a native calling-convention annotation.
 
+An indirect class result also states PA8's `alias=exclusive_result` fact:
+its bounded result storage is disjoint from data visible through unrelated
+names, including other incoming arguments. The [x86-64 psABI memory-result convention](https://gitlab.com/x86-psABIs/x86-64-ABI/-/blob/master/x86-64-ABI/low-level-sys-info.tex#L749)
+requires the caller to provide that distinct buffer. The separate fact may be dropped;
+`pass=indirect_result` alone does not authorize alias-based rewrites, and
+pointers derived from the result may still alias each other.
+
 Synthesized copy/move constructors, assignment helpers, and related
 temporary-materialization support are part of the PA12 semantic model, but `cppgm++` only
 needs to emit the helper definitions that the lowered program actually requires. Unused

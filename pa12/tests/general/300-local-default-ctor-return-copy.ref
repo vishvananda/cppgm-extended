@@ -1,4 +1,4 @@
-function @f(%ret : ptr [pass=indirect_result, object_bytes=4], %b : u8) -> void [binding=strong, object=_Z1fb] {
+function @f(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %b : u8) -> void [binding=strong, object=_Z1fb] {
   slot $b : u8
   slot $s : obj<4x4>
   slot $t : obj<4x4>

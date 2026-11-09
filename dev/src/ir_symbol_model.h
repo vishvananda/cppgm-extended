@@ -184,10 +184,11 @@ const unsigned kParamPassingModeCount = PPM_BY_ADDRESS + 1;
 enum ParamAliasMode : std::uint8_t
 {
 	PALM_DEFAULT,
-	PALM_NOALIAS
+	PALM_NOALIAS,
+	PALM_EXCLUSIVE_RESULT
 };
 
-const unsigned kParamAliasModeCount = PALM_NOALIAS + 1;
+const unsigned kParamAliasModeCount = PALM_EXCLUSIVE_RESULT + 1;
 
 // `index ... [projection=...]`.
 enum IndexProjectionKind : std::uint8_t
@@ -384,7 +385,7 @@ inline const char* spelling(ParamPassingMode value)
 
 inline const char* spelling(ParamAliasMode value)
 {
-	static const char* const kAliases[kParamAliasModeCount] = { "", "noalias" };
+	static const char* const kAliases[kParamAliasModeCount] = { "", "noalias", "exclusive_result" };
 	return kAliases[value];
 }
 

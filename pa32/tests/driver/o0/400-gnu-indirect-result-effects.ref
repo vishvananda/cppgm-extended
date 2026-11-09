@@ -1,0 +1,211 @@
+function @pure_large(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %x : i64) -> void [linkage=c, binding=strong, no_inline=yes] {
+  slot $x : i64
+
+  block ^entry:
+    store typed i64 %x, $x
+    %t1 = load typed i64 $x
+    %t2 = load typed i64 $x
+    %t3 = binary add nowrap i64 %t2, 1
+    %t4 = load typed i64 $x
+    %t5 = binary add nowrap i64 %t4, 2
+    call void @Large__Large__aggregate(%ret, %t1, %t3, %t5)
+    return void
+}
+function @const_large(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %x : i64) -> void [linkage=c, binding=strong, no_inline=yes] {
+  slot $x : i64
+
+  block ^entry:
+    store typed i64 %x, $x
+    %t1 = load typed i64 $x
+    %t2 = binary add nowrap i64 %t1, 3
+    %t3 = load typed i64 $x
+    %t4 = binary add nowrap i64 %t3, 4
+    %t5 = load typed i64 $x
+    %t6 = binary add nowrap i64 %t5, 5
+    call void @Large__Large__aggregate(%ret, %t2, %t4, %t6)
+    return void
+}
+function @pure_small(%x : i64) -> obj<16x8> [effects=readonly, repeatable=yes, linkage=c, binding=strong, no_inline=yes] {
+  slot $x : i64
+  slot $retobj__1 : obj<16x8>
+
+  block ^entry:
+    store typed i64 %x, $x
+    %t1 = addr $retobj__1
+    %t2 = load typed i64 $x
+    %t3 = load typed i64 $x
+    %t4 = binary add nowrap i64 %t3, 1
+    call void @Small__Small__aggregate(%t1, %t2, %t4)
+    return obj<16x8> $retobj__1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $i : i64
+  slot $a : obj<24x8>
+  slot $b : obj<24x8>
+  slot $c : obj<16x8>
+
+  block ^entry:
+    %t1 = unary neg i32 100
+    %t2 = convert sext i64 i32 %t1
+    store typed i64 %t2, $i
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t3 = load typed i64 $i
+    %t4 = cmp ne i64 %t3, 101
+    branch %t4, ^for_body_2, ^for_end_4
+
+  block ^for_body_2:
+    %t5 = addr $a
+    %t6 = load typed i64 $i
+    call void @pure_large(%t5, %t6)
+    %t7 = addr $b
+    %t8 = load typed i64 $i
+    call void @const_large(%t7, %t8)
+    %t9 = addr $c
+    %t10 = load typed i64 $i
+    %t11 = call obj<16x8> @pure_small(%t10)
+    copyobj 16x8 %t11, %t9
+    %t12 = addr $a
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = load typed i64 %t13
+    %t15 = load typed i64 $i
+    %t16 = cmp ne i64 %t14, %t15
+    branch %t16, ^if_then_5, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t17 = addr $a
+    %t18 = index i8 [projection=field] %t17, 8
+    %t19 = load typed i64 %t18
+    %t20 = load typed i64 $i
+    %t21 = binary add nowrap i64 %t20, 1
+    %t22 = cmp ne i64 %t19, %t21
+    branch %t22, ^if_then_5, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t23 = addr $a
+    %t24 = index i8 [projection=field] %t23, 16
+    %t25 = load typed i64 %t24
+    %t26 = load typed i64 $i
+    %t27 = binary add nowrap i64 %t26, 2
+    %t28 = cmp ne i64 %t25, %t27
+    branch %t28, ^if_then_5, ^if_else_6
+
+  block ^if_then_5:
+    return i32 1
+
+  block ^if_else_6:
+    jump ^if_end_9
+
+  block ^if_end_9:
+    %t29 = addr $b
+    %t30 = index i8 [projection=field] %t29, 0
+    %t31 = load typed i64 %t30
+    %t32 = load typed i64 $i
+    %t33 = binary add nowrap i64 %t32, 3
+    %t34 = cmp ne i64 %t31, %t33
+    branch %t34, ^if_then_10, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t35 = addr $b
+    %t36 = index i8 [projection=field] %t35, 8
+    %t37 = load typed i64 %t36
+    %t38 = load typed i64 $i
+    %t39 = binary add nowrap i64 %t38, 4
+    %t40 = cmp ne i64 %t37, %t39
+    branch %t40, ^if_then_10, ^lor_rhs_12
+
+  block ^lor_rhs_12:
+    %t41 = addr $b
+    %t42 = index i8 [projection=field] %t41, 16
+    %t43 = load typed i64 %t42
+    %t44 = load typed i64 $i
+    %t45 = binary add nowrap i64 %t44, 5
+    %t46 = cmp ne i64 %t43, %t45
+    branch %t46, ^if_then_10, ^if_else_11
+
+  block ^if_then_10:
+    return i32 2
+
+  block ^if_else_11:
+    jump ^if_end_14
+
+  block ^if_end_14:
+    %t47 = addr $c
+    %t48 = index i8 [projection=field] %t47, 0
+    %t49 = load typed i64 %t48
+    %t50 = load typed i64 $i
+    %t51 = cmp ne i64 %t49, %t50
+    branch %t51, ^if_then_15, ^lor_rhs_17
+
+  block ^lor_rhs_17:
+    %t52 = addr $c
+    %t53 = index i8 [projection=field] %t52, 8
+    %t54 = load typed i64 %t53
+    %t55 = load typed i64 $i
+    %t56 = binary add nowrap i64 %t55, 1
+    %t57 = cmp ne i64 %t54, %t56
+    branch %t57, ^if_then_15, ^if_else_16
+
+  block ^if_then_15:
+    return i32 3
+
+  block ^if_else_16:
+    jump ^if_end_18
+
+  block ^if_end_18:
+    jump ^for_iter_3
+
+  block ^for_iter_3:
+    %t58 = load typed i64 $i
+    %t59 = binary add nowrap i64 %t58, 1
+    store typed i64 %t59, $i
+    jump ^for_cond_1
+
+  block ^for_end_4:
+    return i32 0
+}
+function @Large__Large__aggregate(%this : ptr [object_bytes=24], %a : i64, %b : i64, %c : i64) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $a : i64
+  slot $b : i64
+  slot $c : i64
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i64 %a, $a
+    store typed i64 %b, $b
+    store typed i64 %c, $c
+    %t1 = load typed i64 $a
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i64 %t1, %t3
+    %t4 = load typed i64 $b
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store typed i64 %t4, %t6
+    %t7 = load typed i64 $c
+    %t8 = load typed ptr $this
+    %t9 = index i8 [projection=field] %t8, 16
+    store typed i64 %t7, %t9
+    return void
+}
+function @Small__Small__aggregate(%this : ptr [object_bytes=16], %a : i64, %b : i64) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $a : i64
+  slot $b : i64
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i64 %a, $a
+    store typed i64 %b, $b
+    %t1 = load typed i64 $a
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i64 %t1, %t3
+    %t4 = load typed i64 $b
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store typed i64 %t4, %t6
+    return void
+}

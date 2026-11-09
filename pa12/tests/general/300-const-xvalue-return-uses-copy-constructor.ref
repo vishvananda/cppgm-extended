@@ -6,7 +6,7 @@ function @as_const_xvalue(%value : ptr [pass=by_address, object_bytes=4]) -> ptr
     %t1 = load typed ptr $value
     return ptr %t1
 }
-function @take(%ret : ptr [pass=indirect_result, object_bytes=4], %values : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z4takeRA1_K4item] {
+function @take(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %values : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z4takeRA1_K4item] {
   slot $values : ptr
 
   block ^entry:

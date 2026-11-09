@@ -574,6 +574,10 @@ bool Validator::check_links()
 			if (parameters[i].pass >= ir_model::kParamPassingModeCount ||
 				parameters[i].alias >= ir_model::kParamAliasModeCount)
 				return fail("invalid parameter metadata", parameters[i].name);
+			if (parameters[i].alias == ir_model::PALM_EXCLUSIVE_RESULT &&
+				(i != 0 || !signature.result.is_void() || !parameters[i].type.is_pointer() ||
+					parameters[i].pass != ir_model::PPM_INDIRECT_RESULT || parameters[i].object_bytes == 0))
+				return fail("exclusive result alias requires bounded indirect result storage", parameters[i].name);
 		}
 	}
 	for (const Symbol& symbol : program_.symbols)

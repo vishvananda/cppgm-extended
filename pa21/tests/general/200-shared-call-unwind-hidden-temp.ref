@@ -2,15 +2,15 @@ declare global @g_runtime_branch : i32 [binding=strong]
 
 declare function @complete(%arg0 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=strong, object=_Z8completeR6Cursor]
 declare function @Payload__Payload(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN7PayloadC1Ev]
-declare function @Cursor__get(%arg0 : ptr [pass=indirect_result, object_bytes=8], %arg1 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN6Cursor3getEv]
+declare function @Cursor__get(%arg0 : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=8], %arg1 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN6Cursor3getEv]
 declare function @process(%arg0 : i32, %arg1 : ptr [pass=by_address, object_bytes=1], %arg2 : u8) -> u8 [binding=strong, object=_Z7processiRK7Payloadb]
 declare function @Macroizer__active(%arg0 : ptr [object_bytes=1]) -> u8 [binding=strong, object=_ZN9Macroizer6activeEv]
-declare function @Macroizer__get(%arg0 : ptr [pass=indirect_result, object_bytes=8], %arg1 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN9Macroizer3getEv]
+declare function @Macroizer__get(%arg0 : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=8], %arg1 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN9Macroizer3getEv]
 declare function @Payload___Payload(%arg0 : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN7PayloadD1Ev]
 declare function @Payload__operator_(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=strong, object=_ZN7PayloadaSEOS_]
 declare function @Payload__Payload__ov2(%arg0 : ptr [alias=noalias, object_bytes=1], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=strong, object=_ZN7PayloadC1EOS_]
 
-function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor : ptr [pass=by_address, object_bytes=1], %macroizer : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z11preproc_getR6CursorR9Macroizer] {
+function @preproc_get(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=8], %cursor : ptr [pass=by_address, object_bytes=1], %macroizer : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z11preproc_getR6CursorR9Macroizer] {
   slot $cursor : ptr
   slot $macroizer : ptr
   slot $token : obj<8x4>

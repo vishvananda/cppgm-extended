@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load typed i32 $cond__1
     return i32 %t9
 }
-function @active_owner_case__buffer_item___cppgm_class_template_identity_1___begin(%ret : ptr [pass=indirect_result, object_bytes=8], %this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN17active_owner_case6bufferINS_4itemENS_9allocatorIS1_EEE5beginEv, inline_hint=yes] {
+function @active_owner_case__buffer_item___cppgm_class_template_identity_1___begin(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=8], %this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN17active_owner_case6bufferINS_4itemENS_9allocatorIS1_EEE5beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -41,7 +41,7 @@ function @active_owner_case__buffer_item___cppgm_class_template_identity_1___beg
     call void @active_owner_case__iter___cppgm_class_template_identity_2___cppgm_class_template_identity_3___iter__ov3(%ret, %t2)
     return void
 }
-function @active_owner_case__iter___cppgm_class_template_identity_2___cppgm_class_template_identity_3___operator_(%ret : ptr [pass=indirect_result, object_bytes=8], %this : ptr [object_bytes=8], %n : i64) -> void [binding=weak, object=_ZNK17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEplEl, inline_hint=yes] {
+function @active_owner_case__iter___cppgm_class_template_identity_2___cppgm_class_template_identity_3___operator_(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=8], %this : ptr [object_bytes=8], %n : i64) -> void [binding=weak, object=_ZNK17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEplEl, inline_hint=yes] {
   slot $this : ptr
   slot $n : i64
 

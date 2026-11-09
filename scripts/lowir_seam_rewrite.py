@@ -54,7 +54,7 @@ MODES = [
 # Lowering States"), as metadata items.
 SOURCE_FACT = re.compile(
     r'^(?:unwind=no|return=(?:noreturn|nonnull)|effects=\w+|repeatable=yes|storage=readonly|inline_hint=yes|no_inline=yes|'
-    r'object_bytes=\d+|alias=noalias|classes=\w+|result_classes=\w+|elision=copy)$')
+    r'object_bytes=\d+|alias=(?:noalias|exclusive_result)|classes=\w+|result_classes=\w+|elision=copy)$')
 
 PURE = ('addr', 'const', 'index', 'binary', 'cmp', 'convert', 'copy')
 INVERT = {'eq': 'ne', 'ne': 'eq', 'lt': 'ge', 'ge': 'lt', 'gt': 'le', 'le': 'gt',

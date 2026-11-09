@@ -59,7 +59,10 @@ struct Pair
 class CopyCoalescing
 {
 public:
-	explicit CopyCoalescing(FunctionContext& context) : c_(context), body_(context.body) {}
+	explicit CopyCoalescing(FunctionContext& context) : c_(context), body_(context.body)
+	{
+		result_bytes_ = exclusive_result_bytes(c_.program, c_.symbol);
+	}
 
 	bool run();
 
@@ -68,6 +71,12 @@ private:
 	// or globals, a slot whose address never escapes and anything else,
 	// or two parameters both promised noalias.
 	bool disjoint(Value a, Value b) const;
+	bool disjoint(const Rooted& a, const Rooted& b, uint64_t bytes) const
+	{
+		return disjoint(a.root, b.root) ||
+			exclusive_result_apart(result_bytes_, a.root, a.offset, bytes, b.root, body_.parameter_count) ||
+			exclusive_result_apart(result_bytes_, b.root, b.offset, bytes, a.root, body_.parameter_count);
+	}
 	void flush(BlockId block, std::vector<Pair>& run);
 	bool forward_copies(BlockId block);
 	bool zero_fill_slots();
@@ -76,6 +85,7 @@ private:
 
 	FunctionContext& c_;
 	FunctionBody& body_;
+	uint64_t result_bytes_ = 0;
 	std::vector<uint32_t> uses_;
 	std::vector<uint32_t> slot_uses_; // per slot: instructions naming it (directly or by addr)
 	std::vector<uint8_t> escaped_;    // per slot: its address reaches more than accesses and copies
@@ -205,7 +215,7 @@ bool CopyCoalescing::forward_copies(BlockId block)
 				(!written &&
 					(private_to ||
 						(rooted(body_, source, origin) && rooted(body_, inst.ops[1], to) &&
-							disjoint(origin.root, to.root)))))
+							disjoint(origin, to, static_cast<uint64_t>(inst.immediate))))))
 			{
 				inst.ops[0] = source;
 				unlink_after(body_, block, first_prev, first);
@@ -613,7 +623,7 @@ bool CopyCoalescing::run()
 					(load.type.is_integer() || load.type.is_pointer()) && store->ops[0].is(ValueKind::Temp) &&
 					store->ops[0].index == load.result && uses_[load.result] >= 1 &&
 					rooted(body_, load.ops[0], pair.from) && rooted(body_, store->ops[1], pair.to) &&
-					disjoint(pair.from.root, pair.to.root);
+					disjoint(pair.from, pair.to, storage_bytes(load.type));
 				if (!ok)
 					break;
 				pair.load = loads[k];

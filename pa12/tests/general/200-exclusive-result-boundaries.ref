@@ -1,0 +1,133 @@
+function @make(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %input : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z4makeRK5Input] {
+  slot $input : ptr
+
+  block ^entry:
+    store typed ptr %input, $input
+    %t1 = load typed ptr $input
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i64 %t2
+    %t4 = index i8 [projection=field] %ret, 0
+    store typed i64 %t3, %t4
+    %t5 = load typed ptr $input
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load typed i64 %t6
+    %t8 = binary add nowrap i64 %t7, 1
+    %t9 = index i8 [projection=field] %ret, 8
+    store typed i64 %t8, %t9
+    %t10 = load typed ptr $input
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load typed i64 %t11
+    %t13 = binary add nowrap i64 %t12, 2
+    %t14 = index i8 [projection=field] %ret, 16
+    store typed i64 %t13, %t14
+    return void
+}
+function @direct(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %n : i64) -> void [binding=strong, object=_Z6directl] {
+  slot $n : i64
+
+  block ^entry:
+    store typed i64 %n, $n
+    %t1 = load typed i64 $n
+    %t2 = load typed i64 $n
+    %t3 = binary add nowrap i64 %t2, 1
+    %t4 = load typed i64 $n
+    %t5 = binary add nowrap i64 %t4, 2
+    call void @Result__Result__aggregate(%ret, %t1, %t3, %t5)
+    return void
+}
+function @invoke(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %maker : ptr, %input : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z6invokePF6ResultRK5InputES2_] {
+  slot $maker : ptr
+  slot $input : ptr
+
+  block ^entry:
+    store typed ptr %maker, $maker
+    store typed ptr %input, $input
+    %t1 = load typed ptr $input
+    %t2 = load typed ptr $maker
+    call void %t2(%ret, %t1) as (%arg0 : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %arg1 : ptr [pass=by_address, object_bytes=8]) -> void
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $input : obj<8x8>
+  slot $a : obj<24x8>
+  slot $b : obj<24x8>
+  slot $c : obj<24x8>
+
+  block ^entry:
+    %t1 = addr $input
+    %t2 = addr $input
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i64 13, %t3
+    %t4 = addr $a
+    %t5 = addr $input
+    call void @make(%t4, %t5)
+    %t6 = addr $b
+    %t7 = addr @make
+    %t8 = addr $input
+    call void @invoke(%t6, %t7, %t8)
+    %t9 = addr $c
+    call void @direct(%t9, 17)
+    %t10 = addr $a
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load typed i64 %t11
+    %t13 = addr $a
+    %t14 = index i8 [projection=field] %t13, 8
+    %t15 = load typed i64 %t14
+    %t16 = binary add nowrap i64 %t12, %t15
+    %t17 = addr $a
+    %t18 = index i8 [projection=field] %t17, 16
+    %t19 = load typed i64 %t18
+    %t20 = binary add nowrap i64 %t16, %t19
+    %t21 = addr $b
+    %t22 = index i8 [projection=field] %t21, 0
+    %t23 = load typed i64 %t22
+    %t24 = binary add nowrap i64 %t20, %t23
+    %t25 = addr $b
+    %t26 = index i8 [projection=field] %t25, 8
+    %t27 = load typed i64 %t26
+    %t28 = binary add nowrap i64 %t24, %t27
+    %t29 = addr $b
+    %t30 = index i8 [projection=field] %t29, 16
+    %t31 = load typed i64 %t30
+    %t32 = binary add nowrap i64 %t28, %t31
+    %t33 = addr $c
+    %t34 = index i8 [projection=field] %t33, 0
+    %t35 = load typed i64 %t34
+    %t36 = binary add nowrap i64 %t32, %t35
+    %t37 = addr $c
+    %t38 = index i8 [projection=field] %t37, 8
+    %t39 = load typed i64 %t38
+    %t40 = binary add nowrap i64 %t36, %t39
+    %t41 = addr $c
+    %t42 = index i8 [projection=field] %t41, 16
+    %t43 = load typed i64 %t42
+    %t44 = binary add nowrap i64 %t40, %t43
+    %t45 = binary sub nowrap i64 %t44, 138
+    %t46 = convert trunc i32 i64 %t45
+    return i32 %t46
+}
+function @Result__Result__aggregate(%this : ptr [object_bytes=24], %first : i64, %second : i64, %third : i64) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $first : i64
+  slot $second : i64
+  slot $third : i64
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i64 %first, $first
+    store typed i64 %second, $second
+    store typed i64 %third, $third
+    %t1 = load typed i64 $first
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i64 %t1, %t3
+    %t4 = load typed i64 $second
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store typed i64 %t4, %t6
+    %t7 = load typed i64 $third
+    %t8 = load typed ptr $this
+    %t9 = index i8 [projection=field] %t8, 16
+    store typed i64 %t7, %t9
+    return void
+}

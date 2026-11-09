@@ -1,0 +1,6 @@
+count(copyobj) == 1 in @copy
+count(load) <= 0 in @copy
+count(copyobj) <= 0 in @ordinary
+count(load) >= 4 in @ordinary
+count(copyobj) == 1 in @bounded
+count(load) >= 2 in @bounded

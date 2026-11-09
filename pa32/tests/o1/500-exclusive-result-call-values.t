@@ -1,0 +1,115 @@
+global @published : ptr = zero
+function @peek(%p : ptr) -> i64 [effects=readonly, repeatable=yes, no_inline=yes] {
+  block ^entry:
+    %v = load i64 %p
+    return i64 %v
+}
+function @global_read() -> i64 [effects=readonly, repeatable=yes, no_inline=yes] {
+  block ^entry:
+    %p = load ptr @published
+    %base = index i8 %p, -8
+    %v = load i64 %base
+    return i64 %v
+}
+function @private(%out : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %input : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %a = call i64 @peek(%input)
+    store i64 7, %out
+    %b = call i64 @peek(%input)
+    %sum = binary add i64 %a, %b
+    %field = index i8 %out, 8
+    store i64 %sum, %field
+    return void
+}
+function @ordinary(%out : ptr [pass=indirect_result, object_bytes=32], %input : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %a = call i64 @peek(%input)
+    store i64 7, %out
+    %b = call i64 @peek(%input)
+    %sum = binary add i64 %a, %b
+    %field = index i8 %out, 8
+    store i64 %sum, %field
+    return void
+}
+function @outside(%out : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=16], %input : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %a = call i64 @peek(%input)
+    %beyond = index i8 %out, 16
+    store i64 7, %beyond
+    %b = call i64 @peek(%input)
+    %sum = binary add i64 %a, %b
+    %field = index i8 %out, 8
+    store i64 %sum, %field
+    return void
+}
+function @embedded(%out : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32]) -> void [no_inline=yes] {
+  block ^entry:
+    %p = load ptr %out
+    %a = call i64 @peek(%p)
+    %field = index i8 %out, 8
+    store i64 7, %field
+    %b = call i64 @peek(%p)
+    %sum = binary add i64 %a, %b
+    %result = index i8 %out, 16
+    store i64 %sum, %result
+    return void
+}
+# Publishing a derived result pointer prevents the privacy proof.
+function @published_result(%out : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32]) -> void [no_inline=yes] {
+  block ^entry:
+    %p = index i8 %out, 8
+    jump ^use
+  block ^use:
+    store ptr %p, @published
+    %a = call i64 @global_read()
+    store i64 7, %out
+    %b = call i64 @global_read()
+    %sum = binary add i64 %a, %b
+    %field = index i8 %out, 16
+    store i64 %sum, %field
+    return void
+}
+function @main() -> i32 [role=entry] {
+  slot $out : obj<64x8>
+  slot $input : i64
+  block ^entry:
+    %out = addr $out
+    %input = addr $input
+    store i64 3, %input
+    call void @private(%out, %input)
+    %field = index i8 %out, 8
+    %private_value = load i64 %field
+    %ok1 = cmp eq i64 %private_value, 6
+    branch %ok1, ^ordinary, ^bad
+  block ^ordinary:
+    store i64 3, %out
+    call void @ordinary(%out, %out)
+    %ordinary_value = load i64 %field
+    %ok2 = cmp eq i64 %ordinary_value, 10
+    branch %ok2, ^outside, ^bad
+  block ^outside:
+    %beyond = index i8 %out, 16
+    store i64 3, %beyond
+    call void @outside(%out, %beyond)
+    %outside_value = load i64 %field
+    %ok3 = cmp eq i64 %outside_value, 10
+    branch %ok3, ^embedded, ^bad
+  block ^embedded:
+    store ptr %field, %out
+    store i64 3, %field
+    call void @embedded(%out)
+    %embedded_value = load i64 %beyond
+    %ok4 = cmp eq i64 %embedded_value, 10
+    branch %ok4, ^late, ^bad
+  block ^late:
+    store ptr 0, @published
+    store i64 3, %out
+    call void @published_result(%out)
+    %late_value = load i64 %beyond
+    %ok5 = cmp eq i64 %late_value, 10
+    branch %ok5, ^done, ^bad
+  block ^done:
+    return i32 0
+  block ^bad:
+    return i32 1
+}

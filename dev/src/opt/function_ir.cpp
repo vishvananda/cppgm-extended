@@ -75,6 +75,75 @@ std::vector<uint8_t> escaped_slots(const FunctionBody& body, bool any_index)
 	return escaped;
 }
 
+bool exclusive_result_escapes(const Program& program, const FunctionBody& body)
+{
+	if (body.parameter_count == 0)
+		return true;
+	// Derivation edges, independent of block layout. Each pointer step has
+	// one parent; phi/select uses conservatively prevent the proof below.
+	std::vector<TempId> first(body.temps.size(), kNoId), next(body.temps.size(), kNoId), work;
+	const auto step = [](const Instruction& inst) {
+		return inst.result != kNoId &&
+			(inst.op == Opcode::Addr || inst.op == Opcode::Index ||
+				(inst.op == Opcode::Copy && inst.type.is_pointer()));
+	};
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			const Instruction& inst = body.instructions[i];
+			if (inst.op == Opcode::FrameAddress)
+				return true;
+			if (inst.op == Opcode::Call)
+			{
+				const Signature* boundary = program.call_boundary(inst);
+				if (boundary == nullptr || !boundary->boundary.repeatable)
+					return true;
+			}
+			else if (!is_pure(inst) && inst.op != Opcode::Load && inst.op != Opcode::Store &&
+				inst.op != Opcode::CopyObject && inst.op != Opcode::ZeroInit && inst.op != Opcode::Jump &&
+				inst.op != Opcode::Branch && inst.op != Opcode::Switch && inst.op != Opcode::Return)
+				return true;
+			if (step(inst) && inst.ops[0].is(ValueKind::Temp))
+			{
+				next[inst.result] = first[inst.ops[0].index];
+				first[inst.ops[0].index] = inst.result;
+			}
+		}
+	std::vector<uint8_t> derived(body.temps.size(), 0);
+	derived[0] = 1;
+	work.push_back(0);
+	while (!work.empty())
+	{
+		const TempId parent = work.back();
+		work.pop_back();
+		for (TempId t = first[parent]; t != kNoId; t = next[t])
+			if (!derived[t])
+			{
+				derived[t] = 1;
+				work.push_back(t);
+			}
+	}
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			const Instruction& inst = body.instructions[i];
+			uint32_t position = 0;
+			bool escapes = false;
+			for_each_operand(body, inst, [&](Value value) {
+				const uint32_t at = position++;
+				if (!value.is(ValueKind::Temp) || !derived[value.index])
+					return;
+				const bool destination = ((inst.op == Opcode::Store || inst.op == Opcode::CopyObject) && at == 1) ||
+					(inst.op == Opcode::ZeroInit && at == 0);
+				if (!destination && !(step(inst) && at == 0) && inst.op != Opcode::Compare && inst.op != Opcode::Branch)
+					escapes = true;
+			});
+			if (escapes)
+				return true;
+		}
+	return false;
+}
+
 void find_allocation_functions(Program& program)
 {
 	program.allocation_functions.assign(program.symbols.size(), 0);

@@ -126,6 +126,34 @@ inline bool allocation_apart(
 	return (allocated(program, body, a) && comes_before(program, body, b, a)) ||
 		(allocated(program, body, b) && comes_before(program, body, a, b));
 }
+// An explicitly exclusive, bounded indirect result is the first parameter.
+// The pass mode by itself makes no alias promise.
+inline uint64_t exclusive_result_bytes(const lowir::Program& program, lowir::SymbolId function)
+{
+	const lowir::Signature& signature =
+		program.signatures[program.functions[program.symbols[function].detail].signature];
+	const lowir::Parameter* parameters = program.parameters_of(signature);
+	return signature.parameter_count != 0 && parameters[0].alias == ir_model::PALM_EXCLUSIVE_RESULT
+		? parameters[0].object_bytes
+		: 0;
+}
+
+// A bounded result access and storage rooted at another incoming parameter,
+// global or slot. A loaded/call-produced pointer may be derived from the
+// result and cannot use this proof.
+inline bool exclusive_result_apart(
+	uint64_t extent, lowir::Value result, int64_t offset, uint64_t bytes, lowir::Value other, uint32_t parameters)
+{
+	return extent != 0 && result.is(lowir::ValueKind::Temp) && result.index == 0 && offset >= 0 &&
+		static_cast<uint64_t>(offset) <= extent && bytes <= extent - static_cast<uint64_t>(offset) &&
+		(other.is(lowir::ValueKind::Slot) || other.is(lowir::ValueKind::Symbol) ||
+			(other.is(lowir::ValueKind::Temp) && other.index != 0 && other.index < parameters));
+}
+
+// Conservative escape proof for exclusive result parameter zero. Result
+// loads can expose stored pointer bits, so they also prevent this proof.
+bool exclusive_result_escapes(const lowir::Program& program, const lowir::FunctionBody& body);
+
 // eh_* instructions and throw, resume, exception and exception_selector.
 inline bool is_eh_instruction(lowir::Opcode op)
 {

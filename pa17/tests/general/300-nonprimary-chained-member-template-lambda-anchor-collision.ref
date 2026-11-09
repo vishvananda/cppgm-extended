@@ -73,7 +73,7 @@ function @nonprimary_chained_lambda__run() -> i32 [binding=weak, object=_ZN25non
   block ^call_unwind_end_4:
     return i32 %t6
 }
-function @nonprimary_chained_lambda__first_void___old(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN25nonprimary_chained_lambda5firstIvE3oldIZNS_3runEvEUlvE_EENS_6secondIvEERKT_, inline_hint=yes] {
+function @nonprimary_chained_lambda__first_void___old(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1], %this : ptr [object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN25nonprimary_chained_lambda5firstIvE3oldIZNS_3runEvEUlvE_EENS_6secondIvEERKT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param2 : ptr
 

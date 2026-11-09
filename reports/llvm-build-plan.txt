@@ -1018,3 +1018,66 @@ carry an explicit, justified result-storage alias fact and prove escape
 behavior; pass=indirect_result alone is not the current LowIR privacy
 contract. Do not promote those failing source expectations or assume the
 four-unit no-change result proves all object-result paths unimportant.
+
+Result-storage candidate, B38, 2026-11-09
+----------------------------------------
+This four-part group builds on accepted B33 (7a7579f79):
+1. Source indirect class results carry alias=exclusive_result as a separate
+   bounded fact. Memory forwarding reuses source-field loads across writes
+   to that result. Other pointer roots and out-of-extent writes stay aliases.
+2. Copy coalescing consumes the same bounded fact to combine adjacent field
+   transfers and forward temporary copies. Ordinary overlapping pointers
+   keep sequential-copy behavior; result-derived pointers still alias.
+3. Repeatable read-only scalar calls survive stores to exclusive result
+   storage only after a lazy escape proof. The typed derivation graph is
+   linear and independent of layout. Exposing an address, loading potentially
+   pointer-bearing result contents, unknown calls and non-memory observations
+   prevent the proof. Volatile and out-of-extent controls retain both calls.
+4. GNU pure/const source functions returning through an explicit result
+   pointer keep conservative LowIR effects. Filling that pointer writes
+   memory. Scalar/direct object results retain their effect/repeatability
+   promises. This fixes a real B33 miscompile at both O2 and O3.
+
+The x86-64 psABI's Returning of Values rule supplies the source promise:
+https://gitlab.com/x86-psABIs/x86-64-ABI/-/blob/master/x86-64-ABI/low-level-sys-info.tex#L749
+Clang 22.1.2 independently adds NoAlias to agg.result in CGCall.cpp. The
+LowIR pass mode alone is unchanged and makes no alias promise. The existing
+pairwise noalias mode is unchanged; the new mode is explicit and bounded.
+
+Thirteen new required fixtures cover PA8 validation, PA12 source boundaries,
+PA28 GNU source behavior, PA32 load/copy/call quality and optimized host
+behavior. Placement requires optimized tests in PA32: PA28 covers the source
+contract at its normal level and PA32's host/O2 lane catches the runtime bug
+without requiring a particular optimized IR shape. The B33 parent fails its
+linked program (exit 1); the candidate passes. Both O2 and O3 parent failures
+are also retained in the independent source-oracle evidence.
+
+All 80 source observations are retained: GCC, Clang and the candidate pass
+all 20 each; the parent passes 18 and fails the two regression observations.
+An additional packed I128 result probe passes with all four compilers.
+Initial call-cache expectations exposed a pointer-derivation predicate that
+mistook index's element type for its pointer result; this is corrected. An
+initial raw control used an unsupported forward temporary and is corrected;
+positive reference success and artifact presence are now checked explicitly.
+All failed attempts and the initial source are retained, not counted as
+successful optimization tests.
+
+Strict 9976/9976, debug/modern, all architecture/file/placement/CWG audits,
+harness, PA5 self-host and inception pass. Eighty-two old references are
+regenerated through normal targets; each changes only the new parameter
+fact (verified by stripping that one fact and comparing to the old file).
+The current snapshot is compiler-block38-result-values, cppgm++ SHA256
+09e3f138bbf6e345b55225dc09a6d45a36461e215da951012290fcf7d560baed.
+Frozen compile gate: O0 1.00004270x instructions; O3 1.00260329x (+0.2603%),
+RSS 0.99757145x. It passes. Four-unit private relinking takes 13.61 s; the
+three sample instruction ratios are 0.99885288x, 0.99945452x and 0.99978659x,
+with all outputs identical. Some reductions are within A/A noise; none is a
+whole-build score. The earlier compact-memory-test probe remains unpromoted.
+
+The fresh full LLVM build passes in 342.62 s, all 2577 C++ units without
+fallback. All 323 current and 323 frozen objects and linked cppgm compilers
+are byte-identical between native-built and cppgm-built Clang. The full
+runtime comparison and official course/student release are still pending;
+this candidate is not accepted until those checks finish. The 0.95x goal
+remains open. Evidence is /mnt/vizier/cppgm-llvm-evidence/block38-result-values-*
+and the block36/block37 fast-screen and focused-test directories.

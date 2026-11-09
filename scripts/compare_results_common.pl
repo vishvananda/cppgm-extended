@@ -1239,7 +1239,7 @@ sub parse_lowir_parameter_metadata_suffix
 		elsif ($key eq 'alias')
 		{
 			return (0, "unknown parameter alias mode '$value'")
-				if $value !~ /^(?:noalias)$/;
+				if $value !~ /^(?:noalias|exclusive_result)$/;
 			$metadata{alias} = $value;
 		}
 		elsif ($key eq 'object_bytes')

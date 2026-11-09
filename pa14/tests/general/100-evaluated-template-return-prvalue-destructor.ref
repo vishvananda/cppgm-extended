@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = load typed i32 @count
     return i32 %t2
 }
-function @make(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=weak, object=_Z4makeIiE6resultIT_Ev] {
+function @make(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1]) -> void [binding=weak, object=_Z4makeIiE6resultIT_Ev] {
   block ^entry:
     zeroinit 1x1 %ret
     call void @result_int___result(%ret)

@@ -12,7 +12,7 @@ function @consume(%value : ptr [pass=by_address, object_bytes=24]) -> i64 [bindi
     %t8 = binary add nowrap i64 %t5, %t7
     return i64 %t8
 }
-function @produce(%ret : ptr [pass=indirect_result, object_bytes=24], %x : i64) -> void [binding=strong, object=_Z7producel] {
+function @produce(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %x : i64) -> void [binding=strong, object=_Z7producel] {
   slot $x : i64
 
   block ^entry:

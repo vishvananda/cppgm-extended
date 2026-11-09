@@ -39,7 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^call_unwind_end_6:
     return i32 0
 }
-function @make_guard(%ret : ptr [pass=indirect_result, object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_Z10make_guardIiE5guardIT_ES1_, inline_hint=yes] {
+function @make_guard(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_Z10make_guardIiE5guardIT_ES1_, inline_hint=yes] {
   slot $__param1 : i32
 
   block ^entry:
@@ -47,7 +47,7 @@ function @make_guard(%ret : ptr [pass=indirect_result, object_bytes=1], %__param
     call void @guard_int___guard(%ret)
     return void
 }
-function @guard_factory_int___make(%ret : ptr [pass=indirect_result, object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN13guard_factoryIiE4makeEi, inline_hint=yes] {
+function @guard_factory_int___make(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN13guard_factoryIiE4makeEi, inline_hint=yes] {
   slot $__param1 : i32
 
   block ^entry:

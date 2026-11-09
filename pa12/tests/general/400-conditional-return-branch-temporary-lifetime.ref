@@ -1,18 +1,18 @@
 global @count : i32 [binding=strong] = zero
 
-function @at(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z2atv] {
+function @at(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1]) -> void [binding=strong, object=_Z2atv] {
   block ^entry:
     zeroinit 1x1 %ret
     call void @iterator__iterator(%ret)
     return void
 }
-function @end(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z3endv] {
+function @end(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1]) -> void [binding=strong, object=_Z3endv] {
   block ^entry:
     zeroinit 1x1 %ret
     call void @iterator__iterator(%ret)
     return void
 }
-function @begin(%ret : ptr [pass=indirect_result, object_bytes=1], %empty : u8) -> void [binding=strong, object=_Z5beginb] {
+function @begin(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1], %empty : u8) -> void [binding=strong, object=_Z5beginb] {
   slot $empty : u8
   slot $tmpobj__1 : obj<1x1>
   slot $call__2 : ptr

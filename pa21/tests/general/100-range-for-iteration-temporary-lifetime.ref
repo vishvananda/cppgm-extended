@@ -170,7 +170,7 @@ function @Iterator__operator_(%this : ptr [object_bytes=8]) -> ptr [binding=weak
     %t3 = load typed ptr %t2
     return ptr %t3
 }
-function @Iterator__operator____2(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8IteratorppEv, inline_hint=yes] {
+function @Iterator__operator____2(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1], %this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8IteratorppEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

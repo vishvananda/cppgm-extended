@@ -1,4 +1,4 @@
-function @make(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [binding=strong, object=_Z4makev] {
+function @make(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4]) -> void [binding=strong, object=_Z4makev] {
   block ^entry:
     call void @Outer__Outer(%ret)
     %t1 = index i8 [projection=field] %ret, 0

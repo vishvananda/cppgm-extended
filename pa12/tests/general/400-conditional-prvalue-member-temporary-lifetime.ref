@@ -9,7 +9,7 @@ global @result_control [binding=strong] = {
   i32 7
 }
 
-function @choose(%ret : ptr [pass=indirect_result, object_bytes=8], %local : u8) -> void [binding=strong, object=_Z6chooseb] {
+function @choose(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=8], %local : u8) -> void [binding=strong, object=_Z6chooseb] {
   slot $local : u8
   slot $base : obj<8x8>
   slot $tmpobj__1 : obj<8x8>

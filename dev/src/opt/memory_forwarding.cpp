@@ -121,7 +121,10 @@ uint64_t type_key(Type t)
 class MemoryForwarding
 {
 public:
-	explicit MemoryForwarding(FunctionContext& context) : c_(context), body_(context.body), cfg_(context.cfg) {}
+	explicit MemoryForwarding(FunctionContext& context) : c_(context), body_(context.body), cfg_(context.cfg)
+	{
+		result_bytes_ = exclusive_result_bytes(c_.program, c_.symbol);
+	}
 
 	// The containers, kept across runs for their capacity (run() clears
 	// or assigns each; diamond_join's marks are compared with an epoch the
@@ -136,6 +139,11 @@ private:
 	bool fields_apart(const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const;
 	TempId allocation_of(const AddressFacts& f) const;
 	bool private_allocation(const AddressFacts& f) const;
+	bool result_apart(const AddressFacts& result, uint64_t bytes, const AddressFacts& other) const
+	{
+		return exclusive_result_apart(result_bytes_, Value::make(result.base, result.index), result.offset, bytes,
+			Value::make(other.base, other.index), body_.parameter_count);
+	}
 	void forget_int_cells();
 	void invalidate(Value address, uint64_t bytes, const Instruction* writer = nullptr);
 	void invalidate_all()
@@ -151,6 +159,7 @@ private:
 	void remember_at(const AddressFacts& f, const Key& key, Type type, Value value, bool typed);
 	void copy_facts(const Instruction& copy);
 	bool reuse_call(const Instruction& call);
+	void note_call_write(Value destination, uint64_t bytes);
 	void process(BlockId block);
 	InstId known_copy(BlockId block, InstId prev, InstId id);
 	InstId field_copy(BlockId block, InstId prev, InstId id);
@@ -199,6 +208,7 @@ private:
 	FunctionContext& c_;
 	FunctionBody& body_;
 	Cfg& cfg_;
+	uint64_t result_bytes_ = 0;                           // explicitly exclusive first-parameter result storage
 	std::vector<AddressFacts> address_;                   // per temp
 	mutable std::vector<Strided> strided_;                // per temp once asked (known: base set)
 	std::vector<uint8_t> escaped_;                        // per slot: address leaves the analysis
@@ -247,6 +257,9 @@ private:
 	RepeatedCall calls_[16];
 	unsigned call_count_ = 0, call_next_ = 0;
 	uint64_t call_epoch_ = 1;
+	bool call_has_reads_ = false;
+	bool result_escape_checked_ = false;
+	bool result_escaped_ = true;
 	bool changed_ = false;
 	bool replaced_ = false; // some repl_ entry is set
 };
@@ -359,6 +372,10 @@ bool MemoryForwarding::may_alias(const AddressFacts& a, uint64_t a_bytes, const 
 		if (a.base != ValueKind::Temp && b.base != ValueKind::Temp)
 			return false;
 		if ((a.base == ValueKind::Slot && !escaped_[a.index]) || (b.base == ValueKind::Slot && !escaped_[b.index]))
+			return false;
+		// Explicit result storage is disjoint from other incoming objects.
+		// Unknown loaded/call-produced pointers may be derived from it.
+		if (result_apart(a, a_bytes, b) || result_apart(b, b_bytes, a))
 			return false;
 		if (a.base == ValueKind::Temp && b.base == ValueKind::Temp && fields_apart(a, a_bytes, b, b_bytes))
 			return false;
@@ -713,6 +730,7 @@ bool MemoryForwarding::reuse_call(const Instruction& call)
 	entry.type = call.type;
 	entry.arguments = call.extra_count;
 	entry.epoch = boundary->boundary.effects == ir_model::CFXM_READNONE ? 0 : call_epoch_;
+	call_has_reads_ = call_has_reads_ || entry.epoch != 0;
 	entry.operands[0] = call.ops[0];
 	for (unsigned i = 0; i < call.extra_count; ++i)
 		entry.operands[i + 1] = body_.operands[call.extra_first + i];
@@ -752,11 +770,34 @@ bool MemoryForwarding::reuse_call(const Instruction& call)
 	return false;
 }
 
+// A repeatable read-only call cannot observe a write to exclusive result
+// storage until its address escapes. Other memory facts retain their usual
+// invalidation rules. The escape graph is built only for an active cache.
+void MemoryForwarding::note_call_write(Value destination, uint64_t bytes)
+{
+	if (call_count_ == 0 || !call_has_reads_)
+		return;
+	const AddressFacts at = facts_of(destination);
+	if (result_bytes_ != 0 && at.base == ValueKind::Temp && at.index == 0 && at.offset >= 0 &&
+		static_cast<uint64_t>(at.offset) <= result_bytes_ && bytes <= result_bytes_ - static_cast<uint64_t>(at.offset))
+	{
+		if (!result_escape_checked_)
+		{
+			result_escaped_ = exclusive_result_escapes(c_.program, body_);
+			result_escape_checked_ = true;
+		}
+		if (!result_escaped_)
+			return;
+	}
+	++call_epoch_;
+}
+
 void MemoryForwarding::process(BlockId block)
 {
 	unsigned stores = 0;
 	call_count_ = call_next_ = 0;
 	call_epoch_ = 1;
+	call_has_reads_ = false;
 	InstId prev = kNoId;
 	for (InstId i = body_.blocks[block].first; i != kNoId;)
 	{
@@ -779,7 +820,8 @@ void MemoryForwarding::process(BlockId block)
 		else if ((inst.flags & IF_VOLATILE) != 0)
 			call_count_ = call_next_ = 0;
 		else if (inst.op == Opcode::Store || inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit)
-			++call_epoch_;
+			note_call_write(inst.op == Opcode::ZeroInit ? inst.ops[0] : inst.ops[1],
+				inst.op == Opcode::Store ? storage_bytes(inst.type) : static_cast<uint64_t>(inst.immediate));
 		else if (inst.op != Opcode::Load && !is_pure(inst))
 			call_count_ = call_next_ = 0;
 		if (inst.op == Opcode::Load && (inst.flags & IF_VOLATILE) == 0)

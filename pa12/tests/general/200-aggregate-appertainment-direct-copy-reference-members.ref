@@ -6,7 +6,7 @@ function @aggregate_appertainment_direct_copy_reference_members__get_right(%expr
     %t1 = load typed ptr $expr
     return ptr %t1
 }
-function @aggregate_appertainment_direct_copy_reference_members__make_expr(%ret : ptr [pass=indirect_result, object_bytes=24], %expr : ptr [pass=by_address, object_bytes=16], %mark : i32) -> void [binding=strong, object=_ZN53aggregate_appertainment_direct_copy_reference_members9make_exprERKNS_13BitwiseOrExprEi] {
+function @aggregate_appertainment_direct_copy_reference_members__make_expr(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %expr : ptr [pass=by_address, object_bytes=16], %mark : i32) -> void [binding=strong, object=_ZN53aggregate_appertainment_direct_copy_reference_members9make_exprERKNS_13BitwiseOrExprEi] {
   slot $expr : ptr
   slot $mark : i32
   slot $end : obj<4x4>

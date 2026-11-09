@@ -40,7 +40,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @as_marker__impl_const__cppgm_class_template_identity_2____operator__(%t18, %t19, %t20)
     return i32 0
 }
-function @as_marker__impl_const__cppgm_class_template_identity_1____operator__(%ret : ptr [pass=indirect_result, object_bytes=24], %this : ptr [object_bytes=1], %expr : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR9plus_leafEELi2EEEEclESD_, inline_hint=yes] {
+function @as_marker__impl_const__cppgm_class_template_identity_1____operator__(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %this : ptr [object_bytes=1], %expr : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR9plus_leafEELi2EEEEclESD_, inline_hint=yes] {
   slot $this : ptr
   slot $expr : ptr
   slot $begin : obj<1x1>
@@ -65,7 +65,7 @@ function @as_marker__impl_const__cppgm_class_template_identity_1____operator__(%
     %t11 = addr $end
     return void
 }
-function @as_marker__impl_const__cppgm_class_template_identity_2____operator__(%ret : ptr [pass=indirect_result, object_bytes=24], %this : ptr [object_bytes=1], %expr : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR10deref_leafEELi2EEEEclESD_, inline_hint=yes] {
+function @as_marker__impl_const__cppgm_class_template_identity_2____operator__(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %this : ptr [object_bytes=1], %expr : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR10deref_leafEELi2EEEEclESD_, inline_hint=yes] {
   slot $this : ptr
   slot $expr : ptr
   slot $begin : obj<1x1>

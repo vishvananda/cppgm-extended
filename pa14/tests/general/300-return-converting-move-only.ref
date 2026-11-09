@@ -1,4 +1,4 @@
-function @local(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [binding=strong, object=_Z5localv] {
+function @local(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4]) -> void [binding=strong, object=_Z5localv] {
   slot $value : obj<4x4>
 
   block ^entry:
@@ -8,14 +8,14 @@ function @local(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [bind
     call void @Box_Value___Box__ov2(%ret, %t2)
     return void
 }
-function @parameter(%ret : ptr [pass=indirect_result, object_bytes=4], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z9parameter5Value] {
+function @parameter(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z9parameter5Value] {
   slot $value : obj<4x4>
 
   block ^entry:
     call void @Box_Value___Box__ov2(%ret, %value)
     return void
 }
-function @parenthesized(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [binding=strong, object=_Z13parenthesizedv] {
+function @parenthesized(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4]) -> void [binding=strong, object=_Z13parenthesizedv] {
   slot $value : obj<4x4>
 
   block ^entry:

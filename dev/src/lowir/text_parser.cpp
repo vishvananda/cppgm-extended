@@ -948,6 +948,9 @@ void Parser::check_signature(const Signature& signature, Position position)
 	{
 		if (parameters[i].pass == ir_model::PPM_INDIRECT_RESULT && (i != 0 || !signature.result.is_void()))
 			fail_at(position, "invalid indirect result parameter");
+		if (parameters[i].alias == ir_model::PALM_EXCLUSIVE_RESULT &&
+			(parameters[i].pass != ir_model::PPM_INDIRECT_RESULT || parameters[i].object_bytes == 0))
+			fail_at(position, "exclusive result alias requires bounded indirect result storage");
 	}
 }
 

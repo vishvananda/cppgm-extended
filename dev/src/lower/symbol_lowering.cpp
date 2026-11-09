@@ -3108,6 +3108,7 @@ void ProgramLowering::push_result_parameter(const sema::Type* result, bool named
 	destination.name = named ? ret_name_ : 0;
 	destination.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
 	destination.pass = ir_model::PPM_INDIRECT_RESULT;
+	destination.alias = ir_model::PALM_EXCLUSIVE_RESULT;
 	destination.object_bytes = size_of(result, 0);
 	program_.parameters.push_back(destination);
 	++signature.parameter_count;
@@ -3210,15 +3211,20 @@ lowir::SignatureId ProgramLowering::function_signature(
 		signature.boundary.returns = ir_model::CRM_NORETURN;
 	else if (function->returns_nonnull && result->unqualified->kind == sema::TypeKind::Pointer)
 		signature.boundary.returns = ir_model::CRM_NONNULL;
-	if (function->builtin == sema::BuiltinFunction::Strlen || function->effects == sema::FunctionEffect::ReadOnly)
-		signature.boundary.effects = ir_model::CFXM_READONLY;
-	// GNU const (pa28).
-	if (function->effects == sema::FunctionEffect::ReadNone)
-		signature.boundary.effects = ir_model::CFXM_READNONE;
-	// GNU pure/const promise repeatable results, beyond memory effects.
-	// Keep this distinct from inferred read-only memory behavior.
-	signature.boundary.repeatable = function->effects != sema::FunctionEffect::Default ||
-		function->builtin == sema::BuiltinFunction::Strlen;
+	// An indirect source result is an explicit memory write in LowIR.
+	// GNU pure/const do not erase that physical output effect.
+	if (!indirect)
+	{
+		if (function->builtin == sema::BuiltinFunction::Strlen || function->effects == sema::FunctionEffect::ReadOnly)
+			signature.boundary.effects = ir_model::CFXM_READONLY;
+		// GNU const (pa28).
+		if (function->effects == sema::FunctionEffect::ReadNone)
+			signature.boundary.effects = ir_model::CFXM_READNONE;
+		// GNU pure/const promise repeatable results, beyond memory effects.
+		// Keep this distinct from inferred read-only memory behavior.
+		signature.boundary.repeatable = function->effects != sema::FunctionEffect::Default ||
+			function->builtin == sema::BuiltinFunction::Strlen;
+	}
 	return program_.add_signature(signature);
 }
 

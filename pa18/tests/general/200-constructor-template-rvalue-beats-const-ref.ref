@@ -64,7 +64,7 @@ function @movable__movable(%this : ptr [object_bytes=4], %v : i32) -> void [bind
     store typed i32 %t1, %t3
     return void
 }
-function @build(%ret : ptr [pass=indirect_result, object_bytes=8], %u : ptr [pass=by_address, object_bytes=4], %v : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z5buildI4pairI7movableS1_ES1_S1_ET_OT0_OT1_] {
+function @build(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=8], %u : ptr [pass=by_address, object_bytes=4], %v : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z5buildI4pairI7movableS1_ES1_S1_ET_OT0_OT1_] {
   slot $u : ptr
   slot $v : ptr
 

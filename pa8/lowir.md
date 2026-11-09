@@ -714,6 +714,7 @@ Omission means ordinary direct-value passing and has no explicit spelling.
 The currently defined alias values are:
 
 - `noalias`
+- `exclusive_result`
 
 The intended meaning is semantic, not host-ABI-specific:
 
@@ -722,6 +723,15 @@ The intended meaning is semantic, not host-ABI-specific:
   boundary whose argument denotes addressable storage
 - `noalias`: this incoming pointer is disjoint from every other pointer
   parameter on the same boundary that also carries `alias=noalias`
+- `exclusive_result`: valid only on bounded `indirect_result` storage. The
+  first `object_bytes` bytes do not overlap data visible through names
+  other than pointers derived from this result argument. This includes
+  unrelated incoming arguments, globals and local slots. Result-derived
+  pointers can still alias one another. This does not promise that its
+  address never escapes, that calls cannot access it, or that accesses stay
+  within its extent. Dropping the fact is always valid; `indirect_result`
+  alone does not carry it. C++ source lowering states this separate fact
+  for its caller-provided result buffer (the x86-64 psABI return convention).
 - `object_bytes=N`: `N` bytes starting at the pointer are readable when the
   function is entered, so a consumer may load from them where the code would
   not (out of a loop that may not run) as long as nothing that may free them
@@ -1881,6 +1891,10 @@ and `effects=readonly` when one carries GNU `pure` and none carries `const`;
 `__builtin_strlen` states `effects=readonly`. These GNU attributes and
 `__builtin_strlen` also state `repeatable=yes`, preserving their value-reuse
 promise independently of their memory effects.
+A source class returned through an explicit `indirect_result` parameter is
+an exception: filling that buffer writes memory in LowIR, so lowering keeps
+the conservative default effects and does not state `repeatable=yes`. A
+direct object value result does not introduce that memory write.
 
 - `__attribute__((pure))`, `__attribute__((const))`, `[[gnu::pure]]` and
   `[[gnu::const]]` on any declaration: a later declaration adds to an earlier

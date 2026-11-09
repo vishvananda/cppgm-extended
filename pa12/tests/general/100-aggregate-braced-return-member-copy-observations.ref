@@ -3,7 +3,7 @@ global @moves : i32 [binding=strong] = zero
 global @returned_copies : i32 [binding=strong] = zero
 global @returned_moves : i32 [binding=strong] = zero
 
-function @make(%ret : ptr [pass=indirect_result, object_bytes=40], %first : ptr [pass=by_address, object_bytes=16], %second : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z4makeR5ValueS0_] {
+function @make(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=40], %first : ptr [pass=by_address, object_bytes=16], %second : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z4makeR5ValueS0_] {
   slot $first : ptr
   slot $second : ptr
   slot $monitor : obj<1x1>

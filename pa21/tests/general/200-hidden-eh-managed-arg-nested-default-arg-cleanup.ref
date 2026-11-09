@@ -25,7 +25,7 @@ global @__strlit__5 [storage=readonly, binding=internal] = {
   i8 0
 }
 
-function @operator_(%ret : ptr [pass=indirect_result, object_bytes=4], %lhs : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZplRK4TextS1_] {
+function @operator_(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %lhs : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZplRK4TextS1_] {
   slot $lhs : ptr
   slot $__param2 : ptr
   slot $condaddr__1 : ptr
@@ -77,7 +77,7 @@ function @operator_(%ret : ptr [pass=indirect_result, object_bytes=4], %lhs : pt
   block ^call_unwind_end_7:
     return void
 }
-function @operator___ov2(%ret : ptr [pass=indirect_result, object_bytes=4], %lhs : ptr [pass=by_address, object_bytes=4], %__param2 : i8) -> void [binding=strong, object=_ZplRK4Textc] {
+function @operator___ov2(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %lhs : ptr [pass=by_address, object_bytes=4], %__param2 : i8) -> void [binding=strong, object=_ZplRK4Textc] {
   slot $lhs : ptr
   slot $__param2 : i8
   slot $cond__1 : ptr

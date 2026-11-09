@@ -1,4 +1,4 @@
-function @forward_box(%ret : ptr [pass=indirect_result, object_bytes=8], %value : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z11forward_boxRK3Box] {
+function @forward_box(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=8], %value : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z11forward_boxRK3Box] {
   slot $value : ptr
 
   block ^entry:

@@ -175,7 +175,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @operator__(%ret : ptr [pass=indirect_result, object_bytes=24], %prev : ptr [pass=by_address, object_bytes=8], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZlsIA4_cE28array_reference_cv_lazy_implI23array_reference_cv_lazyT_RKS3_ERKS2_S5_] {
+function @operator__(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %prev : ptr [pass=by_address, object_bytes=8], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZlsIA4_cE28array_reference_cv_lazy_implI23array_reference_cv_lazyT_RKS3_ERKS2_S5_] {
   slot $prev : ptr
   slot $value : ptr
 

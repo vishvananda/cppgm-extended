@@ -11,12 +11,12 @@ function @make_small(%x : i32) -> obj<4x4> [binding=strong, object=_Z10make_smal
     call void @Small__Small(%t1, %t2)
     return obj<4x4> $retobj__1
 }
-function @make_empty(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z10make_emptyv] {
+function @make_empty(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1]) -> void [binding=strong, object=_Z10make_emptyv] {
   block ^entry:
     call void @Empty__Empty(%ret)
     return void
 }
-function @make_sixteen(%ret : ptr [pass=indirect_result, object_bytes=16], %x : i64) -> void [binding=strong, object=_Z12make_sixteenx] {
+function @make_sixteen(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=16], %x : i64) -> void [binding=strong, object=_Z12make_sixteenx] {
   slot $x : i64
 
   block ^entry:
@@ -68,7 +68,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^cleanup_resume_5
     %t14 = addr $discard__3
     %t15 = load typed ptr $empty
-    call void %t15(%t14) as (%arg0 : ptr [pass=indirect_result, object_bytes=1]) -> void
+    call void %t15(%t14) as (%arg0 : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1]) -> void
     eh_end
     jump ^call_unwind_end_6
 
@@ -126,7 +126,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t21, $sixteen
     %t22 = addr $value
     %t23 = load typed ptr $sixteen
-    call void %t23(%t22, 31) as (%arg0 : ptr [pass=indirect_result, object_bytes=16], %arg1 : i64) -> void
+    call void %t23(%t22, 31) as (%arg0 : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=16], %arg1 : i64) -> void
     %t24 = addr $value
     %t25 = index i8 [projection=field] %t24, 0
     %t26 = load typed i64 %t25

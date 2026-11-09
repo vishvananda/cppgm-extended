@@ -32,7 +32,7 @@ function @Holder__Holder(%this : ptr [object_bytes=8]) -> void [binding=weak, ob
     call void @Inner__Inner(%t2)
     return void
 }
-function @Holder__get(%ret : ptr [pass=indirect_result, object_bytes=8], %this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZNK6Holder3getEv, inline_hint=yes] {
+function @Holder__get(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=8], %this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZNK6Holder3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

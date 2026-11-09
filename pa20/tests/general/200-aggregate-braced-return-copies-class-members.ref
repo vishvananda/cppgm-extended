@@ -1,4 +1,4 @@
-function @make_aggregate(%ret : ptr [pass=indirect_result, object_bytes=40], %first : ptr [pass=by_address, object_bytes=16], %second : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z14make_aggregate12member_valueS_] {
+function @make_aggregate(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=40], %first : ptr [pass=by_address, object_bytes=16], %second : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z14make_aggregate12member_valueS_] {
   slot $first : obj<16x8>
   slot $second : obj<16x8>
 

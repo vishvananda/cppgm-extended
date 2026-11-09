@@ -255,6 +255,10 @@ Function effects can be represented as a small ordered enum on the canonical
 semantic binding and copied to the existing LowIR call-boundary metadata. This
 lets redeclarations and template instantiations merge the strongest declared
 effect without a string-keyed side table.
+An indirect class result is an explicit output-buffer write in LowIR;
+source `pure` or `const` does not justify claiming that this physical
+boundary writes no memory. Keep its effects conservative. Scalar and direct
+object-value result boundaries retain their GNU effect promises.
 
 ### After PA28
 

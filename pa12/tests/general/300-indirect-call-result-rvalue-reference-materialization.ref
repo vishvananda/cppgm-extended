@@ -100,7 +100,7 @@ function @executor__executor(%this : ptr [object_bytes=4]) -> void [binding=weak
     store typed i32 11, %t2
     return void
 }
-function @source__get_executor(%ret : ptr [pass=indirect_result, object_bytes=4], %this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZNK6source12get_executorEv, inline_hint=yes] {
+function @source__get_executor(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZNK6source12get_executorEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

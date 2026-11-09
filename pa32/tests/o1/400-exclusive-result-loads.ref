@@ -1,0 +1,95 @@
+function @exclusive(%out : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %input : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %before = load typed i64 %input
+    store typed i64 7, %out
+    %sum = binary add i64 %before, %before
+    %field = index i8 %out, 8
+    store typed i64 %sum, %field
+    return void
+}
+function @ordinary(%out : ptr [pass=indirect_result, object_bytes=32], %input : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %before = load typed i64 %input
+    store typed i64 7, %out
+    %after = load typed i64 %input
+    %sum = binary add i64 %before, %after
+    %field = index i8 %out, 8
+    store typed i64 %sum, %field
+    return void
+}
+function @outside(%out : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %input : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %before = load typed i64 %input
+    %beyond = index i8 %out, 32
+    store typed i64 7, %beyond
+    %after = load typed i64 %input
+    %sum = binary add i64 %before, %after
+    store typed i64 %sum, %out
+    return void
+}
+function @derived(%out : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32]) -> void [no_inline=yes] {
+  block ^entry:
+    %same = index i8 %out, 8
+    %before = load typed i64 %same
+    store typed i64 7, %same
+    %sum = binary add i64 %before, 7
+    store typed i64 %sum, %out
+    return void
+}
+function @observed(%out : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %input : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %before = load volatile i64 %input
+    store typed i64 7, %out
+    %after = load volatile i64 %input
+    %sum = binary add i64 %before, %after
+    store typed i64 %sum, %out
+    return void
+}
+function @main() -> i32 [role=entry] {
+  slot $storage : obj<64x8>
+  slot $source : i64
+
+  block ^entry:
+    %out = addr $storage
+    %input = addr $source
+    store i64 3, %input
+    call void @exclusive(%out, %input)
+    %field = index i8 %out, 8
+    %value = load i64 %field
+    %ok1 = cmp eq i64 %value, 6
+    branch %ok1, ^ordinary, ^bad
+
+  block ^ordinary:
+    store i64 3, %out
+    call void @ordinary(%out, %out)
+    %alias_value = load i64 %field
+    %ok2 = cmp eq i64 %alias_value, 10
+    branch %ok2, ^outside, ^bad
+
+  block ^outside:
+    %beyond = index i8 %out, 32
+    store i64 3, %beyond
+    call void @outside(%out, %beyond)
+    %outside_value = load i64 %out
+    %ok3 = cmp eq i64 %outside_value, 10
+    branch %ok3, ^derived, ^bad
+
+  block ^derived:
+    store i64 3, %field
+    call void @derived(%out)
+    %derived_value = load i64 %out
+    %ok4 = cmp eq i64 %derived_value, 10
+    branch %ok4, ^observed, ^bad
+
+  block ^observed:
+    call void @observed(%out, %input)
+    %observed_value = load i64 %out
+    %ok5 = cmp eq i64 %observed_value, 6
+    branch %ok5, ^done, ^bad
+
+  block ^done:
+    return i32 0
+
+  block ^bad:
+    return i32 1
+}

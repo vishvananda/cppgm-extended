@@ -1,4 +1,4 @@
-function @f(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [binding=strong, object=_Z1fv] {
+function @f(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4]) -> void [binding=strong, object=_Z1fv] {
   block ^entry:
     call void @S__S(%ret)
     return void

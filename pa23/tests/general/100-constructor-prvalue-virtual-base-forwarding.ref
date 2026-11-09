@@ -325,7 +325,7 @@ function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1
     store typed ptr %t9, %t7
     return void
 }
-function @make_wrap(%ret : ptr [pass=indirect_result, object_bytes=24], %e : ptr [pass=by_address, object_bytes=24], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z9make_wrapI1DE1WIT_ERKS2_RKi] {
+function @make_wrap(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=24], %e : ptr [pass=by_address, object_bytes=24], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z9make_wrapI1DE1WIT_ERKS2_RKi] {
   slot $e : ptr
   slot $loc : ptr
 

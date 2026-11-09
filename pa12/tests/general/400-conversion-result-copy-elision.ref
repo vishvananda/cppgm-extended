@@ -47,7 +47,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = convert trunc i32 i64 %t14
     return i32 %t15
 }
-function @source__operatorresult(%ret : ptr [pass=indirect_result, object_bytes=4], %this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6sourcecv6resultEv, inline_hint=yes] {
+function @source__operatorresult(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6sourcecv6resultEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

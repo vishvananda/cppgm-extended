@@ -1,0 +1,5 @@
+count(call @peek) <= 1 in @private
+count(call @peek) >= 2 in @ordinary
+count(call @peek) >= 2 in @outside
+count(call @peek) >= 2 in @embedded
+count(call @global_read) >= 2 in @published_result

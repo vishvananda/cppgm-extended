@@ -1,0 +1,70 @@
+function @pack(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %input : ptr [pass=by_address, object_bytes=32]) -> void [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    copyobj 32x8 %input, %ret
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $input : obj<32x8>
+  slot $aggregate__1 : obj<32x8>
+
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi i64 [^entry: 0, ^if_end_7: %t29]
+    %t2 = cmp ne i64 %t1, 1024
+    branch %t2, ^for_body_2, ^for_end_8
+
+  block ^for_body_2:
+    %t3 = addr $input
+    store typed i64 %t1, %t3
+    %t4 = binary mul i64 %t1, 3
+    %t5 = binary add i64 %t4, 1
+    %t6 = index i8 [projection=field] %t3, 8
+    store typed i64 %t5, %t6
+    %t7 = binary mul i64 %t1, 7
+    %t8 = binary add i64 %t7, 2
+    %t9 = index i8 [projection=field] %t3, 16
+    store typed i64 %t8, %t9
+    %t10 = binary mul i64 %t1, 4294967297
+    %t11 = binary add i64 %t10, 3
+    %t12 = index i8 [projection=field] %t3, 24
+    store typed i64 %t11, %t12
+    %t13 = addr $aggregate__1
+    call void @pack(%t13, %t3)
+    %t14 = load i64 %t13
+    %t15 = index i8 [projection=field] %t13, 8
+    %t16 = load i64 %t15
+    %t17 = index i8 [projection=field] %t13, 16
+    %t18 = load i64 %t17
+    %t19 = index i8 [projection=field] %t13, 24
+    %t20 = load i64 %t19
+    %t21 = load typed i64 %t3
+    %t22 = cmp ne i64 %t21, %t14
+    branch %t22, ^if_then_6, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t23 = load typed i64 %t6
+    %t24 = cmp ne i64 %t23, %t16
+    branch %t24, ^if_then_6, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t25 = load typed i64 %t9
+    %t26 = cmp ne i64 %t25, %t18
+    branch %t26, ^if_then_6, ^lor_rhs_5
+
+  block ^lor_rhs_5:
+    %t27 = load typed i64 %t12
+    %t28 = cmp ne i64 %t27, %t20
+    branch %t28, ^if_then_6, ^if_end_7
+
+  block ^if_then_6:
+    return i32 1
+
+  block ^if_end_7:
+    %t29 = binary add i64 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_8:
+    return i32 0
+}

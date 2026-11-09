@@ -1,4 +1,4 @@
-function @make_hooks(%ret : ptr [pass=indirect_result, object_bytes=8], %p : ptr) -> void [unwind=no, binding=strong, object=_Z10make_hooksPi] {
+function @make_hooks(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=8], %p : ptr) -> void [unwind=no, binding=strong, object=_Z10make_hooksPi] {
   slot $p : ptr
 
   block ^entry:

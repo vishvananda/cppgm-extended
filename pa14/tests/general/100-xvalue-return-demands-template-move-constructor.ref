@@ -1,4 +1,4 @@
-function @move_box(%ret : ptr [pass=indirect_result, object_bytes=4], %x : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z8move_boxR3boxIiE] {
+function @move_box(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %x : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z8move_boxR3boxIiE] {
   slot $x : ptr
 
   block ^entry:

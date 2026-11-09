@@ -75,7 +75,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = convert trunc i32 i64 %t17
     return i32 %t18
 }
-function @Proxy__operatorTarget(%ret : ptr [pass=indirect_result, object_bytes=4], %this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZNK5Proxycv6TargetEv, inline_hint=yes] {
+function @Proxy__operatorTarget(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZNK5Proxycv6TargetEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

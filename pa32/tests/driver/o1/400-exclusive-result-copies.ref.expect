@@ -1,0 +1,2 @@
+count(copyobj) == 1 in @pack
+count(load) <= 0 in @pack

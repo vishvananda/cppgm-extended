@@ -51,7 +51,7 @@ function @context__executor_int___executor(%this : ptr [object_bytes=1]) -> void
     store typed ptr %this, $this
     return void
 }
-function @context__executor_int___require(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZNK7context8executorIiE7requireIlEENS0_IT_EERKS3_, inline_hint=yes] {
+function @context__executor_int___require(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=1], %this : ptr [object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZNK7context8executorIiE7requireIlEENS0_IT_EERKS3_, inline_hint=yes] {
   slot $this : ptr
   slot $__param2 : ptr
 

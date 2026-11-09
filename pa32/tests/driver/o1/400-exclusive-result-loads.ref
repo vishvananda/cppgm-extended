@@ -1,0 +1,138 @@
+function @unpack(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %input : ptr [pass=by_address, object_bytes=8]) -> void [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    store typed i64 0, %ret
+    %t1 = index i8 [projection=field] %ret, 8
+    store typed i64 0, %t1
+    %t2 = index i8 [projection=field] %ret, 16
+    store typed i64 0, %t2
+    %t3 = index i8 [projection=field] %ret, 24
+    store typed i64 0, %t3
+    %t4 = load typed i64 %input
+    %t5 = binary and i64 %t4, 1
+    store typed i64 %t5, %ret
+    %t6 = binary ushr i64 %t4, 1
+    %t7 = binary and i64 %t6, 1
+    store typed i64 %t7, %t1
+    %t8 = binary ushr i64 %t4, 2
+    %t9 = binary and i64 %t8, 1
+    store typed i64 %t9, %t2
+    %t10 = binary ushr i64 %t4, 3
+    %t11 = binary and i64 %t10, 1
+    store typed i64 %t11, %t3
+    return void
+}
+function @ordinary(%out : ptr, %input : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed i64 %input
+    %t2 = binary and i64 %t1, 1
+    store typed i64 %t2, %out
+    %t3 = load typed i64 %input
+    %t4 = binary ushr i64 %t3, 1
+    %t5 = binary and i64 %t4, 1
+    %t6 = index i8 [projection=field] %out, 8
+    store typed i64 %t5, %t6
+    %t7 = load typed i64 %input
+    %t8 = binary ushr i64 %t7, 2
+    %t9 = binary and i64 %t8, 1
+    %t10 = index i8 [projection=field] %out, 16
+    store typed i64 %t9, %t10
+    %t11 = load typed i64 %input
+    %t12 = binary ushr i64 %t11, 3
+    %t13 = binary and i64 %t12, 1
+    %t14 = index i8 [projection=field] %out, 24
+    store typed i64 %t13, %t14
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $input : obj<8x8>
+  slot $aggregate__1 : obj<32x8>
+  slot $alias : obj<32x8>
+
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi i64 [^entry: 0, ^if_end_13: %t36]
+    %t2 = cmp ne i64 %t1, 1024
+    branch %t2, ^for_body_2, ^for_end_14
+
+  block ^for_body_2:
+    %t3 = addr $input
+    %t4 = binary mul i64 %t1, 4294967297
+    store typed i64 %t4, %t3
+    %t5 = addr $aggregate__1
+    call void @unpack(%t5, %t3)
+    %t6 = load i64 %t5
+    %t7 = index i8 [projection=field] %t5, 8
+    %t8 = load i64 %t7
+    %t9 = index i8 [projection=field] %t5, 16
+    %t10 = load i64 %t9
+    %t11 = index i8 [projection=field] %t5, 24
+    %t12 = load i64 %t11
+    %t13 = load typed i64 %t3
+    %t14 = binary and i64 %t13, 1
+    %t15 = cmp ne i64 %t14, %t6
+    branch %t15, ^if_then_4, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t16 = binary ushr i64 %t13, 1
+    %t17 = binary and i64 %t16, 1
+    %t18 = cmp ne i64 %t17, %t8
+    branch %t18, ^if_then_4, ^if_end_5
+
+  block ^if_then_4:
+    return i32 1
+
+  block ^if_end_5:
+    %t19 = binary ushr i64 %t13, 2
+    %t20 = binary and i64 %t19, 1
+    %t21 = cmp ne i64 %t20, %t10
+    branch %t21, ^if_then_7, ^lor_rhs_6
+
+  block ^lor_rhs_6:
+    %t22 = binary ushr i64 %t13, 3
+    %t23 = binary and i64 %t22, 1
+    %t24 = cmp ne i64 %t23, %t12
+    branch %t24, ^if_then_7, ^if_end_8
+
+  block ^if_then_7:
+    return i32 2
+
+  block ^if_end_8:
+    %t25 = addr $alias
+    store typed i64 %t13, %t25
+    %t26 = index i8 [projection=field] %t25, 8
+    store typed i64 0, %t26
+    %t27 = index i8 [projection=field] %t25, 16
+    store typed i64 0, %t27
+    %t28 = index i8 [projection=field] %t25, 24
+    store typed i64 0, %t28
+    call void @ordinary(%t25, %t25)
+    %t29 = load typed i64 %t25
+    %t30 = load typed i64 %t3
+    %t31 = binary and i64 %t30, 1
+    %t32 = cmp ne i64 %t29, %t31
+    branch %t32, ^if_then_12, ^lor_rhs_9
+
+  block ^lor_rhs_9:
+    %t33 = load typed i64 %t26
+    branch %t33, ^if_then_12, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t34 = load typed i64 %t27
+    branch %t34, ^if_then_12, ^lor_rhs_11
+
+  block ^lor_rhs_11:
+    %t35 = load typed i64 %t28
+    branch %t35, ^if_then_12, ^if_end_13
+
+  block ^if_then_12:
+    return i32 3
+
+  block ^if_end_13:
+    %t36 = binary add i64 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_14:
+    return i32 0
+}

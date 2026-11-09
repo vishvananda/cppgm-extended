@@ -49,7 +49,7 @@ global @__ehobj_struct_Error [binding=internal] = {
   zero 4
 }
 
-function @operator_(%ret : ptr [pass=indirect_result, object_bytes=4], %__param1 : ptr, %right : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZplPKcRK4Text] {
+function @operator_(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %__param1 : ptr, %right : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZplPKcRK4Text] {
   slot $__param1 : ptr
   slot $right : ptr
 

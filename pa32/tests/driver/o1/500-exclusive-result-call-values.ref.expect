@@ -1,0 +1,5 @@
+count(call @peek) <= 1 in @stored
+count(call @peek) <= 1 in @copied
+count(call @peek) <= 1 in @zeroed
+count(call @peek) >= 2 in @escaped
+count(call @peek) >= 2 in @observed

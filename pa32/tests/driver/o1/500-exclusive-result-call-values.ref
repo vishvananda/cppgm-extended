@@ -1,0 +1,239 @@
+function @peek(%p : ptr) -> i64 [effects=readonly, repeatable=yes, linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed i64 %p
+    return i64 %t1
+}
+function @stored(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %p : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    store typed i64 0, %ret
+    %t1 = index i8 [projection=field] %ret, 8
+    store typed i64 0, %t1
+    %t2 = index i8 [projection=field] %ret, 16
+    store typed i64 0, %t2
+    %t3 = index i8 [projection=field] %ret, 24
+    store typed i64 0, %t3
+    %t4 = call i64 @peek(%p)
+    store typed i64 %t4, %ret
+    store typed i64 %t4, %t1
+    return void
+}
+function @copied(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %p : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = call i64 @peek(%p)
+    store i64 11, %ret
+    %t2 = index i8 [projection=field] %ret, 8
+    store i64 13, %t2
+    %t3 = index i8 [projection=field] %ret, 16
+    store i64 17, %t3
+    %t4 = index i8 [projection=field] %ret, 24
+    store i64 19, %t4
+    store typed i64 %t1, %ret
+    store typed i64 %t1, %t2
+    return void
+}
+function @zeroed(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %p : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = call i64 @peek(%p)
+    store typed i64 0, %ret
+    %t2 = index i8 [projection=field] %ret, 8
+    store typed i64 0, %t2
+    %t3 = index i8 [projection=field] %ret, 16
+    store typed i64 0, %t3
+    %t4 = index i8 [projection=field] %ret, 24
+    store typed i64 0, %t4
+    store typed i64 %t1, %ret
+    store typed i64 %t1, %t2
+    return void
+}
+function @escaped(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32]) -> void [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    store typed i64 0, %ret
+    %t1 = index i8 [projection=field] %ret, 8
+    store typed i64 0, %t1
+    %t2 = index i8 [projection=field] %ret, 16
+    store typed i64 0, %t2
+    %t3 = index i8 [projection=field] %ret, 24
+    store typed i64 0, %t3
+    store typed i64 2, %ret
+    %t4 = call i64 @peek(%ret)
+    store typed i64 7, %ret
+    %t5 = call i64 @peek(%ret)
+    %t6 = binary add nowrap i64 %t4, %t5
+    store typed i64 %t6, %t1
+    return void
+}
+function @observed(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %p : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    store volatile i64 0, %ret
+    %t1 = index i8 [projection=field] %ret, 8
+    store typed i64 0, %t1
+    %t2 = index i8 [projection=field] %ret, 16
+    store typed i64 0, %t2
+    %t3 = index i8 [projection=field] %ret, 24
+    store typed i64 0, %t3
+    %t4 = call i64 @peek(%p)
+    store volatile i64 %t4, %ret
+    %t5 = call i64 @peek(%p)
+    store typed i64 %t5, %t1
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : i64
+  slot $aggregate__1 : obj<32x8>
+  slot $aggregate__2 : obj<32x8>
+  slot $aggregate__3 : obj<32x8>
+  slot $aggregate__4 : obj<32x8>
+  slot $e : obj<32x8>
+
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi i64 [^entry: -100, ^if_end_27: %t59]
+    %t2 = cmp ne i64 %t1, 101
+    branch %t2, ^for_body_2, ^for_end_28
+
+  block ^for_body_2:
+    %t3 = binary mul nowrap i64 %t1, 4294967297
+    %t4 = binary sub nowrap i64 %t3, 512
+    store typed i64 %t4, $value
+    %t5 = addr $value
+    %t6 = addr $aggregate__1
+    call void @stored(%t6, %t5)
+    %t7 = load i64 %t6
+    %t8 = index i8 [projection=field] %t6, 8
+    %t9 = load i64 %t8
+    %t10 = index i8 [projection=field] %t6, 16
+    %t11 = load i64 %t10
+    %t12 = index i8 [projection=field] %t6, 24
+    %t13 = load i64 %t12
+    %t14 = addr $aggregate__2
+    call void @copied(%t14, %t5)
+    %t15 = load i64 %t14
+    %t16 = index i8 [projection=field] %t14, 8
+    %t17 = load i64 %t16
+    %t18 = index i8 [projection=field] %t14, 16
+    %t19 = load i64 %t18
+    %t20 = index i8 [projection=field] %t14, 24
+    %t21 = load i64 %t20
+    %t22 = addr $aggregate__3
+    call void @zeroed(%t22, %t5)
+    %t23 = load i64 %t22
+    %t24 = index i8 [projection=field] %t22, 8
+    %t25 = load i64 %t24
+    %t26 = index i8 [projection=field] %t22, 16
+    %t27 = load i64 %t26
+    %t28 = index i8 [projection=field] %t22, 24
+    %t29 = load i64 %t28
+    %t30 = addr $aggregate__4
+    call void @escaped(%t30)
+    %t31 = load i64 %t30
+    %t32 = index i8 [projection=field] %t30, 8
+    %t33 = load i64 %t32
+    %t34 = index i8 [projection=field] %t30, 16
+    %t35 = load i64 %t34
+    %t36 = index i8 [projection=field] %t30, 24
+    %t37 = load i64 %t36
+    %t38 = addr $e
+    call void @observed(%t38, %t5)
+    %t39 = load typed i64 $value
+    %t40 = cmp ne i64 %t39, %t7
+    branch %t40, ^if_then_6, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t41 = cmp ne i64 %t39, %t9
+    branch %t41, ^if_then_6, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    branch %t11, ^if_then_6, ^lor_rhs_5
+
+  block ^lor_rhs_5:
+    branch %t13, ^if_then_6, ^if_end_7
+
+  block ^if_then_6:
+    return i32 1
+
+  block ^if_end_7:
+    %t42 = cmp ne i64 %t39, %t15
+    branch %t42, ^if_then_11, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t43 = cmp ne i64 %t39, %t17
+    branch %t43, ^if_then_11, ^lor_rhs_9
+
+  block ^lor_rhs_9:
+    %t44 = cmp ne i64 %t19, 17
+    branch %t44, ^if_then_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t45 = cmp ne i64 %t21, 19
+    branch %t45, ^if_then_11, ^if_end_12
+
+  block ^if_then_11:
+    return i32 2
+
+  block ^if_end_12:
+    %t46 = cmp ne i64 %t39, %t23
+    branch %t46, ^if_then_16, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t47 = cmp ne i64 %t39, %t25
+    branch %t47, ^if_then_16, ^lor_rhs_14
+
+  block ^lor_rhs_14:
+    branch %t27, ^if_then_16, ^lor_rhs_15
+
+  block ^lor_rhs_15:
+    branch %t29, ^if_then_16, ^if_end_17
+
+  block ^if_then_16:
+    return i32 3
+
+  block ^if_end_17:
+    %t48 = cmp ne i64 %t31, 7
+    branch %t48, ^if_then_21, ^lor_rhs_18
+
+  block ^lor_rhs_18:
+    %t49 = cmp ne i64 %t33, 9
+    branch %t49, ^if_then_21, ^lor_rhs_19
+
+  block ^lor_rhs_19:
+    branch %t35, ^if_then_21, ^lor_rhs_20
+
+  block ^lor_rhs_20:
+    branch %t37, ^if_then_21, ^if_end_22
+
+  block ^if_then_21:
+    return i32 4
+
+  block ^if_end_22:
+    %t50 = load volatile i64 %t38
+    %t51 = cmp ne i64 %t39, %t50
+    branch %t51, ^if_then_26, ^lor_rhs_23
+
+  block ^lor_rhs_23:
+    %t52 = index i8 [projection=field] %t38, 8
+    %t53 = load typed i64 %t52
+    %t54 = cmp ne i64 %t39, %t53
+    branch %t54, ^if_then_26, ^lor_rhs_24
+
+  block ^lor_rhs_24:
+    %t55 = index i8 [projection=field] %t38, 16
+    %t56 = load typed i64 %t55
+    branch %t56, ^if_then_26, ^lor_rhs_25
+
+  block ^lor_rhs_25:
+    %t57 = index i8 [projection=field] %t38, 24
+    %t58 = load typed i64 %t57
+    branch %t58, ^if_then_26, ^if_end_27
+
+  block ^if_then_26:
+    return i32 5
+
+  block ^if_end_27:
+    %t59 = binary add nowrap i64 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_28:
+    return i32 0
+}
