@@ -107,7 +107,9 @@ other code can reach.
 Forwarding through object copies must respect the copied byte range. Clearing
 an array can expose known-zero fields; overlapping copies need the semantics
 of the original operation. Static initialization is possible only when its
-observable values and ordering agree with dynamic initialization.
+observable values and ordering agree with dynamic initialization. When merging
+buffered field reads into copies, preserve values read before overlapping
+writes, including the saved values in a swap.
 
 The same reasoning applies to a complete fill with any constant byte. Later
 integer reads can have known values even when their indices vary. Prove which

@@ -639,6 +639,24 @@ bool CopyCoalescing::run()
 				flush(b, run);
 				continue;
 			}
+			// Every load in a group precedes its stores. Separate copies
+			// must not delay a later load past an earlier write to its
+			// source (for example, the saved values in a swap). At most
+			// four loads bound this dependence check.
+			bool safe = true;
+			for (size_t later = 1; later < group.size() && safe; ++later)
+				for (size_t earlier = 0; earlier < later; ++earlier)
+					if (!disjoint(
+							group[earlier].to, group[later].from, std::max(group[earlier].bytes, group[later].bytes)))
+					{
+						safe = false;
+						break;
+					}
+			if (!safe)
+			{
+				flush(b, run);
+				continue;
+			}
 			for (const Pair& pair : group)
 			{
 				if (!run.empty())

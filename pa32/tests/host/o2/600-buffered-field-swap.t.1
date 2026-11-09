@@ -1,0 +1,8 @@
+struct Pair { int a,b; };
+extern "C" void seed(Pair*,Pair*);
+int main() {
+  Pair a,b; seed(&a,&b);
+  int b0=b.a,b1=b.b,a0=a.a,a1=a.b;
+  a.a=b0; a.b=b1; b.a=a0; b.b=a1;
+  return a.a!=7 || a.b!=9 || b.a!=3 || b.b!=5;
+}
