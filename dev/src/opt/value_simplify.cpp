@@ -613,6 +613,10 @@ void Simplifier::select_equal_arm(Instruction& inst)
 		value = test->ops[1];
 		arm = static_cast<ComparePredicate>(test->sub) == ComparePredicate::Eq ? 1 : 2;
 	}
+	// Reusing a raw condition is useful when it is already an input. A
+	// computed predicate may instead fold into flags at its sole select.
+	if (value.is(ValueKind::None) && (!x.is(ValueKind::Temp) || x.index >= body_.parameter_count))
+		return;
 	if (!x.is(ValueKind::Temp) || body_.temps[x.index].type != inst.type || !inst.ops[arm].is(ValueKind::Integer))
 		return;
 	Constant selected, compared;

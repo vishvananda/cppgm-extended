@@ -1813,11 +1813,22 @@ void FunctionSelector::find_folds()
 		const Instruction* conj = single(x, lowir::BinaryOp::And);
 		if (conj == nullptr)
 			return;
-		// Folding through the and may move a load only past its comparison.
-		const uint32_t next = conj->next;
+		// Aliases emit no work. Folding through the and may move a load
+		// past these aliases and its comparison, but no effectful operation.
+		auto next_work = [&](uint32_t next) {
+			while (next != kNoId && next != branch_id)
+			{
+				const Instruction& step = body.instructions[next];
+				if (!(marks_[next] & IM_DEAD) && (step.result == kNoId || !(temps_[step.result].flags & TF_ALIAS)))
+					break;
+				next = step.next;
+			}
+			return next;
+		};
+		const uint32_t next = next_work(conj->next);
 		const bool adjacent = next == branch_id ||
 			(next != kNoId && body.instructions[next].op == Opcode::Compare &&
-				body.instructions[next].next == branch_id);
+				next_work(body.instructions[next].next) == branch_id);
 		for (unsigned k = 0; k < 2; ++k)
 		{
 			const Value v = resolve(conj->ops[k]);

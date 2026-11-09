@@ -1,0 +1,154 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @masked_alias
+  abi
+    param %p -> rdi : ptr
+    param %yes -> rsi : i64
+    param %no -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.i32 [rdi], 127
+    mov rax, rdx
+    cmovne rax, rsi
+    ret rax
+
+function @stored_after_mask
+  abi
+    param %p -> rdi : ptr
+    param %yes -> rsi : i64
+    param %no -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 r8, [rdi]
+    and r8, 127
+    store.i32 [rdi], 0
+    mov rax, rdx
+    cmovne rax, rsi
+    ret rax
+
+function @shared_load
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 rdi, [rdi]
+    test.i32 rdi, 127
+    mov r11, 11
+    mov r8, 29
+    cmovne r8, r11
+    add.i32 r8, rdi
+    sext.i32 rax, r8
+    ret rax
+
+function @volatile_mask
+  abi
+    param %p -> rdi : ptr
+    param %yes -> rsi : i64
+    param %no -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 rdi, [rdi]
+    test.i32 rdi, 127
+    mov rax, rdx
+    cmovne rax, rsi
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    slot $data -> [rbp-8] : i32
+
+  block ^entry
+    mov rbx, -256
+
+  block ^loop
+    store.i32 [rbp-8], rbx
+    mov r8, rbx
+    and r8, 127
+    mov r11, 11
+    mov r12, 29
+    cmovne r12, r11
+    lea rdi, [rbp-8]
+    mov rsi, 11
+    mov rdx, 29
+    call @masked_alias [args=(rdx,rsi,rdi)]
+    mov r13, rax
+    lea rdi, [rbp-8]
+    call @shared_load [args=(rdi)]
+    mov r14, rax
+    lea rdi, [rbp-8]
+    mov rsi, 11
+    mov rdx, 29
+    call @volatile_mask [args=(rdx,rsi,rdi)]
+    mov r15, rax
+    lea rdi, [rbp-8]
+    mov rsi, 11
+    mov rdx, 29
+    call @stored_after_mask [args=(rdx,rsi,rdi)]
+    sext.i32 r8, rbx
+    add r8, r12
+    cmp.i64 r13, r12
+    setne r13
+    cmp.i64 r14, r8
+    setne r14
+    cmp.i64 r15, r12
+    setne r15
+    cmp.i64 rax, r12
+    setne rax
+    cmp.i32 [rbp-8], 0
+    setne r8
+    or r13, r14
+    or r15, rax
+    or r13, r15
+    or r13, r8
+    cmp.u8 r13, 0
+    jne ^failed
+
+  block ^next
+    add.i32 rbx, 1
+    cmp.i32 rbx, 256
+    jl ^loop
+    jmp ^done
+
+  block ^failed
+    mov rax, 1
+    ret rax
+
+  block ^done
+    mov rax, 0
+    ret rax
