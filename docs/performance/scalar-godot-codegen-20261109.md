@@ -103,6 +103,12 @@ the compiler. Two different effects need to be separated:
 | simdjson scalar | 1.0008× | 1.0124× | 0.8349× |
 | Godot | 0.9772× | 0.8706× | 0.8968× |
 
+The earlier [final SSE qualification of 0.965× GCC](simdjson-20261107.md#guarded-integer-normalization)
+was measured on the Intel Xeon, separately from this GCloud scalar campaign.
+It is not an EPYC SSE qualification. The later EPYC SSE aggregate is 0.9053×
+GCC; the recovered hosted Intel result is 0.9474× on an 8573C. The remaining
+EPYC SSE gap is separate from the scalar regression isolated below.
+
 The simdjson gain initially reached CI and was subsequently lost. The Godot
 host gap was already present with the qualified compiler; later merges did not
 create it. These are the retained
