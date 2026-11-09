@@ -1259,10 +1259,31 @@ cases; both reduced scalar and pointer forms also lose their switches.
 
 An earlier full LLVM build passed, but is superseded by the quality and
 typed-contract fixes. Its source-hash guard correctly refused to qualify it
-against the modified checkout. All artifacts are retained. A fresh R3 build
-is running and must pass the full byte/timing comparisons. The current
-cppgm qualification includes 324 units, adding the new optimizer module;
-the immutable timing workload remains the same 323 units. Student export
-and official releases are pending. This candidate is not accepted and the
-0.95x objective remains open. Evidence is
+against the modified checkout. All artifacts are retained. The fresh R3
+build passes in 370.43 s, all 2577 C++ units without fallback. All 204
+generated dependencies, 324 current objects (including the new module),
+323 frozen objects and both linked compilers match byte for byte, as do
+all six timing outputs. The immutable timing workload remains unchanged.
+
+Full ABBA gives native 44.275 s and cppgm-built 54.580 s (0.8111946x).
+Cppgm-built instructions are 1,227,048,254,380, 0.99485063x B39 (-0.5149%);
+native instructions are 1.00003171x. Native A/A walls are 44.39 s and 44.62 s.
+This confirms reduced instruction work, not an elapsed-time improvement
+across differently loaded runs. The 0.95x objective is not achieved.
+
+Student export, all 42 wrappers, all three new exported fixtures and
+quick/smoke pass. Official course/student releases are running. This
+candidate is not accepted until they pass. Evidence is
 /mnt/vizier/cppgm-llvm-evidence/block40-switch-results-*.
+
+Next machine-code review: getTranslationUnitDecl's new indexed table read
+still emits lea(global), add(index), load(address). Selection deliberately
+rejects a symbol base with a register index as a lazy address (analysis.cpp
+address-expression construction), so it forms the full address first.
+The emitted add can potentially fold into the following load's base/index
+operand when its result and flags are unobserved. Existing MIR cleanup
+provides register-read/write and flags-dead helpers; use those facts rather
+than changing scratch-register contracts speculatively. Its and(mask),
+test(narrow) pairs also retain a test when the mask proves the result fits
+both widths with the same flags. These are concrete follow-up candidates;
+neither is implemented or counted as a performance improvement yet.
