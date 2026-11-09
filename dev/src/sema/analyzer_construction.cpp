@@ -1447,6 +1447,13 @@ bool Analyzer::same_class_source(const ClassEntity* entity, const syntax::Expr& 
 FunctionEntity* Analyzer::copy_initialization(ClassEntity* entity, const syntax::Expr& source, ConstructionKind kind,
 	uint32_t location, bool in_place, const Candidate* chosen, bool complete_object)
 {
+	// A glvalue naming a specialization need not have instantiated it.
+	// Copying its value does need the complete destination and constructors.
+	if (!entity->complete && !require_complete(entity))
+	{
+		substitution_error(location, "copy initialization of an incomplete class object", true);
+		return nullptr;
+	}
 	// The constructor overload resolution selects with the expression as
 	// its argument (12.8p2-p3: a copy constructor for an lvalue, a move
 	// constructor for an rvalue when there is one); a prvalue of the class
