@@ -99,6 +99,28 @@ function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [unwind=no, bi
     store typed ptr %t11, %t9
     return void
 }
+function @Left__Left__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4LeftC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Left__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+function @Right__Right__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5RightC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Right__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
 function @Derived__f(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN7Derived1fEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -126,28 +148,6 @@ function @Right__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_Z
   block ^entry:
     store typed ptr %this, $this
     return i32 2
-}
-function @Left__Left__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4LeftC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Left__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
-}
-function @Right__Right__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5RightC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Right__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
 }
 function @_Derived__g__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn8_NK7Derived1gEv] {
   block ^entry:

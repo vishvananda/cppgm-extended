@@ -3,7 +3,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    %t2 = const i64 4
-    %t3 = addr $value
+    %t2 = addr $value
     return i32 0
 }

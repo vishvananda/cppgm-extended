@@ -1,0 +1,340 @@
+declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
+
+global @unused : i32 [binding=strong] = zero
+global @base_constructions : i32 [binding=strong] = zero
+global @__typeinfo_name__struct_Derived [storage=readonly, binding=weak, object=_ZTS7Derived] = {
+  i8 55
+  i8 68
+  i8 101
+  i8 114
+  i8 105
+  i8 118
+  i8 101
+  i8 100
+  i8 0
+}
+global @__typeinfo_name__struct_Base [storage=readonly, binding=weak, object=_ZTS4Base] = {
+  i8 52
+  i8 66
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__rtti_struct_Base [storage=readonly, binding=weak, object=_ZTI4Base] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Base
+}
+global @__rtti_struct_Derived [storage=readonly, binding=weak, object=_ZTI7Derived] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Derived
+  ptr addr @__rtti_struct_Base
+}
+global @Derived__vtable [storage=readonly, binding=weak, object=_ZTV7Derived] = {
+  i64 0
+  ptr addr @__rtti_struct_Derived
+  ptr addr @Derived__value
+  ptr addr @Derived___Derived
+  ptr addr @Derived___Derived__deleting_entry
+}
+global @Base__vtable [storage=readonly, binding=weak, object=_ZTV4Base] = {
+  i64 0
+  ptr addr @__rtti_struct_Base
+  ptr addr @Base__value
+  ptr addr @Base___Base
+  ptr addr @Base___Base__deleting_entry
+}
+
+function @external_dispatch(%p : ptr) -> i32 [binding=strong, object=_Z17external_dispatchP6Unused] {
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = load typed ptr %t1
+    %t3 = load typed ptr %t2
+    %t4 = call i32 %t3(%t1) as (%arg0 : ptr [object_bytes=8]) -> i32
+    return i32 %t4
+}
+function @dispatch(%p : ptr) -> i32 [binding=strong, object=_Z8dispatchP4Base] {
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = load typed ptr %t1
+    %t3 = load typed ptr %t2
+    %t4 = call i32 %t3(%t1) as (%arg0 : ptr [object_bytes=16]) -> i32
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<16x8>
+  slot $lor__1 : i64
+  slot $call__2 : i32
+  slot $lor__3 : i64
+
+  block ^entry:
+    %t1 = addr $d
+    call void @Derived__Derived(%t1)
+    eh_try ^cleanup_action_5
+    %t2 = addr $d
+    %t3 = index i8 %t2, 0
+    %t4 = call i32 @dispatch(%t3)
+    store typed i32 %t4, $call__2
+    %t5 = load typed i32 $call__2
+    %t6 = cmp ne i32 %t5, 18
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^cleanup_action_5:
+    %t7 = addr $d
+    call void @Derived___Derived(%t7)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    branch %t6, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t8 = load typed i32 @unused
+    %t9 = cmp ne i32 %t8, 0
+    %t10 = cmp ne i64 %t9, 0
+    store typed i64 %t10, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t11 = load typed i64 $lor__1
+    branch %t11, ^lor_short_8, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t12 = load typed i32 @base_constructions
+    %t13 = cmp ne i32 %t12, 1
+    %t14 = cmp ne i64 %t13, 0
+    store typed i64 %t14, $lor__3
+    jump ^lor_end_9
+
+  block ^lor_short_8:
+    store typed i64 1, $lor__3
+    jump ^lor_end_9
+
+  block ^lor_end_9:
+    %t15 = load typed i64 $lor__3
+    %t16 = convert trunc i32 i64 %t15
+    %t17 = addr $d
+    call void @Derived___Derived(%t17)
+    return i32 %t16
+}
+function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    call void @Base__Base__base_entry(%t2, 17)
+    eh_cleanup ^constructor_cleanup_1
+    %t3 = load typed ptr $this
+    %t4 = addr @Derived__vtable
+    %t5 = index i8 %t4, 16
+    store typed ptr %t5, %t3
+    eh_end
+    return void
+
+  block ^constructor_cleanup_1:
+    %t6 = load typed ptr $this
+    %t7 = index i8 %t6, 0
+    call void @Base___Base__base_entry(%t7)
+    eh_end
+    resume
+}
+function @Derived___Derived__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    %t1 = load typed ptr $this
+    %t2 = addr @Derived__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    eh_end
+    %t4 = load typed ptr $this
+    %t5 = index i8 %t4, 0
+    call void @Base___Base__base_entry(%t5)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t6 = load typed ptr $this
+    %t7 = index i8 %t6, 0
+    call void @Base___Base__base_entry(%t7)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @Derived___Derived__deleting_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD0Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    %t1 = load typed ptr $this
+    %t2 = addr @Derived__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
+    %t4 = load typed ptr $this
+    %t5 = index i8 %t4, 0
+    call void @Base___Base__base_entry(%t5)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t6 = load typed ptr $this
+    call void @operatordelete(%t6)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t7 = load typed ptr $this
+    call void @operatordelete(%t7)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t8 = load typed ptr $this
+    %t9 = index i8 %t8, 0
+    call void @Base___Base__base_entry(%t9)
+    %t10 = load typed ptr $this
+    call void @operatordelete(%t10)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @Derived___Derived(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    %t1 = load typed ptr $this
+    %t2 = addr @Derived__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    eh_end
+    %t4 = load typed ptr $this
+    %t5 = index i8 %t4, 0
+    call void @Base___Base__base_entry(%t5)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t6 = load typed ptr $this
+    %t7 = index i8 %t6, 0
+    call void @Base___Base__base_entry(%t7)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @Base__Base__base_entry(%this : ptr [object_bytes=16], %n : i32) -> void [binding=weak, object=_ZN4BaseC2Ei, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed ptr $this
+    %t2 = addr @Base__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    %t4 = load typed i32 $n
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store typed i32 %t4, %t6
+    %t7 = load typed i32 @base_constructions
+    %t8 = binary add nowrap i32 %t7, 1
+    store typed i32 %t8, @base_constructions
+    return void
+}
+function @Derived__value(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN7Derived5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    %t3 = call i32 @Base__value(%t2)
+    %t4 = binary add nowrap i32 %t3, 1
+    return i32 %t4
+}
+function @Base___Base__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4BaseD2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Base__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+function @Base__value(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN4Base5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load typed i32 %t2
+    return i32 %t3
+}
+function @Base___Base__deleting_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4BaseD0Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    %t1 = load typed ptr $this
+    %t2 = addr @Base__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    eh_end
+    %t4 = load typed ptr $this
+    call void @operatordelete(%t4)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t5 = load typed ptr $this
+    call void @operatordelete(%t5)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @Base___Base(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Base__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+alias object _ZN7DerivedC2Ev = @Derived__Derived
+equivalent_entry @Base___Base = @Base___Base__base_entry

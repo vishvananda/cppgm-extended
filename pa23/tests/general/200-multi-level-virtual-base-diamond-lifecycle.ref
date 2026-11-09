@@ -276,13 +276,6 @@ function @D__D(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, 
     call void @AB___AB__base_entry(%t17, %t19)
     jump ^constructor_cleanup_1
 }
-function @V__anchor(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1V6anchorEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @D___D__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1DD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -389,18 +382,11 @@ function @V__V__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, bin
     store typed i32 %t5, @live
     return void
 }
-function @V__V(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1VC1Ev, inline_hint=yes] {
+function @V__anchor(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1V6anchorEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @V__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    %t4 = load typed i32 @live
-    %t5 = binary add nowrap i32 %t4, 1
-    store typed i32 %t5, @live
     return void
 }
 function @AB__AB__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN2ABC2Ev, object_root=yes, inline_hint=yes] {
@@ -608,5 +594,4 @@ function @B___B__base_entry(%this : ptr [object_bytes=8], %__vtt : ptr) -> void 
     store typed ptr %t8, %t6
     return void
 }
-equivalent_entry @V__V = @V__V__base_entry
 equivalent_entry @V___V = @V___V__base_entry

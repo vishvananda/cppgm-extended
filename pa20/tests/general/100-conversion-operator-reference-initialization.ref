@@ -104,13 +104,6 @@ function @Base__Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=w
     store typed ptr %t3, %t1
     return void
 }
-function @Base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4Base5valueEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 7
-}
 function @Wrapper__Wrapper(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN7WrapperC1ER4Base, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
@@ -133,6 +126,13 @@ function @Wrapper__operatorconstBase_(%this : ptr [object_bytes=8]) -> ptr [bind
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     return ptr %t3
+}
+function @Base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4Base5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 7
 }
 alias object _ZN4BaseC2Ev = @Base__Base
 alias object _ZN7WrapperC2ER4Base = @Wrapper__Wrapper

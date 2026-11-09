@@ -239,6 +239,28 @@ function @Joined__Joined(%this : ptr [object_bytes=40]) -> void [unwind=no, bind
     call void @Second___Second__base_entry(%t15)
     jump ^constructor_cleanup_1
 }
+function @First__First__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN5FirstC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @First__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+function @Second__Second__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN6SecondC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Second__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
 function @First__first(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNK5First5firstEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -401,28 +423,6 @@ function @First___First__deleting_entry(%this : ptr [object_bytes=16]) -> void [
     resume
 
   block ^destructor_end_2:
-    return void
-}
-function @First__First__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN5FirstC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @First__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
-}
-function @Second__Second__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN6SecondC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Second__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
     return void
 }
 function @First___First(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN5FirstD1Ev, inline_hint=yes] {

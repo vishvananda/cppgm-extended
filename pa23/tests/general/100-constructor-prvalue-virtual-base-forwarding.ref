@@ -350,19 +350,6 @@ function @A__A__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [
     store typed i32 %t1, %t3
     return void
 }
-function @A__A(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1AC1Ei, inline_hint=yes] {
-  slot $this : ptr
-  slot $value : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %value, $value
-    %t1 = load typed i32 $value
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    return void
-}
 function @B__B__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1BC2Ei, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
@@ -376,33 +363,7 @@ function @B__B__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [
     store typed i32 %t1, %t3
     return void
 }
-function @B__B(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1BC1Ei, inline_hint=yes] {
-  slot $this : ptr
-  slot $value : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %value, $value
-    %t1 = load typed i32 $value
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    return void
-}
 function @C__C__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1CC2Ei, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-  slot $value : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %value, $value
-    %t1 = load typed i32 $value
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    return void
-}
-function @C__C(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1CC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 
@@ -475,6 +436,3 @@ function @D__D__base_entry(%this : ptr [alias=noalias, object_bytes=24], %__vtt 
     store typed ptr %t2, %t1
     return void
 }
-equivalent_entry @A__A = @A__A__base_entry
-equivalent_entry @B__B = @B__B__base_entry
-equivalent_entry @C__C = @C__C__base_entry

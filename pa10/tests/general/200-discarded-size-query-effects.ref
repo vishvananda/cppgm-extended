@@ -1,0 +1,22 @@
+global @effects : i32 [binding=strong] = zero
+global @observed : i64 [binding=strong] = zero
+
+function @effect() -> i32 [binding=strong, object=_Z6effectv] {
+  block ^entry:
+    %t1 = load typed i32 @effects
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @effects
+    return i32 17
+}
+function @discard_queries() -> void [binding=strong, object=_Z15discard_queriesv] {
+  block ^entry:
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    call void @discard_queries()
+    %t1 = load typed i32 @effects
+    %t2 = cmp ne i32 %t1, 0
+    %t3 = convert trunc i32 i64 %t2
+    return i32 %t3
+}

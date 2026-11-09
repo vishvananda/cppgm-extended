@@ -163,16 +163,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_6:
     return i32 0
 }
-function @Tagged__g(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN6Tagged1gEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
-    %t3 = load typed i32 %t2
-    return i32 %t3
-}
 function @Repeated__Repeated(%this : ptr [object_bytes=40]) -> void [binding=weak, object=_ZN8RepeatedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -202,13 +192,6 @@ function @Repeated__Repeated(%this : ptr [object_bytes=40]) -> void [binding=wea
     %t17 = index i8 %t16, 16
     store typed ptr %t17, %t15
     return void
-}
-function @First__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN5First1fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
 }
 function @First__First__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5FirstC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
@@ -256,6 +239,23 @@ function @Right__Right__base_entry(%this : ptr [object_bytes=16]) -> void [bindi
     %t8 = index i8 [projection=field] %t7, 8
     store typed i32 20, %t8
     return void
+}
+function @First__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN5First1fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
+}
+function @Tagged__g(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN6Tagged1gEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load typed i32 %t2
+    return i32 %t3
 }
 function @Tagged__Tagged__base_entry(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN6TaggedC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr

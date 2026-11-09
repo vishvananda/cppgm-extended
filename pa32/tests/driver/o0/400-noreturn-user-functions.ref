@@ -263,17 +263,6 @@ function @Guard__Guard(%this : ptr [object_bytes=8]) -> void [unwind=no, binding
     store typed ptr %t3, %t1
     return void
 }
-function @Guard__abandon(%this : ptr [object_bytes=8]) -> void [return=noreturn, binding=weak, object=_ZNK5Guard7abandonEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store typed i32 4, %t1
-    %t2 = addr @__external_rtti__int
-    call void @__external_runtime____cxa_throw(%t1, %t2, 0)
-    return void
-}
 function @Guard___Guard__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5GuardD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -342,6 +331,17 @@ function @raise_code__2(%code : i64) -> void [return=noreturn, binding=weak, obj
     store typed i32 %t3, %t1
     %t4 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t1, %t4, 0)
+    return void
+}
+function @Guard__abandon(%this : ptr [object_bytes=8]) -> void [return=noreturn, binding=weak, object=_ZNK5Guard7abandonEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 4, %t1
+    %t2 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t1, %t2, 0)
     return void
 }
 alias object _ZN5GuardC2Ev = @Guard__Guard

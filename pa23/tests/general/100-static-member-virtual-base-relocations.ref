@@ -307,6 +307,17 @@ function @Object___Object__deleting_entry(%this : ptr [object_bytes=40]) -> void
   block ^destructor_end_2:
     return void
 }
+function @Virtual__Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7VirtualC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Virtual__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
 function @Object___Object(%this : ptr [object_bytes=40]) -> void [unwind=no, binding=weak, object=_ZN6ObjectD1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -486,17 +497,6 @@ function @Virtual___Virtual__deleting_entry(%this : ptr [object_bytes=16]) -> vo
     resume
 
   block ^destructor_end_2:
-    return void
-}
-function @Virtual__Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7VirtualC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Virtual__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
     return void
 }
 function @Base__Base__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {

@@ -116,13 +116,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Square___Square(%t16)
     return i32 %t14
 }
-function @Shape__sides(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK5Shape5sidesEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 0
-}
 function @Square__Square(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6SquareC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -146,12 +139,16 @@ function @Square__Square(%this : ptr [object_bytes=8]) -> void [unwind=no, bindi
     eh_end
     resume
 }
-function @Square__sides(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK6Square5sidesEv, inline_hint=yes] {
+function @Shape__Shape__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5ShapeC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
-    return i32 4
+    %t1 = load typed ptr $this
+    %t2 = addr @Shape__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
 }
 function @Square___Square__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6SquareD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
@@ -220,15 +217,30 @@ function @Square___Square__deleting_entry(%this : ptr [object_bytes=8]) -> void 
   block ^destructor_end_2:
     return void
 }
-function @Shape__Shape__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5ShapeC2Ev, object_root=yes, inline_hint=yes] {
+function @Square___Square(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6SquareD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load typed ptr $this
-    %t2 = addr @Shape__vtable
+    %t2 = addr @Square__vtable
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
+    eh_end
+    %t4 = load typed ptr $this
+    %t5 = index i8 %t4, 0
+    call void @Shape___Shape__base_entry(%t5)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t6 = load typed ptr $this
+    %t7 = index i8 %t6, 0
+    call void @Shape___Shape__base_entry(%t7)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @Shape___Shape__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5ShapeD2Ev, object_root=yes, inline_hint=yes] {
@@ -266,32 +278,6 @@ function @Shape___Shape__deleting_entry(%this : ptr [object_bytes=8]) -> void [u
   block ^destructor_end_2:
     return void
 }
-function @Square___Square(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6SquareD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    eh_cleanup ^destructor_cleanup_1
-    %t1 = load typed ptr $this
-    %t2 = addr @Square__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    eh_end
-    %t4 = load typed ptr $this
-    %t5 = index i8 %t4, 0
-    call void @Shape___Shape__base_entry(%t5)
-    jump ^destructor_end_2
-
-  block ^destructor_cleanup_1:
-    %t6 = load typed ptr $this
-    %t7 = index i8 %t6, 0
-    call void @Shape___Shape__base_entry(%t7)
-    eh_end
-    resume
-
-  block ^destructor_end_2:
-    return void
-}
 function @Shape___Shape(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5ShapeD1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -313,6 +299,20 @@ function @Shape__Shape(%this : ptr [object_bytes=8]) -> void [unwind=no, binding
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @Square__sides(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK6Square5sidesEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 4
+}
+function @Shape__sides(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK5Shape5sidesEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 0
 }
 alias object _ZN6SquareC2Ev = @Square__Square
 equivalent_entry @Shape___Shape = @Shape___Shape__base_entry

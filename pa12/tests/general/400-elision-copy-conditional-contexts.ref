@@ -29,14 +29,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $c : u8
   slot $arg__1 : obj<4x4>
   slot $copied : obj<4x4>
-  slot $arg__2 : obj<4x4>
   slot $direct : obj<4x4>
-  slot $arg__3 : obj<4x4>
+  slot $arg__2 : obj<4x4>
   slot $passed : i32
-  slot $arg__4 : obj<4x4>
-  slot $arg__5 : obj<4x4>
+  slot $arg__3 : obj<4x4>
   slot $returned : obj<4x4>
-  slot $cond__6 : i32
+  slot $cond__4 : i32
 
   block ^entry:
     %t1 = addr $arg__1
@@ -46,82 +44,78 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = convert trunc u8 i64 %t3
     store u8 %t4, $c
     %t5 = addr $copied
-    %t6 = addr $arg__2
-    %t7 = load u8 $c
-    branch %t7, ^condobj_then_1, ^condobj_else_2
+    %t6 = load u8 $c
+    branch %t6, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:
-    call void @Token__Token(%t6, 3)
+    call void @Token__Token(%t5, 3)
     jump ^condobj_end_3
 
   block ^condobj_else_2:
-    call void @Token__Token(%t6, 4)
+    call void @Token__Token(%t5, 4)
     jump ^condobj_end_3
 
   block ^condobj_end_3:
-    call void @Token__Token__ov3(%t5, %t6) [elision=copy]
-    %t8 = addr $direct
-    %t9 = addr $arg__3
-    %t10 = load u8 $c
-    branch %t10, ^condobj_then_4, ^condobj_else_5
+    %t7 = addr $direct
+    %t8 = addr $arg__2
+    %t9 = load u8 $c
+    branch %t9, ^condobj_then_4, ^condobj_else_5
 
   block ^condobj_then_4:
-    call void @Token__Token(%t9, 5)
+    call void @Token__Token(%t8, 5)
     jump ^condobj_end_6
 
   block ^condobj_else_5:
-    call void @Token__Token(%t9, 6)
+    call void @Token__Token(%t8, 6)
     jump ^condobj_end_6
 
   block ^condobj_end_6:
-    call void @Token__Token__ov3(%t8, %t9)
-    %t11 = addr $arg__4
-    %t12 = addr $arg__5
-    %t13 = load u8 $c
-    branch %t13, ^condobj_then_7, ^condobj_else_8
+    call void @Token__Token__ov3(%t7, %t8)
+    %t10 = addr $arg__3
+    %t11 = load u8 $c
+    branch %t11, ^condobj_then_7, ^condobj_else_8
 
   block ^condobj_then_7:
-    call void @Token__Token(%t12, 7)
+    call void @Token__Token(%t10, 7)
     jump ^condobj_end_9
 
   block ^condobj_else_8:
-    call void @Token__Token(%t12, 8)
+    call void @Token__Token(%t10, 8)
     jump ^condobj_end_9
 
   block ^condobj_end_9:
-    call void @Token__Token__ov3(%t11, %t12) [elision=copy]
-    %t14 = call i32 @take(%t11)
-    store typed i32 %t14, $passed
-    %t15 = addr $returned
-    %t16 = load u8 $c
-    call void @choose(%t15, %t16)
-    %t17 = addr $copied
-    %t18 = index i8 [projection=field] %t17, 0
-    %t19 = load typed i32 %t18
-    %t20 = addr $direct
-    %t21 = index i8 [projection=field] %t20, 0
-    %t22 = load typed i32 %t21
-    %t23 = binary add nowrap i32 %t19, %t22
-    %t24 = load typed i32 $passed
-    %t25 = binary add nowrap i32 %t23, %t24
-    %t26 = addr $returned
-    %t27 = index i8 [projection=field] %t26, 0
-    %t28 = load typed i32 %t27
-    %t29 = binary add nowrap i32 %t25, %t28
-    %t30 = cmp eq i32 %t29, 16
-    branch %t30, ^cond_then_10, ^cond_else_11
+    %t12 = call i32 @take(%t10)
+    store typed i32 %t12, $passed
+    %t13 = addr $returned
+    %t14 = load u8 $c
+    call void @choose(%t13, %t14)
+    %t15 = addr $copied
+    %t16 = index i8 [projection=field] %t15, 0
+    %t17 = load typed i32 %t16
+    %t18 = addr $direct
+    %t19 = index i8 [projection=field] %t18, 0
+    %t20 = load typed i32 %t19
+    %t21 = binary add nowrap i32 %t17, %t20
+    %t22 = load typed i32 $passed
+    %t23 = binary add nowrap i32 %t21, %t22
+    %t24 = addr $returned
+    %t25 = index i8 [projection=field] %t24, 0
+    %t26 = load typed i32 %t25
+    %t27 = binary add nowrap i32 %t23, %t26
+    %t28 = cmp eq i32 %t27, 16
+    branch %t28, ^cond_then_10, ^cond_else_11
 
   block ^cond_then_10:
-    store typed i32 0, $cond__6
+    store typed i32 0, $cond__4
     jump ^cond_end_12
 
   block ^cond_else_11:
-    store typed i32 1, $cond__6
+    store typed i32 1, $cond__4
     jump ^cond_end_12
 
   block ^cond_end_12:
-    %t31 = load typed i32 $cond__6
-    return i32 %t31
+    %t29 = load typed i32 $cond__4
+    return i32 %t29
 }
 function @Token__Token(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN5TokenC1Ei, inline_hint=yes] {
   slot $this : ptr

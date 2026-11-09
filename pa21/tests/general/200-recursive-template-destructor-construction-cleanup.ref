@@ -139,13 +139,12 @@ function @owning_outer____owning(%this : ptr [object_bytes=8]) -> void [unwind=n
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = const i64 8
-    %t2 = load typed i32 @destroyed
-    %t3 = binary add nowrap i32 %t2, 1
-    store typed i32 %t3, @destroyed
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    store typed ptr 0, %t5
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store typed ptr 0, %t4
     return void
 }
 alias object _ZN5outerC2Ev = @outer__outer

@@ -112,17 +112,6 @@ function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [unwind=no, bi
     store typed ptr %t5, %t3
     return void
 }
-function @Derived__read(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7Derived4readEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 8
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load typed i32 %t3
-    return i32 %t4
-}
 function @Interface__Interface__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN9InterfaceC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -133,5 +122,16 @@ function @Interface__Interface__base_entry(%this : ptr [object_bytes=8]) -> void
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @Derived__read(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7Derived4readEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 8
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    return i32 %t4
 }
 alias object _ZN7DerivedC2Ev = @Derived__Derived

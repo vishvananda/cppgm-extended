@@ -90,7 +90,6 @@ function @holder_implementation____holder(%this : ptr [object_bytes=1]) -> void 
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = const i64 1
     return void
 }
 alias object _ZN6holderIN5owner14implementationEED2Ev = @holder_implementation____holder

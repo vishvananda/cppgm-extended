@@ -71,6 +71,13 @@ void FunctionLowering::call_special(const sema::FunctionEntity* function, EntryV
 	// storage copy writes its data only.
 	const bool data_only = zero_data_only_;
 	zero_data_only_ = false;
+	if (elision && !data_only && variant == EntryVariant::Complete)
+	{
+		// 12.8p31 permits the conditional's selected prvalue to construct
+		// the complete destination, including a nontrivial copy or move.
+		materialize(*written[0], object, location);
+		return;
+	}
 	if (written.size == 1 && elides_conversion(function, WithoutParentheses(written[0])->facts->conversion))
 	{
 		// A copy of a conversion function's class prvalue is that result.
@@ -127,11 +134,6 @@ void FunctionLowering::call_special(const sema::FunctionEntity* function, EntryV
 	if (hidden)
 		hidden_base_arguments(base, location);
 	lowering_.demand(function, variant);
-	// The course defines a dynamic class's tables (where the unit may)
-	// with each construction of an object of it, its constructor defined
-	// here or not (a host object only the tables its code refers to).
-	if (function->constructor && owner != nullptr && owner->dynamic && !lowering_.host_objects())
-		lowering_.class_table(owner);
 	const lowir::Value callee = lowir::Value::symbol(lowering_.entry_symbol(function, variant));
 	emit_call(lowir::Type::scalar(lowir::TypeKind::Void), callee, base, lowir::kNoId, throws, elision);
 	end_call(throws);
@@ -171,6 +173,11 @@ void FunctionLowering::call_constructor(const sema::FunctionEntity* constructor,
 	// its other parameters take their default arguments.
 	const sema::Type* signature = constructor->type->canonical;
 	const sema::ClassEntity* owner = sema::ClassOf(constructor->owner->entity->type);
+	if (elision && !zero_data_only_)
+	{
+		materialize(argument, object, location);
+		return;
+	}
 	if (elides_conversion(constructor, conversion))
 	{
 		// A copy of a conversion function's class prvalue is that result.
@@ -2123,18 +2130,6 @@ void FunctionLowering::construct_base(const sema::SubobjectInit& init, uint32_t 
 		passing_empty_ = saved;
 		destroy_temporaries(first);
 		end_full_expression(region);
-		// The course emits a user-provided base constructor's complete
-		// entry with the base entry a polymorphic class uses, unless the
-		// base is polymorphic with a non-virtual destructor, and with any
-		// base entry a class with virtual bases uses. A host object defines
-		// only the entries it calls (README PA31: demand-driven emission;
-		// each entry is a COMDAT group of its own).
-		const sema::FunctionEntity* constructor = init.constructor;
-		if (!lowering_.host_objects() && constructor != nullptr && !constructor->implicit && !constructor->defaulted &&
-			((entity->polymorphic &&
-				 (!base->polymorphic || (base->destructor != nullptr && base->destructor->is_virtual))) ||
-				VirtualBaseCount(entity) != 0))
-			lowering_.demand(constructor, EntryVariant::Complete);
 	}
 	hidden_base_.active = false;
 	// 15.2p2: a constructed subobject is destroyed if a later

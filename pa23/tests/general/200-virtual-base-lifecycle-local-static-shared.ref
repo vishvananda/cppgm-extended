@@ -44,6 +44,7 @@ global @counted__vtable [storage=readonly, binding=weak, object=_ZTV7counted] = 
 global @counted____vtt [storage=readonly, binding=weak, object=_ZTT7counted, object_root=yes] = {
   ptr addr @counted__vtable + 24
 }
+global @__local_static__counted__counted__decl0__count : i32 [binding=weak, object=_ZZN7countedC1EvE5count] = 0
 global @__typeinfo_name__struct_derived [storage=readonly, binding=weak, object=_ZTS7derived] = {
   i8 55
   i8 100
@@ -74,7 +75,6 @@ global @derived____vtt [storage=readonly, binding=weak, object=_ZTT7derived, obj
   ptr addr @derived__vtable + 24
   ptr addr @derived____construction__counted__0__s0__vtable + 24
 }
-global @__local_static__counted__counted__decl0__count : i32 [binding=weak, object=_ZZN7countedC1EvE5count] = 0
 global @__local_static__counted___counted__decl0__gone : i32 [binding=weak, object=_ZZN7countedD1EvE4gone] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -294,16 +294,6 @@ function @shared__shared__base_entry(%this : ptr [object_bytes=4]) -> void [bind
     store typed i32 1, %t2
     return void
 }
-function @shared__shared(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6sharedC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store typed i32 1, %t2
-    return void
-}
 function @counted__counted(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7countedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -325,4 +315,3 @@ function @counted__counted(%this : ptr [object_bytes=16]) -> void [binding=weak,
     store typed i32 %t8, %t10
     return void
 }
-equivalent_entry @shared__shared = @shared__shared__base_entry

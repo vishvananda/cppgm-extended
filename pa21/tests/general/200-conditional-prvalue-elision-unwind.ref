@@ -1,0 +1,373 @@
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+
+declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
+declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
+
+global @made : i32 [binding=strong] = zero
+global @copied : i32 [binding=strong] = zero
+global @moved : i32 [binding=strong] = zero
+global @destroyed : i32 [binding=strong] = zero
+global @choices : i32 [binding=strong] = zero
+global @__typeinfo_name__struct_Failure [storage=readonly, binding=weak, object=_ZTS7Failure] = {
+  i8 55
+  i8 70
+  i8 97
+  i8 105
+  i8 108
+  i8 117
+  i8 114
+  i8 101
+  i8 0
+}
+global @__rtti_struct_Failure [storage=readonly, binding=weak, object=_ZTI7Failure] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Failure
+}
+global @__ehobj_struct_Failure [binding=internal] = {
+  zero 1
+}
+
+function @choose(%value : u8) -> u8 [binding=strong, object=_Z6chooseb] {
+  slot $value : u8
+
+  block ^entry:
+    store u8 %value, $value
+    %t1 = load typed i32 @choices
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @choices
+    %t3 = load u8 $value
+    return u8 %t3
+}
+function @check(%left : u8) -> i32 [binding=strong, object=_Z5checkb] {
+  slot $left : u8
+  slot $v : obj<4x4>
+  slot $call__1 : u8
+  slot $cond__2 : i32
+  slot $v__shadow2 : obj<4x4>
+  slot $call__3 : u8
+  slot $original : obj<4x4>
+  slot $required : obj<4x4>
+
+  block ^entry:
+    store u8 %left, $left
+    store typed i32 0, @choices
+    store typed i32 0, @destroyed
+    store typed i32 0, @moved
+    store typed i32 0, @copied
+    store typed i32 0, @made
+    %t1 = addr $v
+    %t2 = load u8 $left
+    %t3 = call u8 @choose(%t2)
+    store u8 %t3, $call__1
+    %t4 = load u8 $call__1
+    branch %t4, ^condobj_then_1, ^condobj_else_2
+
+  block ^condobj_then_1:
+    call void @Value__Value(%t1, 17)
+    jump ^condobj_end_3
+
+  block ^condobj_else_2:
+    call void @Value__Value(%t1, 29)
+    jump ^condobj_end_3
+
+  block ^condobj_end_3:
+    %t5 = load typed i32 @choices
+    %t6 = cmp ne i32 %t5, 1
+    branch %t6, ^if_then_4, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t7 = load typed i32 @made
+    %t8 = cmp ne i32 %t7, 1
+    branch %t8, ^if_then_4, ^lor_rhs_9
+
+  block ^lor_rhs_9:
+    %t9 = addr $v
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = load typed i32 %t10
+    %t12 = load u8 $left
+    branch %t12, ^cond_then_11, ^cond_else_12
+
+  block ^cond_then_11:
+    store typed i32 17, $cond__2
+    jump ^cond_end_13
+
+  block ^cond_else_12:
+    store typed i32 29, $cond__2
+    jump ^cond_end_13
+
+  block ^cond_end_13:
+    %t13 = load typed i32 $cond__2
+    %t14 = cmp ne i32 %t11, %t13
+    branch %t14, ^if_then_4, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t15 = load typed i32 @copied
+    %t16 = cmp ne i32 %t15, 0
+    branch %t16, ^if_then_4, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t17 = load typed i32 @moved
+    %t18 = cmp gt i32 %t17, 1
+    branch %t18, ^if_then_4, ^lor_rhs_6
+
+  block ^lor_rhs_6:
+    %t19 = load typed i32 @destroyed
+    %t20 = load typed i32 @moved
+    %t21 = cmp ne i32 %t19, %t20
+    branch %t21, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    %t22 = addr $v
+    call void @Value___Value(%t22)
+    return i32 1
+
+  block ^if_else_5:
+    jump ^if_end_14
+
+  block ^if_end_14:
+    %t23 = addr $v
+    call void @Value___Value(%t23)
+    %t24 = load typed i32 @destroyed
+    %t25 = load typed i32 @made
+    %t26 = load typed i32 @copied
+    %t27 = binary add nowrap i32 %t25, %t26
+    %t28 = load typed i32 @moved
+    %t29 = binary add nowrap i32 %t27, %t28
+    %t30 = cmp ne i32 %t24, %t29
+    branch %t30, ^if_then_15, ^if_else_16
+
+  block ^if_then_15:
+    return i32 2
+
+  block ^if_else_16:
+    jump ^if_end_17
+
+  block ^if_end_17:
+    store typed i32 0, @choices
+    store typed i32 0, @destroyed
+    store typed i32 0, @moved
+    store typed i32 0, @copied
+    store typed i32 0, @made
+    eh_try ^catch_dispatch_18
+    %t31 = addr $v__shadow2
+    %t32 = load u8 $left
+    %t33 = call u8 @choose(%t32)
+    store u8 %t33, $call__3
+    %t34 = load u8 $call__3
+    branch %t34, ^condobj_then_21, ^condobj_else_22
+
+  block ^condobj_then_21:
+    %t35 = unary neg i32 1
+    call void @Value__Value(%t31, %t35)
+    jump ^condobj_end_23
+
+  block ^condobj_else_22:
+    %t36 = unary neg i32 2
+    call void @Value__Value(%t31, %t36)
+    jump ^condobj_end_23
+
+  block ^condobj_end_23:
+    %t37 = addr $v__shadow2
+    call void @Value___Value(%t37)
+    eh_end
+    return i32 3
+
+  block ^catch_dispatch_18:
+    eh_catch @__rtti_struct_Failure, 1
+    jump ^catch_entry_19
+
+  block ^catch_entry_19:
+    %t38 = exception ptr
+    %t39 = exception_selector i32
+    %t40 = cmp eq i32 %t39, 1
+    branch %t40, ^catch_body_24, ^catch_next_25
+
+  block ^catch_body_24:
+    %t41 = call ptr @__external_runtime____cxa_begin_catch(%t38)
+    eh_cleanup ^catch_cleanup_26
+    %t42 = load typed i32 @choices
+    %t43 = cmp ne i32 %t42, 1
+    branch %t43, ^if_then_27, ^lor_rhs_32
+
+  block ^lor_rhs_32:
+    %t44 = load typed i32 @made
+    %t45 = cmp ne i32 %t44, 0
+    branch %t45, ^if_then_27, ^lor_rhs_31
+
+  block ^lor_rhs_31:
+    %t46 = load typed i32 @copied
+    %t47 = cmp ne i32 %t46, 0
+    branch %t47, ^if_then_27, ^lor_rhs_30
+
+  block ^lor_rhs_30:
+    %t48 = load typed i32 @moved
+    %t49 = cmp ne i32 %t48, 0
+    branch %t49, ^if_then_27, ^lor_rhs_29
+
+  block ^lor_rhs_29:
+    %t50 = load typed i32 @destroyed
+    %t51 = cmp ne i32 %t50, 0
+    branch %t51, ^if_then_27, ^if_else_28
+
+  block ^if_then_27:
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    return i32 4
+
+  block ^if_else_28:
+    jump ^if_end_33
+
+  block ^if_end_33:
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    jump ^try_end_20
+
+  block ^catch_cleanup_26:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^catch_next_25:
+    resume
+
+  block ^try_end_20:
+    %t52 = addr $original
+    call void @Value__Value(%t52, 41)
+    %t53 = addr $required
+    %t54 = addr $original
+    eh_try ^cleanup_action_35
+    call void @Value__Value__ov2(%t53, %t54)
+    eh_end
+    jump ^call_unwind_end_36
+
+  block ^cleanup_resume_34:
+    resume
+
+  block ^cleanup_action_35:
+    %t55 = addr $original
+    call void @Value___Value(%t55)
+    jump ^cleanup_resume_34
+
+  block ^call_unwind_end_36:
+    %t56 = addr $required
+    %t57 = index i8 [projection=field] %t56, 0
+    %t58 = load typed i32 %t57
+    %t59 = cmp ne i32 %t58, 41
+    branch %t59, ^if_then_37, ^lor_rhs_39
+
+  block ^lor_rhs_39:
+    %t60 = load typed i32 @copied
+    %t61 = cmp ne i32 %t60, 1
+    branch %t61, ^if_then_37, ^if_else_38
+
+  block ^if_then_37:
+    %t62 = addr $required
+    call void @Value___Value(%t62)
+    %t63 = addr $original
+    call void @Value___Value(%t63)
+    return i32 5
+
+  block ^if_else_38:
+    jump ^if_end_40
+
+  block ^if_end_40:
+    %t64 = addr $required
+    call void @Value___Value(%t64)
+    %t65 = addr $original
+    call void @Value___Value(%t65)
+    %t66 = load typed i32 @destroyed
+    %t67 = load typed i32 @made
+    %t68 = load typed i32 @copied
+    %t69 = binary add nowrap i32 %t67, %t68
+    %t70 = load typed i32 @moved
+    %t71 = binary add nowrap i32 %t69, %t70
+    %t72 = cmp ne i32 %t66, %t71
+    %t73 = convert trunc i32 i64 %t72
+    return i32 %t73
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+
+  block ^entry:
+    %t1 = call i32 @check(0)
+    branch %t1, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t2 = call i32 @check(1)
+    %t3 = cmp ne i32 %t2, 0
+    store typed i64 %t3, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t4 = load typed i64 $lor__1
+    %t5 = convert trunc i32 i64 %t4
+    return i32 %t5
+}
+function @Value__Value(%this : ptr [object_bytes=4], %n : i32) -> void [binding=weak, object=_ZN5ValueC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $n
+    %t5 = cmp lt i32 %t4, 0
+    branch %t5, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t6 = call ptr @__external_runtime____cxa_allocate_exception(1)
+    zeroinit 1x1 %t6
+    %t7 = addr @__rtti_struct_Failure
+    call void @__external_runtime____cxa_throw(%t6, %t7, 0)
+    return void
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t8 = load typed i32 @made
+    %t9 = binary add nowrap i32 %t8, 1
+    store typed i32 %t9, @made
+    return void
+}
+function @Value___Value(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5ValueD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
+    return void
+}
+function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=4], %v : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN5ValueC1ERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $v : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %v, $v
+    %t1 = load typed ptr $v
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store typed i32 %t3, %t5
+    %t6 = load typed i32 @copied
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @copied
+    return void
+}
+alias object _ZN5ValueC2Ei = @Value__Value
+alias object _ZN5ValueD2Ev = @Value___Value
+alias object _ZN5ValueC2ERKS_ = @Value__Value__ov2

@@ -101,18 +101,18 @@ function @Lone__next(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object
     store typed i32 %t3, %t1
     return i32 %t3
 }
-function @Base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN4Base5valueEv, inline_hint=yes] {
-  block ^entry:
-    return i32 1
-}
-function @Derived__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN7Derived5valueEv, inline_hint=yes] {
-  block ^entry:
-    return i32 2
-}
 function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
   block ^entry:
     %t1 = addr @Base__vtable
     %t2 = index i8 %t1, 16
     store typed ptr %t2, %this
     return void
+}
+function @Derived__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN7Derived5valueEv, inline_hint=yes] {
+  block ^entry:
+    return i32 2
+}
+function @Base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN4Base5valueEv, inline_hint=yes] {
+  block ^entry:
+    return i32 1
 }

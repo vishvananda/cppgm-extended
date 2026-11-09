@@ -121,16 +121,6 @@ function @derived__derived(%this : ptr [object_bytes=16]) -> void [binding=weak,
     store typed ptr %t5, %t3
     return void
 }
-function @derived__dispatch(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7derived8dispatchEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 8
-    %t3 = call i32 @base__get(%t2)
-    return i32 %t3
-}
 function @base__base__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4baseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -141,15 +131,14 @@ function @base__base__base_entry(%this : ptr [object_bytes=4]) -> void [binding=
     store typed i32 3, %t2
     return void
 }
-function @base__base(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4baseC1Ev, inline_hint=yes] {
+function @derived__dispatch(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7derived8dispatchEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store typed i32 3, %t2
-    return void
+    %t2 = index i8 %t1, 8
+    %t3 = call i32 @base__get(%t2)
+    return i32 %t3
 }
 alias object _ZN7derivedC2Ev = @derived__derived
-equivalent_entry @base__base = @base__base__base_entry

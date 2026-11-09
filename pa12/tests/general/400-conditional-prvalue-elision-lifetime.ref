@@ -1,0 +1,248 @@
+global @made : i32 [binding=strong] = zero
+global @copied : i32 [binding=strong] = zero
+global @moved : i32 [binding=strong] = zero
+global @destroyed : i32 [binding=strong] = zero
+global @choices : i32 [binding=strong] = zero
+
+function @choose(%value : u8) -> u8 [binding=strong, object=_Z6chooseb] {
+  slot $value : u8
+
+  block ^entry:
+    store u8 %value, $value
+    %t1 = load typed i32 @choices
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @choices
+    %t3 = load u8 $value
+    return u8 %t3
+}
+function @check(%left : u8) -> i32 [binding=strong, object=_Z5checkb] {
+  slot $left : u8
+  slot $v : obj<4x4>
+  slot $call__1 : u8
+  slot $cond__2 : i32
+  slot $original : obj<4x4>
+  slot $required : obj<4x4>
+
+  block ^entry:
+    store u8 %left, $left
+    store typed i32 0, @choices
+    store typed i32 0, @destroyed
+    store typed i32 0, @moved
+    store typed i32 0, @copied
+    store typed i32 0, @made
+    %t1 = addr $v
+    %t2 = load u8 $left
+    %t3 = call u8 @choose(%t2)
+    store u8 %t3, $call__1
+    %t4 = load u8 $call__1
+    branch %t4, ^condobj_then_1, ^condobj_else_2
+
+  block ^condobj_then_1:
+    call void @Value__Value(%t1, 17)
+    jump ^condobj_end_3
+
+  block ^condobj_else_2:
+    call void @Value__Value(%t1, 29)
+    jump ^condobj_end_3
+
+  block ^condobj_end_3:
+    %t5 = load typed i32 @choices
+    %t6 = cmp ne i32 %t5, 1
+    branch %t6, ^if_then_4, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t7 = load typed i32 @made
+    %t8 = cmp ne i32 %t7, 1
+    branch %t8, ^if_then_4, ^lor_rhs_9
+
+  block ^lor_rhs_9:
+    %t9 = addr $v
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = load typed i32 %t10
+    %t12 = load u8 $left
+    branch %t12, ^cond_then_11, ^cond_else_12
+
+  block ^cond_then_11:
+    store typed i32 17, $cond__2
+    jump ^cond_end_13
+
+  block ^cond_else_12:
+    store typed i32 29, $cond__2
+    jump ^cond_end_13
+
+  block ^cond_end_13:
+    %t13 = load typed i32 $cond__2
+    %t14 = cmp ne i32 %t11, %t13
+    branch %t14, ^if_then_4, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t15 = load typed i32 @copied
+    %t16 = cmp ne i32 %t15, 0
+    branch %t16, ^if_then_4, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t17 = load typed i32 @moved
+    %t18 = cmp gt i32 %t17, 1
+    branch %t18, ^if_then_4, ^lor_rhs_6
+
+  block ^lor_rhs_6:
+    %t19 = load typed i32 @destroyed
+    %t20 = load typed i32 @moved
+    %t21 = cmp ne i32 %t19, %t20
+    branch %t21, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    %t22 = addr $v
+    call void @Value___Value(%t22)
+    return i32 1
+
+  block ^if_else_5:
+    jump ^if_end_14
+
+  block ^if_end_14:
+    %t23 = addr $v
+    call void @Value___Value(%t23)
+    %t24 = load typed i32 @destroyed
+    %t25 = load typed i32 @made
+    %t26 = load typed i32 @copied
+    %t27 = binary add nowrap i32 %t25, %t26
+    %t28 = load typed i32 @moved
+    %t29 = binary add nowrap i32 %t27, %t28
+    %t30 = cmp ne i32 %t24, %t29
+    branch %t30, ^if_then_15, ^if_else_16
+
+  block ^if_then_15:
+    return i32 2
+
+  block ^if_else_16:
+    jump ^if_end_17
+
+  block ^if_end_17:
+    store typed i32 0, @choices
+    store typed i32 0, @destroyed
+    store typed i32 0, @moved
+    store typed i32 0, @copied
+    store typed i32 0, @made
+    %t31 = addr $original
+    call void @Value__Value(%t31, 41)
+    %t32 = addr $required
+    %t33 = addr $original
+    eh_try ^cleanup_action_19
+    call void @Value__Value__ov2(%t32, %t33)
+    eh_end
+    jump ^call_unwind_end_20
+
+  block ^cleanup_resume_18:
+    resume
+
+  block ^cleanup_action_19:
+    %t34 = addr $original
+    call void @Value___Value(%t34)
+    jump ^cleanup_resume_18
+
+  block ^call_unwind_end_20:
+    %t35 = addr $required
+    %t36 = index i8 [projection=field] %t35, 0
+    %t37 = load typed i32 %t36
+    %t38 = cmp ne i32 %t37, 41
+    branch %t38, ^if_then_21, ^lor_rhs_23
+
+  block ^lor_rhs_23:
+    %t39 = load typed i32 @copied
+    %t40 = cmp ne i32 %t39, 1
+    branch %t40, ^if_then_21, ^if_else_22
+
+  block ^if_then_21:
+    %t41 = addr $required
+    call void @Value___Value(%t41)
+    %t42 = addr $original
+    call void @Value___Value(%t42)
+    return i32 5
+
+  block ^if_else_22:
+    jump ^if_end_24
+
+  block ^if_end_24:
+    %t43 = addr $required
+    call void @Value___Value(%t43)
+    %t44 = addr $original
+    call void @Value___Value(%t44)
+    %t45 = load typed i32 @destroyed
+    %t46 = load typed i32 @made
+    %t47 = load typed i32 @copied
+    %t48 = binary add nowrap i32 %t46, %t47
+    %t49 = load typed i32 @moved
+    %t50 = binary add nowrap i32 %t48, %t49
+    %t51 = cmp ne i32 %t45, %t50
+    %t52 = convert trunc i32 i64 %t51
+    return i32 %t52
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+
+  block ^entry:
+    %t1 = call i32 @check(0)
+    branch %t1, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t2 = call i32 @check(1)
+    %t3 = cmp ne i32 %t2, 0
+    store typed i64 %t3, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t4 = load typed i64 $lor__1
+    %t5 = convert trunc i32 i64 %t4
+    return i32 %t5
+}
+function @Value__Value(%this : ptr [object_bytes=4], %n : i32) -> void [binding=weak, object=_ZN5ValueC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 @made
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @made
+    return void
+}
+function @Value___Value(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5ValueD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
+    return void
+}
+function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=4], %v : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN5ValueC1ERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $v : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %v, $v
+    %t1 = load typed ptr $v
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store typed i32 %t3, %t5
+    %t6 = load typed i32 @copied
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @copied
+    return void
+}
+alias object _ZN5ValueC2Ei = @Value__Value
+alias object _ZN5ValueD2Ev = @Value___Value
+alias object _ZN5ValueC2ERKS_ = @Value__Value__ov2

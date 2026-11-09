@@ -7,6 +7,17 @@ declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memo
 global @object : obj<40x8> [binding=strong] = {
   zero 40
 }
+global @objects : obj<80x8> [binding=strong] = {
+  zero 80
+}
+global @reference : ptr [binding=strong] = addr @object + 24
+global @pointer : ptr [binding=strong] = addr @object + 24
+global @explicit_pointer : ptr [binding=strong] = addr @object + 24
+global @base_reference : ptr [binding=strong] = addr @object
+global @alias_reference : ptr [binding=strong] = addr @object + 24
+global @base_pointer : ptr [binding=strong] = addr @object
+global @alias_pointer : ptr [binding=strong] = zero
+global @array_reference : ptr [binding=strong] = addr @objects + 64
 global @__typeinfo_name__struct_Object [storage=readonly, binding=weak, object=_ZTS6Object] = {
   i8 54
   i8 79
@@ -134,17 +145,6 @@ global @Virtual__vtable [storage=readonly, binding=weak, object=_ZTV7Virtual] = 
   ptr addr @Virtual___Virtual
   ptr addr @Virtual___Virtual__deleting_entry
 }
-global @objects : obj<80x8> [binding=strong] = {
-  zero 80
-}
-global @reference : ptr [binding=strong] = addr @object + 24
-global @pointer : ptr [binding=strong] = addr @object + 24
-global @explicit_pointer : ptr [binding=strong] = addr @object + 24
-global @base_reference : ptr [binding=strong] = addr @object
-global @alias_reference : ptr [binding=strong] = addr @object + 24
-global @base_pointer : ptr [binding=strong] = addr @object
-global @alias_pointer : ptr [binding=strong] = zero
-global @array_reference : ptr [binding=strong] = addr @objects + 64
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $expected : ptr
@@ -382,6 +382,17 @@ function @Object___Object__deleting_entry(%this : ptr [object_bytes=40]) -> void
   block ^destructor_end_2:
     return void
 }
+function @Virtual__Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7VirtualC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Virtual__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
 function @Object___Object(%this : ptr [object_bytes=40]) -> void [unwind=no, binding=weak, object=_ZN6ObjectD1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -561,17 +572,6 @@ function @Virtual___Virtual__deleting_entry(%this : ptr [object_bytes=16]) -> vo
     resume
 
   block ^destructor_end_2:
-    return void
-}
-function @Virtual__Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7VirtualC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Virtual__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
     return void
 }
 function @Base__Base__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {

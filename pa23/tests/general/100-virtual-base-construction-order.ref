@@ -8,6 +8,26 @@ global @order : obj<64x4> [binding=strong] = {
   zero 64
 }
 global @count : i32 [binding=strong] = zero
+global @__local_static__main__decl0__explicit_order [storage=readonly, binding=internal, object=_ZZ4mainE14explicit_order] = {
+  i32 1
+  i32 2
+  i32 3
+  i32 4
+  i32 -4
+  i32 -3
+  i32 -2
+  i32 -1
+}
+global @__local_static__main__decl1__implicit_order [storage=readonly, binding=internal, object=_ZZ4mainE14implicit_order] = {
+  i32 1
+  i32 2
+  i32 11
+  i32 12
+  i32 -2
+  i32 -1
+  i32 -2
+  i32 -1
+}
 global @__typeinfo_name__struct_Explicit [storage=readonly, binding=weak, object=_ZTS8Explicit] = {
   i8 56
   i8 69
@@ -97,16 +117,6 @@ global @Middle__vtable [storage=readonly, binding=weak, object=_ZTV6Middle] = {
 global @Middle____vtt [storage=readonly, binding=weak, object=_ZTT6Middle, object_root=yes] = {
   ptr addr @Middle__vtable + 24
 }
-global @__local_static__main__decl0__explicit_order [storage=readonly, binding=internal, object=_ZZ4mainE14explicit_order] = {
-  i32 1
-  i32 2
-  i32 3
-  i32 4
-  i32 -4
-  i32 -3
-  i32 -2
-  i32 -1
-}
 global @__typeinfo_name__struct_Implicit [storage=readonly, binding=weak, object=_ZTS8Implicit] = {
   i8 56
   i8 73
@@ -142,16 +152,6 @@ global @Implicit____vtt [storage=readonly, binding=weak, object=_ZTT8Implicit, o
   ptr addr @Implicit__vtable + 32
   ptr addr @Implicit__vtable + 32
   ptr addr @Implicit____construction__Middle__0__s0__vtable + 24
-}
-global @__local_static__main__decl1__implicit_order [storage=readonly, binding=internal, object=_ZZ4mainE14implicit_order] = {
-  i32 1
-  i32 2
-  i32 11
-  i32 12
-  i32 -2
-  i32 -1
-  i32 -2
-  i32 -1
 }
 
 function @mark(%value : i32) -> void [binding=strong, object=_Z4marki] {
@@ -613,17 +613,6 @@ function @Root__Root__base_entry(%this : ptr [object_bytes=4]) -> void [binding=
     call void @mark(1)
     return void
 }
-function @Root__Root(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4RootC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store typed i32 1, %t2
-    call void @mark(1)
-    return void
-}
 function @Middle__Middle__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN6MiddleC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -635,39 +624,7 @@ function @Middle__Middle__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr
     call void @mark(2)
     return void
 }
-function @Middle__Middle(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN6MiddleC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 8
-    call void @Root__Root__base_entry(%t2)
-    eh_cleanup ^constructor_cleanup_1
-    %t3 = load typed ptr $this
-    %t4 = addr @Middle__vtable
-    %t5 = index i8 %t4, 24
-    store typed ptr %t5, %t3
-    call void @mark(2)
-    eh_end
-    return void
-
-  block ^constructor_cleanup_1:
-    %t6 = load typed ptr $this
-    %t7 = index i8 %t6, 8
-    call void @Root___Root(%t7)
-    eh_end
-    resume
-}
 function @Side__Side__base_entry(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4SideC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    call void @mark(3)
-    return void
-}
-function @Side__Side(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4SideC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -819,7 +776,5 @@ function @Middle__Middle__ov2__base_entry(%this : ptr [alias=noalias, object_byt
     call void @mark(12)
     return void
 }
-equivalent_entry @Root__Root = @Root__Root__base_entry
-equivalent_entry @Side__Side = @Side__Side__base_entry
 equivalent_entry @Root___Root = @Root___Root__base_entry
 equivalent_entry @Side___Side = @Side___Side__base_entry

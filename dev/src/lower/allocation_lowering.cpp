@@ -705,39 +705,14 @@ RValue FunctionLowering::constant_value(lowir::Type type, uint64_t bits)
 
 void FunctionLowering::zero_bytes(const RValue& storage, const RValue& size)
 {
-	// 8.5p7 for scalar elements: a host object calls memset, as the host
-	// compilers do at every optimization level (a byte loop over a large
-	// array took several times as long); the course's form zeroes each
-	// byte in a loop.
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
-	if (lowering_.host_objects())
-	{
-		const size_t base = arguments_.size();
-		arguments_.push_back(storage.value);
-		arguments_.push_back(integer(lowir::Type::scalar(lowir::TypeKind::I32), 0).value);
-		arguments_.push_back(size.value);
-		emit_call(lowir::Type::scalar(lowir::TypeKind::Ptr), lowir::Value::symbol(lowering_.memset_function()), base,
-			lowir::kNoId, false);
-		return;
-	}
-	Place offset_slot = Place();
-	offset_slot.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::ZeroinitOffset, i64));
-	store(i64, integer(i64, 0), offset_slot);
-	const lowir::BlockId condition = new_block(lowir::BlockKind::ZeroinitCond);
-	const lowir::BlockId body = new_block(lowir::BlockKind::ZeroinitBody);
-	const lowir::BlockId end = new_block(lowir::BlockKind::ZeroinitEnd);
-	jump(condition);
-	place(condition);
-	const RValue offset = load(i64, offset_slot);
-	branch(compare(lowir::ComparePredicate::Ult, i64, offset, size), body, end);
-	place(body);
-	Place byte = Place();
-	byte.storage = index(i8, ir_model::IPK_NONE, storage.value, offset).value;
-	store(i8, integer(i8, 0), byte);
-	store(i64, binary(lowir::BinaryOp::Add, i64, offset, integer(i64, 1)), offset_slot);
-	jump(condition);
-	place(end);
+	// 8.5p7: nonvolatile scalar elements use one bulk zero. Both the course
+	// runtime and host object writer provide the same memset boundary.
+	const size_t base = arguments_.size();
+	arguments_.push_back(storage.value);
+	arguments_.push_back(integer(lowir::Type::scalar(lowir::TypeKind::I32), 0).value);
+	arguments_.push_back(size.value);
+	emit_call(lowir::Type::scalar(lowir::TypeKind::Ptr), lowir::Value::symbol(lowering_.memset_function()), base,
+		lowir::kNoId, false);
 }
 
 void FunctionLowering::null_member_pointer_elements(

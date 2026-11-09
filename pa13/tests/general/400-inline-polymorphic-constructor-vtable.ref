@@ -88,6 +88,17 @@ function @Impl__Impl(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=w
     eh_end
     resume
 }
+function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Base__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
 function @Impl__destroy(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN4Impl7destroyEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -174,17 +185,6 @@ function @Impl___Impl(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=
   block ^destructor_end_2:
     return void
 }
-function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Base__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
-}
 function @Base___Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -220,17 +220,6 @@ function @Base___Base__deleting_entry(%this : ptr [object_bytes=8]) -> void [unw
   block ^destructor_end_2:
     return void
 }
-function @Base__Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Base__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
-}
 function @Base___Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -245,4 +234,3 @@ function @Base___Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=
 alias object _ZN4ImplC2Ev = @Impl__Impl
 alias object _ZN4ImplD2Ev = @Impl___Impl
 equivalent_entry @Base___Base = @Base___Base__base_entry
-equivalent_entry @Base__Base = @Base__Base__base_entry

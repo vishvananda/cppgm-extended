@@ -113,13 +113,6 @@ function @Control_int__Policy_2____Control__deleting_entry(%this : ptr [object_b
   block ^destructor_end_2:
     return void
 }
-function @Control_int__Policy_2___value(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZN7ControlIiL6Policy2EE5valueEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 2
-}
 function @Control_int__Policy_2____Control(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7ControlIiL6Policy2EED1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -130,6 +123,13 @@ function @Control_int__Policy_2____Control(%this : ptr [object_bytes=8]) -> void
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @Control_int__Policy_2___value(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZN7ControlIiL6Policy2EE5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 2
 }
 alias object _ZN7ControlIiL6Policy2EEC2Ev = @Control_int__Policy_2___Control
 equivalent_entry @Control_int__Policy_2____Control = @Control_int__Policy_2____Control__base_entry

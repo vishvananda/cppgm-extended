@@ -354,16 +354,6 @@ function @shared__shared__base_entry(%this : ptr [object_bytes=4]) -> void [bind
     store typed i32 1, %t2
     return void
 }
-function @shared__shared(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6sharedC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store typed i32 1, %t2
-    return void
-}
 function @counter____lambda_counter__counter_t91_95___FUN() -> i32 [binding=weak, object=_ZZN7counterC1EiENUlvE_8__invokeEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   block ^entry:
     return i32 4
@@ -437,4 +427,3 @@ function @counter____lambda_counter___counter_t158_158__operator__(%this : ptr [
     store typed i32 %t2, @destroyed
     return void
 }
-equivalent_entry @shared__shared = @shared__shared__base_entry

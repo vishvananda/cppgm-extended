@@ -104,14 +104,6 @@ function @leaf__leaf(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=w
     store typed ptr %t5, %t3
     return void
 }
-function @leaf__what(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK4leaf4whatEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = addr @__strlit__1
-    return ptr %t1
-}
 function @mid__mid__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN3midC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -125,6 +117,14 @@ function @mid__mid__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no,
     %t5 = index i8 %t4, 16
     store typed ptr %t5, %t3
     return void
+}
+function @leaf__what(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK4leaf4whatEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = addr @__strlit__1
+    return ptr %t1
 }
 function @base__base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4baseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr

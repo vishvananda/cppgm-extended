@@ -101,13 +101,6 @@ function @Derived__Derived(%this : ptr [object_bytes=8]) -> void [unwind=no, bin
     eh_end
     resume
 }
-function @Derived__f(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZNK7Derived1fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 2
-}
 function @Derived___Derived__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -175,13 +168,6 @@ function @Derived___Derived__deleting_entry(%this : ptr [object_bytes=8]) -> voi
   block ^destructor_end_2:
     return void
 }
-function @Base__f(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZNK4Base1fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
-}
 function @Derived___Derived(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -219,6 +205,13 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=n
     store typed ptr %t3, %t1
     return void
 }
+function @Derived__f(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZNK7Derived1fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 2
+}
 function @Base___Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -229,6 +222,13 @@ function @Base___Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @Base__f(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZNK4Base1fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
 }
 function @Base___Base__deleting_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseD0Ev, inline_hint=yes] {
   slot $this : ptr

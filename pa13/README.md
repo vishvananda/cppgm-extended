@@ -244,6 +244,9 @@ PA13 supports the following in addition to the PA12 subset:
 - virtual `delete` over that supported set, including the deleting-destructor
   entry and selection of a PA12-supported class-specific deallocation function
 - emitted vtable data for supported polymorphic classes
+- definitions demanded by vtable entries and direct calls; an indirect virtual
+  call needs its typed signature and slot without forcing the named body to be
+  emitted. Emit constructor entries that construction actually uses
 - constructor/destructor vpointer writes for supported polymorphic classes;
   an explicitly defaulted default constructor of such a class is not trivial
   (12.1p5) and installs the vpointer like an implicit one

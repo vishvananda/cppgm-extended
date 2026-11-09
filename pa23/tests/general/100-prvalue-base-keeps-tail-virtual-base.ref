@@ -172,15 +172,4 @@ function @Tail__Tail__base_entry(%this : ptr [object_bytes=1]) -> void [binding=
     store i8 9, %t2
     return void
 }
-function @Tail__Tail(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4TailC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i8 9, %t2
-    return void
-}
 alias object _ZN6PaddedC2Eic = @Padded__Padded
-equivalent_entry @Tail__Tail = @Tail__Tail__base_entry

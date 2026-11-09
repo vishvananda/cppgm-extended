@@ -291,20 +291,6 @@ function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1
     store typed ptr %t15, %t13
     return void
 }
-function @Holder__anchor(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN6Holder6anchorEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @Payload__read(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN7Payload4readEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 0
-}
 function @Holder__Holder__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN6HolderC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -319,6 +305,13 @@ function @Holder__Holder__base_entry(%this : ptr [object_bytes=16]) -> void [unw
     call void @Payload__Payload(%t5)
     return void
 }
+function @Holder__anchor(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN6Holder6anchorEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
 function @Payload__Payload(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7PayloadC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -329,5 +322,12 @@ function @Payload__Payload(%this : ptr [object_bytes=8]) -> void [unwind=no, bin
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @Payload__read(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN7Payload4readEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 0
 }
 alias object _ZN7PayloadC2Ev = @Payload__Payload

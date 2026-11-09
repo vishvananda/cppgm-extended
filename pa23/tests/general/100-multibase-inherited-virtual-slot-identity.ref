@@ -166,20 +166,6 @@ function @implementation__implementation(%this : ptr [object_bytes=16]) -> void 
     store typed ptr %t9, %t7
     return void
 }
-function @implementation__first(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN14implementation5firstEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 3
-}
-function @implementation__second(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN14implementation6secondEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 4
-}
 function @interface__interface__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN9interfaceC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -201,6 +187,20 @@ function @interface__interface__base_entry(%this : ptr [object_bytes=16]) -> voi
     %t11 = index i8 %t10, 16
     store typed ptr %t11, %t9
     return void
+}
+function @implementation__first(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN14implementation5firstEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 3
+}
+function @implementation__second(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN14implementation6secondEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 4
 }
 function @left__left__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4leftC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr

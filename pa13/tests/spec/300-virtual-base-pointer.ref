@@ -63,13 +63,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @YD___YD(%t5)
     return i32 %t4
 }
-function @YB__f(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZN2YB1fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
-}
 function @YD__YD(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -92,13 +85,6 @@ function @YD__YD(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak,
     call void @YB___YB__base_entry(%t7)
     eh_end
     resume
-}
-function @YD__f(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZN2YD1fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 3
 }
 function @YD___YD__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YDD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
@@ -204,6 +190,13 @@ function @YB__YB__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, b
     store typed ptr %t3, %t1
     return void
 }
+function @YD__f(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZN2YD1fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 3
+}
 function @YB___YB__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YBD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -214,6 +207,13 @@ function @YB___YB__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, 
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @YB__f(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZN2YB1fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
 }
 function @YB___YB__deleting_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YBD0Ev, inline_hint=yes] {
   slot $this : ptr

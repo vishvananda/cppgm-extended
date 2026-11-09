@@ -104,6 +104,28 @@ function @D__D(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, 
     store typed ptr %t11, %t9
     return void
 }
+function @B1__B1__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B1C2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @B1__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+function @B2__B2__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B2C2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @B2__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
 function @B1__anchor(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN2B16anchorEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -126,28 +148,6 @@ function @D__current(%this : ptr [object_bytes=16]) -> obj<4x4> [binding=weak, o
     %t5 = addr $out
     copyobj 4x4 %t5, %t4
     return obj<4x4> $retobj__1
-}
-function @B1__B1__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B1C2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @B1__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
-}
-function @B2__B2__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B2C2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @B2__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
 }
 function @_D__current__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> obj<4x4> [binding=weak, object=_ZThn8_NK1D7currentEv] {
   block ^entry:

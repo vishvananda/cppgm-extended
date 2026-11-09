@@ -131,8 +131,7 @@ lowir::Value FunctionLowering::member_callee(
 {
 	// 5.2.2p1: a virtual function not named by a qualified-id is its final
 	// overrider, loaded from the object's table with the function's own
-	// boundary (the course emits the function named, unless pure; a host
-	// object only what its tables or direct calls reference, README PA31).
+	// boundary. Only table entries or direct calls demand a definition.
 	if (!dispatch)
 	{
 		signature = lowir::kNoId;
@@ -143,8 +142,6 @@ lowir::Value FunctionLowering::member_callee(
 		lowering_.demand(function);
 		return lowir::Value::symbol(lowering_.function_symbol(function));
 	}
-	if (!function->pure && !lowering_.host_objects())
-		lowering_.demand(function);
 	signature = lowering_.virtual_call_signature(function);
 	const lowir::Value callee = virtual_callee(object, function->vtable_slot);
 	if (lowering_.optimizing() && !function->has_overrider && !function->pure && function->defined &&

@@ -170,28 +170,6 @@ function @Pair__Pair(%this : ptr [object_bytes=32]) -> void [unwind=no, binding=
     store typed ptr %t15, %t13
     return void
 }
-function @Value__get(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN5Value3getEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
-    %t3 = load typed i32 %t2
-    return i32 %t3
-}
-function @Shell__get(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN5Shell3getEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 0
-    %t3 = index i8 [projection=field] %t2, 8
-    %t4 = load typed i32 %t3
-    %t5 = binary add nowrap i32 %t4, 100
-    return i32 %t5
-}
 function @Shell__Shell__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN5ShellC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -219,6 +197,28 @@ function @Lane__Lane__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=
     %t5 = index i8 %t4, 16
     store typed ptr %t5, %t3
     return void
+}
+function @Value__get(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN5Value3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load typed i32 %t2
+    return i32 %t3
+}
+function @Shell__get(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN5Shell3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    %t3 = index i8 [projection=field] %t2, 8
+    %t4 = load typed i32 %t3
+    %t5 = binary add nowrap i32 %t4, 100
+    return i32 %t5
 }
 function @Value__Value__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN5ValueC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr

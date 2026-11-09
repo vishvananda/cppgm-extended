@@ -1,95 +1,80 @@
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $c : u8
   slot $same : obj<4x4>
-  slot $arg__1 : obj<4x4>
   slot $sliced : obj<4x4>
-  slot $arg__2 : obj<8x4>
-  slot $cond__3 : i32
+  slot $arg__1 : obj<8x4>
+  slot $cond__2 : i32
 
   block ^entry:
     store u8 1, $c
-    eh_try ^cleanup_resume_1
     %t1 = addr $same
-    %t2 = addr $arg__1
-    %t3 = load u8 $c
-    eh_end
-    jump ^call_unwind_end_5
+    %t2 = load u8 $c
+    branch %t2, ^condobj_then_1, ^condobj_else_2
 
-  block ^cleanup_resume_1:
+  block ^condobj_then_1:
+    call void @Base__Base(%t1, 1)
+    jump ^condobj_end_3
+
+  block ^condobj_else_2:
+    call void @Base__Base(%t1, 2)
+    jump ^condobj_end_3
+
+  block ^condobj_end_3:
+    eh_try ^cleanup_resume_4
+    %t3 = addr $sliced
+    %t4 = addr $arg__1
+    %t5 = load u8 $c
+    eh_end
+    jump ^call_unwind_end_8
+
+  block ^cleanup_resume_4:
     resume
 
-  block ^call_unwind_end_5:
-    branch %t3, ^condobj_then_2, ^condobj_else_3
+  block ^call_unwind_end_8:
+    branch %t5, ^condobj_then_5, ^condobj_else_6
 
-  block ^condobj_then_2:
-    call void @Base__Base(%t2, 1)
-    jump ^condobj_end_4
+  block ^condobj_then_5:
+    call void @Derived__Derived(%t4, 3)
+    jump ^condobj_end_7
 
-  block ^condobj_else_3:
-    call void @Base__Base(%t2, 2)
-    jump ^condobj_end_4
+  block ^condobj_else_6:
+    call void @Derived__Derived(%t4, 4)
+    jump ^condobj_end_7
 
-  block ^condobj_end_4:
-    eh_try ^cleanup_action_6
-    call void @Base__Base__ov2(%t1, %t2) [elision=copy]
-    call void @Base___Base(%t2)
+  block ^condobj_end_7:
+    %t6 = index i8 %t4, 0
+    eh_try ^cleanup_action_9
+    call void @Base__Base__ov2(%t3, %t6)
+    call void @Derived___Derived(%t4)
     eh_end
-    jump ^call_unwind_end_7
+    jump ^call_unwind_end_10
 
-  block ^cleanup_action_6:
-    call void @Base___Base(%t2)
-    jump ^cleanup_resume_1
+  block ^cleanup_action_9:
+    call void @Derived___Derived(%t4)
+    jump ^cleanup_resume_4
 
-  block ^call_unwind_end_7:
-    eh_try ^cleanup_resume_1
-    %t4 = addr $sliced
-    %t5 = addr $arg__2
-    %t6 = load u8 $c
-    eh_end
-    branch %t6, ^condobj_then_8, ^condobj_else_9
+  block ^call_unwind_end_10:
+    %t7 = addr $same
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = load typed i32 %t8
+    %t10 = addr $sliced
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t9, %t12
+    %t14 = cmp eq i32 %t13, 4
+    branch %t14, ^cond_then_11, ^cond_else_12
 
-  block ^condobj_then_8:
-    call void @Derived__Derived(%t5, 3)
-    jump ^condobj_end_10
+  block ^cond_then_11:
+    store typed i32 0, $cond__2
+    jump ^cond_end_13
 
-  block ^condobj_else_9:
-    call void @Derived__Derived(%t5, 4)
-    jump ^condobj_end_10
+  block ^cond_else_12:
+    store typed i32 1, $cond__2
+    jump ^cond_end_13
 
-  block ^condobj_end_10:
-    %t7 = index i8 %t5, 0
-    eh_try ^cleanup_action_11
-    call void @Base__Base__ov2(%t4, %t7)
-    call void @Derived___Derived(%t5)
-    eh_end
-    jump ^call_unwind_end_12
-
-  block ^cleanup_action_11:
-    call void @Derived___Derived(%t5)
-    jump ^cleanup_resume_1
-
-  block ^call_unwind_end_12:
-    %t8 = addr $same
-    %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load typed i32 %t9
-    %t11 = addr $sliced
-    %t12 = index i8 [projection=field] %t11, 0
-    %t13 = load typed i32 %t12
-    %t14 = binary add nowrap i32 %t10, %t13
-    %t15 = cmp eq i32 %t14, 4
-    branch %t15, ^cond_then_13, ^cond_else_14
-
-  block ^cond_then_13:
-    store typed i32 0, $cond__3
-    jump ^cond_end_15
-
-  block ^cond_else_14:
-    store typed i32 1, $cond__3
-    jump ^cond_end_15
-
-  block ^cond_end_15:
-    %t16 = load typed i32 $cond__3
-    return i32 %t16
+  block ^cond_end_13:
+    %t15 = load typed i32 $cond__2
+    return i32 %t15
 }
 function @Base__Base__base_entry(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN4BaseC2Ei, object_root=yes, inline_hint=yes] {
   slot $this : ptr
@@ -102,21 +87,6 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=4], %x : i32) -> void
     %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
-    return void
-}
-function @Base__Base__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN4BaseC1ERKS_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load typed i32 %t2
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    store typed i32 %t3, %t5
     return void
 }
 function @Derived__Derived(%this : ptr [object_bytes=8], %x : i32) -> void [binding=weak, object=_ZN7DerivedC1Ei, inline_hint=yes] {
@@ -145,6 +115,21 @@ function @Derived__Derived(%this : ptr [object_bytes=8], %x : i32) -> void [bind
     eh_end
     resume
 }
+function @Base__Base__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN4BaseC1ERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store typed i32 %t3, %t5
+    return void
+}
 function @Base__Base(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN4BaseC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
@@ -172,8 +157,8 @@ function @Derived___Derived(%this : ptr [object_bytes=8]) -> void [unwind=no, bi
     store typed ptr %this, $this
     return void
 }
-alias object _ZN4BaseC2ERKS_ = @Base__Base__ov2
 alias object _ZN4BaseD2Ev = @Base___Base
 alias object _ZN7DerivedC2Ei = @Derived__Derived
+alias object _ZN4BaseC2ERKS_ = @Base__Base__ov2
 alias object _ZN7DerivedD2Ev = @Derived___Derived
 equivalent_entry @Base__Base = @Base__Base__base_entry

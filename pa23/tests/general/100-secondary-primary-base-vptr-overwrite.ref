@@ -123,27 +123,6 @@ function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [unwind=no, bi
     store typed ptr %t5, %t3
     return void
 }
-function @Derived__f(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7Derived1fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 2
-}
-function @Derived__g(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7Derived1gEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 7
-}
-function @Mid__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK3Mid1gEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
-}
 function @Mid__Mid__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN3MidC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -158,6 +137,20 @@ function @Mid__Mid__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no,
     store typed ptr %t5, %t3
     return void
 }
+function @Derived__f(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7Derived1fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 2
+}
+function @Derived__g(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7Derived1gEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 7
+}
 function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -168,5 +161,12 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=n
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @Mid__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK3Mid1gEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
 }
 alias object _ZN7DerivedC2Ev = @Derived__Derived

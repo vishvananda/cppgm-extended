@@ -1,3 +1,4 @@
+declare function @__cppgm_builtin_memset(%arg0 : ptr, %arg1 : i32, %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memset]
 declare function @operatornew__(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new_array]
 
 function @owned_array() -> ptr [binding=strong, object=_Z11owned_arrayv] {
@@ -6,29 +7,12 @@ function @owned_array() -> ptr [binding=strong, object=_Z11owned_arrayv] {
     return ptr %t1
 }
 function @Hidden__create_array() -> ptr [binding=weak, object=_ZN6Hidden12create_arrayEv, inline_hint=yes] {
-  slot $zeroinit_offset__1 : i64
-
   block ^entry:
     %t1 = call ptr @operatornew__(16)
     %t2 = index i8 %t1, 8
     %t3 = const i64 2
     store typed i64 %t3, %t1
     %t4 = binary sub i64 16, 8
-    store typed i64 0, $zeroinit_offset__1
-    jump ^zeroinit_cond_1
-
-  block ^zeroinit_cond_1:
-    %t5 = load typed i64 $zeroinit_offset__1
-    %t6 = cmp ult i64 %t5, %t4
-    branch %t6, ^zeroinit_body_2, ^zeroinit_end_3
-
-  block ^zeroinit_body_2:
-    %t7 = index i8 %t2, %t5
-    store i8 0, %t7
-    %t8 = binary add i64 %t5, 1
-    store typed i64 %t8, $zeroinit_offset__1
-    jump ^zeroinit_cond_1
-
-  block ^zeroinit_end_3:
+    %t5 = call ptr @__cppgm_builtin_memset(%t2, 0, %t4)
     return ptr %t2
 }

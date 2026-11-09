@@ -85,6 +85,17 @@ function @Derived__Derived(%this : ptr [object_bytes=8]) -> void [unwind=no, bin
     store typed ptr %t5, %t3
     return void
 }
+function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Base__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
 function @Derived__f(%this : ptr [object_bytes=8], %__param1 : i32) -> i32 [binding=weak, object=_ZN7Derived1fEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
@@ -102,16 +113,5 @@ function @Derived__f__ov2(%this : ptr [object_bytes=8], %__param1 : i8) -> i32 [
     store typed ptr %this, $this
     store i8 %__param1, $__param1
     return i32 2
-}
-function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Base__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
 }
 alias object _ZN7DerivedC2Ev = @Derived__Derived

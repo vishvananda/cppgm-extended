@@ -216,13 +216,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_10:
     return i32 0
 }
-function @Root__id(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN4Root2idEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
-}
 function @Top__Top(%this : ptr [object_bytes=48]) -> void [binding=weak, object=_ZN3TopC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -268,13 +261,6 @@ function @Top__Top(%this : ptr [object_bytes=48]) -> void [binding=weak, object=
     store typed i32 7, %t32
     return void
 }
-function @Top__id(%this : ptr [object_bytes=48]) -> i32 [binding=weak, object=_ZN3Top2idEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 2
-}
 function @Middle__Middle__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN6MiddleC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -288,6 +274,20 @@ function @Middle__Middle__base_entry(%this : ptr [object_bytes=16]) -> void [unw
     %t5 = index i8 %t4, 16
     store typed ptr %t5, %t3
     return void
+}
+function @Top__id(%this : ptr [object_bytes=48]) -> i32 [binding=weak, object=_ZN3Top2idEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 2
+}
+function @Root__id(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN4Root2idEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
 }
 function @Side__Side__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN4SideC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr

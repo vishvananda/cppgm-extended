@@ -383,16 +383,6 @@ function @Mark__Mark__base_entry(%this : ptr [object_bytes=1]) -> void [binding=
     store i8 5, %t2
     return void
 }
-function @Mark__Mark(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4MarkC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i8 5, %t2
-    return void
-}
 function @Tail__Tail__base_entry(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN4TailC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -406,18 +396,3 @@ function @Tail__Tail__base_entry(%this : ptr [object_bytes=8]) -> void [binding=
     store i8 2, %t4
     return void
 }
-function @Tail__Tail(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN4TailC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store typed i32 1, %t2
-    %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
-    store i8 2, %t4
-    return void
-}
-equivalent_entry @Mark__Mark = @Mark__Mark__base_entry
-equivalent_entry @Tail__Tail = @Tail__Tail__base_entry

@@ -176,15 +176,14 @@ the compile/link driver remain PA24 and PA25 work.
 
 When a same-type conditional class prvalue is materialized in a private
 temporary and then selected for copy or move construction into its final
-complete-object destination, PA12 records the standard source-language
-permission on that outer direct call as `[elision=copy]`, by the rule of
-`../pa8/lowir.md`: a copy-initialization from a prvalue conditional of the
-object's own class, never a direct-initialization, a `return` operand or a
-derived prvalue sliced into a base; the comparison checks it.  This is serialized
-optimization information, not an O0 elision: the emitted O0 LowIR retains the
-distinct temporary, transfer call, and normal/exceptional destruction.  The
-focused control checks those relationships and executes the O0 behavior
-without prescribing complete generated LowIR text.
+complete-object destination, C++11 permits the selected operand to construct
+the destination directly (12.8p31), even when the omitted copy or move has
+observable effects. This permission applies at `-O0` too. Preserve evaluation
+of the selected branch and the destination's required lifetime and destruction.
+Do not apply this rule to a derived prvalue sliced into a base or to a named
+glvalue whose copy is required. If retaining the transfer, its LowIR call may
+state `[elision=copy]` as described in `../pa8/lowir.md`; an elided transfer needs
+neither that call nor destruction of a separate source temporary.
 
 For supported indirect return-by-value cases, PA12 lowers an eligible top-level named
 local directly in `%ret` instead of building a separate local object and then copying or
@@ -463,9 +462,8 @@ PA12 supports the following in addition to the PA11 subset:
   cv-combined glvalue operands, lvalue/prvalue conversion, and destruction of a
   containing branch temporary only after its selected member result has been
   materialized
-- serialized `[elision=copy]` permission on the outer copy/move construction
-  from a private same-type conditional prvalue, while retaining its ordinary
-  O0 transfer and cleanup
+- permitted copy elision from a private same-type conditional prvalue, or
+  `[elision=copy]` on a retained outer transfer with its corresponding cleanup
 - equal temporary-destruction suffixes in the same full-expression and unwind
   context use shared LowIR cleanup continuations, including conditional
   lifetime guards where the guarded object identity is the same

@@ -223,15 +223,6 @@ function @PointerImpl_int___PointerImpl(%this : ptr [object_bytes=16]) -> void [
     store typed ptr %t5, %t3
     return void
 }
-function @PointerImpl_int___get(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZN11PointerImplIiE3getEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
-    return ptr %t2
-}
 function @LvalueImpl_longint___LvalueImpl(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN10LvalueImplIlEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -245,15 +236,6 @@ function @LvalueImpl_longint___LvalueImpl(%this : ptr [object_bytes=24]) -> void
     %t5 = index i8 %t4, 16
     store typed ptr %t5, %t3
     return void
-}
-function @LvalueImpl_longint___get(%this : ptr [object_bytes=24]) -> ptr [binding=weak, object=_ZN10LvalueImplIlE3getEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
-    return ptr %t2
 }
 function @RvalueImpl_shortint___RvalueImpl(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN10RvalueImplIsEC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -269,15 +251,6 @@ function @RvalueImpl_shortint___RvalueImpl(%this : ptr [object_bytes=16]) -> voi
     store typed ptr %t5, %t3
     return void
 }
-function @RvalueImpl_shortint___get(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZN10RvalueImplIsE3getEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
-    return ptr %t2
-}
 function @Pointer__Pointer__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7PointerC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -288,6 +261,15 @@ function @Pointer__Pointer__base_entry(%this : ptr [object_bytes=8]) -> void [un
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @PointerImpl_int___get(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZN11PointerImplIiE3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    return ptr %t2
 }
 function @Lvalue__Lvalue__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6LvalueC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
@@ -300,6 +282,15 @@ function @Lvalue__Lvalue__base_entry(%this : ptr [object_bytes=8]) -> void [unwi
     store typed ptr %t3, %t1
     return void
 }
+function @LvalueImpl_longint___get(%this : ptr [object_bytes=24]) -> ptr [binding=weak, object=_ZN10LvalueImplIlE3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    return ptr %t2
+}
 function @Rvalue__Rvalue__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6RvalueC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -310,6 +301,15 @@ function @Rvalue__Rvalue__base_entry(%this : ptr [object_bytes=8]) -> void [unwi
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @RvalueImpl_shortint___get(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZN10RvalueImplIsE3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    return ptr %t2
 }
 alias object _ZN11PointerImplIiEC2Ev = @PointerImpl_int___PointerImpl
 alias object _ZN10LvalueImplIlEC2Ev = @LvalueImpl_longint___LvalueImpl

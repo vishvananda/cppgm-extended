@@ -238,9 +238,7 @@ void FunctionLowering::discard(const syntax::Expr& expr)
 		return;
 	case syntax::ExprKind::Sizeof:
 	case syntax::ExprKind::SizeofPack:
-		// A discarded size query is still materialized (the course's form).
-		if (facts != nullptr && facts->type != nullptr)
-			size_query(*e);
+		// Its folded result is unused; its operand is unevaluated (5.3.3).
 		return;
 	case syntax::ExprKind::Unary:
 	{

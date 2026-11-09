@@ -191,19 +191,5 @@ function @downcast_root__downcast_root__base_entry(%this : ptr [object_bytes=4],
     store typed i32 %t1, %t3
     return void
 }
-function @downcast_root__downcast_root(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN13downcast_rootC1Ei, inline_hint=yes] {
-  slot $this : ptr
-  slot $v : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %v, $v
-    %t1 = load typed i32 $v
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    return void
-}
 alias object _ZN13downcast_leafC2Ev = @downcast_leaf__downcast_leaf
 equivalent_entry @downcast_leaf___downcast_leaf = @downcast_leaf___downcast_leaf__base_entry
-equivalent_entry @downcast_root__downcast_root = @downcast_root__downcast_root__base_entry

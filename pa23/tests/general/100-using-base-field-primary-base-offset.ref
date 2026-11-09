@@ -140,13 +140,6 @@ function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [unwind=no, bi
     store typed ptr %t5, %t3
     return void
 }
-function @Primary__anchor(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN7Primary6anchorEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 0
-}
 function @Base__read(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN4Base4readEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -172,6 +165,13 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=
     %t5 = index i8 %t4, 16
     store typed ptr %t5, %t3
     return void
+}
+function @Primary__anchor(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN7Primary6anchorEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 0
 }
 function @Primary__Primary__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7PrimaryC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr

@@ -23,9 +23,9 @@ int main()
   {
     Value result = choose_left ? Value(22) : Value(33);
     if (result.payload != 22 || direct_constructions != 1 ||
-        copies != 0 || moves != 1 || destructions != 1)
+        copies != 0 || moves > 1 || destructions != moves)
       return 1;
   }
-  return direct_constructions == 1 && copies == 0 && moves == 1 &&
-    destructions == 2 ? 0 : 2;
+  return direct_constructions == 1 && copies == 0 && moves <= 1 &&
+    destructions == moves + 1 ? 0 : 2;
 }

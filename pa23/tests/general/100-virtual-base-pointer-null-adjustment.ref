@@ -420,41 +420,6 @@ function @Object___Object__deleting_entry(%this : ptr [object_bytes=32]) -> void
   block ^destructor_end_2:
     return void
 }
-function @Virtual___Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7VirtualD2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Virtual__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
-}
-function @Virtual___Virtual__deleting_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7VirtualD0Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    eh_cleanup ^destructor_cleanup_1
-    %t1 = load typed ptr $this
-    %t2 = addr @Virtual__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    eh_end
-    %t4 = load typed ptr $this
-    call void @operatordelete(%t4)
-    jump ^destructor_end_2
-
-  block ^destructor_cleanup_1:
-    %t5 = load typed ptr $this
-    call void @operatordelete(%t5)
-    eh_end
-    resume
-
-  block ^destructor_end_2:
-    return void
-}
 function @Object___Object(%this : ptr [object_bytes=32]) -> void [unwind=no, binding=weak, object=_ZN6ObjectD1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -499,6 +464,41 @@ function @Virtual__Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [u
     %t2 = addr @Virtual__vtable
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
+    return void
+}
+function @Virtual___Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7VirtualD2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Virtual__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+function @Virtual___Virtual__deleting_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7VirtualD0Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    %t1 = load typed ptr $this
+    %t2 = addr @Virtual__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    eh_end
+    %t4 = load typed ptr $this
+    call void @operatordelete(%t4)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t5 = load typed ptr $this
+    call void @operatordelete(%t5)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @Virtual___Virtual(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7VirtualD1Ev, inline_hint=yes] {

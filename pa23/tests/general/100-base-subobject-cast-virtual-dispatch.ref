@@ -81,6 +81,17 @@ function @derived__derived(%this : ptr [object_bytes=8]) -> void [unwind=no, bin
     store typed ptr %t5, %t3
     return void
 }
+function @base__base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4baseC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @base__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
 function @derived__value(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZNK7derived5valueEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -94,16 +105,5 @@ function @base__value(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=w
   block ^entry:
     store typed ptr %this, $this
     return i32 1
-}
-function @base__base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4baseC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @base__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
 }
 alias object _ZN7derivedC2Ev = @derived__derived

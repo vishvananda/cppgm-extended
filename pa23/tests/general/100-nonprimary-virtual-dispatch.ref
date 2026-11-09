@@ -81,13 +81,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @call(%t3)
     return i32 %t4
 }
-function @YB__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YB1gEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 2
-}
 function @YD__YD(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -110,20 +103,6 @@ function @YD__YD(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak
     store typed ptr %t11, %t9
     return void
 }
-function @YA__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YA1fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
-}
-function @YD__g(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN2YD1gEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 4
-}
 function @YA__YA__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YAC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -145,6 +124,27 @@ function @YB__YB__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, b
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @YA__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YA1fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
+}
+function @YD__g(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN2YD1gEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 4
+}
+function @YB__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YB1gEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 2
 }
 function @_YD__g__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn8_N2YD1gEv] {
   block ^entry:

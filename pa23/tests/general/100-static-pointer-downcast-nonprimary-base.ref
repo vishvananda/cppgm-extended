@@ -188,19 +188,5 @@ function @base__base__base_entry(%this : ptr [object_bytes=4], %v : i32) -> void
     store typed i32 %t1, %t3
     return void
 }
-function @base__base(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN4baseC1Ei, inline_hint=yes] {
-  slot $this : ptr
-  slot $v : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %v, $v
-    %t1 = load typed i32 $v
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    return void
-}
 alias object _ZN4leafC2Ev = @leaf__leaf
 equivalent_entry @leaf___leaf = @leaf___leaf__base_entry
-equivalent_entry @base__base = @base__base__base_entry

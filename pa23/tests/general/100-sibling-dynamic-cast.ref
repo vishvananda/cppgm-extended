@@ -1,5 +1,5 @@
-declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
 
 declare function @__external_runtime____dynamic_cast(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr, %arg3 : i64) -> ptr [role=dynamic_cast, linkage=c, binding=strong, object=__dynamic_cast]
@@ -8,12 +8,6 @@ declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
 
-global @__typeinfo_name__class_YD [storage=readonly, binding=weak, object=_ZTS2YD] = {
-  i8 50
-  i8 89
-  i8 68
-  i8 0
-}
 global @__typeinfo_name__class_YA [storage=readonly, binding=weak, object=_ZTS2YA] = {
   i8 50
   i8 89
@@ -23,6 +17,11 @@ global @__typeinfo_name__class_YA [storage=readonly, binding=weak, object=_ZTS2Y
 global @__rtti_class_YA [storage=readonly, binding=weak, object=_ZTI2YA] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__class_YA
+}
+global @YA__vtable [storage=readonly, binding=weak, object=_ZTV2YA] = {
+  i64 0
+  ptr addr @__rtti_class_YA
+  ptr addr @YA__f
 }
 global @__typeinfo_name__class_YB [storage=readonly, binding=weak, object=_ZTS2YB] = {
   i8 50
@@ -34,62 +33,10 @@ global @__rtti_class_YB [storage=readonly, binding=weak, object=_ZTI2YB] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__class_YB
 }
-global @__rtti_class_YD [storage=readonly, binding=weak, object=_ZTI2YD] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__class_YD
-  i32 0
-  i32 2
-  ptr addr @__rtti_class_YA
-  i64 2
-  ptr addr @__rtti_class_YB
-  i64 2050
-}
-global @YD__vtable [storage=readonly, binding=weak, object=_ZTV2YD] = {
-  i64 0
-  ptr addr @__rtti_class_YD
-  ptr addr @YA__f
-}
-global @YD____view__YB__8__vtable [storage=readonly, binding=internal] = {
-  i64 -8
-  ptr addr @__rtti_class_YD
-  ptr addr @YB__g
-}
-global @YA__vtable [storage=readonly, binding=weak, object=_ZTV2YA] = {
-  i64 0
-  ptr addr @__rtti_class_YA
-  ptr addr @YA__f
-}
 global @YB__vtable [storage=readonly, binding=weak, object=_ZTV2YB] = {
   i64 0
   ptr addr @__rtti_class_YB
   ptr addr @YB__g
-}
-global @__typeinfo_name__struct_Diamond [storage=readonly, binding=weak, object=_ZTS7Diamond] = {
-  i8 55
-  i8 68
-  i8 105
-  i8 97
-  i8 109
-  i8 111
-  i8 110
-  i8 100
-  i8 0
-}
-global @__typeinfo_name__struct_Left [storage=readonly, binding=weak, object=_ZTS4Left] = {
-  i8 52
-  i8 76
-  i8 101
-  i8 102
-  i8 116
-  i8 0
-}
-global @__rtti_struct_Left [storage=readonly, binding=weak, object=_ZTI4Left] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Left
-  i32 0
-  i32 1
-  ptr addr @__rtti_class_YA
-  i64 -8189
 }
 global @__typeinfo_name__struct_Right [storage=readonly, binding=weak, object=_ZTS5Right] = {
   i8 53
@@ -107,70 +54,6 @@ global @__rtti_struct_Right [storage=readonly, binding=weak, object=_ZTI5Right] 
   i32 1
   ptr addr @__rtti_class_YA
   i64 -8189
-}
-global @__rtti_struct_Diamond [storage=readonly, binding=weak, object=_ZTI7Diamond] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Diamond
-  i32 2
-  i32 2
-  ptr addr @__rtti_struct_Left
-  i64 2
-  ptr addr @__rtti_struct_Right
-  i64 2050
-}
-global @Diamond__vtable [storage=readonly, binding=weak, object=_ZTV7Diamond] = {
-  i64 0
-  i64 0
-  i64 0
-  ptr addr @__rtti_struct_Diamond
-  ptr addr @YA__f
-}
-global @Diamond____view__Right__8__vtable [storage=readonly, binding=internal] = {
-  i64 -8
-  i64 -8
-  i64 -8
-  ptr addr @__rtti_struct_Diamond
-  ptr 0
-}
-global @Diamond____construction__Left__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC7Diamond0_4Left] = {
-  i64 0
-  i64 0
-  i64 0
-  ptr addr @__rtti_struct_Left
-  ptr addr @YA__f
-}
-global @Diamond____construction__Right__8__s0__vtable [storage=readonly, binding=internal, object=_ZTC7Diamond8_5Right] = {
-  i64 -8
-  i64 -8
-  i64 0
-  ptr addr @__rtti_struct_Right
-  ptr addr @YA__f
-}
-global @Diamond____construction__Right__8__s1__vtable [storage=readonly, binding=internal] = {
-  i64 0
-  i64 8
-  ptr addr @__rtti_struct_Right
-  ptr addr @YA__f
-}
-global @Diamond____vtt [storage=readonly, binding=weak, object=_ZTT7Diamond, object_root=yes] = {
-  ptr addr @Diamond__vtable + 32
-  ptr addr @Diamond____construction__Left__0__s0__vtable + 32
-  ptr addr @Diamond____construction__Left__0__s0__vtable + 32
-  ptr addr @Diamond____construction__Right__8__s0__vtable + 32
-  ptr addr @Diamond____construction__Right__8__s1__vtable + 24
-  ptr addr @Diamond__vtable + 32
-  ptr addr @Diamond____view__Right__8__vtable + 32
-}
-global @Left__vtable [storage=readonly, binding=weak, object=_ZTV4Left] = {
-  i64 0
-  i64 0
-  i64 0
-  ptr addr @__rtti_struct_Left
-  ptr addr @YA__f
-}
-global @Left____vtt [storage=readonly, binding=weak, object=_ZTT4Left, object_root=yes] = {
-  ptr addr @Left__vtable + 32
-  ptr addr @Left__vtable + 32
 }
 global @Right__vtable [storage=readonly, binding=weak, object=_ZTV5Right] = {
   i64 0
@@ -253,6 +136,126 @@ global @__rtti_struct_Ambiguous [storage=readonly, binding=weak, object=_ZTI9Amb
   ptr addr @__rtti_struct_RepeatedRight
   i64 4098
 }
+global @__ehobj_struct_Ambiguous [binding=internal] = {
+  zero 24
+}
+global @__typeinfo_name__class_YD [storage=readonly, binding=weak, object=_ZTS2YD] = {
+  i8 50
+  i8 89
+  i8 68
+  i8 0
+}
+global @__rtti_class_YD [storage=readonly, binding=weak, object=_ZTI2YD] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__class_YD
+  i32 0
+  i32 2
+  ptr addr @__rtti_class_YA
+  i64 2
+  ptr addr @__rtti_class_YB
+  i64 2050
+}
+global @YD__vtable [storage=readonly, binding=weak, object=_ZTV2YD] = {
+  i64 0
+  ptr addr @__rtti_class_YD
+  ptr addr @YA__f
+}
+global @YD____view__YB__8__vtable [storage=readonly, binding=internal] = {
+  i64 -8
+  ptr addr @__rtti_class_YD
+  ptr addr @YB__g
+}
+global @__typeinfo_name__struct_Diamond [storage=readonly, binding=weak, object=_ZTS7Diamond] = {
+  i8 55
+  i8 68
+  i8 105
+  i8 97
+  i8 109
+  i8 111
+  i8 110
+  i8 100
+  i8 0
+}
+global @__typeinfo_name__struct_Left [storage=readonly, binding=weak, object=_ZTS4Left] = {
+  i8 52
+  i8 76
+  i8 101
+  i8 102
+  i8 116
+  i8 0
+}
+global @__rtti_struct_Left [storage=readonly, binding=weak, object=_ZTI4Left] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Left
+  i32 0
+  i32 1
+  ptr addr @__rtti_class_YA
+  i64 -8189
+}
+global @__rtti_struct_Diamond [storage=readonly, binding=weak, object=_ZTI7Diamond] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Diamond
+  i32 2
+  i32 2
+  ptr addr @__rtti_struct_Left
+  i64 2
+  ptr addr @__rtti_struct_Right
+  i64 2050
+}
+global @Diamond__vtable [storage=readonly, binding=weak, object=_ZTV7Diamond] = {
+  i64 0
+  i64 0
+  i64 0
+  ptr addr @__rtti_struct_Diamond
+  ptr addr @YA__f
+}
+global @Diamond____view__Right__8__vtable [storage=readonly, binding=internal] = {
+  i64 -8
+  i64 -8
+  i64 -8
+  ptr addr @__rtti_struct_Diamond
+  ptr 0
+}
+global @Diamond____construction__Left__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC7Diamond0_4Left] = {
+  i64 0
+  i64 0
+  i64 0
+  ptr addr @__rtti_struct_Left
+  ptr addr @YA__f
+}
+global @Diamond____construction__Right__8__s0__vtable [storage=readonly, binding=internal, object=_ZTC7Diamond8_5Right] = {
+  i64 -8
+  i64 -8
+  i64 0
+  ptr addr @__rtti_struct_Right
+  ptr addr @YA__f
+}
+global @Diamond____construction__Right__8__s1__vtable [storage=readonly, binding=internal] = {
+  i64 0
+  i64 8
+  ptr addr @__rtti_struct_Right
+  ptr addr @YA__f
+}
+global @Diamond____vtt [storage=readonly, binding=weak, object=_ZTT7Diamond, object_root=yes] = {
+  ptr addr @Diamond__vtable + 32
+  ptr addr @Diamond____construction__Left__0__s0__vtable + 32
+  ptr addr @Diamond____construction__Left__0__s0__vtable + 32
+  ptr addr @Diamond____construction__Right__8__s0__vtable + 32
+  ptr addr @Diamond____construction__Right__8__s1__vtable + 24
+  ptr addr @Diamond__vtable + 32
+  ptr addr @Diamond____view__Right__8__vtable + 32
+}
+global @Left__vtable [storage=readonly, binding=weak, object=_ZTV4Left] = {
+  i64 0
+  i64 0
+  i64 0
+  ptr addr @__rtti_struct_Left
+  ptr addr @YA__f
+}
+global @Left____vtt [storage=readonly, binding=weak, object=_ZTT4Left, object_root=yes] = {
+  ptr addr @Left__vtable + 32
+  ptr addr @Left__vtable + 32
+}
 global @Ambiguous__vtable [storage=readonly, binding=weak, object=_ZTV9Ambiguous] = {
   i64 0
   ptr addr @__rtti_struct_Ambiguous
@@ -277,9 +280,6 @@ global @RepeatedRight__vtable [storage=readonly, binding=weak, object=_ZTV13Repe
   i64 0
   ptr addr @__rtti_struct_RepeatedRight
   ptr addr @YB__g
-}
-global @__ehobj_struct_Ambiguous [binding=internal] = {
-  zero 24
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

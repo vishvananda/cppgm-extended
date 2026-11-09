@@ -82,16 +82,6 @@ function @V__V__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     store typed i32 42, %t2
     return void
 }
-function @V__V(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1VC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store typed i32 42, %t2
-    return void
-}
 function @A__A__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1AC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -102,15 +92,3 @@ function @A__A__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     store typed i32 7, %t2
     return void
 }
-function @A__A(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1AC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store typed i32 7, %t2
-    return void
-}
-equivalent_entry @V__V = @V__V__base_entry
-equivalent_entry @A__A = @A__A__base_entry

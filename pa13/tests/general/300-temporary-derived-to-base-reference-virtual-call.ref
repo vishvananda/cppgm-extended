@@ -75,13 +75,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @Base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4Base5valueEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
-}
 function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -99,16 +92,6 @@ function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [binding=weak,
     store typed i32 7, %t7
     return void
 }
-function @Derived__value(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7Derived5valueEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
-    %t3 = load typed i32 %t2
-    return i32 %t3
-}
 function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -119,5 +102,22 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=n
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @Derived__value(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7Derived5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load typed i32 %t2
+    return i32 %t3
+}
+function @Base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4Base5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
 }
 alias object _ZN7DerivedC2Ev = @Derived__Derived

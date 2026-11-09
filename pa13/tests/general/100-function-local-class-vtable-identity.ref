@@ -158,20 +158,6 @@ function @local__local(%this : ptr [object_bytes=8]) -> void [unwind=no, binding
     store typed ptr %t5, %t3
     return void
 }
-function @local__value(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ5firstvENK5local5valueEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
-}
-function @base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4base5valueEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 0
-}
 function @local__local__2(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=internal, object=_ZZ6secondvEN5localC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -186,13 +172,6 @@ function @local__local__2(%this : ptr [object_bytes=8]) -> void [unwind=no, bind
     store typed ptr %t5, %t3
     return void
 }
-function @local__value__2(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ6secondvENK5local5valueEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 2
-}
 function @base__base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4baseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -203,6 +182,27 @@ function @base__base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=n
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @local__value(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ5firstvENK5local5valueEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
+}
+function @local__value__2(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ6secondvENK5local5valueEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 2
+}
+function @base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4base5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 0
 }
 alias object _ZZ5firstvEN5localC2Ev = @local__local
 alias object _ZZ6secondvEN5localC2Ev = @local__local__2

@@ -1,21 +1,6 @@
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_Leaf [storage=readonly, binding=weak, object=_ZTS4Leaf] = {
-  i8 52
-  i8 76
-  i8 101
-  i8 97
-  i8 102
-  i8 0
-}
-global @__typeinfo_name__struct_Top [storage=readonly, binding=weak, object=_ZTS3Top] = {
-  i8 51
-  i8 84
-  i8 111
-  i8 112
-  i8 0
-}
 global @__typeinfo_name__struct_Mid [storage=readonly, binding=weak, object=_ZTS3Mid] = {
   i8 51
   i8 77
@@ -42,6 +27,33 @@ global @__rtti_struct_Mid [storage=readonly, binding=weak, object=_ZTI3Mid] = {
   ptr addr @__rtti_struct_Low
   i64 -10237
 }
+global @Mid__vtable [storage=readonly, binding=weak, object=_ZTV3Mid] = {
+  i64 0
+  i64 0
+  i64 0
+  i64 0
+  ptr addr @__rtti_struct_Mid
+  ptr addr @_Mid__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40
+  ptr addr @Low__low
+  ptr addr @Mid__self
+}
+global @Mid____vtt [storage=readonly, binding=weak, object=_ZTT3Mid, object_root=yes] = {
+  ptr addr @Mid__vtable + 40
+  ptr addr @Mid__vtable + 40
+}
+global @Low__vtable [storage=readonly, binding=weak, object=_ZTV3Low] = {
+  i64 0
+  ptr addr @__rtti_struct_Low
+  ptr addr @Low__self
+  ptr addr @Low__low
+}
+global @__typeinfo_name__struct_Top [storage=readonly, binding=weak, object=_ZTS3Top] = {
+  i8 51
+  i8 84
+  i8 111
+  i8 112
+  i8 0
+}
 global @__rtti_struct_Top [storage=readonly, binding=weak, object=_ZTI3Top] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_Top
@@ -51,6 +63,43 @@ global @__rtti_struct_Top [storage=readonly, binding=weak, object=_ZTI3Top] = {
   i64 -12285
   ptr addr @__rtti_struct_Low
   i64 -10237
+}
+global @Top__vtable [storage=readonly, binding=weak, object=_ZTV3Top] = {
+  i64 0
+  i64 0
+  i64 0
+  i64 0
+  i64 0
+  ptr addr @__rtti_struct_Top
+  ptr addr @_Top__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40
+  ptr addr @Low__low
+  ptr addr @_Top__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n48
+  ptr addr @Top__self
+}
+global @Top____construction__Mid__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC3Top0_3Mid] = {
+  i64 0
+  i64 0
+  i64 0
+  i64 0
+  ptr addr @__rtti_struct_Mid
+  ptr addr @_Mid__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40
+  ptr addr @Low__low
+  ptr addr @Mid__self
+}
+global @Top____vtt [storage=readonly, binding=weak, object=_ZTT3Top, object_root=yes] = {
+  ptr addr @Top__vtable + 48
+  ptr addr @Top__vtable + 48
+  ptr addr @Top__vtable + 48
+  ptr addr @Top____construction__Mid__0__s0__vtable + 40
+  ptr addr @Top____construction__Mid__0__s0__vtable + 40
+}
+global @__typeinfo_name__struct_Leaf [storage=readonly, binding=weak, object=_ZTS4Leaf] = {
+  i8 52
+  i8 76
+  i8 101
+  i8 97
+  i8 102
+  i8 0
 }
 global @__rtti_struct_Leaf [storage=readonly, binding=weak, object=_ZTI4Leaf] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
@@ -126,55 +175,6 @@ global @Leaf____vtt [storage=readonly, binding=weak, object=_ZTT4Leaf, object_ro
   ptr addr @Leaf____construction__Top__16__s1__vtable + 40
   ptr addr @Leaf____construction__Mid__0__s0__vtable + 40
   ptr addr @Leaf____construction__Mid__0__s0__vtable + 40
-}
-global @Top__vtable [storage=readonly, binding=weak, object=_ZTV3Top] = {
-  i64 0
-  i64 0
-  i64 0
-  i64 0
-  i64 0
-  ptr addr @__rtti_struct_Top
-  ptr addr @_Top__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40
-  ptr addr @Low__low
-  ptr addr @_Top__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n48
-  ptr addr @Top__self
-}
-global @Top____construction__Mid__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC3Top0_3Mid] = {
-  i64 0
-  i64 0
-  i64 0
-  i64 0
-  ptr addr @__rtti_struct_Mid
-  ptr addr @_Mid__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40
-  ptr addr @Low__low
-  ptr addr @Mid__self
-}
-global @Top____vtt [storage=readonly, binding=weak, object=_ZTT3Top, object_root=yes] = {
-  ptr addr @Top__vtable + 48
-  ptr addr @Top__vtable + 48
-  ptr addr @Top__vtable + 48
-  ptr addr @Top____construction__Mid__0__s0__vtable + 40
-  ptr addr @Top____construction__Mid__0__s0__vtable + 40
-}
-global @Mid__vtable [storage=readonly, binding=weak, object=_ZTV3Mid] = {
-  i64 0
-  i64 0
-  i64 0
-  i64 0
-  ptr addr @__rtti_struct_Mid
-  ptr addr @_Mid__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40
-  ptr addr @Low__low
-  ptr addr @Mid__self
-}
-global @Mid____vtt [storage=readonly, binding=weak, object=_ZTT3Mid, object_root=yes] = {
-  ptr addr @Mid__vtable + 40
-  ptr addr @Mid__vtable + 40
-}
-global @Low__vtable [storage=readonly, binding=weak, object=_ZTV3Low] = {
-  i64 0
-  ptr addr @__rtti_struct_Low
-  ptr addr @Low__self
-  ptr addr @Low__low
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -280,7 +280,7 @@ function @Leaf__Leaf(%this : ptr [object_bytes=32]) -> void [unwind=no, binding=
     store typed ptr %t21, %t19
     return void
 }
-function @Top__self(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZN3Top4selfEv, inline_hint=yes] {
+function @Mid__self(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN3Mid4selfEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -295,7 +295,7 @@ function @Low__low(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_Z
     store typed ptr %this, $this
     return i32 1
 }
-function @Mid__self(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN3Mid4selfEv, inline_hint=yes] {
+function @Low__self(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN3Low4selfEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -303,7 +303,7 @@ function @Mid__self(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_
     %t1 = load typed ptr $this
     return ptr %t1
 }
-function @Low__self(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN3Low4selfEv, inline_hint=yes] {
+function @Top__self(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZN3Top4selfEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -363,6 +363,26 @@ function @Top__Top__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> v
     store typed ptr %t14, %t12
     return void
 }
+function @_Mid__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40(%arg0 : ptr) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n40_N3Mid4selfEv] {
+  block ^entry:
+    %t1 = load typed ptr %arg0
+    %t2 = index i8 %t1, -24
+    %t3 = load typed i64 %t2
+    %t4 = index i8 %arg0, %t3
+    %t5 = call ptr @Mid__self(%t4)
+    %t6 = cmp eq ptr %t5, 0
+    branch %t6, ^return_null_1, ^adjust_return_2
+
+  block ^return_null_1:
+    return ptr %t5
+
+  block ^adjust_return_2:
+    %t7 = load typed ptr %t5
+    %t8 = index i8 %t7, -40
+    %t9 = load typed i64 %t8
+    %t10 = index i8 %t5, %t9
+    return ptr %t10
+}
 function @_Top__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40(%arg0 : ptr) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n40_N3Top4selfEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
@@ -399,26 +419,6 @@ function @_Top__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__v
   block ^adjust_return_2:
     %t7 = load typed ptr %t5
     %t8 = index i8 %t7, -48
-    %t9 = load typed i64 %t8
-    %t10 = index i8 %t5, %t9
-    return ptr %t10
-}
-function @_Mid__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40(%arg0 : ptr) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n40_N3Mid4selfEv] {
-  block ^entry:
-    %t1 = load typed ptr %arg0
-    %t2 = index i8 %t1, -24
-    %t3 = load typed i64 %t2
-    %t4 = index i8 %arg0, %t3
-    %t5 = call ptr @Mid__self(%t4)
-    %t6 = cmp eq ptr %t5, 0
-    branch %t6, ^return_null_1, ^adjust_return_2
-
-  block ^return_null_1:
-    return ptr %t5
-
-  block ^adjust_return_2:
-    %t7 = load typed ptr %t5
-    %t8 = index i8 %t7, -40
     %t9 = load typed i64 %t8
     %t10 = index i8 %t5, %t9
     return ptr %t10

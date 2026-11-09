@@ -246,6 +246,101 @@ function @D___D__deleting_entry(%this : ptr [object_bytes=16]) -> void [unwind=n
   block ^destructor_end_2:
     return void
 }
+function @D___D(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN1DD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    %t1 = load typed ptr $this
+    %t2 = addr @D__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    %t4 = load typed ptr $this
+    %t5 = index i8 %t4, 8
+    %t6 = addr @D____view__B2__8__vtable
+    %t7 = index i8 %t6, 16
+    store typed ptr %t7, %t5
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
+    %t8 = load typed ptr $this
+    %t9 = index i8 %t8, 8
+    call void @B2___B2__base_entry(%t9)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t10 = load typed ptr $this
+    %t11 = index i8 %t10, 0
+    call void @B1___B1__base_entry(%t11)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t12 = load typed ptr $this
+    %t13 = index i8 %t12, 0
+    call void @B1___B1__base_entry(%t13)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t14 = load typed ptr $this
+    %t15 = index i8 %t14, 8
+    call void @B2___B2__base_entry(%t15)
+    %t16 = load typed ptr $this
+    %t17 = index i8 %t16, 0
+    call void @B1___B1__base_entry(%t17)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @B1__B1__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B1C2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    call void @B0__B0__base_entry(%t2)
+    eh_cleanup ^constructor_cleanup_1
+    %t3 = load typed ptr $this
+    %t4 = addr @B1__vtable
+    %t5 = index i8 %t4, 16
+    store typed ptr %t5, %t3
+    eh_end
+    return void
+
+  block ^constructor_cleanup_1:
+    %t6 = load typed ptr $this
+    %t7 = index i8 %t6, 0
+    call void @B0___B0__base_entry(%t7)
+    eh_end
+    resume
+}
+function @B2__B2__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B2C2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    call void @B0__B0__base_entry(%t2)
+    eh_cleanup ^constructor_cleanup_1
+    %t3 = load typed ptr $this
+    %t4 = addr @B2__vtable
+    %t5 = index i8 %t4, 16
+    store typed ptr %t5, %t3
+    eh_end
+    return void
+
+  block ^constructor_cleanup_1:
+    %t6 = load typed ptr $this
+    %t7 = index i8 %t6, 0
+    call void @B0___B0__base_entry(%t7)
+    eh_end
+    resume
+}
 function @B1___B1__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B1D2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -380,101 +475,6 @@ function @B2___B2__deleting_entry(%this : ptr [object_bytes=8]) -> void [unwind=
   block ^destructor_end_2:
     return void
 }
-function @D___D(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN1DD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    eh_cleanup ^destructor_cleanup_1
-    %t1 = load typed ptr $this
-    %t2 = addr @D__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    %t4 = load typed ptr $this
-    %t5 = index i8 %t4, 8
-    %t6 = addr @D____view__B2__8__vtable
-    %t7 = index i8 %t6, 16
-    store typed ptr %t7, %t5
-    eh_end
-    eh_cleanup ^destructor_suffix_cleanup_3
-    %t8 = load typed ptr $this
-    %t9 = index i8 %t8, 8
-    call void @B2___B2__base_entry(%t9)
-    eh_end
-    jump ^destructor_suffix_next_4
-
-  block ^destructor_suffix_cleanup_3:
-    %t10 = load typed ptr $this
-    %t11 = index i8 %t10, 0
-    call void @B1___B1__base_entry(%t11)
-    eh_end
-    resume
-
-  block ^destructor_suffix_next_4:
-    %t12 = load typed ptr $this
-    %t13 = index i8 %t12, 0
-    call void @B1___B1__base_entry(%t13)
-    jump ^destructor_end_2
-
-  block ^destructor_cleanup_1:
-    %t14 = load typed ptr $this
-    %t15 = index i8 %t14, 8
-    call void @B2___B2__base_entry(%t15)
-    %t16 = load typed ptr $this
-    %t17 = index i8 %t16, 0
-    call void @B1___B1__base_entry(%t17)
-    eh_end
-    resume
-
-  block ^destructor_end_2:
-    return void
-}
-function @B1__B1__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B1C2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 0
-    call void @B0__B0__base_entry(%t2)
-    eh_cleanup ^constructor_cleanup_1
-    %t3 = load typed ptr $this
-    %t4 = addr @B1__vtable
-    %t5 = index i8 %t4, 16
-    store typed ptr %t5, %t3
-    eh_end
-    return void
-
-  block ^constructor_cleanup_1:
-    %t6 = load typed ptr $this
-    %t7 = index i8 %t6, 0
-    call void @B0___B0__base_entry(%t7)
-    eh_end
-    resume
-}
-function @B2__B2__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B2C2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 0
-    call void @B0__B0__base_entry(%t2)
-    eh_cleanup ^constructor_cleanup_1
-    %t3 = load typed ptr $this
-    %t4 = addr @B2__vtable
-    %t5 = index i8 %t4, 16
-    store typed ptr %t5, %t3
-    eh_end
-    return void
-
-  block ^constructor_cleanup_1:
-    %t6 = load typed ptr $this
-    %t7 = index i8 %t6, 0
-    call void @B0___B0__base_entry(%t7)
-    eh_end
-    resume
-}
 function @B1___B1(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B1D1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -527,7 +527,7 @@ function @B2___B2(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak
   block ^destructor_end_2:
     return void
 }
-function @B0___B0__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B0D2Ev, object_root=yes, inline_hint=yes] {
+function @B0__B0__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B0C2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -538,7 +538,7 @@ function @B0___B0__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, 
     store typed ptr %t3, %t1
     return void
 }
-function @B0__B0__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B0C2Ev, object_root=yes, inline_hint=yes] {
+function @B0___B0__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B0D2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

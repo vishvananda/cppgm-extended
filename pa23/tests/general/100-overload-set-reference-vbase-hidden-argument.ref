@@ -174,18 +174,4 @@ function @A__A__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void 
     store typed ptr %t2, %t1
     return void
 }
-function @A__A(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1AC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 8
-    call void @V__V__base_entry(%t2)
-    %t3 = load typed ptr $this
-    %t4 = addr @A__vtable
-    %t5 = index i8 %t4, 24
-    store typed ptr %t5, %t3
-    return void
-}
 equivalent_entry @V__V = @V__V__base_entry

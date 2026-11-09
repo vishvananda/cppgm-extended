@@ -125,15 +125,4 @@ function @IOS__IOS__base_entry(%this : ptr [object_bytes=4]) -> void [binding=we
     store typed i32 0, %t2
     return void
 }
-function @IOS__IOS(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3IOSC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store typed i32 0, %t2
-    return void
-}
 alias object _ZN6HolderC2I6StreamEERT_ = @Holder__Holder
-equivalent_entry @IOS__IOS = @IOS__IOS__base_entry

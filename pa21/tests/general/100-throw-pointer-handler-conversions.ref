@@ -1106,20 +1106,6 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=16]) -> void [binding
     store typed i32 1, %t5
     return void
 }
-function @Base__Base(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN4BaseC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Base__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
-    store typed i32 1, %t5
-    return void
-}
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     %t1 = addr @derived
@@ -1138,4 +1124,3 @@ alias object _ZN7DerivedD2Ev = @Derived___Derived
 alias object _ZN7DerivedC2Ev = @Derived__Derived
 alias object _ZN7PrivateD2Ev = @Private___Private
 equivalent_entry @Base___Base = @Base___Base__base_entry
-equivalent_entry @Base__Base = @Base__Base__base_entry

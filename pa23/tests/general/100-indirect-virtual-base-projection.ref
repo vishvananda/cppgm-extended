@@ -757,16 +757,6 @@ function @B__B__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     store typed i32 7, %t2
     return void
 }
-function @B__B(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1BC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store typed i32 7, %t2
-    return void
-}
 function @H__H__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN1HC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -806,4 +796,3 @@ function @E__E(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1
     store typed ptr %t9, %t7
     return void
 }
-equivalent_entry @B__B = @B__B__base_entry

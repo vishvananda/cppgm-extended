@@ -164,20 +164,6 @@ function @Combined__Combined(%this : ptr [object_bytes=16]) -> void [unwind=no, 
     store typed ptr %t11, %t9
     return void
 }
-function @Derived1__f(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8Derived11fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @Derived2__f(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8Derived21fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @Derived1__Derived1__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN8Derived1C2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -204,6 +190,20 @@ function @Derived2__Derived2__base_entry(%this : ptr [object_bytes=8]) -> void [
     %t4 = addr @Derived2__vtable
     %t5 = index i8 %t4, 16
     store typed ptr %t5, %t3
+    return void
+}
+function @Derived1__f(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8Derived11fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Derived2__f(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8Derived21fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
     return void
 }
 function @Abstract__Abstract__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN8AbstractC2Ev, object_root=yes, inline_hint=yes] {

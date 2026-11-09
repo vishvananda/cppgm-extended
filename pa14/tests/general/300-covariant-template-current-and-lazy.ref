@@ -159,14 +159,6 @@ function @Self_int___Self(%this : ptr [object_bytes=8]) -> void [unwind=no, bind
     store typed ptr %t5, %t3
     return void
 }
-function @Self_int___self(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN4SelfIiE4selfEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    return ptr %t1
-}
 function @Same__Same(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4SameC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -181,13 +173,6 @@ function @Same__Same(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=w
     store typed ptr %t5, %t3
     return void
 }
-function @Same__get(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN4Same3getEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return ptr 0
-}
 function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -199,6 +184,14 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=n
     store typed ptr %t3, %t1
     return void
 }
+function @Self_int___self(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN4SelfIiE4selfEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    return ptr %t1
+}
 function @Interface__Interface__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN9InterfaceC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -209,6 +202,13 @@ function @Interface__Interface__base_entry(%this : ptr [object_bytes=8]) -> void
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @Same__get(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN4Same3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return ptr 0
 }
 alias object _ZN4SelfIiEC2Ev = @Self_int___Self
 alias object _ZN4SameC2Ev = @Same__Same
