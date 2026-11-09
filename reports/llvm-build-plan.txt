@@ -664,3 +664,39 @@ C++ compilations and zero generators. The complete build and downstream
 comparisons remain pending. Immutable tools: compiler-block14-captures-members.
 Receipt outside checkout: block14-captures-members-validation.json. All initial
 and superseded observations are retained.
+
+
+Blocks 15-16: deduction, captures, copy demand and loop exits (accepted)
+-------------------------------------------------------------------
+The remaining nine LLVM source failures clear as a group. C++17 condition
+declarations support CTAD, deduction runs the initializer-list constructor
+phase with its copy/default exceptions, and fixed enums support direct-list
+initialization. Nested generic captures propagate into their enclosing
+closures. Fixed reference-member expressions and class parameter types keep
+their precise dependence. Inherited-constructor ties follow CWG 2273, with
+builtin operator candidates excluded from constructor-only tie-breaking.
+Implicit copy facts are demanded only when that copy can participate in
+constructor selection. Loop unrolling uses unique CFG exit successors when
+adding phi inputs, including repeated switch targets. P0138R2 and CWG 2251/2374
+texts are archived and exported.
+
+The first B15 strict/export run exposed two builtin-operator crashes from the
+new constructor tie-breaker; B16 adds the missing null-function guard. The
+final B16 strict report passes 9910/9910, with debug/modern, architecture,
+format, file/placement/CWG audits, PA5 self-host, inception and harness passing.
+All 144 final cppgm/GCC/Clang O0/O3 observations pass. The fresh student export
+passes 219 documents, 42 wrappers and 25 fixture checks. Frozen instruction
+ratios against accepted B13 are O0 0.999387 and O3 0.999754, with identical
+objects. Full course and student releases pass all 17 gates and extra margins.
+This cumulative result clears the previously outstanding extra timing margin.
+
+Fresh B15 and B16 builds both complete all 3163 clang-target steps, with all
+2577 C++ compilations performed by cppgm and unchanged LLVM sources. Diagnostic
+build elapsed times are not benchmark results. The built Clang reports its
+version, but its first compilation exposes a missing trailing default argument
+in placement new: a small AST allocation receives an address-sized extra count.
+That runtime gap is handled in the following block. LLVM build timing, complete
+cppgm output identity and generated-Clang performance remain pending.
+Immutable tools: compiler-block16-builtin-candidate-guard. Receipt outside the
+checkout: block16-deduction-captures-validation.json. All failed and superseded
+observations are retained.
