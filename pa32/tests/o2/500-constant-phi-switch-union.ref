@@ -1,0 +1,9 @@
+function @select(%value : u32, %wide : u8) -> i64 {
+  block ^entry:
+    %extended = convert zext i64 u32 %value
+    %large_result = binary add i64 %extended, 7
+    %small_extended = convert zext i64 u32 %value
+    %small_result = binary add i64 %small_extended, 7
+    %t5 = select i64 %wide, %large_result, %small_result
+    return i64 %t5
+}

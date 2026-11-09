@@ -13,6 +13,8 @@ namespace {
 // A block threaded through holds at most this many instructions besides
 // its phis (each predecessor re-evaluates them).
 const uint32_t kThreadWork = 8;
+// A switch lookup is repeated for each incoming edge; bound that work too.
+const uint32_t kThreadCases = 32;
 // A block whose branch a jumping predecessor takes over (its values not
 // decided there) holds at most this many instructions besides its phis,
 // and one block gives at most kCloneBudget copies in all.
@@ -358,13 +360,29 @@ bool JumpThreading::evaluate(BlockId block, const Value* inputs, BlockId& target
 		if (is_terminator(inst.op))
 		{
 			Constant c;
-			if (inst.op != Opcode::Branch || !literal_constant(body_, value(inst.ops[0]), c) ||
-				c.kind != ValueKind::Integer)
+			if ((inst.op != Opcode::Branch && inst.op != Opcode::Switch) ||
+				!literal_constant(body_, value(inst.ops[0]), c) || c.kind != ValueKind::Integer)
 			{
 				ok = false;
 				break;
 			}
-			target = (c.bits.low | c.bits.high) != 0 ? inst.ops[1].index : inst.ops[2].index;
+			if (inst.op == Opcode::Branch)
+				target = (c.bits.low | c.bits.high) != 0 ? inst.ops[1].index : inst.ops[2].index;
+			else
+			{
+				const Type type = inst.type.is_void() ? Type::scalar(TypeKind::I64) : inst.type;
+				target = inst.ops[1].index;
+				for (uint32_t k = 0; k < inst.extra_count; k += 2)
+				{
+					Constant label;
+					if (literal_constant(body_, body_.operands[inst.extra_first + k], label) &&
+						same_constant(type, label, c))
+					{
+						target = body_.operands[inst.extra_first + k + 1].index;
+						break;
+					}
+				}
+			}
 			break;
 		}
 		Constant a, b, r;
@@ -459,8 +477,8 @@ BlockId JumpThreading::successor_holding(BlockId m, TempId t) const
 	return x == kNoId || x == m || cfg_.pred_count(x) != 1 ? kNoId : x;
 }
 
-// A block that only computes its branch condition from phis: a
-// predecessor whose inputs decide the branch jumps to the decided
+// A block that only computes its branch or switch selector from phis: a
+// predecessor whose inputs decide the target jumps to the decided
 // successor directly. A value of the block used past it must have every
 // such use under one successor entered from the block alone, which no
 // predecessor then enters directly (the block still dominates those
@@ -486,7 +504,10 @@ bool JumpThreading::constant_phis(bool counted)
 			m == body_.layout[0])
 			continue;
 		const InstId term = body_.blocks[m].last;
-		if (term == kNoId || body_.instructions[term].op != Opcode::Branch)
+		if (term == kNoId ||
+			(body_.instructions[term].op != Opcode::Branch &&
+				(c_.level < 2 || body_.instructions[term].op != Opcode::Switch ||
+					body_.instructions[term].extra_count / 2 > kThreadCases)))
 			continue;
 		uint32_t work = 0;
 		bool has_phi = false, copyable = true;
@@ -499,7 +520,8 @@ bool JumpThreading::constant_phis(bool counted)
 		}
 		if (!has_phi || work > kThreadWork)
 			continue;
-		copyable = copyable && work <= kCopyWork;
+		// Undecided switches stay in place: copy_branch clones two-way tests.
+		copyable = copyable && work <= kCopyWork && body_.instructions[term].op == Opcode::Branch;
 		// Every value of the block is used only after it inside the block
 		// (the phis by its own computations, those by the branch); a use by
 		// one of its phis, from a back edge, is a use outside the threaded

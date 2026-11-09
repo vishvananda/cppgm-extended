@@ -1,0 +1,10 @@
+function @select(%condition : u8) -> i64 {
+  block ^entry:
+    branch %condition, ^hit, ^fallback
+
+  block ^hit:
+    return i64 19
+
+  block ^fallback:
+    return i64 23
+}

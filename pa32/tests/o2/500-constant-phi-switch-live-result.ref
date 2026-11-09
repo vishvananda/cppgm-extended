@@ -1,0 +1,16 @@
+function @select(%condition : u8, %input : u8) -> i64 {
+  block ^entry:
+    %t1 = select u8 %condition, 7, %input
+    %selector = convert zext i64 u8 %t1
+    switch %selector, ^fallback, 7:^hit, 9:^other
+
+  block ^hit:
+    %result = binary add i64 %selector, 103
+    return i64 %result
+
+  block ^other:
+    return i64 19
+
+  block ^fallback:
+    return i64 23
+}
