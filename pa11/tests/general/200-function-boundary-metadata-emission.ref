@@ -1,4 +1,4 @@
-declare function @__builtin_strlen(%arg0 : ptr) -> i64 [effects=readonly, unwind=no, binding=strong, object=cppgm_builtin_strlen]
+declare function @__builtin_strlen(%arg0 : ptr) -> i64 [effects=readonly, unwind=no, repeatable=yes, binding=strong, object=cppgm_builtin_strlen]
 
 global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 120

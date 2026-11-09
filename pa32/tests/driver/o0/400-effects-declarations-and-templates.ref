@@ -1,6 +1,6 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-declare function @__builtin_strlen(%arg0 : ptr) -> i64 [effects=readonly, unwind=no, binding=strong, object=cppgm_builtin_strlen]
+declare function @__builtin_strlen(%arg0 : ptr) -> i64 [effects=readonly, unwind=no, repeatable=yes, binding=strong, object=cppgm_builtin_strlen]
 declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
 global @counter : i32 [binding=strong] = 0
@@ -31,7 +31,7 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 0
 }
 
-function @later(%x : i32) -> i32 [effects=readnone, binding=strong, object=_Z5lateri] {
+function @later(%x : i32) -> i32 [effects=readnone, repeatable=yes, binding=strong, object=_Z5lateri] {
   slot $x : i32
 
   block ^entry:
@@ -40,7 +40,7 @@ function @later(%x : i32) -> i32 [effects=readnone, binding=strong, object=_Z5la
     %t2 = binary add nowrap i32 %t1, 1
     return i32 %t2
 }
-function @earlier(%x : i32) -> i32 [effects=readonly, binding=strong, object=_Z7earlieri] {
+function @earlier(%x : i32) -> i32 [effects=readonly, repeatable=yes, binding=strong, object=_Z7earlieri] {
   slot $x : i32
 
   block ^entry:
@@ -50,7 +50,7 @@ function @earlier(%x : i32) -> i32 [effects=readonly, binding=strong, object=_Z7
     %t3 = binary add nowrap i32 %t1, %t2
     return i32 %t3
 }
-function @bracketed(%x : i32) -> i32 [effects=readnone, binding=strong, object=_Z9bracketedi] {
+function @bracketed(%x : i32) -> i32 [effects=readnone, repeatable=yes, binding=strong, object=_Z9bracketedi] {
   slot $x : i32
 
   block ^entry:
@@ -72,7 +72,7 @@ function @doubled(%x : i32) -> i32 [binding=strong, object=_Z7doubledIiET_S0_] {
     %t5 = binary add nowrap i32 %t3, %t4
     return i32 %t5
 }
-function @Shape__area(%this : ptr [object_bytes=16]) -> i32 [effects=readonly, binding=strong, object=_ZNK5Shape4areaEv] {
+function @Shape__area(%this : ptr [object_bytes=16]) -> i32 [effects=readonly, repeatable=yes, binding=strong, object=_ZNK5Shape4areaEv] {
   slot $this : ptr
 
   block ^entry:
@@ -137,7 +137,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t21 = load typed ptr $view
     %t22 = load typed ptr %t21
     %t23 = load typed ptr %t22
-    %t24 = call i32 %t23(%t21) as (%arg0 : ptr [object_bytes=16]) -> i32 [effects=readonly]
+    %t24 = call i32 %t23(%t21) as (%arg0 : ptr [object_bytes=16]) -> i32 [effects=readonly, repeatable=yes]
     store typed i32 %t24, $call__6
     %t25 = load typed i32 $call__6
     %t26 = convert sitofp f64 i32 %t25
@@ -233,7 +233,7 @@ function @Shape__Shape(%this : ptr [object_bytes=16]) -> void [unwind=no, bindin
     store typed ptr %t3, %t1
     return void
 }
-function @doubled__2(%x : f64) -> f64 [effects=readnone, binding=weak, object=_Z7doubledIdET_S0_] {
+function @doubled__2(%x : f64) -> f64 [effects=readnone, repeatable=yes, binding=weak, object=_Z7doubledIdET_S0_] {
   slot $x : f64
 
   block ^entry:
