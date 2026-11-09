@@ -1318,3 +1318,29 @@ Three AA/ABBA screens pass output equality: candidate/control instructions
 variation, not whole-build runtime evidence. All observations are retained.
 Full LLVM build, current/frozen object comparisons, full runtime and official
 course/student release qualification are next. This candidate is not accepted.
+
+B41 full qualification results
+------------------------------
+Fresh LLVM passes all 2577 C++ units without fallback in 353.64 s.
+All 204 generated dependencies, 324 current objects, 323 frozen objects,
+both linked compilers and all six timing outputs match byte for byte.
+Full ABBA measures 48.615 s native versus 54.915 s cppgm-built, 0.8852772x.
+Native A/A walls were 43.98 and 45.08 s; the later native block slowed
+substantially, so do not claim a resolved elapsed improvement across runs.
+Cppgm-built instructions are 1,223,662,398,258.5, 0.99724065x B40 (-0.2759%);
+native instructions remain stable at 1.00001051x. The 0.95x goal is unmet.
+
+All 42 exported wrappers, both exported fixtures and quick/smoke pass.
+The official full release is still running. Its student speed observation
+has scaling 2.54x, within the 3.00 hard limit but short of 2.40 release
+headroom. If this is the only failed release margin, preserve the complete
+initial run and do exactly one speed-only recheck of the unchanged seed/self,
+then use official calibrate.pl --from to judge all cached checks. No gate
+limits or observations are edited. Candidate remains unaccepted pending this.
+
+Private follow-ups retain exact full-binary controls. Disabling pointer
+result tables adds instructions in all three samples, so keep the tables.
+Allowing memory/immediate tests instead of the existing O2 register-predicate
+policy has no resolved instruction win and variable cycles; do not change it.
+Outlining one hash-range helper also has no resolved win. Each experiment
+uses private copied archives and leaves the full LLVM build untouched.
