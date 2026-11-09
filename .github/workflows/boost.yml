@@ -1,0 +1,115 @@
+name: Boost benchmarks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmarks:
+    name: Boost correctness and performance
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_STDLIB_FLAGS: ""
+      CPPGM_WARNINGS_AS_ERRORS: "1"
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential binutils ca-certificates clang curl git python3 bzip2 gdb
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Trust the mounted checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Build compiler
+        run: make -C dev cppgm++ -j "$(nproc)"
+      - name: Cache pinned Boost archive
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/boost_1_92_0.tar.bz2
+          key: boost-1.92.0-5c1d40cb8e19adbf740a4ec2da35b3e58f3f5804b1dce44deb53df72193cbc6c
+      - name: Fetch pinned Boost
+        run: |
+          archive="$RUNNER_TEMP/boost_1_92_0.tar.bz2"
+          if [ ! -f "$archive" ]; then
+            curl --fail --location --retry 3 \
+              https://archives.boost.io/release/1.92.0/source/boost_1_92_0.tar.bz2 \
+              --output "$archive.tmp"
+            echo "5c1d40cb8e19adbf740a4ec2da35b3e58f3f5804b1dce44deb53df72193cbc6c  $archive.tmp" | sha256sum --check
+            mv "$archive.tmp" "$archive"
+          fi
+          echo "5c1d40cb8e19adbf740a4ec2da35b3e58f3f5804b1dce44deb53df72193cbc6c  $archive" | sha256sum --check
+      - name: Build and validate the selected suites with all three compilers
+        run: |
+          python3 scripts/boost_benchmarks.py run \
+            --archive "$RUNNER_TEMP/boost_1_92_0.tar.bz2" \
+            --compiler dev/cppgm++ --output obj/boost --jobs "$(nproc)"
+      - name: Report
+        if: always()
+        run: |
+          if [ -f obj/boost/summary.md ]; then
+            cat obj/boost/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Collect reviewed results and diagnostics
+        if: always()
+        run: python3 scripts/boost_benchmarks.py collect obj/boost obj/boost-evidence
+      - name: Retain results and raw observations
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: boost-${{ github.sha }}-${{ github.run_id }}
+          path: obj/boost-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
+  publish:
+    name: publish Boost results
+    needs: benchmarks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-branch
+      - uses: actions/download-artifact@v7
+        with:
+          name: boost-${{ github.sha }}-${{ github.run_id }}
+          path: artifact
+      - name: Publish comparisons and retained history
+        env:
+          REVISION: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 tools/scripts/boost_benchmarks.py publish artifact badge-branch \
+            --revision "$REVISION" --run-url "$RUN_URL"
+          cd badge-branch
+          git add boost
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Publish Boost benchmarks of $REVISION"
+          git push origin HEAD:benchmark-badges

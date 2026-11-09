@@ -139,6 +139,32 @@ class ReviewTests(unittest.TestCase):
         self.assertEqual(boost_ci_toolchain.expand(['@' + str(response)]),
                          ['-std=c++11', '-c', 'file with spaces.cpp', '-o', 'output.o'])
 
+    def test_gdb_launcher_keeps_the_executable_and_times_once_in_either_order(self):
+        fake = self.root / 'fake-gdb'
+        received = self.root / 'gdb-arguments.json'
+        fake.write_text('#!/usr/bin/env python3\nimport json,os,sys\n'
+                        'open(os.environ["GDB_ARGS"],"w").write(json.dumps(sys.argv[1:]))\n')
+        fake.chmod(0o755)
+        timer = Path(boost_ci.__file__).with_name('boost_ci_execute.py').resolve()
+        for outer in (False, True):
+            with self.subTest(outer=outer):
+                directory = self.root / str(outer)
+                directory.mkdir()
+                boost_ci.setup(self.root, directory, gdb_executable=fake)
+                shim = directory / 'boost-ci-gdb'
+                log = directory / 'native.jsonl'
+                args = ['-batch', '-x', 'printers.py', '/build/test-executable']
+                command = ([timer, shim, *args] if outer else
+                           [shim, *args[:-1], timer, args[-1]])
+                env = dict(os.environ, BOOST_CI_RUNTIME_INVOCATIONS=str(log), GDB_ARGS=str(received))
+                env.pop('BOOST_CI_TIMER_ACTIVE', None)
+                result = subprocess.run(command, env=env)
+                self.assertEqual(result.returncode, 0)
+                actual = json.loads(received.read_text())
+                self.assertEqual(actual[-len(args):], args)
+                self.assertNotIn(str(timer), actual)
+                self.assertEqual(len(log.read_text().splitlines()), 1)
+
     def test_response_file_reaches_cpp_compiler_as_arguments(self):
         received = self.root / 'received.json'
         compiler = self.root / 'compiler'

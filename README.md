@@ -49,8 +49,8 @@ The export's references are generated from this compiler.
 <td width="152"><a href="https://github.com/vishvananda/cppgm-extended/actions/runs/42476441186"><img alt="simdjson · scalar + SSE: passing" width="120" height="24" src="docs/performance/preview/badges/tests-simd.svg"></a></td>
 </tr>
 <tr>
-<td>Boost advisory</td>
-<td width="152"><a href="https://github.com/vishvananda/cppgm-extended/actions/runs/42476437427"><img alt="Boost advisory: passing" width="120" height="24" src="docs/performance/preview/badges/tests-boost.svg"></a></td>
+<td>Boost · 17 suites</td>
+<td width="152"><a href="https://github.com/vishvananda/cppgm-extended/actions/workflows/boost.yml"><img alt="Boost correctness and performance" width="120" height="24" src="https://github.com/vishvananda/cppgm-extended/actions/workflows/boost.yml/badge.svg"></a></td>
 </tr>
 <tr>
 <td>Self-build + inception</td>
@@ -71,7 +71,7 @@ The export's references are generated from this compiler.
 
 ## Performance
 
-**O3 speedups; higher is better.** Colors fade from green through yellow and orange, reaching red at 0.50× or below.
+**O3 speedups except the Boost debug build; higher is better.** Colors fade from green through yellow and orange, reaching red at 0.50× or below.
 
 Badges show **EPYC / Intel / hosted Intel**, top to bottom. `n/m` means not measured. Swipe sideways for other columns.
 
@@ -114,6 +114,13 @@ Badges show **EPYC / Intel / hosted Intel**, top to bottom. `n/m` means not meas
 <td width="152">n/a</td>
 </tr>
 <tr>
+<td><a href="benchmarks/boost/README.md">Boost tests · debug†</a></td>
+<td width="152"><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/report.md"><img alt="Boost compile CPU vs gcc: EPYC" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/boost/epyc-compile-gcc.svg"></a><br><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/report.md"><img alt="Boost compile CPU vs gcc: Intel" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/boost/intel-compile-gcc.svg"></a><br><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/report.md"><img alt="Boost compile CPU vs gcc: hosted Intel" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/boost/github-intel-compile-gcc.svg"></a></td>
+<td width="152"><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/report.md"><img alt="Boost compile CPU vs clang: EPYC" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/boost/epyc-compile-clang.svg"></a><br><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/report.md"><img alt="Boost compile CPU vs clang: Intel" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/boost/intel-compile-clang.svg"></a><br><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/report.md"><img alt="Boost compile CPU vs clang: hosted Intel" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/boost/github-intel-compile-clang.svg"></a></td>
+<td width="152">n/a</td>
+<td width="152">n/a</td>
+</tr>
+<tr>
 <td>Godot headless†</td>
 <td width="152"><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs gcc; AMD EPYC 9V45 96-Core Processor; GitHub hosted; Ubuntu 26.04 container; revision b866774e011bf6be996f089185079adbbde87b19: 3.76×" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-gcc-epyc.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs gcc: intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-gcc-intel.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs gcc: hosted-intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-gcc-hosted-intel.svg"></a></td>
 <td width="152"><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs clang; AMD EPYC 9V45 96-Core Processor; GitHub hosted; Ubuntu 26.04 container; revision b866774e011bf6be996f089185079adbbde87b19: 2.99×" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-clang-epyc.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs clang: intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-clang-intel.svg"></a><br><a href="docs/performance/preview/godot.md"><img alt="Godot headless O3 build CPU vs clang: hosted-intel not measured: n/m" width="120" height="24" src="docs/performance/preview/badges/matrix-godot-build-clang-hosted-intel.svg"></a></td>
@@ -132,7 +139,7 @@ Badges show **EPYC / Intel / hosted Intel**, top to bottom. `n/m` means not meas
 
 cppgm++ runtime measures **codegen performance**: self-built versus GCC-built or Clang-built compiler.
 
-[O0, CPU models, revisions and per-test results](docs/performance/preview/performance.md). CPU time, except index-cpp runtime uses elapsed time. Godot reports a full build, including SCons and linking. † Single-run build/compile observations; small differences need repeats.
+[O0, CPU models, revisions and per-test results](docs/performance/preview/performance.md). CPU time, except index-cpp runtime uses elapsed time. Godot reports a full build, including SCons and linking. [Boost](benchmarks/boost/README.md) reports C++ test compilation; correctness-test execution timings are in its details. † Single-run build/compile observations; small differences need repeats.
 
 ## Caveats
 

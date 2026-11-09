@@ -11,7 +11,7 @@ Results below are preview snapshots. The original suites describe `783dbfcf0`; G
 | Public programs | 81 / 81 | Builds and matching output | [Per-program results](public.md) |
 | index-cpp | 50 / 50 | Original checksums, all three compilers | [Per-workload results](index-cpp.md) |
 | simdjson scalar / SSE | Pass, both backends | twitter and citm canonical DOM output | [Current CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476441186) |
-| Boost | Pinned advisory suites pass | Upstream build, run and rejection actions | [CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476437427) |
+| Boost | Pinned suites pass; now measured by the [performance lane](../../../benchmarks/boost/README.md) | Upstream build, run and rejection actions | [Recorded validation](https://github.com/vishvananda/cppgm-extended/actions/runs/42476437427) |
 | Self-build and inception | Pass | Complete rebuild; identical self/inception compiler binaries | [CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476437424) |
 | Student export | Pass | Exported compiler, fixtures and reference wrappers | [CI](https://github.com/vishvananda/cppgm-extended/actions/runs/42476441242) |
 | Godot / headless release | 5 / 5 per compiler | Full engine builds; independent checksums for cppgm, GCC and Clang (`b866774e0`) | [Workloads and provenance](godot.md) |

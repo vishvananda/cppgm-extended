@@ -63,6 +63,14 @@ This is one complete observation under load, using four workers and identical re
 
 Build observations include SCons and GCC linking. Runtime gives all five workloads equal weight; CPU includes startup and elapsed time measures only the work loop. A/A warnings and individual results remain visible in the linked detail.
 
+### Boost compilation and test execution
+
+The [Boost performance lane](../../../benchmarks/boost/README.md) measures the
+existing 1,818 C++11 debug test declarations with cppgm, GCC and Clang. Its
+[reports by host](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/report.md)
+show compile CPU speed and separate correctness-test execution timings. These
+are fresh automatic measurements rather than the snapshots above.
+
 ### Adding a workload or configuration
 
 Add a named configuration to the [workload catalog](../../../benchmarks/catalog.json), emit [versioned correctness and comparison records](../results-format.md), and regenerate the summary and linked tables. Tests/inputs are children of a configuration; compiling one library is counted once. Godot's headless release preset uses this contract, including complete-build and checked-workload records.

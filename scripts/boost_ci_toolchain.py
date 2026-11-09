@@ -4,6 +4,7 @@ import fcntl
 import json
 import os
 from pathlib import Path
+import resource
 import shlex
 import subprocess
 import sys
@@ -37,7 +38,7 @@ def route(arguments):
     if '-c' in arguments or '-E' in arguments or language in ('c++', 'c++-header') or any(
         Path(a).suffix in ('.cpp', '.cc', '.cxx', '.C') for a in sources
     ):
-        return 'cppgm', os.environ['BOOST_CI_COMPILER']
+        return os.environ.get('BOOST_CI_LABEL', 'cppgm'), os.environ['BOOST_CI_COMPILER']
     return 'host-link-or-query', os.environ['BOOST_CI_HOST_CXX']
 
 
@@ -46,10 +47,13 @@ def main():
     expanded = expand(arguments)
     kind, compiler = route(expanded)
     start = time.monotonic()
-    forwarded = expanded if kind == 'cppgm' else arguments
+    before = resource.getrusage(resource.RUSAGE_CHILDREN)
+    forwarded = arguments if kind in ('host-c', 'host-link-or-query') else expanded
     process = subprocess.run([compiler, *forwarded], check=False)
-    record = dict(cwd=os.getcwd(), route=kind, compiler=compiler, args=expanded,
-                  returncode=process.returncode, seconds=time.monotonic() - start)
+    after = resource.getrusage(resource.RUSAGE_CHILDREN)
+    record = dict(cwd=os.getcwd(), route=kind, compiler=compiler, args=expand(forwarded), requested_args=expanded,
+                  returncode=process.returncode, seconds=time.monotonic() - start,
+                  cpu_seconds=after.ru_utime + after.ru_stime - before.ru_utime - before.ru_stime)
     with Path(os.environ['BOOST_CI_INVOCATIONS']).open('a') as stream:
         fcntl.flock(stream, fcntl.LOCK_EX)
         stream.write(json.dumps(record) + '\n')

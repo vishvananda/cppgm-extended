@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the bounded Boost 1.92 advisory selection and review actual B2 results."""
+"""Run the pinned Boost 1.92 selection and review actual B2 results."""
 import argparse
 from collections import Counter
 import hashlib
@@ -46,7 +46,7 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def review(xml_path, log_path, calls_path, project, expected):
+def review(xml_path, log_path, calls_path, project, expected, label='cppgm', native_path=None):
     tree = ET.parse(xml_path).getroot()
     boost = Path(tree.findtext('directory')).resolve()
     declarations = []
@@ -60,6 +60,8 @@ def review(xml_path, log_path, calls_path, project, expected):
     require(len(declarations) == expected, f'{project}: expected {expected} declarations, got {len(declarations)}')
     require(not re.search(r'^\.\.\.failed updating \d+ targets?\.\.\.$', log_path.read_text(), re.M), 'B2 reported failed targets')
     calls = [json.loads(line) for line in calls_path.read_text().splitlines()]
+    native = ([json.loads(line) for line in native_path.read_text().splitlines()]
+              if native_path is not None and native_path.exists() else [])
     require(calls and all(c['returncode'] in (0, 1) for c in calls), 'compiler crash or invalid compiler status')
     by_directory = {}
     for call in calls:
@@ -87,10 +89,13 @@ def review(xml_path, log_path, calls_path, project, expected):
         marker = Path(action.findtext('path'))
         require(action.attrib['status'] == '0' and marker.read_text().strip() == 'passed', f'failed {target}')
         compiled = by_directory.get(marker.parent.resolve(), [])
-        require(compiled and all(c['route'] == 'cppgm' for c in compiled), f'no cppgm compilation for {target}')
+        require(compiled and all(c['route'] == label for c in compiled), f'no {label} compilation for {target}')
         require(any(c['returncode'] == 1 for c in compiled) if kind == 'COMPILE_FAIL' else
                 all(c['returncode'] == 0 for c in compiled), f'incorrect compilation result for {target}')
         row = dict(target=target, kind=kind, marker_sha256=digest(marker), compiler_invocations=len(compiled))
+        row.update(compile_cpu=sum(c.get('cpu_seconds', 0) for c in compiled),
+                   compile_elapsed=sum(c.get('seconds', 0) for c in compiled),
+                   sources=[c['args'] for c in compiled])
         if kind in ('RUN', 'RUN_FAIL'):
             output = marker.with_suffix('.output')
             status = re.search(r'EXIT STATUS:\s*(\d+)\s*$', output.read_text(errors='replace'))
@@ -103,13 +108,19 @@ def review(xml_path, log_path, calls_path, project, expected):
             if project == 'libs/json/test' and name == '_gdb-printers.test':
                 require('boost-ci-gdb' in capture[0].findtext('command', ''), 'JSON printer test did not execute GDB')
             row.update(native_status=code, output_sha256=digest(output))
+            executed = [c for c in native if any(
+                marker.parent.resolve() in (Path(c['cwd']) / arg).resolve().parents
+                for arg in c['command'] if arg and not arg.startswith('-'))]
+            if executed:
+                require(len(executed) == 1, f'duplicate native measurement for {target}')
+                row.update(test_cpu=executed[0]['cpu_seconds'], test_elapsed=executed[0]['elapsed_seconds'])
         rows.append(row)
         counts[kind] += 1
     return dict(project=project, declarations=len(declarations), passed=len(rows), counts=dict(counts), tests=rows,
                 xml_sha256=digest(xml_path), invocations_sha256=digest(calls_path))
 
 
-def setup(boost, output):
+def setup(boost, output, label='cppgm', gdb_executable='/usr/bin/gdb'):
     config = output / 'config'
     config.mkdir()
     # Select Boost's real compiler config while retaining its platform/stdlib and
@@ -117,13 +128,21 @@ def setup(boost, output):
     (config / 'compiler.hpp').write_text('#if defined(__clang__)\n#include <boost/config/compiler/clang.hpp>\n#else\n#include <boost/config/compiler/gcc.hpp>\n#endif\n')
     (config / 'user.hpp').write_text('#define BOOST_COMPILER_CONFIG "' + str(config / 'compiler.hpp') + '"\n')
     adapter = Path(__file__).with_name('boost_ci_toolchain.py').resolve()
+    timer = Path(__file__).with_name('boost_ci_execute.py').resolve()
     gdb = output / 'boost-ci-gdb'
     safe = output / 'build/boost/bin.v2/libs/json/test'
-    gdb.write_text('#!/usr/bin/env python3\nimport os,sys\nos.execv("/usr/bin/gdb", ["gdb", "-iex", ' +
-                   repr('add-auto-load-safe-path ' + str(safe)) + ', *sys.argv[1:]])\n')
+    # B2 combines the test's GDB launcher with the general timing launcher.
+    # Keep GDB's executable argument intact and measure the debugger once,
+    # regardless of the order B2 chooses for the two launchers.
+    gdb.write_text('#!/usr/bin/env python3\nimport os,sys\ntimer=' + repr(str(timer)) + '\n' +
+                   'args=[a for a in sys.argv[1:] if a != timer]\n' +
+                   'command=[' + repr(str(gdb_executable)) + ', "-iex", ' + repr('add-auto-load-safe-path ' + str(safe)) + ', *args]\n' +
+                   'if os.environ.get("BOOST_CI_TIMER_ACTIVE") == "1":\n    os.execv(command[0], command)\n' +
+                   'os.execv(timer, [timer, *command])\n')
     gdb.chmod(0o755)
     jam = config / 'user-config.jam'
-    jam.write_text('using gcc : cppgm : "' + str(adapter) + '" : <archiver>/usr/bin/ar <cxxflags>-include <cxxflags>"' + str(config / 'user.hpp') + '" ;\n'
+    toolset = 'clang' if label == 'clang' else 'gcc'
+    jam.write_text('using ' + toolset + ' : ' + label + ' : "' + str(adapter) + '" : <archiver>/usr/bin/ar <cxxflags>-include <cxxflags>"' + str(config / 'user.hpp') + '" ;\n'
                    'using python : : /usr/bin/python3 ;\nimport-search "' + str(boost / 'libs/json/pretty_printers') + '" ;\n'
                    'using boost-pretty-printers : "' + str(gdb) + '" ;\n')
     return jam
@@ -136,17 +155,27 @@ def main():
     parser.add_argument('--compiler', type=Path, default=Path('dev/cppgm++'))
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--jobs', type=int, default=4)
+    parser.add_argument('--label', choices=('cppgm', 'gcc', 'clang'), default='cppgm')
+    parser.add_argument('--host-cxx', default='g++')
+    parser.add_argument('--host-cc', help='C driver; defaults to gcc, or the sibling clang for the Clang lane')
     args = parser.parse_args()
     start = time.monotonic()
     require(digest(args.archive) == ARCHIVE_SHA256, 'Boost archive checksum mismatch')
-    boost, output, compiler = args.boost_root.resolve(), args.output.resolve(), args.compiler.resolve()
+    # Keep the driver's invocation name: clang++ may select a C++ configuration
+    # that resolving its symlink to clang would lose.
+    boost, output, compiler = args.boost_root.resolve(), args.output.resolve(), args.compiler.absolute()
     require(not output.exists(), 'use a fresh output directory')
     output.mkdir(parents=True)
-    host_cxx, host_cc = shutil.which('g++'), shutil.which('gcc')
+    host_cxx = shutil.which(args.host_cxx)
+    c_driver = args.host_cc or ('gcc' if args.label != 'clang' else
+                               str(Path(host_cxx or args.host_cxx).with_name(
+                                   Path(host_cxx or args.host_cxx).name.replace('clang++', 'clang', 1))))
+    host_cc = shutil.which(c_driver)
     require(host_cxx and host_cc and compiler.is_file(), 'missing compiler')
-    jam = setup(boost, output)
+    jam = setup(boost, output, args.label)
     env = dict(os.environ, BOOST_CI_COMPILER=str(compiler), BOOST_CI_HOST_CXX=host_cxx,
-               BOOST_CI_HOST_CC=host_cc, CPPGM_HOST_CXX=host_cxx, CPPGM_STDLIB_FLAGS='')
+               BOOST_CI_HOST_CC=host_cc, BOOST_CI_LABEL=args.label,
+               CPPGM_HOST_CXX=host_cxx, CPPGM_STDLIB_FLAGS='')
     report = dict(boost='1.92.0', archive_sha256=ARCHIVE_SHA256, compiler_sha256=digest(compiler), suites=[], status='running')
 
     def save():
@@ -166,8 +195,12 @@ def main():
             case = output / project.replace('/', '-')
             case.mkdir()
             env['BOOST_CI_INVOCATIONS'] = str(case / 'invocations.jsonl')
+            env['BOOST_CI_RUNTIME_INVOCATIONS'] = str(case / 'native-invocations.jsonl')
+            launcher = Path(__file__).with_name('boost_ci_execute.py').resolve()
+            toolset = ('clang' if args.label == 'clang' else 'gcc') + '-' + args.label
             command = [str(boost / 'b2'), '--ignore-site-config', '--user-config=' + str(jam), '-j' + str(args.jobs),
-                       'toolset=gcc-cppgm', 'cxxstd=11', 'variant=debug', 'link=static', 'runtime-link=shared',
+                       'toolset=' + toolset, 'cxxstd=11', 'variant=debug', 'link=static', 'runtime-link=shared',
+                       'testing.launcher=' + shlex.quote(str(launcher)),
                        'threading=multi', '--build-dir=' + str(output / 'build'), '--reconfigure', '-a', '-d2',
                        project, '--out-xml=' + str(case / 'b2.xml'), '--dump-tests']
             # The original JSON Jamfile declares this target explicit; the
@@ -179,7 +212,8 @@ def main():
                 log.write(shlex.join(command) + '\n'); log.flush()
                 process = subprocess.run(command, cwd=boost, env=env, stdout=log, stderr=subprocess.STDOUT)
             require(process.returncode == 0, f'B2 exited {process.returncode}: {project}')
-            result = review(case / 'b2.xml', case / 'b2.log', case / 'invocations.jsonl', project, expected)
+            result = review(case / 'b2.xml', case / 'b2.log', case / 'invocations.jsonl', project, expected,
+                            args.label, case / 'native-invocations.jsonl')
             result['seconds'] = time.monotonic() - suite_start
             report['suites'].append(result)
             save()

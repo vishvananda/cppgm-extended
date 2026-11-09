@@ -57,13 +57,26 @@
     },
     {
       "id": "boost",
-      "name": "Boost compatibility suites",
-      "kind": "correctness",
-      "documentation": "TESTING_AND_REFERENCES.md#boost-advisory-ci",
+      "name": "Boost compilation and test execution",
+      "kind": "benchmark",
+      "documentation": "benchmarks/boost/README.md",
       "configurations": [
         {
+          "id": "debug",
+          "name": "The 17 pinned upstream C++11 debug suites",
+          "optimizations": [
+            "O0",
+            "mixed"
+          ],
+          "parameters": {
+            "version": "1.92.0",
+            "suites": 17,
+            "test_declarations": 1818
+          }
+        },
+        {
           "id": "advisory",
-          "name": "Pinned upstream suites",
+          "name": "Historical correctness snapshots",
           "optimizations": [
             "mixed"
           ]

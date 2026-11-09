@@ -84,38 +84,22 @@ fixtures retain numbering, discovery and hygiene checks.
 PA29's optional x86 target-feature checks run with `make test-target-features`
 (or `-nobuild`). They require POPCNT and are excluded from cumulative reports.
 
-## Boost advisory CI
+<a id="boost-advisory-ci"></a>
 
-The independent **Boost advisory** workflow runs on every push, with a
-20-minute budget. It builds the compiler and compiles/runs the original
-Boost 1.92 Accumulators, Asio, Container, Function, Fusion, JSON, MP11, MPL,
-Optional, Proto, QVM, TypeErasure, TypeTraits, UUID, Variant2 and Xpressive suites:
-1,810 declared tests. QVM covers fixed and deduced array-bound specialization ordering. Asio includes both original spawn variants and exercises
-recursive constraints and partial ordering. The template and callable suites cover ordering,
-substitution, constructor and overload regressions from the compatibility
-campaign; Optional adds compile-fail and run-fail coverage. JSON includes the
-actual GDB pretty-printer integration. This supplements the required compiler checks; advisory
-failures remain visible in the job steps, summary and retained artifacts.
+## Boost correctness and performance CI
 
-The archive is pinned by SHA-256. Every C++ compilation uses `cppgm++`;
-the host handles C, assembler and linking. The runner checks declarations,
-expected-failure actions, compiler results and actual execution results,
-including GDB invocation. Missing tests and compiler crashes fail the
-review. Each run uses a fresh build directory and executes its runtime tests.
+The **Boost benchmarks** workflow runs on main pushes, pull requests and manual
+requests. It keeps the advisory's exact 17-suite Boost 1.92 selection: **1,818
+C++11 debug test declarations**, including expected failures and JSON's GDB
+pretty-printer integration. cppgm, GCC and Clang must validate the same original
+B2 oracles; missing tests and compiler crashes fail the check.
 
-With the verified archive and extracted release available locally:
-
-```sh
-python3 scripts/boost_ci.py \
-  --archive /path/to/boost_1_92_0.tar.bz2 \
-  --boost-root /path/to/boost_1_92_0 \
-  --compiler dev/cppgm++ --output obj/boost-advisory --jobs 4
-```
-
-Use a new output directory for each run. `results.json` records per-suite
-timings and reviewed results; raw B2 XML, logs and compiler invocations
-remain alongside it. The workflow retains these diagnostics for 14 days.
-The runner's failure controls are part of `make test-harness`.
+[Scope, timing method and reproduction](benchmarks/boost/README.md) ·
+[Published results by host](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/report.md).
+Compile CPU excludes B2, configuration probes, library dependencies, C and linking. Native test
+execution is reported separately from application runtime benchmarks. PR results
+are in the summary and artifact; successful main runs publish shared records,
+compile badges and per-suite detail. The failure controls are in `make test-harness`.
 
 ## Public benchmarks CI
 
