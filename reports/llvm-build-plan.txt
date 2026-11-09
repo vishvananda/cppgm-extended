@@ -629,3 +629,38 @@ A fresh LLVM build clears seven of the prior 20 failed C++ compilations, leaving
 every C++ object uses cppgm. The full LLVM build and downstream comparisons remain
 pending. Immutable tools: compiler-block13-namespace-lists; receipt outside the
 checkout: block13-namespace-lists-validation.json. All initial results are retained.
+
+
+Block 14: inherited access, generic captures and copied this (validated;
+extra full-release timing margin outstanding)
+-----------------------------------------------------------------------
+Inherited constructors check the originating base constructor's access at the
+call site. Generic lambda fixed-expression patterns wait for capture discovery
+before checking odr-use. C++17 supports constant direct member-pointer template
+arguments with canonical identity when no this-adjustment is required, and
+[*this] object copying, cv/mutable access, destruction, exception cleanup and
+constexpr/generic evaluation. N4268 and P0018R3 are archived and exported.
+
+Three required PA11:500 and sixteen optional PA29 modern fixtures pass all 114
+cppgm/GCC/Clang O0/O3 observations. Strict 9902/9902, debug/modern, architecture,
+format, file, placement and CWG audits, PA5 self-host, root inception, final
+harness, PA35 quick and smoke pass. Final export v2 passes 215 documents, all
+42 wrappers and nineteen fixtures. An initial PA11 fixture's class returns
+required PA12 ABI; it now constructs locals and returns integers. The initial
+harness caught an unsorted document inventory; sorting and final harness/export
+checks correct that. Compiler sources still match the immutable snapshot.
+
+Frozen parent/candidate instruction ratios O0 1.000162 and O3 1.000038 pass,
+with identical objects. Full course/student builds pass all 17 ordinary gates.
+The extra 25% wall-time scaling margin remains SHORT: initial growth 2.42/2.16;
+one preserved scaling-only recheck gives 2.41/2.42. No retries or gate changes
+follow. A 60-observation paired instruction probe of the initially flagged
+function family shows parent growth 1.976896, candidate 1.976816 and identical
+objects, with per-size work ratios within 0.004%. This is not a claim of a fully
+passing release check; canonical compat/llvm remains at accepted B13.
+
+A fresh all-cppgm LLVM build clears four prior failures, leaving nine failed
+C++ compilations and zero generators. The complete build and downstream
+comparisons remain pending. Immutable tools: compiler-block14-captures-members.
+Receipt outside checkout: block14-captures-members-validation.json. All initial
+and superseded observations are retained.
