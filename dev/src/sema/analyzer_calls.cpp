@@ -1104,7 +1104,8 @@ int Analyzer::compare_candidates(const Candidate& a, const Candidate& b, uint32_
 			return ak == DeductionGuideKind::Constructor ? 1 : -1;
 		}
 	}
-	if (!better && !worse && !object && a.function->constructor && b.function->constructor)
+	if (!better && !worse && !object && a.function != nullptr && b.function != nullptr && a.function->constructor &&
+		b.function->constructor)
 	{
 		// CWG2273: after equal argument conversions, a constructor of
 		// the more-derived class wins when the used parameter types match.
