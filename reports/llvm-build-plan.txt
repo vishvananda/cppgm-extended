@@ -725,3 +725,31 @@ cppgm exposes a conditional class-return conversion bug; the next block handles
 that runtime gap. Complete cppgm object identity and both timing comparisons
 remain pending. Immutable tools: compiler-block17-allocation-defaults. Receipt:
 block17-allocation-defaults-validation.json outside the checkout.
+
+
+Block 18: conditional class-return conversions (accepted)
+-------------------------------------------------------
+A class result initialized from a glvalue conditional must call its selected
+conversion function with its proper result convention; the constructor-only
+branch now handles actual constructors. Two PA12:400 controls cover trivial
+and nontrivial results and selected-operand evaluation. Both fail with the
+prior compiler and pass with cppgm, GCC and Clang at O0/O3.
+
+Strict 9917/9917, debug/modern, all audits, PA5 self-host, inception, harness,
+PA35 quick/smoke and full course/student releases pass. All 42 observations
+on the seven recent fixtures pass; export checks 219 documents, 42 wrappers
+and seven fixtures. Frozen instruction ratios against B16 are O0 0.999985
+and O3 0.999996, with identical objects and verified snapshot source hashes.
+
+The fresh unchanged-source LLVM build completes all 3163 clang-target steps.
+Both Clangs compile all 323 cppgm translation units at O3 and both resulting
+cppgm executables link. Objects match for 183 units and differ for 140. The
+cppgm executable produced by cppgm-built Clang passes 7352 source-tool strict
+tests. An initial all-tools report used a global application override that
+routed unrelated tools to cppgm++; that invalid attempt is retained separately.
+The first actual O3 difference reduces to X86 cost tables: omitted default
+member initializers in static aggregate arrays became zero rather than their
+sentinels. The next block fixes that C++14 initialization gap. Whole-build
+byte identity and formal timings remain pending. Immutable tools:
+compiler-block18-conditional-conversion; receipt outside checkout:
+block18-conditional-conversion-validation.json.
