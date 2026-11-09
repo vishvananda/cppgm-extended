@@ -1,0 +1,7 @@
+# Small scalar expressions retain a small instruction budget; correctness
+# includes signed extrema, masks that affect surviving bits and shared users.
+instructions <= 4 in @top32
+instructions <= 4 in @top64
+instructions <= 4 in @keep_sign_mask
+instructions <= 4 in @keep_middle_bit
+instructions <= 5 in @shared_mask

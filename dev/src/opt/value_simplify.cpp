@@ -1928,6 +1928,23 @@ bool Simplifier::reassociate(Instruction& inst)
 	Constant cx;
 	if (!constant(def->ops[1], def->type, cx))
 		return false;
+	// A right shift cannot observe the low bits it discards. A preceding
+	// mask preserving every surviving bit (including the sign) is redundant.
+	if ((op == BinaryOp::Shr || op == BinaryOp::UShr) && inner == BinaryOp::And)
+	{
+		const unsigned width = lowir::integer_bits(inst.type.kind());
+		Literal shift, mask;
+		if (width == 0 || width > 64 || !integer_bits(inst.type, cy, shift) || !integer_bits(inst.type, cx, mask) ||
+			shift.high != 0 || shift.low >= width)
+			return false;
+		const uint64_t all = width == 64 ? ~uint64_t(0) : (uint64_t(1) << width) - 1;
+		const uint64_t observed = (all >> shift.low) << shift.low;
+		if ((mask.low & observed) != observed)
+			return false;
+		inst.ops[0] = def->ops[0];
+		inst.flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT));
+		return true;
+	}
 	Literal zero = { 0, 0 };
 	Constant zero_c = integer_constant(inst.type, zero), r;
 	// Subtractions of constants are additions of their negations.

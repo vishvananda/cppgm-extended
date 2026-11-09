@@ -31,6 +31,11 @@ that can trap or fold a shift with an invalid count. Floating identities need
 extra care: replacing `x + 0` with `x` can change negative zero, and reassociating
 a sum changes rounding.
 
+A mask before a right shift may change only bits the shift discards. Check
+every surviving bit, including the sign bit of an arithmetic shift. Preserve
+other readers of the masked value, and discard any exactness promise whose
+proof depended on the mask clearing low bits.
+
 Adjacent integer multiply/add operations can sometimes be combined at their
 common width. Preserve wrapping, shared intermediate values and observations
 between the operations. Check the native cost too: a smaller expression may
@@ -46,6 +51,12 @@ Promoting scalar storage to SSA removes loads and stores, but requires proving
 that all its accesses are understood. Splitting an aggregate may expose more
 promotable fields. Preserve padding, bit-fields, volatile members, alignment
 and ABI carriers; splitting every object is not always profitable.
+
+An indexed region can stay in memory while disjoint scalar fields are
+promoted. Bound every possible indexed access, including its full width.
+If a fixed access straddles that region, retain all overlapping accesses
+together. Unknown indices, escaping pointers, whole-object operations and
+volatile accesses may prevent the proof.
 
 A slot in a value operand reads memory at that instruction. Reusing an
 expression containing such an operand requires the same memory proof as an

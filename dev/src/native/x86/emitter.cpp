@@ -184,17 +184,24 @@ void FunctionEmitter::find_loop_heads(const Function& function)
 	std::vector<std::pair<int32_t, uint32_t>> heads;
 	for (size_t i = 0; i < branch_offset_.size(); ++i)
 		if (relax_target_[i] >= 0 && relax_target_[i] <= branch_offset_[i])
-			heads.push_back(std::make_pair(relax_target_[i], static_cast<uint32_t>(i)));
+			heads.push_back(std::make_pair(relax_target_[i], static_cast<uint32_t>(i + 1)));
+	// Computed branches repeatedly enter addressed blocks without a direct
+	// back edge. Give their destinations the same bounded alignment policy.
+	for (const lowir::CodeLabel& label : function.code_labels)
+		if (!function.blocks[label.block].fallen_into &&
+			(chain_end_[label.block] == label.block || chain_end_[label.block] == kNoChainEnd))
+			heads.push_back(std::make_pair(block_start_[label.block], 0u));
 	std::sort(heads.begin(), heads.end());
 	for (size_t k = 0; k < heads.size(); ++k)
 		if (k + 1 == heads.size() || heads[k + 1].first != heads[k].first)
 		{
 			loop_heads_.push_back(heads[k].first);
-			loop_last_.push_back(heads[k].second);
+			loop_last_.push_back(heads[k].second == 0 ? lowir::kNoId : heads[k].second - 1);
 		}
 	for (size_t k = 0; k < loop_heads_.size(); ++k)
 	{
-		const bool short_loop = branch_offset_[loop_last_[k]] - loop_heads_[k] <= kWindowLoopLong;
+		const bool short_loop = loop_last_[k] != lowir::kNoId &&
+			branch_offset_[loop_last_[k]] - loop_heads_[k] <= kWindowLoopLong;
 		loop_padding_.push_back(loop_padding_[k] + (short_loop ? kWindowBytes - 1 : kLoopPad));
 	}
 }
@@ -224,7 +231,7 @@ bool FunctionEmitter::measure_short_loops(const Function& function)
 	for (size_t k = 0; k < loop_heads_.size(); ++k)
 	{
 		const uint32_t last = loop_last_[k];
-		if (!counted[k])
+		if (last == lowir::kNoId || !counted[k])
 			continue;
 		if (k + 1 < loop_heads_.size() && loop_heads_[k + 1] <= branch_offset_[last])
 			continue;
@@ -703,6 +710,7 @@ void FunctionEmitter::encode(const Function& function)
 			labels_[b] = labels_[chain_end_[b]];
 		next_emitted_[b] = skip ? next_emitted_[b + 1] : static_cast<uint32_t>(b);
 	}
+	int32_t aligned_head = -1;
 	for (size_t b = 0; b < blocks; ++b)
 	{
 		const Block& block = function.blocks[b];
@@ -714,8 +722,11 @@ void FunctionEmitter::encode(const Function& function)
 		{
 			const std::vector<int32_t>::const_iterator head = std::lower_bound(
 				loop_heads_.begin(), loop_heads_.end(), block_start_[b]);
-			if (head != loop_heads_.end() && *head == block_start_[b])
+			if (head != loop_heads_.end() && *head == block_start_[b] && aligned_head != block_start_[b])
+			{
 				align_loop_head(static_cast<size_t>(head - loop_heads_.begin()));
+				aligned_head = block_start_[b];
+			}
 		}
 		falls_through = true;
 		if (block.count != 0)

@@ -165,6 +165,10 @@ and preserve their entry state and code identity through optimization. Tests
 observe dispatch and lifetime behavior; they do not prescribe register choices
 or instruction sequences.
 
+Dataflow optimizations must include every declared indirect destination.
+A value available on one incoming path need not be available at an addressed
+entry reached from another path.
+
 ### Module assembly
 
 Under `--full-asm`, namespace asm uses the shared `assembly_global` boundary.

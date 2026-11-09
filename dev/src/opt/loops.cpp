@@ -424,7 +424,7 @@ bool make_loop_preheader(FunctionBody& body, const Cfg& cfg, const LoopForest& f
 // The largest value an index operand may hold, unsigned: its literal, an
 // unsigned type's or a zero extension's range, or an `and` with a literal.
 // ~0 when unknown.
-static uint64_t index_bound(const FunctionBody& body, Value v)
+uint64_t index_upper_bound(const FunctionBody& body, Value v)
 {
 	if (v.is(ValueKind::Integer))
 		return body.literals[v.index].high == 0 && body.literals[v.index].low >> 63 == 0 ? body.literals[v.index].low
@@ -444,7 +444,7 @@ static uint64_t index_bound(const FunctionBody& body, Value v)
 		return from < 8 ? (uint64_t(1) << (8 * from)) - 1 : ~uint64_t(0);
 	}
 	if (def.op == Opcode::Binary && static_cast<BinaryOp>(def.sub) == BinaryOp::And)
-		return std::min(index_bound(body, def.ops[0]), index_bound(body, def.ops[1]));
+		return std::min(index_upper_bound(body, def.ops[0]), index_upper_bound(body, def.ops[1]));
 	return ~uint64_t(0);
 }
 
@@ -458,7 +458,7 @@ bool table_entry(const FunctionBody& body, Value address, uint64_t bytes)
 	if (def.op != Opcode::Index)
 		return false;
 	const Located base = locate(body, def.ops[0]);
-	const uint64_t bound = index_bound(body, def.ops[1]), element = storage_bytes(def.type);
+	const uint64_t bound = index_upper_bound(body, def.ops[1]), element = storage_bytes(def.type);
 	if (!base.known || !base.root.is(ValueKind::Slot) || base.offset < 0 || bound >= (uint64_t(1) << 32) ||
 		element >= (uint64_t(1) << 16))
 		return false;

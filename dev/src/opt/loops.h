@@ -95,6 +95,9 @@ bool read_before_loop(const lowir::FunctionBody& body, const Cfg& cfg, const Loo
 // table lookup by a byte reads the table, whatever the byte.
 bool table_entry(const lowir::FunctionBody& body, lowir::Value address, uint64_t bytes);
 
+// A nonnegative index's largest possible value; UINT64_MAX when unknown.
+uint64_t index_upper_bound(const lowir::FunctionBody& body, lowir::Value value);
+
 // What a load moved to `pre` reads when `pre`, or the one block before it,
 // already loaded or stored that address at its type with no write after it:
 // that value (None otherwise).

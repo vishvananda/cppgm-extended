@@ -112,7 +112,7 @@ struct Function
 	std::vector<Inst> insts;
 	std::shared_ptr<AssemblySites> assembly; // allocated only for user assembly
 	std::vector<lowir::DebugLocation> locations;
-	// The blocks the jump_table instructions name, each table a range.
+	// Jump-table and indirect-jump destinations, each instruction a range.
 	std::vector<uint32_t> jump_targets;
 	std::vector<lowir::CodeLabel> code_labels;
 	bool variadic = false;

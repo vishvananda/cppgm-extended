@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include "lowir/builder.h"
+#include "opt/loops.h"
 #include "opt/passes.h"
 
 namespace opt {
@@ -27,19 +28,26 @@ struct Field
 	bool packed; // an eightbyte's integer: its loads take their bits from it
 };
 
+struct AccessRange
+{
+	uint64_t first, end;
+	bool indexed;
+};
+
 struct SlotFacts
 {
 	bool candidate = true;
-	bool call_written = false;                         // a call returns its object into the slot
-	bool copied_out = false;                           // a copy reads the slot whole
-	std::vector<Field> fields;                         // typed accesses
-	std::vector<std::pair<uint64_t, uint64_t>> spans;  // copied or zeroed [offset, end)
-	std::vector<std::pair<uint64_t, uint64_t>> stores; // stored fields [offset, end)
-	std::vector<std::pair<uint64_t, uint64_t>> reads;  // copied out whole [offset, end)
-	std::vector<std::pair<uint64_t, uint64_t>> writes; // stored, copied into, zeroed or a call's result [offset, end)
-	std::vector<std::pair<uint64_t, bool>> wholes;     // i64 accesses at eightbyte starts (true: loads)
-	uint64_t packed = 0;                               // eightbytes that move only whole (bit per eightbyte)
-	uint64_t forced = 0;                               // eightbytes an i64 access reads or writes whole
+	bool call_written = false;                          // a call returns its object into the slot
+	bool copied_out = false;                            // a copy reads the slot whole
+	std::vector<Field> fields;                          // typed accesses
+	std::vector<std::pair<uint64_t, uint64_t>> indexed; // ranges accessed through bounded variable indices
+	std::vector<std::pair<uint64_t, uint64_t>> spans;   // copied or zeroed [offset, end)
+	std::vector<std::pair<uint64_t, uint64_t>> stores;  // stored fields [offset, end)
+	std::vector<std::pair<uint64_t, uint64_t>> reads;   // copied out whole [offset, end)
+	std::vector<std::pair<uint64_t, uint64_t>> writes;  // stored, copied into, zeroed or a call's result [offset, end)
+	std::vector<std::pair<uint64_t, bool>> wholes;      // i64 accesses at eightbyte starts (true: loads)
+	uint64_t packed = 0;                                // eightbytes that move only whole (bit per eightbyte)
+	uint64_t forced = 0;                                // eightbytes an i64 access reads or writes whole
 };
 
 // A copy between two slots of this function: each side's typed fields
@@ -71,6 +79,7 @@ public:
 private:
 	bool objects_through_slots();
 	bool address_of(Value v, SlotAddress& out) const;
+	uint64_t address_extent(Value v) const { return extent_.empty() ? 0 : extent_[v.index]; }
 	void escape(Value v);
 	void analyze();
 	void access(Value storage, Type type, bool store);
@@ -95,6 +104,7 @@ private:
 	FunctionContext& c_;
 	FunctionBody& body_;
 	std::vector<SlotAddress> address_; // per temp (slot kNoId: none)
+	std::vector<uint64_t> extent_;     // maximum additional offset of a bounded address
 	std::vector<SlotFacts> facts_;     // per slot
 	std::vector<SlotCopy> copies_;
 	std::vector<uint32_t> first_field_; // per slot: first new slot of its fields (kNoId: kept)
@@ -135,6 +145,16 @@ void AggregateSlots::access(Value storage, Type type, bool store)
 		facts_[a.slot].candidate = false;
 		return;
 	}
+	const uint64_t extent = storage.is(ValueKind::Temp) ? address_extent(storage) : 0;
+	if (extent != 0)
+	{
+		const uint64_t end = static_cast<uint64_t>(a.offset) + extent + storage_bytes(type);
+		if (end > storage_bytes(body_.slots[a.slot].type))
+			facts_[a.slot].candidate = false;
+		else
+			facts_[a.slot].indexed.push_back(std::make_pair(static_cast<uint64_t>(a.offset), end));
+		return;
+	}
 	facts_[a.slot].fields.push_back(Field{ static_cast<uint64_t>(a.offset), type, false });
 	if (type.kind() == TypeKind::I64 && a.offset % 8 == 0)
 		facts_[a.slot].wholes.push_back(std::make_pair(static_cast<uint64_t>(a.offset), !store));
@@ -156,7 +176,7 @@ void AggregateSlots::span(Value storage, uint64_t bytes, bool read)
 	}
 	else if (!address_of(storage, a))
 		return;
-	if (a.offset < 0)
+	if (a.offset < 0 || (storage.is(ValueKind::Temp) && address_extent(storage) != 0))
 	{
 		facts_[a.slot].candidate = false;
 		return;
@@ -168,6 +188,7 @@ void AggregateSlots::span(Value storage, uint64_t bytes, bool read)
 void AggregateSlots::analyze()
 {
 	address_.assign(body_.temps.size(), SlotAddress{ kNoId, 0 });
+	extent_.clear();
 	facts_.assign(body_.slots.size(), SlotFacts());
 	copies_.clear();
 	for (BlockId b : body_.layout)
@@ -185,15 +206,42 @@ void AggregateSlots::analyze()
 				if (inst.type.is_pointer() && address_of(inst.ops[0], a))
 				{
 					address_[inst.result] = a;
+					if (!extent_.empty())
+						extent_[inst.result] = address_extent(inst.ops[0]);
 					continue;
 				}
 				break;
 			case Opcode::Index:
-				if (address_of(inst.ops[0], a) && inst.ops[1].is(ValueKind::Integer))
+				if (address_of(inst.ops[0], a))
 				{
-					const Literal bits = body_.literals[inst.ops[1].index];
-					a.offset += static_cast<int64_t>(bits.low) * static_cast<int64_t>(storage_bytes(inst.type));
+					const uint64_t element = storage_bytes(inst.type);
+					uint64_t extent = address_extent(inst.ops[0]);
+					if (inst.ops[1].is(ValueKind::Integer))
+					{
+						const Literal bits = body_.literals[inst.ops[1].index];
+						const __int128 offset = a.offset +
+							static_cast<__int128>(static_cast<int64_t>(bits.low)) * element;
+						if (offset < 0 || offset > static_cast<__int128>(storage_bytes(body_.slots[a.slot].type)))
+							break;
+						a.offset = static_cast<int64_t>(offset);
+					}
+					else
+					{
+						const uint64_t bound = index_upper_bound(body_, inst.ops[1]);
+						if (bound >= (uint64_t(1) << 32) || element >= (uint64_t(1) << 16))
+							break;
+						extent += bound * element;
+						if (a.offset < 0 ||
+							static_cast<uint64_t>(a.offset) + extent > storage_bytes(body_.slots[a.slot].type))
+							break;
+					}
 					address_[inst.result] = a;
+					if (extent != 0)
+					{
+						if (extent_.empty())
+							extent_.assign(body_.temps.size(), 0);
+						extent_[inst.result] = extent;
+					}
 					continue;
 				}
 				break;
@@ -318,6 +366,51 @@ Type AggregateSlots::hinted_filler(SlotId slot, uint64_t gap, uint64_t end) cons
 bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 {
 	std::vector<Field>& fields = facts.fields;
+	if (!facts.indexed.empty())
+	{
+		// Keep indexed regions in the original object. Only disjoint, fixed
+		// fields split off; whole-object operations keep the object intact.
+		if (c_.level < 2 || !facts.spans.empty())
+			return false;
+		// Close overlaps with fixed accesses too: a wide fixed access
+		// straddling an indexed region must keep all of its bytes coherent.
+		std::vector<AccessRange> ranges;
+		for (const auto& range : facts.indexed)
+			ranges.push_back(AccessRange{ range.first, range.second, true });
+		for (const Field& field : fields)
+		{
+			const uint64_t end = field.offset + storage_bytes(field.type);
+			if (end > size || end < field.offset)
+				return false;
+			ranges.push_back(AccessRange{ field.offset, end, false });
+		}
+		std::sort(
+			ranges.begin(), ranges.end(), [](const AccessRange& x, const AccessRange& y) { return x.first < y.first; });
+		uint32_t count = 0;
+		for (const AccessRange range : ranges)
+			if (count != 0 && range.first < ranges[count - 1].end)
+			{
+				ranges[count - 1].end = std::max(ranges[count - 1].end, range.end);
+				ranges[count - 1].indexed = ranges[count - 1].indexed || range.indexed;
+			}
+			else
+				ranges[count++] = range;
+		facts.indexed.clear();
+		for (uint32_t k = 0; k < count; ++k)
+			if (ranges[k].indexed)
+				facts.indexed.push_back(std::make_pair(ranges[k].first, ranges[k].end));
+		std::vector<Field> kept;
+		for (const Field& field : fields)
+		{
+			const auto at = std::upper_bound(facts.indexed.begin(), facts.indexed.end(), field.offset,
+				[](uint64_t offset, const std::pair<uint64_t, uint64_t>& range) { return offset < range.second; });
+			const bool overlap = at != facts.indexed.end() && at->first < field.offset + storage_bytes(field.type);
+			if (!overlap)
+				kept.push_back(field);
+		}
+		fields.swap(kept);
+		facts.wholes.clear();
+	}
 	// An i64 access of an eightbyte other fields share (a copy simplified
 	// to a load and a store) moves it whole: a copy's span, if the
 	// eightbyte packs (pack_forced).
@@ -801,7 +894,8 @@ void AggregateSlots::rewrite()
 					a = SlotAddress{ storage.index, 0 };
 				else if (!address_of(storage, a))
 					a.slot = kNoId;
-				if (a.slot != kNoId && first_field_[a.slot] != kNoId)
+				if (a.slot != kNoId && first_field_[a.slot] != kNoId &&
+					(!storage.is(ValueKind::Temp) || address_extent(storage) == 0))
 				{
 					const uint64_t offset = static_cast<uint64_t>(a.offset);
 					bool packed = false;
@@ -819,7 +913,9 @@ void AggregateSlots::rewrite()
 						i = next;
 						continue;
 					}
-					body_.instructions[i].ops[load ? 0 : 1] = field_slot(a.slot, offset);
+					const Value field = field_slot(a.slot, offset);
+					if (!field.is(ValueKind::None))
+						body_.instructions[i].ops[load ? 0 : 1] = field;
 				}
 			}
 			else if (inst.op == Opcode::Call)

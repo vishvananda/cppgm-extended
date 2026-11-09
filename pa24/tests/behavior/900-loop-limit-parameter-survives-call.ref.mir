@@ -39,8 +39,8 @@ function @count_to
     jmp ^loop_condition
 
   block ^loop_condition
-    cmp.i64 [rbp-8], rbx
-    jl ^loop_body
+    cmp.i64 rbx, [rbp-8]
+    jg ^loop_body
     jmp ^loop_end
 
   block ^loop_body

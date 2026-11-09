@@ -27,6 +27,18 @@ second: return table[1];
 }
 
 extern "C" unsigned host_mix(unsigned);
+extern "C" int computed_empty_entries(unsigned choice) {
+    static const void *entries[] = {&&first, &&second, &&last};
+    goto *entries[choice];
+first:
+    asm volatile("");
+    goto second;
+second:
+    asm volatile("");
+    goto last;
+last:
+    return 71;
+}
 extern "C" unsigned computed_live_state(unsigned state, unsigned rounds) {
     static const void* entries[] = {&&even, &&odd};
     if (!rounds) return state;

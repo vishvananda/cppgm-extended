@@ -1,0 +1,5 @@
+# The indexed bytes remain memory; disjoint scalar state should not require
+# a memory load and store on every loop iteration. No SSA shape is required.
+count(load) <= 1 in @disjoint_state
+count(store) <= 2 in @disjoint_state
+instructions <= 30 in @disjoint_state

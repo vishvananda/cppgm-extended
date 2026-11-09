@@ -1,0 +1,108 @@
+function @disjoint_state(%index : u8, %other : u8, %count : u32) -> u32 [unwind=no, no_inline=yes] {
+  slot $state : obj<264x8>
+
+  block ^entry:
+    %base = addr $state
+    %selected = index u8 %base, %index
+    %read = index u8 %base, %other
+    store u8 3, %read
+    jump ^loop
+
+  block ^loop:
+    %t4 = phi u32 [^entry: 7, ^body: %sum]
+    %i = phi u32 [^entry: 0, ^body: %next]
+    %more = cmp ult u32 %i, %count
+    branch %more, ^body, ^end
+
+  block ^body:
+    %byte = convert trunc u8 u32 %i
+    store u8 %byte, %selected
+    %read_byte = load u8 %read
+    %amount = convert zext u32 u8 %read_byte
+    %step = binary add u32 %i, %amount
+    %sum = binary add u32 %step, %t4
+    %next = binary add u32 %i, 1
+    jump ^loop
+
+  block ^end:
+    return u32 %t4
+}
+function @overlap_chain(%index : u8) -> i64 [unwind=no, no_inline=yes] {
+  slot $state : obj<272x8>
+
+  block ^entry:
+    %base = addr $state
+    %wide = index i8 %base, 252
+    %field = index i8 %base, 256
+    %selected = index u8 %base, %index
+    store i64 0, %wide
+    store u32 305419896, %field
+    store u8 153, %selected
+    %all = load i64 %wide
+    %result = binary add i64 %all, 17
+    return i64 %result
+}
+function @unknown_index(%index : i64) -> u32 [unwind=no, no_inline=yes] {
+  slot $state : obj<264x8>
+
+  block ^entry:
+    %base = addr $state
+    %field = index i8 %base, 256
+    %selected = index i8 %base, %index
+    store u32 0, %field
+    store u8 255, %selected
+    %result = load u32 %field
+    return u32 %result
+}
+function @whole_zero(%index : u8) -> u32 [unwind=no, no_inline=yes] {
+  slot $state : obj<264x8>
+
+  block ^entry:
+    %base = addr $state
+    %field = index i8 %base, 256
+    %selected = index u8 %base, %index
+    store u32 9, %field
+    zeroinit 264x8 %base
+    store u8 255, %selected
+    %result = load u32 %field
+    return u32 %result
+}
+function @volatile_field(%index : u8) -> u32 [unwind=no, no_inline=yes] {
+  slot $state : obj<264x8>
+
+  block ^entry:
+    %base = addr $state
+    %field = index i8 %base, 256
+    %selected = index u8 %base, %index
+    store volatile u32 19, %field
+    store u8 255, %selected
+    %result = load volatile u32 %field
+    return u32 %result
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call u32 @disjoint_state(0, 255, 5)
+    %a_ok = cmp eq u32 %a, 32
+    %b = call u32 @disjoint_state(129, 129, 5)
+    %b_ok = cmp eq u32 %b, 27
+    %c = call i64 @overlap_chain(255)
+    %c_ok = cmp eq i64 %c, 1311768467434635281
+    %d = call u32 @unknown_index(256)
+    %d_ok = cmp eq u32 %d, 255
+    %e = call u32 @whole_zero(255)
+    %e_ok = cmp eq u32 %e, 0
+    %f = call u32 @volatile_field(0)
+    %f_ok = cmp eq u32 %f, 19
+    %ab = binary and i64 %a_ok, %b_ok
+    %cd = binary and i64 %c_ok, %d_ok
+    %ef = binary and i64 %e_ok, %f_ok
+    %abcd = binary and i64 %ab, %cd
+    %all = binary and i64 %ef, %abcd
+    branch %all, ^pass, ^fail
+
+  block ^pass:
+    return i32 0
+
+  block ^fail:
+    return i32 1
+}

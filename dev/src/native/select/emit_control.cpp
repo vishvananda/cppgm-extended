@@ -129,10 +129,11 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 	}
 	if (level_ >= 1 && !body_->code_labels.empty())
 	{
-		// Block-local rewrites preserve addressed entries and need no
-		// predecessor-specific register facts or edge transfers.
+		// Keep addressed entries in place. Reload forwarding uses every
+		// declared indirect edge; other rewrites here stay within a block.
 		merge_constant_stores(out);
 		fuse_copies_into_lea(out);
+		forward_home_reloads(out);
 		drop_redundant_tests(out);
 		drop_redundant_copies(out);
 		fold_call_targets(out);
@@ -607,8 +608,15 @@ void FunctionSelector::emit_terminator(uint32_t id)
 	switch (inst.op)
 	{
 	case Opcode::IndirectJump:
-		emit1(Op::IndirectJump, TypeKind::Ptr, reg_operand(inst.ops[0], Type::scalar(TypeKind::Ptr), kSelectScratch));
+	{
+		Inst& jump = emit1(
+			Op::IndirectJump, TypeKind::Ptr, reg_operand(inst.ops[0], Type::scalar(TypeKind::Ptr), kSelectScratch));
+		jump.aux = static_cast<uint32_t>(out_->jump_targets.size());
+		jump.aux2 = inst.extra_count;
+		for (uint32_t k = 0; k < inst.extra_count; ++k)
+			out_->jump_targets.push_back(blocks_[layout_of_[body_->operands[inst.extra_first + k].index]].mir);
 		break;
+	}
 	case Opcode::Jump:
 	{
 		// Host EH: a jump to a resume-only block resumes (host_eh.cpp).
@@ -756,7 +764,7 @@ void FunctionSelector::emit_branch(const Instruction& inst)
 
 // A tested `x & y` (find_folds): test x, y, or bt x, k for `x & (1 << k)`;
 // the condition taking ZF or CF for `set` (nonzero) or its inverse.
-Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set)
+Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set, bool branch)
 {
 	const Type type = conj.type;
 	const TypeKind kind = type.is_pointer() ? TypeKind::Ptr : type.kind();
@@ -807,6 +815,13 @@ Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set)
 			load_into(kEmitScratch, b, kind);
 			b = Operand::make_reg(kEmitScratch);
 		}
+		// A register predicate lets the processor fuse its following branch.
+		// Memory-immediate forms with a displacement cannot fuse on all x86 CPUs.
+		if (branch && level_ >= 2 && a.kind == OperandKind::Mem && b.kind == OperandKind::Imm)
+		{
+			load_into(kSelectScratch, a, test_type.kind());
+			a = Operand::make_reg(kSelectScratch);
+		}
 		emit2(Op::Test, test_type.kind(), a, b);
 	}
 	return cond;
@@ -816,7 +831,7 @@ void FunctionSelector::emit_compare_jump(const Instruction& compare, uint32_t on
 {
 	// A compare with zero of a tested `x & y`: the branch takes its test.
 	auto emit_test_jump = [&](const Instruction& conj, bool set) {
-		const Cond cond = emit_and_test(conj, set);
+		const Cond cond = emit_and_test(conj, set, true);
 		Inst& j = emit1(Op::Jcc, TypeKind::Void, Operand::make_label(on_true));
 		j.sub = cond;
 		emit1(Op::Jmp, TypeKind::Void, Operand::make_label(on_false));
@@ -968,7 +983,14 @@ Cond FunctionSelector::compare_flags(const Instruction& compare)
 		load_into(kSelectScratch, a, kind);
 		a = Operand::make_reg(kSelectScratch);
 	}
-	emit2(Op::Cmp, logical_not ? kind : compare_width(compare, a), a, b);
+	const TypeKind width = logical_not ? kind : compare_width(compare, a);
+	// Prefer the register/memory compare form; reverse its predicate too.
+	if (a.kind == OperandKind::Mem && b.kind == OperandKind::Reg)
+	{
+		std::swap(a, b);
+		pred = swapped(pred);
+	}
+	emit2(Op::Cmp, width, a, b);
 	return int_cond(pred);
 }
 

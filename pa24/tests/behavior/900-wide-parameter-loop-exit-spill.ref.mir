@@ -82,8 +82,8 @@ function @probe
     mov rax, rdi
     cqo
     idiv r11
-    cmp.i64 [rbp-8], rax
-    jb ^for_body
+    cmp.i64 rax, [rbp-8]
+    ja ^for_body
     jmp ^for_end
 
   block ^for_body
@@ -98,7 +98,7 @@ function @probe
   block ^check2
     load.ptr rdi, [r12]
     load.i64 r10, [rbp-16]
-    cmp.u32 [rdi+r10+12], rcx
+    cmp.u32 rcx, [rdi+r10+12]
     jne ^for_iter
     jmp ^check3
 

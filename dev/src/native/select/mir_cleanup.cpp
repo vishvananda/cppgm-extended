@@ -745,7 +745,7 @@ void HomeForwarding::edges()
 		for (uint32_t i = block.first; i < block.first + block.count; ++i)
 		{
 			const Inst& inst = f_.insts[i];
-			if (inst.op == Op::JumpTable)
+			if (inst.op == Op::JumpTable || inst.op == Op::IndirectJump)
 				for (uint32_t k = inst.aux; k < inst.aux + inst.aux2; ++k)
 					succs_.push_back(f_.jump_targets[k]);
 			else if (inst.op == Op::WideCmpBranch)
@@ -922,7 +922,7 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 			leave();
 			continue;
 		}
-		if (inst.op == Op::Jmp)
+		if (inst.op == Op::Jmp || inst.op == Op::IndirectJump)
 			continue;
 		// A jump table writes its index and a scratch register.
 		if (inst.op == Op::JumpTable)

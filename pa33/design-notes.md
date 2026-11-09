@@ -26,6 +26,15 @@ Preserve loop recognition through exact integer conversions. Check layout
 changes with native timing: instruction counts can stay unchanged while speed
 changes.
 
+A memory operand can save an instruction while making a branch slower.
+Compare load dependencies and compare/branch fusion on the target processors;
+preserve the access width and flags when separating a load from its predicate.
+
+Indirect dispatch can repeatedly enter blocks without a direct back edge.
+Consider their instruction alignment too, while bounding padding and accounting
+for it when choosing short branches. Several labels can denote one code
+position; do not charge or insert alignment repeatedly at that position.
+
 ## Allocate across the control-flow graph
 
 Compute liveness across ordinary and exception edges. Model a phi transfer on
