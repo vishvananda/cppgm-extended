@@ -1159,7 +1159,55 @@ within A/A variation. The first frozen probe used relative executable paths
 and failed before compilation; the absolute-path rerun and all observations
 are retained. None of these private screens is a whole-LLVM score.
 
-The full LLVM rebuild and downstream byte/timing checks are pending, as are
-student export and the official releases. This candidate is not accepted;
-the 0.95x goal remains open. Evidence is
+The full LLVM build passes in 357.00 s, all 2577 C++ units without fallback.
+All 204 generated dependencies, 323 current objects, 323 frozen objects and
+both linked compilers match byte for byte. All timing outputs also match.
+The final immutable candidate passes 16 C++ runtime observations (GCC,
+Clang, parent and candidate, O0 through O3) and three raw LowIR runtime
+checks (O0/O2/O3). The initial downstream controller omitted its 323-TU
+input manifest and stopped before compiling any current objects; explicit
+current/frozen manifests are now recorded and the comparisons pass in r2.
+The failed attempt is retained and is not a compiler failure.
+
+Full runtime ABBA gives native 47.075 s and cppgm-built 55.495 s (0.8482746x).
+Cppgm-built instructions are 1,233,399,487,576, 1.00005946x B38 (+0.00595%);
+native instructions are 0.99999789x. This is no resolved instruction win.
+A/A native wall observations are 48.87 s and 54.18 s, so do not attribute
+the changed cross-run wall ratio to this optimization. The 0.95x goal is
+not achieved.
+
+Student export, all 42 wrappers, both new exported fixtures and PA35
+quick/smoke pass. Official course/student releases are running. This
+candidate is not accepted until those checks pass. Evidence is
 /mnt/vizier/cppgm-llvm-evidence/block39-bounded-*.
+
+Next dispatch investigation, B40 diagnostics
+--------------------------------------------
+Fresh source and machine-code views show Decl::getTranslationUnitDecl
+inlining castFromDeclContext's switch with a large jump table. A private
+one-unit noinline override reduces static size, but sample instructions rise
+by 0.2166%, 0.1921% and 0.1169%. Cycle changes are within A/A variation;
+do not promote the LLVM source override or a general outlining policy.
+Both its initial unsupported -iquote attempt and successful -I rerun are
+retained. No measured full LLVM tree or compiler source is changed by it.
+
+Checking the private relink control exposed a script detail: shlex retained
+shell escaping on $ORIGIN, adding a literal backslash to RUNPATH. The
+recompiled control object is already byte-identical to the original;
+allocated code/data sections of its relink match as well. Correcting just
+that link argument produces a control clang binary identical in full to
+the original. The private group helpers now unescape that literal argument
+when invoking the linker without a shell. Original binaries, receipts and
+observations remain in place; corrected relinks have distinct directories.
+
+A stronger typed transformation candidate avoids the switch dispatch itself:
+each case returns a scalar constant or the same pointer plus a constant
+offset. Native Clang emits a result lookup table for both forms in the
+block40-switch-result-probe; cppgm retains switches. All six GCC/Clang/cppgm
+O0/O3 runtime oracles pass, including every case and out-of-range defaults.
+The actual castFromDeclContext LowIR, in block39-next-hot-codegen-review,
+has 30 cases through 77, five offsets (-40 through -72), one common pointer
+and an unreachable default. Its pointer operand carries a preserved non-null
+fact. This is a concrete missing transformation, not a measured global win.
+Implement the general forms with bounded table size, correct sparse holes
+and defaults, typed LowIR data, normal PA32 regressions and the usual gates.
