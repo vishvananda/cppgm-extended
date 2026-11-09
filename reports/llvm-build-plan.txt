@@ -782,7 +782,7 @@ A/A plus paired ABBA runs compiling all 323 cppgm units at 12 jobs give
 retains identical objects and linked output. Both exact LLVM builds use
 Release -O3 without PGO or LTO. These runs share a loaded host, so the raw
 CPU/counter observations are retained alongside wall time. Formal LLVM build
-timing is running separately; no final LLVM build-time ratio is claimed yet.
+timing has now completed; its final results are recorded below.
 
 Immutable tools: compiler-block19-static-aggregate-defaults. Actual source:
 16384551d39b07cf7789e3577ff5b312d5222d77. Its snapshot was frozen before the
@@ -822,4 +822,32 @@ Source 1fe0de90cc0e0d7ac9a5c5015a4f3cf6b1e5e729; subsequent fixture-only commit
 0c86435b2 supplies generated outcome expectations. Immutable tools:
 compiler-block20-constant-phi-switch. Receipt outside checkout:
 block20-constant-phi-switch-validation.json. Profiling and further candidates
-continue; the LLVM build-time comparison is still running on frozen B19 tools.
+continue; the completed LLVM build-time comparison uses frozen B19 tools.
+
+
+Completed build timing and further code-generation candidates
+------------------------------------------------------------
+The matched B19 native/cppgm/cppgm/native build comparison completes with
+1588.82 s native and 366.93 s cppgm mean elapsed time at twelve workers:
+4.330x faster construction of LLVM with cppgm. C++ child CPU is 18307.149 s
+versus 4020.769 s (4.553x); all 2577 C++ units compile and 187 generated inputs
+are identical on every observation. Native A/A elapsed times vary, so raw
+counter and CPU observations are retained. Both LLVM configurations are
+plain Release -O3, with PGO and LTO disabled.
+
+B21's optional payload/flag forwarding plus B22's cold-edge inlining,
+return-register preference and fast-path cleanup have passed cumulatively:
+strict 9925/9925, debug/modern, all audits, PA5 self-host, inception, harness,
+export, PA35 quick/smoke and full course/student release checks. Initial failed
+attempts remain recorded; final checks use corrected source and fixture lanes.
+All 2577 LLVM C++ units compile; both Clangs again produce all 323 identical
+cppgm objects and identical linked compilers. Frozen-compile instructions are
++0.432% O3 versus accepted B20 and RSS +0.612%, within normal gates. LLVM text
+shrinks 3.17% from B21. Retired runtime instructions increase about 0.254%;
+a direct paired comparison gives modest CPU/wall improvements with enough
+A/A load noise that no confident global runtime win is claimed.
+
+Details and remaining performance leads are in llvm-codegen-profile.txt.
+The B22 acceptance receipt is block22-cold-sites-return-hints-validation.json
+outside the checkout. B23's host-only narrow select cleanup is being validated
+separately; it is not included in this accepted checkpoint.

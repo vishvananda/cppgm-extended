@@ -1,0 +1,146 @@
+LLVM 22.1.2 code-generation investigation
+=======================================
+
+Workload and controls
+---------------------
+All 323 frozen cppgm C++ translation units are compiled at O3 with twelve
+workers. Both LLVM builds are plain Release -O3 -DNDEBUG, with PGO and LTO
+disabled. Resource and GCC include directories are pinned. Every timed run
+checks all object hashes and the linked cppgm executable. Raw measurements,
+commands and profiles live under /mnt/vizier/cppgm-llvm-evidence.
+
+The initial B19 comparison took 45.005 s with native-built Clang and 54.420 s
+with cppgm-built Clang. C++ child CPU time increased 22.4%, instructions 14.1%,
+and cycles 22.2%. Later concurrent load changed materially: comparisons across
+those wall-time epochs are not evidence that an optimization helped or hurt.
+The native instruction count remains approximately 1.090 trillion per batch.
+
+Language-form reductions
+------------------------
+Generic and nested generic lambdas, initialized captures, copied *this,
+structured pair/tuple bindings, reference bindings and if constexpr shed
+their abstraction overhead in the initial examples. Fold-expression
+association also needs an equivalent handwritten association as its control.
+Nine LLVM/library types agree with native Clang on size, alignment and
+trivial copy/move/destruction properties; no wrong trait path was found.
+
+Concrete missed optimizations:
+* Variant visitation retained a switch on known incoming tag values. B20
+  extends bounded constant-phi jump threading to switches. Its reduced union
+  visitor falls from 18 LowIR instructions/eight blocks to six/one. B20 has
+  passed normal checks and full releases, and is the accepted checkpoint.
+* An optional factory/consumer retained stack storage. B21 forwards a known
+  flag from a fixed location even when its address is formed at the join,
+  and selects an incoming payload only on the edges that use it. The reduced
+  optional round trip becomes the same select as its handwritten control.
+  Independent GCC-built drivers check the actual compiled functions.
+* Returned arithmetic preferred dying input registers over the ABI return
+  register. B22's prototype lets existing copy/LEA fusion remove a return
+  copy; basic sums and increments now match native Clang's two instructions.
+  PA33 owns the native regression. A no-hidden-return-copy quality predicate
+  fails with B21 and passes with B22; the source driver exercises twelve
+  compile/link/replay configurations and checks widths, shifts and live calls.
+
+Measured limits of these candidates
+----------------------------------
+B19 cppgm-built Clang: 1.244026 trillion instructions per frozen cppgm batch.
+B20:                  1.243526 trillion (about 0.04% less than B19).
+B21:                  1.242987 trillion (about 0.08% less than B19).
+B22 initial:          1.246146 trillion (about 0.25% more than B21).
+Thus the first two reductions improve individual forms but explain little of
+the whole runtime gap. Direct B21/B22 ABBA gives mean wall times 55.78 versus
+54.70 s and C++ CPU 608.01 versus 588.26 s: point improvements of 1.94% and
+3.25%. A/A wall times were 54.76 and 72.80 s, so those point estimates do not
+establish a confident global speedup. B22 passes normal correctness, frozen
+compile and full course/student release gates; its code-size/local quality
+changes are accepted with this measured tradeoff stated explicitly.
+
+B21's initial frozen-compile instruction cost is about +0.51% at O3. B22's
+paired frozen-compile result is +0.432% versus accepted B20, with RSS +0.612%:
+within the normal 0.5% instruction and 3% RSS thresholds, but not zero cost.
+O0 instructions increase about 0.010%. New optimizer behavior intentionally
+changes O3 object bytes, so PA35's same-source seed/self comparison is not
+used as a before/after optimizer oracle. Per-compiler output repeatability,
+normal same-revision seed/self identity and native correctness remain required.
+
+Other leads and negative evidence
+---------------------------------
+The initial cppgm-built Clang has 143.6 MB of text versus native's 73.3 MB.
+Most extra bytes are inside functions common to both; code-size outliers in
+ARM-specific checks are not by themselves explanations of the x86 workload.
+Function symbol sizes also include inline tables and aliases, so raw size
+ratios are not interpreted as executed instruction ratios.
+
+Fixed-period retired-instruction profiles with LBR call chains cover three
+heavy cppgm translation units. Hashing moves between outlined hash_short
+and FoldingSet callers: grouping both removes the apparent excess from the
+individual FoldingSet symbol. It is not a demonstrated hashing hotspot.
+Declaration/context helpers likewise require family-level attribution.
+
+SmallPtrSet growth is marked unlikely but was inlined into insertion, adding
+stack/frame overhead on the common path. B22 consumes existing advisory edge
+hints in inlining decisions. Its insertion body shrinks from 274 to 99 LowIR
+instructions and the local stack reservation from 72 to 8 bytes. However a
+private diagnostic LLVM changing only SmallPtrSet.cpp shows no meaningful
+retired-instruction reduction on the sampled compile; this is a hypothesis
+to evaluate, not a proven global speedup. The combined B22 LLVM text is 139.0 MB.
+
+Remaining investigation targets include unnecessary normalization of narrow
+arguments used only as select conditions, duplicated switch result tails,
+and unnecessary retained constructor/lambda entry points. The object path
+already emits relaxable GOT relocations, so missing GOT relaxation is not
+an established explanation. Some accepted build flags, including inline
+visibility/function sections, also need separate handling/impact review.
+
+Validation provenance
+---------------------
+B20 source: 1fe0de90cc0e0d7ac9a5c5015a4f3cf6b1e5e729.
+B21 source: b0565e723e30af3150bf75cd75396a680aca5d1f.
+B22 source: fac618eba55aac2215fbae40c93f3366f46d5299, followed by related
+fixture/reference-only commits. All nine binaries are byte-identical before
+and after the explicit Reg cast that fixes GCC's narrowing warning/self-build
+rejection. The fresh B22 LLVM therefore uses the same immutable compiler as
+the corrected source. All 2577 LLVM C++ units compile, and all 323 downstream
+cppgm objects plus the linked compiler are byte-identical to native LLVM.
+
+Initial B22 attempts found the narrowing source issue, a misplaced fixture
+extension, and related MIR reference changes. Corrected checks preserve the
+original observations. Fifty-two affected native reference cases were
+regenerated through the harness; every runtime stdout/status stayed equal.
+New fixture checks must actually execute, not merely return a successful
+empty-selection result. Final strict 9925/9925, harness, export and full
+course/student release checks pass under block22final3. Corrected-source
+self-host/debug/modern/audits pass under block22final; all nine compiler
+binaries match the immutable final snapshot. The three exported fixtures
+and all reference wrappers pass. The acceptance receipt is
+block22-cold-sites-return-hints-validation.json outside this checkout.
+
+Completed LLVM build-time comparison
+------------------------------------
+Frozen B19 tools and unchanged LLVM source were measured at twelve workers,
+with native A/A followed by native/cppgm/cppgm/native. Mean paired build wall
+time is 1588.82 s native versus 366.93 s cppgm (4.330x); C++ child CPU is
+18307.149 s versus 4020.769 s (4.553x). All 2577 C++ compilations complete in
+each build and all 187 generated inputs agree. Retired-instruction ratio is
+3.289x; raw observations include A/A variation and remain available under
+llvm-build-timing-block19-static-aggregate-defaults. This is a B19 build-time
+measurement, not a claim about later candidates.
+
+Next candidate and diagnostic observations
+-----------------------------------------
+B23 removes a host-ABI argument extension when the argument is used only as
+a select condition; wider readers retain normalization. Source driver checks
+pass in all twelve PA33 configurations, and independent host-built drivers
+pass with poisoned unspecified upper argument bits. It is still a candidate:
+normal gates and fresh LLVM are running on immutable tools. Small select
+leaves go from five machine instructions to four. The normal LowIR executable
+path already omits these host-entry extensions, so its MIR cannot demonstrate
+the host-only saving; a discarded course-only quality probe is retained in
+the evidence directory rather than presented as a failing regression.
+
+Further reductions show a shifted tag tested against one can test the original
+bit mask directly, and hot DeclContext casts repeat identical switch tails.
+Neither transformation has been implemented. Allocation-count interposition
+on three heavy translation units finds nearly identical malloc counts and
+requested bytes, making increased heap allocation an unlikely broad cause of
+the runtime gap. Interposed runs are diagnostic counts, not speed benchmarks.
