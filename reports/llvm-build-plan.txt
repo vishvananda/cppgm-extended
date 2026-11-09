@@ -1272,8 +1272,9 @@ This confirms reduced instruction work, not an elapsed-time improvement
 across differently loaded runs. The 0.95x objective is not achieved.
 
 Student export, all 42 wrappers, all three new exported fixtures and
-quick/smoke pass. Official course/student releases are running. This
-candidate is not accepted until they pass. Evidence is
+quick/smoke pass. Official course/student releases pass all 17 gates on
+their first full run (1193.08 s), including timing headroom: worst scaling
+2.29x course and 2.10x student. The checkpoint is accepted. Evidence is
 /mnt/vizier/cppgm-llvm-evidence/block40-switch-results-*.
 
 Next machine-code review: getTranslationUnitDecl's new indexed table read
