@@ -886,9 +886,13 @@ LLVM optimization extension audit, 2026-11-09:
    expansions, not every lexical attribute spelling in generated Clang tables.
    Record supported/ignored tags and algorithm fallbacks in
    llvm-extension-audit.txt, with the original source/query evidence retained.
- - Prioritize pure/const repeated calls and bit-reversal builtin fallbacks;
-   investigate return non-null/freshness facts next. Restrict, alignment,
-   minsize and visibility remain distinct gaps to evaluate on active hot paths.
- - The first pure/const partial relink has no resolved downstream instruction
-   win. Keep that result; header support or smaller static code is not proof
-   of a whole-LLVM runtime improvement.
+ - The first batch fixes pure/const repeated calls, bit-reversal fallbacks and
+   return non-null facts. Strict 9949/9949, all normal checks, both full
+   releases 17/17, a fresh complete LLVM and current/frozen byte comparisons
+   pass. Frozen compile O3 instructions are +0.1953%, within the normal gate.
+ - LLVM runtime speed is 0.8331x native (44.715 versus 53.675 s). Retired
+   instructions versus B26 are 0.99989384x: no resolved global instruction
+   win. Keep the negative evidence; support for a tag or smaller static code
+   is not proof of a whole-LLVM runtime improvement. The 0.95x goal remains.
+ - Allocator freshness, restrict, alignment, minsize and visibility remain
+   separate gaps. Evaluate active hot uses and inferred helper work next.
