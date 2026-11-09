@@ -1,0 +1,45 @@
+function @guarded(%p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %present = cmp ne ptr %p, 0
+    branch %present, ^nonnull, ^null
+
+  block ^nonnull:
+    return i64 0
+
+  block ^null:
+    return i64 0
+}
+function @joined(%p : ptr, %take : i1) -> i64 [no_inline=yes] {
+  block ^entry:
+    %present = cmp ne ptr %p, 0
+    branch %present, ^joined, ^other
+
+  block ^other:
+    branch %take, ^joined, ^done
+
+  block ^joined:
+    %again = cmp eq ptr %p, 0
+    %r = select i64 %again, 1, %again
+    return i64 %r
+
+  block ^done:
+    return i64 0
+}
+function @main() -> i64 [role=entry] {
+  slot $data : i64
+
+  block ^entry:
+    %p = addr $data
+    %a = call i64 @guarded(0)
+    %b = call i64 @guarded(%p)
+    %c = call i64 @joined(0, 1)
+    %d = call i64 @joined(%p, 1)
+    %e = call i64 @joined(0, 0)
+    %ab = binary or i64 %a, %b
+    %de = binary or i64 %d, %e
+    %bad_c = cmp ne i64 %c, 1
+    %rest = binary or i64 %ab, %de
+    %rest_bad = cmp ne i64 %rest, 0
+    %bad = binary or i1 %bad_c, %rest_bad
+    return i64 %bad
+}

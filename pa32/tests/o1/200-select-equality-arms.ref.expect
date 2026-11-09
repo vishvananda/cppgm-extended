@@ -1,0 +1,5 @@
+# The equality edge reuses a value instead of repeating its literal.
+count(/\b37\b/) <= 1 in @equal_literal
+count(/\b37\b/) <= 1 in @different_literal
+none(/\b0\b/) in @truth_zero
+count(/\b0\b/) <= 1 in @pointer_null

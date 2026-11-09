@@ -195,6 +195,7 @@ private:
 	Value low_lane_source(Value v, unsigned bytes);
 	bool reassociate(Instruction& inst);
 	bool affine_constant(BlockId block, InstId& prev, InstId id);
+	bool shifted_truth_mask(BlockId block, InstId& prev, InstId id);
 	uint64_t possible_bits(Value v, Type type, unsigned depth = 0);
 	bool mask_or(Instruction& inst);
 	bool packed_part(Instruction& inst);
@@ -280,6 +281,7 @@ private:
 	bool edge_equality(BlockId from, BlockId to, Value& x, Value& y) const;
 	bool select_identity(const Instruction& phi, BlockId block, Value& out) const;
 	bool select_phi(BlockId block, InstId prev, InstId id);
+	void select_equal_arm(Instruction& inst);
 	bool merge_diamonds();
 	bool known_nonzero(Value v) const
 	{
@@ -593,6 +595,38 @@ bool Simplifier::select_phi(BlockId block, InstId prev, InstId id)
 	return true;
 }
 
+// On a select's equality edge, its compared value can supply the literal
+// it equals. This keeps an existing register instead of materializing the
+// same literal; floating equality does not imply equal bits (signed zero).
+void Simplifier::select_equal_arm(Instruction& inst)
+{
+	if (!(inst.type.is_integer() || inst.type.is_pointer()))
+		return;
+	Value x = inst.ops[0], value = Value::none();
+	unsigned arm = 2;
+	const Instruction* test = producer(x);
+	if (test != nullptr && test->op == Opcode::Compare && test->type == inst.type &&
+		(static_cast<ComparePredicate>(test->sub) == ComparePredicate::Eq ||
+			static_cast<ComparePredicate>(test->sub) == ComparePredicate::Ne))
+	{
+		x = test->ops[0];
+		value = test->ops[1];
+		arm = static_cast<ComparePredicate>(test->sub) == ComparePredicate::Eq ? 1 : 2;
+	}
+	if (!x.is(ValueKind::Temp) || body_.temps[x.index].type != inst.type || !inst.ops[arm].is(ValueKind::Integer))
+		return;
+	Constant selected, compared;
+	if (!constant(inst.ops[arm], inst.type, selected) ||
+		(value.is(ValueKind::None)
+				? !is_integer(inst.type, selected, 0)
+				: !constant(value, inst.type, compared) || !same_constant(inst.type, selected, compared)))
+		return;
+	inst.ops[arm] = x;
+	if (uses_[x.index] != 0xffffffffu)
+		++uses_[x.index];
+	changed_ = true;
+}
+
 bool Simplifier::identity(Instruction& inst, Value& out)
 {
 	switch (inst.op)
@@ -606,6 +640,7 @@ bool Simplifier::identity(Instruction& inst, Value& out)
 			out = (c.bits.low | c.bits.high) != 0 ? inst.ops[1] : inst.ops[2];
 			return true;
 		}
+		select_equal_arm(inst);
 		if (inst.ops[1] == inst.ops[2])
 		{
 			out = inst.ops[1];
@@ -1008,7 +1043,7 @@ void Simplifier::edge_facts(BlockId block)
 	if (def != nullptr && def->op == Opcode::Compare && def->type.is_float())
 		float_bound_facts(*def, taken);
 	Constant zero;
-	if (def == nullptr || def->op != Opcode::Compare || !def->type.is_integer() ||
+	if (def == nullptr || def->op != Opcode::Compare || !(def->type.is_integer() || def->type.is_pointer()) ||
 		!literal_constant(body_, def->ops[1], zero) || !is_integer(def->type, zero, 0))
 		return;
 	const ComparePredicate pred = static_cast<ComparePredicate>(def->sub);
@@ -1229,15 +1264,16 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 	const Value x = inst.ops[0], y = inst.ops[1];
 	// A value proved nonzero: x != 0, x == 0, and x - 1 against x
 	// (unsigned: it cannot wrap below zero).
+	Constant compared_zero;
+	if ((type.is_integer() || type.is_pointer()) && known_nonzero(x) && constant(y, type, compared_zero) &&
+		is_integer(type, compared_zero, 0) && (pred == ComparePredicate::Ne || pred == ComparePredicate::Eq))
+	{
+		out = literal(truth_constant(pred == ComparePredicate::Ne));
+		return true;
+	}
 	if (type.is_integer())
 	{
 		Constant cy;
-		if (known_nonzero(x) && constant(y, type, cy) && is_integer(type, cy, 0) &&
-			(pred == ComparePredicate::Ne || pred == ComparePredicate::Eq))
-		{
-			out = literal(truth_constant(pred == ComparePredicate::Ne));
-			return true;
-		}
 		// A positive literal above every value x can have.
 		Literal limit;
 		if (type.kind() != TypeKind::I128 && constant(y, type, cy) && integer_bits(type, cy, limit) &&
@@ -2744,6 +2780,60 @@ bool Simplifier::reuse_quotient(BlockId block, InstId& prev, InstId id)
 	return true;
 }
 
+// Only truth is observed: ((x >> k) & m) != 0 can test x & (m << k).
+// Require every observed bit below the shifted-in region, for arithmetic
+// shifts too. Single-use producers make the replacement remove work.
+bool Simplifier::shifted_truth_mask(BlockId block, InstId& prev, InstId id)
+{
+	const Instruction& seen = body_.instructions[id];
+	if (seen.op != Opcode::Branch && seen.op != Opcode::Select && seen.op != Opcode::Compare)
+		return false;
+	const Instruction* mask = producer(seen.ops[0]);
+	if (mask == nullptr || mask->op != Opcode::Binary || static_cast<BinaryOp>(mask->sub) != BinaryOp::And ||
+		!mask->type.is_integer() || mask->type.kind() == TypeKind::I128 || uses_[mask->result] != 1)
+		return false;
+	const Type type = mask->type;
+	Constant zero;
+	if (seen.op == Opcode::Compare &&
+		(seen.type != type ||
+			(static_cast<ComparePredicate>(seen.sub) != ComparePredicate::Eq &&
+				static_cast<ComparePredicate>(seen.sub) != ComparePredicate::Ne) ||
+			!constant(seen.ops[1], type, zero) || !is_integer(type, zero, 0)))
+		return false;
+	for (unsigned k = 0; k < 2; ++k)
+	{
+		const Instruction* shift = producer(mask->ops[k]);
+		if (shift == nullptr || shift->op != Opcode::Binary || shift->type != type || uses_[shift->result] != 1 ||
+			(static_cast<BinaryOp>(shift->sub) != BinaryOp::Shr && static_cast<BinaryOp>(shift->sub) != BinaryOp::UShr))
+			continue;
+		Constant c, m;
+		Literal count, bits;
+		const unsigned width = lowir::integer_bits(type.kind());
+		if (!constant(shift->ops[1], type, c) || !integer_bits(type, c, count) || count.high != 0 || count.low == 0 ||
+			count.low >= width || !constant(mask->ops[1 - k], type, m) || !integer_bits(type, m, bits) ||
+			bits.low == 0 || (bits.low >> (width - count.low)) != 0)
+			continue;
+		Instruction direct = make_instruction(Opcode::Binary, type);
+		direct.sub = static_cast<uint8_t>(BinaryOp::And);
+		direct.ops[0] = shift->ops[0];
+		direct.ops[1] = literal(integer_constant(type, Literal{ bits.low << count.low, 0 }));
+		direct.location = mask->location;
+		const InstId at = append_instruction(body_, direct);
+		const TempId temp = append_temp(body_, type, at);
+		body_.instructions[at].result = temp;
+		insert_after(body_, block, prev, at);
+		prev = at;
+		body_.instructions[id].ops[0] = Value::temp(temp);
+		repl_.resize(body_.temps.size(), Value::none());
+		uses_.resize(body_.temps.size(), 0);
+		uses_[temp] = 1;
+		if (direct.ops[0].is(ValueKind::Temp) && uses_[direct.ops[0].index] != 0xffffffffu)
+			++uses_[direct.ops[0].index];
+		return true;
+	}
+	return false;
+}
+
 void Simplifier::process_block(BlockId block)
 {
 	current_block_ = block;
@@ -2826,6 +2916,11 @@ void Simplifier::process_block(BlockId block)
 		if (inst.op == Opcode::Branch)
 			simplify_branch(inst);
 		canonicalize(inst);
+		if (shifted_truth_mask(block, prev, id))
+		{
+			changed_ = true;
+			continue;
+		}
 		// Appending the replacement product may move `inst`; take up the
 		// rewritten sum again with a fresh instruction reference.
 		if (affine_constant(block, prev, id) ||

@@ -1,0 +1,3 @@
+none(select) in @guarded
+instructions <= 4 in @guarded
+has(cmp eq) in @joined

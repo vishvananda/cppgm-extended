@@ -1,0 +1,152 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @adjust
+  abi
+    param %p -> rdi : ptr
+    return ptr -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea rax, [rdi-8]
+    cmp.ptr rdi, 0
+    cmove rax, rdi
+    ret rax
+
+function @adjust_predicate_first
+  abi
+    param %p -> rdi : ptr
+    return ptr -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea rax, [rdi-8]
+    cmp.ptr rdi, 0
+    cmove rax, rdi
+    ret rax
+
+function @before_store
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, [rdi]
+    store.i64 [rdi], 9
+    cmp.i64 r8, 5
+    mov r11, 11
+    mov rax, 29
+    cmove rax, r11
+    ret rax
+
+function @change
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    store.i64 [rdi], 9
+    mov rax, 0
+    ret rax
+
+function @before_call
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
+
+  block ^entry
+    load.i64 rbx, [rdi]
+    call @change [args=(rdi)]
+    cmp.i64 rbx, 5
+    mov r11, 11
+    mov rax, 29
+    cmove rax, r11
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    slot $data -> [rbp-16] : obj<16x8>
+    temp %a -> [rbp-24] : i64
+
+  block ^entry
+    lea rbx, [rbp-16]
+    lea rdi, [rbp-8]
+    call @adjust [args=(rdi)]
+    mov r12, rax
+    mov rdi, 0
+    call @adjust [args=(rdi)]
+    cmp.ptr r12, rbx
+    setne r12
+    movzx r12, r12
+    cmp.ptr rax, 0
+    setne r13
+    movzx r13, r13
+    lea rdi, [rbp-8]
+    call @adjust_predicate_first [args=(rdi)]
+    mov r14, rax
+    mov rdi, 0
+    call @adjust_predicate_first [args=(rdi)]
+    mov r15, rax
+    store.i64 [rbx], 5
+    mov rdi, rbx
+    call @before_store [args=(rdi)]
+    store.i64 [rbp-24], r12
+    mov r12, rax
+    store.i64 [rbx], 5
+    mov rdi, rbx
+    call @before_call [args=(rdi)]
+    cmp.ptr r14, rbx
+    setne r14
+    movzx r14, r14
+    cmp.ptr r15, 0
+    setne r15
+    movzx r15, r15
+    cmp.i64 r12, 11
+    setne r12
+    movzx r12, r12
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    load.i64 r10, [rbp-24]
+    or r13, r10
+    or r14, r15
+    or r12, rax
+    mov rax, r13
+    or rax, r14
+    or rax, r12
+    ret rax

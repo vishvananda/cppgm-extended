@@ -1,0 +1,7 @@
+# Address calculation, predicate, selection and return; no extra result copy.
+instructions <= 4 in @adjust
+none(/^ret (?!rax$)/) in @adjust
+instructions <= 4 in @adjust_predicate_first
+none(/^ret (?!rax$)/) in @adjust_predicate_first
+has(store) in @before_store
+has(call @change) in @before_call

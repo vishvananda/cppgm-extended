@@ -2379,9 +2379,9 @@ void FunctionSelector::find_high_products()
 	});
 }
 
-// An integer compare or logical not whose only use is the condition of the
-// branch ending its block, with other instructions between them: it is
-// evaluated at the branch (README goal 7).
+// An integer compare or logical not whose only use is a branch or select's
+// condition in its block is evaluated there. Its SSA operands stay live;
+// fold_load checks intervening effects before moving a memory access.
 bool FunctionSelector::sunk_compare(uint32_t id) const
 {
 	const lowir::FunctionBody& body = *body_;
@@ -2396,8 +2396,10 @@ bool FunctionSelector::sunk_compare(uint32_t id) const
 	if ((t.flags & (TF_ALIAS | TF_GLOBAL)) || t.uses != 1 || t.user == kNoId)
 		return false;
 	const Instruction& user = body.instructions[t.user];
-	return user.op == Opcode::Branch && inst_block_[t.user] == inst_block_[id] && pos_[t.user] > pos_[id] + 1 &&
-		resolve(user.ops[0]) == Value::temp(inst.result);
+	const Value self = Value::temp(inst.result);
+	return (user.op == Opcode::Branch ||
+			   (user.op == Opcode::Select && !(resolve(user.ops[1]) == self) && !(resolve(user.ops[2]) == self))) &&
+		inst_block_[t.user] == inst_block_[id] && pos_[t.user] > pos_[id] + 1 && resolve(user.ops[0]) == self;
 }
 
 // Where an instruction reads its operands: a folded load at its consumer,

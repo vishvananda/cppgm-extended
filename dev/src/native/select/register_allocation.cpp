@@ -1554,11 +1554,25 @@ void FunctionSelector::hint_chain(Value v, uint32_t b, Reg reg)
 			return;
 		t.hint = reg;
 		const lowir::InstId def = body.temps[v.index].def;
-		if (def == kNoId || !ties_first_operand(body.instructions[def]))
+		if (def == kNoId)
 			return;
 		// (A load folded into the first operand leaves the second to the result.)
 		const Instruction& computed = body.instructions[def];
-		Value u = resolve(computed.ops[0]);
+		Value u;
+		if (computed.op == Opcode::Select)
+		{
+			// A dying arm may already occupy the select's result register.
+			// Prefer the false arm, which cmov otherwise copies first.
+			u = resolve(computed.ops[2]);
+			if (u.kind != ValueKind::Temp || temps_[u.index].last != pos_[def])
+				u = resolve(computed.ops[1]);
+		}
+		else
+		{
+			if (!ties_first_operand(computed))
+				return;
+			u = resolve(computed.ops[0]);
+		}
 		if (u.kind == ValueKind::Temp && (temps_[u.index].flags & TF_FOLDED) && computed.op == Opcode::Binary)
 			u = resolve(computed.ops[1]);
 		if (u.kind != ValueKind::Temp || temps_[u.index].last != pos_[def])

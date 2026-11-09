@@ -403,7 +403,9 @@ void FunctionSelector::prepass_block(uint32_t b)
 			// the values an integer two-address result is computed from.
 			const Value v = resolve(inst.ops[0]);
 			const bool two_address = v.kind == ValueKind::Temp && v.index >= body.parameter_count &&
-				body.instructions[body.temps[v.index].def].op == Opcode::Binary && !inst.type.is_float();
+				(body.instructions[body.temps[v.index].def].op == Opcode::Binary ||
+					body.instructions[body.temps[v.index].def].op == Opcode::Select) &&
+				!inst.type.is_float() && !inst.type.is_vector();
 			if (two_address && level_ >= 1)
 				hint_chain(v, b, RAX);
 			else if (!two_address)

@@ -1,0 +1,152 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @adjust
+  abi
+    param %p -> rdi : ptr
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea rax, [rdi-<off0>]
+    cmp.ptr rdi, 0
+    cmove rax, rdi
+    ret rax
+
+function @adjust_predicate_first
+  abi
+    param %p -> rdi : ptr
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea rax, [rdi-<off0>]
+    cmp.ptr rdi, 0
+    cmove rax, rdi
+    ret rax
+
+function @before_store
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, [rdi]
+    store.i64 [rdi], 9
+    cmp.i64 r8, 5
+    mov <gpr0>, 11
+    mov rax, 29
+    cmove rax, <gpr0>
+    ret rax
+
+function @change
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    store.i64 [rdi], 9
+    mov rax, 0
+    ret rax
+
+function @before_call
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr1>
+
+  block ^entry
+    load.i64 <gpr1>, [rdi]
+    call @change [args=(rdi)]
+    cmp.i64 <gpr1>, 5
+    mov <gpr0>, 11
+    mov rax, 29
+    cmove rax, <gpr0>
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr1> <gpr2> <gpr3> <gpr4> <gpr5>
+    slot $data -> [rbp-<off0>] : obj<16x8>
+    temp %a -> [rbp-<off1>] : i64
+
+  block ^entry
+    lea <gpr1>, [rbp-<off0>]
+    lea rdi, [rbp-<off2>]
+    call @adjust [args=(rdi)]
+    mov <gpr2>, rax
+    mov rdi, 0
+    call @adjust [args=(rdi)]
+    cmp.ptr <gpr2>, <gpr1>
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    cmp.ptr rax, 0
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    lea rdi, [rbp-<off2>]
+    call @adjust_predicate_first [args=(rdi)]
+    mov <gpr4>, rax
+    mov rdi, 0
+    call @adjust_predicate_first [args=(rdi)]
+    mov <gpr5>, rax
+    store.i64 [<gpr1>], 5
+    mov rdi, <gpr1>
+    call @before_store [args=(rdi)]
+    store.i64 [rbp-<off1>], <gpr2>
+    mov <gpr2>, rax
+    store.i64 [<gpr1>], 5
+    mov rdi, <gpr1>
+    call @before_call [args=(rdi)]
+    cmp.ptr <gpr4>, <gpr1>
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    cmp.ptr <gpr5>, 0
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    cmp.i64 <gpr2>, 11
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    load.i64 <gpr6>, [rbp-<off1>]
+    or <gpr3>, <gpr6>
+    or <gpr4>, <gpr5>
+    or <gpr2>, rax
+    mov rax, <gpr3>
+    or rax, <gpr4>
+    or rax, <gpr2>
+    ret rax

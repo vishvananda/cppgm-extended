@@ -1,0 +1,5 @@
+none(binary ushr) in @unsigned_bit
+none(binary shr) in @signed_bit
+none(binary ushr) in @branch_bits
+has(binary shr) in @sign_fill
+has(binary ushr) in @shared_shift

@@ -1,0 +1,64 @@
+# Truth needs only the original bits a constant right shift brings to a mask.
+# Arithmetic sign-fill bits and shared numeric results keep their semantics.
+function @unsigned_bit(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %shift = binary ushr i64 %x, 2
+    %mask = binary and i64 %shift, 1
+    %r = select i64 %mask, 11, 29
+    return i64 %r
+}
+function @signed_bit(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %shift = binary shr i64 %x, 2
+    %mask = binary and i64 %shift, 1
+    %zero = cmp eq i64 %mask, 0
+    %r = select i64 %zero, 29, 11
+    return i64 %r
+}
+function @branch_bits(%x : u32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %shift = binary ushr u32 %x, 7
+    %mask = binary and u32 %shift, 3
+    branch %mask, ^yes, ^no
+  block ^yes:
+    return i64 11
+  block ^no:
+    return i64 29
+}
+function @sign_fill(%x : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %shift = binary shr i32 %x, 7
+    %mask = binary and i32 %shift, -2147483648
+    %r = select i64 %mask, 11, 29
+    return i64 %r
+}
+function @shared_shift(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %shift = binary ushr i64 %x, 2
+    %mask = binary and i64 %shift, 1
+    %r = select i64 %mask, 11, 29
+    %out = binary add i64 %r, %shift
+    return i64 %out
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %a = call i64 @unsigned_bit(4)
+    %b = call i64 @unsigned_bit(3)
+    %c = call i64 @signed_bit(-4)
+    %d = call i64 @signed_bit(-8)
+    %e = call i64 @branch_bits(256)
+    %f = call i64 @branch_bits(512)
+    %g = call i64 @sign_fill(-1)
+    %h = call i64 @sign_fill(2147483647)
+    %i = call i64 @shared_shift(20)
+    %ab = binary add i64 %a, %b
+    %cd = binary add i64 %c, %d
+    %ef = binary add i64 %e, %f
+    %gh = binary add i64 %g, %h
+    %abcd = binary add i64 %ab, %cd
+    %efgh = binary add i64 %ef, %gh
+    %eight = binary add i64 %abcd, %efgh
+    %sum = binary add i64 %eight, %i
+    %bad = cmp ne i64 %sum, 176
+    return i64 %bad
+}
