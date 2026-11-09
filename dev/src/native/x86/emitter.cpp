@@ -920,7 +920,7 @@ void FunctionEmitter::frame_reserve(const Function& function)
 	const bool leaf = !calls_out_;
 	unwind_.reserve = leaf ? function.stack_size + 8 + static_cast<uint32_t>(save_shift_) - 16 * saved
 						   : function.stack_size + 8 - 8 * saved;
-	// O1+, a body that names no frame location: only a call's alignment
+	// A body that names no frame location: only a call's alignment
 	// needs RSP moved past the saves (none in a function that calls
 	// nothing; an odd number of pushes leaves it aligned), not the frame's
 	// unused virtual-RBP slot and padding.
@@ -984,7 +984,7 @@ void FunctionEmitter::prologue(const Function& function)
 }
 
 // Pops of the saved registers (RSP first back at the save area when it
-// moves during the body), `leave`; without a frame pointer the reserve's
+// moves during the body), then frame teardown; without a frame pointer the reserve's
 // release, then the pops. Returns where the frame is released (after
 // `leave` or the release).
 uint32_t FunctionEmitter::epilogue_body(const Function& function, uint32_t* pop_end)
@@ -1005,7 +1005,12 @@ uint32_t FunctionEmitter::epilogue_body(const Function& function, uint32_t* pop_
 		}
 	if (!omit_fp_)
 	{
-		asm_.byte(0xc9); // leave
+		// No storage or saves were reserved, so RSP already points at the
+		// saved RBP. Keep leave for dynamic stacks and user assembly.
+		if (function.stack_size == 0 && function.preserve_mask == 0 && !dynamic_stack_ && !function.assembly)
+			asm_.pop(RBP);
+		else
+			asm_.byte(0xc9); // leave
 		released = asm_.size() - static_cast<uint32_t>(base_);
 	}
 	return released;

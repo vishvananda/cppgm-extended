@@ -1018,7 +1018,9 @@ void FunctionSelector::emit_call(uint32_t id)
 	const bool byte_tested = level_ >= 1 && register_bytes(kind) == 1 && t.uses == 1 && t.user != kNoId &&
 		body.instructions[t.user].op == Opcode::Branch && !(t.flags & (TF_GLOBAL | TF_HOMED)) && d != kSelectScratch &&
 		d != kEmitScratch;
-	if (!stored && !byte_tested && !(level_ >= 1 && byte_only_[inst.result]))
+	// A same-width ABI return, like a same-width store, observes only the
+	// result's own bits. Do not widen it just to return those bits again.
+	if (!terminal && !byte_tested && !(level_ >= 1 && byte_only_[inst.result]))
 		normalize_result(inst, d, kind);
 	finish_result(inst, d);
 }

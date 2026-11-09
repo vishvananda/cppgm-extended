@@ -1,0 +1,8 @@
+# A same-width ABI return forwards its defined bits without widening them.
+none(sext) in @forward_signed
+none(zext) in @forward_unsigned
+none(and) in @forward_true
+none(and) in @forward_false
+# Widening still needs the original signed or unsigned value.
+has(sext) in @widen_signed
+has(zext) in @widen_unsigned

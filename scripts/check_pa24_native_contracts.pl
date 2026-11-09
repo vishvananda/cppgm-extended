@@ -602,6 +602,17 @@ for my $test (@tests)
 		}
 		next;
 	}
+	if($test =~ /(?:zero|dynamic)-storage-epilogue/) {
+		my $code = main_code($test, $program, 0);
+		my $dynamic = $test =~ /dynamic-storage/;
+		die "$test: frame teardown does not preserve its stack requirements\n"
+			if substr($code, -2) ne ($dynamic ? "\xc9\xc3" : "\x5d\xc3");
+		my $run = run_command_capture(
+			cmd => [$program], stdout => "$directory/program.stdout",
+			stderr => "$directory/program.stderr", timeout => 10);
+		die "$test: frame teardown changed the program result\n" if $run != 0;
+		next;
+	}
 	if($test =~ /unreachable-terminator/) {
 		my $body = function_body($test, $mir, 'guarded');
 		die "$test: guarded function lost its impossible control-flow block\n"

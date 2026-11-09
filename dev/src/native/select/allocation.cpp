@@ -869,7 +869,9 @@ void FunctionSelector::finish_frame()
 	out_->preserve_mask = used_callee_saved_;
 	out_->stack_size = (frame_size_ + 15) & ~15u;
 	out_->duplicate_epilogues = level_ >= 1;
-	out_->omit_frame_pointer = level_ >= 1 && eh_model_ == EhModel::Host && !out_->variadic &&
+	// A fixed host frame has the same ABI and unwind requirements at every
+	// level. Baseline user assembly retains its explicit frame environment.
+	out_->omit_frame_pointer = (level_ >= 1 || !out_->assembly) && eh_model_ == EhModel::Host && !out_->variadic &&
 		!out_->eh_records_pushed && !frame_addressed_ && out_->aligned_base == 0 && fixed_stack(*out_);
 	if ((used_callee_saved_ & (1u << RBP)) && !out_->omit_frame_pointer)
 		throw InternalError(std::string("RBP allocated in a function that keeps its frame pointer: ") +

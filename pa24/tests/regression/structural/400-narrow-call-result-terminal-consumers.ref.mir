@@ -48,7 +48,6 @@ function @return_result
 
   block ^entry
     call @byte_value [args=()]
-    zext.i8 rax
     ret rax
 
 function @widen_result

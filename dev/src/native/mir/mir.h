@@ -135,7 +135,8 @@ struct Function
 	bool wide_bulk = false;
 	// O2+: loop heads start on a fetch boundary, nops before them.
 	bool align_loops = false;
-	// O1+, host model: no RBP frame. The frame keeps its layout below a
+	// Host model: no RBP frame where fixed-stack facts permit it (baseline
+	// user assembly keeps its frame). The layout stays below a
 	// virtual RBP (the saved-RBP slot left unused): the prologue reserves
 	// stack_size + 8 less the saves and pushes them, so a frame operand
 	// [rbp + d] is encoded [rsp + stack_size + d] (plus the argument area
