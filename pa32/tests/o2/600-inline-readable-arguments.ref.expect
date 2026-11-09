@@ -1,0 +1,8 @@
+# outcomes from 600-inline-readable-arguments.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(call @late_value)
+none(call @readable_wrapper)
+
+count(call) <= 0 in @path
+count(branch) <= 1 in @path
+count(cmp) <= 1 in @path
+count(cmp) >= 1 in @path

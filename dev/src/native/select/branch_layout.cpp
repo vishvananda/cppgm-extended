@@ -39,6 +39,199 @@ bool branch_to(const Inst& inst, Op op, uint32_t block)
 	return inst.op == op && inst.ops[0].kind == OperandKind::Label && inst.ops[0].symbol == block;
 }
 
+// Small physical-register tails can share code without SSA repair: every
+// entering path already supplies exactly the registers that code reads.
+// Keep calls, assembly, EH and implicit fallthrough out of the candidate set.
+bool shared_tail(const Function& f, uint32_t b)
+{
+	const Block& block = f.blocks[b];
+	if (b == 0 || block.landing || block.count < 2)
+		return false;
+	unsigned count = 0;
+	Op last = Op::Nop;
+	for (uint32_t i = block.first; i < block.first + block.count; ++i)
+	{
+		if (f.insts[i].op == Op::Nop)
+			continue;
+		if (++count > 12)
+			return false;
+		last = f.insts[i].op;
+		switch (f.insts[i].op)
+		{
+		case Op::Mov:
+		case Op::Load:
+		case Op::Store:
+		case Op::Lea:
+		case Op::Add:
+		case Op::Sub:
+		case Op::And:
+		case Op::Or:
+		case Op::Xor:
+		case Op::Shl:
+		case Op::Shr:
+		case Op::Sar:
+		case Op::Cmp:
+		case Op::Test:
+		case Op::Setcc:
+		case Op::Movzx:
+		case Op::Sext:
+		case Op::Zext:
+		case Op::Jcc:
+		case Op::Jmp:
+		case Op::Ret:
+			break;
+		default:
+			return false;
+		}
+	}
+	return count >= 2 && (last == Op::Jmp || last == Op::Ret);
+}
+
+Operand shared_operand(Operand op, const std::vector<uint32_t>& target)
+{
+	if (op.kind == OperandKind::Label)
+		op.symbol = target[op.symbol];
+	return op;
+}
+
+uint64_t tail_hash(const Function& f, const Block& block, const std::vector<uint32_t>& target)
+{
+	uint64_t hash = 0;
+	auto add = [&](uint64_t value) { hash = (hash ^ value) * 1099511628211ull; };
+	for (uint32_t i = block.first; i < block.first + block.count; ++i)
+	{
+		const Inst& inst = f.insts[i];
+		if (inst.op == Op::Nop)
+			continue;
+		add(static_cast<uint64_t>(inst.op));
+		add(static_cast<uint64_t>(inst.type));
+		add(static_cast<uint64_t>(inst.type2));
+		add(inst.sub);
+		add(inst.flags);
+		add(inst.aux);
+		add(inst.aux2);
+		add(inst.eh);
+		add(inst.nops);
+		for (unsigned k = 0; k < inst.nops; ++k)
+		{
+			const Operand op = shared_operand(inst.ops[k], target);
+			add(static_cast<uint64_t>(op.kind));
+			add(static_cast<uint64_t>(op.access));
+			switch (op.kind)
+			{
+			case OperandKind::None:
+				break;
+			case OperandKind::Reg:
+				add(op.reg);
+				break;
+			case OperandKind::Imm:
+			case OperandKind::FImm:
+				add(static_cast<uint64_t>(op.type));
+				add(static_cast<uint64_t>(op.imm));
+				add(static_cast<uint64_t>(op.imm_high));
+				break;
+			case OperandKind::Mem:
+				add(op.reg);
+				add(op.index);
+				add(op.scale);
+				[[fallthrough]];
+			case OperandKind::Symbol:
+				add(static_cast<uint32_t>(op.disp));
+				[[fallthrough]];
+			case OperandKind::Label:
+				add(op.symbol);
+				break;
+			}
+		}
+	}
+	return hash;
+}
+
+bool same_tail(const Function& f, const Block& a, const Block& b, const std::vector<uint32_t>& target)
+{
+	uint32_t i = a.first, j = b.first;
+	for (;;)
+	{
+		while (i < a.first + a.count && f.insts[i].op == Op::Nop)
+			++i;
+		while (j < b.first + b.count && f.insts[j].op == Op::Nop)
+			++j;
+		if (i == a.first + a.count || j == b.first + b.count)
+			return i == a.first + a.count && j == b.first + b.count;
+		const Inst& x = f.insts[i++];
+		const Inst& y = f.insts[j++];
+		if (x.op != y.op || x.type != y.type || x.type2 != y.type2 || x.sub != y.sub || x.flags != y.flags ||
+			x.aux != y.aux || x.aux2 != y.aux2 || x.eh != y.eh || x.nops != y.nops)
+			return false;
+		for (unsigned n = 0; n < x.nops; ++n)
+			if (x.ops[n].access != y.ops[n].access ||
+				shared_operand(x.ops[n], target) != shared_operand(y.ops[n], target))
+				return false;
+	}
+}
+
+void share_small_tails(Function& f, std::vector<uint32_t>& end, const std::vector<uint8_t>& live)
+{
+	if (f.blocks.size() < 8 || !f.eh.landings.empty() || f.eh_records_pushed || !f.code_labels.empty() || f.assembly)
+		return;
+	const uint32_t n = static_cast<uint32_t>(f.blocks.size());
+	std::vector<uint32_t> target(n);
+	for (uint32_t b = 0; b < n; ++b)
+		target[b] = end[b] == kNoChainEnd ? b : end[b];
+	FlatMap<uint64_t, uint32_t, WordKeyHash> tails;
+	tails.clear(n);
+	bool changed = false;
+	// Forward tails are visited first. A collision is fully compared; a
+	// different tail with that hash simply stays separate.
+	for (uint32_t b = n; b-- > 1;)
+	{
+		if (!live[b] || target[b] != b || !shared_tail(f, b))
+			continue;
+		const uint64_t hash = tail_hash(f, f.blocks[b], target);
+		const uint32_t* previous = tails.find(hash);
+		if (previous != nullptr && same_tail(f, f.blocks[b], f.blocks[*previous], target))
+		{
+			target[b] = *previous;
+			changed = true;
+		}
+		else if (previous == nullptr)
+			tails.insert(hash, b);
+	}
+	if (!changed)
+		return;
+	// A jump chain may end at a tail just shared with an already visited
+	// canonical tail. Every such canonical tail maps directly to itself.
+	for (uint32_t b = 0; b < n; ++b)
+		target[b] = target[target[b]];
+	for (uint32_t b = 0; b < n; ++b)
+	{
+		Block& block = f.blocks[b];
+		if (target[b] != b)
+		{
+			Inst jump;
+			jump.op = Op::Jmp;
+			jump.nops = 1;
+			jump.ops[0] = Operand::make_label(target[b]);
+			f.insts[block.first] = jump;
+			block.count = 1;
+		}
+		else
+			for (uint32_t i = block.first; i < block.first + block.count; ++i)
+			{
+				Inst& inst = f.insts[i];
+				for (unsigned k = 0; k < inst.nops; ++k)
+					inst.ops[k] = shared_operand(inst.ops[k], target);
+				if (inst.op == Op::WideCmpBranch)
+					inst.aux = target[inst.aux];
+			}
+	}
+	for (uint32_t& b : f.jump_targets)
+		b = target[b];
+	for (uint32_t b = 0; b < n; ++b)
+		if (end[b] != kNoChainEnd)
+			end[b] = target[b];
+}
+
 // O2+, host model, laid-out MIR: a call the function returns from at once
 // (a `ret` after it in its block, or first in the block it falls into)
 // jumps to its callee past the epilogue (Op::TailJump) when the callee
@@ -242,6 +435,7 @@ uint32_t FunctionSelector::layout_branches()
 		for (uint32_t c : layout_chain_)
 			end[c] = e;
 	}
+	share_small_tails(f, end, live);
 	// The kept blocks' new indexes; a removed block's references take its
 	// chain end's.
 	uint32_t kept = 0;

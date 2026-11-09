@@ -1,0 +1,5 @@
+count(cmp) <= 0 in @Node__has_this
+count(branch) <= 0 in @Node__branch_this
+count(select) <= 0 in @Node__select_this
+count(cmp) <= 0 in @reference_missing
+count(cmp) >= 1 in @pointer_missing

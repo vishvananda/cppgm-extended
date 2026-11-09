@@ -117,7 +117,7 @@ function @f() -> void [binding=strong, object=_Z1fv] {
 
   block ^for_end_13:
     %t63 = binary add nowrap i32 %t5, 1
-    %t64 = binary add nowrap i32 %t4, 50
+    %t64 = binary add i32 %t4, 50
     %t65 = cmp lt i32 %t63, 50
     branch %t65, ^loop_preheader_1, ^for_end_14
 

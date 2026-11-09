@@ -148,7 +148,7 @@ assign-instruction:
 
 rvalue-instruction:
 	KW_CONST type scalar-literal
-	KW_COPY type value
+	KW_COPY KW_NONNULL? type value
 	KW_PHI type OP_LSQUARE phi-incoming (OP_COMMA phi-incoming)* OP_RSQUARE
 	KW_ADDR addressable
 	KW_LOAD KW_VOLATILE? KW_TYPED? type storage

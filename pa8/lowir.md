@@ -1706,7 +1706,7 @@ selector only if no clause has.
 
 ## Instruction Facts
 
-Three keywords state facts about an instruction:
+Four keywords state facts about an instruction:
 
 ```text
 %v = load typed ptr %field
@@ -1714,8 +1714,16 @@ store typed i32 %n, %count
 %t = binary add nowrap i32 %i, 1
 %q = binary div exact i64 %bytes, 12
 %n = convert trunc exact i32 i64 %wide
+%p = copy nonnull ptr %source
 ```
 
+- `nonnull`, on a pointer `copy`: its copied pointer is not null whenever
+  the instruction executes. The result has the same pointer bits as the source.
+  A consumer may use the result as non-null, but must drop this fact when
+  speculating the copy onto a path that did not execute it. A readable incoming
+  object (`object_bytes` greater than zero) likewise cannot be a null pointer.
+  Inlining may use this copy to preserve that formal parameter promise only
+  at the original call site; it does not refine the caller's other paths.
 - `typed`, on a `load` or `store` of a pointer, a floating type or an integer
   wider than one byte: the access reads or writes an object of the access's
   type through a glvalue of that type, in the sense of C++ [basic.lval]/10,

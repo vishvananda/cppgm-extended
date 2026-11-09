@@ -1,0 +1,224 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @storage
+  storage scalar obj<512x8>
+  init obj<512x8> 0
+
+function @shared_cases
+  abi
+    param %p -> rdi : ptr
+    param %kind -> rsi : i64
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov <gpr0>, rsi
+    cmp.i64 <gpr0>, 11
+    ja ^fallback
+    jump_table <gpr0>, [^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11]
+
+  block ^case9
+    lea rax, [rdi-<off0>]
+    ret rax
+
+  block ^case10
+    lea rax, [rdi-<off1>]
+    ret rax
+
+  block ^case11
+    lea rax, [rdi-<off2>]
+    ret rax
+
+  block ^fallback
+    ret rdi
+
+function @distinct_cases
+  abi
+    param %p -> rdi : ptr
+    param %kind -> rsi : i64
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov <gpr0>, rsi
+    cmp.i64 <gpr0>, 11
+    ja ^fallback
+    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5, ^case6, ^case7, ^case8, ^case9, ^case10, ^case11]
+
+  block ^case0
+    lea rax, [rdi-<off0>]
+    ret rax
+
+  block ^case1
+    lea rax, [rdi-<off1>]
+    ret rax
+
+  block ^case2
+    lea rax, [rdi-<off2>]
+    ret rax
+
+  block ^case3
+    lea rax, [rdi-<off3>]
+    ret rax
+
+  block ^case4
+    lea rax, [rdi-<off4>]
+    ret rax
+
+  block ^case5
+    lea rax, [rdi-<off5>]
+    ret rax
+
+  block ^case6
+    lea rax, [rdi-<off6>]
+    ret rax
+
+  block ^case7
+    lea rax, [rdi-<off7>]
+    ret rax
+
+  block ^case8
+    lea rax, [rdi-<off8>]
+    ret rax
+
+  block ^case9
+    lea rax, [rdi-<off9>]
+    ret rax
+
+  block ^case10
+    lea rax, [rdi-<off10>]
+    ret rax
+
+  block ^case11
+    lea rax, [rdi-<off11>]
+    ret rax
+
+  block ^fallback
+    ret rdi
+
+function @shared_store_paths
+  abi
+    param %p -> rdi : ptr
+    param %kind -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov <gpr0>, rsi
+    cmp.i64 <gpr0>, 11
+    ja ^fallback
+    jump_table <gpr0>, [^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11]
+
+  block ^case9
+    store.i64 [rdi], 1
+    jmp ^done
+
+  block ^case10
+    store.i64 [rdi], 2
+    jmp ^done
+
+  block ^fallback
+    store.i64 [rdi], 0
+    jmp ^done
+
+  block ^case11
+    store.i64 [rdi], 3
+
+  block ^done
+    mov rax, 0
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr1> <gpr2> <gpr3> <gpr4>
+
+  block ^entry
+    mov <gpr1>, @storage+256
+    mov <gpr2>, 0
+
+  block ^loop
+    mov rdi, <gpr1>
+    mov rsi, <gpr2>
+    call @shared_cases [args=(rsi,rdi)]
+    mov <gpr3>, rax
+    mov rdi, <gpr1>
+    mov rsi, <gpr2>
+    call @distinct_cases [args=(rsi,rdi)]
+    mov <gpr4>, rax
+    mov rdi, <gpr1>
+    mov rsi, <gpr2>
+    call @shared_store_paths [args=(rsi,rdi)]
+    load.i64 r8, [<gpr1>]
+    cmp.i64 <gpr2>, 12
+    setb r9
+    mov rax, <gpr2>
+    mov <gpr5>, -6148914691236517205
+    mul <gpr5>
+    shr rdx, 1
+    imul rdx, 3
+    mov rax, <gpr2>
+    sub rax, rdx
+    lea rdi, [rax+<off0>]
+    test.u8 r9, r9
+    mov <gpr5>, 0
+    cmove rdi, <gpr5>
+    cmp.i64 r8, rdi
+    setne r8
+    movzx r8, r8
+    imul rax, 8
+    lea rdi, [<gpr2>*8]
+    mov rsi, -40
+    sub rsi, rax
+    mov rdx, -40
+    sub rdx, rdi
+    lea rsi, [<gpr1>+rsi]
+    lea rdx, [<gpr1>+rdx]
+    test.u8 r9, r9
+    cmove rsi, <gpr1>
+    cmove rdx, <gpr1>
+    cmp.ptr <gpr3>, rsi
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    cmp.ptr <gpr4>, rdx
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    or <gpr3>, <gpr4>
+    or <gpr3>, r8
+    jne ^fail
+
+  block ^next
+    add <gpr2>, 1
+    cmp.i64 <gpr2>, 16
+    jne ^loop
+    jmp ^done
+
+  block ^fail
+    mov rax, 1
+    ret rax
+
+  block ^done
+    mov rax, 0
+    ret rax

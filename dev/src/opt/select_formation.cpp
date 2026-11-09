@@ -319,7 +319,7 @@ InstId SelectFormation::hoist(BlockId a, BlockId e, InstId after)
 		unlink_after(body_, a, kNoId, i);
 		insert_after(body_, e, after, i);
 		// Speculated: its facts may not hold where its arm did not run.
-		body_.instructions[i].flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT));
+		body_.instructions[i].flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT | IF_NONNULL));
 		after = i;
 	}
 	return after;

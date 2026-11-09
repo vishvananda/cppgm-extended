@@ -1,0 +1,4 @@
+count(cmp) <= 0 in @marked_eq
+count(branch) <= 0 in @marked_branch
+count(select) <= 0 in @marked_select
+count(cmp) >= 1 in @unmarked

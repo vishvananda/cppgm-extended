@@ -66,7 +66,7 @@ void Parser::define_words()
 		define(lowir_model::spelling(static_cast<ConvertOp>(i)), WordClass::Convert, i);
 	for (unsigned i = 0; i < kVectorOpCount; ++i)
 		define(lowir_model::spelling(static_cast<VectorOp>(i)), WordClass::Vector, i);
-	for (const InstructionFlag fact : { IF_VOLATILE, IF_TYPED, IF_NO_WRAP, IF_EXACT })
+	for (const InstructionFlag fact : { IF_VOLATILE, IF_TYPED, IF_NO_WRAP, IF_EXACT, IF_NONNULL })
 		define(lowir_model::spelling(fact), WordClass::Fact, fact);
 	// The compatibility spellings `readonly` and `thread_local` after a
 	// global's name (lowir.md "Structured Global Data Initializers").

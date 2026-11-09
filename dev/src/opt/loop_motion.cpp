@@ -166,6 +166,8 @@ bool LoopMotion::sweep(uint32_t loop, bool apply)
 					return true;
 				unlink_after(body_, b, prev, i);
 				insert_after(body_, pre, tail, i);
+				if (!certain)
+					body_.instructions[i].flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT | IF_NONNULL));
 				tail = i;
 				c_.block_of[i] = pre;
 				++c_.stats.invariants_hoisted;

@@ -1,0 +1,77 @@
+function @reference_missing(%value : ptr [pass=by_address, object_bytes=8]) -> u8 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    return u8 0
+}
+function @pointer_missing(%value : ptr) -> u8 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp eq ptr %value, 0
+    %t2 = convert trunc u8 i64 %t1
+    return u8 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $n : obj<8x8>
+
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi i64 [^entry: -512, ^if_end_10: %t14]
+    %t2 = cmp ne i64 %t1, 512
+    branch %t2, ^for_body_2, ^for_end_11
+
+  block ^for_body_2:
+    %t3 = addr $n
+    store typed i64 %t1, %t3
+    %t4 = call i32 @Node__has_this(%t3)
+    %t5 = cmp ne i32 %t4, 1
+    branch %t5, ^if_then_5, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t6 = call i64 @Node__branch_this(%t3)
+    %t7 = cmp ne i64 %t1, %t6
+    branch %t7, ^if_then_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t8 = call ptr @Node__select_this(%t3, 0)
+    %t9 = cmp ne ptr %t3, %t8
+    branch %t9, ^if_then_5, ^if_end_6
+
+  block ^if_then_5:
+    return i32 1
+
+  block ^if_end_6:
+    %t10 = call u8 @reference_missing(%t3)
+    branch %t10, ^if_then_9, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t11 = call u8 @pointer_missing(%t3)
+    branch %t11, ^if_then_9, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t12 = call u8 @pointer_missing(0)
+    %t13 = cmp eq u8 %t12, 0
+    branch %t13, ^if_then_9, ^if_end_10
+
+  block ^if_then_9:
+    return i32 2
+
+  block ^if_end_10:
+    %t14 = binary add nowrap i64 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_11:
+    return i32 0
+}
+function @Node__has_this(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4Node8has_thisEv, inline_hint=yes, no_inline=yes] {
+  block ^entry:
+    return i32 1
+}
+function @Node__branch_this(%this : ptr [object_bytes=8]) -> i64 [binding=weak, object=_ZNK4Node11branch_thisEv, inline_hint=yes, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed i64 %this
+    return i64 %t1
+}
+function @Node__select_this(%this : ptr [object_bytes=8], %other : ptr) -> ptr [binding=weak, object=_ZNK4Node11select_thisEPKS_, inline_hint=yes, no_inline=yes] {
+  block ^entry:
+    return ptr %this
+}

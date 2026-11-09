@@ -1,0 +1,6 @@
+blocks <= 5 in @shared_cases
+instructions <= 12 in @shared_cases
+blocks >= 14 in @distinct_cases
+blocks <= 7 in @shared_store_paths
+count(store) <= 4 in @shared_store_paths
+count(store) >= 4 in @shared_store_paths

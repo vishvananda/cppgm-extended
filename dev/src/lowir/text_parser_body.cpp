@@ -369,6 +369,8 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Opcode keyword, I
 	}
 	case Opcode::Copy:
 		inst.op = Opcode::Copy;
+		if (accept_word(WordClass::Fact, IF_NONNULL))
+			inst.flags |= IF_NONNULL;
 		inst.type = result = parse_type();
 		inst.ops[0] = parse_value(builder, inst.type.kind());
 		return true;

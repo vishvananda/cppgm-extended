@@ -763,6 +763,11 @@ bool Writer::write_value_instruction(const Instruction& inst)
 		break;
 	case Opcode::Copy:
 		head(inst.op);
+		if ((inst.flags & IF_NONNULL) != 0)
+		{
+			text(spelling(IF_NONNULL));
+			text(" ");
+		}
 		break;
 	case Opcode::VaArg:
 		head(inst.op);

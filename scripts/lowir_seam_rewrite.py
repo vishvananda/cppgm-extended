@@ -66,7 +66,7 @@ LITERAL_BEFORE = r'(?<=[\s,(\[:])'
 LITERAL_AFTER = r'(?=[\s,:)\]]|$)'
 TYPED_LINE = re.compile(
     r'^\s*(?:%[A-Za-z0-9_]+\s*=\s*)?'
-    r'(?:const|copy|phi|store(?:\s+volatile)?(?:\s+typed)?|return|unary\s+\w+|'
+    r'(?:const|copy(?:\s+nonnull)?|phi|store(?:\s+volatile)?(?:\s+typed)?|return|unary\s+\w+|'
     r'binary\s+\w+(?:\s+nowrap)?(?:\s+exact)?|cmp\s+\w+|select|atomic_\w+)'
     r'\s+([A-Za-z0-9_]+)\b')
 

@@ -1,0 +1,224 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @storage
+  storage scalar obj<512x8>
+  init obj<512x8> 0
+
+function @shared_cases
+  abi
+    param %p -> rdi : ptr
+    param %kind -> rsi : i64
+    return ptr -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r10, rsi
+    cmp.i64 r10, 11
+    ja ^fallback
+    jump_table r10, [^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11]
+
+  block ^case9
+    lea rax, [rdi-40]
+    ret rax
+
+  block ^case10
+    lea rax, [rdi-48]
+    ret rax
+
+  block ^case11
+    lea rax, [rdi-56]
+    ret rax
+
+  block ^fallback
+    ret rdi
+
+function @distinct_cases
+  abi
+    param %p -> rdi : ptr
+    param %kind -> rsi : i64
+    return ptr -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r10, rsi
+    cmp.i64 r10, 11
+    ja ^fallback
+    jump_table r10, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5, ^case6, ^case7, ^case8, ^case9, ^case10, ^case11]
+
+  block ^case0
+    lea rax, [rdi-40]
+    ret rax
+
+  block ^case1
+    lea rax, [rdi-48]
+    ret rax
+
+  block ^case2
+    lea rax, [rdi-56]
+    ret rax
+
+  block ^case3
+    lea rax, [rdi-64]
+    ret rax
+
+  block ^case4
+    lea rax, [rdi-72]
+    ret rax
+
+  block ^case5
+    lea rax, [rdi-80]
+    ret rax
+
+  block ^case6
+    lea rax, [rdi-88]
+    ret rax
+
+  block ^case7
+    lea rax, [rdi-96]
+    ret rax
+
+  block ^case8
+    lea rax, [rdi-104]
+    ret rax
+
+  block ^case9
+    lea rax, [rdi-112]
+    ret rax
+
+  block ^case10
+    lea rax, [rdi-120]
+    ret rax
+
+  block ^case11
+    lea rax, [rdi-128]
+    ret rax
+
+  block ^fallback
+    ret rdi
+
+function @shared_store_paths
+  abi
+    param %p -> rdi : ptr
+    param %kind -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r10, rsi
+    cmp.i64 r10, 11
+    ja ^fallback
+    jump_table r10, [^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11]
+
+  block ^case9
+    store.i64 [rdi], 1
+    jmp ^done
+
+  block ^case10
+    store.i64 [rdi], 2
+    jmp ^done
+
+  block ^fallback
+    store.i64 [rdi], 0
+    jmp ^done
+
+  block ^case11
+    store.i64 [rdi], 3
+
+  block ^done
+    mov rax, 0
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14
+
+  block ^entry
+    mov rbx, @storage+256
+    mov r12, 0
+
+  block ^loop
+    mov rdi, rbx
+    mov rsi, r12
+    call @shared_cases [args=(rsi,rdi)]
+    mov r13, rax
+    mov rdi, rbx
+    mov rsi, r12
+    call @distinct_cases [args=(rsi,rdi)]
+    mov r14, rax
+    mov rdi, rbx
+    mov rsi, r12
+    call @shared_store_paths [args=(rsi,rdi)]
+    load.i64 r8, [rbx]
+    cmp.i64 r12, 12
+    setb r9
+    mov rax, r12
+    mov r11, -6148914691236517205
+    mul r11
+    shr rdx, 1
+    imul rdx, 3
+    mov rax, r12
+    sub rax, rdx
+    lea rdi, [rax+1]
+    test.u8 r9, r9
+    mov r11, 0
+    cmove rdi, r11
+    cmp.i64 r8, rdi
+    setne r8
+    movzx r8, r8
+    imul rax, 8
+    lea rdi, [r12*8]
+    mov rsi, -40
+    sub rsi, rax
+    mov rdx, -40
+    sub rdx, rdi
+    lea rsi, [rbx+rsi]
+    lea rdx, [rbx+rdx]
+    test.u8 r9, r9
+    cmove rsi, rbx
+    cmove rdx, rbx
+    cmp.ptr r13, rsi
+    setne r13
+    movzx r13, r13
+    cmp.ptr r14, rdx
+    setne r14
+    movzx r14, r14
+    or r13, r14
+    or r13, r8
+    jne ^fail
+
+  block ^next
+    add r12, 1
+    cmp.i64 r12, 16
+    jne ^loop
+    jmp ^done
+
+  block ^fail
+    mov rax, 1
+    ret rax
+
+  block ^done
+    mov rax, 0
+    ret rax

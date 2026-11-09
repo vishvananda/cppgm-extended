@@ -1,0 +1,163 @@
+declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
+
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
+declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
+declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
+
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
+  zero 4
+}
+
+function @late_value(%p : ptr) -> i64 [linkage=c, binding=strong] {
+  block ^entry:
+    branch %p, ^cond_then_1, ^cond_end_2
+
+  block ^cond_then_1:
+    %t1 = load typed i64 %p
+    jump ^cond_end_2
+
+  block ^cond_end_2:
+    %t2 = phi i64 [^cond_then_1: %t1, ^entry: -99]
+    return i64 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $n : obj<8x8>
+
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi i64 [^entry: -512, ^if_end_12: %t16]
+    %t2 = cmp ne i64 %t1, 512
+    branch %t2, ^for_body_2, ^for_end_13
+
+  block ^for_body_2:
+    %t3 = addr $n
+    store typed i64 %t1, %t3
+    %t4 = call i64 @path(%t3, 1)
+    %t5 = cmp ne i64 %t1, %t4
+    branch %t5, ^if_then_5, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t6 = call i64 @path(%t3, 0)
+    branch %t6, ^if_then_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t7 = call i64 @path(0, 0)
+    %t8 = cmp ne i64 %t7, 1
+    branch %t8, ^if_then_5, ^if_end_6
+
+  block ^if_then_5:
+    return i32 1
+
+  block ^if_end_6:
+    %t9 = call i64 @path_try(0, 1, 1)
+    %t10 = cmp ne i64 %t9, 1
+    branch %t10, ^if_then_8, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t11 = call i64 @path_try(%t3, 1, 1)
+    branch %t11, ^if_then_8, ^if_end_9
+
+  block ^if_then_8:
+    return i32 2
+
+  block ^if_end_9:
+    %t12 = call i64 @path_try(%t3, 1, 0)
+    %t13 = cmp ne i64 %t1, %t12
+    branch %t13, ^if_then_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t14 = call i64 @path_try(0, 0, 0)
+    %t15 = cmp ne i64 %t14, 1
+    branch %t15, ^if_then_11, ^if_end_12
+
+  block ^if_then_11:
+    return i32 3
+
+  block ^if_end_12:
+    %t16 = binary add nowrap i64 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_13:
+    return i32 0
+}
+function @path(%p : ptr, %active : u8) -> i64 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    branch %active, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    %t1 = copy nonnull ptr %p
+    %t2 = load typed i64 %t1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    %t3 = cmp eq ptr %p, 0
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t4 = phi i64 [^cond_else_2: %t3, ^cond_then_1: %t2]
+    return i64 %t4
+}
+function @path_try(%p : ptr, %active : u8, %fail : u8) -> i64 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    eh_try ^catch_dispatch_6
+    branch %fail, ^if_then_1, ^if_end_2
+
+  block ^if_then_1:
+    %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 7, %t1
+    %t2 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t1, %t2, 0)
+    unreachable
+
+  block ^if_end_2:
+    branch %active, ^cond_then_3, ^cond_else_4
+
+  block ^cond_then_3:
+    %t3 = copy nonnull ptr %p
+    %t4 = load typed i64 %t3
+    jump ^cond_end_5
+
+  block ^cond_else_4:
+    %t5 = cmp eq ptr %p, 0
+    jump ^cond_end_5
+
+  block ^cond_end_5:
+    %t6 = phi i64 [^cond_else_4: %t5, ^cond_then_3: %t4]
+    eh_end
+    return i64 %t6
+
+  block ^catch_dispatch_6:
+    eh_catch @__external_rtti__int, 1
+    %t7 = exception ptr
+    %t8 = exception_selector i32
+    %t9 = cmp eq i32 %t8, 1
+    branch %t9, ^catch_body_7, ^catch_next_9
+
+  block ^catch_body_7:
+    %t10 = call ptr @__external_runtime____cxa_begin_catch(%t7)
+    eh_cleanup ^catch_cleanup_8
+    %t11 = cmp eq ptr %p, 0
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    return i64 %t11
+
+  block ^catch_cleanup_8:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^catch_next_9:
+    resume
+}

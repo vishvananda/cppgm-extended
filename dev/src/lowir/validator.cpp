@@ -95,6 +95,8 @@ bool is_bswap_type(Type type)
 // Other instructions never spell them, so their flag bits are not facts.
 const char* misplaced_fact(const Instruction& inst)
 {
+	if ((inst.flags & IF_NONNULL) != 0 && (inst.op != Opcode::Copy || !inst.type.is_pointer()))
+		return "nonnull requires a pointer copy";
 	if (inst.op == Opcode::Binary)
 	{
 		const BinaryOp op = static_cast<BinaryOp>(inst.sub);

@@ -103,7 +103,6 @@ bool is_commutative(const Instruction& inst)
 	if (inst.op == Opcode::Binary && inst.type.is_float())
 		return static_cast<BinaryOp>(inst.sub) == BinaryOp::Add || static_cast<BinaryOp>(inst.sub) == BinaryOp::Mul;
 	if (inst.op == Opcode::Binary && inst.type.is_integer())
-	{
 		switch (static_cast<BinaryOp>(inst.sub))
 		{
 		case BinaryOp::Add:
@@ -115,7 +114,6 @@ bool is_commutative(const Instruction& inst)
 		default:
 			return false;
 		}
-	}
 	return inst.op == Opcode::Compare &&
 		(static_cast<ComparePredicate>(inst.sub) == ComparePredicate::Eq ||
 			static_cast<ComparePredicate>(inst.sub) == ComparePredicate::Ne);
@@ -287,7 +285,16 @@ private:
 	{
 		if (v.is(ValueKind::Temp) && v.index < nonzero_.size() && nonzero_[v.index] != 0)
 			return true;
+		if (v.is(ValueKind::Temp) && v.index < body_.parameter_count)
+		{
+			const Signature& entry =
+				c_.program.signatures[c_.program.functions[c_.program.symbols[c_.symbol].detail].signature];
+			if (v.index < entry.parameter_count && c_.program.parameters_of(entry)[v.index].object_bytes != 0)
+				return true;
+		}
 		const Instruction* call = producer(v);
+		if (call != nullptr && call->op == Opcode::Copy && (call->flags & IF_NONNULL) != 0)
+			return true;
 		if (call == nullptr || call->op != Opcode::Call || !call->type.is_pointer())
 			return false;
 		const Signature* signature = c_.program.call_boundary(*call);
@@ -653,6 +660,11 @@ bool Simplifier::identity(Instruction& inst, Value& out)
 	{
 	case Opcode::Select:
 	{
+		if (known_nonzero(inst.ops[0]))
+		{
+			out = inst.ops[1];
+			return true;
+		}
 		// A known condition picks its operand; equal operands are either.
 		Constant c;
 		if (literal_constant(body_, inst.ops[0], c) && c.kind == ValueKind::Integer)
@@ -670,6 +682,8 @@ bool Simplifier::identity(Instruction& inst, Value& out)
 	}
 	case Opcode::Copy:
 	{
+		if ((inst.flags & IF_NONNULL) != 0 && !known_nonzero(inst.ops[0]))
+			return false;
 		if (inst.ops[0].is(ValueKind::Temp) && body_.temps[inst.ops[0].index].type == inst.type)
 		{
 			out = inst.ops[0];
@@ -2675,6 +2689,12 @@ bool Simplifier::math_call(BlockId block, InstId& prev, InstId id)
 // zero-extensions, truncations of truth values and `x != 0`.
 void Simplifier::simplify_branch(Instruction& term)
 {
+	if (known_nonzero(term.ops[0]))
+	{
+		term.ops[0] = integer_value(body_, Literal{ 1, 0 });
+		changed_ = true;
+		return;
+	}
 	for (unsigned step = 0; step < 4; ++step)
 	{
 		const Instruction* def = producer(term.ops[0]);
@@ -3018,6 +3038,15 @@ void Simplifier::process_block(BlockId block)
 			changed_ = true;
 			id = next;
 			continue;
+		}
+		// The refinement also proves its source non-null after this point.
+		// A handler can skip instructions after its opener; do not export
+		// such a fact into that block's dominator descendants.
+		if (inst.op == Opcode::Copy && (inst.flags & IF_NONNULL) != 0 && inst.ops[0].is(ValueKind::Temp) &&
+			!nonzero_[inst.ops[0].index] && (first_opener_[block] == kNoId || ordinal_[id] < first_opener_[block]))
+		{
+			nonzero_[inst.ops[0].index] = 1;
+			nonzero_undo_.push_back(inst.ops[0].index);
 		}
 		// The rewrite appends instructions (`inst` may move): the remainder,
 		// now a subtraction, is taken up again.

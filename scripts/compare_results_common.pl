@@ -1724,7 +1724,7 @@ sub validate_lowir_instruction
 		$state->{temps}{$destination} = $type;
 		return 0;
 	}
-	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*copy\s+([A-Za-z0-9_]+)\s+(.+)$/)
+	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*copy(?:\s+nonnull)?\s+([A-Za-z0-9_]+)\s+(.+)$/)
 	{
 		validate_lowir_value_operand_type($3, $2, $state, $errors, "$context copy");
 		$state->{temps}{$1} = $2;
@@ -3318,7 +3318,7 @@ sub canonical_lowir_literal
 # line names one; undef for positions typed elsewhere (call arguments,
 # `index` offsets, atomic orderings, spans and addends).
 my $LOWIR_TYPE = qr/(?:[A-Za-z0-9_]+|obj<\d+x\d+>)/;
-my $LOWIR_TYPED_INSTRUCTION = qr/^\s*(?:%[A-Za-z0-9_<>]+\s*=\s*)?(?:const|copy|phi|store(?:\s+volatile)?(?:\s+typed)?|return|unary\s+\w+|binary\s+\w+(?:\s+nowrap)?(?:\s+exact)?|cmp\s+\w+|select|atomic_\w+|va_arg)\s+($LOWIR_TYPE)(?:\s|$)/;
+my $LOWIR_TYPED_INSTRUCTION = qr/^\s*(?:%[A-Za-z0-9_<>]+\s*=\s*)?(?:const|copy(?:\s+nonnull)?|phi|store(?:\s+volatile)?(?:\s+typed)?|return|unary\s+\w+|binary\s+\w+(?:\s+nowrap)?(?:\s+exact)?|cmp\s+\w+|select|atomic_\w+|va_arg)\s+($LOWIR_TYPE)(?:\s|$)/;
 my $LOWIR_TYPED_CONVERT = qr/^\s*%[A-Za-z0-9_<>]+\s*=\s*convert\s+\w+\s+$LOWIR_TYPE\s+($LOWIR_TYPE)\s/;
 my $LOWIR_TYPED_GLOBAL = qr/^global @[A-Za-z0-9_<>]+(?:\s+readonly)?\s*:\s*($LOWIR_TYPE)/;
 my $LOWIR_TYPED_DATA_ITEM = qr/^\s+($LOWIR_TYPE)\s+-?\S+\s*$/;

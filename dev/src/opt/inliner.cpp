@@ -662,8 +662,8 @@ bool inline_return(
 // list by block), returns jump to the continuation and merge the result in
 // a phi there (or, for a value phis cannot carry, its one return's value
 // replaces the result: recorded in `repl`, applied once per caller).
-InstId clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, InstId call_id,
-	const FunctionBody& kb, std::vector<BlockId>& layout_next, std::vector<Value>& repl,
+InstId clone_call(Program& program, SymbolId caller, SymbolId source, FunctionBody& cb, BlockId block, InstId prev,
+	InstId call_id, const FunctionBody& kb, std::vector<BlockId>& layout_next, std::vector<Value>& repl,
 	const PartialCut* partial = nullptr, bool straight = false)
 {
 	const Instruction call = cb.instructions[call_id];
@@ -705,12 +705,29 @@ InstId clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev
 	// the end of the call's block.
 	static std::vector<Value> temps;
 	temps.assign(kb.temps.size(), Value::none());
+	const Signature& entry = program.signatures[program.functions[program.symbols[source].detail].signature];
+	const Parameter* params = program.parameters_of(entry);
+	const Signature& calling = program.signatures[program.functions[program.symbols[caller].detail].signature];
+	const Parameter* inputs = program.parameters_of(calling);
 	for (TempId t = 0; t < kb.parameter_count; ++t)
 	{
 		temps[t] = cb.operands[call.extra_first + t];
-		if (!temps[t].is(ValueKind::Temp) || cb.temps[temps[t].index].type == kb.temps[t].type)
+		bool nonnull = params[t].object_bytes != 0 && params[t].type.is_pointer() && !temps[t].is(ValueKind::Slot);
+		if (nonnull && temps[t].is(ValueKind::Temp))
+		{
+			const TempId argument = temps[t].index;
+			const InstId id = cb.temps[argument].def;
+			const Instruction* origin = id == kNoId ? nullptr : &cb.instructions[id];
+			if ((argument < cb.parameter_count && inputs[argument].object_bytes != 0) ||
+				(origin != nullptr &&
+					((origin->op == Opcode::Copy && (origin->flags & IF_NONNULL) != 0) ||
+						(origin->op == Opcode::Addr && origin->ops[0].is(ValueKind::Slot)))))
+				nonnull = false;
+		}
+		if (!nonnull && (!temps[t].is(ValueKind::Temp) || cb.temps[temps[t].index].type == kb.temps[t].type))
 			continue;
 		Instruction retype = make_instruction(Opcode::Copy, kb.temps[t].type);
+		retype.flags = nonnull ? IF_NONNULL : 0;
 		retype.ops[0] = temps[t];
 		retype.location = call.location;
 		const InstId id = append_instruction(cb, retype);
@@ -1829,8 +1846,8 @@ bool InlineWaveRunner::process(SymbolId caller)
 			const bool loop = copy != kNoId ? shape_of(program_, copy, nounwind_).loop : shapes_[g].loop;
 			InstId tail = kNoId;
 			if (!source_required_ || !inline_return(body, b, before_call, i, kb, tail))
-				tail = clone_call(program_, body, b, before_call, i, kb, layout_next, repl, partly ? &partial : nullptr,
-					source_required_);
+				tail = clone_call(program_, caller, source, body, b, before_call, i, kb, layout_next, repl,
+					partly ? &partial : nullptr, source_required_);
 			if (copy != kNoId)
 				release(copy);
 			if (!source_required_)

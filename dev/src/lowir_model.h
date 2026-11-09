@@ -831,7 +831,7 @@ inline BranchPrediction inverted(BranchPrediction prediction)
 // - The instruction facts (pa8/lowir.md "Instruction Facts"), true whenever
 //   the instruction runs; dropping one is always correct: IF_EXACT (`exact`
 //   on div/udiv/shr/ushr/trunc), IF_NO_WRAP (`nowrap` on add/sub/mul/shl),
-//   IF_TYPED (`typed` on load/store).
+//   IF_TYPED (`typed` on load/store), IF_NONNULL (`nonnull` on a pointer copy).
 
 enum InstructionFlag : std::uint8_t
 {
@@ -841,11 +841,12 @@ enum InstructionFlag : std::uint8_t
 	IF_SELECTOR = 8,
 	IF_EXACT = 16,
 	IF_NO_WRAP = 32,
-	IF_TYPED = 64
+	IF_TYPED = 64,
+	IF_NONNULL = 128 // a pointer copy whose result cannot be null
 };
 
 // The keyword of a flag the text spells as a word (`volatile`, `exact`,
-// `nowrap`, `typed`); null for the others, which are spelled by syntax
+// `nowrap`, `typed`, `nonnull`); null for the others, which are spelled by syntax
 // (`as`, `elision=copy`, a selector operand).
 inline const char* spelling(InstructionFlag flag)
 {
@@ -859,6 +860,8 @@ inline const char* spelling(InstructionFlag flag)
 		return "nowrap";
 	case IF_TYPED:
 		return "typed";
+	case IF_NONNULL:
+		return "nonnull";
 	default:
 		return 0;
 	}
@@ -866,8 +869,8 @@ inline const char* spelling(InstructionFlag flag)
 
 inline bool from_spelling(const char* text, std::size_t length, InstructionFlag* flag)
 {
-	const InstructionFlag words[] = { IF_VOLATILE, IF_EXACT, IF_NO_WRAP, IF_TYPED };
-	for (unsigned i = 0; i < 4; ++i)
+	const InstructionFlag words[] = { IF_VOLATILE, IF_EXACT, IF_NO_WRAP, IF_TYPED, IF_NONNULL };
+	for (unsigned i = 0; i < 5; ++i)
 	{
 		if (detail::same_spelling(spelling(words[i]), text, length))
 		{
