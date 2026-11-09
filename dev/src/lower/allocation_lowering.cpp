@@ -49,9 +49,9 @@ bool ReservedPlacement(const sema::FunctionEntity* function)
 	const sema::Scope* owner = function->owner;
 	const bool global = !function->member && owner != nullptr && owner->kind == sema::ScopeKind::Namespace &&
 		owner->entity != nullptr && static_cast<const sema::NamespaceEntity*>(owner->entity)->depth == 0;
-	return global && !function->templated && !parameters->variadic && parameters->param_count == 2 &&
-		parameters->params[1]->kind == sema::TypeKind::Pointer && sema::IsVoid(parameters->params[1]->element) &&
-		parameters->params[1]->element->cv == 0;
+	return global && !function->templated && function->primary == nullptr && !parameters->variadic &&
+		parameters->param_count == 2 && parameters->params[1]->kind == sema::TypeKind::Pointer &&
+		sema::IsVoid(parameters->params[1]->element) && parameters->params[1]->element->cv == 0;
 }
 
 } // namespace

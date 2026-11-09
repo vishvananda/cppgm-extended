@@ -15,6 +15,11 @@ polymorphic compiler. It extends PA13 with:
 - template-backed operator overloads where the non-template PA7-PA13 machinery
   already exists
 
+An instantiated allocation function template remains a custom allocation
+function. Even when deduction gives it the parameter types `(size_t, void*)`,
+preserve its call, side effects and returned storage; it does not acquire the
+identity of the reserved non-template placement allocation function.
+
 A nondependent range in a template body is checked using the range-for
 variable's type and category. The hidden range variable is an lvalue even
 when its initializer returns a temporary; lookup and overload resolution for
