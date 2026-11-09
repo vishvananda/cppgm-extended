@@ -275,3 +275,19 @@ Primary semantic source:
 https://gcc.gnu.org/onlinedocs/gcc/Common-Attributes.html#index-malloc-function-attribute
 
 Restrict, assumed alignment, minsize and visibility remain separate gaps.
+
+B44 runtime rejection and B46 separation
+---------------------------------------
+B44 completes all normal checks, a fresh LLVM build, byte-identical current
+and frozen cppgm compilation and both official course/student releases. It
+is nevertheless not accepted: the direct LLVM-runtime comparison is slower
+than B41 despite fewer instructions. See B46's section in llvm-build-plan.txt
+and block44-direct-parent-clang-runtime-timing for every observation.
+The broad recursive-dispatch contraction is separated out.
+
+B46 retains GNU malloc's independent result-alias promise and compiler
+throughput fixes, plus object-return value handling, while restoring B41's
+inlining policy. Its 9991 strict tests and normal auxiliary checks pass,
+with frozen O3 instructions down 0.5116% and unchanged frozen object bytes.
+It still needs full LLVM/release qualification before promotion. Restrict,
+assumed alignment, minsize and visibility remain unimplemented promises.

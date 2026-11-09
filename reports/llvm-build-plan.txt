@@ -1378,3 +1378,25 @@ difference is malloc's new noalias_result=yes declaration fact. No executable
 output or tolerance is changed. All qualification evidence has the prefix
 block44-allocator-visitor-r4 under /mnt/vizier/cppgm-llvm-evidence.
 Full LLVM, release and downstream timing/equality qualification are pending.
+
+B46 separated alias/value group, 2026-11-09
+------------------------------------------
+Do not promote B44's broad recursive-dispatch contraction. Its full normal
+qualification and both official releases pass, but a direct B41/B44 ABBA
+comparison gives 53.725 s parent versus 59.055 s candidate (0.909745x),
+with both candidate observations slower than both parent observations.
+Instructions fall 0.2249%, cycles rise 8.5233%. This is kept as a rejected
+experiment, not a runtime improvement. Accepted compat/llvm stays B41.
+
+B46 restores B41's inliner exactly and removes the experimental visitor
+quality fixtures. It groups allocator return-alias promises, the two
+optimizer bookkeeping reductions and correct by-value object-return escape
+handling. Normal pointer returns, actual captures, volatile fields and
+physical-frame observations remain conservative.
+
+Strict 9991/9991, debug/modern, architecture/file/placement/CWG audits,
+harness, PA5 self-host and inception pass. Twenty-eight native/candidate
+runtime oracle observations pass at O0..O3. Frozen compile ratios versus B41
+are O0 1.00007679 and O3 0.99488406 (-0.5116%); RSS 1.02484712 and
+1.00214810 pass. O0 and O3 frozen object bytes match B41 exactly.
+Full LLVM/release/runtime qualification remains pending for B46.

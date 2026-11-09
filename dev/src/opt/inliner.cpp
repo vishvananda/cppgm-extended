@@ -1210,8 +1210,6 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 	const SymbolMetadata& m = program_.symbols[callee].metadata;
 	const Shape& shape = shapes_[g];
 	once = false;
-	const uint32_t once_cap = options_.limits.once_cap != 0 ? options_.limits.once_cap
-															: kOnceCap * (options_.level >= 2 ? kOnceO2Scale : 1);
 	if (source_required_ && (m.flags & SF_FORCE_INLINE) == 0)
 		return false;
 	// A loop can absorb a loop-free dispatcher or forwarder on its call
@@ -1220,16 +1218,7 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 	const bool collapse = graph_.recursive[g] && !source_required_ && options_.level >= 2 && loop_site &&
 		graph_.component[g] == graph_.component[caller_] && !shape.loop && !shape.eh && shape.self_calls == 0 &&
 		shape.component_calls == 1;
-	// Contract a uniquely called dispatcher into its caller on the same
-	// call cycle. Its definition disappears rather than growing a second
-	// copy; the remaining back edge is an ordinary recursive call. Keep
-	// the existing single-call size/work budgets and all safety exclusions.
-	const bool contract = !source_required_ && options_.level >= 2 && wave_ != InlineWave::Late &&
-		graph_.recursive[g] && graph_.component[g] == graph_.component[caller_] && !shape.loop && !shape.eh &&
-		shape.self_calls == 0 && shape.component_calls == 1 && graph_.calls_in[g] == 1 && !graph_.observed[g] &&
-		discardable(program_, callee);
-	if ((graph_.recursive[g] && !collapse && !contract) || g == caller_ || (m.flags & SF_NO_INLINE) != 0 ||
-		shape.unsafe ||
+	if ((graph_.recursive[g] && !collapse) || g == caller_ || (m.flags & SF_NO_INLINE) != 0 || shape.unsafe ||
 		(!source_required_ &&
 			((m.flags & SF_REPLACEABLE) != 0 ||
 				(shape.eh && !cleanup_welcome(shape, handler_code, loop_site) &&
@@ -1240,12 +1229,6 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 	{
 		charge = 0;
 		return true;
-	}
-	if (contract)
-	{
-		charge = shape.hot;
-		once = true;
-		return charge <= once_cap && charge <= once_budget_ && charge <= budgets_.once_unit;
 	}
 	const bool hint = (m.flags & (SF_INLINE_HINT | SF_FORCE_INLINE)) != 0;
 	// Cold code is copied but priced as free: it runs at most once, on the
@@ -1351,6 +1334,8 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 	// an internal callee (a lambda's operator() called from the loops of
 	// the for_each it is passed to) when the copies together fit the cap.
 	// The definition goes either way.
+	const uint32_t once_cap = options_.limits.once_cap != 0 ? options_.limits.once_cap
+															: kOnceCap * (options_.level >= 2 ? kOnceO2Scale : 1);
 	const bool sole = options_.level >= 2 && m.binding == ir_model::SBM_INTERNAL && graph_.callers_in[g] == 1 &&
 		!graph_.observed[g] && discardable(program_, callee) && size * graph_.calls_in[g] <= once_cap;
 	if (!(single || sole) || size > once_cap || size > once_budget_ || size > budgets_.once_unit)
