@@ -196,3 +196,33 @@ and cppgm-built Clang 53.635 s in the full runtime comparison (0.8264x).
 A/A wall time is variable; the instruction reduction is only 0.0775% versus
 B29, with native instructions stable. Do not claim a resolved runtime win.
 The remaining extension promises above are still unimplemented.
+
+Supplemental source check at B38
+--------------------------------
+Recompiling remaining-promises.cpp with the immutable B38 compiler produces
+exactly the same optimized LowIR as B33. The allocator return-alias,
+restrict and assumed-alignment gaps therefore remain present; scoped GNU
+const call reuse still works. Evidence: remaining-promises-block38-results.json
+and cppgm-block38-remaining-promises.lowir in the audit evidence directory.
+All 204 generated dependencies in the authoritative native header closure
+also match the fresh B38 LLVM build byte for byte.
+
+A supplemental scan checks raw GNU/scoped attributes, builtins and pragmas
+outside Compiler.h's wrapper names. Its lexical candidates are retained in
+source-extension-lexical-supplement.json and source-extension-pragmas.json.
+These are candidate lists, not active declaration counts: LLVM contains
+generated attribute documentation, literal code examples and other platforms'
+disabled branches. The xxhash may_alias typedef and explicit clang loop
+unroll(full) pragma occur inside LLVM_XXH_USE_NEON, disabled in this X86
+configuration. CrashRecoveryContext's optnone annotation is confined to
+the MSVC/32-bit branch. Neither supplies a missing active optimization hint
+for the measured build. The compiler already recognizes may_alias and pack;
+ordinary unknown pragmas are ignored. The scan found no additional active
+loop-unroll request in this source/header closure.
+
+Keep the remaining promises as separate, measured work. In particular,
+malloc describes aliasing of the returned pointer and does not authorize
+discarding the allocator's global writes. Restrict needs its scoped access
+rules; it cannot be implemented by blindly marking every pointer parameter
+pairwise disjoint. An alignment feature query should only promise the
+alignment semantics actually preserved by lowering and optimization.

@@ -1075,9 +1075,40 @@ with all outputs identical. Some reductions are within A/A noise; none is a
 whole-build score. The earlier compact-memory-test probe remains unpromoted.
 
 The fresh full LLVM build passes in 342.62 s, all 2577 C++ units without
-fallback. All 323 current and 323 frozen objects and linked cppgm compilers
-are byte-identical between native-built and cppgm-built Clang. The full
-runtime comparison and official course/student release are still pending;
-this candidate is not accepted until those checks finish. The 0.95x goal
-remains open. Evidence is /mnt/vizier/cppgm-llvm-evidence/block38-result-values-*
-and the block36/block37 fast-screen and focused-test directories.
+fallback. All 204 generated dependencies, 323 current and 323 frozen objects
+and linked cppgm compilers are byte-identical between native-built and
+cppgm-built Clang. Every runtime timing output also matches. Full frozen
+runtime ABBA gives native 43.295 s and cppgm-built 53.560 s (0.8083458x).
+Cppgm-built Clang retires 1,233,326,154,536.5 instructions, 0.99933273x B33
+(-0.0667%); native instructions stay within 0.0101%. Cppgm elapsed time is
+essentially unchanged from B33's 53.635 s. Do not interpret the different
+cross-run wall ratio as a resolved improvement or regression. The 0.95x
+goal remains open.
+
+Export, all 42 reference-wrapper checks, all 13 new exported fixtures and
+PA35 quick/smoke pass. The official course/student release is still running;
+this candidate is not accepted until it passes. Evidence is
+/mnt/vizier/cppgm-llvm-evidence/block38-result-values-* and the block36/block37
+fast-screen and focused-test directories.
+
+Next reduced gap: a non-inlined helper that writes only its output argument
+still invalidates every incoming-memory fact in its caller. The new
+block39-bounded-writes-probe constructs a 32-byte class result through such
+a helper. B38 reloads the same source field after the call; native Clang
+retains one load. All six GCC/Clang/B38 O0/O3 runtime observations pass,
+including overlapping ordinary arguments and a helper that writes a global.
+This is a missing optimization, not a correctness failure. A bounded write
+summary derived from typed function bodies could preserve unrelated loads
+without falsely labeling an output-writing call read-only. Keep unknown
+offsets, multiple roots, global writes, opaque effects and recursive calls
+conservative initially. Summaries must be built once in callee-first order
+and consumed by alias-aware invalidation, not by reparsing or rescanning
+each call's callee. The probe is diagnostic evidence outside the checkout;
+it still needs normal PA32 fixtures and a measured implementation.
+
+A fresh native/B38 instruction/LBR profile of the frozen program_lowering
+unit is retained in block38-runtime-profile. Both outputs match. This is
+one localization sample, not the full ABBA score; sampled symbol percentages
+must not be read as stable cross-compiler instruction differences because
+inlining changes attribution. The source-extension audit now also covers
+raw pragmas and confirms the remaining promise reductions against B38.
