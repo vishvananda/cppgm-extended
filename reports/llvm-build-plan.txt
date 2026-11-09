@@ -1086,8 +1086,15 @@ cross-run wall ratio as a resolved improvement or regression. The 0.95x
 goal remains open.
 
 Export, all 42 reference-wrapper checks, all 13 new exported fixtures and
-PA35 quick/smoke pass. The official course/student release is still running;
-this candidate is not accepted until it passes. Evidence is
+PA35 quick/smoke pass. Both official course/student releases pass 17/17.
+The first full release passed the hard gates but missed student scaling
+headroom (2.44x versus a 2.40x margin target, hard limit 3.00x). All original
+observations and both original reports are retained. One cached speed-only
+recheck with the same immutable student seed/self binaries gives 2.23x;
+the course remains 2.13x. The official calibrate.pl --from check passes all
+17 gates for both builds without repeating the already-passing correctness
+or Cachegrind groups, changing thresholds, or changing either binary. This
+checkpoint is accepted; the goal remains open. Evidence is
 /mnt/vizier/cppgm-llvm-evidence/block38-result-values-* and the block36/block37
 fast-screen and focused-test directories.
 

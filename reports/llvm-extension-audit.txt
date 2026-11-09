@@ -226,3 +226,14 @@ discarding the allocator's global writes. Restrict needs its scoped access
 rules; it cannot be implemented by blindly marking every pointer parameter
 pairwise disjoint. An alignment feature query should only promise the
 alignment semantics actually preserved by lowering and optimization.
+
+The B38 result-storage group is now qualified: strict 9976/9976, all required
+audits, debug/modern, PA5/inception, export/wrappers/fixtures, quick/smoke,
+both full releases 17/17 and the frozen compile gate pass. All current and
+frozen LLVM-generated cppgm objects and linked compilers match byte for byte.
+Its full runtime score is 0.80835x (43.295 s native, 53.560 s cppgm-built),
+with 0.0667% fewer cppgm-built instructions than B33 and essentially unchanged
+elapsed time. The first student scaling observation missed release headroom;
+the same-binary speed-only recheck passes (2.23x, course 2.13x), with both
+observations retained. Acceptance receipt: block38-result-values-qualification-state.json.
+This qualification does not fix the remaining extension promises above.
