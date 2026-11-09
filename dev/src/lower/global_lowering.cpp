@@ -1687,6 +1687,11 @@ bool ProgramLowering::static_aggregate(
 		const sema::VariableEntity* variable = static_cast<const sema::VariableEntity*>(member->variable);
 		if (selected != nullptr && member != selected)
 			continue;
+		// An omitted member uses its default initializer, including when
+		// it refers to an earlier member. Retain the typed initialization
+		// rather than treating the member as value-initialized zero bytes.
+		if ((list == nullptr || next >= list->elements.size) && variable->member_initializer != nullptr)
+			return false;
 		if (member->bit_field)
 		{
 			if (variable->name == nullptr)
@@ -1946,8 +1951,10 @@ bool ProgramLowering::zero_value_initialized(const sema::Type* type, uint32_t de
 			return false;
 	for (const sema::DataMember* member = cls->members; member != nullptr; member = member->next)
 	{
-		if (member->variable->kind == sema::EntityKind::Variable && !member->variable->type->is_reference() &&
-			!zero_value_initialized(member->variable->type, depth + 1))
+		if (member->variable->kind == sema::EntityKind::Variable &&
+			(static_cast<const sema::VariableEntity*>(member->variable)->member_initializer != nullptr ||
+				(!member->variable->type->is_reference() &&
+					!zero_value_initialized(member->variable->type, depth + 1))))
 			return false;
 	}
 	return true;

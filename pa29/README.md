@@ -340,7 +340,9 @@ conversions lead to one permitted type. Distinct result types remain ambiguous.
 
 In C++14 and later, default member initializers do not disqualify an aggregate.
 Explicitly initialized members use the supplied values; omitted members use
-their default initializers in member order. Retain the C++11 restriction in
+their default initializers in member order, including partial static tables
+and implicit array tails. Defaults can refer to earlier members; nonconstant
+defaults retain their evaluation order and effects. Retain the C++11 restriction in
 C++11 mode, along with the other aggregate restrictions in every mode.
 Preserve reference/value categories and reject invalid initializers and overload
 candidates. Digit separators keep their value in native floating literals and cooked
