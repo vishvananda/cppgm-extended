@@ -712,7 +712,17 @@ Reg FunctionSelector::allocate(uint32_t temp, uint32_t exclude, Reg prefer0, Reg
 	// costs nothing there, so it is taken first (a value flowing into a
 	// phi computed in the phi's register: register_allocation.cpp).
 	const bool hinted = level_ >= 1 && t.hint != kNoReg && t.hint == prefer1;
-	const Reg prefs[3] = { hinted ? prefer1 : prefer0, hinted ? prefer0 : prefer1, t.hint };
+	// For a return, prefer rax: a copy into an add can fuse to a three-
+	// address lea, while an add in its dying operand followed by the
+	// return's copy cannot use that fusion.
+	const bool returned = level_ >= 1 && t.hint == RAX;
+	const Reg prefs[3] = { returned ? RAX
+			: hinted                ? prefer1
+									: prefer0,
+		returned     ? prefer0
+			: hinted ? prefer0
+					 : prefer1,
+		returned ? prefer1 : t.hint };
 	for (unsigned k = 0; k < 3; ++k)
 		if (prefs[k] != kNoReg && (allowed & (1u << prefs[k])))
 			return prefs[k];

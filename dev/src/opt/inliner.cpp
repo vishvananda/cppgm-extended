@@ -1631,6 +1631,33 @@ bool InlineWaveRunner::process(SymbolId caller)
 				all = all && cold[cfg.succs[k]] && cfg.rpo_index[cfg.succs[k]] > r;
 			cold[b] = (ends || all) && b != body.layout[0];
 		}
+	// Predicted rare edges guide profitability, just as terminal paths do.
+	// A unique incoming edge identifies the prediction entering a region;
+	// a join inherits it only when all forward predecessors are cold.
+	if (!source_required_ && options_.level >= 2)
+		for (BlockId b : cfg.rpo)
+		{
+			if (b == body.layout[0])
+				continue;
+			bool inherited = cfg.pred_count(b) != 0;
+			for (uint32_t k = cfg.pred_first[b]; k < cfg.pred_first[b + 1] && inherited; ++k)
+				inherited = cold[cfg.preds[k]] && cfg.rpo_index[cfg.preds[k]] < cfg.rpo_index[b];
+			if (inherited)
+				cold[b] = 1;
+			if (cfg.pred_count(b) != 1)
+				continue;
+			const BlockId from = cfg.preds[cfg.pred_first[b]];
+			const InstId last = body.blocks[from].last;
+			if (last == kNoId)
+				continue;
+			const Instruction& branch = body.instructions[last];
+			if (branch.op != Opcode::Branch || branch.ops[1].index == branch.ops[2].index)
+				continue;
+			const BranchPrediction prediction = static_cast<BranchPrediction>(branch.sub);
+			if ((prediction == BranchPrediction::Unlikely && branch.ops[1].index == b) ||
+				(prediction == BranchPrediction::Likely && branch.ops[2].index == b))
+				cold[b] = 1;
+		}
 	// Loop blocks (new blocks inherit their split block's answer).
 	std::vector<uint8_t> in_loop(policy_blocks, 0);
 	if (caller_loop_)

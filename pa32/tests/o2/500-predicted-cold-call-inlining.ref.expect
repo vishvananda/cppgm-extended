@@ -1,0 +1,14 @@
+# budget from 500-predicted-cold-call-inlining.ref: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 37
+blocks <= 13
+count(call) <= 5
+count(load) <= 3
+count(store) <= 3
+count(phi) <= 3
+instructions <= 12 in @mix
+instructions <= 9 in @unlikely_call
+instructions <= 8 in @likely_call
+instructions <= 15 in @ordinary_call
+
+# outcomes from 500-predicted-cold-call-inlining.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(call @mix) in @ordinary_call

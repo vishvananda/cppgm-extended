@@ -1,0 +1,47 @@
+function @mix(%x : u32) -> u32 [binding=strong, object=_Z3mixj] {
+  block ^entry:
+    %t1 = binary ushr u32 %x, 13
+    %t2 = binary xor u32 %x, %t1
+    %t3 = binary mul u32 %t2, 2246822507
+    %t4 = binary ushr u32 %t3, 16
+    %t5 = binary xor u32 %t3, %t4
+    %t6 = binary mul u32 %t5, 3266489909
+    %t7 = binary ushr u32 %t6, 13
+    %t8 = binary xor u32 %t6, %t7
+    return u32 %t8
+}
+function @unlikely_call(%tag : u32, %x : u32) -> u32 [binding=strong, object=_Z13unlikely_calljj] {
+  block ^entry:
+    %t1 = cmp eq u32 %tag, 0
+    branch unlikely %t1, ^if_then_1, ^if_end_2
+
+  block ^if_then_1:
+    %t2 = call u32 @mix(%x)
+    return u32 %t2
+
+  block ^if_end_2:
+    %t3 = binary add u32 %x, 1
+    return u32 %t3
+}
+function @likely_call(%tag : u32, %x : u32) -> u32 [binding=strong, object=_Z11likely_calljj] {
+  block ^entry:
+    branch likely %tag, ^if_then_1, ^if_end_2
+
+  block ^if_then_1:
+    %t1 = binary add u32 %x, 1
+    return u32 %t1
+
+  block ^if_end_2:
+    %t2 = call u32 @mix(%x)
+    return u32 %t2
+}
+function @ordinary_call(%tag : u32, %x : u32) -> u32 {
+  block ^entry:
+    branch %tag, ^warm, ^compute
+  block ^warm:
+    %next = binary add u32 %x, 1
+    return u32 %next
+  block ^compute:
+    %value = call u32 @mix(%x)
+    return u32 %value
+}

@@ -2809,7 +2809,8 @@ void Simplifier::process_block(BlockId block)
 			continue;
 		}
 		substitute(inst);
-		if (inst.op == Opcode::Select && select_phi(block, prev, id))
+		const Instruction* choice = inst.op == Opcode::Select ? producer(inst.ops[0]) : nullptr;
+		if (choice != nullptr && choice->op == Opcode::Phi && select_phi(block, prev, id))
 		{
 			changed_ = true;
 			id = next;
