@@ -1,0 +1,5 @@
+count(convert) <= 1 in @narrow
+count(convert) <= 1 in @sign_extend
+count(convert) <= 1 in @zero_extend
+count(convert) <= 0 in @retype
+count(convert) >= 1 in @floating_guard

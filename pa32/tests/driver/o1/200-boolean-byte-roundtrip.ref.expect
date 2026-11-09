@@ -1,0 +1,4 @@
+count(convert) <= 0 in @integer_truth
+count(convert) <= 0 in @floating_truth
+count(convert) >= 1 in @unsigned_byte
+count(convert) >= 1 in @signed_byte

@@ -1,0 +1,138 @@
+function @low_bit(%p : ptr) -> u8 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = load i32 %p
+    %t2 = binary and i32 %t1, 1
+    %t3 = copy u32 %t2
+    %t4 = convert zext i64 u32 %t3
+    %t5 = convert trunc u8 i64 %t4
+    return u8 %t5
+}
+function @high_bit(%p : ptr) -> u8 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = load i32 %p
+    %t2 = binary shr i32 %t1, 31
+    %t3 = binary and i32 %t2, 1
+    %t4 = copy u32 %t3
+    %t5 = convert zext i64 u32 %t4
+    %t6 = convert trunc u8 i64 %t5
+    return u8 %t6
+}
+function @copy_low(%out : ptr, %p : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = load i32 %p
+    %t2 = binary and i32 %t1, 1
+    %t3 = copy u32 %t2
+    %t4 = convert zext i64 u32 %t3
+    %t5 = convert trunc u8 i64 %t4
+    store u8 %t5, %out
+    return void
+}
+function @wider_field(%p : ptr) -> u8 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = load i32 %p
+    %t2 = binary shr i32 %t1, 1
+    %t3 = binary and i32 %t2, 7
+    %t4 = copy u32 %t3
+    %t5 = cmp ne u32 %t4, 0
+    %t6 = convert trunc u8 i64 %t5
+    return u8 %t6
+}
+function @raw_xor(%x : u32) -> u8 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary xor u32 %x, 1
+    %t2 = cmp ne u32 %t1, 0
+    %t3 = convert trunc u8 i64 %t2
+    return u8 %t3
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<4x4>
+  slot $copied : u8
+
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi u32 [^entry: 0, ^if_else_11: %t43]
+    %t2 = cmp ne u32 %t1, 1024
+    branch %t2, ^for_body_2, ^for_end_12
+
+  block ^for_body_2:
+    %t3 = addr $value
+    %t4 = binary and u32 %t1, 1
+    store u32 %t4, %t3
+    %t5 = binary ushr u32 %t1, 1
+    %t6 = binary and u32 %t5, 7
+    %t7 = binary shl u32 %t6, 1
+    %t8 = binary or u32 %t4, %t7
+    store u32 %t8, %t3
+    %t9 = binary and u32 %t1, 134217727
+    %t10 = binary shl u32 %t9, 4
+    %t11 = binary or u32 %t8, %t10
+    store u32 %t11, %t3
+    %t12 = binary ushr u32 %t1, 2
+    %t13 = binary and u32 %t12, 1
+    %t14 = binary shl u32 %t13, 31
+    %t15 = binary or u32 %t11, %t14
+    store u32 %t15, %t3
+    store u8 0, $copied
+    %t16 = addr $copied
+    call void @copy_low(%t16, %t3)
+    %t17 = load u8 $copied
+    %t18 = convert zext i64 u32 %t4
+    %t19 = convert zext i32 u8 %t17
+    %t20 = convert trunc i32 i64 %t18
+    %t21 = cmp ne i32 %t19, %t20
+    branch %t21, ^if_then_4, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t22 = call u8 @low_bit(%t3)
+    %t23 = load u8 $copied
+    %t24 = cmp ne u8 %t22, %t23
+    branch %t24, ^if_then_4, ^if_end_5
+
+  block ^if_then_4:
+    return i32 1
+
+  block ^if_end_5:
+    %t25 = call u8 @high_bit(%t3)
+    %t26 = binary and u32 %t1, 4
+    %t27 = cmp ne u32 %t26, 0
+    %t28 = convert zext i32 u8 %t25
+    %t29 = convert trunc i32 i64 %t27
+    %t30 = cmp ne i32 %t28, %t29
+    branch %t30, ^if_then_6, ^if_else_7
+
+  block ^if_then_6:
+    return i32 2
+
+  block ^if_else_7:
+    %t31 = call u8 @wider_field(%t3)
+    %t32 = binary and u32 %t1, 14
+    %t33 = cmp ne u32 %t32, 0
+    %t34 = convert zext i32 u8 %t31
+    %t35 = convert trunc i32 i64 %t33
+    %t36 = cmp ne i32 %t34, %t35
+    branch %t36, ^if_then_8, ^if_end_9
+
+  block ^if_then_8:
+    return i32 3
+
+  block ^if_end_9:
+    %t37 = call u8 @raw_xor(%t1)
+    %t38 = binary xor u32 %t1, 1
+    %t39 = cmp ne u32 %t38, 0
+    %t40 = convert zext i32 u8 %t37
+    %t41 = convert trunc i32 i64 %t39
+    %t42 = cmp ne i32 %t40, %t41
+    branch %t42, ^if_then_10, ^if_else_11
+
+  block ^if_then_10:
+    return i32 4
+
+  block ^if_else_11:
+    %t43 = binary add u32 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_12:
+    return i32 0
+}

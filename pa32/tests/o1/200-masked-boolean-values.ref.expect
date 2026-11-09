@@ -1,0 +1,7 @@
+count(cmp) <= 0 in @masked
+count(cmp) <= 0 in @high_bit
+count(cmp) <= 0 in @volatile_bit
+count(load volatile) >= 1 in @volatile_bit
+count(cmp) >= 1 in @wide_mask
+count(cmp) >= 1 in @arbitrary_xor
+count(cmp) >= 1 in @signed_byte

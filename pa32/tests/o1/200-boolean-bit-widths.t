@@ -1,0 +1,84 @@
+# Truth results remain one bit through byte and signedness conversions.
+function @compare_roundtrip(%x : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %truth = cmp ne i32 %x, 0
+    %byte = convert trunc u8 i64 %truth
+    %wide = convert zext i64 u8 %byte
+    %masked = binary and i64 %wide, 1
+    return i64 %masked
+}
+function @float_roundtrip(%x : f64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %truth = cmp ne f64 %x, 0.0
+    %byte = convert trunc u8 i64 %truth
+    %wide = convert zext i64 u8 %byte
+    return i64 %wide
+}
+function @copied_truth(%x : i32) -> u32 [no_inline=yes] {
+  block ^entry:
+    %truth = cmp ne i32 %x, 0
+    %narrow = convert trunc i32 i64 %truth
+    %view = copy u32 %narrow
+    %masked = binary and u32 %view, 1
+    return u32 %masked
+}
+function @arbitrary_copy(%x : i32) -> u32 [no_inline=yes] {
+  block ^entry:
+    %view = copy u32 %x
+    %masked = binary and u32 %view, 1
+    return u32 %masked
+}
+function @unsigned_byte(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %byte = convert trunc u8 i64 %x
+    %wide = convert zext i64 u8 %byte
+    return i64 %wide
+}
+function @signed_byte(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %byte = convert trunc i8 i64 %x
+    %wide = convert sext i64 i8 %byte
+    return i64 %wide
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    jump ^loop
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^next: %inext]
+    %small = convert trunc i32 i64 %i
+    %floating = convert sitofp f64 i64 %i
+    %a = call i64 @compare_roundtrip(%small)
+    %b = call i64 @float_roundtrip(%floating)
+    %c32 = call u32 @copied_truth(%small)
+    %c = convert zext i64 u32 %c32
+    %d32 = call u32 @arbitrary_copy(%small)
+    %d = convert zext i64 u32 %d32
+    %e = call i64 @unsigned_byte(%i)
+    %f = call i64 @signed_byte(%i)
+    %truth = cmp ne i64 %i, 0
+    %bit = binary and i64 %i, 1
+    %byte = binary and i64 %i, 255
+    %negative = cmp uge i64 %byte, 128
+    %signed = binary sub i64 %byte, 256
+    %expected_signed = select i64 %negative, %signed, %byte
+    %bad_a = cmp ne i64 %a, %truth
+    %bad_b = cmp ne i64 %b, %truth
+    %bad_c = cmp ne i64 %c, %truth
+    %bad_d = cmp ne i64 %d, %bit
+    %bad_e = cmp ne i64 %e, %byte
+    %bad_f = cmp ne i64 %f, %expected_signed
+    %ab = binary or i64 %bad_a, %bad_b
+    %cd = binary or i64 %bad_c, %bad_d
+    %ef = binary or i64 %bad_e, %bad_f
+    %abcd = binary or i64 %ab, %cd
+    %bad = binary or i64 %abcd, %ef
+    branch %bad, ^fail, ^next
+  block ^next:
+    %inext = binary add i64 %i, 1
+    %more = cmp ne i64 %inext, 1024
+    branch %more, ^loop, ^done
+  block ^fail:
+    return i64 1
+  block ^done:
+    return i64 0
+}

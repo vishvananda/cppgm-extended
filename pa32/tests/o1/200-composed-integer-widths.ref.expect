@@ -1,0 +1,7 @@
+count(convert) <= 1 in @drop_middle
+count(convert) <= 1 in @keep_sign
+count(convert) <= 1 in @keep_zero
+count(convert) <= 0 in @retype
+count(convert trunc u8 i64) <= 0 in @shared
+count(convert) <= 1 in @wide_sign
+count(convert) <= 1 in @wide_byte

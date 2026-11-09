@@ -1,0 +1,7 @@
+count(convert) <= 0 in @compare_roundtrip
+count(binary and) <= 0 in @compare_roundtrip
+count(convert) <= 0 in @float_roundtrip
+count(binary and) <= 0 in @copied_truth
+count(binary and) >= 1 in @arbitrary_copy
+count(convert) >= 1 in @unsigned_byte
+count(convert) >= 1 in @signed_byte

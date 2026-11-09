@@ -432,7 +432,8 @@ OperandKey Simplifier::key_of(Value v, Type type)
 }
 
 // An i64 truth value (0 or 1): a comparison, a logical not, a 0/1
-// literal, a phi of truth values, or a widening/narrowing of one.
+// literal, a one-bit mask, a phi of truth values, or a widening/narrowing
+// of one.
 bool Simplifier::boolean(Value v, unsigned depth)
 {
 	Constant c;
@@ -447,6 +448,15 @@ bool Simplifier::boolean(Value v, unsigned depth)
 		return true;
 	case Opcode::Unary:
 		return static_cast<UnaryOp>(def->sub) == UnaryOp::Not;
+	case Opcode::Copy:
+		return def->type.is_integer() && boolean(def->ops[0], depth + 1);
+	case Opcode::Binary:
+		if (def->type.is_integer() && static_cast<BinaryOp>(def->sub) == BinaryOp::And)
+			for (unsigned k = 0; k < 2; ++k)
+				if (literal_constant(body_, def->ops[k], c) && c.kind == ValueKind::Integer && c.bits.low <= 1 &&
+					c.bits.high == 0)
+					return true;
+		return false;
 	case Opcode::Convert:
 		return (static_cast<ConvertOp>(def->sub) == ConvertOp::ZExt ||
 				   static_cast<ConvertOp>(def->sub) == ConvertOp::Trunc) &&
@@ -1373,6 +1383,19 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 			out = v;
 			return true;
 		}
+		// Comparisons produce i64. A narrower canonical truth needs only
+		// a zero extension, including after a signedness-only copy.
+		if (type.is_integer() && storage_bytes(type) < 8 && x.is(ValueKind::Temp) && body_.temps[x.index].type == type)
+		{
+			inst.op = Opcode::Convert;
+			inst.sub = static_cast<uint8_t>(ConvertOp::ZExt);
+			inst.type = Type::scalar(TypeKind::I64);
+			set_convert_source_type(inst, type);
+			inst.ops[0] = x;
+			inst.ops[1] = inst.ops[2] = Value::none();
+			inst.flags = 0;
+			changed_ = true;
+		}
 		return false;
 	}
 	// x == 0 and x != 1 invert a comparison x is (through truth-preserving
@@ -1561,14 +1584,36 @@ bool Simplifier::convert_identity(Instruction& inst, Value& out)
 			return true;
 		}
 	}
-	// A truncation back to the type an extension widened.
+	// A truncation after widening keeps the original low bits. If the final
+	// type is still wider, retain the original extension's sign behavior.
 	const Instruction* def = op == ConvertOp::Trunc ? producer(inst.ops[0]) : nullptr;
 	if (def != nullptr && def->op == Opcode::Convert &&
 		(static_cast<ConvertOp>(def->sub) == ConvertOp::ZExt || static_cast<ConvertOp>(def->sub) == ConvertOp::SExt) &&
-		def->ops[0].is(ValueKind::Temp) && body_.temps[def->ops[0].index].type == inst.type)
+		def->type == from && from.is_integer() && inst.type.is_integer() && def->ops[0].is(ValueKind::Temp))
 	{
-		out = def->ops[0];
-		return true;
+		const Type original = convert_source_type(*def);
+		if (!original.is_integer() || body_.temps[def->ops[0].index].type != original)
+			return false;
+		if (original == inst.type)
+		{
+			out = def->ops[0];
+			return true;
+		}
+		const unsigned source_bits = lowir::integer_bits(original.kind());
+		const unsigned target_bits = lowir::integer_bits(inst.type.kind());
+		inst.ops[0] = def->ops[0];
+		if (source_bits == target_bits)
+		{
+			inst.op = Opcode::Copy;
+			inst.sub = 0;
+			inst.immediate = 0;
+		}
+		else
+		{
+			inst.sub = source_bits > target_bits ? static_cast<uint8_t>(ConvertOp::Trunc) : def->sub;
+			set_convert_source_type(inst, original);
+		}
+		changed_ = true;
 	}
 	return false;
 }
@@ -1664,8 +1709,20 @@ uint64_t Simplifier::possible_bits(Value v, Type type, unsigned depth)
 	if (constant(v, type, c))
 		return integer_bits(type, c, bits) ? bits.low & all : all;
 	const Instruction* def = producer(v);
-	if (def == nullptr || depth >= 6 || !type.is_integer() || type.kind() == TypeKind::I128 || def->type != type)
+	if (def == nullptr || depth >= 6 || !type.is_integer() || type.kind() == TypeKind::I128)
 		return all;
+	// Comparisons and logical not produce i64 truth values regardless of
+	// the operand type stored in the instruction.
+	if (def->op == Opcode::Compare || (def->op == Opcode::Unary && static_cast<UnaryOp>(def->sub) == UnaryOp::Not))
+		return 1;
+	if (def->type != type)
+		return all;
+	if (def->op == Opcode::Copy && def->ops[0].is(ValueKind::Temp))
+	{
+		const Type from = body_.temps[def->ops[0].index].type;
+		if (from.is_integer() && storage_bytes(from) == storage_bytes(type))
+			return possible_bits(def->ops[0], from, depth + 1);
+	}
 	if (def->op == Opcode::Vector)
 	{
 		const VectorOp op = static_cast<VectorOp>(def->sub);

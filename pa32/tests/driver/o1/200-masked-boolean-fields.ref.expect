@@ -1,0 +1,5 @@
+count(cmp) <= 0 in @low_bit
+count(cmp) <= 0 in @high_bit
+count(cmp) <= 0 in @copy_low
+count(cmp) >= 1 in @wider_field
+count(cmp) >= 1 in @raw_xor
