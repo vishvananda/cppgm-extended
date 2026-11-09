@@ -300,6 +300,8 @@ def publish(args):
             (dest / name).write_bytes(content)
         (dest / 'report.md').write_text(details)
     benchmark_hosts.library_index(args.target / 'simdjson', 'simdjson benchmark hosts')
+    from library_benchmark_badges import library_badges
+    library_badges(args.target / 'simdjson', 'simdjson')
 
 
 def main():

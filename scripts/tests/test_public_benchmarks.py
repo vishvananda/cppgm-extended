@@ -745,7 +745,8 @@ class BadgePublicationTests(unittest.TestCase):
 
     def test_public_update_preserves_every_self_build_file(self):
         self.self_build()
-        previous = {p.name: p.read_bytes() for p in (self.target / 'intel').iterdir()}
+        previous = {p.name: p.read_bytes() for p in (self.target / 'intel').iterdir()
+                    if p.name.startswith('self')}
         (self.artifact / 'selfhost.json').unlink()
         for name in publication.BADGES[4:] + publication.CLANG_BADGES:
             (self.artifact / 'badges' / f'{name}.json').unlink(missing_ok=True)

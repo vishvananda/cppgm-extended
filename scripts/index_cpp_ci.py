@@ -252,6 +252,8 @@ def publish(artifact, target, revision, run_url):
             (destination / name).write_bytes(data)
         (destination / 'report.md').write_text(details)
     benchmark_hosts.library_index(target / 'index-cpp', 'index-cpp benchmark hosts')
+    from library_benchmark_badges import library_badges
+    library_badges(target / 'index-cpp', 'index-cpp')
 
 
 def main():

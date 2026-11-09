@@ -137,6 +137,11 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False, co
             (destination / f'{name}.svg').write_text(rendered[name])
         for name, content in files.items():
             (destination / name).write_text(content)
+    from library_benchmark_badges import public_badges
+    public_badges(target, platform if component != 'self-build' else None)
+    if platform == 'epyc' and legacy_epyc and component != 'self-build':
+        for name in BADGES[:4]:
+            (target / (name + '.svg')).write_bytes((target / platform / (name + '.svg')).read_bytes())
 
 
 def main():

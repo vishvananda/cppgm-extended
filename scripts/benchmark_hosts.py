@@ -10,16 +10,16 @@ def hosted_platform(cpu):
     raise ValueError(f'unrecognized hosted benchmark CPU: {cpu!r}')
 
 
-def library_index(directory, title):
+def library_index(directory, title, metadata_name='metadata.json', report_name='report.md', index_name='report.md'):
     rows = []
     for platform, label in [('epyc', 'EPYC (CI)'), ('github-intel', 'Intel (CI)'),
                             ('intel', 'Intel (dedicated)')]:
-        metadata = directory / platform / 'metadata.json'
+        metadata = directory / platform / metadata_name
         if not metadata.is_file():
             continue
         data = json.loads(metadata.read_text())
         cpu = data['cpu'].replace('|', '\\|').replace('\n', ' ')
-        rows.append(f"| {label} | {cpu} | `{data['revision'][:9]}` | [Results]({platform}/report.md) |")
+        rows.append(f"| {label} | {cpu} | `{data['revision'][:9]}` | [Results]({platform}/{report_name}) |")
     text = (f'# {title}\n\nEach host retains its last measurement. Compare the CPU model and measured commit.\n\n'
             '| Host | CPU | Measured compiler | Report |\n|---|---|---|---|\n')
-    (directory / 'report.md').write_text(text + '\n'.join(rows) + '\n')
+    (directory / index_name).write_text(text + '\n'.join(rows) + '\n')

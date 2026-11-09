@@ -298,6 +298,8 @@ def publish(args):
                                            '[Versioned records](standard/records.json) · '
                                            '[CI run and artifacts](' + args.run_url + ')\n')
     benchmark_hosts.library_index(args.target / 'godot', 'Godot benchmark hosts')
+    from library_benchmark_badges import library_badges
+    library_badges(args.target / 'godot', 'godot')
 
 
 def main():
