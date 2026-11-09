@@ -103,6 +103,7 @@ jobs:
     timeout-minutes: 5
     concurrency:
       group: benchmark-badge-publication
+      queue: max
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v6

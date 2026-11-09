@@ -164,6 +164,8 @@ class FreshnessTests(unittest.TestCase):
                     self.assertIn('GH_TOKEN: ${{ github.token }}', job)
                     self.assertLess(job.index('scripts/benchmark_freshness.py'), job.index('cd badge-branch'))
                     self.assertIn('git add .', job)
+                    self.assertIn('queue: max', job)
+                    self.assertIn('cancel-in-progress: false', job)
                 count += 1
         self.assertGreaterEqual(count, 10)
 

@@ -118,6 +118,7 @@ jobs:
       contents: write
     concurrency:
       group: benchmark-badge-publication
+      queue: max
       cancel-in-progress: false
 
     steps:
@@ -231,6 +232,7 @@ jobs:
       contents: write
     concurrency:
       group: benchmark-badge-publication
+      queue: max
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v6
