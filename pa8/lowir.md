@@ -479,11 +479,20 @@ The return values are `noreturn` and `nonnull`. The latter requires a `ptr`
 result and promises that every normal return produces a non-null pointer; it
 does not suppress effects or unwinding. Omission states no return promise.
 
+The independent optional boundary fact `noalias_result=yes` requires a `ptr`
+result. A non-null returned pointer denotes storage disjoint from other
+pointers valid when the call returns; that storage contains no pointers to
+existing live objects. It does not imply a non-null result or restrict the
+call's reads, writes, or unwinding. Omission makes no return-alias promise.
+GNU argumentless `malloc` produces this fact; the argument-bearing
+deallocator-association attribute alone does not. It is a declaration fact,
+not part of a C++ function pointer's type.
+
 The C++ lowering states `effects`, `unwind` and `return` by the rules in Facts The C++
 Lowering States below.
 
 Call signatures only accept call-boundary metadata such as `arity=...`, `effects=...`,
-`unwind=...`, `return=...`, and `repeatable=yes`. Top-level symbol metadata such as `role=...`, `linkage=...`,
+`unwind=...`, `return=...`, `repeatable=yes`, and `noalias_result=yes`. Top-level symbol metadata such as `role=...`, `linkage=...`,
 `binding=...`, `replaceable=...`, `object=...`, `keep_alias=...`, `prefer_local=...`, `object_root=...`, and
 `force_inline=...`, `inline_hint=...`, and
 `no_inline=...` are not valid on `as (...) -> ...`
@@ -1884,6 +1893,12 @@ specializations use their own declarations. Virtual call boundaries retain
 the called declaration's promise. It is not a function-type property, so an
 ordinary function-pointer call does not inherit it. `noreturn` takes precedence
 when both attributes apply.
+
+`noalias_result=yes`: a pointer-returning function with GNU argumentless
+`malloc` states the independent fresh-storage promise described above.
+Its declaration, implicit/explicit specialization and virtual-call ownership
+follow `returns_nonnull`; ordinary function-pointer calls acquire neither
+promise from the function type. Existing-memory writes remain conservative.
 
 `effects`: a function declaration, definition or call signature states
 `effects=readnone` when any declaration of the function carries GNU `const`,

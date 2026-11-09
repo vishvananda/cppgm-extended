@@ -120,6 +120,10 @@ bool Parser::parse_decl_specifier_seq(ListFrame<DeclSpecifier>& list, SpecifierI
 
 bool Parser::gnu_attribute(const char* spelling, Attribute& attribute, bool& kept)
 {
+	// malloc(deallocator, ...) is only a deallocation association; it does
+	// not make the no-alias promise of the argumentless malloc attribute.
+	if ((std::strcmp(spelling, "malloc") == 0 || std::strcmp(spelling, "__malloc__") == 0) && at(TokenKind::OP_LPAREN))
+		return false;
 	// One GNU attribute after its name of the kinds later stages use that
 	// stand alone or take an expression (kept); false when no such kind
 	// (`kept` stays false) or its operand does not parse.
@@ -139,7 +143,7 @@ bool Parser::gnu_attribute(const char* spelling, Attribute& attribute, bool& kep
 		{ "gnu_inline", "__gnu_inline__", AttributeKind::GnuInline }, { "used", "__used__", AttributeKind::Used },
 		{ "noreturn", "__noreturn__", AttributeKind::NoReturn },
 		{ "returns_nonnull", "__returns_nonnull__", AttributeKind::ReturnsNonNull },
-		{ "naked", "__naked__", AttributeKind::Naked } };
+		{ "malloc", "__malloc__", AttributeKind::Malloc }, { "naked", "__naked__", AttributeKind::Naked } };
 	for (const auto& simple : kSimple)
 	{
 		if (std::strcmp(spelling, simple.spelling) == 0 || std::strcmp(spelling, simple.reserved) == 0)

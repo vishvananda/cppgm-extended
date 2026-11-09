@@ -170,7 +170,17 @@ bool allocated(const Program& program, const FunctionBody& body, Value v)
 	if (!v.is(ValueKind::Temp) || v.index < body.parameter_count)
 		return false;
 	const InstId def = body.temps[v.index].def;
-	return def != kNoId && allocation_call(program, body.instructions[def]);
+	return def != kNoId && fresh_result_call(program, body.instructions[def]);
+}
+
+bool fresh_result_call(const Program& program, const Instruction& inst)
+{
+	if (inst.op != Opcode::Call || inst.result == kNoId || !inst.type.is_pointer())
+		return false;
+	if (allocation_call(program, inst))
+		return true;
+	const Signature* signature = program.call_boundary(inst);
+	return signature != nullptr && signature->boundary.noalias_result;
 }
 
 // The most values comes_before follows back from one pointer.
@@ -201,7 +211,7 @@ bool comes_before(const Program& program, const FunctionBody& body, Value v, Val
 			else
 				walk[count++] = y;
 		};
-		if (allocation_call(program, d))
+		if (fresh_result_call(program, d))
 			continue;
 		if (d.op == Opcode::Index || d.op == Opcode::Addr || (d.op == Opcode::Copy && d.type.is_pointer()))
 			visit(d.ops[0]);

@@ -249,3 +249,29 @@ in remaining-promise-sites.json. These sites locate the remaining work;
 header inclusion alone does not prove a template was instantiated or a
 particular function called during the benchmark. No new feature support is
 claimed by this supplemental check.
+
+B44 allocator return-alias candidate
+------------------------------------
+The active GNU argumentless malloc promise is now retained as the independent
+LowIR boundary fact noalias_result=yes, including reserved/scoped spellings,
+redeclarations, implicit template instances and virtual call boundaries.
+Explicit specializations use their own declarations; ordinary function
+pointer types acquire no declaration attribute. The argument-bearing
+deallocator-association form alone supplies no alias promise. Call writes,
+possible null returns and unwinding remain independent. The optimizer uses
+the return promise for storage identity while retaining conservative effects
+across the call.
+
+Normal PA8 model/negative fixtures, PA28 runtime interoperability, PA32 source
+ownership and raw/source alias predicates cover the change. Both alias and
+recursive-visitor predicates fail on immutable B41 and pass on the candidate.
+GCC 15, Clang 22 and candidate runtime checks pass at O0 through O3; per-pass
+verification and source replay pass too. The isolated allocator change leaves
+all 64 sampled LLVM objects byte-identical: no downstream speedup is claimed
+for that attribute alone. The grouped B44 candidate remains under full LLVM
+and release qualification; accepted compat/llvm remains B41.
+
+Primary semantic source:
+https://gcc.gnu.org/onlinedocs/gcc/Common-Attributes.html#index-malloc-function-attribute
+
+Restrict, assumed alignment, minsize and visibility remain separate gaps.

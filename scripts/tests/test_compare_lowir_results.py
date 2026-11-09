@@ -636,7 +636,7 @@ function @invoke() -> {result_type} {{
 
     def test_address_only_function_rejects_boundary_metadata(self):
         for metadata in ("arity=variadic", "effects=readonly", "unwind=no", "return=noreturn", "return=nonnull",
-                         "effects=readnone, repeatable=yes"):
+                         "effects=readnone, repeatable=yes", "noalias_result=yes"):
             program = f"declare function @opaque [{metadata}]\n"
             self.assertNotEqual(self.compare(program, program).returncode, 0)
 
@@ -659,6 +659,21 @@ function @invoke() -> {result_type} {{
 """
         generated = reference.replace(" [return=nonnull]", "")
         self.assertNotEqual(self.compare(reference, generated).returncode, 0)
+
+    def test_source_comparison_preserves_noalias_result(self):
+        reference = """function @allocate() -> ptr [noalias_result=yes] {
+  block ^entry:
+    return ptr 0
+}
+"""
+        self.assertEqual(self.compare(reference, reference).returncode, 0)
+        generated = reference.replace(" [noalias_result=yes]", "")
+        self.assertNotEqual(self.compare(reference, generated).returncode, 0)
+
+    def test_noalias_result_requires_pointer_and_yes(self):
+        for result_type, value in (("i32", "yes"), ("ptr", "no")):
+            program = f"declare function @allocate() -> {result_type} [noalias_result={value}]\n"
+            self.assertNotEqual(self.compare(program, program).returncode, 0)
 
     def test_nonnull_indirect_signature_requires_pointer_result(self):
         program = """function @invoke(%fn : ptr) -> i32 {

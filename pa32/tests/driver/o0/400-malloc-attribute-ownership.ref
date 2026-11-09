@@ -1,0 +1,97 @@
+declare function @plain(%arg0 : i64) -> ptr [noalias_result=yes, linkage=c, binding=strong]
+declare function @reserved(%arg0 : i64) -> ptr [return=nonnull, noalias_result=yes, linkage=c, binding=strong]
+declare function @scoped(%arg0 : i64) -> ptr [noalias_result=yes, linkage=c, binding=strong]
+declare function @later(%arg0 : i64) -> ptr [noalias_result=yes, linkage=c, binding=strong]
+declare function @association(%arg0 : i64) -> ptr [linkage=c, binding=strong]
+declare function @produce(%arg0 : i64) -> ptr [noalias_result=yes, binding=weak, object=_Z7produceIdEPT_m]
+declare function @produce__2(%arg0 : i64) -> ptr [binding=strong, object=_Z7produceIiEPT_m]
+
+function @invoke_plain(%n : i64) -> ptr [linkage=c, binding=strong] {
+  slot $n : i64
+
+  block ^entry:
+    store typed i64 %n, $n
+    %t1 = load typed i64 $n
+    %t2 = call ptr @plain(%t1)
+    return ptr %t2
+}
+function @invoke_reserved(%n : i64) -> ptr [linkage=c, binding=strong] {
+  slot $n : i64
+
+  block ^entry:
+    store typed i64 %n, $n
+    %t1 = load typed i64 $n
+    %t2 = call ptr @reserved(%t1)
+    return ptr %t2
+}
+function @invoke_scoped(%n : i64) -> ptr [linkage=c, binding=strong] {
+  slot $n : i64
+
+  block ^entry:
+    store typed i64 %n, $n
+    %t1 = load typed i64 $n
+    %t2 = call ptr @scoped(%t1)
+    return ptr %t2
+}
+function @invoke_later(%n : i64) -> ptr [linkage=c, binding=strong] {
+  slot $n : i64
+
+  block ^entry:
+    store typed i64 %n, $n
+    %t1 = load typed i64 $n
+    %t2 = call ptr @later(%t1)
+    return ptr %t2
+}
+function @invoke_association(%n : i64) -> ptr [linkage=c, binding=strong] {
+  slot $n : i64
+
+  block ^entry:
+    store typed i64 %n, $n
+    %t1 = load typed i64 $n
+    %t2 = call ptr @association(%t1)
+    return ptr %t2
+}
+function @implicit_instance(%n : i64) -> ptr [binding=strong, object=_Z17implicit_instancem] {
+  slot $n : i64
+
+  block ^entry:
+    store typed i64 %n, $n
+    %t1 = load typed i64 $n
+    %t2 = call ptr @produce(%t1)
+    return ptr %t2
+}
+function @explicit_instance(%n : i64) -> ptr [binding=strong, object=_Z17explicit_instancem] {
+  slot $n : i64
+
+  block ^entry:
+    store typed i64 %n, $n
+    %t1 = load typed i64 $n
+    %t2 = call ptr @produce__2(%t1)
+    return ptr %t2
+}
+function @virtual_instance(%factory : ptr, %n : i64) -> ptr [binding=strong, object=_Z16virtual_instanceP7Factorym] {
+  slot $factory : ptr
+  slot $n : i64
+
+  block ^entry:
+    store typed ptr %factory, $factory
+    store typed i64 %n, $n
+    %t1 = load typed ptr $factory
+    %t2 = load typed i64 $n
+    %t3 = load typed ptr %t1
+    %t4 = load typed ptr %t3
+    %t5 = call ptr %t4(%t1, %t2) as (%arg0 : ptr [object_bytes=8], %arg1 : i64) -> ptr [noalias_result=yes]
+    return ptr %t5
+}
+function @function_pointer(%fn : ptr, %n : i64) -> ptr [binding=strong, object=_Z16function_pointerPFPvmEm] {
+  slot $fn : ptr
+  slot $n : i64
+
+  block ^entry:
+    store typed ptr %fn, $fn
+    store typed i64 %n, $n
+    %t1 = load typed i64 $n
+    %t2 = load typed ptr $fn
+    %t3 = call ptr %t2(%t1) as (%arg0 : i64) -> ptr
+    return ptr %t3
+}

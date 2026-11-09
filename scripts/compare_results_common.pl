@@ -1360,6 +1360,7 @@ sub parse_lowir_function_metadata_suffix
 		unwind => '',
 		return => '',
 		repeatable => '',
+		noalias_result => '',
 		role => '',
 		linkage => '',
 		binding => '',
@@ -1397,10 +1398,10 @@ sub parse_lowir_function_metadata_suffix
 					if $value !~ /^(?:readnone|readonly|readwrite)$/;
 				$metadata{effects} = $value;
 			}
-			elsif ($key eq 'repeatable')
+			elsif ($key eq 'repeatable' || $key eq 'noalias_result')
 			{
-				return (0, "repeatable metadata requires yes") if $value ne 'yes';
-				$metadata{repeatable} = $value;
+				return (0, "$key metadata requires yes") if $value ne 'yes';
+				$metadata{$key} = $value;
 			}
 			elsif ($key eq 'unwind')
 			{
@@ -1507,6 +1508,8 @@ sub parse_lowir_function_metadata_suffix
 		if $metadata{repeatable} ne '' && $metadata{effects} !~ /^(?:readnone|readonly)$/;
 	return (0, "nonnull return metadata requires a pointer result")
 		if $metadata{return} eq 'nonnull' && defined($result_type) && $result_type ne 'ptr';
+	return (0, "noalias_result metadata requires a pointer result")
+		if $metadata{noalias_result} ne '' && defined($result_type) && $result_type ne 'ptr';
 	return (1, \%metadata);
 }
 
@@ -2813,7 +2816,7 @@ sub validate_lowir_text
 		my ($ok, $metadata_or_error) = parse_lowir_function_metadata_suffix($suffix);
 		push @errors, "declare function \@$name has invalid metadata: $metadata_or_error" if !$ok;
 		push @errors, "address-only function \@$name cannot carry boundary metadata"
-			if $suffix =~ /\b(?:arity|effects|unwind|return|repeatable|result_classes)\s*=/;
+			if $suffix =~ /\b(?:arity|effects|unwind|return|repeatable|noalias_result|result_classes)\s*=/;
 	}
 	my %signatures;
 	while ($data =~ /^function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*) \{$/gm)
@@ -2917,7 +2920,7 @@ my $LOWIR_COMPARE_SOURCE_FACTS = 1;
 sub lowir_metadata_item_is_source_fact
 {
 	my ($key, $value) = @_;
-	return 1 if $key =~ /^(?:effects|unwind|return|repeatable|inline_hint|no_inline|alias|object_bytes|classes|result_classes|elision)$/;
+	return 1 if $key =~ /^(?:effects|unwind|return|repeatable|noalias_result|inline_hint|no_inline|alias|object_bytes|classes|result_classes|elision)$/;
 	return 1 if $key eq 'storage' && $value eq 'readonly';
 	return 0;
 }

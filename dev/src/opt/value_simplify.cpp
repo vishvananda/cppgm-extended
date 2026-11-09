@@ -119,16 +119,6 @@ bool is_commutative(const Instruction& inst)
 			static_cast<ComparePredicate>(inst.sub) == ComparePredicate::Ne);
 }
 
-// The operand type of a scalar instruction's operands.
-Type operand_type(const Instruction& inst)
-{
-	if (inst.op == Opcode::Convert)
-		return convert_source_type(inst);
-	if (inst.op == Opcode::Index)
-		return Type::scalar(TypeKind::I64);
-	return inst.type;
-}
-
 // The operation that reads back what a `from*` operation places.
 VectorOp lane_read(VectorOp from)
 {
@@ -226,6 +216,12 @@ private:
 	bool changed_;
 	BlockId current_block_ = kNoId;
 	std::vector<Value> repl_;
+	bool has_replacements_ = false;
+	void replace(TempId temp, Value value)
+	{
+		repl_[temp] = value;
+		has_replacements_ = true;
+	}
 	std::vector<uint32_t> uses_;  // per temp at the pass start (a retyped load: none)
 	bool edited_ = false;         // substitute changed an operand (reported or not)
 	std::vector<uint8_t> walked_; // per block: process_block ran on it
@@ -274,6 +270,7 @@ private:
 	// Per temporary: the literal a branch edge proved it equals on every
 	// path into the current block (none outside such a region).
 	std::vector<Value> equal_;
+	uint32_t equal_count_ = 0;
 	std::vector<TempId> equal_undo_;
 	void edge_facts(BlockId block);
 	bool edge_equality(BlockId from, BlockId to, Value& x, Value& y) const;
@@ -525,7 +522,7 @@ void Simplifier::substitute(Instruction& inst)
 bool Simplifier::fold(const Instruction& inst, Value& out)
 {
 	Constant a, b, r;
-	const Type type = operand_type(inst);
+	const Type type = scalar_operand_type(inst);
 	switch (inst.op)
 	{
 	case Opcode::Const:
@@ -1071,6 +1068,7 @@ void Simplifier::edge_facts(BlockId block)
 	if (edge_equality(p, block, x, y) && x.is(ValueKind::Temp) && y.is_literal() && equal_[x.index].is(ValueKind::None))
 	{
 		equal_[x.index] = y;
+		++equal_count_;
 		equal_undo_.push_back(x.index);
 	}
 	const Instruction* def = producer(term.ops[0]);
@@ -2398,7 +2396,7 @@ bool Simplifier::bulk_call(Instruction& inst)
 	{
 		if (repl_.size() <= inst.result)
 			repl_.resize(body_.temps.size(), Value::none());
-		repl_[inst.result] = to;
+		replace(inst.result, to);
 	}
 	inst.op = zero ? Opcode::ZeroInit : Opcode::CopyObject;
 	inst.type = Type::scalar(TypeKind::Void);
@@ -2790,7 +2788,7 @@ uint64_t Simplifier::phi_signature(const Instruction& phi) const
 
 ExprKey Simplifier::expression_key(const Instruction& inst)
 {
-	const Type type = operand_type(inst);
+	const Type type = scalar_operand_type(inst);
 	ExprKey key;
 	key.op = static_cast<uint8_t>(inst.op);
 	key.sub = inst.sub;
@@ -2956,7 +2954,7 @@ void Simplifier::process_block(BlockId block)
 			const Instruction& earlier = body_.instructions[phi_chain_[c].first];
 			if (repl_[earlier.result].is(ValueKind::None) && same_phi(earlier, phi))
 			{
-				repl_[phi.result] = Value::temp(earlier.result);
+				replace(phi.result, Value::temp(earlier.result));
 				++c_.stats.reused;
 				changed_ = true;
 				merged = true;
@@ -3032,7 +3030,7 @@ void Simplifier::process_block(BlockId block)
 		Value value;
 		if (inst.result != kNoId && (fold(inst, value) || identity(inst, value)))
 		{
-			repl_[inst.result] = value;
+			replace(inst.result, value);
 			unlink_after(body_, block, prev, id);
 			++c_.stats.folded;
 			changed_ = true;
@@ -3079,7 +3077,7 @@ void Simplifier::process_block(BlockId block)
 					id = next;
 					continue;
 				}
-				repl_[inst.result] = Value::temp(found->temp);
+				replace(inst.result, Value::temp(found->temp));
 				unlink_after(body_, block, prev, id);
 				++c_.stats.reused;
 				changed_ = true;
@@ -3233,7 +3231,7 @@ bool Simplifier::merge_diamonds()
 				if (same_computation(body_, phi_incoming(body_, p1, first.on_true), t2, 4, quiet) &&
 					same_computation(body_, phi_incoming(body_, p1, first.on_false), f2, 4, quiet))
 				{
-					repl_[p2.result] = Value::temp(p1.result);
+					replace(p2.result, Value::temp(p1.result));
 					changed = true;
 					break;
 				}
@@ -3248,11 +3246,7 @@ void Simplifier::finish(bool full)
 	// With no replacement and no equality in force, substitution changes
 	// only a call through a function's address (in a block the walk did
 	// not reach).
-	bool any = false;
-	for (size_t t = 0; t < repl_.size() && !any; ++t)
-		any = !repl_[t].is(ValueKind::None);
-	for (size_t t = 0; t < equal_.size() && !any; ++t)
-		any = !equal_[t].is(ValueKind::None);
+	const bool any = has_replacements_ || equal_count_ != 0;
 	// In a block the walk processed, an instruction past the phis was
 	// substituted then, its operands defined before it in the walk (a
 	// replacement is recorded only for the result being processed, an
@@ -3274,6 +3268,8 @@ void Simplifier::finish(bool full)
 bool Simplifier::run()
 {
 	c_.ensure_cfg();
+	has_replacements_ = false;
+	equal_count_ = 0;
 	table_.clear(body_.instructions.size());
 	nonzero_undo_.clear();
 	equal_undo_.clear();
@@ -3310,7 +3306,10 @@ bool Simplifier::run()
 			continue;
 		}
 		for (size_t u = equal_undo_.size(); u > equal_marks.back(); --u)
+		{
 			equal_[equal_undo_[u - 1]] = Value::none();
+			--equal_count_;
+		}
 		equal_undo_.resize(equal_marks.back());
 		equal_marks.pop_back();
 		for (size_t u = nonzero_undo_.size(); u > nonzero_marks.back(); --u)

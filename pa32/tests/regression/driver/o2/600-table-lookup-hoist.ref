@@ -1,6 +1,6 @@
 declare global @stderr : ptr [linkage=c, binding=strong]
 
-declare function @malloc(%arg0 : i64) -> ptr [unwind=no, linkage=c, binding=strong]
+declare function @malloc(%arg0 : i64) -> ptr [unwind=no, noalias_result=yes, linkage=c, binding=strong]
 declare function @fputs(%arg0 : ptr, %arg1 : ptr) -> i32 [linkage=c, binding=strong]
 declare function @exit(%arg0 : i32) -> void [unwind=no, return=noreturn, linkage=c, binding=strong]
 declare function @free(%arg0 : ptr) -> void [unwind=no, linkage=c, binding=strong]

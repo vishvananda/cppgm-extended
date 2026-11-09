@@ -285,6 +285,7 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 		function->noreturn = false;
 		function->effects = FunctionEffect::Default;
 		function->returns_nonnull = false;
+		function->noalias_result = false;
 		function->no_inline = false;
 		function->naked = false;
 	}

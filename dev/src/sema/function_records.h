@@ -501,6 +501,8 @@ struct FunctionEntity : Entity
 	FunctionEffect effects;
 	// GNU returns_nonnull: a function result promise, not a function type.
 	bool returns_nonnull;
+	// GNU argumentless malloc: independent of effects and returns_nonnull.
+	bool noalias_result;
 	// An inheriting constructor that is the full form of the constructor
 	// it inherits through its bases' inheriting constructors (no trailing
 	// default argument omitted: the one the hosts declare, P0136, which

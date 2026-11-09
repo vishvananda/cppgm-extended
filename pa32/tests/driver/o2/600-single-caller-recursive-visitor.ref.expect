@@ -1,0 +1,3 @@
+# Contract the private dispatch layer; preserve explicitly outlined work.
+none(call @route) in @visit
+count(return) >= 1 in @retained

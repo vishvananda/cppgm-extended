@@ -1,0 +1,61 @@
+declare function @malloc(%n : i64) -> ptr [unwind=no, linkage=c, binding=strong, object=malloc]
+
+global @published : ptr = 0
+
+function @fresh(%p : ptr) -> ptr [noalias_result=yes, no_inline=yes] {
+  block ^entry:
+    store i64 99, %p
+    %q = call ptr @malloc(16)
+    return ptr %q
+}
+function @ordinary(%p : ptr) -> ptr [no_inline=yes] {
+  block ^entry:
+    return ptr %p
+}
+function @call_writes(%p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %before = load i64 %p
+    %q = call ptr @fresh(%p)
+    %after = load i64 %p
+    %sum = binary add i64 %before, %after
+    return i64 %sum
+}
+function @fresh_store(%p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %q = call ptr @fresh(%p)
+    %before = load i64 %p
+    store i64 7, %q
+    %sum = binary add i64 %before, %before
+    return i64 %sum
+}
+function @indirect_fresh(%fn : ptr, %p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %q = call ptr %fn(%p) as (%arg : ptr) -> ptr [noalias_result=yes]
+    %before = load i64 %p
+    store i64 7, %q
+    %sum = binary add i64 %before, %before
+    return i64 %sum
+}
+function @ordinary_store(%p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %q = call ptr @ordinary(%p)
+    %before = load i64 %p
+    store i64 7, %q
+    %after = load i64 %p
+    %sum = binary add i64 %before, %after
+    return i64 %sum
+}
+function @published_alias(%p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %q = call ptr @fresh(%p)
+    store ptr %q, @published
+    store i64 3, %q
+    %alias = call ptr @ordinary(%p)
+    store i64 9, %alias
+    %after = load i64 %q
+    return i64 %after
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

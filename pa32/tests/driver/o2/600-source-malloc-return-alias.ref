@@ -1,0 +1,20 @@
+declare function @fresh(%arg0 : i64) -> ptr [noalias_result=yes, linkage=c, binding=strong]
+declare function @ordinary(%arg0 : i64) -> ptr [linkage=c, binding=strong]
+
+function @fresh_load(%p : ptr) -> i32 [linkage=c, binding=strong] {
+  block ^entry:
+    %t1 = call ptr @fresh(4)
+    %t2 = load typed i32 %p
+    store typed i32 7, %t1
+    %t3 = binary add nowrap i32 %t2, %t2
+    return i32 %t3
+}
+function @ordinary_load(%p : ptr) -> i32 [linkage=c, binding=strong] {
+  block ^entry:
+    %t1 = call ptr @ordinary(4)
+    %t2 = load typed i32 %p
+    store typed i32 7, %t1
+    %t3 = load typed i32 %p
+    %t4 = binary add nowrap i32 %t2, %t3
+    return i32 %t4
+}

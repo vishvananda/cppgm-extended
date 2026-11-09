@@ -100,6 +100,8 @@ enum class AttributeKind : uint8_t
 	NoReturn,
 	// GNU returns_nonnull: every normally returned pointer is non-null.
 	ReturnsNonNull,
+	// GNU malloc without arguments: the returned storage does not alias.
+	Malloc,
 	// GNU mode(identifier): its machine-mode keyword, never an expression.
 	Mode,
 	// Optional shared assembly: a body owns its ABI and frame.

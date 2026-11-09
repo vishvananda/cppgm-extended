@@ -25,7 +25,7 @@ bool cpu_query_declaration(const Program& program, const Symbol& symbol)
 	if (signature.result.kind() != (xstate ? TypeKind::I64 : TypeKind::Void) || signature.parameter_count != count ||
 		signature.boundary.arity != ir_model::CAM_FIXED || signature.boundary.effects != ir_model::CFXM_DEFAULT ||
 		signature.boundary.returns != ir_model::CRM_DEFAULT || signature.boundary.repeatable ||
-		signature.boundary.result_classes != 0)
+		signature.boundary.noalias_result || signature.boundary.result_classes != 0)
 		return false;
 	const Parameter* parameters = program.parameters_of(signature);
 	for (uint32_t i = 0; i < count; ++i)
@@ -568,6 +568,8 @@ bool Validator::check_links()
 			return fail("repeatable metadata requires readnone or readonly effects");
 		if (boundary.returns == ir_model::CRM_NONNULL && !signature.result.is_pointer())
 			return fail("nonnull return metadata requires a pointer result");
+		if (boundary.noalias_result && !signature.result.is_pointer())
+			return fail("noalias_result metadata requires a pointer result");
 		const Parameter* parameters = program_.parameters_of(signature);
 		for (uint32_t i = 0; i < signature.parameter_count; ++i)
 		{

@@ -569,8 +569,8 @@ void MemoryForwarding::escapes()
 	escaped_.assign(body_.slots.size(), 0);
 	self_stores_.clear();
 	address_.assign(body_.temps.size(), AddressFacts());
-	allocation_.assign(body_.temps.size(), kNoId);
-	allocation_left_.assign(body_.temps.size(), 0);
+	allocation_.clear();
+	allocation_left_.clear();
 	auto stepped = [&](const Instruction& inst) {
 		if (inst.ops[0].is(ValueKind::Temp) && inst.ops[0].index < allocation_.size())
 			allocation_[inst.result] = allocation_[inst.ops[0].index];
@@ -617,6 +617,13 @@ void MemoryForwarding::escapes()
 					inst.op == Opcode::ZeroInit;
 				if (address_use)
 					return;
+				// Only a known local address or tracked allocation can escape
+				// here. Scalar temporaries and literal operands need no facts.
+				if (!v.is(ValueKind::Slot) &&
+					(!v.is(ValueKind::Temp) ||
+						(address_[v.index].base != ValueKind::Slot &&
+							(v.index >= allocation_.size() || allocation_[v.index] == kNoId))))
+					return;
 				const AddressFacts f = facts_of(v);
 				if (inst.op == Opcode::Store && f.base == ValueKind::Slot)
 				{
@@ -633,13 +640,25 @@ void MemoryForwarding::escapes()
 					allocation_[v.index] != kNoId)
 					allocation_left_[allocation_[v.index]] = 1;
 			});
-			if (allocation_call(c_.program, inst))
+			if (fresh_result_call(c_.program, inst))
+			{
+				if (allocation_.empty())
+				{
+					allocation_.assign(body_.temps.size(), kNoId);
+					allocation_left_.assign(body_.temps.size(), 0);
+				}
 				allocation_[inst.result] = inst.result;
+			}
 		}
 	for (BlockId b : body_.layout)
 		for (InstId i = body_.blocks[b].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
 			i = body_.instructions[i].next)
 			for_each_operand(body_, body_.instructions[i], [&](const Value& v) {
+				if (!v.is(ValueKind::Slot) &&
+					(!v.is(ValueKind::Temp) ||
+						(address_[v.index].base != ValueKind::Slot &&
+							(v.index >= allocation_.size() || allocation_[v.index] == kNoId))))
+					return;
 				const AddressFacts f = facts_of(v);
 				if (f.base == ValueKind::Slot)
 					escaped_[f.index] = 1;

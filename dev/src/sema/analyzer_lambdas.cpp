@@ -1148,6 +1148,8 @@ FunctionEntity* Analyzer::closure_call(ClassEntity* closure, const syntax::Lambd
 			call->used = true;
 		if (attribute->kind == syntax::AttributeKind::ReturnsNonNull)
 			call->returns_nonnull = true;
+		if (attribute->kind == syntax::AttributeKind::Malloc)
+			call->noalias_result = true;
 		const FunctionEffect effect = attribute->kind == syntax::AttributeKind::Const ? FunctionEffect::ReadNone
 			: attribute->kind == syntax::AttributeKind::Pure                          ? FunctionEffect::ReadOnly
 																					  : FunctionEffect::Default;

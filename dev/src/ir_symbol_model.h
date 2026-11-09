@@ -247,6 +247,7 @@ enum class MetadataKey : std::uint8_t
 	Unwind,
 	Return,
 	Repeatable,
+	NoAliasResult,
 	ResultClasses,
 	// Symbol metadata.
 	Storage,
@@ -406,9 +407,9 @@ inline const char* spelling(EightbyteClass value)
 inline const char* spelling(MetadataKey key)
 {
 	static const char* const kKeys[kMetadataKeyCount] = { "arity", "effects", "unwind", "return", "repeatable",
-		"result_classes", "storage", "section", "role", "linkage", "binding", "object", "tls_for", "keep_alias",
-		"prefer_local", "object_root", "force_inline", "inline_hint", "no_inline", "replaceable", "pass", "alias",
-		"object_bytes", "classes", "elision", "projection" };
+		"noalias_result", "result_classes", "storage", "section", "role", "linkage", "binding", "object", "tls_for",
+		"keep_alias", "prefer_local", "object_root", "force_inline", "inline_hint", "no_inline", "replaceable", "pass",
+		"alias", "object_bytes", "classes", "elision", "projection" };
 	return kKeys[static_cast<unsigned>(key)];
 }
 
@@ -597,6 +598,9 @@ struct FunctionBoundaryMetadata
 	// A normally completed call can be reused with equal arguments and
 	// unchanged memory dependencies; memory effects alone do not say this.
 	bool repeatable = false;
+	// A non-null result denotes storage disjoint from other live pointers.
+	// This states no memory effects or unwinding promise about the call.
+	bool noalias_result = false;
 	std::uint8_t result_classes = 0; // ObjectClassBits of a direct object result
 };
 

@@ -3211,6 +3211,8 @@ lowir::SignatureId ProgramLowering::function_signature(
 		signature.boundary.returns = ir_model::CRM_NORETURN;
 	else if (function->returns_nonnull && result->unqualified->kind == sema::TypeKind::Pointer)
 		signature.boundary.returns = ir_model::CRM_NONNULL;
+	signature.boundary.noalias_result = function->noalias_result &&
+		result->unqualified->kind == sema::TypeKind::Pointer;
 	// An indirect source result is an explicit memory write in LowIR.
 	// GNU pure/const do not erase that physical output effect.
 	if (!indirect)

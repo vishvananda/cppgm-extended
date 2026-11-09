@@ -222,6 +222,11 @@ the supported subset:
   instances inherit it; an explicit specialization uses its own declarations,
   following GCC's attribute ownership rules.
   Function pointers do not acquire the attribute as part of their type
+- GNU argumentless `malloc`, including its reserved and `gnu::` spellings,
+  promises a disjoint returned allocation, preserved as `noalias_result=yes`.
+  It follows the same declaration/template ownership rules and does not
+  promise non-null, read-only memory, or no unwinding. The argument-bearing
+  deallocator-association form alone makes no return-alias promise
 
 If host link succeeds but the host C++ ABI/runtime behavior is wrong, fix the
 host ABI/runtime lowering, metadata, or object-emission path.

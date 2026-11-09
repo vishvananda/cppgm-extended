@@ -1706,6 +1706,7 @@ FunctionEntity* Analyzer::specialize(FunctionEntity* primary, const TypeList& gi
 	function->used = primary->used;
 	function->effects = primary->effects;
 	function->returns_nonnull = primary->returns_nonnull;
+	function->noalias_result = primary->noalias_result;
 	// [[noreturn]] or GNU noreturn on the template (7.6.3p1).
 	function->noreturn = primary->noreturn;
 	function->signature = signature_of(type);

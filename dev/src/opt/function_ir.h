@@ -107,10 +107,25 @@ inline bool is_pure(const lowir::Instruction& inst)
 // whose boundary may unwind, or throw/resume.
 bool may_unwind(const lowir::Program& program, const lowir::Instruction& inst);
 
+// Scalar expression operands use the result type except for conversion
+// sources and pointer indices. Shared by substitution and expression keys.
+inline lowir::Type scalar_operand_type(const lowir::Instruction& inst)
+{
+	if (inst.op == lowir::Opcode::Convert)
+		return lowir::convert_source_type(inst);
+	if (inst.op == lowir::Opcode::Index)
+		return lowir::Type::scalar(lowir::TypeKind::I64);
+	return inst.type;
+}
+
 // A call of malloc, calloc or the runtime's `operator new`, declared and not
 // defined here: its result is storage no earlier pointer reaches.
 void find_allocation_functions(lowir::Program& program);
 bool allocation_call(const lowir::Program& program, const lowir::Instruction& inst);
+
+// A fresh result, including a GNU malloc return promise. Unlike a builtin
+// allocation_call, this alone permits arbitrary writes to existing memory.
+bool fresh_result_call(const lowir::Program& program, const lowir::Instruction& inst);
 // Whether v is the result of an allocation call: storage no earlier
 // pointer reaches.
 bool allocated(const lowir::Program& program, const lowir::FunctionBody& body, lowir::Value v);

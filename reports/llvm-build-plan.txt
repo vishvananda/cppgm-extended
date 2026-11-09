@@ -1344,3 +1344,37 @@ Allowing memory/immediate tests instead of the existing O2 register-predicate
 policy has no resolved instruction win and variable cycles; do not change it.
 Outlining one hash-range helper also has no resolved win. Each experiment
 uses private copied archives and leaves the full LLVM build untouched.
+
+B43 rejected experiment and B44 candidate, 2026-11-09
+-----------------------------------------------------
+Removing unnecessary roots from vague constructor entries reduced selected
+object size but missed the frozen compiler instruction gate: +2.70% initially,
++1.99% after early pruning, and +1.42% after two throughput fixes. The private
+32-object screen showed no resolved instruction saving. No full LLVM build
+or accepted-branch update was performed. Evidence and source worktree are
+retained under block43-vague-entries* and cppgm-llvm-opt-vague-entries.
+
+B44 groups four supported changes: allocator return-alias promises; bounded
+contraction of a uniquely called, loop-free dispatcher on a call cycle; lazy
+allocation-origin maps/avoiding irrelevant escape facts; and constant-time
+replacement/equality-presence bookkeeping in value simplification. The last
+two preserve R2's frozen O0/O3 objects and all 64 selected LLVM objects plus
+the private linked Clang exactly. A scalar operand-type helper moves into
+opt/function_ir.h to keep value_simplify.cpp inside the repository file limit.
+
+The fast localization control rebuilds 32 selected objects and relinks to
+the exact B41 Clang hash in 33 seconds; 64 objects cover about 73% of sampled
+compiler work. Native-object substitution localizes a 1.58% instruction
+saving to TypeLoc.cpp. A targeted diagnostic removing its visitor call saves
+0.286%; the general B44 contraction in a 64-object private link saves 0.327%.
+These are byte-checked localization screens, not whole-LLVM scores. Concurrent
+load changed and some early screens shared a pinned CPU, so their wall/cycle
+ratios are not used to claim speedups. Raw observations are retained.
+
+Final R4 frozen instruction ratios versus B41 are 1.00007993 at O0 and
+0.99470444 at O3 (-0.5296%); RSS ratios 1.01965723 and 1.00073009 pass.
+The one existing stale reference is regenerated through Make: its sole
+difference is malloc's new noalias_result=yes declaration fact. No executable
+output or tolerance is changed. All qualification evidence has the prefix
+block44-allocator-visitor-r4 under /mnt/vizier/cppgm-llvm-evidence.
+Full LLVM, release and downstream timing/equality qualification are pending.

@@ -1,0 +1,28 @@
+extern "C" void* malloc(unsigned long);
+extern "C" void free(void*);
+#if !__has_attribute(malloc) || !__has_attribute(__malloc__)
+#error malloc return-alias promises must be advertised
+#endif
+int allocation_calls;
+__attribute__((malloc, noinline)) int* acquire(int* old) {
+  ++allocation_calls;
+  *old += 3;
+  return static_cast<int*>(malloc(sizeof(int)));
+}
+__attribute__((noinline)) int exercise(int* p) {
+  int before = *p;
+  int* q = acquire(p);
+  if (!q) return -1;
+  int after_call = *p;
+  *q = 7;
+  int result = before + after_call + *p;
+  free(q);
+  return result;
+}
+int main() {
+  for (int i = 0; i != 64; ++i) {
+    int value = i;
+    if (exercise(&value) != 3*i + 6 || value != i + 3) return 1;
+  }
+  return allocation_calls != 64;
+}
