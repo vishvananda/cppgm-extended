@@ -13,6 +13,11 @@ metaprogramming layer:
 - integral constant-expression evaluation for template arguments
 - `static_assert` over the supported integral constant-expression subset
 
+Constructing from a scalar or an unrelated complete class without conversion
+functions must not demand unused implicit copy/move facts. A dependent assertion
+in an unused conversion-result class remains unevaluated in that case; an actual
+copy still checks its participating conversions.
+
 ### Prerequisites
 
 You should complete Programming Assignment 14 before starting this assignment.

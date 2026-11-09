@@ -1,0 +1,64 @@
+Source: https://cplusplus.github.io/CWG/issues/2374.html
+Full historical text follows; DELETE/INSERT markers preserve, rather than apply, edits.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2374. Overly permissive specification of enum direct-list-initialization
+Section: 9.5.5 [dcl.init.list [1]] Status: C++20 Submitter: Shafik Yaghmour Date:
+2018-02-18
+
+[Adopted as a DR at the November, 2019 meeting.]
+
+According to 9.5.5 [dcl.init.list [2]] bullet 3.8,
+
+-
+
+Otherwise, if T is an enumeration with a fixed underlying type (9.8.1 [dcl.enum [3]]),
+the initializer-list has a single element v, and the initialization is
+direct-list-initialization, the object is initialized with the value T(v) (7.6.1.4
+[expr.type.conv [4]]); if a narrowing conversion is required to convert v to the
+underlying type of T, the program is ill-formed.
+
+The conversion T(v) is too broad, allowing, e.g., conversion from a different scoped
+enumeration type. The intent presumably was only to allow v to be a value of T's
+underlying type.
+
+Notes from the October, 2018 teleconference:
+
+CWG agreed with the suggested direction, along the lines of “...can be implicitly
+converted to the underlying type of T...”
+
+Proposed resolution (May, 2019): [SUPERSEDED]
+
+Change bullet 3.8 of 9.5.5 [dcl.init.list [1]] as follows:
+
+-
+
+Otherwise, if T is an enumeration with a fixed underlying type (9.8.1 [dcl.enum [3]]),
+the initializer-list has a single element v, [INSERT: v can be implicitly converted to
+the underlying type of T,] and the initialization is direct-list-initialization, the
+object is initialized with the value T(v) (7.6.1.4 [expr.type.conv [4]]); if a narrowing
+conversion is required to convert v to the underlying type of T, the program is
+ill-formed. [Example:...
+
+Proposed resolution (October, 2019):
+
+Change bullet 3.8 of 9.5.5 [dcl.init.list [1]] as follows:
+
+-
+
+Otherwise, if T is an enumeration with a fixed underlying type (9.8.1 [dcl.enum [3]])
+[INSERT: U], the initializer-list has a single element v, [INSERT: v can be implicitly
+converted to U,] and the initialization is direct-list-initialization, the object is
+initialized with the value T(v) (7.6.1.4 [expr.type.conv [4]]); if a narrowing
+conversion is required to convert v to [DELETE: the underlying type of T] [INSERT: U],
+the program is ill-formed. [Example:...
+
+Source links:
+[1] https://wg21.link/dcl.init.list
+[2] https://wg21.link/dcl.init.list#3.8
+[3] https://wg21.link/dcl.enum
+[4] https://wg21.link/expr.type.conv

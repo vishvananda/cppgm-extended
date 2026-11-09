@@ -143,9 +143,12 @@ bool Deducible(const Type* type, uint32_t depth, uint32_t level)
 	case TypeKind::Class:
 	{
 		const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(type->unqualified->entity)->templ;
-		if (facts == nullptr || facts->role != TemplateRole::Specialization || !facts->dependent ||
-			facts->template_name != nullptr)
+		if (facts == nullptr)
+			return false;
+		if (facts->role != TemplateRole::Specialization || facts->template_name != nullptr)
 			return true;
+		if (!facts->dependent)
+			return false;
 		// A template template-parameter's specialization TT<...> (its
 		// stand-in, see Analyzer::stand_in_template) deduces TT too.
 		const ClassEntity* templ = facts->pattern;

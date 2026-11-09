@@ -523,7 +523,21 @@ void Analyzer::constructor_candidates(ClassEntity* entity, const syntax::Slice<s
 	// element that is itself a braced list, CWG 2076) take a copy or move
 	// constructor's argument by standard conversions only: an expression of
 	// the class or a class derived from it.
-	const bool copies = arguments.size == 1 && kind != ConstructionKind::Converting &&
+	// A scalar cannot call a copy/move constructor, nor can an unrelated
+	// complete class without conversion functions. Do not demand implicit
+	// copy facts for those arguments: their unused subobject conversions
+	// can require class definitions the selected constructor never uses.
+	bool possible_copy = true;
+	if (arguments.size == 1 && kind != ConstructionKind::Converting &&
+		arguments[0]->kind != syntax::ExprKind::BracedInit && arguments[0]->facts != nullptr &&
+		arguments[0]->facts->type != nullptr)
+	{
+		const ClassEntity* source = ClassOf(arguments[0]->facts->type);
+		possible_copy = source != nullptr &&
+			(source == entity || !source->complete || source->has_conversion_functions ||
+				conversions_.is_base_of(entity, source));
+	}
+	const bool copies = possible_copy && arguments.size == 1 && kind != ConstructionKind::Converting &&
 		(kind == ConstructionKind::Direct ||
 			(kind == ConstructionKind::CopyList && arguments[0]->kind != syntax::ExprKind::BracedInit) ||
 			same_class_source(entity, *arguments[0]));

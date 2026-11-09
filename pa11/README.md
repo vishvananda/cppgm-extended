@@ -384,7 +384,10 @@ PA11 supports the following in addition to the PA10 procedural subset:
   overload behavior. Access is checked against the originating base constructor
   at the call site; the inheriting using-declaration's access has no effect.
   A friend of the base therefore retains that privilege when constructing the
-  derived object. See the offline [P0136R1 wording](../doc/cwg/paper-p0136r1.txt).
+  derived object. When argument conversions tie and their used parameter types
+  match, the constructor originating in the more-derived class wins. See the offline
+  [P0136R1 wording](../doc/cwg/paper-p0136r1.txt) and
+  [CWG2273 decision](../doc/cwg/cwg-2273.txt).
 - use of complete class types in:
   - `sizeof(type-id)`
   - `sizeof(expr)`

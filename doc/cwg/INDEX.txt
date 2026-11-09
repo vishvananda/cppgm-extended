@@ -441,3 +441,8 @@ N4268 | paper-n4268.txt
 P0018R3 | paper-p0018r3.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0018r3.html
   C++17 capture of *this by value.
+
+P0138R2, CWG2251 and CWG2374: direct-list initialization of fixed-underlying enumerations; narrowing and implicit-conversion controls.
+Sources: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0138r2.pdf
+https://cplusplus.github.io/CWG/issues/2251.html
+https://cplusplus.github.io/CWG/issues/2374.html

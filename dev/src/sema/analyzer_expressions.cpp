@@ -699,7 +699,8 @@ ExprFacts* Analyzer::binding_expression(
 				if (!implicit_object(home))
 				{
 					evaluated_error(expr.location, "non-static data member used without an object");
-					ExprFacts* facts = new_facts(expr, variable->type, ValueCategory::LValue);
+					const Type* type = variable->type->is_reference() ? variable->type->element : variable->type;
+					ExprFacts* facts = new_facts(expr, type, ValueCategory::LValue);
 					facts->entity = variable;
 					return facts;
 				}
@@ -2869,8 +2870,8 @@ ExprFacts* Analyzer::functional_cast(const syntax::FunctionalCastExpr& expr, Sco
 	Specifiers specifiers;
 	ClassEntity* deduction = cxx17_ ? deduction_template(expr.type, scope) : nullptr;
 	if (deduction != nullptr)
-		specifiers.type = deduce_class_type(
-			deduction, expr.braced != nullptr ? expr.braced->elements : expr.arguments, scope, expr.location);
+		specifiers.type = deduce_class_type(deduction, expr.braced != nullptr ? expr.braced->elements : expr.arguments,
+			scope, expr.location, false, expr.braced);
 	else
 		this->specifiers(expr.type, scope, specifiers, false);
 	if (failed())
@@ -2933,6 +2934,8 @@ ExprFacts* Analyzer::functional_cast(const syntax::FunctionalCastExpr& expr, Sco
 	}
 	if (expr.braced != nullptr)
 	{
+		if (direct_enum_list(*expr.braced, target, scope))
+			return failed() ? nullptr : new_facts(expr, target->unqualified, ValueCategory::PRValue);
 		// 8.5.4p3: one element without narrowing (p7).
 		if (expr.braced->elements.size > 1)
 		{

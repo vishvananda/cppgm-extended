@@ -1104,6 +1104,27 @@ int Analyzer::compare_candidates(const Candidate& a, const Candidate& b, uint32_
 			return ak == DeductionGuideKind::Constructor ? 1 : -1;
 		}
 	}
+	if (!better && !worse && !object && a.function->constructor && b.function->constructor)
+	{
+		// CWG2273: after equal argument conversions, a constructor of
+		// the more-derived class wins when the used parameter types match.
+		const Type* at = a.function->type->canonical;
+		const Type* bt = b.function->type->canonical;
+		bool same = count <= at->param_count && count <= bt->param_count;
+		for (uint32_t i = 0; same && i < count; ++i)
+			same = at->params[i] == bt->params[i];
+		if (same)
+		{
+			const FunctionEntity* af = graph_.inherited_root(a.function);
+			const FunctionEntity* bf = graph_.inherited_root(b.function);
+			const ClassEntity* ac = ClassOf((af != nullptr ? af : a.function)->owner->entity->type);
+			const ClassEntity* bc = ClassOf((bf != nullptr ? bf : b.function)->owner->entity->type);
+			if (ac != bc && conversions_.is_base_of(bc, ac))
+				return 1;
+			if (ac != bc && conversions_.is_base_of(ac, bc))
+				return -1;
+		}
+	}
 	return 0;
 }
 

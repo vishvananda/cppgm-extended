@@ -313,6 +313,9 @@ including constexpr variables and calls ([N4268](../doc/cwg/paper-n4268.txt)).
 Generic-lambda capture discovery includes callable objects named as callees;
 unevaluated calls do not acquire captures. Keep recursive generic calls bound
 to their parameters and captured objects through the closure's stored members.
+Nested generic closures propagate captures through enclosing lambdas while
+their capture frames are still being built. Fixed local initializers use the
+enclosing object's type, including reference members and copied `*this`.
 An explicit lambda trailing return type can itself be `auto` in C++14 and
 later; deduce it from the body while preserving `decltype(auto)`'s reference
 semantics and the restrictions on nested function types.
@@ -324,6 +327,13 @@ references, initialized captures and captured `this` retain their normal
 object identity and lifetime. Non-generic captureless conversions yield
 function pointers that preserve the call operator's constexpr eligibility. A static local or
 other forbidden constexpr body construct prevents an inferred constant call.
+Direct brace initialization of a fixed-underlying enumeration accepts a single
+element that converts to the underlying type without narrowing. Copy-list
+initialization keeps its ordinary restrictions; see [P0138R2](../doc/cwg/paper-p0138r2.txt),
+[CWG2251](../doc/cwg/issue-2251.txt) and [CWG2374](../doc/cwg/issue-2374.txt).
+Class template deduction preserves brace initialization's initializer-list
+constructor phase and copy-deduction exceptions, including in condition declarations.
+
 In C++14 and later, contextual conversions such as array bounds and switch
 conditions can select among cv-qualified conversion overloads when all viable
 conversions lead to one permitted type. Distinct result types remain ambiguous.

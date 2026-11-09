@@ -2395,9 +2395,13 @@ bool LoopPass::try_unroll_search(uint32_t loop)
 			if (!member[b])
 				continue;
 			// Edges leaving the loop: the target's phis take this copy.
-			for_each_successor(body_, body_.instructions[body_.blocks[b].last], [&](BlockId t) {
+			// A switch may name one exit several times. Its phi has one
+			// input per predecessor block, so use the CFG's unique edges.
+			for (uint32_t edge = cfg_.succ_first[b]; edge < cfg_.succ_first[b + 1]; ++edge)
+			{
+				const BlockId t = cfg_.succs[edge];
 				if (member[t] || owned[t])
-					return;
+					continue;
 				for (InstId i = body_.blocks[t].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
 					i = body_.instructions[i].next)
 				{
@@ -2407,7 +2411,7 @@ bool LoopPass::try_unroll_search(uint32_t loop)
 					exit_pairs[t].push_back(Value::block(mine[b]));
 					exit_pairs[t].push_back(mapped(phi_incoming(body_, body_.instructions[i], b)));
 				}
-			});
+			}
 		}
 		// The next pass's header phis read this pass's latch values.
 		std::vector<Value> next;

@@ -173,7 +173,21 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 		// A member template's nondependent local initializers may be typed
 		// in its definition. They have the same implicit object type as its
 		// instantiated body; a closure's this is handled by its captures.
-		if (function->member && !function->is_static && function->owner->entity != nullptr &&
+		if (capture_scan_ != nullptr && function->owner == capture_scan_->closure->scope)
+		{
+			context.lambda = capture_scan_;
+			if (saved_body != nullptr && (capture_scan_->expr->has_default || capture_scan_->this_captured))
+			{
+				context.this_type = saved_body->this_type;
+				if (context.this_type != nullptr && capture_scan_->this_copied)
+				{
+					const Type* object = context.this_type->element;
+					context.this_type = types_.pointer(types_.qualified(
+						object, static_cast<uint8_t>(object->cv | (capture_scan_->expr->is_mutable ? 0 : kConst))));
+				}
+			}
+		}
+		else if (function->member && !function->is_static && function->owner->entity != nullptr &&
 			graph_.closure_call(static_cast<const ClassEntity*>(function->owner->entity)) != function)
 			context.this_type = types_.pointer(types_.qualified(function->owner->entity->type, type->function_cv));
 		body_ = &context;
@@ -380,7 +394,7 @@ bool Analyzer::condition(const syntax::Condition& condition, Scope* scope)
 	const syntax::ConditionDeclaration& declaration = *condition.declaration;
 	condition_specifiers(declaration.specifiers);
 	Specifiers specifiers;
-	this->specifiers(declaration.specifiers, scope, specifiers, false);
+	this->specifiers(declaration.specifiers, scope, specifiers, false, cxx17_);
 	if (deferred_reserved_call())
 		return false;
 	if (specifiers.type == nullptr)

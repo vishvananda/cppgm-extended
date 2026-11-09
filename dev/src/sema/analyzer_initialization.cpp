@@ -378,6 +378,29 @@ const syntax::Expr* Analyzer::reference_list_element(const syntax::BracedInitLis
 		: nullptr;
 }
 
+bool Analyzer::direct_enum_list(const syntax::BracedInitList& list, const Type* type, Scope* scope)
+{
+	// P0138R2: direct-list-initialization of a fixed enumeration checks
+	// the single scalar element against its underlying type, without
+	// narrowing. Copy-list-initialization keeps its ordinary rules.
+	const Type* bare = type->unqualified;
+	if (!cxx17_ || bare->kind != TypeKind::Enum || list.elements.size != 1)
+		return false;
+	const EnumEntity* enumeration = static_cast<const EnumEntity*>(bare->entity);
+	if (!enumeration->fixed)
+		return false;
+	const syntax::Expr& element = *list.elements[0];
+	const ExprFacts* source = typed_value(element, scope);
+	if (source == nullptr)
+		return true;
+	if (!IsScalar(source->type->unqualified) || source->type->unqualified == bare)
+		return false;
+	const Conversion* conversion = convert(element, enumeration->underlying, false);
+	if (conversion != nullptr && check_narrowing(element, conversion, enumeration->underlying, scope))
+		new_facts(list, type, ValueCategory::LValue);
+	return true;
+}
+
 void Analyzer::list_initialize(const syntax::BracedInitList& list, const Type* type, Scope* scope)
 {
 	// 8.5.4 for the slice: arrays element by element, scalars from at most

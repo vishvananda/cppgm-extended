@@ -597,7 +597,8 @@ private:
 	ExprFacts* functional_cast(const syntax::FunctionalCastExpr& expr, Scope* scope);
 	ClassEntity* deduction_template(const syntax::Slice<syntax::DeclSpecifier>& type, Scope* scope);
 	const Type* deduce_class_type(ClassEntity* templ, const syntax::Slice<syntax::Expr*>& arguments, Scope* scope,
-		uint32_t location, bool copy_initialization = false, bool list_initialization = false);
+		uint32_t location, bool copy_initialization = false, const syntax::BracedInitList* list = nullptr);
+	bool class_deduction_copy_source(ClassEntity* templ, ClassEntity* source);
 	const Type* deduce_class_declaration(
 		const Specifiers& specifiers, const syntax::InitDeclarator& init, Scope* scope, uint32_t location);
 	TemplateHead* class_deduction_head(ClassEntity* owner, const TemplateHead* inner, TypeList& remap);
@@ -1250,6 +1251,7 @@ private:
 	void check_const_default(ClassEntity* entity, const FunctionEntity* constructor, uint32_t location);
 	bool nontrivial_destruction(const Type* type);
 	void list_initialize(const syntax::BracedInitList& list, const Type* type, Scope* scope);
+	bool direct_enum_list(const syntax::BracedInitList& list, const Type* type, Scope* scope);
 	void aggregate_initialize(const syntax::BracedInitList& list, ClassEntity* entity, Scope* scope);
 	void aggregate_members(const syntax::BracedInitList& list, uint32_t& next, ClassEntity* entity, Scope* scope);
 	bool aggregate_default_member(const DataMember* member);

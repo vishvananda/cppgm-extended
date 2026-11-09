@@ -1,0 +1,58 @@
+Source: https://cplusplus.github.io/CWG/issues/2251.html
+Full historical text follows; DELETE/INSERT markers preserve, rather than apply, edits.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2251. Unreachable enumeration list-initialization
+Section: 9.5.5 [dcl.init.list [1]] Status: C++17 Submitter: Richard Smith Date:
+2016-03-22
+
+[Adopted at the February/March, 2017 meeting.]
+
+P0138R2 adds a new bullet for enum initialization after bullet 8 of 9.5.5 [dcl.init.list
+[2]] paragraph 3. However, paragraph 7 already dealt with all the cases where the
+initializer list contains a single element and the target type is a non-reference type,
+so the new paragraph 9 rule is unreachable.
+
+Proposed resolution (December, 2016):
+
+Reorder the bullets in 9.5.5 [dcl.init.list [2]] paragraph 3 as follows:
+
+List-initialization of an object or reference of type T is defined as follows:
+
+-
+
+...
+
+-
+
+Otherwise, if T is a class type, constructors are considered...
+
+-
+
+[INSERT: Otherwise, if T is an enumeration with a fixed underlying type (9.8.1 [dcl.enum
+[3]]), the initializer-list has a single element v, and the initialization is
+direct-list-initialization, the object is initialized with the value T(v) (7.6.1.4
+[expr.type.conv [4]]); if a narrowing conversion is required to convert v to the
+underlying type of T, the program is ill-formed. [Example:...]
+
+-
+
+Otherwise, if the initializer list has a single element of type E...
+
+-
+
+Otherwise, if T is a reference type...
+
+-
+
+[DELETE: Otherwise, if T is an enumeration with a fixed underlying type...]
+
+Source links:
+[1] https://wg21.link/dcl.init.list
+[2] https://wg21.link/dcl.init.list#3
+[3] https://wg21.link/dcl.enum
+[4] https://wg21.link/expr.type.conv

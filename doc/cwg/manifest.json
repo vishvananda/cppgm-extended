@@ -1965,6 +1965,32 @@
         "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
         "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
       }
+    },
+    {
+      "issue": 2251,
+      "file": "issue-2251.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2251.html",
+      "source_html_sha256": "05081fa44e396c84c61864a77e25cd7ec0c2182fb987c17393fd45d63a9f20b0",
+      "text_sha256": "69baf324b5e7c52eb005c02bfa8b8c314fc56bac1e3296cdc8cab03f801822da",
+      "retrieved": "2026-11-09",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "deletions/insertions preserved, not applied"
+      }
+    },
+    {
+      "issue": 2374,
+      "file": "issue-2374.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2374.html",
+      "source_html_sha256": "6fe13b6eba543f426e2b6d91397e55bc0e7897b72ad7ee2921f8cee4031be58d",
+      "text_sha256": "4522d716fd09e9a649bd1918e6ecafd7c5142113bb36d8edccaf6836a77885ad",
+      "retrieved": "2026-11-09",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "deletions/insertions preserved, not applied"
+      }
     }
   ],
   "supplemental_papers": [
@@ -2256,6 +2282,21 @@
         "path": "scripts/cwg_html_text.py",
         "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
         "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
+      "paper": "P0138R2",
+      "file": "paper-p0138r2.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0138r2.pdf",
+      "source_pdf_file": "paper-p0138r2.pdf",
+      "source_pdf_sha256": "e9aa39735d69badf3275ff1f4b64e5020c7e0d1bc75eefa231f029fe661134e1",
+      "text_sha256": "fa0cb7c23b54f7e7d234bb84aa87c6a95619fcd30d045754a7d74483d904bd94",
+      "retrieved": "2026-11-09",
+      "text_renderer": {
+        "module": "pypdf",
+        "version": "7.0.0",
+        "mode": "layout",
+        "historical_edits": "full historical text retained; adjacent original PDF preserves typography"
       }
     }
   ]

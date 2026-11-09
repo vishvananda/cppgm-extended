@@ -1,0 +1,35 @@
+function @scan(%selector : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = cmp ult i64 %selector, 2
+    branch %t1, ^exit, ^unrolled_1
+
+  block ^unrolled_1:
+    %t2 = binary add i64 %selector, 1
+    %t3 = cmp ult i64 %t2, 2
+    branch %t3, ^exit, ^unrolled_2
+
+  block ^unrolled_2:
+    %t4 = binary add i64 %selector, 2
+    %t5 = cmp ult i64 %t4, 2
+    branch %t5, ^exit, ^unrolled_3
+
+  block ^unrolled_3:
+    %t6 = binary add i64 %selector, 3
+    %t7 = cmp ult i64 %t6, 2
+    %t8 = select i64 %t7, 3, 4
+    jump ^exit
+
+  block ^exit:
+    %t9 = phi i64 [^entry: 0, ^unrolled_1: 1, ^unrolled_2: 2, ^unrolled_3: %t8]
+    return i64 %t9
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %one = call i64 @scan(-1)
+    %none = call i64 @scan(2)
+    %a = cmp eq i64 %one, 1
+    %b = cmp eq i64 %none, 4
+    %ok = binary and i64 %a, %b
+    %status = select i32 %ok, 0, 1
+    return i32 %status
+}

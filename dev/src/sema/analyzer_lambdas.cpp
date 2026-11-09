@@ -198,6 +198,18 @@ ExprFacts* Analyzer::templated_lambda(
 	closure->complete = true;
 	if (semantic())
 		number_closure(closure, facts);
+	// Discovery walks the generic body before its specializations exist.
+	// Its enclosing lambdas must supply storage for these captures now,
+	// while their capture frames are still being constructed.
+	for (const Entity* entity : frame.captures)
+	{
+		if (entity->kind == EntityKind::Variable && static_cast<const VariableEntity*>(entity)->init_capture)
+			continue;
+		if (!capture_variable(entity, expr.location))
+			error(expr.location, "a lambda captures an automatic variable outside its enclosing function");
+	}
+	if (frame.this_captured)
+		capture_this(expr.location);
 	finish_captures(frame);
 	if (semantic())
 	{
