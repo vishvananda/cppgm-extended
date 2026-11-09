@@ -4821,11 +4821,7 @@ function @check
     mov rsi, rbx
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok0
-
-  block ^bad0
-    mov rax, 1
-    ret rax
+    je ^bad200
 
   block ^ok0
     mov rdi, r12
@@ -4834,11 +4830,7 @@ function @check
     lea rsi, [rbx+16]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok1
-
-  block ^bad1
-    mov rax, 2
-    ret rax
+    je ^bad201
 
   block ^ok1
     mov rdi, r12
@@ -4847,11 +4839,7 @@ function @check
     lea rsi, [rbx+32]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok2
-
-  block ^bad2
-    mov rax, 3
-    ret rax
+    je ^bad202
 
   block ^ok2
     mov rdi, r12
@@ -4860,11 +4848,7 @@ function @check
     lea rsi, [rbx+48]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok3
-
-  block ^bad3
-    mov rax, 4
-    ret rax
+    je ^bad203
 
   block ^ok3
     mov rdi, r12
@@ -4873,11 +4857,7 @@ function @check
     lea rsi, [rbx+64]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok4
-
-  block ^bad4
-    mov rax, 5
-    ret rax
+    je ^bad204
 
   block ^ok4
     mov rdi, r12

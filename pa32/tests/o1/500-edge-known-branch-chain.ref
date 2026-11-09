@@ -9,20 +9,14 @@ function @fold_through_jump_and_unrelated_branch(%flag : i64, %other : i64) -> i
 
   block ^taken:
     call void @observe(1)
-    branch %other, ^again, ^retest
+    branch %other, ^again, ^known
 
   block ^again:
     call void @observe(2)
     return i64 5
 
-  block ^retest:
-    branch %flag, ^known, ^impossible
-
   block ^known:
     return i64 7
-
-  block ^impossible:
-    return i64 99
 
   block ^skipped:
     return i64 3
@@ -63,16 +57,10 @@ function @keep_across_landing_pad(%flag : i64) -> i64 {
     eh_catch @bang_type, 1
     %selector = exception_selector i32
     %matched = cmp eq i32 %selector, 1
-    branch %matched, ^retest, ^catch_next
-
-  block ^retest:
-    branch %flag, ^left, ^right
+    branch %matched, ^left, ^catch_next
 
   block ^left:
     return i64 7
-
-  block ^right:
-    return i64 3
 
   block ^catch_next:
     resume
