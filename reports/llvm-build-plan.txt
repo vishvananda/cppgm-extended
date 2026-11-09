@@ -700,3 +700,28 @@ cppgm output identity and generated-Clang performance remain pending.
 Immutable tools: compiler-block16-builtin-candidate-guard. Receipt outside the
 checkout: block16-deduction-captures-validation.json. All failed and superseded
 observations are retained.
+
+
+Block 17: default arguments on allocation calls (accepted)
+--------------------------------------------------------
+Scalar and array new-expressions complete the selected allocation call with
+its trailing default arguments. Defaults are instantiated when used, evaluated
+once, participate in noexcept, and retain temporary/exception cleanup. Five
+controls cover PA12:400, PA15:100, PA16:100 and PA21:100. An initial placement
+check correctly moved the combined scalar/array test from PA12:300 to :400.
+
+Final strict 9915/9915, debug/modern, all audits, PA5 self-host, inception,
+harness, PA35 quick/smoke and full course/student release gates pass. All 30
+cppgm/GCC/Clang O0/O3 observations pass. The final export checks 219 documents,
+42 wrappers and five fixtures. Frozen compile instructions remain essentially
+unchanged versus B13, with identical frozen objects; all source hashes match
+the snapshot.
+
+The fresh LLVM build completes all 3163 clang-target steps, including 2577 C++
+compilations by cppgm. All 187 shared generated headers/driver source files
+match native LLVM. The built Clang compiles and runs the tiny C++ program at
+O0 and O3, producing objects byte-identical to the native-built Clang. Compiling
+cppgm exposes a conditional class-return conversion bug; the next block handles
+that runtime gap. Complete cppgm object identity and both timing comparisons
+remain pending. Immutable tools: compiler-block17-allocation-defaults. Receipt:
+block17-allocation-defaults-validation.json outside the checkout.
