@@ -790,3 +790,36 @@ source commit: the immutable manifest's older revision is retained, and
 block19-source-provenance.json verifies its actual source hashes against this
 commit. Receipt: block19-static-aggregate-defaults-validation.json outside
 the checkout. All original and superseded observations remain available.
+
+
+Block 20: constant-input switch threading (accepted)
+--------------------------------------------------
+Jump threading now follows a switch whose selector folds from the incoming
+phi values, including integer extensions and default cases. Undecided switches
+are not cloned. At most 32 cases are examined per incoming edge, keeping this
+work bounded. Three PA32:500 regressions cover union/tag dispatch, signed and
+default labels, and values that must remain available after the switch.
+
+The reduced union visitor falls from 18 instructions in eight blocks to six
+instructions in one block. All nine independent native-driver O0/O2/O3 checks
+pass. Strict 9920/9920, debug/modern, all audits, PA5 self-host, inception,
+harness, export, PA35 quick/smoke and full course/student releases pass. Initial
+audit/export attempts caught missing generated outcome expectations; the
+canonical generator supplied them, and final audit/export checks pass. The
+export also passes all wrappers and the three new fixtures.
+
+Frozen compile instruction ratios against B19 are O0 0.999992 and O3 1.000268,
+with identical objects. Fresh LLVM completes all 2577 C++ compilations, and
+both built Clangs again produce 323/323 identical cppgm objects and identical
+linked compilers. On the full frozen cppgm input, cppgm-built Clang retires
+1.243526 trillion instructions versus B19's 1.244026 trillion: approximately
+0.04% less. Native remains at 1.090 trillion. The isolated visitor improves,
+but this change does not substantially close the whole LLVM runtime gap.
+Concurrent load increased substantially during timing, so the later wall-time
+and cycle ratios do not measure improvement against the earlier run.
+
+Source 1fe0de90cc0e0d7ac9a5c5015a4f3cf6b1e5e729; subsequent fixture-only commit
+0c86435b2 supplies generated outcome expectations. Immutable tools:
+compiler-block20-constant-phi-switch. Receipt outside checkout:
+block20-constant-phi-switch-validation.json. Profiling and further candidates
+continue; the LLVM build-time comparison is still running on frozen B19 tools.
