@@ -753,3 +753,40 @@ sentinels. The next block fixes that C++14 initialization gap. Whole-build
 byte identity and formal timings remain pending. Immutable tools:
 compiler-block18-conditional-conversion; receipt outside checkout:
 block18-conditional-conversion-validation.json.
+
+
+Block 19: static aggregate default member initializers (accepted)
+---------------------------------------------------------------
+Static aggregate arrays now evaluate omitted default member initializers
+through the typed initializer path, including earlier-member references and
+effects. The zero-data shortcut also declines elements with such defaults.
+Three optional PA29 C++14 regressions cover sentinel cost tables, contextual
+defaults and ordered effects. All 18 cppgm/GCC/Clang O0/O3 observations pass.
+
+Strict 9917/9917, debug/modern, all audits, PA5 self-host, inception, harness,
+PA35 quick/smoke and full course/student release gates pass. The export checks
+219 documents, 42 wrappers and the three new fixtures. Frozen instruction
+ratios against B18 are O0 1.000007 and O3 1.000022, with identical objects.
+
+The fresh LLVM build completes all 3163 target steps, including all 2577 C++
+compilations by cppgm. Both built Clangs compile all 323 cppgm translation
+units with byte-identical objects; the linked cppgm executables are also
+byte-identical (SHA256 854aa8fe46e9fc407192c02136e1e5715e391f27c2b9bec6f58aa05e66024f66).
+The resulting cppgm passes the three new regressions. This closes the first
+build and downstream byte-identity objectives for LLVM 22.1.2.
+
+A/A plus paired ABBA runs compiling all 323 cppgm units at 12 jobs give
+45.005 s for native-built Clang and 54.420 s for cppgm-built Clang: ratio
+0.826994, or 20.9% longer elapsed time. C++ child CPU time is 483.651 s versus
+591.808 s (22.4% longer); retired instructions increase by 14.1%. Every run
+retains identical objects and linked output. Both exact LLVM builds use
+Release -O3 without PGO or LTO. These runs share a loaded host, so the raw
+CPU/counter observations are retained alongside wall time. Formal LLVM build
+timing is running separately; no final LLVM build-time ratio is claimed yet.
+
+Immutable tools: compiler-block19-static-aggregate-defaults. Actual source:
+16384551d39b07cf7789e3577ff5b312d5222d77. Its snapshot was frozen before the
+source commit: the immutable manifest's older revision is retained, and
+block19-source-provenance.json verifies its actual source hashes against this
+commit. Receipt: block19-static-aggregate-defaults-validation.json outside
+the checkout. All original and superseded observations remain available.
