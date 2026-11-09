@@ -302,6 +302,10 @@ word widths and constants. Their behavior drivers exercise every byte input,
 wider seeds and cases that invalidate a shortcut. Any equivalent arithmetic
 or data-based solution meeting the size bounds is acceptable.
 
+An object returned by value is a read of its storage, not an escape of its
+address. Preserve actual address captures, pointer returns, volatile reads
+and physical frame observations when combining field copies.
+
 Recursive-dispatch fixtures bound redundant call layers around loop work.
 Preserve recursive exits, argument effects, unwinding and the stated code-size
 bounds; the tests do not prescribe a particular call-graph algorithm.

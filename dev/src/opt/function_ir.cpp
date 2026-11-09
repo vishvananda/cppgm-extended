@@ -51,6 +51,13 @@ std::vector<uint8_t> escaped_slots(const FunctionBody& body, bool any_index)
 		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
 		{
 			const Instruction& inst = body.instructions[i];
+			// Frame-address observations can reach storage without naming a
+			// slot. Keep every slot conservatively exposed in that case.
+			if (inst.op == Opcode::FrameAddress)
+			{
+				std::fill(escaped.begin(), escaped.end(), 1);
+				return escaped;
+			}
 			if (inst.op == Opcode::Addr || (inst.op == Opcode::Copy && inst.type.is_pointer()) ||
 				(inst.op == Opcode::Index && (any_index || inst.ops[1].is(ValueKind::Integer))))
 			{
@@ -63,8 +70,12 @@ std::vector<uint8_t> escaped_slots(const FunctionBody& body, bool any_index)
 			uint32_t position = 0;
 			for_each_operand(body, inst, [&](const Value& v) {
 				const uint32_t at = position++;
-				if (!((inst.op == Opcode::Load && at == 0) || (inst.op == Opcode::Store && at == 1) ||
-						inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit))
+				// An object return reads the storage's value, as an object load
+				// does; returning a pointer still exposes its address.
+				if (!((inst.op == Opcode::Load && at == 0) ||
+						(inst.op == Opcode::Return && inst.type.is_object() && at == 0) ||
+						(inst.op == Opcode::Store && at == 1) || inst.op == Opcode::CopyObject ||
+						inst.op == Opcode::ZeroInit))
 					leaves(v);
 			});
 		}

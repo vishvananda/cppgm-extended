@@ -1,0 +1,38 @@
+Returned-object storage candidate, 2026-11-09
+===========================================
+
+This is unaccepted follow-up work based on B44's implementation checkpoint
+2503e562a. It is not part of the accepted compat/llvm branch.
+
+A two-u32 object returned by value retained two loads, a shift, an OR and
+register copies: seven instructions versus a load and return with GCC 15
+and Clang 22. Generic escape analysis marked the return's storage address
+as published. Treating that operation as an object-value read lets the
+existing copy coalescer make a contiguous copy; the native backend emits
+exactly the same wide load and return as the upstream compilers. Actual
+pointer returns and captured addresses remain escapes; a physical frame
+observation conservatively exposes every slot. Volatile loads do not merge.
+
+Normal PA32 O2 raw/source fixtures and the object-roundtrip lane cover values,
+pointers, capture, volatile fields, repeated/reversed fields and frame
+observations. The source runtime checks 4096 data patterns plus overlapping
+captured storage. Parent, candidate, GCC and Clang all pass at O0 through O3
+(16 observations); O2/O3 per-pass verification and source replay pass, as do
+normal and debug object roundtrips.
+
+Strict 9993/9993, debug/modern, all architecture/file/placement/CWG audits,
+harness, PA5 self-host and inception pass. Frozen O0/O3 objects match the
+parent: instruction ratios 0.99997183 and 1.00022963 (+0.023%), RSS below the
+parent. Snapshot: compiler-block45-object-returns-r1, cppgm SHA256
+ee3312496bebf3bf6e364817afae527e1c494d203563c02c7b1cec7a282cc509.
+
+An earlier one-line diagnostic without the frame guard replaces 37/64
+profile-selected LLVM objects. Its instruction ratio is 0.9989051, but A/A
+variation is 0.1427%, larger than the 0.1095% apparent saving. Every output
+byte matches. No resolved downstream runtime/instruction win is claimed, and
+no fresh full LLVM build or full course/student release has been run for
+this candidate. Keep it for grouping with further measured improvements.
+
+Evidence: /mnt/vizier/cppgm-llvm-evidence/block45-* . The private diagnostic
+compiler and native-substitution experiments are localization evidence, not
+a qualified production compiler or whole-build performance result.

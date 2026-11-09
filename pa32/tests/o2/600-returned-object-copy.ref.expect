@@ -1,0 +1,6 @@
+count(copyobj) >= 1 in @returned_value
+count(copyobj) <= 0 in @captured_value
+count(copyobj) <= 0 in @returned_address
+count(copyobj) <= 0 in @volatile_value
+count(load volatile) >= 2 in @volatile_value
+count(copyobj) <= 0 in @observed_frame
