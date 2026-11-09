@@ -19,7 +19,7 @@ function @joined(%p : ptr, %take : i1) -> i64 [no_inline=yes] {
 
   block ^joined:
     %again = cmp eq ptr %p, 0
-    %r = select i64 %again, 1, %again
+    %r = select i64 %again, 1, 0
     return i64 %r
 
   block ^done:
