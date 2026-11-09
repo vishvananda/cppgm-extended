@@ -66,9 +66,10 @@ Build observations include SCons and GCC linking. Runtime gives all five workloa
 ### Boost compilation and test execution
 
 The [Boost performance lane](../../../benchmarks/boost/README.md) measures the
-existing 1,818 C++11 debug test declarations with cppgm, GCC and Clang. Its
-[reports by host](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/report.md)
-show compile CPU speed and separate correctness-test execution timings. These
+existing 1,818 C++11 test declarations with cppgm, GCC and Clang at O3 with assertions enabled
+(GDB retains its debug settings for correctness only). Its
+[reports by host](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/o3/report.md)
+show compile CPU speed, paired native test runtime and per-test detail. These
 are fresh automatic measurements rather than the snapshots above.
 
 ### Adding a workload or configuration

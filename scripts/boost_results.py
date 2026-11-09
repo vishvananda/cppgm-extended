@@ -27,7 +27,7 @@ def normalize(artifact, environment, run_url, details_url, raw_url):
     provenance = dict(archive_sha256=document['archive_sha256'], metadata=metadata,
                       raw_per_test_timings='results.json compilers/label/suites/tests',
                       source='fresh extraction of the verified upstream archive')
-    base = dict(workload='boost', configuration='debug', host=host,
+    base = dict(workload='boost', configuration='o3' if producer.optimized(document) else 'debug', host=host,
                 revision=metadata['revision'], status='passed', provenance=provenance,
                 context=dict(language='C++11', target_isa='baseline x86-64; no native CPU tuning',
                              standard_library=metadata['standard_library'], workers=metadata['jobs'],
@@ -61,7 +61,8 @@ def normalize(artifact, environment, run_url, details_url, raw_url):
                 ('test-execution', 'test_cpu', 'native test actions',
                  'Ratio of sums of native test child CPU seconds, including startup and GDB integration; '
                  'one clean campaign per compiler; correctness-test timing, not application throughput')]:
-            selected = {label: [r for r in value if phase == 'compile' or r['kind'] in ('RUN', 'RUN_FAIL')]
+            selected = {label: [r for r in value if (phase != 'compile' or not producer.optimized(document) or r['target'] != producer.boost_runtime.GDB)
+                               and (phase == 'compile' or r['kind'] in ('RUN', 'RUN_FAIL'))]
                         for label, value in rows.items()}
             if not selected['cppgm']:
                 continue
@@ -70,10 +71,30 @@ def normalize(artifact, environment, run_url, details_url, raw_url):
                 reference = sum(r.get(key, 0) for r in selected[ref])
                 if min(candidate, reference) <= 0:
                     raise ValueError('missing positive Boost timing')
-                records.append(dict(base, baseline=ref, test=project, scope=scope, phase=phase, optimization=optimization,
+                records.append(dict(base, baseline=ref, test=project, scope=scope, phase=phase, optimization='O3' if phase == 'compile' and producer.optimized(document) else optimization,
                                     metric='cpu_seconds', method=method, coverage=coverage(selected['cppgm'], unit),
                                     speedup=reference / candidate,
                                     candidate_seconds=candidate, reference_seconds=reference))
+    runtime = document.get('runtime')
+    if runtime is not None:
+        for project, group in [('all-suites', runtime), *runtime['suites'].items()]:
+            selected = [r for r in producer.cases(document['compilers']['cppgm']).values()
+                        if producer.boost_runtime.eligible(r) and (project == 'all-suites' or r['target'].split('//')[0] == project)]
+            cov = coverage(selected, 'native test programs')
+            cov['excluded'] = sum(project == 'all-suites' or r['target'].split('//')[0] == project
+                                  for r in runtime['exclusions'])
+            for reference, value in group['comparisons'].items():
+                records.append(dict(base, baseline=reference, test=project, scope='summary' if project == 'all-suites' else 'test',
+                                    phase='runtime', optimization='O3' if producer.optimized(document) else 'O0',
+                                    metric='cpu_seconds', coverage=cov, speedup=value['speedup'],
+                                    candidate_seconds=value['candidate_seconds'], reference_seconds=value['reference_seconds'],
+                                    method='Median reference/cppgm speedup of mirrored ABBA/BAAB block CPU means; '
+                                    'two warmups per compiler, four A/A observations per reference; repeated short programs normalized '
+                                    'to one execution; verification and GDB excluded; native process startup included',
+                                    provenance=dict(provenance, runtime_replay={k: runtime[k] for k in
+                                                    ('selected', 'blocks', 'output_equality_cases', 'case_set_sha256')},
+                                                    paired_blocks=value['blocks'], calibration=value['calibration'],
+                                                    raw_runtime_observations='runtime/batches.jsonl and runtime/NNN-*.jsonl')))
     all_rows = list(producer.cases(document['compilers']['cppgm']).values())
     cov = coverage(all_rows, 'Boost test declarations per compiler')
     validation = dict(base, optimization='mixed', oracle='Original B2 compile/link/run and expected-failure actions, including GDB; all three compilers',

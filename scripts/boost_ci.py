@@ -113,7 +113,8 @@ def review(xml_path, log_path, calls_path, project, expected, label='cppgm', nat
                 for arg in c['command'] if arg and not arg.startswith('-'))]
             if executed:
                 require(len(executed) == 1, f'duplicate native measurement for {target}')
-                row.update(test_cpu=executed[0]['cpu_seconds'], test_elapsed=executed[0]['elapsed_seconds'])
+                row.update(test_cpu=executed[0]['cpu_seconds'], test_elapsed=executed[0]['elapsed_seconds'],
+                           native_command=executed[0]['command'], native_cwd=executed[0]['cwd'])
         rows.append(row)
         counts[kind] += 1
     return dict(project=project, declarations=len(declarations), passed=len(rows), counts=dict(counts), tests=rows,
@@ -155,6 +156,7 @@ def main():
     parser.add_argument('--compiler', type=Path, default=Path('dev/cppgm++'))
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--jobs', type=int, default=4)
+    parser.add_argument('--optimization', choices=('O0', 'O3'), default='O0')
     parser.add_argument('--label', choices=('cppgm', 'gcc', 'clang'), default='cppgm')
     parser.add_argument('--host-cxx', default='g++')
     parser.add_argument('--host-cc', help='C driver; defaults to gcc, or the sibling clang for the Clang lane')
@@ -203,6 +205,8 @@ def main():
                        'testing.launcher=' + shlex.quote(str(launcher)),
                        'threading=multi', '--build-dir=' + str(output / 'build'), '--reconfigure', '-a', '-d2',
                        project, '--out-xml=' + str(case / 'b2.xml'), '--dump-tests']
+            if args.optimization == 'O3':
+                command += ['optimization=speed', 'inlining=full', 'debug-symbols=off']
             # The original JSON Jamfile declares this target explicit; the
             # project alone builds its 49 ordinary tests but omits GDB.
             if project == 'libs/json/test':

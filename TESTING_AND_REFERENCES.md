@@ -90,16 +90,18 @@ PA29's optional x86 target-feature checks run with `make test-target-features`
 
 The **Boost benchmarks** workflow runs on main pushes, pull requests and manual
 requests. It keeps the advisory's exact 17-suite Boost 1.92 selection: **1,818
-C++11 debug test declarations**, including expected failures and JSON's GDB
-pretty-printer integration. cppgm, GCC and Clang must validate the same original
+C++11 test declarations**, including expected failures and JSON's GDB
+pretty-printer integration. Performance builds use O3 with assertions enabled;
+GDB retains Og/debug settings for correctness only. cppgm, GCC and Clang validate the same original
 B2 oracles; missing tests and compiler crashes fail the check.
 
 [Scope, timing method and reproduction](benchmarks/boost/README.md) ·
-[Published results by host](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/report.md).
-Compile CPU excludes B2, configuration probes, library dependencies, C and linking. Native test
-execution is reported separately from application runtime benchmarks. PR results
+[Published results by host](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/boost/o3/report.md).
+Compile CPU excludes B2, configuration probes, library dependencies, C, linking and GDB.
+Paired native test replays measure runtime separately, repeating short programs
+and retaining A/A calibration. PR results
 are in the summary and artifact; successful main runs publish shared records,
-compile badges and per-suite detail. The failure controls are in `make test-harness`.
+compile/runtime badges and per-suite detail. The failure controls are in `make test-harness`.
 
 ## Public benchmarks CI
 

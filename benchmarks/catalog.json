@@ -62,8 +62,21 @@
       "documentation": "benchmarks/boost/README.md",
       "configurations": [
         {
+          "id": "o3",
+          "name": "17 C++11 suites at O3 with assertions; GDB correctness-only",
+          "optimizations": [
+            "O3",
+            "mixed"
+          ],
+          "parameters": {
+            "version": "1.92.0",
+            "suites": 17,
+            "test_declarations": 1818
+          }
+        },
+        {
           "id": "debug",
-          "name": "The 17 pinned upstream C++11 debug suites",
+          "name": "Historical 17-suite C++11 debug campaigns",
           "optimizations": [
             "O0",
             "mixed"
