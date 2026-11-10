@@ -6,7 +6,7 @@
 namespace driver {
 
 // The hosted environment of cppgm++'s preprocess, compile and link modes
-// (PA26's hosted headers, PA29): the host C++ compiler's predefined macros
+// (PA26's hosted headers, PA30): the host C++ compiler's predefined macros
 // (gnu++11) and standard include directories, discovered once when cppgm++
 // was built (dev/gen_builtin_host_config.pl) and baked in, so the answer
 // does not depend on the compiler installed where cppgm++ runs. Turns on

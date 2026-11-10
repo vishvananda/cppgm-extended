@@ -87,7 +87,7 @@ jobs:
       - name: Measure optional course exercises
         if: github.event_name == 'workflow_dispatch' && inputs.course_quality
         run: |
-          python3 scripts/check_optimization_quality.py pa32/tests/improvements \
+          python3 scripts/check_optimization_quality.py pa33/tests/improvements \
             --mode native --compiler dev/cppgm++ --report-only \
             --iterations 1000000 --timing-rounds 6 \
             --out obj/public-benchmarks/course-quality
@@ -201,7 +201,7 @@ jobs:
                 --details obj/public-benchmarks/details.md \
                 --badges obj/public-benchmarks/badges
               if [ "$COURSE_QUALITY" = true ]; then
-                python3 scripts/check_optimization_quality.py pa32/tests/improvements \
+                python3 scripts/check_optimization_quality.py pa33/tests/improvements \
                   --mode native --compiler dev/cppgm++ --report-only \
                   --iterations 1000000 --timing-rounds 6 \
                   --out obj/public-benchmarks/course-quality

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check the compiler options of required course lanes, including their wrappers.
 
-PA32 introduces IR optimization; PA33 introduces native optimization.
+PA33 introduces IR optimization; PA34 introduces native optimization.
 Inspect expanded course recipes (both batch
 modes), not host build flags or fixture names. Follow local runner/wrapper
 scripts and their literal per-test guards. Separate debug preservation and
@@ -19,8 +19,8 @@ from check_fixture_lanes import (
 )
 
 
-OPTIMIZER_PA = 32
-NATIVE_OPTIMIZER_PA = 33
+OPTIMIZER_PA = 33
+NATIVE_OPTIMIZER_PA = 34
 POSITIVE_OPT = re.compile(r"(?<![\w/])-O(?:[1-9]\d*|fast|[sgz])?(?![\w-])")
 CANDIDATE = re.compile(r"CPPGM_APP_ARGS|cppgm\+\+|lowiropt|lowir2native|candidate|"
                        r"\b(?:\w+_)?(?:app|driver|backend|compiler|command|args|options)\b", re.I)
@@ -128,7 +128,7 @@ def scan_optimization_requirements(root, pas):
             inputs = {p.relative_to(directory).as_posix()
                       for p in (directory / 'tests').rglob('*')
                       if p.is_file() and p.suffix in ('.t', '.cpp', '.lowir')
-                      and not {'regression', 'debuginfo', 'modern-cxx'} & set(p.parts)}
+                      and not {'regression', 'debuginfo'} & set(p.parts)}
             scripts = {}
             test_owners = {}
             for batch in ('', '1'):

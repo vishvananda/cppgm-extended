@@ -324,7 +324,7 @@ Useful intermediate representations include:
 A virtual call is an ordinary load of the vpointer, a load from the vtable
 and an indirect call. Keep it that way, with vtables as `storage=readonly`
 structured data and vpointer writes as ordinary stores in the constructors.
-Then PA32 needs no virtual-call machinery to turn a call on an object of known
+Then PA33 needs no virtual-call machinery to turn a call on an object of known
 type into a direct one: once the constructor is inlined, memory forwarding
 knows the vpointer, a load from readonly data at a constant offset yields the
 function's address, and an indirect call through an `addr` becomes direct.

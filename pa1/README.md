@@ -488,7 +488,7 @@ The pipeline above is the clearest way to get every translation rule right,
 and it is a fine way to finish PA1. What follows is one representation that
 scales; any design that meets the
 output here and the speed gates later is acceptable. Later assignments lex all of the host's
-standard library headers for every translation unit, and PA34 compiles the
+standard library headers for every translation unit, and PA35 compiles the
 compiler itself: millions of bytes per compile. There, a pipeline that
 handles one code point at a time through several state machines, or stores
 a record for every character, becomes the compiler's largest cost. What

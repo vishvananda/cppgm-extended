@@ -284,7 +284,7 @@ class RebuildTimingTests(unittest.TestCase):
 
         def measure(command, cwd, timeout, log, stdout):
             self.command = command
-            build = directory / 'pa34'
+            build = directory / 'pa35'
             objects = build / 'selfhost'
             objects.mkdir(parents=True)
             (objects / 'one.o').write_bytes(self.object)

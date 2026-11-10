@@ -23,7 +23,7 @@ REFERENCE_TARGETS = [
 ASSIGNMENT_REFERENCE_TARGETS = {
     **{f"pa{i}": "cppgm++" for i in range(5, 8)},
     **{f"pa{i}": "cppgm++" for i in range(10, 24)},
-    **{f"pa{i}": "cppgm++" for i in range(25, 32)},
+    **{f"pa{i}": "cppgm++" for i in range(25, 33)},
     "pa1": "pptoken",
     "pa2": "posttoken",
     "pa3": "ppexpr",
@@ -31,8 +31,8 @@ ASSIGNMENT_REFERENCE_TARGETS = {
     "pa8": "lowir",
     "pa9": "abimangle",
     "pa24": "lowir2native",
-    "pa32": "lowiropt",
-    "pa33": "lowir2native",
+    "pa33": "lowiropt",
+    "pa34": "lowir2native",
 }
 
 
@@ -66,17 +66,17 @@ class ExportedDevMakefileTests(unittest.TestCase):
             'scripts/check_inline_assembly.pl': '# optional assembly checker\n',
             'dev/src/asm_model.h': '// shared assembly vocabulary\n',
             'dev/src/x86_asm_model.h': '// architectural encoding facts\n',
-            'pa36/Makefile': '# optional assignment\n',
-            'pa36/tests/source/100-stream.t': 'source fixture\n',
-            'pa36/tests/source/100-stream.assembly-profile': 'gnu\n',
-            'pa36/tests/source/100-stream.driver.cpp': 'native observer\n',
+            'pa29/Makefile': '# optional assignment\n',
+            'pa29/tests/source/100-stream.t': 'source fixture\n',
+            'pa29/tests/source/100-stream.assembly-profile': 'gnu\n',
+            'pa29/tests/source/100-stream.driver.cpp': 'native observer\n',
             'pa8/tests/general/100-valid.t': 'program input\n',
             'pa27/tests/behavior/100-layout.ref.inspect.plan': 'object contract\n',
             'pa27/tests/controls/200-section-token-safe.t': 'graded control\n',
-            'pa29/tests/modern-cxx/compile/600-extension.t': 'optional extension\n',
-            'pa29/tests/modern-cxx/compile/600-extension.cxx-standard': 'c++14\n',
-            'pa29/tests/modern-cxx/compile/600-extension.ref.exit_status': 'EXIT_SUCCESS\n',
-            'pa31/tests/modern-cxx/link/600-abi.t': 'optional ABI extension\n',
+            'pa30/tests/modern-cxx/compile/600-extension.t': 'optional extension\n',
+            'pa30/tests/modern-cxx/compile/600-extension.cxx-standard': 'c++14\n',
+            'pa30/tests/modern-cxx/compile/600-extension.ref.exit_status': 'EXIT_SUCCESS\n',
+            'pa32/tests/modern-cxx/link/600-abi.t': 'optional ABI extension\n',
         }
         excluded = [
             'scripts/private_audit.py',
@@ -84,9 +84,9 @@ class ExportedDevMakefileTests(unittest.TestCase):
             'pa28/tests/controls/100-audit-standalone-function-try.audit',
             'pa27/tests/controls/200-audit-global-variable-name.cpp',
             'pa10/plan.md', 'pa10/audit.md', 'pa10/implementation.md',
-            'pa32/optimization-path-unification-plan.md',
-            'pa32/IMPLEMENTATION.MD', 'pa33/maintainer/design-notes.md',
-            'pa34/notes/README.md', 'pa34/run-notes.md',
+            'pa33/optimization-path-unification-plan.md',
+            'pa33/IMPLEMENTATION.MD', 'pa34/maintainer/design-notes.md',
+            'pa35/notes/README.md', 'pa35/run-notes.md',
             'doc/backend-review/newcomer-notes.md',
             'doc/backend-review/mutations.txt', 'doc/compiler-native-symbol-owners.tsv',
         ]
@@ -132,19 +132,19 @@ class ExportedDevMakefileTests(unittest.TestCase):
             supplied = subprocess.run(command, capture_output=True, text=True)
             self.assertEqual(supplied.returncode, 0, supplied.stdout + supplied.stderr)
 
-    def test_pa33_export_keeps_course_without_maintainer_dependencies(self):
+    def test_pa34_export_keeps_course_without_maintainer_dependencies(self):
         script = EXPORT_SCRIPT.read_text()
-        start = script.index('prune_student_pa33() {')
+        start = script.index('prune_student_pa34() {')
         end = script.index('\n}\n', start) + len('\n}\n')
-        with tempfile.TemporaryDirectory(prefix='exported-pa33.') as temp:
+        with tempfile.TemporaryDirectory(prefix='exported-pa34.') as temp:
             root = Path(temp)
-            shutil.copytree(REPO_ROOT / 'pa33', root / 'pa33', symlinks=True,
+            shutil.copytree(REPO_ROOT / 'pa34', root / 'pa34', symlinks=True,
                             ignore=shutil.ignore_patterns('*.my*', '*.check*', '*.ref.program'))
             shutil.copytree(REPO_ROOT / 'scripts', root / 'scripts', symlinks=True)
             shutil.copy(REPO_ROOT / 'Makefile', root / 'Makefile')
             # Driver links now reuse fixtures from their earliest owning PA.
             # Include those targets as the complete exporter does.
-            for path in (root / 'pa33/tests').rglob('*'):
+            for path in (root / 'pa34/tests').rglob('*'):
                 if not path.is_symlink():
                     continue
                 source = (REPO_ROOT / path.relative_to(root)).resolve(strict=True)
@@ -152,9 +152,9 @@ class ExportedDevMakefileTests(unittest.TestCase):
                 if not destination.exists():
                     destination.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(source, destination)
-            subprocess.run(['bash', '-c', script[start:end] + '\ndest="$1"\nprune_student_pa33',
+            subprocess.run(['bash', '-c', script[start:end] + '\ndest="$1"\nprune_student_pa34',
                             'bash', str(root)], check=True)
-            pa = root / 'pa33'
+            pa = root / 'pa34'
             self.assertFalse((pa / 'maintainer').exists())
             self.assertFalse((pa / 'tests/regression').exists())
             self.assertEqual(list(pa.rglob('*.ref.ir')), [])
@@ -188,13 +188,13 @@ class ExportedDevMakefileTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exported-test-defaults.") as temp:
             root = Path(temp)
             (root / "Makefile").write_text("all:\n")
-            for pa in (24, 32, 33):
+            for pa in (24, 33, 34):
                 source = (REPO_ROOT / f"pa{pa}/Makefile").read_text()
                 # Exercise the actual file selection as well as the rewrite;
                 # a correct sanitizer does nothing for an omitted assignment.
                 default = next(line for line in source.splitlines()
                                if line.startswith("test:"))
-                # Other course lanes the default names (PA33's kernels) are
+                # Other course lanes the default names (PA34's kernels) are
                 # silent stand-ins here; the course lane is what prints.
                 others = [name for name in default.split()[1:]
                           if name not in ("test-course", "test-regression")]
@@ -210,7 +210,7 @@ class ExportedDevMakefileTests(unittest.TestCase):
                 ["bash", "-c", sanitize + '\ndest="$1"\n' + selection,
                  "bash", str(root)], check=True,
             )
-            for pa in (24, 32, 33):
+            for pa in (24, 33, 34):
                 with self.subTest(pa=pa):
                     for target, expected in (("test", "course"),
                                              ("test-regression", "regression")):

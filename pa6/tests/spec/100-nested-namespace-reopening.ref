@@ -2,7 +2,6 @@
 start translation unit 1
 translation-unit
   scope namespace <global>
-    type-alias Item int
     scope namespace outer
       scope namespace inner
         variable value int

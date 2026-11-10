@@ -15,7 +15,7 @@ use Getopt::Long;
 
 # The source-value sidecars have authored outcomes and no generated budgets.
 # Other assignments retain their generated budget tolerances, in percent.
-my %tolerance = (pa10 => 0, pa12 => 0, pa16 => 0, pa24 => 100, pa32 => 10, pa33 => 10);
+my %tolerance = (pa10 => 0, pa12 => 0, pa16 => 0, pa24 => 100, pa33 => 10, pa34 => 10);
 
 my %o = (root => "$FindBin::Bin/..");
 GetOptions(\%o, 'root=s', 'backend=s', 'write') && !@ARGV

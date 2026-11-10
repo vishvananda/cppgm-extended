@@ -26,14 +26,14 @@ from audit_test_requirements import scan_optimization_requirements
 
 
 DEFAULT_TRACKER = Path("scripts/architecture/pa-feature-placement.md")
-COURSE_PA_COUNT = 35
-OPTIONAL_PAS = ("pa36",)
+COURSE_PA_COUNT = 36
+OPTIONAL_PAS = ()
 COURSE_PAS = tuple(f"pa{i}" for i in range(1, COURSE_PA_COUNT + 1))
 AUDITED_PAS = COURSE_PAS + OPTIONAL_PAS
-# Self-hosting (PA34) and optimizing the compiler (PA35) add no language
+# Self-hosting (PA35) and optimizing the compiler (PA36) add no language
 # feature, so no feature table row may name either as its owner.
-NO_FEATURE_PAS = frozenset({"pa34", "pa35"})
-DEFAULT_PAS = tuple(f"pa{i}" for i in range(10, 24)) + OPTIONAL_PAS
+NO_FEATURE_PAS = frozenset({"pa35", "pa36"})
+DEFAULT_PAS = tuple(f"pa{i}" for i in range(1, 35))
 LOCAL_TEST_HYGIENE_PAS = AUDITED_PAS
 STRICT_TEMPLATE_PAS = ("pa14", "pa15", "pa17", "pa18", "pa19")
 SEMANTIC_ONLY_PA_MAX = 7
@@ -43,18 +43,18 @@ SOURCE_EH_LOWIR_OWNER_PA = 21
 BACKEND_ONLY_PAS = {24}
 EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
 VALID_TEST_CLUSTERS = frozenset(range(100, 1000, 100))
-HOSTED_STL_OWNER_PA = "pa30"
-HOSTED_STL_EARLY_PA_MAX = 29
+HOSTED_STL_OWNER_PA = "pa31"
+HOSTED_STL_EARLY_PA_MAX = 30
 HOSTED_STL_INTERNAL_INCLUDE_PREFIXES = ("__", "bits/", "ext/")
 HOST_ABI_EH_COMPONENT_HEADERS = set()
 HOSTED_EH_RTTI_HEADERS = {
     "exception",
     "typeinfo",
 }
-HOSTED_EH_RTTI_HEADER_OWNER_PA = "pa30"
-HOSTED_EH_RTTI_HEADER_EARLY_PA_MAX = 29
-HOSTED_EXCEPTION_RUNTIME_OWNER_PA = "pa31"
-HOSTED_EXCEPTION_RUNTIME_EARLY_PA_MAX = 30
+HOSTED_EH_RTTI_HEADER_OWNER_PA = "pa31"
+HOSTED_EH_RTTI_HEADER_EARLY_PA_MAX = 30
+HOSTED_EXCEPTION_RUNTIME_OWNER_PA = "pa32"
+HOSTED_EXCEPTION_RUNTIME_EARLY_PA_MAX = 31
 ABI_NAMING_OWNER_PA = "pa9"
 ABI_NAMING_EARLY_PA_MAX = 8
 ABI_NAMING_WORD_RE = re.compile(r"mangl", re.IGNORECASE)
@@ -155,7 +155,7 @@ LATE_PLACEMENT_ANCHOR_FEATURES = {
     "host.eh_object",
     "host.object_interop",
 }
-HOST_OBJECT_ATTRIBUTE_NAMES = {"section", "weak"}
+HOST_OBJECT_ATTRIBUTE_NAMES = {"section", "weak", "visibility", "aligned", "__aligned__", "used", "__used__"}
 PA27_HOST_OBJECT_ATTRIBUTE_NAMES = HOST_OBJECT_ATTRIBUTE_NAMES | {"visibility"}
 
 # PA5-PA7 consume C++ source but stop at AST, type/scope, or call-semantic
@@ -431,6 +431,9 @@ RULES: tuple[FeatureRule, ...] = (
                 ref_patterns=(rx(r"operator_(?:new|delete)_array|delete_array|array_cookie"),)),
     FeatureRule("lookup.using_directive", (rx(r"\busing\s+namespace\b|\busing\s+[A-Za-z_][A-Za-z0-9_:<>]*::[A-Za-z_]"),)),
     FeatureRule("support.lambda", (rx(r"(?<!operator)(?<!operator new)(?<!operator delete)\[[^]\n]*\]\s*\([^)]*\)\s*(?:mutable\s*)?(?:noexcept\s*)?(?:->|\{)"),)),
+    FeatureRule("source.assembly_attribute", ()),
+    FeatureRule("source.target_macro", ()),
+    FeatureRule("function.inline_attribute", ()),
     FeatureRule("syntax.nested_namespace", (rx(r"\bnamespace\s+[A-Za-z_]\w*\s*::"),)),
     FeatureRule("syntax.attribute_using_prefix", (rx(r"\[\[\s*using\s+[A-Za-z_]\w*\s*:"),)),
     FeatureRule("template.placeholder_nttp", ()),
@@ -663,6 +666,14 @@ def feature_owner_errors(features: dict[str, FeatureMeta]) -> list[str]:
     return errors
 
 
+def numeric_apostrophe(source: str, position: int) -> bool:
+    if source[position] != "'" or position + 1 == len(source):
+        return False
+    if not re.match(r"[A-Za-z_0-9]", source[position + 1]):
+        return False
+    return re.search(r"(?<![\w.])(?:[0-9]|\.[0-9])(?:[\w.']|(?<=[eEpP])[+-])*\Z", source[:position], re.ASCII) is not None
+
+
 def strip_comments(source: str) -> str:
     out: list[str] = []
     i = 0
@@ -709,7 +720,7 @@ def strip_comments(source: str) -> str:
             in_block = True
             i += 2
             continue
-        if c in ("'", '"'):
+        if c in ("'", '"') and not numeric_apostrophe(source, i):
             in_string = c
         out.append(c)
         i += 1
@@ -732,7 +743,7 @@ def strip_string_literals(source: str) -> str:
                 in_string = None
             i += 1
             continue
-        if c in ("'", '"'):
+        if c in ("'", '"') and not numeric_apostrophe(source, i):
             in_string = c
             out.append(" ")
             i += 1
@@ -1436,6 +1447,10 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             "function.dynamic_exception_spec", ["source:dynamic exception specification"])
     for rule in RULES:
         haystack = no_comments if rule.use_raw else code
+        if rule.feature_id == "support.host_predefined_macro":
+            # Asking whether an identifier exists does not require importing
+            # another compiler's predefined macro set.
+            haystack = re.sub(r"^\s*#\s*ifn?def\s+[A-Za-z_]\w*[^\n]*", "", haystack, flags=re.MULTILINE)
         if rule.feature_id in {"support.auto", "support.decltype_auto"}:
             haystack = placeholder_code
         if rule.feature_id in {"class.nested_type", "class.using_declaration"}:
@@ -1495,10 +1510,19 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
         for evidence in lambda_hit.evidence:
             if evidence not in hit.evidence:
                 hit.evidence.append(evidence)
-    host_object_attributes = re.findall(
-        r"__attribute__\s*\(\(\s*([A-Za-z_][A-Za-z0-9_]*)",
-        code,
-    )
+    host_object_attributes = []
+    for attribute in re.finditer(r"\b__attribute__\s*\(", code):
+        start = code.index("(", attribute.start())
+        end = matching_delimiter(code, start, "(", ")")
+        if end is None:
+            continue
+        body = code[start + 1:end].strip()
+        if body.startswith("(") and body.endswith(")"):
+            body = body[1:-1]
+        for item in split_top_level_commas(body):
+            name = re.match(r"\s*([A-Za-z_]\w*)", item)
+            if name:
+                host_object_attributes.append(name.group(1))
     if host_object_attributes:
         host_object_attribute_names = set(host_object_attributes)
         no_inline = host_object_attribute_names & {"noinline", "__noinline__"}
@@ -1518,14 +1542,23 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
                 "host.object_attribute",
                 [f"source:__attribute__(({name}))" for name in recognized],
             )
-        effect_names = {"pure", "const", "__pure__", "__const__"}
+        inline_names = {"always_inline", "__always_inline__"}
+        inline = sorted(host_object_attribute_names & inline_names)
+        if inline:
+            hits["function.inline_attribute"] = FeatureHit("function.inline_attribute", [f"source:__attribute__(({name}))" for name in inline])
+        assembly_names = {"naked", "__naked__", "vector_size", "__vector_size__", "target", "__target__"}
+        assembly = sorted(host_object_attribute_names & assembly_names)
+        if assembly:
+            hits["source.assembly_attribute"] = FeatureHit(
+                "source.assembly_attribute", [f"source:__attribute__(({name}))" for name in assembly])
+        effect_names = {"pure", "const", "__pure__", "__const__", "malloc", "__malloc__", "returns_nonnull", "__returns_nonnull__"}
         effects = sorted(host_object_attribute_names & effect_names)
         if effects:
             hits["host.function_effect_attribute"] = FeatureHit(
                 "host.function_effect_attribute",
                 [f"source:__attribute__(({name}))" for name in effects],
             )
-        if host_object_attribute_names <= (recognized_names | effect_names | no_inline):
+        if host_object_attribute_names <= (recognized_names | effect_names | no_inline | assembly_names | inline_names):
             hits.pop("support.attribute", None)
         if (
             test_path.startswith("pa27/tests/")
@@ -1534,6 +1567,21 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             predefined = hits.get("support.host_predefined_macro")
             if predefined and all("__APPLE__" in item for item in predefined.evidence):
                 hits.pop("support.host_predefined_macro", None)
+    platform_names = {"__APPLE__", "__MACH__", "__ELF__", "__linux__", "__unix__"}
+    platform_macros = sorted(set(re.findall(r"\b__[A-Za-z_]+__\b", code)) & platform_names)
+    if platform_macros:
+        hits["source.target_macro"] = FeatureHit("source.target_macro", ["source:" + name for name in platform_macros])
+        predefined = hits.get("support.host_predefined_macro")
+        if predefined:
+            predefined.evidence = [item for item in predefined.evidence if item.removeprefix("source:") not in platform_names]
+            if not predefined.evidence:
+                hits.pop("support.host_predefined_macro")
+    # PA28's effect advertisement is narrower than the full hosted probe API.
+    probes = re.findall(r"\b__(?:has_\w+|is_identifier|building_module)\s*\(\s*([A-Za-z_]\w*)", code)
+    effect_probes = {"pure", "const", "__pure__", "__const__", "malloc", "__malloc__", "returns_nonnull", "__returns_nonnull__"}
+    if probes and all(name in effect_probes for name in probes) and not re.search(r"\b__(?:has_feature|has_builtin|has_include|has_cpp_attribute|is_identifier|building_module)\b", code):
+        hits.pop("support.preprocessor_probe", None)
+        hits.setdefault("host.function_effect_attribute", FeatureHit("host.function_effect_attribute", [])).evidence.extend("source:__has_attribute(" + name + ")" for name in probes)
     if (
         test_path.startswith("pa28/tests/")
         and re.search(r"\b(?:abi_tag|__abi_tag__?)\s*\(", code)
@@ -1553,10 +1601,10 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             ["source:builtin transform in inspected host ABI name"],
         )
         hits.pop("template.builtin_traits", None)
-    if test_path.startswith("pa29/tests/run/"):
+    if test_path.startswith("pa30/tests/run/"):
         hits["hosted.runtime_compat"] = FeatureHit(
             "hosted.runtime_compat",
-            ["harness:PA29 hosted link/run"],
+            ["harness:PA30 hosted link/run"],
         )
     if (
         re.search(r"__local_static__|local_static_(?:init|ready)", ref_text)
@@ -2062,6 +2110,10 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
             continue
         relative = path.relative_to(root).as_posix()
         source = read_text(path)
+        host_observer = path.name.endswith(".driver.cpp") and path.with_name(path.name[:-len(".driver.cpp")] + ".assembly-profile").is_file()
+        host_library = ".lib." in path.name and path.suffix in {".c", ".cc", ".cpp", ".cxx"}
+        if host_observer or host_library:
+            continue
         if number <= ABI_NAMING_EARLY_PA_MAX:
             path_match = ABI_NAMING_WORD_RE.search(relative)
             source_match = ABI_NAMING_WORD_RE.search(source)
@@ -2195,7 +2247,9 @@ def companion_source_text_for(path: Path) -> str:
     numbered_sources = set(numbered_test_source_files_for(path))
     chunks: list[str] = []
     for sidecar in sorted(path.parent.glob(f"{path.stem}.*")):
-        if sidecar == path or sidecar.suffix.startswith(".ref"):
+        host_library = ".lib." in sidecar.name and sidecar.suffix in {".c", ".cc", ".cpp", ".cxx"}
+        host_observer = sidecar.name.endswith(".driver.cpp") and path.with_suffix(".assembly-profile").is_file()
+        if sidecar == path or sidecar.suffix.startswith(".ref") or host_library or host_observer:
             continue
         if (
             sidecar.name.endswith(sidecar_suffixes)
@@ -2552,6 +2606,8 @@ def row_for(path: Path,
         "abi-facts" if current_pa == "pa9" else
         "cpp-source"
     )
+    if current_number in {33, 34} and re.match(r"\s*(?:declare\s+(?:function|global)|function|global|assembly(?:_function|_global)?)\s+@", strip_comments(source)):
+        input_contract = "lowir-backend"
     raw_hits = (detect_features(detection_source, ref_text, relative_path.as_posix())
                 if input_contract == "cpp-source" else {})
     if assembly_profile in {"lowir", "gnu", "gnu-native", "gnu-compile", "lowir-reject", "gnu-reject", "lowir-native", "lowir-native-reject"}:
@@ -2579,6 +2635,9 @@ def row_for(path: Path,
             path_hints[feature_id] = path_evidence
     detected = sorted(hits)
     placements = []
+    mode_path = path.with_suffix(".cxx-standard")
+    language_mode = read_text(mode_path).strip() if mode_path.is_file() else "gnu++11"
+    expected_exit = expected_exit_for(path)
     for feature_id in detected:
         meta = features.get(feature_id)
         if not meta:
@@ -2591,6 +2650,10 @@ def row_for(path: Path,
             })
             continue
         status, reason = placement_for(meta, current_pa, current_cluster)
+        if (feature_id == "support.decltype_auto" and current_number in {5, 6, 7}
+                and mode_path.is_file() and language_mode in {"c++11", "gnu++11"}
+                and expected_exit in {"1", "EXIT_FAILURE"}):
+            status, reason = "mode-rejection", "Earlier-mode declaration rejection does not require placeholder deduction"
         placements.append({
             "feature": feature_id,
             "status": status,

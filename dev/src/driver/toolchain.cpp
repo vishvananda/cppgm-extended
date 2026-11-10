@@ -59,7 +59,7 @@ bool sse_option(const std::string& option, uint8_t& level)
 namespace {
 
 // An input in command-line order: a source, serialized LowIR (`.lowir`,
-// PA32), an object, or a -l library.
+// PA33), an object, or a -l library.
 struct Input
 {
 	enum class Kind
@@ -595,7 +595,7 @@ bool compile_unit(
 	return true;
 }
 
-// One serialized LowIR unit (PA32's LowIR object input): read and
+// One serialized LowIR unit (PA33's LowIR object input): read and
 // validated, optimized at the invocation's level, then compiled by the same
 // object back end as a source's program.
 bool compile_lowir_unit(

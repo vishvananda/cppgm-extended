@@ -63,7 +63,7 @@ SELECTIONS = {
     # text_t mode or execs a worker that collects `.t` the same way.
     "run_all_tests.pl": (r"\.t$", True),
     "run_all_tests_common.pl": (r"\.t$", True),
-    # PA32's object round trip walks its roots itself and does not prune.
+    # PA33's object round trip walks its roots itself and does not prune.
     "run_object_lowir_roundtrip_tests.pl": (r"\.(?:cpp|t)$", False),
 }
 
@@ -80,10 +80,10 @@ LISTING_RUNNERS = {
 # how that script names them: "pattern" when it contains the pattern,
 # "name" when it names each file).  Matching files are inputs.
 EXTERNAL_LANES = (
-    # PA35's targets run scripts/check.pl, whose suites name their inputs.
-    ("pa35", "tests/behavior/*.cpp", "pa35/scripts/behavior.pl", "pattern"),
-    ("pa35", "tests/byte_values/*", "pa35/scripts/generated.pl", "name"),
-    ("pa35", "tests/generators/*", "pa35/scripts/generated.pl", "name"),
+    # PA36's targets run scripts/check.pl, whose suites name their inputs.
+    ("pa36", "tests/behavior/*.cpp", "pa36/scripts/behavior.pl", "pattern"),
+    ("pa36", "tests/byte_values/*", "pa36/scripts/generated.pl", "name"),
+    ("pa36", "tests/generators/*", "pa36/scripts/generated.pl", "name"),
     # Tests-first records of known defects, kept out of the course lanes and
     # the student export until their fixes land; see
     # docs/student-reference-audit-review.md.

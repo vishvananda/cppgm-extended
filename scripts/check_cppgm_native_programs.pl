@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# Run self-checking C++ fixtures through the native driver at every PA33 level.
+# Run self-checking C++ fixtures through the native driver at every PA34 level.
 # Each program must exit successfully and write no stdout, both when built
 # directly, through object link paths, and through the supplied LowIR backend.
 use strict;

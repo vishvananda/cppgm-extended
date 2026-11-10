@@ -704,7 +704,7 @@ private:
 	// order of a call's arguments unspecified (g++ evaluates them right to
 	// left, cppgm++ left to right), so two emitting operands of one call are
 	// emitted by separate statements, the last first: the output must not
-	// depend on the compiler that built this one (PA34's inception).
+	// depend on the compiler that built this one (PA35's inception).
 	RValue binary(lowir::BinaryOp op, lowir::Type type, const RValue& left, const RValue& right, uint8_t flags = 0);
 	RValue compare(lowir::ComparePredicate predicate, lowir::Type type, const RValue& left, const RValue& right);
 	RValue unary(lowir::UnaryOp op, const RValue& operand);

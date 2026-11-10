@@ -14,9 +14,9 @@ return-deduction extensions remain available in the course's C++11 mode.
 | --- | --- | --- |
 | Binary literals, digit separators | C++14+ | PA1–PA4 token/value/macro boundaries |
 | Hexadecimal floating literals | C++17 | PA1–PA4; GNU compiler modes also retain existing extensions |
-| Nested namespaces, attribute using-prefixes | C++17 | PA5 syntax, PA6 lookup; vendor effects PA29 |
+| Nested namespaces, attribute using-prefixes | C++17 | PA5 syntax, PA6 lookup; vendor effects PA30 |
 | Contextual conversions, aggregate member defaults | C++14+ | PA11/PA12; constexpr PA16 |
-| Public aggregate bases, direct prvalue result objects, inline variables, aligned allocation | C++17 | PA11/PA12; constexpr PA16; multi-TU PA25; host ABI PA31 |
+| Public aggregate bases, direct prvalue result objects, inline variables, aligned allocation | C++17 | PA11/PA12; constexpr PA16; multi-TU PA25; host ABI PA32 |
 | Fold expressions | C++17 | PA15; composed deduction PA18/PA19 |
 | Relaxed constexpr bodies | C++14 rules, existing C++11 extension | PA16 |
 | Variable templates | C++14, existing C++11 extension | PA17 |
@@ -25,9 +25,9 @@ return-deduction extensions remain available in the course's C++11 mode.
 | `if constexpr` | C++17 | PA19, after substitution and constant evaluation |
 | `decltype(auto)`, generic lambdas, initialized captures | C++14+ | PA20; failure cleanup PA21 |
 | `[*this]`, constexpr closures, structured bindings, fixed-enum direct lists | C++17 | PA20; failure cleanup PA21 |
-| `noexcept` function-type identity/conversion | C++17 | PA6/PA7; ABI PA9; deduction PA18; host checks PA31 |
-| General GNU source assembly and shared LowIR assembly | GNU extension | PA8 transport; PA36 binding, integrated encoding and object behavior |
-| Standard-library consumers (`optional`, `variant`, `string_view`, deduction guides) | Required selected modes | PA30/PA31; use host headers, no STL implementation required |
+| `noexcept` function-type identity/conversion | C++17 | PA6/PA7; ABI PA9; deduction PA18; host checks PA32 |
+| General GNU source assembly and shared LowIR assembly | GNU extension | PA8 transport; PA29 binding, integrated encoding and object behavior |
+| Standard-library consumers (`optional`, `variant`, `string_view`, deduction guides) | Required selected modes | PA31/PA32; use host headers, no STL implementation required |
 
 Read the owning handout for exact supported forms and limits. Syntax appears
 in the shared grammar at PA5; its presence does not require all later semantics

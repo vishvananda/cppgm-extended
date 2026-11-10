@@ -45,7 +45,7 @@ enum class FundamentalType : uint8_t
 	Int128,
 	UnsignedInt128,
 
-	// GCC's extended floating types (PA29; C++23's 6.8.3 as GCC implements
+	// GCC's extended floating types (PA30; C++23's 6.8.3 as GCC implements
 	// them in every mode): _Float16 (binary16), _Float32, _Float64,
 	// _Float128 (binary128), _Float32x (binary64), _Float64x (x87's
 	// extended format), and the GNU __float128 (binary128, distinct from
@@ -58,7 +58,7 @@ enum class FundamentalType : uint8_t
 	Float64x,
 	GnuFloat128,
 
-	// Clang's __bf16 (x86-64, PA34): bfloat16 storage (2 bytes, 2-byte
+	// Clang's __bf16 (x86-64, PA35): bfloat16 storage (2 bytes, 2-byte
 	// aligned: an 8-bit exponent and an 8-bit significand), whose
 	// arithmetic is performed in float; of a lower floating-point rank
 	// than _Float16, and converting to or from it only by the usual

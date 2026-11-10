@@ -5,7 +5,7 @@
 #include "lex/token_kind.h"
 
 // The GNU builtins this implementation provides to hosted source (PA26,
-// PA29): the builtin functions of the registry below (__builtin_memcpy ...)
+// PA30): the builtin functions of the registry below (__builtin_memcpy ...)
 // and the type traits and transforms (__is_class ...). Hosted headers ask
 // `__has_builtin` before using an optional one; it answers from these
 // registries, which the parser and analyzer read the names from.
@@ -419,7 +419,7 @@ enum class GnuTrait : uint8_t
 	AddAtomic,
 	// C23's `_BitInt ( constant-expression )` (Clang's C++ extension; an
 	// expression operand, `unsigned` before it): parsed, and dependent in a
-	// template's definition; its types are outside PA29.
+	// template's definition; its types are outside PA30.
 	BitInt,
 	// `__integer_pack ( expression )`: the pack 0, 1, ..., N-1 of N's type,
 	// the whole pattern of a template argument pack expansion.

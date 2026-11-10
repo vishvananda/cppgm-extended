@@ -5,7 +5,7 @@
 A C++ compiler course designed for agents, with 36 cumulative assignments from
 preprocessing to native code, optimization and self-hosting. This repository
 contains a high-performance reference implementation in `dev/`; `pa1/` through
-`pa35/` hold the handouts, tests and wrappers.
+`pa36/` hold the handouts, tests and wrappers.
 
 For how the reference compiler was built and its performance results, read
 [How I Built a Compiler That Is Faster Than GCC and Clang](https://medium.com/@vishvananda/how-i-built-a-compiler-that-is-faster-than-gcc-and-clang-4c8c1d4818fa).
@@ -147,7 +147,7 @@ cppgm++ runtime measures **codegen performance**: self-built versus GCC-built or
 
 - The [required C++11/14/17 profile](LANGUAGE_PROFILE.md) covers selected features, not full conformance to every edition.
 - Targets are Linux x86-64 and optional Intel macOS; other architectures are unsupported.
-- [Integrated assembly](pa36/README.md) is required before hosted compatibility; its documented ISA profile remains bounded.
+- [Integrated assembly](pa29/README.md) is required before hosted compatibility; its documented ISA profile remains bounded.
 - No C++ standard library is bundled; use a host-installed library.
 - The compiler may contain bugs.
 - Code generation may be poor for unfamiliar program shapes.

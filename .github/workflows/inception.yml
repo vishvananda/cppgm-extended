@@ -1,6 +1,6 @@
 name: Inception
 
-# Consume PA34’s self compiler from the PA5 CI checkpoint and compare it
+# Consume PA35’s self compiler from the PA5 CI checkpoint and compare it
 # with the next generation built from the same source SHA and host toolchain.
 
 on:
@@ -155,8 +155,8 @@ jobs:
       - name: Compare cppgm++ inception
         id: compare
         run: |
-          CPPGM_OBJECT_ROOT="$GITHUB_WORKSPACE/obj/pa34/restored-self-driver" \
-            make -C pa34 compare-cppgm++-inception-from-restored-self \
+          CPPGM_OBJECT_ROOT="$GITHUB_WORKSPACE/obj/pa35/restored-self-driver" \
+            make -C pa35 compare-cppgm++-inception-from-restored-self \
             INCEPTION_RESTORED_CPPGM_SELF="$RUNNER_TEMP/restored-self/bin/cppgm++-self" \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"

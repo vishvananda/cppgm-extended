@@ -254,7 +254,7 @@ For `integer-literals` you need to check that they fit into the maximal type bas
 These are the C++11 grammars. PA1 through PA4 follow them strictly, so
 binary integer literals (`0b101`), hexadecimal floating literals (`0x1p3`)
 and the extended floating suffixes (`1.0Q`, `1.0f128`) are `invalid` here.
-From PA29 on, the compiler accepts them through the same tokenizer, because
+From PA30 on, the compiler accepts them through the same tokenizer, because
 the host's headers use them; take the dialect as a parameter of the literal
 classifier now rather than write a second classifier later.
 

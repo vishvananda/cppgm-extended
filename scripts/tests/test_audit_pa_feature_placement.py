@@ -31,6 +31,29 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_digit_separators_do_not_hide_later_source_features(self):
+        source = "int n=1'000; double x=0xA'B.C'Dp+0'2; template<auto N> struct Value {}; auto lambda=[](auto x){return x;};"
+        stripped = audit.strip_string_literals(audit.strip_comments(source))
+        self.assertIn("template<auto N>", stripped)
+        self.assertIn("support.lambda", audit.detect_features(source))
+        self.assertIn("template.placeholder_nttp", audit.detect_features(source))
+        self.assertNotIn("hidden", audit.strip_string_literals("char c='a'; const char* s=\"hidden\";"))
+
+    def test_host_observers_do_not_add_student_compiler_prerequisites(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            fixture = root / "pa29/tests/source/100-body.t"
+            write(fixture, 'extern "C" int body() { return 1; }')
+            write(fixture.with_suffix('.assembly-profile'), 'gnu')
+            write(fixture.with_suffix('.driver.cpp'), '#include <thread>\nint main() {}')
+            write(fixture.with_suffix('.lib.provider.cpp'), '#include <vector>\n')
+            self.assertNotIn('#include', audit.companion_source_text_for(fixture))
+            self.assertFalse(audit.scan_test_hygiene(root, ['pa29']))
+            write(root / 'pa29/tests/source/100-ordinary.cpp', '#include <vector>\n')
+            self.assertTrue(any(x.kind == 'early-hosted-stl' for x in audit.scan_test_hygiene(root, ['pa29'])))
+        self.assertNotIn('support.host_predefined_macro', audit.detect_features('#ifdef __clang__\nint x;\n#endif'))
+        self.assertIn('support.host_predefined_macro', audit.detect_features('int version = __GNUC__;'))
+
     def test_required_later_language_forms_have_distinct_owners(self):
         table = audit.load_feature_table(REPO_ROOT / audit.DEFAULT_TRACKER)
         cases = {
@@ -190,13 +213,13 @@ for my $test (@tests) {
             findings = audit.scan_optimization_requirements(root, ['pa26'])
             self.assertEqual({f['path'] for f in findings},
                              {'pa26/scripts/optimized.sh', 'pa26/tests/general/300-catch.env'})
-            write(root / 'pa32/Makefile', (root / 'pa26/Makefile').read_text())
-            self.assertEqual(audit.scan_optimization_requirements(root, ['pa32']), [])
+            write(root / 'pa33/Makefile', (root / 'pa26/Makefile').read_text())
+            self.assertEqual(audit.scan_optimization_requirements(root, ['pa33']), [])
 
-    def test_native_optimization_flags_belong_to_pa33(self) -> None:
+    def test_native_optimization_flags_belong_to_pa34(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            for pa in ('pa24', 'pa32', 'pa33'):
+            for pa in ('pa24', 'pa33', 'pa34'):
                 write(root / pa / 'Makefile', '''test:
 	@perl ../scripts/native.pl ../dev/lowir2native my tests/behavior
 ''')
@@ -204,11 +227,11 @@ for my $test (@tests) {
                 write(root / pa / 'tests/behavior/900-native.t', 'function @main() {}\n')
                 write(root / pa / 'tests/behavior/900-native.flags', '-O3\n')
                 write(root / pa / 'tests/behavior/900-native.link.flags', '-O2\n')
-            findings = audit.scan_optimization_requirements(root, ['pa24', 'pa32', 'pa33'])
+            findings = audit.scan_optimization_requirements(root, ['pa24', 'pa33', 'pa34'])
             self.assertEqual([f['path'] for f in findings],
                              ['pa24/tests/behavior/900-native.flags',
-                              'pa32/tests/behavior/900-native.flags'])
-            self.assertTrue(all('PA33' in f['message'] for f in findings))
+                              'pa33/tests/behavior/900-native.flags'])
+            self.assertTrue(all('PA34' in f['message'] for f in findings))
 
     def test_optimization_scan_checks_batch_branch_and_else_branch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -272,17 +295,17 @@ for my $test (@tests) {
     def test_regression_numbering_does_not_expand_course_requirements(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            bad = ["pa32/tests/regression/o3/548-lanes.t",
-                   "pa32/tests/object-roundtrip/540-boundary.cpp",
-                   "pa33/tests/regression/controls/native/439-memory.cpp",
+            bad = ["pa33/tests/regression/o3/548-lanes.t",
+                   "pa33/tests/object-roundtrip/540-boundary.cpp",
+                   "pa34/tests/regression/controls/native/439-memory.cpp",
                    "pa24/tests/regression/unnumbered.t"]
             for name in bad:
                 write(root / name, "return\n")
-            write(root / "pa33/tests/regression/o1/400-memory.t", "return\n")
-            write(root / "pa33/tests/regression/simd/100-helper.t.1", "int main() {}\n")
-            self.assertEqual(audit.iter_test_files(root, ["pa24", "pa32", "pa33"]),
-                             [root / "pa32/tests/object-roundtrip/540-boundary.cpp"])
-            findings = audit.scan_test_hygiene(root, ["pa24", "pa32", "pa33"])
+            write(root / "pa34/tests/regression/o1/400-memory.t", "return\n")
+            write(root / "pa34/tests/regression/simd/100-helper.t.1", "int main() {}\n")
+            self.assertEqual(audit.iter_test_files(root, ["pa24", "pa33", "pa34"]),
+                             [root / "pa33/tests/object-roundtrip/540-boundary.cpp"])
+            findings = audit.scan_test_hygiene(root, ["pa24", "pa33", "pa34"])
             self.assertEqual({f.path for f in findings}, set(bad))
             self.assertTrue(all(f.kind == "test-number" for f in findings))
 
@@ -387,7 +410,7 @@ function @main() -> i32 {
     def test_parser_syntax_does_not_require_later_semantic_behavior(self) -> None:
         for feature_id, owner in (("exception.try_catch", "pa21"),
                                   ("function.noexcept", "pa6"),
-                                  ("support.attribute", "pa29")):
+                                  ("support.attribute", "pa30")):
             feature = audit.FeatureMeta(feature_id, owner, 100, "", "")
             self.assertEqual(audit.placement_for(feature, "pa5", 100)[0],
                              "semantic-surface")
@@ -440,13 +463,13 @@ function @main() -> i32 {
     def test_later_language_directory_is_not_excluded_from_placement(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            optional = root / "pa29/tests/modern-cxx/compile/501-extension.t"
-            required = root / "pa29/tests/compile/500-required.t"
+            optional = root / "pa30/tests/modern-cxx/compile/501-extension.t"
+            required = root / "pa30/tests/compile/500-required.t"
             write(optional, "auto identity = [](auto value) { return value; };\n")
             write(required, "int value;\n")
-            self.assertEqual(audit.iter_test_files(root, ["pa29"]), [required, optional])
-            self.assertIn(optional, audit.iter_local_test_files(root, ["pa29"]))
-            findings = audit.scan_test_hygiene(root, ["pa29"])
+            self.assertEqual(audit.iter_test_files(root, ["pa30"]), [required, optional])
+            self.assertIn(optional, audit.iter_local_test_files(root, ["pa30"]))
+            findings = audit.scan_test_hygiene(root, ["pa30"])
             self.assertTrue(any(f.kind == "test-number" and "501-extension" in f.path
                                 for f in findings), findings)
 
@@ -705,16 +728,16 @@ function @main() -> i32 {
     def test_hygiene_reports_compile_flags_sidecar(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
-            test = root / "pa31" / "tests" / "link" / "600-hosted-smoke.t"
+            test = root / "pa32" / "tests" / "link" / "600-hosted-smoke.t"
             write(test, "int main() { return 0; }\n")
             write(test.with_suffix(".compile.flags"), "-O1\n")
 
-            findings = audit.scan_test_hygiene(root, ["pa31"])
+            findings = audit.scan_test_hygiene(root, ["pa32"])
             self.assertEqual(
                 [(finding.path, finding.kind) for finding in findings],
                 [
                     (
-                        "pa31/tests/link/600-hosted-smoke.compile.flags",
+                        "pa32/tests/link/600-hosted-smoke.compile.flags",
                         "compile-flags-sidecar",
                     ),
                 ],
@@ -726,13 +749,13 @@ function @main() -> i32 {
             pa28_typeinfo = root / "pa28" / "tests" / "general" / "200-typeid-header.t"
             write(pa28_typeinfo, "#include <typeinfo>\nint main() { return 0; }\n")
 
-            pa29_exception = root / "pa29" / "tests" / "compile" / "600-exception-header.t"
-            write(pa29_exception, "#include <exception>\nint main() { return 0; }\n")
+            pa30_exception = root / "pa30" / "tests" / "compile" / "600-exception-header.t"
+            write(pa30_exception, "#include <exception>\nint main() { return 0; }\n")
 
-            pa30_typeinfo = root / "pa30" / "tests" / "compile" / "700-typeinfo-header.t"
-            write(pa30_typeinfo, "#include <typeinfo>\nint main() { return 0; }\n")
+            pa31_typeinfo = root / "pa31" / "tests" / "compile" / "700-typeinfo-header.t"
+            write(pa31_typeinfo, "#include <typeinfo>\nint main() { return 0; }\n")
 
-            findings = audit.scan_test_hygiene(root, ["pa28", "pa29", "pa30"])
+            findings = audit.scan_test_hygiene(root, ["pa28", "pa30", "pa31"])
             self.assertEqual(
                 [(finding.path, finding.kind, finding.evidence) for finding in findings],
                 [
@@ -742,7 +765,7 @@ function @main() -> i32 {
                         "#include <typeinfo>",
                     ),
                     (
-                        "pa29/tests/compile/600-exception-header.t",
+                        "pa30/tests/compile/600-exception-header.t",
                         "early-hosted-eh-rtti-header",
                         "#include <exception>",
                     ),
@@ -752,7 +775,7 @@ function @main() -> i32 {
     def test_hygiene_checks_host_interop_numbered_sources(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
-            pas = ["pa26", "pa27", "pa28", "pa29", "pa30", "pa31"]
+            pas = ["pa26", "pa27", "pa28", "pa30", "pa31", "pa32"]
             for pa in pas:
                 anchor = root / pa / "tests" / "general" / "300-string.t"
                 write(anchor, "")
@@ -813,16 +836,16 @@ function @main() -> i32 {
                 ),
             )
 
-            pa31_exception_ptr = (
-                root / "pa31" / "tests" / "link" /
+            pa32_exception_ptr = (
+                root / "pa32" / "tests" / "link" /
                 "600-exception-ptr-runtime.t"
             )
             write(
-                pa31_exception_ptr,
+                pa32_exception_ptr,
                 "int main() { return 0; }\n",
             )
 
-            findings = audit.scan_test_hygiene(root, ["pa27", "pa31"])
+            findings = audit.scan_test_hygiene(root, ["pa27", "pa32"])
             self.assertEqual(
                 [(finding.path, finding.kind, finding.evidence) for finding in findings],
                 [
@@ -1212,7 +1235,7 @@ function @main() -> i32 {
             )
             self.assertEqual(audit.host_eh_object_evidence(anchor, "pa21", source), "")
 
-    def test_pa27_host_object_attributes_do_not_require_pa29_attribute_support(self) -> None:
+    def test_pa27_host_object_attributes_do_not_require_pa30_attribute_support(self) -> None:
         hits = audit.detect_features(
             "__attribute__((weak)) int value;\n"
             "__attribute__((section(\"data\"))) int placed;\n"
@@ -1223,13 +1246,13 @@ function @main() -> i32 {
         self.assertIn("host.object_attribute", hits)
         self.assertNotIn("support.attribute", hits)
 
-    def test_visibility_attribute_outside_pa27_retains_pa29_owner(self) -> None:
+    def test_visibility_attribute_retains_the_first_host_object_owner(self) -> None:
         hits = audit.detect_features(
             "__attribute__((visibility(\"default\"))) int exported;\n",
             test_path="pa17/tests/general/300-attribute.t",
         )
-        self.assertNotIn("host.object_attribute", hits)
-        self.assertIn("support.attribute", hits)
+        self.assertIn("host.object_attribute", hits)
+        self.assertNotIn("support.attribute", hits)
 
     def test_pa27_host_object_anchor_is_an_explicit_layer_assertion(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
@@ -1268,10 +1291,10 @@ function @main() -> i32 {
         self.assertIn("host.abi_builtin_type", hits)
         self.assertNotIn("template.builtin_traits", hits)
 
-    def test_pa29_run_has_hosted_runtime_owner(self) -> None:
+    def test_pa30_run_has_hosted_runtime_owner(self) -> None:
         hits = audit.detect_features(
             "int main() { return 0; }",
-            test_path="pa29/tests/run/800-hosted-runtime.t",
+            test_path="pa30/tests/run/800-hosted-runtime.t",
         )
         self.assertIn("hosted.runtime_compat", hits)
 
@@ -1426,12 +1449,12 @@ function @main() -> i32 {
         )
         self.assertIn("exception.throw_operand_cleanup", hits)
 
-    def test_course_has_thirty_five_assignments(self) -> None:
+    def test_course_has_thirty_six_assignments(self) -> None:
         self.assertEqual(audit.COURSE_PAS[0], "pa1")
-        self.assertEqual(audit.COURSE_PAS[-1], "pa35")
-        self.assertEqual(len(audit.COURSE_PAS), 35)
+        self.assertEqual(audit.COURSE_PAS[-1], "pa36")
+        self.assertEqual(len(audit.COURSE_PAS), 36)
         self.assertEqual(audit.LOCAL_TEST_HYGIENE_PAS, audit.COURSE_PAS + audit.OPTIONAL_PAS)
-        self.assertIn("pa36", audit.LOCAL_TEST_HYGIENE_PAS)
+        self.assertIn("pa29", audit.LOCAL_TEST_HYGIENE_PAS)
 
     def test_feature_owners_exclude_assignments_without_language_features(self) -> None:
         def table(*owners: str) -> dict[str, object]:
@@ -1446,27 +1469,27 @@ function @main() -> i32 {
                 for owner in owners
             }
 
-        self.assertEqual(audit.feature_owner_errors(table("pa1", "pa29", "pa33", "pa36")), [])
-        errors = audit.feature_owner_errors(table("pa34", "pa35", "pa37"))
+        self.assertEqual(audit.feature_owner_errors(table("pa1", "pa30", "pa34", "pa29")), [])
+        errors = audit.feature_owner_errors(table("pa35", "pa36", "pa37"))
         self.assertEqual(len(errors), 3)
-        self.assertIn("feature feature.pa34 names owner pa34, which adds no language feature", errors)
         self.assertIn("feature feature.pa35 names owner pa35, which adds no language feature", errors)
-        self.assertTrue(any("pa37" in error and "35 required or optional assignments" in error for error in errors))
+        self.assertIn("feature feature.pa36 names owner pa36, which adds no language feature", errors)
+        self.assertTrue(any("pa37" in error and "36 required or optional assignments" in error for error in errors))
 
     def test_live_feature_table_names_only_feature_owning_assignments(self) -> None:
         features = audit.load_feature_table(REPO_ROOT / audit.DEFAULT_TRACKER)
         self.assertEqual(audit.feature_owner_errors(features), [])
 
-    def test_optional_assembly_fixtures_keep_numbering_and_input_contracts(self) -> None:
+    def test_required_assembly_fixtures_keep_numbering_and_input_contracts(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            source = root / "pa36/tests/source/501-bad-number.t"
-            lowir = root / "pa36/tests/spec/100-model.t"
+            source = root / "pa29/tests/source/501-bad-number.t"
+            lowir = root / "pa29/tests/spec/100-model.t"
             write(source, "void f() { asm volatile(\"nop\"); }\n")
             write(lowir, "assembly @packet intel none 1 0 0 0 { text \"nop\" }\n")
             write(lowir.with_suffix(".assembly-profile"), "lowir\n")
-            self.assertEqual(audit.iter_test_files(root, ["pa36"]), [source, lowir])
-            findings = audit.scan_test_hygiene(root, ["pa36"])
+            self.assertEqual(audit.iter_test_files(root, ["pa29"]), [source, lowir])
+            findings = audit.scan_test_hygiene(root, ["pa29"])
             self.assertTrue(any(f.kind == "test-number" and "501-bad-number" in f.path for f in findings))
             features = audit.load_feature_table(REPO_ROOT / audit.DEFAULT_TRACKER)
             self.assertEqual(audit.row_for(lowir, root, features)["input_contract"], "lowir-backend")
@@ -1480,25 +1503,25 @@ function @main() -> i32 {
             self.assertTrue(any(p["feature"] == "assembly.shared_boundary" and p["status"] == "violation"
                                 for p in row["placements"]))
 
-    def test_pa35_selection_scans_its_tests_without_findings(self) -> None:
+    def test_pa36_selection_scans_its_tests_without_findings(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
-            write(root / "pa35" / "tests" / "behavior" / "narrow_ops.cpp", "int main() { return 0; }\n")
+            write(root / "pa36" / "tests" / "behavior" / "narrow_ops.cpp", "int main() { return 0; }\n")
             out = root / "report.md"
             status = audit.main([
                 "--root", str(root),
                 "--tracker", str(REPO_ROOT / audit.DEFAULT_TRACKER),
-                "--pa", "pa35",
+                "--pa", "pa36",
                 "--fail-on-early",
                 "--markdown-out", str(out),
             ])
             self.assertEqual(status, 0)
             self.assertIn("- tests scanned: 0", out.read_text())
 
-    def test_default_audit_includes_optional_assembly(self) -> None:
+    def test_default_audit_includes_required_assembly(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            source = root / "pa36/tests/source/100-basic.t"
+            source = root / "pa29/tests/source/100-basic.t"
             write(source, 'void f() { asm volatile("nop"); }\n')
             write(source.with_suffix(".assembly-profile"), "gnu\n")
             report = root / "report.md"

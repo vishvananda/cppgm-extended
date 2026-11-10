@@ -903,12 +903,12 @@ def build_cpu(command, log=None, root=None):
 def selfhost_commands(work, jobs, clangxx='clang++'):
     """Build identical compiler sources at O3, with isolated objects per role."""
     work = Path(work).resolve()
-    pa34 = ['make', '-C', 'pa34', f'-j{jobs}', 'CXX=../dev/cppgm++', 'CPPGM_HOST_CXX=g++',
-            f'INCEPTION_OBJ_ROOT_BASE={work}/pa34', f'INCEPTION_BUILD_JOBS={jobs}',
+    pa35 = ['make', '-C', 'pa35', f'-j{jobs}', 'CXX=../dev/cppgm++', 'CPPGM_HOST_CXX=g++',
+            f'INCEPTION_OBJ_ROOT_BASE={work}/pa35', f'INCEPTION_BUILD_JOBS={jobs}',
             f'INCEPTION_OBJECT_BUILD_JOBS={jobs}']
     return (('gcc', ['make', '-C', 'dev', f'-j{jobs}', 'cppgm++', f'OBJ={work}/gcc', 'CXX=g++', 'CPPGM_HOST_CXX=g++']),
-            ('self', pa34 + ['cppgm++-self']),
-            ('inception', pa34 + ['cppgm++-inception']),
+            ('self', pa35 + ['cppgm++-self']),
+            ('inception', pa35 + ['cppgm++-inception']),
             ('clang', ['make', '-C', 'dev', f'-j{jobs}', 'cppgm++', f'OBJ={work}/clang',
                        f'CXX={clangxx}', 'CPPGM_HOST_CXX=g++']))
 
@@ -973,8 +973,8 @@ def selfhost(arguments):
         configs = {name: timing.sha(bootstrap / name / 'generated/cppgm_builtin_host_config.h') for name in ('gcc', 'clang')}
         require(configs['gcc'] == configs['clang'], 'native compilers have different builtin host configurations')
         builds['metadata']['builtin_host_config_sha256'] = configs
-        compiler = bootstrap / 'pa34/bin/selfhost/cppgm++-self'
-        inception = bootstrap / 'pa34/bin/inception/cppgm++-inception'
+        compiler = bootstrap / 'pa35/bin/selfhost/cppgm++-self'
+        inception = bootstrap / 'pa35/bin/inception/cppgm++-inception'
         require(timing.sha(compiler) == timing.sha(inception),
                 'self and inception compiler binaries differ')
         builds['paired_self'] = paired_rebuilds(directory, arguments.jobs, seed, compiler, arguments.paired_blocks, 'GCC-built cppgm++', root)

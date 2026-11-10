@@ -26,7 +26,7 @@ class RepositoryTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
-class OptionalModernCxxTests(unittest.TestCase):
+class RequiredLanguageProfileTests(unittest.TestCase):
     def selected(self, pa, target, batch):
         directory = REPO_ROOT / pa
         inputs = {p.relative_to(directory).as_posix()
@@ -46,21 +46,22 @@ class OptionalModernCxxTests(unittest.TestCase):
                         lane, selection, directory, inputs))
         return selected
 
-    def test_later_language_fixtures_run_only_in_optional_lanes(self):
-        for pa in ('pa29', 'pa31'):
-            directory = REPO_ROOT / pa
-            optional = {p.relative_to(directory).as_posix()
-                        for p in (directory / 'tests/modern-cxx').rglob('*.t')}
-            self.assertTrue(optional)
+    def test_all_migrated_language_inputs_run_in_normal_lanes(self):
+        import json
+        ledger = json.loads((REPO_ROOT / 'docs/course-migration-ledger.json').read_text())
+        language = [row for row in ledger['fixtures'] if '/modern-cxx/' in row['old']]
+        self.assertEqual(len(language), 133)
+        by_pa = {}
+        for row in language:
+            pa, relative = row['new'].split('/', 1)
+            self.assertTrue((REPO_ROOT / row['new']).is_file(), row)
+            by_pa.setdefault(pa, set()).add(relative)
+        for pa, expected in by_pa.items():
             for batch in ('', '1'):
-                for target in ('test', 'test-batch', 'ref-test', 'ref-test-batch'):
-                    with self.subTest(pa=pa, batch=batch, target=target):
-                        selected = self.selected(pa, target, batch)
-                        self.assertTrue(selected)
-                        self.assertFalse(selected & optional, selected & optional)
-                for target in ('test-modern-cxx', 'ref-test-modern-cxx'):
-                    with self.subTest(pa=pa, batch=batch, target=target):
-                        self.assertEqual(self.selected(pa, target, batch), optional)
+                with self.subTest(pa=pa, batch=batch):
+                    self.assertTrue(expected <= self.selected(pa, 'test', batch),
+                                    expected - self.selected(pa, 'test', batch))
+        self.assertFalse(list(REPO_ROOT.glob('pa*/tests/modern-cxx/**/*.t')))
 
     def test_cxx11_correctness_regressions_remain_required(self):
         cases = {
@@ -76,40 +77,27 @@ class OptionalModernCxxTests(unittest.TestCase):
                 with self.subTest(pa=pa, batch=batch):
                     self.assertTrue(expected <= self.selected(pa, 'test', batch), expected)
 
-    def test_later_language_mode_sidecars_stay_optional(self):
-        for pa in ('pa29', 'pa31'):
-            for path in (REPO_ROOT / pa / 'tests').rglob('*'):
-                if path.suffix not in ('.cxx-standard', '.flags'):
-                    continue
-                words = path.read_text().split()
-                if path.suffix == '.cxx-standard':
-                    later = any(word in ('c++14', 'c++17') for word in words)
-                else:
-                    later = any(word in ('-std=c++14', '-std=gnu++14',
-                                         '-std=c++17', '-std=gnu++17') for word in words)
-                if later:
-                    self.assertIn('modern-cxx', path.relative_to(REPO_ROOT).parts, str(path))
+    def test_mode_sidecars_are_normal_inputs(self):
+        for directory in REPO_ROOT.glob('pa[0-9]*'):
+            modes = list((directory / 'tests').rglob('*.cxx-standard'))
+            if not modes:
+                continue
+            selected = self.selected(directory.name, 'test', '')
+            for mode in modes:
+                with self.subTest(mode=mode):
+                    self.assertTrue(mode.with_suffix('.t').is_file())
+                    self.assertIn(mode.with_suffix('.t').relative_to(directory).as_posix(), selected)
 
-    def test_root_optional_target_propagates_failure_and_runs_both_pas(self):
-        with tempfile.TemporaryDirectory(prefix='optional-dispatch.') as temp:
-            root = Path(temp)
-            shutil.copy(REPO_ROOT / 'Makefile', root / 'Makefile')
-            (root / 'scripts').symlink_to(REPO_ROOT / 'scripts')
-            for pa in ('pa29', 'pa31'):
-                (root / pa).mkdir()
-                (root / pa / 'Makefile').write_text(
-                    'test-modern-cxx:\n\t@echo ' + pa + ' >> ../ran\n'
-                    '\t@test "$(FAIL_PA)" != "' + pa + '"\n')
-            for fail in ('', 'pa29', 'pa31'):
-                with self.subTest(fail=fail):
-                    result = subprocess.run(
-                        ['make', '--no-print-directory', '-C', str(root),
-                         'DEFAULT_BUILD_JOBS=2', 'test-modern-cxx-nobuild', f'FAIL_PA={fail}'],
-                        capture_output=True, text=True, env=fixture_lanes.make_environment())
-                    self.assertEqual(result.returncode == 0, not fail,
-                                     result.stdout + result.stderr)
-                    self.assertEqual((root / 'ran').read_text().splitlines(), ['pa29', 'pa31'])
-                    (root / 'ran').unlink()
+    def test_assembly_is_required_and_optimized_results_are_isolated(self):
+        self.assertTrue(self.selected('pa29', 'test', ''))
+        with tempfile.TemporaryDirectory() as scratch:
+            baseline = fixture_lanes.make(REPO_ROOT / 'pa29', scratch, '-n', 'TEST_DEPS=', 'test-nobuild')
+            optimized = fixture_lanes.make(REPO_ROOT / 'pa34', scratch, '-n', 'TEST_DEPS=', 'test-assembly')
+        self.assertIn('control_t', baseline)
+        self.assertIn('CPPGM_ASSEMBLY_LEVELS=O3', optimized)
+        self.assertIn('my-assembly-o3', optimized)
+        self.assertNotIn('my-assembly-o3', baseline)
+
 
 
 class StandInTests(unittest.TestCase):
@@ -247,14 +235,14 @@ class StandInTests(unittest.TestCase):
         ], output)
 
     def test_external_lane_must_name_its_inputs(self):
-        self.write("pa35/Makefile", "test:\n\tperl scripts/check.pl\n")
-        self.write("pa35/scripts/behavior.pl", 'glob("$PA35/tests/behavior/*.cpp")\n')
-        self.write("pa35/scripts/generated.pl", "narrow_main.cpp\n")
-        self.write("pa35/tests/behavior/loops.cpp")
-        self.write("pa35/tests/byte_values/narrow_main.cpp")
-        self.write("pa35/tests/generators/unnamed.pl")
+        self.write("pa36/Makefile", "test:\n\tperl scripts/check.pl\n")
+        self.write("pa36/scripts/behavior.pl", 'glob("$PA36/tests/behavior/*.cpp")\n')
+        self.write("pa36/scripts/generated.pl", "narrow_main.cpp\n")
+        self.write("pa36/tests/behavior/loops.cpp")
+        self.write("pa36/tests/byte_values/narrow_main.cpp")
+        self.write("pa36/tests/generators/unnamed.pl")
         status, problems, output = self.check()
-        self.assertEqual(problems, ["pa35/tests/generators/unnamed.pl"], output)
+        self.assertEqual(problems, ["pa36/tests/generators/unnamed.pl"], output)
 
 
 if __name__ == "__main__":

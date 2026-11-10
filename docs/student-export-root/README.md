@@ -23,15 +23,15 @@ For assignment N, read `paN/README.md`, then:
 ```sh
 make build
 make test-paN                 # Iterate on PA N
-make test-report-through-paN  # Final validation for PA1–PA33
+make test-report-through-paN  # Final validation for PA1–PA34
 ```
 
 Replace N with the assignment number. The through report includes PA N;
 no separate PA N check is needed.
-[PA34](pa34/README.md) runs the self-host ladder and ends with `make inception`,
+[PA35](pa35/README.md) runs the self-host ladder and ends with `make inception`,
 comparing the self and inception generations.
-[PA35](pa35/README.md) makes the compiler fast and ends with
-`make -C pa35 test`, its own gates on generated code and compile speed.
+[PA36](pa36/README.md) makes the compiler fast and ends with
+`make -C pa36 test`, its own gates on generated code and compile speed.
 Integrated assembly is required after PA28 and before hosted compatibility,
 and runs in normal assignment reports.
 Later milestones extend your existing compiler; do not reset to the initial

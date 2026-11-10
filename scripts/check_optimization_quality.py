@@ -112,7 +112,7 @@ def check_fixture(args, fixture, output, tools):
     inputs = directory / 'inputs'
     (inputs / 'kernels').mkdir(parents=True)
     (inputs / 'improvements').mkdir()
-    shutil.copy2(ROOT / 'pa32/tests/kernels/600-support.h', inputs / 'kernels/600-support.h')
+    shutil.copy2(ROOT / 'pa33/tests/kernels/600-support.h', inputs / 'kernels/600-support.h')
     source = inputs / fixture.parent.name / fixture.name
     shutil.copy2(fixture, source)
     data = dict(settings=config, level=level, sources={str(p.relative_to(inputs)): digest(p)
@@ -198,7 +198,7 @@ def main(argv=None):
     parser.add_argument('--backend', default=str(ROOT / 'dev/cppgm++-ref'))
     parser.add_argument('--compiler', default=str(ROOT / 'dev/cppgm++'))
     parser.add_argument('--host', default='g++', help='GCC driver for the common oracle and comparison')
-    parser.add_argument('--out', type=Path, default=ROOT / 'pa32/obj/quality')
+    parser.add_argument('--out', type=Path, default=ROOT / 'pa33/obj/quality')
     parser.add_argument('--scale', type=int, default=1)
     parser.add_argument('--iterations', type=int)
     parser.add_argument('--level', type=int, choices=(1, 2, 3))

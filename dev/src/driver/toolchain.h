@@ -52,7 +52,7 @@ int debug_info_request(const std::string& arg);
 int debug_type_request(const std::string& arg);
 
 // A direct driver query (--version, -v, -dumpmachine, -dumpversion,
-// -print-search-dirs, PA29), answered on standard output.
+// -print-search-dirs, PA30), answered on standard output.
 int run_query(const std::string& flag);
 
 } // namespace driver

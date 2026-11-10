@@ -53,7 +53,7 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_PAS = ['pa%d' % n for n in range(10, 24)] + ['pa32']
+DEFAULT_PAS = ['pa%d' % n for n in range(10, 24)] + ['pa33']
 
 SYMBOL_LINE = re.compile(
     r'^\s*(?:declare\s+)?(?:global|function)\s+@(?P<name>[^\s(:\[]+)')
@@ -88,7 +88,7 @@ RESIDUAL = 'instantiation-dependent signature'
 # Documented differences: (fixture path relative to the repository root,
 # reference name) -> reason. Keep this list short and explained.
 DOCUMENTED = {
-    ('pa29/tests/run/800-out-of-class-nested-template-abi-tag-suppression-run.t',
+    ('pa30/tests/run/800-out-of-class-nested-template-abi-tag-suppression-run.t',
      '_ZN5outerIiE5inner6detachB11tagged_declEPS0_'):
         'The out-of-class definition retains the declaration ABI tag '
         '(Itanium 5.1.1; GCC agrees); Clang drops tagged_decl here.',

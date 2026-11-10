@@ -1,15 +1,17 @@
 # Assignment feature owners
 
 This is the live feature table read by `scripts/audit_pa_feature_placement.py`.
-Owners and clusters use the current 35-assignment sequence. PA34 (self-hosting)
-and PA35 (optimizing the compiler) add no language feature, so no row names
-either as its owner; the auditor rejects a table that does. Optional PA36 owns
-the shared assembly extension outside that sequence. N3485 references
+Owners and clusters use the current 36-assignment sequence. PA35 (self-hosting)
+and PA36 (optimizing the compiler) add no language feature, so no row names
+either as its owner; the auditor rejects a table that does. PA29 owns the required shared assembly boundary before hosted compatibility. N3485 references
 refer to `../../doc/n3485.txt`.
 
 | Feature Family | Canonical Owner PA | Owner Cluster | Versioned Reference | Auditor Status | Required Detections |
 | --- | --- | ---: | --- | --- | --- |
-| `assembly.shared_boundary` | `pa36` | 100 | N/A: optional frontend-neutral assembly contract | covered | `.assembly-profile` selects GNU source or LowIR assembly, including malformed-contract tests; independent of directory and assignment numbering. |
+| `source.target_macro` | `pa25` | 100 | Target driver contract | covered | Target platform selection macros for object-format/ABI source branches; full hosted macro import remains PA30. |
+| `function.inline_attribute` | `pa11` | 400 | Function annotation vocabulary | covered | Accept inline annotations with the function's typed facts; mandatory hosted forced-inline substitution remains PA30. |
+| `source.assembly_attribute` | `pa29` | 100 | GNU assembly source adapter | covered | Naked declarations and annotation compatibility; vector_size payload types and target annotations. Broader vector operations and forced-inline codegen remain hosted consumers. |
+| `assembly.shared_boundary` | `pa29` | 100 | PA8 transport; required frontend-neutral assembly contract | covered | `.assembly-profile` selects GNU source or LowIR assembly, including malformed-contract tests; independent of directory and assignment numbering. |
 | `syntax.nested_namespace` | `pa5` | 100 | N4659 `[namespace.def]` | covered | C++17 qualified namespace definitions; namespace aliases are not opened as namespaces. |
 | `syntax.attribute_using_prefix` | `pa5` | 100 | N4659 `[dcl.attr.grammar]` | covered | C++17 attribute using-prefix syntax; vendor effects retain their later owners. |
 | `template.placeholder_nttp` | `pa18` | 400 | N4659 `[temp.param]`, `[temp.arg.nontype]` | covered | Deduction of non-type parameter types; distinguish trailing-return function pointer parameter types. |
@@ -29,7 +31,7 @@ refer to `../../doc/n3485.txt`.
 | `lowir.procedural.float_conversion` | `pa10` | 200 | 4.6 `[conv.fpprom]`, 4.8 `[conv.double]`, 4.9 `[conv.fpint]` | pending | Source-to-LowIR floating scalar literals, promotions, conversions, returns, and branch normalization. Native/backend execution parity remains PA24 and should be tested with LowIR/backend inputs. |
 | `expr.cast.builtin` | `pa10` | 200 | 5.2.9 `[expr.static.cast]`, 5.2.11 `[expr.const.cast]`, 5.4 `[expr.cast]` | pending | C-style casts, `static_cast`, `const_cast`, scalar/function/reference/pointer casts. |
 | `call.variadic_promotions` | `pa10` | 200 | 5.2.2 `[expr.call]`, 4.6 `[conv.fpprom]` | pending | Source-to-LowIR argument lowering for C-style variadic calls and default promotions. Native ABI/runtime parity for variadic calls remains PA24-owned backend coverage. |
-| `lang.extended_integer` | `pa25` | 300 | N/A: GNU/Clang `__int128` extension | pending | Runtime lowering for `__int128` / `__uint128_t` values through source-driver programs. PA29 keeps hosted compile-only stress for vendor typedefs, literals, and header compatibility. |
+| `lang.extended_integer` | `pa25` | 300 | N/A: GNU/Clang `__int128` extension | pending | Runtime lowering for `__int128` / `__uint128_t` values through source-driver programs. PA30 keeps hosted compile-only stress for vendor typedefs, literals, and header compatibility. |
 | `class.basic` | `pa11` | 100 | 9 `[class]`, 9.2 `[class.mem]` | pending | `class`/`struct`, members, methods, access labels, nested class use. |
 | `class.access_control` | `pa11` | 100 | 11 `[class.access]` | pending | public/private/protected member and constructor access checks. |
 | `class.nested_type` | `pa11` | 100 | 9.7 `[class.nest]`, 9.9 `[class.nested.type]`, 3.4.3.1 `[class.qual]` | pending | nested classes, nested typedefs, qualified member type names, inherited member typedefs. |
@@ -41,7 +43,7 @@ refer to `../../doc/n3485.txt`.
 | `class.layout.bitfield` | `pa11` | 300 | 9.6 `[class.bit]` | pending | `:` bit-field declarators, zero-width unnamed bit fields. |
 | `class.bitfield.access_or_init` | `pa11` | 400 | 9.6 `[class.bit]`, 8.5.1 `[dcl.init.aggr]` | pending | bit-field member access, assignment, constructor/member/aggregate initialization. |
 | `class.inheritance.single` | `pa11` | 200 | 10 `[class.derived]` | pending | one direct non-virtual base. |
-| `class.attribute.no_unique_address` | `pa29` | 600 | N/A: post-C++11 attribute; 7.6 `[dcl.attr]` for attribute syntax | pending | `[[no_unique_address]]` layout, empty member overlap, recursive empty holder cases in hosted/source-compatibility inputs. |
+| `class.attribute.no_unique_address` | `pa30` | 600 | N/A: post-C++11 attribute; 7.6 `[dcl.attr]` for attribute syntax | pending | `[[no_unique_address]]` layout, empty member overlap, recursive empty holder cases in hosted/source-compatibility inputs. |
 | `expr.new_delete` | `pa12` | 300 | 5.3.4 `[expr.new]`, 5.3.5 `[expr.delete]`, 12.5 `[class.free]` | pending | scalar `new`/`delete`, placement new, class construction through allocation expressions. |
 | `expr.pseudo_destructor` | `pa11` | 300 | 5.2.4 `[expr.pseudo]` | pending | scalar and class pseudo/explicit destructor-call syntax. |
 | `function.default_argument` | `pa7` | 300 | 8.3.6 `[dcl.fct.default]` | pending | default arguments on namespace/member functions and constructor calls. LowIR tests using plain procedural default arguments need a PA10-or-later LowIR owner; class/template interactions inherit their later feature owners. |
@@ -56,11 +58,11 @@ refer to `../../doc/n3485.txt`.
 | `exception.handler_branch_cleanup` | `pa21` | 200 | 12.4 `[class.dtor]`, 15.3 `[except.handle]` | pending | A branch inside a typed handler can reach a throwing call while an outer object remains live. The call's unwind path must finish the catch and destroy outer objects before resuming. |
 | `host.eh_object` | `pa26` | 100 | N/A: host object and Itanium C++ ABI EH contract | pending | PA26 `cppgm++ -c` object/runtime coverage: EH runtime imports, personality references, unwind and LSDA facts, typed-catch references, or final host-unwinder behavior. Distinguish this layer from PA21 source-to-LowIR exception lowering. |
 | `host.object_interop` | `pa27` | 100 | N/A: host object/toolchain interoperability contract | pending | PA27 `cppgm++ -c` coverage with an object-inspection sidecar or an anchor contract that names host/compiler-object behavior. Do not infer this feature from every PA27 path; runtime-only language regressions still need ownership review. |
-| `host.object_attribute` | `pa27` | 200 | N/A: host object linkage and section contract | pending | GNU `weak`, `section`, and `visibility` attributes when they control host-object symbol binding, section placement, or inspected symbol visibility. Function `noinline` metadata is PA11-owned. Broader hosted attribute parsing remains PA29-owned. |
-| `host.function_effect_attribute` | `pa28` | 200 | N/A: GNU callable effect contract | covered | GNU `pure` and `const` function/template attributes retain read-only-memory and no-memory-access effects on the canonical callable, as specified by PA28. Other hosted attribute parsing remains PA29-owned. |
-| `host.abi_name_attribute` | `pa28` | 200 | N/A: Itanium host ABI name contract | pending | ABI-tag attributes on constructors, destructors, and other object-inspected host symbols. General attribute parsing and hosted-header compatibility remain PA29-owned. |
-| `host.abi_builtin_type` | `pa28` | 200 | N/A: Itanium host ABI name contract | pending | A compiler builtin transform type that appears in an object-inspected host symbol. General builtin-trait and transform source compatibility remains PA29-owned. |
-| `hosted.runtime_compat` | `pa29` | 800 | N/A: hosted link/run compatibility contract | pending | PA29 `tests/run` smokes that compile hosted or vendor source forms and then link and execute them. Their underlying syntax may first appear in an earlier PA29 compile cluster. |
+| `host.object_attribute` | `pa27` | 200 | N/A: host object linkage and section contract | pending | GNU `weak`, `section`, and `visibility` attributes when they control host-object symbol binding, section placement, or inspected symbol visibility. Function `noinline` metadata is PA11-owned. Broader hosted attribute parsing remains PA30-owned. |
+| `host.function_effect_attribute` | `pa28` | 200 | N/A: GNU callable effect contract | covered | GNU `pure` and `const` function/template attributes retain read-only-memory and no-memory-access effects on the canonical callable, as specified by PA28. Other hosted attribute parsing remains PA30-owned. |
+| `host.abi_name_attribute` | `pa28` | 200 | N/A: Itanium host ABI name contract | pending | ABI-tag attributes on constructors, destructors, and other object-inspected host symbols. General attribute parsing and hosted-header compatibility remain PA30-owned. |
+| `host.abi_builtin_type` | `pa28` | 200 | N/A: Itanium host ABI name contract | pending | A compiler builtin transform type that appears in an object-inspected host symbol. General builtin-trait and transform source compatibility remains PA30-owned. |
+| `hosted.runtime_compat` | `pa30` | 800 | N/A: hosted link/run compatibility contract | pending | PA30 `tests/run` smokes that compile hosted or vendor source forms and then link and execute them. Their underlying syntax may first appear in an earlier PA30 compile cluster. |
 | `lookup.adl` | `pa11` | 200 | 3.4.2 `[basic.lookup.argdep]` | pending | associated namespaces/classes, hidden friends, ADL suppression and ambiguity. |
 | `operator.overload` | `pa11` | 300 | 13.5 `[over.oper]` | pending | member/nonmember/friend operators, operator function ids, overloaded subscript/shift/call operators over the PA11 object subset. |
 | `class.using_declaration` | `pa11` | 300 | 7.3.3 `[namespace.udecl]`, 10.2 `[class.member.lookup]` | pending | using declarations that re-expose inherited members or affect access. |
@@ -69,8 +71,8 @@ refer to `../../doc/n3485.txt`.
 | `class.member_pointer` | `pa22` | 300 | 4.11 `[conv.mem]`, 5.5 `[expr.mptr.oper]`, 8.3.3 `[dcl.mptr]` | pending | `T C::*`, `.*`, `->*`, member pointer conversions/null tests over the completed non-virtual object model. Virtual-base and polymorphic adjustment cases inherit the PA23 pointer-adjustment owner. |
 | `class.conversion_operator` | `pa12` | 400 | 12.3.2 `[class.conv.fct]` | pending | non-template `operator T()` declarations and calls over the completed PA12 value subset. |
 | `function.trailing_return` | `pa6` | 300 | 8.3.5 `[dcl.fct]`, 7.1.6.4 `[dcl.spec.auto]` | pending | trailing return type syntax as type/declarator analysis. LowIR tests inherit the enclosing function kind's LowIR owner; auto return deduction belongs to `support.auto`. |
-| `support.constinit` | `pa29` | 600 | N/A: GNU __constinit extension | pending | GCC constant-initialization declarations: enforce static or thread storage and constant initialization while preserving mutability. |
-| `support.attribute` | `pa29` | 500 | 7.6 `[dcl.attr]` | pending | standard/GNU attributes outside `no_unique_address`, including hosted/vendor declaration attributes and attributes on specialization declarations. |
+| `support.constinit` | `pa30` | 600 | N/A: GNU __constinit extension | pending | GCC constant-initialization declarations: enforce static or thread storage and constant initialization while preserving mutability. |
+| `support.attribute` | `pa30` | 500 | 7.6 `[dcl.attr]` | pending | standard/GNU attributes outside `no_unique_address`, including hosted/vendor declaration attributes and attributes on specialization declarations. |
 | `lifetime.ctor_dtor` | `pa11` | 200 | 3.8 `[basic.life]`, 12.1 `[class.ctor]`, 12.4 `[class.dtor]` | pending | constructors, destructors, local/global lifetime, init/fini refs. |
 | `value.copy_move` | `pa12` | 100 | 12.8 `[class.copy]`, 8.4.2 `[dcl.fct.def.default]`, 8.4.3 `[dcl.fct.def.delete]` | pending | copy/move ctors/assignments, `= default`, `= delete`, move-only patterns. |
 | `value.by_value_abi` | `pa12` | 200 | 5.2.2 `[expr.call]`, 6.6.3 `[stmt.return]`, 12.8 `[class.copy]` | pending | class by-value params/returns, indirect return refs. |
@@ -87,8 +89,8 @@ refer to `../../doc/n3485.txt`.
 | `support.decltype` | `pa6` | 200 | 7.1.6.2 `[dcl.type.simple]` | pending | `decltype` type analysis. LowIR tests inherit the enclosing feature owner unless `decltype` itself is the primary semantic assertion. |
 | `support.auto` | `pa20` | 100 | 7.1.6.4 `[dcl.spec.auto]` | pending | `auto` in declarations and non-template return type deduction. |
 | `support.bodyless_placeholder_return` | `pa20` | 100 | N4140 `[dcl.spec.auto]` | pending | Bodyless function declarations with a deduced `auto` return, including deleted overloads accepted while compiling newer hosted headers. Deleted declarations do not require a deduction body. |
-| `support.host_predefined_macro` | `pa29` | 300 | N/A: hosted predefined macro import | pending | Host/compiler predefined macros imported from the configured host toolchain, including compiler/target identity macros, `__SIZE_TYPE__`, `__PTRDIFF_TYPE__`, `__CHAR_BIT__`, and other type/limit/width macros. |
-| `support.preprocessor_probe` | `pa29` | 300 | N/A: hosted preprocessor compatibility | pending | Hosted preprocessor probe operators and function-like probes such as `__has_builtin`, `__has_feature`, `__has_extension`, `__has_include`, `__has_attribute`, and `__is_identifier`. |
+| `support.host_predefined_macro` | `pa30` | 300 | N/A: hosted predefined macro import | pending | Host/compiler predefined macros imported from the configured host toolchain, including compiler/target identity macros, `__SIZE_TYPE__`, `__PTRDIFF_TYPE__`, `__CHAR_BIT__`, and other type/limit/width macros. |
+| `support.preprocessor_probe` | `pa30` | 300 | N/A: hosted preprocessor compatibility | pending | Hosted preprocessor probe operators and function-like probes such as `__has_builtin`, `__has_feature`, `__has_extension`, `__has_include`, `__has_attribute`, and `__is_identifier`. |
 | `rtti.typeid` | `pa21` | 100 | 5.2.8 `[expr.typeid]` | pending | `typeid(type-id)`, supported `typeid(expr)`, and deterministic RTTI/typeinfo LowIR for the PA21 RTTI subset. |
 | `rtti.dynamic_cast.pointer` | `pa21` | 100 | 5.2.7 `[expr.dynamic.cast]` | pending | Pointer-form `dynamic_cast<T*>` over the supported single-inheritance polymorphic subset and the associated `__dynamic_cast`/RTTI helper facts. |
 | `rtti.dynamic_cast.void` | `pa22` | 100 | 5.2.7 `[expr.dynamic.cast]` | pending | `dynamic_cast<void*>` over the existing single-vptr polymorphic ABI and the `_ZTIv` helper fact. |
@@ -111,7 +113,7 @@ refer to `../../doc/n3485.txt`.
 | `template.pack` | `pa15` | 200 | 14.5.3 `[temp.variadic]` | pending | `...` packs and pack expansions. Rebalanced from PA14 so PA15 owns the first metaprogramming/variadic extension over basic templates. |
 | `template.template_parameter` | `pa17` | 200 | 14.1 `[temp.param]`, 14.3.3 `[temp.arg.template]` | pending | template-template parameter syntax. Rebalanced from PA14 because this is second-order template entity modeling. |
 | `template.member_template` | `pa17` | 300 | 14.5.2 `[temp.mem]` | pending | member templates, templated operators/call operators. Rebalanced from PA14 because member-template collection/ownership fits the PA17 entity graph. |
-| `template.builtin_traits` | `pa29` | 500 | N/A: compiler intrinsics/hosted trait probes | pending | builtin trait/intrinsic expressions such as `__is_*`, `__builtin_*`, builtin type transforms such as `__remove_cv(T)` / `__decay(T)`, and pack/sequence intrinsics such as `__type_pack_element` / `__make_integer_seq`. |
+| `template.builtin_traits` | `pa30` | 500 | N/A: compiler intrinsics/hosted trait probes | pending | builtin trait/intrinsic expressions such as `__is_*`, `__builtin_*`, builtin type transforms such as `__remove_cv(T)` / `__decay(T)`, and pack/sequence intrinsics such as `__type_pack_element` / `__make_integer_seq`. |
 | `template.nttp` | `pa15` | 100 | 14.1 `[temp.param]`, 14.3.2 `[temp.arg.nontype]` | pending | integral non-type template params/args. |
 | `template.nttp.pointer_member` | `pa18` | 400 | 14.3.2 `[temp.arg.nontype]` | pending | pointer, reference, enum, and class/static-member NTTP values; member-pointer NTTP cases also require the member-pointer owner. |
 | `template.explicit_specialization` | `pa15` | 300 | 14.7.3 `[temp.expl.spec]` | pending | `template<>` explicit specialization. |

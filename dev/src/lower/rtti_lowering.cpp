@@ -346,7 +346,7 @@ lowir::SymbolId ProgramLowering::class_information(const sema::ClassEntity* enti
 	// A class's type information; with `table`, a polymorphic class's
 	// table as well where the unit defines it (a run-time check's classes,
 	// the course's form; Itanium 5.2.3). A host object defines only what
-	// its code refers to (README PA31): a check reads the object's table,
+	// its code refers to (README PA32): a check reads the object's table,
 	// which the unit constructing it defines.
 	if (table && !host_objects_)
 		class_table(entity);

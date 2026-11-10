@@ -753,7 +753,7 @@ Expr* Parser::coroutine_operation(const Identifier* keyword, Expr* operand, uint
 {
 	// A call of an unspellable name (` co_await` and so on), which only an
 	// uninstantiated template's definition may hold: coroutines (C++20) are
-	// outside PA29, so the analysis rejects any other.
+	// outside PA30, so the analysis rejects any other.
 	const std::string spelling = std::string(" ") + keyword->spelling;
 	IdExpr* callee = make<IdExpr>(ExprKind::Id, location);
 	callee->name = make_simple_name(

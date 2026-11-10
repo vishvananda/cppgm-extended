@@ -155,7 +155,7 @@ surface:
   cleanup or catch continuations
 
 The cases compile at `-O0`, including nested catch forwarding. Optimization
-is introduced in PA32; its host-object lane checks that forwarding and unwind
+is introduced in PA33; its host-object lane checks that forwarding and unwind
 metadata remain correct after optimization. PA26 requires no optimized build.
 
 For each test anchor `x.t`, companion C++ sources are named:

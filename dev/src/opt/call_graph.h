@@ -6,7 +6,7 @@
 #include "lowir/program.h"
 #include "opt/optimizer.h"
 
-// The direct-call graph of a program's function definitions (PA32
+// The direct-call graph of a program's function definitions (PA33
 // inlining and pruning): dense function indices in definition order, call
 // edges from typed call operands, one byte of non-call observation per
 // function, and strongly connected components (Tarjan) giving recursion

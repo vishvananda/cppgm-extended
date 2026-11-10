@@ -279,7 +279,7 @@ for my $name (sort keys %type)
 	push @errors, "type '$name' has no retained ledger row" if !$ledger_type{$name};
 }
 
-# 6. The optional assembly vocabulary belongs to the owners recorded in the
+# 6. The shared assembly vocabulary belongs to the owners recorded in the
 # ledger. Do not tie its documentation or tests to an assignment number.
 my @assembly_rows = grep { $_->{category} eq 'structure' && $_->{surface} eq 'assembly' } @retained;
 push @errors, "assembly templates have no retained ledger structure row" if !@assembly_rows;

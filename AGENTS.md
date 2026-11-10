@@ -11,7 +11,7 @@ attribution and consult [NOTICE](NOTICE), not historical PA numbers, for origins
 
 - Put compiler changes in `dev/` and `dev/src/`. Keep tool source lists in
   `dev/frontend_source_sets.mk` current.
-- Treat `pa1/` through `pa35/` as handouts, tests, references and wrappers.
+- Treat `pa1/` through `pa36/` as handouts, tests, references and wrappers.
   Read the owning handout before changing a milestone's behavior.
 - Required fixtures live in the earliest owning `paN/tests/`, in the cluster
   of the latest feature they exercise, inside a lane that assignment's
@@ -33,7 +33,7 @@ make CXX=clang++ CPPGM_HOST_CXX=clang++
 make test-pa8
 CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-report
 make test-debuginfo
-make -C pa34 test-through-pa5 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
+make -C pa35 test-through-pa5 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
 make inception
 ```
 
@@ -43,8 +43,8 @@ or mixed-toolchain objects with `INCEPTION_OBJ_ROOT_BASE` or `OBJ`.
 
 After compiler changes, run the affected suite, full strict report, debug-info
 checks and self-host through PA5. Run inception when changing self-host
-behavior, and `make -C pa35 test-smoke` when changing the optimizer, the
-backend or the lowering; `make -C pa35 ref-test` is PA35's release check. PA34 owns the `test-through-*` ladder; root `make inception`
+behavior, and `make -C pa36 test-smoke` when changing the optimizer, the
+backend or the lowering; `make -C pa36 ref-test` is PA36's release check. PA35 owns the `test-through-*` ladder; root `make inception`
 compares the rebuilt compiler.
 
 See [TESTING_AND_REFERENCES.md](TESTING_AND_REFERENCES.md) for test selection,

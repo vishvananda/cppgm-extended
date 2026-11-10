@@ -501,7 +501,7 @@ sub build_wrapped_text_request
 			        @inputs);
 		}
 
-		# Hosted-compat preprocessor tests (suffix "pp", e.g. pa29) must run with
+		# Hosted-compat preprocessor tests (suffix "pp", e.g. pa30) must run with
 		# -E so the tool preprocesses instead of compiling+linking the directive-
 		# only source (which has no main). Mirrors the batch worker
 		# (run_cpphostcompat_preproc_worker.pl) so the bucket behaves identically

@@ -19,8 +19,8 @@ make test-harness
 make inception
 ```
 
-The report covers PA1–PA33; PA34's final check is inception, and PA35's gates
-are a release check ([below](#pa35-smoke-and-release-check)). Narrow the report
+The report covers PA1–PA34; PA35's final check is inception, and PA36's gates
+are a release check ([below](#pa36-smoke-and-release-check)). Narrow the report
 with `ACTIVE_TEST_REPORT_PAS='pa8 pa10'`. Control parallelism with
 `TEST_REPORT_ASSIGNMENT_JOBS` and `TEST_REPORT_SUBTEST_JOBS`; `ORDERED=false`
 streams completed jobs. Use `CPPGM_TEST_RUNNER=0` to diagnose ordinary versus
@@ -34,7 +34,7 @@ Each worker indexes fixture companion filenames once per directory; retained
 result namespaces do not require a new scan per fixture.
 
 CI sets `CPPGM_WARNINGS_AS_ERRORS=1` for the compiler and tool sources, including
-PA34 builds. Use `make CPPGM_WARNINGS_AS_ERRORS=1` to apply the same policy locally.
+PA35 builds. Use `make CPPGM_WARNINGS_AS_ERRORS=1` to apply the same policy locally.
 Test programs use their harness's compile flags.
 
 The default report selects checks for Linux or Intel macOS automatically.
@@ -82,7 +82,7 @@ a linkable program; `exit N` uses the supplied backend and checks its outcome.
 `NAME.stdout`, when present, checks exact output, including an empty file.
 These controls constrain behavior rather than instruction selection.
 
-PA29's optional x86 target-feature checks run with `make test-target-features`
+PA30's optional x86 target-feature checks run with `make test-target-features`
 (or `-nobuild`). They require POPCNT and are excluded from cumulative reports.
 
 <a id="boost-advisory-ci"></a>
@@ -126,7 +126,7 @@ owning handout's requirements. Personal inputs and scratch
 harnesses belong in `student.tests/` and are run explicitly.
 
 The numbering check includes solution-only `regression/` lanes, nested
-controls and PA32's standalone object-roundtrip sources. Their implementation
+controls and PA33's standalone object-roundtrip sources. Their implementation
 requirements remain separate from the course feature-placement check.
 
 A fixture must also sit where a lane runs it: a fixture beside the roots its
@@ -136,12 +136,12 @@ from the recipes of its `test*` and `ref-test*` targets and fails on an input
 no `test*` lane selects, or on a file under `tests/` that is neither an
 input, a companion named after one (`x.ref*`, `x.t.N`, `x.lib.*`, ...), nor
 a header or note that a fixture uses. Lanes a Makefile cannot show, such as
-PA35's, are listed in the script with their reason.
+PA36's, are listed in the script with their reason.
 
 The feature placement audit also checks required course commands, their local
 runner/wrapper scripts and per-test `.flags`/`.env` options. Positive compiler
-optimization levels require PA32; direct `lowir2native` optimization requires
-PA33. It expands Makefile variables in both batch modes and checks fixture
+optimization levels require PA33; direct `lowir2native` optimization requires
+PA34. It expands Makefile variables in both batch modes and checks fixture
 guards in shared runners. Host compiler build/link flags, reference evaluators,
 separate maintainer regression targets and deferred debug-preservation lanes
 are not early student requirements. Put cross-stage regressions in a later
@@ -179,15 +179,15 @@ reducer whose features the assignment owns. Host-linked, multi-unit,
 optimized or g++-output-compared programs belong to PA25 and later. Controls
 without a stated outcome stay with PA10–PA12's focused checkers.
 
-PA24, PA32 and PA33 also have `tests/regression/`, which pins this solution's
+PA24, PA33 and PA34 also have `tests/regression/`, which pins this solution's
 particular output shapes. Maintainer `make test` runs both `test-course` and
 `test-regression`; student-export `make test` runs the course contract only.
-PA33's export omits its regression fixtures and `maintainer/` tooling entirely.
-`pa33/tests/regression/simd/` is one such lane: hosted programs that compile the
-GCC vector intrinsic headers and link with `-lm`, so PA29's required surface does
-not grow. The source-only `pa33/maintainer/Makefile` retains census and Cachegrind
+PA34's export omits its regression fixtures and `maintainer/` tooling entirely.
+`pa34/tests/regression/simd/` is one such lane: hosted programs that compile the
+GCC vector intrinsic headers and link with `-lm`, so PA30's required surface does
+not grow. The source-only `pa34/maintainer/Makefile` retains census and Cachegrind
 targets, which are not student requirements; the course lane
-`make -C pa33 test-kernels` (PA35's kernels under Cachegrind, at PA33's
+`make -C pa34 test-kernels` (PA36's kernels under Cachegrind, at PA34's
 limit) is one, so `make test-report` needs valgrind.
 Keep solution-specific expectations out of graded course fixtures.
 
@@ -269,39 +269,39 @@ those expressions. The script exits 1 when a mismatch is not listed with
 its reason in the script's `DOCUMENTED` table, and `--verbose` lists every
 mismatch of a fixture.
 
-## PA35 smoke and release check
+## PA36 smoke and release check
 
-PA35 has no reference files. Its gates compare at test time: generated code
+PA36 has no reference files. Its gates compare at test time: generated code
 with the compiler's own host-built seed and with GCC, compile time and memory
 with the host compiler. What the course keeps from its solution is a
 calibration.
 
-`make -C pa35 test-smoke` runs the correctness group alone: the workload at
+`make -C pa36 test-smoke` runs the correctness group alone: the workload at
 `-O0` and `-O3`, every `tests/behavior` program at `-O0` to `-O3` with its
 MIR dump, and generated programs from five seeds, in seconds (8 at twelve
 jobs here). Run it
 with the other checks in [AGENTS.md](AGENTS.md) after a change to the
 optimizer, the backend or the lowering. `make test-harness` includes
-`scripts/tests/test_pa35_harness.py`, which checks the gate table and the
+`scripts/tests/test_pa36_harness.py`, which checks the gate table and the
 handout's limits and ladder steps, the progress ladder, the release check's
 margins in both builds and the runners without the course compiler. Neither
-`make test` nor `make test-report` runs PA35: like PA34 it is outside the
+`make test` nor `make test-report` runs PA36: like PA35 it is outside the
 report, its speed gates time real compiles, and its cycle proxy runs the
 workload under cache simulation, so a full run takes minutes.
 
-`make -C pa35 ref-test` is the release check. It runs every gate on the
+`make -C pa36 ref-test` is the release check. It runs every gate on the
 course build (`check.pl` with 100 generated seeds), then builds the same
 source as the student export's Makefile does (plain `-O3`, the C library's
 `malloc`; the seed by g++, self by that seed) and measures its speed and
 codegen groups, the configuration students' gates compare. It writes
-`pa35/calibration.tsv` (the student build's value and margin for each gate,
+`pa36/calibration.tsv` (the student build's value and margin for each gate,
 the measurements behind them, and the machine, toolchain and commit, named
-generically) and `pa35/maintainer/calibration-course.tsv` (the course
+generically) and `pa36/maintainer/calibration-course.tsv` (the course
 build's). Commit both. The check fails when a gate fails in either build, or when a value
 in either build does not clear its limit by the release margin of its kind
 (margin = limit / value - 1):
 
-| Kind | Gates | Release margin | Spread measured when PA35 entered |
+| Kind | Gates | Release margin | Spread measured when PA36 entered |
 | --- | --- | ---: | --- |
 | count | own instructions at `-O0` and `-O3`, the four kernels | 2% | under 0.01%: 81 seed/self pairs relinked in shuffled object orders, 8 environment sizes, 3 workload paths; kernels identical with relinked seeds |
 | proxy | cycle proxy at `-O0` and `-O3` | 1.5% | 1.22% at `-O0` and 0.51% at `-O3` over the 81 relinked pairs (standard deviation 0.27% and 0.13%); environment and path under 0.03% |
@@ -329,7 +329,7 @@ Re-calibrate:
 
 When either build falls short, improve the solution and re-sync it;
 never move a limit to fit it. The export ships `calibration.tsv` and drops
-`pa35/maintainer/`.
+`pa36/maintainer/`.
 
 
 ## Optional Intel macOS checks

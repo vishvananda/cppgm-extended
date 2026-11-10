@@ -1,49 +1,120 @@
-## CPPGM Programming Assignment 30 (`cppgm++ -c`)
+## CPPGM Programming Assignment 29 (`cppgm++ -E` / `cppgm++ -c`)
 
 ### Overview
 
-PA30 is the hosted header-compile assignment. It is split out of PA29: where
-PA29 establishes that hosted source/header inputs preprocess and compile at all
-(intrinsics, parser concessions, builtin traits, header-free conformance
-anchors, and lightweight C-wrapper header smokes). PA30 raises the bar to
-**compiling the heaviest real C++ standard-library headers** end to end with
-`cppgm++ -c`, within a workable compile time.
+PA30 is the hosted source/header compatibility assignment. Its job is to make
+`cppgm++` preprocess and compile the hosted standard-library and vendor
+extension environment needed by later bootstrap-style builds.
 
-By PA29, hosted headers and source should preprocess and compile for the
-lighter hosted workload. PA30 raises the bar to large, template- and trait-heavy
-STL headers (`<vector>`, `<unordered_map>`, `<tuple>`, `<random>`,
-`<functional>`, and the iostream/string/exception machinery).
+This milestone is intentionally distinct from the previous host-toolchain
+assignments:
 
-The tests require clean object emission from heavy hosted headers. PA31 then
-checks whether emitted header code links and runs.
+- PA27 is about ordinary host-linkable object files.
+- PA28 is about host C++ ABI/runtime correctness after host link.
+- PA30 is about preprocessing, parsing, semantic analysis, and lowering
+  compatibility for hosted source/header inputs.
 
 To complete PA30, implement these goals:
 
-- compile the heaviest hosted standard-library headers cleanly with `cppgm++ -c`
-- carry the template instantiation, trait evaluation, and overload-resolution
-  depth those headers exercise without exponential blow-up
-- stay within a workable compile time on the heavy-header workload (the
-  harness stops a compile after 45 seconds by default; it does not limit
-  memory)
+- hosted preprocessor compatibility
+- GNU/Clang parser concessions used by the selected hosted headers
+- GNU builtin type and literal forms used by the selected hosted environment
+- builtin traits, transforms, and intrinsics used by that hosted environment
+- hosted-header/source compile compatibility for the lighter hosted workload
+  covered by the PA30 tests, including C-wrapper headers and selected
+  vendor/header forms
 
 ### Prerequisites
 
-Complete PA29 before starting this assignment.
+Complete PA28 before starting this assignment.
 
 You will want to reuse:
 
-- the full earlier language, template, semantic, and lowering stack
-- the PA29 hosted preprocess/compile compatibility surface (intrinsics, parser
-  concessions, builtin traits/types, header-free conformance anchors, and
-  lightweight C-wrapper header smokes)
+- the full earlier language, template, and lowering stack
 - the PA27/PA28 `cppgm++ -c` host-object path
+- the PA28 host-ABI-compatible output path
+- the earlier preprocessor pipeline, now with hosted-driver controls
+
+The GNU/Clang concessions this assignment owns include several the selected
+hosted headers depend on:
+
+- GNU anonymous structs expose their fields as members of the enclosing class;
+  these field names remain values when distinguishing casts from calls
+
+- hosted source-file comments may contain opaque legacy 8-bit bytes; line
+  splicing, trigraphs and comment delimiters retain their usual behavior.
+  This does not relax UTF-8 diagnostics for tokens or literals, or the strict
+  PA1 tokenizer's input contract
+- hosted source lines may end in CRLF: a splice deletes the carriage return
+  with the backslash and new-line, after a trigraph `??/` too. PA1's `new-line`
+  stays LF alone
+- parenthesized parameter declarators introduce their names normally, including
+  array parameters; a known type name still participates in the usual
+  function-type disambiguation
+- a quote with no partner on its line is a token of its own, so `#if 0` text
+  may say `don't`. PA1 rejects one
+
+- the `aligned` attribute takes a constant expression, not only a literal, and
+  inside a class template that expression may name the template's own
+  parameters, so it is not knowable until instantiation; it is accepted in
+  the `[[gnu::aligned]]` spelling too, and before a block-scope declaration or
+  after a declarator it aligns the declared object
+- GNU attributes before and among declaration specifiers remain attached to
+  their declaration, including constructors, destructors and conversions
+- a hosted type specifier such as `__uint128_t` or `__float128` spells itself as
+  an identifier rather than a keyword, and introduces a functional cast the same
+  way a fundamental type keyword does
+- GNU `mode(identifier)` selects the complete declared scalar's machine
+  representation, including the 64-bit `word`, `pointer` and `unwind_word`
+  modes used by the hosted unwinder; it preserves qualifiers and signedness
+  and validates the declaration's category. Dependent declared modes retain
+  an interned type transform until substitution; GNU ignores an unassociated
+  dependent alias RHS's mode, while an alias-name attribute still applies.
+  The complex modes `SC`, `DC`, `XC` and `TC` select float, double,
+  extended and binary128 complex representations while retaining the
+  complex category, qualifiers and dependent transform identity
+- GCC's `__constinit` requires static or thread storage and static
+  initialization, without adding `const` or requiring a literal class type;
+  dependent definitions are checked when instantiated
+- Clang's `__builtin_bitreverse8/16/32/64` converts its argument to the
+  corresponding unsigned integer type and reverses all of its bits. The
+  result has that same type; the builtins work in constant expressions and
+  are advertised through `__has_builtin`
+- `_Atomic` is not `volatile`: a class with an `_Atomic` member is still a
+  literal type and may have a `constexpr` constructor
+- `__builtin_frame_address(level)` takes a nonnegative constant frame level
+  and returns a `void*` to the physical activation frame. On x86-64, level zero
+  reads a retained RBP frame even in optimized leaf functions. A nonzero level
+  follows saved caller frame pointers and requires a valid caller chain;
+  callers that omit frame pointers cannot be traversed reliably. Inlining
+  uses the containing activation's frame. The query is not a C++ constant
+  expression, and `__has_builtin` advertises it through the builtin registry
 
 The tests assume a Linux shell environment with `make`, `bash`, `perl`, and a
-working host C++ compiler with hosted C++ headers installed. You may override the
-compiler with `CXX=...`. `CPPGM_HOST_CXX` selects the host compiler used for
-builtin macro/include probing; if unset it defaults to `CXX`. When you use a
+working host C++ compiler with hosted C++ headers installed.
+You may override the compiler with `CXX=...`. `CPPGM_HOST_CXX` selects the host
+compiler used for builtin macro/include probing. If it is not set, it defaults
+to `CXX`.
+
+The hosted tests rely on the host compiler's target, predefined macros, standard
+library include paths, and standard-library selection flags. When you use a
 non-default standard library, pass the same choice through `CPPGM_STDLIB_FLAGS`
 so the course compiler and host compiler agree.
+
+Library traits use their declared template definitions and specializations.
+A familiar standard-library name does not define an incomplete primary or
+replace its member declarations and values.
+
+Those answers are discovered **once, when `cppgm++` is built**, and baked into
+it. The compiler does not probe the host toolchain at run time to find its
+include paths: a compiler that decided where the standard library lives each
+time it ran would give different answers on different machines and would make
+its own output depend on whatever compiler happened to be installed. A
+consequence students see directly is that `-stdlib=` on the command line cannot
+change the choice. It is checked against the selection the compiler was built
+with, so it may agree, and a flag that disagrees is refused rather than
+honoured -- honouring it would compile against one library's headers while
+claiming another.
 
 ### Starter Kit
 
@@ -53,9 +124,11 @@ The starter kit provides:
 - the shared implementation you built under `dev/src/`
 - `pa30/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
 - `pa30/Makefile`
-- `pa30/scripts/`, the hosted `-c` compile test harness (shared with PA29)
-- `pa30/tests/compile/`, the heavy-STL header-compile tests and checked-in
-  reference files
+- `pa30/scripts/`, the hosted preprocessor/compile test harness
+- `pa30/tests/preproc/`, hosted preprocessor tests and references
+- `pa30/tests/compile/`, hosted compile-only tests and references
+- `pa30/tests/run/`, small host-link/run smokes for hosted C-wrapper headers
+  and builtin/runtime interop
 
 Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Preserve supplied test inputs.
@@ -65,34 +138,91 @@ Corrections to reference outputs follow the
 Use `cppgm++-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.
 
+### Driver Surface
+
+Previously required:
+
+- the PA25 compile/link surface: `-c`, default link mode, `-I`, `-L`, `-l`, and
+  `--target`
+- the PA27/PA28 host-compatible behavior for the relevant compile-mode subset
+
+New or newly required in PA30:
+
+- hosted preprocess mode: `-E`
+- hosted preprocessor-control flags:
+  - `-D <macro>` and `-D<macro>`
+  - `-U <macro>` and `-U<macro>`
+  - `-include <file>`
+  - `-isystem <dir>` and `-isystem<dir>`
+- direct driver query forms:
+  - `--version`
+  - `-v`
+  - `-dumpmachine`
+  - `-dumpversion`
+  - `-print-search-dirs`
+- compatibility handling for common build-system flags that should either be
+  honored or harmlessly accepted when they do not affect the tested output
+- `-mno-red-zone` disables use of the x86-64 SysV red zone for local storage;
+  `-mred-zone` enables it, and the last of these options wins
+
 ### Command-Line Contract
 
-PA30 introduces no new `cppgm++` flags. It reuses the compile-mode surface
-already required by PA29:
+PA30 continues extending the same `cppgm++` frontend used in PA25-PA28.
+
+Required preprocess forms:
+
+```sh
+cppgm++ -E -o <outfile> <srcfile>
+cppgm++ -E <srcfile1> <srcfile2> ...
+cppgm++ -E -D <macro> -U <macro> -include <file> -isystem <dir> <srcfile>
+```
+
+Required compile forms:
 
 ```sh
 cppgm++ -c -o <objfile> <srcfile>
-cppgm++ -c -isystem <dir> -o <objfile> <srcfile>
-cppgm++ -c -D <macro> -U <macro> -include <file> -o <objfile> <srcfile>
+cppgm++ -c <srcfile1> <srcfile2> ...
+cppgm++ -c -D <macro> -U <macro> -include <file> -isystem <dir> -o <objfile> <srcfile>
+```
+
+Query flags are required only as direct driver queries. For example:
+
+```sh
+cppgm++ --version
+cppgm++ -dumpmachine
+cppgm++ -print-search-dirs
 ```
 
 ### Output Format
 
-`cppgm++ -c` shall write a host-linker-compatible relocatable object as in
-PA27/PA28/PA29. For PA30 the emitted object is discarded — the requirement is
-simply that the heavy hosted header compiles cleanly to an object without error.
+`cppgm++ -E` shall write the same structured posttoken/preprocessor stream
+format used by the PA4 `preproc` frontend. When `-o <outfile>` is present, that
+stream is written to `<outfile>`.
 
-The hosted header path should still lower through the same LowIR representation
-used by `cppgm++ --emit-lowir`. Performance work may avoid unnecessary file
-I/O; the object must remain the one serialized LowIR produces (PA32's object
-round trip), so the facts the backend needs for hosted code are LowIR facts.
+`cppgm++ -c` shall continue to write host-linker-compatible relocatable object
+files as in PA27/PA28.
+
+The new PA30 requirement is not a new object format. It is the ability to
+preprocess and compile hosted source/header inputs successfully through the
+`cppgm++` path.
+
+Hosted compatibility should use the same source-to-LowIR-to-object pipeline as
+ordinary compilation. Hosted include search, predefined macros, and builtin
+probes can affect the source program being compiled, but `--emit-lowir` should
+remain representative of the LowIR that object emission consumes: the object
+`cppgm++ -c` writes must be the object the serialized LowIR produces (PA33's
+object round trip checks it), so the facts hosted code needs in the backend
+are LowIR facts; how they travel in memory is yours.
 
 ### Error Handling
 
 If preprocessing, parsing, semantic analysis, lowering, object emission, or
-output writing fails, `cppgm++` shall exit with failure. Exact diagnostics are
-not the grading contract; the harness compares exit status and checked output
-sidecars.
+output writing fails, `cppgm++` shall exit with failure.
+
+For compile-only tests, exact diagnostics are not the grading contract. The
+harness compares exit status and any checked output sidecars. If the reference
+run fails, stdout and stderr are diagnostic side effects rather than required
+output.
 
 ### Testing
 
@@ -105,74 +235,513 @@ make test
 To run one test through the shared check target:
 
 ```sh
-make check TEST=tests/compile/600-const-unordered-map-find.t
+make check TEST=tests/preproc/300-has-include.t
+make check TEST=tests/compile/600-builtin-transforms-and-traits.t
+make check TEST=tests/run/800-hosted-cmath-ceil-run.t
 ```
 
-The local tests live in `tests/compile/`. Each test is `.t` (source) plus an
-empty `.ref` base, a `.ref.exit_status`, and a `.ref.stdout`. Most expect
-`EXIT_SUCCESS` and pass iff `cppgm++ -c` compiles them cleanly; the few
-negative tests expect `EXIT_FAILURE`. Each test includes a real heavy
-header together with a semantic check — a trait, `decltype`, `sizeof`, or
-`static_assert` that cannot be satisfied without analyzing the header,
-so a test cannot pass by skipping or stubbing the include.
+PA30 has three test directories:
 
-Optional `x.no-exceptions` and `x.cxx-standard` sidecars disable exceptions or
-select the language mode for a compile test. The standard sidecar currently
-accepts `c++11` and `c++14`.
+- `tests/preproc/`: hosted preprocessor compatibility. The oracle is the
+  PA4-style structured preprocessor stream plus exit status.
+- `tests/compile/`: hosted compile-only compatibility. The oracle is successful
+  object emission, compile exit status, and any stdout/reference sidecars used
+  by the harness.
+- `tests/run/`: narrow host-link/run compatibility smokes. These tests cover
+  hosted builtins, C library entry points, and lightweight hosted C-wrapper
+  headers such as `<cassert>`, `<cmath>`, `<cstdarg>`, `<cstddef>`, `<cstdio>`,
+  `<cstdlib>`, `<cstring>`, and `<csignal>`. They do not require broad template-heavy C++
+  standard-library headers or general hosted header-generated runtime support.
+
+The checked-in tests are hosted/vendor compatibility cases, standard-library
+sentinels, reducers, and bootstrap-facing compile smokes rather than direct
+N3485 clause tests.
+
+Optional sidecars include:
+
+- `x.env`: environment variables for one test, such as additional standard
+  include paths
+- `x.no-exceptions`: compile a `tests/compile` input with `-fno-exceptions`
+- `x.cxx-standard`: select the required language mode below
+- `x.flags`: additional compiler flags for a `tests/run` input
+- `x.ref.impl.exit_status`, `x.ref.program.exit_status`, and
+  `x.ref.program.stdout`: implementation and program-result references for
+  `tests/run` host-link/run smokes
+
+The default preprocessor references are intentionally host-agnostic. The test harness checks that checked-in PA30 preprocessor refs do not accidentally
+pin local host macro values such as platform-specific integer or floating-point
+limits.
+
+GNU `q`/`Q` floating suffixes denote `__float128`, as specified in
+[GCC's floating-type extensions](https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html),
+in both normal compilation and the typed `cppgm++ -E` stream. Emit binary128
+bytes for these literals; `l`/`L` still denote `long double`. This PA30
+extension does not change the strict C++11 literal grammar of PA2–PA4.
+
+Runtime checks that require libgcc's binary128 or bfloat16 helpers run on
+Linux; the Darwin runtime does not supply those interfaces. Binary16 checks
+run on both hosts. Calls to conversion helpers must follow the target runtime's
+ABI, which can differ from the calling convention of an ordinary `_Float16`
+function.
+
+Hosted `-Wno-narrowing` suppresses list-initialization narrowing diagnostics,
+as described in [GCC's C++ dialect options](https://gcc.gnu.org/onlinedocs/gcc/C_002b_002b-Dialect-Options.html).
+The actual scalar conversions still occur, and narrowing remains a failure in
+SFINAE contexts. `-Wnarrowing` or `-Werror=narrowing` restores the diagnostic;
+the last of these specific options wins. Without suppression, the compiler
+continues to reject narrowing conversions.
+
+### Required language prerequisites
+
+The [language profile](../LANGUAGE_PROFILE.md) is taught and tested in the
+owning earlier assignments. Hosted headers consume those same type, deduction,
+constant-evaluation and closure rules. A language-only reducer belongs in its
+earlier lesson; host include/builtin/ABI consumers stay here or in PA32.
+The supplied `.cxx-standard` sidecars select required modes in normal tests.
+Later header concessions such as conditional `explicit(bool)`, alias-declaration
+initializers and `no_unique_address` remain bounded compatibility extensions;
+they do not imply full C++20/23 coverage.
+
+### Hosted ABI Name Guidance
+
+PA30 is mostly about accepting hosted headers, but compile-only hosted tests can
+still expose symbol-spelling problems through emitted objects and unresolved
+references. The `cppgm++ -c` path should continue producing host ABI names that
+PA27 and PA28 already made observable.
+
+A recommended implementation style is to keep the PA9 mangler in the
+compile-mode path while adding hosted parser, semantic, builtin, and lowering
+support. That style works best when hosted standard-library entities, inline
+namespaces, ABI-tagged declarations, dependent template names, local entities,
+and function template specializations keep the semantic information needed to
+name them.
+
+For compile-only tests, the immediate oracle may be successful object emission,
+but the object must carry host ABI names that PA32 can link and run without a
+separate hosted-only naming scheme.
 
 ### Required Implementation Surface
 
-To complete PA30, support:
+To complete PA30, implement hosted compatibility for:
 
-- compiling the heaviest hosted standard-library headers within that time limit
-- the template, trait, and overload-resolution depth those headers exercise
-  during `-c` compilation
-
-The PA30 tests do not require:
-
-- new intrinsics, parser concessions, header-free conformance anchors, or
-  lightweight hosted C-wrapper behavior beyond the hosted compatibility already
-  needed before PA30
-- hosted header-emitted link/runtime behavior
-- bootstrap or self-host builds
+- predefined macro import, `__COUNTER__`, the GNU comma paste, `_Pragma`,
+  `__has_*`, `#include_next`, `#warning`, ignored unknown pragmas, and hosted
+  hex-float preprocessing forms such as `0x1p+4`. Hosted preprocessing also
+  executes conditional and macro-definition directives encountered while
+  collecting a function-like macro's arguments, as GNU CPP does. A redefinition
+  affects argument prescan, while the open call retains its original
+  replacement list; `__COUNTER__` remains one sequence per translation unit.
+  A system header may replace a macro's previous definition, as GNU CPP does
+  with system-header redefinition diagnostics suppressed; ordinary source
+  redefinitions still require identical definitions.
+  Hosted rescanning follows GNU CPP's active replacement contexts: a macro
+  stays disabled while its replacement is read, and tokens rejected for
+  that reason remain unavailable on later rescans. PA4's non-hosted interface
+  retains the course-defined nesting rules in [PA4's macro guide](../pa4/macros.md).
+  PA4's non-hosted text-sequence boundaries are unchanged. `#warning` lets
+  translation continue, like an ignored pragma; anything it prints goes to
+  standard error, which the tests do not check.  `__COUNTER__` expands to
+  `0` at its first use in a translation unit and to one more at each later
+  use.  In a variadic macro's replacement list, the GNU form
+  `, ## __VA_ARGS__` removes the comma when the variable arguments are empty
+  as written; otherwise the comma stays and the arguments follow it, pasting
+  nothing.  A probe answers for its whole family or not at all: a name the
+  preprocessor treats as defined but does not substitute leaves the header's
+  own fallback macro unused and the probe call sitting in the controlling
+  expression.  `__has_cpp_attribute` takes an attribute-token, which N4868
+  15.2/2 spells as an identifier or a scoped `identifier :: identifier`, and
+  `__has_warning` takes a string literal; the rest take a single identifier.
+  `__has_cpp_attribute` answers nonzero only for an attribute the compiler
+  implements, here the standard `no_unique_address`, also spelled
+  `__no_unique_address__`, and `0` for any other name, scoped ones included;
+  `__has_attribute` likewise answers nonzero for the GNU and Clang
+  attributes the compiler implements (`always_inline`, `noinline`,
+  `noreturn`, `deprecated`, `pure`, `const`, `used`, `weak`, `packed`, `aligned`,
+  `section`, `vector_size`, `mode`, `gnu_inline`, `abi_tag`, `may_alias`, `using_if_exists` and
+  `exclude_from_explicit_instantiation`, each also spelled `__name__`) and
+  `0` for any other.
+  GNU `deprecated` / `__deprecated__` is recognized with no argument, an
+  empty argument list, or one string-literal message (also as a `gnu::`
+  attribute). It does not change program behavior, type, or ABI. Deprecation
+  warning emission is optional and is not implemented by this course tool;
+  an invalid message type or more than one argument is still rejected.
+  A conditional whose condition is `__builtin_constant_p`, optionally
+  parenthesized or explicitly converted, permits folding reference
+  reinterpretations in its selected expression. The reference retains the
+  original storage identity: an unrelated view cannot read that storage.
+  Called function bodies use their own constant-expression rules; ordinary
+  conditionals and the non-hosted query keep their existing rules.
+  `__has_builtin` answers from the registries that hold the builtins rather
+  than from a list beside them: claiming not to have one that is implemented is
+  worse than lacking it, because the header then takes a fallback written in
+  later-standard machinery that has to be supported instead of the builtin
+  already there.
+  Probes for guarantees the compiler does not make, such as
+  `__has_declspec_attribute`, answer no rather than failing
+- GNU `always_inline` direct calls in host objects substitute the available
+  body at every optimization level, including constructors and destructors.
+  A bounded constant stack request outside every control-flow cycle can use
+  fixed local storage before substitution. Preserve distinct allocations in
+  loops; a dynamic request still needs its own stack lifetime.
+  Determine recursion from reachable calls after constant branch cleanup; an
+  unreachable self call must not block substitution.
+  Substitution preserves cleanup, noexcept termination, local-static identity
+  and source locations. An ineligible required call is diagnosed. The course
+  LowIR view and its optional `force_inline` profitability flag retain their
+  existing contract; the object LowIR view includes source-required substitution.
+- GNU/Clang parser concessions commonly exercised by the selected hosted
+  headers, including dependent nested-angle disambiguation, nested qualified
+  template-ids used as outer template arguments, builtin-trait identifiers
+  referenced as ordinary names, GNU `__decltype`, parenthesized
+  throw-expressions emitted by hosted helper macros, and GNU builtin float type
+  specifiers such as `__float128` / `_Float128`, plus GNU complex component
+  operators `__real__` and `__imag__`, and the C++20 conditional
+  explicit-specifier `explicit(constant-expression)`, which both host compilers
+  accept in C++11 mode as an extension and libc++ writes unconditionally
+  outside its C++03 branch.  Its condition decides whether the constructor
+  takes part in copy initialization, so a parse that accepts the form and
+  discards the condition silently mis-ranks overloads.  Attributes interleave
+  with the specifiers around it rather than preceding them all
+- hosted assembly consumers use the shared assembly boundary from PA29.
+  Preserve the user instructions, declared operands/effects and module ordering;
+  do not replace selected strings with arithmetic or runtime-query operations
+- builtin traits, transforms, intrinsics, and builtin families used during
+  hosted compile acceptance, including lowering `__builtin_abort` as a
+  non-returning call to the host C runtime; fixed-arity hosted integer
+  intrinsics reject calls with the wrong number of operands.  This includes the
+  type-shape traits a hosted library may spell directly rather than derive from
+  partial specializations: `__is_const`, `__is_volatile`, `__is_void`,
+  `__is_array`, `__is_bounded_array`, `__is_unbounded_array`,
+  `__is_lvalue_reference`, `__is_rvalue_reference`, `__is_object`,
+  `__is_arithmetic`, `__is_fundamental`, `__is_compound`, `__is_referenceable`
+  and `__is_unsigned`.  Note that cv-qualification belongs to the type, so
+  `__is_const` is false for a reference to const however it was written.
+  `__is_base_of` relates two *class* types, so it is false when either operand
+  is a reference even though the reference names a class; a hosted library
+  turns on that answer to remove an rvalue-stream overload when the stream
+  deduces to an lvalue reference.  It
+  also includes the libm intrinsic family a hosted `<cmath>` forwards to, in
+  its `float` / `double` / `long double` spellings.  Most take their own result
+  type in every operand, so the arity is the whole signature; the rest name
+  their own shape, reading an exponent back through a pointer (`frexp`),
+  taking one in (`ldexp`, `scalbn`, `scalbln`), writing a whole part
+  (`modf`), writing a quotient (`remquo`), taking a `long double` second
+  operand (`nexttoward`), or returning an integral type rather than the
+  operand's (`ilogb`, `lrint`, `lround`, `llrint`, `llround`).  They lower
+  to a call to the C function of the same name, except `__builtin_fabsf`
+  and `__builtin_fabs`, which clear only the sign bit inline, preserving
+  NaN payloads and evaluating the converted argument once.
+  `__builtin_fabsl` retains the C-library call.  A builtin is a
+  global-namespace name, so `::__builtin_x` names the same one as
+  `__builtin_x`, which is how a hosted library keeps a user's macro from
+  intercepting the call; any deeper qualification names something else.  It
+  also includes the variadic builtins `<cstdarg>` expands to: beside
+  `__builtin_va_start` and `__builtin_va_arg`, which lower to the `va_start`
+  and `va_arg` of `../pa8/lowir.md`, `__builtin_va_copy` copies the
+  argument-list object and `__builtin_va_end` does nothing.
+  `__builtin_expect(e, c)` is the value of `e` converted to `long`. A known
+  expectation may guide a condition through LowIR's advisory `branch likely`
+  or `branch unlikely`; an incorrect prediction must not change behavior.
+  `__builtin_unreachable()` lowers to `unreachable`, as in PA11.
+  `__builtin_assume` is not required; without it
+  `__has_builtin(__builtin_assume)` answers 0 and a header takes its fallback
+- hosted compiler intrinsics lowered directly to typed LowIR operations do not
+  unwind; an explicit `noexcept` wrapper containing only such operations shall
+  not acquire a terminate landing
+- a force-inline function that does not return ends its caller's block: nothing
+  follows the call, so there is no continuation to split off.  Inlining it must
+  still place the callee's body, and the block the callee's returns would have
+  landed in is simply not reachable.  A hosted library declares its throw
+  helpers this way, so refusing the shape rejects the header
+- semantic and lowering compatibility for hosted source patterns used by those
+  headers, including post-declarator parameter
+  attributes, explicit specializations of primary-template member functions,
+  placeholder-return declarations without a body, such as a deleted overload
+  declared `auto` (a C++14 declaration form required by PA20; it remains
+  out of scope, and like PA20's deduced return types it is accepted in every
+  language mode), non-standard hex-float compile acceptance on ordinary
+  floating types,
+  and `[[no_unique_address]]` empty-member layout through generated copy operations
+- the standard `[[noreturn]]` attribute takes no argument and appertains only
+  to the declarator-id of a function declaration (7.6.3p1): a variable,
+  including a block-scope one, a data member, a parameter, a typedef or
+  alias-declaration, a class or enumeration head, a statement, and the
+  position after a parameter list
+  (where it would appertain to the function type) are rejected. Leading
+  attributes of a block item appertain to the declaration it introduces
+- a function declared `[[noreturn]]` or GNU `noreturn` on any declaration
+  states `return=noreturn` on its declarations and definition and on the
+  call signature of a virtual call (`../pa8/lowir.md`, "Facts The C++
+  Lowering States"; a direct call has no signature to carry it), and so
+  do a function template's specializations, while an explicit specialization
+  keeps only its own declarations'; a call through a pointer states none, and
+  a call of such a function does not end its block. PA33's `-O0` driver lane
+  compares the fact
+- semantic validation of primary-source GNU inline function bodies even when
+  emission is deferred; an unimplemented reserved compiler builtin may defer
+  its wrapper, but ordinary lookup and type errors in an unused wrapper must
+  still be diagnosed
+- typed retention of a scalar GNU `vector_size` typedef's byte width for
+  compile-time layout queries and semantic validation of unused inline wrapper
+  literals; runtime vector operations and vector-expression lowering are not
+  required
+- lightweight hosted C-wrapper header and C runtime interop smokes where the
+  header surface is mostly builtin macros/functions or ordinary C declarations
+  (`<cassert>`, `<cmath>`, `<cstdarg>`, `<cstddef>`, `<cstdio>`, `<cstdlib>`,
+  `<cstring>`, `<csignal>`)
 
 If a failing PA30 test exposes a bug in syntax, semantic analysis, template
 handling, lowering, or object emission that is shared with earlier language
 features, fix the shared compiler behavior rather than adding a PA30-only path.
 
+### Out Of Scope
+
+The PA30 tests do not require:
+
+- host object/link/runtime behavior beyond the PA27/PA28 host-compatible path
+- compiling broad template-heavy C++ standard-library headers such as
+  `<vector>`, `<tuple>`, `<functional>`, `<iostream>`, `<string>`, or container
+  and stream headers
+- general hosted C++ header-emitted link/runtime behavior
+- full build-system emulation beyond the documented query and compatibility
+  flags
+- recursive hosted-header coverage reporting
+- bootstrap or self-host builds
+
+### Optional target features
+
+On x86-64 with POPCNT, `-mpopcnt` enables population-count lowering and
+defines `__POPCNT__`; `-mno-popcnt` restores the portable default. The last
+option wins, and explicit `-D`/`-U` macro overrides still apply. Run
+`make test-target-features` to check this optional extension, including zero,
+operand widths and evaluating an argument once. It is separate from the
+required C++11 report and does not prescribe an instruction sequence.
+
+### SSE2 unpack builtins
+
+The GNU `__builtin_ia32_punpck*128` family interleaves the low or high
+half of two 128-bit vectors with 8-, 16-, 32-, or 64-bit lanes. Preserve
+all lane bits and evaluate each operand once. The provided-builtin registry
+reports the implemented family, and semantic facts retain the selected half
+and lane type for the existing vector lowering path.
+
+### SSE2 packed integer lane shifts
+
+The GNU SSE2 `psll*`, `psrl*` and `psra*` immediate-form builtins shift
+16-, 32- and 64-bit lanes (arithmetic right for 16 and 32 bits). Their int
+count may be a runtime value. Oversized and negative counts yield zero for
+left/logical right and sign-fill for arithmetic right. Evaluate both operands
+once and bound the count before forming a LowIR shift.
+
+### SSE2 immediate lane shuffles
+
+`__builtin_ia32_pshufd` selects four 32-bit lanes using the low 8 bits of a constant int;
+`__builtin_ia32_shufpd` selects one double lane from each of two sources using
+the low 2 bits of a constant int. GCC masks constant selectors to those
+widths, including negative values. Preserve every lane bit, including NaN payloads and signed
+zero, and evaluate operands once. Record selector/type facts during analysis;
+a selector in an always-inline wrapper or template can remain deferred.
+
+`__builtin_ia32_shufps` selects two float lanes from each of two sources
+using an 8-bit immediate, preserving all payload bits.
+
+`__builtin_ia32_pshuflw` and `__builtin_ia32_pshufhw` select four 16-bit
+lanes within the low or high 64-bit half using an 8-bit immediate. Preserve
+the other four lanes bit for bit, and retain the same single-evaluation and
+deferred-selector rules.
+
+After mandatory inlining substitutes a wrapper call, a deferred shuffle
+selector must be constant. A runtime selector through the public intrinsic
+wrapper remains an error. This check uses typed LowIR facts and leaves
+ordinary generated code and named debug storage unchanged.
+
+Vector construction and wrapper substitution should retain whole-vector facts.
+Preserve lane bits and evaluation order when building narrow integer vectors;
+constant selectors exposed by required inlining can select native operations
+without first expanding into per-lane memory work. A still-variable selector
+must keep the operation's specified runtime behavior or diagnostic. No exact
+instruction sequence is required.
+
+### SSE lane sign masks
+
+`__builtin_ia32_pmovmskb128`, `__builtin_ia32_movmskps` and
+`__builtin_ia32_movmskpd` collect the sign bits of 16 byte, 4 float or
+2 double lanes into the low bits of an int. Read floating representations
+as integer bits, preserving signed zero and NaN signs without floating
+exceptions. Evaluate the input once and leave unused result bits zero.
+
+### Generic GNU atomic runtime operations
+
+The pointer-based `__atomic_load`, `__atomic_store`, `__atomic_exchange` and
+`__atomic_compare_exchange` support complete objects beyond the inline
+1-, 2-, 4- and 8-byte forms. Record this requirement in the existing typed
+call facts and use the generic runtime ABI in host object mode: prepend
+the object byte size; pass pointers and integer memory orders; omit the
+compare-exchange weak parameter while evaluating its expression once.
+Keep const-destination and operand-size checks. Other builtin forms retain
+their existing size restrictions. Linking needs a compatible runtime
+provider (`libatomic` on Linux, supplied by the host link command).
+
+The weak argument's value does not change the runtime ABI. cppgm preserves
+its expression's side effects once, as Clang does; GCC 15 discards that
+expression in the generic form. The required evaluation control records
+this host-oracle difference separately from the common ABI protocol.
+
+### GNU vector permutations
+
+`__builtin_shuffle(vector, mask)` and `__builtin_shuffle(first, second, mask)`
+permute lanes of one or two matching vectors. The integral mask has the
+same width and lane count. Mask lanes select modulo N or 2N, including
+negative and runtime values; the second input follows the first in memory
+lane order. Preserve all lane bits, including floating NaNs and signed zero,
+and evaluate each operand once. Use typed vector/mask facts and linear lane
+lowering. The existing limit of 64 lanes also applies here.
+
+The GCC/Clang `__builtin_shufflevector(first, second, index...)` form uses
+constant indexes into two matching inputs. Its result has one lane per
+index. An index of -1 leaves that lane unspecified; choosing zero is valid.
+Validate and retain these constants in typed facts. Both public GCC and
+Clang SSE wrappers can then use the same permutation lowering.
+
+### Clang vector scalar casts
+
+An explicit arithmetic scalar cast to a Clang `ext_vector_type` converts to the
+lane type and broadcasts the result to every lane. Evaluate the scalar once.
+Keep this distinct from GNU `vector_size` casts, which reinterpret equal-sized
+representations. Preserve the vector kind through template substitution.
+
+### Whole-vector braced initialization
+
+A single same-type vector operand in braces initializes the whole vector,
+including in a member initializer and constant initialization. Distinguish this
+from a scalar lane list: preserve every lane, evaluate the operand once, and
+retain volatile reads. A vector of a different size cannot initialize a lane
+implicitly.
+
+### Immediate vector operations
+
+`__builtin_ia32_pclmulqdq128` selects a 64-bit lane from each 128-bit input
+using immediate bits 0 and 4 and returns their 128-bit carryless polynomial
+product. `__builtin_ia32_permti256` independently selects each 128-bit half
+of a 256-bit result: each selector nibble chooses one of four source halves;
+its bit 3 zeros the result half and bit 2 is ignored. Preserve operand bits
+and evaluate inputs once. Selectors are immediate bytes; Clang's public
+carryless-multiply macro passes that byte as `char`. A deferred selector in a
+template or always-inline wrapper must become constant after substitution.
+Use typed operation facts; wider vector objects retain their existing ABI.
+
+### SSE2 saturating packed conversions
+
+`__builtin_ia32_packuswb128` clamps signed 16-bit lanes to [0,255], then
+packs them into bytes. `__builtin_ia32_packsswb128` clamps to [-128,127];
+`__builtin_ia32_packssdw128` clamps signed 32-bit lanes to [-32768,32767]
+and packs them into words. The SSE4.1 `__builtin_ia32_packusdw128` clamps
+signed 32-bit lanes to [0,65535] before packing them into unsigned words.
+The first input fills the low half of the
+128-bit result and the second fills the high half. Evaluate both once.
+Use the recorded input/output lane types and signed comparisons before
+narrowing; truncating first loses the saturation behavior.
+
+### SSE2 packed bitwise and-not
+
+`__builtin_ia32_pandn128` takes two vectors of two signed 64-bit lanes and
+returns the bitwise complement of the first input masked by the second.
+Preserve all 128 bits and evaluate each operand once. The public
+`_mm_andnot_si128` wrapper has the same behavior.
+
+### SSE2 unsigned byte maximum
+
+`__builtin_ia32_pmaxub128` chooses the unsigned maximum in each of sixteen
+byte lanes. It shares the byte-minimum signature and typed lane lowering;
+evaluate both operands once and compare byte bits as unsigned regardless
+of the vector element type's signedness.
+
+### SSE instructions
+
+A GNU vector of 16 bytes is a LowIR `v128` value, and an SSE builtin with an SSE
+instruction is a LowIR `vector` instruction. This applies at every optimization
+level. [lowir.md](../pa8/lowir.md#vector-operations) defines `v128`, `vector`, the
+list of operations and the call boundary. Extend the LowIR reader, writer and
+validator and `lowir2native` to match. Each operation encodes as its legacy SSE
+form. A vector of another size, a vector of `bool` lanes and an operation with no
+`vector` form stay lane by lane.
+
 ### Design Notes (Non-Normative)
 
-The heavy headers stress the same machinery PA29 enables, just far harder:
-deeply nested template instantiation, trait and `decltype` evaluation, partial
-specialization selection, and large overload sets. The productive failures here
-are usually performance cliffs (re-resolving the same bound template pack,
-re-instantiating the same specialization) rather than missing features. Prefer
-memoizing repeated resolution over deepening recursion guards.
+Hosted compatibility is easiest to approach as a sequence of small compatibility
+surfaces: preprocessor probes, parser concessions, builtin traits/types, and
+then semantic/lowering cases. Keep fixes tied to the source pattern being
+exercised. Avoid making broad source-text special cases when an earlier
+semantic or template representation can carry the information directly.
 
-PA30 is the first assignment whose inputs make the harness's time limit a
-budget rather than a guard against hangs: each test brings a heavy header,
-with its macros, overload sets and thousands of specializations, into one
-translation unit. The limit sits far above what a sound design needs, so it
-catches cliffs, not constant factors: work that grows with the square of the
-input, or that is redone at every use instead of once. The speed comes from
-structure the earlier assignments set up:
+The typed intrinsic kind can also serve exception-boundary analysis directly.
+Keeping that fact on the semantic call avoids treating a lowered atomic,
+vector, or compiler operation as an unknown indirect call.
 
-- PA4: a header inside an include guard is skipped on later inclusions, and
-  an inactive group is scanned only for its directives
-- PA6: a lookup costs the scopes it searches, not the size of the program
-- PA14 and PA15: a specialization is found in one probe, by its template and
-  canonical arguments, with constant arguments as values
-- PA14's on-demand instantiation and the deferred instantiation of PA18 and
-  PA19: a body is instantiated only when it is used
-- PA16: the constant-initialization probe runs on every namespace-scope
-  object of every hosted header, so it has to give up cheaply
-- PA17: an explicit-instantiation declaration (`extern template`) leaves the
-  library's own instantiations to the library
-
-When a PA30 compile is slow, find which of these it breaks before tuning
-anything else.
+That same preference applies to hosted ABI names: keep type structure, template
+arguments, ABI tags, and local context available until the ABI naming layer can
+consume them. Reconstructing those facts later from pretty-printed strings tends
+to create fragile library-version-specific behavior.
 
 ### After PA30
 
-Later hosted tests keep the same hosted header environment and then check that
-the emitted code from those headers also links and runs.
+Later hosted tests keep the same hosted source/header environment while adding
+larger template-heavy standard-library headers and then link/run behavior for
+code emitted from hosted headers.
+
+Clang's `__builtin_ia32_pslldqi128_byteshift` and
+`__builtin_ia32_psrldqi128_byteshift` take a byte count in `[0,255]`.
+Normalize their constant count into the existing typed whole-register shift
+facts. Counts of 16 or more produce zero; these Clang forms require a constant
+immediate even in an `always_inline` function, while template arguments defer
+until instantiation. The GNU forms retain their bit-count interface.
+
+### Clang elementwise minimum and maximum
+
+`__builtin_elementwise_min` and `__builtin_elementwise_max` operate on two
+matching arithmetic scalars or vectors. Preserve the operand type without
+integer promotions, order signed and unsigned lanes correctly, and evaluate
+each operand once. Floating operations follow LLVM maxNum/minNum: one NaN
+yields the numeric operand, two NaNs yield NaN, and equal zeros may retain
+either sign. Consume typed operands and lower through existing scalar
+comparisons and selection; integer scalar constant evaluation uses the same operation.
+
+### Clang elementwise square root
+
+Clang's `__builtin_elementwise_sqrt` preserves `float` and `double` scalar
+types as well as their vector forms. Evaluate the operand once, preserve IEEE
+square-root results (including signed zero and NaNs), and leave `errno` alone.
+
+### Clang binary16 storage
+
+`__fp16` is a distinct two-byte floating storage type. Scalar arithmetic and
+unary `+`/`-` promote it to `float`; variadic arguments promote it to `double`.
+Preserve binary16 conversions, vector lanes and its distinct Itanium `Dh`
+encoding. A declared scalar `__fp16` parameter or return type is rejected;
+pointers and references remain valid.
+
+Required inlining preserves dynamic stack allocation lifetimes. Constant-sized,
+on-repeating requests may use fixed frame storage; runtime-sized or repeated
+requests retain dynamic storage and release it when the substituted call returns.
+
+The optional `test-target-features` lane also checks ordered SSE feature flags
+(`-msse3`, `-mssse3`, `-msse4.1`, `-msse4.2` and their `-mno-` forms), implied
+feature macros, and SSE4.1 dot-product, insertion and rounding builtins. Native
+checks must guard execution on CPUs that lack the requested instruction set.
+
+The SSE control builtins behind `_mm_getcsr` and `_mm_setcsr` access actual CPU
+state. Preserve argument evaluation, mode bits and instruction ordering; restore
+the original state in tests that change it.
+Clang headers may declare `_mm_getcsr` and `_mm_setcsr` directly as compiler
+intrinsics rather than define inline wrappers. Those global declarations use
+the same semantics and must not require external runtime symbols.
+
+GNU source accepts `\e` and `\E` for the escape character (value 27),
+including wide literals. Preserve their source spelling during preprocessing
+and stringification; raw strings retain their backslashes.
+
+`-fno-exceptions` rejects throw and try/catch constructs in checked function
+bodies, including instantiated templates, and omits unwind cleanup regions.
+Unused template bodies may contain those constructs. Normal scope-exit
+destruction, temporary lifetimes and array destruction still run. The opposite
+flag restores exception handling.

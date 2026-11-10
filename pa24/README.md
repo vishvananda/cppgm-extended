@@ -208,7 +208,7 @@ It also checks the machine-IR dump:
   canonicalization. These cases check ABI and other required relationships.
 - `tests/behavior/` checks program results. Its reference MIR is informational.
   These course inputs use unoptimized native compilation; optimized division,
-  register allocation and carrier regressions live in PA33's behavior lanes.
+  register allocation and carrier regressions live in PA34's behavior lanes.
 - `tests/controls/` checks focused MIR, ABI and native execution properties,
   each named by its file: a shift, or an indexed address and a shift, for a
   multiply by a constant; a small copy's frame operands; a direct access of a
@@ -580,7 +580,7 @@ To complete PA24, implement these goals:
 
    A direct object parameter may be copied to local storage and read through
    field addresses. Preserve all field bytes, signedness and local mutations,
-   including fields crossing ABI carriers. PA33 can improve this placement
+   including fields crossing ABI carriers. PA34 can improve this placement
    without adding a new LowIR field-extraction operation.
 
    Copying a stack-passed object may use the target's copy registers while
@@ -765,7 +765,7 @@ So PA24 should leave behind:
 - a stable `LowIR -> machine IR` boundary that later optimization passes can target:
   keep value identity separate from physical location, with instruction uses,
   definitions, clobbers and fixed-register constraints explicit. Prefer selecting
-  into virtual registers and allocating over the selected instructions, so PA33
+  into virtual registers and allocating over the selected instructions, so PA34
   can replace a simple placement policy without rewriting the selector or
   recovering values from physical-register traffic. This is design guidance,
   not a required allocation algorithm or a change to the final MIR dump

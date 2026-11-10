@@ -831,7 +831,7 @@ std::string describe_stats(const OptimizerStats& s)
 {
 	std::ostringstream out;
 #if CPPGM_TELEMETRY_ENABLED
-	out << "pa32_opt_stats functions=" << s.functions << " instructions_in=" << s.instructions_in
+	out << "pa33_opt_stats functions=" << s.functions << " instructions_in=" << s.instructions_in
 		<< " instructions_out=" << s.instructions_out << " blocks_in=" << s.blocks_in << " blocks_out=" << s.blocks_out
 		<< " folded=" << s.folded << " propagated=" << s.propagated << " reused=" << s.reused << " dead=" << s.dead
 		<< " branches_folded=" << s.branches_folded << " blocks_removed=" << s.blocks_removed

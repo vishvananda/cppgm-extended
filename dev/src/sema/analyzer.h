@@ -2717,7 +2717,7 @@ private:
 	// Function templates' explicit(condition) specifiers (see
 	// specialized_explicit), by template.
 	PointerMap explicit_index_;
-	// GNU aligned on a typedef or alias-declaration (hosted, PA29): the
+	// GNU aligned on a typedef or alias-declaration (hosted, PA30): the
 	// alignment it gives, which may be weaker than its type's, keyed by the
 	// typedef's binding (Binding::aligned_alias), and in aligned_variables_
 	// by each variable or data member declared with it (its type the

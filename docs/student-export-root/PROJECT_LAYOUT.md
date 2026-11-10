@@ -38,10 +38,10 @@ path without `.cpp`; for example, `dev/src/syntax/foo.cpp` is listed as
 - PA20-PA23: remaining source-to-LowIR language and object-model closure
 - PA24: native backend from LowIR
 - PA25-PA26: compile/link driver integration and host exception metadata
-- PA27-PA31: host ABI and hosted compatibility
-- PA32-PA33: LowIR and machine-backend optimization
-- PA34: inception, rebuilding `cppgm++` with `cppgm++`
-- PA35: optimizing the compiler, its generated code and its own speed
+- PA27-PA32: host ABI and hosted compatibility
+- PA33-PA34: LowIR and machine-backend optimization
+- PA35: inception, rebuilding `cppgm++` with `cppgm++`
+- PA36: optimizing the compiler, its generated code and its own speed
 - Required assembly before hosted compatibility: shared operands, constraints and native emission
 
 ## Assignment Map
@@ -76,26 +76,26 @@ path without `.cpp`; for example, `dev/src/syntax/foo.cpp` is listed as
 | PA26 | `cppgm++ -c` | host exception metadata and runtime-helper facts |
 | PA27 | `cppgm++ -c` | host-linkable object interoperability |
 | PA28 | `cppgm++ -c` | host C++ ABI and runtime behavior |
-| PA29 | `cppgm++ -E`, `cppgm++ -c` | hosted header/source compatibility |
-| PA30 | `cppgm++ -c` | heavy hosted-header compile compatibility |
-| PA31 | `cppgm++ -c` | hosted header-emitted link/runtime compatibility |
-| PA32 | `lowiropt` | LowIR optimization |
-| PA33 | `lowir2native -O1/-O2/-O3` | machine/backend optimization |
-| PA34 | inception targets | rebuild `cppgm++` with `cppgm++` |
-| PA35 | `make -C pa35 test` | generated code against the seed and GCC, compile speed against the host |
-| PA36 | `cppgm++`, `lowir` | shared assembly boundary and native emission |
-
-## PA34
-
-PA34 rebuilds your compiler with itself. The host-built `dev/cppgm++` produces
-`cppgm++-self`, which produces `cppgm++-inception`. Completion requires the
-last two binaries to match byte for byte. The `test-through-paN` ladder runs
-earlier assignment tests with self-built tools while you work toward that
-comparison; see [PA34](pa34/README.md) for the commands.
+| PA29 | `cppgm++`, `lowir` | shared assembly boundary and native emission |
+| PA30 | `cppgm++ -E`, `cppgm++ -c` | hosted header/source compatibility |
+| PA31 | `cppgm++ -c` | heavy hosted-header compile compatibility |
+| PA32 | `cppgm++ -c` | hosted header-emitted link/runtime compatibility |
+| PA33 | `lowiropt` | LowIR optimization |
+| PA34 | `lowir2native -O1/-O2/-O3` | machine/backend optimization |
+| PA35 | inception targets | rebuild `cppgm++` with `cppgm++` |
+| PA36 | `make -C pa36 test` | generated code against the seed and GCC, compile speed against the host |
 
 ## PA35
 
-PA35 makes the compiler you finished in PA34 fast. Its gates compare the
+PA35 rebuilds your compiler with itself. The host-built `dev/cppgm++` produces
+`cppgm++-self`, which produces `cppgm++-inception`. Completion requires the
+last two binaries to match byte for byte. The `test-through-paN` ladder runs
+earlier assignment tests with self-built tools while you work toward that
+comparison; see [PA35](pa35/README.md) for the commands.
+
+## PA36
+
+PA36 makes the compiler you finished in PA35 fast. Its gates compare the
 self-built compiler with the host-built seed on a frozen workload, a few
 generated-code kernels with GCC, and the seed's compile time and memory with
-the host compiler's. `make -C pa35 test` runs them; see [PA35](pa35/README.md).
+the host compiler's. `make -C pa36 test` runs them; see [PA36](pa36/README.md).

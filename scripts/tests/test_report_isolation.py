@@ -351,18 +351,18 @@ class ReportIsolationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="report-ignore.") as directory:
             root = Path(directory)
             shutil.copy(ROOT / ".gitignore", root / ".gitignore")
-            (root / "pa29").mkdir()
-            shutil.copy(ROOT / "pa29/.gitignore", root / "pa29/.gitignore")
+            (root / "pa30").mkdir()
+            shutil.copy(ROOT / "pa30/.gitignore", root / "pa30/.gitignore")
             subprocess.run(["git", "init", "-q", str(root)], check=True)
             outputs = ["pa1/tests/sample.my.run-1", "pa1/tests/sample.my.run-1.exit_status",
-                       "pa17/tests/controls/sample.check.run-1", "pa33/tests/o1/sample.my.run-1.mir",
-                       "pa29/tests/preproc/sample.pp.run-1", "pa29/tests/preproc/sample.pp.run-1.stdout",
+                       "pa17/tests/controls/sample.check.run-1", "pa34/tests/o1/sample.my.run-1.mir",
+                       "pa30/tests/preproc/sample.pp.run-1", "pa30/tests/preproc/sample.pp.run-1.stdout",
                        ".test_counts.run-1", "pa17/.test_failed.run-1"]
             for name in outputs:
                 result = subprocess.run(["git", "check-ignore", name], cwd=root, capture_output=True)
                 self.assertEqual(result.returncode, 0, name)
-            for name in ("pa1/tests/sample.ref", "pa33/tests/o1/sample.ref.expect",
-                         "pa33/tests/o1/sample.ref.program.stdout"):
+            for name in ("pa1/tests/sample.ref", "pa34/tests/o1/sample.ref.expect",
+                         "pa34/tests/o1/sample.ref.program.stdout"):
                 result = subprocess.run(["git", "check-ignore", name], cwd=root, capture_output=True)
                 self.assertEqual(result.returncode, 1, name)
 

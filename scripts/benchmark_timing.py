@@ -54,7 +54,7 @@ def retain(path, row):
 
 
 class Rebuild:
-    """Recompile identical PA34 inputs with two fixed compiler binaries."""
+    """Recompile identical PA35 inputs with two fixed compiler binaries."""
     def __init__(self, root, directory, jobs, seed, self_built, measure):
         self.root, self.directory = Path(root), Path(directory)
         self.jobs, self.measure = jobs, measure
@@ -65,7 +65,7 @@ class Rebuild:
             target.chmod(0o555)
             self.binaries[label] = target
         self.hashes = {label: sha(path) for label, path in self.binaries.items()}
-        self.build = self.directory / 'pa34'
+        self.build = self.directory / 'pa35'
         self.expected = None
         self.objects = None
         self.samples = []
@@ -76,7 +76,7 @@ class Rebuild:
         objects = self.build / 'selfhost'
         if objects.exists():
             shutil.rmtree(objects)
-        command = ['make', '-C', 'pa34', f'-j{self.jobs}', 'cppgm++-self',
+        command = ['make', '-C', 'pa35', f'-j{self.jobs}', 'cppgm++-self',
                    f'CXX={self.binaries[label]}', 'CPPGM_HOST_CXX=g++',
                    f'INCEPTION_OBJ_ROOT_BASE={self.build}',
                    'INCEPTION_COMPILER_FLAVOR=selfhost',

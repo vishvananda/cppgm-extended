@@ -34,7 +34,7 @@ class QualityTests(unittest.TestCase):
                 quality.work_ratio(a, b)
 
     def test_invalid_limits_and_unknown_settings_fail(self):
-        original = (ROOT / 'pa32/tests/kernels/600-bounded-search.quality').read_text()
+        original = (ROOT / 'pa33/tests/kernels/600-bounded-search.quality').read_text()
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / 'case.quality'
             for text in [original + 'secret_cap=3\n',
@@ -64,7 +64,7 @@ sys.exit(subprocess.call(['g++', *args]))
 ''')
             compiler.chmod(0o755)
             result = subprocess.run(['python3', str(SCRIPT),
-                                     str(ROOT / 'pa32/tests/kernels/600-bounded-search.t'),
+                                     str(ROOT / 'pa33/tests/kernels/600-bounded-search.t'),
                                      '--mode', 'native', '--compiler', str(compiler),
                                      '--host', 'g++', '--out', str(directory / 'out')],
                                     capture_output=True, text=True, timeout=30)
@@ -77,7 +77,7 @@ sys.exit(subprocess.call(['g++', *args]))
     def test_real_alternative_compiler_and_retained_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             result = subprocess.run(['python3', str(SCRIPT),
-                                     str(ROOT / 'pa32/tests/kernels/600-bounded-search.t'),
+                                     str(ROOT / 'pa33/tests/kernels/600-bounded-search.t'),
                                      '--mode', 'native', '--compiler', 'g++', '--host', 'g++',
                                      '--out', tmp, '--scale', '64', '--timing-rounds', '1'],
                                     capture_output=True, text=True, timeout=45)
@@ -100,9 +100,9 @@ class StudentDocumentsTests(unittest.TestCase):
             root = Path(tmp)
             for source in (ROOT / 'docs/student-export-root').glob('*.md'):
                 (root / source.name).write_text('Course documentation.\n')
-            path = root / 'pa32/design-notes.md'
+            path = root / 'pa33/design-notes.md'
             path.parent.mkdir(); path.write_text(text)
-            inventory = root / 'inventory'; inventory.write_text('pa32/design-notes.md\n')
+            inventory = root / 'inventory'; inventory.write_text('pa33/design-notes.md\n')
             return subprocess.run(['perl', str(ROOT / 'scripts/audit_student_documents.pl'),
                                    '--root', str(root), '--manifest', str(inventory)],
                                   capture_output=True, text=True)
@@ -120,7 +120,7 @@ class StudentDocumentsTests(unittest.TestCase):
             with self.subTest(text=text):
                 result = self.audit(text)
                 self.assertNotEqual(result.returncode, 0)
-                self.assertIn('pa32/design-notes.md:', result.stdout)
+                self.assertIn('pa33/design-notes.md:', result.stdout)
 
 
 if __name__ == '__main__':

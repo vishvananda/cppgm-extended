@@ -8,7 +8,7 @@
 // builds on this header exactly as it is shipped.
 //
 // As in lowir_model.h there are no containers: how a MIR function, block,
-// instruction and operand are stored is your design.  PA33 adds a
+// instruction and operand are stored is your design.  PA34 adds a
 // liveness-based allocator and MIR passes between selection and encoding,
 // so keep selection separate from register assignment and record each
 // instruction's uses, definitions and clobbers (see the PA24 handout).

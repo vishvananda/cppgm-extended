@@ -1,236 +1,353 @@
-# Approaching machine optimization
+# Designing a LowIR optimizer
 
-Start with the MIR and backend from PA24. The [assignment](README.md) defines
-the behavior, quality envelopes and kernel limits. These notes explain design
-questions and failure cases, without prescribing an allocator, instruction
-sequence or tuning policy.
+The [assignment](README.md) defines the interface and quality bar. These notes
+explain ways to reason about improvements; they prescribe neither a pass order
+nor the reference implementation's data structures or tuning policy.
 
-## Describe what instructions do
+## Start with proofs and small examples
 
-Record each instruction's uses, definitions and clobbers, including call
-arguments, fixed registers, tied operands and both parts of indexed addresses.
-Selection may fold operations or introduce temporaries, so LowIR liveness alone
-need not describe the selected instructions. Rewrites must keep those facts
-consistent with emission.
+For each transformation, state the behavior it preserves, the facts it needs,
+and the conditions that prevent it. Write a positive example and an example
+that fails each condition. Inspect the resulting LowIR, validate it, and execute
+it through the reference backend at `-O0`. This keeps optimizer correctness
+separate from machine optimization. Source fixtures should also survive the
+serialized-LowIR object path.
 
-Base frame requirements on the selected operations too. A wide integer
-conversion need not adjust the stack, while a runtime conversion may require
-it. Reserving a register unnecessarily can turn loop state into repeated spills.
+Work on typed instructions and their operands. Reuse the parsed LowIR model;
+rendering and reparsing text to recognize a pattern loses facts and makes
+changes expensive. Keep use/definition information and control-flow analyses
+consistent after edits. A transformation that reports no change should not
+force another round of unrelated analyses.
 
-Begin with local improvements: identity copies, immediate operands, address
-arithmetic and jumps to the next block. Stop propagation at conflicting writes,
-unknown clobbers and exceptional boundaries. Keep meaningful debug locations
-on surviving instructions.
+A join needs a phi only when the incoming value can be read before another
+definition. Liveness can avoid unnecessary phis and stack traffic, but must
+include exceptional paths and preserve values a handler observes.
 
-Preserve loop recognition through exact integer conversions. Check layout
-changes with native timing: instruction counts can stay unchanged while speed
-changes.
+## Scalar and control-flow simplification
 
-A memory operand can save an instruction while making a branch slower.
-Compare load dependencies and compare/branch fusion on the target processors;
-preserve the access width and flags when separating a load from its predicate.
+Start with constant folding, identities, copies and unreachable blocks.
+Compute integer results at the instruction's width. Do not evaluate a division
+that can trap or fold a shift with an invalid count. Floating identities need
+extra care: replacing `x + 0` with `x` can change negative zero, and reassociating
+a sum changes rounding.
 
-Indirect dispatch can repeatedly enter blocks without a direct back edge.
-Consider their instruction alignment too, while bounding padding and accounting
-for it when choosing short branches. Several labels can denote one code
-position; do not charge or insert alignment repeatedly at that position.
+A mask before a right shift may change only bits the shift discards. Check
+every surviving bit, including the sign bit of an arithmetic shift. Preserve
+other readers of the masked value, and discard any exactness promise whose
+proof depended on the mask clearing low bits.
 
-## Allocate across the control-flow graph
+Adjacent integer multiply/add operations can sometimes be combined at their
+common width. Preserve wrapping, shared intermediate values and observations
+between the operations. Check the native cost too: a smaller expression may
+replace cheap shifts or address calculations with a slower multiply.
 
-Compute liveness across ordinary and exception edges. Model a phi transfer on
-its edge, especially when its predecessor has more than one successor. Parallel
-copies must preserve cycles. A reload and a phi assigning one register on the
-same edge must agree on which value is live afterwards.
+Executable-edge constant propagation can discover constants through branches
+and phis. Dominance permits reusing a pure value where its definition always
+runs first. A branch can supply facts to the blocks its taken edge dominates;
+those facts do not automatically hold at a merge reached another way. Repair
+phi inputs whenever edges are removed, redirected or split.
 
-Values live through a call need a surviving register or a correctly placed
-save/reload. Split a live range where that reduces repeated memory traffic;
-a cold call need not force a loop's values into memory on every iteration.
-Handler-visible values must also be available at every relevant throw point.
+Promoting scalar storage to SSA removes loads and stores, but requires proving
+that all its accesses are understood. Splitting an aggregate may expose more
+promotable fields. Preserve padding, bit-fields, volatile members, alignment
+and ABI carriers; splitting every object is not always profitable.
 
-Sharing a dying operand's register can remove a copy, but operand order and
-early clobbers matter. A two-address subtraction cannot overwrite its right
-operand before reading it. A conditional move leaves its destination unchanged
-on one path; model both paths. Fixed-register division and shifts can overlap
-other operands, implicit uses and ABI arguments.
+An indexed region can stay in memory while disjoint scalar fields are
+promoted. Bound every possible indexed access, including its full width.
+If a fixed access straddles that region, retain all overlapping accesses
+together. Unknown indices, escaping pointers, whole-object operations and
+volatile accesses may prevent the proof.
 
-Count pressure at the actual reads and writes. An operand that dies before
-a result reuses its register need not overlap that result. Folded or deferred
-uses must remain live until the selected instruction reads them.
+A slot in a value operand reads memory at that instruction. Reusing an
+expression containing such an operand requires the same memory proof as an
+explicit load. Keep those reads distinct from operands naming storage.
 
-Weight uses by expected execution frequency, and measure spills and reloads
-inside loops rather than counting only frame slots. Saving a callee-saved
-register costs work on each function entry and exit. Rematerializing a cheap
-constant or address may be better than carrying it across a long live range.
-Branch predictions can guide these costs and block layout. Retain enough
-precision to distinguish common and rare paths; a prediction is never proof
-that the other path is unreachable.
+Conditionally updated fields can need many merge values inside a loop.
+Promoting all of them may turn a few memory updates into repeated register
+spills and transfers. Compare both native work and size, including inactive
+fields and early exits; a smaller SSA graph alone does not establish a win.
 
-## Width and representation
+## Case membership and predication
 
-Know which readers need a narrow value's upper bits. Removing an extension
-is safe for a low-bit store and may be unsafe for an address index. Follow
-requirements through phis, selects and copies, not just the next instruction.
-Do not assume incoming upper bits are initialized when the ABI leaves them
-unspecified. A guard can narrow the possible full-width values enough to
-make a later normalization redundant. Check the original range through any
-truncation, merge every incoming edge and forget facts at unknown clobbers. A proof such as `convert trunc exact` may help; an arbitrary cast
-supplies no such proof.
+Several switch cases with one destination can describe a numeric interval.
+Preserve the selector's width, signed boundaries, holes and default edge when
+expressing that membership as a predicate. This can expose conditional work
+to existing simplification and predication. A fact justified only on a taken
+arm does not automatically apply to speculative work, including an increment's
+overflow promises. Loads, calls and trapping arithmetic need their own proofs.
+No particular representation is required.
 
-A calculation that reads only the low bits and then writes the full result
-may establish its own representation. Check the encoded width and all operand
-uses: addresses consume full-width values, and a shift with a possible zero
-count may leave the destination unchanged.
+## Memory facts and safe motion
 
-For scalar/vector transfers, track which bits each consumer reads. A shuffle
-that uses only supplied lanes may not need cleared upper lanes; a wider unpack
-or a second consumer can observe them. Test with nonzero prior register bits,
-signed zero and NaN payloads, not only freshly loaded scalar values.
+Distinguish the proof that accesses cannot overlap from the proof that a load
+may run earlier. A disjoint store does not justify reading an invalid pointer
+on a zero-iteration path. A call can modify memory or free an allocation.
 
-Switch tests can reuse ranges excluded by earlier comparisons on that path.
-Check gaps, signed boundaries and the selector's full width before omitting a
-bound or extension; out-of-range values must still reach a defined default.
-An explicitly unreachable successor supplies another proof: defined executions
-cannot take that edge. Consider its effect on dispatch size and range checks,
-while preserving reachable actions before an impossible continuation. Include
-defined defaults, narrow incoming values and empty sets of live arms in tests.
-Equivalent indexed addresses can have different encoding costs. Preserve
-scale, width and flags when choosing the order of their operands.
-Combining a scale with an add may work with either operand order. Preserve
-any later reader of the intermediate scaled value, including partial writes.
+An overwrite proof need not establish disjointness: the same SSA address and
+access type identify the same bytes even when their object offset is unknown.
+A later complete write can make an earlier write unobservable if nothing
+between them may read those bytes. Calls, exceptions, lifetime changes,
+volatile or atomic operations and partial overlaps require separate care.
+Reuse the memory walk's information to skip blocks that cannot contain an
+overwrite pair.
 
-Test signed extrema and wrapping unsigned arithmetic. Select a division at the
-intended width and preserve its trapping preconditions. A high-half product
-must retain the correct signedness and any other users of the full product.
-A constant-divide sequence must preserve a dividend that it reads after a
-fixed-register multiplication.
+Useful sources of disjointness include separate local objects, non-overlapping
+ranges of one object and the `typed` rules in
+[Instruction Facts](../pa8/lowir.md#instruction-facts). Character accesses,
+unions, `may_alias` and disabled strict aliasing restrict that last proof.
+Signed and unsigned integers of one width are compatible. The absence of a
+`typed` fact grants no type-based disjointness.
 
-Treat floating/integer carrier copies as bit transfers. A full XMM frame
-access covers sixteen bytes, even if a later operation reads only the upper
-half. Slot liveness and incoming argument spills must include all those bytes.
+A local whose address never escapes may retain memory facts across unrelated
+calls. A pointer stored into its own object needs an escape analysis too: a
+later read of that pointer can expose the object. Allocation results can be
+separate from earlier pointers, but passing or publishing one changes what
+other code can reach.
 
-## Floating selection and scheduling
+Forwarding through object copies must respect the copied byte range. Clearing
+an array can expose known-zero fields; overlapping copies need the semantics
+of the original operation. Static initialization is possible only when its
+observable values and ordering agree with dynamic initialization. When merging
+buffered field reads into copies, preserve values read before overlapping
+writes, including the saved values in a swap.
 
-A scalar memory operand can remove a separate load, but the instruction's
-operand order, alignment and aliasing requirements still apply. A compare may
-have swapped operands; preserve its predicate, including unordered results.
-Signed zero and NaNs distinguish apparently interchangeable minimum/maximum
-sequences.
+The same reasoning applies to a complete fill with any constant byte. Later
+integer reads can have known values even when their indices vary. Prove which
+bytes were initialized before each read and account for partial writes,
+pointer merges, escapes, volatile or atomic observations and exception paths.
+A repeated byte is a representation fact, not a general floating or pointer
+value. Different propagation strategies may meet the same quality bounds.
 
-Flags are a value too. A zeroing instruction between a compare and a branch
-or select can destroy the condition. Prove the flags survive every intervening
-instruction and predecessor before reusing them.
+## Loops, counters and exits
 
-Independent roots or divisions can overlap in execution. Starting more of
-them can also increase XMM pressure and create spills. Partial-register
-semantics may introduce dependencies on old destination bits. Measure a
-representative chain and inspect the selected operands; a smaller instruction
-count alone does not establish a latency improvement.
+Describe a loop's entries, latches and exits before changing it. A preheader
+provides a place for invariant work. Rotation may make an existing test run at
+the bottom; preserve the initial guard and values read after the loop.
 
-## Frame layout, blocks and encoding
+Hoisting a load requires both disjointness and safe execution at the new
+position. Sinking a store requires that every original exit observes the right
+value and that the store does not run on a path that previously wrote nothing.
+A location updated conditionally may need a phi or a retained memory path.
+Calls and exception paths are part of these proofs.
 
-Adjacent ordinary field stores can offer another size improvement: combine
-their written bytes when fewer memory operations suffice. Preserve holes,
-nonzero fields and the separate effects of volatile or atomic accesses.
-Check both code size and runtime work; a shorter encoding alone is not a
-performance result. The adjacent-zero-fields fixture bounds memory work
-without prescribing a particular clearing instruction.
+Combining independent operations can introduce invariant values after an
+earlier motion step. Revisit changed loops when that exposes useful work;
+reuse existing loop facts and avoid repeating analysis for unaffected code.
+The same zero-trip, memory and exception proofs still apply.
 
-Lay out the final frame after allocation. Preserve object alignment, reuse
-storage only when lifetimes do not overlap, and derive unwind information from
-the actual saved registers and stack changes. Test leaf functions, calls,
-alternate exits and exceptional returns. Omitting a frame pointer changes
-addressing and unwind requirements; it is not just deleting two instructions.
+A product of an induction variable and an invariant can sometimes become an
+induction of its own. Account for every latch, the initial value, overflow and
+all users of the original counter. Widening a narrow counter may avoid repeated
+extensions only when its narrow values remain representable. LowIR's
+`convert trunc exact` states that proof; an ordinary narrowing cast does not.
 
-A shared return sequence is useful only when a path reaches it. After giving
-exits their own teardown, check whether a shared copy remains reachable through
-a branch or fallthrough. Retain unwind rows for every emitted exit and calls
-in cleanup code, including calls with stack arguments.
+A short loop with a known bound can be expanded while retaining early exits.
+First, last and missing matches in a search must probe the same elements; an
+empty range must probe nothing. Pointer bounds require reasoning about offsets
+within the same object. Unknown bounds keep a general path. Bound code growth
+as well as runtime work, and do not require every small loop to expand. Estimate
+the instructions the transformation actually copies, including a final test
+when needed, rather than charging an extra iteration of the whole body.
 
-When eliminating stack stores, include each throwing call's handler reads.
-A later overwrite on the normal path cannot replace a value the handler
-needs before that overwrite. Check nested handlers and partial-width accesses.
+Unswitching moves an invariant choice outside a loop by making specialized
+paths. Interchange changes the traversal of a nest. For either, prove memory
+dependences and final values, including exceptional exits, before considering
+profitability.
 
-Place frequently followed edges together and keep cold paths out of hot loops
-where profitable. Alignment can improve fetch behavior or add work at every
-entry to a short loop. Branch shortening and padding interact, so validate
-final displacements and relocations after layout. No particular padding size,
-block order or prologue sequence is a quality requirement.
-Removing code can shift hot loops into less favorable fetch windows even when
-their instruction counts stay the same. Measure runtime as well as size;
-use selective alignment rather than assuming more padding always helps.
-Data-dependent exits do not make a repeated path unimportant. A loop with
-several back edges can contain a compact fast cycle and a longer slow path;
-measure their final encoded spans separately. A short retry path should not
-discard a useful alignment of the larger cycle. Reuse loop facts across passes,
-bound padding and preserve its alignment through object linking. Compare
-several harmless changes to preceding code and linked object placement.
-Distinguish an unmeasured edge from an unlikely one, especially with indirect
-branches; padding a hot fallthrough can add work on every iteration.
-Consider how often a loop can repeat: entry padding may cost more than it
-saves for a short scan over a small immutable table.
-Entry placement can affect direct calls and table-driven indirect calls
-differently. Include both when measuring changes to compact leaf functions.
+A conditional pointer update can leave a segment boundary unchanged on most
+iterations. Consider carrying the boundary with that pointer and comparing a
+copying pointer against its end. Prove which stores can change a loaded
+boundary, preserve zero-work guards, and test segment crossings, overlapping
+ranges, byte aliases and volatile accesses. Measure the resulting program;
+fewer scalar instructions can still increase register pressure.
 
-A short shared dispatch tail can sometimes be copied into its incoming
-jumps. Preserve its guards, flag dependencies, memory accesses and exception
-boundaries. Count table data as well as instructions when bounding growth.
-Measure branch prediction across several layouts; unchanged instruction counts
-can still hide a substantial runtime difference. No particular duplication
-or block order is required.
+## Calls and exceptions
 
-Sharing identical tails has the opposite tradeoff. Separate conditional
-branches can have different outcome histories even when their instructions
-match; merging them can worsen prediction while saving bytes. In particular,
-sharing can undo a loop test deliberately copied into its back edge. Preserve
-that separation or choose a pass order that retains the intended loop shape.
-Compare predictable and mixed incoming paths across several layouts; no
-particular sharing or duplication strategy is required.
+Inlining can expose constants and memory facts, but code growth can make
+callers harder to optimize and increase compiler cost. Consider hot work and
+cold paths separately, and bound total growth rather than copying a large body
+at every site. Partial specialization may remove repeated work without copying
+the whole function. Recursion and address-taken functions need separate care.
 
-## Validation and further experiments
+Membership in a call cycle does not make every member a recursive worker.
+Forwarding and dispatch layers can sometimes be combined around a loop while
+retaining the calls that perform recursive work. Establish where expansion
+stops, preserve argument evaluation and exceptional exits, and recheck the
+call structure after edits. A smaller call graph alone does not justify
+unbounded code growth or repeated analysis of unchanged functions.
 
-An object copied into local storage may have its integer fields available
-in ABI registers already. Track the bytes each carrier covers, including
-partial writes and calls, before replacing a field load with an extraction.
-Copy a carrier that still has readers, preserve sign or zero extension,
-and account for flags changed by shifts. Reads spanning carriers, escaped
-storage and volatile accesses need separate proofs. Once no access needs
-the storage, revisit frame reservation under the debug, exception and ABI rules.
-Include retained storage in the profitability decision. A longer extraction
-can add work if another reader, escaped address or call still needs the home.
+For a body that only forwards a call and returns its result, composing argument
+permutations and constants may avoid copying any instructions. Preserve
+argument evaluation and boundary conversions, retain observable object copies,
+and detect forwarding cycles. Resolve shared chains once rather than walking
+the same chain again from every caller. A retained function's address and
+external boundary must keep their meaning.
 
-Instruction counts alone can miss expensive instruction forms. Compare
-measured throughput and latency on the supported CPUs, and preserve the
-operation's result and observed flags. A compatible encoding may benefit
-newer CPUs while retaining baseline behavior; an unsupported instruction
-needs an explicit target capability. Include zero and boundary cases in
-bit-count tests, respecting the LowIR operation's specified zero behavior.
+A short returning path around a larger calling path can be useful to inline
+even when the whole body is not. Keep growth in that slower path from
+duplicating work at every caller or hiding the useful wrapper. Measure both
+retained code size and native execution; fewer copies alone are not a win.
+An early return around a loop does not make the loop's work cold. Include
+zero-work and nonzero iteration cases when checking those decisions.
+Compare a callee's size before expansion with its current size. Earlier copies
+can make a small query look expensive to inline at its remaining call sites.
+A result known on every normal return can remove a caller's guard even when
+the callee has effects. Preserve those effects and exceptional exits; do not
+confuse a constant result with a removable call.
 
-A register sum consumed by the following load can share that load's indexed
-address. The arithmetic flags must be dead, and the original sum must be
-overwritten before any later reader. A bounded local search can prove this
-without changing the selector's scratch-register contract. Partial and
-conditional writes are not full overwrites; an escaping or live-out address
-still needs its sum. Keep the load's displacement, type and source location.
+A direct-call optimization must respect replacement and `no_inline` metadata.
+A guessed virtual target needs a runtime identity check and an indirect
+fallback; construction of one object does not prove all later calls use its
+original table. Calls on both paths must have the same cleanup behavior.
 
-Logical flags can sometimes survive a change in operand width. An immediate
-AND mask confined below both sign bits gives the same zero, sign, parity,
-carry and overflow flags as a test of the resulting value at either width.
-Masks reaching a sign bit require a separate proof; equality alone does not
-justify reusing flags for signed conditions.
+LowIR's [exception instructions](../pa8/lowir.md#exception-instructions)
+include implicit edges. Dominance along ordinary edges alone does not establish
+what a handler has executed. Values reused by a handler must be valid at every
+throw point that can reach it. Inlining a protected region requires balanced
+region state on all normal and exceptional paths. A landing that removes its
+own record must retain that record on entry, as the format specifies.
 
-Use a behavior test for each counterexample, then an envelope broad enough to
-accept different registers, offsets and instruction orders. The reference MIR
-is one example. Prefer total work, memory traffic and frame bounds to a
-requirement that one named instruction appear.
+A copied handler must preserve an exception its caller can still read or
+resume. A continuation reached from both ordinary and handler paths needs
+that check too; a normal incoming path does not settle the other path's state.
 
-The [optional improvement exercises](../pa32/improvements.md) cover vector
-loops, packing, ordered reductions and independent math chains. PA33 can reuse
-their scalar oracles while changing only native optimization. Accepting
-serialized vector LowIR and deciding to vectorize scalar input are separate
-responsibilities.
+## Library math and representation
 
-For timing, use immutable executables, runtime inputs, equal output checks,
-A/A calibration and paired ABBA observations. Compile outside the measured
-interval and retain every observation. Dynamic counts explain work for a
-deterministic workload; timing investigates latency and layout. Measure on
-both available CPU lanes before generalizing a small hardware-dependent gain.
+A library function's name is not enough when the unit defines that function.
+For a recognized external library operation, preserve every observable effect
+as well as its result. In particular, LowIR's `unary sqrt` has no `errno`
+effect; replacing an unrestricted library square root with it is unsafe. A
+proof of non-negativity or a guarded fallback can make the transformation valid.
+Test negative values, infinities, NaNs and both zeros.
+
+Quotient/remainder sharing must preserve signed rounding and the validity of
+the divisor. Known-bit information can simplify masks and conversions, but it
+must account for wrapping arithmetic and signedness.
+
+A floating/integer `copy` of matching width moves bits; `convert` computes a
+numeric conversion. This distinction matters when promoting ABI carriers,
+forwarding stores and preserving signed zero or NaN representations.
+
+Repeated logical shifts and conditional XORs can sometimes be combined
+algebraically. For a constant word-sized polynomial `P`, the step
+`F(x) = (x >> 1) ^ ((x & 1) ? P : 0)` is linear over bits. Reversing a predicate
+can add a constant XOR term; include it in the proof. When `k` is smaller than
+the word width, split the input into its low `k` bits and the remaining bits.
+After `k` steps, the latter contribute `x >> k`, and the former can be
+evaluated independently. Arithmetic or readonly lookup data can express the
+result. Prove the rule for the actual width and branch polarity. At or beyond
+the word width there is no remaining high-bit contribution; do not form an
+invalid shift. Retain work whose intermediate values have other observable
+users. Compare table space, memory latency and compile cost against the
+arithmetic removed. Variable polynomials and arithmetic shifts need their own
+proofs.
+
+## Conditional field access
+
+When a tested bit chooses two constant offsets from one base, their distance
+may allow that bit to form an array index. Account for element size, signed
+and narrow inputs, shifts, reversed arms and comparison polarity. Use the
+original base and drop field-specific facts that no longer describe the
+computed address. Only the selected address may be read; computing addresses
+does not authorize reading both fields.
+
+Factoring a read through a merge requires compatible load types, no intervening
+effects, valid operands on the new path and preserved exceptional behavior.
+Volatile accesses need their own proof. A branch can hide load latency on a
+predicted path: converting a load-dependent traversal to arithmetic can make
+it slower. Measure dependency chains and native execution alongside the
+reduction in branches; the fixtures allow equivalent arithmetic and control
+flow within their quality bounds.
+
+## Register pressure and independent work
+
+Reducing LowIR instruction count can lengthen live ranges. A value moved out
+of a loop must occupy a register or a spill slot over that loop. Consuming a
+dying operand earlier can reduce pressure, while sinking a computation can
+avoid executing it on paths that do not use it.
+
+Independent divisions and square roots may benefit from starting before the
+first one's consumers. Reordering must preserve dependencies, traps, memory
+effects and call boundaries. Measure native execution as well as static work;
+PA34's allocator and instruction selection determine the eventual cost.
+
+## Optional vector and traversal experiments
+
+Vectorization, block packing and interchange are optional extensions. See the
+[improvement exercises](improvements.md) for inputs, scalar oracles and commands.
+Existing PA30 `v128` operations express packed values without new private
+frontend information. An optimizer can use baseline operations or retain
+scalar code; each operation's semantics remain those in the format.
+
+For a vector loop, check every tail length, both traversal directions,
+alignment, overlapping ranges and mixed element widths. A runtime guard can
+select the scalar path when ranges overlap. Preserve the order of floating
+reductions unless the input contract permits reassociation. Packing independent
+operations is different from changing a reduction's order. Guarded zero-work
+paths must not gain speculative loads.
+
+## Measure runtime work and compiler work
+
+Use [the quality checks](README.md#quality-bar) to judge behavior and broad
+outcomes. Total size, residual repeated memory work and dynamic instruction
+counts can be useful bounds; they do not prescribe a mnemonic or a pass.
+
+For a performance experiment, freeze inputs and binaries, verify identical
+results, calibrate A/A noise, then retain every observation from paired ABBA
+blocks. Compile outside the timed interval. Count instructions to explain
+redundant work and use timing to investigate latency and layout. Thread
+scheduling can change the executed work as well as elapsed time.
+
+Measure the optimizer's own compile cost and peak memory alongside generated
+code. Cache analyses only while their inputs remain valid, check invalidation
+in a verification mode, bound fixed-point work, and avoid scanning an entire
+unit from every function pass. Choose data structures that make edits local;
+the particular containers and thresholds are your design.
+
+## Bounded writes across calls
+
+A helper can write its output argument while leaving unrelated input data
+unchanged. Calling it read-only would be wrong: stores through its output
+must invalidate facts about those bytes. Instead, derive a memory footprint
+from its typed instructions and retain facts the existing alias analysis
+proves disjoint from that footprint. The same proof can support loop-load
+hoisting without inlining the helper.
+
+A conservative starting point is a bounded prefix of one pointer parameter.
+Direct stores, object copies and zeroing contribute spans; a known callee's
+span composes with the actual argument's constant offset. Reject unknown
+offsets, writes through multiple roots, global writes, opaque effects and
+recursive dependencies. Build summaries once in callee-first order rather
+than walking a callee for every call site. A summary bounds writes only: it
+does not promise repeatability, no capture, no aliasing or absence of IO.
+
+Respect any explicit alias promise's extent. An exclusive result's first
+eight bytes do not make a helper's thirty-two-byte write disjoint from other
+inputs. Preserve overlapping-argument and global-write behavior, and ensure
+zero-iteration loops do not gain reads from invalid pointers. These facts
+come from the LowIR definitions, so replaying serialized input can derive
+them without private frontend data.
+
+## Result tables for switches
+
+A switch whose arms only return integer constants can select a value from
+read-only data instead of transferring control among return blocks. The
+same representation applies when all arms return one dominating pointer
+plus constant byte offsets: select the offset, then apply it to that pointer.
+Retain any integer-to-pointer bitcast explicitly in the typed instructions.
+
+Check the selector's width and signedness before choosing its range. A
+wrapping subtraction followed by an unsigned range check handles negative
+keys and narrow selectors without signed-overflow assumptions. Sparse holes
+must preserve the default result and its effects. An unreachable default
+does not require a result, but a defined default that writes memory cannot
+silently become a table entry. Cases with effects or different pointer bases
+need their original behavior.
+
+Bound table growth relative to the case operands and cap individual tables.
+Small signed elements can hold offsets or return-value bit patterns, with
+explicit extension or retyping to recover the result. Uniform results need
+only a membership or range decision; adding a table load would waste work.
+Use normal LowIR globals and instructions so the object path and serialized
+replay retain the same facts. Check every new instruction with the existing
+per-pass verifier as well as runtime oracles and replayed-object comparisons.

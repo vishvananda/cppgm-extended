@@ -257,7 +257,7 @@ void ProgramLowering::lower_unit(
 		// A host object defines a member read only as a constant where it
 		// is named (3.2p2: no odr-use) or in a body it does not emit when
 		// its code or data refers to it (variable_symbol), unless an
-		// explicit instantiation names it (README PA31: demand-driven
+		// explicit instantiation names it (README PA32: demand-driven
 		// emission; the course's form defines it where named).
 		const sema::VariableEntity* variable = analyzer.demanded_variables()[i];
 		if (host_objects_ && !variable->templ->explicit_definition &&
@@ -904,7 +904,7 @@ void ProgramLowering::demand_destruction(const sema::FunctionEntity* destructor)
 	// An automatic object's destruction demands a virtual destructor's
 	// entries together: base, deleting, then complete (the course's
 	// order, whichever a body calls first). A host object defines the
-	// complete entry the destruction calls (README PA31); a table it emits
+	// complete entry the destruction calls (README PA32); a table it emits
 	// demands the deleting entry, a call of the base entry that entry.
 	if (destructor->denotes != nullptr)
 		destructor = destructor->denotes;

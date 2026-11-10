@@ -4,7 +4,7 @@
 
 #include "opt/function_ir.h"
 
-// Natural loops of one body (PA32 loop transforms): back edges into a
+// Natural loops of one body (PA33 loop transforms): back edges into a
 // dominating header, bodies by reverse search from the latches, nesting by
 // containment. Loops whose bodies hold handler blocks are not reported, nor
 // those found once the memberships pass eight per block (a deep nest).

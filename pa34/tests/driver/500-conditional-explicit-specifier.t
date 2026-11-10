@@ -1,0 +1,1 @@
+../../../pa30/tests/compile/500-conditional-explicit-specifier.t

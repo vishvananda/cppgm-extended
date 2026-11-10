@@ -164,7 +164,7 @@ VariableEntity* Decomposer::object()
 	const bool reference = info.type->is_reference();
 	info.type = analyzer_.deduced_type(specifiers_, info.type, declarator.initializer, scope_, info.location);
 	// An array initializer without a ref-qualifier makes e an array whose
-	// elements it initializes (11.5p1): outside PA29, which binds a
+	// elements it initializes (11.5p1): outside PA30, which binds a
 	// reference to the array instead (`auto& [a, b] = array`).
 	const syntax::Initializer& written = *declarator.initializer;
 	const syntax::Expr* single = written.kind == syntax::InitializerKind::Parenthesized

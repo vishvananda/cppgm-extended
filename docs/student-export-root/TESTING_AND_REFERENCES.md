@@ -5,13 +5,13 @@ Run commands from the repository root, replacing N with the assignment number:
 ```sh
 make build
 make test-paN                 # Iterate on PA N
-make test-report-through-paN  # Final validation for PA1–PA33
-make test-report              # Full PA1–PA33 report
-make inception                # PA34 completion
+make test-report-through-paN  # Final validation for PA1–PA34
+make test-report              # Full PA1–PA34 report
+make inception                # PA35 completion
 ```
 
 The through report includes PA N; no separate PA N check is needed.
-PA35 ends with `make -C pa35 test`, which is not part of the report: its gates compare your compiler with the host and
+PA36 ends with `make -C pa36 test`, which is not part of the report: its gates compare your compiler with the host and
 its own seed.
 Assembly is required before hosted compatibility and runs in normal reports.
 Suites select platform-specific checks automatically and list skips separately
@@ -28,7 +28,7 @@ make CXX=g++ CPPGM_HOST_CXX=g++
 
 `TEST=` accepts a path, quoted glob or quoted list; mixed-input assignments
 route each fixture to its runner. Finish with the root through target.
-Keep a real host compiler in `CPPGM_HOST_CXX` when PA34 uses
+Keep a real host compiler in `CPPGM_HOST_CXX` when PA35 uses
 `CXX=../dev/cppgm++`. Use a separate object root for different toolchains.
 
 Each `make` test invocation gives fixture results a unique run ID, inherited by
@@ -49,7 +49,7 @@ without running shell login scripts.
 - Default `make test` and the through reports run the course contract;
   additional compatibility material does not add completion requirements.
 
-PA33 checks executable behavior, declared MIR bounds, debug locations and
+PA34 checks executable behavior, declared MIR bounds, debug locations and
 kernel instruction counts. It requires no allocator statistics or exact
 optimized MIR match.
 
@@ -137,8 +137,8 @@ An early LowIR control can state `accept` (validate LowIR without linking),
 `NAME.stdout` checks exact output when supplied. The
 [offline drafts](doc/REFERENCES.md) retain edition and defect-report provenance.
 
-PA29 also has an optional `make test-target-features` suite for x86 POPCNT.
-It is excluded from required reports; see the PA29 handout for the CPU option.
+PA30 also has an optional `make test-target-features` suite for x86 POPCNT.
+It is excluded from required reports; see the PA30 handout for the CPU option.
 
 ## Debug and inspection checks
 

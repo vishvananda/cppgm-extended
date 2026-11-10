@@ -21,7 +21,7 @@ extend your work.
 
 No test observes your model: the graded interfaces are the reader, the
 validator, the writer and the construction exercises. Design the model all
-the same for the optimizer that will edit it. PA32 rewrites one function at
+the same for the optimizer that will edit it. PA33 rewrites one function at
 a time, many times over: it inserts, removes and replaces instructions and
 blocks, renames uses, and asks how many uses a value has. A model in which a
 function owns its instructions and blocks, where an edit touches only that
@@ -117,7 +117,7 @@ between a floating value and an integer of its width preserves the bits.
 NaN literals may carry an explicit payload, such as `nan(0x12)`, so these
 representation copies survive serialization without losing observable bits.
 The specification fixtures exercise reading, validation and serialization of
-these forms; PA32 explains when an optimizer can introduce them. They need no
+these forms; PA33 explains when an optimizer can introduce them. They need no
 private source-language facts when read back by the object path.
 The full format reference also documents later additions. A feature appearing
 there alone does not add a new PA8 requirement: this handout and the owning
@@ -175,7 +175,7 @@ exercise. No C++-to-LowIR frontend is needed for these programs.
 
 ### Design Notes (Non-Normative)
 
-The model built here outlives this assignment: PA10 lowers C++ into it, PA32
+The model built here outlives this assignment: PA10 lowers C++ into it, PA33
 optimizes it and PA24 compiles it. Three choices made now decide how much
 that later work costs.
 
@@ -185,7 +185,7 @@ that later work costs.
   `--emit-lowir`; the compile path never writes LowIR text and parses it
   back, and the host objects of PA26 onward carry machine code, not a
   serialized copy of the program.
-- Give every fact a spelling. PA32 requires an object compiled from emitted
+- Give every fact a spelling. PA33 requires an object compiled from emitted
   LowIR to equal the one compiled directly, so a fact that later stages read
   must survive the writer and the reader. A flag kept only in memory is a
   fact no later stage may rely on: add its text form when you add the flag.
@@ -248,4 +248,4 @@ Finish the assignment with the root cumulative `make test-report-through-pa8`.
 DWARF, debugger integration, optimization, object linking and native code
 emission belong to later assignments; `tests/debuginfo/` and
 `make test-debuginfo` in this directory are the debug-location lanes that
-PA24, PA32 and PA33 run, not part of PA8.
+PA24, PA33 and PA34 run, not part of PA8.

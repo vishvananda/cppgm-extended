@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 
-// Optional PA36 assembly vocabulary (pa36/assembly.md), supplied as a header
+// Optional PA29 assembly vocabulary (pa29/assembly.md), supplied as a header
 // scaffold. These records describe the public boundary; program containers,
 // parsing, constraint selection and emission remain the student's design.
 //

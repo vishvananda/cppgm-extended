@@ -411,7 +411,7 @@ struct FunctionEntity : Entity
 	bool is_operator;
 	TokenKind operator_token;
 	bool operator_array;
-	// PA29's rare facts, a bit each: GNU always_inline, whose calls in this
+	// PA30's rare facts, a bit each: GNU always_inline, whose calls in this
 	// unit run this unit's body (see ProgramLowering::inline_copy); a hosted
 	// GNU inline wrapper of a reserved builtin this compiler lacks
 	// (FunctionBody::reserved_call), whose statements holding such a call

@@ -1,8 +1,8 @@
 #pragma once
 
-// Optional PA36's initial x86-64 encoding vocabulary and instruction facts.
+// Optional PA29's initial x86-64 encoding vocabulary and instruction facts.
 // These are architectural forms, independent of a frontend, LowIR containers,
-// register allocator or object writer. See pa36/README.md and assembly.md.
+// register allocator or object writer. See pa29/README.md and assembly.md.
 // The course solution consumes this header as shipped; students may use these
 // facts with their own parser, form selection and encoding design.
 

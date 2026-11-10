@@ -5,7 +5,7 @@
 #include "opt/call_graph.h"
 #include "opt/passes.h"
 
-// Bounded inlining of direct calls (PA32 O1+). Three waves over the
+// Bounded inlining of direct calls (PA33 O1+). Three waves over the
 // callee-first call graph (opt/call_graph.h):
 //   ordinary   small callees within a per-caller growth budget; a loop may
 //              absorb forwarding layers on its call cycle

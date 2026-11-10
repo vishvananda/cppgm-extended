@@ -229,10 +229,10 @@ for my $prefix (@$prefixes) {
                 cwd=root, text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_pa29_legacy_compile_preserves_system_include_arguments(self):
-        with tempfile.TemporaryDirectory(prefix="pa29-system-includes.") as temp_dir:
+    def test_pa30_legacy_compile_preserves_system_include_arguments(self):
+        with tempfile.TemporaryDirectory(prefix="pa30-system-includes.") as temp_dir:
             root = Path(temp_dir)
-            pa = root / "pa29"
+            pa = root / "pa30"
             pa.mkdir()
             (root / "scripts").mkdir()
             shutil.copyfile(
@@ -252,7 +252,7 @@ for my $prefix (@$prefixes) {
             env = os.environ.copy()
             env.pop("CPPGM_APP_ARGS", None)
             run(
-                "bash", str(REPO_ROOT / "pa29/scripts/run_one_compile_test.sh"),
+                "bash", str(REPO_ROOT / "pa30/scripts/run_one_compile_test.sh"),
                 "tool.py", "input.t", "input.my", cwd=pa, env=env,
             )
             self.assertEqual(

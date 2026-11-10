@@ -1,6 +1,6 @@
 name: Selfhost
 
-# PA34 owns the ladder; test-through-pa5 is the consolidated parser checkpoint.
+# PA35 owns the ladder; test-through-pa5 is the consolidated parser checkpoint.
 
 on:
   workflow_dispatch:
@@ -61,7 +61,7 @@ jobs:
 
       - name: Run selfhost through PA5
         run: |
-          make -C pa34 test-through-pa5 \
+          make -C pa35 test-through-pa5 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -73,7 +73,7 @@ jobs:
           bundle="$RUNNER_TEMP/cppgm-self"
           upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa34/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa35/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -157,7 +157,7 @@ jobs:
 
       - name: Run selfhost through PA5
         run: |
-          make -C pa34 test-through-pa5 \
+          make -C pa35 test-through-pa5 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -169,7 +169,7 @@ jobs:
           bundle="$RUNNER_TEMP/cppgm-self"
           upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa34/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa35/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -261,7 +261,7 @@ jobs:
 
       - name: Run selfhost through PA5
         run: |
-          make -C pa34 test-through-pa5 \
+          make -C pa35 test-through-pa5 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -273,7 +273,7 @@ jobs:
           bundle="$RUNNER_TEMP/cppgm-self"
           upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa34/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa35/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -368,7 +368,7 @@ jobs:
 
       - name: Run selfhost through PA5
         run: |
-          make -C pa34 test-through-pa5 \
+          make -C pa35 test-through-pa5 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -380,7 +380,7 @@ jobs:
           bundle="$RUNNER_TEMP/cppgm-self"
           upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa34/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa35/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"

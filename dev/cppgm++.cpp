@@ -947,7 +947,7 @@ int run_emit_lowir_mode(vector<string> args)
 	// compile's debug-information level stated (-g0, -gline-tables-only)
 	// is the program `-c -o x.o` compiles, lowered in host-object mode, in
 	// the object dialect, so the object it gives is the direct compile's
-	// (PA32 object roundtrip). Otherwise the output is the course's LowIR
+	// (PA33 object roundtrip). Otherwise the output is the course's LowIR
 	// view in the course dialect, --hosted or not (the help text: --hosted
 	// selects the host environment, which this view preprocesses in
 	// anyway), which the LowIR lanes compare, the course's lowir and
@@ -959,7 +959,7 @@ int run_emit_lowir_mode(vector<string> args)
 	if (object_half)
 		invocation.hosted = true;
 	PreprocessorOptions options = source_preprocessor_options(invocation);
-	// The LowIR view preprocesses in the host environment -c uses (PA32: a
+	// The LowIR view preprocesses in the host environment -c uses (PA33: a
 	// source the driver lanes compile includes host headers).
 	if (!options.hosted)
 		driver::add_host_environment(options, invocation.target != native::host_target());

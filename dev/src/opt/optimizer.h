@@ -101,7 +101,7 @@ bool parse_inline_limit(const std::string& text, InlineLimits& limits);
 // Optimizes a valid program in place at options.level.
 void optimize_program(lowir::Program& program, const OptimizerOptions& options, OptimizerStats* stats);
 
-// One `pa32_opt_stats` line of the counters.
+// One `pa33_opt_stats` line of the counters.
 std::string describe_stats(const OptimizerStats& stats);
 
 } // namespace opt

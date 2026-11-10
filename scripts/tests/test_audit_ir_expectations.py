@@ -36,7 +36,7 @@ SELECT_CHOICE = """function @choose(%condition : i1, %a : ptr, %b : ptr) -> i64 
 
 # A real dump: the generators read its format, and it is large enough for the
 # two tolerances to give different bounds.
-MACHINE_IR = max((REPO_ROOT / "pa33" / "tests" / "o1").glob("*.ref.mir"),
+MACHINE_IR = max((REPO_ROOT / "pa34" / "tests" / "o1").glob("*.ref.mir"),
                  key=lambda path: path.stat().st_size).read_text()
 
 
@@ -55,7 +55,7 @@ class AuditIrExpectationsTests(unittest.TestCase):
     def sidecar(self, base: Path) -> Path:
         return base.with_name(base.name + ".ref.expect")
 
-    def machine_fixture(self, lane: str = "pa33/tests/o1/x") -> Path:
+    def machine_fixture(self, lane: str = "pa34/tests/o1/x") -> Path:
         base = self.fixture(lane)
         base.with_name("x.ref.mir").write_text(MACHINE_IR)
         self.sidecar(base).write_text("")
@@ -140,7 +140,7 @@ function @constant_read() -> i32 {
                     self.assertEqual(result.returncode, status, result.stdout + result.stderr)
 
     def lowir_choice(self) -> Path:
-        base = self.fixture("pa32/tests/o2/x")
+        base = self.fixture("pa33/tests/o2/x")
         base.with_suffix(".t").write_text(POINTER_CHOICE)
         base.with_name("x.ref").write_text(SELECT_CHOICE)
         self.sidecar(base).write_text("instructions <= 8\ncount(load) <= 1\n")
@@ -195,7 +195,7 @@ function @constant_read() -> i32 {
                 self.assertEqual(self.audit().returncode, 0)
 
     def test_indexed_field_contract_accepts_a_branched_single_load(self):
-        fixture = REPO_ROOT / "pa32/tests/o2/500-indexed-bit-loads.t"
+        fixture = REPO_ROOT / "pa33/tests/o2/500-indexed-bit-loads.t"
         text = fixture.read_text()
         for name in ("shifted", "inverted", "high_bit"):
             pattern = re.compile(r"(function @" + name + r"\([^}]+)\n}")
@@ -261,7 +261,7 @@ cp {dump} "$2"
         return path
 
     def behavior_fixture(self) -> Path:
-        base = self.machine_fixture("pa33/tests/behavior/o2/x")
+        base = self.machine_fixture("pa34/tests/behavior/o2/x")
         base.with_name("x.ref.mir").unlink()
         base.with_name("x.flags").write_text("--a --b\n")
         return base

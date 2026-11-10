@@ -1,5 +1,5 @@
 TARGET = cppgm++
-TARGET_ARGS =
+TARGET_ARGS = 
 export CPPGM_APP_ARGS := $(TARGET_ARGS)
 HOST_UNAME_S = $(shell uname -s)
 LLVM_CXX_LOCAL = /usr/local/opt/llvm/bin/clang++
@@ -32,6 +32,7 @@ CPPGM_STDLIB_FLAGS ?=
 CPPGM_TEST_RUNNER ?= 1
 REPORT_EMPTY_OPTIONAL_TEST_ROOTS ?= 0
 CPPGM_TEST_APP ?= ../dev/$(TARGET)
+LOWIR2NATIVE_APP ?= ../dev/lowir2native
 REF_TEST_APP ?= $(CPPGM_TEST_APP)-ref
 TEST_DEPS ?= dev-shared-target
 RUN_CHECK_DEPS ?= dev-shared-target
@@ -41,7 +42,10 @@ else
 CPPGM_HOSTCOMPAT_COMPILE_WORKERS ?= 3
 endif
 export CPPGM_HOSTCOMPAT_COMPILE_WORKERS
+PREPROC_TEST_ROOT ?= tests/preproc
 COMPILE_TEST_ROOT ?= tests/compile
+RUN_TEST_ROOT ?= tests/run
+TARGET_FEATURE_TEST_ROOT ?= tests/target-features
 ifneq ($(CPPGM_BATCH_TESTS),)
 export WRAPPED_BATCH_STDIN ?= 1
 endif
@@ -120,6 +124,30 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 	$(CXX) $(DEBUG_CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
+define run_preproc_course_bucket
+	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
+		bash scripts/check_preproc_refs_portable.sh "$(1)"; \
+		if [ -n "$(CPPGM_BATCH_TESTS)" ]; then \
+			perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp "$(1)"; \
+		else \
+			scripts/run_all_tests.pl $(CPPGM_TEST_APP) pp "$(1)"; \
+		fi; \
+		scripts/compare_results.pl ref pp "$(1)"; \
+	else \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
+	fi
+endef
+
+define run_preproc_course_bucket_batch
+	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
+		bash scripts/check_preproc_refs_portable.sh "$(1)"; \
+		perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp "$(1)"; \
+		scripts/compare_results.pl ref pp "$(1)"; \
+	else \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
+	fi
+endef
+
 define run_compile_course_bucket
 	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
 		if [ -n "$(CPPGM_BATCH_TESTS)" ]; then \
@@ -142,38 +170,77 @@ define run_compile_course_bucket_batch
 	fi
 endef
 
+define run_course_bucket
+	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
+		perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my "$(1)"; \
+		scripts/compare_results_link.pl ref my "$(1)"; \
+	else \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
+	fi
+endef
+
 test: $(TEST_DEPS)
+	@bash scripts/check_preproc_refs_portable.sh $(PREPROC_TEST_ROOT)
+ifneq ($(CPPGM_BATCH_TESTS),)
+	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
+else
+	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
+endif
+	@scripts/compare_results.pl ref pp $(PREPROC_TEST_ROOT)
 ifneq ($(CPPGM_BATCH_TESTS),)
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
 else
 	perl scripts/run_compile_tests.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
 endif
 	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
+	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(RUN_TEST_ROOT)
+	@scripts/compare_results_link.pl ref my $(RUN_TEST_ROOT)
+
+# Optional CPU capabilities do not change the baseline C++11 report.
+test-target-features: $(TEST_DEPS)
+	@perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_TEST_APP) "$(TARGET_FEATURE_TEST_ROOT)" $(LOWIR2NATIVE_APP)
+
+.PHONY: test-target-features
 
 test-batch: $(TEST_DEPS)
+	@bash scripts/check_preproc_refs_portable.sh $(PREPROC_TEST_ROOT)
+	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
+	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(RUN_TEST_ROOT)
+	@scripts/compare_results_link.pl ref my $(RUN_TEST_ROOT)
 
 ref-test:
 ifneq ($(strip $(TEST)),)
 	@$(REF_TEST_RUN)
 else
+	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)
 	@perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
+		perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(RUN_TEST_ROOT)
 endif
 
 ref-test-batch:
+	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
+		perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(RUN_TEST_ROOT)
 
 REF_TEST_RUN = case "$(TEST)" in \
+	$(PREPROC_TEST_ROOT)/*) perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
 	$(COMPILE_TEST_ROOT)/*) perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
-	*) echo "Usage: make ref-test TEST=$(COMPILE_TEST_ROOT)/<file>.t"; exit 1 ;; \
+	$(RUN_TEST_ROOT)/*) perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
+	*) echo "Usage: make ref-test TEST=$(PREPROC_TEST_ROOT)/<file>.t, $(COMPILE_TEST_ROOT)/<file>.t, or $(RUN_TEST_ROOT)/<file>.t"; exit 1 ;; \
 esac
 
 CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
-	'$(COMPILE_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check {tests}'
+	'$(PREPROC_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) check {tests}' \
+	'$(COMPILE_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check {tests}' \
+	'$(RUN_TEST_ROOT)/*::perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) check {tests}'
+CHECK_COMPARE = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
+	'$(PREPROC_TEST_ROOT)/*|$(COMPILE_TEST_ROOT)/*::scripts/compare_results.pl ref check {tests}' \
+	'$(RUN_TEST_ROOT)/*::scripts/compare_results_link.pl ref check {tests}'
 include ../scripts/pa_run_check_targets.mk
 
-.PHONY: dev-shared-target ref-test ref-test-batch test-batch
+.PHONY: dev-shared-target ref-test ref-test-batch test-batch  
 ../dev/$(TARGET):
 	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX)
 

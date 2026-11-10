@@ -172,7 +172,7 @@ sub canonicalize_machine_ir
 	my ($data) = @_;
 	return undef if !defined($data);
 	$data = normalize_machine_ir($data);
-	# Focused PA33 properties validate non-default entry alignment.  Keep the
+	# Focused PA34 properties validate non-default entry alignment.  Keep the
 	# legacy structural MIR oracle concerned with instruction and frame shape.
 	$data =~ s/^\s+code_alignment\s+\d+\n//mg;
 	# The frame's total size is a layout choice like its displacements: a
@@ -479,7 +479,7 @@ sub check_lowir_lowers
 		"To reproduce:\n\n    \$ $app -c -O0 -o /dev/null " . rooted_path($input) . "\n\n");
 }
 
-# With CPPGM_LOWIR_BEHAVIOR_APP naming a `lowir2native` (PA32's lanes name
+# With CPPGM_LOWIR_BEHAVIOR_APP naming a `lowir2native` (PA33's lanes name
 # the reference backend), a handwritten LowIR fixture with an entry function
 # is also run before and after optimization: the input and the optimized
 # output are each built through that backend at -O0 and executed, and the
@@ -490,7 +490,7 @@ sub check_lowir_lowers
 # budgets of a sidecar say nothing about results, so without this an
 # optimizer that changed a program's answer passed.
 # ----------------------------------------------------------------------
-# The LowIR behaviour check (CPPGM_LOWIR_BEHAVIOR_APP, PA32): the fixture
+# The LowIR behaviour check (CPPGM_LOWIR_BEHAVIOR_APP, PA33): the fixture
 # and the optimized output are each built into a program through the
 # reference backend and run, and the two programs must end the same way
 # and print the same output.
@@ -2913,7 +2913,7 @@ sub validate_lowir_text
 # The source-to-LowIR lanes (PA10-PA23 and PA8's `cppgm++ --emit-lowir`
 # debug-information lanes) compare the facts the C++ lowering states by rule
 # (pa8/lowir.md, "Facts The C++ Lowering States"), as they compare the
-# instruction facts.  PA32's optimized lanes (mode lowir_optimized_t) leave
+# instruction facts.  PA33's optimized lanes (mode lowir_optimized_t) leave
 # them uncompared: an optimizer may add a fact it proves, or drop one.
 my $LOWIR_COMPARE_SOURCE_FACTS = 1;
 

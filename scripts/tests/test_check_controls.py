@@ -366,7 +366,7 @@ class ZeroBoundedControlTests(unittest.TestCase):
         temp = tempfile.TemporaryDirectory(prefix="zero-bounded-control.")
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
-        self.source = (REPO_ROOT / "pa32/tests/regression/controls/"
+        self.source = (REPO_ROOT / "pa33/tests/regression/controls/"
                        "500-zero-bounded-signed-range.t").read_text()
         self.fixture = self.root / "500-zero-bounded-signed-range.t"
         self.fixture.write_text(self.source)

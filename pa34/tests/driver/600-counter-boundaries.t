@@ -1,0 +1,1 @@
+../../../pa33/tests/driver/o2/600-counter-boundaries.t

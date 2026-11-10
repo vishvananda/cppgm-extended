@@ -170,7 +170,7 @@ A fixture that fails on one of these is telling you which convention
 your output departs from; the canonical diff the harness writes beside the
 output shows where.
 
-The facts are what later stages may rely on: PA32's optimizer can assume a
+The facts are what later stages may rely on: PA33's optimizer can assume a
 typed store does not change a typed load of another type, remove the
 exception region around a call that cannot unwind, fold a load from readonly
 data to its value, and load through a reference before a loop that may not
@@ -476,15 +476,15 @@ operation as it creates a temporary. In particular, keeping the canonical
 `i64` comparison result there avoids duplicating result-type decisions at
 each later use.
 
-The LowIR this assignment emits is the optimizer's input at PA32, which is
+The LowIR this assignment emits is the optimizer's input at PA33, which is
 why its shape is simple rather than efficient. Every local lives in a slot
-and every use loads it: PA32 promotes slots to values, so there is no need to
+and every use loads it: PA33 promotes slots to values, so there is no need to
 avoid the loads here. `unreachable` states a fact the optimizer uses to
 delete code after a call that does not return; it is not a trap to execute.
 The instruction facts (Instruction Facts in `../pa8/lowir.md`) are the
 semantic facts the optimizer cannot recover from LowIR alone: C++'s type-based
 aliasing and its undefined signed overflow. State them where the rules say,
-even though nothing before PA32 reads them.
+even though nothing before PA33 reads them.
 
 Lower each function straight into the PA8 model, and decide by demand from
 the start which definitions to lower. A definition the translation unit need

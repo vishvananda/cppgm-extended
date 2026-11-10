@@ -8,7 +8,7 @@
 //
 // What is deliberately not here: program containers.  How a program,
 // function, block, instruction and operand are stored is your design, and
-// PA32 will rewrite it in place, one function at a time (see the PA8
+// PA33 will rewrite it in place, one function at a time (see the PA8
 // handout).  Store these enums in it rather than text: an instruction is
 // an Opcode, not the word `binary`; an operand's kind is a ValueKind, not
 // its sigil.  Names (temporaries, slots, blocks, symbols) are the only

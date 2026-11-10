@@ -84,7 +84,7 @@ and text. You can run it before supporting includes or conditionals. Preserve
 the course-defined recursion rules in `macros.md`; a host preprocessor is not
 an exact oracle for those rules. The directives handout specifies the default
 include search and predefined values. Hosted-system-header compatibility is
-later work: PA29 adds the GNU and Clang extensions that the host's headers
+later work: PA30 adds the GNU and Clang extensions that the host's headers
 use, such as `__COUNTER__`, the `__has_*` probes and the GNU comma paste
 `, ## __VA_ARGS__`.
 
@@ -122,7 +122,7 @@ required. Finish with the cumulative through-PA4 report from the root.
 
 The macro and directive guides describe the clearest way to get every rule
 right, and it is a fine way to finish PA4. Later assignments preprocess the
-host's standard library headers for every translation unit, and PA34
+host's standard library headers for every translation unit, and PA35
 compiles the compiler itself: hundreds of thousands of tokens per compile,
 most of them from macros, include guards and groups that are skipped. At
 that scale the representation decides the cost, not the rules. One representation

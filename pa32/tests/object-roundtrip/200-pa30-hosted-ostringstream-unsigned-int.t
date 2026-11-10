@@ -1,1 +1,0 @@
-../../../pa30/tests/compile/600-hosted-ostringstream-unsigned-int.t

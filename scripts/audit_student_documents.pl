@@ -25,7 +25,7 @@ my %public = map { $_ => 1 } $1 =~ /^\s*(dev\/\S+)/mg;
 my @rules = (
     ['private work path', qr{(?:/home/[^\s`]+|obj/wt-[^\s`]+|handoff\.md|research_notes/)}],
     ['private fixture or journal', qr{(?:tests/regression|pa\d+/maintainer/|optimization-course-plan\.md)}],
-    ['private implementation API', qr{\b(?:FunctionContext|scratch_carried_reloads|pa32_opt_stats|read_only_functions|kUnroll\w*|kSearch\w*)\b|--inline-limit|\bonce-cap\b}],
+    ['private implementation API', qr{\b(?:FunctionContext|scratch_carried_reloads|pa33_opt_stats|read_only_functions|kUnroll\w*|kSearch\w*)\b|--inline-limit|\bonce-cap\b}],
     ['reference tuning policy', qr{course solution(?:'s)?\s+(?:uses|keeps|runs|chooses|decides|places|inlines|carries)\b}],
     ['benchmark development history', qr{\b(?:PENNANT|tramp3d-v4|fftbench|SmallPT)\b|\bfewer cycles\b|\bcycles off\b}],
 );

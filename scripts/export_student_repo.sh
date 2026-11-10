@@ -318,12 +318,12 @@ sanitize_student_seams_makefile() {
   fi
 }
 
-# Regenerate and verify the solution references first, then remove PA33's
+# Regenerate and verify the solution references first, then remove PA34's
 # private allocator regressions and profiling material from the student tree.
-prune_student_pa33() {
-  rm -rf "$dest/pa33/maintainer" "$dest/pa33/tests/regression"
-  find "$dest/pa33/tests" -type f -name '*.ref.ir' -delete
-  perl -0pi -e 's/\n-include maintainer\/Makefile\n/\n/' "$dest/pa33/Makefile"
+prune_student_pa34() {
+  rm -rf "$dest/pa34/maintainer" "$dest/pa34/tests/regression"
+  find "$dest/pa34/tests" -type f -name '*.ref.ir' -delete
+  perl -0pi -e 's/\n-include maintainer\/Makefile\n/\n/' "$dest/pa34/Makefile"
   local script
   for script in check_cppgm_function_census \
     check_native_carrier_fields \
@@ -335,12 +335,12 @@ prune_student_pa33() {
   done
 }
 
-# PA35's release check calibrates the course solution itself: drop its
+# PA36's release check calibrates the course solution itself: drop its
 # maintainer directory and the Makefile line that includes it.
-prune_student_pa35() {
-  if [ -f "$dest/pa35/Makefile" ]; then
-    rm -rf "$dest/pa35/maintainer"
-    perl -0pi -e 's/\n-include maintainer\/Makefile\n/\n/' "$dest/pa35/Makefile"
+prune_student_pa36() {
+  if [ -f "$dest/pa36/Makefile" ]; then
+    rm -rf "$dest/pa36/maintainer"
+    perl -0pi -e 's/\n-include maintainer\/Makefile\n/\n/' "$dest/pa36/Makefile"
   fi
 }
 
@@ -406,7 +406,7 @@ shared_scripts=(
   scripts/write_unresolved_symbol_report.pl
   scripts/expect_ir.pl
 )
-# Copy control checkers for reference regeneration. PA33's private checkers
+# Copy control checkers for reference regeneration. PA34's private checkers
 # are removed with its maintainer lanes after reference verification.
 for check_script in "$repo_root"/scripts/check_*.pl; do
   # This compares maintainer compiler builds using a private audit table.
@@ -509,7 +509,7 @@ CPPGM_MAKE_LOW_JOB_LIMIT = $(shell \
 	limit='$(CPPGM_MAKE_JOB_LIMIT)'; cpus='$(DEFAULT_BUILD_JOBS)'; \
 	if [ "$$limit" -gt 0 ] 2>/dev/null && [ "$$cpus" -gt "$$limit" ] 2>/dev/null; then echo 1; else echo 0; fi)
 ifeq ($(CPPGM_MAKE_LOW_JOB_LIMIT),1)
-$(warning make is limited to -j$(CPPGM_MAKE_JOB_LIMIT) on a $(DEFAULT_BUILD_JOBS)-core machine; large compiler builds, especially self-host and PA34/inception builds, will be very slow. Omit -j or use -j$(DEFAULT_BUILD_JOBS).)
+$(warning make is limited to -j$(CPPGM_MAKE_JOB_LIMIT) on a $(DEFAULT_BUILD_JOBS)-core machine; large compiler builds, especially self-host and PA35/inception builds, will be very slow. Omit -j or use -j$(DEFAULT_BUILD_JOBS).)
 endif
 endif
 endif
@@ -632,10 +632,10 @@ sanitize_student_root_makefile "$dest/Makefile"
 sanitize_student_seams_makefile "$dest/pa11/Makefile"
 sanitize_linux_student_scripts
 
-if [ -f "$dest/pa34/Makefile" ]; then
+if [ -f "$dest/pa35/Makefile" ]; then
   perl -0pi -e '
     s/\$\(foreach checkpoint,\$\(CHECKPOINTS\),\$\(if \$\(strip \$\(FRONTEND_OBJ_BASENAMES_\$\(checkpoint\)\)\),,\$\(error missing FRONTEND_OBJ_BASENAMES_\$\(checkpoint\) in \.\.\/dev\/frontend_source_sets\.mk\)\)\)/\$(foreach checkpoint,\$(CHECKPOINTS),\$(if \$(filter undefined,\$(origin FRONTEND_OBJ_BASENAMES_\$(checkpoint))),\$(error missing FRONTEND_OBJ_BASENAMES_\$(checkpoint) in ..\/dev\/frontend_source_sets.mk),))/g;
-  ' "$dest/pa34/Makefile"
+  ' "$dest/pa35/Makefile"
 fi
 
 
@@ -702,8 +702,9 @@ pa_ref_pairs=(
   pa29:cppgm++
   pa30:cppgm++
   pa31:cppgm++
-  pa32:lowiropt
-  pa33:lowir2native
+  pa32:cppgm++
+  pa33:lowiropt
+  pa34:lowir2native
 )
 
 source_sha=$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || echo unknown)
@@ -780,17 +781,12 @@ make -s -C "$dest" ref-test-debuginfo \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
   CPPGM_TEST_RUNNER=1
-make -s -C "$dest" ref-test-modern-cxx \
-  CXX="${CXX:-g++}" \
-  CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
-  CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
-  CPPGM_TEST_RUNNER=1
 
 verify_regenerated_reference_outputs
 verify_expectation_sidecars
 
-prune_student_pa33
-prune_student_pa35
+prune_student_pa34
+prune_student_pa36
 
 finalize_reference_binaries
 

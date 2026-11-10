@@ -90,7 +90,7 @@ PA27 strengthens the PA25 compile-mode surface on the host-compatible path
 and uses PA9 ABI names for C++ object symbols. It also adds `-isystem <dir>`
 and `-isystem<dir>` for explicit system-header search directories. Preserve
 function bodies from those headers, including move constructors; system-header
-origin does not make a body ignorable. PA29 adds automatic hosted include
+origin does not make a body ignorable. PA30 adds automatic hosted include
 discovery and the remaining hosted preprocessor controls.
 
 Required forms:
@@ -374,7 +374,7 @@ definition with internal linkage a local symbol. Both make a definition
 discardable: a translation unit that stops referring to it can leave it out,
 because another unit that needs a vague-linkage definition emits its own
 copy and nothing outside the unit names a local one. Item 7 relies on the
-second; PA32's single-call inlining and pruning rely on both. Keep each
+second; PA33's single-call inlining and pruning rely on both. Keep each
 section's relocations in their own list, sorted by offset, so that emitting
 or dropping one definition never scans the relocations of the whole object.
 

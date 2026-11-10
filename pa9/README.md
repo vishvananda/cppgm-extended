@@ -417,7 +417,7 @@ Encode the existing non-throwing function-type facts according to the
 Itanium ABI. A non-throwing specification within a function type remains
 distinct where the ABI requires it; it is not an arbitrary suffix added to
 every function name. The fact interface already describes this independently
-of source parsing. PA32 later checks agreement with host-produced objects;
+of source parsing. PA33 later checks agreement with host-produced objects;
 use the retained Itanium reference and N4659 `[except.spec]`.
 
 ### Out Of Scope

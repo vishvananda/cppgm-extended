@@ -1,1 +1,0 @@
-../../../pa32/tests/driver/o2/600-call-and-cleanup-boundaries.t

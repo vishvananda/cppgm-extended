@@ -1,6 +1,6 @@
 # Agent instructions
 
-Build one cumulative C++ compiler with the required C++11/14/17 profile for Linux x86-64, working through PA1–PA35.
+Build one cumulative C++ compiler with the required C++11/14/17 profile for Linux x86-64, working through PA1–PA36.
 Read the current `paN/README.md` and [Testing and references](TESTING_AND_REFERENCES.md)
 before changing code. [Project layout](PROJECT_LAYOUT.md) gives the assignment map.
 
@@ -22,7 +22,7 @@ before changing code. [Project layout](PROJECT_LAYOUT.md) gives the assignment m
 
 ```sh
 make test-paN                 # Iterate on PA N
-make test-report-through-paN  # Final validation for PA1–PA33
+make test-report-through-paN  # Final validation for PA1–PA34
 ```
 
 Replace N with the assignment number. The through report includes PA N;
@@ -32,12 +32,12 @@ shape: file and function size limits, counted in lines of code, and shortcuts
 such as reading the environment or running other
 programs from the compiler. It is advisory: no exit criterion runs it, the
 shipped files pass it, and a tree that fails it usually has a shortcut or a
-file too large to review. PA34 ends with `make inception`, PA35 with
-`make -C pa35 test`. Use the debug and inspection targets required by the
+file too large to review. PA35 ends with `make inception`, PA36 with
+`make -C pa36 test`. Use the debug and inspection targets required by the
 owning handout when changing those surfaces.
 
 Default tests run the course contract described by each handout.
-PA33 requires behavior, MIR bounds, debug checks and kernel instruction counts,
+PA34 requires behavior, MIR bounds, debug checks and kernel instruction counts,
 with no allocator-specific diagnostics.
 
 ## References

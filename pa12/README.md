@@ -515,7 +515,7 @@ For over-aligned `new`, select the available alignment-aware allocation and
 deallocation declarations, preserving placement arguments and failure cleanup.
 The alignment argument describes the allocated type, including arrays.
 The core contract can use minimal declarations of `std::align_val_t` and the
-allocation functions; PA32 adds the real host `<new>` integration.
+allocation functions; PA33 adds the real host `<new>` integration.
 See N4659 `[basic.align]`, `[expr.new]`, `[expr.delete]` and `[dcl.fct.spec]`.
 
 ### Out Of Scope
@@ -601,7 +601,7 @@ Useful intermediate representations include:
 One small value returned from one function and passed to another is three
 or four whole-object copies in this LowIR: field stores into the result, a
 `copyobj` or a `return` of the object, and a `copyobj` into the argument's
-storage. That is the intended shape. PA32 splits such slots into scalar
+storage. That is the intended shape. PA33 splits such slots into scalar
 values when every use of their addresses is a direct load or store, a
 `copyobj` or `zeroinit` at a constant offset, or an indirect result. A copy
 lowered as a loop, a byte sequence or a call to a helper keeps the object in

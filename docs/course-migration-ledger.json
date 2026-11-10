@@ -1,6 +1,6 @@
 {
-  "base": "534decb7f566613f9a8b7a605e88252a098c6057",
-  "status": "migration in progress; assignment numbers still original",
+  "base": "92308da8e",
+  "status": "required profile migrated; validation in progress",
   "baseline_counts": {
     "modern_compile": 84,
     "modern_run": 41,
@@ -11,7 +11,7 @@
   "fixtures": [
     {
       "old": "pa29/tests/compile/500-gnu-asm-branch-missing-flags-bad.t",
-      "new": "pa36/tests/source/100-gnu-asm-local-branch-entry-flags.t",
+      "new": "pa29/tests/source/100-gnu-asm-local-branch-entry-flags.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -25,7 +25,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-carry-without-producer-bad.t",
-      "new": "pa36/tests/source/100-gnu-asm-entry-flag-output.t",
+      "new": "pa29/tests/source/100-gnu-asm-entry-flag-output.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -39,7 +39,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-cas-missing-accumulator-bad.t",
-      "new": "pa36/tests/source/100-gnu-asm-declared-cas-operands.t",
+      "new": "pa29/tests/source/100-gnu-asm-declared-cas-operands.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -53,7 +53,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-cpuid-count-reject.t",
-      "new": "pa36/tests/source/100-gnu-asm-cpuid-count-reject.t",
+      "new": "pa29/tests/source/100-gnu-asm-cpuid-count-reject.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -67,7 +67,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-cpuid-forms.t",
-      "new": "pa36/tests/source/100-gnu-asm-cpuid-forms.t",
+      "new": "pa29/tests/source/100-gnu-asm-cpuid-forms.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -82,7 +82,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-cpuid-output-reject.t",
-      "new": "pa36/tests/source/100-gnu-asm-cpuid-output-reject.t",
+      "new": "pa29/tests/source/100-gnu-asm-cpuid-output-reject.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -96,7 +96,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-cpuid-suffix-reject.t",
-      "new": "pa36/tests/source/100-gnu-asm-cpuid-suffix-reject.t",
+      "new": "pa29/tests/source/100-gnu-asm-cpuid-suffix-reject.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -110,7 +110,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-flag-output-reference-bad.t",
-      "new": "pa36/tests/source/100-gnu-asm-flag-output-reference-bad.t",
+      "new": "pa29/tests/source/100-gnu-asm-flag-output-reference-bad.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -124,7 +124,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-keyword-statement.t",
-      "new": "pa36/tests/source/100-gnu-asm-keyword-statement.t",
+      "new": "pa29/tests/source/100-gnu-asm-keyword-statement.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -139,7 +139,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-locked-notb-fence.t",
-      "new": "pa36/tests/source/100-gnu-asm-locked-notb-fence.t",
+      "new": "pa29/tests/source/100-gnu-asm-locked-notb-fence.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -154,7 +154,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-output-operand-statement.t",
-      "new": "pa36/tests/source/100-gnu-asm-output-operand-statement.t",
+      "new": "pa29/tests/source/100-gnu-asm-output-operand-statement.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -169,7 +169,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-pand-count-reject.t",
-      "new": "pa36/tests/source/100-gnu-asm-pand-count-reject.t",
+      "new": "pa29/tests/source/100-gnu-asm-pand-count-reject.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -183,7 +183,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-pand-forms.t",
-      "new": "pa36/tests/source/100-gnu-asm-pand-forms.t",
+      "new": "pa29/tests/source/100-gnu-asm-pand-forms.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -198,7 +198,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-pand-gp-reject.t",
-      "new": "pa36/tests/source/100-gnu-asm-pand-gp-reject.t",
+      "new": "pa29/tests/source/100-gnu-asm-pand-gp-reject.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -212,7 +212,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-pand-suffix-reject.t",
-      "new": "pa36/tests/source/100-gnu-asm-pand-suffix-reject.t",
+      "new": "pa29/tests/source/100-gnu-asm-pand-suffix-reject.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -226,7 +226,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-volatile-memory-clobber-called.t",
-      "new": "pa36/tests/source/100-gnu-asm-volatile-memory-clobber-called.t",
+      "new": "pa29/tests/source/100-gnu-asm-volatile-memory-clobber-called.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -241,7 +241,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-volatile-statement.t",
-      "new": "pa36/tests/source/100-gnu-asm-volatile-statement.t",
+      "new": "pa29/tests/source/100-gnu-asm-volatile-statement.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -256,7 +256,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-xgetbv-constraint-reject.t",
-      "new": "pa36/tests/source/100-gnu-asm-declared-query-operands.t",
+      "new": "pa29/tests/source/100-gnu-asm-declared-query-operands.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -270,7 +270,7 @@
     },
     {
       "old": "pa29/tests/compile/500-gnu-asm-xgetbv-forms.t",
-      "new": "pa36/tests/source/100-gnu-asm-xgetbv-forms.t",
+      "new": "pa29/tests/source/100-gnu-asm-xgetbv-forms.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -285,7 +285,7 @@
     },
     {
       "old": "pa29/tests/compile/500-namespace-asm-executable-data-bad.t",
-      "new": "pa36/tests/source/200-namespace-asm-executable-section.t",
+      "new": "pa29/tests/source/200-namespace-asm-executable-section.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -299,7 +299,7 @@
     },
     {
       "old": "pa29/tests/compile/500-namespace-asm-reserved-section-bad.t",
-      "new": "pa36/tests/source/200-namespace-asm-existing-text-section.t",
+      "new": "pa29/tests/source/200-namespace-asm-existing-text-section.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -313,7 +313,7 @@
     },
     {
       "old": "pa29/tests/compile/500-namespace-asm-unrestored-section-bad.t",
-      "new": "pa36/tests/source/200-namespace-asm-persistent-section-state.t",
+      "new": "pa29/tests/source/200-namespace-asm-persistent-section-state.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -327,7 +327,7 @@
     },
     {
       "old": "pa29/tests/run/800-gnu-asm-cas-retry.t",
-      "new": "pa36/tests/source/200-gnu-asm-cas-retry.t",
+      "new": "pa29/tests/source/200-gnu-asm-cas-retry.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -343,7 +343,7 @@
     },
     {
       "old": "pa29/tests/run/800-namespace-asm-data-sections.t",
-      "new": "pa36/tests/source/200-module-metadata-strings.t",
+      "new": "pa29/tests/source/200-module-metadata-strings.t",
       "feature": "assembly.shared_boundary",
       "mode": "gnu++11",
       "disposition": "required assembly control",
@@ -389,7 +389,7 @@
     },
     {
       "old": "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-gnu-packed.t",
-      "new": "pa29/tests/compile/500-attribute-grammar-using-gnu-packed.t",
+      "new": "pa30/tests/compile/500-attribute-grammar-using-gnu-packed.t",
       "feature": "attribute.vendor",
       "disposition": "required normal lane",
       "companions": [
@@ -2198,7 +2198,7 @@
     },
     {
       "old": "pa31/tests/modern-cxx/link/600-aligned-allocation.t",
-      "new": "pa31/tests/link/600-aligned-allocation.t",
+      "new": "pa32/tests/link/600-aligned-allocation.t",
       "feature": "hosted.modern_language",
       "disposition": "required normal lane",
       "companions": [
@@ -2213,7 +2213,7 @@
     },
     {
       "old": "pa31/tests/modern-cxx/link/600-aligned-global-placement.t",
-      "new": "pa31/tests/link/600-aligned-global-placement.t",
+      "new": "pa32/tests/link/600-aligned-global-placement.t",
       "feature": "hosted.modern_language",
       "disposition": "required normal lane",
       "companions": [
@@ -2228,7 +2228,7 @@
     },
     {
       "old": "pa31/tests/modern-cxx/link/600-hosted-aggregate-member-initializers.t",
-      "new": "pa31/tests/link/600-hosted-aggregate-member-initializers.t",
+      "new": "pa32/tests/link/600-hosted-aggregate-member-initializers.t",
       "feature": "hosted.modern_language",
       "disposition": "required normal lane",
       "companions": [
@@ -2243,7 +2243,7 @@
     },
     {
       "old": "pa31/tests/modern-cxx/link/600-hosted-atomic-prvalue.t",
-      "new": "pa31/tests/link/600-hosted-atomic-prvalue.t",
+      "new": "pa32/tests/link/600-hosted-atomic-prvalue.t",
       "feature": "hosted.modern_language",
       "disposition": "required normal lane",
       "companions": [
@@ -2258,7 +2258,7 @@
     },
     {
       "old": "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.t",
-      "new": "pa31/tests/link/600-hosted-noexcept-function-abi.t",
+      "new": "pa32/tests/link/600-hosted-noexcept-function-abi.t",
       "feature": "hosted.modern_language",
       "disposition": "required normal lane",
       "companions": [
@@ -2276,7 +2276,7 @@
     },
     {
       "old": "pa31/tests/modern-cxx/link/600-inline-default-initialization.t",
-      "new": "pa31/tests/link/600-inline-default-initialization.t",
+      "new": "pa32/tests/link/600-inline-default-initialization.t",
       "feature": "hosted.modern_language",
       "disposition": "required normal lane",
       "companions": [
@@ -2295,7 +2295,7 @@
     },
     {
       "old": "pa31/tests/modern-cxx/link/600-inline-late-static-definition.t",
-      "new": "pa31/tests/link/600-inline-late-static-definition.t",
+      "new": "pa32/tests/link/600-inline-late-static-definition.t",
       "feature": "hosted.modern_language",
       "disposition": "required normal lane",
       "companions": [
@@ -2314,7 +2314,7 @@
     },
     {
       "old": "pa31/tests/modern-cxx/link/600-standard-deduction-guides.t",
-      "new": "pa31/tests/link/600-standard-deduction-guides.t",
+      "new": "pa32/tests/link/600-standard-deduction-guides.t",
       "feature": "hosted.modern_language",
       "disposition": "required normal lane",
       "companions": [
@@ -2709,7 +2709,7 @@
     },
     {
       "old": "pa36/tests/reject/100-alternative-columns.t",
-      "new": "pa8/tests/general/300-assembly-alternative-columns.t",
+      "new": "pa8/tests/spec/300-assembly-alternative-columns.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2720,7 +2720,7 @@
     },
     {
       "old": "pa36/tests/reject/100-argument-type-conflict.t",
-      "new": "pa8/tests/general/300-assembly-argument-type-conflict.t",
+      "new": "pa8/tests/spec/300-assembly-argument-type-conflict.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2731,7 +2731,7 @@
     },
     {
       "old": "pa36/tests/reject/100-assembly-function-duplicate.t",
-      "new": "pa8/tests/general/300-assembly-assembly-function-duplicate.t",
+      "new": "pa8/tests/spec/300-assembly-assembly-function-duplicate.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2742,7 +2742,7 @@
     },
     {
       "old": "pa36/tests/reject/100-assembly-function-ordinary-body.t",
-      "new": "pa8/tests/general/300-assembly-assembly-function-ordinary-body.t",
+      "new": "pa8/tests/spec/300-assembly-assembly-function-ordinary-body.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2753,7 +2753,7 @@
     },
     {
       "old": "pa36/tests/reject/100-assembly-function-register-setup.t",
-      "new": "pa8/tests/general/300-assembly-assembly-function-register-setup.t",
+      "new": "pa8/tests/spec/300-assembly-assembly-function-register-setup.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2764,7 +2764,7 @@
     },
     {
       "old": "pa36/tests/reject/100-assembly-function-runtime-input.t",
-      "new": "pa8/tests/general/300-assembly-assembly-function-runtime-input.t",
+      "new": "pa8/tests/spec/300-assembly-assembly-function-runtime-input.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2775,7 +2775,7 @@
     },
     {
       "old": "pa36/tests/reject/100-code-label-duplicate-owner.t",
-      "new": "pa8/tests/general/300-assembly-code-label-duplicate-owner.t",
+      "new": "pa8/tests/spec/300-assembly-code-label-duplicate-owner.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2786,7 +2786,7 @@
     },
     {
       "old": "pa36/tests/reject/100-code-label-unknown-block.t",
-      "new": "pa8/tests/general/300-assembly-code-label-unknown-block.t",
+      "new": "pa8/tests/spec/300-assembly-code-label-unknown-block.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2797,7 +2797,7 @@
     },
     {
       "old": "pa36/tests/reject/100-environment-prefix-bound.t",
-      "new": "pa8/tests/general/300-assembly-environment-prefix-bound.t",
+      "new": "pa8/tests/spec/300-assembly-environment-prefix-bound.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2808,7 +2808,7 @@
     },
     {
       "old": "pa36/tests/reject/100-exit-output-has-no-alternatives.t",
-      "new": "pa8/tests/general/300-assembly-exit-output-has-no-alternatives.t",
+      "new": "pa8/tests/spec/300-assembly-exit-output-has-no-alternatives.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2819,7 +2819,7 @@
     },
     {
       "old": "pa36/tests/reject/100-exit-output-needs-i32.t",
-      "new": "pa8/tests/general/300-assembly-exit-output-needs-i32.t",
+      "new": "pa8/tests/spec/300-assembly-exit-output-needs-i32.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2830,7 +2830,7 @@
     },
     {
       "old": "pa36/tests/reject/100-exit-output-without-label.t",
-      "new": "pa8/tests/general/300-assembly-exit-output-without-label.t",
+      "new": "pa8/tests/spec/300-assembly-exit-output-without-label.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2841,7 +2841,7 @@
     },
     {
       "old": "pa36/tests/reject/100-exit-tag-overflow.t",
-      "new": "pa8/tests/general/300-assembly-exit-tag-overflow.t",
+      "new": "pa8/tests/spec/300-assembly-exit-tag-overflow.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2852,7 +2852,7 @@
     },
     {
       "old": "pa36/tests/reject/100-exit-tag-runtime.t",
-      "new": "pa8/tests/general/300-assembly-exit-tag-runtime.t",
+      "new": "pa8/tests/spec/300-assembly-exit-tag-runtime.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2863,7 +2863,7 @@
     },
     {
       "old": "pa36/tests/reject/100-exit-tag-zero.t",
-      "new": "pa8/tests/general/300-assembly-exit-tag-zero.t",
+      "new": "pa8/tests/spec/300-assembly-exit-tag-zero.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2874,7 +2874,7 @@
     },
     {
       "old": "pa36/tests/reject/100-indirect-jump-nonpointer.t",
-      "new": "pa8/tests/general/300-assembly-indirect-jump-nonpointer.t",
+      "new": "pa8/tests/spec/300-assembly-indirect-jump-nonpointer.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2885,7 +2885,7 @@
     },
     {
       "old": "pa36/tests/reject/100-indirect-jump-unaddressed.t",
-      "new": "pa8/tests/general/300-assembly-indirect-jump-unaddressed.t",
+      "new": "pa8/tests/spec/300-assembly-indirect-jump-unaddressed.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2896,7 +2896,7 @@
     },
     {
       "old": "pa36/tests/reject/100-invalid-placeholder.t",
-      "new": "pa8/tests/general/300-assembly-invalid-placeholder.t",
+      "new": "pa8/tests/spec/300-assembly-invalid-placeholder.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2907,7 +2907,7 @@
     },
     {
       "old": "pa36/tests/reject/100-invalid-register-view.t",
-      "new": "pa8/tests/general/300-assembly-invalid-register-view.t",
+      "new": "pa8/tests/spec/300-assembly-invalid-register-view.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2918,7 +2918,7 @@
     },
     {
       "old": "pa36/tests/reject/100-invalid-tie.t",
-      "new": "pa8/tests/general/300-assembly-invalid-tie.t",
+      "new": "pa8/tests/spec/300-assembly-invalid-tie.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2929,7 +2929,7 @@
     },
     {
       "old": "pa36/tests/reject/100-label-needs-i32.t",
-      "new": "pa8/tests/general/300-assembly-label-needs-i32.t",
+      "new": "pa8/tests/spec/300-assembly-label-needs-i32.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2940,7 +2940,7 @@
     },
     {
       "old": "pa36/tests/reject/100-label-without-exit-output.t",
-      "new": "pa8/tests/general/300-assembly-label-without-exit-output.t",
+      "new": "pa8/tests/spec/300-assembly-label-without-exit-output.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2951,7 +2951,7 @@
     },
     {
       "old": "pa36/tests/reject/100-module-argument-bound.t",
-      "new": "pa8/tests/general/300-assembly-module-argument-bound.t",
+      "new": "pa8/tests/spec/300-assembly-module-argument-bound.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2962,7 +2962,7 @@
     },
     {
       "old": "pa36/tests/reject/100-module-output.t",
-      "new": "pa8/tests/general/300-assembly-module-output.t",
+      "new": "pa8/tests/spec/300-assembly-module-output.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2973,7 +2973,7 @@
     },
     {
       "old": "pa36/tests/reject/100-module-runtime-register.t",
-      "new": "pa8/tests/general/300-assembly-module-runtime-register.t",
+      "new": "pa8/tests/spec/300-assembly-module-runtime-register.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2984,7 +2984,7 @@
     },
     {
       "old": "pa36/tests/reject/100-noreturn-continuation.t",
-      "new": "pa8/tests/general/300-assembly-noreturn-continuation.t",
+      "new": "pa8/tests/spec/300-assembly-noreturn-continuation.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -2995,7 +2995,7 @@
     },
     {
       "old": "pa36/tests/reject/100-noreturn-output.t",
-      "new": "pa8/tests/general/300-assembly-noreturn-output.t",
+      "new": "pa8/tests/spec/300-assembly-noreturn-output.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -3006,7 +3006,7 @@
     },
     {
       "old": "pa36/tests/reject/100-overlapping-commutative-pairs.t",
-      "new": "pa8/tests/general/300-assembly-overlapping-commutative-pairs.t",
+      "new": "pa8/tests/spec/300-assembly-overlapping-commutative-pairs.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -3017,7 +3017,7 @@
     },
     {
       "old": "pa36/tests/reject/100-range-word-overflow.t",
-      "new": "pa8/tests/general/300-assembly-range-word-overflow.t",
+      "new": "pa8/tests/spec/300-assembly-range-word-overflow.t",
       "feature": "assembly.transport",
       "disposition": "required reader rejection",
       "companions": [
@@ -3025,6 +3025,1995 @@
         "pa36/tests/reject/100-range-word-overflow.t"
       ],
       "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-atomic-update-run.t",
+      "new": "pa30/tests/run/800-gnu-asm-atomic-update-run.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-atomic-update-run.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-atomic-update-run.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-atomic-update-run.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-atomic-update-run.t",
+        "pa29/tests/run/800-gnu-asm-atomic-update-run.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-bit-flags.t",
+      "new": "pa30/tests/run/800-gnu-asm-bit-flags.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-bit-flags.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-bit-flags.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-bit-flags.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-bit-flags.t",
+        "pa29/tests/run/800-gnu-asm-bit-flags.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-cpuid-bits.t",
+      "new": "pa30/tests/run/800-gnu-asm-cpuid-bits.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-cpuid-bits.lib.provider.c",
+        "pa29/tests/run/800-gnu-asm-cpuid-bits.link.flags",
+        "pa29/tests/run/800-gnu-asm-cpuid-bits.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-cpuid-bits.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-cpuid-bits.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-cpuid-bits.t",
+        "pa29/tests/run/800-gnu-asm-cpuid-bits.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-cpuid-flags.t",
+      "new": "pa30/tests/run/800-gnu-asm-cpuid-flags.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-cpuid-flags.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-cpuid-flags.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-cpuid-flags.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-cpuid-flags.t",
+        "pa29/tests/run/800-gnu-asm-cpuid-flags.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-cpuid-once.t",
+      "new": "pa30/tests/run/800-gnu-asm-cpuid-once.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-cpuid-once.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-cpuid-once.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-cpuid-once.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-cpuid-once.t",
+        "pa29/tests/run/800-gnu-asm-cpuid-once.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-label-overload-run.t",
+      "new": "pa30/tests/run/800-gnu-asm-label-overload-run.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-label-overload-run.lib.provider.c",
+        "pa29/tests/run/800-gnu-asm-label-overload-run.link.flags",
+        "pa29/tests/run/800-gnu-asm-label-overload-run.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-label-overload-run.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-label-overload-run.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-label-overload-run.t",
+        "pa29/tests/run/800-gnu-asm-label-overload-run.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-label-using-declaration-run.t",
+      "new": "pa30/tests/run/800-gnu-asm-label-using-declaration-run.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-label-using-declaration-run.lib.provider.c",
+        "pa29/tests/run/800-gnu-asm-label-using-declaration-run.link.flags",
+        "pa29/tests/run/800-gnu-asm-label-using-declaration-run.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-label-using-declaration-run.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-label-using-declaration-run.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-label-using-declaration-run.t",
+        "pa29/tests/run/800-gnu-asm-label-using-declaration-run.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-leading-underscore-label-run.t",
+      "new": "pa30/tests/run/800-gnu-asm-leading-underscore-label-run.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-leading-underscore-label-run.lib.provider.c",
+        "pa29/tests/run/800-gnu-asm-leading-underscore-label-run.link.flags",
+        "pa29/tests/run/800-gnu-asm-leading-underscore-label-run.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-leading-underscore-label-run.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-leading-underscore-label-run.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-leading-underscore-label-run.t",
+        "pa29/tests/run/800-gnu-asm-leading-underscore-label-run.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-pand-bits.t",
+      "new": "pa30/tests/run/800-gnu-asm-pand-bits.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-pand-bits.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-pand-bits.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-pand-bits.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-pand-bits.t",
+        "pa29/tests/run/800-gnu-asm-pand-bits.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-pand-flags.t",
+      "new": "pa30/tests/run/800-gnu-asm-pand-flags.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-pand-flags.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-pand-flags.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-pand-flags.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-pand-flags.t",
+        "pa29/tests/run/800-gnu-asm-pand-flags.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-pand-once.t",
+      "new": "pa30/tests/run/800-gnu-asm-pand-once.t",
+      "feature": "hosted.gnu_abi_consumer",
+      "disposition": "retained required hosted integration",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-pand-once.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-pand-once.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-pand-once.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-pand-once.t",
+        "pa29/tests/run/800-gnu-asm-pand-once.t.1"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-assembly-syntax-mode.t",
+      "new": "pa29/tests/reject/100-assembly-syntax-mode.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-assembly-syntax-mode.assembly-profile",
+        "pa36/tests/reject/100-assembly-syntax-mode.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-bitfield-memory-only.t",
+      "new": "pa29/tests/reject/100-bitfield-memory-only.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-bitfield-memory-only.assembly-profile",
+        "pa36/tests/reject/100-bitfield-memory-only.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-bswap-word.t",
+      "new": "pa29/tests/reject/100-bswap-word.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-bswap-word.assembly-profile",
+        "pa36/tests/reject/100-bswap-word.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-cfi-cfa-overflow.t",
+      "new": "pa29/tests/reject/100-cfi-cfa-overflow.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-cfi-cfa-overflow.assembly-profile",
+        "pa36/tests/reject/100-cfi-cfa-overflow.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-cfi-data-section.t",
+      "new": "pa29/tests/reject/100-cfi-data-section.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-cfi-data-section.assembly-profile",
+        "pa36/tests/reject/100-cfi-data-section.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-cfi-invalid-saved-offset.t",
+      "new": "pa29/tests/reject/100-cfi-invalid-saved-offset.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-cfi-invalid-saved-offset.assembly-profile",
+        "pa36/tests/reject/100-cfi-invalid-saved-offset.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-cfi-nested-procedure.t",
+      "new": "pa29/tests/reject/100-cfi-nested-procedure.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-cfi-nested-procedure.assembly-profile",
+        "pa36/tests/reject/100-cfi-nested-procedure.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-cfi-outside-procedure.t",
+      "new": "pa29/tests/reject/100-cfi-outside-procedure.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-cfi-outside-procedure.assembly-profile",
+        "pa36/tests/reject/100-cfi-outside-procedure.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-cfi-relative-without-cfa.t",
+      "new": "pa29/tests/reject/100-cfi-relative-without-cfa.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-cfi-relative-without-cfa.assembly-profile",
+        "pa36/tests/reject/100-cfi-relative-without-cfa.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-cfi-unclosed-procedure.t",
+      "new": "pa29/tests/reject/100-cfi-unclosed-procedure.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-cfi-unclosed-procedure.assembly-profile",
+        "pa36/tests/reject/100-cfi-unclosed-procedure.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-cfi-unmatched-restore.t",
+      "new": "pa29/tests/reject/100-cfi-unmatched-restore.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-cfi-unmatched-restore.assembly-profile",
+        "pa36/tests/reject/100-cfi-unmatched-restore.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-cmov-byte.t",
+      "new": "pa29/tests/reject/100-cmov-byte.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-cmov-byte.assembly-profile",
+        "pa36/tests/reject/100-cmov-byte.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-computed-goto-integer.t",
+      "new": "pa29/tests/reject/100-computed-goto-integer.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-computed-goto-integer.assembly-profile",
+        "pa36/tests/reject/100-computed-goto-integer.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-dangling-prefix.t",
+      "new": "pa29/tests/reject/100-dangling-prefix.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-dangling-prefix.assembly-profile",
+        "pa36/tests/reject/100-dangling-prefix.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-duplicate-local-label.t",
+      "new": "pa29/tests/reject/100-duplicate-local-label.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-duplicate-local-label.assembly-profile",
+        "pa36/tests/reject/100-duplicate-local-label.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-evex-integer-decorator.t",
+      "new": "pa29/tests/reject/100-evex-integer-decorator.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-evex-integer-decorator.assembly-profile",
+        "pa36/tests/reject/100-evex-integer-decorator.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-evex-unmaskable.t",
+      "new": "pa29/tests/reject/100-evex-unmaskable.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-evex-unmaskable.assembly-profile",
+        "pa36/tests/reject/100-evex-unmaskable.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-evex-wrong-broadcast.t",
+      "new": "pa29/tests/reject/100-evex-wrong-broadcast.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-evex-wrong-broadcast.assembly-profile",
+        "pa36/tests/reject/100-evex-wrong-broadcast.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-evex-zero-without-mask.t",
+      "new": "pa29/tests/reject/100-evex-zero-without-mask.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-evex-zero-without-mask.assembly-profile",
+        "pa36/tests/reject/100-evex-zero-without-mask.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-extend-high-byte-rex.t",
+      "new": "pa29/tests/reject/100-extend-high-byte-rex.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-extend-high-byte-rex.assembly-profile",
+        "pa36/tests/reject/100-extend-high-byte-rex.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-extend-zero-dword.t",
+      "new": "pa29/tests/reject/100-extend-zero-dword.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-extend-zero-dword.assembly-profile",
+        "pa36/tests/reject/100-extend-zero-dword.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-gnu-invalid-tie.t",
+      "new": "pa29/tests/reject/100-gnu-invalid-tie.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-gnu-invalid-tie.assembly-profile",
+        "pa36/tests/reject/100-gnu-invalid-tie.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-goto-bypasses-initialization.t",
+      "new": "pa29/tests/reject/100-goto-bypasses-initialization.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-goto-bypasses-initialization.assembly-profile",
+        "pa36/tests/reject/100-goto-bypasses-initialization.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-goto-missing-label.t",
+      "new": "pa29/tests/reject/100-goto-missing-label.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-goto-missing-label.assembly-profile",
+        "pa36/tests/reject/100-goto-missing-label.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-goto-reference-needs-label-modifier.t",
+      "new": "pa29/tests/reject/100-goto-reference-needs-label-modifier.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-goto-reference-needs-label-modifier.assembly-profile",
+        "pa36/tests/reject/100-goto-reference-needs-label-modifier.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-immediate-domain-boundary.t",
+      "new": "pa29/tests/reject/100-immediate-domain-boundary.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-immediate-domain-boundary.assembly-profile",
+        "pa36/tests/reject/100-immediate-domain-boundary.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-immediate-not-constant.t",
+      "new": "pa29/tests/reject/100-immediate-not-constant.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-immediate-not-constant.assembly-profile",
+        "pa36/tests/reject/100-immediate-not-constant.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-label-address-undefined.t",
+      "new": "pa29/tests/reject/100-label-address-undefined.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-label-address-undefined.assembly-profile",
+        "pa36/tests/reject/100-label-address-undefined.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-lock-bit-test.t",
+      "new": "pa29/tests/reject/100-lock-bit-test.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-lock-bit-test.assembly-profile",
+        "pa36/tests/reject/100-lock-bit-test.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-lock-branch.t",
+      "new": "pa29/tests/reject/100-lock-branch.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-lock-branch.assembly-profile",
+        "pa36/tests/reject/100-lock-branch.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-lock-register-target.t",
+      "new": "pa29/tests/reject/100-lock-register-target.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-lock-register-target.assembly-profile",
+        "pa36/tests/reject/100-lock-register-target.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-duplicate.t",
+      "new": "pa29/tests/reject/100-macro-duplicate.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-duplicate.assembly-profile",
+        "pa36/tests/reject/100-macro-duplicate.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-excessive-repeat.t",
+      "new": "pa29/tests/reject/100-macro-excessive-repeat.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-excessive-repeat.assembly-profile",
+        "pa36/tests/reject/100-macro-excessive-repeat.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-exitm-outside.t",
+      "new": "pa29/tests/reject/100-macro-exitm-outside.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-exitm-outside.assembly-profile",
+        "pa36/tests/reject/100-macro-exitm-outside.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-expression-zero-divisor.t",
+      "new": "pa29/tests/reject/100-macro-expression-zero-divisor.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-expression-zero-divisor.assembly-profile",
+        "pa36/tests/reject/100-macro-expression-zero-divisor.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-keyword-duplicate.t",
+      "new": "pa29/tests/reject/100-macro-keyword-duplicate.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-keyword-duplicate.assembly-profile",
+        "pa36/tests/reject/100-macro-keyword-duplicate.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-mismatched-argument.t",
+      "new": "pa29/tests/reject/100-macro-mismatched-argument.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-mismatched-argument.assembly-profile",
+        "pa36/tests/reject/100-macro-mismatched-argument.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-recursion.t",
+      "new": "pa29/tests/reject/100-macro-recursion.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-recursion.assembly-profile",
+        "pa36/tests/reject/100-macro-recursion.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-required.t",
+      "new": "pa29/tests/reject/100-macro-required.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-required.assembly-profile",
+        "pa36/tests/reject/100-macro-required.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-unclosed-if.t",
+      "new": "pa29/tests/reject/100-macro-unclosed-if.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-unclosed-if.assembly-profile",
+        "pa36/tests/reject/100-macro-unclosed-if.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-unclosed.t",
+      "new": "pa29/tests/reject/100-macro-unclosed.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-unclosed.assembly-profile",
+        "pa36/tests/reject/100-macro-unclosed.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-macro-unmatched.t",
+      "new": "pa29/tests/reject/100-macro-unmatched.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-macro-unmatched.assembly-profile",
+        "pa36/tests/reject/100-macro-unmatched.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-mask-clobber-conflict.t",
+      "new": "pa29/tests/reject/100-mask-clobber-conflict.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-mask-clobber-conflict.assembly-profile",
+        "pa36/tests/reject/100-mask-clobber-conflict.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-module-alias-cycle.t",
+      "new": "pa29/tests/reject/100-module-alias-cycle.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-module-alias-cycle.assembly-profile",
+        "pa36/tests/reject/100-module-alias-cycle.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-module-bss-nonzero.t",
+      "new": "pa29/tests/reject/100-module-bss-nonzero.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-module-bss-nonzero.assembly-profile",
+        "pa36/tests/reject/100-module-bss-nonzero.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-module-duplicate-definition.t",
+      "new": "pa29/tests/reject/100-module-duplicate-definition.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-module-duplicate-definition.assembly-profile",
+        "pa36/tests/reject/100-module-duplicate-definition.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-module-empty-section-stack.t",
+      "new": "pa29/tests/reject/100-module-empty-section-stack.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-module-empty-section-stack.assembly-profile",
+        "pa36/tests/reject/100-module-empty-section-stack.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-module-unbounded-storage.t",
+      "new": "pa29/tests/reject/100-module-unbounded-storage.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-module-unbounded-storage.assembly-profile",
+        "pa36/tests/reject/100-module-unbounded-storage.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-module-unknown-section-flags.t",
+      "new": "pa29/tests/reject/100-module-unknown-section-flags.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-module-unknown-section-flags.assembly-profile",
+        "pa36/tests/reject/100-module-unknown-section-flags.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-movsxd-no-extension.t",
+      "new": "pa29/tests/reject/100-movsxd-no-extension.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-movsxd-no-extension.assembly-profile",
+        "pa36/tests/reject/100-movsxd-no-extension.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-naked-always-inline.t",
+      "new": "pa29/tests/reject/100-naked-always-inline.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-naked-always-inline.assembly-profile",
+        "pa36/tests/reject/100-naked-always-inline.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-naked-cpp-body.t",
+      "new": "pa29/tests/reject/100-naked-cpp-body.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-naked-cpp-body.assembly-profile",
+        "pa36/tests/reject/100-naked-cpp-body.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-naked-extended.t",
+      "new": "pa29/tests/reject/100-naked-extended.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-naked-extended.assembly-profile",
+        "pa36/tests/reject/100-naked-extended.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-repeat-arithmetic.t",
+      "new": "pa29/tests/reject/100-repeat-arithmetic.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-repeat-arithmetic.assembly-profile",
+        "pa36/tests/reject/100-repeat-arithmetic.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-setcc-wide.t",
+      "new": "pa29/tests/reject/100-setcc-wide.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-setcc-wide.assembly-profile",
+        "pa36/tests/reject/100-setcc-wide.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-symbol-is-not-numeric.t",
+      "new": "pa29/tests/reject/100-symbol-is-not-numeric.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-symbol-is-not-numeric.assembly-profile",
+        "pa36/tests/reject/100-symbol-is-not-numeric.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-symbol-needs-constant-address.t",
+      "new": "pa29/tests/reject/100-symbol-needs-constant-address.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-symbol-needs-constant-address.assembly-profile",
+        "pa36/tests/reject/100-symbol-needs-constant-address.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-undefined-local-branch.t",
+      "new": "pa29/tests/reject/100-undefined-local-branch.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-undefined-local-branch.assembly-profile",
+        "pa36/tests/reject/100-undefined-local-branch.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-upper-vector-clobber-conflict.t",
+      "new": "pa29/tests/reject/100-upper-vector-clobber-conflict.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-upper-vector-clobber-conflict.assembly-profile",
+        "pa36/tests/reject/100-upper-vector-clobber-conflict.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-vex-immediate-width.t",
+      "new": "pa29/tests/reject/100-vex-immediate-width.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-vex-immediate-width.assembly-profile",
+        "pa36/tests/reject/100-vex-immediate-width.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-vex-legacy-prefix.t",
+      "new": "pa29/tests/reject/100-vex-legacy-prefix.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-vex-legacy-prefix.assembly-profile",
+        "pa36/tests/reject/100-vex-legacy-prefix.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-vex-width-mismatch.t",
+      "new": "pa29/tests/reject/100-vex-width-mismatch.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-vex-width-mismatch.assembly-profile",
+        "pa36/tests/reject/100-vex-width-mismatch.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/reject/100-wide-cas-register.t",
+      "new": "pa29/tests/reject/100-wide-cas-register.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/reject/100-wide-cas-register.assembly-profile",
+        "pa36/tests/reject/100-wide-cas-register.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/100-immediate-domains.t",
+      "new": "pa29/tests/source/100-immediate-domains.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/100-immediate-domains.assembly-profile",
+        "pa36/tests/source/100-immediate-domains.driver.cpp",
+        "pa36/tests/source/100-immediate-domains.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/100-memory-objects.t",
+      "new": "pa29/tests/source/100-memory-objects.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/100-memory-objects.assembly-profile",
+        "pa36/tests/source/100-memory-objects.driver.cpp",
+        "pa36/tests/source/100-memory-objects.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/100-stream.t",
+      "new": "pa29/tests/source/100-stream.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/100-stream.assembly-profile",
+        "pa36/tests/source/100-stream.driver.cpp",
+        "pa36/tests/source/100-stream.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-absolute-symbol-move.t",
+      "new": "pa29/tests/source/200-absolute-symbol-move.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-absolute-symbol-move.assembly-link-mode",
+        "pa36/tests/source/200-absolute-symbol-move.assembly-profile",
+        "pa36/tests/source/200-absolute-symbol-move.driver.cpp",
+        "pa36/tests/source/200-absolute-symbol-move.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-aliased-outputs.t",
+      "new": "pa29/tests/source/200-aliased-outputs.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-aliased-outputs.assembly-profile",
+        "pa36/tests/source/200-aliased-outputs.driver.cpp",
+        "pa36/tests/source/200-aliased-outputs.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-aligned-frame-clobber.t",
+      "new": "pa29/tests/source/200-aligned-frame-clobber.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-aligned-frame-clobber.assembly-profile",
+        "pa36/tests/source/200-aligned-frame-clobber.driver.cpp",
+        "pa36/tests/source/200-aligned-frame-clobber.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-bit-forms.t",
+      "new": "pa29/tests/source/200-bit-forms.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-bit-forms.assembly-profile",
+        "pa36/tests/source/200-bit-forms.driver.cpp",
+        "pa36/tests/source/200-bit-forms.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-bitfield-conditional-places.t",
+      "new": "pa29/tests/source/200-bitfield-conditional-places.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-bitfield-conditional-places.assembly-profile",
+        "pa36/tests/source/200-bitfield-conditional-places.driver.cpp",
+        "pa36/tests/source/200-bitfield-conditional-places.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-bitfield-output-places.t",
+      "new": "pa29/tests/source/200-bitfield-output-places.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-bitfield-output-places.assembly-profile",
+        "pa36/tests/source/200-bitfield-output-places.driver.cpp",
+        "pa36/tests/source/200-bitfield-output-places.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-computed-goto-cleanup.t",
+      "new": "pa29/tests/source/200-computed-goto-cleanup.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-computed-goto-cleanup.assembly-profile",
+        "pa36/tests/source/200-computed-goto-cleanup.driver.cpp",
+        "pa36/tests/source/200-computed-goto-cleanup.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-computed-goto.t",
+      "new": "pa29/tests/source/200-computed-goto.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-computed-goto.assembly-profile",
+        "pa36/tests/source/200-computed-goto.driver.cpp",
+        "pa36/tests/source/200-computed-goto.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-cpuid.t",
+      "new": "pa29/tests/source/200-cpuid.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-cpuid.assembly-profile",
+        "pa36/tests/source/200-cpuid.driver.cpp",
+        "pa36/tests/source/200-cpuid.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-dialect-switch.t",
+      "new": "pa29/tests/source/200-dialect-switch.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-dialect-switch.assembly-profile",
+        "pa36/tests/source/200-dialect-switch.driver.cpp",
+        "pa36/tests/source/200-dialect-switch.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-early-matching.t",
+      "new": "pa29/tests/source/200-early-matching.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-early-matching.assembly-profile",
+        "pa36/tests/source/200-early-matching.driver.cpp",
+        "pa36/tests/source/200-early-matching.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-evex-fixed-clobbers.t",
+      "new": "pa29/tests/source/200-evex-fixed-clobbers.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-evex-fixed-clobbers.assembly-instructions",
+        "pa36/tests/source/200-evex-fixed-clobbers.assembly-profile",
+        "pa36/tests/source/200-evex-fixed-clobbers.driver.cpp",
+        "pa36/tests/source/200-evex-fixed-clobbers.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-extend-moves.t",
+      "new": "pa29/tests/source/200-extend-moves.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-extend-moves.assembly-profile",
+        "pa36/tests/source/200-extend-moves.driver.cpp",
+        "pa36/tests/source/200-extend-moves.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-flag-outputs.t",
+      "new": "pa29/tests/source/200-flag-outputs.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-flag-outputs.assembly-profile",
+        "pa36/tests/source/200-flag-outputs.driver.cpp",
+        "pa36/tests/source/200-flag-outputs.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-goto-cleanups.t",
+      "new": "pa29/tests/source/200-goto-cleanups.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-goto-cleanups.assembly-profile",
+        "pa36/tests/source/200-goto-cleanups.driver.cpp",
+        "pa36/tests/source/200-goto-cleanups.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-goto-exits.t",
+      "new": "pa29/tests/source/200-goto-exits.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-goto-exits.assembly-profile",
+        "pa36/tests/source/200-goto-exits.driver.cpp",
+        "pa36/tests/source/200-goto-exits.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-goto-scope-cleanup.t",
+      "new": "pa29/tests/source/200-goto-scope-cleanup.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-goto-scope-cleanup.assembly-profile",
+        "pa36/tests/source/200-goto-scope-cleanup.driver.cpp",
+        "pa36/tests/source/200-goto-scope-cleanup.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-inline-data-alignment.t",
+      "new": "pa29/tests/source/200-inline-data-alignment.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-inline-data-alignment.assembly-profile",
+        "pa36/tests/source/200-inline-data-alignment.driver.cpp",
+        "pa36/tests/source/200-inline-data-alignment.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-inline-macro-operands.t",
+      "new": "pa29/tests/source/200-inline-macro-operands.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-inline-macro-operands.assembly-profile",
+        "pa36/tests/source/200-inline-macro-operands.driver.cpp",
+        "pa36/tests/source/200-inline-macro-operands.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-integer-forms.t",
+      "new": "pa29/tests/source/200-integer-forms.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-integer-forms.assembly-profile",
+        "pa36/tests/source/200-integer-forms.driver.cpp",
+        "pa36/tests/source/200-integer-forms.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-local-branches.t",
+      "new": "pa29/tests/source/200-local-branches.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-local-branches.assembly-profile",
+        "pa36/tests/source/200-local-branches.driver.cpp",
+        "pa36/tests/source/200-local-branches.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-locked-atomics.t",
+      "new": "pa29/tests/source/200-locked-atomics.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-locked-atomics.assembly-profile",
+        "pa36/tests/source/200-locked-atomics.driver.cpp",
+        "pa36/tests/source/200-locked-atomics.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-macro-definition-order.t",
+      "new": "pa29/tests/source/200-macro-definition-order.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-macro-definition-order.assembly-profile",
+        "pa36/tests/source/200-macro-definition-order.driver.cpp",
+        "pa36/tests/source/200-macro-definition-order.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-mask-register-operands.t",
+      "new": "pa29/tests/source/200-mask-register-operands.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-mask-register-operands.assembly-instructions",
+        "pa36/tests/source/200-mask-register-operands.assembly-profile",
+        "pa36/tests/source/200-mask-register-operands.driver.cpp",
+        "pa36/tests/source/200-mask-register-operands.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-memory-alternatives.t",
+      "new": "pa29/tests/source/200-memory-alternatives.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-memory-alternatives.assembly-profile",
+        "pa36/tests/source/200-memory-alternatives.driver.cpp",
+        "pa36/tests/source/200-memory-alternatives.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-module-code-data.t",
+      "new": "pa29/tests/source/200-module-code-data.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-module-code-data.assembly-profile",
+        "pa36/tests/source/200-module-code-data.driver.cpp",
+        "pa36/tests/source/200-module-code-data.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-module-macro-control.t",
+      "new": "pa29/tests/source/200-module-macro-control.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-module-macro-control.assembly-profile",
+        "pa36/tests/source/200-module-macro-control.driver.cpp",
+        "pa36/tests/source/200-module-macro-control.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-module-macros.t",
+      "new": "pa29/tests/source/200-module-macros.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-module-macros.assembly-profile",
+        "pa36/tests/source/200-module-macros.driver.cpp",
+        "pa36/tests/source/200-module-macros.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-module-personality-absolute.t",
+      "new": "pa29/tests/source/200-module-personality-absolute.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-module-personality-absolute.assembly-link-mode",
+        "pa36/tests/source/200-module-personality-absolute.assembly-profile",
+        "pa36/tests/source/200-module-personality-absolute.driver.cpp",
+        "pa36/tests/source/200-module-personality-absolute.platforms",
+        "pa36/tests/source/200-module-personality-absolute.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-module-personality-wide.t",
+      "new": "pa29/tests/source/200-module-personality-wide.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-module-personality-wide.assembly-profile",
+        "pa36/tests/source/200-module-personality-wide.driver.cpp",
+        "pa36/tests/source/200-module-personality-wide.platforms",
+        "pa36/tests/source/200-module-personality-wide.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-module-personality.t",
+      "new": "pa29/tests/source/200-module-personality.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-module-personality.assembly-profile",
+        "pa36/tests/source/200-module-personality.driver.cpp",
+        "pa36/tests/source/200-module-personality.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-module-storage.t",
+      "new": "pa29/tests/source/200-module-storage.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-module-storage.assembly-profile",
+        "pa36/tests/source/200-module-storage.driver.cpp",
+        "pa36/tests/source/200-module-storage.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-module-unwind-simple.t",
+      "new": "pa29/tests/source/200-module-unwind-simple.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-module-unwind-simple.assembly-profile",
+        "pa36/tests/source/200-module-unwind-simple.driver.cpp",
+        "pa36/tests/source/200-module-unwind-simple.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-module-unwind.t",
+      "new": "pa29/tests/source/200-module-unwind.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-module-unwind.assembly-profile",
+        "pa36/tests/source/200-module-unwind.driver.cpp",
+        "pa36/tests/source/200-module-unwind.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-module-weak-replacement.t",
+      "new": "pa29/tests/source/200-module-weak-replacement.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-module-weak-replacement.assembly-profile",
+        "pa36/tests/source/200-module-weak-replacement.driver.cpp",
+        "pa36/tests/source/200-module-weak-replacement.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-naked-abi.t",
+      "new": "pa29/tests/source/200-naked-abi.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-naked-abi.assembly-profile",
+        "pa36/tests/source/200-naked-abi.driver.cpp",
+        "pa36/tests/source/200-naked-abi.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-naked-cfi-escape.t",
+      "new": "pa29/tests/source/200-naked-cfi-escape.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-naked-cfi-escape.assembly-profile",
+        "pa36/tests/source/200-naked-cfi-escape.driver.cpp",
+        "pa36/tests/source/200-naked-cfi-escape.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-naked-specialization.t",
+      "new": "pa29/tests/source/200-naked-specialization.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-naked-specialization.assembly-profile",
+        "pa36/tests/source/200-naked-specialization.driver.cpp",
+        "pa36/tests/source/200-naked-specialization.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-naked-template-virtual.t",
+      "new": "pa29/tests/source/200-naked-template-virtual.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-naked-template-virtual.assembly-profile",
+        "pa36/tests/source/200-naked-template-virtual.driver.cpp",
+        "pa36/tests/source/200-naked-template-virtual.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-naked-unwind.t",
+      "new": "pa29/tests/source/200-naked-unwind.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-naked-unwind.assembly-profile",
+        "pa36/tests/source/200-naked-unwind.driver.cpp",
+        "pa36/tests/source/200-naked-unwind.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-raw-module-macro-uniques.t",
+      "new": "pa29/tests/source/200-raw-module-macro-uniques.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-raw-module-macro-uniques.assembly-profile",
+        "pa36/tests/source/200-raw-module-macro-uniques.driver.cpp",
+        "pa36/tests/source/200-raw-module-macro-uniques.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-register-bank-transfers.t",
+      "new": "pa29/tests/source/200-register-bank-transfers.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-register-bank-transfers.assembly-profile",
+        "pa36/tests/source/200-register-bank-transfers.driver.cpp",
+        "pa36/tests/source/200-register-bank-transfers.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-repeated-copy.t",
+      "new": "pa29/tests/source/200-repeated-copy.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-repeated-copy.assembly-profile",
+        "pa36/tests/source/200-repeated-copy.driver.cpp",
+        "pa36/tests/source/200-repeated-copy.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-scalar-string-moves.t",
+      "new": "pa29/tests/source/200-scalar-string-moves.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-scalar-string-moves.assembly-profile",
+        "pa36/tests/source/200-scalar-string-moves.driver.cpp",
+        "pa36/tests/source/200-scalar-string-moves.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-symbol-addresses.t",
+      "new": "pa29/tests/source/200-symbol-addresses.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-symbol-addresses.assembly-profile",
+        "pa36/tests/source/200-symbol-addresses.driver.cpp",
+        "pa36/tests/source/200-symbol-addresses.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-symbol-calls.t",
+      "new": "pa29/tests/source/200-symbol-calls.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-symbol-calls.assembly-profile",
+        "pa36/tests/source/200-symbol-calls.driver.cpp",
+        "pa36/tests/source/200-symbol-calls.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-traps-and-flags.t",
+      "new": "pa29/tests/source/200-traps-and-flags.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-traps-and-flags.assembly-instructions",
+        "pa36/tests/source/200-traps-and-flags.assembly-profile",
+        "pa36/tests/source/200-traps-and-flags.driver.cpp",
+        "pa36/tests/source/200-traps-and-flags.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-upper-vector-class.t",
+      "new": "pa29/tests/source/200-upper-vector-class.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-upper-vector-class.assembly-instructions",
+        "pa36/tests/source/200-upper-vector-class.assembly-profile",
+        "pa36/tests/source/200-upper-vector-class.driver.cpp",
+        "pa36/tests/source/200-upper-vector-class.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-vector-output.t",
+      "new": "pa29/tests/source/200-vector-output.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-vector-output.assembly-profile",
+        "pa36/tests/source/200-vector-output.driver.cpp",
+        "pa36/tests/source/200-vector-output.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-vex-fixed-clobbers.t",
+      "new": "pa29/tests/source/200-vex-fixed-clobbers.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-vex-fixed-clobbers.assembly-profile",
+        "pa36/tests/source/200-vex-fixed-clobbers.driver.cpp",
+        "pa36/tests/source/200-vex-fixed-clobbers.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-wide-vector-operands.t",
+      "new": "pa29/tests/source/200-wide-vector-operands.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-wide-vector-operands.assembly-profile",
+        "pa36/tests/source/200-wide-vector-operands.driver.cpp",
+        "pa36/tests/source/200-wide-vector-operands.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/200-zmm-vector-operands.t",
+      "new": "pa29/tests/source/200-zmm-vector-operands.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/200-zmm-vector-operands.assembly-instructions",
+        "pa36/tests/source/200-zmm-vector-operands.assembly-profile",
+        "pa36/tests/source/200-zmm-vector-operands.driver.cpp",
+        "pa36/tests/source/200-zmm-vector-operands.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/300-live-clobbers.t",
+      "new": "pa29/tests/source/300-live-clobbers.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/300-live-clobbers.assembly-profile",
+        "pa36/tests/source/300-live-clobbers.driver.cpp",
+        "pa36/tests/source/300-live-clobbers.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/source/300-memory-effects.t",
+      "new": "pa29/tests/source/300-memory-effects.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/source/300-memory-effects.assembly-profile",
+        "pa36/tests/source/300-memory-effects.driver.cpp",
+        "pa36/tests/source/300-memory-effects.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/100-stream.t",
+      "new": "pa29/tests/spec/100-stream.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/100-stream.assembly-profile",
+        "pa36/tests/spec/100-stream.driver.cpp",
+        "pa36/tests/spec/100-stream.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-aliased-outputs.t",
+      "new": "pa29/tests/spec/200-aliased-outputs.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-aliased-outputs.assembly-profile",
+        "pa36/tests/spec/200-aliased-outputs.driver.cpp",
+        "pa36/tests/spec/200-aliased-outputs.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-assembly-function-standalone.t",
+      "new": "pa29/tests/spec/200-assembly-function-standalone.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-assembly-function-standalone.assembly-profile",
+        "pa36/tests/spec/200-assembly-function-standalone.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-assembly-functions.t",
+      "new": "pa29/tests/spec/200-assembly-functions.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-assembly-functions.assembly-profile",
+        "pa36/tests/spec/200-assembly-functions.driver.cpp",
+        "pa36/tests/spec/200-assembly-functions.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-assembly-unwind.t",
+      "new": "pa29/tests/spec/200-assembly-unwind.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-assembly-unwind.assembly-profile",
+        "pa36/tests/spec/200-assembly-unwind.driver.cpp",
+        "pa36/tests/spec/200-assembly-unwind.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-code-labels.t",
+      "new": "pa29/tests/spec/200-code-labels.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-code-labels.assembly-profile",
+        "pa36/tests/spec/200-code-labels.driver.cpp",
+        "pa36/tests/spec/200-code-labels.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-commutative-locations.t",
+      "new": "pa29/tests/spec/200-commutative-locations.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-commutative-locations.assembly-profile",
+        "pa36/tests/spec/200-commutative-locations.driver.cpp",
+        "pa36/tests/spec/200-commutative-locations.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-cpuid.t",
+      "new": "pa29/tests/spec/200-cpuid.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-cpuid.assembly-profile",
+        "pa36/tests/spec/200-cpuid.driver.cpp",
+        "pa36/tests/spec/200-cpuid.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-distinct-storage-output.t",
+      "new": "pa29/tests/spec/200-distinct-storage-output.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-distinct-storage-output.assembly-profile",
+        "pa36/tests/spec/200-distinct-storage-output.driver.cpp",
+        "pa36/tests/spec/200-distinct-storage-output.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-evex-native.t",
+      "new": "pa29/tests/spec/200-evex-native.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-evex-native.assembly-instructions",
+        "pa36/tests/spec/200-evex-native.assembly-profile",
+        "pa36/tests/spec/200-evex-native.driver.cpp",
+        "pa36/tests/spec/200-evex-native.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-exit-tags.t",
+      "new": "pa29/tests/spec/200-exit-tags.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-exit-tags.assembly-profile",
+        "pa36/tests/spec/200-exit-tags.driver.cpp",
+        "pa36/tests/spec/200-exit-tags.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-flag-state-input.t",
+      "new": "pa29/tests/spec/200-flag-state-input.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-flag-state-input.assembly-profile",
+        "pa36/tests/spec/200-flag-state-input.driver.cpp",
+        "pa36/tests/spec/200-flag-state-input.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-immediate-invocations.t",
+      "new": "pa29/tests/spec/200-immediate-invocations.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-immediate-invocations.assembly-profile",
+        "pa36/tests/spec/200-immediate-invocations.driver.cpp",
+        "pa36/tests/spec/200-immediate-invocations.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-joint-memory-column.t",
+      "new": "pa29/tests/spec/200-joint-memory-column.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-joint-memory-column.assembly-profile",
+        "pa36/tests/spec/200-joint-memory-column.driver.cpp",
+        "pa36/tests/spec/200-joint-memory-column.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-local-branches.t",
+      "new": "pa29/tests/spec/200-local-branches.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-local-branches.assembly-profile",
+        "pa36/tests/spec/200-local-branches.driver.cpp",
+        "pa36/tests/spec/200-local-branches.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-macro-environment.t",
+      "new": "pa29/tests/spec/200-macro-environment.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-macro-environment.assembly-profile",
+        "pa36/tests/spec/200-macro-environment.driver.cpp",
+        "pa36/tests/spec/200-macro-environment.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-mask-register-operands.t",
+      "new": "pa29/tests/spec/200-mask-register-operands.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-mask-register-operands.assembly-instructions",
+        "pa36/tests/spec/200-mask-register-operands.assembly-profile",
+        "pa36/tests/spec/200-mask-register-operands.driver.cpp",
+        "pa36/tests/spec/200-mask-register-operands.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-module-arguments.t",
+      "new": "pa29/tests/spec/200-module-arguments.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-module-arguments.assembly-profile",
+        "pa36/tests/spec/200-module-arguments.driver.cpp",
+        "pa36/tests/spec/200-module-arguments.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-module-dialect-switch.t",
+      "new": "pa29/tests/spec/200-module-dialect-switch.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-module-dialect-switch.assembly-profile",
+        "pa36/tests/spec/200-module-dialect-switch.driver.cpp",
+        "pa36/tests/spec/200-module-dialect-switch.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-module-macro-typed-symbols.t",
+      "new": "pa29/tests/spec/200-module-macro-typed-symbols.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-module-macro-typed-symbols.assembly-profile",
+        "pa36/tests/spec/200-module-macro-typed-symbols.driver.cpp",
+        "pa36/tests/spec/200-module-macro-typed-symbols.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-module-standalone.t",
+      "new": "pa29/tests/spec/200-module-standalone.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-module-standalone.assembly-profile",
+        "pa36/tests/spec/200-module-standalone.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-module-symbols.t",
+      "new": "pa29/tests/spec/200-module-symbols.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-module-symbols.assembly-profile",
+        "pa36/tests/spec/200-module-symbols.driver.cpp",
+        "pa36/tests/spec/200-module-symbols.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-module-typed-definitions.t",
+      "new": "pa29/tests/spec/200-module-typed-definitions.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-module-typed-definitions.assembly-profile",
+        "pa36/tests/spec/200-module-typed-definitions.driver.cpp",
+        "pa36/tests/spec/200-module-typed-definitions.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-noreturn-effect.t",
+      "new": "pa29/tests/spec/200-noreturn-effect.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-noreturn-effect.assembly-profile",
+        "pa36/tests/spec/200-noreturn-effect.driver.cpp",
+        "pa36/tests/spec/200-noreturn-effect.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-reserved-frame-output.t",
+      "new": "pa29/tests/spec/200-reserved-frame-output.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-reserved-frame-output.assembly-profile",
+        "pa36/tests/spec/200-reserved-frame-output.driver.cpp",
+        "pa36/tests/spec/200-reserved-frame-output.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-string-dialect-aliases.t",
+      "new": "pa29/tests/spec/200-string-dialect-aliases.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-string-dialect-aliases.assembly-profile",
+        "pa36/tests/spec/200-string-dialect-aliases.driver.cpp",
+        "pa36/tests/spec/200-string-dialect-aliases.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-symbol-call-stack.t",
+      "new": "pa29/tests/spec/200-symbol-call-stack.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-symbol-call-stack.assembly-profile",
+        "pa36/tests/spec/200-symbol-call-stack.driver.cpp",
+        "pa36/tests/spec/200-symbol-call-stack.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-symbol-identities.t",
+      "new": "pa29/tests/spec/200-symbol-identities.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-symbol-identities.assembly-profile",
+        "pa36/tests/spec/200-symbol-identities.driver.cpp",
+        "pa36/tests/spec/200-symbol-identities.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-upper-ymm-operands.t",
+      "new": "pa29/tests/spec/200-upper-ymm-operands.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-upper-ymm-operands.assembly-instructions",
+        "pa36/tests/spec/200-upper-ymm-operands.assembly-profile",
+        "pa36/tests/spec/200-upper-ymm-operands.driver.cpp",
+        "pa36/tests/spec/200-upper-ymm-operands.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-upper-zmm-operands.t",
+      "new": "pa29/tests/spec/200-upper-zmm-operands.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-upper-zmm-operands.assembly-instructions",
+        "pa36/tests/spec/200-upper-zmm-operands.assembly-profile",
+        "pa36/tests/spec/200-upper-zmm-operands.driver.cpp",
+        "pa36/tests/spec/200-upper-zmm-operands.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-vex-native.t",
+      "new": "pa29/tests/spec/200-vex-native.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-vex-native.assembly-profile",
+        "pa36/tests/spec/200-vex-native.driver.cpp",
+        "pa36/tests/spec/200-vex-native.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-wide-register-operands.t",
+      "new": "pa29/tests/spec/200-wide-register-operands.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-wide-register-operands.assembly-profile",
+        "pa36/tests/spec/200-wide-register-operands.driver.cpp",
+        "pa36/tests/spec/200-wide-register-operands.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa36/tests/spec/200-zmm-register-operands.t",
+      "new": "pa29/tests/spec/200-zmm-register-operands.t",
+      "feature": "assembly.shared_boundary",
+      "disposition": "required assembly baseline and optimized preservation",
+      "companions": [
+        "pa36/tests/spec/200-zmm-register-operands.assembly-instructions",
+        "pa36/tests/spec/200-zmm-register-operands.assembly-profile",
+        "pa36/tests/spec/200-zmm-register-operands.driver.cpp",
+        "pa36/tests/spec/200-zmm-register-operands.t"
+      ],
+      "note": "Instruction/constraint binding follows PA29; later source consumers retain their host ABI/builtin prerequisites."
+    },
+    {
+      "old": "pa29/tests/run/100-no-red-zone.t",
+      "new": "pa30/tests/run/800-no-red-zone.t",
+      "feature": "hosted.runtime_compat",
+      "disposition": "normalized required driver run cluster",
+      "companions": [
+        "pa30/tests/run/100-no-red-zone.flags",
+        "pa30/tests/run/100-no-red-zone.lib.value.cpp",
+        "pa30/tests/run/100-no-red-zone.link.flags",
+        "pa30/tests/run/100-no-red-zone.ref.impl.exit_status",
+        "pa30/tests/run/100-no-red-zone.ref.program.exit_status",
+        "pa30/tests/run/100-no-red-zone.ref.program.stdout",
+        "pa30/tests/run/100-no-red-zone.t",
+        "pa30/tests/run/100-no-red-zone.t.1"
+      ]
+    },
+    {
+      "old": "pa29/tests/run/100-red-zone-last-option.t",
+      "new": "pa30/tests/run/800-red-zone-last-option.t",
+      "feature": "hosted.runtime_compat",
+      "disposition": "normalized required driver run cluster",
+      "companions": [
+        "pa30/tests/run/100-red-zone-last-option.flags",
+        "pa30/tests/run/100-red-zone-last-option.lib.value.cpp",
+        "pa30/tests/run/100-red-zone-last-option.link.flags",
+        "pa30/tests/run/100-red-zone-last-option.ref.impl.exit_status",
+        "pa30/tests/run/100-red-zone-last-option.ref.program.exit_status",
+        "pa30/tests/run/100-red-zone-last-option.ref.program.stdout",
+        "pa30/tests/run/100-red-zone-last-option.t",
+        "pa30/tests/run/100-red-zone-last-option.t.1"
+      ]
     }
-  ]
+  ],
+  "assignment_map": {
+    "pa36": "pa29",
+    "pa29": "pa30",
+    "pa30": "pa31",
+    "pa31": "pa32",
+    "pa32": "pa33",
+    "pa33": "pa34",
+    "pa34": "pa35",
+    "pa35": "pa36"
+  }
 }

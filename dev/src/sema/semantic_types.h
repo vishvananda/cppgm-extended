@@ -53,7 +53,7 @@ enum class TypeKind : uint8_t
 	// element i of that expansion (see Analyzer::substitute_list).
 	BoundPack,
 	// A GNU vector (vector_size, Clang's ext_vector_type; hosted
-	// compilations, PA29): `bound` lanes of the scalar `element`. Its size
+	// compilations, PA30): `bound` lanes of the scalar `element`. Its size
 	// and alignment are the lanes' total rounded up to a power of two (a
 	// bool vector's lanes are bits, Clang's); it is list-initialized lane by
 	// lane, copied whole, compared lane by lane and converted, reduced and
@@ -84,7 +84,7 @@ enum class Access : uint8_t
 	Private
 };
 
-// cv-qualifier bits, and C11's _Atomic (Clang's C++ extension, PA29): an
+// cv-qualifier bits, and C11's _Atomic (Clang's C++ extension, PA30): an
 // atomic type is its type so qualified, of its own size and alignment, read
 // and written atomically.
 enum : uint8_t

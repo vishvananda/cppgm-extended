@@ -27,7 +27,7 @@ const uint32_t kLoopSiteScale = 4;
 const uint32_t kTrivialLeaf = 4;
 // Single-call (definition-removing) inlining; from O2 a callee twice that
 // size and its caller twice the budget (a lambda's instantiation of a
-// large dispatcher called once: pa32's O1 fixtures pin the O1 caps).
+// large dispatcher called once: pa33's O1 fixtures pin the O1 caps).
 const uint32_t kOnceCap = 512;
 const uint32_t kOnceCallerBudget = 1024;
 const uint32_t kOnceO2Scale = 2;
@@ -104,7 +104,7 @@ const uint32_t kRecursiveTreeCalls = 2;
 // HintCap doubled, and not a single-call candidate) takes hinted and
 // call-free callees with at most kSettledCalls call sites up to half again
 // their caps: its growth costs no other copy, and few copies are made.
-// (Callees full of calls keep their caps: pa32 pins them.)
+// (Callees full of calls keep their caps: pa33 pins them.)
 const uint32_t kSettledSize = 2 * kFastPathTotalHintCap;
 const uint32_t kSettledScaleNum = 3;
 const uint32_t kSettledScaleDen = 2;
@@ -1342,7 +1342,7 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 	{
 		// A settled caller copies a callee with at most kSettledFewCalls
 		// call sites up to kSettledFewCap (the callee stays: at most that
-		// many copies), unless calls make much of it (pa32 pins those).
+		// many copies), unless calls make much of it (pa33 pins those).
 		if (caller_settled_ && wave_ != InlineWave::Once && graph_.calls_in[g] <= kSettledFewCalls &&
 			size <= (shapes_[caller_].size <= kSettledSmallCaller ? 2 * kSettledFewCap : kSettledFewCap) &&
 			size <= budget_ && shape.calls * kSettledCallShare <= shape.size)

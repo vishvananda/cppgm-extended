@@ -4,7 +4,7 @@
 
 #include "opt/call_graph.h"
 
-// Interprocedural argument propagation (PA32 O2+): an internal, unobserved,
+// Interprocedural argument propagation (PA33 O2+): an internal, unobserved,
 // nonrecursive, fixed-arity definition whose every direct call passes the
 // same literal or symbol for a parameter reads that value instead; a
 // parameter its body then never reads leaves the signature and every call

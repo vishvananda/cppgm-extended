@@ -23,19 +23,19 @@ components introduced in [the native encoding lesson](native-encoding.md).
 
 At `-O0`, a conservative placement policy can give values frame homes and
 use short-lived registers during selection. A simple allocator is another
-option. Keep value identity distinct from physical location so PA33 can improve
+option. Keep value identity distinct from physical location so PA34 can improve
 placement without replacing instruction selection.
 
 #### Seams for later work
 
-PA24's fixtures are small functions at `-O0`. PA33 adds register allocation
-and machine-IR passes to this backend, and PA34 compiles the compiler with
+PA24's fixtures are small functions at `-O0`. PA34 adds register allocation
+and machine-IR passes to this backend, and PA35 compiles the compiler with
 it. These seams cost little to leave in place now and much to cut in later:
 
 - **Keep values distinct from their locations.** Prefer selecting into typed
   virtual registers, with fixed ABI operands and instruction constraints
   explicit, then assigning physical registers or frame homes over the selected
-  instructions. A simple scan suffices at `-O0`; PA33 should replace the
+  instructions. A simple scan suffices at `-O0`; PA34 should replace the
   placement policy without rewriting selection. Early placement, as in the
   example above, is another option, but retain value identities and keep its
   predicted uses, definitions and clobbers consistent with emission. Later

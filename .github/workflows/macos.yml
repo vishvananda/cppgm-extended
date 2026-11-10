@@ -102,13 +102,11 @@ jobs:
           /usr/bin/time -lp make test-report CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Check optional target features
         run: make test-target-features-nobuild CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
-      - name: Check optional inline assembly
-        run: make -C pa36 test-nobuild CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
         run: |
-          make -C pa34 cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
+          make -C pa35 cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             INCEPTION_BUILD_JOBS=4 INCEPTION_OBJECT_BUILD_JOBS=4
-          make -C pa34 compare-cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
+          make -C pa35 compare-cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             INCEPTION_BUILD_JOBS=4 INCEPTION_OBJECT_BUILD_JOBS=4
       - name: Retain failing test diagnostics
         if: failure()

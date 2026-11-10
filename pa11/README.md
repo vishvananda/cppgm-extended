@@ -92,7 +92,7 @@ States") for every function it emits, and the comparison checks each one:
   function; a member defined outside its class without `inline` states none.
 - `no_inline=yes` on a function any declaration of which carries GNU
   `noinline` (required from this assignment on: the `lifecycle-inline-policy`
-  control checks it, and PA32's `-O0` driver lane compares the fact), and on
+  control checks it, and PA33's `-O0` driver lane compares the fact), and on
   the lowering's own `cppgm_call_terminate` helper.
 - `object_bytes=N` on `this`, `N` its class's size, in every member function
   and every constructor and destructor entry, and on the `this` and
@@ -487,7 +487,7 @@ Useful intermediate representations include:
   spelling, so unused constructors/destructors do not perturb earlier outputs
 
 An object lives in an `obj<NxA>` slot, and its address passes to its
-constructor and destructor as `this`. PA32 splits a slot into scalar values
+constructor and destructor as `this`. PA33 splits a slot into scalar values
 only when every use of its address is a direct load or store, a copy, a
 zeroing or a call's indirect result, so an object can live in registers only
 after its constructor and destructor calls are inlined. Keep them ordinary calls to ordinary

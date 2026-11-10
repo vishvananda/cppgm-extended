@@ -1,8 +1,9 @@
 # Required assembly and later-language course integration
 
 Maintainer plan, 2026-11-10; not a student handout or export document.
-This branch changes the plan only. The proposed assignment order and language
-requirements below have not yet replaced the live course contracts.
+Implementation is in progress on this branch. The required assignment order,
+language profile and ordinary discovery now follow this plan; qualification
+and the migration ledger record the remaining review.
 
 ## Base and coordination
 
@@ -231,7 +232,7 @@ cover the moved cases. Update audit/harness tests and export reference parity.
 Keep N3485 for existing C++11 clauses and adopted-defect history. Add pinned,
 offline C++14 and C++17 draft references under `doc/`, with text extraction,
 source URL/date/checksum and retained attribution. Use
-[N4140](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4140.pdf)
+[N4140](https://github.com/cplusplus/draft/tree/n4140)
 and [N4659](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4659.pdf)
 as the versioned starting points; their full library chapters are references,
 not additional course requirements. Link the already retained WG21 papers
@@ -295,5 +296,4 @@ validation rather than silently point to an unrelated assignment.
 Completion means the normal course teaches and tests the existing supported
 language profile and assembly path; later compatibility lessons consume those
 features; default reports cover their required cases on both supported hosts;
-and the exported course reproduces the same structure. The planning branch
-itself makes no compiler or student-contract changes.
+and the exported course reproduces the same structure. The implementation includes compiler, test harness, handout and export changes.

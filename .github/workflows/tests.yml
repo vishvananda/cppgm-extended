@@ -1,6 +1,6 @@
 name: Tests
 
-# The 35-assignment course owns self-hosting in PA34. PA5 is the
+# The 36-assignment course owns self-hosting in PA35. PA5 is the
 # consolidated parser checkpoint (formerly PA10); it builds cppgm++ in full.
 
 on:
@@ -256,21 +256,13 @@ jobs:
             name: test-debuginfo
             command: make test-debuginfo-nobuild
             timeout: 60
-          - id: test-modern-cxx
-            name: optional C++14/17
-            command: make test-modern-cxx-nobuild
-            timeout: 30
           - id: test-target-features
             name: optional target features
             command: make test-target-features-nobuild
             timeout: 30
-          - id: test-inline-assembly
-            name: optional inline assembly
-            command: make -C pa36 test-nobuild
-            timeout: 30
           - id: selfhost-through-pa5
             name: test-through-pa5
-            command: make -C pa34 test-through-pa5 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
+            command: make -C pa35 test-through-pa5 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
             timeout: 90
 
     env:
@@ -347,7 +339,7 @@ jobs:
           bundle="$RUNNER_TEMP/cppgm-self"
           upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa34/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa35/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"

@@ -31,7 +31,7 @@ struct PreprocessorOptions
 	// Directories searched for an included file after the including file's
 	// directory and before the working directory (-I, in order).
 	std::vector<std::string> include_paths;
-	// Hosted mode (cppgm++'s -E, -c and link modes, PA26/PA29): the system
+	// Hosted mode (cppgm++'s -E, -c and link modes, PA26/PA30): the system
 	// directories searched after include_paths by both #include forms
 	// (-isystem, then the host's standard directories unless -nostdinc),
 	// the host compiler's predefined macros and builtin declarations (text

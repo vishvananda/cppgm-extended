@@ -1084,7 +1084,7 @@ function @main(%x : i32, %p : ptr) -> i64 {
 
     # The facts the C++ lowering states (pa8/lowir.md, "Facts The C++
     # Lowering States") are compared on the source-to-LowIR lanes and left
-    # uncompared on PA32's optimized lanes, where an optimizer may add them.
+    # uncompared on PA33's optimized lanes, where an optimizer may add them.
     FACTS = """declare function @helper(%p : ptr [pass=by_address, object_bytes=4]) -> i32 [unwind=no]
 
 global @limit : i32 [storage=readonly] = 3
@@ -1401,7 +1401,7 @@ output.chmod(0o755)
 
 @unittest.skipUnless(LOWIR2NATIVE.exists(), "needs the built dev/lowir2native")
 class OptimizedLowIrBehaviorTest(unittest.TestCase):
-    """PA32's optimized lanes run a handwritten fixture with an entry
+    """PA33's optimized lanes run a handwritten fixture with an entry
     function before and after optimization through the reference backend:
     an optimizer that changes the program's answer fails its budgets."""
 
@@ -1583,7 +1583,7 @@ function @main() -> i64 {
         self.assertIn("exited with status 6; the input's program exited with status 5", result.stdout)
 
     def test_edge_folding_driver_runs_both_reachable_phi_values(self):
-        fixture = REPO_ROOT / "pa32/tests/o1/500-edge-known-branch.t"
+        fixture = REPO_ROOT / "pa33/tests/o1/500-edge-known-branch.t"
         source = fixture.read_text()
         reference = fixture.with_suffix(".ref").read_text()
         driver = fixture.with_suffix(".driver.lowir").read_text()

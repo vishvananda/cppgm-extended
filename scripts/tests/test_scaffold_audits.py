@@ -219,7 +219,7 @@ class AssemblyContractAudit(unittest.TestCase):
              "assembly record 'unique' is not recognized by the reader"),
             ("dev/src/lowir/assembly_writer.cpp", '"  unique"', '"  unique2"',
              "assembly record 'unique' is not written"),
-            ("pa36/assembly.md", '`unique`', '`unique2`',
+            ("pa29/assembly.md", '`unique`', '`unique2`',
              "assembly record 'unique' is absent from its owner documentation"),
             ("dev/src/lowir/text_parser_assembly.cpp", 'FunctionUnwind::Initial', 'FunctionUnwind::None',
              "assembly function initial unwind mode has no reader or writer"),

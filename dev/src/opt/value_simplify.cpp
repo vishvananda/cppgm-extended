@@ -493,7 +493,7 @@ void Simplifier::substitute(Instruction& inst)
 		if (inst.op == Opcode::Call && i == 0 && r.is_literal())
 			continue;
 		// O2+: a call through a function's address is a direct call (its
-		// stated signature kept; O1 keeps it, pa32 pins the address-taken
+		// stated signature kept; O1 keeps it, pa33 pins the address-taken
 		// callee's survival there).
 		if (inst.op == Opcode::Call && i == 0 && c_.level >= 2 && r.is(ValueKind::Temp) &&
 			body_.temps[r.index].def != kNoId)

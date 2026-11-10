@@ -424,9 +424,9 @@ int run_driver_mode(const vector<string>& args)
 	switch (invocation.mode)
 	{
 	case DriverMode::Query:
-		return run_unimplemented_mode("driver query mode", "PA29");
+		return run_unimplemented_mode("driver query mode", "PA30");
 	case DriverMode::Preprocess:
-		return run_unimplemented_mode("hosted preprocess driver mode (-E)", "PA29");
+		return run_unimplemented_mode("hosted preprocess driver mode (-E)", "PA30");
 	case DriverMode::Compile:
 		return run_unimplemented_mode("compile driver mode (-c)", "PA24");
 	case DriverMode::Link:

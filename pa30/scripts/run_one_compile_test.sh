@@ -17,11 +17,10 @@ fi
 
 test_args=()
 if [ -f "${2%.t}.system-includes" ]; then
-  while IFS= read -r system_include_dir; do
-    if [ -n "$system_include_dir" ]; then
-      test_args+=("-isystem" "$system_include_dir")
-    fi
-  done < "${2%.t}.system-includes"
+  while IFS= read -r -d '' system_include_dir; do
+    test_args+=("-isystem" "$system_include_dir")
+  done < <(perl -I../scripts -MCppgmBatchWorker=read_word_list -e \
+    'print "$_\0" for read_word_list($ARGV[0]);' "${2%.t}.system-includes")
 fi
 if [ -f "${2%.t}.no-exceptions" ]; then
   test_args+=("-fno-exceptions")
@@ -29,7 +28,7 @@ fi
 if [ -f "${2%.t}.cxx-standard" ]; then
   read -r cxx_standard < "${2%.t}.cxx-standard"
   case "$cxx_standard" in
-    c++11|c++14) test_args+=("-std=$cxx_standard") ;;
+    c++11|c++14|c++17) test_args+=("-std=$cxx_standard") ;;
     *) echo "unsupported C++ standard sidecar: $cxx_standard" >&2; exit 2 ;;
   esac
 fi

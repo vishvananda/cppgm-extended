@@ -1,159 +1,220 @@
-# CPPGM Programming Assignment 34: Self-hosting (inception)
+## CPPGM Programming Assignment 33 (`lowir2native -O*`)
 
-Complete PA33, then use your compiler to build itself. PA34 adds no language
-feature or output format: it checks that the implementation you have built
-can compile its own sources correctly and reproducibly.
+### Overview
 
-## Completion criterion
+Improve the native code produced from LowIR while preserving program behavior,
+the ABI, unwinding and debug information. PA33 optimizes LowIR; PA34 optimizes
+its translation to machine instructions. Reuse this backend in both
+`lowir2native` and the `cppgm++` object and executable paths.
 
-From the repository root:
+Complete PA24 and PA33 first. Continue working in `dev/lowir2native.cpp` and
+your shared backend under `dev/src/`. The assignment wrapper points there.
+The supplied `mir_model.h` and register definitions are the MIR vocabulary
+provide shared spellings; the MIR's containers are yours.
+[Design notes](design-notes.md) suggest a starting approach.
 
-```sh
-make inception CXX=g++ CPPGM_HOST_CXX=g++
-```
+### Required behavior
 
-Keep the same host compiler and standard-library flags throughout the build.
-The target performs three builds:
-
-| Generation | Built by | Output |
-| --- | --- | --- |
-| Seed | The host C++ compiler | `dev/cppgm++` |
-| Self | The seed compiler | `pa34/cppgm++-self` |
-| Inception | The self-built compiler | `pa34/cppgm++-inception` |
-
-The self and inception binaries must match byte for byte. The seed is built
-by a different compiler and is not the binary comparison target. A successful
-run prints `MATCH cppgm++` and exits successfully.
-
-The host compiler still links the generated object files and supplies the
-hosted configuration. Your compiler must perform the C++ compilation and
-native object generation itself. Keep LowIR and MIR as the interfaces defined
-by the earlier assignments.
-
-## Work through the ladder
-
-The ladder helps locate failures before the final comparison. Run these
-commands from the repository root:
+Support these forms at each of `-O1`, `-O2` and `-O3`:
 
 ```sh
-make build CXX=g++ CPPGM_HOST_CXX=g++
-make -C pa34 test-through-pa4 CPPGM_HOST_CXX=g++
-make -C pa34 test-through-pa5 CPPGM_HOST_CXX=g++
-make -C pa34 test-through-pa8 CPPGM_HOST_CXX=g++
-make -C pa34 test-through-pa33 CPPGM_HOST_CXX=g++
-make inception CXX=g++ CPPGM_HOST_CXX=g++
+lowir2native -O1 -o <program> <lowirfile>...
+lowir2native -O1 --dump-machine-ir <mirfile> <lowirfile>...
+lowir2native -O1 --dump-machine-ir <mirfile> -o <program> <lowirfile>...
 ```
 
-Within `pa34/`, `CXX` defaults to `../dev/cppgm++`. Keep
-`CPPGM_HOST_CXX` set to a real host compiler. Do not pass the host compiler
-as PA34's `CXX`, since that would bypass self-compilation.
+`-O0` remains the PA24 baseline. `--help` and `-h` exit successfully;
+`--target <target>` retains its PA24 meaning. Reuse the PA8 LowIR language,
+including entry-role and other explicit metadata.
 
-`test-through-paN` builds the needed self-hosted tools and runs PA1 through
-PA N with them, in assignment order. `test-paN` reruns just one stage. These
-are the existing assignment contracts with a different compiler binary; the
-expected outputs do not change.
+- **O1:** meet the bounds for local cleanup, such as redundant copies,
+  argument setup, address calculations and unnecessary jumps.
+- **O2:** also meet the bounds for values live across blocks and calls,
+  loop register use and frame size, in functions with and without
+  exception regions.
+- **O3:** handle PA33's O3 output through the optimized native backend.
+  A separate O3 machine pass is not required if your O2 backend meets the bar.
 
-| Assignment tests | Self-built tool |
-| --- | --- |
-| PA1 | `pptoken-self` |
-| PA2 | `posttoken-self` |
-| PA3 | `ppexpr-self` |
-| PA4 | `preproc-self` |
-| PA5–PA7, PA10–PA23, PA25–PA31 | `cppgm++-self` |
-| PA8 | `lowir-self` |
-| PA9 | `abimangle-self` |
-| PA24, PA33 | `lowir2native-self` |
-| PA32 | `lowiropt-self`, with `cppgm++-self` for driver checks |
+Pass order, register allocation and instruction selection are your choices.
+If your existing backend already meets a bound, no extra pass is needed for
+that case. Completion depends on the output, not on adding named optimizations.
+Higher optimization levels must preserve the correctness established by
+previous assignments. In `cppgm++`, apply PA33's LowIR optimization before
+native lowering at the requested level.
 
-PA1–PA4 rebuild the smaller preprocessing tools. PA5 must build the complete
-`cppgm++` implementation even though its tests use only `--emit-ast`; later
-source-language rungs reuse that binary in the appropriate mode. The ladder
-is a sequence of checks, not a sequence of partial implementations of your
-compiler.
+An `unreachable` continuation can justify removing switch arms or range checks
+that serve only impossible inputs. Preserve defined defaults and their effects,
+including a non-returning call before an unreachable terminator.
 
-PA8 still uses the supplied native backend to execute the LowIR constructed
-by `lowir-self`; PA10–PA23 use it for their self-checking controls on C++
-lowering. PA24 and PA33 test your self-built native backend.
+The MIR dump uses PA24's text format and describes the same instructions and
+ABI/frame facts that produce the executable. When both outputs are requested,
+they must come from the same optimized program. Keep call argument uses,
+stack arguments, variadic and no-return annotations, exception boundaries,
+callee-saved register information and indexed-address operands accurate after
+rewriting instructions.
 
-The source sets come from `dev/frontend_source_sets.mk`, including the files
-you added during earlier assignments. Keep those lists current for every tool
-that uses a shared module.
+Fail with a nonzero status for missing inputs or output options, missing option
+arguments, unreadable or invalid LowIR, an unsupported target, an unwritable
+output, or failed code generation/linking. Exact diagnostic wording and output
+files left after failure are not prescribed.
 
-## Focused builds and checks
+### How output is checked
 
-From the repository root:
+Every native fixture checks compilation status and the generated program's
+stdout and exit status. Correct output is required regardless of optimization
+level or allocation strategy.
+Blocks that emit no instructions can share an address. Alignment and branch-size
+changes must preserve all their control-flow targets; no particular padding or
+branch encoding is required.
+
+A one-past pointer can still reach its array through valid backward arithmetic.
+Preserve the array's contents and lifetime when such a pointer crosses a call
+or a block boundary; storage optimizations must account for those uses too.
+
+Where `x.ref.expect` exists, the MIR must satisfy its predicates. They bound
+quantities such as instruction count, blocks, calls, memory operands and frame
+size, and state focused requirements for effects such as volatile accesses
+and exception operations. The numbers in the sidecar are the actual limits;
+you do not need to reproduce the reference registers, offsets, instruction
+order or block layout. A missing expectation means execution alone is checked.
+The predicates count mnemonics as the PA24 dump spells them (`load.*` and
+`store.*` for memory accesses, `eh_push` and `eh_pop` for regions, an
+implicit prologue; see PA24's machine-IR text).
+The `.ref.mir` and `.ref.cmir` files are examples, not optimized-output oracles.
+
+These bounds are a deterministic, lightweight code-quality bar; fewer static
+instructions do not always mean faster code. `make test-kernels` adds a
+dynamic bar: the four kernels in `../pa36/kernels/`, compiled by `cppgm++`
+at their levels and by GCC and linked against one GCC-built driver, each
+execute at most 1.50 times GCC's instructions, counted with Cachegrind
+(which this check requires). They exercise an accessor chain around a call
+in a loop, a hash lookup, and loop state carried across calls and a `try`
+region, so the optimizer's inlining and the allocator's register use,
+inside exception regions included, are measured here rather than deferred.
+PA35 builds the compiler with itself, so this code becomes the compiler's
+own speed; PA36 tightens the same kernels to 1.30.
+
+The same target also runs PA33's six original kernel families from
+`../pa33/tests/kernels/`: bounded search, aliased/disjoint field updates,
+narrow arithmetic, state crossing a cold call, conditionally updated
+floating state and adjacent updates with an invariant factor. They pass through
+the complete optimized compiler and use the same host-built driver and scalar
+oracle. Their `.quality` files publish the native instruction-ratio limits.
+The driver checks unspecified upper bits on a narrow incoming argument too.
+These checks require Python 3, GCC and Cachegrind on Linux x86-64.
+
+`make test-improvements` runs optional vector, memory traversal, floating
+reduction and scheduling experiments, checking results and reporting work
+without a speed threshold. See [the exercise guide](../pa33/improvements.md)
+for inputs, correctness boundaries and reproducible timing commands.
+
+For a failed expectation, inspect the reported predicate or run:
 
 ```sh
-make -C pa34 cppgm++-self CPPGM_HOST_CXX=g++
-make -C pa34 test-pa12 CPPGM_HOST_CXX=g++
-make -C pa34 compare-cppgm++-inception CPPGM_HOST_CXX=g++
+perl ../scripts/expect_ir.pl tests/o1/<name>.my.mir tests/o1/<name>.ref.expect
 ```
 
-The last command performs the final comparison without rebuilding the seed
-first. After changing compiler sources, run root `make build` before these
-focused commands so the seed includes your fix.
+Debug fixtures carry `!dbg(file, line, column)` annotations. Their predicates
+check source locations on surviving calls and returns without comparing the
+whole instruction sequence. Removed computations may lose their locations;
+combined computations may use a contributing location. Preserve meaningful
+locations on surviving operations and do not invent locations from another
+function or source statement.
 
-Use `INCEPTION_OBJ_ROOT_BASE=../obj/pa34-experiment` on PA34 commands to keep
-an experiment's objects separate. Canonical objects depend on the compiler
-that produced them; changing that compiler correctly invalidates those objects.
-Do not combine object generations for the final comparison.
+### Full-width XMM frame accesses
 
-For a quick single-source diagnosis:
+A whole-register floating move uses sixteen bytes for an SSE/SSEUP value.
+Frame-byte liveness must account for the upper eight bytes as well as the
+lower ones, including incoming vector and binary128 argument spills. An access
+to only the upper half keeps the full incoming store; ordinary integer register
+widths remain unchanged.
+
+### Testing
+
+From this directory:
 
 ```sh
-make -C pa34 probe-self-object SOURCE=../dev/cppgm++.cpp CPPGM_HOST_CXX=g++
+make test
+make test-debuginfo
+make check TEST='tests/o1/100-return-copy-coalesce.t'
 ```
 
-This uses the self-host flags but writes a scratch object under
-`obj/pa34/probe/`. It is a debugging aid; finish with the normal ladder and
-inception targets.
+`make test` runs the O1, O2 and O3 MIR and behavior buckets, the
+self-checking C++ programs under `tests/driver/` and `make test-kernels`.
+The driver programs must exit zero and write no stdout at all three levels,
+when built directly, through PA25 compiler objects (`.obj`), and through PA26
+native objects (`.o`) linked with `CPPGM_HOST_CXX`, and through the compiler's
+LowIR output passed to the student's `lowir2native`. This also checks that
+the two tools agree on the LowIR boundary. The programs check language and
+lifetime behavior; they do not require diagnostic counters or a particular
+backend design.
 
-## Diagnose a failure
+`make test-debuginfo` runs `tests/debuginfo/o1`, `o2` and `o3`. Both targets
+must pass. Finish with `make test-report-through-pa34` from the repository root
+before continuing to PA35's self-host ladder. See
+[Testing and references](../TESTING_AND_REFERENCES.md) for test selection.
 
-1. Find the first failing source file or assignment test.
-2. Reduce it to a small input in `student.tests/` and compare the seed and
-   self-built compiler on that input.
-3. Fix the underlying parser, semantic, lowering, optimizer or native-code
-   behavior. Preserve the earlier assignment contracts.
-4. Rebuild the seed, rerun the failing rung, then continue the ladder and final
-   comparison.
+The numbered buckets group backend features. `tests/o1`, `o2` and `o3` check
+code-quality bounds as well as execution; `tests/behavior/` adds correctness
+cases and applies bounds only where an expectation is supplied.
 
-A byte mismatch can come from unstable symbol or instruction order, embedded
-paths, timestamps, host configuration or linker behavior. PA34 also compares
-corresponding self and inception objects as they are built, so the first
-object mismatch can identify the responsible source file.
+### Further improvements
 
-A self-build slowdown can expose a miscompilation as well as an inefficient
-algorithm. Check for repeated semantic work, lost cache results and divergent
-control flow before increasing resource limits.
+After meeting the supplied bounds, compare repeated work in your optimized
+MIR with measured native execution. Useful investigations include keeping
+narrow values unextended until a reader needs the upper bits, sharing a
+dying operand's register, avoiding reloads around rare calls, selecting a
+high product or a constant divide economically, and placing dependent
+floating operations so independent ones can start. PA33's vector output
+uses the existing PA30 LowIR vocabulary; accepting and correctly lowering
+that output is separate from choosing to vectorize scalar input yourself.
 
-Each self-build source compile has a 900-second timeout; each inception
-compile has a 3,600-second timeout. The runner also caps a command at 8 GiB
-RSS. Inception compilation uses at most eight jobs by default; lower
-`INCEPTION_BUILD_JOBS` if concurrent compiler processes exhaust memory.
-The timeout knobs are `INCEPTION_SELFHOST_COMPILE_TIMEOUT_SEC` and
-`INCEPTION_INCEPTION_COMPILE_TIMEOUT_SEC`; the memory knob is
-`CPPGM_RUN_MAX_RSS_KB`. Use them to diagnose a reduced case, then validate the
-complete build under the normal limits.
+Under register pressure, compare frequently used loop state with values
+retained for later readers. Use counts alone can favor a long live range
+that displaces several shorter ones. Include register occupancy in that
+tradeoff, and measure scalar and vector spill costs separately.
 
-## Measuring the self-built compiler
+When combining scaled arithmetic with an address calculation, preserve the
+operation width, wrapped bits, live intermediate values and any observed flags.
 
-Nothing in PA34 is timed, but the self-built compiler is the largest program
-your optimizer and backend compile, and the natural one to measure them on.
-A few habits make such measurements mean something:
+A scalar field may already be contained in an incoming object register.
+Compare extracting its bytes with materializing and reloading the object.
+Prove byte coverage, signedness and carrier lifetime; preserve observable
+memory accesses and flags, and keep a fallback for unsupported boundaries.
+Count the work added as well as the memory work removed: an extraction can
+cost more than a load when the object and its frame still need storage.
 
-- Freeze a seed and a self build of one source, and keep them unchanged
-  while you measure. A rebuilt binary is a different program.
-- Link the seed and the self build the same way, with the same `malloc`. An
-  allocator difference can move a compiler's time by a few percent and hide
-  the difference that comes from generated code.
-- Count instructions on both levels of one workload (`-O0` mostly runs the
-  front end and instruction selection, `-O3` mostly the optimizer), and use
-  paired timing to confirm. When a change touches the optimizer, a self
-  build from the new source does different work as well as running
-  different code; to see the code alone, build one frozen source with the
-  old and the new compiler and compare those two binaries, which do the
-  same work.
+Check results at the ABI boundary as well as inside a function: incoming
+upper bits, caller clobbers, phi transfers, exceptional exits and frame
+alignment all matter. Measure instruction counts for redundant work and
+time for latency and layout changes. Preserve a behavior test for each
+counterexample. Neither the course reference dump nor a speed comparison
+requires a particular instruction, register allocation or block order.
 
-[PA35](../pa35/README.md) turns these measurements into gates: its scripts
-freeze the seed and the self build, link them alike and count both levels.
+Include data-dependent loops with several back edges in layout experiments.
+Check that padding and branch shortening preserve behavior after linking;
+compare runtime across changes to preceding code as well as instruction counts.
+
+An extension can be redundant when the next calculation reads only the narrow
+bits and writes the full result. Preserve extensions needed by wider readers,
+address operands or operations that can leave the destination unchanged.
+
+### Scope
+
+PA34 does not require a new LowIR optimizer, source-language changes,
+interprocedural machine optimization, instruction scheduling or vectorization.
+What it requires is meeting the supplied predicates and kernel limits while
+preserving earlier contracts. They reward keeping values in registers over
+their whole live ranges, across calls (in callee-saved registers), around
+loops and through exception regions, more than local rewrites of a
+conservative frame form; a liveness-based allocator over the PA24 machine IR
+is the direct way to meet them, and the one later work keeps improving.
+
+### Assembly preservation
+
+PA29's user assembly remains opaque through optimization. Preserve declared
+memory/state effects, evaluated operands, ties, early writes, live values and
+all outgoing/addressed control-flow edges. Do not reinterpret instruction
+strings as arithmetic or infer undeclared effects. PA34's normal
+`test-assembly` lane reuses the PA29 native/roundtrip controls at O3 after both
+optimizer milestones, with independent result files for parallel reports.

@@ -394,13 +394,13 @@ The same monotonic-extension rule applies here:
 A function with a destructible local and a call that may throw has a cleanup
 region, so in real C++ code, this compiler's own source included, most
 functions have one. The shape this assignment emits is therefore the common
-case for PA32's optimizer and for the PA24 and PA33 backend, not a rare path
+case for PA33's optimizer and for the PA24 and PA34 backend, not a rare path
 they can treat conservatively. A few properties decide how much of that code
 they can improve:
 
 - Close full-expression regions before control-flow joins, and give the
   paths that merge the same protected-call state (PA26 states this as a
-  requirement for host objects). PA32 removes a region that nothing inside
+  requirement for host objects). PA33 removes a region that nothing inside
   can unwind out of, and promotes slots across the function; both rely on
   every block having one stack of active regions.
 - Handler edges are implicit in LowIR: an exception leaves from the region

@@ -611,7 +611,7 @@ class CompareResultsCommonTests(unittest.TestCase):
             )
             write_text(testbase.with_suffix(".ref"), ref_lowir)
             # The source-to-LowIR lanes compare the facts the C++ lowering
-            # states; PA32's optimized lanes leave them uncompared.
+            # states; PA33's optimized lanes leave them uncompared.
             write_text(testbase.with_suffix(".my"), my_lowir)
             result = run_compare("lowir_t", root, "tests")
             self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
