@@ -75,7 +75,7 @@ function @cheap(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
     %t = binary mul i64 %i, 8
     %x = binary add i64 %s, %m
     %sum = binary add i64 %t, %x
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -90,7 +90,7 @@ function @calls(%n : i64) -> void [no_inline=yes] {
     %i = phi i64 [^entry: 0, ^body: %next]
     %m = binary mul i64 %i, 164
     call void @use(%m)
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -159,7 +159,7 @@ function @changing(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
     %p = index i8 %a, %m
     %v = load i64 %p
     %sum = binary add i64 %t, %v
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 

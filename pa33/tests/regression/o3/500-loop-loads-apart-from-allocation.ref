@@ -81,8 +81,6 @@ function @guarded(%data : ptr, %n : i64) -> i64 [no_inline=yes] {
 
   block ^put:
     %c = load u8 %data
-    %at = index u8 %out, %i
-    store u8 %c, %at
     %cw = convert zext i64 u8 %c
     %s1 = binary add i64 %s, %cw
     jump ^next

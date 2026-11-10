@@ -16,7 +16,7 @@ function @same_object() -> void [no_inline=yes] {
     store i64 1, %p
     %q = index i64 %second, %t2
     store i64 2, %q
-    %next = binary add i64 %t2, 1
+    %next = binary add nowrap i64 %t2, 1
     %t6 = cmp lt i64 %next, 30
     branch %t6, ^body, ^done
 
@@ -63,7 +63,7 @@ function @two_pointers(%a : ptr, %b : ptr) -> void [no_inline=yes] {
     store i64 1, %p
     %q = index i64 %b, %t17
     store i64 2, %q
-    %next = binary add i64 %t17, 1
+    %next = binary add nowrap i64 %t17, 1
     %t21 = cmp lt i64 %next, 30
     branch %t21, ^body, ^done
 

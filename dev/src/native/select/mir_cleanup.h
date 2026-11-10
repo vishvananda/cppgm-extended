@@ -8,6 +8,10 @@
 // MIR cleanups after selection, before branch layout (O1+).
 namespace native {
 
+// O2+: guard unsigned 64-bit hardware divisions with a checked 32-bit path.
+// Both original operands are retained for the full-width fallback.
+void narrow_variable_divides(Function& function);
+
 // Runs of consecutive stores of immediates to adjacent bytes of one base
 // become the fewest aligned stores of the combined bytes (the rest nops),
 // so a wider load of them forwards from one store.

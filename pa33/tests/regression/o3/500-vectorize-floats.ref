@@ -53,7 +53,7 @@ function @add_f32(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes
     %r = binary add f32 %v, %w
     %o = index f32 %d, %i
     store typed f32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -115,7 +115,7 @@ function @sub_f32(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes
     %r = binary sub f32 %v, %w
     %o = index f32 %d, %i
     store typed f32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -177,7 +177,7 @@ function @mul_f32(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes
     %r = binary mul f32 %v, %w
     %o = index f32 %d, %i
     store typed f32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -239,7 +239,7 @@ function @div_f32(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes
     %r = binary div f32 %v, %w
     %o = index f32 %d, %i
     store typed f32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -292,7 +292,7 @@ function @sqrt_f32(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=ye
     %r = unary sqrt f32 %v
     %o = index f32 %d, %i
     store typed f32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -347,7 +347,7 @@ function @neg_f32(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes
     %r = unary neg f32 %v
     %o = index f32 %d, %i
     store typed f32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -409,7 +409,7 @@ function @add_f64(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes
     %r = binary add f64 %v, %w
     %o = index f64 %d, %i
     store typed f64 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -471,7 +471,7 @@ function @sub_f64(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes
     %r = binary sub f64 %v, %w
     %o = index f64 %d, %i
     store typed f64 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -533,7 +533,7 @@ function @mul_f64(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes
     %r = binary mul f64 %v, %w
     %o = index f64 %d, %i
     store typed f64 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -595,7 +595,7 @@ function @div_f64(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes
     %r = binary div f64 %v, %w
     %o = index f64 %d, %i
     store typed f64 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -648,7 +648,7 @@ function @sqrt_f64(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=ye
     %r = unary sqrt f64 %v
     %o = index f64 %d, %i
     store typed f64 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -703,7 +703,7 @@ function @neg_f64(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes
     %r = unary neg f64 %v
     %o = index f64 %d, %i
     store typed f64 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -759,7 +759,7 @@ function @literal_f32(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline
     %r = binary mul f32 %v, %t22
     %o = index f32 %d, %i
     store typed f32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -815,7 +815,7 @@ function @literal_f64(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline
     %r = binary mul f64 %v, %t22
     %o = index f64 %d, %i
     store typed f64 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -872,7 +872,7 @@ function @magnitude_f64(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inli
     %r = copy f64 %m
     %o = index f64 %d, %i
     store typed f64 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -916,7 +916,7 @@ function @from_int(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=ye
     %r = convert sitofp f32 i32 %a
     %o = index f32 %d, %i
     store typed f32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -960,7 +960,7 @@ function @to_int(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %r = convert fptosi i32 f32 %v
     %o = index i32 %d, %i
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -1019,7 +1019,7 @@ function @float_chooses_int(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_
     %t32 = cmp lt f32 %v, %w
     %r = select i32 %t32, %a, %b
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 

@@ -51,7 +51,7 @@ function @pairs(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
     %p = index i8 %a, %o
     %v = load i64 %p
     %sum = binary add i64 %s, %v
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %t9 = binary add i64 %t1, 16
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done

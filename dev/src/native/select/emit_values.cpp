@@ -686,6 +686,15 @@ void FunctionSelector::emit_store(const Instruction& inst)
 	}
 	Operand src = rm_operand(inst.ops[0], type, kEmitScratch);
 	const Operand mem = address_operand(inst.ops[1], kSelectScratch);
+	// i1 has a byte carrier but only one value bit. An ordinary byte
+	// reader of the storage must see 0/1 even when the stored value's
+	// producer is wider. Immediates were normalized by imm_for already.
+	if (kind == TypeKind::I1 && value.kind == ValueKind::Temp && body_->temps[value.index].type.kind() != TypeKind::I1)
+	{
+		load_into(kEmitScratch, src, TypeKind::I64);
+		normalize(kEmitScratch, TypeKind::I1);
+		src = Operand::make_reg(kEmitScratch);
+	}
 	if (type.is_vector())
 		src = vector_register(inst.ops[0], static_cast<Reg>(XMM0 + 15));
 	if (type.is_float() || type.is_vector())

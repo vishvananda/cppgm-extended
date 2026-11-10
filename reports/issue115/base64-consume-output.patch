@@ -1,0 +1,14 @@
+--- a/index.c
++++ b/index.c
+@@ -7419,6 +7419,11 @@
+     char *encoded_buf = (char *)malloc(encoded_size);
+ 
+     size_t actual_len = b64_encode(encoded_buf, data->input_str, data->input_len);
++
++    if (actual_len != data->encoded_len ||
++        memcmp(encoded_buf, data->encoded_str, actual_len) != 0) {
++        abort();
++    }
+ 
+     data->result_val += (uint32_t)actual_len;
+     free(encoded_buf);

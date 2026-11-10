@@ -37,7 +37,7 @@ function @widen_short(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert sext i32 i16 %v
     %o = index i32 %d, %i
     store typed i32 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -93,7 +93,7 @@ function @widen_byte(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert zext i32 u8 %v
     %o = index i32 %d, %i
     store typed i32 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -140,7 +140,7 @@ function @narrow(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert trunc i16 i32 %v
     %o = index i16 %d, %i
     store typed i16 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -185,7 +185,7 @@ function @to_double(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert sitofp f64 i32 %v
     %o = index f64 %d, %i
     store typed f64 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -230,7 +230,7 @@ function @to_float(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert fptrunc f32 f64 %v
     %o = index f32 %d, %i
     store typed f32 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -281,7 +281,7 @@ function @two_arrays(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t = binary add i64 %w, 7
     %o = index i64 %d, %i
     store typed i64 %t, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -329,7 +329,7 @@ function @two_sizes(%a : ptr, %b : ptr, %n : i64) -> void [no_inline=yes] {
     store typed i16 1, %p
     %q = index i32 %b, %i
     store typed i32 2, %q
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -374,7 +374,7 @@ function @to_int(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert fptosi i32 f64 %v
     %o = index i32 %d, %i
     store typed i32 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -422,7 +422,7 @@ function @long_to_short(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert trunc i16 i64 %v
     %o = index i16 %d, %i
     store typed i16 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -485,7 +485,7 @@ function @long_to_byte(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert trunc u8 i64 %v
     %o = index u8 %d, %i
     store u8 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -547,7 +547,7 @@ function @two_sizes_tested(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes]
     %s = binary add i32 %w, %u
     %o = index i32 %d, %i
     store i32 %s, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -565,7 +565,7 @@ function @same_offset(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert zext i32 u8 %v
     %o = index i32 %d, %i
     store i32 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -584,7 +584,7 @@ function @ahead(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert zext i32 u8 %v
     %o = index i32 %d, %i
     store i32 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -603,7 +603,7 @@ function @close(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %v = load u8 %a
     %w = convert zext i32 u8 %v
     store i32 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 

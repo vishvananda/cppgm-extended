@@ -419,7 +419,14 @@ void SlotPromotion::classify()
 				accessed_[v.index] = 1;
 				const Type type = body_.slots[v.index].type;
 				const bool typed = inst.type == type || integer_twins(inst.type, type) || float_twins(inst.type, type);
-				const bool load = inst.op == Opcode::Load && at == 0 && (inst.flags & IF_VOLATILE) == 0 && typed;
+				// i1 occupies a byte containing its normalized 0/1 value.
+				// A byte read of that private storage only zero-extends it;
+				// byte writes, escaping addresses and volatile accesses still
+				// disqualify the slot below.
+				const bool boolean_byte = type.kind() == TypeKind::I1 &&
+					(inst.type.kind() == TypeKind::I8 || inst.type.kind() == TypeKind::U8);
+				const bool load = inst.op == Opcode::Load && at == 0 && (inst.flags & IF_VOLATILE) == 0 &&
+					(typed || boolean_byte);
 				const bool store = inst.op == Opcode::Store && at == 1 && (inst.flags & IF_VOLATILE) == 0 && typed &&
 					!inst.ops[0].is(ValueKind::Slot) && storable(body_, inst);
 				if (!load && !store)
@@ -729,9 +736,16 @@ void SlotPromotion::rename_block(BlockId block)
 														  : current_[c];
 			if (inst.type != body_.slots[inst.ops[0].index].type && current_[c].is(ValueKind::Temp))
 			{
-				// A twin-typed read: a copy retyping the value.
-				Instruction retype = make_instruction(Opcode::Copy, inst.type);
+				// Same-width twins retype bits; an i1 byte read extends 0/1.
+				const Type held = body_.slots[inst.ops[0].index].type;
+				const bool boolean_byte = held.kind() == TypeKind::I1;
+				Instruction retype = make_instruction(boolean_byte ? Opcode::Convert : Opcode::Copy, inst.type);
 				retype.ops[0] = current_[c];
+				if (boolean_byte)
+				{
+					retype.sub = static_cast<uint8_t>(ConvertOp::ZExt);
+					set_convert_source_type(retype, held);
+				}
 				retype.location = inst.location;
 				const InstId id = append_instruction(body_, retype);
 				body_.instructions[id].result = append_temp(body_, inst.type, id);
@@ -750,7 +764,9 @@ void SlotPromotion::rename_block(BlockId block)
 			current_[c] = inst.ops[0];
 			const Type from = stored_type(body_, inst);
 			const Type held = body_.slots[inst.ops[1].index].type;
-			if (inst.ops[0].is_literal() && (from.is_float() || held.is_float()))
+			if (inst.ops[0].is(ValueKind::Integer) && held.kind() == TypeKind::I1)
+				current_[c] = integer_value(body_, normalize_integer(held, body_.literals[inst.ops[0].index]));
+			else if (inst.ops[0].is_literal() && (from.is_float() || held.is_float()))
 			{
 				if (from.is_float() && inst.ops[0].is(ValueKind::Integer))
 					current_[c] = literal_value(body_, ValueKind::Float, from.kind(),

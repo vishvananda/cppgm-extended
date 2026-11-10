@@ -1,0 +1,110 @@
+function @nonnegative(%p : ptr, %bound : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %enter = cmp gt i64 %bound, 0
+    branch %enter, ^loop_preheader_1, ^empty
+
+  block ^loop_preheader_1:
+    %t2 = cmp ugt i64 %bound, 2
+    %t3 = binary and i64 %enter, %t2
+    branch %t3, ^loop_preheader_2, ^loop_preheader_5
+
+  block ^loop_preheader_2:
+    %t4 = binary add i64 %bound, -2
+    %t5 = vector pzero
+    %t6 = vector fromi64 1
+    %t7 = vector punpcklqdq %t5, %t6
+    %t8 = vector paddq %t5, %t7
+    %t9 = vector fromi64 7
+    %t10 = vector pshufd %t9, 68
+    %t11 = vector fromi64 2
+    %t12 = vector pshufd %t11, 68
+    jump ^wide_loop_3
+
+  block ^wide_loop_3:
+    %t13 = phi v128 [^loop_preheader_2: %t5, ^wide_loop_3: %t22]
+    %t14 = phi v128 [^loop_preheader_2: %t8, ^wide_loop_3: %t24]
+    %t15 = phi i64 [^loop_preheader_2: 0, ^wide_loop_3: %t23]
+    %t16 = vector pand %t14, %t10
+    %t17 = vector psrlqi %t14, 2
+    %t18 = index i64 %p, %t15
+    %t19 = load v128 %t18
+    %t20 = vector paddq %t16, %t17
+    %t21 = vector paddq %t19, %t20
+    %t22 = vector paddq %t13, %t21
+    %t23 = binary add nowrap i64 %t15, 2
+    %t24 = vector paddq %t14, %t12
+    %t25 = cmp lt i64 %t23, %t4
+    branch %t25, ^wide_loop_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t26 = vector pshufd %t22, 78
+    %t27 = vector paddq %t22, %t26
+    %t28 = vector toi64 %t27
+    jump ^loop_preheader_5
+
+  block ^loop_preheader_5:
+    %t29 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t28]
+    %t30 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t23]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^loop_preheader_5: %t30, ^body: %next]
+    %sum = phi i64 [^loop_preheader_5: %t29, ^body: %total]
+    %rem = binary and i64 %i, 7
+    %quot = binary ushr i64 %i, 2
+    %q = index i64 %p, %i
+    %value = load i64 %q
+    %part = binary add i64 %rem, %quot
+    %with_value = binary add i64 %value, %part
+    %total = binary add i64 %sum, %with_value
+    %next = binary add nowrap i64 %i, 1
+    %more = cmp lt i64 %next, %bound
+    branch %more, ^body, ^done
+
+  block ^done:
+    return i64 %total
+
+  block ^empty:
+    return i64 0
+}
+function @signed_range(%first : i64, %bound : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %more = cmp lt i64 %first, %bound
+    branch %more, ^body, ^done
+
+  block ^body:
+    %t2 = phi i64 [^body: %total, ^entry: 0]
+    %t3 = phi i64 [^body: %next, ^entry: %first]
+    %rem = binary mod i64 %t3, 8
+    %quot = binary div i64 %t3, 4
+    %part = binary add i64 %rem, %quot
+    %total = binary add i64 %part, %t2
+    %next = binary add nowrap i64 %t3, 1
+    %t9 = cmp lt i64 %next, %bound
+    branch %t9, ^body, ^done
+
+  block ^done:
+    %t10 = phi i64 [^entry: 0, ^body: %total]
+    return i64 %t10
+}
+function @wrapping_counter() -> i64 [no_inline=yes] {
+  block ^entry:
+    return i64 7
+}
+function @main() -> i32 [role=entry] {
+  slot $data : obj<32x8>
+
+  block ^entry:
+    zeroinit 32x8 $data
+    %p = addr $data
+    %a = call i64 @nonnegative(%p, 4)
+    %b = call i64 @nonnegative(%p, 0)
+    %c = call i64 @signed_range(-4, 0)
+    %d = call i64 @wrapping_counter()
+    %ab = binary add i64 %a, %b
+    %cd = binary add i64 %c, %d
+    %total = binary add i64 %ab, %cd
+    %bad = cmp ne i64 %total, 2
+    %out = convert zext i32 i1 %bad
+    return i32 %out
+}

@@ -1,0 +1,9 @@
+# outcomes from 300-object-value-transfer-forms.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(load)
+none(store)
+none(copyobj)
+
+instructions <= 10 in @object_forms
+none(load) in @object_forms
+none(store) in @object_forms
+none(copyobj) in @object_forms

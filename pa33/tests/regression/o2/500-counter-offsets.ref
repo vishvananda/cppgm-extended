@@ -48,7 +48,7 @@ function @read_after(%step : i64, %row : i64, %n : i64) -> i64 [no_inline=yes] {
     %c = phi i64 [^entry: 0, ^body: %c1]
     %at = phi i64 [^entry: %row, ^body: %at1]
     %at1 = binary add i64 %step, %at
-    %c1 = binary add i64 %c, 1
+    %c1 = binary add nowrap i64 %c, 1
     %d = cmp lt i64 %c1, %n
     branch %d, ^body, ^done
 
@@ -114,7 +114,7 @@ function @varying(%base : ptr, %step : i64, %n : i64) -> i64 [no_inline=yes] {
     %v = load i64 %p
     %t1 = binary add i64 %t, %v
     %at1 = binary add i64 %step, %at
-    %c1 = binary add i64 %c, 1
+    %c1 = binary add nowrap i64 %c, 1
     %d = cmp lt i64 %c1, %n
     branch %d, ^body, ^done
 

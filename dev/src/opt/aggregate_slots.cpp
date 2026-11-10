@@ -985,6 +985,75 @@ void AggregateSlots::rewrite()
 // temporary slot of its own, and a store of a call's result or a parameter
 // a copy from the value: the forms the splitting below reads field by field.
 // (Complex values move this way, as whole objects from slot to slot.)
+// Object values are immutable snapshots. Their value copies are aliases;
+// copies from storage are loads, and an object-valued copyobj is a store.
+// Canonicalize all three before looking for whole-object transfers, including
+// copies the inliner introduced. No source-language spelling is privileged.
+bool canonicalize_object_values(FunctionBody& body)
+{
+	std::vector<Value> alias;
+	bool changed = false;
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			Instruction& inst = body.instructions[i];
+			if (inst.op == Opcode::Copy && inst.type.is_object())
+			{
+				const Value from = inst.ops[0];
+				if (from.is(ValueKind::Temp) && body.temps[from.index].type == inst.type)
+				{
+					if (alias.empty())
+						alias.assign(body.temps.size(), Value::none());
+					alias[inst.result] = from;
+				}
+				else
+					inst.op = Opcode::Load;
+				changed = true;
+			}
+			else if (inst.op == Opcode::CopyObject && inst.ops[0].is(ValueKind::Temp))
+			{
+				const Type type = body.temps[inst.ops[0].index].type;
+				if (!type.is_object())
+					continue;
+				inst.op = Opcode::Store;
+				inst.type = type;
+				inst.immediate = 0;
+				inst.sub = 0;
+				changed = true;
+			}
+		}
+	if (alias.empty())
+		return changed;
+	const auto resolve = [&](Value value) {
+		Value root = value;
+		while (root.is(ValueKind::Temp) && !alias[root.index].is(ValueKind::None))
+			root = alias[root.index];
+		while (value.is(ValueKind::Temp) && !alias[value.index].is(ValueKind::None))
+		{
+			const Value next = alias[value.index];
+			alias[value.index] = root;
+			value = next;
+		}
+		return root;
+	};
+	for (BlockId b : body.layout)
+	{
+		InstId prev = kNoId;
+		for (InstId i = body.blocks[b].first; i != kNoId;)
+		{
+			Instruction& inst = body.instructions[i];
+			const InstId next = inst.next;
+			for_each_operand(body, inst, [&](Value& value) { value = resolve(value); });
+			if (inst.result != kNoId && !alias[inst.result].is(ValueKind::None))
+				unlink_after(body, b, prev, i);
+			else
+				prev = i;
+			i = next;
+		}
+	}
+	return true;
+}
+
 bool AggregateSlots::objects_through_slots()
 {
 	const auto whole = [](const Instruction& inst) {
@@ -1061,9 +1130,11 @@ bool AggregateSlots::objects_through_slots()
 
 bool AggregateSlots::run()
 {
-	if (body_.slots.empty())
+	if (body_.slots.empty() &&
+		std::none_of(body_.temps.begin(), body_.temps.end(), [](const Temp& temp) { return temp.type.is_object(); }))
 		return false;
-	const bool rewritten = objects_through_slots();
+	bool rewritten = canonicalize_object_values(body_);
+	rewritten = objects_through_slots() || rewritten;
 	analyze();
 	first_field_.assign(body_.slots.size(), kNoId);
 	bool any = false;

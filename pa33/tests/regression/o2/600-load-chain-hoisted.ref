@@ -18,7 +18,7 @@ function @chain(%this : ptr, %out : ptr, %n : i64) -> void [binding=strong] {
     %step = copy i64 %t9
     %slot = index f64 %out, %step
     store typed f64 1, %slot
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %t14 = binary add i64 %t9, %wide
     %more = cmp lt i64 %next, %n
     branch %more, ^body, ^done
@@ -45,7 +45,7 @@ function @past_branch(%this : ptr, %out : ptr, %n : i64, %c : i64) -> void [bind
   block ^join:
     %cell = index f64 %base, %i
     store typed f64 3, %cell
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %more = cmp lt i64 %next, %n
     branch %more, ^body, ^done
 

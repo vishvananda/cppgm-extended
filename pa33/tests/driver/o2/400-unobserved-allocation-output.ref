@@ -1,0 +1,122 @@
+declare function @malloc(%arg0 : i64) -> ptr [linkage=c, binding=strong]
+declare function @free(%arg0 : ptr) -> void [linkage=c, binding=strong]
+declare function @__errno_location() -> ptr [effects=readnone, unwind=no, repeatable=yes, linkage=c, binding=strong]
+
+global @published_output : ptr [binding=strong] = zero
+global @output_events : u32 [binding=strong] = zero
+
+function @unused_heap(%n : i64) -> i64 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = call i64 @__private_output0(%n)
+    return i64 %t1
+}
+function @publish_output(%p : ptr) -> void [binding=internal, object=_ZL14publish_outputPh, no_inline=yes] {
+  block ^entry:
+    store typed ptr %p, @published_output
+    store u8 19, %p
+    return void
+}
+function @two_outputs(%a : ptr, %b : ptr) -> u32 [binding=internal, object=_ZL11two_outputsPhS_, no_inline=yes] {
+  block ^entry:
+    store u8 3, %a
+    store u8 4, %b
+    return u32 9
+}
+function @observable_write(%p : ptr) -> void [binding=internal, object=_ZL16observable_writePVh, no_inline=yes] {
+  block ^entry:
+    store volatile u8 7, %p
+    %t1 = load volatile u32 @output_events
+    %t2 = binary add u32 %t1, 1
+    store volatile u32 %t2, @output_events
+    return void
+}
+function @allocation_errno(%size : i64) -> i32 [binding=internal, object=_ZL16allocation_errnom, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__errno_location()
+    store typed i32 0, %t1
+    %t2 = call ptr @malloc(%size)
+    %t3 = call ptr @__errno_location()
+    %t4 = load typed i32 %t3
+    %t5 = cmp ne i32 %t4, 0
+    %t6 = convert trunc i32 i64 %t5
+    call void @free(%t2)
+    return i32 %t6
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i64 @unused_heap(0)
+    %t2 = cmp ne i64 %t1, 5
+    branch %t2, ^if_then_3, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t3 = call i64 @unused_heap(1)
+    %t4 = cmp ne i64 %t3, 6
+    branch %t4, ^if_then_3, ^lor_rhs_2
+
+  block ^lor_rhs_2:
+    %t5 = call i64 @unused_heap(65)
+    %t6 = cmp ne i64 %t5, 70
+    branch %t6, ^if_then_3, ^if_end_4
+
+  block ^if_then_3:
+    return i32 1
+
+  block ^if_end_4:
+    %t7 = call ptr @malloc(8)
+    call void @publish_output(%t7)
+    %t8 = load typed ptr @published_output
+    %t9 = load u8 %t8
+    %t10 = cmp ne u8 %t9, 19
+    branch %t10, ^if_then_5, ^if_else_6
+
+  block ^if_then_5:
+    return i32 2
+
+  block ^if_else_6:
+    %t11 = call u32 @two_outputs(%t7, %t7)
+    %t12 = cmp ne u32 %t11, 9
+    branch %t12, ^if_then_8, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t13 = load u8 %t7
+    %t14 = cmp ne u8 %t13, 4
+    branch %t14, ^if_then_8, ^if_end_9
+
+  block ^if_then_8:
+    return i32 3
+
+  block ^if_end_9:
+    call void @observable_write(%t7)
+    %t15 = load u8 %t7
+    %t16 = cmp ne u8 %t15, 7
+    branch %t16, ^if_then_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t17 = load volatile u32 @output_events
+    %t18 = cmp ne u32 %t17, 1
+    branch %t18, ^if_then_11, ^if_end_12
+
+  block ^if_then_11:
+    return i32 4
+
+  block ^if_end_12:
+    call void @free(%t7)
+    %t19 = call i32 @allocation_errno(16)
+    branch %t19, ^if_then_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t20 = call i32 @allocation_errno(9223372036854775807)
+    %t21 = cmp ne i32 %t20, 1
+    branch %t21, ^if_then_14, ^if_end_15
+
+  block ^if_then_14:
+    return i32 5
+
+  block ^if_end_15:
+    return i32 0
+}
+function @__private_output0(%n : i64) -> i64 [binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = binary add i64 %n, 5
+    return i64 %t1
+}

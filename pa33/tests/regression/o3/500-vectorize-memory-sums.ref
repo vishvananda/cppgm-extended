@@ -129,7 +129,7 @@ function @field(%this : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %v = load typed i32 %p
     %sum = binary add i32 %old, %v
     store typed i32 %sum, %t1
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -181,7 +181,7 @@ function @typed(%out : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %v = load typed i32 %p
     %wide = convert sext i64 i32 %v
     %sum = binary add i64 %old, %wide
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^loop_exit_6
 
@@ -202,7 +202,7 @@ function @refused(%out : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %sum = binary add i32 %v, %old
     %twice = binary add i32 %sum, %sum
     store typed i32 %twice, %out
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 

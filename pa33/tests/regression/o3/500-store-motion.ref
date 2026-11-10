@@ -540,7 +540,7 @@ function @through_unknown_step(%row : i64, %n : i64) -> void [no_inline=yes] {
     %q = index i64 @values, %i
     %v = load typed i64 %q
     %t = binary add i64 %s, %v
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^loop_exit_6
 
@@ -588,7 +588,7 @@ function @changing_step(%n : i64) -> void [no_inline=yes] {
     %i = phi i64 [^loop_preheader_4: %t18, ^body: %next]
     %p = index i64 @table, %i
     store typed i64 %i, %p
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -601,7 +601,7 @@ function @two_loops(%n : i64) -> void [no_inline=yes] {
 
   block ^one:
     %i = phi i64 [^entry: 0, ^one: %i2]
-    %i2 = binary add i64 %i, 1
+    %i2 = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %i2, %n
     branch %c, ^one, ^loop_exit_2
 
@@ -611,7 +611,7 @@ function @two_loops(%n : i64) -> void [no_inline=yes] {
 
   block ^two:
     %j = phi i64 [^two: %j2, ^loop_exit_2: 0]
-    %j2 = binary add i64 %j, 1
+    %j2 = binary add nowrap i64 %j, 1
     %d = cmp lt i64 %j2, %n
     branch %d, ^two, ^loop_exit_4
 

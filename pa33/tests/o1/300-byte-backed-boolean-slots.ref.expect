@@ -1,0 +1,5 @@
+instructions <= 16 in @boolean_bytes
+none(load) in @boolean_bytes
+none(store) in @boolean_bytes
+count(load volatile) >= 1 in @volatile_byte
+count(store volatile) >= 1 in @volatile_byte

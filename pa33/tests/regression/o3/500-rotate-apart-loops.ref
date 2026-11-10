@@ -36,7 +36,7 @@ function @shared_exit(%n : i64, %m : i64, %p : ptr) -> i64 [no_inline=yes] {
     %t18 = phi i64 [^first_body: %a_next, ^loop_preheader_4: %t17]
     %at = index i64 %p, %t18
     store i64 %t18, %at
-    %a_next = binary add i64 %t18, 1
+    %a_next = binary add nowrap i64 %t18, 1
     %t21 = cmp lt i64 %a_next, %n
     branch %t21, ^first_body, ^after
 
@@ -80,7 +80,7 @@ function @shared_exit(%n : i64, %m : i64, %p : ptr) -> i64 [no_inline=yes] {
     %t36 = phi i64 [^second_body: %b_next, ^loop_preheader_12: %t35]
     %to = index i64 %p, %t36
     store i64 %m, %to
-    %b_next = binary add i64 %t36, 1
+    %b_next = binary add nowrap i64 %t36, 1
     %t39 = cmp lt i64 %b_next, %m
     branch %t39, ^second_body, ^join
 

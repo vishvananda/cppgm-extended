@@ -16,7 +16,7 @@ function @hoist_disjoint_global(%limit : i64) -> i64 [no_inline=yes] {
 
   block ^body:
     store i64 %value, @other
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     jump ^header
 
   block ^exit:
@@ -39,7 +39,7 @@ function @keep_across_unknown_call(%limit : i64) -> i64 [no_inline=yes] {
     %value = load i64 @stable
     call void @unknown_effects()
     store i64 %value, @other
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     jump ^header
 
   block ^exit:
@@ -59,7 +59,7 @@ function @keep_across_atomic(%limit : i64) -> i64 [no_inline=yes] {
     %value = load i64 @stable
     atomic_store i64 %i, %address, 0
     store i64 %value, @other
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     jump ^header
 
   block ^exit:

@@ -46,7 +46,7 @@ function @up_lt(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %r = binary add i32 %v, 1
     %o = index i32 %d, %i
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -323,7 +323,7 @@ function @flipped(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %r = binary add i32 %v, 1
     %o = index i32 %d, %i
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp gt i64 %n, %next
     branch %c, ^body, ^done
 
@@ -378,7 +378,7 @@ function @stays_on_false(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %r = binary add i32 %v, 1
     %o = index i32 %d, %i
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp ge i64 %next, %n
     branch %c, ^done, ^body
 

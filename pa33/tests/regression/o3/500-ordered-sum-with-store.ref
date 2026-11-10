@@ -11,7 +11,7 @@ function @sum_and_store(%x : ptr, %d : ptr, %n : i64) -> f64 [no_inline=yes] {
     %to = index f64 %d, %t3
     store typed f64 0.25, %to
     %sum = binary add f64 %v, %t2
-    %next = binary add i64 %t3, 1
+    %next = binary add nowrap i64 %t3, 1
     %t9 = cmp lt i64 %next, %n
     branch %t9, ^latch, ^exit
 

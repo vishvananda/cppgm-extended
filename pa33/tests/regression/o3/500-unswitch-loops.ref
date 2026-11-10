@@ -50,7 +50,7 @@ function @on_parameter(%flag : i64, %p : ptr, %n : i64) -> i64 [no_inline=yes] {
     %twice = binary add i64 %v, %v
     store i64 %twice, %at
     %next_sum = binary add i64 %twice, %t19
-    %next = binary add i64 %t20, 1
+    %next = binary add nowrap i64 %t20, 1
     %t26 = cmp lt i64 %next, %n
     branch %t26, ^body, ^exit
 
@@ -95,7 +95,7 @@ function @on_parameter(%flag : i64, %p : ptr, %n : i64) -> i64 [no_inline=yes] {
     %t48 = unary neg i64 %t47
     store i64 %t48, %t46
     %t49 = binary add i64 %t44, %t48
-    %t50 = binary add i64 %t45, 1
+    %t50 = binary add nowrap i64 %t45, 1
     %t51 = cmp lt i64 %t50, %n
     branch %t51, ^loop_preheader_13, ^exit
 
@@ -166,7 +166,7 @@ function @on_outer_compare(%p : ptr, %n : i64) -> void [no_inline=yes] {
     jump ^unrolled_4
 
   block ^unrolled_4:
-    %i_next = binary add i64 %t2, 1
+    %i_next = binary add nowrap i64 %t2, 1
     %t35 = cmp lt i64 %i_next, %n
     branch %t35, ^unrolled_1, ^exit
 
@@ -182,7 +182,7 @@ function @read_past_exit(%flag : i64, %p : ptr, %n : i64) -> i64 [no_inline=yes]
     %at = index i64 %p, %i
     %v = load i64 %at
     call void @touch(%v)
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %more = cmp lt i64 %next, %n
     branch %more, ^body, ^after
 
@@ -191,7 +191,7 @@ function @read_past_exit(%flag : i64, %p : ptr, %n : i64) -> i64 [no_inline=yes]
     %t7 = index i64 %p, %t6
     %t8 = load i64 %t7
     call void @touch(1)
-    %t9 = binary add i64 %t6, 1
+    %t9 = binary add nowrap i64 %t6, 1
     %t10 = cmp lt i64 %t9, %n
     branch %t10, ^loop_preheader_2, ^after
 
@@ -214,7 +214,7 @@ function @keep_exit_test(%flag : i64, %p : ptr, %n : i64) -> i64 [no_inline=yes]
   block ^latch:
     %at = index i64 %p, %t2
     store i64 %t2, %at
-    %next = binary add i64 %t2, 1
+    %next = binary add nowrap i64 %t2, 1
     %t5 = cmp lt i64 %next, %n
     branch %t5, ^body, ^exit
 
@@ -239,7 +239,7 @@ function @keep_variant_test(%p : ptr, %n : i64) -> void [no_inline=yes] {
     jump ^latch
 
   block ^latch:
-    %next = binary add i64 %t2, 1
+    %next = binary add nowrap i64 %t2, 1
     %t7 = cmp lt i64 %next, %n
     branch %t7, ^body, ^exit
 
@@ -260,7 +260,7 @@ function @keep_unwinding_call(%flag : i64, %n : i64) -> void [no_inline=yes] {
     jump ^latch
 
   block ^latch:
-    %next = binary add i64 %t2, 1
+    %next = binary add nowrap i64 %t2, 1
     %t4 = cmp lt i64 %next, %n
     branch %t4, ^body, ^exit
 

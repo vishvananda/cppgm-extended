@@ -4,6 +4,22 @@ The [assignment](README.md) defines the interface and quality bar. These notes
 explain ways to reason about improvements; they prescribe neither a pass order
 nor the reference implementation's data structures or tuning policy.
 
+Equivalent object-value spellings should preserve the same snapshot semantics
+and expose the same field information. Promote independent fields before
+combining their arithmetic when that avoids unnecessary memory transfers.
+Measure both orders rather than assuming that a wider operation is faster.
+
+For private boolean storage, a one-bit write establishes a normalized byte
+representation; an arbitrary byte write does not. Escapes, mixed writes and
+volatile accesses invalidate that simple proof. For loops, distinguish a
+nonnegative counter with a proved nonwrapping step from one whose initial
+value or wrap behavior is unknown before simplifying signed arithmetic.
+
+Discarded heap output can be dead even when a helper's return value is live.
+Prove that its destination is neither read nor captured, preserve its other
+effects and keep any specialized copies bounded and reusable. A payload
+benchmark should consume the produced bytes so it measures useful work.
+
 ## Start with proofs and small examples
 
 For each transformation, state the behavior it preserves, the facts it needs,

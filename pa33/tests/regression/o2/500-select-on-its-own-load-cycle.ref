@@ -42,7 +42,7 @@ function @scan(%a : ptr, %n : i64) -> i64 [binding=strong] {
     %value = load typed f64 %at
     %positive = cmp gt f64 %value, 0
     %t7 = select i64 %positive, %i, %best
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     jump ^loop
 
   block ^done:

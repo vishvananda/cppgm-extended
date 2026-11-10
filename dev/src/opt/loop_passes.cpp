@@ -47,7 +47,6 @@ public:
 
 	bool run(bool fresh);
 	bool unroll();
-	bool mark_no_wrap();
 	bool hoist_loads();
 	bool version_fills();
 
@@ -3271,88 +3270,6 @@ bool LoopPass::hoist_loads()
 	return changed;
 }
 
-bool LoopPass::mark_no_wrap()
-{
-	c_.ensure_cfg();
-	find_loops(body_, cfg_, forest_);
-	bool any = false;
-	for (uint32_t loop = 0; loop < forest_.loops.size(); ++loop)
-	{
-		const Loop& l = forest_.loops[loop];
-		if (l.latches.size() != 1)
-			continue;
-		for (InstId i = body_.blocks[l.header].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
-			i = body_.instructions[i].next)
-		{
-			const Type type = body_.instructions[i].type;
-			const TypeKind kind = type.kind();
-			if (!(kind == TypeKind::I8 || kind == TypeKind::U8 || kind == TypeKind::I16 || kind == TypeKind::U16 ||
-					kind == TypeKind::I32))
-				continue;
-			Induction iv;
-			if (!induction(loop, i, iv) || iv.pointer || iv.step_bytes != 1)
-				continue;
-			const InstId step = body_.temps[iv.next].def;
-			if (body_.instructions[step].op != Opcode::Binary ||
-				static_cast<BinaryOp>(body_.instructions[step].sub) != BinaryOp::Add)
-				continue;
-			const bool is_signed = kind == TypeKind::I8 || kind == TypeKind::I16 || kind == TypeKind::I32;
-			// (A latch test sees the start's increment first.)
-			bool start_below_max = false;
-			if (iv.init.is(ValueKind::Integer))
-			{
-				const unsigned bits = static_cast<unsigned>(8 * storage_bytes(type)) - (is_signed ? 1 : 0);
-				const Literal start = normalize_integer(type, body_.literals[iv.init.index]);
-				start_below_max = static_cast<int64_t>(start.low) < static_cast<int64_t>((1ull << bits) - 1);
-			}
-			// The guard: the header's branch on the counter (the header's
-			// other successor leaving), or the latch's on the next value.
-			// The header's guards only a step past it: one in the header
-			// runs before its test, on the leaving pass too.
-			bool step_in_header = false;
-			for (InstId k = body_.blocks[l.header].first; k != kNoId && !step_in_header; k = body_.instructions[k].next)
-				step_in_header = k == step;
-			bool guarded = false;
-			for (unsigned which = 0; which < 2 && !guarded; ++which)
-			{
-				if ((which == 0 && step_in_header) || (which == 1 && !start_below_max))
-					continue;
-				const BlockId b = which == 0 ? l.header : l.latches[0];
-				const Instruction& term = body_.instructions[body_.blocks[b].last];
-				if (term.op != Opcode::Branch || !term.ops[0].is(ValueKind::Temp) ||
-					body_.temps[term.ops[0].index].def == kNoId)
-					continue;
-				const Instruction& cmp = body_.instructions[body_.temps[term.ops[0].index].def];
-				if (cmp.op != Opcode::Compare || cmp.type != type)
-					continue;
-				const bool in1 = in_loop(forest_, loop, term.ops[1].index),
-						   in2 = in_loop(forest_, loop, term.ops[2].index);
-				if (in1 == in2)
-					continue;
-				// Continuing on true (the in-loop target first) or on false.
-				const bool continue_on_true = in1;
-				const TempId tested = which == 0 ? iv.value : iv.next;
-				for (unsigned side = 0; side < 2 && !guarded; ++side)
-				{
-					if (!(cmp.ops[side].is(ValueKind::Temp) && cmp.ops[side].index == tested) ||
-						!invariant(loop, cmp.ops[1 - side]))
-						continue;
-					ComparePredicate pred = side == 0 ? static_cast<ComparePredicate>(cmp.sub)
-													  : swapped(static_cast<ComparePredicate>(cmp.sub));
-					if (!continue_on_true)
-						pred = inverted(pred);
-					guarded = pred == (is_signed ? ComparePredicate::Lt : ComparePredicate::Ult);
-				}
-			}
-			if (!guarded)
-				continue;
-			body_.instructions[step].flags |= IF_NO_WRAP;
-			any = true;
-		}
-	}
-	return any;
-}
-
 bool hoist_loop_loads(FunctionContext& context)
 {
 	LoopPass pass(context);
@@ -3366,12 +3283,6 @@ bool version_fill_loops(FunctionContext& context)
 	if (changed)
 		context.invalidate_cfg();
 	return changed;
-}
-
-bool mark_no_wrap_counters(FunctionContext& context)
-{
-	LoopPass pass(context);
-	return pass.mark_no_wrap();
 }
 
 bool unroll_loops(FunctionContext& context)

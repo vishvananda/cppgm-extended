@@ -59,7 +59,7 @@ function @counter_as_data(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %o = index i32 %d, %j
     store typed i32 %m, %o
     %t38 = binary add i32 %t34, 14
-    %j2 = binary add i64 %j, 1
+    %j2 = binary add nowrap i64 %j, 1
     %c = cmp lt i64 %j2, %n
     branch %c, ^body, ^done
 
@@ -105,7 +105,7 @@ function @long_counter_as_data(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %i = phi i64 [^loop_preheader_4: %t18, ^body: %next]
     %o = index i64 %d, %i
     store typed i64 %i, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -121,7 +121,7 @@ function @calls(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %o = index i32 %d, %i
     %v = load typed i32 %o
     call void @touch(%v)
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -138,7 +138,7 @@ function @volatile_load(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %v = load volatile i32 %o
     %r = binary add i32 %v, 1
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -154,7 +154,7 @@ function @strided(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %j = binary mul i64 %i, 2
     %o = index i32 %d, %j
     store typed i32 1, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -171,7 +171,7 @@ function @gather(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %v = load typed i64 %p
     %q = index i32 %d, %v
     store typed i32 1, %q
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -189,7 +189,7 @@ function @from_long(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert sitofp f64 i64 %v
     %o = index f64 %d, %i
     store typed f64 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -207,7 +207,7 @@ function @from_unsigned(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %w = convert uitofp f32 u32 %v
     %o = index f32 %d, %i
     store typed f32 %w, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -224,7 +224,7 @@ function @divides(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %v = load typed i32 %o
     %r = binary div i32 %v, 3
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -240,7 +240,7 @@ function @one_place(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %p = index i32 %x, %i
     %v = load i32 %p
     store i32 %v, %d
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -262,7 +262,7 @@ function @two_blocks(%d : ptr, %n : i64) -> void [no_inline=yes] {
     jump ^tail
 
   block ^tail:
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -281,7 +281,7 @@ function @select_i64(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %r = select i64 %t, %v, 5
     %o = index i64 %d, %i
     store typed i64 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -316,7 +316,7 @@ function @wrapping_index(%d : ptr, %n : i64, %s : i32) -> void [no_inline=yes] {
     %o = index i32 %d, %w
     store typed i32 1, %o
     %j2 = binary add i32 %j, 1
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -394,7 +394,7 @@ function @second_counter(%d : ptr, %n : i64, %s : i64) -> void [no_inline=yes] {
     %o = index i32 %d, %j
     store typed i32 1, %o
     %j2 = binary add i64 %j, 1
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 

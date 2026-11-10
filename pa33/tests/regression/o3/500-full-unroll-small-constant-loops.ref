@@ -30,7 +30,7 @@ function @keep_five_trips() -> i64 [no_inline=yes] {
   block ^body:
     %t1 = phi i64 [^body: %next, ^entry: 0]
     call void @touch(%t1)
-    %next = binary add i64 %t1, 1
+    %next = binary add nowrap i64 %t1, 1
     %t3 = cmp lt i64 %next, 5
     branch %t3, ^body, ^exit
 
@@ -45,14 +45,14 @@ function @keep_branching_body(%choose : i64) -> i64 [no_inline=yes] {
   block ^body:
     %t1 = phi i64 [^body: %next, ^entry: 0]
     call void @touch(1)
-    %next = binary add i64 %t1, 1
+    %next = binary add nowrap i64 %t1, 1
     %t3 = cmp lt i64 %next, 2
     branch %t3, ^body, ^exit
 
   block ^loop_preheader_2:
     %t4 = phi i64 [^loop_preheader_2: %t5, ^entry: 0]
     call void @touch(2)
-    %t5 = binary add i64 %t4, 1
+    %t5 = binary add nowrap i64 %t4, 1
     %t6 = cmp lt i64 %t5, 2
     branch %t6, ^loop_preheader_2, ^exit
 
@@ -82,7 +82,7 @@ function @keep_clone_budget() -> i64 [no_inline=yes] {
     call void @touch(13)
     call void @touch(14)
     call void @touch(15)
-    %next = binary add i64 %t1, 1
+    %next = binary add nowrap i64 %t1, 1
     %t3 = cmp lt i64 %next, 4
     branch %t3, ^body, ^exit
 

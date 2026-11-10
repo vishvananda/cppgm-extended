@@ -30,7 +30,7 @@ function @apply(%p : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
 
   block ^next:
     %u = phi i64 [^direct: %a, ^indirect: %b]
-    %step = binary add i64 %i, 1
+    %step = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %step, %n
     branch %c, ^head, ^done
 

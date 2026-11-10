@@ -75,6 +75,12 @@ The base LowIR type family begins with the scalar and pointer types:
 - `ptr`
 - `v128` (PA30; see [Vector Operations](#vector-operations))
 
+An `i1` value has one value bit and occupies one byte in storage. An `i1`
+store writes its low bit as a byte containing 0 or 1, including when the
+supplied integer value is wider. A byte read of that stored representation
+therefore returns 0 or 1. A write through another access type, an escaped
+address or a volatile access still needs its own memory proof.
+
 PA8 also accepts a restricted object-aware direct call-boundary type:
 
 - `obj<bytesxalign>`

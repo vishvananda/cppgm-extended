@@ -89,7 +89,7 @@ function @same_element(%a : ptr, %n : i64) -> void [no_inline=yes] {
     %v = load typed i32 %p
     %r = binary add i32 %v, 1
     store typed i32 %r, %p
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -108,7 +108,7 @@ function @reads_behind(%a : ptr, %n : i64) -> void [no_inline=yes] {
     %r = binary add i32 %v, 1
     %o = index i32 %a, %i
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -127,7 +127,7 @@ function @reads_behind_3(%a : ptr, %n : i64) -> void [no_inline=yes] {
     %r = binary add i32 %v, 1
     %o = index i32 %a, %i
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -175,7 +175,7 @@ function @apart_behind(%a : ptr, %n : i64) -> void [no_inline=yes] {
     %r = binary add i32 %v, 1
     %o = index i32 %a, %i
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -249,7 +249,7 @@ function @rows_of_one_object(%k : i64, %n : i64) -> void [no_inline=yes] {
     %v = load typed i32 %p
     %o = index i32 @table, %i
     store typed i32 %v, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -291,7 +291,7 @@ function @two_objects(%n : i64) -> void [no_inline=yes] {
     %v = load typed i32 %p
     %o = index i32 @table, %i
     store typed i32 %v, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -335,7 +335,7 @@ function @types_apart(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %r = convert fptosi i32 f32 %v
     %o = index i32 %d, %i
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -386,7 +386,7 @@ function @untyped(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %v = load i32 %p
     %o = index i32 %d, %i
     store i32 %v, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -467,7 +467,7 @@ function @three_stores(%a0 : ptr, %a1 : ptr, %a2 : ptr, %x : ptr, %n : i64) -> v
     store i32 %v, %o1
     %o2 = index i32 %a2, %i
     store i32 %v, %o2
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -490,7 +490,7 @@ function @four_stores(%a0 : ptr, %a1 : ptr, %a2 : ptr, %a3 : ptr, %x : ptr, %n :
     store i32 %v, %o2
     %o3 = index i32 %a3, %i
     store i32 %v, %o3
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -560,7 +560,7 @@ function @one_typed(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %r = convert fptosi i32 f32 %v
     %o = index i32 %d, %i
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 

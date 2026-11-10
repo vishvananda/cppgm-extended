@@ -376,7 +376,7 @@ function @reverse_copy(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %m = binary sub i64 %n, %i
     %o = index i32 %d, %m
     store typed i32 %v, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 

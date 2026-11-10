@@ -306,6 +306,18 @@ An object returned by value is a read of its storage, not an escape of its
 address. Preserve actual address captures, pointer returns, volatile reads
 and physical frame observations when combining field copies.
 
+The object-transfer fixtures use equivalent value-copy and whole-object
+memory forms. Preserve when each snapshot is taken while meeting their size
+bounds. Boolean-storage fixtures also read through byte types: preserve
+arbitrary byte writes, escaped storage and volatile accesses. Counter fixtures
+include nonnegative loops, negative starts and wrapping counters; any arithmetic
+simplification must preserve all of them.
+
+Heap-output fixtures discard some produced bytes while retaining a helper's
+return value or other effects. Meet the stated quality bounds while preserving
+observed contents, pointer escapes, volatile accesses and allocation-error
+observations such as `errno`. No particular specialization strategy is required.
+
 Recursive-dispatch fixtures bound redundant call layers around loop work.
 Preserve recursive exits, argument effects, unwinding and the stated code-size
 bounds; the tests do not prescribe a particular call-graph algorithm.

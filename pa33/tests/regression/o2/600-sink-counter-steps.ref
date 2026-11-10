@@ -8,7 +8,7 @@ function @reader_after_step(%p : ptr, %n : i64) -> i64 [binding=strong, no_inlin
     %q = index i64 %p, %i
     %v = load i64 %q
     %total = binary add i64 %sum, %v
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %more = cmp lt i64 %next, %n
     branch %more, ^loop, ^done
 
@@ -21,7 +21,7 @@ function @compare_read_twice(%p : ptr, %n : i64) -> i1 [binding=strong, no_inlin
 
   block ^loop:
     %i = phi i64 [^entry: 0, ^loop: %next]
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %more = cmp lt i64 %next, %n
     %q = index i64 %p, %i
     %w = convert zext i64 i1 %more
@@ -37,7 +37,7 @@ function @step_read_early(%p : ptr, %n : i64) -> void [binding=strong, no_inline
 
   block ^loop:
     %i = phi i64 [^entry: 0, ^loop: %next]
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %q = index i64 %p, %next
     store i64 %i, %q
     %more = cmp lt i64 %next, %n

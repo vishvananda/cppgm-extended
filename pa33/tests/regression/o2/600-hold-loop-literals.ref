@@ -24,7 +24,7 @@ function @scale(%p : ptr, %n : i64) -> f64 [binding=strong, no_inline=yes] {
   block ^next:
     %v = phi f64 [^rare: %r, ^usual: %y]
     %u = binary add f64 %t, %v
-    %step = binary add i64 %i, 1
+    %step = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %step, %n
     branch %c, ^head, ^done
 
@@ -38,7 +38,7 @@ function @noted(%n : i64) -> f64 [binding=strong, no_inline=yes] {
   block ^head:
     %i = phi i64 [^entry: 0, ^head: %step]
     %r = call f64 @note(1.5)
-    %step = binary add i64 %i, 1
+    %step = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %step, %n
     branch %c, ^head, ^done
 

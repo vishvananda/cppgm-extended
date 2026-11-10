@@ -40,7 +40,7 @@ function @dot(%x : ptr, %y : ptr, %n : i64) -> f64 [no_inline=yes] {
     %w = load typed f64 %q
     %m = binary mul f64 %v, %w
     %sum = binary add f64 %s, %m
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -95,7 +95,7 @@ function @quotients(%x : ptr, %y : ptr, %n : i64) -> f32 [no_inline=yes] {
     %w = load typed f32 %q
     %m = binary div f32 %v, %w
     %sum = binary sub f32 %s, %m
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -224,7 +224,7 @@ function @plain(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
     %p = index f64 %x, %i
     %v = load typed f64 %p
     %sum = binary add f64 %s, %v
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -242,7 +242,7 @@ function @running(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
     %v = load typed f64 %p
     %m = binary mul f64 %s, %v
     %sum = binary add f64 %s, %m
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -260,7 +260,7 @@ function @thirds(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     %v = load typed i32 %p
     %h = binary div i32 %v, 3
     %sum = binary add i32 %s, %h
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 

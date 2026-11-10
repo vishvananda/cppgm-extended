@@ -1,0 +1,13 @@
+function @object_forms(%a : f64, %b : f64, %c : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %xy = binary add f64 %a, %b
+    %xyz = binary add f64 %c, %xy
+    return f64 %xyz
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %value = call f64 @object_forms(1.5, -2.25, 4.0)
+    %bad = cmp ne f64 %value, 3.25
+    %out = convert zext i32 i1 %bad
+    return i32 %out
+}

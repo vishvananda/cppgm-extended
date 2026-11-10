@@ -808,6 +808,12 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 		run_inline_wave(program, options, stats, InlineWave::Once, budgets, original, nounwind, simplify);
 		prune_unreachable(program, stats);
 		run_inline_wave(program, options, stats, InlineWave::Late, budgets, original, nounwind, simplify);
+		if (level >= 2 && elide_private_allocations(program, stats, simplify))
+		{
+			original.resize(program.symbols.size(), 0);
+			nounwind.resize(program.symbols.size(), 0);
+			prune_unreachable(program, stats);
+		}
 		if (level >= 2)
 			forward_calls(program, stats);
 		prune_unreachable(program, stats);

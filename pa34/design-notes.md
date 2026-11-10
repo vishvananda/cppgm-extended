@@ -5,6 +5,13 @@ the behavior, quality envelopes and kernel limits. These notes explain design
 questions and failure cases, without prescribing an allocator, instruction
 sequence or tuning policy.
 
+An unsigned division with wide operands can sometimes use a narrower hardware
+operation after a range check, retaining a full-width fallback. Keep both
+original operands available, respect fixed registers and address-register
+dependencies, and test values on both sides of the width boundary. Extra
+checks can save time despite increasing instruction count; measure the target
+CPU and code-size tradeoff before adopting such a policy.
+
 ## Describe what instructions do
 
 Record each instruction's uses, definitions and clobbers, including call

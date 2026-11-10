@@ -34,6 +34,12 @@ bool specialize_arguments(
 // inliner may then inline it. True when it made a copy.
 bool copy_for_callees(lowir::Program& program, OptimizerStats& stats);
 
+// O2+: drop unobserved library allocations and their private writes. Calls
+// through a proven write-only, noncapturing parameter can share a bounded
+// copy with just those writes removed, retaining its return and other effects.
+bool elide_private_allocations(
+	lowir::Program& program, OptimizerStats& stats, const std::function<void(lowir::SymbolId)>& simplify);
+
 // O2+: redirect calls through call-and-return wrappers, composing parameter
 // permutations and constants without copying a body or changing signatures.
 // Keep argument evaluation, materialization and cleanup, and honor no-inline

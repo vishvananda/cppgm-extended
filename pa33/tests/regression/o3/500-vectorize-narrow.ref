@@ -52,7 +52,7 @@ function @add_bytes(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=y
     %t = binary add u8 %a, %b
     %o = index u8 %d, %i
     store u8 %t, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -110,7 +110,7 @@ function @sum_bytes(%x : ptr, %n : i64) -> i8 [no_inline=yes] {
     %a = load i8 %p
     %t33 = binary and i8 %a, 10
     %t34 = binary add i8 %s, %t33
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -166,7 +166,7 @@ function @sum_shorts(%x : ptr, %n : i64) -> u16 [no_inline=yes] {
     %a = load typed u16 %p
     %t31 = binary mul u16 %a, 3
     %t32 = binary add u16 %s, %t31
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -241,7 +241,7 @@ function @mul_bytes(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t = convert trunc u8 i32 %m
     %o = index u8 %d, %i
     store u8 %t, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -320,7 +320,7 @@ function @both(%d : ptr, %e : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t = binary add u8 %a, 44
     %q = index u8 %d, %i
     store u8 %t, %q
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -375,7 +375,7 @@ function @other_sign(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t25 = binary add u8 %a, 1
     %o = index u8 %d, %i
     store u8 %t25, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
@@ -395,7 +395,7 @@ function @running(%d : ptr, %x : ptr, %n : i64) -> i32 [no_inline=yes] {
     %u = binary add i32 %sum, 1
     %o = index i32 %d, %i
     store i32 %u, %o
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
