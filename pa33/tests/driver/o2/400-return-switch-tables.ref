@@ -15,9 +15,6 @@ global @__constexpr_template__2 [storage=readonly, binding=internal] = {
   u8 200
 }
 global @__constexpr_template__3 [storage=readonly, binding=internal] = {
-  zero 512
-}
-global @__constexpr_template__4 [storage=readonly, binding=internal] = {
   i32 -40
   i32 -72
   i32 -32
@@ -289,7 +286,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr @__constexpr_template__1
     %t2 = addr @__constexpr_template__2
     %t3 = addr $storage
-    copyobj 512x1 @__constexpr_template__3, %t3
+    zeroinit 512x1 %t3
     jump ^for_cond_1
 
   block ^for_cond_1:
@@ -351,7 +348,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_1
 
   block ^for_end_13:
-    %t26 = addr @__constexpr_template__4
+    %t26 = addr @__constexpr_template__3
     %t27 = index i8 %t3, 160
     %t28 = index i8 %t3, 400
     jump ^for_cond_14

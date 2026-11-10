@@ -34,8 +34,8 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -44,5 +44,4 @@ function @main
     mov rsi, 0
     mov rdx, 1
     call @check [args=(rdx,rsi,rdi)]
-    sext.i32 rax
     ret rax

@@ -38,16 +38,15 @@ function @keep_across_edge
   block ^continuation
     mov rdi, 30
     call @bump [args=(rdi)]
-    mov r8, rax
-    add rbx, r8
+    add rbx, rax
     ret rbx
 
 function @main
   abi
     return i32 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 

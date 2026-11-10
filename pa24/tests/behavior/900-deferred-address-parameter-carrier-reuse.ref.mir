@@ -48,8 +48,7 @@ function @seed
     epilogues shared
 
   block ^entry
-    add rdx, rcx
-    zext.i32 rdx
+    add.u32 rdx, rcx
     load.ptr rdi, [rdi+104]
     imul rsi, 168
     store.u32 [rdi+rsi+136], rdx
@@ -158,8 +157,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx
@@ -182,9 +181,8 @@ function @main
     store.u8 [rsp+8], r11
     call @probe [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov r8, rax
-    zext.i32 r8
-    cmp.i64 r8, 2
+    zext.i32 rax
+    cmp.i64 rax, 2
     jne ^fail
     jmp ^check1
 

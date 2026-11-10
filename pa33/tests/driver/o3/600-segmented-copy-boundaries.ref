@@ -1,7 +1,3 @@
-global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  zero 32
-}
-
 function @copy_observed(%node : ptr, %dst : ptr, %src : ptr, %n : u32) -> void [binding=strong, object=_Z13copy_observedPPiPViPKij, no_inline=yes] {
   block ^entry:
     %t1 = convert zext i64 u32 %n
@@ -128,13 +124,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_1:
     %t1 = phi u32 [^for_iter_16: %t75, ^entry: 0]
     %t2 = addr $a
-    copyobj 32x4 @__constexpr_template__1, %t2
+    zeroinit 32x4 %t2
     %t3 = addr $b
-    copyobj 32x4 @__constexpr_template__1, %t3
+    zeroinit 32x4 %t3
     %t4 = addr $c
-    copyobj 32x4 @__constexpr_template__1, %t4
+    zeroinit 32x4 %t4
     %t5 = addr $spare
-    copyobj 32x4 @__constexpr_template__1, %t5
+    zeroinit 32x4 %t5
     %t6 = addr $nodes
     store typed ptr %t2, %t6
     %t7 = index i8 %t6, 8

@@ -20,7 +20,6 @@ function @bits32
     fmov.f32 [rbp-8], xmm0
     fmul.f32 xmm0, [rbp-8], 2.0f
     fmov.f32 rax, xmm0
-    sext.i32 rax
     ret rax
 
 function @bits64

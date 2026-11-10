@@ -15,11 +15,10 @@ function @low_signed
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.i32 rax, [rbp-8]
     ret rax
 
@@ -33,11 +32,10 @@ function @high_unsigned
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.u32 rax, [rbp-4]
     ret rax
 
@@ -51,11 +49,10 @@ function @high_signed
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.i32 rax, [rbp-4]
     ret rax
 
@@ -69,11 +66,10 @@ function @last_signed
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.i8 rax, [rbp-1]
     ret rax
 
@@ -87,11 +83,10 @@ function @inner_unsigned
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.u8 rax, [rbp-5]
     ret rax
 
@@ -105,11 +100,10 @@ function @unaligned_signed
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.i16 rax, [rbp-7]
     ret rax
 
@@ -123,11 +117,10 @@ function @unaligned_unsigned
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.u16 rax, [rbp-5]
     ret rax
 
@@ -141,11 +134,10 @@ function @last_half
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.u16 rax, [rbp-2]
     ret rax
 
@@ -155,17 +147,16 @@ function @second_high
     param %p -> rsi : i64
     return i32 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-16] : obj<16x8>
-    param-slot %p -> [rbp-32] : obj<16x8>
+    param-slot %p -> [rbp-16] : obj<16x8>
 
   block ^entry
-    store.i64 [rbp-32], rdi
-    store.i64 [rbp-24], rsi
-    copy_bytes 16x8, [rbp-16], [rbp-32]
+    store.i64 [rbp-16], rdi
+    store.i64 [rbp-8], rsi
     load.i32 rax, [rbp-4]
     ret rax
 
@@ -175,17 +166,16 @@ function @cross_carriers
     param %p -> rsi : i64
     return u32 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-16] : obj<16x8>
-    param-slot %p -> [rbp-32] : obj<16x8>
+    param-slot %p -> [rbp-16] : obj<16x8>
 
   block ^entry
-    store.i64 [rbp-32], rdi
-    store.i64 [rbp-24], rsi
-    copy_bytes 16x8, [rbp-16], [rbp-32]
+    store.i64 [rbp-16], rdi
+    store.i64 [rbp-8], rsi
     load.u32 rax, [rbp-10]
     ret rax
 
@@ -199,11 +189,10 @@ function @after_mutation
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     store.u8 [rbp-3], 31
     load.u32 rax, [rbp-4]
     ret rax
@@ -213,18 +202,18 @@ function @after_escape
     param %p -> rdi : obj<8x8>
     return u32 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
+    store.i64 [rbp-8], rdi
     lea rbx, [rbp-8]
-    copy_bytes 8x8, rbx, [rbp-16]
+    copy_bytes 8x8, rbx, [rbp-8]
     mov rdi, rbx
     call @stomp [args=(rdi)]
     load.u32 rax, [rbx+4]
@@ -240,11 +229,10 @@ function @after_call
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     mov rdi, 91
     mov rsi, 82
     mov rdx, 73
@@ -265,11 +253,10 @@ function @observed_field
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.i32 rax, [rbp-4]
     ret rax
 
@@ -279,17 +266,16 @@ function @mixed_carriers
     param %p -> xmm0 : i64
     return i32 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-16] : obj<16x8>
-    param-slot %p -> [rbp-32] : obj<16x8>
+    param-slot %p -> [rbp-16] : obj<16x8>
 
   block ^entry
-    store.i64 [rbp-32], rdi
-    fmov.f64 [rbp-24], xmm0
-    copy_bytes 16x8, [rbp-16], [rbp-32]
+    store.i64 [rbp-16], rdi
+    fmov.f64 [rbp-8], xmm0
     load.i32 rax, [rbp-12]
     ret rax
 
@@ -303,11 +289,10 @@ function @sse_carrier
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    fmov.f64 [rbp-16], xmm0
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    fmov.f64 [rbp-8], xmm0
     load.i32 rax, [rbp-4]
     ret rax
 
@@ -316,18 +301,18 @@ function @retained_frame
     param %p -> rdi : obj<8x8>
     return i32 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
+    store.i64 [rbp-8], rdi
     lea rdi, [rbp-8]
-    copy_bytes 8x8, rdi, [rbp-16]
+    copy_bytes 8x8, rdi, [rbp-8]
     load.i32 rbx, [rdi+4]
     call @stomp [args=(rdi)]
     ret rbx
@@ -374,11 +359,10 @@ function @both_fields
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.u32 r8, [rbp-4]
     load.u32 r9, [rbp-8]
     add r8, r9
@@ -395,11 +379,10 @@ function @branch_field
     frame_pointer keep
     epilogues shared
     slot $home -> [rbp-8] : obj<8x8>
-    param-slot %p -> [rbp-16] : obj<8x8>
+    param-slot %p -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.i32 r8, [rbp-4]
     cmp.i32 rsi, 0
     jne ^take
@@ -443,48 +426,40 @@ function @main
     load.i64 rdi, [rbp-8]
     call @low_signed [args=(rdi)]
     sext.i32 rax
-    mov rdx, -1247373432
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -1247373432
     setne rbx
     movzx rbx, rbx
     store.i64 [rbp-8], -1017017724017666168
     load.i64 rdi, [rbp-8]
     call @high_unsigned [args=(rdi)]
     zext.i32 rax
-    mov rdx, 4058174404
-    cmp.u32 rax, rdx
+    cmp.u32 rax, 4058174404
     setne r12
     movzx r12, r12
     store.i64 [rbp-8], -1017017724017666168
     load.i64 rdi, [rbp-8]
     call @high_signed [args=(rdi)]
     sext.i32 rax
-    mov rdx, -236792892
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -236792892
     setne r13
     movzx r13, r13
     store.i64 [rbp-8], -1017017724017666168
     load.i64 rdi, [rbp-8]
     call @last_signed [args=(rdi)]
-    sext.i8 rax
-    mov rdx, -15
-    cmp.i8 rax, rdx
+    cmp.i8 rax, -15
     setne r14
     movzx r14, r14
     store.i64 [rbp-8], -1017017724017666168
     load.i64 rdi, [rbp-8]
     call @inner_unsigned [args=(rdi)]
-    zext.i8 rax
-    mov rdx, 181
-    cmp.u8 rax, rdx
+    cmp.u8 rax, 181
     setne r15
     movzx r15, r15
     store.i64 [rbp-8], -1017017724017666168
     load.i64 rdi, [rbp-8]
     call @unaligned_signed [args=(rdi)]
     sext.i16 rax
-    mov rdx, -22889
-    cmp.i16 rax, rdx
+    cmp.i16 rax, -22889
     setne r10
     movzx r10, r10
     store.i64 [rbp-32], r10
@@ -492,8 +467,7 @@ function @main
     load.i64 rdi, [rbp-8]
     call @unaligned_unsigned [args=(rdi)]
     zext.i16 rax
-    mov rdx, 50357
-    cmp.u16 rax, rdx
+    cmp.u16 rax, 50357
     setne r10
     movzx r10, r10
     store.i64 [rbp-40], r10
@@ -501,8 +475,7 @@ function @main
     load.i64 rdi, [rbp-8]
     call @last_half [args=(rdi)]
     zext.i16 rax
-    mov rdx, 61922
-    cmp.u16 rax, rdx
+    cmp.u16 rax, 61922
     setne r10
     movzx r10, r10
     store.i64 [rbp-48], r10
@@ -512,8 +485,7 @@ function @main
     load.i64 rsi, [rbp-16]
     call @second_high [args=(rsi,rdi)]
     sext.i32 rax
-    mov rdx, 691686236
-    cmp.i32 rax, rdx
+    cmp.i32 rax, 691686236
     setne r10
     movzx r10, r10
     store.i64 [rbp-56], r10
@@ -523,8 +495,7 @@ function @main
     load.i64 rsi, [rbp-16]
     call @cross_carriers [args=(rsi,rdi)]
     zext.i32 rax
-    mov rdx, 2408640994
-    cmp.u32 rax, rdx
+    cmp.u32 rax, 2408640994
     setne r10
     movzx r10, r10
     store.i64 [rbp-64], r10
@@ -532,8 +503,7 @@ function @main
     load.i64 rdi, [rbp-8]
     call @after_mutation [args=(rdi)]
     zext.i32 rax
-    mov rdx, 4058128324
-    cmp.u32 rax, rdx
+    cmp.u32 rax, 4058128324
     setne r10
     movzx r10, r10
     store.i64 [rbp-72], r10
@@ -541,8 +511,7 @@ function @main
     load.i64 rdi, [rbp-8]
     call @after_escape [args=(rdi)]
     zext.i32 rax
-    mov rdx, 4275878552
-    cmp.u32 rax, rdx
+    cmp.u32 rax, 4275878552
     setne r10
     movzx r10, r10
     store.i64 [rbp-80], r10
@@ -550,8 +519,7 @@ function @main
     load.i64 rdi, [rbp-8]
     call @after_call [args=(rdi)]
     zext.i32 rax
-    mov rdx, 4058174404
-    cmp.u32 rax, rdx
+    cmp.u32 rax, 4058174404
     setne r10
     movzx r10, r10
     store.i64 [rbp-88], r10
@@ -559,8 +527,7 @@ function @main
     load.i64 rdi, [rbp-8]
     call @observed_field [args=(rdi)]
     sext.i32 rax
-    mov rdx, -236792892
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -236792892
     setne r10
     movzx r10, r10
     store.i64 [rbp-96], r10
@@ -570,8 +537,7 @@ function @main
     fmov.f64 xmm0, [rbp-16]
     call @mixed_carriers [args=(rdi,xmm0)]
     sext.i32 rax
-    mov rdx, -236792892
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -236792892
     setne r10
     movzx r10, r10
     store.i64 [rbp-104], r10
@@ -579,8 +545,7 @@ function @main
     fmov.f64 xmm0, [rbp-8]
     call @sse_carrier [args=(xmm0)]
     sext.i32 rax
-    mov rdx, -236792892
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -236792892
     setne r10
     movzx r10, r10
     store.i64 [rbp-112], r10
@@ -588,16 +553,14 @@ function @main
     load.i64 rdi, [rbp-8]
     call @retained_frame [args=(rdi)]
     sext.i32 rax
-    mov rdx, -236792892
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -236792892
     setne r10
     movzx r10, r10
     store.i64 [rbp-120], r10
     store.i64 [rbp-8], -1017017724017666168
     load.i64 rdi, [rbp-8]
     call @both_fields [args=(rdi)]
-    mov rdx, 7105768268
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 7105768268
     setne r10
     movzx r10, r10
     store.i64 [rbp-128], r10
@@ -605,8 +568,7 @@ function @main
     mov rsi, 0
     call @branch_field [args=(rsi,rdi)]
     sext.i32 rax
-    mov rdx, -1247373432
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -1247373432
     setne r10
     movzx r10, r10
     store.i64 [rbp-136], r10
@@ -614,60 +576,58 @@ function @main
     mov rsi, 1
     call @branch_field [args=(rsi,rdi)]
     sext.i32 rax
-    mov rdx, -236792892
-    cmp.i32 rax, rdx
+    cmp.i32 rax, -236792892
     setne rax
     movzx rax, rax
-    add rbx, r12
+    add.i32 rbx, r12
     sext.i32 rbx
-    add rbx, r13
+    add.i32 rbx, r13
     sext.i32 rbx
-    add rbx, r14
+    add.i32 rbx, r14
     sext.i32 rbx
-    add rbx, r15
+    add.i32 rbx, r15
     sext.i32 rbx
     load.i64 r11, [rbp-32]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-40]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-48]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-56]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-64]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-72]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-80]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-88]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-96]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-104]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-112]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-120]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-128]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-136]
-    add rbx, r11
+    add.i32 rbx, r11
     sext.i32 rbx
-    add rbx, rax
-    sext.i32 rbx
+    add.i32 rbx, rax
     ret rbx

@@ -20,6 +20,7 @@ function @read_pair
     frame_pointer keep
     epilogues shared
     slot $pair -> [rbp-16] : obj<16x8>
+    param-slot %pair -> [rbp-16] : obj<16x8>
 
   block ^entry
     copy_bytes 16x8, [rbp-16], [rbp+16]

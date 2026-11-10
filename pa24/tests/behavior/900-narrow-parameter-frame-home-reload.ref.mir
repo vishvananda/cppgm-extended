@@ -104,8 +104,7 @@ function @main
     mov r8, 6
     mov r9, 1
     call @lookup [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    mov r8, rax
-    cmp.i64 r8, 42
+    cmp.i64 rax, 42
     je ^good
     jmp ^bad
 

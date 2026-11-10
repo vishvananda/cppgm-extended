@@ -29,18 +29,17 @@ function @probe
     param %tag -> rdx : obj<1x1>
     return ptr -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx
     slot $tag -> [rbp-8] : obj<1x1>
-    param-slot %tag -> [rbp-16] : obj<1x1>
+    param-slot %tag -> [rbp-8] : obj<1x1>
 
   block ^entry
     mov rbx, rsi
-    store.i64 [rbp-16], rdx
-    copy_bytes 1x1, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdx
     call @identity [args=(rdi)]
     mov rdi, rbx
     call @identity [args=(rdi)]

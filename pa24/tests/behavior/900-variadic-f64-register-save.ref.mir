@@ -10,8 +10,8 @@ function @read_f64
     param %tag -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 256
-    scratch_bytes 48
+    stack_size 208
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $arguments -> [rbp-24] : obj<24x8>

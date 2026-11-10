@@ -70,8 +70,7 @@ function @main
     mov rdi, @cell
     mov rsi, 7
     call @read_after_call [args=(rsi,rdi)]
-    mov r8, rax
-    cmp.i64 r8, 41
+    cmp.i64 rax, 41
     je ^good
     jmp ^bad
 

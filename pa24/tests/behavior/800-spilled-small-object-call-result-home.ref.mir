@@ -41,7 +41,7 @@ function @run
     param %j -> [rbp+40] : i64
     return i64 -> rax
   frame
-    stack_size 128
+    stack_size 112
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -55,7 +55,6 @@ function @run
     temp %t8 -> [rbp-56] : i64
     temp %t9 -> [rbp-64] : i64
     temp %t10 -> [rbp-72] : i64
-    temp %pair -> [rbp-88] : obj<16x8>
 
   block ^entry
     load.i64 rax, [rbp+16]
@@ -92,9 +91,8 @@ function @run
     add r10, 10
     store.i64 [rbp-72], r10
     call @make_pair [args=()]
-    store.i64 [rbp-88], rax
-    store.i64 [rbp-80], rdx
-    copy_bytes 16x8, @copied, [rbp-88]
+    store.i64 @copied, rax
+    store.i64 @copied+8, rdx
     add rbx, r12
     add rbx, r13
     add rbx, r14
@@ -110,8 +108,8 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 

@@ -71,7 +71,6 @@ function @sdiv_i16_7
     mov rax, rdi
     cqo
     idiv r11
-    sext.i16 rax
     ret rax
 
 function @smod_i16_7
@@ -104,9 +103,8 @@ function @sdiv_i32_negative31
   block ^entry
     mov r11, -31
     mov rax, rdi
-    cqo
-    idiv r11
-    sext.i32 rax
+    cqo.i32
+    idiv.i32 r11
     ret rax
 
 function @smod_i32_negative31
@@ -122,8 +120,8 @@ function @smod_i32_negative31
   block ^entry
     mov r11, -31
     mov rax, rdi
-    cqo
-    idiv r11
+    cqo.i32
+    idiv.i32 r11
     ret rdx
 
 function @udiv3
@@ -226,7 +224,6 @@ function @udiv_u8_7
     mov rax, rdi
     mov rdx, 0
     div r11
-    zext.i8 rax
     ret rax
 
 function @umod_u8_7
@@ -261,7 +258,6 @@ function @udiv_u16_1000
     mov rax, rdi
     mov rdx, 0
     div r11
-    zext.i16 rax
     ret rax
 
 function @umod_u16_1000
@@ -295,8 +291,7 @@ function @udiv_u32_31
     mov r11, 31
     mov rax, rdi
     mov rdx, 0
-    div r11
-    zext.i32 rax
+    div.i32 r11
     ret rax
 
 function @umod_u32_31
@@ -313,15 +308,15 @@ function @umod_u32_31
     mov r11, 31
     mov rax, rdi
     mov rdx, 0
-    div r11
+    div.i32 r11
     ret rdx
 
 function @main
   abi
     return i32 -> rax
   frame
-    stack_size 192
-    scratch_bytes 48
+    stack_size 144
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx r12 r13 r14 r15
@@ -351,7 +346,6 @@ function @main
     movzx r12, r12
     mov rdi, -128
     call @smod_narrow3 [args=(rdi)]
-    sext.i8 rax
     cmp.i8 rax, -2
     setne r13
     movzx r13, r13
@@ -413,14 +407,12 @@ function @main
     store.i64 [rbp-56], r10
     mov rdi, 255
     call @udiv_u8_7 [args=(rdi)]
-    zext.i8 rax
     cmp.u8 rax, 36
     setne r10
     movzx r10, r10
     store.i64 [rbp-64], r10
     mov rdi, 255
     call @umod_u8_7 [args=(rdi)]
-    zext.i8 rax
     cmp.u8 rax, 3
     setne r10
     movzx r10, r10

@@ -44,18 +44,16 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $result -> [rbp-16] : obj<16x8>
-    temp %value -> [rbp-32] : obj<16x8>
 
   block ^entry
     call @forward_pair [args=()]
-    store.i64 [rbp-32], rax
-    store.i64 [rbp-24], rdx
-    copy_bytes 16x8, [rbp-16], [rbp-32]
+    store.i64 [rbp-16], rax
+    store.i64 [rbp-8], rdx
     load.i64 r8, [rbp-16]
     load.i64 r9, [rbp-8]
     cmp.i64 r8, 11

@@ -54,8 +54,7 @@ function @main
     mov rdi, rbx
     mov rsi, 123
     call @f [args=(rsi,rdi)]
-    mov r8, rax
-    cmp.ptr r8, rbx
+    cmp.ptr rax, rbx
     jne ^bad_ptr
     jmp ^check_value
 

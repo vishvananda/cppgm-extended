@@ -8,9 +8,6 @@ global @__constexpr_template__2 [storage=readonly, binding=internal] = {
   u32 1
   u32 2
 }
-global @__constexpr_template__3 [storage=readonly, binding=internal] = {
-  zero 32
-}
 
 function @fill_bytes(%p : ptr, %s : ptr, %n : u32) -> void [binding=strong, object=_Z10fill_bytesPcPKcj, no_inline=yes] {
   block ^entry:
@@ -137,46 +134,45 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_7:
     %t25 = load typed u32 %t2
-    %t26 = load typed u32 $y
-    %t27 = cmp ne u32 %t25, %t26
-    branch %t27, ^if_then_9, ^lor_rhs_8
+    %t26 = cmp ne u32 %t25, 16843009
+    branch %t26, ^if_then_9, ^lor_rhs_8
 
   block ^lor_rhs_8:
-    %t28 = load typed u32 %t10
-    %t29 = cmp ne u32 %t26, %t28
-    branch %t29, ^if_then_9, ^if_end_10
+    %t27 = load typed u32 %t10
+    %t28 = cmp ne u32 %t27, 16843009
+    branch %t28, ^if_then_9, ^if_end_10
 
   block ^if_then_9:
     return i32 2
 
   block ^if_end_10:
-    %t30 = addr $wide
-    copyobj 32x16 @__constexpr_template__3, %t30
-    %t31 = load volatile u32 $two
-    call void @fill_wide(%t30, %t31)
+    %t29 = addr $wide
+    zeroinit 32x16 %t29
+    %t30 = load volatile u32 $two
+    call void @fill_wide(%t29, %t30)
     jump ^for_cond_11
 
   block ^for_cond_11:
-    %t32 = phi u32 [^if_end_10: 0, ^if_end_15: %t39]
-    %t33 = cmp ult u32 %t32, 2
-    branch %t33, ^for_body_12, ^for_end_16
+    %t31 = phi u32 [^if_end_10: 0, ^if_end_15: %t38]
+    %t32 = cmp ult u32 %t31, 2
+    branch %t32, ^for_body_12, ^for_end_16
 
   block ^for_body_12:
-    %t34 = index i128 [projection=array_element] %t30, %t32
-    %t35 = load i64 %t34
-    %t36 = index i8 [projection=field] %t34, 8
-    %t37 = load i64 %t36
-    %t38 = cmp ne i64 %t37, 1
-    branch %t38, ^if_then_14, ^lor_rhs_13
+    %t33 = index i128 [projection=array_element] %t29, %t31
+    %t34 = load i64 %t33
+    %t35 = index i8 [projection=field] %t33, 8
+    %t36 = load i64 %t35
+    %t37 = cmp ne i64 %t36, 1
+    branch %t37, ^if_then_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    branch %t35, ^if_then_14, ^if_end_15
+    branch %t34, ^if_then_14, ^if_end_15
 
   block ^if_then_14:
     return i32 3
 
   block ^if_end_15:
-    %t39 = binary add u32 %t32, 1
+    %t38 = binary add u32 %t31, 1
     jump ^for_cond_11
 
   block ^for_end_16:

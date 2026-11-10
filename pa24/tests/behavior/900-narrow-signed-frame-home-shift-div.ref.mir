@@ -66,24 +66,24 @@ function @fold
     sar rbx, 1
     mov r11, 2
     mov rax, r12
-    cqo
-    idiv r11
+    cqo.i32
+    idiv.i32 r11
     mov r8, rax
     sext.i32 r8
     mov r11, 3
     mov rax, r13
-    cqo
-    idiv r11
-    add rbx, r8
+    cqo.i32
+    idiv.i32 r11
+    sext.i32 rdx
+    add.i32 rbx, r8
     sext.i32 rbx
-    add rbx, rdx
+    add.i32 rbx, rdx
     sext.i32 rbx
-    add rbx, r14
+    add.i32 rbx, r14
     sext.i32 rbx
-    add rbx, r15
+    add.i32 rbx, r15
     sext.i32 rbx
     add.i32 rbx, [rbp-8]
-    sext.i32 rbx
     ret rbx
 
 function @main
@@ -104,9 +104,8 @@ function @main
     mov r8, 2
     mov r9, 3
     call @fold [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, -3
+    sext.i32 rax
+    cmp.i32 rax, -3
     je ^good
     jmp ^bad
 

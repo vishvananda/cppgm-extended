@@ -107,9 +107,8 @@ function @read_before_call
     add <gpr1>, 100
     add <gpr1>, <gpr3>
     call @produce [args=()]
-    mov r8, rax
-    store.i64 [<gpr0>], r8
-    add <gpr1>, r8
+    store.i64 [<gpr0>], rax
+    add <gpr1>, rax
     ret <gpr1>
 
 function @main
@@ -117,7 +116,7 @@ function @main
     return i32 -> rax
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve <gpr0>

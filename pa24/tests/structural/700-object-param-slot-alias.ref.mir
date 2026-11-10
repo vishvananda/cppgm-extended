@@ -30,11 +30,10 @@ function @unwrap
     frame_pointer keep
     epilogues shared
     slot $x -> [rbp-8] : obj<8x8>
-    param-slot %x -> [rbp-16] : obj<8x8>
+    param-slot %x -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-16], rdi
-    copy_bytes 8x8, [rbp-8], [rbp-16]
+    store.i64 [rbp-8], rdi
     load.i64 rax, [rbp-8]
     ret rax
 

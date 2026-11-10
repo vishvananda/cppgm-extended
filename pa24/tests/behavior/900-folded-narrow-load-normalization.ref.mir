@@ -68,9 +68,8 @@ function @reduced
     mov r9, rdi
     mov rdi, 1
     call @get_record [args=(rcx,rdx,rsi,rdi,r8,r9), unwind=no]
-    mov r8, rax
     eh_push ^unwind, 0
-    load.u8 rdi, [r8+8]
+    load.u8 rdi, [rax+8]
     store.i64 @sink, 42
     call @accept [args=(rdi)]
     sext.i32 rax
@@ -84,8 +83,8 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $record -> [rbp-16] : obj<16x8>
@@ -94,5 +93,4 @@ function @main
     lea rdi, [rbp-16]
     store.u8 [rdi+8], 2
     call @reduced [args=(rdi)]
-    sext.i32 rax
     ret rax

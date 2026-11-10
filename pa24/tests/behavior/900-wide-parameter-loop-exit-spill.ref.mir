@@ -179,8 +179,8 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
@@ -192,9 +192,8 @@ function @main
     mov rdx, 4242
     mov rcx, 7
     call @probe [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    mov r8, rax
-    zext.i8 r8
-    cmp.i64 r8, 1
+    zext.i8 rax
+    cmp.i64 rax, 1
     jne ^bad
     jmp ^checkcopy
 

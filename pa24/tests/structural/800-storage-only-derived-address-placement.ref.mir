@@ -107,17 +107,16 @@ function @read_before_call
     add r12, 100
     add r12, r14
     call @produce [args=()]
-    mov r8, rax
-    store.i64 [rbx], r8
-    add r12, r8
+    store.i64 [rbx], rax
+    add r12, rax
     ret r12
 
 function @main
   abi
     return i32 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx

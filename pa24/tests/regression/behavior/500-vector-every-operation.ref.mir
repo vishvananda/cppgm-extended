@@ -4825,9 +4825,8 @@ function @check
     mov rdi, r13
     mov rsi, r12
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok0
     jmp ^bad0
 
@@ -4841,9 +4840,8 @@ function @check
     lea rsi, [r12+16]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok1
     jmp ^bad1
 
@@ -4857,9 +4855,8 @@ function @check
     lea rsi, [r12+32]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok2
     jmp ^bad2
 
@@ -4873,9 +4870,8 @@ function @check
     lea rsi, [r12+48]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok3
     jmp ^bad3
 
@@ -4889,9 +4885,8 @@ function @check
     lea rsi, [r12+64]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok4
     jmp ^bad4
 
@@ -4905,9 +4900,8 @@ function @check
     lea rsi, [r12+80]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok5
     jmp ^bad5
 
@@ -4921,9 +4915,8 @@ function @check
     lea rsi, [r12+96]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok6
     jmp ^bad6
 
@@ -4937,9 +4930,8 @@ function @check
     lea rsi, [r12+112]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok7
     jmp ^bad7
 
@@ -4953,9 +4945,8 @@ function @check
     lea rsi, [r12+128]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok8
     jmp ^bad8
 
@@ -4969,9 +4960,8 @@ function @check
     lea rsi, [r12+144]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok9
     jmp ^bad9
 
@@ -4985,9 +4975,8 @@ function @check
     lea rsi, [r12+160]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok10
     jmp ^bad10
 
@@ -5001,9 +4990,8 @@ function @check
     lea rsi, [r12+176]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok11
     jmp ^bad11
 
@@ -5017,9 +5005,8 @@ function @check
     lea rsi, [r12+192]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok12
     jmp ^bad12
 
@@ -5033,9 +5020,8 @@ function @check
     lea rsi, [r12+208]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok13
     jmp ^bad13
 
@@ -5049,9 +5035,8 @@ function @check
     lea rsi, [r12+224]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok14
     jmp ^bad14
 
@@ -5065,9 +5050,8 @@ function @check
     lea rsi, [r12+240]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok15
     jmp ^bad15
 
@@ -5081,9 +5065,8 @@ function @check
     lea rsi, [r12+256]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok16
     jmp ^bad16
 
@@ -5097,9 +5080,8 @@ function @check
     lea rsi, [r12+272]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok17
     jmp ^bad17
 
@@ -5113,9 +5095,8 @@ function @check
     lea rsi, [r12+288]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok18
     jmp ^bad18
 
@@ -5129,9 +5110,8 @@ function @check
     lea rsi, [r12+304]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok19
     jmp ^bad19
 
@@ -5145,9 +5125,8 @@ function @check
     lea rsi, [r12+320]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok20
     jmp ^bad20
 
@@ -5161,9 +5140,8 @@ function @check
     lea rsi, [r12+336]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok21
     jmp ^bad21
 
@@ -5177,9 +5155,8 @@ function @check
     lea rsi, [r12+352]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok22
     jmp ^bad22
 
@@ -5193,9 +5170,8 @@ function @check
     lea rsi, [r12+368]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok23
     jmp ^bad23
 
@@ -5209,9 +5185,8 @@ function @check
     lea rsi, [r12+384]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok24
     jmp ^bad24
 
@@ -5225,9 +5200,8 @@ function @check
     lea rsi, [r12+400]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok25
     jmp ^bad25
 
@@ -5241,9 +5215,8 @@ function @check
     lea rsi, [r12+416]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok26
     jmp ^bad26
 
@@ -5257,9 +5230,8 @@ function @check
     lea rsi, [r12+432]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok27
     jmp ^bad27
 
@@ -5273,9 +5245,8 @@ function @check
     lea rsi, [r12+448]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok28
     jmp ^bad28
 
@@ -5289,9 +5260,8 @@ function @check
     lea rsi, [r12+464]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok29
     jmp ^bad29
 
@@ -5305,9 +5275,8 @@ function @check
     lea rsi, [r12+480]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok30
     jmp ^bad30
 
@@ -5321,9 +5290,8 @@ function @check
     lea rsi, [r12+496]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok31
     jmp ^bad31
 
@@ -5337,9 +5305,8 @@ function @check
     lea rsi, [r12+512]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok32
     jmp ^bad32
 
@@ -5353,9 +5320,8 @@ function @check
     lea rsi, [r12+528]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok33
     jmp ^bad33
 
@@ -5369,9 +5335,8 @@ function @check
     lea rsi, [r12+544]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok34
     jmp ^bad34
 
@@ -5385,9 +5350,8 @@ function @check
     lea rsi, [r12+560]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok35
     jmp ^bad35
 
@@ -5401,9 +5365,8 @@ function @check
     lea rsi, [r12+576]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok36
     jmp ^bad36
 
@@ -5417,9 +5380,8 @@ function @check
     lea rsi, [r12+592]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok37
     jmp ^bad37
 
@@ -5433,9 +5395,8 @@ function @check
     lea rsi, [r12+608]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok38
     jmp ^bad38
 
@@ -5449,9 +5410,8 @@ function @check
     lea rsi, [r12+624]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok39
     jmp ^bad39
 
@@ -5465,9 +5425,8 @@ function @check
     lea rsi, [r12+640]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok40
     jmp ^bad40
 
@@ -5481,9 +5440,8 @@ function @check
     lea rsi, [r12+656]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok41
     jmp ^bad41
 
@@ -5497,9 +5455,8 @@ function @check
     lea rsi, [r12+672]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok42
     jmp ^bad42
 
@@ -5513,9 +5470,8 @@ function @check
     lea rsi, [r12+688]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok43
     jmp ^bad43
 
@@ -5529,9 +5485,8 @@ function @check
     lea rsi, [r12+704]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok44
     jmp ^bad44
 
@@ -5545,9 +5500,8 @@ function @check
     lea rsi, [r12+720]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok45
     jmp ^bad45
 
@@ -5561,9 +5515,8 @@ function @check
     lea rsi, [r12+736]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok46
     jmp ^bad46
 
@@ -5577,9 +5530,8 @@ function @check
     lea rsi, [r12+752]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok47
     jmp ^bad47
 
@@ -5593,9 +5545,8 @@ function @check
     lea rsi, [r12+768]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok48
     jmp ^bad48
 
@@ -5609,9 +5560,8 @@ function @check
     lea rsi, [r12+784]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok49
     jmp ^bad49
 
@@ -5625,9 +5575,8 @@ function @check
     lea rsi, [r12+800]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok50
     jmp ^bad50
 
@@ -5641,9 +5590,8 @@ function @check
     lea rsi, [r12+816]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok51
     jmp ^bad51
 
@@ -5657,9 +5605,8 @@ function @check
     lea rsi, [r12+832]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok52
     jmp ^bad52
 
@@ -5673,9 +5620,8 @@ function @check
     lea rsi, [r12+848]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok53
     jmp ^bad53
 
@@ -5689,9 +5635,8 @@ function @check
     lea rsi, [r12+864]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok54
     jmp ^bad54
 
@@ -5705,9 +5650,8 @@ function @check
     lea rsi, [r12+880]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok55
     jmp ^bad55
 
@@ -5721,9 +5665,8 @@ function @check
     lea rsi, [r12+896]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok56
     jmp ^bad56
 
@@ -5737,9 +5680,8 @@ function @check
     lea rsi, [r12+912]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok57
     jmp ^bad57
 
@@ -5753,9 +5695,8 @@ function @check
     lea rsi, [r12+928]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok58
     jmp ^bad58
 
@@ -5769,9 +5710,8 @@ function @check
     lea rsi, [r12+944]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok59
     jmp ^bad59
 
@@ -5785,9 +5725,8 @@ function @check
     lea rsi, [r12+960]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok60
     jmp ^bad60
 
@@ -5801,9 +5740,8 @@ function @check
     lea rsi, [r12+976]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok61
     jmp ^bad61
 
@@ -5817,9 +5755,8 @@ function @check
     lea rsi, [r12+992]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok62
     jmp ^bad62
 
@@ -5833,9 +5770,8 @@ function @check
     lea rsi, [r12+1008]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok63
     jmp ^bad63
 
@@ -5849,9 +5785,8 @@ function @check
     lea rsi, [r12+1024]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok64
     jmp ^bad64
 
@@ -5865,9 +5800,8 @@ function @check
     lea rsi, [r12+1040]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok65
     jmp ^bad65
 
@@ -5881,9 +5815,8 @@ function @check
     lea rsi, [r12+1056]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok66
     jmp ^bad66
 
@@ -5897,9 +5830,8 @@ function @check
     lea rsi, [r12+1072]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok67
     jmp ^bad67
 
@@ -5913,9 +5845,8 @@ function @check
     lea rsi, [r12+1088]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok68
     jmp ^bad68
 
@@ -5929,9 +5860,8 @@ function @check
     lea rsi, [r12+1104]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok69
     jmp ^bad69
 
@@ -5945,9 +5875,8 @@ function @check
     lea rsi, [r12+1120]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok70
     jmp ^bad70
 
@@ -5961,9 +5890,8 @@ function @check
     lea rsi, [r12+1136]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok71
     jmp ^bad71
 
@@ -5977,9 +5905,8 @@ function @check
     lea rsi, [r12+1152]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok72
     jmp ^bad72
 
@@ -5993,9 +5920,8 @@ function @check
     lea rsi, [r12+1168]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok73
     jmp ^bad73
 
@@ -6009,9 +5935,8 @@ function @check
     lea rsi, [r12+1184]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok74
     jmp ^bad74
 
@@ -6025,9 +5950,8 @@ function @check
     lea rsi, [r12+1200]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok75
     jmp ^bad75
 
@@ -6041,9 +5965,8 @@ function @check
     lea rsi, [r12+1216]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok76
     jmp ^bad76
 
@@ -6057,9 +5980,8 @@ function @check
     lea rsi, [r12+1232]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok77
     jmp ^bad77
 
@@ -6073,9 +5995,8 @@ function @check
     lea rsi, [r12+1248]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok78
     jmp ^bad78
 
@@ -6089,9 +6010,8 @@ function @check
     lea rsi, [r12+1264]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok79
     jmp ^bad79
 
@@ -6105,9 +6025,8 @@ function @check
     lea rsi, [r12+1280]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok80
     jmp ^bad80
 
@@ -6121,9 +6040,8 @@ function @check
     lea rsi, [r12+1296]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok81
     jmp ^bad81
 
@@ -6137,9 +6055,8 @@ function @check
     lea rsi, [r12+1312]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok82
     jmp ^bad82
 
@@ -6153,9 +6070,8 @@ function @check
     lea rsi, [r12+1328]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok83
     jmp ^bad83
 
@@ -6169,9 +6085,8 @@ function @check
     lea rsi, [r12+1344]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok84
     jmp ^bad84
 
@@ -6185,9 +6100,8 @@ function @check
     lea rsi, [r12+1360]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok85
     jmp ^bad85
 
@@ -6201,9 +6115,8 @@ function @check
     lea rsi, [r12+1376]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok86
     jmp ^bad86
 
@@ -6217,9 +6130,8 @@ function @check
     lea rsi, [r12+1392]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok87
     jmp ^bad87
 
@@ -6233,9 +6145,8 @@ function @check
     lea rsi, [r12+1408]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok88
     jmp ^bad88
 
@@ -6249,9 +6160,8 @@ function @check
     lea rsi, [r12+1424]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok89
     jmp ^bad89
 
@@ -6265,9 +6175,8 @@ function @check
     lea rsi, [r12+1440]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok90
     jmp ^bad90
 
@@ -6281,9 +6190,8 @@ function @check
     lea rsi, [r12+1456]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok91
     jmp ^bad91
 
@@ -6297,9 +6205,8 @@ function @check
     lea rsi, [r12+1472]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok92
     jmp ^bad92
 
@@ -6313,9 +6220,8 @@ function @check
     lea rsi, [r12+1488]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok93
     jmp ^bad93
 
@@ -6329,9 +6235,8 @@ function @check
     lea rsi, [r12+1504]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok94
     jmp ^bad94
 
@@ -6345,9 +6250,8 @@ function @check
     lea rsi, [r12+1520]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok95
     jmp ^bad95
 
@@ -6361,9 +6265,8 @@ function @check
     lea rsi, [r12+1536]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok96
     jmp ^bad96
 
@@ -6377,9 +6280,8 @@ function @check
     lea rsi, [r12+1552]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok97
     jmp ^bad97
 
@@ -6393,9 +6295,8 @@ function @check
     lea rsi, [r12+1568]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok98
     jmp ^bad98
 
@@ -6409,9 +6310,8 @@ function @check
     lea rsi, [r12+1584]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok99
     jmp ^bad99
 
@@ -6425,9 +6325,8 @@ function @check
     lea rsi, [r12+1600]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok100
     jmp ^bad100
 
@@ -6441,9 +6340,8 @@ function @check
     lea rsi, [r12+1616]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok101
     jmp ^bad101
 
@@ -6457,9 +6355,8 @@ function @check
     lea rsi, [r12+1632]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok102
     jmp ^bad102
 
@@ -6473,9 +6370,8 @@ function @check
     lea rsi, [r12+1648]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok103
     jmp ^bad103
 
@@ -6489,9 +6385,8 @@ function @check
     lea rsi, [r12+1664]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok104
     jmp ^bad104
 
@@ -6505,9 +6400,8 @@ function @check
     lea rsi, [r12+1680]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok105
     jmp ^bad105
 
@@ -6521,9 +6415,8 @@ function @check
     lea rsi, [r12+1696]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok106
     jmp ^bad106
 
@@ -6537,9 +6430,8 @@ function @check
     lea rsi, [r12+1712]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok107
     jmp ^bad107
 
@@ -6553,9 +6445,8 @@ function @check
     lea rsi, [r12+1728]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok108
     jmp ^bad108
 
@@ -6569,9 +6460,8 @@ function @check
     lea rsi, [r12+1744]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok109
     jmp ^bad109
 
@@ -6585,9 +6475,8 @@ function @check
     lea rsi, [r12+1760]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok110
     jmp ^bad110
 
@@ -6601,9 +6490,8 @@ function @check
     lea rsi, [r12+1776]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok111
     jmp ^bad111
 
@@ -6617,9 +6505,8 @@ function @check
     lea rsi, [r12+1792]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok112
     jmp ^bad112
 
@@ -6633,9 +6520,8 @@ function @check
     lea rsi, [r12+1808]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok113
     jmp ^bad113
 
@@ -6649,9 +6535,8 @@ function @check
     lea rsi, [r12+1824]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok114
     jmp ^bad114
 
@@ -6665,9 +6550,8 @@ function @check
     lea rsi, [r12+1840]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok115
     jmp ^bad115
 
@@ -6681,9 +6565,8 @@ function @check
     lea rsi, [r12+1856]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok116
     jmp ^bad116
 
@@ -6697,9 +6580,8 @@ function @check
     lea rsi, [r12+1872]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok117
     jmp ^bad117
 
@@ -6713,9 +6595,8 @@ function @check
     lea rsi, [r12+1888]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok118
     jmp ^bad118
 
@@ -6729,9 +6610,8 @@ function @check
     lea rsi, [r12+1904]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok119
     jmp ^bad119
 
@@ -6745,9 +6625,8 @@ function @check
     lea rsi, [r12+1920]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok120
     jmp ^bad120
 
@@ -6761,9 +6640,8 @@ function @check
     lea rsi, [r12+1936]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok121
     jmp ^bad121
 
@@ -6777,9 +6655,8 @@ function @check
     lea rsi, [r12+1952]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok122
     jmp ^bad122
 
@@ -6793,9 +6670,8 @@ function @check
     lea rsi, [r12+1968]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok123
     jmp ^bad123
 
@@ -6809,9 +6685,8 @@ function @check
     lea rsi, [r12+1984]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok124
     jmp ^bad124
 
@@ -6825,9 +6700,8 @@ function @check
     lea rsi, [r12+2000]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok125
     jmp ^bad125
 
@@ -6841,9 +6715,8 @@ function @check
     lea rsi, [r12+2016]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok126
     jmp ^bad126
 
@@ -6857,9 +6730,8 @@ function @check
     lea rsi, [r12+2032]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok127
     jmp ^bad127
 
@@ -6873,9 +6745,8 @@ function @check
     lea rsi, [r12+2048]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok128
     jmp ^bad128
 
@@ -6889,9 +6760,8 @@ function @check
     lea rsi, [r12+2064]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok129
     jmp ^bad129
 
@@ -6905,9 +6775,8 @@ function @check
     lea rsi, [r12+2080]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok130
     jmp ^bad130
 
@@ -6921,9 +6790,8 @@ function @check
     lea rsi, [r12+2096]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok131
     jmp ^bad131
 
@@ -6937,9 +6805,8 @@ function @check
     lea rsi, [r12+2112]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok132
     jmp ^bad132
 
@@ -6953,9 +6820,8 @@ function @check
     lea rsi, [r12+2128]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok133
     jmp ^bad133
 
@@ -6969,9 +6835,8 @@ function @check
     lea rsi, [r12+2144]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok134
     jmp ^bad134
 
@@ -6985,9 +6850,8 @@ function @check
     lea rsi, [r12+2160]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok135
     jmp ^bad135
 
@@ -7001,9 +6865,8 @@ function @check
     lea rsi, [r12+2176]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok136
     jmp ^bad136
 
@@ -7017,9 +6880,8 @@ function @check
     lea rsi, [r12+2192]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok137
     jmp ^bad137
 
@@ -7033,9 +6895,8 @@ function @check
     lea rsi, [r12+2208]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok138
     jmp ^bad138
 
@@ -7049,9 +6910,8 @@ function @check
     lea rsi, [r12+2224]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok139
     jmp ^bad139
 
@@ -7065,9 +6925,8 @@ function @check
     lea rsi, [r12+2240]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok140
     jmp ^bad140
 
@@ -7081,9 +6940,8 @@ function @check
     lea rsi, [r12+2256]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok141
     jmp ^bad141
 
@@ -7097,9 +6955,8 @@ function @check
     lea rsi, [r12+2272]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok142
     jmp ^bad142
 
@@ -7113,9 +6970,8 @@ function @check
     lea rsi, [r12+2288]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok143
     jmp ^bad143
 
@@ -7129,9 +6985,8 @@ function @check
     lea rsi, [r12+2304]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok144
     jmp ^bad144
 
@@ -7145,9 +7000,8 @@ function @check
     lea rsi, [r12+2320]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok145
     jmp ^bad145
 
@@ -7161,9 +7015,8 @@ function @check
     lea rsi, [r12+2336]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok146
     jmp ^bad146
 
@@ -7177,9 +7030,8 @@ function @check
     lea rsi, [r12+2352]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok147
     jmp ^bad147
 
@@ -7193,9 +7045,8 @@ function @check
     lea rsi, [r12+2368]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok148
     jmp ^bad148
 
@@ -7209,9 +7060,8 @@ function @check
     lea rsi, [r12+2384]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok149
     jmp ^bad149
 
@@ -7225,9 +7075,8 @@ function @check
     lea rsi, [r12+2400]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok150
     jmp ^bad150
 
@@ -7241,9 +7090,8 @@ function @check
     lea rsi, [r12+2416]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok151
     jmp ^bad151
 
@@ -7257,9 +7105,8 @@ function @check
     lea rsi, [r12+2432]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok152
     jmp ^bad152
 
@@ -7273,9 +7120,8 @@ function @check
     lea rsi, [r12+2448]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok153
     jmp ^bad153
 
@@ -7289,9 +7135,8 @@ function @check
     lea rsi, [r12+2464]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok154
     jmp ^bad154
 
@@ -7305,9 +7150,8 @@ function @check
     lea rsi, [r12+2480]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok155
     jmp ^bad155
 
@@ -7321,9 +7165,8 @@ function @check
     lea rsi, [r12+2496]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok156
     jmp ^bad156
 
@@ -7337,9 +7180,8 @@ function @check
     lea rsi, [r12+2512]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok157
     jmp ^bad157
 
@@ -7353,9 +7195,8 @@ function @check
     lea rsi, [r12+2528]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok158
     jmp ^bad158
 
@@ -7369,9 +7210,8 @@ function @check
     lea rsi, [r12+2544]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok159
     jmp ^bad159
 
@@ -7385,9 +7225,8 @@ function @check
     lea rsi, [r12+2560]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok160
     jmp ^bad160
 
@@ -7401,9 +7240,8 @@ function @check
     lea rsi, [r12+2576]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok161
     jmp ^bad161
 
@@ -7417,9 +7255,8 @@ function @check
     lea rsi, [r12+2592]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok162
     jmp ^bad162
 
@@ -7433,9 +7270,8 @@ function @check
     lea rsi, [r12+2608]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok163
     jmp ^bad163
 
@@ -7449,9 +7285,8 @@ function @check
     lea rsi, [r12+2624]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok164
     jmp ^bad164
 
@@ -7465,9 +7300,8 @@ function @check
     lea rsi, [r12+2640]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok165
     jmp ^bad165
 
@@ -7481,9 +7315,8 @@ function @check
     lea rsi, [r12+2656]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok166
     jmp ^bad166
 
@@ -7497,9 +7330,8 @@ function @check
     lea rsi, [r12+2672]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok167
     jmp ^bad167
 
@@ -7513,9 +7345,8 @@ function @check
     lea rsi, [r12+2688]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok168
     jmp ^bad168
 
@@ -7529,9 +7360,8 @@ function @check
     lea rsi, [r12+2704]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok169
     jmp ^bad169
 
@@ -7545,9 +7375,8 @@ function @check
     lea rsi, [r12+2720]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok170
     jmp ^bad170
 
@@ -7561,9 +7390,8 @@ function @check
     lea rsi, [r12+2736]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok171
     jmp ^bad171
 
@@ -7577,9 +7405,8 @@ function @check
     lea rsi, [r12+2752]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok172
     jmp ^bad172
 
@@ -7593,9 +7420,8 @@ function @check
     lea rsi, [r12+2768]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok173
     jmp ^bad173
 
@@ -7609,9 +7435,8 @@ function @check
     lea rsi, [r12+2784]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok174
     jmp ^bad174
 
@@ -7625,9 +7450,8 @@ function @check
     lea rsi, [r12+2800]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok175
     jmp ^bad175
 
@@ -7641,9 +7465,8 @@ function @check
     lea rsi, [r12+2816]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok176
     jmp ^bad176
 
@@ -7657,9 +7480,8 @@ function @check
     lea rsi, [r12+2832]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok177
     jmp ^bad177
 
@@ -7673,9 +7495,8 @@ function @check
     lea rsi, [r12+2848]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok178
     jmp ^bad178
 
@@ -7689,9 +7510,8 @@ function @check
     lea rsi, [r12+2864]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok179
     jmp ^bad179
 
@@ -7705,9 +7525,8 @@ function @check
     lea rsi, [r12+2880]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok180
     jmp ^bad180
 
@@ -7721,9 +7540,8 @@ function @check
     lea rsi, [r12+2896]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok181
     jmp ^bad181
 
@@ -7737,9 +7555,8 @@ function @check
     lea rsi, [r12+2912]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok182
     jmp ^bad182
 
@@ -7753,9 +7570,8 @@ function @check
     lea rsi, [r12+2928]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok183
     jmp ^bad183
 
@@ -7769,9 +7585,8 @@ function @check
     lea rsi, [r12+2944]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok184
     jmp ^bad184
 
@@ -7785,9 +7600,8 @@ function @check
     lea rsi, [r12+2960]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok185
     jmp ^bad185
 
@@ -7801,9 +7615,8 @@ function @check
     lea rsi, [r12+2976]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok186
     jmp ^bad186
 
@@ -7817,9 +7630,8 @@ function @check
     lea rsi, [r12+2992]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok187
     jmp ^bad187
 
@@ -7833,9 +7645,8 @@ function @check
     lea rsi, [r12+3008]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok188
     jmp ^bad188
 
@@ -7849,9 +7660,8 @@ function @check
     lea rsi, [r12+3024]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok189
     jmp ^bad189
 
@@ -7865,9 +7675,8 @@ function @check
     lea rsi, [r12+3040]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok190
     jmp ^bad190
 
@@ -7881,9 +7690,8 @@ function @check
     lea rsi, [r12+3056]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok191
     jmp ^bad191
 
@@ -7897,9 +7705,8 @@ function @check
     lea rsi, [r12+3072]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok192
     jmp ^bad192
 
@@ -7913,9 +7720,8 @@ function @check
     lea rsi, [r12+3088]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok193
     jmp ^bad193
 
@@ -7929,9 +7735,8 @@ function @check
     lea rsi, [r12+3104]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok194
     jmp ^bad194
 
@@ -7945,9 +7750,8 @@ function @check
     lea rsi, [r12+3120]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok195
     jmp ^bad195
 
@@ -7961,9 +7765,8 @@ function @check
     lea rsi, [r12+3136]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok196
     jmp ^bad196
 
@@ -7977,9 +7780,8 @@ function @check
     lea rsi, [r12+3152]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok197
     jmp ^bad197
 
@@ -7993,9 +7795,8 @@ function @check
     lea rsi, [r12+3168]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok198
     jmp ^bad198
 
@@ -8009,9 +7810,8 @@ function @check
     lea rsi, [r12+3184]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok199
     jmp ^bad199
 
@@ -8025,9 +7825,8 @@ function @check
     lea rsi, [r12+3200]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok200
     jmp ^bad200
 
@@ -8041,9 +7840,8 @@ function @check
     lea rsi, [r12+3216]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok201
     jmp ^bad201
 
@@ -8057,9 +7855,8 @@ function @check
     lea rsi, [r12+3232]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok202
     jmp ^bad202
 
@@ -8073,9 +7870,8 @@ function @check
     lea rsi, [r12+3248]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok203
     jmp ^bad203
 
@@ -8089,9 +7885,8 @@ function @check
     lea rsi, [r12+3264]
     mov rdi, r13
     call @same [args=(rsi,rdi)]
-    mov r8, rax
-    sext.i32 r8
-    cmp.i32 r8, 0
+    sext.i32 rax
+    cmp.i32 rax, 0
     jne ^ok204
     jmp ^bad204
 

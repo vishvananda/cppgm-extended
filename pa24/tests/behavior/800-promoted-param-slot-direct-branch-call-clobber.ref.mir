@@ -59,8 +59,7 @@ function @check
   block ^entry
     mov rbx, rsi
     call @size [args=(rdi)]
-    mov r8, rax
-    cmp.i64 rbx, r8
+    cmp.i64 rbx, rax
     jae ^bad
     jmp ^good
 

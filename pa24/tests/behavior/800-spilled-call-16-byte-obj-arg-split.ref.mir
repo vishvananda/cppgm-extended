@@ -12,17 +12,16 @@ function @target
     param %io -> rdx : i64
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $pair -> [rbp-16] : obj<16x8>
-    param-slot %pair -> [rbp-32] : obj<16x8>
+    param-slot %pair -> [rbp-16] : obj<16x8>
 
   block ^entry
-    store.i64 [rbp-32], rdi
-    store.i64 [rbp-24], rsi
-    copy_bytes 16x8, [rbp-16], [rbp-32]
+    store.i64 [rbp-16], rdi
+    store.i64 [rbp-8], rsi
     load.i64 r8, [rbp-16]
     add r8, [rbp-8]
     add r8, rdx

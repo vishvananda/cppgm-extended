@@ -105,7 +105,6 @@ function @div_narrow3
     mov rax, rdi
     cqo
     idiv r11
-    sext.i8 rax
     ret rax
 
 function @div_narrow_negative3
@@ -123,15 +122,14 @@ function @div_narrow_negative3
     mov rax, rdi
     cqo
     idiv r11
-    sext.i8 rax
     ret rax
 
 function @main
   abi
     return i32 -> rax
   frame
-    stack_size 112
-    scratch_bytes 48
+    stack_size 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx r12 r13 r14 r15
@@ -165,14 +163,12 @@ function @main
     movzx r15, r15
     mov rdi, -128
     call @div_narrow3 [args=(rdi)]
-    sext.i8 rax
     cmp.i8 rax, -42
     setne r10
     movzx r10, r10
     store.i64 [rbp-8], r10
     mov rdi, 127
     call @div_narrow_negative3 [args=(rdi)]
-    sext.i8 rax
     cmp.i8 rax, -42
     setne rax
     movzx rax, rax

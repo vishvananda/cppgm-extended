@@ -17,8 +17,7 @@ function @increment
 
   block ^entry
     load.i32 r8, [rdi]
-    add r8, 1
-    sext.i32 r8
+    add.i32 r8, 1
     store.i32 [rdi], r8
     ret
 

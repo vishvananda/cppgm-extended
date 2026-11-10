@@ -95,12 +95,12 @@ function @main
     mov r13, rax
     mov rdi, rbx
     call @size [args=(rdi)]
-    mov r9, rax
     load.ptr r8, @dispatch
     mov rdi, rbx
     mov rsi, r12
     mov rdx, 1
     mov rcx, 13
+    mov r9, rax
     mov r11, r8
     mov r8, r13
     call *r11 [args=(rcx,rdx,rsi,rdi,r8,r9)]

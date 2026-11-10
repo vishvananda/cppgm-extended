@@ -109,13 +109,11 @@ function @main
   block ^entry
     mov rdi, 255
     call @wrap_unsigned [args=(rdi), unwind=no]
-    zext.i8 rax
     cmp.u8 rax, 0
     setne rbx
     movzx rbx, rbx
     mov rdi, -128
     call @wrap_signed [args=(rdi), unwind=no]
-    sext.i8 rax
     cmp.i8 rax, 127
     setne r12
     movzx r12, r12
@@ -143,7 +141,6 @@ function @main
     store.i1 [rbp-16], r10
     mov rdi, 0
     call @wrap_bool [args=(rdi), unwind=no]
-    and rax, 1
     cmp.i1 [rbp-16], 0
     setne r8
     movzx r8, r8

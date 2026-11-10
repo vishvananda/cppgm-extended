@@ -148,9 +148,7 @@ function @branch_false
 
   block ^entry
     call @forward_false [args=()]
-    mov r8, rax
-    and r8, 1
-    cmp.i1 r8, 0
+    cmp.i1 rax, 0
     jne ^wrong
     jmp ^right
 
@@ -179,7 +177,6 @@ function @main
     mov <gpr1>, rax
     call @forward_true [args=()]
     mov <gpr2>, rax
-    and <gpr2>, 1
     call @branch_false [args=()]
     cmp.i64 <gpr0>, -127
     setne <gpr0>
