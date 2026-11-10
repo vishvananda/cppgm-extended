@@ -42,6 +42,11 @@ Higher optimization levels must preserve the correctness established by
 previous assignments. In `cppgm++`, apply PA33's LowIR optimization before
 native lowering at the requested level.
 
+Loop fixtures combine invariant inputs, changing phi values and paths that
+finish an iteration early. Meet their frame-access and size bounds while
+preserving every path, including partial and empty iterations. Keep explicit
+branch predictions effective when choosing registers and arranging blocks.
+
 An `unreachable` continuation can justify removing switch arms or range checks
 that serve only impossible inputs. Preserve defined defaults and their effects,
 including a non-returning call before an unreachable terminator.

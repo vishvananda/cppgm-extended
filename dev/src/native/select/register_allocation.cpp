@@ -603,7 +603,8 @@ void FunctionSelector::block_weights()
 	// Reverse postorder, and back edges (to a block on the walk's stack).
 	// (The scratch persists for its capacity: each vector is assigned before use.)
 	static std::vector<uint8_t> state, back, in_back;
-	static std::vector<uint32_t> next, post, stack, order, by_size, inner, parent, header_of, stamp, blocks;
+	static std::vector<uint32_t> next, post, stack, order, by_size, inner, parent, header_of, stamp, blocks,
+		latch_header;
 	static std::vector<uint64_t> prob, in_prob, again, flow;
 	state.assign(n, 0);
 	back.assign(succs_.size(), 0);
@@ -667,16 +668,36 @@ void FunctionSelector::block_weights()
 				return true;
 		return false;
 	};
+	// An early edge to the loop's latch skips the rest of this iteration.
+	// Unrolled guards retain this shape even after their inner loop is gone.
+	latch_header.assign(n, kNoId);
+	for (uint32_t b = 0; b < n; ++b)
+		if (inner[b] != kNoId)
+		{
+			const uint32_t header = members[first[inner[b]]];
+			for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
+				if (back[k] && succs_[k] == header)
+					latch_header[b] = header;
+		}
 	// Edge probabilities, by successor index.
 	prob.assign(succs_.size(), 0);
 	for (uint32_t b = 0; b < n; ++b)
 	{
-		uint32_t warm = 0, exits = 0;
+		const auto ends_iteration = [&](uint32_t edge) {
+			if (inner[b] == kNoId)
+				return false;
+			const uint32_t header = members[first[inner[b]]];
+			if (back[edge] && succs_[edge] == header)
+				return true;
+			return latch_header[succs_[edge]] == header;
+		};
+		uint32_t warm = 0, exits = 0, ending = 0;
 		for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
 			if (!ra_cold_[succs_[k]])
 			{
 				++warm;
 				exits += inner[b] != kNoId && !contains(inner[b], succs_[k]) ? 1 : 0;
+				ending += ends_iteration(k) ? 1 : 0;
 			}
 		for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
 		{
@@ -692,6 +713,8 @@ void FunctionSelector::block_weights()
 				const bool likely = on_true == (prediction == lowir::BranchPrediction::Likely);
 				prob[k] = likely ? kOne - kOne / 2001 : kOne / 2001;
 			}
+			else if (exits == 0 && ending != 0 && ending != warm)
+				prob[k] = ends_iteration(k) ? kOne / 10 / ending : (kOne - kOne / 10) / (warm - ending);
 			else if (exits == 0 || exits == warm)
 				prob[k] = kOne / warm;
 			else
@@ -1111,10 +1134,14 @@ void FunctionSelector::assign_registers()
 	// The first member of a web to be assigned takes a register free over
 	// every member's ranges when they are disjoint and one is: the web's
 	// edge transfers then move nothing.
+	// Overlapping subsets can take different registers. Bound retries as well
+	// as members considered, so a large spilled web cannot cause quadratic work.
+	std::vector<uint8_t> web_trials(m, 0);
 	auto assign_web = [&](uint32_t c, Reg tied) {
 		const uint32_t root = find(c);
-		if (web_first[root + 1] - web_first[root] < 2 || group_reg[root] != kNoReg)
+		if (web_first[root + 1] - web_first[root] < 2 || web_trials[root] == kWebTrials)
 			return false;
+		++web_trials[root];
 		const uint32_t first = static_cast<uint32_t>(ra_ranges_.size());
 		uint64_t weight = 0;
 		uint8_t looped = 0;
@@ -1122,6 +1149,9 @@ void FunctionSelector::assign_registers()
 		// overlaps none already taken. (A value live through the loop that
 		// also feeds a phi would otherwise cost the rest of the web theirs.)
 		std::vector<uint32_t> members(web_members.begin() + web_first[root], web_members.begin() + web_first[root + 1]);
+		members.erase(std::remove_if(members.begin(), members.end(),
+						  [&](uint32_t w) { return temps_[ra_candidates_[w]].greg != kNoReg; }),
+			members.end());
 		for (uint32_t w : members)
 			if (temps_[ra_candidates_[w]].cls != temps_[ra_candidates_[c]].cls)
 				return false;

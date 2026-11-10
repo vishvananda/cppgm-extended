@@ -21,6 +21,17 @@ less executed work.
 
 ## Describe what instructions do
 
+Related phi values can need more than one register: an invariant input may
+overlap the changing values even when successive changing values do not
+overlap each other. Consider those lifetimes independently rather than
+letting one assigned value decide the register choices for every related value.
+
+Unrolling removes loop headers but can leave repeated checks that finish the
+current iteration early. Independent even-split guesses at those checks can
+make later work appear much colder than it is. Use the remaining control-flow
+structure, preserve explicit predictions, and measure the resulting register
+use across different branch patterns. Keep frequency analysis bounded.
+
 Record each instruction's uses, definitions and clobbers, including call
 arguments, fixed registers, tied operands and both parts of indexed addresses.
 Selection may fold operations or introduce temporaries, so LowIR liveness alone

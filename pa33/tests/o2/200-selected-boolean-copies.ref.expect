@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+count(instructions) <= 12 in @member
+count(branch) <= 2 in @member

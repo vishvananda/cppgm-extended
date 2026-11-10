@@ -1,0 +1,135 @@
+global @input : i32 = 0
+
+function @member(%x : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %a = cmp eq i32 %x, 1
+    %a1 = convert trunc i1 i64 %a
+    %b = cmp eq i32 %x, 2
+    %b1 = convert trunc i1 i64 %b
+    %either = select i1 %a, %a1, %b1
+    branch %either, ^yes, ^third
+
+  block ^third:
+    %c = cmp eq i32 %x, 3
+    branch %c, ^yes, ^no
+
+  block ^yes:
+    return i32 1
+
+  block ^no:
+    return i32 0
+}
+function @narrow(%x : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %byte = convert trunc u8 i32 %x
+    %signed = copy i8 %byte
+    branch %signed, ^yes, ^no
+
+  block ^yes:
+    return i32 1
+
+  block ^no:
+    return i32 0
+}
+function @mixed(%cond : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %value = select i32 %cond, 256, 1
+    %byte = convert trunc u8 i32 %value
+    %signed = copy i8 %byte
+    branch %signed, ^yes, ^no
+
+  block ^yes:
+    return i32 1
+
+  block ^no:
+    return i32 0
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    store volatile i32 -2147483648, @input
+    %x0 = load volatile i32 @input
+    %r0 = call i32 @member(%x0)
+    %bad0 = cmp ne i32 %r0, 0
+    store volatile i32 -1, @input
+    %x1 = load volatile i32 @input
+    %r1 = call i32 @member(%x1)
+    %bad1 = cmp ne i32 %r1, 0
+    %sum1 = binary or i64 %bad0, %bad1
+    store volatile i32 0, @input
+    %x2 = load volatile i32 @input
+    %r2 = call i32 @member(%x2)
+    %bad2 = cmp ne i32 %r2, 0
+    %sum2 = binary or i64 %sum1, %bad2
+    store volatile i32 1, @input
+    %x3 = load volatile i32 @input
+    %r3 = call i32 @member(%x3)
+    %bad3 = cmp ne i32 %r3, 1
+    %sum3 = binary or i64 %sum2, %bad3
+    store volatile i32 2, @input
+    %x4 = load volatile i32 @input
+    %r4 = call i32 @member(%x4)
+    %bad4 = cmp ne i32 %r4, 1
+    %sum4 = binary or i64 %sum3, %bad4
+    store volatile i32 3, @input
+    %x5 = load volatile i32 @input
+    %r5 = call i32 @member(%x5)
+    %bad5 = cmp ne i32 %r5, 1
+    %sum5 = binary or i64 %sum4, %bad5
+    store volatile i32 4, @input
+    %x6 = load volatile i32 @input
+    %r6 = call i32 @member(%x6)
+    %bad6 = cmp ne i32 %r6, 0
+    %sum6 = binary or i64 %sum5, %bad6
+    store volatile i32 2147483647, @input
+    %x7 = load volatile i32 @input
+    %r7 = call i32 @member(%x7)
+    %bad7 = cmp ne i32 %r7, 0
+    %sum7 = binary or i64 %sum6, %bad7
+    store volatile i32 0, @input
+    %x8 = load volatile i32 @input
+    %r8 = call i32 @narrow(%x8)
+    %bad8 = cmp ne i32 %r8, 0
+    %sum8 = binary or i64 %sum7, %bad8
+    store volatile i32 1, @input
+    %x9 = load volatile i32 @input
+    %r9 = call i32 @narrow(%x9)
+    %bad9 = cmp ne i32 %r9, 1
+    %sum9 = binary or i64 %sum8, %bad9
+    store volatile i32 2, @input
+    %x10 = load volatile i32 @input
+    %r10 = call i32 @narrow(%x10)
+    %bad10 = cmp ne i32 %r10, 1
+    %sum10 = binary or i64 %sum9, %bad10
+    store volatile i32 255, @input
+    %x11 = load volatile i32 @input
+    %r11 = call i32 @narrow(%x11)
+    %bad11 = cmp ne i32 %r11, 1
+    %sum11 = binary or i64 %sum10, %bad11
+    store volatile i32 256, @input
+    %x12 = load volatile i32 @input
+    %r12 = call i32 @narrow(%x12)
+    %bad12 = cmp ne i32 %r12, 0
+    %sum12 = binary or i64 %sum11, %bad12
+    store volatile i32 257, @input
+    %x13 = load volatile i32 @input
+    %r13 = call i32 @narrow(%x13)
+    %bad13 = cmp ne i32 %r13, 1
+    %sum13 = binary or i64 %sum12, %bad13
+    store volatile i32 -256, @input
+    %x14 = load volatile i32 @input
+    %r14 = call i32 @narrow(%x14)
+    %bad14 = cmp ne i32 %r14, 0
+    %sum14 = binary or i64 %sum13, %bad14
+    store volatile i32 0, @input
+    %x15 = load volatile i32 @input
+    %r15 = call i32 @mixed(%x15)
+    %bad15 = cmp ne i32 %r15, 1
+    %sum15 = binary or i64 %sum14, %bad15
+    store volatile i32 1, @input
+    %x16 = load volatile i32 @input
+    %r16 = call i32 @mixed(%x16)
+    %bad16 = cmp ne i32 %r16, 0
+    %sum16 = binary or i64 %sum15, %bad16
+    %out = convert trunc i32 i64 %sum16
+    return i32 %out
+}

@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+count(frame) <= 6 in @walk
+stack_size <= 80 in @walk
+count(instructions) <= 220 in @walk

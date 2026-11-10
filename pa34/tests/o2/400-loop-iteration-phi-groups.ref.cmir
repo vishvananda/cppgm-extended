@@ -1,0 +1,410 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @touch
+  abi
+    param %p -> rdi : ptr
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    ret rdi
+
+function @walk
+  abi
+    param %root -> rdi : ptr
+    param %input -> rsi : ptr
+    param %length -> rdx : i64
+    param %budget -> rcx : i32
+    param %output -> r8 : ptr
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    param-slot %length -> [rbp-<off0>] : i64
+
+  block ^entry
+    mov <gpr2>, rdi
+    mov <gpr3>, rsi
+    mov <gpr0>, rcx
+    mov rdi, r8
+    cmp.ptr <gpr2>, 0
+    setne rax
+    movzx rax, rax
+    cmp.i32 <gpr0>, 0
+    setg rcx
+    movzx rcx, rcx
+    test.i64 rax, rcx
+    je ^empty
+
+  block ^entry~start
+    store.i64 [rbp-<off0>], rdx
+
+  block ^start
+    call @touch [args=(rdi)]
+    mov r8, rax
+    mov rsi, 0
+    mov <gpr1>, <gpr2>
+    mov rdi, 0
+    mov rcx, 0
+
+  block ^head
+    cmp.i64 rsi, [rbp-<off0>]
+    jb ^byte
+
+  block ^finish
+    ret rdi
+
+  block ^tail
+    add rsi, 1
+    cmp.i32 rcx, <gpr0>
+    jge ^finish_tail
+
+  block ^tail~head
+    mov <gpr1>, rax
+    cmp.i64 rsi, [rbp-<off0>]
+    jae ^finish
+
+  block ^byte
+    load.u8 rdx, [<gpr3>+rsi]
+
+  block ^step0
+    lea.i32 r9, [rcx+<off0>]
+    mov rax, rdx
+    shr rax, 7
+    and rax, 1
+    lea <gpr4>, [rax*8]
+    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    cmp.ptr rax, 0
+    je ^step6~tail
+
+  block ^check0
+    cmp.u8 [rax+<off0>], 0
+    jne ^leaf0
+
+  block ^check0~merge0
+    mov <gpr1>, rax
+
+  block ^merge0
+    cmp.i32 r9, <gpr0>
+    jl ^step1
+
+  block ^merge0~tail
+    mov rcx, r9
+    mov rax, <gpr1>
+    add rsi, 1
+    cmp.i32 rcx, <gpr0>
+    jl ^tail~head
+
+  block ^finish_tail
+    ret rdi
+
+  block ^leaf0
+    load.u8 rax, [rax+<off1>]
+    store.u8 [r8+rdi], rax
+    add rdi, 1
+    mov <gpr1>, <gpr2>
+    cmp.i32 r9, <gpr0>
+    jge ^merge0~tail
+
+  block ^step1
+    lea.i32 r9, [rcx+<off1>]
+    mov rax, rdx
+    shr rax, 6
+    and rax, 1
+    lea <gpr4>, [rax*8]
+    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    cmp.ptr rax, 0
+    je ^step6~tail
+
+  block ^check1
+    cmp.u8 [rax+<off0>], 0
+    jne ^leaf1
+
+  block ^check1~merge1
+    mov <gpr1>, rax
+
+  block ^merge1
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+    jmp ^step2
+
+  block ^leaf1
+    load.u8 rax, [rax+<off1>]
+    store.u8 [r8+rdi], rax
+    add rdi, 1
+    mov <gpr1>, <gpr2>
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+
+  block ^step2
+    lea.i32 r9, [rcx+<off2>]
+    mov rax, rdx
+    shr rax, 5
+    and rax, 1
+    lea <gpr4>, [rax*8]
+    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    cmp.ptr rax, 0
+    je ^step6~tail
+
+  block ^check2
+    cmp.u8 [rax+<off0>], 0
+    jne ^leaf2
+
+  block ^check2~merge2
+    mov <gpr1>, rax
+
+  block ^merge2
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+    jmp ^step3
+
+  block ^leaf2
+    load.u8 rax, [rax+<off1>]
+    store.u8 [r8+rdi], rax
+    add rdi, 1
+    mov <gpr1>, <gpr2>
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+
+  block ^step3
+    lea.i32 r9, [rcx+<off3>]
+    mov rax, rdx
+    shr rax, 4
+    and rax, 1
+    lea <gpr4>, [rax*8]
+    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    cmp.ptr rax, 0
+    je ^step6~tail
+
+  block ^check3
+    cmp.u8 [rax+<off0>], 0
+    jne ^leaf3
+
+  block ^check3~merge3
+    mov <gpr1>, rax
+
+  block ^merge3
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+    jmp ^step4
+
+  block ^leaf3
+    load.u8 rax, [rax+<off1>]
+    store.u8 [r8+rdi], rax
+    add rdi, 1
+    mov <gpr1>, <gpr2>
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+
+  block ^step4
+    lea.i32 r9, [rcx+<off4>]
+    mov rax, rdx
+    shr rax, 3
+    and rax, 1
+    lea <gpr4>, [rax*8]
+    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    cmp.ptr rax, 0
+    je ^step6~tail
+
+  block ^check4
+    cmp.u8 [rax+<off0>], 0
+    jne ^leaf4
+
+  block ^check4~merge4
+    mov <gpr1>, rax
+
+  block ^merge4
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+    jmp ^step5
+
+  block ^leaf4
+    load.u8 rax, [rax+<off1>]
+    store.u8 [r8+rdi], rax
+    add rdi, 1
+    mov <gpr1>, <gpr2>
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+
+  block ^step5
+    lea.i32 r9, [rcx+<off5>]
+    mov rax, rdx
+    shr rax, 2
+    and rax, 1
+    lea <gpr4>, [rax*8]
+    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    cmp.ptr rax, 0
+    je ^step6~tail
+
+  block ^check5
+    cmp.u8 [rax+<off0>], 0
+    jne ^leaf5
+
+  block ^check5~merge5
+    mov <gpr1>, rax
+
+  block ^merge5
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+    jmp ^step6
+
+  block ^leaf5
+    load.u8 rax, [rax+<off1>]
+    store.u8 [r8+rdi], rax
+    add rdi, 1
+    mov <gpr1>, <gpr2>
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+
+  block ^step6
+    lea.i32 r9, [rcx+<off6>]
+    mov rax, rdx
+    shr rax, 1
+    and rax, 1
+    lea <gpr4>, [rax*8]
+    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    cmp.ptr rax, 0
+    je ^step6~tail
+
+  block ^check6
+    cmp.u8 [rax+<off0>], 0
+    jne ^leaf6
+
+  block ^check6~merge6
+    mov <gpr1>, rax
+
+  block ^merge6
+    cmp.i32 r9, <gpr0>
+    jl ^step7
+
+  block ^merge6~tail
+    mov rcx, r9
+    mov rax, <gpr1>
+    jmp ^tail
+
+  block ^step6~tail
+    mov rcx, r9
+    jmp ^tail
+
+  block ^leaf6
+    load.u8 rax, [rax+<off1>]
+    store.u8 [r8+rdi], rax
+    add rdi, 1
+    mov <gpr1>, <gpr2>
+    cmp.i32 r9, <gpr0>
+    jge ^merge6~tail
+
+  block ^step7
+    add.i32 rcx, 8
+    shr rdx, 0
+    and rdx, 1
+    imul rdx, 8
+    load.ptr rax, [<gpr1>+rdx+<off0>]
+    cmp.ptr rax, 0
+    je ^tail
+
+  block ^check7
+    cmp.u8 [rax+<off0>], 0
+    je ^tail
+
+  block ^leaf7
+    load.u8 rax, [rax+<off1>]
+    store.u8 [r8+rdi], rax
+    add rdi, 1
+    mov rax, <gpr2>
+    jmp ^tail
+
+  block ^empty
+    mov rax, 0
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2>
+    slot $root -> [rbp-<off1>] : obj<24x8>
+    slot $left -> [rbp-<off2>] : obj<24x8>
+    slot $right -> [rbp-<off3>] : obj<24x8>
+    slot $bytes -> [rbp-<off4>] : obj<2x1>
+    slot $out -> [rbp-<off5>] : obj<16x1>
+
+  block ^entry
+    lea rax, [rbp-<off2>]
+    lea rcx, [rbp-<off3>]
+    store.u8 [rax+<off1>], 2
+    store.u8 [rcx+<off3>], 7
+    store.u8 [rax+<off0>], 1
+    store.u8 [rcx+<off4>], 1
+    store.ptr [rbp-<off6>], rax
+    store.ptr [rbp-<off0>], rcx
+    store.i16 [rbp-<off4>], 61610
+    lea rdi, [rbp-<off1>]
+    lea rsi, [rbp-<off4>]
+    mov rdx, 2
+    mov rcx, 13
+    lea r8, [rbp-<off5>]
+    call @walk [args=(rcx,rdx,rsi,rdi,r8)]
+    cmp.i64 rax, 13
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    mov rax, 0
+    mov rcx, 0
+
+  block ^sum
+    load.u8 rdx, [rbp+rax-<off0>]
+    add rcx, rdx
+    add rax, 1
+    cmp.i64 rax, 13
+    jae ^finish
+
+  block ^sum~sum
+    load.u8 rdx, [rbp+rax-<off0>]
+    add rcx, rdx
+    add rax, 1
+    cmp.i64 rax, 13
+    jb ^sum~sum
+
+  block ^finish
+    cmp.i64 rcx, 66
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    lea rdi, [rbp-<off1>]
+    lea rsi, [rbp-<off4>]
+    mov rdx, 2
+    mov rcx, 0
+    lea r8, [rbp-<off5>]
+    call @walk [args=(rcx,rdx,rsi,rdi,r8)]
+    cmp.i64 rax, 0
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    store.ptr [rbp-<off0>], 0
+    lea rdi, [rbp-<off1>]
+    lea rsi, [rbp-<off4>]
+    mov rdx, 1
+    mov rcx, 8
+    lea r8, [rbp-<off5>]
+    call @walk [args=(rcx,rdx,rsi,rdi,r8)]
+    cmp.i64 rax, 0
+    setne rax
+    movzx rax, rax
+    or <gpr0>, <gpr1>
+    or <gpr0>, <gpr2>
+    or rax, <gpr0>
+    ret rax

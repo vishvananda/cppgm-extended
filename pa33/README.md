@@ -313,6 +313,10 @@ arbitrary byte writes, escaped storage and volatile accesses. Counter fixtures
 include nonnegative loops, negative starts and wrapping counters; any arithmetic
 simplification must preserve all of them.
 
+Boolean conditions may pass through selected zero/one values and integer
+retypes. Meet their quality bounds while preserving actual narrowing of
+arbitrary integers; a nonzero value can become zero when narrowed.
+
 Large-object fixtures combine indexed payloads, recurrent scalar fields and
 whole-object snapshots. Meet their bounds while preserving every copied byte
 and the time each snapshot is taken. Keep volatile accesses and overlapping

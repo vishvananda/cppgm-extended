@@ -458,6 +458,8 @@ bool Simplifier::boolean(Value v, unsigned depth)
 				return false;
 		}
 		return true;
+	case Opcode::Select:
+		return def->type.is_integer() && boolean(def->ops[1], depth + 1) && boolean(def->ops[2], depth + 1);
 	default:
 		return false;
 	}
@@ -2642,6 +2644,13 @@ void Simplifier::simplify_branch(Instruction& term)
 		const Instruction* def = producer(term.ops[0]);
 		if (def == nullptr)
 			return;
+		if (def->op == Opcode::Copy && def->type.is_integer() && def->ops[0].is(ValueKind::Temp) &&
+			boolean(def->ops[0]))
+		{
+			term.ops[0] = def->ops[0];
+			changed_ = true;
+			continue;
+		}
 		if (def->op == Opcode::Convert && def->ops[0].is(ValueKind::Temp) &&
 			(static_cast<ConvertOp>(def->sub) == ConvertOp::ZExt ||
 				(static_cast<ConvertOp>(def->sub) == ConvertOp::Trunc && boolean(def->ops[0]))))
