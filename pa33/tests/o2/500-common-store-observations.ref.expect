@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+count(load volatile) >= 1 in @guarded_volatile
+count(store volatile) >= 1 in @guarded_volatile

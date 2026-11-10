@@ -317,6 +317,11 @@ Boolean conditions may pass through selected zero/one values and integer
 retypes. Meet their quality bounds while preserving actual narrowing of
 arbitrary integers; a nonzero value can become zero when narrowed.
 
+Meet the conditional-store fixtures' branch and store bounds while preserving
+the selected values, cursor updates and empty-input behavior. Keep alias reads,
+callbacks, volatile accesses and potentially trapping work correctly ordered
+and conditional.
+
 Large-object fixtures combine indexed payloads, recurrent scalar fields and
 whole-object snapshots. Meet their bounds while preserving every copied byte
 and the time each snapshot is taken. Keep volatile accesses and overlapping

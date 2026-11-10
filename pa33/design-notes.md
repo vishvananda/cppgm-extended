@@ -90,6 +90,14 @@ A slot in a value operand reads memory at that instruction. Reusing an
 expression containing such an operand requires the same memory proof as an
 explicit load. Keep those reads distinct from operands naming storage.
 
+Both arms of a choice may write the same location. Factoring that write can
+expose conditional values and cursor updates to predication. Prove address
+equivalence and preserve observations before moving any effect. Limit
+speculated work and drop facts justified only on the selected arm. Sequential
+cursor choices differ from a pointer-chasing chain: fewer unpredictable
+branches can justify more instructions, while a dependent load may benefit
+from branch prediction. Measure cycles and branch misses alongside counts.
+
 Conditionally updated fields can need many merge values inside a loop.
 Promoting all of them may turn a few memory updates into repeated register
 spills and transfers. Compare both native work and size, including inactive
