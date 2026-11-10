@@ -2,6 +2,7 @@
 
 #include "lowir/assembly.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstring>
 
@@ -1218,10 +1219,46 @@ void ObjectCompiler::add_relocations()
 
 void ObjectCompiler::add_groups()
 {
+	// A group exporting aliases is a bundle. A foreign compiler may emit
+	// only its primary name under that name's COMDAT key; selecting such
+	// a group must not discard this bundle's additional ABI entry names.
+	// Index the exported names once, then key each bundle by its entire
+	// sorted export set. Different sets can coexist, while equal bundles
+	// still coalesce, independently of their chosen implementation name.
+	std::vector<std::vector<uint32_t>> exports(out_->sections.size());
+	std::vector<uint8_t> grouped(out_->sections.size(), 0);
+	for (uint32_t symbol : grouped_)
+		grouped[placement_[slot(symbol)].section] = 1;
+	for (uint32_t k = 0; k < out_->symbols.size(); ++k)
+	{
+		const object::Symbol& symbol = out_->symbols[k];
+		if (symbol.section < grouped.size() && grouped[symbol.section] && symbol.binding != Binding::Local)
+			exports[symbol.section].push_back(k);
+	}
 	for (const uint32_t symbol : grouped_)
 	{
 		object::Group group;
 		group.signature = object_symbol(symbol);
+		std::vector<uint32_t>& names = exports[placement_[slot(symbol)].section];
+		if (image_.target == Target::Linux && names.size() > 1)
+		{
+			std::sort(names.begin(), names.end(),
+				[&](uint32_t a, uint32_t b) { return std::strcmp(out_->symbol_name(a), out_->symbol_name(b)) < 0; });
+			std::string key = "__cppgm_comdat_exports.";
+			for (uint32_t name : names)
+			{
+				const char* text = out_->symbol_name(name);
+				key += std::to_string(std::strlen(text));
+				key += ':';
+				key += text;
+			}
+			object::Symbol signature = out_->symbols[group.signature];
+			signature.name = out_->add_string(key);
+			signature.size = 0;
+			signature.binding = Binding::Local;
+			signature.type = object::SymbolType::None;
+			group.signature = out_->add_symbol(signature);
+		}
 		group.sections.push_back(placement_[slot(symbol)].section);
 		out_->sections[placement_[slot(symbol)].section].group = static_cast<uint32_t>(out_->groups.size());
 		out_->groups.push_back(std::move(group));

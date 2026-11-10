@@ -18,7 +18,8 @@
 // - binding=internal definitions are local symbols; binding=weak
 //   definitions (inline functions, template instances, vtables, type
 //   information) are weak symbols, each in its own section of a COMDAT
-//   group named by its object symbol, so the linker keeps one copy (a
+//   group named by its object symbol or its bundle of exported aliases,
+//   so the linker keeps every required name while coalescing equal bundles (a
 //   GNU weak definition, SF_REPLACEABLE, is a weak symbol in the shared
 //   section, as GCC places it); other definitions are global.
 //   Declarations are undefined symbols,

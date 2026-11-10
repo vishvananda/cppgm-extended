@@ -1,0 +1,8 @@
+#include "300-base-only-entry-export.helper.h"
+extern "C" int complete_object_value(int n) {
+  ExportBox b{n};
+  ExportValue v(b);
+  ExportDerived d(b);
+  return v.value + d.value - n;
+}
+int main() { return host_check_base_only_exports(); }

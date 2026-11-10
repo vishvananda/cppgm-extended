@@ -1,0 +1,6 @@
+#include "300-base-only-entry-export.helper.h"
+extern "C" int base_only_value(int n) {
+  ExportBox b{n};
+  ExportDerived d(b);
+  return d.value;
+}
