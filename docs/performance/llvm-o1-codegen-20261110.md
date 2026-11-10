@@ -592,3 +592,65 @@ Raw comparison evidence is in
 `o{1,2,3}-tables-cost-returns-serial-diagnostic-r4-clang-runtime-timing/`,
 `o123-current-text-section-sizes-r4.json`, and
 `o{1,2,3}-tables-cost-returns-text-cohorts-r4.json`.
+
+## Constructor entry repair and bounded call reuse
+
+The mixed noinline failure is now reduced and repaired. A constexpr constructor
+can have both complete and base entries emitted, after which optimization removes
+the unused base body. The old code excludes constexpr functions from the typed
+entry-equivalence proof and fails to restore the removed ABI name as an alias.
+A selected COMDAT group can consequently omit the base entry another object
+calls. The minimal reproducer links at O0 and fails at O1 through O3.
+
+The repair allows the existing equivalence proof for eligible constexpr
+constructors, retains the alternate weak ABI export when one implementation is
+pruned, and shares equivalent nonreplaceable weak implementations at O1 and above.
+Virtual bases, implicit/defaulted copies with tail-padding differences, incompatible
+ABIs and explicit replaceable weak definitions remain excluded by the proof.
+O0 still streams definitions before final entry proofs are published; eagerly
+consuming those proofs during O0 selection breaks direct/serialized object
+equality and is not retained. Both entry names remain available without that change.
+
+The PA33 host regression fails before the repair. Mixed producer optimization
+levels, two host compilers, two ELF linkers and six object orders pass all 384
+combinations after the repair versus 360 before. Replacing the affected winning
+X86 object in the original mixed LLVM also repairs both real input failures;
+their generated objects match native exactly. This is a targeted reproducer
+repair, not a new complete LLVM runtime measurement.
+
+The normal compiler image `7f21299641cea9503017174257b427ff3a8f82aa5937ff3d82ab31dac5dbe017`
+passes 10,586/10,586 strict tests, debug and object-roundtrip checks, all architecture
+and placement audits, the harness, self-host through PA5, inception and PA36
+quick/smoke. The combined frozen gate against `194ce80d0`, including the earlier
+table/cost/return batch, passes at 0.999961 O0 and 1.004883 O3 instructions with flat
+memory. O0 frozen objects are byte identical. The repair alone has essentially
+flat compile cost and no established runtime improvement in the 34-file screen.
+
+A private bounded scalar-call CSE prototype reuses a normally completed dominating
+call only after checking every intervening path for memory and non-memory barriers.
+The first prototype incorrectly overlooks a current block's tail on an earlier
+loop iteration; the aliasing-loop regression rejects it. The corrected prototype
+passes 16 GCC/Clang/before/after comparisons at all four levels, plus 12 GCC/cppgm
+unwind-contract comparisons. Clang's GNU `pure` lowering adds `nounwind`, so the
+may-unwind contract is checked separately rather than treating that source case
+as a portable three-compiler oracle.
+
+Five profiled LLVM objects change, but the corrected screen reduces instructions
+only about 0.035%, with no demonstrated cycle benefit. Its frozen gate adds about
+0.027% O3 instructions. It remains private and does not justify a full LLVM rebuild
+by itself. Missing call CSE is demonstrated, but this bounded subset does not
+explain the remaining 17% workload deficit.
+
+Call-event attribution also needs a tail-call qualification. Native
+`Decl::getAttrs` ends in a jump to `ASTContext::getDeclAttrs`, whereas cppgm's O1
+version calls and returns. A missing retired call can therefore be a tail jump
+rather than an inlined or eliminated evaluation. cppgm's sibling-call formation
+currently starts at O2 and rejects functions with any frame-address formation.
+This motivates a separate O1 contribution measurement; it cannot alone explain
+the gap also observed at O2/O3.
+
+Evidence: `o1-equivalent-weak-entries-main-r3-*`,
+`o1-tables-entries-combined-main-r3-frozen-perf/`,
+`weak-entry-mixed-levels-r2/`, `o1-real-llvm-weak-ctor-repair-r1/`,
+`o1-dominating-pure-calls-*-r3/`, and the paired `*-decl-getattrs-tail-r1.asm`
+files under the evidence root. The elapsed target remains unmet.

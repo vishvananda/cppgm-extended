@@ -366,19 +366,20 @@ const lowir::JumpThunk* ObjectCompiler::jump_thunk(lowir::SymbolId symbol)
 
 const lowir::JumpThunk* ObjectCompiler::equivalent_entry(lowir::SymbolId symbol)
 {
-	// O1+ has retained the unit through inlining. Build this sparse index
-	// once, after lowering has finished; O0 never visits these facts.
+	// O1+ retains the unit through inlining, so entry proofs are complete
+	// before selection. O0 streams definitions before these facts are final.
 	if (!entries_indexed_)
 	{
 		for (const lowir::EquivalentEntry& entry : program_.equivalent_entries)
 		{
 			const lowir::Symbol& source = program_.symbols[entry.symbol];
 			const lowir::Symbol& target = program_.symbols[entry.target];
-			// Share only direct aliases. Other bindings retain their own body
-			// rather than adding a forwarding branch at entry.
+			// Equal nonreplaceable bindings may share the proved implementation,
+			// including vague-linkage entries and their COMDAT exports.
 			if (source.kind == lowir::SymbolKind::FunctionDefinition &&
 				target.kind == lowir::SymbolKind::FunctionDefinition &&
-				source.metadata.binding == ir_model::SBM_STRONG && target.metadata.binding == ir_model::SBM_STRONG &&
+				source.metadata.binding == target.metadata.binding &&
+				(source.metadata.binding == ir_model::SBM_STRONG || source.metadata.binding == ir_model::SBM_WEAK) &&
 				((source.metadata.flags | target.metadata.flags) & lowir::SF_REPLACEABLE) == 0 &&
 				(image_.target != Target::MacOS ||
 					(source.metadata.tls_for == lowir::kNoId) == (target.metadata.tls_for == lowir::kNoId)) &&

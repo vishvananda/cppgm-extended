@@ -1,0 +1,6 @@
+# explicit-outcomes
+
+# Bounded scalar code for shared case results and call-based alignment.
+instructions <= 15 in @lookup
+instructions <= 10 in @powers
+instructions <= 7 in @round_through_table

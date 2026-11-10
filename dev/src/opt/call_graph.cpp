@@ -254,6 +254,23 @@ uint32_t prune_unreachable(Program& program, OptimizerStats& stats)
 						mark(v.index);
 				});
 	}
+	// A retained vague-linkage implementation must keep both entry names:
+	// another unit may choose its COMDAT group but reference the other ABI entry.
+	for (const EquivalentEntry& entry : program.equivalent_entries)
+	{
+		if (!is_definition(program, entry.symbol) || !is_definition(program, entry.target) ||
+			live[entry.symbol] == live[entry.target] || !program.same_entry_abi(entry.symbol, entry.target))
+			continue;
+		const Symbol& a = program.symbols[entry.symbol];
+		const Symbol& b = program.symbols[entry.target];
+		if (a.metadata.binding != ir_model::SBM_WEAK || b.metadata.binding != ir_model::SBM_WEAK ||
+			((a.metadata.flags | b.metadata.flags) & SF_REPLACEABLE) != 0)
+			continue;
+		const SymbolId kept = live[entry.symbol] ? entry.symbol : entry.target;
+		const Symbol& dropped = live[entry.symbol] ? b : a;
+		const NameId object = dropped.metadata.object != 0 ? dropped.metadata.object : dropped.name;
+		program.aliases.push_back(ObjectAlias{ object, kept });
+	}
 	uint32_t removed = 0;
 	std::vector<SymbolId> order;
 	for (SymbolId s : program.order)

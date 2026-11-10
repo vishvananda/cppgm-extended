@@ -25,8 +25,8 @@ bool EquivalentEntries(const sema::SemanticGraph& graph, const sema::FunctionEnt
 	// when no virtual bases need a different initialization/destruction path.
 	// Implicit/defaulted copies can treat tail padding differently.
 	if (!(function->constructor || function->destructor) || function->trivial || function->implicit ||
-		function->synthesized || function->is_constexpr || function->noreturn || function->body == nullptr ||
-		!function->defined || function->owner == nullptr || function->owner->entity == nullptr)
+		function->synthesized || function->noreturn || function->body == nullptr || !function->defined ||
+		function->owner == nullptr || function->owner->entity == nullptr)
 		return false;
 	const sema::ClassEntity* owner = sema::ClassOf(function->owner->entity->type);
 	if (owner == nullptr || !owner->complete || sema::VirtualBaseCount(owner) != 0)

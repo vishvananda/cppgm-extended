@@ -32,6 +32,12 @@ uint64_t returned_powers(const FunctionBody& body, Value value, Type type, unsig
 		}
 		return out;
 	}
+	if (def.op == Opcode::Binary && static_cast<BinaryOp>(def.sub) == BinaryOp::Shl &&
+		literal_constant(body, def.ops[0], c) && is_integer(type, c, 1))
+	{
+		const unsigned width = lowir::integer_bits(type.kind());
+		return width == 64 ? ~uint64_t(0) : (uint64_t(1) << width) - 1;
+	}
 	if (def.op == Opcode::Copy)
 	{
 		const Type from = def.ops[0].is(ValueKind::Temp) ? body.temps[def.ops[0].index].type : type;

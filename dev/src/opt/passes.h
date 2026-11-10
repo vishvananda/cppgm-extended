@@ -290,6 +290,9 @@ bool form_switches(FunctionContext& context);
 // pointer plus constant offsets use bounded readonly result tables. Keep
 // defined defaults and side effects; data growth is linear in case operands.
 bool form_return_tables(FunctionContext& context);
+// O1+: dense constant case groups feeding one scalar phi use bounded result
+// tables, retaining other case/default paths and first-match semantics.
+bool form_phi_result_tables(FunctionContext& context);
 
 // O2+, after the scalar rounds (opt/select_formation.cpp): a branch to a
 // diamond or triangle whose arms only compute (at most two speculatable

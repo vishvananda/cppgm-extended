@@ -147,6 +147,12 @@ struct Shape
 	bool constant_result = false; // every normal return is the same integer literal
 };
 
+bool cheap_shape_instruction(const Instruction& inst)
+{
+	return inst.op == Opcode::Copy || inst.op == Opcode::Addr ||
+		(inst.op == Opcode::Index && inst.ops[1].is(ValueKind::Integer));
+}
+
 uint32_t addressed_slot(const FunctionBody& body, Value v);
 
 // A callee with a short call-free path to a return around a slower calling
@@ -199,6 +205,7 @@ Shape shape_of(
 	bool unwinding = false, unguarded = false;
 	bool same_result = !source_required && sig.result.is_integer();
 	uint32_t result_literal = kNoId;
+	uint32_t cheap = 0;
 	for (BlockId b : body.layout)
 	{
 		++shape.blocks;
@@ -292,6 +299,7 @@ Shape shape_of(
 			for (InstId i = body.blocks[b].first; i != kNoId && !cold[b]; i = body.instructions[i].next)
 			{
 				const Instruction& inst = body.instructions[i];
+				cheap += !shape.eh && cheap_shape_instruction(inst) ? 1 : 0;
 				shape.hot_call = shape.hot_call || inst.op == Opcode::Call;
 				shape.allocates = shape.allocates ||
 					(inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) &&
@@ -377,6 +385,11 @@ Shape shape_of(
 						(body.instructions[i].op == Opcode::Call && !body.instructions[i].ops[0].is(ValueKind::Symbol));
 		}
 	}
+	if (shape.blocks == 1)
+		for (InstId i = body.blocks[body.layout[0]].first; i != kNoId; i = body.instructions[i].next)
+			cheap += !shape.eh && cheap_shape_instruction(body.instructions[i]) ? 1 : 0;
+	if (!shape.eh && !shape.hot_call)
+		shape.hot -= cheap / 2;
 	return shape;
 }
 

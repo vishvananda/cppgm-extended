@@ -1,0 +1,7 @@
+#include "300-constexpr-base-entry-export.helper.h"
+extern "C" int complete_entry_value(int n) {
+  CtorBox b{n};
+  CtorView<int> a(b);
+  if(false) { CtorDerived d(b); return d.value; }
+  return a.value;
+}

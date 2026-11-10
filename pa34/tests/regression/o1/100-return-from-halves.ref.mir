@@ -24,7 +24,7 @@ function @both
     shl r11, 32
     zext.i32 rax, rdi
     or rax, r11
-    ret
+    ret rax
 
 function @constant_high
   abi
@@ -42,7 +42,7 @@ function @constant_high
     mov r11, 38654705664
     zext.i32 rax, rdi
     or rax, r11
-    ret
+    ret rax
 
 function @main
   abi

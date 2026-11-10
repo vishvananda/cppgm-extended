@@ -359,6 +359,8 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 		RUN_PASS(specialize_phi_compares);
 		RUN_PASS(split_branch_compares);
 	}
+	if (RUN_PASS(form_phi_result_tables))
+		scalar_rounds(context);
 	if (level >= 2 && RUN_PASS(form_return_tables))
 		scalar_rounds(context);
 	compact_body(program, context.body);

@@ -311,10 +311,17 @@ namespace {
 // At most eight tail instructions; no call, two-address operation or
 // frame/callee-saved destination is crossed or retargeted. The scalar return
 // observes every surviving register read before its epilogue.
-void coalesce_return(Function& f, Block& block)
+void coalesce_return(Function& f, Block& block, bool object_in_rax)
 {
 	uint32_t at = block.first + block.count - 1;
 	Inst result = f.insts[at];
+	if (object_in_rax && result.op == Op::Ret && result.nops == 0)
+	{
+		result.nops = 1;
+		result.type = lowir::TypeKind::I64;
+		result.ops[0] = Operand::make_reg(RAX);
+	}
+
 	auto gpr = [](const Operand& op) { return op.kind == OperandKind::Reg && op.reg < 16; };
 	auto wide = [](lowir::TypeKind k) {
 		return k == lowir::TypeKind::Void || k == lowir::TypeKind::Ptr || k == lowir::TypeKind::I64;
@@ -391,6 +398,8 @@ uint32_t FunctionSelector::layout_branches()
 	// A jump to a block that only returns (through jump-only blocks)
 	// returns itself when the return is all its epilogue (a frameless
 	// return, or no saves and no frame): the return is copied over the jump.
+	const bool object_in_rax = signature_->result.is_object() && entry_layout_.result == ArgClass::Mixed &&
+		entry_layout_.result_parts == 1 && entry_layout_.result_part[0].reg == RAX;
 	const bool bare_returns = f.preserve_mask == 0 && f.stack_size == 0;
 	for (uint32_t b = 0; b < blocks; ++b)
 	{
@@ -400,7 +409,7 @@ uint32_t FunctionSelector::layout_branches()
 		Inst& last = f.insts[block.first + block.count - 1];
 		if (last.op == Op::Ret)
 		{
-			coalesce_return(f, block);
+			coalesce_return(f, block, object_in_rax);
 			continue;
 		}
 		if (last.op != Op::Jmp || last.ops[0].kind != OperandKind::Label)
@@ -412,7 +421,7 @@ uint32_t FunctionSelector::layout_branches()
 			(bare_returns || (f.insts[f.blocks[t].first].flags & MF_FRAMELESS) != 0))
 		{
 			last = f.insts[f.blocks[t].first];
-			coalesce_return(f, block);
+			coalesce_return(f, block, object_in_rax);
 		}
 	}
 	// Host objects: the blocks the entry and the landing pads reach (a

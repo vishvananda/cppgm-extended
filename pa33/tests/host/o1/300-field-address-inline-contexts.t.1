@@ -1,0 +1,7 @@
+#include "300-field-address-inline-contexts.helper.h"
+extern "C" unsigned long field_sum(const Fields* p) {
+  return p->a+p->b+p->c+p->d+p->e+p->f+p->g+p->h+p->i;
+}
+extern "C" unsigned long read_three(const Fields* a,const Fields* b,const Fields* c) {
+  return field_sum(a)^field_sum(b)^field_sum(c);
+}

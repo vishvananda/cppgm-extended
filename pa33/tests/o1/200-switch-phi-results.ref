@@ -1,0 +1,185 @@
+global @effects : i64 = 0
+global @__switch_results_0 : obj<8x1> [storage=readonly, binding=internal] = {
+  i8 17
+  i8 8
+  i8 0
+  i8 9
+  i8 5
+  i8 4
+  i8 1
+  i8 11
+}
+global @__switch_results_1 : obj<9x1> [storage=readonly, binding=internal] = {
+  i8 33
+  i8 0
+  i8 46
+  i8 0
+  i8 97
+  i8 0
+  i8 109
+  i8 0
+  i8 120
+}
+global @__switch_results_2 : obj<8x1> [storage=readonly, binding=internal] = {
+  i8 1
+  i8 2
+  i8 3
+  i8 4
+  i8 5
+  i8 6
+  i8 7
+  i8 8
+}
+
+function @lookup(%n : i64, %seed : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    switch %n, ^otherwise, 0:^merge, 1:^switch_case_4, 2:^switch_case_4, 3:^case3, 4:^switch_case_4, 5:^switch_case_4, 6:^switch_case_4, 7:^switch_case_4, 8:^switch_case_4
+
+  block ^case3:
+    %old = load volatile i64 @effects
+    %next = binary add i64 %seed, %old
+    store volatile i64 %next, @effects
+    %choice = binary xor i64 %seed, 45
+    jump ^merge
+
+  block ^otherwise:
+    %fallback = binary add i64 %seed, 99
+    jump ^merge
+
+  block ^merge:
+    %result = phi i64 [^case3: %choice, ^otherwise: %fallback, ^entry: 3, ^switch_case_4: %t9]
+    return i64 %result
+
+  block ^switch_case_4:
+    %t6 = binary sub i64 %n, 1
+    %t7 = index i8 @__switch_results_0, %t6
+    %t8 = load i8 %t7
+    %t9 = convert sext i64 i8 %t8
+    jump ^merge
+}
+function @holes(%n : i64, %seed : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    switch %n, ^otherwise, -5:^merge, -3:^switch_case_3, -1:^switch_case_3, 1:^switch_case_3, 3:^switch_case_3, 5:^switch_case_3
+
+  block ^otherwise:
+    jump ^merge
+
+  block ^merge:
+    %result = phi i64 [^otherwise: %seed, ^entry: -17, ^switch_case_3: %t5]
+    return i64 %result
+
+  block ^switch_case_3:
+    %t2 = binary sub i64 %n, -3
+    %t3 = index i8 @__switch_results_1, %t2
+    %t4 = load i8 %t3
+    %t5 = convert sext i64 i8 %t4
+    jump ^merge
+}
+function @powers(%n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    switch %n, ^otherwise, 0:^merge, 1:^switch_case_3, 2:^switch_case_3, 3:^switch_case_3, 4:^switch_case_3, 5:^switch_case_3, 6:^switch_case_3, 7:^switch_case_3, 8:^switch_case_3
+
+  block ^otherwise:
+    jump ^merge
+
+  block ^merge:
+    %result = phi i64 [^otherwise: 512, ^entry: 1, ^switch_case_3: %t6]
+    return i64 %result
+
+  block ^switch_case_3:
+    %t2 = binary sub i64 %n, 1
+    %t3 = index i8 @__switch_results_2, %t2
+    %t4 = load i8 %t3
+    %t5 = convert sext i64 i8 %t4
+    %t6 = binary shl i64 1, %t5
+    jump ^merge
+}
+function @round_through_table(%x : i64, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %alignment = call i64 @powers(%n)
+    %t2 = binary sub i64 %alignment, 1
+    %t3 = binary add i64 %x, %t2
+    %t4 = unary neg i64 %alignment
+    %result = binary and i64 %t3, %t4
+    return i64 %result
+}
+function @duplicates(%n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    switch %n, ^otherwise, 0:^merge, 1:^b, 2:^c, 3:^d, 4:^e, 5:^f, 3:^duplicate
+
+  block ^b:
+    jump ^merge
+
+  block ^c:
+    jump ^merge
+
+  block ^d:
+    jump ^merge
+
+  block ^e:
+    jump ^merge
+
+  block ^f:
+    jump ^merge
+
+  block ^duplicate:
+    jump ^merge
+
+  block ^otherwise:
+    jump ^merge
+
+  block ^merge:
+    %result = phi i64 [^b: 17, ^c: 23, ^d: 33, ^e: 49, ^f: 61, ^duplicate: 77, ^otherwise: 99, ^entry: 11]
+    return i64 %result
+}
+function @shift_word(%n : i32) -> i32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %result = binary shl i32 1, %n
+    return i32 %result
+}
+function @signed_word_division(%x : i64, %n : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %word = call i32 @shift_word(%n)
+    %divisor = convert sext i64 i32 %word
+    %result = binary udiv i64 %x, %divisor
+    return i64 %result
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %signed = call i64 @signed_word_division(-1, 31)
+    %bad_signed = cmp ne i64 %signed, 1
+    %duplicate = call i64 @duplicates(3)
+    %bad_duplicate = cmp ne i64 %duplicate, 33
+    %a = call i64 @lookup(1, 7)
+    %b = call i64 @lookup(3, 7)
+    %c = call i64 @lookup(99, 13)
+    %d = call i64 @holes(-3, 901)
+    %e = call i64 @holes(-4, 901)
+    %f = call i64 @holes(-5, 901)
+    %g = call i64 @round_through_table(123, 3)
+    %h = call i64 @round_through_table(-1, 8)
+    %i = call i64 @powers(99)
+    %ticks = load volatile i64 @effects
+    %bad_a = cmp ne i64 %a, 17
+    %bad_b = cmp ne i64 %b, 42
+    %bad_c = cmp ne i64 %c, 112
+    %bad_d = cmp ne i64 %d, 33
+    %bad_e = cmp ne i64 %e, 901
+    %bad_f = cmp ne i64 %f, -17
+    %bad_g = cmp ne i64 %g, 128
+    %bad_h = cmp ne i64 %h, 0
+    %bad_i = cmp ne i64 %i, 512
+    %bad_ticks = cmp ne i64 %ticks, 7
+    %ab = binary or i64 %bad_a, %bad_b
+    %cd = binary or i64 %bad_c, %bad_d
+    %ef = binary or i64 %bad_e, %bad_f
+    %gh = binary or i64 %bad_g, %bad_h
+    %it = binary or i64 %bad_i, %bad_ticks
+    %abcd = binary or i64 %ab, %cd
+    %efgh = binary or i64 %ef, %gh
+    %all = binary or i64 %abcd, %efgh
+    %bad = binary or i64 %it, %all
+    %checked = binary or i64 %bad_duplicate, %bad
+    %all_checked = binary or i64 %bad_signed, %checked
+    return i64 %all_checked
+}

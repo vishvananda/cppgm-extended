@@ -29,16 +29,36 @@ struct Case
 	Result result;
 };
 
+struct PhiIncoming
+{
+	uint32_t position;
+	BlockId from;
+	uint64_t key, bits;
+};
+
+struct PhiTable
+{
+	BlockId join;
+	InstId phi;
+	Type selector, result;
+	const std::vector<PhiIncoming>& inputs;
+	const std::vector<uint64_t>& values;
+	bool powers, byte;
+};
+
 class ReturnTables
 {
 public:
 	explicit ReturnTables(FunctionContext& context) : c_(context), p_(context.program), b_(context.body) {}
 	bool run();
+	bool run_phi();
 
 private:
 	bool returned(BlockId block, Result& result) const;
 	bool available(Value value, BlockId block);
 	bool candidate(BlockId block);
+	bool phi_candidate(BlockId block);
+	void rewrite_phi_table(const Instruction& term, const PhiTable& facts);
 	SymbolId table(const std::vector<uint64_t>& values, Type type);
 	void rewrite(BlockId block, const Instruction& term, Type selector, uint64_t first,
 		const std::vector<uint64_t>& values, const Result& result);
@@ -318,6 +338,181 @@ bool ReturnTables::candidate(BlockId block)
 	return true;
 }
 
+bool ReturnTables::phi_candidate(BlockId block)
+{
+	const InstId terminal = b_.blocks[block].last;
+	if (terminal == kNoId)
+		return false;
+	const Instruction term = b_.instructions[terminal];
+	if (term.op != Opcode::Switch || term.extra_count < 8 || term.extra_count > 1024)
+		return false;
+	const Type selector = term.type.is_void() ? Type::scalar(TypeKind::I64) : term.type;
+	if (!selector.is_integer() || integer_bits(selector.kind()) > 64)
+		return false;
+	c_.ensure_cfg_light();
+	BlockId join = kNoId;
+	InstId phi = kNoId;
+	Type result;
+	std::vector<PhiIncoming> inputs;
+	const uint64_t bias = is_unsigned(selector.kind()) ? 0 : uint64_t(1) << 63;
+	for (uint32_t k = 0; k < term.extra_count; k += 2)
+	{
+		const BlockId target = b_.operands[term.extra_first + k + 1].index;
+		if (target == block || target == term.ops[1].index || c_.cfg.pred_count(target) != 1 ||
+			c_.cfg.preds[c_.cfg.pred_first[target]] != block ||
+			(c_.cfg.flags[target] & (BF_ADDRESS | BF_HANDLER | BF_EH)))
+			continue;
+		const Block& arm = b_.blocks[target];
+		if (arm.first == kNoId || arm.first != arm.last || b_.instructions[arm.last].op != Opcode::Jump)
+			continue;
+		const BlockId merge = b_.instructions[arm.last].ops[0].index;
+		const InstId first = b_.blocks[merge].first;
+		if (merge == block || merge == target || first == kNoId || b_.instructions[first].op != Opcode::Phi ||
+			(b_.instructions[first].next != kNoId && b_.instructions[b_.instructions[first].next].op == Opcode::Phi) ||
+			(join != kNoId && merge != join))
+			continue;
+		const Instruction& incoming = b_.instructions[first];
+		if (!incoming.type.is_integer() || incoming.type.kind() == TypeKind::I128)
+			continue;
+		const Value value = phi_incoming(b_, incoming, target);
+		if (!value.is(ValueKind::Integer) || !b_.operands[term.extra_first + k].is(ValueKind::Integer))
+			continue;
+		join = merge;
+		phi = first;
+		result = incoming.type;
+		inputs.push_back(PhiIncoming{ k, target,
+			normalize_integer(selector, b_.literals[b_.operands[term.extra_first + k].index]).low,
+			normalize_integer(result, b_.literals[value.index]).low });
+	}
+	if (inputs.size() < 4)
+		return false;
+	std::sort(inputs.begin(), inputs.end(),
+		[&](const PhiIncoming& a, const PhiIncoming& b) { return (a.key ^ bias) < (b.key ^ bias); });
+	const uint64_t first = inputs.front().key, span = inputs.back().key - first;
+	if (span >= 512 || span + 1 > inputs.size() * 2)
+		return false;
+	// LowIR switches choose their first matching arm. Reject repeated keys
+	// in the candidate window, including arms that are not table candidates.
+	// The accepted span has at most 512 entries, so the bitmap is bounded.
+	uint64_t seen[8] = {};
+	for (uint32_t k = 0; k < term.extra_count; k += 2)
+	{
+		const Value key = b_.operands[term.extra_first + k];
+		if (!key.is(ValueKind::Integer))
+			return false;
+		const uint64_t delta = normalize_integer(selector, b_.literals[key.index]).low - first;
+		if (delta > span)
+			continue;
+		const uint64_t bit = uint64_t(1) << (delta & 63);
+		if (seen[delta / 64] & bit)
+			return false;
+		seen[delta / 64] |= bit;
+	}
+	bool varies = false, byte = true, powers = true;
+	for (const PhiIncoming& in : inputs)
+	{
+		varies = varies || in.bits != inputs.front().bits;
+		byte = byte && in.bits <= 127;
+		powers = powers && in.bits != 0 && (in.bits & (in.bits - 1)) == 0;
+	}
+	if (!varies)
+		return false;
+	std::vector<uint64_t> values(static_cast<size_t>(span + 1), 0);
+	for (const PhiIncoming& in : inputs)
+		values[static_cast<size_t>(in.key - first)] = powers ? static_cast<uint64_t>(__builtin_ctzll(in.bits))
+															 : in.bits;
+	const PhiTable facts{ join, phi, selector, result, inputs, values, powers, byte };
+	rewrite_phi_table(term, facts);
+	++c_.stats.folded;
+	return true;
+}
+
+void ReturnTables::rewrite_phi_table(const Instruction& term, const PhiTable& facts)
+{
+	const BlockId join = facts.join;
+	const InstId phi = facts.phi;
+	const Type selector = facts.selector, result = facts.result;
+	const std::vector<PhiIncoming>& inputs = facts.inputs;
+	const std::vector<uint64_t>& values = facts.values;
+	const bool powers = facts.powers, byte = facts.byte;
+	const uint64_t first = inputs.front().key;
+	const Type element = byte || powers ? Type::scalar(TypeKind::I8) : result;
+	const SymbolId data = table(values, element);
+	const BlockId lookup = append_block(b_, BlockKind::SwitchCase);
+	b_.layout.push_back(lookup);
+	InstId after = kNoId;
+	const Type word = Type::scalar(TypeKind::I64);
+	Value index = term.ops[0];
+	if (selector != word)
+	{
+		Instruction cast = make_instruction(integer_bits(selector.kind()) == 64 ? Opcode::Copy : Opcode::Convert, word);
+		cast.ops[0] = index;
+		if (cast.op == Opcode::Convert)
+		{
+			cast.sub = static_cast<uint8_t>(is_unsigned(selector.kind()) ? ConvertOp::ZExt : ConvertOp::SExt);
+			set_convert_source_type(cast, selector);
+		}
+		index = emit(lookup, after, cast, word);
+	}
+	if (first != 0)
+	{
+		Instruction sub = make_instruction(Opcode::Binary, word);
+		sub.sub = static_cast<uint8_t>(BinaryOp::Sub);
+		sub.ops[0] = index;
+		sub.ops[1] = number(first);
+		index = emit(lookup, after, sub, word);
+	}
+	Instruction address = make_instruction(Opcode::Index, element);
+	address.ops[0] = Value::symbol(data);
+	address.ops[1] = index;
+	const Value at = emit(lookup, after, address, Type::scalar(TypeKind::Ptr));
+	Instruction load = make_instruction(Opcode::Load, element);
+	load.ops[0] = at;
+	Value value = emit(lookup, after, load, element);
+	if (element != result)
+	{
+		Instruction cast = make_instruction(Opcode::Convert, result);
+		cast.ops[0] = value;
+		cast.sub = static_cast<uint8_t>(integer_bits(result.kind()) > 8 ? ConvertOp::SExt : ConvertOp::Trunc);
+		set_convert_source_type(cast, element);
+		value = emit(lookup, after, cast, result);
+	}
+	if (powers)
+	{
+		Instruction shift = make_instruction(Opcode::Binary, result);
+		shift.sub = static_cast<uint8_t>(BinaryOp::Shl);
+		shift.ops[0] = number(1);
+		shift.ops[1] = value;
+		value = emit(lookup, after, shift, result);
+	}
+	Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+	jump.ops[0] = Value::block(join);
+	insert_after(b_, lookup, after, append_instruction(b_, jump));
+	for (const PhiIncoming& in : inputs)
+	{
+		b_.operands[term.extra_first + in.position + 1] = Value::block(lookup);
+		remove_phi_incoming(b_, join, in.from);
+	}
+	const Instruction old_phi = b_.instructions[phi];
+	std::vector<Value> pairs(
+		b_.operands.begin() + old_phi.extra_first, b_.operands.begin() + old_phi.extra_first + old_phi.extra_count);
+	pairs.push_back(Value::block(lookup));
+	pairs.push_back(value);
+	b_.instructions[phi].extra_first = append_operands(b_, pairs.data(), static_cast<uint32_t>(pairs.size()));
+	b_.instructions[phi].extra_count = static_cast<uint32_t>(pairs.size());
+	c_.invalidate_cfg();
+	c_.invalidate_block_of();
+}
+
+bool ReturnTables::run_phi()
+{
+	bool changed = false;
+	const size_t count = b_.layout.size();
+	for (size_t i = 0; i < count; ++i)
+		changed = phi_candidate(b_.layout[i]) || changed;
+	return changed;
+}
+
 bool ReturnTables::run()
 {
 	bool changed = false;
@@ -333,6 +528,14 @@ bool ReturnTables::run()
 }
 
 } // namespace
+
+bool form_phi_result_tables(FunctionContext& context)
+{
+	if (context.return_table_names == nullptr)
+		return false;
+	ReturnTables pass(context);
+	return pass.run_phi();
+}
 
 bool form_return_tables(FunctionContext& context)
 {

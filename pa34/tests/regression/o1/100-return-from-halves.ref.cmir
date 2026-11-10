@@ -24,7 +24,7 @@ function @both
     shl <gpr0>, 32
     zext.i32 rax, rdi
     or rax, <gpr0>
-    ret
+    ret rax
 
 function @constant_high
   abi
@@ -42,7 +42,7 @@ function @constant_high
     mov <gpr0>, 38654705664
     zext.i32 rax, rdi
     or rax, <gpr0>
-    ret
+    ret rax
 
 function @main
   abi
