@@ -518,3 +518,63 @@ callee-shape walk. It reduces frozen compile instructions by 4.42%, 5.68% and
 and modeled L2 misses 3.331%, while calls rise 2.536%. The remaining three
 profiles and hardware panel are pending; this experiment is not part of the
 qualified compiler. Evidence: `gap-C-call-price-*`.
+
+## Two-word prototype: investigate the unexpected regression
+
+The accepted work was rebased onto main `535ed4f12` as `a30986549`.
+The new immutable compiler builds LLVM at O1 in a diagnostic 304 seconds;
+all 325 frozen cppgm objects and the linked executable match native LLVM.
+That is a correctness replay, not an elapsed comparison. The investigation
+below deliberately keeps the preserved pre-rebase compiler and LLVM image
+fixed, so changes from main do not confound the experiment.
+
+The first native word-pair prototype increased number_literal instructions
+by 18.62%, distinct executed bytes by 13.46%, and modeled L2 code misses by
+34.96%. Of the 202.4 million extra instructions, 144.6 million were stack
+loads and stores. The hypothesis that incoming parameter homes alone caused
+the regression was incomplete: already-inlined values repeatedly packed two
+words into I128 and immediately extracted them again.
+
+Three interacting omissions are now demonstrated:
+
+- The existing packed-part simplifier excludes I128. The new aggregate
+  representation therefore bypassed that simplification. An inline
+  identity/accessor chain grew from two machine instructions to 76;
+  `FoldingSetNodeID::operator==` grew from 18 to 65, with its frame increasing
+  from 8 to 168 bytes. Typed packed-part simplification removes those chains.
+- The same conversions inflated inline costs. Instrumented admission for
+  a hot `DenseMap::find_as` helper changed from hot cost 73 to 184, exceeding
+  the hinted cap of 96. Typed cleanup brings it to 75 and restores admission.
+  Increasing the inline threshold would conceal the representation problem.
+- The private argument path omitted the existing scalar path's deferred
+  address handling for a spilled base. It could emit `lea 48` instead of
+  `base + 48`. A reduced mixed-toolchain test fails in the original prototype
+  and passes after sharing that behavior. Eight GCC/Clang cases cover O0–O3.
+
+A native-only extraction-alias experiment also exposed stale scaled-address
+facts: turning a word into a constant after computing its scale produced a
+three-byte end offset instead of twelve in `std::max({a,b,c})`. Reordering
+the analysis fixed that reproducer. The retained experiment instead folds
+the typed IR before native analysis, which also exposes the simpler bodies
+to the inliner. These failed private variants remain recorded.
+
+| Change from accepted pre-rebase compiler | Instructions | Executed bytes | Modeled L2 code misses |
+| --- | ---: | ---: | ---: |
+| Native word-pair handling alone | -0.14% | +0.01% | -0.18% |
+| Aggregate coercion without early wide expansion | +6.21% | +6.05% | +14.42% |
+| Original combined prototype | +18.62% | +13.46% | +34.96% |
+| Typed cleanup and spilled-address repair combined | +1.28% | +1.19% | +1.80% |
+
+The combined repairs remove about 93% of the extra instructions. All 325
+objects and the executable match native; the 32 mixed ABI controls, 52
+optimized-IR replay/Casting.h controls, and eight spilled-base controls pass.
+This is still a partial-rebuild screen, and it still regresses: no aggregate
+milestone or runtime acceptance is claimed. Continue the related work on
+incoming two-word values and partially occupied carriers, then port the
+combined changes onto the rebased source while preserving main's aggregate
+improvements. Do not discard the workstream on the first prototype's result.
+
+Evidence: `gap-A-native-word-parts-root-cause-r1/`, including the instruction
+attribution, three inliner traces, reduced failing programs and ablations;
+`gap-A-root-cause-opt-fold-late-{top40,full-output,ledger-number}-r1/`;
+`compiler-gap-rebased-535ed-r1/` and `gap-rebased-535ed-full-output-r1/`.
