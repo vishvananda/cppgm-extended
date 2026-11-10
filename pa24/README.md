@@ -571,6 +571,11 @@ To complete PA24, implement these goals:
    argument, MIR should load that chunk directly from its frame location. It
    should not materialize the object's base address solely for the load.
 
+   A direct object parameter may be copied to local storage and read through
+   field addresses. Preserve all field bytes, signedness and local mutations,
+   including fields crossing ABI carriers. PA33 can improve this placement
+   without adding a new LowIR field-extraction operation.
+
    Copying a stack-passed object may use the target's copy registers while
    preparing a call. A scalar argument whose source occupies either copy
    register must retain its value until its register or stack argument is

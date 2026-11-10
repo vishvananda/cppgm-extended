@@ -5,6 +5,7 @@
 #include <climits>
 
 #include "native/mir/type_kinds.h"
+#include "native/select/frame_extraction.h"
 
 // MIR cleanups after selection (O1+): see mir_cleanup.h.
 namespace native {
@@ -746,24 +747,6 @@ unsigned held_bytes(int32_t h)
 	return (h & 7) == 0 ? 8u : static_cast<unsigned>(h & 7);
 }
 
-// Without a direct frame read, this pass has no rewrite to perform.
-bool has_frame_read(const Function& function)
-{
-	for (const Inst& inst : function.insts)
-	{
-		if ((inst.flags & MF_VOLATILE) || (inst.op != Op::Load && inst.op != Op::Cmp && inst.op != Op::Test))
-			continue;
-		for (unsigned k = 0; k < inst.nops; ++k)
-		{
-			const Operand& operand = inst.ops[k];
-			if (operand.kind == OperandKind::Mem && operand.reg == kFrame && operand.index == kNoReg &&
-				operand.symbol == lowir::kNoId)
-				return true;
-		}
-	}
-	return false;
-}
-
 // forward_home_reloads' dataflow: per block, the frame home each GPR holds
 // at its start (the meet of its predecessors' ends) and the transfer
 // through its instructions.
@@ -777,6 +760,7 @@ private:
 	void edges();
 	void transfer(uint32_t b, int32_t* holds, bool rewrite);
 	uint32_t forward_scratch(uint32_t i, uint32_t end, Reg holder);
+	bool forward_narrow(uint32_t i, uint32_t end, const int32_t* holds);
 
 	Function& f_;
 	uint32_t n_;
@@ -787,6 +771,7 @@ private:
 	// block only a host landing reaches (see edges).
 	std::vector<uint8_t> cut_;
 	std::vector<uint32_t> order_; // reverse postorder from the entry
+	std::vector<std::pair<uint32_t, Inst>> extractions_;
 	uint32_t removed_ = 0;
 };
 
@@ -934,6 +919,33 @@ uint32_t HomeForwarding::forward_scratch(uint32_t i, uint32_t end, Reg holder)
 	return 1;
 }
 
+// Extract only bytes covered by a known carrier. A shift changes flags,
+// unlike a load, so an interior read needs dead flags. Copy the carrier
+// before shifting unless the original load already overwrote it.
+bool HomeForwarding::forward_narrow(uint32_t i, uint32_t end, const int32_t* holds)
+{
+	Inst& inst = f_.insts[i];
+	const unsigned bytes = register_bytes(inst.type);
+	const int32_t at = inst.ops[1].disp;
+	Reg holder = kNoReg;
+	unsigned shift = 0;
+	for (Reg r = 0; r < 16; ++r)
+	{
+		if (holds[r] == kHoldsNothing || r == RSP)
+			continue;
+		const int64_t delta = static_cast<int64_t>(at) - held_home(holds[r]);
+		if (delta >= 0 && delta + bytes <= held_bytes(holds[r]))
+		{
+			holder = r;
+			shift = static_cast<unsigned>(delta) * 8;
+			break;
+		}
+	}
+	if (holder == kNoReg || (shift != 0 && !flags_dead_after(f_.insts, i, i + std::min(end - i, 64u))))
+		return false;
+	return extract_integer_carrier(f_.insts[i], i, holder, shift, extractions_);
+}
+
 void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 {
 	std::vector<Inst>& insts = f_.insts;
@@ -1039,27 +1051,16 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 					return r;
 			return kNoReg;
 		};
-		// A narrow reload extends the holder's low bytes as the load would.
+		// A narrow reload extends the holder's covered bytes as the load would.
 		if (inst.op == Op::Load && !wide && plain_gpr(inst.ops[0]) && frame_slot(inst.ops[1], offset) &&
-			(offset & 7) == 0)
+			register_bytes(inst.type) < 8)
 		{
 			const unsigned bytes = register_bytes(inst.type);
-			if (bytes < 8)
-			{
-				const Reg dst = inst.ops[0].reg;
-				const Reg holder = rewrite ? holder_of(offset, bytes) : kNoReg;
-				holds[dst] = dst == R11 ? kHoldsNothing : held(offset, bytes);
-				if (!rewrite || holder == kNoReg)
-					continue;
-				const lowir::TypeKind type = inst.type;
-				const bool sign = type == lowir::TypeKind::I8 || type == lowir::TypeKind::I16 ||
-					type == lowir::TypeKind::I32;
-				inst.op = sign ? Op::Sext : Op::Zext;
-				inst.type = type == lowir::TypeKind::I1 ? lowir::TypeKind::U8 : type;
-				inst.ops[1] = Operand::make_reg(holder);
+			const Reg dst = inst.ops[0].reg;
+			if (rewrite && forward_narrow(i, end, holds))
 				++removed_;
-				continue;
-			}
+			holds[dst] = dst == R11 || (offset & 7) != 0 ? kHoldsNothing : held(offset, bytes);
+			continue;
 		}
 		// A compare or test reading a home the holder covers reads it.
 		if ((inst.op == Op::Cmp || inst.op == Op::Test) && rewrite)
@@ -1133,7 +1134,7 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 
 uint32_t HomeForwarding::run()
 {
-	if (n_ == 0 || f_.stack_size == 0 || !has_frame_read(f_))
+	if (n_ == 0 || f_.stack_size == 0 || !has_direct_frame_read(f_))
 		return 0;
 	for (const FrameBinding& binding : f_.bindings)
 		if (binding.kind != BindingKind::Slot && !binding.type.is_object() &&
@@ -1203,6 +1204,7 @@ uint32_t HomeForwarding::run()
 	}
 	for (uint32_t b : order_)
 		transfer(b, &in[static_cast<size_t>(b) * 16], true);
+	insert_frame_extractions(f_, extractions_);
 	return removed_;
 }
 
@@ -2589,13 +2591,14 @@ uint32_t forward_return_slots(Function& function)
 	return removed == 0 ? 0 : removed + forward_return_slots_once(function);
 }
 
-// O1+, frame-pointer-free leaves: a frame no instruction uses (the
+// O1+, leaves: frame storage no instruction uses (the
 // cleanups above took its last reads and writes) is not reserved. Whether
 // it did.
 bool drop_unused_frame(Function& function)
 {
-	if (!function.omit_frame_pointer || function.preserve_mask != 0 || function.stack_size == 0 ||
-		function.scratch_bytes != 0 || function.variadic || function.eh_records_pushed || !function.eh.landings.empty())
+	if (function.preserve_mask != 0 || function.stack_size == 0 || function.scratch_bytes != 0 || function.variadic ||
+		function.eh_records_pushed || !function.eh.landings.empty() || !function.debug_slots.empty() ||
+		function.aligned_base != 0)
 		return false;
 	for (const Inst& inst : function.insts)
 	{
@@ -2655,7 +2658,7 @@ bool drop_unused_frame(Function& function)
 			return false;
 		}
 		for (unsigned k = 0; k < inst.nops; ++k)
-			if (frame_based(inst.ops[k]) || (inst.ops[k].kind == OperandKind::Reg && inst.ops[k].reg == RSP))
+			if (frame_based(inst.ops[k]) || inst.ops[k].uses_reg(RSP) || inst.ops[k].uses_reg(RBP))
 				return false;
 	}
 	function.stack_size = 0;

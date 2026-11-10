@@ -188,6 +188,21 @@ particular sharing or duplication strategy is required.
 
 ## Validation and further experiments
 
+An object copied into local storage may have its integer fields available
+in ABI registers already. Track the bytes each carrier covers, including
+partial writes and calls, before replacing a field load with an extraction.
+Copy a carrier that still has readers, preserve sign or zero extension,
+and account for flags changed by shifts. Reads spanning carriers, escaped
+storage and volatile accesses need separate proofs. Once no access needs
+the storage, revisit frame reservation under the debug, exception and ABI rules.
+
+Instruction counts alone can miss expensive instruction forms. Compare
+measured throughput and latency on the supported CPUs, and preserve the
+operation's result and observed flags. A compatible encoding may benefit
+newer CPUs while retaining baseline behavior; an unsupported instruction
+needs an explicit target capability. Include zero and boundary cases in
+bit-count tests, respecting the LowIR operation's specified zero behavior.
+
 A register sum consumed by the following load can share that load's indexed
 address. The arithmetic flags must be dead, and the original sum must be
 overwritten before any later reader. A bounded local search can prove this

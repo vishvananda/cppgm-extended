@@ -67,8 +67,9 @@ uint32_t forward_frame_copies(Function& function, const std::vector<FrameObject>
 // writes removed.
 uint32_t forward_return_slots(Function& function);
 
-// A frame-pointer-free leaf whose instructions no longer use its frame
-// reserves none. Returns whether it dropped it.
+// A leaf whose instructions no longer use its frame reserves no storage.
+// The existing ABI policy still decides whether to keep its frame pointer.
+// Returns whether it dropped the storage.
 bool drop_unused_frame(Function& function);
 
 struct TailCopies
