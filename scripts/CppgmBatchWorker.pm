@@ -28,6 +28,7 @@ our @EXPORT_OK = qw(
   print_test_run_summary
   read_env_file
   read_word_list
+  standard_args_for
   resolve_host_command
   result_suffix
   run_result_name
@@ -432,6 +433,17 @@ sub app_args_for
 {
 	my ($app) = @_;
 	return shellwords($ENV{CPPGM_APP_ARGS} || '');
+}
+
+sub standard_args_for
+{
+	my ($test) = @_;
+	(my $base = $test) =~ s/\.(?:cpp|t(?:\.1)?)$//;
+	return () if !-f "$base.cxx-standard";
+	my @standards = read_word_list("$base.cxx-standard");
+	die "Expected one C++ standard in $base.cxx-standard\n"
+		if @standards != 1 || $standards[0] !~ /\A(?:c|gnu)\+\+(?:11|14|17)\z/;
+	return "-std=$standards[0]";
 }
 
 sub open_worker

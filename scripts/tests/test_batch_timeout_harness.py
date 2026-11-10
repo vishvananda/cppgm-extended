@@ -57,6 +57,43 @@ def wait_for_pid_exit(pid: int, timeout_sec: float) -> None:
 
 
 class BatchTimeoutHarnessTests(unittest.TestCase):
+    def test_fixture_language_modes_override_defaults_in_cli_and_batch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tests = root / 'tests'
+            tests.mkdir()
+            tool = root / 'tool'
+            tool.write_text(textwrap.dedent('''\
+                #!/usr/bin/env python3
+                import pathlib, sys
+                base = [arg for arg in sys.argv[1:] if arg != '--batch-stdin']
+                def emit(args):
+                    mode = [arg for arg in args if arg.startswith('-std=')][-1]
+                    pathlib.Path(args[args.index('-o') + 1]).write_text(mode + '\\n')
+                if '--batch-stdin' in sys.argv:
+                    for line in sys.stdin:
+                        fields = line.rstrip('\\n').split('\\t')
+                        emit(base + fields[4:])
+                        print('EXIT_SUCCESS', flush=True)
+                else:
+                    emit(base)
+                '''))
+            tool.chmod(0o755)
+            for name, mode in [('first', 'c++14'), ('second', 'c++17'), ('third', None)]:
+                (tests / (name + '.t')).write_text('int value;\n')
+                if mode:
+                    (tests / (name + '.cxx-standard')).write_text(mode + '\n')
+            for batch in ['0', '1']:
+                env = dict(os.environ, CPPGM_BATCH_TESTS=batch, CPPGM_TEST_JOBS='1',
+                           CPPGM_TEST_RUN_ID='', CPPGM_APP_ARGS='--emit-types -std=c++11')
+                result = subprocess.run(
+                    ['perl', str(REPO_ROOT / 'scripts/run_all_tests_common.pl'),
+                     'text_t', str(tool), 'my', str(tests)],
+                    cwd=root, env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                for name, mode in [('first', 'c++14'), ('second', 'c++17'), ('third', 'c++11')]:
+                    self.assertEqual((tests / (name + '.my')).read_text(), '-std=' + mode + '\n')
+
     def test_companion_prefixes_preserve_literal_names_and_sorted_groups(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

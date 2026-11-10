@@ -44,13 +44,7 @@ sub process_one_test
 	my @system_include_flags = map { ('-isystem', $_) } @system_include_dirs;
 	my @test_flags;
 	push @test_flags, '-fno-exceptions' if -f "$test_base.no-exceptions";
-	if (-f "$test_base.cxx-standard")
-	{
-		my @standards = read_word_list("$test_base.cxx-standard");
-		die "Expected one C++ standard in $test_base.cxx-standard\n"
-			if scalar(@standards) != 1 || $standards[0] !~ m/^c\+\+(?:11|14|17)$/;
-		push @test_flags, "-std=$standards[0]";
-	}
+	push @test_flags, CppgmBatchWorker::standard_args_for($test);
 	my $build_timeout = get_timeout_from_env("CPPGM_BUILD_TEST_TIMEOUT_SEC", 45);
 	if (defined($env->{CPPGM_BUILD_TEST_TIMEOUT_SEC}) &&
 		$env->{CPPGM_BUILD_TEST_TIMEOUT_SEC} =~ m/^\d+$/ &&

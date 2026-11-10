@@ -6,13 +6,14 @@
 # supplied reference backend (`lowir2native-ref -O0`), and the program is run
 # with no input: it must exit with the stated status, and print the stated
 # output when one is given.  A control that states a rejection must make the
-# frontend fail.  The LowIR text itself is not compared, so any LowIR whose
+# frontend fail.  An `accept` control checks the generated LowIR with the
+# supplied reader without requiring a linkable program. The LowIR text itself is not compared, so any LowIR whose
 # behaviour is right passes.  A program or frontend killed by a signal fails:
 # SIGABRT is not `exit 134`, nor a crashing frontend a rejection, nor a
 # frontend's internal compiler error (status 70, CPPGM_EXIT_INTERNAL_ERROR).
 #
 # The expected outcome comes from, in order:
-#   NAME.expect  one line, `exit N` or `reject`; NAME.stdout, when present,
+#   NAME.expect  one line, `exit N`, `accept` or `reject`; NAME.stdout, when present,
 #                holds the exact expected standard output;
 #   the leading `//` comment block of NAME.cpp: `expect exit N` (also
 #                `expect link ok and exit N`), or `expect reject`,
@@ -76,7 +77,8 @@ sub expectation
 		my $text = read_file("$base.expect");
 		return ('exit', $1, $stdout) if $text =~ /^\s*exit\s+(\d+)\s*$/m;
 		return ('reject', undef, undef) if $text =~ /^\s*reject\s*$/m;
-		die "$test: $base.expect states neither `exit N` nor `reject`\n";
+		return ('accept', undef, undef) if $text =~ /^\s*accept\s*$/m;
+		die "$test: $base.expect states neither `exit N`, `accept` nor `reject`\n";
 	}
 	my $comment = leading_comment(read_file($test));
 	my ($exit_at, $reject_at) = (-1, -1);
@@ -125,7 +127,7 @@ sub grade
 {
 	my ($app, $native_reference, $test) = @_;
 	my ($kind, $status, $stdout) = expectation($test);
-	my @frontend = ($app, '--emit-lowir', '-O0');
+	my @frontend = ($app, '--emit-lowir', '-O0', CppgmBatchWorker::standard_args_for($test));
 	(my $base = $test) =~ s/\.(?:cpp|t)$//;
 	if (-f "$base.limits")
 	{
@@ -157,6 +159,18 @@ sub grade
 	}
 	return 'frontend ' . ending(\%compile) . ': ' . tail_of("$directory/frontend.stderr")
 		if $compile{timed_out} || $compile{signal} || $compile{exit} != 0;
+	if ($kind eq 'accept')
+	{
+		my $reader = $ENV{CPPGM_CONTROL_LOWIR_APP} // "$FindBin::Bin/../dev/lowir-ref";
+		my %validation;
+		run_command_capture(
+			cmd => [$reader, '-o', "$directory/canonical.lowir", $lowir],
+			stdout => "$directory/reader.stdout", stderr => "$directory/reader.stderr",
+			timeout => 60, outcome => \%validation);
+		return 'reference LowIR reader ' . ending(\%validation) . ': ' . tail_of("$directory/reader.stderr")
+			if $validation{timed_out} || $validation{signal} || $validation{exit} != 0;
+		return undef;
+	}
 	my $program = "$directory/program";
 	my %build;
 	run_command_capture(

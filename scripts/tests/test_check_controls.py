@@ -153,6 +153,44 @@ class CheckControlsTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("output differs", result.stderr)
 
+    def test_compile_acceptance_validates_lowir_without_linking(self):
+        fixture = self.control("200-types.t", "int function() { return 0; }\n",
+                               expect="accept\n")
+        reader = self.root / "lowir-ref"
+        reader.write_text(
+            "#!/usr/bin/env python3\nimport pathlib, sys\n"
+            "source = pathlib.Path(sys.argv[-1]).read_text()\n"
+            "sys.exit(0 if source.startswith('0\\n') else 1)\n")
+        reader.chmod(0o755)
+        self.backend.write_text("#!/bin/sh\nexit 99\n")
+        with patch.dict(os.environ, {"CPPGM_CONTROL_LOWIR_APP": str(reader)}):
+            result = self.run_checker(fixture)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            fixture.write_text("int function() { return 1; }\n")
+            result = self.run_checker(fixture)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("reference LowIR reader exited with status 1", result.stderr)
+
+    def test_control_passes_its_language_mode_without_changing_other_controls(self):
+        fixture = self.control("200-modern.t", "// expect exit 0\nint main() { return 0; }\n")
+        fixture.with_suffix(".cxx-standard").write_text("c++17\n")
+        self.frontend.write_text(FRONTEND.replace(
+            "source = pathlib.Path(args[-1]).read_text()",
+            "assert '-std=c++17' in args, args\nsource = pathlib.Path(args[-1]).read_text()"))
+        result = self.run_checker(fixture)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        fixture.with_suffix(".cxx-standard").write_text("c++11 c++17\n")
+        result = self.run_checker(fixture)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Expected one C++ standard", result.stderr)
+        fixture.with_suffix(".cxx-standard").unlink()
+        self.frontend.write_text(FRONTEND.replace(
+            "source = pathlib.Path(args[-1]).read_text()",
+            "assert not any(arg.startswith('-std=') for arg in args), args\n"
+            "source = pathlib.Path(args[-1]).read_text()"))
+        result = self.run_checker(fixture)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_a_named_control_must_state_an_outcome(self):
         focused = self.control("530-focused-property.t", "int main() { return 3; }\n")
         stated = self.control("100-pass.t", "// expect exit 7\nint main() { return 7; }\n")
