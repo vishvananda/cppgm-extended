@@ -767,8 +767,12 @@ void FunctionSelector::find_low_reads()
 					(kind == TypeKind::I32 || kind == TypeKind::U32) && resolve(inst.ops[1]).kind != ValueKind::Integer;
 				const bool count = k == 1 &&
 					(op == lowir::BinaryOp::Shl || op == lowir::BinaryOp::Shr || op == lowir::BinaryOp::UShr);
-				low = count || (same && k < 2 && ((wraps && !no_wrap) || divides));
-				passes = same && k < 2 && (bitwise || (wraps && no_wrap));
+				const bool word = same && k < 2 && kind == TypeKind::U32 && bitwise;
+				const bool shift = same && k == 0 &&
+					(op == lowir::BinaryOp::Shl || op == lowir::BinaryOp::Shr || op == lowir::BinaryOp::UShr) &&
+					word_shift(inst);
+				low = count || word || shift || (same && k < 2 && ((wraps && !no_wrap) || divides));
+				passes = !word && same && k < 2 && (bitwise || (wraps && no_wrap));
 				break;
 			}
 			case Opcode::Store:

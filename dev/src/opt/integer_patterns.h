@@ -13,4 +13,8 @@ protected:
 };
 bool simplify_integer_arithmetic(lowir::FunctionBody& body, const std::vector<uint32_t>& uses,
 	IntegerPatternFacts& facts, lowir::BlockId block, lowir::InstId& previous, lowir::InstId instruction);
+bool simplify_integer_conversion(lowir::FunctionBody& body, const std::vector<uint32_t>& uses,
+	IntegerPatternFacts& facts, lowir::Instruction& instruction);
+bool simplify_pointer_distance(lowir::FunctionBody& body, IntegerPatternFacts& facts, lowir::BlockId block,
+	lowir::InstId& previous, lowir::InstId instruction);
 } // namespace opt

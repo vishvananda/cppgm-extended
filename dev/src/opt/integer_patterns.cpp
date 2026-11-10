@@ -12,6 +12,7 @@ public:
 	{}
 	bool variable_power_division(BlockId block, InstId& prev, InstId id);
 	bool round_power_alignment(BlockId block, InstId& prev, InstId id);
+	bool narrow_truncation(Instruction& inst);
 
 private:
 	bool power_of_two(Value value, Type type, unsigned& budget, unsigned width = 64);
@@ -233,7 +234,243 @@ bool IntegerPatterns::round_power_alignment(BlockId block, InstId& prev, InstId 
 	return false;
 }
 
+// A truncation of arithmetic on extensions of its own type is that arithmetic
+// in the narrow type: the low bits of each operation depend only on the low
+// bits of its operands.
+bool IntegerPatterns::narrow_truncation(Instruction& inst)
+{
+	if (inst.op != Opcode::Convert || static_cast<ConvertOp>(inst.sub) != ConvertOp::Trunc || !inst.type.is_integer() ||
+		inst.type.kind() == TypeKind::I1)
+		return false;
+	const Instruction* def = producer(inst.ops[0]);
+	if (def == nullptr || def->op != Opcode::Binary || !def->type.is_integer())
+		return false;
+	const BinaryOp op = static_cast<BinaryOp>(def->sub);
+	const bool shift = op == BinaryOp::Shl;
+	// (No lanes multiply bytes: the wider form may still run in lanes.)
+	const bool product = op == BinaryOp::Mul && storage_bytes(inst.type) > 1;
+	if (op != BinaryOp::Add && op != BinaryOp::Sub && op != BinaryOp::And && op != BinaryOp::Or &&
+		op != BinaryOp::Xor && !shift && !product)
+		return false;
+	Value narrow[2] = { Value::none(), Value::none() };
+	for (unsigned k = 0; k < 2; ++k)
+	{
+		const Value v = def->ops[k];
+		Constant c;
+		Literal bits;
+		if (constant(v, def->type, c))
+		{
+			if (!integer_bits(def->type, c, bits) || (shift && k == 1 && bits.low >= 8 * storage_bytes(inst.type)))
+				return false;
+			narrow[k] = integer_value(body_, normalize_integer(inst.type, bits));
+			continue;
+		}
+		const Instruction* wide = producer(v);
+		if ((shift && k == 1) || wide == nullptr || wide->op != Opcode::Convert ||
+			(static_cast<ConvertOp>(wide->sub) != ConvertOp::SExt &&
+				static_cast<ConvertOp>(wide->sub) != ConvertOp::ZExt) ||
+			!wide->ops[0].is(ValueKind::Temp) || body_.temps[wide->ops[0].index].type != inst.type)
+			return false;
+		narrow[k] = wide->ops[0];
+	}
+	if (narrow[0].is(ValueKind::Integer) && narrow[1].is(ValueKind::Integer))
+		return false;
+	Instruction rewritten = make_instruction(Opcode::Binary, inst.type);
+	rewritten.sub = static_cast<uint8_t>(op);
+	rewritten.ops[0] = narrow[0];
+	rewritten.ops[1] = narrow[1];
+	rewritten.result = inst.result;
+	rewritten.next = inst.next;
+	rewritten.location = inst.location;
+	inst = rewritten;
+	return true;
+}
+
+// Bounded address algebra over typed SSA; no source reconstruction.
+class PointerDistance
+{
+public:
+	PointerDistance(FunctionBody& body, IntegerPatternFacts& facts, uint64_t stride)
+		: body_(body), facts_(facts), stride_(stride)
+	{}
+	bool collect(Value& address, bool negative);
+	Value emit(BlockId block, InstId& prev, uint32_t location);
+
+private:
+	struct Term
+	{
+		Value value;
+		bool negative;
+	};
+	const Instruction* producer(Value value) const
+	{
+		return value.is(ValueKind::Temp) && value.index >= body_.parameter_count &&
+				body_.temps[value.index].def != kNoId
+			? &body_.instructions[body_.temps[value.index].def]
+			: nullptr;
+	}
+	bool record(Value value, uint64_t bytes, bool negative);
+	FunctionBody& body_;
+	IntegerPatternFacts& facts_;
+	uint64_t stride_;
+	uint64_t magnitude_ = 0;
+	Term terms_[6];
+	unsigned count_ = 0;
+};
+
+bool PointerDistance::record(Value value, uint64_t bytes, bool negative)
+{
+	value = facts_.resolve(value);
+	const Instruction* def = producer(value);
+	if (def != nullptr && def->op == Opcode::Binary && def->type.kind() == TypeKind::I64 &&
+		static_cast<BinaryOp>(def->sub) == BinaryOp::Sub && def->ops[0].is(ValueKind::Integer) &&
+		body_.literals[def->ops[0].index].low == 0)
+	{
+		value = facts_.resolve(def->ops[1]);
+		negative = !negative;
+		def = producer(value);
+	}
+	else if (def != nullptr && def->op == Opcode::Unary && def->type.kind() == TypeKind::I64 &&
+		static_cast<UnaryOp>(def->sub) == UnaryOp::Neg)
+	{
+		value = facts_.resolve(def->ops[0]);
+		negative = !negative;
+		def = producer(value);
+	}
+	if (bytes != stride_ && def != nullptr && def->op == Opcode::Binary && def->type.kind() == TypeKind::I64 &&
+		def->ops[1].is(ValueKind::Integer))
+	{
+		uint64_t scale = body_.literals[def->ops[1].index].low;
+		const BinaryOp operation = static_cast<BinaryOp>(def->sub);
+		if (operation == BinaryOp::Shl && scale < 63)
+			scale = uint64_t(1) << scale;
+		else if (operation != BinaryOp::Mul)
+			return false;
+		if (bytes == 0 || stride_ % bytes != 0 || scale != stride_ / bytes)
+			return false;
+		value = facts_.resolve(def->ops[0]);
+		def = producer(value);
+		bytes = stride_;
+	}
+	if (count_ == 6)
+		return false;
+	uint64_t bound = 0;
+	if (value.is(ValueKind::Integer))
+	{
+		const int64_t literal = static_cast<int64_t>(body_.literals[value.index].low);
+		if (bytes != stride_)
+		{
+			// Restrict the constant conversion too: neither product nor
+			// division may silently wrap while proving an exact quotient.
+			const uint64_t absolute = literal < 0 ? uint64_t(0) - uint64_t(literal) : uint64_t(literal);
+			if (bytes == 0 || absolute > uint64_t(INT64_MAX) / bytes || (absolute * bytes) % stride_ != 0)
+				return false;
+			const uint64_t units = absolute * bytes / stride_;
+			value = integer_value(body_,
+				Literal{ literal < 0 ? uint64_t(0) - units : units, literal < 0 && units != 0 ? ~uint64_t(0) : 0 });
+		}
+		const uint64_t bits = body_.literals[value.index].low;
+		bound = int64_t(bits) < 0 ? uint64_t(0) - bits : bits;
+	}
+	else
+	{
+		if (bytes != stride_ || !value.is(ValueKind::Temp) || body_.temps[value.index].type.kind() != TypeKind::I64)
+			return false;
+		bound = facts_.possible_bits(value, Type::scalar(TypeKind::I64));
+		if (bound > uint64_t(INT64_MAX) && def != nullptr && def->op == Opcode::Convert &&
+			static_cast<ConvertOp>(def->sub) == ConvertOp::SExt)
+		{
+			const unsigned width = integer_bits(convert_source_type(*def).kind());
+			if (width > 0 && width < 64)
+				bound = uint64_t(1) << (width - 1);
+		}
+	}
+	if (stride_ != 1 && (bound > uint64_t(INT64_MAX) / stride_ || magnitude_ > uint64_t(INT64_MAX) / stride_ - bound))
+		return false;
+	magnitude_ += bound;
+	terms_[count_++] = Term{ value, negative };
+	return true;
+}
+
+bool PointerDistance::collect(Value& address, bool negative)
+{
+	address = facts_.resolve(address);
+	for (unsigned depth = 0; depth < 4; ++depth)
+	{
+		const Instruction* index = producer(address);
+		if (index == nullptr || index->op != Opcode::Index)
+			return true;
+		// record() may extend only the literal pool, not instructions.
+		if (!record(index->ops[1], storage_bytes(index->type), negative))
+			return false;
+		address = facts_.resolve(index->ops[0]);
+	}
+	return false;
+}
+
+Value PointerDistance::emit(BlockId block, InstId& prev, uint32_t location)
+{
+	Value value = integer_value(body_, Literal{ 0, 0 });
+	for (unsigned i = 0; i < count_; ++i)
+	{
+		Instruction next = make_instruction(Opcode::Binary, Type::scalar(TypeKind::I64));
+		next.sub = static_cast<uint8_t>(terms_[i].negative ? BinaryOp::Sub : BinaryOp::Add);
+		next.ops[0] = value;
+		next.ops[1] = terms_[i].value;
+		next.location = location;
+		const InstId id = append_instruction(body_, next);
+		body_.instructions[id].result = append_temp(body_, next.type, id);
+		insert_after(body_, block, prev, id);
+		prev = id;
+		value = Value::temp(body_.instructions[id].result);
+	}
+	return value;
+}
+
 } // namespace
+
+bool simplify_integer_conversion(
+	FunctionBody& body, const std::vector<uint32_t>& uses, IntegerPatternFacts& facts, Instruction& instruction)
+{
+	IntegerPatterns patterns(body, uses, facts);
+	return patterns.narrow_truncation(instruction);
+}
+
+bool simplify_pointer_distance(FunctionBody& body, IntegerPatternFacts& facts, BlockId block, InstId& prev, InstId id)
+{
+	const Instruction seen = body.instructions[id];
+	if (seen.op != Opcode::Binary || seen.type.kind() != TypeKind::I64 ||
+		static_cast<BinaryOp>(seen.sub) != BinaryOp::Shr || (seen.flags & IF_EXACT) == 0)
+		return false;
+	const Instruction* difference = &seen;
+	uint64_t stride = 1;
+	if (seen.type.kind() == TypeKind::I64 && static_cast<BinaryOp>(seen.sub) == BinaryOp::Shr &&
+		(seen.flags & IF_EXACT) != 0 && seen.ops[1].is(ValueKind::Integer) &&
+		body.literals[seen.ops[1].index].low < 63 && seen.ops[0].is(ValueKind::Temp) &&
+		body.temps[seen.ops[0].index].def != kNoId)
+	{
+		stride = uint64_t(1) << body.literals[seen.ops[1].index].low;
+		difference = &body.instructions[body.temps[seen.ops[0].index].def];
+	}
+	if (!difference->type.is_pointer() || static_cast<BinaryOp>(difference->sub) != BinaryOp::Sub ||
+		difference->op != Opcode::Binary)
+		return false;
+	Value a = difference->ops[0], b = difference->ops[1];
+	PointerDistance proof(body, facts, stride);
+	if (!proof.collect(a, false) || !proof.collect(b, true) || !(a == b) ||
+		!(a.is(ValueKind::Temp) || a.is(ValueKind::Symbol) || a.is(ValueKind::Slot)))
+		return false;
+	const Value value = proof.emit(block, prev, seen.location);
+	Instruction& changed = body.instructions[id];
+	changed.op = Opcode::Copy;
+	changed.type = Type::scalar(TypeKind::I64);
+	changed.sub = 0;
+	changed.ops[0] = value;
+	changed.ops[1] = Value::none();
+	changed.flags = 0;
+	return true;
+}
+
 bool simplify_integer_arithmetic(FunctionBody& body, const std::vector<uint32_t>& uses, IntegerPatternFacts& facts,
 	BlockId block, InstId& previous, InstId instruction)
 {

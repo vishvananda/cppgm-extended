@@ -19,6 +19,11 @@ namespace opt {
 // bounded summaries are built in callee-first order. True when one is found.
 bool infer_function_memory(lowir::Program& program);
 
+// Record a conservative read-only fact after one callee is simplified in
+// bottom-up order. Unknown or replaceable calls prevent a proof. No
+// repeatability, bounded-write or parameter-position facts are inferred.
+bool infer_optimized_readonly(lowir::Program& program, lowir::SymbolId symbol);
+
 bool specialize_arguments(
 	lowir::Program& program, OptimizerStats& stats, const std::function<void(lowir::SymbolId)>& simplify);
 

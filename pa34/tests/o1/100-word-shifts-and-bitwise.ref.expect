@@ -1,0 +1,6 @@
+# explicit-outcomes
+
+# Bound work without prescribing instruction spellings or registers.
+instructions <= 3 in @logical
+instructions <= 3 in @signed_return
+instructions <= 5 in @hash

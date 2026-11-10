@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+# Preserve both counts, including a negative result, without address work.
+instructions <= 5 in @distance

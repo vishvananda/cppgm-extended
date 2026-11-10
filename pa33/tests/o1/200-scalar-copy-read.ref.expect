@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+# Bounds allow different scalar representations and instruction choices.
+instructions <= 7 in @read_copy
+instructions <= 3 in @saved

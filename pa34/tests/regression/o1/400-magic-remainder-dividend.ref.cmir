@@ -41,5 +41,5 @@ function @main
 
   block ^done
     mov rax, r8
-    and rax, 255
+    and.i32 rax, 255
     ret rax

@@ -1,0 +1,215 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @logical
+  abi
+    param %x -> rdi : u32
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zext.i32 rax, rdi
+    shr.u32 rax, 7
+    ret rax
+
+function @arithmetic
+  abi
+    param %x -> rdi : i32
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zext.i32 rax, rdi
+    sar.u32 rax, 7
+    sext.i32 rax
+    ret rax
+
+function @signed_return
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zext.i32 rax, rdi
+    sar.u32 rax, 7
+    ret rax
+
+function @unsigned_arithmetic
+  abi
+    param %x -> rdi : u32
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zext.i32 rax, rdi
+    sar.u32 rax, 7
+    ret rax
+
+function @bitwise
+  abi
+    param %x -> rdi : u32
+    param %y -> rsi : u32
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rdi
+    xor.u32 rax, rsi
+    ret rax
+
+function @zero_count
+  abi
+    param %x -> rdi : u32
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rdi
+    shr rax, 0
+    ret rax
+
+function @variable
+  abi
+    param %x -> rdi : u32
+    param %k -> rsi : u32
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rcx, rsi
+    mov rax, rdi
+    shr rax, rcx
+    ret rax
+
+function @hash
+  abi
+    param %p -> rdi : ptr
+    return u32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zext.i32 rax, rdi
+    shr.u32 rax, 4
+    shr.u32 rdi, 9
+    xor.u32 rax, rdi
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    temp %f -> [rbp-<off0>] : i64
+    temp %g -> [rbp-<off1>] : i64
+    temp %h -> [rbp-<off2>] : i64
+
+  block ^entry
+    mov rdi, 4294967295
+    call @logical [args=(rdi)]
+    mov <gpr0>, rax
+    mov rdi, -1
+    call @arithmetic [args=(rdi)]
+    mov <gpr1>, rax
+    mov rdi, -2147483648
+    call @signed_return [args=(rdi)]
+    mov <gpr2>, rax
+    mov rdi, 4294967295
+    call @unsigned_arithmetic [args=(rdi)]
+    mov <gpr3>, rax
+    mov rdi, 2147483648
+    mov rsi, 2147483647
+    call @bitwise [args=(rsi,rdi)]
+    mov <gpr4>, rax
+    mov rdi, 4294967295
+    call @zero_count [args=(rdi)]
+    mov <gpr5>, rax
+    store.i64 [rbp-<off0>], <gpr5>
+    mov rdi, 4294967295
+    mov rsi, 0
+    call @variable [args=(rsi,rdi)]
+    mov <gpr5>, rax
+    store.i64 [rbp-<off1>], <gpr5>
+    mov rdi, 4294967295
+    mov rsi, 31
+    call @variable [args=(rsi,rdi)]
+    mov <gpr5>, rax
+    store.i64 [rbp-<off2>], <gpr5>
+    mov rdi, 1311768467463790320
+    call @hash [args=(rdi)]
+    cmp.i64 <gpr0>, 33554431
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    cmp.i64 <gpr1>, -1
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    cmp.i32 <gpr2>, -16777216
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    cmp.i64 <gpr3>, 4294967295
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    cmp.i64 <gpr4>, 4294967295
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    cmp.i64 [rbp-<off0>], 4294967295
+    setne r8
+    movzx r8, r8
+    cmp.i64 [rbp-<off1>], 4294967295
+    setne r9
+    movzx r9, r9
+    cmp.i64 [rbp-<off2>], 1
+    setne rdi
+    movzx rdi, rdi
+    cmp.u32 rax, 166105984
+    setne rax
+    movzx rax, rax
+    or <gpr0>, <gpr1>
+    or <gpr2>, <gpr3>
+    or <gpr4>, r8
+    or r9, rdi
+    or <gpr0>, <gpr2>
+    or <gpr4>, r9
+    or <gpr0>, <gpr4>
+    or rax, <gpr0>
+    ret rax

@@ -214,7 +214,7 @@ void Specializer::remove_parameters(uint32_t f, const std::vector<uint8_t>& remo
 // no store but to a slot whose address stays here, no volatile or atomic
 // access, no exception work. Calls to defined functions are the caller's
 // question; any other call must promise as much itself.
-static bool writes_nothing_outside(const Program& program, const FunctionBody& body, const CallGraph& graph)
+static bool writes_nothing_outside(const Program& program, const FunctionBody& body, const CallGraph* graph)
 {
 	std::vector<uint8_t> escaped;
 	auto own = [&](Value address) {
@@ -243,7 +243,8 @@ static bool writes_nothing_outside(const Program& program, const FunctionBody& b
 			}
 			else if (inst.op == Opcode::Call)
 			{
-				const bool defined = inst.ops[0].is(ValueKind::Symbol) && graph.function_of(inst.ops[0].index) != kNoId;
+				const bool defined = graph != nullptr && inst.ops[0].is(ValueKind::Symbol) &&
+					graph->function_of(inst.ops[0].index) != kNoId;
 				if (!defined && call_may_write_memory(program, inst))
 					return false;
 			}
@@ -307,6 +308,25 @@ static FunctionWrites bounded_writes(const Program& program, const FunctionBody&
 	return out;
 }
 
+// Optimized callees are visited before their callers. A positive fact remains
+// valid through semantics-preserving transformations; recursive/unknown calls
+// conservatively prevent a proof. This says nothing about repeatability.
+bool infer_optimized_readonly(Program& program, SymbolId id)
+{
+	const Symbol& symbol = program.symbols[id];
+	if (symbol.kind != SymbolKind::FunctionDefinition || (symbol.metadata.flags & SF_REPLACEABLE) ||
+		program.functions[symbol.detail].body == nullptr)
+		return false;
+	if (program.read_only_functions.size() < program.symbols.size())
+		program.read_only_functions.resize(program.symbols.size(), 0);
+	if (program.read_only_functions[id])
+		return true;
+	const bool readonly = writes_nothing_outside(program, *program.functions[symbol.detail].body, nullptr);
+	if (readonly)
+		program.read_only_functions[id] = 1;
+	return readonly;
+}
+
 bool infer_function_memory(Program& program)
 {
 	CallGraph graph;
@@ -318,7 +338,7 @@ bool infer_function_memory(Program& program)
 	{
 		const Symbol& symbol = program.symbols[graph.functions[f]];
 		if ((symbol.metadata.flags & SF_REPLACEABLE) != 0 ||
-			!writes_nothing_outside(program, *program.functions[symbol.detail].body, graph))
+			!writes_nothing_outside(program, *program.functions[symbol.detail].body, &graph))
 		{
 			writes[f] = 1;
 			work.push_back(f);

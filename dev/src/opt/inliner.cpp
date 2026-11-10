@@ -1,4 +1,5 @@
 #include "opt/inliner.h"
+#include "opt/interprocedural.h"
 
 #include "lowir/builder.h"
 #include "opt/loops.h"
@@ -1981,6 +1982,8 @@ void InlineWaveRunner::run()
 				shapes_[f] = source_required_
 					? shape_of<true>(program_, caller, nounwind_)
 					: shape_of(program_, caller, nounwind_, graph_.recursive[f] ? &graph_ : nullptr);
+			if (!source_required_)
+				infer_optimized_readonly(program_, caller);
 		}
 	}
 }

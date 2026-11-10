@@ -18,7 +18,7 @@ function @both
     slot $result -> [rbp-<off0>] : obj<8x4>
 
   block ^entry
-    xor rdi, 5
+    xor.i32 rdi, 5
     add.i32 rsi, 7
     mov <gpr0>, rsi
     shl <gpr0>, 32
@@ -38,7 +38,7 @@ function @constant_high
     slot $result -> [rbp-<off0>] : obj<8x4>
 
   block ^entry
-    xor rdi, 5
+    xor.i32 rdi, 5
     mov <gpr0>, 38654705664
     zext.i32 rax, rdi
     or rax, <gpr0>

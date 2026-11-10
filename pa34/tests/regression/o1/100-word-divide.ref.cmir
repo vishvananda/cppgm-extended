@@ -216,11 +216,11 @@ function @main
     cmp.i16 rax, -10922
     setne rax
     movzx rax, rax
-    or <gpr1>, <gpr2>
-    or <gpr1>, <gpr3>
-    or <gpr1>, <gpr4>
-    or <gpr1>, <gpr5>
-    or <gpr1>, r8
-    or <gpr1>, r9
-    or rax, <gpr1>
+    or.i32 <gpr1>, <gpr2>
+    or.i32 <gpr1>, <gpr3>
+    or.i32 <gpr1>, <gpr4>
+    or.i32 <gpr1>, <gpr5>
+    or.i32 <gpr1>, r8
+    or.i32 <gpr1>, r9
+    or.i32 rax, <gpr1>
     ret rax

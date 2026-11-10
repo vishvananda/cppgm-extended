@@ -1,0 +1,40 @@
+function @read_copy(%p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %value = load i64 %p
+    %bit = binary and i64 %value, 4
+    branch %bit, ^yes, ^no
+
+  block ^yes:
+    %shifted = binary ushr i64 %value, 7
+    return i64 %shifted
+
+  block ^no:
+    %product = binary mul i64 %value, 17
+    return i64 %product
+}
+function @saved(%p : ptr, %q : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %value = load i64 %p
+    store i64 33, %q
+    return i64 %value
+}
+function @main() -> i64 [role=entry] {
+  slot $x : i64
+
+  block ^entry:
+    %p = addr $x
+    store i64 132, $x
+    %a = call i64 @read_copy(%p)
+    store i64 16, $x
+    %b = call i64 @read_copy(%p)
+    %c = call i64 @saved(%p, %p)
+    %d = load i64 $x
+    %ab = cmp ne i64 %a, 1
+    %bb = cmp ne i64 %b, 272
+    %cb = cmp ne i64 %c, 16
+    %db = cmp ne i64 %d, 33
+    %r1 = binary or i64 %ab, %bb
+    %r2 = binary or i64 %cb, %db
+    %bad = binary or i64 %r1, %r2
+    return i64 %bad
+}

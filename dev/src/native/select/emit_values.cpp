@@ -965,7 +965,8 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 	// Baseline signed arithmetic uses its own width and extends when a
 	// reader needs it. O1+ can instead keep a canonical 64-bit nowrap
 	// result for its readers and their tests (find_low_reads).
-	const bool word = !bitwise &&
+	const bool word =
+		(!bitwise || (level_ >= 1 && (kind == TypeKind::U32 || (kind == TypeKind::I32 && low_read(inst.result))))) &&
 		(kind == TypeKind::U32 || (kind == TypeKind::I32 && (level_ < 1 || low_read(inst.result))));
 	const TypeKind width = b.kind == OperandKind::Mem || word ? kind : TypeKind::I64;
 	if (a.kind == OperandKind::Reg && a.reg == d)
@@ -1040,6 +1041,22 @@ void FunctionSelector::emit_float_binary(const Instruction& inst)
 	finish_result(inst, d);
 }
 
+// The nonzero count makes a 32-bit write, even when the input register
+// contains unspecified ABI upper bits. All reads use only the low word.
+bool FunctionSelector::word_shift(const Instruction& inst) const
+{
+	if (level_ < 1 || inst.op != Opcode::Binary)
+		return false;
+	const TypeKind kind = inst.type.kind();
+	const BinaryOp op = static_cast<BinaryOp>(inst.sub);
+	if ((kind != TypeKind::U32 && kind != TypeKind::I32) ||
+		(op != BinaryOp::Shr && op != BinaryOp::UShr && !(op == BinaryOp::Shl && kind == TypeKind::U32)))
+		return false;
+	const Value count = resolve(inst.ops[1]);
+	return count.kind == ValueKind::Integer && literal(count).high == 0 && literal(count).low > 0 &&
+		literal(count).low < 32;
+}
+
 void FunctionSelector::emit_shift(const Instruction& inst)
 {
 	const TypeKind kind = inst.type.kind();
@@ -1062,11 +1079,22 @@ void FunctionSelector::emit_shift(const Instruction& inst)
 	}
 	// (A count in rcx keeps the result out of it.)
 	const Reg d = result_reg(inst, dying_reg(inst.ops[0]), kNoReg, count.kind == OperandKind::Imm ? 0u : 1u << RCX);
+	const bool word = word_shift(inst);
 	if (a.kind == OperandKind::Mem)
-		emit2(Op::Load, kind == TypeKind::Ptr ? TypeKind::Ptr : kind, Operand::make_reg(d), a);
+		emit2(Op::Load, word ? TypeKind::U32 : kind == TypeKind::Ptr ? TypeKind::Ptr : kind, Operand::make_reg(d), a);
+	else if (word && a.kind == OperandKind::Reg && a.reg != d)
+		emit2(Op::Zext, TypeKind::U32, Operand::make_reg(d), a);
 	else
 		load_into(d, a, TypeKind::I64);
 	const Operand dst = Operand::make_reg(d);
+	if (word)
+	{
+		emit2(op == BinaryOp::Shl ? Op::Shl : op == BinaryOp::UShr ? Op::Shr : Op::Sar, TypeKind::U32, dst, count);
+		if (kind == TypeKind::I32 && op == BinaryOp::Shr)
+			normalize_result(inst, d, kind);
+		finish_result(inst, d);
+		return;
+	}
 	// O1+: a u32 shift left or arithmetic right by an immediate below 32
 	// in its 32-bit form, which zero-extends.
 	const bool short_u32 = level_ >= 1 && kind == TypeKind::U32 && count.kind == OperandKind::Imm && count.imm < 32;

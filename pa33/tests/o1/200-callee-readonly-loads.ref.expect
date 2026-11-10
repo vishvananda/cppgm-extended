@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+# Include the call and its result while bounding the duplicated load's work.
+instructions <= 5 in @reuse

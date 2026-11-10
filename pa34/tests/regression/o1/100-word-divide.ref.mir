@@ -216,11 +216,11 @@ function @main
     cmp.i16 rax, -10922
     setne rax
     movzx rax, rax
-    or rbx, r12
-    or rbx, r13
-    or rbx, r14
-    or rbx, r15
-    or rbx, r8
-    or rbx, r9
-    or rax, rbx
+    or.i32 rbx, r12
+    or.i32 rbx, r13
+    or.i32 rbx, r14
+    or.i32 rbx, r15
+    or.i32 rbx, r8
+    or.i32 rbx, r9
+    or.i32 rax, rbx
     ret rax

@@ -1,0 +1,31 @@
+function @distance(%p : ptr, %a : u32, %b : u32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %ax = convert zext i64 u32 %a
+    %bx = convert zext i64 u32 %b
+    %t3 = binary sub i64 0, %bx
+    %t4 = binary add i64 %ax, %t3
+    return i64 %t4
+}
+function @unbounded(%p : ptr, %a : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %offset = binary mul i64 %a, 8
+    %end = index i8 %p, %offset
+    %bytes = binary sub ptr %end, %p
+    %count = binary shr exact i64 %bytes, 3
+    return i64 %count
+}
+function @main() -> i64 [role=entry] {
+  slot $array : obj<128x8>
+
+  block ^entry:
+    %p = index i8 $array, 64
+    %a = call i64 @distance(%p, 5, 2)
+    %b = call i64 @distance(%p, 2, 5)
+    %c = call i64 @unbounded(%p, -4)
+    %ab = cmp ne i64 %a, 3
+    %bb = cmp ne i64 %b, -3
+    %cb = cmp ne i64 %c, -4
+    %r = binary or i64 %ab, %bb
+    %bad = binary or i64 %cb, %r
+    return i64 %bad
+}

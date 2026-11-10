@@ -48,7 +48,7 @@ function @walk
   block ^done
     load.i64 r10, [rbp-104]
     mov rax, r10
-    and rax, 255
+    and.u32 rax, 255
     ret rax
 
   block ^next~head
@@ -206,5 +206,5 @@ function @main
     call @walk [args=(rdx,rsi,rdi)]
     add.u32 rbx, rax
     zext.i32 rax, rbx
-    and rax, 127
+    and.i32 rax, 127
     ret rax

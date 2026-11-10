@@ -173,6 +173,7 @@ public:
 	Reg emit_signed_magic_divide(Reg x, int64_t divisor, bool remainder);
 	Reg emit_word_magic_divide(Reg x, int64_t divisor, bool remainder, bool unsigned_op);
 	void emit_shift(const lowir::Instruction& inst);
+	bool word_shift(const lowir::Instruction& inst) const;
 	void emit_compare(const lowir::Instruction& inst);
 	void emit_select(const lowir::Instruction& inst);
 	void emit_count(const lowir::Instruction& inst, Cond cc);

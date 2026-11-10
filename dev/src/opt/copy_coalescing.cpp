@@ -200,6 +200,42 @@ bool CopyCoalescing::forward_copies(BlockId block)
 	{
 		Instruction& inst = body_.instructions[i];
 		Rooted from, to;
+
+		// A whole scalar copy immediately read at its own width can use that
+		// read's SSA value directly. The store preserves every private slot
+		// byte; ordinary promotion may then remove the temporary's address.
+		if (inst.op == Opcode::CopyObject && !(inst.flags & IF_VOLATILE) && inst.next != kNoId &&
+			rooted(body_, inst.ops[1], to) && to.root.is(ValueKind::Slot) && to.offset == 0 && !escaped_[to.root.index])
+		{
+			const Type type = body_.slots[to.root.index].type;
+			const unsigned bits = type.is_pointer() ? 64 : integer_bits(type.kind());
+			const InstId next = inst.next;
+			const Instruction& read = body_.instructions[next];
+			const bool source = !inst.ops[0].is(ValueKind::Temp) || body_.temps[inst.ops[0].index].type.is_pointer();
+			if (source && bits >= 8 && bits <= 64 && bits == 8 * storage_bytes(type) &&
+				inst.immediate == static_cast<int64_t>(storage_bytes(type)) && read.op == Opcode::Load &&
+				read.type == type && read.ops[0] == to.root && !(read.flags & IF_VOLATILE))
+			{
+				const TempId value = read.result;
+				const uint32_t location = inst.location;
+				Instruction load = make_instruction(Opcode::Load, type);
+				load.ops[0] = inst.ops[0];
+				load.result = value;
+				load.location = location;
+				load.next = next;
+				Instruction store = make_instruction(Opcode::Store, type);
+				store.ops[0] = Value::temp(value);
+				store.ops[1] = to.root;
+				store.location = location;
+				store.next = read.next;
+				body_.instructions[i] = load;
+				body_.instructions[next] = store;
+				body_.temps[value].def = i;
+				first = kNoId;
+				changed = true;
+				continue;
+			}
+		}
 		if (inst.op == Opcode::CopyObject && first != kNoId && rooted(body_, inst.ops[0], from) &&
 			from.root == Value::slot(slot) && from.offset == 0 &&
 			inst.immediate == body_.instructions[first].immediate && slot_uses_[slot] == 2)
