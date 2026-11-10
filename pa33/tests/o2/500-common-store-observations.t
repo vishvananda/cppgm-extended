@@ -1,0 +1,161 @@
+global @observed : i32 = 0
+
+function @observe(%pointer : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %value = load i32 %pointer
+    store i32 %value, @observed
+    return void
+}
+
+function @read_after_store(%flag : i1, %out : ptr, %source : ptr) -> i32 [no_inline=yes] {
+  block ^entry:
+    branch %flag, ^yes, ^no
+  block ^yes:
+    store i32 3, %out
+    %a = load i32 %source
+    jump ^join
+  block ^no:
+    store i32 7, %out
+    %b = load i32 %source
+    jump ^join
+  block ^join:
+    %value = phi i32 [^yes: %a, ^no: %b]
+    return i32 %value
+}
+
+function @call_after_store(%flag : i1, %out : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    branch %flag, ^yes, ^no
+  block ^yes:
+    store i32 11, %out
+    call void @observe(%out)
+    jump ^join
+  block ^no:
+    store i32 13, %out
+    call void @observe(%out)
+    jump ^join
+  block ^join:
+    return void
+}
+
+function @guarded_volatile(%flag : i1, %out : ptr, %source : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    branch %flag, ^yes, ^no
+  block ^yes:
+    %value = load volatile i32 %source
+    store volatile i32 %value, %out
+    jump ^join
+  block ^no:
+    store volatile i32 17, %out
+    jump ^join
+  block ^join:
+    return void
+}
+
+function @guarded_division(%flag : i1, %out : ptr, %divisor : i32) -> void [no_inline=yes] {
+  block ^entry:
+    branch %flag, ^yes, ^no
+  block ^yes:
+    %value = binary div i32 8, %divisor
+    store i32 %value, %out
+    jump ^join
+  block ^no:
+    store i32 29, %out
+    jump ^join
+  block ^join:
+    return void
+}
+
+function @different_destinations(%flag : i1, %first : ptr, %second : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    branch %flag, ^yes, ^no
+  block ^yes:
+    store i32 31, %first
+    jump ^join
+  block ^no:
+    store i32 37, %second
+    jump ^join
+  block ^join:
+    return void
+}
+
+function @two_writes(%flag : i1, %first : ptr, %second : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    branch %flag, ^yes, ^no
+  block ^yes:
+    store i32 41, %first
+    store i32 43, %second
+    jump ^join
+  block ^no:
+    store i32 47, %first
+    store i32 53, %second
+    jump ^join
+  block ^join:
+    return void
+}
+
+function @main() -> i32 {
+  slot $cell : i32
+  slot $source : i32
+  block ^entry:
+    %out = addr $cell
+    %source = addr $source
+    store i32 59, $source
+    %a = call i32 @read_after_store(1, %out, %out)
+    %b = call i32 @read_after_store(0, %out, %out)
+    %c = call i32 @read_after_store(1, %out, %source)
+    %ba = cmp ne i32 %a, 3
+    %bb = cmp ne i32 %b, 7
+    %bc = cmp ne i32 %c, 59
+    %ab = binary or i64 %ba, %bb
+    %abc = binary or i64 %ab, %bc
+    branch %abc, ^fail, ^calls
+  block ^calls:
+    call void @call_after_store(1, %out)
+    %yes_observed = load i32 @observed
+    call void @call_after_store(0, %out)
+    %no_observed = load i32 @observed
+    %by = cmp ne i32 %yes_observed, 11
+    %bn = cmp ne i32 %no_observed, 13
+    %bad_calls = binary or i64 %by, %bn
+    branch %bad_calls, ^fail, ^volatile
+  block ^volatile:
+    call void @guarded_volatile(0, %out, nullptr)
+    %v0 = load volatile i32 %out
+    call void @guarded_volatile(1, %out, %source)
+    %v1 = load volatile i32 %out
+    %bv0 = cmp ne i32 %v0, 17
+    %bv1 = cmp ne i32 %v1, 59
+    %bad_volatile = binary or i64 %bv0, %bv1
+    branch %bad_volatile, ^fail, ^division
+  block ^division:
+    call void @guarded_division(0, %out, 0)
+    %d0 = load i32 %out
+    call void @guarded_division(1, %out, 2)
+    %d1 = load i32 %out
+    %bd0 = cmp ne i32 %d0, 29
+    %bd1 = cmp ne i32 %d1, 4
+    %bad_division = binary or i64 %bd0, %bd1
+    branch %bad_division, ^fail, ^destinations
+  block ^destinations:
+    call void @different_destinations(0, nullptr, %out)
+    %p0 = load i32 %out
+    call void @different_destinations(1, %out, nullptr)
+    %p1 = load i32 %out
+    %bp0 = cmp ne i32 %p0, 37
+    %bp1 = cmp ne i32 %p1, 31
+    %bad_destinations = binary or i64 %bp0, %bp1
+    branch %bad_destinations, ^fail, ^aliases
+  block ^aliases:
+    call void @two_writes(1, %out, %out)
+    %w0 = load i32 %out
+    call void @two_writes(0, %out, %out)
+    %w1 = load i32 %out
+    %bw0 = cmp ne i32 %w0, 43
+    %bw1 = cmp ne i32 %w1, 53
+    %bad = binary or i64 %bw0, %bw1
+    %status = convert trunc i32 i64 %bad
+    return i32 %status
+  block ^fail:
+    return i32 1
+}

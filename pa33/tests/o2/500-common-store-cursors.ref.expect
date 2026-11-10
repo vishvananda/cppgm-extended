@@ -1,0 +1,8 @@
+# explicit-outcomes
+
+count(branch) <= 2 in @stream
+count(store) <= 1 in @stream
+count(branch) <= 2 in @stream_reverse
+count(store) <= 1 in @stream_reverse
+none(branch) in @nowrap_choice
+count(store) <= 1 in @nowrap_choice

@@ -97,6 +97,10 @@ private:
 	bool arm(BlockId a, BlockId from, BlockId& to) const;
 	bool loads_through_merge(Value cond, BlockId join) const;
 	bool form(BlockId e);
+	bool form_store(BlockId e);
+	InstId store_arm(BlockId arm, BlockId from) const;
+	bool same_expression(Value a, Value b, unsigned depth = 0) const;
+	bool unit_update(Type type, Value a, Value b) const;
 	bool range_switch(BlockId block, InstId id);
 	bool form_load(BlockId e);
 	InstId load_arm(BlockId a, BlockId from) const;
@@ -736,6 +740,169 @@ bool SelectFormation::range_switch(BlockId block, InstId id)
 	return true;
 }
 
+// One ordinary store and a small amount of pure work on an arm. Exclude
+// implicit slot reads and operations whose unselected evaluation may trap.
+InstId SelectFormation::store_arm(BlockId arm, BlockId from) const
+{
+	const Cfg& cfg = c_.cfg;
+	if (arm == from || touched_[arm] || (cfg.flags[arm] & (BF_HANDLER | BF_EH)) || cfg.pred_count(arm) != 1 ||
+		cfg.preds[cfg.pred_first[arm]] != from)
+		return kNoId;
+	const InstId last = body_.blocks[arm].last;
+	if (last == kNoId || body_.instructions[last].op != Opcode::Jump)
+		return kNoId;
+	InstId store = kNoId;
+	unsigned count = 0;
+	for (InstId i = body_.blocks[arm].first; i != last; i = body_.instructions[i].next)
+	{
+		const Instruction& inst = body_.instructions[i];
+		if (++count > 2 * kArmCap)
+			return kNoId;
+		for (const Value op : inst.ops)
+			if (op.is(ValueKind::Slot) && inst.op != Opcode::Addr)
+				return kNoId;
+		if (inst.op == Opcode::Store)
+		{
+			if (store != kNoId || (inst.flags & IF_VOLATILE) || !selectable(inst.type))
+				return kNoId;
+			store = i;
+		}
+		else if (!speculatable(body_, inst))
+			return kNoId;
+		else if (inst.op == Opcode::Binary)
+		{
+			const BinaryOp op = static_cast<BinaryOp>(inst.sub);
+			if (op == BinaryOp::Shl || op == BinaryOp::Shr || op == BinaryOp::UShr)
+				return kNoId;
+		}
+	}
+	return store;
+}
+
+// Bounded structural equality of pure expressions. Shared loaded values
+// are allowed, but two independent loads are never treated as one value.
+bool SelectFormation::same_expression(Value a, Value b, unsigned depth) const
+{
+	if (a == b)
+		return true;
+	if (depth == 4)
+		return false;
+	const Instruction* left = producer(a);
+	const Instruction* right = producer(b);
+	if (left == nullptr || right == nullptr || !speculatable(body_, *left) || !speculatable(body_, *right) ||
+		left->op != right->op || left->sub != right->sub || left->type != right->type ||
+		left->immediate != right->immediate || left->extra_count != 0 || right->extra_count != 0)
+		return false;
+	for (unsigned k = 0; k < 3; ++k)
+		if (!same_expression(left->ops[k], right->ops[k], depth + 1))
+			return false;
+	return true;
+}
+
+bool SelectFormation::unit_update(Type type, Value a, Value b) const
+{
+	if (!type.is_integer())
+		return false;
+	for (unsigned side = 0; side < 2; ++side)
+	{
+		const Instruction* step = producer(side == 0 ? a : b);
+		Constant by;
+		if (step != nullptr && step->op == Opcode::Binary && step->type == type &&
+			(static_cast<BinaryOp>(step->sub) == BinaryOp::Add || static_cast<BinaryOp>(step->sub) == BinaryOp::Sub) &&
+			step->ops[0] == (side == 0 ? b : a) && literal_constant(body_, step->ops[1], by) &&
+			(is_integer(type, by, 1) || is_integer(type, by, -1)))
+			return true;
+	}
+	return false;
+}
+
+// Factor an always-performed store through a small diamond. Sequential
+// cursor updates can be predicated even when the condition reads through
+// those cursors; keep the pointer-chasing admission rule for other cycles.
+bool SelectFormation::form_store(BlockId e)
+{
+	const InstId term = body_.blocks[e].last;
+	if (term == kNoId || body_.instructions[term].op != Opcode::Branch ||
+		body_.instructions[term].sub != static_cast<uint8_t>(BranchPrediction::None))
+		return false;
+	const Instruction branch = body_.instructions[term];
+	const BlockId t = branch.ops[1].index, f = branch.ops[2].index;
+	if (t == f || !branch.ops[0].is(ValueKind::Temp))
+		return false;
+	const InstId ti = store_arm(t, e), fi = store_arm(f, e);
+	if (ti == kNoId || fi == kNoId)
+		return false;
+	const BlockId join = body_.instructions[body_.blocks[t].last].ops[0].index;
+	if (join != body_.instructions[body_.blocks[f].last].ops[0].index || join == e || touched_[join] ||
+		(c_.cfg.flags[join] & (BF_HANDLER | BF_EH)) || c_.cfg.pred_count(join) != 2 || c_.cfg.dominates(join, e))
+		return false;
+	const Instruction left = body_.instructions[ti], right = body_.instructions[fi];
+	if (left.type != right.type || !same_expression(left.ops[1], right.ops[1]))
+		return false;
+	const bool dependent = loads_through_merge(branch.ops[0], join);
+	unsigned selects = 0;
+	std::vector<InstId> phis;
+	for (InstId i = body_.blocks[join].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
+		i = body_.instructions[i].next)
+	{
+		const Instruction& phi = body_.instructions[i];
+		const Value a = phi_incoming(body_, phi, t), b = phi_incoming(body_, phi, f);
+		if (!selectable(phi.type) || a.is(ValueKind::Slot) || b.is(ValueKind::Slot))
+			return false;
+		if (!(a == b) && (++selects > kSelectCap || (dependent && !unit_update(phi.type, a, b))))
+			return false;
+		phis.push_back(i);
+	}
+	unlink_after(body_, t, previous_in_block(body_, t, ti), ti);
+	unlink_after(body_, f, previous_in_block(body_, f, fi), fi);
+	InstId at = previous_in_block(body_, e, term);
+	at = hoist(t, e, at);
+	at = hoist(f, e, at);
+	const auto choose = [&](Type type, Value a, Value b) -> Value {
+		if (a == b)
+			return a;
+		Instruction select = make_instruction(Opcode::Select, type);
+		select.ops[0] = branch.ops[0];
+		select.ops[1] = a;
+		select.ops[2] = b;
+		select.location = branch.location;
+		const InstId id = append_instruction(body_, select);
+		body_.instructions[id].result = append_temp(body_, type, id);
+		insert_after(body_, e, at, id);
+		at = id;
+		return Value::temp(body_.instructions[id].result);
+	};
+	const Value stored = choose(left.type, left.ops[0], right.ops[0]);
+	for (InstId id : phis)
+	{
+		const Instruction phi = body_.instructions[id];
+		const Value value = choose(phi.type, phi_incoming(body_, phi, t), phi_incoming(body_, phi, f));
+		Instruction copy = make_instruction(Opcode::Copy, phi.type);
+		copy.result = phi.result;
+		copy.ops[0] = value;
+		copy.location = phi.location;
+		copy.next = phi.next;
+		body_.instructions[id] = copy;
+	}
+	body_.instructions[ti].ops[0] = stored;
+	body_.instructions[ti].flags &= right.flags;
+	body_.instructions[ti].location = branch.location;
+	insert_after(body_, e, at, ti);
+	for (BlockId arm : { t, f })
+	{
+		Instruction end = make_instruction(Opcode::Unreachable, Type::scalar(TypeKind::Void));
+		end.location = branch.location;
+		body_.instructions[body_.blocks[arm].last] = end;
+	}
+	Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+	jump.ops[0] = Value::block(join);
+	jump.location = branch.location;
+	body_.instructions[term] = jump;
+	touched_[e] = touched_[t] = touched_[f] = touched_[join] = 1;
+	++c_.stats.branches_folded;
+	return true;
+}
+
 bool SelectFormation::run()
 {
 	c_.ensure_cfg();
@@ -749,7 +916,7 @@ bool SelectFormation::run()
 		if (id != kNoId && body_.instructions[id].op == Opcode::Switch)
 			changed = range_switch(b, id) || changed;
 		if (c_.cfg.reachable(b) && !touched_[b] && !(c_.cfg.flags[b] & BF_EH))
-			changed = form(b) || form_load(b) || changed;
+			changed = form(b) || form_load(b) || (c_.level >= 2 && form_store(b)) || changed;
 	}
 	if (changed)
 		c_.invalidate_cfg();
