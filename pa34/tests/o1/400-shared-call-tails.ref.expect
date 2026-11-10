@@ -1,0 +1,2 @@
+# Equivalent switch arms must fit without repeated arithmetic and calls.
+instructions <= 100 in @worker

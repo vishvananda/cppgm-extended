@@ -39,9 +39,10 @@ bool branch_to(const Inst& inst, Op op, uint32_t block)
 	return inst.op == op && inst.ops[0].kind == OperandKind::Label && inst.ops[0].symbol == block;
 }
 
-// Small physical-register tails can share code without SSA repair: every
+// Bounded physical-register tails can share code without SSA repair: every
 // entering path already supplies exactly the registers that code reads.
-// Keep calls, assembly, EH and implicit fallthrough out of the candidate set.
+// Calls retain their exact target, ABI facts and physical operands. Assembly,
+// EH and implicit fallthrough stay outside the candidate set.
 bool shared_tail(const Function& f, uint32_t b)
 {
 	const Block& block = f.blocks[b];
@@ -53,7 +54,7 @@ bool shared_tail(const Function& f, uint32_t b)
 	{
 		if (f.insts[i].op == Op::Nop)
 			continue;
-		if (++count > 12)
+		if (++count > 64)
 			return false;
 		last = f.insts[i].op;
 		switch (f.insts[i].op)
@@ -79,6 +80,19 @@ bool shared_tail(const Function& f, uint32_t b)
 		case Op::Jcc:
 		case Op::Jmp:
 		case Op::Ret:
+		case Op::Call:
+		case Op::Imul:
+		case Op::Neg:
+		case Op::Not:
+		case Op::Cqo:
+		case Op::Idiv:
+		case Op::Div:
+		case Op::Bsf:
+		case Op::Bsr:
+		case Op::Popcnt:
+		case Op::Rol:
+		case Op::Ror:
+		case Op::Cmov:
 			break;
 		default:
 			return false;

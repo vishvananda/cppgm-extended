@@ -1,0 +1,237 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @calls
+  storage scalar i64
+  init i64 0
+
+function @effect
+  abi
+    param %x -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, @calls
+    add r8, 3
+    store.i64 @calls, r8
+    mov rax, rdi
+    xor rax, 90
+    ret rax
+
+function @other
+  abi
+    param %x -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, @calls
+    add r8, 5
+    store.i64 @calls, r8
+    mov rax, rdi
+    xor rax, 91
+    ret rax
+
+function @worker
+  abi
+    param %n -> rdi : i64
+    param %x -> rsi : i64
+    param %d -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0>
+    param-slot %d -> [rbp-<off0>] : i64
+
+  block ^entry
+    mov <gpr0>, rsi
+    mov <gpr1>, rdi
+    cmp.i64 <gpr1>, 7
+    ja ^fallback
+    jump_table <gpr1>, [^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c6, ^entry~c7]
+
+  block ^entry~c5
+    store.i64 [rbp-<off0>], rdx
+
+  block ^c5
+    mov rdi, <gpr0>
+    call @effect [args=(rdi)]
+    xor rax, 33
+    imul rax, 17
+    add rax, 11
+    shr rax, 3
+    xor rax, <gpr0>
+    mov rdx, 0
+    div [rbp-<off0>]
+    imul rax, 13
+    add rax, 29
+    xor rax, 77
+    shl rax, 5
+    or rax, 7
+    add rax, <gpr0>
+    xor rax, 255
+    ret rax
+
+  block ^entry~c6
+    store.i64 [rbp-<off0>], rdx
+
+  block ^c6
+    mov rdi, <gpr0>
+    call @other [args=(rdi)]
+    xor rax, 33
+    imul rax, 17
+    add rax, 11
+    shr rax, 3
+    xor rax, <gpr0>
+    mov rdx, 0
+    div [rbp-<off0>]
+    imul rax, 13
+    add rax, 29
+    xor rax, 77
+    shl rax, 5
+    or rax, 7
+    add rax, <gpr0>
+    xor rax, 255
+    ret rax
+
+  block ^entry~c7
+    store.i64 [rbp-<off0>], rdx
+
+  block ^c7
+    mov rdi, <gpr0>
+    call @effect [args=(rdi)]
+    xor rax, 33
+    imul rax, 17
+    add rax, 11
+    shr rax, 3
+    xor rax, <gpr0>
+    cqo
+    idiv [rbp-<off0>]
+    imul rax, 13
+    add rax, 29
+    xor rax, 77
+    shl rax, 5
+    or rax, 7
+    add rax, <gpr0>
+    xor rax, 255
+    ret rax
+
+  block ^fallback
+    mov rax, 999
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr2> <gpr3> <gpr4> <gpr5>
+
+  block ^entry
+    mov <gpr2>, 0
+    mov <gpr0>, 781331
+    mov <gpr3>, 0
+
+  block ^loop
+    mov <gpr6>, 6364136223846793005
+    imul <gpr0>, <gpr6>
+    add <gpr0>, 1
+    mov rax, <gpr2>
+    mov <gpr6>, -2049638230412172401
+    mul <gpr6>
+    shr rdx, 3
+    imul rdx, 9
+    mov rax, <gpr2>
+    sub rax, rdx
+    mov <gpr4>, rax
+    mov r8, <gpr2>
+    and r8, 63
+    lea <gpr5>, [r8+<off0>]
+    mov rdi, <gpr4>
+    mov rsi, <gpr0>
+    mov rdx, <gpr5>
+    call @worker [args=(rdx,rsi,rdi)]
+    mov r8, rax
+    cmp.i64 <gpr4>, 6
+    sete r9
+    cmp.i64 <gpr4>, 8
+    sete rdi
+    test.u8 r9, r9
+    mov <gpr6>, 91
+    mov rsi, 90
+    cmovne rsi, <gpr6>
+    xor rsi, <gpr0>
+    xor rsi, 33
+    imul rsi, 17
+    add rsi, 11
+    shr rsi, 3
+    xor rsi, <gpr0>
+    mov rax, rsi
+    mov rdx, 0
+    div <gpr5>
+    mov rcx, rax
+    mov rax, rsi
+    cqo
+    idiv <gpr5>
+    cmp.i64 <gpr4>, 7
+    cmove rcx, rax
+    imul rcx, 13
+    add rcx, 29
+    xor rcx, 77
+    shl rcx, 5
+    or rcx, 7
+    add rcx, <gpr0>
+    xor rcx, 255
+    test.u8 rdi, rdi
+    mov <gpr6>, 999
+    cmovne rcx, <gpr6>
+    test.u8 r9, r9
+    mov <gpr6>, 5
+    mov r9, 3
+    cmovne r9, <gpr6>
+    test.u8 rdi, rdi
+    mov <gpr6>, 0
+    cmovne r9, <gpr6>
+    add <gpr3>, r9
+    load.i64 r9, @calls
+    cmp.i64 r8, rcx
+    setne r8
+    movzx r8, r8
+    cmp.i64 r9, <gpr3>
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    jne ^fail
+
+  block ^next
+    add <gpr2>, 1
+    cmp.i64 <gpr2>, 4096
+    jne ^loop
+    jmp ^done
+
+  block ^fail
+    mov rax, 1
+    ret rax
+
+  block ^done
+    mov rax, 0
+    ret rax

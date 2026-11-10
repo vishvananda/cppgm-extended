@@ -1,0 +1,237 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @calls
+  storage scalar i64
+  init i64 0
+
+function @effect
+  abi
+    param %x -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, @calls
+    add r8, 3
+    store.i64 @calls, r8
+    mov rax, rdi
+    xor rax, 90
+    ret rax
+
+function @other
+  abi
+    param %x -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, @calls
+    add r8, 5
+    store.i64 @calls, r8
+    mov rax, rdi
+    xor rax, 91
+    ret rax
+
+function @worker
+  abi
+    param %n -> rdi : i64
+    param %x -> rsi : i64
+    param %d -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
+    param-slot %d -> [rbp-8] : i64
+
+  block ^entry
+    mov rbx, rsi
+    mov r10, rdi
+    cmp.i64 r10, 7
+    ja ^fallback
+    jump_table r10, [^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c6, ^entry~c7]
+
+  block ^entry~c5
+    store.i64 [rbp-8], rdx
+
+  block ^c5
+    mov rdi, rbx
+    call @effect [args=(rdi)]
+    xor rax, 33
+    imul rax, 17
+    add rax, 11
+    shr rax, 3
+    xor rax, rbx
+    mov rdx, 0
+    div [rbp-8]
+    imul rax, 13
+    add rax, 29
+    xor rax, 77
+    shl rax, 5
+    or rax, 7
+    add rax, rbx
+    xor rax, 255
+    ret rax
+
+  block ^entry~c6
+    store.i64 [rbp-8], rdx
+
+  block ^c6
+    mov rdi, rbx
+    call @other [args=(rdi)]
+    xor rax, 33
+    imul rax, 17
+    add rax, 11
+    shr rax, 3
+    xor rax, rbx
+    mov rdx, 0
+    div [rbp-8]
+    imul rax, 13
+    add rax, 29
+    xor rax, 77
+    shl rax, 5
+    or rax, 7
+    add rax, rbx
+    xor rax, 255
+    ret rax
+
+  block ^entry~c7
+    store.i64 [rbp-8], rdx
+
+  block ^c7
+    mov rdi, rbx
+    call @effect [args=(rdi)]
+    xor rax, 33
+    imul rax, 17
+    add rax, 11
+    shr rax, 3
+    xor rax, rbx
+    cqo
+    idiv [rbp-8]
+    imul rax, 13
+    add rax, 29
+    xor rax, 77
+    shl rax, 5
+    or rax, 7
+    add rax, rbx
+    xor rax, 255
+    ret rax
+
+  block ^fallback
+    mov rax, 999
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+
+  block ^entry
+    mov r12, 0
+    mov rbx, 781331
+    mov r13, 0
+
+  block ^loop
+    mov r11, 6364136223846793005
+    imul rbx, r11
+    add rbx, 1
+    mov rax, r12
+    mov r11, -2049638230412172401
+    mul r11
+    shr rdx, 3
+    imul rdx, 9
+    mov rax, r12
+    sub rax, rdx
+    mov r14, rax
+    mov r8, r12
+    and r8, 63
+    lea r15, [r8+1]
+    mov rdi, r14
+    mov rsi, rbx
+    mov rdx, r15
+    call @worker [args=(rdx,rsi,rdi)]
+    mov r8, rax
+    cmp.i64 r14, 6
+    sete r9
+    cmp.i64 r14, 8
+    sete rdi
+    test.u8 r9, r9
+    mov r11, 91
+    mov rsi, 90
+    cmovne rsi, r11
+    xor rsi, rbx
+    xor rsi, 33
+    imul rsi, 17
+    add rsi, 11
+    shr rsi, 3
+    xor rsi, rbx
+    mov rax, rsi
+    mov rdx, 0
+    div r15
+    mov rcx, rax
+    mov rax, rsi
+    cqo
+    idiv r15
+    cmp.i64 r14, 7
+    cmove rcx, rax
+    imul rcx, 13
+    add rcx, 29
+    xor rcx, 77
+    shl rcx, 5
+    or rcx, 7
+    add rcx, rbx
+    xor rcx, 255
+    test.u8 rdi, rdi
+    mov r11, 999
+    cmovne rcx, r11
+    test.u8 r9, r9
+    mov r11, 5
+    mov r9, 3
+    cmovne r9, r11
+    test.u8 rdi, rdi
+    mov r11, 0
+    cmovne r9, r11
+    add r13, r9
+    load.i64 r9, @calls
+    cmp.i64 r8, rcx
+    setne r8
+    movzx r8, r8
+    cmp.i64 r9, r13
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    jne ^fail
+
+  block ^next
+    add r12, 1
+    cmp.i64 r12, 4096
+    jne ^loop
+    jmp ^done
+
+  block ^fail
+    mov rax, 1
+    ret rax
+
+  block ^done
+    mov rax, 0
+    ret rax
