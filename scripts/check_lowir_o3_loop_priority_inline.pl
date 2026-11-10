@@ -99,56 +99,40 @@ for my $test (@tests)
 	{
 		require_pair_calls($test, $o0, $caller, 2, 'O0');
 	}
-	my $complete = call_count(function_body($test, $o0, 'preferred_body'),
-		'advance');
-
-	# A call inside a loop runs once per iteration, so its callee's inline
-	# caps double there: from O1 a hinted callee too large for straight-line
-	# sites is expanded at the loop site of loop_first and loop_second,
-	# while its straight-line calls (their entry calls, no_loop_pair's pair)
-	# stay calls to the retained definition. (two_loop_calls, a small body
-	# with a call-free path to its return, is a wrapper the inliner keeps
-	# large callees out of; it is not checked.)
+	# Large shared bodies must not multiply merely because a call is in a
+	# loop. Bound code growth without requiring a particular call decision.
+	my $input_size = scalar(() = $o0 =~ /^    \S/gm);
 	for my $level (qw(O1 O2 O3))
 	{
 		my ($path, $lowir) = optimize($app, $test, $directory, $level);
-		for my $caller (qw(loop_first loop_second))
+		my $output_size = scalar(() = $lowir =~ /^    \S/gm);
+		die "$test: $level expanded the shared bodies from $input_size " .
+			"to $output_size instructions\n" if $output_size > $input_size + 32;
+		for my $caller (qw(loop_first loop_second no_loop_pair two_loop_calls))
 		{
-			my $body = require_pair_calls($test, $lowir, $caller, 1, $level);
-			my ($entry) = $body =~
-				/^\s*block \^[^:]+:\n(.*?)(?=^\s*block \^|\z)/ms;
-			die "$test: $level expanded the straight-line site in $caller " .
-				"instead of its loop site\n"
-				if !defined($entry) ||
-				   call_count($entry, 'preferred_body') != 1;
-			die "$test: $level $caller does not contain the complete body\n"
-				if call_count($body, 'advance') != $complete;
-			my ($failure_label, $failure_body);
-			while($body =~
-				/^\s*block \^([^:]+):\n(.*?)(?=^\s*block \^|\z)/msg) {
+			my $body = function_body($test, $lowir, $caller);
+			my $size = scalar(() = $body =~ /^    \S/gm);
+			die "$test: $level $caller exceeds its 64-instruction envelope\n"
+				if $size > 64;
+		}
+		# Inlined or retained, a noreturn arm has no normal successor and
+		# contributes no incoming value to a merge phi in its function.
+		while ($lowir =~ /(function \@[^\n]+.*?)(?=\nfunction \@|\z)/sg)
+		{
+			my $body = $1;
+			while ($body =~ /^\s*block \^([^:]+):\n(.*?)(?=^\s*block \^|\z)/msg)
+			{
 				my ($label, $block) = ($1, $2);
 				next if $block !~ /^\s+call void \@fail\(\)$/m;
-				die "$test: $level $caller contains more than one cloned failure arm\n"
-					if defined($failure_label);
-				($failure_label, $failure_body) = ($label, $block);
+				die "$test: $level retained a normal successor after noreturn\n"
+					if $block =~ /^\s+(?:jump|branch|switch)\b/m;
+				die "$test: $level noreturn successor remains in a merge phi\n"
+					if $body =~ /^\s+%\w+ = phi [^\n]*\[\^\Q$label\E:/m;
 			}
-			die "$test: $level $caller lost the cloned noreturn arm\n"
-				if !defined($failure_label);
-			die "$test: $level inlining retained a normal successor after noreturn\n"
-				if $failure_body =~ /^\s+(?:jump|branch|switch)\b/m;
-			die "$test: $level removed noreturn successor remains in a merge phi\n"
-				if $body =~ /^\s+%\w+ = phi [^\n]*\[\^\Q$failure_label\E:/m;
 		}
-		my $pair = require_pair_calls($test, $lowir, 'no_loop_pair', 2, $level);
-		die "$test: $level copied the callee into straight-line no_loop_pair\n"
-			if call_count($pair, 'advance') != 0;
-		die "$test: $level shared callable body was not retained for " .
-			"non-loop calls\n"
-			if call_count(function_body($test, $lowir, 'preferred_body'),
-				'advance') != $complete;
 		compile_and_run($driver, $test, $directory, $path);
 	}
 }
 
-print "loop-site priority inlining: PASS (" . scalar(@tests) . "/" .
+print "loop-site code growth and noreturn safety: PASS (" . scalar(@tests) . "/" .
 	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

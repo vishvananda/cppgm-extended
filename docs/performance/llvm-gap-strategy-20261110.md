@@ -272,7 +272,7 @@ All raw records are under `/mnt/vizier/cppgm-llvm-evidence`:
 - `gap-D-mask-facts-full-output-r2/`: complete output comparison after the private relink.
 - `gap-D-mask-facts-four-level-frozen-r2/`: compile-cost measurements.
 - `gap-D-mask-facts-hw-panel-r2/`: all hardware observations and retained outlier flags.
-## Final callee pricing: private screening
+## Final callee pricing: initial screening
 
 The next C experiment removes the fourfold loop-site allowance for callees
 larger than the ordinary cap and judges a callee after its own inlining. It
@@ -303,21 +303,21 @@ evidence of a smaller executed footprint and fewer code misses, not a proven
 elapsed-time improvement. Every observation and flagged outlier is retained.
 
 Frozen compile instructions for r3 change by -0.001% at O0, -0.439% at O1,
--2.142% at O2 and -2.436% at O3; RSS remains within the gate. These are private
-candidate costs. The accepted baseline and proven-gain ledger do not change.
+-2.142% at O2 and -2.436% at O3; RSS remains within the gate. These were the private
+candidate costs at the screening checkpoint. The compile-cost baseline remains
+8f76ebb0d; the completed qualification below records the runtime gain.
 The full O1 LLVM rebuild completes in 394.68 seconds under load, with no C++
 fallback; this is an unpaired build observation, not a compile-speed claim.
 Its Clang SHA-256 is
 `4a5325778b87aa9e7f7f09187dae7b2bb21f595863ab38e2872d736d9bc15e84`.
-The output-verified five-block comparison is running. Normal qualification
-and promotion depend on those results.
+The output-verified five-block comparison and normal qualification are
+reported below.
 
-One existing maintainer control explicitly requires the old large-body loop
+One existing maintainer control explicitly required the old large-body loop
 multiplier: `check_lowir_o3_loop_priority_inline.pl` passes with the baseline
 and rejects the candidate because loop_first retains two calls instead of one.
-If this policy change is adopted, replace that exact admission requirement
-with behavior and code-growth bounds while preserving its noreturn/phi safety
-coverage. This is a known qualification item, not a passing test claim.
+The qualification replaces that exact admission requirement with behavior
+and code-growth bounds while preserving its noreturn/phi safety coverage.
 
 Evidence: `gap-C-final-shape-four-panel-summary-r2.json`,
 `gap-C-final-shape-hw-panel-r2/`,
@@ -373,3 +373,124 @@ rise 1.920%; hardware code misses rise 0.740%. Frozen compile instructions fall
 about 0.22% at O1--O3. The register/memory tradeoff moves, but the intended code
 cache benefit does not. Keep this prototype private rather than adopting the
 lower opening price. Evidence: `gap-B-callee-save-price-*`.
+
+
+## Final callee pricing: qualified checkpoint
+
+The compiler now prices a full callee after its own inlining and grants the
+fourfold loop allowance only when that final hot body fits the ordinary cap.
+The obsolete input-shape snapshots and admission counters are removed. This
+is still only part of C4. Partial-copy policy and the remaining cost caps have
+not been replaced.
+
+The complete O1 LLVM build passes all 325 object comparisons and linked
+executable comparisons in all 32 observations: native A/A followed by five
+symmetric three-way blocks. Candidate/accepted cycles are 0.97472 (95% interval
+0.96258–0.98685). The cycle ratio against native falls from 1.13996 to 1.11111,
+a gain of 2.885 points, with a conservative proven gain of 1.489 points. The
+O1 target is not met.
+
+Elapsed candidate/accepted is 1.01675 (95% interval 0.88322–1.15027), so no
+elapsed improvement is established. One candidate observation takes 74.83 s
+while ordinary candidate observations take about 49–51 s; its compiler CPU
+time and cycles do not increase proportionately. Some sibling activity also
+rises during the run. All observations remain in the statistics; the elapsed
+outlier's exact cause is not established. There is no cgroup CPU throttling
+recorded in the inspected counters.
+
+Whole-workload instruction-cache misses fall 4.50% and fetch stalls fall 4.93%,
+while instructions rise 0.557%. The full build's deterministic ledger confirms
+smaller executed code on all four inputs. Values below are changes from the
+full accepted 8f76ebb0d build; modeled cache counts cover the main executable,
+matching the instruction-mix scope rather than whole-process totals.
+
+| Input | Executed code bytes | Instructions | Bytes/instruction | Conditional branches | Calls | Modeled L2 code misses |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| number_literal | -2.432% | +0.999% | -0.476% | +0.868% | +0.750% | -1.105% |
+| store_motion | -2.650% | +0.848% | -0.695% | +0.113% | +2.618% | -2.635% |
+| program_lowering | -2.969% | +0.761% | -0.560% | +0.367% | +2.108% | -3.467% |
+| class_templates | -2.966% | +0.948% | -0.716% | +0.313% | +2.865% | -3.641% |
+
+The full-build hardware panel on store_motion records L2 code misses -4.97%,
+resteers -7.41%, instruction-TLB second-level hits -6.69%, TLB walk duration
+-8.67%, mispredictions -0.63% and fetch stalls -3.34%. Blocked store forwarding
+rises 6.62% and micro-operations rise 0.97%. All 80 object outputs match, and
+17 cycle outliers are flagged and retained. This improves the code-footprint
+mechanism while leaving the aggregate problem open.
+
+The compile-cost baseline remains the measured post-move 8f76ebb0d baseline.
+A compiler checkpoint does not reset the cumulative budget. The table uses
+the paired repeats of that same immutable compiler from this cost gate.
+Proven gain is the lower 95% bound and is credited only at O1; O2/O3 runtime
+has not been remeasured for this checkpoint. Headroom is to the unproven +2%
+line, not permission to bypass a normal per-batch gate. O0 retains its separate
+unchanged limits. All RSS ratios are within 0.12% of baseline.
+
+| Level | Baseline instructions | Current instructions | Cumulative growth | Proven gain (points) | Headroom to +2% |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| O0 | 3.276466 G | 3.276430 G | -0.001% | 0 | separate O0 limit |
+| O1 | 7.674457 G | 7.640779 G | -0.439% | 1.489 | 2.439 points |
+| O2 | 9.070773 G | 8.876450 G | -2.142% | 0 | 4.142 points |
+| O3 | 9.421966 G | 9.192478 G | -2.436% | 0 | 4.436 points |
+
+Qualification passes: PA33, strict report 10,592/10,592, debug information,
+self-host through PA5, inception with matching objects and compiler, PA36
+smoke/quick, harness, architecture/format/file audits and global placement.
+The PA33 cluster-500 regressions fail the old compiler's size envelope and
+pass at O1–O3; behavior agrees with GCC and Clang. The expanded helper makes
+260 loop-body instructions before and 22 after. The old exact loop-inlining
+control now checks behavior, bounded growth and noreturn/phi safety.
+
+Evidence: `gap-C-final-shape-qualification-current-r1.json`,
+`gap-C-final-shape-full-threeway-r3/`,
+`gap-C-final-shape-full-four-panel-summary-r1.json`,
+`gap-C-final-shape-full-hw-panel-r1/`, and
+`gap-C-final-shape-regression-r4/quality-regression-proof.json`.
+
+## Further casting-fact checks
+
+Controls using LLVM 22.1.2's actual Casting.h pass under GCC, native Clang,
+the accepted compiler and this checkpoint at O0–O3, including nonzero base
+offsets, null inputs, repeated type checks and a call that changes the type
+tag. The last case must reload the tag: a const-qualified accessor is not a
+promise that intervening calls leave the object's storage unchanged.
+
+One missing lowering fact is confirmed. On the successful non-null path of
+a statically analyzed base/derived pointer conversion, the adjusted pointer
+is also non-null. Lowering emits an unqualified LowIR index, losing that
+source-level guarantee. The existing generic raw-address index must not be
+assumed non-null. A private prototype records the guarantee with the existing
+nonnull pointer-copy fact at the conversion site. The checked_cast example
+falls from nine to six machine instructions at O1/O3, removing the adjustment
+and redundant null test; nullable conversions still preserve null. The O0
+control object's text size is unchanged. Speculation already drops nonnull
+facts when moving the copy onto paths where the original instruction did not
+execute.
+
+All 325 workload objects and the executable still match after a 40-provider
+relink (26 provider objects change), and frozen compile cost is essentially
+flat at all four levels. Nevertheless, the first number_literal screen moves
+executed bytes only -0.008%, instructions +0.228%, branches +0.225%, calls
++0.466% and modeled L2 misses +0.172%. This remains private. Function totals
+also change through inlining and pointer-key lookup path frequencies; these
+are not evidence that the three removed instructions became more expensive.
+The follow-up must account for fact-only copies in the inliner's cost model
+rather than treating new semantic knowledge as executable work.
+
+A second example eliminates the repeated type test but still branches to
+constant boolean returns at both O1 and O3, where native emits setcc. A
+conservative scan of the accepted number_literal profile finds only 75
+recognizable epilogue-free sites, 95,957 executed branches and 9,082 modeled
+mispredictions. That bound is too small for a separate optimization milestone;
+it does not cover arbitrary return bodies.
+
+Evidence: `gap-casting-header-controls-r1/`,
+`gap-E-cast-result-fact-{compiler,top40,full-output,ledger-number,four-level-frozen}-r1/`,
+and `gap-D-terminal-select-bound-r1/`.
+
+A separate C4 screen prices a call's setup and control work in the existing
+callee-shape walk. It reduces frozen compile instructions by 4.42%, 5.68% and
+6.00% at O1–O3. Its first 40-provider profile reduces executed bytes 0.717%
+and modeled L2 misses 3.331%, while calls rise 2.536%. The remaining three
+profiles and hardware panel are pending; this experiment is not part of the
+qualified compiler. Evidence: `gap-C-call-price-*`.

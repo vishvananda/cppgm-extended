@@ -1,0 +1,201 @@
+global @initial : i64 [binding=strong] = 1729
+global @iterations : u32 [binding=strong] = 7
+
+function @mix(%x : i64) -> i64 [binding=strong, object=_Z3mixm] {
+  block ^entry:
+    %t1 = binary shl i64 %x, 7
+    %t2 = binary xor i64 %x, %t1
+    %t3 = binary ushr i64 %t2, 11
+    %t4 = binary xor i64 %t2, %t3
+    %t5 = binary add i64 %t4, 101
+    %t6 = binary shl i64 %t5, 7
+    %t7 = binary xor i64 %t5, %t6
+    %t8 = binary ushr i64 %t7, 11
+    %t9 = binary xor i64 %t7, %t8
+    %t10 = binary add i64 %t9, 211
+    %t11 = binary shl i64 %t10, 7
+    %t12 = binary xor i64 %t10, %t11
+    %t13 = binary ushr i64 %t12, 11
+    %t14 = binary xor i64 %t12, %t13
+    %t15 = binary add i64 %t14, 307
+    %t16 = binary shl i64 %t15, 7
+    %t17 = binary xor i64 %t15, %t16
+    %t18 = binary ushr i64 %t17, 11
+    %t19 = binary xor i64 %t17, %t18
+    %t20 = binary add i64 %t19, 401
+    %t21 = binary shl i64 %t20, 7
+    %t22 = binary xor i64 %t20, %t21
+    %t23 = binary ushr i64 %t22, 11
+    %t24 = binary xor i64 %t22, %t23
+    %t25 = binary add i64 %t24, 503
+    %t26 = binary shl i64 %t25, 7
+    %t27 = binary xor i64 %t25, %t26
+    %t28 = binary ushr i64 %t27, 11
+    %t29 = binary xor i64 %t27, %t28
+    %t30 = binary add i64 %t29, 601
+    return i64 %t30
+}
+function @run(%x : i64, %count : u32) -> i64 [binding=strong, object=_Z3runmj, no_inline=yes] {
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi u32 [^entry: 0, ^for_body_2: %t18]
+    %t2 = phi i64 [^entry: %x, ^for_body_2: %t17]
+    %t3 = cmp ne u32 %count, %t1
+    branch %t3, ^for_body_2, ^for_end_3
+
+  block ^for_body_2:
+    %t4 = call i64 @expanded(%t2)
+    %t5 = convert zext i64 u32 %t1
+    %t6 = binary add i64 %t4, %t5
+    %t7 = convert zext i64 u32 %count
+    %t8 = binary xor i64 %t6, %t7
+    %t9 = call i64 @expanded(%t8)
+    %t10 = binary shl i64 %t9, 11
+    %t11 = binary xor i64 %t9, %t10
+    %t12 = binary add i64 %t7, %t11
+    %t13 = binary ushr i64 %t12, 17
+    %t14 = binary xor i64 %t12, %t13
+    %t15 = binary mul i64 %t14, 37
+    %t16 = binary ushr i64 %t15, 19
+    %t17 = binary xor i64 %t15, %t16
+    %t18 = binary add u32 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_3:
+    return i64 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load volatile i64 @initial
+    %t2 = load volatile u32 @iterations
+    %t3 = call i64 @run(%t1, %t2)
+    %t4 = cmp ne i64 %t3, 7210775075916949423
+    %t5 = convert trunc i32 i64 %t4
+    return i32 %t5
+}
+function @expanded(%x : i64) -> i64 [binding=weak, object=_Z8expandedm, inline_hint=yes] {
+  block ^entry:
+    %t1 = binary shl i64 %x, 7
+    %t2 = binary xor i64 %x, %t1
+    %t3 = binary ushr i64 %t2, 11
+    %t4 = binary xor i64 %t2, %t3
+    %t5 = binary add i64 %t4, 101
+    %t6 = binary shl i64 %t5, 7
+    %t7 = binary xor i64 %t5, %t6
+    %t8 = binary ushr i64 %t7, 11
+    %t9 = binary xor i64 %t7, %t8
+    %t10 = binary add i64 %t9, 211
+    %t11 = binary shl i64 %t10, 7
+    %t12 = binary xor i64 %t10, %t11
+    %t13 = binary ushr i64 %t12, 11
+    %t14 = binary xor i64 %t12, %t13
+    %t15 = binary add i64 %t14, 307
+    %t16 = binary shl i64 %t15, 7
+    %t17 = binary xor i64 %t15, %t16
+    %t18 = binary ushr i64 %t17, 11
+    %t19 = binary xor i64 %t17, %t18
+    %t20 = binary add i64 %t19, 401
+    %t21 = binary shl i64 %t20, 7
+    %t22 = binary xor i64 %t20, %t21
+    %t23 = binary ushr i64 %t22, 11
+    %t24 = binary xor i64 %t22, %t23
+    %t25 = binary add i64 %t24, 503
+    %t26 = binary shl i64 %t25, 7
+    %t27 = binary xor i64 %t25, %t26
+    %t28 = binary ushr i64 %t27, 11
+    %t29 = binary xor i64 %t27, %t28
+    %t30 = binary add i64 %t29, 601
+    %t31 = binary shl i64 %t30, 7
+    %t32 = binary xor i64 %t30, %t31
+    %t33 = binary ushr i64 %t32, 11
+    %t34 = binary xor i64 %t32, %t33
+    %t35 = binary add i64 %t34, 101
+    %t36 = binary shl i64 %t35, 7
+    %t37 = binary xor i64 %t35, %t36
+    %t38 = binary ushr i64 %t37, 11
+    %t39 = binary xor i64 %t37, %t38
+    %t40 = binary add i64 %t39, 211
+    %t41 = binary shl i64 %t40, 7
+    %t42 = binary xor i64 %t40, %t41
+    %t43 = binary ushr i64 %t42, 11
+    %t44 = binary xor i64 %t42, %t43
+    %t45 = binary add i64 %t44, 307
+    %t46 = binary shl i64 %t45, 7
+    %t47 = binary xor i64 %t45, %t46
+    %t48 = binary ushr i64 %t47, 11
+    %t49 = binary xor i64 %t47, %t48
+    %t50 = binary add i64 %t49, 401
+    %t51 = binary shl i64 %t50, 7
+    %t52 = binary xor i64 %t50, %t51
+    %t53 = binary ushr i64 %t52, 11
+    %t54 = binary xor i64 %t52, %t53
+    %t55 = binary add i64 %t54, 503
+    %t56 = binary shl i64 %t55, 7
+    %t57 = binary xor i64 %t55, %t56
+    %t58 = binary ushr i64 %t57, 11
+    %t59 = binary xor i64 %t57, %t58
+    %t60 = binary add i64 %t59, 601
+    %t61 = binary shl i64 %t60, 7
+    %t62 = binary xor i64 %t60, %t61
+    %t63 = binary ushr i64 %t62, 11
+    %t64 = binary xor i64 %t62, %t63
+    %t65 = binary add i64 %t64, 101
+    %t66 = binary shl i64 %t65, 7
+    %t67 = binary xor i64 %t65, %t66
+    %t68 = binary ushr i64 %t67, 11
+    %t69 = binary xor i64 %t67, %t68
+    %t70 = binary add i64 %t69, 211
+    %t71 = binary shl i64 %t70, 7
+    %t72 = binary xor i64 %t70, %t71
+    %t73 = binary ushr i64 %t72, 11
+    %t74 = binary xor i64 %t72, %t73
+    %t75 = binary add i64 %t74, 307
+    %t76 = binary shl i64 %t75, 7
+    %t77 = binary xor i64 %t75, %t76
+    %t78 = binary ushr i64 %t77, 11
+    %t79 = binary xor i64 %t77, %t78
+    %t80 = binary add i64 %t79, 401
+    %t81 = binary shl i64 %t80, 7
+    %t82 = binary xor i64 %t80, %t81
+    %t83 = binary ushr i64 %t82, 11
+    %t84 = binary xor i64 %t82, %t83
+    %t85 = binary add i64 %t84, 503
+    %t86 = binary shl i64 %t85, 7
+    %t87 = binary xor i64 %t85, %t86
+    %t88 = binary ushr i64 %t87, 11
+    %t89 = binary xor i64 %t87, %t88
+    %t90 = binary add i64 %t89, 601
+    %t91 = binary shl i64 %t90, 7
+    %t92 = binary xor i64 %t90, %t91
+    %t93 = binary ushr i64 %t92, 11
+    %t94 = binary xor i64 %t92, %t93
+    %t95 = binary add i64 %t94, 101
+    %t96 = binary shl i64 %t95, 7
+    %t97 = binary xor i64 %t95, %t96
+    %t98 = binary ushr i64 %t97, 11
+    %t99 = binary xor i64 %t97, %t98
+    %t100 = binary add i64 %t99, 211
+    %t101 = binary shl i64 %t100, 7
+    %t102 = binary xor i64 %t100, %t101
+    %t103 = binary ushr i64 %t102, 11
+    %t104 = binary xor i64 %t102, %t103
+    %t105 = binary add i64 %t104, 307
+    %t106 = binary shl i64 %t105, 7
+    %t107 = binary xor i64 %t105, %t106
+    %t108 = binary ushr i64 %t107, 11
+    %t109 = binary xor i64 %t107, %t108
+    %t110 = binary add i64 %t109, 401
+    %t111 = binary shl i64 %t110, 7
+    %t112 = binary xor i64 %t110, %t111
+    %t113 = binary ushr i64 %t112, 11
+    %t114 = binary xor i64 %t112, %t113
+    %t115 = binary add i64 %t114, 503
+    %t116 = binary shl i64 %t115, 7
+    %t117 = binary xor i64 %t115, %t116
+    %t118 = binary ushr i64 %t117, 11
+    %t119 = binary xor i64 %t117, %t118
+    %t120 = binary add i64 %t119, 601
+    return i64 %t120
+}

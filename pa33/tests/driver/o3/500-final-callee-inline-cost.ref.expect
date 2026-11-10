@@ -1,0 +1,11 @@
+# budget from 500-final-callee-inline-cost.ref: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 199
+blocks <= 9
+count(call) <= 6
+count(load) <= 5
+count(store) <= 3
+count(phi) <= 6
+instructions <= 36 in @mix
+instructions <= 26 in @run
+instructions <= 9 in @main
+instructions <= 135 in @expanded

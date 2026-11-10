@@ -22,8 +22,8 @@ const uint32_t kCallerBudget = 1536;
 // its loops. Small helpers retain ordinary admission: losing a setter or
 // accessor there can cost every activation of a hot wrapper.
 const uint32_t kOutsideLoopBudget = 40;
-// A call inside one of the caller's loops runs once per iteration: its
-// callee's caps grow fourfold.
+// Loop sites get a fourfold allowance for small full callees and
+// bounded partial copies.
 const uint32_t kLoopSiteScale = 4;
 const uint32_t kTrivialLeaf = 4;
 // Single-call (definition-removing) inlining; from O2 a callee twice that
@@ -114,10 +114,6 @@ const uint32_t kSettledFewCalls = 2;
 const uint32_t kSettledFewCap = 128;
 const uint32_t kSettledCallShare = 8;
 const uint32_t kSettledSmallCaller = 128;
-// A callee grown past its caps by its own copies is judged by its input
-// shape at this many loop sites per caller (admit).
-const uint32_t kGrownCopies = 2;
-
 struct Shape
 {
 	uint32_t size = 0;
@@ -1061,12 +1057,6 @@ private:
 	bool caller_cfg_changed_ = false;
 	CallGraph graph_;
 	std::vector<Shape> shapes_;
-	std::vector<Shape> input_shapes_;     // the ordinary wave's input (every function
-										  // before its own copies)
-	std::vector<uint32_t> grown_copies_;  // per function index: copies judged by
-										  // the input shape, this caller
-	std::vector<uint32_t> grown_touched_; // the indexes grown_copies_ counts for
-										  // this caller (reset per caller)
 	uint32_t caller_ = kNoId;
 	// The caller has a loop (its own or an inlined one) or EH regions.
 	bool caller_loop_ = false;
@@ -1271,7 +1261,7 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 		charge = size;
 		return true;
 	}
-	const uint32_t scale = loop_site ? kLoopSiteScale : 1;
+	const uint32_t scale = loop_site && size <= kOrdinaryCap ? kLoopSiteScale : 1;
 	const bool fast_path = fast_path_of(shape, hint, scale);
 	const bool settled = caller_settled_ && graph_.calls_in[g] <= kSettledCalls;
 	const uint32_t settled_num = settled ? kSettledScaleNum : 1, settled_den = settled ? kSettledScaleDen : 1;
@@ -1283,7 +1273,7 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 		const uint32_t cap = (leaf && !call_free         ? kLateLeafCap
 									 : hint || call_free ? (hint ? hint_cap : kCallFreeCap) * settled_num / settled_den
 														 : kLateCap) *
-			(loop_site ? kLoopSiteScale : 1);
+			(loop_site && size <= kOrdinaryCap ? kLoopSiteScale : 1);
 		charge = size;
 		return (size <= cap || fast_path) && charge <= budget_;
 	}
@@ -1302,35 +1292,11 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 										 : straight   ? kOrdinaryLeafCap
 										 : s.hot_call ? kOrdinaryCallCap
 													  : kOrdinaryCap) *
-				(loop_site ? kLoopSiteScale : 1);
+				(loop_site && s.hot <= kOrdinaryCap ? kLoopSiteScale : 1);
 			return !shared_loop && (s.hot <= cap || fast_path_of(s, hint, scale)) ? 2 : 0;
 		};
 		int fit = fits(shape);
-		// Callees go first, so a callee may stand here grown past its
-		// caps only by copies of its own callees. At a loop site, where
-		// the call costs most, the policy reads the sizes and paths it had
-		// on input (not when it absorbed a growth path: that stays out of
-		// loops as it is; at most kGrownCopies sites per caller), and the
-		// charge prices the copy as it is: absorbing a callee cannot evict
-		// a function from its callers' loops.
-		if (fit == 0 && loop_site && !shape.allocates && g < input_shapes_.size() && input_shapes_[g].hot < shape.hot &&
-			grown_copies_[g] < kGrownCopies)
-		{
-			const Shape& input = input_shapes_[g];
-			Shape judged = shape;
-			judged.size = input.size;
-			judged.hot = input.hot;
-			judged.hot_call = input.hot_call;
-			judged.blocks = input.blocks;
-			judged.returns = input.returns;
-			judged.call = input.call;
-			judged.calls = input.calls;
-			judged.fast = input.fast;
-			judged.fast_return = input.fast_return;
-			fit = fits(judged);
-			if (fit != 0 && grown_copies_[g]++ == 0)
-				grown_touched_.push_back(g);
-		}
+		// Price the final callee shape, including its own inline copies.
 		if (fit == 1)
 		{
 			charge = 0;
@@ -1609,9 +1575,6 @@ bool InlineWaveRunner::process(SymbolId caller)
 		? options_.limits.once_caller_budget
 		: kOnceCallerBudget * (options_.level >= 2 ? kOnceO2Scale : 1);
 	folded_budget_ = kFoldedCallerBudget;
-	for (uint32_t g : grown_touched_)
-		grown_copies_[g] = 0;
-	grown_touched_.clear();
 	FunctionBody& body = *program_.functions[program_.symbols[caller].detail].body;
 	static Cfg scratch; // (reused for its capacity: every build overwrites what
 						// it fills)
@@ -1954,9 +1917,7 @@ void InlineWaveRunner::run()
 	if (!source_required_)
 	{
 		folded_failures_.assign(graph_.functions.size(), 0);
-		grown_copies_.assign(graph_.functions.size(), 0);
 	}
-	grown_touched_.clear();
 	for (uint32_t f = 0; f < graph_.functions.size(); ++f)
 		if (!source_required_ || graph_.calls_in[f] != 0)
 		{
@@ -1964,8 +1925,6 @@ void InlineWaveRunner::run()
 				? shape_of<true>(program_, graph_.functions[f], nounwind_)
 				: shape_of(program_, graph_.functions[f], nounwind_, graph_.recursive[f] ? &graph_ : nullptr);
 		}
-	if (!source_required_ && wave_ == InlineWave::Ordinary)
-		input_shapes_ = shapes_;
 	for (uint32_t f : graph_.bottom_up)
 	{
 		const SymbolId caller = graph_.functions[f];
