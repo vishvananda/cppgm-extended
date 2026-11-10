@@ -6,7 +6,7 @@ function @align_value(%selector : u32) -> u32 [linkage=c, binding=strong, no_inl
     %t2 = binary add i64 %t1, 1
     store volatile i64 %t2, @ticks
     %t3 = binary umod u32 %selector, 7
-    switch %t3, ^switch_default_9, 0:^switch_case_1, 1:^switch_case_2, 2:^switch_case_3, 3:^switch_case_4, 4:^switch_case_5, 5:^switch_case_8
+    switch %t3, ^switch_default_7, 0:^switch_case_1, 1:^switch_case_2, 2:^switch_case_3, 3:^switch_case_4, 4:^switch_case_5, 5:^switch_case_6
 
   block ^switch_case_1:
     return u32 1
@@ -22,45 +22,27 @@ function @align_value(%selector : u32) -> u32 [linkage=c, binding=strong, no_inl
 
   block ^switch_case_5:
     %t4 = binary and u32 %selector, 32
-    branch %t4, ^cond_end_7, ^cond_else_6
-
-  block ^cond_else_6:
-    jump ^cond_end_7
-
-  block ^cond_end_7:
-    %t5 = phi i32 [^cond_else_6: 32, ^switch_case_5: 16]
+    %t5 = select i32 %t4, 16, 32
     %t6 = copy u32 %t5
     return u32 %t6
 
-  block ^switch_case_8:
+  block ^switch_case_6:
     return u32 64
 
-  block ^switch_default_9:
+  block ^switch_default_7:
     return u32 128
 }
 function @sometimes_nonpower(%selector : u32) -> u32 [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     %t1 = cmp eq u32 %selector, 2
-    branch %t1, ^cond_end_2, ^cond_else_1
-
-  block ^cond_else_1:
-    jump ^cond_end_2
-
-  block ^cond_end_2:
-    %t2 = phi i32 [^cond_else_1: 4, ^entry: 3]
+    %t2 = select i32 %t1, 3, 4
     %t3 = copy u32 %t2
     return u32 %t3
 }
 function @sometimes_zero(%selector : u32) -> u32 [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     %t1 = cmp eq u32 %selector, 7
-    branch %t1, ^cond_end_2, ^cond_else_1
-
-  block ^cond_else_1:
-    jump ^cond_end_2
-
-  block ^cond_end_2:
-    %t2 = phi i32 [^cond_else_1: 4, ^entry: 0]
+    %t2 = select i32 %t1, 0, 4
     %t3 = copy u32 %t2
     return u32 %t3
 }
@@ -71,13 +53,7 @@ function @weak_alignment(%selector : u32) -> u32 [linkage=c, binding=weak, repla
 function @signed_alignment(%selector : u32) -> i8 [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     %t1 = binary and u32 %selector, 1
-    branch %t1, ^cond_then_1, ^cond_end_2
-
-  block ^cond_then_1:
-    jump ^cond_end_2
-
-  block ^cond_end_2:
-    %t2 = phi i32 [^cond_then_1: -128, ^entry: 2]
+    %t2 = select i32 %t1, -128, 2
     %t3 = convert trunc i8 i32 %t2
     return i8 %t3
 }
@@ -148,47 +124,35 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t1 = phi u32 [^entry: 0, ^cond_end_10: %t38]
-    %t2 = phi i64 [^entry: 1, ^cond_end_10: %t6]
-    %t3 = phi i64 [^entry: 0, ^cond_end_10: %t37]
+    %t1 = phi u32 [^entry: 0, ^cond_end_6: %t38]
+    %t2 = phi i64 [^entry: 1, ^cond_end_6: %t6]
+    %t3 = phi i64 [^entry: 0, ^cond_end_6: %t37]
     %t4 = cmp ult u32 %t1, 65536
-    branch %t4, ^for_body_2, ^for_end_11
+    branch %t4, ^for_body_2, ^for_end_7
 
   block ^for_body_2:
     %t5 = binary mul i64 %t2, 6364136223846793005
     %t6 = binary add i64 %t5, 1
     %t7 = cmp ult u32 %t1, 4
-    branch %t7, ^cond_then_3, ^cond_end_10
+    branch %t7, ^cond_then_3, ^cond_end_6
 
   block ^cond_then_3:
     %t8 = cmp eq u32 %t1, 0
-    branch %t8, ^cond_end_9, ^cond_else_4
+    branch %t8, ^cond_end_5, ^cond_else_4
 
   block ^cond_else_4:
     %t9 = cmp eq u32 %t1, 1
-    branch %t9, ^cond_end_8, ^cond_else_5
-
-  block ^cond_else_5:
     %t10 = cmp eq u32 %t1, 2
-    branch %t10, ^cond_end_7, ^cond_else_6
+    %t11 = select i64 %t10, -1, -9223372036854775808
+    %t12 = select i64 %t9, 1, %t11
+    jump ^cond_end_5
 
-  block ^cond_else_6:
-    jump ^cond_end_7
+  block ^cond_end_5:
+    %t13 = phi i64 [^cond_else_4: %t12, ^cond_then_3: 0]
+    jump ^cond_end_6
 
-  block ^cond_end_7:
-    %t11 = phi i64 [^cond_else_6: -9223372036854775808, ^cond_else_5: -1]
-    jump ^cond_end_8
-
-  block ^cond_end_8:
-    %t12 = phi i64 [^cond_end_7: %t11, ^cond_else_4: 1]
-    jump ^cond_end_9
-
-  block ^cond_end_9:
-    %t13 = phi i64 [^cond_end_8: %t12, ^cond_then_3: 0]
-    jump ^cond_end_10
-
-  block ^cond_end_10:
-    %t14 = phi i64 [^cond_end_9: %t13, ^for_body_2: %t6]
+  block ^cond_end_6:
+    %t14 = phi i64 [^cond_end_5: %t13, ^for_body_2: %t6]
     %t15 = binary mul i64 %t3, 31
     %t16 = call i64 @round_up(%t14, %t1)
     %t17 = binary add i64 %t15, %t16
@@ -215,17 +179,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t38 = binary add u32 %t1, 1
     jump ^for_cond_1
 
-  block ^for_end_11:
+  block ^for_end_7:
     %t39 = cmp ne i64 %t3, 6345242704293526140
-    branch %t39, ^lor_end_13, ^lor_rhs_12
+    branch %t39, ^lor_end_9, ^lor_rhs_8
 
-  block ^lor_rhs_12:
+  block ^lor_rhs_8:
     %t40 = load volatile i64 @ticks
     %t41 = cmp ne i64 %t40, 196608
-    jump ^lor_end_13
+    jump ^lor_end_9
 
-  block ^lor_end_13:
-    %t42 = phi i64 [^lor_rhs_12: %t41, ^for_end_11: 1]
+  block ^lor_end_9:
+    %t42 = phi i64 [^lor_rhs_8: %t41, ^for_end_7: 1]
     %t43 = convert trunc i32 i64 %t42
     return i32 %t43
 }

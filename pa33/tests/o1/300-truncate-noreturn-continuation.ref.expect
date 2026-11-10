@@ -7,3 +7,6 @@ count(store) <= 3
 count(phi) <= 4
 instructions <= 9 in @select
 instructions <= 10 in @keeps_reachable_tail
+
+# outcomes from 300-truncate-noreturn-continuation.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(phi)

@@ -13,4 +13,5 @@ instructions <= 9 in @cross_slot_needed_phi
 none(call @stale_phi_callee)
 none(load)
 none(store)
+none(phi)
 absent(@stale_phi_callee)

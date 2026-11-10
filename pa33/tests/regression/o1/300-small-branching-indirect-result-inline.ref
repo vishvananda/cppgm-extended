@@ -25,6 +25,6 @@ function @main(%cond : i64, %lhs : ptr, %rhs : ptr) -> i64 [role=entry] {
     jump ^inline_cont_3
 
   block ^inline_cont_3:
-    %r = phi i64 [^left_1: %a_1, ^right_2: %b_2]
-    return i64 %r
+    %t3 = phi i64 [^left_1: %a_1, ^right_2: %b_2]
+    return i64 %t3
 }

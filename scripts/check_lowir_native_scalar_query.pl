@@ -11,7 +11,7 @@ use lib $FindBin::Bin;
 use CppgmBatchWorker qw(collect_tests run_command_capture);
 
 # The wrapper's exact-result call becomes a tail jump (MIR `tail_jump`) at
-# -O2 and above in the host exception model only: objects `cppgm++ -c`
+# -O1 and above in the host exception model only: objects `cppgm++ -c`
 # writes for the host toolchain (dev/src/native/select/branch_layout.cpp,
 # form_tail_jumps). No dump shows that model's MIR, so the check reads the
 # host object's encoding: a tail jump is a `jmp` whose branch relocation
@@ -253,7 +253,7 @@ for my $test (@tests)
 		my $query = object_function($test, $code, $wrapper);
 		my @calls = branch_targets($query, 'call');
 		my @jumps = branch_targets($query, 'jmp');
-		if($level eq 'O0' || $level eq 'O1') {
+		if($level eq 'O0') {
 			die "$test: host $level unexpectedly formed a scalar tail jump\n"
 				if @jumps;
 			die "$test: host $level lost the ordinary scalar call\n"

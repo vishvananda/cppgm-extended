@@ -1,22 +1,12 @@
 declare function @exit(%status : i32) -> void [unwind=no]
 
 function @grow(%begin : ptr, %end : ptr, %n : i64) -> i64 [unwind=no, binding=internal, no_inline=yes] {
-  slot $size : i64
-
   block ^entry:
     %size = binary sub ptr %end, %begin
-    store i64 %size, $size
-    %a = addr $size
-    %x_3 = load i64 %a
-    %less_4 = cmp ult i64 %x_3, %n
-    branch %less_4, ^inline_cont_2, ^else_1
-
-  block ^else_1:
-    jump ^inline_cont_2
-
-  block ^inline_cont_2:
-    %v = phi i64 [^else_1: %x_3, ^entry: %n]
-    %r = binary add i64 %size, %v
+    %t2 = copy i64 %size
+    %less_3 = cmp ult i64 %t2, %n
+    %t4 = select i64 %less_3, %n, %t2
+    %r = binary add i64 %size, %t4
     return i64 %r
 }
 function @main() -> i32 [unwind=no, role=entry] {

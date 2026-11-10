@@ -28,13 +28,7 @@ function @keeps_two_copies(%dest : ptr, %other : ptr, %a : i64) -> void {
 }
 function @keeps_conditional_store(%dest : ptr, %a : i64, %pick : u8) -> void {
   block ^entry:
-    branch %pick, ^set, ^done
-
-  block ^set:
-    jump ^done
-
-  block ^done:
-    %t1 = phi i64 [^entry: 0, ^set: 13]
+    %t1 = select i64 %pick, 13, 0
     store i64 %a, %dest
     %t2 = index i8 [projection=field] %dest, 8
     store i64 %t1, %t2

@@ -14,29 +14,19 @@ function @observe(%value : i32) -> i32 [binding=strong, object=_Z7observei] {
 function @use_first(%value : i32) -> i32 [binding=strong, object=_Z9use_firsti] {
   block ^entry:
     %t1 = load typed i32 @observed
-    %t2 = binary add nowrap i32 %t1, 3
+    %t2 = binary add i32 %t1, 8
     store typed i32 %t2, @observed
-    %t3 = binary add i32 %t1, 8
-    store typed i32 %t3, @observed
-    %t4 = binary add nowrap i32 %value, %t3
-    return i32 %t4
+    %t3 = binary add nowrap i32 %value, %t2
+    return i32 %t3
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = load typed i32 @observed
-    %t2 = binary add nowrap i32 %t1, 3
+    %t2 = binary add i32 %t1, 8
     store typed i32 %t2, @observed
-    %t3 = binary add i32 %t1, 8
-    store typed i32 %t3, @observed
-    %t4 = binary add i32 %t1, 19
-    %t5 = cmp ne i32 %t4, 19
-    branch %t5, ^lor_end_2, ^inline_entry_1
-
-  block ^inline_entry_1:
-    jump ^lor_end_2
-
-  block ^lor_end_2:
-    %t6 = phi i64 [^inline_entry_1: 0, ^entry: 1]
-    %t7 = convert trunc i32 i64 %t6
-    return i32 %t7
+    %t3 = binary add i32 %t1, 19
+    %t4 = cmp ne i32 %t3, 19
+    %t5 = select i64 %t4, 1, 0
+    %t6 = convert trunc i32 i64 %t5
+    return i32 %t6
 }

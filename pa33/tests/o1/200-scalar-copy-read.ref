@@ -1,22 +1,22 @@
 function @read_copy(%p : ptr) -> i64 [no_inline=yes] {
   block ^entry:
-    %value = load i64 %p
-    %bit = binary and i64 %value, 4
+    %t1 = load i64 %p
+    %bit = binary and i64 %t1, 4
     branch %bit, ^yes, ^no
 
   block ^yes:
-    %shifted = binary ushr i64 %value, 7
+    %shifted = binary ushr i64 %t1, 7
     return i64 %shifted
 
   block ^no:
-    %product = binary mul i64 %value, 17
+    %product = binary mul i64 %t1, 17
     return i64 %product
 }
 function @saved(%p : ptr, %q : ptr) -> i64 [no_inline=yes] {
   block ^entry:
-    %value = load i64 %p
+    %t1 = load i64 %p
     store i64 33, %q
-    return i64 %value
+    return i64 %t1
 }
 function @main() -> i64 [role=entry] {
   slot $x : i64

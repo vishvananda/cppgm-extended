@@ -202,15 +202,17 @@ for my $test (@tests)
 			if $positive =~ /^\s+slot \$staging\b/m ||
 			   $positive =~ /^\s+copyobj 24x8 /m;
 		# The conditionally stored field is tracked apart from the rest of
-		# the staging object: a phi of its value per path (13 from ^set)
-		# is what reaches the destination's second field.
+		# the staging object: its phi or select carries 13 on the set path
+		# to the destination's second field.
 		my $conditional = function_body(
 			$test, $o1, 'keeps_conditional_store');
 		my ($field) = $conditional =~
 			/^\s+%(\w+) = phi i64 \[[^\]\n]*\^set: 13[,\]]/m;
+		($field) = $conditional =~ /^\s+%(\w+) = select i64 %pick, 13, \S+$/m
+			if !defined($field);
 		my ($high) = $conditional =~
 			/^\s+%(\w+) = index i8 \[projection=field\] %dest, 8$/m;
-		die "$test: conditional field lost its independently tracked home\n"
+		die "$test: conditional field lost its independently tracked value\n"
 			if $conditional =~ /^\s+slot \$staging\b/m ||
 			   $conditional =~ /^\s+copyobj 16x8 /m ||
 			   !defined($field) || !defined($high) ||
@@ -267,8 +269,8 @@ for my $test (@tests)
 		die "$test: O1 retained control flow after the noreturn call\n"
 			if block_body($test, $positive, 'raise') =~ /^\s+jump /m;
 		my $guard = function_body($test, $o1, 'keeps_reachable_tail');
-		die "$test: reachable merge tail was removed\n"
-			if $guard !~ /^\s+%\w+ = phi i64 /m;
+		die "$test: reachable return choice was removed\n"
+			if $guard !~ /^\s+%\w+ = (?:phi|select) i64 /m;
 		check_phi_predecessors($test, 'keeps_reachable_tail', $guard);
 		next;
 	}
@@ -429,9 +431,11 @@ for my $test (@tests)
 		die "$test: cross-slot forwarding retained the destination slot\n"
 			if $cross =~ /^\s+slot \$forwarded\b/m;
 		my ($phi) = $cross =~ /^\s+%\w+ = phi i64 (.+)$/m;
-		die "$test: cross-slot forwarding omitted the required join phi\n"
-			if !defined($phi) || $phi !~ /:\s*5(?:,|\])/ ||
-			   $phi !~ /:\s*9(?:,|\])/;
+		my $choice = defined($phi) && $phi =~ /:\s*5(?:,|\])/ &&
+			$phi =~ /:\s*9(?:,|\])/;
+		$choice ||= $cross =~ /^\s+%\w+ = select i64 %choose, 5, 9$/m;
+		die "$test: cross-slot forwarding lost its incoming values\n"
+			if !$choice;
 		next;
 	}
 	die "$test: no survivor-property predicate selected\n";

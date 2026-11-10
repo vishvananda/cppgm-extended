@@ -205,30 +205,12 @@ global @__strlit__28 [storage=readonly, binding=internal] = {
 
 function @choose(%condition : u8) -> u32 [binding=strong, object=_Z6chooseb, no_inline=yes] {
   block ^entry:
-    branch %condition, ^condaddr_then_1, ^condaddr_else_2
-
-  block ^condaddr_then_1:
     %t1 = addr @__strlit__25
-    jump ^condaddr_end_3
-
-  block ^condaddr_else_2:
     %t2 = addr @__strlit__26
-    jump ^condaddr_end_3
-
-  block ^condaddr_end_3:
-    %t3 = phi ptr [^condaddr_then_1: %t1, ^condaddr_else_2: %t2]
-    branch %condition, ^cond_then_4, ^cond_else_5
-
-  block ^cond_then_4:
+    %t3 = select ptr %condition, %t1, %t2
     %t4 = addr @__strlit__27
-    jump ^cond_end_6
-
-  block ^cond_else_5:
     %t5 = addr @__strlit__28
-    jump ^cond_end_6
-
-  block ^cond_end_6:
-    %t6 = phi ptr [^cond_then_4: %t4, ^cond_else_5: %t5]
+    %t6 = select ptr %condition, %t4, %t5
     %t7 = load u8 %t3
     %t8 = convert zext i32 u8 %t7
     %t9 = binary mul nowrap i32 %t8, 256

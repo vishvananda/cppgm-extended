@@ -11,7 +11,7 @@ use lib $FindBin::Bin;
 use CppgmBatchWorker qw(collect_tests run_command_capture);
 
 # A call a function returns from at once becomes a tail jump (MIR
-# `tail_jump`: the epilogue, then a jump to the callee) at -O2 and above,
+# `tail_jump`: the epilogue, then a jump to the callee) at -O1 and above,
 # in the host exception model only: objects `cppgm++ -c` writes for the
 # host toolchain (dev/src/native/select/branch_layout.cpp,
 # form_tail_jumps). No dump shows that model's MIR, so the check reads the
@@ -146,7 +146,7 @@ for my $test (@tests)
 		my $tail = object_function($test, $code, 'tail_transfer');
 		my @calls = branch_targets($tail, 'call');
 		my @jumps = branch_targets($tail, 'jmp');
-		if($level eq 'O0' || $level eq 'O1') {
+		if($level eq 'O0') {
 			die "$test: host $level unexpectedly formed a tail jump\n"
 				if @jumps;
 			die "$test: host $level lost the ordinary direct call\n"

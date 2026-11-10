@@ -6,3 +6,6 @@ count(load) <= 4
 count(store) <= 3
 count(phi) <= 4
 instructions <= 8 in @choose
+
+# outcomes from 500-effect-free-loop-deleted-exit-phi.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(phi)

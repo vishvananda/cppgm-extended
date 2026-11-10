@@ -370,7 +370,7 @@ bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 	{
 		// Keep indexed regions in the original object. Only disjoint, fixed
 		// fields split off; whole-object operations keep the object intact.
-		if (c_.level < 2 || !facts.spans.empty())
+		if (!facts.spans.empty())
 			return false;
 		// Close overlaps with fixed accesses too: a wide fixed access
 		// straddling an indexed region must keep all of its bytes coherent.
@@ -1079,15 +1079,8 @@ bool AggregateSlots::run()
 			continue;
 		if (!facts.candidate || !settle(facts, storage_bytes(type), s))
 			continue;
-		// A scalar slot whose address was taken keeps its accesses at O1:
-		// turning them into direct ones for promotion made the two
-		// benchmark workloads it changed about 10% slower with the hull
-		// allocator. From O2 they become direct (the live-range allocator
-		// keeps promoted values in registers).
-		if (!type.is_object() && c_.level < 2)
-			continue;
 		settled[s] = 1;
-		if (c_.level >= 2 && type.is_object())
+		if (type.is_object())
 			facts.packed = packable(facts, storage_bytes(type));
 	}
 	agree_packing(settled);

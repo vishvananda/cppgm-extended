@@ -2,14 +2,8 @@ declare function @observe(%value : i64) -> void
 
 function @repair_fold_target_phi(%choose : i64) -> i64 [no_inline=yes] {
   block ^entry:
-    branch %choose, ^join, ^alternate
-
-  block ^alternate:
-    jump ^join
-
-  block ^join:
-    %result = phi i64 [^alternate: 22, ^entry: 11]
-    return i64 %result
+    %t1 = select i64 %choose, 11, 22
+    return i64 %t1
 }
 function @inline_after_dead_predecessor(%choose : i64) -> i64 [binding=strong] {
   block ^entry:
@@ -18,12 +12,6 @@ function @inline_after_dead_predecessor(%choose : i64) -> i64 [binding=strong] {
 function @cross_slot_needed_phi(%choose : i64) -> i64 [no_inline=yes] {
   block ^entry:
     call void @observe(0)
-    branch %choose, ^join, ^right
-
-  block ^right:
-    jump ^join
-
-  block ^join:
-    %t1 = phi i64 [^right: 9, ^entry: 5]
+    %t1 = select i64 %choose, 5, 9
     return i64 %t1
 }

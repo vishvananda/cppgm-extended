@@ -7,8 +7,9 @@ O1, O2 and O3. The new experiments below establish no replacement runtime score.
 
 ## Method adopted from `~/gap.md`
 
-Prioritize aggregate representation, executed code footprint, inlining, branch
-shape and address folding, in that order. Screen immutable private compilers by
+First measure sibling calls, existing aggregate splitting and select formation
+at O1, independently. Then prioritize aggregate representation, executed code
+footprint, inlining, branch shape and address folding. Screen immutable private compilers by
 rebuilding the profile-selected LLVM objects, verifying their outputs, then
 running a deterministic ledger. The panel comprises number_literal, store_motion,
 program_lowering and class_templates; its six metrics are executed distinct code
@@ -24,9 +25,26 @@ Fewer events per group avoid multiplexing on this host. Historical whole-workloa
 records omit several of these events, so they cannot fit all proposed mechanism
 costs; assumed event costs are not calibrated or causal attribution.
 
-Require a mechanism bound before changing policy. Structural aggregate work and
-the general inliner have a net O3 compile-instruction budget of 2%; incidental
-changes retain 0.5%. Qualify commits with the usual tests and audits. Rebuild full
+Require a mechanism bound before changing policy. Measure compile instructions
+on semantic_overload.cpp at O0, O1, O2 and O3. The original baseline is the
+immutable 558f42c8 compiler adopted in 54bdf818b. The user subsequently clarified
+that moving existing work between optimization levels establishes a new
+baseline: remeasure after the three O1 moves, then charge future structural
+work against that compiler. Retain the old comparison as the cost of changing
+level contents, rather than counting it as new aggregate work.
+A batch up to 0.5% uses the normal gate;
+cumulative growth up to 2% requires the predicted panel movement. Above 2%,
+cumulative growth must be covered point for point by proven runtime gain at
+that same level: the lower 95% bound on the whole-workload cycle-ratio drop,
+over at least five ABBA pairs. Above 10% also needs user sign-off. All outputs
+must match the native oracle in every observation, with the predicted event
+movement; a cycle-only change requires checks with three link orders. O0,
+RSS and PA36 release limits remain unchanged. Report per-level baseline,
+current cost, growth, proven gain and headroom together.
+
+Before using more than 0.5%, require a cheap no-candidate exit, shared analyses,
+no per-candidate body rescans, an on/off cost measurement and removal of
+superseded special cases. Qualify commits with the usual tests and audits. Rebuild full
 LLVM and make an elapsed comparison after a workstream, with at least five ABBA
 pairs. The elapsed target stays 1.05, independently of the working counter ledger.
 
@@ -68,9 +86,61 @@ The original getMatching example loses its argument homes. Further prototypes
 cover eightbyte call results and return construction. They pass standalone
 controls, including escaping addresses, volatile storage, floating ABI classes,
 stack arguments, mixed widths and inlined object returns. The wider LLVM slice
-has exposed additional integration defects; these prototypes remain private
-until corrected and measured. The general 16-byte case and getMatching's
-12-byte result remain outstanding. No exit criterion from gap.md is yet met.
+exposed additional integration defects. A private late word-return prototype
+now builds full LLVM and reproduces all 325 native objects and the linked
+executable. Its getMatching fast path keeps the 12-byte payload in registers,
+but its fallback still saves registers on the stack. The 35-object screen
+reduces blocked store forwarding by 2.3% while increasing instructions by 1%;
+fetch stalls and code-cache misses are flat. The full replay also increases
+instructions, so this prototype is not adopted. Its temporary return
+representation is native-only and lacks serialized IR support. No aggregate
+exit criterion from gap.md is yet met.
+
+## O1 level contents
+
+PA33 leaves level contents to the implementation; PA34 specifies behavior and
+quality bounds. Both handouts have been read. No handout change is necessary.
+Sibling calls retain the frame, stack-argument, exception-model and addressed
+block guards. Ordinary aggregate splitting already runs at O1; the experiment
+moves its remaining packing, scalar-address and indexed-region guards, plus
+the addressed-block invocation. Select formation is tested independently of
+the rest of the O2 late pipeline. Existing tests that forbid O1 tail jumps
+need their level expectation changed while retaining the correctness guards.
+
+Each feature has a separate immutable compiler and 35-object LLVM relink.
+The separate O1 compile-instruction costs versus the preceding compiler are
+0.013% for sibling calls, 1.112% for the aggregate guards and 1.957% for select
+formation. Combined, the level moves cost 3.127% at O1. The O0, O2 and O3
+pipelines are unchanged; their frozen objects match the preceding compiler.
+
+The qualified baseline after moving the existing passes is below. Future
+growth and proven gains are measured from
+this baseline, per the user's clarification. Headroom is the unproven 2-point
+allowance; O0 retains its existing, separate limit.
+
+| Level | Baseline instructions | Current instructions | Growth | Proven gain | Headroom |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| O0 | 3.276616 G | 3.276616 G | 0% | 0 points | Existing O0 gate |
+| O1 | 7.674418 G | 7.674418 G | 0% | 0 points | 2 points |
+| O2 | 9.070676 G | 9.070676 G | 0% | 0 points | 2 points |
+| O3 | 9.421919 G | 9.421919 G | 0% | 0 points | 2 points |
+
+On the number_literal relink screen, sibling calls reduce actual calls by
+4.35%; select formation increases conditional moves/setcc by 30.7% and reduces
+conditional branches by 1.46%. These are partial-rebuild mechanism results,
+not runtime gains. The complete LLVM built with all three moves produces all
+325 cppgm objects and the linked executable byte-identically to native LLVM.
+No new runtime gain is claimed pending paired measurements.
+
+Qualification passes: strict report 10,589/10,589 including the updated
+survivor controls; debug checks; self-host through PA5; inception; PA36
+quick/smoke; harness; architecture, format, file and global placement audits.
+The complete harness passes on retry after one timeout-cleanup fixture failed
+when the runner was restricted to one CPU. Its separate retry also passes;
+no timeout harness code was changed. The placement audit finds no fixture moves.
+On store_motion, the complete LLVM's count panel reports blocked store
+forwarding down 7.65%, mispredictions down 4.49% and fetch stalls down 2.66%
+against the previous build. All outputs match; cycle outliers remain recorded.
 
 ## Evidence
 
@@ -85,3 +155,12 @@ All raw records are under `/mnt/vizier/cppgm-llvm-evidence`:
 - `gap-checkpoint-ledger-number-r1/`: repaired baseline deterministic ledger.
 - `gap-A-register-aggregates-compiler-r6/` and `gap-A-register-aggregates-top35-r6/`:
   private aggregate probe and relink, including unsuccessful validation logs.
+- `gap-step0-four-level-frozen-r1/`: independent feature costs against the old baseline.
+- `gap-step0-new-baseline-four-level-frozen-r1/`: measured baseline after the moves.
+- `gap-step0-reference-review-r1/`: old/new output review excluding unrelated examples.
+- `gap-step0-fixture-before-r1/`: the two new quality regressions fail before the moves.
+- `gap-step0-baseline-full-output-r1/`: full LLVM's 325-object and executable equality.
+- `gap-step0-baseline-hw-panel-r1/`: full LLVM's hardware mechanism panel.
+- `gap-step0-baseline-main-r2-strict-status.json`: strict report after control updates.
+- `gap-step0-baseline-audit-r2-validation-status.json`: architecture, file and placement checks.
+- `logs/gap-step0-baseline-main-r3-harness.log`: complete final harness pass.

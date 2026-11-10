@@ -3,13 +3,7 @@ declare function @escape(%pointer : ptr) -> void
 
 function @decomposes(%dest : ptr, %a : i64, %b : u32, %flag : u8) -> i64 {
   block ^entry:
-    branch %flag, ^then, ^join
-
-  block ^then:
-    jump ^join
-
-  block ^join:
-    %t1 = phi i64 [^entry: 0, ^then: 21]
+    %t1 = select i64 %flag, 21, 0
     %wide = convert zext i64 u32 %b
     %sum = binary add i64 %a, %wide
     store i64 %a, %dest

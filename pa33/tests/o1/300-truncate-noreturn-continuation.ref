@@ -15,17 +15,8 @@ function @select(%value : i64) -> i64 {
 }
 function @keeps_reachable_tail(%value : i64, %gate : u8) -> i64 {
   block ^entry:
-    branch %gate, ^observe, ^ok
-
-  block ^observe:
     %code = binary add i64 %value, 1
-    jump ^merge
-
-  block ^ok:
     %sum = binary add i64 %value, 5
-    jump ^merge
-
-  block ^merge:
-    %result = phi i64 [^observe: %code, ^ok: %sum]
-    return i64 %result
+    %t3 = select i64 %gate, %code, %sum
+    return i64 %t3
 }

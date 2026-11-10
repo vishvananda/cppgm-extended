@@ -1,14 +1,8 @@
 function @min_of(%a : i64, %b : i64) -> i64 {
   block ^entry:
     %less = cmp ult i64 %b, %a
-    branch %less, ^end, ^else
-
-  block ^else:
-    jump ^end
-
-  block ^end:
-    %v = phi i64 [^else: %a, ^entry: %b]
-    return i64 %v
+    %t2 = select i64 %less, %b, %a
+    return i64 %t2
 }
 function @min_kept_after_store(%a : i64, %b : i64, %out : ptr) -> i64 {
   slot $a : i64
@@ -37,12 +31,6 @@ function @min_of_fields(%q : ptr) -> i64 {
     %vx = load i64 %q
     %vy = load i64 %y
     %less = cmp ult i64 %vy, %vx
-    branch %less, ^end, ^else
-
-  block ^else:
-    jump ^end
-
-  block ^end:
-    %v = phi i64 [^else: %vx, ^entry: %vy]
-    return i64 %v
+    %t5 = select i64 %less, %vy, %vx
+    return i64 %t5
 }

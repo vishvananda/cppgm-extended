@@ -11,15 +11,9 @@ function @callee(%x : i64, %take_x : u8) -> i64 {
 }
 function @caller(%x : i64, %take_x : u8) -> i64 {
   block ^entry:
-    branch %take_x, ^inline_cont_2, ^increment_1
-
-  block ^increment_1:
-    %t2_2 = binary add i64 %x, 1
-    jump ^inline_cont_2
-
-  block ^inline_cont_2:
-    %t1 = phi i64 [^increment_1: %t2_2, ^entry: %x]
-    return i64 %t1
+    %t2_1 = binary add i64 %x, 1
+    %t2 = select i64 %take_x, %x, %t2_1
+    return i64 %t2
 }
 function @object_callee(%p : ptr, %take_p : u8) -> obj<8x8> {
   slot $__o1inl0__retmergeobj__1 : obj<8x8>
@@ -39,13 +33,7 @@ function @object_callee(%p : ptr, %take_p : u8) -> obj<8x8> {
 }
 function @object_caller(%p : ptr, %take_p : u8, %out : ptr) -> void {
   block ^entry:
-    branch %take_p, ^inline_cont_2, ^take_null_1
-
-  block ^take_null_1:
-    jump ^inline_cont_2
-
-  block ^inline_cont_2:
-    %t1 = phi ptr [^take_null_1: 0, ^entry: %p]
+    %t1 = select ptr %take_p, %p, 0
     store ptr %t1, %out
     return void
 }

@@ -1,0 +1,38 @@
+function @packed(%a : u8, %b : u8, %c : u16, %d : u32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = convert zext i64 u8 %a
+    %t2 = convert zext i64 u8 %b
+    %t3 = binary shl i64 %t2, 8
+    %t4 = binary or i64 %t1, %t3
+    %t5 = convert zext i64 u16 %c
+    %t6 = binary shl i64 %t5, 16
+    %t7 = binary or i64 %t4, %t6
+    %t8 = convert zext i64 u32 %d
+    %t9 = binary shl i64 %t8, 32
+    %t10 = binary or i64 %t7, %t9
+    return i64 %t10
+}
+function @volatile_field(%a : i64) -> i64 [no_inline=yes] {
+  slot $value : obj<8x8>
+
+  block ^entry:
+    %base = addr $value
+    store volatile i64 %a, %base
+    %bits = load volatile i64 %base
+    return i64 %bits
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %bits = call i64 @packed(1, 2, 3, 4)
+    %ok = cmp eq i64 %bits, 17180066305
+    %observed = call i64 @volatile_field(-17)
+    %same = cmp eq i64 %observed, -17
+    %all = binary and i1 %ok, %same
+    branch %all, ^pass, ^fail
+
+  block ^pass:
+    return i32 0
+
+  block ^fail:
+    return i32 1
+}

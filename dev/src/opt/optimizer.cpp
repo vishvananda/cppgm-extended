@@ -285,7 +285,7 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 		for (unsigned round = 0; round < kScalarRounds; ++round)
 		{
 			context.level = level;
-			bool changed = level >= 2 && RUN_PASS(split_aggregate_slots);
+			bool changed = RUN_PASS(split_aggregate_slots);
 			// Scalar/value passes at O2 preserve addressed entries; reserve
 			// graph-forming O3 rewrites for the ordinary pipeline.
 			context.level = level >= 2 ? 2 : 1;
@@ -835,7 +835,16 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 				FunctionContext context(program, symbol, stats, options.level);
 				const PooledContext pooled(context, context_pool());
 				enable_verify(context, options);
-				if (has_loop(context) && RUN_PASS(sink_counter_steps))
+				bool changed = false;
+				for (unsigned round = 0; round < kSelectRounds && RUN_PASS(form_selects); ++round)
+				{
+					RUN_PASS(cleanup_cfg);
+					changed = true;
+				}
+				if (changed)
+					scalar_rounds(context);
+				changed = (has_loop(context) && RUN_PASS(sink_counter_steps)) || changed;
+				if (changed)
 					compact_body(program, context.body);
 			}
 	count_program(program, stats.instructions_out, stats.blocks_out);

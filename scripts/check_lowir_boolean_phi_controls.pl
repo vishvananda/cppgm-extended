@@ -144,13 +144,9 @@ for my $test (@tests)
 		if direct_phi_branch_count($o0_fold) != 1;
 	die "$test: O1 did not thread the private loop-local Boolean phi\n"
 		if direct_phi_branch_count($o1_fold) != 0;
-	for my $retained ('retain_shared_choice',
-		'retain_loop_carried_choice')
-	{
-		my $body = function_body($test, $o1, $retained);
-		die "$test: O1 incorrectly threaded $retained\n"
-			if direct_phi_branch_count($body) != 1;
-	}
+	my $carried = function_body($test, $o1, 'retain_loop_carried_choice');
+	die "$test: O1 incorrectly threaded retain_loop_carried_choice\n"
+		if direct_phi_branch_count($carried) != 1;
 
 	# O1 and up bypass a private acyclic Boolean diamond and thread a
 	# forwarded Boolean decision; O0 keeps both shapes.
@@ -164,6 +160,9 @@ for my $test (@tests)
 	for my $level_body (['O1', $o1], ['O2', $o2], ['O3', $o3])
 	{
 		my ($level, $output) = @$level_body;
+		my $shared_loop = function_body($test, $output, 'retain_shared_choice');
+		die "$test: $level lost the shared loop-local Boolean value\n"
+			if !shared_value_kept($shared_loop);
 		my $fold = function_body($test, $output,
 			'fold_acyclic_boolean_diamond');
 		die "$test: $level did not bypass the private acyclic Boolean diamond\n"

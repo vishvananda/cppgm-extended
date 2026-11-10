@@ -11,14 +11,8 @@ function @choose(%x : i64) -> i64 [unwind=no, prefer_local=yes] {
 }
 function @caller(%x : i64) -> i64 {
   block ^entry:
-    %t1_3 = cmp eq i64 %x, 0
-    branch %t1_3, ^inline_cont_2, ^nonzero_1
-
-  block ^nonzero_1:
-    jump ^inline_cont_2
-
-  block ^inline_cont_2:
-    %t1 = phi i64 [^nonzero_1: 20, ^entry: 10]
-    %t2 = binary add i64 %t1, 1
+    %t1_1 = cmp eq i64 %x, 0
+    %t3 = select i64 %t1_1, 10, 20
+    %t2 = binary add i64 %t3, 1
     return i64 %t2
 }

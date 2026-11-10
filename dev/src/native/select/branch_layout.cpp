@@ -620,7 +620,7 @@ uint32_t FunctionSelector::layout_branches()
 	stats_.threaded_blocks += blocks - kept;
 	f.blocks.resize(kept);
 	f.branches_laid_out = true;
-	if (level_ >= 2 && eh_model_ == EhModel::Host && !addressed)
+	if (level_ >= 1 && eh_model_ == EhModel::Host && !addressed)
 		laid_out -= form_tail_jumps(f);
 	return laid_out;
 }
