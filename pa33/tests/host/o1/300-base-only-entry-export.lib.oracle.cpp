@@ -1,8 +1,13 @@
 #include "300-base-only-entry-export.helper.h"
+#if defined(__APPLE__)
+#define SYM(name) "_" name
+#else
+#define SYM(name) name
+#endif
 extern "C" void host_complete(ExportValue*, const ExportBox*)
-  asm("_ZN11ExportValueC1ERK9ExportBox");
+  asm(SYM("_ZN11ExportValueC1ERK9ExportBox"));
 extern "C" void host_base(ExportValue*, const ExportBox*)
-  asm("_ZN11ExportValueC2ERK9ExportBox");
+  asm(SYM("_ZN11ExportValueC2ERK9ExportBox"));
 extern "C" int host_check_base_only_exports() {
   struct Storage {
     unsigned long before;
