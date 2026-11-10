@@ -25,6 +25,11 @@ made required and taught at the appropriate dependency boundary. It does not
 require completing either language standard, expanding the assembler ISA, or
 finishing RustGM's separate frontend/backend integration.
 
+The implemented branch is now based on LLVM successor `633c162d3`; the
+original base above records where planning started. Its native expectations
+were refreshed through the owning reference targets before export parity was
+qualified. The migration ledger records the completed fixture dispositions.
+
 ## Target order
 
 Insert assembly after host ABI interoperation and before hosted compatibility.

@@ -48,9 +48,9 @@ class ParserState
 {
 public:
 	// `hosted`: a hosted compilation's contextual coroutine operators.
-	// `cxx17`: permits attribute-using-prefix syntax in the selected mode.
-	ParserState(
-		ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted = false, bool cxx17 = false);
+	// `cxx14`/`cxx17`: standard syntax in the selected language mode.
+	ParserState(ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted = false,
+		bool cxx14 = false, bool cxx17 = false);
 
 	// The furthest location where a parse failed (for the diagnostic).
 	uint32_t error_location() const { return error_location_; }
@@ -388,6 +388,7 @@ protected:
 	telemetry::Counter rewinds_;
 	telemetry::Counter deferred_count_;
 	const bool hosted_;
+	const bool cxx14_;
 	const bool cxx17_;
 
 	// The virt-specifiers; C++20's coroutine operators, identifiers in C++11

@@ -21,8 +21,8 @@ namespace syntax {
 class Parser : public ParserState
 {
 public:
-	Parser(
-		ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted = false, bool cxx17 = false);
+	Parser(ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted = false,
+		bool cxx14 = false, bool cxx17 = false);
 
 	// The translation unit, or null after a syntax error.
 	TranslationUnit* parse_translation_unit();

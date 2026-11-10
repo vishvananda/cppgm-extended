@@ -1,0 +1,47 @@
+1 translation units
+start translation unit 1
+translation-unit
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier example
+      parameter-clause
+        parameter-declaration
+          decl-specifier-seq
+            decl-specifier KW_INT:int
+          declarator
+            identifier input
+    compound-statement
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_AUTO:auto
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier closure
+            initializer
+              lambda-expression
+                lambda-introducer [assignedinput,direct(input),listed{input}]
+                lambda-declarator
+                  parameter-clause
+                    parameter-declaration
+                      decl-specifier-seq
+                        decl-specifier KW_AUTO:auto
+                      declarator
+                        identifier argument
+                compound-statement
+                  return-statement
+                    binary-expression OP_PLUS:+
+                      binary-expression OP_PLUS:+
+                        binary-expression OP_PLUS:+
+                          id-expression assigned
+                          id-expression direct
+                        id-expression listed
+                      id-expression argument
+      return-statement
+        call-expression
+          id-expression closure
+          argument-list
+            literal 1
+end translation unit

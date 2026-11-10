@@ -1274,7 +1274,7 @@ Expr* Parser::parse_keyword_cast()
 
 void Parser::invent_lambda_parameters(LambdaExpr& lambda)
 {
-	if (!hosted_ || lambda.parameters == nullptr)
+	if ((!hosted_ && !cxx14_) || lambda.parameters == nullptr)
 		return;
 	std::vector<TemplateParameter*> invented;
 	ParameterDeclaration** normalized = nullptr;
@@ -1368,7 +1368,7 @@ Expr* Parser::parse_lambda()
 			}
 			capture.name = tok().identifier;
 			next();
-			if (hosted_ && (at(TokenKind::OP_ASS) || at(TokenKind::OP_LBRACE) || at(TokenKind::OP_LPAREN)))
+			if ((hosted_ || cxx14_) && (at(TokenKind::OP_ASS) || at(TokenKind::OP_LBRACE) || at(TokenKind::OP_LPAREN)))
 			{
 				capture.initializer = parse_initializer(true);
 				if (capture.initializer == nullptr)

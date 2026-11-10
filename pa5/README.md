@@ -484,3 +484,8 @@ lambda-introducer <text>
 lambda-declarator
 lambda-specifier <token>
 ```
+
+The mode-tagged [modern syntax example](tests/spec/100-required-modern-syntax.t)
+and its [AST reference](tests/spec/100-required-modern-syntax.ref) show the
+required later forms together. The dump preserves their syntax before the
+owning semantic lessons perform deduction, capture analysis or instantiation.

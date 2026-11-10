@@ -4,8 +4,9 @@
 
 namespace syntax {
 
-Parser::Parser(ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted, bool cxx17)
-	: ParserState(tokens, identifiers, arena, hosted, cxx17)
+Parser::Parser(
+	ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted, bool cxx14, bool cxx17)
+	: ParserState(tokens, identifiers, arena, hosted, cxx14, cxx17)
 {}
 
 TranslationUnit* Parser::parse_translation_unit()
