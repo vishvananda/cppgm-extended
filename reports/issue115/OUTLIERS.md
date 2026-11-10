@@ -1,5 +1,7 @@
 # Issue 115: the next runtime outliers
 
+The next batch investigates [conditional stores and the remaining outliers](STORE_PREDICATION.md).
+
 This batch starts from the qualified fixes in PR #124 (`e53739ed0`). It uses
 the eight slowest relative-to-Clang entries in [the previous table](current-summary.md)
 to choose investigations. The measured compiler source is `f586f86c4`;

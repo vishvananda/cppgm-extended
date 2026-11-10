@@ -1,3 +1,5 @@
+The latest batch covers [conditional-store predication](STORE_PREDICATION.md), including a new paired table.
+
 This is the first qualified batch. See [the next outlier investigation](OUTLIERS.md)
 for the subsequent maze and Huffman improvements.
 
