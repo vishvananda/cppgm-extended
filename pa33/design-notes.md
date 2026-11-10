@@ -15,6 +15,18 @@ volatile accesses invalidate that simple proof. For loops, distinguish a
 nonnegative counter with a proved nonwrapping step from one whose initial
 value or wrap behavior is unknown before simplifying signed arithmetic.
 
+Splitting every field of a large object can create more loop-carried state
+than the machine can keep efficiently. Consider splitting frequently updated
+fixed fields while retaining opaque bytes in memory. Copies must transfer both
+parts, including padding, without changing snapshot timing. Keep the amount of
+partitioning work bounded.
+
+An address derived from a fresh allocation can be disjoint from a pointer
+loaded through an older object, provided the fresh address has not escaped.
+Trace copies and indexing, and account for publication, pointer merges and
+opaque callees. Releasing a private allocation does not publish its address;
+a fresh-return promise does not suppress the call's other effects.
+
 Discarded heap output can be dead even when a helper's return value is live.
 Prove that its destination is neither read nor captured, preserve its other
 effects and keep any specialized copies bounded and reusable. A payload

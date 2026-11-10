@@ -1386,7 +1386,7 @@ uint32_t forward_float_homes(Function& function)
 // flags (no `mov reg, 0`, which may be encoded as an xor). A 64-bit and
 // whose result's upper half is zero (an operand's is, from the block's
 // instructions) sets the zero flag a 32-bit test of r would. Linear.
-uint32_t drop_redundant_tests(Function& function)
+uint32_t drop_redundant_tests(Function& function, bool signed_zero)
 {
 	std::vector<Inst>& insts = function.insts;
 	auto alu_width = [](const Inst& inst) {
@@ -1489,7 +1489,8 @@ uint32_t drop_redundant_tests(Function& function)
 				{
 					const Cond cond = static_cast<Cond>(reader.sub);
 					ok = zero_only ? cond == CC_E || cond == CC_NE
-								   : full || cond == CC_E || cond == CC_NE || cond == CC_S || cond == CC_NS;
+								   : full || cond == CC_E || cond == CC_NE || cond == CC_S || cond == CC_NS ||
+							(signed_zero && (cond == CC_L || cond == CC_GE));
 					continue;
 				}
 				if (reader.op == Op::Mov || reader.op == Op::Load || reader.op == Op::Store || reader.op == Op::Lea ||
@@ -1501,6 +1502,27 @@ uint32_t drop_redundant_tests(Function& function)
 			}
 			if (!ok)
 				continue;
+			if (!full && !zero_only)
+				for (uint32_t k = i + 1; k < end; ++k)
+				{
+					Inst& reader = insts[k];
+					if (reader.op == Op::Jcc || reader.op == Op::Setcc || reader.op == Op::Cmov)
+					{
+						// TEST clears OF, so its signed zero comparisons read
+						// only SF. Arithmetic may set OF: read SF directly,
+						// including when the arithmetic result wrapped.
+						if (reader.sub == CC_L)
+							reader.sub = CC_S;
+						else if (reader.sub == CC_GE)
+							reader.sub = CC_NS;
+						continue;
+					}
+					if (reader.op == Op::Mov || reader.op == Op::Load || reader.op == Op::Store ||
+						reader.op == Op::Lea || reader.op == Op::Movzx || reader.op == Op::Sext ||
+						reader.op == Op::Zext || reader.op == Op::Nop)
+						continue;
+					break;
+				}
 			test.op = Op::Nop;
 			test.nops = 0;
 			test.ops[0] = test.ops[1] = Operand();

@@ -1,0 +1,80 @@
+declare function @malloc(%bytes : i64) -> ptr [unwind=no, linkage=c]
+declare function @free(%p : ptr) -> void [unwind=no, linkage=c]
+declare function @capture(%p : ptr) -> void [linkage=c]
+
+global @published : ptr = 0
+
+function @private_scan(%holder : ptr) -> i32 [no_inline=yes] {
+  block ^entry:
+    %buffer = call ptr @malloc(16)
+    %t2 = load ptr %holder
+    %value = load i32 %t2
+    jump ^loop
+
+  block ^loop:
+    %t4 = phi i64 [^entry: 0, ^loop: %t9]
+    %sum = phi i32 [^entry: 0, ^loop: %total]
+    %i = convert trunc exact i32 i64 %t4
+    %at = index i32 %buffer, %t4
+    store i32 %i, %at
+    %total = binary add i32 %sum, %value
+    %t9 = binary add nowrap i64 %t4, 1
+    %next = convert trunc exact i32 i64 %t9
+    %more = cmp lt i32 %next, 4
+    branch %more, ^loop, ^done
+
+  block ^done:
+    %last = index i32 %buffer, 3
+    %observed = load volatile i32 %last
+    call void @free(%buffer)
+    %out = binary add i32 %total, %observed
+    return i32 %out
+}
+function @published_scan(%holder : ptr, %n : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %buffer = call ptr @malloc(16)
+    store ptr %buffer, @published
+    store i32 7, %buffer
+    %t2 = load ptr %holder
+    jump ^loop
+
+  block ^loop:
+    %i = phi i32 [^entry: 0, ^loop: %next]
+    %sum = phi i32 [^entry: 0, ^loop: %total]
+    %value = load i32 %t2
+    store i32 %i, %buffer
+    %total = binary add i32 %sum, %value
+    %next = binary add nowrap i32 %i, 1
+    %more = cmp lt i32 %next, %n
+    branch %more, ^loop, ^done
+
+  block ^done:
+    call void @free(%buffer)
+    return i32 %total
+}
+function @captured_scan(%holder : ptr, %n : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %buffer = call ptr @malloc(16)
+    call void @capture(%buffer)
+    store i32 7, %buffer
+    %t2 = load ptr %holder
+    jump ^loop
+
+  block ^loop:
+    %i = phi i32 [^entry: 0, ^loop: %next]
+    %sum = phi i32 [^entry: 0, ^loop: %total]
+    %value = load i32 %t2
+    store i32 %i, %buffer
+    %total = binary add i32 %sum, %value
+    %next = binary add nowrap i32 %i, 1
+    %more = cmp lt i32 %next, %n
+    branch %more, ^loop, ^done
+
+  block ^done:
+    call void @free(%buffer)
+    return i32 %total
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

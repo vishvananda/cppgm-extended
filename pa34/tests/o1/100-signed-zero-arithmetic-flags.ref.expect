@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+# Any equivalent selection meeting the bounds is acceptable.
+instructions <= 6 in @negative32
+instructions <= 6 in @nonnegative64

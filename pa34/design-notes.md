@@ -12,6 +12,13 @@ dependencies, and test values on both sides of the width boundary. Extra
 checks can save time despite increasing instruction count; measure the target
 CPU and code-size tradeoff before adopting such a policy.
 
+A comparison of an arithmetic result with zero need not always set flags
+again. Distinguish the result's sign from the arithmetic overflow flag: a
+wrapped result still has the sign its comparison observes. Preserve every
+reader of the flags. Also check that a local simplification leaves loop
+rotation and placement effective; fewer instructions alone do not guarantee
+less executed work.
+
 ## Describe what instructions do
 
 Record each instruction's uses, definitions and clobbers, including call

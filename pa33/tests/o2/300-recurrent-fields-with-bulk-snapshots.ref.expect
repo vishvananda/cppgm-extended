@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+# Bound repeated scalar work while preserving the opaque indexed payload.
+instructions <= 55 in @scan
+count(load) <= 3 in @scan

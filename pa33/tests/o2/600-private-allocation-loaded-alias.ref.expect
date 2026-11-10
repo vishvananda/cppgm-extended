@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+count(load) <= 3 in @private_scan
+count(load) >= 1 in @published_scan
+count(load) >= 1 in @captured_scan

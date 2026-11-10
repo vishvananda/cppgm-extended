@@ -313,6 +313,16 @@ arbitrary byte writes, escaped storage and volatile accesses. Counter fixtures
 include nonnegative loops, negative starts and wrapping counters; any arithmetic
 simplification must preserve all of them.
 
+Large-object fixtures combine indexed payloads, recurrent scalar fields and
+whole-object snapshots. Meet their bounds while preserving every copied byte
+and the time each snapshot is taken. Keep volatile accesses and overlapping
+field views observable.
+
+Private-allocation fixtures include pointers loaded from older objects,
+published addresses and opaque callees. Remove repeated reads only when their
+memory cannot change; an allocation's freshness alone does not establish that
+its address stays private.
+
 Heap-output fixtures discard some produced bytes while retaining a helper's
 return value or other effects. Meet the stated quality bounds while preserving
 observed contents, pointer escapes, volatile accesses and allocation-error

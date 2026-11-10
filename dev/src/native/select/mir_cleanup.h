@@ -32,7 +32,7 @@ uint32_t fuse_adds_and_extensions(Function& function);
 
 // A `test r, r` repeating the flags the instruction before it set from r
 // goes (the readers' conditions permitting). Returns the tests removed.
-uint32_t drop_redundant_tests(Function& function);
+uint32_t drop_redundant_tests(Function& function, bool signed_zero = false);
 
 // A 64-bit register copy between registers an earlier copy in the block
 // made equal (neither named since) goes. Returns the copies removed.

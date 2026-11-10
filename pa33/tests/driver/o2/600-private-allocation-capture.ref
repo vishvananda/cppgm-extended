@@ -1,0 +1,98 @@
+declare function @malloc(%arg0 : i64) -> ptr [unwind=no, noalias_result=yes, linkage=c, binding=strong]
+declare function @free(%arg0 : ptr) -> void [unwind=no, linkage=c, binding=strong]
+
+global @published : ptr [binding=strong] = zero
+
+function @capture(%p : ptr) -> void [binding=strong, object=_Z7capturePi, no_inline=yes] {
+  block ^entry:
+    store typed ptr %p, @published
+    return void
+}
+function @scan(%holder : ptr, %publish : i32) -> i32 [binding=strong, object=_Z4scanPPii, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @malloc(16)
+    %t2 = cmp eq ptr %t1, 0
+    branch %t2, ^if_then_1, ^if_end_2
+
+  block ^if_then_1:
+    return i32 -1
+
+  block ^if_end_2:
+    %t3 = cmp eq i32 %publish, 1
+    branch %t3, ^if_then_3, ^if_end_4
+
+  block ^if_then_3:
+    store typed ptr %t1, @published
+    jump ^if_end_6
+
+  block ^if_end_4:
+    %t4 = cmp eq i32 %publish, 2
+    branch %t4, ^if_then_5, ^if_end_6
+
+  block ^if_then_5:
+    call void @capture(%t1)
+    jump ^if_end_6
+
+  block ^if_end_6:
+    store typed i32 7, %t1
+    jump ^for_cond_7
+
+  block ^for_cond_7:
+    %t5 = phi i64 [^if_end_6: 0, ^for_body_8: %t13]
+    %t6 = phi i32 [^if_end_6: 0, ^for_body_8: %t11]
+    %t7 = convert trunc exact i32 i64 %t5
+    %t8 = cmp ne i32 %t7, 4
+    branch %t8, ^for_body_8, ^for_end_9
+
+  block ^for_body_8:
+    %t9 = load typed ptr %holder
+    %t10 = load typed i32 %t9
+    %t11 = binary add nowrap i32 %t10, %t6
+    %t12 = index i32 [projection=array_element] %t1, %t5
+    store typed i32 %t7, %t12
+    %t13 = binary add nowrap i64 %t5, 1
+    jump ^for_cond_7
+
+  block ^for_end_9:
+    %t14 = index i8 %t1, 12
+    %t15 = load volatile i32 %t14
+    call void @free(%t1)
+    %t16 = binary add nowrap i32 %t15, %t6
+    return i32 %t16
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : i32
+  slot $source : ptr
+
+  block ^entry:
+    store typed i32 9, $value
+    %t1 = addr $value
+    store typed ptr %t1, $source
+    %t2 = addr $source
+    %t3 = call i32 @scan(%t2, 0)
+    %t4 = cmp ne i32 %t3, 39
+    branch %t4, ^if_then_1, ^if_end_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_end_2:
+    %t5 = addr @published
+    %t6 = call i32 @scan(%t5, 1)
+    %t7 = cmp ne i32 %t6, 10
+    branch %t7, ^if_then_3, ^if_else_4
+
+  block ^if_then_3:
+    return i32 2
+
+  block ^if_else_4:
+    %t8 = call i32 @scan(%t5, 2)
+    %t9 = cmp ne i32 %t8, 10
+    branch %t9, ^if_then_5, ^if_end_6
+
+  block ^if_then_5:
+    return i32 3
+
+  block ^if_end_6:
+    return i32 0
+}

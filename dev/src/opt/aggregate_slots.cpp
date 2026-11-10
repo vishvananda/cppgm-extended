@@ -37,9 +37,11 @@ struct AccessRange
 struct SlotFacts
 {
 	bool candidate = true;
+	bool partial = false;                               // fixed fields split; untiled bytes keep their original storage
 	bool call_written = false;                          // a call returns its object into the slot
 	bool copied_out = false;                            // a copy reads the slot whole
 	std::vector<Field> fields;                          // typed accesses
+	std::vector<uint64_t> recurrent;                    // fields written on every pass of a loop
 	std::vector<std::pair<uint64_t, uint64_t>> indexed; // ranges accessed through bounded variable indices
 	std::vector<std::pair<uint64_t, uint64_t>> spans;   // copied or zeroed [offset, end)
 	std::vector<std::pair<uint64_t, uint64_t>> stores;  // stored fields [offset, end)
@@ -82,6 +84,7 @@ private:
 	uint64_t address_extent(Value v) const { return extent_.empty() ? 0 : extent_[v.index]; }
 	void escape(Value v);
 	void analyze();
+	void mark_recurrent_fields();
 	void access(Value storage, Type type, bool store);
 	void span(Value storage, uint64_t bytes, bool read = false);
 	bool settle(SlotFacts& facts, uint64_t size, SlotId slot);
@@ -333,6 +336,56 @@ void AggregateSlots::analyze()
 			for_each_operand(body_, body_.instructions[i], [&](Value& v) { escape(v); });
 }
 
+// Splitting every field of a large copied object can turn cold state into
+// loop-carried register pressure. Split only fixed fields updated on every
+// pass; the other bytes continue to use the original object's bulk transfers.
+void AggregateSlots::mark_recurrent_fields()
+{
+	bool any = false;
+	for (SlotId s = 0; s < facts_.size(); ++s)
+		any = any ||
+			(facts_[s].candidate && !facts_[s].spans.empty() && storage_bytes(body_.slots[s].type) > 8 * kMaxFields);
+	if (!any)
+		return;
+	Cfg& cfg = c_.ensure_cfg();
+	LoopForest forest;
+	find_loops(body_, cfg, forest);
+	for (const Loop& loop : forest.loops)
+	{
+		if (loop.latches.size() != 1)
+			continue;
+		for (BlockId b : loop.blocks)
+		{
+			if (!cfg.dominates(b, loop.latches[0]))
+				continue;
+			for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			{
+				const Instruction& inst = body_.instructions[i];
+				if (inst.op != Opcode::Store || (inst.flags & IF_VOLATILE) != 0)
+					continue;
+				SlotAddress at = { kNoId, 0 };
+				if (inst.ops[1].is(ValueKind::Slot))
+					at.slot = inst.ops[1].index;
+				else if (!address_of(inst.ops[1], at) || address_extent(inst.ops[1]) != 0)
+					continue;
+				SlotFacts& facts = facts_[at.slot];
+				if (facts.candidate && !facts.spans.empty() && at.offset >= 0 &&
+					storage_bytes(body_.slots[at.slot].type) > 8 * kMaxFields)
+				{
+					const uint64_t offset = static_cast<uint64_t>(at.offset);
+					if (std::find(facts.recurrent.begin(), facts.recurrent.end(), offset) == facts.recurrent.end())
+					{
+						if (facts.recurrent.size() == kMaxFields)
+							facts.candidate = false;
+						else
+							facts.recurrent.push_back(offset);
+					}
+				}
+			}
+		}
+	}
+}
+
 // Fields: the typed accesses, which must agree where they meet, tiled
 // with integer fillers across every copied or zeroed span.
 // A filler at `gap` (below `end`) in `slot`: a typed field that a copy
@@ -366,12 +419,15 @@ Type AggregateSlots::hinted_filler(SlotId slot, uint64_t gap, uint64_t end) cons
 bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 {
 	std::vector<Field>& fields = facts.fields;
+	facts.partial = !facts.spans.empty() && size > 8 * kMaxFields;
+	if (facts.partial && facts.recurrent.empty())
+		return false;
+	if (!facts.partial && !facts.spans.empty() && !facts.indexed.empty())
+		return false;
 	if (!facts.indexed.empty())
 	{
-		// Keep indexed regions in the original object. Only disjoint, fixed
-		// fields split off; whole-object operations keep the object intact.
-		if (!facts.spans.empty())
-			return false;
+		// Indexed regions keep their original storage. Whole-object copies
+		// move those residual bytes separately from disjoint scalar fields.
 		// Close overlaps with fixed accesses too: a wide fixed access
 		// straddling an indexed region must keep all of its bytes coherent.
 		std::vector<AccessRange> ranges;
@@ -416,6 +472,8 @@ bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 	// eightbyte packs (pack_forced).
 	for (const std::pair<uint64_t, bool>& w : facts.wholes)
 	{
+		if (facts.partial)
+			break;
 		bool shared = false;
 		for (const Field& f : fields)
 			shared = shared ||
@@ -471,6 +529,13 @@ bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 			return false;
 		unique.push_back(f);
 	}
+	if (facts.partial)
+		unique.erase(std::remove_if(unique.begin(), unique.end(),
+						 [&](const Field& f) {
+							 return std::find(facts.recurrent.begin(), facts.recurrent.end(), f.offset) ==
+								 facts.recurrent.end();
+						 }),
+			unique.end());
 	for (const std::pair<uint64_t, uint64_t>& s : facts.spans)
 	{
 		if (s.second > size)
@@ -480,6 +545,14 @@ bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 		for (const Field& f : unique)
 			if (f.type.kind() == TypeKind::F80 && f.offset < s.second && f.offset + 16 > s.first)
 				return false;
+		if (facts.partial)
+		{
+			for (const Field& f : unique)
+				if (f.offset < s.second && f.offset + storage_bytes(f.type) > s.first &&
+					(f.offset < s.first || f.offset + storage_bytes(f.type) > s.second))
+					return false;
+			continue;
+		}
 		// Fillers for the bytes of [first, second) no field covers.
 		uint64_t at = s.first;
 		std::vector<Field> fill;
@@ -840,11 +913,28 @@ void AggregateSlots::expand_copy(BlockId block, InstId prev, const Instruction& 
 	const bool dst_split = split(dst_value, dst);
 	// Walk the split side's fields (the destination's when both split).
 	const SlotAddress& lead = dst_split ? dst : src;
+	uint64_t covered = 0;
+	const auto residual = [&](uint64_t end) {
+		if (end <= covered)
+			return;
+		Instruction copy = inst;
+		copy.next = kNoId;
+		copy.immediate = static_cast<int64_t>(end - covered);
+		// Byte alignment is valid for every residual partition. Do not
+		// inherit a whole object's stronger alignment after an odd offset.
+		copy.sub = 0;
+		const Value to = pointer_at(block, at, dst_value, static_cast<int64_t>(covered), inst.location);
+		copy.ops[0] = zero ? to : pointer_at(block, at, source, static_cast<int64_t>(covered), inst.location);
+		if (!zero)
+			copy.ops[1] = to;
+		at = emit(block, at, copy, Type::scalar(TypeKind::Void));
+	};
 	for (const Field& f : facts_[lead.slot].fields)
 	{
 		if (f.offset < static_cast<uint64_t>(lead.offset) || f.offset + storage_bytes(f.type) > lead.offset + bytes)
 			continue;
 		const int64_t rel = static_cast<int64_t>(f.offset) - lead.offset;
+		residual(static_cast<uint64_t>(rel));
 		Value value;
 		if (zero && f.type.is_vector())
 		{
@@ -872,7 +962,9 @@ void AggregateSlots::expand_copy(BlockId block, InstId prev, const Instruction& 
 		const Value field = dst_split ? field_slot(dst.slot, dst.offset + rel) : Value::none();
 		store.ops[1] = !field.is(ValueKind::None) ? field : pointer_at(block, at, dst_value, rel, inst.location);
 		at = emit(block, at, store, Type::scalar(TypeKind::Void));
+		covered = static_cast<uint64_t>(rel) + storage_bytes(f.type);
 	}
+	residual(bytes);
 	last = at;
 }
 
@@ -1136,6 +1228,7 @@ bool AggregateSlots::run()
 	bool rewritten = canonicalize_object_values(body_);
 	rewritten = objects_through_slots() || rewritten;
 	analyze();
+	mark_recurrent_fields();
 	first_field_.assign(body_.slots.size(), kNoId);
 	bool any = false;
 	const uint32_t slots = static_cast<uint32_t>(body_.slots.size());
@@ -1151,7 +1244,7 @@ bool AggregateSlots::run()
 		if (!facts.candidate || !settle(facts, storage_bytes(type), s))
 			continue;
 		settled[s] = 1;
-		if (type.is_object())
+		if (type.is_object() && !facts.partial)
 			facts.packed = packable(facts, storage_bytes(type));
 	}
 	agree_packing(settled);

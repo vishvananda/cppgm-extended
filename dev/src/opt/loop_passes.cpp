@@ -1,6 +1,7 @@
 #include <cstring>
 
 #include "lowir/builder.h"
+#include "opt/allocation_origins.h"
 #include "opt/loops.h"
 #include "opt/passes.h"
 #include "opt/scalar_fold.h"
@@ -108,6 +109,7 @@ private:
 	// whose objects are known live at its end (entry_objects_kept; empty:
 	// not computed for this graph).
 	std::vector<uint64_t> live_objects_;
+	std::unique_ptr<AllocationOrigins> origins_;
 };
 
 bool LoopPass::invariant(uint32_t loop, Value v) const
@@ -2895,8 +2897,10 @@ static bool step_root(const FunctionBody& body, Value root)
 // `escaped` counts a variable index as a step (locate() follows it).
 static bool may_overlap(const Program& program, const FunctionBody& body, const LoopWrite& w, const Located& at,
 	const Strided& fields, uint64_t bytes, Type type, bool typed, const std::vector<uint8_t>& escaped,
-	uint64_t result_bytes)
+	uint64_t result_bytes, const AllocationOrigins& origins)
 {
+	if (origins.apart(w.at.root, at.root))
+		return false;
 	if (strided_apart(w.fields, w.bytes, fields, bytes))
 		return false;
 	const bool named_a = w.at.root.is(ValueKind::Slot) || w.at.root.is(ValueKind::Symbol);
@@ -3098,8 +3102,8 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 				bool clobbered = false;
 				for (const LoopWrite& w : writes)
 					clobbered = clobbered ||
-						may_overlap(
-							c_.program, body_, w, at, fields, bytes, inst.type, typed, hoist_escaped_, result_bytes);
+						may_overlap(c_.program, body_, w, at, fields, bytes, inst.type, typed, hoist_escaped_,
+							result_bytes, *origins_);
 				// Run on every entry, the load keeps its facts; moved only
 				// because its memory may always be read, it runs where it did
 				// not, and `typed` may not hold there (lowir.md "Instruction Facts").
@@ -3245,6 +3249,7 @@ bool LoopPass::hoist_loads()
 	find_loops(body_, cfg_, forest_);
 	if (forest_.loops.empty())
 		return false;
+	origins_.reset(new AllocationOrigins(c_.program, body_));
 	c_.entry_block_of(hoist_loop_loads);
 	// A preheader for each loop with a load to move, then the loops are found
 	// again. (A loop's preheader changes only its header's entry edge.)

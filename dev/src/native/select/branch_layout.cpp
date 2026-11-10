@@ -379,8 +379,11 @@ uint32_t FunctionSelector::layout_branches()
 	// copied to a back edge may follow the instruction that set its flags.
 	if ((!addressed && shrink_wrap(*out_)) || copied)
 		forward_home_reloads(*out_);
-	if (copied)
-		drop_redundant_tests(*out_);
+	// Keep compare-shaped loop tests through rotation and placement. Once
+	// those choices are settled, signed comparisons against zero can read
+	// arithmetic's sign bit directly. Do this before compare propagation,
+	// which must not export a removed TEST's cleared-overflow promise.
+	drop_redundant_tests(*out_, true);
 	if (!addressed)
 	{
 		drop_guarded_integer_extensions(*out_);
