@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+# Each payload fits a memory read, result transfer and return.
+instructions <= 3 in @byte_return
+instructions <= 3 in @half_return

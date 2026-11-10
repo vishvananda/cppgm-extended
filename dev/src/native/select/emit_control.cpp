@@ -63,11 +63,10 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 		if (blocks_[b].reachable)
 			prepass_block(b);
 	// Without a frame pointer (finish_frame decides it from the code: no
-	// instruction moves RSP), RBP holds values: no stack allocation, no
-	// variadic area, no i128 floating conversion through the stack, no call with
-	// a stack argument area or an over-aligned one. (A function whose
-	// calls' argument areas are all that moves RSP may drop its frame
-	// pointer too, keeping RBP unused.)
+	// instruction moves RSP), RBP holds values: fixed call argument areas
+	// aligned through 16 fit in the reserved frame. Dynamic stack allocation,
+	// variadic areas, i128 floating conversions and over-aligned calls still
+	// require the frame pointer.
 	// Local objects aligned beyond 16 are addressed from R12, reserved for
 	// the function (Function::aligned_base); the frame pointer stays.
 	for (uint32_t s = 0; s < body_->slots.size(); ++s)

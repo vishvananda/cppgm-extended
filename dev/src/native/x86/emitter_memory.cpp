@@ -216,7 +216,7 @@ void FunctionEmitter::zero_bytes(const Inst& inst)
 	const uint32_t bytes = inst.aux;
 	const Operand& dst = inst.ops[0];
 	const RM to = dst.kind == OperandKind::Reg ? RM::m(dst.reg, 0) : rm(dst);
-	if (bytes == 16 || (function_->wide_bulk && bytes > 16 && bytes <= 128))
+	if (bytes == 16 || (function_->wide_bulk && bytes > 16 && bytes <= 256))
 	{
 		// 16-byte chunks of a cleared xmm15, then scalar stores.
 		asm_.op(0x66, false, 0x0fef, 2, kX15 & 15, RM::r(kX15)); // pxor xmm15, xmm15

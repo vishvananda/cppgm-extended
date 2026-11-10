@@ -1,0 +1,33 @@
+function @round_up(%x : i64, %n : u8) -> i64 [no_inline=yes] {
+  block ^entry:
+    %count = convert zext i64 u8 %n
+    %alignment = binary shl i64 1, %count
+    %t3 = binary sub i64 %alignment, 1
+    %t4 = binary add i64 %x, %t3
+    %t5 = unary neg i64 %alignment
+    %result = binary and i64 %t4, %t5
+    return i64 %result
+}
+function @signed_byte(%x : i64, %n : i8) -> i64 [no_inline=yes] {
+  block ^entry:
+    %bit = binary shl i8 1, %n
+    %divisor = convert sext i64 i8 %bit
+    %result = binary udiv i64 %x, %divisor
+    return i64 %result
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %a = call i64 @round_up(123, 3)
+    %b = call i64 @round_up(0, 63)
+    %c = call i64 @round_up(-1, 63)
+    %d = call i64 @round_up(8, 0)
+    %e = call i64 @signed_byte(-1, 7)
+    %bad_a = cmp ne i64 %a, 128
+    %bad_d = cmp ne i64 %d, 8
+    %bad_e = cmp ne i64 %e, 1
+    %ab = binary or i64 %b, %bad_a
+    %cd = binary or i64 %c, %bad_d
+    %abcd = binary or i64 %ab, %cd
+    %bad = binary or i64 %bad_e, %abcd
+    return i64 %bad
+}

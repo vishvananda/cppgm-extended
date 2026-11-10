@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+# The callee fact permits bounded alignment arithmetic through its call.
+instructions <= 7 in @round_call

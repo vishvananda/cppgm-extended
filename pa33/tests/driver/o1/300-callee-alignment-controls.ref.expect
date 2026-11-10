@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+# Keep the side-effecting alignment call and bounded scalar rounding code.
+instructions <= 12 in @round_up

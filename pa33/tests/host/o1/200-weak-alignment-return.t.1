@@ -1,0 +1,4 @@
+extern "C" __attribute__((weak, noinline)) unsigned alignment_override(unsigned) { return 4; }
+extern "C" unsigned long divide_overridden(unsigned long value, unsigned selector) {
+  return value / alignment_override(selector);
+}

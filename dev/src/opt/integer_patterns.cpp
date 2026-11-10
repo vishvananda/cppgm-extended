@@ -4,6 +4,55 @@
 namespace opt {
 using namespace lowir;
 namespace {
+uint64_t returned_powers(const FunctionBody& body, Value value, Type type, unsigned& budget)
+{
+	if (budget == 0 || !type.is_integer() || type.kind() == TypeKind::I128)
+		return 0;
+	--budget;
+	Constant c;
+	Literal bits;
+	if (literal_constant(body, value, c) && integer_bits(type, c, bits))
+		return bits.high == 0 && bits.low != 0 && (bits.low & (bits.low - 1)) == 0 ? bits.low : 0;
+	if (!value.is(ValueKind::Temp) || value.index < body.parameter_count || body.temps[value.index].def == kNoId)
+		return 0;
+	const Instruction& def = body.instructions[body.temps[value.index].def];
+	if (def.type != type)
+		return 0;
+	if (def.op == Opcode::Phi || def.op == Opcode::Select)
+	{
+		uint64_t out = 0;
+		const unsigned count = def.op == Opcode::Phi ? def.extra_count / 2 : 2;
+		for (unsigned i = 0; i < count; ++i)
+		{
+			const Value operand = def.op == Opcode::Phi ? body.operands[def.extra_first + i * 2 + 1] : def.ops[i + 1];
+			const uint64_t choice = returned_powers(body, operand, type, budget);
+			if (choice == 0)
+				return 0;
+			out |= choice;
+		}
+		return out;
+	}
+	if (def.op == Opcode::Copy)
+	{
+		const Type from = def.ops[0].is(ValueKind::Temp) ? body.temps[def.ops[0].index].type : type;
+		return storage_bytes(from) == storage_bytes(type) ? returned_powers(body, def.ops[0], from, budget) : 0;
+	}
+	if (def.op == Opcode::Convert)
+	{
+		const Type from = convert_source_type(def);
+		const ConvertOp op = static_cast<ConvertOp>(def.sub);
+		uint64_t powers = returned_powers(body, def.ops[0], from, budget);
+		const unsigned width = lowir::integer_bits(type.kind()), input = lowir::integer_bits(from.kind());
+		if (op == ConvertOp::ZExt)
+			return powers;
+		if (op == ConvertOp::Trunc)
+			return width == 64 || (powers >> width) == 0 ? powers : 0;
+		if (op == ConvertOp::SExt)
+			return (powers >> (input - 1)) == 0 ? powers : 0;
+	}
+	return 0;
+}
+
 class IntegerPatterns
 {
 public:
@@ -46,6 +95,11 @@ bool IntegerPatterns::power_of_two(Value value, Type type, unsigned& budget, uns
 	const Instruction* def = producer(value);
 	if (def == nullptr || def->type != type)
 		return false;
+	if (def->op == Opcode::Call && def->ops[0].is(ValueKind::Symbol))
+	{
+		const uint64_t powers = facts_.returned_power_bits(def->ops[0].index, type);
+		return powers != 0 && (width == 64 || (powers >> width) == 0);
+	}
 	if (def->op == Opcode::Copy)
 	{
 		const Type from = def->ops[0].is(ValueKind::Temp) ? body_.temps[def->ops[0].index].type : type;
@@ -73,7 +127,8 @@ bool IntegerPatterns::power_of_two(Value value, Type type, unsigned& budget, uns
 		return true;
 	}
 	if (def->op == Opcode::Binary && static_cast<BinaryOp>(def->sub) == BinaryOp::Shl &&
-		constant(def->ops[0], type, c) && is_integer(type, c, 1) && possible_bits(def->ops[1], type) < width)
+		constant(def->ops[0], type, c) && is_integer(type, c, 1) &&
+		(width == lowir::integer_bits(type.kind()) || possible_bits(def->ops[1], type) < width))
 		return true;
 	return false;
 }
@@ -469,6 +524,33 @@ bool simplify_pointer_distance(FunctionBody& body, IntegerPatternFacts& facts, B
 	changed.ops[1] = Value::none();
 	changed.flags = 0;
 	return true;
+}
+
+uint64_t infer_return_power_bits(const Program& program, SymbolId id)
+{
+	const Symbol& symbol = program.symbols[id];
+	if (symbol.kind != SymbolKind::FunctionDefinition || (symbol.metadata.flags & SF_REPLACEABLE) != 0 ||
+		(symbol.metadata.binding != ir_model::SBM_INTERNAL && symbol.metadata.binding != ir_model::SBM_STRONG))
+		return 0;
+	const Function& function = program.functions[symbol.detail];
+	const Type type = program.signatures[function.signature].result;
+	if (function.body == nullptr || !type.is_integer() || type.kind() == TypeKind::I128 ||
+		function.body->layout.size() > 128)
+		return 0;
+	unsigned budget = 512;
+	uint64_t out = 0;
+	for (BlockId b : function.body->layout)
+	{
+		const InstId last = function.body->blocks[b].last;
+		if (last == kNoId || function.body->instructions[last].op != Opcode::Return)
+			continue;
+		const Instruction& ret = function.body->instructions[last];
+		const uint64_t powers = ret.type == type ? returned_powers(*function.body, ret.ops[0], type, budget) : 0;
+		if (powers == 0)
+			return 0;
+		out |= powers;
+	}
+	return out;
 }
 
 bool simplify_integer_arithmetic(FunctionBody& body, const std::vector<uint32_t>& uses, IntegerPatternFacts& facts,

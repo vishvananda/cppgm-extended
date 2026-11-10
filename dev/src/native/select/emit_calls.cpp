@@ -1138,11 +1138,14 @@ void FunctionSelector::emit_return(const Instruction& inst)
 					emit2(Op::FMov, part_type(part), to, src.displaced(static_cast<int32_t>(part.offset)));
 				else
 				{
-					// A last eightbyte of at most four bytes loads as such: a
-					// 4-byte store of it forwards (the upper half is padding).
-					const bool half = level_ >= 1 && bytes - part.offset <= 4;
-					emit2(Op::Load, half ? TypeKind::U32 : TypeKind::I64, to,
-						src.displaced(static_cast<int32_t>(part.offset)));
+					// Read the payload width of the last eightbyte. Byte and
+					// halfword stores then forward without reading padding.
+					const unsigned remaining = bytes - part.offset;
+					const TypeKind width = level_ < 1 || remaining > 4 ? TypeKind::I64
+						: remaining == 1                               ? TypeKind::U8
+						: remaining == 2                               ? TypeKind::U16
+																	   : TypeKind::U32;
+					emit2(Op::Load, width, to, src.displaced(static_cast<int32_t>(part.offset)));
 				}
 			}
 			emit(Op::Ret);

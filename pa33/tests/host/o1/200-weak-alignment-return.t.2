@@ -1,0 +1,4 @@
+extern "C" unsigned long divide_overridden(unsigned long, unsigned);
+int main() {
+  return divide_overridden(30, 1) != 10 || divide_overridden(16, 2) != 5;
+}

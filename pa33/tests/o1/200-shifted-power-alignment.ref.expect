@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+# Defined shifts need no separate count bound to simplify alignment.
+instructions <= 7 in @round_up

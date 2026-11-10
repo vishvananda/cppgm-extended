@@ -159,6 +159,17 @@ private:
 	bool affine_constant(BlockId block, InstId& prev, InstId id);
 	bool shifted_truth_mask(BlockId block, InstId& prev, InstId id);
 	uint64_t possible_bits(Value v, Type type, unsigned depth = 0) override;
+	uint64_t returned_power_bits(SymbolId symbol, Type type) override;
+	// Callee bodies are unchanged during this walk. Cache at most sixteen
+	// queries; past the budget, leave arithmetic alone rather than rescan.
+	struct ReturnedPower
+	{
+		SymbolId symbol;
+		uint64_t bits;
+	};
+	ReturnedPower returned_powers_[16];
+	unsigned returned_power_count_ = 0;
+
 	bool mask_or(Instruction& inst);
 	bool packed_part(Instruction& inst);
 	bool project_or(BlockId block, InstId& prev, InstId id);
@@ -3224,8 +3235,27 @@ void Simplifier::finish(bool full)
 	}
 }
 
+uint64_t Simplifier::returned_power_bits(SymbolId symbol, Type type)
+{
+	if (symbol == c_.symbol)
+		return 0; // this body's return graph may change during the walk
+	const Symbol& callee = c_.program.symbols[symbol];
+	if (callee.kind != SymbolKind::FunctionDefinition ||
+		c_.program.signatures[c_.program.functions[callee.detail].signature].result != type)
+		return 0;
+	for (unsigned i = 0; i < returned_power_count_; ++i)
+		if (returned_powers_[i].symbol == symbol)
+			return returned_powers_[i].bits;
+	if (returned_power_count_ == 16)
+		return 0;
+	const uint64_t bits = infer_return_power_bits(c_.program, symbol);
+	returned_powers_[returned_power_count_++] = ReturnedPower{ symbol, bits };
+	return bits;
+}
+
 bool Simplifier::run()
 {
+	returned_power_count_ = 0;
 	c_.ensure_cfg();
 	has_replacements_ = false;
 	equal_count_ = 0;

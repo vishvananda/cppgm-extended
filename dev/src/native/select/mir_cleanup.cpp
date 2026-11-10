@@ -872,11 +872,16 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 		// copy may use rdi, rsi, rcx and the scratch registers. Either
 		// writes its destination's bytes.
 		const bool xmm_zero = inst.op == Op::ZeroBytes &&
-			(inst.aux == 16 || (f_.wide_bulk && inst.aux > 16 && inst.aux <= 128));
+			(inst.aux == 16 || (f_.wide_bulk && inst.aux > 16 && inst.aux <= 256));
 		if (xmm_zero || (inst.op == Op::CopyBytes && !(inst.flags & MF_COPY_DYNAMIC)))
 		{
 			if (inst.op == Op::CopyBytes)
-				drop_caller_saved();
+			{
+				if (direct_copy(inst.aux, inst.aux2, f_.wide_bulk))
+					holds[R10] = holds[R11] = kHoldsNothing;
+				else
+					drop_caller_saved();
+			}
 			if (inst.ops[0].kind == OperandKind::Mem && inst.ops[0].reg == kFrame)
 				forget_home(inst.ops[0].disp, inst.ops[0].disp + static_cast<int32_t>(inst.aux));
 			else
