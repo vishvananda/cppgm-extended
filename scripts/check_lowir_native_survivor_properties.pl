@@ -230,18 +230,16 @@ for my $test (@tests)
 			if $positive !~
 			   /^\s+store\.i64 \Q$copy_home\E, \Q$value_register\E$/m;
 
-		my $baseline = function_body($test, $o0, 'call_result_to_edge_home');
-		$positive = function_body($test, $o1, 'call_result_to_edge_home');
-		my $value_home = frame_offset($positive, 'value');
-		die "$test: call-result reducer lost its stable edge home\n"
-			if !defined($value_home);
-		die "$test: O1 did not store the first scalar call result directly\n"
-			if $positive !~
-			   /^\s+call \@identity\b[^\n]*\n\s+store\.i64 \Q$value_home\E, rax$/m;
-		my $baseline_home = frame_offset($baseline, 'value');
-		die "$test: O0 baseline already had the direct call-result store\n"
-			if defined($baseline_home) && $baseline =~
-			   /^\s+call \@identity\b[^\n]*\n\s+store\.i64 \Q$baseline_home\E, rax$/m;
+		for my $level ([ 'O0', $o0 ], [ 'O1', $o1 ]) {
+			my ($label, $mir) = @$level;
+			my $body = function_body($test, $mir, 'call_result_to_edge_home');
+			my $value_home = frame_offset($body, 'value');
+			die "$test: $label call-result reducer lost its stable edge home\n"
+				if !defined($value_home);
+			die "$test: $label did not store the first scalar call result directly\n"
+				if $body !~
+				   /^\s+call \@identity\b[^\n]*\n\s+store\.i64 \Q$value_home\E, rax$/m;
+		}
 
 		my $dead = function_body($test, $o1, 'load_with_dead_address');
 		my ($dead_carrier) = $dead =~
