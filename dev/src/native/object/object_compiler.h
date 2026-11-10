@@ -85,7 +85,8 @@ class ObjectBuilder : public lowir::DefinitionSink
 {
 public:
 	ObjectBuilder(lowir::Program& program, ObjectStats& stats, EhModel eh_model = EhModel::Course,
-		int optimization_level = 0, bool position_independent = false, Target target = Target::Linux);
+		int optimization_level = 0, bool position_independent = false, Target target = Target::Linux,
+		bool red_zone = true);
 	~ObjectBuilder();
 
 	ObjectBuilder(const ObjectBuilder&) = delete;
@@ -114,6 +115,6 @@ void recover_jump_thunks(lowir::Program& program, EhModel eh_model);
 // propagates.
 bool compile_object(lowir::Program& program, object::ObjectFile& out, std::string& error, ObjectStats* stats,
 	EhModel eh_model = EhModel::Course, int optimization_level = 0, bool position_independent = false,
-	Target target = Target::Linux);
+	Target target = Target::Linux, bool red_zone = true);
 
 } // namespace native

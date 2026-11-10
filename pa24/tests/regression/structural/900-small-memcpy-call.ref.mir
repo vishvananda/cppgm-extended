@@ -65,8 +65,7 @@ function @copy_unused
     epilogues shared
 
   block ^entry
-    mov rdx, 13
-    copy_bytes 13x1, rdi, rsi
+    copy_bytes 13x1, [rdi], [rsi]
     ret
 
 function @copy_dynamic

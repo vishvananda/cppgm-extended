@@ -1598,10 +1598,17 @@ void FunctionSelector::find_addresses()
 			// register: each argument takes it again (emit_call), as a slot
 			// argument does; one live across a call would take a callee-saved
 			// register, and the reads fold.
-			const bool remat = level_ >= 1 &&
+			const Instruction* user = t.uses == 1 && t.user != kNoId ? &body.instructions[t.user] : nullptr;
+			// A small ignored-result memcpy consumes its pointers as memory
+			// operands, before ABI staging, at every level (emit_call).
+			const bool copy_address = user != nullptr && user->op == Opcode::Call &&
+				unused_fixed_memcpy_bytes(*user) != kNoId &&
+				(resolve(body.operands[user->extra_first]) == Value::temp(inst.result) ||
+					resolve(body.operands[user->extra_first + 1]) == Value::temp(inst.result));
+			const bool remat = (level_ >= 1 || copy_address) &&
 				(expr.kind == AddrExpr::Frame || expr.kind == AddrExpr::Temp ||
 					(expr.kind == AddrExpr::Symbol && symbol_access(expr.base) == SymbolAccess::Direct)) &&
-				expr.index == kNoId && !other_value_use[inst.result];
+				expr.index == kNoId && (copy_address || !other_value_use[inst.result]);
 			if (((t.flags & TF_VALUE_USE) && !remat) || t.uses == 0)
 				return;
 			// An address read in other blocks folds there too at O1+ when its

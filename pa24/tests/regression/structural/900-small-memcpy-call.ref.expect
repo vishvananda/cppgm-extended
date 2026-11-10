@@ -6,3 +6,5 @@ has(copy_bytes) in @copy_unused
 none(call) in @copy_unused
 count(call) == 1 in @copy_dynamic
 count(call) == 1 in @ordinary_call
+# Original pointer carriers need no count or argument setup.
+none(mov) in @copy_unused

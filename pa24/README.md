@@ -644,9 +644,11 @@ To complete PA24, implement these goals:
    in registers without an unnecessary stack round-trip.
 
 11. Preserve narrow integer width behavior in MIR.
-   Ordinary `i8`/`u16` compare-fed branches should stay visibly narrow, and small signed
-   or unsigned integer arithmetic should show the expected post-operation normalization
-   instead of silently widening into an untyped 64-bit path.
+   Ordinary `i8`/`u16` compare-fed branches should stay visibly narrow. Small signed
+   or unsigned integer arithmetic must normalize its result when a reader observes
+   bits above its logical width. An immediate same-width store or ABI return only
+   consumes that width and needs no extension. A one-bit arithmetic result still
+   needs its one-bit mask, since its byte carrier contains additional bits.
 
    A typed integer load defines the complete logical register value: narrow
    signed loads sign-extend and narrow unsigned loads zero-extend as part of

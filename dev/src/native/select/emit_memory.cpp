@@ -236,27 +236,60 @@ void FunctionSelector::emit_bulk(const Instruction& inst)
 	mir.aux2 = align;
 }
 
-// A fixed small memcpy is a machine copy even without the optimizer.
-// Its call arguments are already staged, so ordinary call clobbers
-// conservatively cover the copy's reserved scratch registers. Through
-// 32 bytes the emitter uses direct chunks and preserves rdi/rsi.
-bool FunctionSelector::emit_fixed_memcpy(
-	const Instruction& inst, Value callee, const lowir::Signature& sig, const CallLayout& layout)
+uint32_t FunctionSelector::fixed_memcpy_bytes(const Instruction& inst, Value callee, const lowir::Signature& sig) const
 {
 	if (callee.kind != ValueKind::Symbol || inst.extra_count != 3 || sig.parameter_count != 3 ||
-		!sig.result.is_pointer() || layout.stack_bytes != 0 || layout.stack_align > 16 ||
+		!sig.result.is_pointer() || sig.boundary.arity == ir_model::CAM_VARIADIC ||
 		!program_.memcpy_function(callee.index))
-		return false;
+		return kNoId;
 	const lowir::Parameter* params = program_.parameters_of(sig);
 	if (!params[0].type.is_pointer() || !params[1].type.is_pointer() || params[2].type.kind() != TypeKind::I64 ||
 		params[0].pass != ir_model::PPM_DIRECT || params[1].pass != ir_model::PPM_DIRECT ||
 		params[2].pass != ir_model::PPM_DIRECT)
-		return false;
+		return kNoId;
 	const Value bytes = resolve(body_->operands[inst.extra_first + 2]);
 	if (bytes.kind != ValueKind::Integer || literal(bytes).high != 0 || literal(bytes).low > 32)
+		return kNoId;
+	return static_cast<uint32_t>(literal(bytes).low);
+}
+
+uint32_t FunctionSelector::unused_fixed_memcpy_bytes(const Instruction& inst) const
+{
+	if (inst.result != kNoId && !(temps_[inst.result].flags & TF_DEAD) && temps_[inst.result].uses != 0)
+		return kNoId;
+	const lowir::Signature* sig = program_.call_boundary(inst);
+	return sig == nullptr ? kNoId : fixed_memcpy_bytes(inst, resolve(inst.ops[0]), *sig);
+}
+
+bool FunctionSelector::emit_unused_fixed_memcpy(const Instruction& inst)
+{
+	const uint32_t bytes = unused_fixed_memcpy_bytes(inst);
+	if (bytes == kNoId)
+		return false;
+	// Keep the original pointer operands. Neither an unused count argument
+	// nor a call-preserved pointer needs ABI argument staging.
+	if (bytes != 0)
+	{
+		const Operand src = address_operand(body_->operands[inst.extra_first + 1], kEmitScratch);
+		const Operand dst = address_operand(body_->operands[inst.extra_first], kSelectScratch);
+		Inst& copy = emit2(Op::CopyBytes, TypeKind::Void, dst, src);
+		copy.aux = bytes;
+		copy.aux2 = 1;
+	}
+	return true;
+}
+
+// A used result still follows call staging so the destination pointer
+// remains available after forming both addresses. Unused results take
+// the direct operand path before call preparation (emit_calls.cpp).
+bool FunctionSelector::emit_fixed_memcpy(
+	const Instruction& inst, Value callee, const lowir::Signature& sig, const CallLayout& layout)
+{
+	const uint32_t bytes = fixed_memcpy_bytes(inst, callee, sig);
+	if (bytes == kNoId || layout.stack_bytes != 0 || layout.stack_align > 16)
 		return false;
 	Inst& copy = emit2(Op::CopyBytes, TypeKind::Void, Operand::make_reg(RDI), Operand::make_reg(RSI));
-	copy.aux = static_cast<uint32_t>(literal(bytes).low);
+	copy.aux = bytes;
 	copy.aux2 = 1;
 	if (inst.result != kNoId && !(temps_[inst.result].flags & TF_DEAD) && temps_[inst.result].uses != 0)
 	{

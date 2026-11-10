@@ -17,5 +17,4 @@ function @main
 
   block ^entry
     add rdi, 2 !dbg(tests/debuginfo/machine/100-lowir2native-machine-add.t, 3, 10)
-    sext.i32 rdi !dbg(tests/debuginfo/machine/100-lowir2native-machine-add.t, 3, 10)
     ret rdi

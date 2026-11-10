@@ -1,0 +1,13 @@
+# Fixed ignored-result copies do not cross a call ABI boundary.
+has(copy_bytes) in @copy_keep
+none(call) in @copy_keep
+preserve == 0 in @copy_keep
+has(copy_bytes) in @read_fixed
+none(call) in @read_fixed
+preserve == 0 in @read_fixed
+has(copy_bytes) in @copy_pressure
+none(call) in @copy_pressure
+none(copy_bytes) in @zero_copy
+none(call) in @zero_copy
+preserve == 0 in @zero_copy
+none(lea) in @read_fixed

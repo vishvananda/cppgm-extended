@@ -125,6 +125,7 @@ public:
 	// The exception model of the functions emitted from now on; the host
 	// model records each function's unwind facts.
 	void set_eh_model(EhModel model) { eh_model_ = model; }
+	void set_red_zone(bool enabled) { red_zone_ = enabled; }
 	const UnwindFacts& unwind() const { return unwind_; }
 	const std::vector<CodeLocation>& locations() const { return locations_; }
 	// The last function's frame displacements relative to its CFA: a
@@ -203,6 +204,7 @@ private:
 	uint32_t epilogue_ = 0;
 	uint64_t base_ = 0;
 	EhModel eh_model_ = EhModel::Course;
+	bool red_zone_ = true;
 	UnwindFacts unwind_;
 	uint32_t terminal_ = 0;      // the host resume terminal's label
 	bool dynamic_stack_ = false; // RSP moves (stack_alloc, pushed EH records)

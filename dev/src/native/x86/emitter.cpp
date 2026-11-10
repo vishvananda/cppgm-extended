@@ -926,6 +926,13 @@ void FunctionEmitter::frame_reserve(const Function& function)
 	// unused virtual-RBP slot and padding.
 	if (frameless_body(function))
 		unwind_.reserve = leaf || saved % 2 == 1 ? 0 : 8;
+	// SysV reserves 128 bytes below RSP from asynchronous clobbering.
+	// A fixed leaf with no register saves fits its storage there when
+	// stack_size plus the unused virtual-RBP slot is at most 128 bytes.
+	// Keeping that slot also leaves room for a bulk copy's temporary push.
+	// Assembly controls its own stack; -mno-red-zone keeps the reservation.
+	if (red_zone_ && leaf && saved == 0 && !function.assembly && function.stack_size <= 120)
+		unwind_.reserve = 0;
 	frame_top_ = static_cast<int32_t>(8 + 8 * saved + unwind_.reserve);
 }
 

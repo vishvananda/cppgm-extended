@@ -188,6 +188,10 @@ public:
 	void emit_bulk(const lowir::Instruction& inst);
 	bool emit_fixed_memcpy(const lowir::Instruction& inst, lowir::Value callee, const lowir::Signature& signature,
 		const CallLayout& layout);
+	uint32_t fixed_memcpy_bytes(
+		const lowir::Instruction& inst, lowir::Value callee, const lowir::Signature& signature) const;
+	uint32_t unused_fixed_memcpy_bytes(const lowir::Instruction& inst) const;
+	bool emit_unused_fixed_memcpy(const lowir::Instruction& inst);
 	void emit_wide(const lowir::Instruction& inst);
 	void normalize(Reg reg, lowir::TypeKind type);
 	uint32_t read_registers(const lowir::Instruction& inst, unsigned depth) const;

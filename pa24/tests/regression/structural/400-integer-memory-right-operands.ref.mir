@@ -126,7 +126,6 @@ function @multiply_frame
     load.i32 rax, [rbp+16]
     store.i32 [rbp-8], rax
     imul.i32 rdi, [rbp-8]
-    sext.i32 rdi
     ret rdi
 
 function @compare_indexed
@@ -203,7 +202,6 @@ function @multiply_byte
   block ^entry
     load.i8 rdi, [rdi]
     imul rsi, rdi
-    sext.i8 rsi
     ret rsi
 
 function @add_byte_indexed
@@ -221,7 +219,6 @@ function @add_byte_indexed
   block ^entry
     load.i8 rdi, [rdi+rsi]
     add rdx, rdi
-    sext.i8 rdx
     ret rdx
 
 function @main

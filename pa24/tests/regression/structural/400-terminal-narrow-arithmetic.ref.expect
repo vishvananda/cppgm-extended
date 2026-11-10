@@ -1,0 +1,8 @@
+# The immediate narrow sink observes no high result bits.
+none(zext) in @wrap_unsigned
+none(sext) in @wrap_signed
+none(zext) in @store_word
+# Wider consumers and a one-bit value still require normalization.
+has(zext) in @widen_unsigned
+has(sext) in @widen_signed
+has(and) in @wrap_bool

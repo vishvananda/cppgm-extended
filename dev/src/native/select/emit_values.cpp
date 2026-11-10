@@ -193,8 +193,25 @@ void FunctionSelector::finish_result(const Instruction& inst, Reg reg)
 
 void FunctionSelector::normalize_result(const Instruction& inst, Reg reg, TypeKind type)
 {
-	if (!low_read(inst.result))
-		normalize(reg, type);
+	if (low_read(inst.result))
+		return;
+	// A local same-width store or ABI return consumes the wrapping result's
+	// own bits. The baseline selector needs no whole-function analysis to
+	// avoid extending those bits only to discard the extension immediately.
+	// i1 still needs its mask: its byte carrier is wider than its value.
+	const TempInfo& t = temps_[inst.result];
+	if (type != TypeKind::I1 && narrow_integer(type) && t.uses == 1 && t.user != kNoId &&
+		inst_block_[t.user] == block_ && pos_[t.user] == position_ + 1)
+	{
+		const Instruction& user = body_->instructions[t.user];
+		const Value self = Value::temp(inst.result);
+		const Value destination = resolve(user.ops[1]);
+		const bool stored = user.op == Opcode::Store && !(destination == self) &&
+			(destination.kind != ValueKind::Slot || slot_state_[destination.index] != SS_PROMOTED);
+		if ((stored || user.op == Opcode::Return) && user.type.kind() == type && resolve(user.ops[0]) == self)
+			return;
+	}
+	normalize(reg, type);
 }
 
 void FunctionSelector::normalize(Reg reg, TypeKind type)

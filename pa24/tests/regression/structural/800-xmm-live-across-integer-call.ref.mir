@@ -25,7 +25,6 @@ function @clobber_xmm_from_integer
     fmul.f64 xmm0, xmm0, 3.0
     fmov.f64 @observed, xmm0
     sub rdi, 5
-    sext.i32 rdi
     ret rdi
 
 function @preserve_across_integer_call

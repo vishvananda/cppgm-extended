@@ -20,7 +20,6 @@ function @divide
     mov rax, rdi
     cqo
     idiv r11
-    sext.i32 rax
     ret rax
 
 function @main

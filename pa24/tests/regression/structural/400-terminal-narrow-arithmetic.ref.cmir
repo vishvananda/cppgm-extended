@@ -1,0 +1,159 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @wrap_unsigned
+  abi
+    param %value -> rdi : u8
+    return u8 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    add rdi, 1
+    ret rdi
+
+function @wrap_signed
+  abi
+    param %value -> rdi : i8
+    return i8 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    sub rdi, 1
+    ret rdi
+
+function @store_word
+  abi
+    param %value -> rdi : u16
+    param %destination -> rsi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    add rdi, 1
+    store.u16 [rsi], rdi
+    ret
+
+function @widen_unsigned
+  abi
+    param %value -> rdi : u8
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    add rdi, 1
+    zext.i8 rdi
+    ret rdi
+
+function @widen_signed
+  abi
+    param %value -> rdi : i8
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    sub rdi, 1
+    sext.i8 rdi
+    ret rdi
+
+function @wrap_bool
+  abi
+    param %value -> rdi : i1
+    return i1 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    add rdi, 1
+    and rdi, 1
+    ret rdi
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $word -> [rbp-<off0>] : u16
+    temp %false -> [rbp-<off1>] : i1
+
+  block ^entry
+    mov rdi, 255
+    call @wrap_unsigned [args=(rdi), unwind=no]
+    zext.i8 rax
+    cmp.u8 rax, 0
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    mov rdi, -128
+    call @wrap_signed [args=(rdi), unwind=no]
+    sext.i8 rax
+    cmp.i8 rax, 127
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    lea rsi, [rbp-<off0>]
+    mov rdi, 65535
+    call @store_word [args=(rsi,rdi), unwind=no]
+    load.u16 r8, [rbp-<off0>]
+    cmp.u16 r8, 0
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    mov rdi, 255
+    call @widen_unsigned [args=(rdi), unwind=no]
+    cmp.i64 rax, 0
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    mov rdi, -128
+    call @widen_signed [args=(rdi), unwind=no]
+    cmp.i64 rax, 127
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    mov rdi, 1
+    call @wrap_bool [args=(rdi), unwind=no]
+    mov <gpr5>, rax
+    and <gpr5>, 1
+    store.i1 [rbp-<off1>], <gpr5>
+    mov rdi, 0
+    call @wrap_bool [args=(rdi), unwind=no]
+    and rax, 1
+    cmp.i1 [rbp-<off1>], 0
+    setne r8
+    movzx r8, r8
+    cmp.i1 rax, 1
+    setne rax
+    movzx rax, rax
+    or <gpr0>, <gpr1>
+    or <gpr2>, <gpr3>
+    or <gpr4>, r8
+    or <gpr0>, <gpr2>
+    or <gpr4>, rax
+    or <gpr0>, <gpr4>
+    ret <gpr0>

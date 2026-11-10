@@ -96,7 +96,6 @@ function @out_of_range
   block ^entry
     mov r8, 1
     shl r8, 32
-    sext.i32 r8
     ret r8
 
 function @main

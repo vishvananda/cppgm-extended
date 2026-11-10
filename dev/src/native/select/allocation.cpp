@@ -184,6 +184,10 @@ void FunctionSelector::inst_clobbers(uint32_t id, uint32_t& clobber, uint32_t& e
 		break;
 	case Opcode::Call:
 	{
+		// A direct small copy uses only the bulk operation's reserved
+		// scratch registers, without a call or ABI argument staging.
+		if (unused_fixed_memcpy_bytes(inst) != kNoId)
+			break;
 		clobber = kCallerSavedGprs | kAllXmms;
 		const lowir::Signature* sig = program_.call_boundary(inst);
 		if (sig != nullptr)

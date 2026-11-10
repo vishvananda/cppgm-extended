@@ -114,7 +114,7 @@ class ObjectCompiler
 {
 public:
 	ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level,
-		bool position_independent, Target target);
+		bool position_independent, Target target, bool red_zone);
 
 	// Selects and encodes one function definition.
 	void function(lowir::SymbolId symbol);
@@ -229,7 +229,7 @@ private:
 };
 
 ObjectCompiler::ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level,
-	bool position_independent, Target target)
+	bool position_independent, Target target, bool red_zone)
 	: program_(program), stats_(stats), selector_(program), emitter_(image_, runtime_, stats.emit),
 	  share_entries_(optimization_level >= 1), eh_model_(eh_model), position_independent_(position_independent)
 {
@@ -238,6 +238,7 @@ ObjectCompiler::ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhMo
 	selector_.set_position_independent(position_independent);
 	selector_.set_optimization_level(optimization_level);
 	emitter_.set_eh_model(eh_model);
+	emitter_.set_red_zone(red_zone);
 	for (unsigned k = 0; k < kHostBuiltinCount; ++k)
 		host_builtins_[k] = std::make_pair(0u, 0u);
 	declare_symbols();
@@ -1297,8 +1298,9 @@ void ObjectCompiler::finish(ObjectFile& out)
 }
 
 ObjectBuilder::ObjectBuilder(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level,
-	bool position_independent, Target target)
-	: compiler_(new ObjectCompiler(program, stats, eh_model, optimization_level, position_independent, target))
+	bool position_independent, Target target, bool red_zone)
+	: compiler_(
+		  new ObjectCompiler(program, stats, eh_model, optimization_level, position_independent, target, red_zone))
 {}
 
 ObjectBuilder::~ObjectBuilder()
@@ -1430,13 +1432,13 @@ void recover_jump_thunks(lowir::Program& program, EhModel eh_model)
 }
 
 bool compile_object(lowir::Program& program, object::ObjectFile& out, std::string& error, ObjectStats* stats,
-	EhModel eh_model, int optimization_level, bool position_independent, Target target)
+	EhModel eh_model, int optimization_level, bool position_independent, Target target, bool red_zone)
 {
 	ObjectStats local;
 	try
 	{
-		ObjectBuilder builder(
-			program, stats != nullptr ? *stats : local, eh_model, optimization_level, position_independent, target);
+		ObjectBuilder builder(program, stats != nullptr ? *stats : local, eh_model, optimization_level,
+			position_independent, target, red_zone);
 		builder.finish(out);
 	}
 	catch (const BackendError& e)

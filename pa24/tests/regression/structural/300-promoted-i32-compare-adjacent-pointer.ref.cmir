@@ -31,7 +31,6 @@ function @main
   block ^body
     load.i32 r8, [rbp-<off0>]
     add r8, 1
-    sext.i32 r8
     store.i32 [rbp-<off0>], r8
     jmp ^cond
 

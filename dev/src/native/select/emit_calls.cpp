@@ -765,6 +765,8 @@ void FunctionSelector::emit_call(uint32_t id)
 	const lowir::Signature* sig = program_.call_boundary(inst);
 	if (sig == nullptr)
 		throw InternalError("indirect call without a signature");
+	if (emit_unused_fixed_memcpy(inst))
+		return;
 	const lowir::Parameter* params = program_.parameters_of(*sig);
 	// A long double literal passed to `...` is X87 class (psABI 3.2.3:
 	// memory, 16-aligned).
