@@ -1,9 +1,12 @@
 # LLVM gap strategy: 10 November 2026
 
 The working target is cppgm-built LLVM compiling the 325 frozen cppgm units
-in at most 1.05 times native-built LLVM's elapsed time. The last paired
-whole-workload measurements still show 16.96%, 18.25% and 19.19% overhead at
-O1, O2 and O3. The new experiments below establish no replacement runtime score.
+in at most 1.05 times native-built LLVM's elapsed time, at every level.
+The qualified O1 level moves now measure 12.99% overhead over five ABBA
+blocks (95% interval 9.68%-16.31%). The target remains unmet. The preceding
+measurements were 16.96%, 18.25% and 19.19% at O1, O2 and O3; O2 and O3 have
+not been remeasured after this checkpoint. Those older runs and the current
+one are not a paired proof of the improvement between compiler revisions.
 
 ## Method adopted from `~/gap.md`
 
@@ -130,7 +133,22 @@ On the number_literal relink screen, sibling calls reduce actual calls by
 conditional branches by 1.46%. These are partial-rebuild mechanism results,
 not runtime gains. The complete LLVM built with all three moves produces all
 325 cppgm objects and the linked executable byte-identically to native LLVM.
-No new runtime gain is claimed pending paired measurements.
+The five-block whole-workload comparison reports the following ratios to native:
+
+| Metric | Mean ratio | 95% interval |
+| --- | ---: | ---: |
+| Elapsed | 1.1299 | 1.0968-1.1631 |
+| Cycles | 1.1417 | 1.1196-1.1637 |
+| Instructions | 1.06591 | 1.06589-1.06593 |
+| L1 code misses | 1.1654 | 1.1368-1.1939 |
+| Fetch stalls | 1.3029 | 1.2735-1.3323 |
+
+The run uses fresh native A/A calibration and five alternating ABBA blocks,
+12 fixed physical cores, unchanged binaries and frozen inputs. All 325 object
+hashes and the linked executable match the native oracle on all 22 observations.
+Raw sibling load records show shared-host activity during the run; every
+observation is retained and the interval reflects block variation. This is a
+new baseline score, not proof of a same-level gain funding future compile cost.
 
 Qualification passes: strict report 10,589/10,589 including the updated
 survivor controls; debug checks; self-host through PA5; inception; PA36
@@ -164,3 +182,4 @@ All raw records are under `/mnt/vizier/cppgm-llvm-evidence`:
 - `gap-step0-baseline-main-r2-strict-status.json`: strict report after control updates.
 - `gap-step0-baseline-audit-r2-validation-status.json`: architecture, file and placement checks.
 - `logs/gap-step0-baseline-main-r3-harness.log`: complete final harness pass.
+- `gap-step0-baseline-native-five-pairs-r1/`: all 22 raw observations and intervals.
