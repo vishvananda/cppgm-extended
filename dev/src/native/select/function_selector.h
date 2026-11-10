@@ -101,6 +101,8 @@ public:
 	bool exceptional_edges();
 	void loop_depths();
 	void block_weights();
+	bool iteration_guard(uint32_t loop, uint32_t header, const std::vector<uint32_t>& inner,
+		const std::vector<uint32_t>& parent, const lowir::Instruction& branch, bool continue_true) const;
 	void collect_uses(const std::vector<int32_t>& index);
 	void live_ranges();
 	void assign_registers();

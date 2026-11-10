@@ -584,6 +584,54 @@ void FunctionSelector::loop_depths()
 	block_weights();
 }
 
+// A pointer-validity check or an incremented header counter below an
+// invariant bound: weak likelihood evidence, never a reachability proof.
+bool FunctionSelector::iteration_guard(uint32_t loop, uint32_t header, const std::vector<uint32_t>& inner,
+	const std::vector<uint32_t>& parent, const Instruction& branch, bool continue_true) const
+{
+	using lowir::BinaryOp;
+	using lowir::ComparePredicate;
+	const lowir::FunctionBody& body = *body_;
+	const auto producer = [&](Value value) -> const Instruction* {
+		value = resolve(value);
+		return value.is(ValueKind::Temp) && value.index >= body.parameter_count && body.temps[value.index].def != kNoId
+			? &body.instructions[body.temps[value.index].def]
+			: nullptr;
+	};
+	const Instruction* cmp = producer(branch.ops[0]);
+	if (cmp == nullptr || cmp->op != Opcode::Compare)
+		return false;
+	const ComparePredicate pred = static_cast<ComparePredicate>(cmp->sub);
+	if (cmp->type.kind() == TypeKind::Ptr && cmp->ops[1].is(ValueKind::Integer) && literal(cmp->ops[1]).low == 0)
+		return continue_true ? pred == ComparePredicate::Ne : pred == ComparePredicate::Eq;
+	if (!cmp->type.is_integer())
+		return false;
+	const bool below = pred == ComparePredicate::Lt || pred == ComparePredicate::Le || pred == ComparePredicate::Ult ||
+		pred == ComparePredicate::Ule;
+	const bool above = pred == ComparePredicate::Gt || pred == ComparePredicate::Ge || pred == ComparePredicate::Ugt ||
+		pred == ComparePredicate::Uge;
+	if (!(continue_true ? below : above))
+		return false;
+	const Instruction* step = producer(cmp->ops[0]);
+	if (step == nullptr || step->op != Opcode::Binary || step->type != cmp->type ||
+		static_cast<BinaryOp>(step->sub) != BinaryOp::Add || !step->ops[1].is(ValueKind::Integer) ||
+		static_cast<int64_t>(literal(step->ops[1]).low) <= 0)
+		return false;
+	const Value base = resolve(step->ops[0]), bound = resolve(cmp->ops[1]);
+	const Instruction* phi = producer(base);
+	if (phi == nullptr || phi->op != Opcode::Phi || phi->type != cmp->type || !base.is(ValueKind::Temp) ||
+		temps_[base.index].block != header)
+		return false;
+	if (!bound.is(ValueKind::Temp) || bound.index < body.parameter_count)
+		return true;
+	if (temps_[bound.index].block >= inner.size())
+		return false;
+	for (uint32_t at = inner[temps_[bound.index].block]; at != kNoId; at = parent[at])
+		if (at == loop)
+			return false;
+	return true;
+}
+
 // Each block's estimated executions per call (Wu and Larus, in fixed
 // point): a block's flow splits evenly among its successors that are not
 // cold, except that edges leaving its innermost loop share 1/10 of it;
@@ -668,8 +716,9 @@ void FunctionSelector::block_weights()
 				return true;
 		return false;
 	};
-	// An early edge to the loop's latch skips the rest of this iteration.
-	// Unrolled guards retain this shape even after their inner loop is gone.
+	// A null or remaining-counter guard can end an iteration early. Other
+	// conditionals may intentionally skip most iterations, so an edge to the
+	// latch alone says nothing about the likely path.
 	latch_header.assign(n, kNoId);
 	for (uint32_t b = 0; b < n; ++b)
 		if (inner[b] != kNoId)
@@ -713,7 +762,10 @@ void FunctionSelector::block_weights()
 				const bool likely = on_true == (prediction == lowir::BranchPrediction::Likely);
 				prob[k] = likely ? kOne - kOne / 2001 : kOne / 2001;
 			}
-			else if (exits == 0 && ending != 0 && ending != warm)
+			else if (exits == 0 && warm == 2 && ending == 1 && term.op == Opcode::Branch &&
+				iteration_guard(inner[b], members[first[inner[b]]], inner, parent, term,
+					ends_iteration(k) ? term.ops[1].index != blocks_[succs_[k]].id
+									  : term.ops[1].index == blocks_[succs_[k]].id))
 				prob[k] = ends_iteration(k) ? kOne / 10 / ending : (kOne - kOne / 10) / (warm - ending);
 			else if (exits == 0 || exits == warm)
 				prob[k] = kOne / warm;
