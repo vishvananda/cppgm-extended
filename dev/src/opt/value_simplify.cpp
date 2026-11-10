@@ -1,4 +1,5 @@
 #include "lowir/builder.h"
+#include "opt/integer_patterns.h"
 #include "opt/loops.h"
 #include "opt/passes.h"
 #include "opt/scalar_fold.h"
@@ -11,33 +12,6 @@ namespace opt {
 using namespace lowir;
 
 namespace {
-
-// The floating predicate that holds exactly when `predicate` does not: an
-// ordered one's negation holds when an operand is a NaN.
-ComparePredicate float_inverted(ComparePredicate predicate)
-{
-	switch (predicate)
-	{
-	case ComparePredicate::Lt:
-		return ComparePredicate::Uge;
-	case ComparePredicate::Le:
-		return ComparePredicate::Ugt;
-	case ComparePredicate::Gt:
-		return ComparePredicate::Ule;
-	case ComparePredicate::Ge:
-		return ComparePredicate::Ult;
-	case ComparePredicate::Ult:
-		return ComparePredicate::Ge;
-	case ComparePredicate::Ule:
-		return ComparePredicate::Gt;
-	case ComparePredicate::Ugt:
-		return ComparePredicate::Le;
-	case ComparePredicate::Uge:
-		return ComparePredicate::Lt;
-	default:
-		return inverted(predicate);
-	}
-}
 
 // An operand of a hashed expression: a temporary, symbol or slot by id, a
 // literal by value.
@@ -142,7 +116,7 @@ unsigned lane_bytes(VectorOp read)
 	return read == VectorOp::Tof32 || read == VectorOp::Toi32 ? 4 : 8;
 }
 
-class Simplifier
+class Simplifier final : public IntegerPatternFacts
 {
 public:
 	explicit Simplifier(FunctionContext& context) : c_(context), body_(context.body), changed_(false) {}
@@ -155,7 +129,7 @@ public:
 	void exchange(Pool& pool);
 
 private:
-	Value resolve(Value v);
+	Value resolve(Value v) override;
 	bool constant(Value v, Type type, Constant& out);
 	Value literal(const Constant& c) { return literal_value(body_, c.kind, c.float_kind, c.bits); }
 	OperandKey key_of(Value v, Type type);
@@ -184,7 +158,7 @@ private:
 	bool reassociate(Instruction& inst);
 	bool affine_constant(BlockId block, InstId& prev, InstId id);
 	bool shifted_truth_mask(BlockId block, InstId& prev, InstId id);
-	uint64_t possible_bits(Value v, Type type, unsigned depth = 0);
+	uint64_t possible_bits(Value v, Type type, unsigned depth = 0) override;
 	bool mask_or(Instruction& inst);
 	bool packed_part(Instruction& inst);
 	bool project_or(BlockId block, InstId& prev, InstId id);
@@ -1422,7 +1396,7 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 	if (def == nullptr || def->op != Opcode::Compare)
 		return false;
 	const ComparePredicate tested = static_cast<ComparePredicate>(def->sub);
-	inst.sub = static_cast<uint8_t>(def->type.is_float() ? float_inverted(tested) : inverted(tested));
+	inst.sub = static_cast<uint8_t>(def->type.is_float() ? invert_float_predicate(tested) : inverted(tested));
 	inst.type = def->type;
 	inst.ops[0] = def->ops[0];
 	inst.ops[1] = def->ops[1];
@@ -2025,7 +1999,8 @@ bool Simplifier::project_or(BlockId block, InstId& prev, InstId id)
 
 // ((x * a) +/- b) * c = x * (a * c) +/- (b * c), at the
 // integer type's width. Only consume single-use intermediates: one multiply
-// disappears without duplicating shared work. Floating arithmetic stays ordered.
+// disappears without duplicating shared work. Floating arithmetic stays
+// ordered.
 bool Simplifier::affine_constant(BlockId block, InstId& prev, InstId id)
 {
 	const Instruction& seen = body_.instructions[id];
@@ -2801,8 +2776,8 @@ ExprKey Simplifier::expression_key(const Instruction& inst)
 	return key;
 }
 
-// `x % y` where `x / y` is also computed is `x - (x / y) * y`: no second divide.
-// A quotient computed just after the remainder moves up to it.
+// `x % y` where `x / y` is also computed is `x - (x / y) * y`: no second
+// divide. A quotient computed just after the remainder moves up to it.
 bool Simplifier::reuse_quotient(BlockId block, InstId& prev, InstId id)
 {
 	const uint32_t kReach = 8;
@@ -3002,6 +2977,20 @@ void Simplifier::process_block(BlockId block)
 		{
 			changed_ = true;
 			continue;
+		}
+		if (inst.op == Opcode::Binary && (inst.type.kind() == TypeKind::U32 || inst.type.kind() == TypeKind::I64))
+		{
+			const BinaryOp op = static_cast<BinaryOp>(inst.sub);
+			const bool changed = (op == BinaryOp::Mul || op == BinaryOp::Shl || op == BinaryOp::UDiv ||
+									 op == BinaryOp::UMod) &&
+				simplify_integer_arithmetic(body_, uses_, *this, block, prev, id);
+			if (changed)
+			{
+				repl_.resize(body_.temps.size(), Value::none());
+				uses_.resize(body_.temps.size(), 0);
+				changed_ = true;
+				continue;
+			}
 		}
 		if (inst.op == Opcode::Branch)
 			simplify_branch(inst);

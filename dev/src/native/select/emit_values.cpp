@@ -423,7 +423,8 @@ void FunctionSelector::emit_inst(uint32_t id)
 	{
 		Operand size = rm_operand(inst.ops[0], Type::scalar(TypeKind::I64), kSelectScratch);
 		if (size.kind == OperandKind::Imm && (size.imm < 0 || size.imm > 0x7ffffff0ll))
-			throw BackendError("constant stack_alloc size exceeds the native stack adjustment range");
+			throw BackendError("constant stack_alloc size exceeds the native stack "
+							   "adjustment range");
 		if (size.kind != OperandKind::Imm && size.kind != OperandKind::Reg)
 		{
 			load_into(kSelectScratch, size, TypeKind::I64);
@@ -839,6 +840,25 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 	}
 	if (level_ >= 1 && rotate_[inst.result] != 0)
 	{
+		if (rotate_[inst.result] >= 254)
+		{
+			const bool rol = rotate_[inst.result] == 255;
+			const Instruction& first = body_->instructions[body_->temps[resolve(inst.ops[0]).index].def];
+			const Instruction& second = body_->instructions[body_->temps[resolve(inst.ops[1]).index].def];
+			const Instruction& shift = (static_cast<BinaryOp>(first.sub) == BinaryOp::Shl) == rol ? first : second;
+			const Value x = resolve(shift.ops[0]);
+			const Operand a = rm_operand(x, inst.type, kSelectScratch);
+			const Operand c = rm_operand(shift.ops[1], type_of(shift.ops[1]), kEmitScratch);
+			load_into(RCX, c, TypeKind::I64);
+			const Reg d = result_reg(inst, dying_reg(x), kNoReg, 1u << RCX);
+			if (a.kind == OperandKind::Mem)
+				emit2(Op::Load, kind, Operand::make_reg(d), a);
+			else
+				load_into(d, a, TypeKind::I64);
+			emit2(rol ? Op::Rol : Op::Ror, TypeKind::I64, Operand::make_reg(d), Operand::make_reg(RCX));
+			finish_result(inst, d);
+			return;
+		}
 		// A rotation (find_rmw): x, the value both shifts read, into the
 		// result's register, then rol by the left shift's count, or ror by
 		// the right one's when it is the smaller.

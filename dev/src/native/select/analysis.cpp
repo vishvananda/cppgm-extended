@@ -1,5 +1,5 @@
-#include "native/select/function_selector.h"
 #include "native/select/for_each_inst.h"
+#include "native/select/function_selector.h"
 
 #include <algorithm>
 #include <stdexcept>
@@ -2316,6 +2316,50 @@ void FunctionSelector::find_rmw()
 				x.last = pos_[id];
 		}
 	});
+	// Variable i64 rotations use x86's modulo-64 counts. Restrict to OR:
+	// xor/add overlap when the count is zero, unlike a rotation.
+	for_each_inst([&](uint32_t id, uint32_t b) {
+		const Instruction& inst = body.instructions[id];
+		if ((marks_[id] & IM_DEAD) || inst.op != Opcode::Binary || inst.result == kNoId ||
+			static_cast<lowir::BinaryOp>(inst.sub) != lowir::BinaryOp::Or || inst.type.kind() != TypeKind::I64 ||
+			(temps_[inst.result].flags & (TF_ALIAS | TF_DEAD)))
+			return;
+		for (unsigned k = 0; k < 2; ++k)
+		{
+			const Value l = resolve(inst.ops[k]), r = resolve(inst.ops[1 - k]);
+			const lowir::InstId li = single(l, b, TF_FOLDED), ri = single(r, b, TF_FOLDED);
+			if (li == kNoId || ri == kNoId)
+				continue;
+			const Instruction& ls = body.instructions[li];
+			const Instruction& rs = body.instructions[ri];
+			if (ls.op != Opcode::Binary || rs.op != Opcode::Binary || ls.type != inst.type || rs.type != inst.type ||
+				static_cast<lowir::BinaryOp>(ls.sub) != lowir::BinaryOp::Shl ||
+				static_cast<lowir::BinaryOp>(rs.sub) != lowir::BinaryOp::UShr ||
+				!(resolve(ls.ops[0]) == resolve(rs.ops[0])))
+				continue;
+			const Value counts[2] = { resolve(ls.ops[1]), resolve(rs.ops[1]) };
+			for (unsigned side = 0; side < 2; ++side)
+			{
+				const lowir::InstId ci = single(counts[side], b, TF_FOLDED);
+				if (ci == kNoId || body.instructions[ci].type.kind() != TypeKind::I64)
+					continue;
+				const Instruction& sub = body.instructions[ci];
+				const Value width = resolve(sub.ops[0]);
+				if (sub.op != Opcode::Binary || static_cast<lowir::BinaryOp>(sub.sub) != lowir::BinaryOp::Sub ||
+					width.kind != ValueKind::Integer || literal(width).high != 0 || literal(width).low != 64 ||
+					!(resolve(sub.ops[1]) == counts[1 - side]) || counts[1 - side].kind == ValueKind::Integer)
+					continue;
+				temps_[l.index].flags |= TF_ROTATED;
+				temps_[r.index].flags |= TF_ROTATED;
+				temps_[counts[side].index].flags |= TF_ROTATED;
+				rotate_[inst.result] = side == 0 ? 254 : 255;
+				for (Value v : { resolve(ls.ops[0]), counts[1 - side] })
+					if (v.kind == ValueKind::Temp && temps_[v.index].block == b && temps_[v.index].last < pos_[id])
+						temps_[v.index].last = pos_[id];
+				return;
+			}
+		}
+	});
 	// Rotations.
 	const uint16_t folded = taken | TF_FOLDED;
 	// The count of `x op k` defining v, used once, by `user` in block b, a
@@ -2346,6 +2390,8 @@ void FunctionSelector::find_rmw()
 		const TypeKind kind = inst.type.kind();
 		if ((op != lowir::BinaryOp::Or && op != lowir::BinaryOp::Xor && op != lowir::BinaryOp::Add) ||
 			(kind != TypeKind::I64 && kind != TypeKind::U32))
+			return;
+		if (rotate_[inst.result] != 0)
 			return;
 		const uint64_t width = value_bytes(inst.type) * 8;
 		for (unsigned k = 0; k < 2; ++k)

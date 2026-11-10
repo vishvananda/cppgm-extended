@@ -1334,8 +1334,14 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 	// an internal callee (a lambda's operator() called from the loops of
 	// the for_each it is passed to) when the copies together fit the cap.
 	// The definition goes either way.
-	const uint32_t once_cap = options_.limits.once_cap != 0 ? options_.limits.once_cap
-															: kOnceCap * (options_.level >= 2 ? kOnceO2Scale : 1);
+	const uint32_t requested_once_cap = options_.limits.once_cap != 0
+		? options_.limits.once_cap
+		: kOnceCap * (options_.level >= 2 ? kOnceO2Scale : 1);
+	// A weak definition may be shared by many translation units even when
+	// this unit has one call site. Its removed local definition does not
+	// justify an equally large copy at every link-time caller.
+	const uint32_t once_cap = m.binding == ir_model::SBM_WEAK ? std::min(requested_once_cap, uint32_t(128))
+															  : requested_once_cap;
 	const bool sole = options_.level >= 2 && m.binding == ir_model::SBM_INTERNAL && graph_.callers_in[g] == 1 &&
 		!graph_.observed[g] && discardable(program_, callee) && size * graph_.calls_in[g] <= once_cap;
 	if (!(single || sole) || size > once_cap || size > once_budget_ || size > budgets_.once_unit)

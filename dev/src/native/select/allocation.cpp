@@ -1,5 +1,5 @@
-#include "native/select/function_selector.h"
 #include "native/select/for_each_inst.h"
+#include "native/select/function_selector.h"
 
 #include <climits>
 #include <string>
@@ -213,6 +213,11 @@ void FunctionSelector::inst_clobbers(uint32_t id, uint32_t& clobber, uint32_t& e
 	case Opcode::Binary:
 	{
 		const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
+		if (level_ >= 1 && inst.result != kNoId && rotate_[inst.result] >= 254)
+		{
+			clobber = early = 1u << RCX;
+			break;
+		}
 		if (inst.type.is_float())
 			break;
 		if (inst.type.kind() == TypeKind::I128)

@@ -10,6 +10,9 @@
 // and double formats, and f80 is x87 extended, matching native evaluation.
 namespace opt {
 
+// Negate an IEEE comparison, preserving unordered operands.
+lowir::ComparePredicate invert_float_predicate(lowir::ComparePredicate predicate);
+
 // The constant an operand denotes when it is a literal.
 inline bool literal_constant(const lowir::FunctionBody& body, lowir::Value value, lowir::Constant& out)
 {

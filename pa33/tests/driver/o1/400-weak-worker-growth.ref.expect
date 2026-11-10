@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+# Bound duplication; retaining a shared call or simplifying its work are both valid.
+instructions <= 100 in @caller

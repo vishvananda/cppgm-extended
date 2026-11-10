@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+# Execution checks the negative flag, without prescribing arithmetic instructions.
+instructions <= 16 in @sext_flag

@@ -590,4 +590,31 @@ bool is_all_ones(Type type, const Constant& c)
 	return (x & mask_of(width)) == mask_of(width);
 }
 
+// The floating predicate that holds exactly when `predicate` does not: an
+// ordered one's negation holds when an operand is a NaN.
+ComparePredicate invert_float_predicate(ComparePredicate predicate)
+{
+	switch (predicate)
+	{
+	case ComparePredicate::Lt:
+		return ComparePredicate::Uge;
+	case ComparePredicate::Le:
+		return ComparePredicate::Ugt;
+	case ComparePredicate::Gt:
+		return ComparePredicate::Ule;
+	case ComparePredicate::Ge:
+		return ComparePredicate::Ult;
+	case ComparePredicate::Ult:
+		return ComparePredicate::Ge;
+	case ComparePredicate::Ule:
+		return ComparePredicate::Gt;
+	case ComparePredicate::Ugt:
+		return ComparePredicate::Le;
+	case ComparePredicate::Uge:
+		return ComparePredicate::Lt;
+	default:
+		return inverted(predicate);
+	}
+}
+
 } // namespace opt

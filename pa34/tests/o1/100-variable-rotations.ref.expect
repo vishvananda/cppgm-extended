@@ -1,0 +1,3 @@
+# Bound redundant shift/count work while allowing equivalent instruction selection.
+instructions <= 12 in @rotate_right
+stack_size <= 32 in @rotate_right
