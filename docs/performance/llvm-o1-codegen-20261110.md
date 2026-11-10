@@ -2,8 +2,9 @@
 
 The current target is elapsed time at most **1.05 times native LLVM**, with
 equal or faster preferred. The O0 target was already met: 550.105 seconds
-against 551.12 seconds, a ratio of 0.9982, with all outputs identical. LLVM O2
-and O3 measurements remain deferred until O1 meets its target.
+against 551.12 seconds, a ratio of 0.9982, with all outputs identical. At the
+user's request, matched O2 and O3 measurements now run alongside the O1
+investigation; their completion does not change the O1 acceptance target.
 
 ## What the measurement compares
 
@@ -256,7 +257,8 @@ trials. Negative controls cover atomic/volatile accesses, values retained
 across an aliasing write, and sign-promoted byte/halfword values whose
 neighbors must not be read instead.
 
-This compiler builds all 3,365 LLVM C++ translation units. Its resulting
+The configuration contains 3,365 C++ compile commands; the `clang` build
+target compiles 2,577 C++ translation units, all with cppgm. Its resulting
 Clang passes complete native output equality at 51.590 versus 44.200 seconds:
 1.1672 times native elapsed, 1.0700 times instructions, 1.1748 times cycles,
 1.1948 times I-cache misses and 1.3304 times instruction-fetch stall counts.
@@ -369,7 +371,9 @@ paths at all four levels, leaving encoding choice to the compiler.
 
 The frozen compile gate against `fc5519bc3` reports instruction ratios of
 1.000008 at O0 and 0.999828 at O3, with flat memory. The full LLVM build uses
-all 3,365 C++ units without fallback and retains identical generated headers.
+the `clang` target's 2,577 C++ units without fallback and retains identical
+generated headers. The compilation database contains 3,365 configured C++
+commands, including targets outside this build; that is not the built count.
 Every measured object and the linked cppgm executable matches native, with
 100% PMU coverage. The final full comparison is 1.0701 times instructions,
 1.1793 times cycles, 1.1989 times I-cache misses and 1.3475 times fetch stalls.
@@ -379,7 +383,8 @@ Raw evidence is in `o1-qualified-microcode-profile-r4/`,
 `o1-qualified-frontend-and-branches-r4/`, `o1-return-and-microcode-main-*`, and
 `o1-return-and-microcode-diagnostic-r1-*` under the evidence root. The accepted
 receipt binds the final source, all tool hashes, normal checks, independent
-controls and full LLVM observation. LLVM O2 and O3 remain deferred.
+controls and full LLVM observation. O2 and O3 were deferred at this checkpoint;
+the subsequent comparison requested by the user is described below.
 
 
 ## Static text census of the qualified compiler
@@ -430,3 +435,160 @@ Evidence: `o1-qualified-text-cohorts-r1.json`,
 `o1-profiled-34-provider-units-r1.json`, and the `o1-phi-switch-table-*`,
 `o1-object-return-tail-*`, `o1-ssa-inline-cost-*`,
 `o1-boolean-carriers-*` and `o1-compact-positive-word-*` directories.
+
+## Distinguishing inlining from missing optimizations
+
+The next normal source image, SHA-256 `558f42c8ddf58641073c9c148c24fdfa750cf2cfe7619e608da8b995d16a8d3a`,
+combines shared-phi result tables, conservative SSA glue discounts in the
+inlining cost, and single-register aggregate return coalescing. Table formation
+preserves LowIR's first-match rule for duplicate keys and leaves power-of-two
+results visible as shifts. Normal qualification passes 10,585/10,585 strict
+tests, all architecture and placement audits, debug checks, self-host through
+PA5, inception, PA36 quick/smoke, the harness and 64 cross-compiler controls.
+The frozen compile gate reports 0.999999 O0 and 1.004943 O3 instruction ratios
+against `194ce80d0`, with flat memory. The candidate is an experiment, not an
+established whole-workload improvement.
+
+A fresh native A/A followed by cppgm/native/native/cppgm, after the O1/O2/O3
+LLVM builds finish, gives **52.105 versus 44.550 seconds**, a ratio of 1.169585.
+CPU time is 1.172776 times native; instructions are 1.069900, cycles 1.181919,
+I-cache misses 1.201946 and instruction-fetch stall counts 1.351839. All 325
+objects and the linked executable match in every observation; PMU coverage is
+100%. Earlier concurrent-build observations remain retained separately.
+
+The cycle/instruction ratio implies approximately **10.47% higher CPI**.
+Arithmetically, about seven of the 18.19 excess cycle percentage points are
+the instruction-count difference at native CPI, and about 11.20 points are
+the additional CPI cost on that larger instruction stream. This is not a
+causal partition into passes: call overhead, branch behavior, scheduling,
+memory traffic and code footprint overlap. In particular, more calls do not
+by themselves prove insufficient inlining.
+
+Two reduced source experiments confirm missing opportunities at all optimized
+levels, with inlining deliberately disabled on the getter:
+
+| Case | Native LLVM | cppgm |
+| --- | --- | --- |
+| Two consecutive calls of an unannotated, deterministic getter | One call, double the result | Two calls at O1 through O3 |
+| Two consecutive calls with explicit `pure` | One call | One call |
+| Explicit `pure` getter before and after a conditional, no intervening write | One call | Two calls, including O3 |
+| Sum an invariant explicit `pure` getter over `n` iterations | One guarded call and a multiply | Call on each iteration, including O3 |
+| Two consecutive explicit `pure` calls returning a one-word aggregate | One call | Two calls, including O3 |
+
+Native LLVM infers `memory(argmem: read)`, `nosync`, `nofree` and other
+properties for the first getter. cppgm's existing read-only inference does
+not imply repeatability, and its call value numbering requires an explicit
+repeatability annotation. Even with that annotation, the call cache is local
+to a basic block and loop-invariant motion excludes calls. These are specific
+missing proofs and transformations, rather than an absent general scalar
+optimizer. LLVM's local O1 pipeline includes function-attribute inference,
+EarlyCSE with MemorySSA, LICM and repeated SROA/InstCombine cleanup; a list of
+pass names alone does not establish which one costs time in this workload.
+
+The unannotated experiment agrees at all four levels between LLVM and cppgm;
+the annotated experiment also agrees with GCC. Controls retain aliased writes,
+volatile and atomic reads, mutations within loops, and a zero-iteration loop
+given a null pointer. The reduced cases establish optimization gaps, not their
+whole-LLVM weights. Raw sources, assembly and receipts are in
+`inferred-pure-call-diagnostic-r1*`, `pure-call-motion-diagnostic-r1*` and
+`pure-aggregate-call-diagnostic-r1*`. The aggregate experiment agrees with
+GCC and LLVM at all four levels, including aliasing writes and distinct
+result-object identities. cppgm explicitly excludes object results and
+object parameters from call value numbering. Its scalar replacement and
+return coalescing therefore do not supply LLVM's aggregate call-value reuse.
+Simply reusing an object's storage address would violate object identity;
+a fix needs a typed value/materialization proof.
+
+The matched-provider experiment replaces 34 profiled source files and their
+shared weak helpers in the current cppgm-built LLVM with normal native
+objects. A separate native-only control replaces those same source files in
+native-built LLVM with native objects compiled using `-fno-inline-functions`.
+Always-inline requirements remain honored. Each comparison holds its own
+other objects and link command fixed. An initial noinline control mixed into
+cppgm-built LLVM crashes during instruction selection; its raw failure is
+retained and cannot supply performance attribution. The normal O1/O2/O3
+builds and the normal native-object substitution pass output equality.
+The mixed helper/ABI incompatibility needs separate investigation.
+Counts on two frozen real inputs
+include instructions, cycles, retired calls and conditional branches, followed
+by precise call-event samples. This measures the gross effect of native
+inlining policy in that subset. Because cppgm already inlines many calls,
+the penalty from disabling native inlining is not an additive estimate of
+the part of the remaining whole-workload gap caused by missed inlining.
+
+The completed comparisons localize substantial cost to that source set:
+
+| Frozen input | Original cycle gap | Gap after native 34-file substitution | Cycle deficit removed | Excess calls removed |
+| --- | ---: | ---: | ---: | ---: |
+| `lower/program_lowering` | +18.94% | +8.09% | 57.27% | 63.77% |
+| `opt/store_motion` | +16.00% | +8.93% | 44.20% | 60.66% |
+
+Every observation matches the native object oracle, with 100% counter
+coverage. These are two sampled inputs, not a whole-workload causal split.
+The native-only noinline control increases call counts 14.39–16.25 times
+and cycles 4.06–4.80 times. That gross perturbation establishes why ordinary
+inlining matters but cannot isolate the much smaller difference between
+cppgm's existing inlining and LLVM's policy.
+
+Precise retired-call samples decode to actual call instructions in essentially
+all main-binary samples. Decode the target rather than attributing raw caller
+symbol deltas: inlining itself moves events between caller symbols. The ten
+largest positive direct-target deltas account for approximately 29–38% of the
+net excess calls. Recurring targets include declaration-context traversal,
+TypeLoc visitors, declaration attribute queries, short hashes, FoldingSet
+equality and `memcmp`. Call counts are not cycle weights, and indirect calls
+cannot be matched by register spelling. Evidence is in
+`o1-inline-contribution-r4/summary.json` and
+`o1-inline-contribution-r4/call-attribution-decoded-targets-r3.json`.
+
+A conservative private leaf-only repeatability proof eliminates the reduced
+getter duplicate and agrees with GCC/Clang/before/candidate on all 16 level
+comparisons. Its frozen gate passes (+0.041% O3 instructions, flat memory).
+However, **all 34 rebuilt LLVM objects and the linked LLVM image are byte
+identical to the control**. The subsequent runtime screen is therefore A/A
+noise, not a speedup; it does not justify a full rebuild or promotion. This
+narrows the useful next experiments toward control-flow and aggregate call
+reuse, since many LLVM getters already have explicit annotations.
+
+The dedicated frozen compile-input directory now retains all 52 files by
+verified hash. It replaces a removed historical worktree path without changing
+any input bytes. Evidence is in `frozen-compile-inputs-52files-r1/`,
+`o1-inferred-leaf-repeatability-private-r2-frozen-perf/` and
+`o1-inferred-leaf-repeatability-no-codegen-effect-r1.json`.
+
+## Current O1, O2 and O3 comparison
+
+The same candidate compiler image builds LLVM at each producer optimization
+level. Each resulting compiler then builds the same frozen cppgm workload at
+O3. Native LLVM builds use the matching producer level, the same LLVM sources
+and generated headers, and no PGO or LTO. Timing runs are serialized after
+all three builds finish, with fresh native A/A and a cppgm/native/native/cppgm
+block at each level. Values below are means of the paired observations;
+the two observations per side are not a precise confidence interval.
+
+| LLVM producer level | Native-built LLVM elapsed | cppgm-built LLVM elapsed | Elapsed gap | CPU gap | Instruction gap | Cycle gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| O1 | 44.550 s | 52.105 s | +16.96% | +17.28% | +6.99% | +18.19% |
+| O2 | 41.785 s | 49.410 s | +18.25% | +18.57% | +10.95% | +19.50% |
+| O3 | 41.080 s | 48.965 s | +19.19% | +19.41% | +10.94% | +20.24% |
+
+All 325 objects and the final executable match native's frozen oracle in
+every observation at every level; minimum PMU coverage is 100%. The current
+O3 builds are slightly faster than O2 on both sides, reversing the earlier
+matrix's ordering. The relative codegen gap persists at all three levels.
+Aggregate excess CPU time is approximately 89.4, 90.1 and 92.8 seconds,
+respectively: most of the absolute deficit survives the level changes.
+
+Static `.text` sizes are 70,178,329 / 120,513,042 bytes at O1,
+68,668,425 / 128,997,186 at O2, and 73,303,049 / 132,387,138 at O3
+(native / cppgm). The corresponding size ratios are 1.7172, 1.8786 and
+1.8060. Common raw-name function cohorts are 1.5343, 1.7954 and 1.7212 times
+native in named bytes; aliases may overlap within those cohorts. These are
+static implementation and emission measurements, not sampled hot-code sizes
+or percentages of runtime caused by the instruction cache.
+
+Raw comparison evidence is in
+`o123-tables-cost-returns-current-comparison-r4.json`,
+`o{1,2,3}-tables-cost-returns-serial-diagnostic-r4-clang-runtime-timing/`,
+`o123-current-text-section-sizes-r4.json`, and
+`o{1,2,3}-tables-cost-returns-text-cohorts-r4.json`.
