@@ -97,6 +97,8 @@ speculated work and drop facts justified only on the selected arm. Sequential
 cursor choices differ from a pointer-chasing chain: fewer unpredictable
 branches can justify more instructions, while a dependent load may benefit
 from branch prediction. Measure cycles and branch misses alongside counts.
+Preserve loop-invariant choices for unswitching and vectorization; a choice
+made outside the loop need not become conditional work on every iteration.
 
 Conditionally updated fields can need many merge values inside a loop.
 Promoting all of them may turn a few memory updates into repeated register
