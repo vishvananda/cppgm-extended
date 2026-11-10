@@ -51,6 +51,30 @@ superseded special cases. Qualify commits with the usual tests and audits. Rebui
 LLVM and make an elapsed comparison after a workstream, with at least five ABBA
 pairs. The elapsed target stays 1.05, independently of the working counter ledger.
 
+### Investigate unexpected results before abandoning a workstream
+
+A failed screen rejects the measured prototype, not the underlying mechanism.
+Related changes may need to work together before their benefit appears. When
+the ledger moves against the prediction, preserve the immutable compiler and
+raw results, then attribute the excess work and check for confounders: pass
+ordering, lost facts, representation conversions, changed inline decisions,
+register pressure, code layout and interactions with other optimizations.
+
+Use small reproducers and controlled ablations to separate those explanations.
+Make a few focused iterations, combining dependent fixes where the evidence
+supports them, and repeat the same output-checked screen. Do not abandon an
+approach solely because its first incomplete implementation regresses. Record
+what each iteration disproves or repairs, what remains unimplemented, and why
+the mechanism is retained or eventually deprioritized. Acceptance still needs
+the normal correctness, compile-cost and whole-workload performance gates.
+
+The two-word aggregate prototype illustrates this rule. It removed packing at
+some outgoing boundaries but left pack/unpack chains after inlining and did
+not preserve every scalar extension requirement. The first regression is a
+reason to investigate those interactions; it does not disprove keeping small
+aggregate values in registers. Root-cause controls and ablations are retained
+in `gap-A-native-word-parts-root-cause-r1/` in the campaign evidence directory.
+
 ## Correctness prerequisite: constructor exports
 
 The full LLVM rebuilt with 54bdf818b exposed 131 undefined weak constructor or
