@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "lowir/builder.h"
+#include "opt/loops.h"
 #include "opt/passes.h"
 #include "opt/scalar_fold.h"
 
@@ -101,6 +102,7 @@ private:
 	InstId store_arm(BlockId arm, BlockId from) const;
 	bool same_expression(Value a, Value b, unsigned depth = 0) const;
 	bool unit_update(Type type, Value a, Value b) const;
+	bool invariant_condition(BlockId block, Value condition);
 	bool range_switch(BlockId block, InstId id);
 	bool form_load(BlockId e);
 	InstId load_arm(BlockId a, BlockId from) const;
@@ -113,6 +115,8 @@ private:
 	FunctionBody& body_;
 	std::vector<uint8_t> touched_;
 	const std::vector<uint32_t>* uses_ = nullptr;
+	LoopForest loops_;
+	bool loops_ready_ = false;
 };
 
 const Instruction* SelectFormation::producer(Value v) const
@@ -816,6 +820,34 @@ bool SelectFormation::unit_update(Type type, Value a, Value b) const
 	return false;
 }
 
+// Leave invariant loop choices available for unswitching and vectorization.
+// Build the loop forest only after a store diamond has passed admission.
+bool SelectFormation::invariant_condition(BlockId block, Value condition)
+{
+	if (!loops_ready_)
+	{
+		find_loops(body_, c_.cfg, loops_);
+		c_.entry_block_of(form_selects);
+		loops_ready_ = true;
+	}
+	if (loops_.partial || loops_.dropped[block])
+		return true;
+	const uint32_t loop = loops_.innermost[block];
+	if (loop == kNoId)
+		return false;
+	const auto outside = [&](Value value) {
+		if (!value.is(ValueKind::Temp) || value.index < body_.parameter_count)
+			return true;
+		const InstId def = body_.temps[value.index].def;
+		return def != kNoId && def < c_.block_of.size() && c_.block_of[def] != kNoId &&
+			!in_loop(loops_, loop, c_.block_of[def]);
+	};
+	if (outside(condition))
+		return true;
+	const Instruction* test = producer(condition);
+	return test != nullptr && test->op == Opcode::Compare && outside(test->ops[0]) && outside(test->ops[1]);
+}
+
 // Factor an always-performed store through a small diamond. Sequential
 // cursor updates can be predicated even when the condition reads through
 // those cursors; keep the pointer-chasing admission rule for other cycles.
@@ -853,6 +885,8 @@ bool SelectFormation::form_store(BlockId e)
 			return false;
 		phis.push_back(i);
 	}
+	if (invariant_condition(e, branch.ops[0]))
+		return false;
 	unlink_after(body_, t, previous_in_block(body_, t, ti), ti);
 	unlink_after(body_, f, previous_in_block(body_, f, fi), fi);
 	InstId at = previous_in_block(body_, e, term);
