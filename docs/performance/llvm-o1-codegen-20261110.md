@@ -38,6 +38,7 @@ Ratios below are **cppgm-built LLVM / native-built LLVM**; smaller is better.
 | Symbolic loop entry plus Index CSE, private diagnostic | 52.290 s | 44.220 s | 1.1825 | 1.0811 | 1.1895 | 1.2144 |
 | Sixth preserved register with fixed call areas, private diagnostic | 52.005 s | 44.660 s | 1.1645 | 1.0809 | 1.1845 | 1.2191 |
 | Four frame/scheduling/mask/register groups, private R3 | 51.590 s | 44.200 s | 1.1672 | 1.0700 | 1.1748 | 1.1948 |
+| Qualified frame/mask batch including alias form, `fc5519bc3` | 51.845 s | 44.165 s | 1.1739 | 1.0699 | 1.1776 | 1.1856 |
 
 All completed rows passed output equality; the latest full runs
 had 100% PMU coverage. The private diagnostic establishes a useful direction,
@@ -268,9 +269,31 @@ extensions can already have disappeared before load folding. The next
 candidate applies the same bounded read-width proof to that form. Its
 `signed_word` and `signed_byte` cases now each need one load and a return;
 controls needing sign-promoted high bits still use the original narrow read
-and mask. This revision is undergoing normal qualification and has no full
-LLVM runtime result yet. Required regressions belong to PA33 for the loop
-schedule and PA34 for native masks, frame/ABI and load-width controls.
+and mask. Commit `fc5519bc3` passes 10,578/10,578 strict tests, all architecture
+and placement audits, the harness, debug checks, self-host through PA5,
+inception and PA36 quick/smoke. Its frozen instruction ratios are 1.00015 at
+O0 and 1.00052 at O3, with flat memory and identical O0 output. Required
+regressions belong to PA33 for the loop schedule and PA34 for native masks,
+frame/ABI and load-width controls.
+
+The final full LLVM measurement is 51.845 versus 44.165 seconds, a ratio of
+1.1739. All 325 objects and the executable match native in every observation,
+and PMU coverage is 100%. Instructions are 6.99% above native and cycles are
+17.76% above native, leaving about 10.1% worse cycles per instruction. I-cache
+misses are 18.56% above native and fetch stalls 32.47% above native. The earlier
+private row's elapsed improvement is not confirmed by this final result;
+instruction and cache ratios improve modestly, while the 5% target remains
+unmet. O2 and O3 LLVM measurements remain deferred.
+
+Thirty-seven internal exact text examples change with the register allocation
+and counter ordering. Before their normal worker/canonicalizer regeneration,
+all existing compile statuses and program outcomes match their old hashes.
+The two LowIR diffs contain the same instructions in the same blocks, with
+independent counter steps reordered; an additional tail-recursion driver
+agrees before/after at all four native levels. Generated executables are
+restored rather than committed. The fresh strict report passes after only
+these affected textual references are regenerated; the compiler stays
+byte-identical throughout the reference review.
 
 A separate size ablation halves hinted and loop-site admission caps and
 disables original-size admission of already-grown callees. Across 32
