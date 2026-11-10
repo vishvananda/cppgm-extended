@@ -39,8 +39,9 @@ bool merge_zero_run(std::vector<Inst>& insts, uint32_t first, uint32_t past, int
 }
 
 // The stores insts[first, past) (immediates, one base): rewritten in place
-// when fewer chunks cover their bytes; stores that overlap, or span more
-// than 64 bytes, stay.
+// when fewer chunks cover their bytes. Gaps stay untouched; zero subranges
+// can use vector stores. Overlapping writes must agree byte for byte, and
+// the whole run spans at most 64 bytes.
 void merge_store_run(std::vector<Inst>& insts, uint32_t first, uint32_t past, bool wide)
 {
 	const uint32_t kSpan = 64;
@@ -61,10 +62,11 @@ void merge_store_run(std::vector<Inst>& insts, uint32_t first, uint32_t past, bo
 		const uint32_t at = static_cast<uint32_t>(insts[k].ops[0].disp - lo);
 		for (uint32_t b = 0; b < register_bytes(insts[k].type); ++b)
 		{
-			if (written[at + b])
+			const uint8_t byte = static_cast<uint8_t>(static_cast<uint64_t>(insts[k].ops[1].imm) >> (8 * b));
+			if (written[at + b] && value[at + b] != byte)
 				return;
 			written[at + b] = 1;
-			value[at + b] = static_cast<uint8_t>(static_cast<uint64_t>(insts[k].ops[1].imm) >> (8 * b));
+			value[at + b] = byte;
 		}
 	}
 	const uint32_t span = static_cast<uint32_t>(hi - lo);
@@ -75,6 +77,7 @@ void merge_store_run(std::vector<Inst>& insts, uint32_t first, uint32_t past, bo
 		lowir::TypeKind::Void, lowir::TypeKind::I64 };
 	int32_t disps[kSpan];
 	uint8_t widths[kSpan];
+	bool zeroes[kSpan] = {};
 	int64_t imms[kSpan];
 	uint32_t count = 0;
 	for (uint32_t p = 0; p < span;)
@@ -82,6 +85,19 @@ void merge_store_run(std::vector<Inst>& insts, uint32_t first, uint32_t past, bo
 		if (!written[p])
 		{
 			++p;
+			continue;
+		}
+		uint32_t end = p;
+		if (wide)
+			while (end < span && written[end] && value[end] == 0)
+				++end;
+		if (end - p >= 16)
+		{
+			disps[count] = lo + static_cast<int32_t>(p);
+			widths[count] = static_cast<uint8_t>(end - p);
+			imms[count] = 0;
+			zeroes[count++] = true;
+			p = end;
 			continue;
 		}
 		uint32_t w = 8;
@@ -109,6 +125,16 @@ void merge_store_run(std::vector<Inst>& insts, uint32_t first, uint32_t past, bo
 	for (uint32_t c = 0; c < count; ++c)
 	{
 		Inst& inst = insts[first + c];
+		if (zeroes[c])
+		{
+			inst.op = Op::ZeroBytes;
+			inst.type = lowir::TypeKind::Void;
+			inst.nops = 1;
+			inst.ops[0].disp = disps[c];
+			inst.aux = widths[c];
+			inst.aux2 = 1;
+			continue;
+		}
 		inst.type = kTypes[widths[c]];
 		inst.ops[0].disp = disps[c];
 		inst.ops[1] = Operand::make_imm(imms[c], imms[c] < 0 ? -1 : 0);

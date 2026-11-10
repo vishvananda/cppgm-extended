@@ -1,0 +1,75 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @fields
+  storage data
+  item i64 11
+  item i64 22
+  item i64 77
+  item i64 33
+  item i64 44
+  item i64 55
+  item i64 66
+  item i64 88
+
+function @sparse_fields
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zero_bytes 16x1, [rdi]
+    zero_bytes 32x1, [rdi+24]
+    store.i64 [rdi+56], 9
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, @fields
+    call @sparse_fields [args=(rdi), unwind=no]
+    mov r8, 0
+
+  block ^loop
+    lea r9, [r8*8]
+    mov r10, @fields
+    add r9, r10
+    cmp.i64 r8, 7
+    mov r11, 9
+    mov rdi, 0
+    cmove rdi, r11
+    cmp.i64 r8, 2
+    mov r11, 77
+    cmove rdi, r11
+    cmp.i64 rdi, [r9]
+    jne ^fail
+
+  block ^next
+    add r8, 1
+    cmp.i64 r8, 8
+    jb ^loop
+    jmp ^done
+
+  block ^fail
+    mov rax, 1
+    ret rax
+
+  block ^done
+    mov rax, 0
+    ret rax

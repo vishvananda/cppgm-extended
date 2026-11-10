@@ -1,0 +1,2 @@
+# Bound memory work while permitting any strategy that preserves the hole.
+mem <= 4 in @sparse_fields

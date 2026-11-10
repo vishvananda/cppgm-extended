@@ -899,6 +899,24 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 		load_into(kSelectScratch, a, TypeKind::Ptr);
 		a = Operand::make_reg(kSelectScratch);
 	}
+	// Put an imm64 directly in the product's register when its other
+	// operand is memory. Keep the address intact until IMUL reads it.
+	if (level_ >= 1 && op == BinaryOp::Mul && kind == TypeKind::I64 &&
+		((a.kind == OperandKind::Mem && b.kind == OperandKind::Imm && !fits_imm32(b)) ||
+			(b.kind == OperandKind::Mem && a.kind == OperandKind::Imm && !fits_imm32(a))))
+	{
+		const Operand memory = a.kind == OperandKind::Mem ? a : b;
+		const Operand factor = a.kind == OperandKind::Imm ? a : b;
+		const Reg planned = temps_[inst.result].greg;
+		if (planned == kNoReg || !memory.uses_reg(planned))
+		{
+			const Reg d = result_reg(inst, kNoReg, kNoReg, mem_regs(memory));
+			load_into(d, factor, TypeKind::I64);
+			emit2(Op::Imul, TypeKind::I64, Operand::make_reg(d), memory);
+			finish_result(inst, d);
+			return;
+		}
+	}
 	// A narrow memory right operand and a multiplier beyond imm32 go to a
 	// register: r11, or r10 when the left operand (after a swap, the former
 	// right operand) already occupies r11.

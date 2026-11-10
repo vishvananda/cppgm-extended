@@ -1,0 +1,2 @@
+# Bound instructions without requiring a particular multiply form.
+instructions <= 3 in @memory_product
