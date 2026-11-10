@@ -1,6 +1,11 @@
 #include "300-constexpr-base-entry-export.helper.h"
+#if defined(__APPLE__)
+#define SYM(name) "_" name
+#else
+#define SYM(name) name
+#endif
 extern "C" void host_base_entry(CtorView<int>*, const CtorBox*)
-  asm("_ZN8CtorViewIiEC2I7CtorBoxEERKT_");
+  asm(SYM("_ZN8CtorViewIiEC2I7CtorBoxEERKT_"));
 extern "C" int host_check_entries() {
   struct Storage {
     unsigned long before;
