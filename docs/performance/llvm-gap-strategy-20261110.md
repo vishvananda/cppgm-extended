@@ -272,3 +272,94 @@ All raw records are under `/mnt/vizier/cppgm-llvm-evidence`:
 - `gap-D-mask-facts-full-output-r2/`: complete output comparison after the private relink.
 - `gap-D-mask-facts-four-level-frozen-r2/`: compile-cost measurements.
 - `gap-D-mask-facts-hw-panel-r2/`: all hardware observations and retained outlier flags.
+## Final callee pricing: private screening
+
+The next C experiment removes the fourfold loop-site allowance for callees
+larger than the ordinary cap and judges a callee after its own inlining. It
+removes the fallback that admitted an expanded callee using its smaller input
+shape, together with that fallback's shape copies and counters. Correctness,
+ABI, recursion, exception and explicit inline-attribute checks remain in place.
+This is a partial implementation of C4, not the proposed complete cost model.
+
+The private compiler is `gap-C-final-shape-compiler-r3/cppgm++` under the
+evidence root. Its 40 rebuilt LLVM objects and linked diagnostic Clang are
+byte-identical to the preceding r2 experiment, which retained the obsolete
+bookkeeping. All 325 frozen workload objects and the linked executable match
+native. The four-input ledger reports these changes against the accepted full
+8f76ebb0d build, not the superseded partial baseline:
+
+| Input | Executed code bytes | Instructions | Bytes/instruction | Conditional branches | Calls | Modeled L2 code misses |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| number_literal | -0.467% | -0.028% | -0.172% | +0.096% | -0.519% | -2.044% |
+| store_motion | -0.528% | +0.040% | -0.215% | -0.013% | +0.505% | -1.646% |
+| program_lowering | -0.513% | +0.246% | -0.238% | +0.211% | +0.844% | -1.746% |
+| class_templates | -0.532% | +0.221% | -0.260% | +0.144% | +0.987% | -1.623% |
+
+The hardware screen on store_motion records L2 code misses -2.63%, front-end
+resteers -4.83%, instruction-TLB second-level hits -3.28%, and walk duration
+-2.54%. Fetch stalls rise 3.27% in their separate counter group, blocked store
+forwarding rises 1.76%, and retired micro-operations rise 0.15%. Thus this is
+evidence of a smaller executed footprint and fewer code misses, not a proven
+elapsed-time improvement. Every observation and flagged outlier is retained.
+
+Frozen compile instructions for r3 change by -0.001% at O0, -0.439% at O1,
+-2.142% at O2 and -2.436% at O3; RSS remains within the gate. These are private
+candidate costs. The accepted baseline and proven-gain ledger do not change.
+The full O1 LLVM rebuild completes in 394.68 seconds under load, with no C++
+fallback; this is an unpaired build observation, not a compile-speed claim.
+Its Clang SHA-256 is
+`4a5325778b87aa9e7f7f09187dae7b2bb21f595863ab38e2872d736d9bc15e84`.
+The output-verified five-block comparison is running. Normal qualification
+and promotion depend on those results.
+
+One existing maintainer control explicitly requires the old large-body loop
+multiplier: `check_lowir_o3_loop_priority_inline.pl` passes with the baseline
+and rejects the candidate because loop_first retains two calls instead of one.
+If this policy change is adopted, replace that exact admission requirement
+with behavior and code-growth bounds while preserving its noreturn/phi safety
+coverage. This is a known qualification item, not a passing test claim.
+
+Evidence: `gap-C-final-shape-four-panel-summary-r2.json`,
+`gap-C-final-shape-hw-panel-r2/`,
+`gap-C-final-shape-four-level-frozen-r3/`,
+`gap-C-final-shape-full-output-r2/`, and
+`gap-C-final-shape-top40-r{2,3}/`.
+
+### Tiny helpers and a layout-sensitive control
+
+A separate private experiment estimates scalar leaf operations during the
+existing callee-shape walk and compares them with argument setup plus the call
+and return. Predicted non-growing leaves bypass growth budgets. All 325 outputs
+match; the four-level compile cost is approximately +0.05--0.07% at O1--O3.
+It has not reduced executed footprint: number_literal changes by +0.007%.
+The combined final-shape/leaf experiment also preserves every output, but its
+footprint reduction (-0.443%) does not exceed final-shape pricing alone. Neither
+the leaf rule nor the combined compiler is selected for the full rebuild.
+
+The leaf-only screen also exposes a limit of treating deterministic instruction
+counts as direct code-generation attribution. DeclContext::lookupImpl has the
+same instructions and control-flow graph in both builds after resolving address
+differences, and both profiles enter it 77,398 times. The candidate executes
+185,732 additional hash-table probes. Exactly twelve instructions and two
+conditional branches per probe account for all of this routine's increase:
+2,228,784 instructions and 371,464 branches. DenseMap hashes pointer-valued keys;
+this is consistent with layout-sensitive key placement, not additional
+instructions emitted into the routine. Do not subtract these observations from
+the performance result or classify them as a missed optimization. Distinguish
+path-frequency changes from code changes when ranking residual costs.
+
+Evidence: `gap-C-leaf-cost-analysis-r3/lookupImpl.diff` (empty normalized
+assembly diff), `lookupImpl-path-counts.json`, `gap-C-leaf-cost-ledger-number-r3/`,
+`gap-C-leaf-cost-hw-panel-r3/`, and the corresponding `gap-C-final-leaf-*` files.
+
+The sparse-switch tree and dense-subrange experiments also preserve all 325
+outputs and have effectively flat compile cost. On number_literal, the latter
+reduces executed footprint only 0.174% and raises modeled L2 code misses 0.941%.
+It remains private. The tree-only screen used 39 providers; the dense-subrange
+screen includes the actual X86EncodingOptimization.cpp provider as its 40th,
+so their differences must not be attributed solely to dense subranges.
+
+The duplicated-epilogue bound has also been rerun against the correct full
+baseline (`gap-B-epilogue-bound-r2.json`). Even assuming short jumps to shared
+tails, it can remove at most 39,907 executed bytes (0.424%). This still does not
+support epilogue sharing as the main footprint remedy.
