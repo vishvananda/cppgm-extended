@@ -33,8 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t17 = unary neg i32 1
     %t18 = convert sext i64 i32 %t17
     %t19 = cmp eq i64 %t16, %t18
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $land__3
+    store typed i64 %t19, $land__3
     jump ^land_end_6
 
   block ^land_short_5:
@@ -42,8 +41,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t21 = load typed i64 $land__3
-    branch %t21, ^cond_then_1, ^cond_else_2
+    %t20 = load typed i64 $land__3
+    branch %t20, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__2
@@ -54,8 +53,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t22 = load typed i32 $cond__2
-    return i32 %t22
+    %t21 = load typed i32 $cond__2
+    return i32 %t21
 }
 function @scalar_box__scalar_box__ov2(%this : ptr [object_bytes=8], %value : i64) -> void [binding=weak, object=_ZN10scalar_boxC1El, inline_hint=yes] {
   slot $this : ptr

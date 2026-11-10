@@ -20,8 +20,7 @@ function @classify(%mode : obj<4x4>) -> i32 [binding=strong, object=_Z8classify3
 
   block ^land_rhs_1:
     %t4 = cmp eq i32 42, 42
-    %t5 = cmp ne i64 %t4, 0
-    store typed i64 %t5, $land__1
+    store typed i64 %t4, $land__1
     jump ^land_end_3
 
   block ^land_short_2:
@@ -29,12 +28,12 @@ function @classify(%mode : obj<4x4>) -> i32 [binding=strong, object=_Z8classify3
     jump ^land_end_3
 
   block ^land_end_3:
-    %t6 = load typed i64 $land__1
-    branch %t6, ^land_rhs_4, ^land_short_5
+    %t5 = load typed i64 $land__1
+    branch %t5, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t7 = cmp ne u8 1, 0
-    store typed i64 %t7, $land__2
+    %t6 = cmp ne u8 1, 0
+    store typed i64 %t6, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -42,9 +41,9 @@ function @classify(%mode : obj<4x4>) -> i32 [binding=strong, object=_Z8classify3
     jump ^land_end_6
 
   block ^land_end_6:
-    %t8 = load typed i64 $land__2
-    %t9 = convert trunc i32 i64 %t8
-    return i32 %t9
+    %t7 = load typed i64 $land__2
+    %t8 = convert trunc i32 i64 %t7
+    return i32 %t8
 }
 function @classify_derived(%mode : obj<4x4>) -> i32 [binding=strong, object=_Z16classify_derived7Derived] {
   slot $mode : obj<4x4>

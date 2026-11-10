@@ -190,8 +190,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_26:
     %t96 = load typed i32 @bad_addresses
     %t97 = cmp eq i32 %t96, 0
-    %t98 = cmp ne i64 %t97, 0
-    store typed i64 %t98, $land__2
+    store typed i64 %t97, $land__2
     jump ^land_end_28
 
   block ^land_short_27:
@@ -199,8 +198,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_28
 
   block ^land_end_28:
-    %t99 = load typed i64 $land__2
-    branch %t99, ^cond_then_23, ^cond_else_24
+    %t98 = load typed i64 $land__2
+    branch %t98, ^cond_then_23, ^cond_else_24
 
   block ^cond_then_23:
     store typed i32 0, $cond__1
@@ -211,8 +210,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_25
 
   block ^cond_end_25:
-    %t100 = load typed i32 $cond__1
-    return i32 %t100
+    %t99 = load typed i32 $cond__1
+    return i32 %t99
 }
 function @Box__Box(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN3BoxC1Ev, inline_hint=yes] {
   slot $this : ptr

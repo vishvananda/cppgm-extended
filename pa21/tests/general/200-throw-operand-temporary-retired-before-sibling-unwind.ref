@@ -177,8 +177,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_7:
     %t7 = load typed i32 @scope_destructions
     %t8 = cmp ne i32 %t7, 1
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__1
+    store typed i64 %t8, $lor__1
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -186,9 +185,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t10 = load typed i64 $lor__1
-    %t11 = convert trunc i32 i64 %t10
-    return i32 %t11
+    %t9 = load typed i64 $lor__1
+    %t10 = convert trunc i32 i64 %t9
+    return i32 %t10
 }
 function @Text__Text(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN4TextC1Ei, inline_hint=yes] {
   slot $this : ptr

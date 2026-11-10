@@ -144,8 +144,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_7:
     %t54 = load typed i32 $bits
     %t55 = cmp ne i32 %t54, 1
-    %t56 = cmp ne i64 %t55, 0
-    store typed i64 %t56, $lor__1
+    store typed i64 %t55, $lor__1
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -153,14 +152,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t57 = load typed i64 $lor__1
-    branch %t57, ^lor_short_11, ^lor_rhs_10
+    %t56 = load typed i64 $lor__1
+    branch %t56, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t58 = load typed i32 $n
-    %t59 = cmp ne i32 %t58, 3
-    %t60 = cmp ne i64 %t59, 0
-    store typed i64 %t60, $lor__2
+    %t57 = load typed i32 $n
+    %t58 = cmp ne i32 %t57, 3
+    store typed i64 %t58, $lor__2
     jump ^lor_end_12
 
   block ^lor_short_11:
@@ -168,9 +166,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t61 = load typed i64 $lor__2
-    %t62 = convert trunc i32 i64 %t61
-    return i32 %t62
+    %t59 = load typed i64 $lor__2
+    %t60 = convert trunc i32 i64 %t59
+    return i32 %t60
 }
 function @Sink__operator__(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinkpLEi, inline_hint=yes] {
   slot $this : ptr

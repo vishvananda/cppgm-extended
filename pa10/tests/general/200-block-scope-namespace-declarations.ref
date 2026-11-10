@@ -89,8 +89,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t3 = call i32 @twice(5)
     %t4 = cmp eq i32 %t3, 14
-    %t5 = cmp ne i64 %t4, 0
-    store typed i64 %t5, $land__2
+    store typed i64 %t4, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -98,14 +97,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t6 = load typed i64 $land__2
-    branch %t6, ^land_rhs_7, ^land_short_8
+    %t5 = load typed i64 $land__2
+    branch %t5, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t7 = call i32 @address(2)
-    %t8 = cmp eq i32 %t7, 6
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__3
+    %t6 = call i32 @address(2)
+    %t7 = cmp eq i32 %t6, 6
+    store typed i64 %t7, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -113,14 +111,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t10 = load typed i64 $land__3
-    branch %t10, ^land_rhs_10, ^land_short_11
+    %t8 = load typed i64 $land__3
+    branch %t8, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t11 = call i32 @defined_after(1)
-    %t12 = cmp eq i32 %t11, 8
-    %t13 = cmp ne i64 %t12, 0
-    store typed i64 %t13, $land__4
+    %t9 = call i32 @defined_after(1)
+    %t10 = cmp eq i32 %t9, 8
+    store typed i64 %t10, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -128,8 +125,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t14 = load typed i64 $land__4
-    branch %t14, ^cond_then_1, ^cond_else_2
+    %t11 = load typed i64 $land__4
+    branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -140,6 +137,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t15 = load typed i32 $cond__1
-    return i32 %t15
+    %t12 = load typed i32 $cond__1
+    return i32 %t12
 }

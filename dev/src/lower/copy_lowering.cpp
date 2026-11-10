@@ -440,9 +440,35 @@ lowir::Value FunctionLowering::copied_parameter(
 	return lowering_.passed_directly(cls) ? lowir::Value::slot(slot) : object;
 }
 
+// 12.8p25, p28: trivial assignment transfers storage and yields *this.
+// Preserve volatile member accesses and explicit noinline requests; the
+// existing object copy limits writes to the class's usable span.
+bool FunctionLowering::copy_assignment(
+	const sema::FunctionEntity* function, lowir::Value destination, lowir::Value source, uint32_t location)
+{
+	if ((function->copy_kind != sema::CopyKind::CopyAssignment &&
+			function->copy_kind != sema::CopyKind::MoveAssignment) ||
+		!function->trivial || function->no_inline)
+		return false;
+	const sema::Type* type = function->type->canonical;
+	if (type->param_count != 1 || !type->params[0]->is_reference() || !type->element->is_reference() ||
+		(type->function_cv & sema::kVolatile) != 0 || (type->params[0]->element->cv & sema::kVolatile) != 0)
+		return false;
+	const sema::ClassEntity* owner = sema::ClassOf(function->owner->entity->type);
+	if (owner->layout != sema::FactState::Done)
+		lowering_.size_of(owner->type, location);
+	if (owner->contains_volatile)
+		return false;
+	if (!owner->empty)
+		copy_object(owner->type, source, destination, location);
+	return true;
+}
+
 void FunctionLowering::call_copy(const sema::FunctionEntity* function, EntryVariant variant, lowir::Value destination,
 	lowir::Value source, bool throws, uint32_t location)
 {
+	if (copy_assignment(function, destination, source, location))
+		return;
 	// A copy or move constructor or assignment operator called with the
 	// object and the source; a constructor's other parameters take their
 	// default arguments (8.3.6, 12.8p2-p3), a full-expression with the

@@ -36,8 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i8 %t6
     %t8 = convert sext i32 i8 %t7
     %t9 = cmp eq i32 %t8, 101
-    %t10 = cmp ne i64 %t9, 0
-    store typed i64 %t10, $land__2
+    store typed i64 %t9, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -45,8 +44,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t11 = load typed i64 $land__2
-    branch %t11, ^cond_then_1, ^cond_else_2
+    %t10 = load typed i64 $land__2
+    branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -57,8 +56,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t12 = load typed i32 $cond__1
-    return i32 %t12
+    %t11 = load typed i32 $cond__1
+    return i32 %t11
 }
 function @Text__Text(%this : ptr [object_bytes=8], %text : ptr) -> void [binding=weak, object=_ZN4TextC1EPKc, inline_hint=yes] {
   slot $this : ptr

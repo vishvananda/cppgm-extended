@@ -840,6 +840,8 @@ private:
 	void call_special(const sema::FunctionEntity* function, EntryVariant variant, lowir::Value object,
 		const syntax::Slice<syntax::Expr*>& written, uint32_t location, bool elision = false);
 	bool copies_storage(const sema::FunctionEntity* function);
+	bool copy_assignment(
+		const sema::FunctionEntity* function, lowir::Value destination, lowir::Value source, uint32_t location);
 	void call_constructor(const sema::FunctionEntity* constructor, lowir::Value object, const syntax::Expr& argument,
 		const sema::Conversion* conversion, uint32_t location, bool elision = false);
 	void construct_from(

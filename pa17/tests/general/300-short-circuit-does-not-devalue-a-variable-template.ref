@@ -39,8 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_7:
     %t5 = load typed i32 $small_answer
     %t6 = cmp eq i32 %t5, 1
-    %t7 = cmp ne i64 %t6, 0
-    store typed i64 %t7, $land__3
+    store typed i64 %t6, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -48,14 +47,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t8 = load typed i64 $land__3
-    branch %t8, ^land_rhs_10, ^land_short_11
+    %t7 = load typed i64 $land__3
+    branch %t7, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t9 = load typed i32 $large_answer
-    %t10 = cmp eq i32 %t9, 2
-    %t11 = cmp ne i64 %t10, 0
-    store typed i64 %t11, $land__4
+    %t8 = load typed i32 $large_answer
+    %t9 = cmp eq i32 %t8, 2
+    store typed i64 %t9, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -63,8 +61,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t12 = load typed i64 $land__4
-    branch %t12, ^cond_then_1, ^cond_else_2
+    %t10 = load typed i64 $land__4
+    branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -75,8 +73,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load typed i32 $cond__1
-    return i32 %t13
+    %t11 = load typed i32 $cond__1
+    return i32 %t11
 }
 function @later() -> void [unwind=no, binding=weak, object=_Z5laterIcEvv] {
   block ^entry:

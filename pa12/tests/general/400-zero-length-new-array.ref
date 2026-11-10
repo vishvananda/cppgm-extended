@@ -98,8 +98,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_17:
     %t27 = load typed i32 @destroyed
     %t28 = cmp eq i32 %t27, 0
-    %t29 = cmp ne i64 %t28, 0
-    store typed i64 %t29, $land__5
+    store typed i64 %t28, $land__5
     jump ^land_end_19
 
   block ^land_short_18:
@@ -107,8 +106,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_19
 
   block ^land_end_19:
-    %t30 = load typed i64 $land__5
-    branch %t30, ^cond_then_14, ^cond_else_15
+    %t29 = load typed i64 $land__5
+    branch %t29, ^cond_then_14, ^cond_else_15
 
   block ^cond_then_14:
     store typed i32 0, $cond__4
@@ -119,8 +118,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_16
 
   block ^cond_end_16:
-    %t31 = load typed i32 $cond__4
-    return i32 %t31
+    %t30 = load typed i32 $cond__4
+    return i32 %t30
 }
 function @Element__Element(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN7ElementC1Ev, inline_hint=yes] {
   slot $this : ptr

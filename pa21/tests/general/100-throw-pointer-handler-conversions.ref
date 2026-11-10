@@ -557,8 +557,7 @@ function @to_base() -> i32 [binding=strong, object=_Z7to_basev] {
     %t13 = index i8 [projection=field] %t12, 8
     %t14 = load typed i32 %t13
     %t15 = cmp eq i32 %t14, 1
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $land__3
+    store typed i64 %t15, $land__3
     jump ^land_end_12
 
   block ^land_short_11:
@@ -566,8 +565,8 @@ function @to_base() -> i32 [binding=strong, object=_Z7to_basev] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t17 = load typed i64 $land__3
-    branch %t17, ^cond_then_7, ^cond_else_8
+    %t16 = load typed i64 $land__3
+    branch %t16, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
     store typed i32 0, $cond__2
@@ -578,10 +577,10 @@ function @to_base() -> i32 [binding=strong, object=_Z7to_basev] {
     jump ^cond_end_9
 
   block ^cond_end_9:
-    %t18 = load typed i32 $cond__2
+    %t17 = load typed i32 $cond__2
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t18
+    return i32 %t17
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()

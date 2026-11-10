@@ -105,8 +105,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t55 = binary shr i32 %t54, 29
     %t56 = unary neg i32 1
     %t57 = cmp ne i32 %t55, %t56
-    %t58 = cmp ne i64 %t57, 0
-    store typed i64 %t58, $lor__2
+    store typed i64 %t57, $lor__2
     jump ^lor_end_7
 
   block ^lor_short_6:
@@ -114,7 +113,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_7
 
   block ^lor_end_7:
-    %t59 = load typed i64 $lor__2
-    %t60 = convert trunc i32 i64 %t59
-    return i32 %t60
+    %t58 = load typed i64 $lor__2
+    %t59 = convert trunc i32 i64 %t58
+    return i32 %t59
 }

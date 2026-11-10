@@ -49,19 +49,6 @@ function @box_node___assign(%this : ptr [object_bytes=1], %dst : ptr [pass=by_ad
     store typed ptr %src, $src
     %t1 = load typed ptr $dst
     %t2 = load typed ptr $src
-    %t3 = call ptr @node__operator_(%t1, %t2)
-    return void
-}
-function @node__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [unwind=no, binding=weak, object=_ZN4nodeaSERKS_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $other
     copyobj 8x4 %t2, %t1
-    %t3 = load typed ptr $this
-    return ptr %t3
+    return void
 }

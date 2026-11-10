@@ -78,8 +78,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = index i8 [projection=field] %t13, 0
     %t15 = load typed i32 %t14
     %t16 = cmp eq i32 %t15, 0
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $land__3
+    store typed i64 %t16, $land__3
     jump ^land_end_12
 
   block ^land_short_11:
@@ -87,8 +86,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t18 = load typed i64 $land__3
-    branch %t18, ^cond_then_7, ^cond_else_8
+    %t17 = load typed i64 $land__3
+    branch %t17, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
     store typed i32 0, $cond__2
@@ -99,10 +98,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_9
 
   block ^cond_end_9:
-    %t19 = load typed i32 $cond__2
+    %t18 = load typed i32 $cond__2
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t19
+    return i32 %t18
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()

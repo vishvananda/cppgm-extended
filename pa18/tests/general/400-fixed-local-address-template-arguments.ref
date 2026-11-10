@@ -41,8 +41,7 @@ function @check_addresses() -> i32 [binding=weak, object=_Z15check_addressesIvEi
   block ^land_rhs_4:
     %t7 = load typed i32 $b
     %t8 = cmp eq i32 %t7, 11
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__2
+    store typed i64 %t8, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -50,14 +49,13 @@ function @check_addresses() -> i32 [binding=weak, object=_Z15check_addressesIvEi
     jump ^land_end_6
 
   block ^land_end_6:
-    %t10 = load typed i64 $land__2
-    branch %t10, ^land_rhs_7, ^land_short_8
+    %t9 = load typed i64 $land__2
+    branch %t9, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t11 = load typed i32 $c
-    %t12 = cmp eq i32 %t11, 7
-    %t13 = cmp ne i64 %t12, 0
-    store typed i64 %t13, $land__3
+    %t10 = load typed i32 $c
+    %t11 = cmp eq i32 %t10, 7
+    store typed i64 %t11, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -65,14 +63,13 @@ function @check_addresses() -> i32 [binding=weak, object=_Z15check_addressesIvEi
     jump ^land_end_9
 
   block ^land_end_9:
-    %t14 = load typed i64 $land__3
-    branch %t14, ^land_rhs_10, ^land_short_11
+    %t12 = load typed i64 $land__3
+    branch %t12, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t15 = load typed i32 $d
-    %t16 = cmp eq i32 %t15, 19
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $land__4
+    %t13 = load typed i32 $d
+    %t14 = cmp eq i32 %t13, 19
+    store typed i64 %t14, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -80,8 +77,8 @@ function @check_addresses() -> i32 [binding=weak, object=_Z15check_addressesIvEi
     jump ^land_end_12
 
   block ^land_end_12:
-    %t18 = load typed i64 $land__4
-    branch %t18, ^cond_then_1, ^cond_else_2
+    %t15 = load typed i64 $land__4
+    branch %t15, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -92,8 +89,8 @@ function @check_addresses() -> i32 [binding=weak, object=_Z15check_addressesIvEi
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t19 = load typed i32 $cond__1
-    return i32 %t19
+    %t16 = load typed i32 $cond__1
+    return i32 %t16
 }
 function @check_addresses__2() -> i32 [binding=weak, object=_Z15check_addressesIlEiv] {
   slot $a : i32
@@ -121,8 +118,7 @@ function @check_addresses__2() -> i32 [binding=weak, object=_Z15check_addressesI
   block ^land_rhs_4:
     %t7 = load typed i32 $b
     %t8 = cmp eq i32 %t7, 11
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__2
+    store typed i64 %t8, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -130,14 +126,13 @@ function @check_addresses__2() -> i32 [binding=weak, object=_Z15check_addressesI
     jump ^land_end_6
 
   block ^land_end_6:
-    %t10 = load typed i64 $land__2
-    branch %t10, ^land_rhs_7, ^land_short_8
+    %t9 = load typed i64 $land__2
+    branch %t9, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t11 = load typed i32 $c
-    %t12 = cmp eq i32 %t11, 7
-    %t13 = cmp ne i64 %t12, 0
-    store typed i64 %t13, $land__3
+    %t10 = load typed i32 $c
+    %t11 = cmp eq i32 %t10, 7
+    store typed i64 %t11, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -145,14 +140,13 @@ function @check_addresses__2() -> i32 [binding=weak, object=_Z15check_addressesI
     jump ^land_end_9
 
   block ^land_end_9:
-    %t14 = load typed i64 $land__3
-    branch %t14, ^land_rhs_10, ^land_short_11
+    %t12 = load typed i64 $land__3
+    branch %t12, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t15 = load typed i32 $d
-    %t16 = cmp eq i32 %t15, 19
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $land__4
+    %t13 = load typed i32 $d
+    %t14 = cmp eq i32 %t13, 19
+    store typed i64 %t14, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -160,8 +154,8 @@ function @check_addresses__2() -> i32 [binding=weak, object=_Z15check_addressesI
     jump ^land_end_12
 
   block ^land_end_12:
-    %t18 = load typed i64 $land__4
-    branch %t18, ^cond_then_1, ^cond_else_2
+    %t15 = load typed i64 $land__4
+    branch %t15, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -172,8 +166,8 @@ function @check_addresses__2() -> i32 [binding=weak, object=_Z15check_addressesI
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t19 = load typed i32 $cond__1
-    return i32 %t19
+    %t16 = load typed i32 $cond__1
+    return i32 %t16
 }
 function @private_reader_int___read() -> i32 [binding=weak, object=_ZN14private_readerIiE4readEv, inline_hint=yes] {
   slot $value : i32

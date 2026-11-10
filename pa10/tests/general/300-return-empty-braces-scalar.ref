@@ -30,8 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i64 @parse_number_token(0)
     %t5 = convert sext i64 i32 3
     %t6 = cmp eq i64 %t4, %t5
-    %t7 = cmp ne i64 %t6, 0
-    store typed i64 %t7, $land__2
+    store typed i64 %t6, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -39,8 +38,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t8 = load typed i64 $land__2
-    branch %t8, ^cond_then_1, ^cond_else_2
+    %t7 = load typed i64 $land__2
+    branch %t7, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -51,6 +50,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load typed i32 $cond__1
-    return i32 %t9
+    %t8 = load typed i32 $cond__1
+    return i32 %t8
 }

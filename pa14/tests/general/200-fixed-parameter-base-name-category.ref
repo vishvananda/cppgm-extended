@@ -36,8 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = addr $value
     %t8 = call i32 @Leaf__type_check(%t7)
     %t9 = cmp eq i32 %t8, 5
-    %t10 = cmp ne i64 %t9, 0
-    store typed i64 %t10, $land__2
+    store typed i64 %t9, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -45,15 +44,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t11 = load typed i64 $land__2
-    branch %t11, ^land_rhs_7, ^land_short_8
+    %t10 = load typed i64 $land__2
+    branch %t10, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t12 = addr $value
-    %t13 = call i32 @Leaf__local_check(%t12)
-    %t14 = cmp eq i32 %t13, 6
-    %t15 = cmp ne i64 %t14, 0
-    store typed i64 %t15, $land__3
+    %t11 = addr $value
+    %t12 = call i32 @Leaf__local_check(%t11)
+    %t13 = cmp eq i32 %t12, 6
+    store typed i64 %t13, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -61,15 +59,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t16 = load typed i64 $land__3
-    branch %t16, ^land_rhs_10, ^land_short_11
+    %t14 = load typed i64 $land__3
+    branch %t14, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t17 = addr $value
-    %t18 = call i32 @Leaf__outside(%t17)
-    %t19 = cmp eq i32 %t18, 19
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $land__4
+    %t15 = addr $value
+    %t16 = call i32 @Leaf__outside(%t15)
+    %t17 = cmp eq i32 %t16, 19
+    store typed i64 %t17, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -77,15 +74,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t21 = load typed i64 $land__4
-    branch %t21, ^land_rhs_13, ^land_short_14
+    %t18 = load typed i64 $land__4
+    branch %t18, ^land_rhs_13, ^land_short_14
 
   block ^land_rhs_13:
-    %t22 = addr $value
-    %t23 = call i32 @Leaf__argument_check(%t22)
-    %t24 = cmp eq i32 %t23, 7
-    %t25 = cmp ne i64 %t24, 0
-    store typed i64 %t25, $land__5
+    %t19 = addr $value
+    %t20 = call i32 @Leaf__argument_check(%t19)
+    %t21 = cmp eq i32 %t20, 7
+    store typed i64 %t21, $land__5
     jump ^land_end_15
 
   block ^land_short_14:
@@ -93,8 +89,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_15
 
   block ^land_end_15:
-    %t26 = load typed i64 $land__5
-    branch %t26, ^cond_then_1, ^cond_else_2
+    %t22 = load typed i64 $land__5
+    branch %t22, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -105,8 +101,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t27 = load typed i32 $cond__1
-    return i32 %t27
+    %t23 = load typed i32 $cond__1
+    return i32 %t23
 }
 function @Root__RecordEvent(%this : ptr [object_bytes=8], %code : i32) -> void [binding=weak, object=_ZN4Root11RecordEventE4Code, inline_hint=yes] {
   slot $this : ptr

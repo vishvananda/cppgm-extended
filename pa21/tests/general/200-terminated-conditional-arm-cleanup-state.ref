@@ -256,8 +256,7 @@ function @exercise(%first : u8, %second : u8) -> i32 [binding=strong, object=_Z8
   block ^lor_rhs_32:
     %t33 = load typed i32 @destructions
     %t34 = cmp ne i32 %t33, 1
-    %t35 = cmp ne i64 %t34, 0
-    store typed i64 %t35, $lor__12
+    store typed i64 %t34, $lor__12
     jump ^lor_end_34
 
   block ^lor_short_33:
@@ -265,14 +264,13 @@ function @exercise(%first : u8, %second : u8) -> i32 [binding=strong, object=_Z8
     jump ^lor_end_34
 
   block ^lor_end_34:
-    %t36 = load typed i64 $lor__12
-    branch %t36, ^lor_short_36, ^lor_rhs_35
+    %t35 = load typed i64 $lor__12
+    branch %t35, ^lor_short_36, ^lor_rhs_35
 
   block ^lor_rhs_35:
-    %t37 = load typed i32 @invalid_destructions
-    %t38 = cmp ne i32 %t37, 0
-    %t39 = cmp ne i64 %t38, 0
-    store typed i64 %t39, $lor__13
+    %t36 = load typed i32 @invalid_destructions
+    %t37 = cmp ne i32 %t36, 0
+    store typed i64 %t37, $lor__13
     jump ^lor_end_37
 
   block ^lor_short_36:
@@ -280,18 +278,18 @@ function @exercise(%first : u8, %second : u8) -> i32 [binding=strong, object=_Z8
     jump ^lor_end_37
 
   block ^lor_end_37:
-    %t40 = load typed i64 $lor__13
-    branch %t40, ^lor_short_39, ^lor_rhs_38
+    %t38 = load typed i64 $lor__13
+    branch %t38, ^lor_short_39, ^lor_rhs_38
 
   block ^lor_rhs_38:
-    %t41 = load typed i32 $caught
-    %t42 = load u8 $first
-    branch %t42, ^lor_short_45, ^lor_rhs_44
+    %t39 = load typed i32 $caught
+    %t40 = load u8 $first
+    branch %t40, ^lor_short_45, ^lor_rhs_44
 
   block ^lor_rhs_44:
-    %t43 = load u8 $second
-    %t44 = cmp ne u8 %t43, 0
-    store typed i64 %t44, $lor__16
+    %t41 = load u8 $second
+    %t42 = cmp ne u8 %t41, 0
+    store typed i64 %t42, $lor__16
     jump ^lor_end_46
 
   block ^lor_short_45:
@@ -299,8 +297,8 @@ function @exercise(%first : u8, %second : u8) -> i32 [binding=strong, object=_Z8
     jump ^lor_end_46
 
   block ^lor_end_46:
-    %t45 = load typed i64 $lor__16
-    branch %t45, ^cond_then_41, ^cond_else_42
+    %t43 = load typed i64 $lor__16
+    branch %t43, ^cond_then_41, ^cond_else_42
 
   block ^cond_then_41:
     store typed i32 7, $cond__15
@@ -311,10 +309,9 @@ function @exercise(%first : u8, %second : u8) -> i32 [binding=strong, object=_Z8
     jump ^cond_end_43
 
   block ^cond_end_43:
-    %t46 = load typed i32 $cond__15
-    %t47 = cmp ne i32 %t41, %t46
-    %t48 = cmp ne i64 %t47, 0
-    store typed i64 %t48, $lor__14
+    %t44 = load typed i32 $cond__15
+    %t45 = cmp ne i32 %t39, %t44
+    store typed i64 %t45, $lor__14
     jump ^lor_end_40
 
   block ^lor_short_39:
@@ -322,9 +319,9 @@ function @exercise(%first : u8, %second : u8) -> i32 [binding=strong, object=_Z8
     jump ^lor_end_40
 
   block ^lor_end_40:
-    %t49 = load typed i64 $lor__14
-    %t50 = convert trunc i32 i64 %t49
-    return i32 %t50
+    %t46 = load typed i64 $lor__14
+    %t47 = convert trunc i32 i64 %t46
+    return i32 %t47
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $first : i32

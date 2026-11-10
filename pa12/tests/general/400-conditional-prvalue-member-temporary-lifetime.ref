@@ -118,8 +118,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t25 = index i8 [projection=field] %t24, 8
     %t26 = load typed i32 %t25
     %t27 = cmp eq i32 %t26, 5
-    %t28 = cmp ne i64 %t27, 0
-    store typed i64 %t28, $land__2
+    store typed i64 %t27, $land__2
     jump ^land_end_10
 
   block ^land_short_9:
@@ -127,8 +126,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_10
 
   block ^land_end_10:
-    %t29 = load typed i64 $land__2
-    branch %t29, ^cond_then_5, ^cond_else_6
+    %t28 = load typed i64 $land__2
+    branch %t28, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
     store typed i32 0, $cond__1
@@ -139,10 +138,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_7
 
   block ^cond_end_7:
-    %t30 = load typed i32 $cond__1
-    %t31 = addr $result__shadow2
-    call void @Owner___Owner(%t31)
-    return i32 %t30
+    %t29 = load typed i32 $cond__1
+    %t30 = addr $result__shadow2
+    call void @Owner___Owner(%t30)
+    return i32 %t29
 }
 function @Owner__Owner(%this : ptr [object_bytes=8], %input : ptr) -> void [binding=weak, object=_ZN5OwnerC1EP7Control, inline_hint=yes] {
   slot $this : ptr

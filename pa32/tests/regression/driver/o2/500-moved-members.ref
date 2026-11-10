@@ -5,8 +5,8 @@ function @fill(%t : ptr, %from : ptr) -> void [binding=strong, object=_Z4fillP5T
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t3 = phi i64 [^entry: 0, ^for_body_2: %t17]
-    %t4 = phi i64 [^entry: 0, ^for_body_2: %t16]
+    %t3 = phi i64 [^entry: 0, ^for_body_2: %t15]
+    %t4 = phi i64 [^entry: 0, ^for_body_2: %t14]
     %t5 = cmp lt i64 %t4, %t2
     branch %t5, ^for_body_2, ^for_end_3
 
@@ -15,16 +15,14 @@ function @fill(%t : ptr, %from : ptr) -> void [binding=strong, object=_Z4fillP5T
     %t7 = copy i64 %t3
     %t8 = index i8 [projection=array_element] %t6, %t7
     %t9 = index i8 [projection=array_element] %from, %t7
-    %t10 = copy nonnull ptr %t8
-    %t11 = copy nonnull ptr %t9
-    %t12 = load typed f64 %t11
-    store typed f64 %t12, %t10
-    %t13 = index i8 [projection=field] %t11, 8
-    %t14 = index i8 [projection=field] %t10, 8
-    %t15 = load typed f64 %t13
-    store typed f64 %t15, %t14
-    %t16 = binary add nowrap i64 %t4, 1
-    %t17 = binary add i64 %t3, 16
+    %t10 = load typed f64 %t9
+    store typed f64 %t10, %t8
+    %t11 = index i8 [projection=field] %t9, 8
+    %t12 = index i8 [projection=field] %t8, 8
+    %t13 = load typed f64 %t11
+    store typed f64 %t13, %t12
+    %t14 = binary add nowrap i64 %t4, 1
+    %t15 = binary add i64 %t3, 16
     jump ^for_cond_1
 
   block ^for_end_3:
@@ -32,9 +30,7 @@ function @fill(%t : ptr, %from : ptr) -> void [binding=strong, object=_Z4fillP5T
 }
 function @boxed(%to : ptr, %from : ptr) -> void [binding=strong, object=_Z5boxedP5BoxedPKS_] {
   block ^entry:
-    %t1 = copy nonnull ptr %to
-    %t2 = copy nonnull ptr %from
-    copyobj 8x8 %t2, %t1
+    copyobj 8x8 %from, %to
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -55,8 +51,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t7 = phi i64 [^entry: 0, ^for_body_2: %t20]
-    %t8 = phi i64 [^entry: 0, ^for_body_2: %t19]
+    %t7 = phi i64 [^entry: 0, ^for_body_2: %t18]
+    %t8 = phi i64 [^entry: 0, ^for_body_2: %t17]
     %t9 = cmp lt i64 %t8, 2
     branch %t9, ^for_body_2, ^inline_cont_3
 
@@ -64,22 +60,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = copy i64 %t7
     %t11 = index i8 [projection=array_element] %t6, %t10
     %t12 = index i8 [projection=array_element] %t1, %t10
-    %t13 = copy nonnull ptr %t11
-    %t14 = copy nonnull ptr %t12
-    %t15 = load typed f64 %t14
-    store typed f64 %t15, %t13
-    %t16 = index i8 [projection=field] %t14, 8
-    %t17 = index i8 [projection=field] %t13, 8
-    %t18 = load typed f64 %t16
-    store typed f64 %t18, %t17
-    %t19 = binary add nowrap i64 %t8, 1
-    %t20 = binary add i64 %t7, 16
+    %t13 = load typed f64 %t12
+    store typed f64 %t13, %t11
+    %t14 = index i8 [projection=field] %t12, 8
+    %t15 = index i8 [projection=field] %t11, 8
+    %t16 = load typed f64 %t14
+    store typed f64 %t16, %t15
+    %t17 = binary add nowrap i64 %t8, 1
+    %t18 = binary add i64 %t7, 16
     jump ^for_cond_1
 
   block ^inline_cont_3:
-    %t21 = index i8 [projection=field] %t6, 24
-    %t22 = load typed f64 %t21
-    %t23 = convert fptosi i32 f64 %t22
-    %t24 = binary add nowrap i32 %t23, 3
-    return i32 %t24
+    %t19 = index i8 [projection=field] %t6, 24
+    %t20 = load typed f64 %t19
+    %t21 = convert fptosi i32 f64 %t20
+    %t22 = binary add nowrap i32 %t21, 3
+    return i32 %t22
 }

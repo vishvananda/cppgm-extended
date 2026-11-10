@@ -55,8 +55,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_11:
     %t8 = load typed i32 @destroyed
     %t9 = cmp eq i32 %t8, 0
-    %t10 = cmp ne i64 %t9, 0
-    store typed i64 %t10, $land__5
+    store typed i64 %t9, $land__5
     jump ^land_end_13
 
   block ^land_short_12:
@@ -64,8 +63,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_13
 
   block ^land_end_13:
-    %t11 = load typed i64 $land__5
-    branch %t11, ^cond_then_8, ^cond_else_9
+    %t10 = load typed i64 $land__5
+    branch %t10, ^cond_then_8, ^cond_else_9
 
   block ^cond_then_8:
     store typed i32 0, $cond__4
@@ -76,8 +75,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_10
 
   block ^cond_end_10:
-    %t12 = load typed i32 $cond__4
-    return i32 %t12
+    %t11 = load typed i32 $cond__4
+    return i32 %t11
 }
 function @Box__get(%this : ptr [object_bytes=1]) -> ptr [unwind=no, binding=weak, object=_ZNK3Box3getEv, inline_hint=yes] {
   slot $this : ptr

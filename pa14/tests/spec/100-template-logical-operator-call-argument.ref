@@ -41,8 +41,7 @@ function @operator__(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [p
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 0
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__1
+    store typed i64 %t8, $land__1
     jump ^land_end_3
 
   block ^land_short_2:
@@ -50,9 +49,9 @@ function @operator__(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [p
     jump ^land_end_3
 
   block ^land_end_3:
-    %t10 = load typed i64 $land__1
-    %t11 = convert trunc u8 i64 %t10
-    return u8 %t11
+    %t9 = load typed i64 $land__1
+    %t10 = convert trunc u8 i64 %t9
+    return u8 %t10
 }
 function @test(%f : u8, %a1 : u8, %a2 : u8, %r : u8) -> i32 [binding=weak, object=_Z4testIbbbbEiT_T0_T1_T2_] {
   slot $f : u8
@@ -79,8 +78,7 @@ function @test(%f : u8, %a1 : u8, %a2 : u8, %r : u8) -> i32 [binding=weak, objec
     %t6 = load u8 $a1
     %t7 = convert zext i32 u8 %t6
     %t8 = cmp eq i32 %t7, 0
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__2
+    store typed i64 %t8, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -88,15 +86,14 @@ function @test(%f : u8, %a1 : u8, %a2 : u8, %r : u8) -> i32 [binding=weak, objec
     jump ^land_end_6
 
   block ^land_end_6:
-    %t10 = load typed i64 $land__2
-    branch %t10, ^land_rhs_7, ^land_short_8
+    %t9 = load typed i64 $land__2
+    branch %t9, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t11 = load u8 $a2
-    %t12 = convert zext i32 u8 %t11
-    %t13 = cmp eq i32 %t12, 1
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__3
+    %t10 = load u8 $a2
+    %t11 = convert zext i32 u8 %t10
+    %t12 = cmp eq i32 %t11, 1
+    store typed i64 %t12, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -104,8 +101,8 @@ function @test(%f : u8, %a1 : u8, %a2 : u8, %r : u8) -> i32 [binding=weak, objec
     jump ^land_end_9
 
   block ^land_end_9:
-    %t15 = load typed i64 $land__3
-    branch %t15, ^cond_then_1, ^cond_else_2
+    %t13 = load typed i64 $land__3
+    branch %t13, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -116,8 +113,8 @@ function @test(%f : u8, %a1 : u8, %a2 : u8, %r : u8) -> i32 [binding=weak, objec
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t16 = load typed i32 $cond__1
-    return i32 %t16
+    %t14 = load typed i32 $cond__1
+    return i32 %t14
 }
 function @operator____2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=weak, object=_ZooI6binderS0_EbRKT_RKT0_] {
   slot $lhs : ptr
@@ -138,8 +135,7 @@ function @operator____2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 1
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__1
+    store typed i64 %t8, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -147,7 +143,7 @@ function @operator____2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t10 = load typed i64 $lor__1
-    %t11 = convert trunc u8 i64 %t10
-    return u8 %t11
+    %t9 = load typed i64 $lor__1
+    %t10 = convert trunc u8 i64 %t9
+    return u8 %t10
 }

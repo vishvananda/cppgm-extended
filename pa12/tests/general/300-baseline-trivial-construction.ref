@@ -119,8 +119,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t22 = index i8 [projection=field] %t21, 0
     %t23 = load typed i64 %t22
     %t24 = cmp ne i64 %t23, 73
-    %t25 = cmp ne i64 %t24, 0
-    store typed i64 %t25, $lor__1
+    store typed i64 %t24, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -128,14 +127,13 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t26 = load typed i64 $lor__1
-    branch %t26, ^lor_short_5, ^lor_rhs_4
+    %t25 = load typed i64 $lor__1
+    branch %t25, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t27 = load typed u32 @effects
-    %t28 = cmp ne u32 %t27, 2
-    %t29 = cmp ne i64 %t28, 0
-    store typed i64 %t29, $lor__2
+    %t26 = load typed u32 @effects
+    %t27 = cmp ne u32 %t26, 2
+    store typed i64 %t27, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -143,48 +141,47 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t30 = load typed i64 $lor__2
-    %t31 = convert trunc u32 i64 %t30
-    %t32 = load typed u32 $bad
-    %t33 = binary add u32 %t32, %t31
-    store typed u32 %t33, $bad
-    %t34 = addr $original
-    %t35 = convert sext i64 i32 1
-    %t36 = addr $empty_storage
-    store typed ptr %t36, $copy
-    %t37 = load typed ptr $copy
-    call void @Empty___Empty(%t37)
-    %t38 = addr $original
-    call void @Empty___Empty(%t38)
-    %t39 = load typed u32 @destroyed
-    %t40 = cmp ne u32 %t39, 2
-    %t41 = convert trunc u32 i64 %t40
-    %t42 = load typed u32 $bad
-    %t43 = binary add u32 %t42, %t41
-    store typed u32 %t43, $bad
-    %t44 = convert sext i64 i32 4
-    %t45 = addr $custom_storage
-    %t46 = call ptr @Custom__operatornew(%t44, %t45)
-    %t47 = cmp ne ptr %t46, 0
-    branch %t47, ^new_init_7, ^new_end_8
+    %t28 = load typed i64 $lor__2
+    %t29 = convert trunc u32 i64 %t28
+    %t30 = load typed u32 $bad
+    %t31 = binary add u32 %t30, %t29
+    store typed u32 %t31, $bad
+    %t32 = addr $original
+    %t33 = convert sext i64 i32 1
+    %t34 = addr $empty_storage
+    store typed ptr %t34, $copy
+    %t35 = load typed ptr $copy
+    call void @Empty___Empty(%t35)
+    %t36 = addr $original
+    call void @Empty___Empty(%t36)
+    %t37 = load typed u32 @destroyed
+    %t38 = cmp ne u32 %t37, 2
+    %t39 = convert trunc u32 i64 %t38
+    %t40 = load typed u32 $bad
+    %t41 = binary add u32 %t40, %t39
+    store typed u32 %t41, $bad
+    %t42 = convert sext i64 i32 4
+    %t43 = addr $custom_storage
+    %t44 = call ptr @Custom__operatornew(%t42, %t43)
+    %t45 = cmp ne ptr %t44, 0
+    branch %t45, ^new_init_7, ^new_end_8
 
   block ^new_init_7:
-    call void @Custom__Custom__aggregate(%t46, 51)
+    call void @Custom__Custom__aggregate(%t44, 51)
     jump ^new_end_8
 
   block ^new_end_8:
-    store typed ptr %t46, $custom
-    %t48 = load typed ptr $custom
-    %t49 = index i8 [projection=field] %t48, 0
-    %t50 = load typed i32 %t49
-    %t51 = cmp ne i32 %t50, 51
-    branch %t51, ^lor_short_10, ^lor_rhs_9
+    store typed ptr %t44, $custom
+    %t46 = load typed ptr $custom
+    %t47 = index i8 [projection=field] %t46, 0
+    %t48 = load typed i32 %t47
+    %t49 = cmp ne i32 %t48, 51
+    branch %t49, ^lor_short_10, ^lor_rhs_9
 
   block ^lor_rhs_9:
-    %t52 = load typed u32 @effects
-    %t53 = cmp ne u32 %t52, 3
-    %t54 = cmp ne i64 %t53, 0
-    store typed i64 %t54, $lor__3
+    %t50 = load typed u32 @effects
+    %t51 = cmp ne u32 %t50, 3
+    store typed i64 %t51, $lor__3
     jump ^lor_end_11
 
   block ^lor_short_10:
@@ -192,34 +189,33 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_11
 
   block ^lor_end_11:
-    %t55 = load typed i64 $lor__3
-    %t56 = convert trunc u32 i64 %t55
-    %t57 = load typed u32 $bad
-    %t58 = binary add u32 %t57, %t56
-    store typed u32 %t58, $bad
-    %t59 = convert sext i64 i32 8
-    %t60 = addr $variadic_storage
-    %t61 = call ptr @operatornew__ov3(%t59, %t60, 7)
-    %t62 = cmp ne ptr %t61, 0
-    branch %t62, ^new_init_12, ^new_end_13
+    %t52 = load typed i64 $lor__3
+    %t53 = convert trunc u32 i64 %t52
+    %t54 = load typed u32 $bad
+    %t55 = binary add u32 %t54, %t53
+    store typed u32 %t55, $bad
+    %t56 = convert sext i64 i32 8
+    %t57 = addr $variadic_storage
+    %t58 = call ptr @operatornew__ov3(%t56, %t57, 7)
+    %t59 = cmp ne ptr %t58, 0
+    branch %t59, ^new_init_12, ^new_end_13
 
   block ^new_init_12:
-    call void @Variadic__Variadic__aggregate(%t61, 91)
+    call void @Variadic__Variadic__aggregate(%t58, 91)
     jump ^new_end_13
 
   block ^new_end_13:
-    store typed ptr %t61, $variadic
-    %t63 = load typed ptr $variadic
-    %t64 = index i8 [projection=field] %t63, 0
-    %t65 = load typed i64 %t64
-    %t66 = cmp ne i64 %t65, 91
-    branch %t66, ^lor_short_15, ^lor_rhs_14
+    store typed ptr %t58, $variadic
+    %t60 = load typed ptr $variadic
+    %t61 = index i8 [projection=field] %t60, 0
+    %t62 = load typed i64 %t61
+    %t63 = cmp ne i64 %t62, 91
+    branch %t63, ^lor_short_15, ^lor_rhs_14
 
   block ^lor_rhs_14:
-    %t67 = load typed u32 @effects
-    %t68 = cmp ne u32 %t67, 4
-    %t69 = cmp ne i64 %t68, 0
-    store typed i64 %t69, $lor__4
+    %t64 = load typed u32 @effects
+    %t65 = cmp ne u32 %t64, 4
+    store typed i64 %t65, $lor__4
     jump ^lor_end_16
 
   block ^lor_short_15:
@@ -227,41 +223,40 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_16
 
   block ^lor_end_16:
-    %t70 = load typed i64 $lor__4
-    %t71 = convert trunc u32 i64 %t70
-    %t72 = load typed u32 $bad
-    %t73 = binary add u32 %t72, %t71
-    store typed u32 %t73, $bad
-    %t74 = addr $array_storage
-    %t75 = call ptr @storage_effect(%t74)
-    %t76 = index i64 [projection=array_element] %t75, 0
-    store typed i64 2, %t76
-    %t77 = index i64 [projection=array_element] %t75, 1
-    store typed i64 3, %t77
-    %t78 = index i64 [projection=array_element] %t75, 2
-    store typed i64 5, %t78
-    %t79 = index i8 %t75, 24
-    store typed ptr %t75, $array
-    %t80 = load typed ptr $array
-    %t81 = addr $array_storage
-    %t82 = cmp ne ptr %t80, %t81
-    branch %t82, ^lor_short_18, ^lor_rhs_17
+    %t66 = load typed i64 $lor__4
+    %t67 = convert trunc u32 i64 %t66
+    %t68 = load typed u32 $bad
+    %t69 = binary add u32 %t68, %t67
+    store typed u32 %t69, $bad
+    %t70 = addr $array_storage
+    %t71 = call ptr @storage_effect(%t70)
+    %t72 = index i64 [projection=array_element] %t71, 0
+    store typed i64 2, %t72
+    %t73 = index i64 [projection=array_element] %t71, 1
+    store typed i64 3, %t73
+    %t74 = index i64 [projection=array_element] %t71, 2
+    store typed i64 5, %t74
+    %t75 = index i8 %t71, 24
+    store typed ptr %t71, $array
+    %t76 = load typed ptr $array
+    %t77 = addr $array_storage
+    %t78 = cmp ne ptr %t76, %t77
+    branch %t78, ^lor_short_18, ^lor_rhs_17
 
   block ^lor_rhs_17:
-    %t83 = load typed ptr $array
-    %t84 = index i64 [projection=array_element] %t83, 0
-    %t85 = load typed i64 %t84
+    %t79 = load typed ptr $array
+    %t80 = index i64 [projection=array_element] %t79, 0
+    %t81 = load typed i64 %t80
+    %t82 = load typed ptr $array
+    %t83 = index i64 [projection=array_element] %t82, 1
+    %t84 = load typed i64 %t83
+    %t85 = binary add nowrap i64 %t81, %t84
     %t86 = load typed ptr $array
-    %t87 = index i64 [projection=array_element] %t86, 1
+    %t87 = index i64 [projection=array_element] %t86, 2
     %t88 = load typed i64 %t87
     %t89 = binary add nowrap i64 %t85, %t88
-    %t90 = load typed ptr $array
-    %t91 = index i64 [projection=array_element] %t90, 2
-    %t92 = load typed i64 %t91
-    %t93 = binary add nowrap i64 %t89, %t92
-    %t94 = cmp ne i64 %t93, 10
-    %t95 = cmp ne i64 %t94, 0
-    store typed i64 %t95, $lor__5
+    %t90 = cmp ne i64 %t89, 10
+    store typed i64 %t90, $lor__5
     jump ^lor_end_19
 
   block ^lor_short_18:
@@ -269,14 +264,13 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_19
 
   block ^lor_end_19:
-    %t96 = load typed i64 $lor__5
-    branch %t96, ^lor_short_21, ^lor_rhs_20
+    %t91 = load typed i64 $lor__5
+    branch %t91, ^lor_short_21, ^lor_rhs_20
 
   block ^lor_rhs_20:
-    %t97 = load typed u32 @effects
-    %t98 = cmp ne u32 %t97, 5
-    %t99 = cmp ne i64 %t98, 0
-    store typed i64 %t99, $lor__6
+    %t92 = load typed u32 @effects
+    %t93 = cmp ne u32 %t92, 5
+    store typed i64 %t93, $lor__6
     jump ^lor_end_22
 
   block ^lor_short_21:
@@ -284,50 +278,49 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_22
 
   block ^lor_end_22:
-    %t100 = load typed i64 $lor__6
-    %t101 = convert trunc u32 i64 %t100
-    %t102 = load typed u32 $bad
-    %t103 = binary add u32 %t102, %t101
-    store typed u32 %t103, $bad
-    %t104 = addr $d
+    %t94 = load typed i64 $lor__6
+    %t95 = convert trunc u32 i64 %t94
+    %t96 = load typed u32 $bad
+    %t97 = binary add u32 %t96, %t95
+    store typed u32 %t97, $bad
+    %t98 = addr $d
+    %t99 = addr $d
+    %t100 = index i8 %t99, 0
+    %t101 = index i8 [projection=field] %t100, 0
+    store typed i32 1, %t101
+    %t102 = addr $d
+    %t103 = index i8 %t102, 0
+    %t104 = index i8 [projection=field] %t103, 4
+    store i8 2, %t104
     %t105 = addr $d
-    %t106 = index i8 %t105, 0
-    %t107 = index i8 [projection=field] %t106, 0
-    store typed i32 1, %t107
-    %t108 = addr $d
-    %t109 = index i8 %t108, 0
-    %t110 = index i8 [projection=field] %t109, 4
-    store i8 2, %t110
-    %t111 = addr $d
-    %t112 = index i8 [projection=field] %t111, 5
-    store i8 99, %t112
-    %t113 = addr $b
-    %t114 = addr $b
-    %t115 = index i8 [projection=field] %t114, 0
-    store typed i32 47, %t115
-    %t116 = addr $b
-    %t117 = index i8 [projection=field] %t116, 4
-    store i8 8, %t117
-    %t118 = convert sext i64 i32 8
-    %t119 = addr $d
-    %t120 = index i8 %t119, 0
-    %t121 = addr $b
-    copyobj 5x4 %t121, %t120
-    store typed ptr %t120, $base
-    %t122 = load typed ptr $base
-    %t123 = index i8 [projection=field] %t122, 0
-    %t124 = load typed i32 %t123
-    %t125 = cmp ne i32 %t124, 47
-    branch %t125, ^lor_short_24, ^lor_rhs_23
+    %t106 = index i8 [projection=field] %t105, 5
+    store i8 99, %t106
+    %t107 = addr $b
+    %t108 = addr $b
+    %t109 = index i8 [projection=field] %t108, 0
+    store typed i32 47, %t109
+    %t110 = addr $b
+    %t111 = index i8 [projection=field] %t110, 4
+    store i8 8, %t111
+    %t112 = convert sext i64 i32 8
+    %t113 = addr $d
+    %t114 = index i8 %t113, 0
+    %t115 = addr $b
+    copyobj 5x4 %t115, %t114
+    store typed ptr %t114, $base
+    %t116 = load typed ptr $base
+    %t117 = index i8 [projection=field] %t116, 0
+    %t118 = load typed i32 %t117
+    %t119 = cmp ne i32 %t118, 47
+    branch %t119, ^lor_short_24, ^lor_rhs_23
 
   block ^lor_rhs_23:
-    %t126 = load typed ptr $base
-    %t127 = index i8 [projection=field] %t126, 4
-    %t128 = load i8 %t127
-    %t129 = convert sext i32 i8 %t128
-    %t130 = cmp ne i32 %t129, 8
-    %t131 = cmp ne i64 %t130, 0
-    store typed i64 %t131, $lor__7
+    %t120 = load typed ptr $base
+    %t121 = index i8 [projection=field] %t120, 4
+    %t122 = load i8 %t121
+    %t123 = convert sext i32 i8 %t122
+    %t124 = cmp ne i32 %t123, 8
+    store typed i64 %t124, $lor__7
     jump ^lor_end_25
 
   block ^lor_short_24:
@@ -335,17 +328,16 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_25
 
   block ^lor_end_25:
-    %t132 = load typed i64 $lor__7
-    branch %t132, ^lor_short_27, ^lor_rhs_26
+    %t125 = load typed i64 $lor__7
+    branch %t125, ^lor_short_27, ^lor_rhs_26
 
   block ^lor_rhs_26:
-    %t133 = addr $d
-    %t134 = index i8 [projection=field] %t133, 5
-    %t135 = load i8 %t134
-    %t136 = convert sext i32 i8 %t135
-    %t137 = cmp ne i32 %t136, 99
-    %t138 = cmp ne i64 %t137, 0
-    store typed i64 %t138, $lor__8
+    %t126 = addr $d
+    %t127 = index i8 [projection=field] %t126, 5
+    %t128 = load i8 %t127
+    %t129 = convert sext i32 i8 %t128
+    %t130 = cmp ne i32 %t129, 99
+    store typed i64 %t130, $lor__8
     jump ^lor_end_28
 
   block ^lor_short_27:
@@ -353,15 +345,15 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_28
 
   block ^lor_end_28:
-    %t139 = load typed i64 $lor__8
-    %t140 = convert trunc u32 i64 %t139
-    %t141 = load typed u32 $bad
-    %t142 = binary add u32 %t141, %t140
-    store typed u32 %t142, $bad
-    %t143 = load typed u32 $bad
-    %t144 = cmp ne u32 %t143, 0
-    %t145 = convert trunc i32 i64 %t144
-    return i32 %t145
+    %t131 = load typed i64 $lor__8
+    %t132 = convert trunc u32 i64 %t131
+    %t133 = load typed u32 $bad
+    %t134 = binary add u32 %t133, %t132
+    store typed u32 %t134, $bad
+    %t135 = load typed u32 $bad
+    %t136 = cmp ne u32 %t135, 0
+    %t137 = convert trunc i32 i64 %t136
+    return i32 %t137
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

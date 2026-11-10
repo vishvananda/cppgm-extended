@@ -22,12 +22,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t10, $rhs
     %t11 = load typed ptr $lhs
     %t12 = load typed ptr $rhs
-    %t13 = call ptr @EmptyDerived__operator_(%t11, %t12)
-    %t14 = addr $dst
-    %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load typed i32 %t15
-    %t17 = cmp eq i32 %t16, 2139062143
-    branch %t17, ^cond_then_1, ^cond_else_2
+    %t13 = addr $dst
+    %t14 = index i8 [projection=field] %t13, 0
+    %t15 = load typed i32 %t14
+    %t16 = cmp eq i32 %t15, 2139062143
+    branch %t16, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -38,16 +37,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t18 = load typed i32 $cond__1
-    return i32 %t18
-}
-function @EmptyDerived__operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [unwind=no, binding=weak, object=_ZN12EmptyDerivedaSERKS_, inline_hint=yes] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %__param1, $__param1
-    %t1 = load typed ptr $this
-    return ptr %t1
+    %t17 = load typed i32 $cond__1
+    return i32 %t17
 }

@@ -80,8 +80,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_10:
     %t15 = load typed i32 @hits
     %t16 = cmp ne i32 %t15, 1
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $lor__4
+    store typed i64 %t16, $lor__4
     jump ^lor_end_12
 
   block ^lor_short_11:
@@ -89,9 +88,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t18 = load typed i64 $lor__4
-    %t19 = convert trunc i32 i64 %t18
-    return i32 %t19
+    %t17 = load typed i64 $lor__4
+    %t18 = convert trunc i32 i64 %t17
+    return i32 %t18
 }
 function @flag_true___operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK4flagILb1EEcvbEv, inline_hint=yes] {
   slot $this : ptr

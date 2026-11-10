@@ -45,8 +45,7 @@ function @check() -> i32 [binding=weak, object=_Z5checkITpTniJEEiv] {
     %t11 = index i32 [projection=array_element] %t9, %t10
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 9
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__2
+    store typed i64 %t13, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -54,16 +53,15 @@ function @check() -> i32 [binding=weak, object=_Z5checkITpTniJEEiv] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t15 = load typed i64 $land__2
-    branch %t15, ^land_rhs_7, ^land_short_8
+    %t14 = load typed i64 $land__2
+    branch %t14, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t16 = addr $fixed
-    %t17 = index i32 [projection=array_element] %t16, 2
-    %t18 = load typed i32 %t17
-    %t19 = cmp eq i32 %t18, 0
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $land__3
+    %t15 = addr $fixed
+    %t16 = index i32 [projection=array_element] %t15, 2
+    %t17 = load typed i32 %t16
+    %t18 = cmp eq i32 %t17, 0
+    store typed i64 %t18, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -71,8 +69,8 @@ function @check() -> i32 [binding=weak, object=_Z5checkITpTniJEEiv] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t21 = load typed i64 $land__3
-    branch %t21, ^cond_then_1, ^cond_else_2
+    %t19 = load typed i64 $land__3
+    branch %t19, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -83,8 +81,8 @@ function @check() -> i32 [binding=weak, object=_Z5checkITpTniJEEiv] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t22 = load typed i32 $cond__1
-    return i32 %t22
+    %t20 = load typed i32 $cond__1
+    return i32 %t20
 }
 function @check__2() -> i32 [binding=weak, object=_Z5checkIJLi1ELi2EEEiv] {
   slot $inferred : obj<12x4>
@@ -112,8 +110,7 @@ function @check__2() -> i32 [binding=weak, object=_Z5checkIJLi1ELi2EEEiv] {
     %t11 = index i32 [projection=array_element] %t9, %t10
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 9
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__2
+    store typed i64 %t13, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -121,16 +118,15 @@ function @check__2() -> i32 [binding=weak, object=_Z5checkIJLi1ELi2EEEiv] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t15 = load typed i64 $land__2
-    branch %t15, ^land_rhs_7, ^land_short_8
+    %t14 = load typed i64 $land__2
+    branch %t14, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t16 = addr $fixed
-    %t17 = index i32 [projection=array_element] %t16, 2
-    %t18 = load typed i32 %t17
-    %t19 = cmp eq i32 %t18, 0
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $land__3
+    %t15 = addr $fixed
+    %t16 = index i32 [projection=array_element] %t15, 2
+    %t17 = load typed i32 %t16
+    %t18 = cmp eq i32 %t17, 0
+    store typed i64 %t18, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -138,8 +134,8 @@ function @check__2() -> i32 [binding=weak, object=_Z5checkIJLi1ELi2EEEiv] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t21 = load typed i64 $land__3
-    branch %t21, ^cond_then_1, ^cond_else_2
+    %t19 = load typed i64 $land__3
+    branch %t19, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -150,6 +146,6 @@ function @check__2() -> i32 [binding=weak, object=_Z5checkIJLi1ELi2EEEiv] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t22 = load typed i32 $cond__1
-    return i32 %t22
+    %t20 = load typed i32 $cond__1
+    return i32 %t20
 }

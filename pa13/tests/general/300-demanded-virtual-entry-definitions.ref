@@ -103,8 +103,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_1:
     %t8 = load typed i32 @unused
     %t9 = cmp ne i32 %t8, 0
-    %t10 = cmp ne i64 %t9, 0
-    store typed i64 %t10, $lor__1
+    store typed i64 %t9, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -112,14 +111,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t11 = load typed i64 $lor__1
-    branch %t11, ^lor_short_8, ^lor_rhs_7
+    %t10 = load typed i64 $lor__1
+    branch %t10, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t12 = load typed i32 @base_constructions
-    %t13 = cmp ne i32 %t12, 1
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $lor__3
+    %t11 = load typed i32 @base_constructions
+    %t12 = cmp ne i32 %t11, 1
+    store typed i64 %t12, $lor__3
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -127,11 +125,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t15 = load typed i64 $lor__3
-    %t16 = convert trunc i32 i64 %t15
-    %t17 = addr $d
-    call void @Derived___Derived(%t17)
-    return i32 %t16
+    %t13 = load typed i64 $lor__3
+    %t14 = convert trunc i32 i64 %t13
+    %t15 = addr $d
+    call void @Derived___Derived(%t15)
+    return i32 %t14
 }
 function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
   slot $this : ptr

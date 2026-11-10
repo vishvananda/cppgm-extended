@@ -36,8 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = load typed i32 %t16
     %t18 = cmp eq i32 %t17, 9
-    %t19 = cmp ne i64 %t18, 0
-    store typed i64 %t19, $land__4
+    store typed i64 %t18, $land__4
     jump ^land_end_6
 
   block ^land_short_5:
@@ -45,8 +44,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t20 = load typed i64 $land__4
-    branch %t20, ^cond_then_1, ^cond_else_2
+    %t19 = load typed i64 $land__4
+    branch %t19, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__3
@@ -57,8 +56,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t21 = load typed i32 $cond__3
-    return i32 %t21
+    %t20 = load typed i32 $cond__3
+    return i32 %t20
 }
 function @Holder__Holder(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN6HolderC1Ei, inline_hint=yes] {
   slot $this : ptr

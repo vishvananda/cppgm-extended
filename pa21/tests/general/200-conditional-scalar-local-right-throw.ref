@@ -450,8 +450,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t26 = load typed i32 @limit
     %t27 = load typed i32 $bound
     %t28 = cmp le i32 %t26, %t27
-    %t29 = cmp ne i64 %t28, 0
-    store typed i64 %t29, $land__4
+    store typed i64 %t28, $land__4
     jump ^land_end_32
 
   block ^land_short_31:
@@ -459,33 +458,33 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_32
 
   block ^land_end_32:
-    %t30 = load typed i64 $land__4
-    branch %t30, ^cond_then_27, ^cond_else_28
+    %t29 = load typed i64 $land__4
+    branch %t29, ^cond_then_27, ^cond_else_28
 
   block ^cond_then_27:
-    %t31 = load typed i32 $caught
-    %t32 = load typed i32 @limit
-    %t33 = cmp ne i32 %t31, %t32
-    %t34 = convert trunc u8 i64 %t33
-    store u8 %t34, $cond__3
+    %t30 = load typed i32 $caught
+    %t31 = load typed i32 @limit
+    %t32 = cmp ne i32 %t30, %t31
+    %t33 = convert trunc u8 i64 %t32
+    store u8 %t33, $cond__3
     jump ^cond_end_29
 
   block ^cond_else_28:
-    %t35 = load typed i32 $caught
-    %t36 = load typed i32 $normal_caught
-    %t37 = cmp ne i32 %t35, %t36
-    %t38 = convert trunc u8 i64 %t37
-    store u8 %t38, $cond__3
+    %t34 = load typed i32 $caught
+    %t35 = load typed i32 $normal_caught
+    %t36 = cmp ne i32 %t34, %t35
+    %t37 = convert trunc u8 i64 %t36
+    store u8 %t37, $cond__3
     jump ^cond_end_29
 
   block ^cond_end_29:
-    %t39 = load u8 $cond__3
-    branch %t39, ^if_then_24, ^if_else_25
+    %t38 = load u8 $cond__3
+    branch %t38, ^if_then_24, ^if_else_25
 
   block ^if_then_24:
-    %t40 = load typed i32 @bad
-    %t41 = binary add nowrap i32 %t40, 1
-    store typed i32 %t41, @bad
+    %t39 = load typed i32 @bad
+    %t40 = binary add nowrap i32 %t39, 1
+    store typed i32 %t40, @bad
     jump ^if_end_33
 
   block ^if_else_25:
@@ -495,23 +494,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_iter_7
 
   block ^for_iter_7:
-    %t42 = load typed i32 @limit
-    %t43 = binary add nowrap i32 %t42, 1
-    store typed i32 %t43, @limit
+    %t41 = load typed i32 @limit
+    %t42 = binary add nowrap i32 %t41, 1
+    store typed i32 %t42, @limit
     jump ^for_cond_5
 
   block ^for_end_8:
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t44 = load typed i32 @selected
-    %t45 = binary add nowrap i32 %t44, 1
-    store typed i32 %t45, @selected
+    %t43 = load typed i32 @selected
+    %t44 = binary add nowrap i32 %t43, 1
+    store typed i32 %t44, @selected
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t46 = load typed i32 @bad
-    branch %t46, ^cond_then_34, ^cond_else_35
+    %t45 = load typed i32 @bad
+    branch %t45, ^cond_then_34, ^cond_else_35
 
   block ^cond_then_34:
     store typed i32 10, $cond__5
@@ -522,8 +521,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_36
 
   block ^cond_end_36:
-    %t47 = load typed i32 $cond__5
-    return i32 %t47
+    %t46 = load typed i32 $cond__5
+    return i32 %t46
 }
 equivalent_entry @S__S = @S__S__base_entry
 equivalent_entry @S__S__ov2 = @S__S__ov2__base_entry

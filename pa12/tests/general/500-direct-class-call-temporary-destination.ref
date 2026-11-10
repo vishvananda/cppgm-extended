@@ -115,8 +115,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_10:
     %t15 = load typed i32 @trace
     %t16 = cmp ne i32 %t15, 123
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $lor__8
+    store typed i64 %t16, $lor__8
     jump ^lor_end_12
 
   block ^lor_short_11:
@@ -124,9 +123,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t18 = load typed i64 $lor__8
-    %t19 = convert trunc i32 i64 %t18
-    return i32 %t19
+    %t17 = load typed i64 $lor__8
+    %t18 = convert trunc i32 i64 %t17
+    return i32 %t18
 }
 function @Pair__Pair(%this : ptr [object_bytes=16], %a : i64, %b : i64) -> void [binding=weak, object=_ZN4PairC1Ell, inline_hint=yes] {
   slot $this : ptr

@@ -73,8 +73,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t40 = call ptr @Base__operator____ov2(%t39, 1)
     %t41 = load typed i32 %t40
     %t42 = cmp ne i32 %t41, 43
-    %t43 = cmp ne i64 %t42, 0
-    store typed i64 %t43, $lor__1
+    store typed i64 %t42, $lor__1
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -82,18 +81,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t44 = load typed i64 $lor__1
-    branch %t44, ^lor_short_8, ^lor_rhs_7
+    %t43 = load typed i64 $lor__1
+    branch %t43, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t45 = addr $f
-    %t46 = index i8 %t45, 32
-    %t47 = call ptr @Base__operator____2(%t46)
-    %t48 = index i8 [projection=field] %t47, 0
-    %t49 = load typed i32 %t48
-    %t50 = cmp ne i32 %t49, 43
-    %t51 = cmp ne i64 %t50, 0
-    store typed i64 %t51, $lor__2
+    %t44 = addr $f
+    %t45 = index i8 %t44, 32
+    %t46 = call ptr @Base__operator____2(%t45)
+    %t47 = index i8 [projection=field] %t46, 0
+    %t48 = load typed i32 %t47
+    %t49 = cmp ne i32 %t48, 43
+    store typed i64 %t49, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -101,18 +99,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t52 = load typed i64 $lor__2
-    branch %t52, ^lor_short_11, ^lor_rhs_10
+    %t50 = load typed i64 $lor__2
+    branch %t50, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t53 = load typed ptr $c
-    %t54 = index i8 %t53, 32
-    %t55 = call ptr @Base__operator____ov2__2(%t54)
-    %t56 = index i8 [projection=field] %t55, 0
-    %t57 = load typed i32 %t56
-    %t58 = cmp ne i32 %t57, 43
-    %t59 = cmp ne i64 %t58, 0
-    store typed i64 %t59, $lor__3
+    %t51 = load typed ptr $c
+    %t52 = index i8 %t51, 32
+    %t53 = call ptr @Base__operator____ov2__2(%t52)
+    %t54 = index i8 [projection=field] %t53, 0
+    %t55 = load typed i32 %t54
+    %t56 = cmp ne i32 %t55, 43
+    store typed i64 %t56, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
@@ -120,9 +117,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t60 = load typed i64 $lor__3
-    %t61 = convert trunc i32 i64 %t60
-    return i32 %t61
+    %t57 = load typed i64 $lor__3
+    %t58 = convert trunc i32 i64 %t57
+    return i32 %t58
 }
 function @Base__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZN4BaseixEi, inline_hint=yes] {
   slot $this : ptr

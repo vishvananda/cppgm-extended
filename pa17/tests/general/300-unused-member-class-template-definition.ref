@@ -31,8 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i8 %t10
     %t12 = convert sext i32 i8 %t11
     %t13 = cmp ne i32 %t12, 98
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $lor__1
+    store typed i64 %t13, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -40,17 +39,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t15 = load typed i64 $lor__1
-    branch %t15, ^lor_short_5, ^lor_rhs_4
+    %t14 = load typed i64 $lor__1
+    branch %t14, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t16 = addr @global
-    %t17 = index i8 [projection=field] %t16, 0
-    %t18 = load i8 %t17
-    %t19 = convert sext i32 i8 %t18
-    %t20 = cmp ne i32 %t19, 103
-    %t21 = cmp ne i64 %t20, 0
-    store typed i64 %t21, $lor__2
+    %t15 = addr @global
+    %t16 = index i8 [projection=field] %t15, 0
+    %t17 = load i8 %t16
+    %t18 = convert sext i32 i8 %t17
+    %t19 = cmp ne i32 %t18, 103
+    store typed i64 %t19, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -58,15 +56,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t22 = load typed i64 $lor__2
-    branch %t22, ^lor_short_8, ^lor_rhs_7
+    %t20 = load typed i64 $lor__2
+    branch %t20, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t23 = addr $integer
-    %t24 = call i32 @Wrapper_Valid___Rebind_int___get(%t23)
-    %t25 = cmp ne i32 %t24, 7
-    %t26 = cmp ne i64 %t25, 0
-    store typed i64 %t26, $lor__3
+    %t21 = addr $integer
+    %t22 = call i32 @Wrapper_Valid___Rebind_int___get(%t21)
+    %t23 = cmp ne i32 %t22, 7
+    store typed i64 %t23, $lor__3
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -74,16 +71,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t27 = load typed i64 $lor__3
-    branch %t27, ^lor_short_11, ^lor_rhs_10
+    %t24 = load typed i64 $lor__3
+    branch %t24, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t28 = addr $character
-    %t29 = call i8 @Wrapper_Valid____Rebind_char___get(%t28)
-    %t30 = convert sext i32 i8 %t29
-    %t31 = cmp ne i32 %t30, 99
-    %t32 = cmp ne i64 %t31, 0
-    store typed i64 %t32, $lor__4
+    %t25 = addr $character
+    %t26 = call i8 @Wrapper_Valid____Rebind_char___get(%t25)
+    %t27 = convert sext i32 i8 %t26
+    %t28 = cmp ne i32 %t27, 99
+    store typed i64 %t28, $lor__4
     jump ^lor_end_12
 
   block ^lor_short_11:
@@ -91,9 +87,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t33 = load typed i64 $lor__4
-    %t34 = convert trunc i32 i64 %t33
-    return i32 %t34
+    %t29 = load typed i64 $lor__4
+    %t30 = convert trunc i32 i64 %t29
+    return i32 %t30
 }
 function @Wrapper_Valid___Rebind_int___Rebind(%this : ptr [object_bytes=4], %n : i32) -> void [binding=weak, object=_ZN7WrapperI5ValidE6RebindIiEC1Ei, inline_hint=yes] {
   slot $this : ptr

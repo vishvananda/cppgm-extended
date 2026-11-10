@@ -35,8 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 13
-    %t13 = cmp ne i64 %t12, 0
-    store typed i64 %t13, $land__2
+    store typed i64 %t12, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -44,15 +43,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t14 = load typed i64 $land__2
-    branch %t14, ^land_rhs_7, ^land_short_8
+    %t13 = load typed i64 $land__2
+    branch %t13, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t15 = addr $value
-    %t16 = call i32 @Derived__check(%t15)
-    %t17 = cmp eq i32 %t16, 1
-    %t18 = cmp ne i64 %t17, 0
-    store typed i64 %t18, $land__3
+    %t14 = addr $value
+    %t15 = call i32 @Derived__check(%t14)
+    %t16 = cmp eq i32 %t15, 1
+    store typed i64 %t16, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -60,8 +58,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t19 = load typed i64 $land__3
-    branch %t19, ^cond_then_1, ^cond_else_2
+    %t17 = load typed i64 $land__3
+    branch %t17, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -72,8 +70,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t20 = load typed i32 $cond__1
-    return i32 %t20
+    %t18 = load typed i32 $cond__1
+    return i32 %t18
 }
 function @Derived__Derived(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
   slot $this : ptr

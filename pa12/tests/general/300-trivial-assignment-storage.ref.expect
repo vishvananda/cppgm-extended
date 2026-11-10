@@ -1,0 +1,9 @@
+# explicit-outcomes
+
+none(call) in @assign_small
+none(call) in @explicit_small
+none(call) in @assign_pair
+count(copyobj) == 1 in @assign_small
+count(copyobj) == 1 in @explicit_small
+has(call) in @volatile_assignment
+has(call) in @user_assignment

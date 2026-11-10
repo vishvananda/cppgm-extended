@@ -32,8 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_7:
     %t9 = load typed i32 @copies
     %t10 = cmp ne i32 %t9, 0
-    %t11 = cmp ne i64 %t10, 0
-    store typed i64 %t11, $land__2
+    store typed i64 %t10, $land__2
     jump ^land_end_9
 
   block ^land_short_8:
@@ -41,8 +40,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t12 = load typed i64 $land__2
-    branch %t12, ^cond_then_4, ^cond_else_5
+    %t11 = load typed i64 $land__2
+    branch %t11, ^cond_then_4, ^cond_else_5
 
   block ^cond_then_4:
     store typed i32 0, $cond__1
@@ -53,8 +52,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_6
 
   block ^cond_end_6:
-    %t13 = load typed i32 $cond__1
-    return i32 %t13
+    %t12 = load typed i32 $cond__1
+    return i32 %t12
 }
 function @Value__Value(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN5ValueC1Ei, inline_hint=yes] {
   slot $this : ptr

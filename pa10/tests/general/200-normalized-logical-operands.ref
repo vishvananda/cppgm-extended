@@ -1,0 +1,386 @@
+global @hits : i32 [binding=strong] = zero
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  u32 0
+  u32 1
+  u32 2
+  u32 11
+  u32 12
+  u32 13
+  u32 2147483647
+  u32 2147483648
+  u32 4294967295
+}
+
+function @between(%x : u32) -> u8 [binding=strong, object=_Z7betweenj] {
+  slot $x : u32
+  slot $land__1 : i64
+
+  block ^entry:
+    store typed u32 %x, $x
+    %t1 = load typed u32 $x
+    %t2 = cmp uge u32 %t1, 1
+    branch %t2, ^land_rhs_1, ^land_short_2
+
+  block ^land_rhs_1:
+    %t3 = load typed u32 $x
+    %t4 = cmp ult u32 %t3, 12
+    store typed i64 %t4, $land__1
+    jump ^land_end_3
+
+  block ^land_short_2:
+    store typed i64 0, $land__1
+    jump ^land_end_3
+
+  block ^land_end_3:
+    %t5 = load typed i64 $land__1
+    %t6 = convert trunc u8 i64 %t5
+    return u8 %t6
+}
+function @outside(%x : u32) -> u8 [binding=strong, object=_Z7outsidej] {
+  slot $x : u32
+  slot $lor__1 : i64
+
+  block ^entry:
+    store typed u32 %x, $x
+    %t1 = load typed u32 $x
+    %t2 = cmp ult u32 %t1, 1
+    branch %t2, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t3 = load typed u32 $x
+    %t4 = cmp uge u32 %t3, 12
+    store typed i64 %t4, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t5 = load typed i64 $lor__1
+    %t6 = convert trunc u8 i64 %t5
+    return u8 %t6
+}
+function @nested(%a : i32, %b : i32, %c : i32) -> u8 [binding=strong, object=_Z6nestediii] {
+  slot $a : i32
+  slot $b : i32
+  slot $c : i32
+  slot $land__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    store typed i32 %a, $a
+    store typed i32 %b, $b
+    store typed i32 %c, $c
+    %t1 = load typed i32 $a
+    %t2 = cmp lt i32 %t1, 2
+    branch %t2, ^land_rhs_1, ^land_short_2
+
+  block ^land_rhs_1:
+    %t3 = load typed i32 $b
+    %t4 = cmp gt i32 %t3, 3
+    store typed i64 %t4, $land__1
+    jump ^land_end_3
+
+  block ^land_short_2:
+    store typed i64 0, $land__1
+    jump ^land_end_3
+
+  block ^land_end_3:
+    %t5 = load typed i64 $land__1
+    branch %t5, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t6 = load typed i32 $c
+    %t7 = cmp eq i32 %t6, 4
+    store typed i64 %t7, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t8 = load typed i64 $lor__2
+    %t9 = convert trunc u8 i64 %t8
+    return u8 %t9
+}
+function @rhs_compare(%x : i32, %y : i32) -> u8 [binding=strong, object=_Z11rhs_compareii] {
+  slot $x : i32
+  slot $y : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    store typed i32 %y, $y
+    %t1 = load typed i32 @hits
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @hits
+    %t3 = load typed i32 $x
+    %t4 = load typed i32 $y
+    %t5 = cmp lt i32 %t3, %t4
+    %t6 = convert trunc u8 i64 %t5
+    return u8 %t6
+}
+function @side_effect(%x : i32, %y : i32) -> u8 [binding=strong, object=_Z11side_effectii] {
+  slot $x : i32
+  slot $y : i32
+  slot $land__1 : i64
+
+  block ^entry:
+    store typed i32 %x, $x
+    store typed i32 %y, $y
+    %t1 = load typed i32 $x
+    %t2 = cmp ne i32 %t1, 0
+    branch %t2, ^land_rhs_1, ^land_short_2
+
+  block ^land_rhs_1:
+    %t3 = load typed i32 $x
+    %t4 = load typed i32 $y
+    %t5 = call u8 @rhs_compare(%t3, %t4)
+    %t6 = cmp ne u8 %t5, 0
+    store typed i64 %t6, $land__1
+    jump ^land_end_3
+
+  block ^land_short_2:
+    store typed i64 0, $land__1
+    jump ^land_end_3
+
+  block ^land_end_3:
+    %t7 = load typed i64 $land__1
+    %t8 = convert trunc u8 i64 %t7
+    return u8 %t8
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $values : obj<36x4>
+  slot $i : u32
+  slot $x : u32
+  slot $land__1 : i64
+  slot $lor__2 : i64
+  slot $a : i32
+  slot $b : i32
+  slot $c : i32
+  slot $land__3 : i64
+  slot $lor__4 : i64
+
+  block ^entry:
+    %t1 = addr $values
+    copyobj 36x4 @__constexpr_template__1, %t1
+    store typed u32 0, $i
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t2 = load typed u32 $i
+    %t3 = cmp ult u32 %t2, 9
+    branch %t3, ^for_body_2, ^for_end_4
+
+  block ^for_body_2:
+    %t4 = addr $values
+    %t5 = load typed u32 $i
+    %t6 = index u32 [projection=array_element] %t4, %t5
+    %t7 = load typed u32 %t6
+    store typed u32 %t7, $x
+    %t8 = load typed u32 $x
+    %t9 = call u8 @between(%t8)
+    %t10 = load typed u32 $x
+    %t11 = cmp uge u32 %t10, 1
+    branch %t11, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t12 = load typed u32 $x
+    %t13 = cmp ult u32 %t12, 12
+    store typed i64 %t13, $land__1
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store typed i64 0, $land__1
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t14 = load typed i64 $land__1
+    %t15 = convert zext i32 u8 %t9
+    %t16 = convert trunc i32 i64 %t14
+    %t17 = cmp ne i32 %t15, %t16
+    branch %t17, ^if_then_5, ^if_else_6
+
+  block ^if_then_5:
+    return i32 1
+
+  block ^if_else_6:
+    jump ^if_end_10
+
+  block ^if_end_10:
+    %t18 = load typed u32 $x
+    %t19 = call u8 @outside(%t18)
+    %t20 = load typed u32 $x
+    %t21 = cmp ult u32 %t20, 1
+    branch %t21, ^lor_short_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t22 = load typed u32 $x
+    %t23 = cmp uge u32 %t22, 12
+    store typed i64 %t23, $lor__2
+    jump ^lor_end_15
+
+  block ^lor_short_14:
+    store typed i64 1, $lor__2
+    jump ^lor_end_15
+
+  block ^lor_end_15:
+    %t24 = load typed i64 $lor__2
+    %t25 = convert zext i32 u8 %t19
+    %t26 = convert trunc i32 i64 %t24
+    %t27 = cmp ne i32 %t25, %t26
+    branch %t27, ^if_then_11, ^if_else_12
+
+  block ^if_then_11:
+    return i32 2
+
+  block ^if_else_12:
+    jump ^if_end_16
+
+  block ^if_end_16:
+    jump ^for_iter_3
+
+  block ^for_iter_3:
+    %t28 = load typed u32 $i
+    %t29 = binary add u32 %t28, 1
+    store typed u32 %t29, $i
+    jump ^for_cond_1
+
+  block ^for_end_4:
+    %t30 = unary neg i32 2
+    store typed i32 %t30, $a
+    jump ^for_cond_17
+
+  block ^for_cond_17:
+    %t31 = load typed i32 $a
+    %t32 = cmp lt i32 %t31, 6
+    branch %t32, ^for_body_18, ^for_end_20
+
+  block ^for_body_18:
+    %t33 = unary neg i32 2
+    store typed i32 %t33, $b
+    jump ^for_cond_21
+
+  block ^for_cond_21:
+    %t34 = load typed i32 $b
+    %t35 = cmp lt i32 %t34, 6
+    branch %t35, ^for_body_22, ^for_end_24
+
+  block ^for_body_22:
+    %t36 = unary neg i32 2
+    store typed i32 %t36, $c
+    jump ^for_cond_25
+
+  block ^for_cond_25:
+    %t37 = load typed i32 $c
+    %t38 = cmp lt i32 %t37, 6
+    branch %t38, ^for_body_26, ^for_end_28
+
+  block ^for_body_26:
+    %t39 = load typed i32 $a
+    %t40 = load typed i32 $b
+    %t41 = load typed i32 $c
+    %t42 = call u8 @nested(%t39, %t40, %t41)
+    %t43 = load typed i32 $a
+    %t44 = cmp lt i32 %t43, 2
+    branch %t44, ^land_rhs_31, ^land_short_32
+
+  block ^land_rhs_31:
+    %t45 = load typed i32 $b
+    %t46 = cmp gt i32 %t45, 3
+    store typed i64 %t46, $land__3
+    jump ^land_end_33
+
+  block ^land_short_32:
+    store typed i64 0, $land__3
+    jump ^land_end_33
+
+  block ^land_end_33:
+    %t47 = load typed i64 $land__3
+    branch %t47, ^lor_short_35, ^lor_rhs_34
+
+  block ^lor_rhs_34:
+    %t48 = load typed i32 $c
+    %t49 = cmp eq i32 %t48, 4
+    store typed i64 %t49, $lor__4
+    jump ^lor_end_36
+
+  block ^lor_short_35:
+    store typed i64 1, $lor__4
+    jump ^lor_end_36
+
+  block ^lor_end_36:
+    %t50 = load typed i64 $lor__4
+    %t51 = convert zext i32 u8 %t42
+    %t52 = convert trunc i32 i64 %t50
+    %t53 = cmp ne i32 %t51, %t52
+    branch %t53, ^if_then_29, ^if_else_30
+
+  block ^if_then_29:
+    return i32 3
+
+  block ^if_else_30:
+    jump ^if_end_37
+
+  block ^if_end_37:
+    jump ^for_iter_27
+
+  block ^for_iter_27:
+    %t54 = load typed i32 $c
+    %t55 = binary add nowrap i32 %t54, 1
+    store typed i32 %t55, $c
+    jump ^for_cond_25
+
+  block ^for_end_28:
+    jump ^for_iter_23
+
+  block ^for_iter_23:
+    %t56 = load typed i32 $b
+    %t57 = binary add nowrap i32 %t56, 1
+    store typed i32 %t57, $b
+    jump ^for_cond_21
+
+  block ^for_end_24:
+    jump ^for_iter_19
+
+  block ^for_iter_19:
+    %t58 = load typed i32 $a
+    %t59 = binary add nowrap i32 %t58, 1
+    store typed i32 %t59, $a
+    jump ^for_cond_17
+
+  block ^for_end_20:
+    %t60 = call u8 @side_effect(0, 3)
+    branch %t60, ^if_then_38, ^lor_rhs_40
+
+  block ^lor_rhs_40:
+    %t61 = load typed i32 @hits
+    %t62 = cmp ne i32 %t61, 0
+    branch %t62, ^if_then_38, ^if_else_39
+
+  block ^if_then_38:
+    return i32 4
+
+  block ^if_else_39:
+    jump ^if_end_41
+
+  block ^if_end_41:
+    %t63 = call u8 @side_effect(1, 3)
+    %t64 = cmp eq u8 %t63, 0
+    branch %t64, ^if_then_42, ^lor_rhs_44
+
+  block ^lor_rhs_44:
+    %t65 = load typed i32 @hits
+    %t66 = cmp ne i32 %t65, 1
+    branch %t66, ^if_then_42, ^if_else_43
+
+  block ^if_then_42:
+    return i32 5
+
+  block ^if_else_43:
+    jump ^if_end_45
+
+  block ^if_end_45:
+    return i32 0
+}

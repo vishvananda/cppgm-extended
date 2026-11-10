@@ -22,8 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $number
     %t9 = call i32 @read__2(%t8)
     %t10 = cmp eq i32 %t9, 4
-    %t11 = cmp ne i64 %t10, 0
-    store typed i64 %t11, $land__2
+    store typed i64 %t10, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -31,8 +30,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t12 = load typed i64 $land__2
-    branch %t12, ^cond_then_1, ^cond_else_2
+    %t11 = load typed i64 $land__2
+    branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -43,8 +42,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load typed i32 $cond__1
-    return i32 %t13
+    %t12 = load typed i32 $cond__1
+    return i32 %t12
 }
 function @read(%item : obj<4x4>) -> i32 [binding=weak, object=_Z4read5value, inline_hint=yes] {
   slot $item : obj<4x4>

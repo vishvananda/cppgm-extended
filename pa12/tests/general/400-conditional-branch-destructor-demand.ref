@@ -97,8 +97,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_10:
     %t11 = load typed i32 @constructions
     %t12 = cmp ne i32 %t11, 1
-    %t13 = cmp ne i64 %t12, 0
-    store typed i64 %t13, $lor__6
+    store typed i64 %t12, $lor__6
     jump ^lor_end_12
 
   block ^lor_short_11:
@@ -106,14 +105,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t14 = load typed i64 $lor__6
-    branch %t14, ^lor_short_14, ^lor_rhs_13
+    %t13 = load typed i64 $lor__6
+    branch %t13, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t15 = load typed i32 @destructions
-    %t16 = cmp ne i32 %t15, 1
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $lor__7
+    %t14 = load typed i32 @destructions
+    %t15 = cmp ne i32 %t14, 1
+    store typed i64 %t15, $lor__7
     jump ^lor_end_15
 
   block ^lor_short_14:
@@ -121,14 +119,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t18 = load typed i64 $lor__7
-    branch %t18, ^lor_short_17, ^lor_rhs_16
+    %t16 = load typed i64 $lor__7
+    branch %t16, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
-    %t19 = load typed i32 @invalid_destructions
-    %t20 = cmp ne i32 %t19, 0
-    %t21 = cmp ne i64 %t20, 0
-    store typed i64 %t21, $lor__8
+    %t17 = load typed i32 @invalid_destructions
+    %t18 = cmp ne i32 %t17, 0
+    store typed i64 %t18, $lor__8
     jump ^lor_end_18
 
   block ^lor_short_17:
@@ -136,9 +133,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t22 = load typed i64 $lor__8
-    %t23 = convert trunc i32 i64 %t22
-    return i32 %t23
+    %t19 = load typed i64 $lor__8
+    %t20 = convert trunc i32 i64 %t19
+    return i32 %t20
 }
 function @Left__Left(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4LeftC1Ev, inline_hint=yes] {
   slot $this : ptr

@@ -196,6 +196,13 @@ RValue FunctionLowering::normalized_truth(const syntax::Expr& expr)
 	// The canonical 0 or 1 an operand of a value `&&`/`||` contributes:
 	// compare in the operand's type; the comparison's result is i64.
 	const RValue value = truth_operand(expr);
+	const syntax::Expr* e = WithoutParentheses(&expr);
+	if (value.type.kind() == lowir::TypeKind::I64 && e->kind == syntax::ExprKind::Binary && BuiltinOperator(e))
+	{
+		const TokenKind op = static_cast<const syntax::BinaryExpr*>(e)->op;
+		if (IsComparisonOperator(op) || op == TokenKind::OP_LAND || op == TokenKind::OP_LOR)
+			return value;
+	}
 	if (value.type.is_pointer())
 		return compare(lowir::ComparePredicate::Ne, value.type, value, integer(value.type, 0));
 	// A pointer to member by its truth (an i128 is no operand of an i64

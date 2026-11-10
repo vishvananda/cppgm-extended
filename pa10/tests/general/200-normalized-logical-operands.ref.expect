@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+count(cmp) == 2 in @between
+count(cmp) == 2 in @outside

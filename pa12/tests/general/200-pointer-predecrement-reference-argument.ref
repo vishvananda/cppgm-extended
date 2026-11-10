@@ -86,8 +86,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = index i8 [projection=field] %t21, 4
     %t23 = load typed i32 %t22
     %t24 = cmp eq i32 %t23, 2
-    %t25 = cmp ne i64 %t24, 0
-    store typed i64 %t25, $land__2
+    store typed i64 %t24, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -95,8 +94,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t26 = load typed i64 $land__2
-    branch %t26, ^cond_then_1, ^cond_else_2
+    %t25 = load typed i64 $land__2
+    branch %t25, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -107,8 +106,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t27 = load typed i32 $cond__1
-    return i32 %t27
+    %t26 = load typed i32 $cond__1
+    return i32 %t26
 }
 function @cell__cell__aggregate(%this : ptr [object_bytes=8], %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr

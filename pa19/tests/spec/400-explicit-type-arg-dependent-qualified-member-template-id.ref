@@ -31,8 +31,7 @@ function @boost__runtime__run_case() -> i32 [binding=strong, object=_ZN5boost7ru
     %t17 = index i8 %t16, 0
     %t18 = call i32 @boost__nfp__nfp_detail__named_parameter_base___cppgm_class_template_identity_1___marker(%t17)
     %t19 = cmp eq i32 %t18, 1
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $land__2
+    store typed i64 %t19, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -40,8 +39,8 @@ function @boost__runtime__run_case() -> i32 [binding=strong, object=_ZN5boost7ru
     jump ^land_end_6
 
   block ^land_end_6:
-    %t21 = load typed i64 $land__2
-    branch %t21, ^cond_then_1, ^cond_else_2
+    %t20 = load typed i64 $land__2
+    branch %t20, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -52,8 +51,8 @@ function @boost__runtime__run_case() -> i32 [binding=strong, object=_ZN5boost7ru
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t22 = load typed i32 $cond__1
-    return i32 %t22
+    %t21 = load typed i32 $cond__1
+    return i32 %t21
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
@@ -73,10 +72,10 @@ function @boost__nfp__opt_append(%__param0 : ptr [pass=by_address, object_bytes=
     %t2 = addr $result
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed ptr $np
-    %t5 = call ptr @boost__nfp__named_parameter_int_second_id_constint____operator_(%t3, %t4)
-    %t6 = addr $retobj__1
-    %t7 = addr $result
-    copyobj 4x4 %t7, %t6
+    copyobj 4x4 %t4, %t3
+    %t5 = addr $retobj__1
+    %t6 = addr $result
+    copyobj 4x4 %t6, %t5
     return obj<4x4> $retobj__1
 }
 function @boost__nfp__nfp_detail__named_parameter_base___cppgm_class_template_identity_1___marker(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZNK5boost3nfp10nfp_detail20named_parameter_baseINS0_23named_parameter_combineINS0_15named_parameterIiNS_7runtime12_GLOBAL__N_19second_idERKiEENS4_IiNS6_8first_idES9_EEEEE6markerEv, inline_hint=yes] {
@@ -85,17 +84,4 @@ function @boost__nfp__nfp_detail__named_parameter_base___cppgm_class_template_id
   block ^entry:
     store typed ptr %this, $this
     return i32 1
-}
-function @boost__nfp__named_parameter_int_second_id_constint____operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=internal, object=_ZN5boost3nfp15named_parameterIiNS_7runtime12_GLOBAL__N_19second_idERKiEaSERKS7_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $other
-    copyobj 4x4 %t2, %t1
-    %t3 = load typed ptr $this
-    return ptr %t3
 }

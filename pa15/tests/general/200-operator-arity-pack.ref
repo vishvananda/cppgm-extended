@@ -22,8 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 4x4 %t9, %t8
     %t10 = call i32 @operator___2($argobj__3, 1)
     %t11 = cmp ne i32 %t10, 4
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__1
+    store typed i64 %t11, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -31,9 +30,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t13 = load typed i64 $lor__1
-    %t14 = convert trunc i32 i64 %t13
-    return i32 %t14
+    %t12 = load typed i64 $lor__1
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
 }
 function @operator_(%x : obj<4x4>) -> i32 [binding=weak, object=_ZplIiJEEi3BoxIT_EDpT0_] {
   slot $x : obj<4x4>

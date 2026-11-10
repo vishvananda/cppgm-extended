@@ -54,8 +54,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = index i8 [projection=field] %t17, 0
     %t19 = load typed i32 %t18
     %t20 = cmp eq i32 %t19, 7
-    %t21 = cmp ne i64 %t20, 0
-    store typed i64 %t21, $land__2
+    store typed i64 %t20, $land__2
     jump ^land_end_8
 
   block ^land_short_7:
@@ -63,13 +62,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_8
 
   block ^land_end_8:
-    %t22 = load typed i64 $land__2
-    %t23 = convert trunc i32 i64 %t22
-    store typed i32 %t23, $ok
-    %t24 = load typed ptr $items
-    call void @operatordelete__(%t24)
-    %t25 = load typed i32 $ok
-    branch %t25, ^cond_then_9, ^cond_else_10
+    %t21 = load typed i64 $land__2
+    %t22 = convert trunc i32 i64 %t21
+    store typed i32 %t22, $ok
+    %t23 = load typed ptr $items
+    call void @operatordelete__(%t23)
+    %t24 = load typed i32 $ok
+    branch %t24, ^cond_then_9, ^cond_else_10
 
   block ^cond_then_9:
     store typed i32 0, $cond__3
@@ -80,8 +79,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_11
 
   block ^cond_end_11:
-    %t26 = load typed i32 $cond__3
-    return i32 %t26
+    %t25 = load typed i32 $cond__3
+    return i32 %t25
 }
 function @item__item(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN4itemC1Ei, inline_hint=yes] {
   slot $this : ptr

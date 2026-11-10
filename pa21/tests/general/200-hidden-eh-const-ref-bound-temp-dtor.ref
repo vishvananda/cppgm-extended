@@ -66,8 +66,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_8:
     %t8 = load typed i32 $after
     %t9 = cmp eq i32 %t8, 1
-    %t10 = cmp ne i64 %t9, 0
-    store typed i64 %t10, $land__4
+    store typed i64 %t9, $land__4
     jump ^land_end_10
 
   block ^land_short_9:
@@ -75,8 +74,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_10
 
   block ^land_end_10:
-    %t11 = load typed i64 $land__4
-    branch %t11, ^cond_then_5, ^cond_else_6
+    %t10 = load typed i64 $land__4
+    branch %t10, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
     store typed i32 0, $cond__3
@@ -87,8 +86,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_7
 
   block ^cond_end_7:
-    %t12 = load typed i32 $cond__3
-    return i32 %t12
+    %t11 = load typed i32 $cond__3
+    return i32 %t11
 }
 function @Hooks___Hooks(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5HooksD1Ev, inline_hint=yes] {
   slot $this : ptr

@@ -30,8 +30,7 @@ function @inspect(%array : ptr [pass=by_address, object_bytes=16]) -> i32 [bindi
     %t20 = binary mul i64 1, 8
     %t21 = index i8 [projection=array_element] %t19, %t20
     %t22 = cmp eq ptr %t17, %t21
-    %t23 = cmp ne i64 %t22, 0
-    store typed i64 %t23, $land__2
+    store typed i64 %t22, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -39,8 +38,8 @@ function @inspect(%array : ptr [pass=by_address, object_bytes=16]) -> i32 [bindi
     jump ^land_end_6
 
   block ^land_end_6:
-    %t24 = load typed i64 $land__2
-    branch %t24, ^cond_then_1, ^cond_else_2
+    %t23 = load typed i64 $land__2
+    branch %t23, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -51,8 +50,8 @@ function @inspect(%array : ptr [pass=by_address, object_bytes=16]) -> i32 [bindi
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t25 = load typed i32 $cond__1
-    return i32 %t25
+    %t24 = load typed i32 $cond__1
+    return i32 %t24
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

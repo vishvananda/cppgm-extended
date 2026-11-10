@@ -26,8 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = addr $two
     %t8 = call i32 @Outer_Five___Inner_5_int___read(%t7)
     %t9 = cmp ne i32 %t8, 18
-    %t10 = cmp ne i64 %t9, 0
-    store typed i64 %t10, $lor__1
+    store typed i64 %t9, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -35,15 +34,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t11 = load typed i64 $lor__1
-    branch %t11, ^lor_short_5, ^lor_rhs_4
+    %t10 = load typed i64 $lor__1
+    branch %t10, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t12 = addr $one
-    %t13 = call i32 @Outer_Two___Inner_2_char___add(%t12)
-    %t14 = cmp ne i32 %t13, 12
-    %t15 = cmp ne i64 %t14, 0
-    store typed i64 %t15, $lor__2
+    %t11 = addr $one
+    %t12 = call i32 @Outer_Two___Inner_2_char___add(%t11)
+    %t13 = cmp ne i32 %t12, 12
+    store typed i64 %t13, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -51,15 +49,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t16 = load typed i64 $lor__2
-    branch %t16, ^lor_short_8, ^lor_rhs_7
+    %t14 = load typed i64 $lor__2
+    branch %t14, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t17 = addr $nested
-    %t18 = call i32 @Outer_Two___Helper_int___Inner_2_char___read(%t17)
-    %t19 = cmp ne i32 %t18, 7
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $lor__3
+    %t15 = addr $nested
+    %t16 = call i32 @Outer_Two___Helper_int___Inner_2_char___read(%t15)
+    %t17 = cmp ne i32 %t16, 7
+    store typed i64 %t17, $lor__3
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -67,15 +64,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load typed i64 $lor__3
-    branch %t21, ^lor_short_11, ^lor_rhs_10
+    %t18 = load typed i64 $lor__3
+    branch %t18, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t22 = const i64 1
-    %t23 = convert sext i64 i32 1
-    %t24 = cmp ne i64 %t22, %t23
-    %t25 = cmp ne i64 %t24, 0
-    store typed i64 %t25, $lor__4
+    %t19 = const i64 1
+    %t20 = convert sext i64 i32 1
+    %t21 = cmp ne i64 %t19, %t20
+    store typed i64 %t21, $lor__4
     jump ^lor_end_12
 
   block ^lor_short_11:
@@ -83,9 +79,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t26 = load typed i64 $lor__4
-    %t27 = convert trunc i32 i64 %t26
-    return i32 %t27
+    %t22 = load typed i64 $lor__4
+    %t23 = convert trunc i32 i64 %t22
+    return i32 %t23
 }
 function @Outer_Two___Inner_2_char___Inner(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN5OuterI3TwoE5InnerILi2EcEC1Ei, inline_hint=yes] {
   slot $this : ptr

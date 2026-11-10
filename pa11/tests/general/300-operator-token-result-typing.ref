@@ -17,8 +17,7 @@ function @operator_(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pa
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 2
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__1
+    store typed i64 %t8, $land__1
     jump ^land_end_3
 
   block ^land_short_2:
@@ -26,9 +25,9 @@ function @operator_(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pa
     jump ^land_end_3
 
   block ^land_end_3:
-    %t10 = load typed i64 $land__1
-    %t11 = convert trunc u8 i64 %t10
-    return u8 %t11
+    %t9 = load typed i64 $land__1
+    %t10 = convert trunc u8 i64 %t9
+    return u8 %t10
 }
 function @operator___2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=strong, object=_ZeoRK4FlagS1_] {
   slot $lhs : ptr
@@ -49,8 +48,7 @@ function @operator___2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr 
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 2
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__1
+    store typed i64 %t8, $land__1
     jump ^land_end_3
 
   block ^land_short_2:
@@ -58,9 +56,9 @@ function @operator___2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr 
     jump ^land_end_3
 
   block ^land_end_3:
-    %t10 = load typed i64 $land__1
-    %t11 = convert trunc u8 i64 %t10
-    return u8 %t11
+    %t9 = load typed i64 $land__1
+    %t10 = convert trunc u8 i64 %t9
+    return u8 %t10
 }
 function @operator__(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_ZaNR4FlagRKS_] {
   slot $lhs : ptr

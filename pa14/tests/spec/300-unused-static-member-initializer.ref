@@ -25,8 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $object
     %t6 = call i32 @unused_int___value(%t5)
     %t7 = cmp ne i32 %t6, 7
-    %t8 = cmp ne i64 %t7, 0
-    store typed i64 %t8, $lor__1
+    store typed i64 %t7, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -34,14 +33,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t9 = load typed i64 $lor__1
-    branch %t9, ^lor_short_5, ^lor_rhs_4
+    %t8 = load typed i64 $lor__1
+    branch %t8, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t10 = load typed i32 $converted
-    %t11 = cmp ne i32 %t10, 3
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__2
+    %t9 = load typed i32 $converted
+    %t10 = cmp ne i32 %t9, 3
+    store typed i64 %t10, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -49,9 +47,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t13 = load typed i64 $lor__2
-    %t14 = convert trunc i32 i64 %t13
-    return i32 %t14
+    %t11 = load typed i64 $lor__2
+    %t12 = convert trunc i32 i64 %t11
+    return i32 %t12
 }
 function @unused_int___operatorint(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN6unusedIiEcviEv, inline_hint=yes] {
   slot $this : ptr

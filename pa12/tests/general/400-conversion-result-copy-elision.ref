@@ -33,8 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = cmp ne i32 %t10, 7
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__1
+    store typed i64 %t11, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -42,9 +41,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t13 = load typed i64 $lor__1
-    %t14 = convert trunc i32 i64 %t13
-    return i32 %t14
+    %t12 = load typed i64 $lor__1
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
 }
 function @source__operatorresult(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=4], %this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6sourcecv6resultEv, inline_hint=yes] {
   slot $this : ptr

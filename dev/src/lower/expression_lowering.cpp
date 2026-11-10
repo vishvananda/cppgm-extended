@@ -2374,6 +2374,15 @@ RValue FunctionLowering::call(const syntax::CallExpr& expr, lowir::Value destina
 		if (!invoked)
 		{
 			arguments(expr.arguments, function->type->canonical, function, expr.location);
+			if (arguments_.size() == base + 2 && copy_assignment(function, object, arguments_[base + 1], expr.location))
+			{
+				RValue copied;
+				copied.type = result_type(function);
+				copied.value = object;
+				arguments_.resize(base);
+				end_call(throws);
+				return copied;
+			}
 			callee = member_callee(function, object, (facts->flags & sema::kVirtualCall) != 0, signature);
 			result = result_type(function);
 			// The course defines the table of a class with virtual bases a
@@ -2625,6 +2634,15 @@ RValue FunctionLowering::operator_call(const syntax::Expr& expr, lowir::Value de
 		push_argument(*operands[i], type->params[i - first]);
 	if (postfix)
 		arguments_.push_back(integer(lowir::Type::scalar(lowir::TypeKind::I32), 0).value);
+	if (arguments_.size() == base + 2 && copy_assignment(function, object_value, arguments_[base + 1], e->location))
+	{
+		RValue copied;
+		copied.type = result_type(function);
+		copied.value = object_value;
+		arguments_.resize(base);
+		end_call(throws);
+		return copied;
+	}
 	lowir::SignatureId signature = lowir::kNoId;
 	const lowir::Value callee = member_callee(
 		function, object_value, (e->facts->flags & sema::kVirtualCall) != 0, signature);

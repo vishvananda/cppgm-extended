@@ -938,8 +938,8 @@ void ProgramLowering::demand_vtable_entries(const sema::FunctionEntity* destruct
 void ProgramLowering::demand_entry(const sema::FunctionEntity* function, EntryVariant variant)
 {
 	// Implicit and defaulted members are synthesized: constructors and
-	// destructors that are not trivial, copy and move members called (the
-	// course calls even a trivial assignment operator). One defaulted
+	// destructors that are not trivial, and copy and move members whose
+	// definitions are needed by calls or addresses. One defaulted
 	// inline outside its class (`inline T::T() = default;`, 8.4.2p5) is
 	// defined where odr-used too (its definition emits nothing).
 	const bool assignment = function->copy_kind == sema::CopyKind::CopyAssignment ||

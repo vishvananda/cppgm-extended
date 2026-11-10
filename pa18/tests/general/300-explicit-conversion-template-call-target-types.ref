@@ -226,8 +226,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t92 = addr $derived
     %t93 = call i32 @Derived__operatorT(%t92)
     %t94 = cmp ne i32 %t93, 23
-    %t95 = cmp ne i64 %t94, 0
-    store typed i64 %t95, $lor__3
+    store typed i64 %t94, $lor__3
     jump ^lor_end_31
 
   block ^lor_short_30:
@@ -235,9 +234,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_31
 
   block ^lor_end_31:
-    %t96 = load typed i64 $lor__3
-    %t97 = convert trunc i32 i64 %t96
-    return i32 %t97
+    %t95 = load typed i64 $lor__3
+    %t96 = convert trunc i32 i64 %t95
+    return i32 %t96
 }
 function @Source__operatorT(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZN6SourcecvT_I5ValueEEv, inline_hint=yes] {
   slot $this : ptr

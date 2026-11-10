@@ -47,8 +47,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_1:
     %t10 = load typed i32 @factories
     %t11 = cmp ne i32 %t10, 2
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__1
+    store typed i64 %t11, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -56,15 +55,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t13 = load typed i64 $lor__1
-    branch %t13, ^lor_short_5, ^lor_rhs_4
+    %t12 = load typed i64 $lor__1
+    branch %t12, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t14 = addr $owner
-    %t15 = call i32 @Owner__get(%t14)
-    %t16 = cmp ne i32 %t15, 4
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $lor__2
+    %t13 = addr $owner
+    %t14 = call i32 @Owner__get(%t13)
+    %t15 = cmp ne i32 %t14, 4
+    store typed i64 %t15, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -72,9 +70,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t18 = load typed i64 $lor__2
-    %t19 = convert trunc i32 i64 %t18
-    return i32 %t19
+    %t16 = load typed i64 $lor__2
+    %t17 = convert trunc i32 i64 %t16
+    return i32 %t17
 }
 function @Path__Path__aggregate(%this : ptr [object_bytes=4], %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr

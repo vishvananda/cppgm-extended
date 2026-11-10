@@ -194,8 +194,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_13:
     %t14 = load typed i32 @drops
     %t15 = cmp ne i32 %t14, 3
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__4
+    store typed i64 %t15, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
@@ -203,11 +202,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t17 = load typed i64 $lor__4
-    %t18 = convert trunc i32 i64 %t17
+    %t16 = load typed i64 $lor__4
+    %t17 = convert trunc i32 i64 %t16
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t18
+    return i32 %t17
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()

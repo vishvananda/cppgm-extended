@@ -23,8 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load typed i64 %t10
     %t12 = convert sext i64 i32 0
     %t13 = cmp eq i64 %t11, %t12
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__2
+    store typed i64 %t13, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -32,18 +31,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t15 = load typed i64 $land__2
-    branch %t15, ^land_rhs_7, ^land_short_8
+    %t14 = load typed i64 $land__2
+    branch %t14, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t16 = addr $bits
-    %t17 = index i8 [projection=field] %t16, 0
-    %t18 = index i64 [projection=array_element] %t17, 2
-    %t19 = load typed i64 %t18
-    %t20 = convert sext i64 i32 0
-    %t21 = cmp eq i64 %t19, %t20
-    %t22 = cmp ne i64 %t21, 0
-    store typed i64 %t22, $land__3
+    %t15 = addr $bits
+    %t16 = index i8 [projection=field] %t15, 0
+    %t17 = index i64 [projection=array_element] %t16, 2
+    %t18 = load typed i64 %t17
+    %t19 = convert sext i64 i32 0
+    %t20 = cmp eq i64 %t18, %t19
+    store typed i64 %t20, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -51,18 +49,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t23 = load typed i64 $land__3
-    branch %t23, ^land_rhs_10, ^land_short_11
+    %t21 = load typed i64 $land__3
+    branch %t21, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t24 = addr $bits
-    %t25 = index i8 [projection=field] %t24, 0
-    %t26 = index i64 [projection=array_element] %t25, 3
-    %t27 = load typed i64 %t26
-    %t28 = convert sext i64 i32 0
-    %t29 = cmp eq i64 %t27, %t28
-    %t30 = cmp ne i64 %t29, 0
-    store typed i64 %t30, $land__4
+    %t22 = addr $bits
+    %t23 = index i8 [projection=field] %t22, 0
+    %t24 = index i64 [projection=array_element] %t23, 3
+    %t25 = load typed i64 %t24
+    %t26 = convert sext i64 i32 0
+    %t27 = cmp eq i64 %t25, %t26
+    store typed i64 %t27, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -70,8 +67,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t31 = load typed i64 $land__4
-    branch %t31, ^cond_then_1, ^cond_else_2
+    %t28 = load typed i64 $land__4
+    branch %t28, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -82,8 +79,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t32 = load typed i32 $cond__1
-    return i32 %t32
+    %t29 = load typed i32 $cond__1
+    return i32 %t29
 }
 function @Bits__Bits(%this : ptr [object_bytes=32]) -> void [binding=weak, object=_ZN4BitsC1Ev, inline_hint=yes] {
   slot $this : ptr

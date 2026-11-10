@@ -27,8 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load typed ptr %t12
     %t14 = addr $value
     %t15 = cmp eq ptr %t13, %t14
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $land__2
+    store typed i64 %t15, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -36,8 +35,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t17 = load typed i64 $land__2
-    branch %t17, ^cond_then_1, ^cond_else_2
+    %t16 = load typed i64 $land__2
+    branch %t16, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -48,8 +47,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t18 = load typed i32 $cond__1
-    return i32 %t18
+    %t17 = load typed i32 $cond__1
+    return i32 %t17
 }
 function @Wrapper__Wrapper(%this : ptr [object_bytes=8], %ptr : ptr) -> void [binding=weak, object=_ZN7WrapperC1EPi, inline_hint=yes] {
   slot $this : ptr

@@ -36,8 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 0
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $land__2
+    store typed i64 %t11, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -45,14 +44,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t13 = load typed i64 $land__2
-    branch %t13, ^land_rhs_7, ^land_short_8
+    %t12 = load typed i64 $land__2
+    branch %t12, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t14 = load typed i32 @moves
-    %t15 = cmp eq i32 %t14, 1
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $land__3
+    %t13 = load typed i32 @moves
+    %t14 = cmp eq i32 %t13, 1
+    store typed i64 %t14, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -60,14 +58,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t17 = load typed i64 $land__3
-    branch %t17, ^land_rhs_10, ^land_short_11
+    %t15 = load typed i64 $land__3
+    branch %t15, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t18 = load typed i32 @copies
-    %t19 = cmp eq i32 %t18, 0
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $land__4
+    %t16 = load typed i32 @copies
+    %t17 = cmp eq i32 %t16, 0
+    store typed i64 %t17, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -75,8 +72,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t21 = load typed i64 $land__4
-    branch %t21, ^cond_then_1, ^cond_else_2
+    %t18 = load typed i64 $land__4
+    branch %t18, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -87,8 +84,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t22 = load typed i32 $cond__1
-    return i32 %t22
+    %t19 = load typed i32 $cond__1
+    return i32 %t19
 }
 function @my_move(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z7my_moveI3BoxEOT_RS1_] {
   slot $value : ptr

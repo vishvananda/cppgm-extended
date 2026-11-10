@@ -35,38 +35,37 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $arg__1
     %t7 = addr $s
     call void @string_like_char_traits___operatorView_CharT_Traits_(%t6, %t7)
-    %t8 = call ptr @view_char_traits___operator_(%t5, %t6)
-    %t9 = addr $source
-    %t10 = addr @__strlit__1
-    %t11 = convert sext i64 i32 4
-    call void @view_char_traits___view__ov3(%t9, %t10, %t11)
-    %t12 = addr $s2
-    %t13 = addr $arg__2
-    %t14 = addr $source
-    call void @view_char_traits___view__ov2(%t13, %t14)
-    call void @string_like_char_traits___string_like__2(%t12, %t13)
+    copyobj 16x8 %t6, %t5
+    %t8 = addr $source
+    %t9 = addr @__strlit__1
+    %t10 = convert sext i64 i32 4
+    call void @view_char_traits___view__ov3(%t8, %t9, %t10)
+    %t11 = addr $s2
+    %t12 = addr $arg__2
+    %t13 = addr $source
+    call void @view_char_traits___view__ov2(%t12, %t13)
+    call void @string_like_char_traits___string_like__2(%t11, %t12)
+    %t14 = addr $s3
+    call void @string_like_char_traits___string_like(%t14)
     %t15 = addr $s3
-    call void @string_like_char_traits___string_like(%t15)
-    %t16 = addr $s3
-    %t17 = addr $arg__3
-    %t18 = addr $source
-    call void @view_char_traits___view__ov2(%t17, %t18)
-    %t19 = call ptr @string_like_char_traits___operator_(%t16, %t17)
-    %t20 = addr $v
-    %t21 = index i8 [projection=field] %t20, 8
-    %t22 = load typed i64 %t21
-    %t23 = convert sext i64 i32 4
-    %t24 = cmp eq i64 %t22, %t23
-    branch %t24, ^land_rhs_4, ^land_short_5
+    %t16 = addr $arg__3
+    %t17 = addr $source
+    call void @view_char_traits___view__ov2(%t16, %t17)
+    %t18 = call ptr @string_like_char_traits___operator_(%t15, %t16)
+    %t19 = addr $v
+    %t20 = index i8 [projection=field] %t19, 8
+    %t21 = load typed i64 %t20
+    %t22 = convert sext i64 i32 4
+    %t23 = cmp eq i64 %t21, %t22
+    branch %t23, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t25 = addr $v2
-    %t26 = index i8 [projection=field] %t25, 8
-    %t27 = load typed i64 %t26
-    %t28 = convert sext i64 i32 4
-    %t29 = cmp eq i64 %t27, %t28
-    %t30 = cmp ne i64 %t29, 0
-    store typed i64 %t30, $land__5
+    %t24 = addr $v2
+    %t25 = index i8 [projection=field] %t24, 8
+    %t26 = load typed i64 %t25
+    %t27 = convert sext i64 i32 4
+    %t28 = cmp eq i64 %t26, %t27
+    store typed i64 %t28, $land__5
     jump ^land_end_6
 
   block ^land_short_5:
@@ -74,18 +73,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t31 = load typed i64 $land__5
-    branch %t31, ^land_rhs_7, ^land_short_8
+    %t29 = load typed i64 $land__5
+    branch %t29, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t32 = addr $s2
-    %t33 = call ptr @string_like_char_traits___data(%t32)
-    %t34 = index i8 [projection=array_element] %t33, 0
-    %t35 = load i8 %t34
-    %t36 = convert sext i32 i8 %t35
-    %t37 = cmp eq i32 %t36, 97
-    %t38 = cmp ne i64 %t37, 0
-    store typed i64 %t38, $land__6
+    %t30 = addr $s2
+    %t31 = call ptr @string_like_char_traits___data(%t30)
+    %t32 = index i8 [projection=array_element] %t31, 0
+    %t33 = load i8 %t32
+    %t34 = convert sext i32 i8 %t33
+    %t35 = cmp eq i32 %t34, 97
+    store typed i64 %t35, $land__6
     jump ^land_end_9
 
   block ^land_short_8:
@@ -93,18 +91,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t39 = load typed i64 $land__6
-    branch %t39, ^land_rhs_10, ^land_short_11
+    %t36 = load typed i64 $land__6
+    branch %t36, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t40 = addr $s2
-    %t41 = call ptr @string_like_char_traits___data(%t40)
-    %t42 = index i8 [projection=array_element] %t41, 3
-    %t43 = load i8 %t42
-    %t44 = convert sext i32 i8 %t43
-    %t45 = cmp eq i32 %t44, 100
-    %t46 = cmp ne i64 %t45, 0
-    store typed i64 %t46, $land__7
+    %t37 = addr $s2
+    %t38 = call ptr @string_like_char_traits___data(%t37)
+    %t39 = index i8 [projection=array_element] %t38, 3
+    %t40 = load i8 %t39
+    %t41 = convert sext i32 i8 %t40
+    %t42 = cmp eq i32 %t41, 100
+    store typed i64 %t42, $land__7
     jump ^land_end_12
 
   block ^land_short_11:
@@ -112,18 +109,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t47 = load typed i64 $land__7
-    branch %t47, ^land_rhs_13, ^land_short_14
+    %t43 = load typed i64 $land__7
+    branch %t43, ^land_rhs_13, ^land_short_14
 
   block ^land_rhs_13:
-    %t48 = addr $s3
-    %t49 = call ptr @string_like_char_traits___data(%t48)
-    %t50 = index i8 [projection=array_element] %t49, 1
-    %t51 = load i8 %t50
-    %t52 = convert sext i32 i8 %t51
-    %t53 = cmp eq i32 %t52, 98
-    %t54 = cmp ne i64 %t53, 0
-    store typed i64 %t54, $land__8
+    %t44 = addr $s3
+    %t45 = call ptr @string_like_char_traits___data(%t44)
+    %t46 = index i8 [projection=array_element] %t45, 1
+    %t47 = load i8 %t46
+    %t48 = convert sext i32 i8 %t47
+    %t49 = cmp eq i32 %t48, 98
+    store typed i64 %t49, $land__8
     jump ^land_end_15
 
   block ^land_short_14:
@@ -131,18 +127,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_15
 
   block ^land_end_15:
-    %t55 = load typed i64 $land__8
-    branch %t55, ^land_rhs_16, ^land_short_17
+    %t50 = load typed i64 $land__8
+    branch %t50, ^land_rhs_16, ^land_short_17
 
   block ^land_rhs_16:
-    %t56 = addr $s3
-    %t57 = call ptr @string_like_char_traits___data(%t56)
-    %t58 = index i8 [projection=array_element] %t57, 2
-    %t59 = load i8 %t58
-    %t60 = convert sext i32 i8 %t59
-    %t61 = cmp eq i32 %t60, 99
-    %t62 = cmp ne i64 %t61, 0
-    store typed i64 %t62, $land__9
+    %t51 = addr $s3
+    %t52 = call ptr @string_like_char_traits___data(%t51)
+    %t53 = index i8 [projection=array_element] %t52, 2
+    %t54 = load i8 %t53
+    %t55 = convert sext i32 i8 %t54
+    %t56 = cmp eq i32 %t55, 99
+    store typed i64 %t56, $land__9
     jump ^land_end_18
 
   block ^land_short_17:
@@ -150,8 +145,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_18
 
   block ^land_end_18:
-    %t63 = load typed i64 $land__9
-    branch %t63, ^cond_then_1, ^cond_else_2
+    %t57 = load typed i64 $land__9
+    branch %t57, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__4
@@ -162,8 +157,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t64 = load typed i32 $cond__4
-    return i32 %t64
+    %t58 = load typed i32 $cond__4
+    return i32 %t58
 }
 function @string_like_char_traits___string_like(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN11string_likeIc6traitsEC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -213,19 +208,6 @@ function @view_char_traits___view(%this : ptr [object_bytes=16]) -> void [bindin
     %t5 = index i8 [projection=field] %t4, 8
     store typed i64 %t3, %t5
     return void
-}
-function @view_char_traits___operator_(%this : ptr [object_bytes=16], %other : ptr [pass=by_address, object_bytes=16]) -> ptr [unwind=no, binding=weak, object=_ZN4viewIc6traitsEaSERKS1_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $other
-    copyobj 16x8 %t2, %t1
-    %t3 = load typed ptr $this
-    return ptr %t3
 }
 function @view_char_traits___view__ov3(%this : ptr [object_bytes=16], %ptr : ptr, %len : i64) -> void [binding=weak, object=_ZN4viewIc6traitsEC1EPKcm, inline_hint=yes] {
   slot $this : ptr

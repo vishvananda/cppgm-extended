@@ -52,8 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = call ptr @address_char()
     %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 1
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $land__2
+    store typed i64 %t11, $land__2
     jump ^land_end_12
 
   block ^land_short_11:
@@ -61,8 +60,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t13 = load typed i64 $land__2
-    branch %t13, ^cond_then_7, ^cond_else_8
+    %t12 = load typed i64 $land__2
+    branch %t12, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
     store typed i32 0, $cond__1
@@ -73,6 +72,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_9
 
   block ^cond_end_9:
-    %t14 = load typed i32 $cond__1
-    return i32 %t14
+    %t13 = load typed i32 $cond__1
+    return i32 %t13
 }

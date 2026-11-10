@@ -22,8 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $value
     %t9 = call i32 @After_Config___erase(%t7, %t8)
     %t10 = cmp eq i32 %t9, 2
-    %t11 = cmp ne i64 %t10, 0
-    store typed i64 %t11, $land__2
+    store typed i64 %t10, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -31,16 +30,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t12 = load typed i64 $land__2
-    branch %t12, ^land_rhs_7, ^land_short_8
+    %t11 = load typed i64 $land__2
+    branch %t11, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t13 = addr $before
-    %t14 = index i8 %t13, 0
-    %t15 = call i32 @Base_Config___erase__ov2(%t14, 0, 0)
-    %t16 = cmp eq i32 %t15, 3
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $land__3
+    %t12 = addr $before
+    %t13 = index i8 %t12, 0
+    %t14 = call i32 @Base_Config___erase__ov2(%t13, 0, 0)
+    %t15 = cmp eq i32 %t14, 3
+    store typed i64 %t15, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -48,16 +46,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t18 = load typed i64 $land__3
-    branch %t18, ^land_rhs_10, ^land_short_11
+    %t16 = load typed i64 $land__3
+    branch %t16, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t19 = addr $after
-    %t20 = index i8 %t19, 0
-    %t21 = call i32 @Base_Config___erase__ov2(%t20, 0, 0)
-    %t22 = cmp eq i32 %t21, 3
-    %t23 = cmp ne i64 %t22, 0
-    store typed i64 %t23, $land__4
+    %t17 = addr $after
+    %t18 = index i8 %t17, 0
+    %t19 = call i32 @Base_Config___erase__ov2(%t18, 0, 0)
+    %t20 = cmp eq i32 %t19, 3
+    store typed i64 %t20, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -65,8 +62,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t24 = load typed i64 $land__4
-    branch %t24, ^cond_then_1, ^cond_else_2
+    %t21 = load typed i64 $land__4
+    branch %t21, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -77,8 +74,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t25 = load typed i32 $cond__1
-    return i32 %t25
+    %t22 = load typed i32 $cond__1
+    return i32 %t22
 }
 function @Before_Config___erase(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN6BeforeI6ConfigE5eraseIiEEN6EnableIXgtstT_Li0EEiE4typeERKS4_, inline_hint=yes] {
   slot $this : ptr

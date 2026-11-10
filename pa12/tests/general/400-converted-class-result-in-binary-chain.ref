@@ -142,8 +142,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_19:
     %t20 = load typed i32 @evaluations
     %t21 = cmp eq i32 %t20, 2
-    %t22 = cmp ne i64 %t21, 0
-    store typed i64 %t22, $land__8
+    store typed i64 %t21, $land__8
     jump ^land_end_21
 
   block ^land_short_20:
@@ -151,8 +150,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_21
 
   block ^land_end_21:
-    %t23 = load typed i64 $land__8
-    branch %t23, ^cond_then_16, ^cond_else_17
+    %t22 = load typed i64 $land__8
+    branch %t22, ^cond_then_16, ^cond_else_17
 
   block ^cond_then_16:
     store typed i32 0, $cond__7
@@ -163,8 +162,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_18
 
   block ^cond_end_18:
-    %t24 = load typed i32 $cond__7
-    return i32 %t24
+    %t23 = load typed i32 $cond__7
+    return i32 %t23
 }
 function @Size__Size(%this : ptr [object_bytes=16], %n : i64, %s : u8) -> void [binding=weak, object=_ZN4SizeC1Elb, inline_hint=yes] {
   slot $this : ptr

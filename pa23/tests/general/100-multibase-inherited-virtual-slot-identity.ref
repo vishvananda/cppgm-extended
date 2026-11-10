@@ -134,8 +134,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load typed ptr %t12
     %t14 = call i32 %t13(%t11) as (%arg0 : ptr [object_bytes=8]) -> i32
     %t15 = cmp ne i32 %t14, 4
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__1
+    store typed i64 %t15, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -143,9 +142,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t17 = load typed i64 $lor__1
-    %t18 = convert trunc i32 i64 %t17
-    return i32 %t18
+    %t16 = load typed i64 $lor__1
+    %t17 = convert trunc i32 i64 %t16
+    return i32 %t17
 }
 function @implementation__implementation(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN14implementationC1Ev, inline_hint=yes] {
   slot $this : ptr

@@ -183,8 +183,7 @@ function @prefix(%count : u32) -> i32 [binding=strong, object=_Z6prefixj] {
     %t18 = index i32 [projection=array_element] %t17, 0
     %t19 = load typed i32 %t18
     %t20 = cmp ne i32 %t19, 1
-    %t21 = cmp ne i64 %t20, 0
-    store typed i64 %t21, $lor__2
+    store typed i64 %t20, $lor__2
     jump ^lor_end_8
 
   block ^lor_short_7:
@@ -192,16 +191,15 @@ function @prefix(%count : u32) -> i32 [binding=strong, object=_Z6prefixj] {
     jump ^lor_end_8
 
   block ^lor_end_8:
-    %t22 = load typed i64 $lor__2
-    branch %t22, ^lor_short_10, ^lor_rhs_9
+    %t21 = load typed i64 $lor__2
+    branch %t21, ^lor_short_10, ^lor_rhs_9
 
   block ^lor_rhs_9:
-    %t23 = load typed ptr $values
-    %t24 = index i32 [projection=array_element] %t23, 1
-    %t25 = load typed i32 %t24
-    %t26 = cmp ne i32 %t25, 2
-    %t27 = cmp ne i64 %t26, 0
-    store typed i64 %t27, $lor__3
+    %t22 = load typed ptr $values
+    %t23 = index i32 [projection=array_element] %t22, 1
+    %t24 = load typed i32 %t23
+    %t25 = cmp ne i32 %t24, 2
+    store typed i64 %t25, $lor__3
     jump ^lor_end_11
 
   block ^lor_short_10:
@@ -209,41 +207,41 @@ function @prefix(%count : u32) -> i32 [binding=strong, object=_Z6prefixj] {
     jump ^lor_end_11
 
   block ^lor_end_11:
-    %t28 = load typed i64 $lor__3
-    %t29 = convert trunc i32 i64 %t28
-    store typed i32 %t29, $bad
+    %t26 = load typed i64 $lor__3
+    %t27 = convert trunc i32 i64 %t26
+    store typed i32 %t27, $bad
     store typed u32 2, $i
     jump ^for_cond_12
 
   block ^for_cond_12:
-    %t30 = load typed u32 $i
-    %t31 = load typed u32 $count
-    %t32 = cmp ne u32 %t30, %t31
-    branch %t32, ^for_body_13, ^for_end_15
+    %t28 = load typed u32 $i
+    %t29 = load typed u32 $count
+    %t30 = cmp ne u32 %t28, %t29
+    branch %t30, ^for_body_13, ^for_end_15
 
   block ^for_body_13:
-    %t33 = load typed ptr $values
-    %t34 = load typed u32 $i
-    %t35 = index i32 [projection=array_element] %t33, %t34
-    %t36 = load typed i32 %t35
-    %t37 = cmp ne i32 %t36, 0
-    %t38 = convert trunc i32 i64 %t37
-    %t39 = load typed i32 $bad
-    %t40 = binary add nowrap i32 %t39, %t38
-    store typed i32 %t40, $bad
+    %t31 = load typed ptr $values
+    %t32 = load typed u32 $i
+    %t33 = index i32 [projection=array_element] %t31, %t32
+    %t34 = load typed i32 %t33
+    %t35 = cmp ne i32 %t34, 0
+    %t36 = convert trunc i32 i64 %t35
+    %t37 = load typed i32 $bad
+    %t38 = binary add nowrap i32 %t37, %t36
+    store typed i32 %t38, $bad
     jump ^for_iter_14
 
   block ^for_iter_14:
-    %t41 = load typed u32 $i
-    %t42 = binary add u32 %t41, 1
-    store typed u32 %t42, $i
+    %t39 = load typed u32 $i
+    %t40 = binary add u32 %t39, 1
+    store typed u32 %t40, $i
     jump ^for_cond_12
 
   block ^for_end_15:
-    %t43 = load typed ptr $values
-    call void @operatordelete__(%t43)
-    %t44 = load typed i32 $bad
-    return i32 %t44
+    %t41 = load typed ptr $values
+    call void @operatordelete__(%t41)
+    %t42 = load typed i32 $bad
+    return i32 %t42
 }
 function @records(%count : u32) -> i32 [binding=strong, object=_Z7recordsj] {
   slot $count : u32
@@ -294,8 +292,7 @@ function @records(%count : u32) -> i32 [binding=strong, object=_Z7recordsj] {
     %t24 = index i8 [projection=field] %t23, 8
     %t25 = load typed i64 %t24
     %t26 = cmp ne i64 %t25, 0
-    %t27 = cmp ne i64 %t26, 0
-    store typed i64 %t27, $lor__2
+    store typed i64 %t26, $lor__2
     jump ^lor_end_7
 
   block ^lor_short_6:
@@ -303,24 +300,24 @@ function @records(%count : u32) -> i32 [binding=strong, object=_Z7recordsj] {
     jump ^lor_end_7
 
   block ^lor_end_7:
-    %t28 = load typed i64 $lor__2
-    %t29 = convert trunc i32 i64 %t28
-    %t30 = load typed i32 $bad
-    %t31 = binary add nowrap i32 %t30, %t29
-    store typed i32 %t31, $bad
+    %t27 = load typed i64 $lor__2
+    %t28 = convert trunc i32 i64 %t27
+    %t29 = load typed i32 $bad
+    %t30 = binary add nowrap i32 %t29, %t28
+    store typed i32 %t30, $bad
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t32 = load typed u32 $i
-    %t33 = binary add u32 %t32, 1
-    store typed u32 %t33, $i
+    %t31 = load typed u32 $i
+    %t32 = binary add u32 %t31, 1
+    store typed u32 %t32, $i
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t34 = load typed ptr $values
-    call void @operatordelete__(%t34)
-    %t35 = load typed i32 $bad
-    return i32 %t35
+    %t33 = load typed ptr $values
+    call void @operatordelete__(%t33)
+    %t34 = load typed i32 $bad
+    return i32 %t34
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $bad : i32
@@ -412,8 +409,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_16:
     %t19 = load typed u32 @allocations
     %t20 = cmp ne u32 %t19, 6
-    %t21 = cmp ne i64 %t20, 0
-    store typed i64 %t21, $lor__6
+    store typed i64 %t20, $lor__6
     jump ^lor_end_18
 
   block ^lor_short_17:
@@ -421,14 +417,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t22 = load typed i64 $lor__6
-    branch %t22, ^lor_short_20, ^lor_rhs_19
+    %t21 = load typed i64 $lor__6
+    branch %t21, ^lor_short_20, ^lor_rhs_19
 
   block ^lor_rhs_19:
-    %t23 = load typed u32 @frees
-    %t24 = cmp ne u32 %t23, 6
-    %t25 = cmp ne i64 %t24, 0
-    store typed i64 %t25, $lor__7
+    %t22 = load typed u32 @frees
+    %t23 = cmp ne u32 %t22, 6
+    store typed i64 %t23, $lor__7
     jump ^lor_end_21
 
   block ^lor_short_20:
@@ -436,7 +431,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_21
 
   block ^lor_end_21:
-    %t26 = load typed i64 $lor__7
-    %t27 = convert trunc i32 i64 %t26
-    return i32 %t27
+    %t24 = load typed i64 $lor__7
+    %t25 = convert trunc i32 i64 %t24
+    return i32 %t25
 }

@@ -136,8 +136,7 @@ function @by_value() -> i32 [binding=strong, object=_Z8by_valuev] {
     %t12 = index i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp eq i32 %t13, 7
-    %t15 = cmp ne i64 %t14, 0
-    store typed i64 %t15, $land__3
+    store typed i64 %t14, $land__3
     jump ^land_end_12
 
   block ^land_short_11:
@@ -145,8 +144,8 @@ function @by_value() -> i32 [binding=strong, object=_Z8by_valuev] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t16 = load typed i64 $land__3
-    branch %t16, ^cond_then_7, ^cond_else_8
+    %t15 = load typed i64 $land__3
+    branch %t15, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
     store typed i32 0, $cond__2
@@ -157,10 +156,10 @@ function @by_value() -> i32 [binding=strong, object=_Z8by_valuev] {
     jump ^cond_end_9
 
   block ^cond_end_9:
-    %t17 = load typed i32 $cond__2
+    %t16 = load typed i32 $cond__2
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t17
+    return i32 %t16
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()
@@ -220,8 +219,7 @@ function @by_const_ref() -> i32 [binding=strong, object=_Z12by_const_refv] {
     %t17 = load i8 %t16
     %t18 = convert sext i32 i8 %t17
     %t19 = cmp eq i32 %t18, 101
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $land__3
+    store typed i64 %t19, $land__3
     jump ^land_end_12
 
   block ^land_short_11:
@@ -229,8 +227,8 @@ function @by_const_ref() -> i32 [binding=strong, object=_Z12by_const_refv] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t21 = load typed i64 $land__3
-    branch %t21, ^cond_then_7, ^cond_else_8
+    %t20 = load typed i64 $land__3
+    branch %t20, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
     store typed i32 0, $cond__2
@@ -241,10 +239,10 @@ function @by_const_ref() -> i32 [binding=strong, object=_Z12by_const_refv] {
     jump ^cond_end_9
 
   block ^cond_end_9:
-    %t22 = load typed i32 $cond__2
+    %t21 = load typed i32 $cond__2
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t22
+    return i32 %t21
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()

@@ -23,8 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp ne i32 %t7, 1
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__1
+    store typed i64 %t8, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -32,18 +31,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t10 = load typed i64 $lor__1
-    branch %t10, ^lor_short_5, ^lor_rhs_4
+    %t9 = load typed i64 $lor__1
+    branch %t9, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t11 = addr @counts
-    %t12 = binary mul i64 1, 4
-    %t13 = index i8 [projection=array_element] %t11, %t12
-    %t14 = index i8 [projection=field] %t13, 0
-    %t15 = load typed i32 %t14
-    %t16 = cmp ne i32 %t15, 7
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $lor__2
+    %t10 = addr @counts
+    %t11 = binary mul i64 1, 4
+    %t12 = index i8 [projection=array_element] %t10, %t11
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = load typed i32 %t13
+    %t15 = cmp ne i32 %t14, 7
+    store typed i64 %t15, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -51,9 +49,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t18 = load typed i64 $lor__2
-    %t19 = convert trunc i32 i64 %t18
-    return i32 %t19
+    %t16 = load typed i64 $lor__2
+    %t17 = convert trunc i32 i64 %t16
+    return i32 %t17
 }
 function @Count__Count(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN5CountC1Ei, inline_hint=yes] {
   slot $this : ptr

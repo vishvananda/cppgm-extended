@@ -28,8 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load typed ptr $const_direct
     %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 7
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $land__2
+    store typed i64 %t11, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -37,8 +36,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t13 = load typed i64 $land__2
-    branch %t13, ^cond_then_1, ^cond_else_2
+    %t12 = load typed i64 $land__2
+    branch %t12, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -49,8 +48,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t14 = load typed i32 $cond__1
-    return i32 %t14
+    %t13 = load typed i32 $cond__1
+    return i32 %t13
 }
 function @traits_constint__false___check(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN6traitsIRKiLb0EE5checkIiEEPiRT_] {
   slot $value : ptr

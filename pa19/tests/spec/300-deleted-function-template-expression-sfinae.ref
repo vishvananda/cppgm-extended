@@ -11,8 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t2 = call i32 @call_deleted_probe(1, 0)
     %t3 = cmp eq i32 %t2, 2
-    %t4 = cmp ne i64 %t3, 0
-    store typed i64 %t4, $land__2
+    store typed i64 %t3, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -20,8 +19,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t5 = load typed i64 $land__2
-    branch %t5, ^cond_then_1, ^cond_else_2
+    %t4 = load typed i64 $land__2
+    branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -32,8 +31,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t6 = load typed i32 $cond__1
-    return i32 %t6
+    %t5 = load typed i32 $cond__1
+    return i32 %t5
 }
 function @call_deleted_probe(%__param0 : i32, %__param1 : i64) -> i32 [binding=weak, object=_Z18call_deleted_probeIiEiT_l] {
   slot $__param0 : i32

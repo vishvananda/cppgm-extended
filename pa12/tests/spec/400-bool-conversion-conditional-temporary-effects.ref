@@ -53,8 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_8:
     %t7 = load typed i32 @constructions
     %t8 = cmp ne i32 %t7, 1
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__4
+    store typed i64 %t8, $lor__4
     jump ^lor_end_10
 
   block ^lor_short_9:
@@ -62,14 +61,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_10
 
   block ^lor_end_10:
-    %t10 = load typed i64 $lor__4
-    branch %t10, ^lor_short_12, ^lor_rhs_11
+    %t9 = load typed i64 $lor__4
+    branch %t9, ^lor_short_12, ^lor_rhs_11
 
   block ^lor_rhs_11:
-    %t11 = load typed i32 @destructions
-    %t12 = cmp ne i32 %t11, 1
-    %t13 = cmp ne i64 %t12, 0
-    store typed i64 %t13, $lor__5
+    %t10 = load typed i32 @destructions
+    %t11 = cmp ne i32 %t10, 1
+    store typed i64 %t11, $lor__5
     jump ^lor_end_13
 
   block ^lor_short_12:
@@ -77,9 +75,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_13
 
   block ^lor_end_13:
-    %t14 = load typed i64 $lor__5
-    %t15 = convert trunc i32 i64 %t14
-    return i32 %t15
+    %t12 = load typed i64 $lor__5
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
 }
 function @flag__flag(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4flagC1Ev, inline_hint=yes] {
   slot $this : ptr

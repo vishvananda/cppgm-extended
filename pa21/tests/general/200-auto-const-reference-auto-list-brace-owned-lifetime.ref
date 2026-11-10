@@ -46,8 +46,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load typed i64 $call__4
     %t14 = convert sext i64 i32 2
     %t15 = cmp ne i64 %t13, %t14
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__3
+    store typed i64 %t15, $lor__3
     eh_end
     jump ^call_unwind_end_12
 
@@ -55,13 +54,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^cleanup_action_9:
-    %t17 = addr $first
-    call void @S___S(%t17)
+    %t16 = addr $first
+    call void @S___S(%t16)
     jump ^cleanup_resume_8
 
   block ^cleanup_action_10:
-    %t18 = addr $second
-    call void @S___S(%t18)
+    %t17 = addr $second
+    call void @S___S(%t17)
     jump ^cleanup_action_9
 
   block ^cleanup_action_11:
@@ -77,16 +76,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_7
 
   block ^lor_end_7:
-    %t19 = load typed i64 $lor__3
-    branch %t19, ^if_then_3, ^if_else_4
+    %t18 = load typed i64 $lor__3
+    branch %t18, ^if_then_3, ^if_else_4
 
   block ^if_then_3:
     call void @S___S(%t6)
     call void @S___S(%t4)
-    %t20 = addr $second
+    %t19 = addr $second
+    call void @S___S(%t19)
+    %t20 = addr $first
     call void @S___S(%t20)
-    %t21 = addr $first
-    call void @S___S(%t21)
     return i32 1
 
   block ^if_else_4:
@@ -95,29 +94,29 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_13:
     call void @S___S(%t6)
     call void @S___S(%t4)
-    %t22 = load typed i32 @alive
-    %t23 = cmp ne i32 %t22, 2
-    branch %t23, ^if_then_14, ^if_else_15
+    %t21 = load typed i32 @alive
+    %t22 = cmp ne i32 %t21, 2
+    branch %t22, ^if_then_14, ^if_else_15
 
   block ^if_then_14:
-    %t24 = addr $second
+    %t23 = addr $second
+    call void @S___S(%t23)
+    %t24 = addr $first
     call void @S___S(%t24)
-    %t25 = addr $first
-    call void @S___S(%t25)
     return i32 2
 
   block ^if_else_15:
     jump ^if_end_16
 
   block ^if_end_16:
-    %t26 = addr $second
+    %t25 = addr $second
+    call void @S___S(%t25)
+    %t26 = addr $first
     call void @S___S(%t26)
-    %t27 = addr $first
-    call void @S___S(%t27)
-    %t28 = load typed i32 @alive
-    %t29 = cmp ne i32 %t28, 0
-    %t30 = convert trunc i32 i64 %t29
-    return i32 %t30
+    %t27 = load typed i32 @alive
+    %t28 = cmp ne i32 %t27, 0
+    %t29 = convert trunc i32 i64 %t28
+    return i32 %t29
 }
 function @S__S(%this : ptr [object_bytes=4], %v : i32) -> void [unwind=no, binding=weak, object=_ZN1SC1Ei, inline_hint=yes] {
   slot $this : ptr

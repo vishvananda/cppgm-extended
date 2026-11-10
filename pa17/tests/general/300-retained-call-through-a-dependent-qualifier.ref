@@ -46,8 +46,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = binary mul i64 2, 4
     %t28 = index i8 %t26, %t27
     %t29 = cmp eq ptr %t25, %t28
-    %t30 = cmp ne i64 %t29, 0
-    store typed i64 %t30, $land__2
+    store typed i64 %t29, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -55,17 +54,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t31 = load typed i64 $land__2
-    branch %t31, ^land_rhs_7, ^land_short_8
+    %t30 = load typed i64 $land__2
+    branch %t30, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t32 = load typed ptr $ec
-    %t33 = addr $c
-    %t34 = binary mul i64 2, 8
-    %t35 = index i8 %t33, %t34
-    %t36 = cmp eq ptr %t32, %t35
-    %t37 = cmp ne i64 %t36, 0
-    store typed i64 %t37, $land__3
+    %t31 = load typed ptr $ec
+    %t32 = addr $c
+    %t33 = binary mul i64 2, 8
+    %t34 = index i8 %t32, %t33
+    %t35 = cmp eq ptr %t31, %t34
+    store typed i64 %t35, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -73,8 +71,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t38 = load typed i64 $land__3
-    branch %t38, ^cond_then_1, ^cond_else_2
+    %t36 = load typed i64 $land__3
+    branch %t36, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -85,8 +83,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t39 = load typed i32 $cond__1
-    return i32 %t39
+    %t37 = load typed i32 $cond__1
+    return i32 %t37
 }
 function @algorithm_classic_policy___operator__(%this : ptr [object_bytes=1], %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIPmEET_S4_S4_, inline_hint=yes] {
   slot $this : ptr

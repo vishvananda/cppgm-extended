@@ -121,8 +121,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = index i8 [projection=field] %t10, 8
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 2
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__2
+    store typed i64 %t13, $land__2
     jump ^land_end_9
 
   block ^land_short_8:
@@ -130,14 +129,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t15 = load typed i64 $land__2
-    branch %t15, ^land_rhs_10, ^land_short_11
+    %t14 = load typed i64 $land__2
+    branch %t14, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t16 = load typed i32 @constructed
-    %t17 = cmp eq i32 %t16, 2
-    %t18 = cmp ne i64 %t17, 0
-    store typed i64 %t18, $land__3
+    %t15 = load typed i32 @constructed
+    %t16 = cmp eq i32 %t15, 2
+    store typed i64 %t16, $land__3
     jump ^land_end_12
 
   block ^land_short_11:
@@ -145,8 +143,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t19 = load typed i64 $land__3
-    branch %t19, ^cond_then_4, ^cond_else_5
+    %t17 = load typed i64 $land__3
+    branch %t17, ^cond_then_4, ^cond_else_5
 
   block ^cond_then_4:
     store typed i32 0, $cond__1
@@ -157,8 +155,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_6
 
   block ^cond_end_6:
-    %t20 = load typed i32 $cond__1
-    return i32 %t20
+    %t18 = load typed i32 $cond__1
+    return i32 %t18
 }
 function @Prefix__Prefix(%this : ptr [object_bytes=16], %t : ptr, %s : i64) -> void [binding=internal, object=_ZZ11make_resultvEN6PrefixC1EPKcm, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr

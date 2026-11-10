@@ -32,8 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = index i8 [projection=field] %t17, 0
     %t19 = load typed i32 %t18
     %t20 = cmp eq i32 %t19, 7
-    %t21 = cmp ne i64 %t20, 0
-    store typed i64 %t21, $land__2
+    store typed i64 %t20, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -41,8 +40,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t22 = load typed i64 $land__2
-    branch %t22, ^cond_then_1, ^cond_else_2
+    %t21 = load typed i64 $land__2
+    branch %t21, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -53,8 +52,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t23 = load typed i32 $cond__1
-    return i32 %t23
+    %t22 = load typed i32 $cond__1
+    return i32 %t22
 }
 function @append(%params : ptr [pass=by_address, object_bytes=4], %np : ptr [pass=by_address, object_bytes=4]) -> obj<8x4> [binding=weak, object=_Z6appendI15named_parameterIi8first_idES0_Ii9second_idEE23named_parameter_combineIT0_T_ERKS7_RKS6_] {
   slot $params : ptr

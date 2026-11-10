@@ -286,8 +286,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t26 = load typed ptr $call__3
     %t27 = load typed ptr $expected
     %t28 = cmp ne ptr %t26, %t27
-    %t29 = cmp ne i64 %t28, 0
-    store typed i64 %t29, $lor__1
+    store typed i64 %t28, $lor__1
     eh_end
     jump ^lor_end_9
 
@@ -296,24 +295,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t30 = load typed i64 $lor__1
-    branch %t30, ^lor_short_14, ^lor_rhs_13
+    %t29 = load typed i64 $lor__1
+    branch %t29, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
     eh_try ^cleanup_action_11
-    %t31 = load typed ptr $pointer
-    %t32 = call ptr @nested_conversion(%t31)
-    store typed ptr %t32, $call__5
-    %t33 = load typed ptr $call__5
-    %t34 = addr $object
-    %t35 = load typed ptr %t34
-    %t36 = index i8 %t35, -24
-    %t37 = load typed i64 %t36
-    %t38 = index i8 %t34, %t37
-    %t39 = index i8 %t38, 12
-    %t40 = cmp ne ptr %t33, %t39
-    %t41 = cmp ne i64 %t40, 0
-    store typed i64 %t41, $lor__4
+    %t30 = load typed ptr $pointer
+    %t31 = call ptr @nested_conversion(%t30)
+    store typed ptr %t31, $call__5
+    %t32 = load typed ptr $call__5
+    %t33 = addr $object
+    %t34 = load typed ptr %t33
+    %t35 = index i8 %t34, -24
+    %t36 = load typed i64 %t35
+    %t37 = index i8 %t33, %t36
+    %t38 = index i8 %t37, 12
+    %t39 = cmp ne ptr %t32, %t38
+    store typed i64 %t39, $lor__4
     eh_end
     jump ^lor_end_15
 
@@ -322,19 +320,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t42 = load typed i64 $lor__4
-    branch %t42, ^lor_short_17, ^lor_rhs_16
+    %t40 = load typed i64 $lor__4
+    branch %t40, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
     eh_try ^cleanup_action_11
-    %t43 = addr $pointer
-    %t44 = call ptr @reference_to_pointer(%t43)
-    store typed ptr %t44, $call__7
-    %t45 = load typed ptr $call__7
-    %t46 = load typed ptr $expected
-    %t47 = cmp ne ptr %t45, %t46
-    %t48 = cmp ne i64 %t47, 0
-    store typed i64 %t48, $lor__6
+    %t41 = addr $pointer
+    %t42 = call ptr @reference_to_pointer(%t41)
+    store typed ptr %t42, $call__7
+    %t43 = load typed ptr $call__7
+    %t44 = load typed ptr $expected
+    %t45 = cmp ne ptr %t43, %t44
+    store typed i64 %t45, $lor__6
     eh_end
     jump ^lor_end_18
 
@@ -343,11 +340,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t49 = load typed i64 $lor__6
-    %t50 = convert trunc i32 i64 %t49
-    %t51 = addr $object
-    call void @Object___Object(%t51)
-    return i32 %t50
+    %t46 = load typed i64 $lor__6
+    %t47 = convert trunc i32 i64 %t46
+    %t48 = addr $object
+    call void @Object___Object(%t48)
+    return i32 %t47
 }
 function @Object__Object(%this : ptr [object_bytes=32]) -> void [unwind=no, binding=weak, object=_ZN6ObjectC1Ev, inline_hint=yes] {
   slot $this : ptr

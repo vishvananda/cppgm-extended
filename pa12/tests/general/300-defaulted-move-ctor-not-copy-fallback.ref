@@ -28,8 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load typed i32 %t14
     %t16 = unary neg i32 1
     %t17 = cmp eq i32 %t15, %t16
-    %t18 = cmp ne i64 %t17, 0
-    store typed i64 %t18, $land__2
+    store typed i64 %t17, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -37,8 +36,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t19 = load typed i64 $land__2
-    branch %t19, ^cond_then_1, ^cond_else_2
+    %t18 = load typed i64 $land__2
+    branch %t18, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -49,8 +48,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t20 = load typed i32 $cond__1
-    return i32 %t20
+    %t19 = load typed i32 $cond__1
+    return i32 %t19
 }
 function @X__X(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1XC1Ev, inline_hint=yes] {
   slot $this : ptr

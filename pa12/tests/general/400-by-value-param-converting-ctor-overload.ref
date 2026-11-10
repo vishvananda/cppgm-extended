@@ -17,8 +17,7 @@ function @put(%it : obj<4x4>, %value : i64) -> i32 [binding=strong, object=_Z3pu
   block ^land_rhs_4:
     %t6 = load typed i64 $value
     %t7 = cmp eq i64 %t6, 7
-    %t8 = cmp ne i64 %t7, 0
-    store typed i64 %t8, $land__2
+    store typed i64 %t7, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -26,8 +25,8 @@ function @put(%it : obj<4x4>, %value : i64) -> i32 [binding=strong, object=_Z3pu
     jump ^land_end_6
 
   block ^land_end_6:
-    %t9 = load typed i64 $land__2
-    branch %t9, ^cond_then_1, ^cond_else_2
+    %t8 = load typed i64 $land__2
+    branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -38,8 +37,8 @@ function @put(%it : obj<4x4>, %value : i64) -> i32 [binding=strong, object=_Z3pu
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load typed i32 $cond__1
-    return i32 %t10
+    %t9 = load typed i32 $cond__1
+    return i32 %t9
 }
 function @put__ov2(%__param0 : i32, %__param1 : i64) -> i32 [binding=strong, object=_Z3putil] {
   slot $__param0 : i32

@@ -40,8 +40,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed ptr $first
     %t6 = load typed ptr $second
     %t7 = cmp ne ptr %t5, %t6
-    %t8 = cmp ne i64 %t7, 0
-    store typed i64 %t8, $lor__1
+    store typed i64 %t7, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -49,15 +48,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t9 = load typed i64 $lor__1
-    branch %t9, ^lor_short_5, ^lor_rhs_4
+    %t8 = load typed i64 $lor__1
+    branch %t8, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t10 = load typed ptr $first
-    %t11 = load typed i32 %t10
-    %t12 = cmp ne i32 %t11, 37
-    %t13 = cmp ne i64 %t12, 0
-    store typed i64 %t13, $lor__2
+    %t9 = load typed ptr $first
+    %t10 = load typed i32 %t9
+    %t11 = cmp ne i32 %t10, 37
+    store typed i64 %t11, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -65,7 +63,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t14 = load typed i64 $lor__2
-    %t15 = convert trunc i32 i64 %t14
-    return i32 %t15
+    %t12 = load typed i64 $lor__2
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
 }

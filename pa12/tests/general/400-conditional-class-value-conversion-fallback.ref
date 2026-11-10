@@ -506,8 +506,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_86:
     %t119 = load typed i32 @box_alive
     %t120 = cmp ne i32 %t119, 0
-    %t121 = cmp ne i64 %t120, 0
-    store typed i64 %t121, $lor__13
+    store typed i64 %t120, $lor__13
     jump ^lor_end_88
 
   block ^lor_short_87:
@@ -515,14 +514,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_88
 
   block ^lor_end_88:
-    %t122 = load typed i64 $lor__13
-    branch %t122, ^lor_short_90, ^lor_rhs_89
+    %t121 = load typed i64 $lor__13
+    branch %t121, ^lor_short_90, ^lor_rhs_89
 
   block ^lor_rhs_89:
-    %t123 = load typed i32 @invalid_lifetimes
-    %t124 = cmp ne i32 %t123, 0
-    %t125 = cmp ne i64 %t124, 0
-    store typed i64 %t125, $lor__14
+    %t122 = load typed i32 @invalid_lifetimes
+    %t123 = cmp ne i32 %t122, 0
+    store typed i64 %t123, $lor__14
     jump ^lor_end_91
 
   block ^lor_short_90:
@@ -530,9 +528,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_91
 
   block ^lor_end_91:
-    %t126 = load typed i64 $lor__14
-    %t127 = convert trunc i32 i64 %t126
-    return i32 %t127
+    %t124 = load typed i64 $lor__14
+    %t125 = convert trunc i32 i64 %t124
+    return i32 %t125
 }
 function @Box__Box__base_entry(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN3BoxC2Ei, object_root=yes, inline_hint=yes] {
   slot $this : ptr

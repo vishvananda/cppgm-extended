@@ -56,8 +56,7 @@ function @accepts_known_digits(%current : i32, %next : obj<8x8>) -> u8 [binding=
     %t6 = load typed i64 %t5
     %t7 = convert sext i64 i32 10
     %t8 = cmp eq i64 %t6, %t7
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__1
+    store typed i64 %t8, $land__1
     jump ^land_end_3
 
   block ^land_short_2:
@@ -65,13 +64,12 @@ function @accepts_known_digits(%current : i32, %next : obj<8x8>) -> u8 [binding=
     jump ^land_end_3
 
   block ^land_end_3:
-    %t10 = load typed i64 $land__1
-    branch %t10, ^land_rhs_4, ^land_short_5
+    %t9 = load typed i64 $land__1
+    branch %t9, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t11 = cmp eq u32 10, 10
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $land__2
+    %t10 = cmp eq u32 10, 10
+    store typed i64 %t10, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -79,7 +77,7 @@ function @accepts_known_digits(%current : i32, %next : obj<8x8>) -> u8 [binding=
     jump ^land_end_6
 
   block ^land_end_6:
-    %t13 = load typed i64 $land__2
-    %t14 = convert trunc u8 i64 %t13
-    return u8 %t14
+    %t11 = load typed i64 $land__2
+    %t12 = convert trunc u8 i64 %t11
+    return u8 %t12
 }

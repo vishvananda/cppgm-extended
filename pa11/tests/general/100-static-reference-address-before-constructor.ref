@@ -42,8 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = index i32 [projection=array_element] %t5, 1
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 11
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__2
+    store typed i64 %t8, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -51,16 +50,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t10 = load typed i64 $land__2
-    branch %t10, ^land_rhs_7, ^land_short_8
+    %t9 = load typed i64 $land__2
+    branch %t9, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t11 = load typed ptr @advanced
-    %t12 = addr @values
-    %t13 = index i32 [projection=array_element] %t12, 2
-    %t14 = cmp eq ptr %t11, %t13
-    %t15 = cmp ne i64 %t14, 0
-    store typed i64 %t15, $land__3
+    %t10 = load typed ptr @advanced
+    %t11 = addr @values
+    %t12 = index i32 [projection=array_element] %t11, 2
+    %t13 = cmp eq ptr %t10, %t12
+    store typed i64 %t13, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -68,15 +66,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t16 = load typed i64 $land__3
-    branch %t16, ^land_rhs_10, ^land_short_11
+    %t14 = load typed i64 $land__3
+    branch %t14, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t17 = load typed ptr @copied
-    %t18 = load typed ptr @advanced
-    %t19 = cmp eq ptr %t17, %t18
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $land__4
+    %t15 = load typed ptr @copied
+    %t16 = load typed ptr @advanced
+    %t17 = cmp eq ptr %t15, %t16
+    store typed i64 %t17, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -84,15 +81,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t21 = load typed i64 $land__4
-    branch %t21, ^land_rhs_13, ^land_short_14
+    %t18 = load typed i64 $land__4
+    branch %t18, ^land_rhs_13, ^land_short_14
 
   block ^land_rhs_13:
-    %t22 = load typed ptr @through_pointer
-    %t23 = load typed ptr @advanced
-    %t24 = cmp eq ptr %t22, %t23
-    %t25 = cmp ne i64 %t24, 0
-    store typed i64 %t25, $land__5
+    %t19 = load typed ptr @through_pointer
+    %t20 = load typed ptr @advanced
+    %t21 = cmp eq ptr %t19, %t20
+    store typed i64 %t21, $land__5
     jump ^land_end_15
 
   block ^land_short_14:
@@ -100,8 +96,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_15
 
   block ^land_end_15:
-    %t26 = load typed i64 $land__5
-    branch %t26, ^cond_then_1, ^cond_else_2
+    %t22 = load typed i64 $land__5
+    branch %t22, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -112,8 +108,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t27 = load typed i32 $cond__1
-    return i32 %t27
+    %t23 = load typed i32 $cond__1
+    return i32 %t23
 }
 function @Observer__Observer(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN8ObserverC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -133,8 +129,7 @@ function @Observer__Observer(%this : ptr [object_bytes=1]) -> void [binding=weak
     %t6 = addr @values
     %t7 = index i32 [projection=array_element] %t6, 1
     %t8 = cmp eq ptr %t5, %t7
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__1
+    store typed i64 %t8, $land__1
     jump ^land_end_3
 
   block ^land_short_2:
@@ -142,16 +137,15 @@ function @Observer__Observer(%this : ptr [object_bytes=1]) -> void [binding=weak
     jump ^land_end_3
 
   block ^land_end_3:
-    %t10 = load typed i64 $land__1
-    branch %t10, ^land_rhs_4, ^land_short_5
+    %t9 = load typed i64 $land__1
+    branch %t9, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t11 = load typed ptr @alias
-    %t12 = addr @values
-    %t13 = index i32 [projection=array_element] %t12, 1
-    %t14 = cmp eq ptr %t11, %t13
-    %t15 = cmp ne i64 %t14, 0
-    store typed i64 %t15, $land__2
+    %t10 = load typed ptr @alias
+    %t11 = addr @values
+    %t12 = index i32 [projection=array_element] %t11, 1
+    %t13 = cmp eq ptr %t10, %t12
+    store typed i64 %t13, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -159,11 +153,11 @@ function @Observer__Observer(%this : ptr [object_bytes=1]) -> void [binding=weak
     jump ^land_end_6
 
   block ^land_end_6:
-    %t16 = load typed i64 $land__2
-    %t17 = convert trunc u8 i64 %t16
-    %t18 = load typed ptr $this
-    %t19 = index i8 [projection=field] %t18, 0
-    store u8 %t17, %t19
+    %t14 = load typed i64 $land__2
+    %t15 = convert trunc u8 i64 %t14
+    %t16 = load typed ptr $this
+    %t17 = index i8 [projection=field] %t16, 0
+    store u8 %t15, %t17
     return void
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {

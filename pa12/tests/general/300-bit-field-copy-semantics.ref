@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 1x4 %t3, %t2
     %t4 = addr $y
     %t5 = addr $x
-    %t6 = call ptr @Bits__operator_(%t4, %t5)
+    copyobj 1x4 %t5, %t4
     return i32 0
 }
 function @Bits__Bits(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4BitsC1Ev, inline_hint=yes] {
@@ -31,21 +31,5 @@ function @Bits__Bits(%this : ptr [object_bytes=4]) -> void [binding=weak, object
     %t10 = binary or u8 %t9, %t7
     store u8 %t10, %t5
     return void
-}
-function @Bits__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN4BitsaSERKS_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load u8 %t2
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    store u8 %t3, %t5
-    %t6 = load typed ptr $this
-    return ptr %t6
 }
 alias object _ZN4BitsC2Ev = @Bits__Bits

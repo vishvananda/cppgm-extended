@@ -142,8 +142,7 @@ function @case_0__check() -> i32 [binding=strong, object=_ZN6case_05checkEv] {
   block ^lor_rhs_10:
     %t12 = load typed i32 @case_0__trace
     %t13 = cmp ne i32 %t12, 21
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $lor__3
+    store typed i64 %t13, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
@@ -151,14 +150,13 @@ function @case_0__check() -> i32 [binding=strong, object=_ZN6case_05checkEv] {
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t15 = load typed i64 $lor__3
-    branch %t15, ^lor_short_14, ^lor_rhs_13
+    %t14 = load typed i64 $lor__3
+    branch %t14, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t16 = load typed i32 @case_0__drops
-    %t17 = cmp ne i32 %t16, 2
-    %t18 = cmp ne i64 %t17, 0
-    store typed i64 %t18, $lor__4
+    %t15 = load typed i32 @case_0__drops
+    %t16 = cmp ne i32 %t15, 2
+    store typed i64 %t16, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
@@ -166,11 +164,11 @@ function @case_0__check() -> i32 [binding=strong, object=_ZN6case_05checkEv] {
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t19 = load typed i64 $lor__4
-    %t20 = convert trunc i32 i64 %t19
+    %t17 = load typed i64 $lor__4
+    %t18 = convert trunc i32 i64 %t17
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t20
+    return i32 %t18
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()
@@ -292,8 +290,7 @@ function @case_1__check() -> i32 [binding=strong, object=_ZN6case_15checkEv] {
   block ^lor_rhs_10:
     %t11 = load typed i32 @case_1__trace
     %t12 = cmp ne i32 %t11, 21
-    %t13 = cmp ne i64 %t12, 0
-    store typed i64 %t13, $lor__3
+    store typed i64 %t12, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
@@ -301,14 +298,13 @@ function @case_1__check() -> i32 [binding=strong, object=_ZN6case_15checkEv] {
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t14 = load typed i64 $lor__3
-    branch %t14, ^lor_short_14, ^lor_rhs_13
+    %t13 = load typed i64 $lor__3
+    branch %t13, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t15 = load typed i32 @case_1__drops
-    %t16 = cmp ne i32 %t15, 2
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $lor__4
+    %t14 = load typed i32 @case_1__drops
+    %t15 = cmp ne i32 %t14, 2
+    store typed i64 %t15, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
@@ -316,11 +312,11 @@ function @case_1__check() -> i32 [binding=strong, object=_ZN6case_15checkEv] {
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t18 = load typed i64 $lor__4
-    %t19 = convert trunc i32 i64 %t18
+    %t16 = load typed i64 $lor__4
+    %t17 = convert trunc i32 i64 %t16
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t19
+    return i32 %t17
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()

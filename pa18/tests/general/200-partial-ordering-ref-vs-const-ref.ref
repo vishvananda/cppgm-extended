@@ -18,8 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $y
     %t5 = call i32 @pick__2(%t4)
     %t6 = cmp eq i32 %t5, 2
-    %t7 = cmp ne i64 %t6, 0
-    store typed i64 %t7, $land__2
+    store typed i64 %t6, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -27,16 +26,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t8 = load typed i64 $land__2
-    branch %t8, ^land_rhs_7, ^land_short_8
+    %t7 = load typed i64 $land__2
+    branch %t7, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
     store typed i32 3, $refarg__4
-    %t9 = addr $refarg__4
-    %t10 = call i32 @pick__2(%t9)
-    %t11 = cmp eq i32 %t10, 2
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $land__3
+    %t8 = addr $refarg__4
+    %t9 = call i32 @pick__2(%t8)
+    %t10 = cmp eq i32 %t9, 2
+    store typed i64 %t10, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -44,8 +42,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t13 = load typed i64 $land__3
-    branch %t13, ^cond_then_1, ^cond_else_2
+    %t11 = load typed i64 $land__3
+    branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -56,8 +54,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t14 = load typed i32 $cond__1
-    return i32 %t14
+    %t12 = load typed i32 $cond__1
+    return i32 %t12
 }
 function @pick(%__param0 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z4pickIiEiRT_] {
   slot $__param0 : ptr

@@ -116,8 +116,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = load typed ptr %t15
     %t17 = call ptr %t16(%t14) as (%arg0 : ptr [object_bytes=8]) -> ptr
     %t18 = cmp ne ptr %t17, 0
-    %t19 = cmp ne i64 %t18, 0
-    store typed i64 %t19, $lor__1
+    store typed i64 %t18, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -125,15 +124,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t20 = load typed i64 $lor__1
-    branch %t20, ^lor_short_5, ^lor_rhs_4
+    %t19 = load typed i64 $lor__1
+    branch %t19, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t21 = const i64 1
-    %t22 = convert sext i64 i32 1
-    %t23 = cmp ne i64 %t21, %t22
-    %t24 = cmp ne i64 %t23, 0
-    store typed i64 %t24, $lor__2
+    %t20 = const i64 1
+    %t21 = convert sext i64 i32 1
+    %t22 = cmp ne i64 %t20, %t21
+    store typed i64 %t22, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -141,9 +139,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t25 = load typed i64 $lor__2
-    %t26 = convert trunc i32 i64 %t25
-    return i32 %t26
+    %t23 = load typed i64 $lor__2
+    %t24 = convert trunc i32 i64 %t23
+    return i32 %t24
 }
 function @Self_int___Self(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4SelfIiEC1Ev, inline_hint=yes] {
   slot $this : ptr

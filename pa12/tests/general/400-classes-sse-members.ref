@@ -219,8 +219,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 16x8 %t29, %t28
     %t30 = call f64 @sum_mixed($argobj__4)
     %t31 = cmp eq f64 %t30, 5.5
-    %t32 = cmp ne i64 %t31, 0
-    store typed i64 %t32, $land__2
+    store typed i64 %t31, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -228,17 +227,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t33 = load typed i64 $land__2
-    branch %t33, ^land_rhs_7, ^land_short_8
+    %t32 = load typed i64 $land__2
+    branch %t32, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t34 = addr $argobj__6
-    %t35 = addr $id
-    copyobj 16x8 %t35, %t34
-    %t36 = call f64 @sum_reversed($argobj__6)
-    %t37 = cmp eq f64 %t36, 1.5
-    %t38 = cmp ne i64 %t37, 0
-    store typed i64 %t38, $land__5
+    %t33 = addr $argobj__6
+    %t34 = addr $id
+    copyobj 16x8 %t34, %t33
+    %t35 = call f64 @sum_reversed($argobj__6)
+    %t36 = cmp eq f64 %t35, 1.5
+    store typed i64 %t36, $land__5
     jump ^land_end_9
 
   block ^land_short_8:
@@ -246,17 +244,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t39 = load typed i64 $land__5
-    branch %t39, ^land_rhs_10, ^land_short_11
+    %t37 = load typed i64 $land__5
+    branch %t37, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t40 = addr $argobj__8
-    %t41 = addr $f
-    copyobj 8x4 %t41, %t40
-    %t42 = call f32 @sum_floats($argobj__8)
-    %t43 = cmp eq f32 %t42, 3f
-    %t44 = cmp ne i64 %t43, 0
-    store typed i64 %t44, $land__7
+    %t38 = addr $argobj__8
+    %t39 = addr $f
+    copyobj 8x4 %t39, %t38
+    %t40 = call f32 @sum_floats($argobj__8)
+    %t41 = cmp eq f32 %t40, 3f
+    store typed i64 %t41, $land__7
     jump ^land_end_12
 
   block ^land_short_11:
@@ -264,17 +261,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t45 = load typed i64 $land__7
-    branch %t45, ^land_rhs_13, ^land_short_14
+    %t42 = load typed i64 $land__7
+    branch %t42, ^land_rhs_13, ^land_short_14
 
   block ^land_rhs_13:
-    %t46 = addr $argobj__10
-    %t47 = addr $t
-    copyobj 12x4 %t47, %t46
-    %t48 = call f32 @third($argobj__10)
-    %t49 = cmp eq f32 %t48, 3f
-    %t50 = cmp ne i64 %t49, 0
-    store typed i64 %t50, $land__9
+    %t43 = addr $argobj__10
+    %t44 = addr $t
+    copyobj 12x4 %t44, %t43
+    %t45 = call f32 @third($argobj__10)
+    %t46 = cmp eq f32 %t45, 3f
+    store typed i64 %t46, $land__9
     jump ^land_end_15
 
   block ^land_short_14:
@@ -282,17 +278,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_15
 
   block ^land_end_15:
-    %t51 = load typed i64 $land__9
-    branch %t51, ^land_rhs_16, ^land_short_17
+    %t47 = load typed i64 $land__9
+    branch %t47, ^land_rhs_16, ^land_short_17
 
   block ^land_rhs_16:
-    %t52 = addr $argobj__12
-    %t53 = addr $n
-    copyobj 8x4 %t53, %t52
-    %t54 = call i32 @sum_ints($argobj__12)
-    %t55 = cmp eq i32 %t54, 9
-    %t56 = cmp ne i64 %t55, 0
-    store typed i64 %t56, $land__11
+    %t48 = addr $argobj__12
+    %t49 = addr $n
+    copyobj 8x4 %t49, %t48
+    %t50 = call i32 @sum_ints($argobj__12)
+    %t51 = cmp eq i32 %t50, 9
+    store typed i64 %t51, $land__11
     jump ^land_end_18
 
   block ^land_short_17:
@@ -300,8 +295,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_18
 
   block ^land_end_18:
-    %t57 = load typed i64 $land__11
-    branch %t57, ^cond_then_1, ^cond_else_2
+    %t52 = load typed i64 $land__11
+    branch %t52, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -312,6 +307,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t58 = load typed i32 $cond__1
-    return i32 %t58
+    %t53 = load typed i32 $cond__1
+    return i32 %t53
 }

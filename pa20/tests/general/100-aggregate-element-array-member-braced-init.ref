@@ -59,8 +59,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = index i32 [projection=array_element] %t26, 3
     %t28 = load typed i32 %t27
     %t29 = cmp eq i32 %t28, 0
-    %t30 = cmp ne i64 %t29, 0
-    store typed i64 %t30, $land__5
+    store typed i64 %t29, $land__5
     jump ^land_end_6
 
   block ^land_short_5:
@@ -68,19 +67,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t31 = load typed i64 $land__5
-    branch %t31, ^land_rhs_7, ^land_short_8
+    %t30 = load typed i64 $land__5
+    branch %t30, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t32 = addr $levels
-    %t33 = binary mul i64 1, 20
-    %t34 = index i8 [projection=array_element] %t32, %t33
-    %t35 = index i8 [projection=field] %t34, 0
-    %t36 = index i32 [projection=array_element] %t35, 0
-    %t37 = load typed i32 %t36
-    %t38 = cmp eq i32 %t37, 1
-    %t39 = cmp ne i64 %t38, 0
-    store typed i64 %t39, $land__6
+    %t31 = addr $levels
+    %t32 = binary mul i64 1, 20
+    %t33 = index i8 [projection=array_element] %t31, %t32
+    %t34 = index i8 [projection=field] %t33, 0
+    %t35 = index i32 [projection=array_element] %t34, 0
+    %t36 = load typed i32 %t35
+    %t37 = cmp eq i32 %t36, 1
+    store typed i64 %t37, $land__6
     jump ^land_end_9
 
   block ^land_short_8:
@@ -88,19 +86,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t40 = load typed i64 $land__6
-    branch %t40, ^land_rhs_10, ^land_short_11
+    %t38 = load typed i64 $land__6
+    branch %t38, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t41 = addr $levels
-    %t42 = binary mul i64 1, 20
-    %t43 = index i8 [projection=array_element] %t41, %t42
-    %t44 = index i8 [projection=field] %t43, 0
-    %t45 = index i32 [projection=array_element] %t44, 1
-    %t46 = load typed i32 %t45
-    %t47 = cmp eq i32 %t46, 2
-    %t48 = cmp ne i64 %t47, 0
-    store typed i64 %t48, $land__7
+    %t39 = addr $levels
+    %t40 = binary mul i64 1, 20
+    %t41 = index i8 [projection=array_element] %t39, %t40
+    %t42 = index i8 [projection=field] %t41, 0
+    %t43 = index i32 [projection=array_element] %t42, 1
+    %t44 = load typed i32 %t43
+    %t45 = cmp eq i32 %t44, 2
+    store typed i64 %t45, $land__7
     jump ^land_end_12
 
   block ^land_short_11:
@@ -108,19 +105,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t49 = load typed i64 $land__7
-    branch %t49, ^land_rhs_13, ^land_short_14
+    %t46 = load typed i64 $land__7
+    branch %t46, ^land_rhs_13, ^land_short_14
 
   block ^land_rhs_13:
-    %t50 = addr $levels
-    %t51 = binary mul i64 1, 20
-    %t52 = index i8 [projection=array_element] %t50, %t51
-    %t53 = index i8 [projection=field] %t52, 0
-    %t54 = index i32 [projection=array_element] %t53, 3
-    %t55 = load typed i32 %t54
-    %t56 = cmp eq i32 %t55, 0
-    %t57 = cmp ne i64 %t56, 0
-    store typed i64 %t57, $land__8
+    %t47 = addr $levels
+    %t48 = binary mul i64 1, 20
+    %t49 = index i8 [projection=array_element] %t47, %t48
+    %t50 = index i8 [projection=field] %t49, 0
+    %t51 = index i32 [projection=array_element] %t50, 3
+    %t52 = load typed i32 %t51
+    %t53 = cmp eq i32 %t52, 0
+    store typed i64 %t53, $land__8
     jump ^land_end_15
 
   block ^land_short_14:
@@ -128,19 +124,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_15
 
   block ^land_end_15:
-    %t58 = load typed i64 $land__8
-    branch %t58, ^land_rhs_16, ^land_short_17
+    %t54 = load typed i64 $land__8
+    branch %t54, ^land_rhs_16, ^land_short_17
 
   block ^land_rhs_16:
-    %t59 = addr $levels
-    %t60 = binary mul i64 2, 20
-    %t61 = index i8 [projection=array_element] %t59, %t60
-    %t62 = index i8 [projection=field] %t61, 0
-    %t63 = index i32 [projection=array_element] %t62, 0
-    %t64 = load typed i32 %t63
-    %t65 = cmp eq i32 %t64, 0
-    %t66 = cmp ne i64 %t65, 0
-    store typed i64 %t66, $land__9
+    %t55 = addr $levels
+    %t56 = binary mul i64 2, 20
+    %t57 = index i8 [projection=array_element] %t55, %t56
+    %t58 = index i8 [projection=field] %t57, 0
+    %t59 = index i32 [projection=array_element] %t58, 0
+    %t60 = load typed i32 %t59
+    %t61 = cmp eq i32 %t60, 0
+    store typed i64 %t61, $land__9
     jump ^land_end_18
 
   block ^land_short_17:
@@ -148,18 +143,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_18
 
   block ^land_end_18:
-    %t67 = load typed i64 $land__9
-    branch %t67, ^land_rhs_19, ^land_short_20
+    %t62 = load typed i64 $land__9
+    branch %t62, ^land_rhs_19, ^land_short_20
 
   block ^land_rhs_19:
-    %t68 = addr $levels
-    %t69 = binary mul i64 2, 20
-    %t70 = index i8 [projection=array_element] %t68, %t69
-    %t71 = index i8 [projection=field] %t70, 16
-    %t72 = load typed i32 %t71
-    %t73 = cmp eq i32 %t72, 0
-    %t74 = cmp ne i64 %t73, 0
-    store typed i64 %t74, $land__10
+    %t63 = addr $levels
+    %t64 = binary mul i64 2, 20
+    %t65 = index i8 [projection=array_element] %t63, %t64
+    %t66 = index i8 [projection=field] %t65, 16
+    %t67 = load typed i32 %t66
+    %t68 = cmp eq i32 %t67, 0
+    store typed i64 %t68, $land__10
     jump ^land_end_21
 
   block ^land_short_20:
@@ -167,8 +161,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_21
 
   block ^land_end_21:
-    %t75 = load typed i64 $land__10
-    branch %t75, ^cond_then_1, ^cond_else_2
+    %t69 = load typed i64 $land__10
+    branch %t69, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__4
@@ -179,8 +173,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t76 = load typed i32 $cond__4
-    return i32 %t76
+    %t70 = load typed i32 $cond__4
+    return i32 %t70
 }
 function @level__level__aggregate(%this : ptr [object_bytes=20], %operators : ptr, %count : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr

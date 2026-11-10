@@ -48,8 +48,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = index i8 [projection=field] %t19, 0
     %t21 = load typed i32 %t20
     %t22 = cmp eq i32 %t21, 3
-    %t23 = cmp ne i64 %t22, 0
-    store typed i64 %t23, $land__4
+    store typed i64 %t22, $land__4
     jump ^land_end_6
 
   block ^land_short_5:
@@ -57,8 +56,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t24 = load typed i64 $land__4
-    branch %t24, ^cond_then_1, ^cond_else_2
+    %t23 = load typed i64 $land__4
+    branch %t23, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__3
@@ -69,8 +68,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t25 = load typed i32 $cond__3
-    return i32 %t25
+    %t24 = load typed i32 $cond__3
+    return i32 %t24
 }
 function @pass(%t : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z4passIiERT_S1_] {
   slot $t : ptr

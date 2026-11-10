@@ -31,8 +31,7 @@ function @case_0__check_case() -> i32 [binding=strong, object=_ZN6case_010check_
     %t9 = index i32 [projection=array_element] %t8, 1
     %t10 = load typed i32 %t9
     %t11 = cmp ne i32 %t10, 2
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__1
+    store typed i64 %t11, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -40,9 +39,9 @@ function @case_0__check_case() -> i32 [binding=strong, object=_ZN6case_010check_
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t13 = load typed i64 $lor__1
-    %t14 = convert trunc i32 i64 %t13
-    return i32 %t14
+    %t12 = load typed i64 $lor__1
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
 }
 function @case_1__check_case() -> i32 [binding=strong, object=_ZN6case_110check_caseEv] {
   slot $a : obj<16x4>
@@ -72,8 +71,7 @@ function @case_1__check_case() -> i32 [binding=strong, object=_ZN6case_110check_
     %t15 = index i32 [projection=array_element] %t14, 1
     %t16 = load typed i32 %t15
     %t17 = cmp ne i32 %t16, 4
-    %t18 = cmp ne i64 %t17, 0
-    store typed i64 %t18, $lor__1
+    store typed i64 %t17, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -81,9 +79,9 @@ function @case_1__check_case() -> i32 [binding=strong, object=_ZN6case_110check_
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t19 = load typed i64 $lor__1
-    %t20 = convert trunc i32 i64 %t19
-    return i32 %t20
+    %t18 = load typed i64 $lor__1
+    %t19 = convert trunc i32 i64 %t18
+    return i32 %t19
 }
 function @case_2__check_case() -> i32 [binding=strong, object=_ZN6case_210check_caseEv] {
   slot $a : obj<8x4>
@@ -107,8 +105,7 @@ function @case_2__check_case() -> i32 [binding=strong, object=_ZN6case_210check_
     %t9 = index i32 [projection=array_element] %t8, 1
     %t10 = load typed i32 %t9
     %t11 = cmp ne i32 %t10, 2
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__1
+    store typed i64 %t11, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -116,9 +113,9 @@ function @case_2__check_case() -> i32 [binding=strong, object=_ZN6case_210check_
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t13 = load typed i64 $lor__1
-    %t14 = convert trunc i32 i64 %t13
-    return i32 %t14
+    %t12 = load typed i64 $lor__1
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
 }
 function @case_3__check_case() -> i32 [binding=strong, object=_ZN6case_310check_caseEv] {
   slot $a : obj<8x4>

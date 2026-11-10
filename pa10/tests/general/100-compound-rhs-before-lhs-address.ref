@@ -39,8 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_1:
     %t7 = load typed i32 @value
     %t8 = cmp ne i32 %t7, 3
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__1
+    store typed i64 %t8, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -48,7 +47,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t10 = load typed i64 $lor__1
-    %t11 = convert trunc i32 i64 %t10
-    return i32 %t11
+    %t9 = load typed i64 $lor__1
+    %t10 = convert trunc i32 i64 %t9
+    return i32 %t10
 }

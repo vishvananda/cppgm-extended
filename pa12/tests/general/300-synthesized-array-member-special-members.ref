@@ -46,8 +46,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t25 = index i8 [projection=field] %t24, 0
     %t26 = load typed i32 %t25
     %t27 = cmp eq i32 %t26, 3
-    %t28 = cmp ne i64 %t27, 0
-    store typed i64 %t28, $land__2
+    store typed i64 %t27, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -55,19 +54,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t29 = load typed i64 $land__2
-    branch %t29, ^land_rhs_7, ^land_short_8
+    %t28 = load typed i64 $land__2
+    branch %t28, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t30 = addr $copied
-    %t31 = index i8 [projection=field] %t30, 0
-    %t32 = binary mul i64 0, 4
-    %t33 = index i8 [projection=array_element] %t31, %t32
-    %t34 = index i8 [projection=field] %t33, 0
-    %t35 = load typed i32 %t34
-    %t36 = cmp eq i32 %t35, 0
-    %t37 = cmp ne i64 %t36, 0
-    store typed i64 %t37, $land__3
+    %t29 = addr $copied
+    %t30 = index i8 [projection=field] %t29, 0
+    %t31 = binary mul i64 0, 4
+    %t32 = index i8 [projection=array_element] %t30, %t31
+    %t33 = index i8 [projection=field] %t32, 0
+    %t34 = load typed i32 %t33
+    %t35 = cmp eq i32 %t34, 0
+    store typed i64 %t35, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -75,19 +73,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t38 = load typed i64 $land__3
-    branch %t38, ^land_rhs_10, ^land_short_11
+    %t36 = load typed i64 $land__3
+    branch %t36, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t39 = addr $copy_assigned
-    %t40 = index i8 [projection=field] %t39, 0
-    %t41 = binary mul i64 0, 4
-    %t42 = index i8 [projection=array_element] %t40, %t41
-    %t43 = index i8 [projection=field] %t42, 0
-    %t44 = load typed i32 %t43
-    %t45 = cmp eq i32 %t44, 5
-    %t46 = cmp ne i64 %t45, 0
-    store typed i64 %t46, $land__4
+    %t37 = addr $copy_assigned
+    %t38 = index i8 [projection=field] %t37, 0
+    %t39 = binary mul i64 0, 4
+    %t40 = index i8 [projection=array_element] %t38, %t39
+    %t41 = index i8 [projection=field] %t40, 0
+    %t42 = load typed i32 %t41
+    %t43 = cmp eq i32 %t42, 5
+    store typed i64 %t43, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -95,19 +92,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t47 = load typed i64 $land__4
-    branch %t47, ^land_rhs_13, ^land_short_14
+    %t44 = load typed i64 $land__4
+    branch %t44, ^land_rhs_13, ^land_short_14
 
   block ^land_rhs_13:
-    %t48 = addr $move_assigned
+    %t45 = addr $move_assigned
+    %t46 = index i8 [projection=field] %t45, 0
+    %t47 = binary mul i64 0, 4
+    %t48 = index i8 [projection=array_element] %t46, %t47
     %t49 = index i8 [projection=field] %t48, 0
-    %t50 = binary mul i64 0, 4
-    %t51 = index i8 [projection=array_element] %t49, %t50
-    %t52 = index i8 [projection=field] %t51, 0
-    %t53 = load typed i32 %t52
-    %t54 = cmp eq i32 %t53, 6
-    %t55 = cmp ne i64 %t54, 0
-    store typed i64 %t55, $land__5
+    %t50 = load typed i32 %t49
+    %t51 = cmp eq i32 %t50, 6
+    store typed i64 %t51, $land__5
     jump ^land_end_15
 
   block ^land_short_14:
@@ -115,8 +111,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_15
 
   block ^land_end_15:
-    %t56 = load typed i64 $land__5
-    branch %t56, ^cond_then_1, ^cond_else_2
+    %t52 = load typed i64 $land__5
+    branch %t52, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -127,8 +123,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t57 = load typed i32 $cond__1
-    return i32 %t57
+    %t53 = load typed i32 $cond__1
+    return i32 %t53
 }
 function @Owner__Owner(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5OwnerC1Ev, inline_hint=yes] {
   slot $this : ptr

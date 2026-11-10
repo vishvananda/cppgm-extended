@@ -503,8 +503,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_92:
     %t66 = load typed i32 @trackers_alive
     %t67 = cmp ne i32 %t66, 0
-    %t68 = cmp ne i64 %t67, 0
-    store typed i64 %t68, $lor__19
+    store typed i64 %t67, $lor__19
     jump ^lor_end_94
 
   block ^lor_short_93:
@@ -512,9 +511,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_94
 
   block ^lor_end_94:
-    %t69 = load typed i64 $lor__19
-    %t70 = convert trunc i32 i64 %t69
-    return i32 %t70
+    %t68 = load typed i64 $lor__19
+    %t69 = convert trunc i32 i64 %t68
+    return i32 %t69
 }
 function @Box__Box(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
   slot $this : ptr

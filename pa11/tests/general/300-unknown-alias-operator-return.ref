@@ -27,8 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $call
     %t6 = call i32 @Call__operator____2(%t5, 41)
     %t7 = cmp ne i32 %t6, 42
-    %t8 = cmp ne i64 %t7, 0
-    store typed i64 %t8, $lor__1
+    store typed i64 %t7, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -36,15 +35,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t9 = load typed i64 $lor__1
-    branch %t9, ^lor_short_5, ^lor_rhs_4
+    %t8 = load typed i64 $lor__1
+    branch %t8, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t10 = addr $call
-    %t11 = call i32 @operator_(%t10, 1)
-    %t12 = cmp ne i32 %t11, 43
-    %t13 = cmp ne i64 %t12, 0
-    store typed i64 %t13, $lor__2
+    %t9 = addr $call
+    %t10 = call i32 @operator_(%t9, 1)
+    %t11 = cmp ne i32 %t10, 43
+    store typed i64 %t11, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -52,9 +50,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t14 = load typed i64 $lor__2
-    %t15 = convert trunc i32 i64 %t14
-    return i32 %t15
+    %t12 = load typed i64 $lor__2
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
 }
 function @Call__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK4CallclEv, inline_hint=yes] {
   slot $this : ptr

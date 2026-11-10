@@ -58,8 +58,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_end_8:
     %t6 = load typed i64 $land__2
-    %t7 = cmp ne i64 %t6, 0
-    store typed i64 %t7, $land__1
+    store typed i64 %t6, $land__1
     call void @Probe___Probe(%t2)
     jump ^land_end_5
 
@@ -68,13 +67,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_5
 
   block ^land_end_5:
-    %t8 = load typed i64 $land__1
-    branch %t8, ^if_then_1, ^if_else_2
+    %t7 = load typed i64 $land__1
+    branch %t7, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    %t9 = load typed i32 @destroyed
-    %t10 = binary add nowrap i32 %t9, 1
-    store typed i32 %t10, @destroyed
+    %t8 = load typed i32 @destroyed
+    %t9 = binary add nowrap i32 %t8, 1
+    store typed i32 %t9, @destroyed
     jump ^if_end_13
 
   block ^if_else_2:

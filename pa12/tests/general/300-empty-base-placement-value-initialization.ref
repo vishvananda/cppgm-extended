@@ -105,8 +105,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_13:
     %t33 = load typed i32 @constructors
     %t34 = cmp eq i32 %t33, 2
-    %t35 = cmp ne i64 %t34, 0
-    store typed i64 %t35, $land__2
+    store typed i64 %t34, $land__2
     jump ^land_end_15
 
   block ^land_short_14:
@@ -114,8 +113,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_15
 
   block ^land_end_15:
-    %t36 = load typed i64 $land__2
-    branch %t36, ^cond_then_10, ^cond_else_11
+    %t35 = load typed i64 $land__2
+    branch %t35, ^cond_then_10, ^cond_else_11
 
   block ^cond_then_10:
     store typed i32 0, $cond__1
@@ -126,8 +125,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_12
 
   block ^cond_end_12:
-    %t37 = load typed i32 $cond__1
-    return i32 %t37
+    %t36 = load typed i32 $cond__1
+    return i32 %t36
 }
 function @Bucket__second(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN6Bucket6secondEv, inline_hint=yes] {
   slot $this : ptr

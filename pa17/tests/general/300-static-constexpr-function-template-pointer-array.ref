@@ -25,8 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t3 = call i64 @table_void___call(42, 2)
     %t4 = cmp eq i64 %t3, 42
-    %t5 = cmp ne i64 %t4, 0
-    store typed i64 %t5, $land__2
+    store typed i64 %t4, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -34,8 +33,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t6 = load typed i64 $land__2
-    branch %t6, ^cond_then_1, ^cond_else_2
+    %t5 = load typed i64 $land__2
+    branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -46,8 +45,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load typed i32 $cond__1
-    return i32 %t7
+    %t6 = load typed i32 $cond__1
+    return i32 %t6
 }
 function @table_void___call(%hash : i64, %index : i64) -> i64 [binding=weak, object=_ZN5tableIvE4callEmm, inline_hint=yes] {
   slot $hash : i64

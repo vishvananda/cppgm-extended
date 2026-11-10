@@ -66,8 +66,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_5:
     %t30 = load typed i32 @conversions
     %t31 = cmp ne i32 %t30, 2
-    %t32 = cmp ne i64 %t31, 0
-    store typed i64 %t32, $lor__3
+    store typed i64 %t31, $lor__3
     jump ^lor_end_7
 
   block ^lor_short_6:
@@ -75,9 +74,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_7
 
   block ^lor_end_7:
-    %t33 = load typed i64 $lor__3
-    %t34 = convert trunc i32 i64 %t33
-    return i32 %t34
+    %t32 = load typed i64 $lor__3
+    %t33 = convert trunc i32 i64 %t32
+    return i32 %t33
 }
 function @Proxy__operatorbool(%this : ptr [object_bytes=2]) -> u8 [binding=weak, object=_ZNK5ProxycvbEv, inline_hint=yes] {
   slot $this : ptr

@@ -22,8 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i8 %t10
     %t12 = convert sext i32 i8 %t11
     %t13 = cmp eq i32 %t12, 3
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__2
+    store typed i64 %t13, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -31,19 +30,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t15 = load typed i64 $land__2
-    branch %t15, ^land_rhs_7, ^land_short_8
+    %t14 = load typed i64 $land__2
+    branch %t14, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t16 = addr $x
-    %t17 = index i8 [projection=field] %t16, 0
-    %t18 = index i8 [projection=field] %t17, 8
-    %t19 = index i8 [projection=array_element] %t18, 1
-    %t20 = load i8 %t19
-    %t21 = convert sext i32 i8 %t20
-    %t22 = cmp eq i32 %t21, 4
-    %t23 = cmp ne i64 %t22, 0
-    store typed i64 %t23, $land__3
+    %t15 = addr $x
+    %t16 = index i8 [projection=field] %t15, 0
+    %t17 = index i8 [projection=field] %t16, 8
+    %t18 = index i8 [projection=array_element] %t17, 1
+    %t19 = load i8 %t18
+    %t20 = convert sext i32 i8 %t19
+    %t21 = cmp eq i32 %t20, 4
+    store typed i64 %t21, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -51,8 +49,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t24 = load typed i64 $land__3
-    branch %t24, ^cond_then_1, ^cond_else_2
+    %t22 = load typed i64 $land__3
+    branch %t22, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -63,8 +61,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t25 = load typed i32 $cond__1
-    return i32 %t25
+    %t23 = load typed i32 $cond__1
+    return i32 %t23
 }
 function @X__X(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1XC1Ev, inline_hint=yes] {
   slot $this : ptr

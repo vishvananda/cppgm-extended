@@ -55,8 +55,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = load typed ptr $member_pointer_callee__3
     %t28 = call i32 %t27(%t21, 4) as (%arg0 : ptr [object_bytes=4], %arg1 : i32) -> i32
     %t29 = cmp eq i32 %t28, 7
-    %t30 = cmp ne i64 %t29, 0
-    store typed i64 %t30, $land__2
+    store typed i64 %t29, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -64,8 +63,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t31 = load typed i64 $land__2
-    branch %t31, ^cond_then_1, ^cond_else_2
+    %t30 = load typed i64 $land__2
+    branch %t30, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -76,8 +75,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t32 = load typed i32 $cond__1
-    return i32 %t32
+    %t31 = load typed i32 $cond__1
+    return i32 %t31
 }
 function @S__plus(%this : ptr [object_bytes=4], %x : i32) -> i32 [binding=weak, object=_ZN1S4plusEi, inline_hint=yes] {
   slot $this : ptr

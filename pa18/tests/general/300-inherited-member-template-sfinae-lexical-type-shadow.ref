@@ -37,8 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = load typed i64 %t21
     %t23 = convert sext i64 i32 2
     %t24 = cmp eq i64 %t22, %t23
-    %t25 = cmp ne i64 %t24, 0
-    store typed i64 %t25, $land__2
+    store typed i64 %t24, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -46,8 +45,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t26 = load typed i64 $land__2
-    branch %t26, ^cond_then_1, ^cond_else_2
+    %t25 = load typed i64 $land__2
+    branch %t25, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -58,8 +57,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t27 = load typed i32 $cond__1
-    return i32 %t27
+    %t26 = load typed i32 $cond__1
+    return i32 %t26
 }
 function @lib__v1__key_value_types___cppgm_class_template_identity_1_____get_value(%value : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN3lib2v115key_value_typesINS0_10node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEEE11__get_valueIS9_TnNS0_9enable_ifIXsr7is_sameIT_S9_EE5valueEiE4typeELi0EEERKNS0_4pairIKS8_mEERSD_, inline_hint=yes] {
   slot $value : ptr

@@ -42,8 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_end_12:
     %t8 = load typed i64 $lor__5
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__4
+    store typed i64 %t8, $land__4
     jump ^land_end_9
 
   block ^land_short_8:
@@ -51,8 +50,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t10 = load typed i64 $land__4
-    branch %t10, ^cond_then_1, ^cond_else_2
+    %t9 = load typed i64 $land__4
+    branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -63,8 +62,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load typed i32 $cond__1
-    return i32 %t11
+    %t10 = load typed i32 $cond__1
+    return i32 %t10
 }
 function @value__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK5valuecvbEv, inline_hint=yes] {
   slot $this : ptr

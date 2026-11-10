@@ -135,8 +135,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_16:
     %t21 = load typed i32 $caught
     %t22 = cmp eq i32 %t21, 16
-    %t23 = cmp ne i64 %t22, 0
-    store typed i64 %t23, $land__4
+    store typed i64 %t22, $land__4
     jump ^land_end_18
 
   block ^land_short_17:
@@ -144,8 +143,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_18
 
   block ^land_end_18:
-    %t24 = load typed i64 $land__4
-    branch %t24, ^cond_then_13, ^cond_else_14
+    %t23 = load typed i64 $land__4
+    branch %t23, ^cond_then_13, ^cond_else_14
 
   block ^cond_then_13:
     store typed i32 0, $cond__3
@@ -156,6 +155,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_15
 
   block ^cond_end_15:
-    %t25 = load typed i32 $cond__3
-    return i32 %t25
+    %t24 = load typed i32 $cond__3
+    return i32 %t24
 }

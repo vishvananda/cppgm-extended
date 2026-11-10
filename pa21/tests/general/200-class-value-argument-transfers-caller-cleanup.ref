@@ -64,8 +64,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load typed ptr %t10
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 7
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__4
+    store typed i64 %t13, $land__4
     jump ^land_end_11
 
   block ^land_short_10:
@@ -73,14 +72,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_11
 
   block ^land_end_11:
-    %t15 = load typed i64 $land__4
-    branch %t15, ^land_rhs_12, ^land_short_13
+    %t14 = load typed i64 $land__4
+    branch %t14, ^land_rhs_12, ^land_short_13
 
   block ^land_rhs_12:
-    %t16 = load typed i32 @Value__live
-    %t17 = cmp eq i32 %t16, 1
-    %t18 = cmp ne i64 %t17, 0
-    store typed i64 %t18, $land__5
+    %t15 = load typed i32 @Value__live
+    %t16 = cmp eq i32 %t15, 1
+    store typed i64 %t16, $land__5
     jump ^land_end_14
 
   block ^land_short_13:
@@ -88,8 +86,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_14
 
   block ^land_end_14:
-    %t19 = load typed i64 $land__5
-    branch %t19, ^cond_then_6, ^cond_else_7
+    %t17 = load typed i64 $land__5
+    branch %t17, ^cond_then_6, ^cond_else_7
 
   block ^cond_then_6:
     store typed i32 0, $cond__3
@@ -100,10 +98,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_8
 
   block ^cond_end_8:
-    %t20 = load typed i32 $cond__3
-    %t21 = addr $source
-    call void @Value___Value(%t21)
-    return i32 %t20
+    %t18 = load typed i32 $cond__3
+    %t19 = addr $source
+    call void @Value___Value(%t19)
+    return i32 %t18
 }
 function @Value__Value(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5ValueC1Ev, inline_hint=yes] {
   slot $this : ptr

@@ -687,8 +687,7 @@ function @check(%f : ptr, %at : i32, %expect_order : i32) -> i32 [binding=strong
     %t9 = load typed i32 @order
     %t10 = load typed i32 $expect_order
     %t11 = cmp eq i32 %t9, %t10
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $land__2
+    store typed i64 %t11, $land__2
     jump ^land_end_12
 
   block ^land_short_11:
@@ -696,8 +695,8 @@ function @check(%f : ptr, %at : i32, %expect_order : i32) -> i32 [binding=strong
     jump ^land_end_12
 
   block ^land_end_12:
-    %t13 = load typed i64 $land__2
-    branch %t13, ^cond_then_7, ^cond_else_8
+    %t12 = load typed i64 $land__2
+    branch %t12, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
     store typed i32 0, $cond__1
@@ -708,10 +707,10 @@ function @check(%f : ptr, %at : i32, %expect_order : i32) -> i32 [binding=strong
     jump ^cond_end_9
 
   block ^cond_end_9:
-    %t14 = load typed i32 $cond__1
+    %t13 = load typed i32 $cond__1
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t14
+    return i32 %t13
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()

@@ -97,8 +97,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t13 = addr $a
     %t14 = addr $b
     %t15 = cmp eq ptr %t13, %t14
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__1
+    store typed i64 %t15, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -106,85 +105,84 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t17 = load typed i64 $lor__1
-    %t18 = convert trunc i32 i64 %t17
-    store typed i32 %t18, $bad
-    %t19 = addr $z
-    zeroinit 24x4 %t19
+    %t16 = load typed i64 $lor__1
+    %t17 = convert trunc i32 i64 %t16
+    store typed i32 %t17, $bad
+    %t18 = addr $z
+    zeroinit 24x4 %t18
     store typed i32 0, $i
     jump ^for_cond_4
 
   block ^for_cond_4:
-    %t20 = load typed i32 $i
-    %t21 = cmp ne i32 %t20, 2
-    branch %t21, ^for_body_5, ^for_end_7
+    %t19 = load typed i32 $i
+    %t20 = cmp ne i32 %t19, 2
+    branch %t20, ^for_body_5, ^for_end_7
 
   block ^for_body_5:
     store typed i32 0, $j
     jump ^for_cond_8
 
   block ^for_cond_8:
-    %t22 = load typed i32 $j
-    %t23 = cmp ne i32 %t22, 3
-    branch %t23, ^for_body_9, ^for_end_11
+    %t21 = load typed i32 $j
+    %t22 = cmp ne i32 %t21, 3
+    branch %t22, ^for_body_9, ^for_end_11
 
   block ^for_body_9:
-    %t24 = addr $z
-    %t25 = load typed i32 $i
-    %t26 = convert sext i64 i32 %t25
-    %t27 = binary mul i64 %t26, 12
-    %t28 = index i8 [projection=array_element] %t24, %t27
-    %t29 = load typed i32 $j
-    %t30 = index i32 [projection=array_element] %t28, %t29
-    %t31 = load typed i32 %t30
-    %t32 = cmp ne i32 %t31, 0
-    %t33 = convert trunc i32 i64 %t32
-    %t34 = load typed i32 $bad
-    %t35 = binary add nowrap i32 %t34, %t33
-    store typed i32 %t35, $bad
+    %t23 = addr $z
+    %t24 = load typed i32 $i
+    %t25 = convert sext i64 i32 %t24
+    %t26 = binary mul i64 %t25, 12
+    %t27 = index i8 [projection=array_element] %t23, %t26
+    %t28 = load typed i32 $j
+    %t29 = index i32 [projection=array_element] %t27, %t28
+    %t30 = load typed i32 %t29
+    %t31 = cmp ne i32 %t30, 0
+    %t32 = convert trunc i32 i64 %t31
+    %t33 = load typed i32 $bad
+    %t34 = binary add nowrap i32 %t33, %t32
+    store typed i32 %t34, $bad
     jump ^for_iter_10
 
   block ^for_iter_10:
-    %t36 = load typed i32 $j
-    %t37 = binary add nowrap i32 %t36, 1
-    store typed i32 %t37, $j
+    %t35 = load typed i32 $j
+    %t36 = binary add nowrap i32 %t35, 1
+    store typed i32 %t36, $j
     jump ^for_cond_8
 
   block ^for_end_11:
     jump ^for_iter_6
 
   block ^for_iter_6:
-    %t38 = load typed i32 $i
-    %t39 = binary add nowrap i32 %t38, 1
-    store typed i32 %t39, $i
+    %t37 = load typed i32 $i
+    %t38 = binary add nowrap i32 %t37, 1
+    store typed i32 %t38, $i
     jump ^for_cond_4
 
   block ^for_end_7:
-    %t40 = addr $dynamic
-    %t41 = call i32 @value()
-    store typed i32 %t41, %t40
-    %t42 = index i8 [projection=array_element] %t40, 4
-    %t43 = call i32 @value()
-    store typed i32 %t43, %t42
-    %t44 = index i8 %t40, 8
-    %t45 = call i32 @value()
-    store typed i32 %t45, %t44
-    %t46 = index i8 [projection=array_element] %t44, 4
-    %t47 = call i32 @value()
-    store typed i32 %t47, %t46
-    %t48 = load typed i32 @effects
-    %t49 = cmp ne i32 %t48, 4
-    branch %t49, ^lor_short_13, ^lor_rhs_12
+    %t39 = addr $dynamic
+    %t40 = call i32 @value()
+    store typed i32 %t40, %t39
+    %t41 = index i8 [projection=array_element] %t39, 4
+    %t42 = call i32 @value()
+    store typed i32 %t42, %t41
+    %t43 = index i8 %t39, 8
+    %t44 = call i32 @value()
+    store typed i32 %t44, %t43
+    %t45 = index i8 [projection=array_element] %t43, 4
+    %t46 = call i32 @value()
+    store typed i32 %t46, %t45
+    %t47 = load typed i32 @effects
+    %t48 = cmp ne i32 %t47, 4
+    branch %t48, ^lor_short_13, ^lor_rhs_12
 
   block ^lor_rhs_12:
-    %t50 = addr $dynamic
-    %t51 = binary mul i64 0, 8
-    %t52 = index i8 [projection=array_element] %t50, %t51
-    %t53 = index i32 [projection=array_element] %t52, 0
-    %t54 = load typed i32 %t53
-    %t55 = cmp ne i32 %t54, 1
-    %t56 = cmp ne i64 %t55, 0
-    store typed i64 %t56, $lor__2
+    %t49 = addr $dynamic
+    %t50 = binary mul i64 0, 8
+    %t51 = index i8 [projection=array_element] %t49, %t50
+    %t52 = index i32 [projection=array_element] %t51, 0
+    %t53 = load typed i32 %t52
+    %t54 = cmp ne i32 %t53, 1
+    store typed i64 %t54, $lor__2
     jump ^lor_end_14
 
   block ^lor_short_13:
@@ -192,18 +190,17 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_14
 
   block ^lor_end_14:
-    %t57 = load typed i64 $lor__2
-    branch %t57, ^lor_short_16, ^lor_rhs_15
+    %t55 = load typed i64 $lor__2
+    branch %t55, ^lor_short_16, ^lor_rhs_15
 
   block ^lor_rhs_15:
-    %t58 = addr $dynamic
-    %t59 = binary mul i64 1, 8
-    %t60 = index i8 [projection=array_element] %t58, %t59
-    %t61 = index i32 [projection=array_element] %t60, 1
-    %t62 = load typed i32 %t61
-    %t63 = cmp ne i32 %t62, 4
-    %t64 = cmp ne i64 %t63, 0
-    store typed i64 %t64, $lor__3
+    %t56 = addr $dynamic
+    %t57 = binary mul i64 1, 8
+    %t58 = index i8 [projection=array_element] %t56, %t57
+    %t59 = index i32 [projection=array_element] %t58, 1
+    %t60 = load typed i32 %t59
+    %t61 = cmp ne i32 %t60, 4
+    store typed i64 %t61, $lor__3
     jump ^lor_end_17
 
   block ^lor_short_16:
@@ -211,58 +208,58 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_17
 
   block ^lor_end_17:
-    %t65 = load typed i64 $lor__3
-    %t66 = convert trunc i32 i64 %t65
-    %t67 = load typed i32 $bad
-    %t68 = binary add nowrap i32 %t67, %t66
-    store typed i32 %t68, $bad
-    %t69 = addr $v
-    store volatile i32 1, %t69
-    %t70 = index i8 [projection=array_element] %t69, 4
-    store volatile i32 2, %t70
-    %t71 = index i8 %t69, 8
-    store volatile i32 3, %t71
-    %t72 = index i8 [projection=array_element] %t71, 4
-    store volatile i32 4, %t72
-    %t73 = addr $v
-    %t74 = binary mul i64 0, 8
-    %t75 = index i8 [projection=array_element] %t73, %t74
-    %t76 = index i32 [projection=array_element] %t75, 1
-    %t77 = load volatile i32 %t76
-    %t78 = addr $v
-    %t79 = binary mul i64 1, 8
-    %t80 = index i8 [projection=array_element] %t78, %t79
-    %t81 = index i32 [projection=array_element] %t80, 0
-    %t82 = load volatile i32 %t81
-    %t83 = binary add nowrap i32 %t77, %t82
-    %t84 = cmp ne i32 %t83, 5
-    %t85 = convert trunc i32 i64 %t84
-    %t86 = load typed i32 $bad
-    %t87 = binary add nowrap i32 %t86, %t85
-    store typed i32 %t87, $bad
-    %t88 = addr $signs
-    copyobj 32x8 @__constexpr_template__2, %t88
-    %t89 = addr $signs
-    %t90 = binary mul i64 0, 16
-    %t91 = index i8 [projection=array_element] %t89, %t90
-    %t92 = index f64 [projection=array_element] %t91, 0
-    %t93 = load typed f64 %t92
-    %t94 = binary div f64 1, %t93
-    %t95 = cmp lt f64 %t94, 0
-    %t96 = cmp eq i64 %t95, 0
-    branch %t96, ^lor_short_19, ^lor_rhs_18
+    %t62 = load typed i64 $lor__3
+    %t63 = convert trunc i32 i64 %t62
+    %t64 = load typed i32 $bad
+    %t65 = binary add nowrap i32 %t64, %t63
+    store typed i32 %t65, $bad
+    %t66 = addr $v
+    store volatile i32 1, %t66
+    %t67 = index i8 [projection=array_element] %t66, 4
+    store volatile i32 2, %t67
+    %t68 = index i8 %t66, 8
+    store volatile i32 3, %t68
+    %t69 = index i8 [projection=array_element] %t68, 4
+    store volatile i32 4, %t69
+    %t70 = addr $v
+    %t71 = binary mul i64 0, 8
+    %t72 = index i8 [projection=array_element] %t70, %t71
+    %t73 = index i32 [projection=array_element] %t72, 1
+    %t74 = load volatile i32 %t73
+    %t75 = addr $v
+    %t76 = binary mul i64 1, 8
+    %t77 = index i8 [projection=array_element] %t75, %t76
+    %t78 = index i32 [projection=array_element] %t77, 0
+    %t79 = load volatile i32 %t78
+    %t80 = binary add nowrap i32 %t74, %t79
+    %t81 = cmp ne i32 %t80, 5
+    %t82 = convert trunc i32 i64 %t81
+    %t83 = load typed i32 $bad
+    %t84 = binary add nowrap i32 %t83, %t82
+    store typed i32 %t84, $bad
+    %t85 = addr $signs
+    copyobj 32x8 @__constexpr_template__2, %t85
+    %t86 = addr $signs
+    %t87 = binary mul i64 0, 16
+    %t88 = index i8 [projection=array_element] %t86, %t87
+    %t89 = index f64 [projection=array_element] %t88, 0
+    %t90 = load typed f64 %t89
+    %t91 = binary div f64 1, %t90
+    %t92 = cmp lt f64 %t91, 0
+    %t93 = cmp eq i64 %t92, 0
+    branch %t93, ^lor_short_19, ^lor_rhs_18
 
   block ^lor_rhs_18:
-    %t97 = addr $signs
-    %t98 = binary mul i64 1, 16
-    %t99 = index i8 [projection=array_element] %t97, %t98
-    %t100 = index f64 [projection=array_element] %t99, 1
-    %t101 = load typed f64 %t100
-    %t102 = binary div f64 1, %t101
-    %t103 = cmp lt f64 %t102, 0
-    %t104 = cmp eq i64 %t103, 0
-    %t105 = cmp ne i64 %t104, 0
-    store typed i64 %t105, $lor__4
+    %t94 = addr $signs
+    %t95 = binary mul i64 1, 16
+    %t96 = index i8 [projection=array_element] %t94, %t95
+    %t97 = index f64 [projection=array_element] %t96, 1
+    %t98 = load typed f64 %t97
+    %t99 = binary div f64 1, %t98
+    %t100 = cmp lt f64 %t99, 0
+    %t101 = cmp eq i64 %t100, 0
+    %t102 = cmp ne i64 %t101, 0
+    store typed i64 %t102, $lor__4
     jump ^lor_end_20
 
   block ^lor_short_19:
@@ -270,48 +267,47 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_20
 
   block ^lor_end_20:
-    %t106 = load typed i64 $lor__4
-    %t107 = convert trunc i32 i64 %t106
-    %t108 = load typed i32 $bad
-    %t109 = binary add nowrap i32 %t108, %t107
-    store typed i32 %t109, $bad
-    %t110 = addr $pointers
-    %t111 = addr $a
-    %t112 = binary mul i64 0, 12
-    %t113 = index i8 [projection=array_element] %t111, %t112
-    %t114 = index i32 [projection=array_element] %t113, 0
-    store typed ptr %t114, %t110
-    %t115 = index i8 [projection=array_element] %t110, 8
-    %t116 = copy ptr 0
-    store typed ptr %t116, %t115
-    %t117 = index i8 %t110, 16
-    %t118 = copy ptr 0
-    store typed ptr %t118, %t117
-    %t119 = index i8 [projection=array_element] %t117, 8
-    %t120 = addr $b
-    %t121 = binary mul i64 1, 12
-    %t122 = index i8 [projection=array_element] %t120, %t121
-    %t123 = index i32 [projection=array_element] %t122, 2
-    store typed ptr %t123, %t119
-    %t124 = addr $pointers
-    %t125 = binary mul i64 0, 16
-    %t126 = index i8 [projection=array_element] %t124, %t125
-    %t127 = index ptr [projection=array_element] %t126, 0
-    %t128 = load typed ptr %t127
-    %t129 = load typed i32 %t128
-    %t130 = cmp ne i32 %t129, 99
-    branch %t130, ^lor_short_22, ^lor_rhs_21
+    %t103 = load typed i64 $lor__4
+    %t104 = convert trunc i32 i64 %t103
+    %t105 = load typed i32 $bad
+    %t106 = binary add nowrap i32 %t105, %t104
+    store typed i32 %t106, $bad
+    %t107 = addr $pointers
+    %t108 = addr $a
+    %t109 = binary mul i64 0, 12
+    %t110 = index i8 [projection=array_element] %t108, %t109
+    %t111 = index i32 [projection=array_element] %t110, 0
+    store typed ptr %t111, %t107
+    %t112 = index i8 [projection=array_element] %t107, 8
+    %t113 = copy ptr 0
+    store typed ptr %t113, %t112
+    %t114 = index i8 %t107, 16
+    %t115 = copy ptr 0
+    store typed ptr %t115, %t114
+    %t116 = index i8 [projection=array_element] %t114, 8
+    %t117 = addr $b
+    %t118 = binary mul i64 1, 12
+    %t119 = index i8 [projection=array_element] %t117, %t118
+    %t120 = index i32 [projection=array_element] %t119, 2
+    store typed ptr %t120, %t116
+    %t121 = addr $pointers
+    %t122 = binary mul i64 0, 16
+    %t123 = index i8 [projection=array_element] %t121, %t122
+    %t124 = index ptr [projection=array_element] %t123, 0
+    %t125 = load typed ptr %t124
+    %t126 = load typed i32 %t125
+    %t127 = cmp ne i32 %t126, 99
+    branch %t127, ^lor_short_22, ^lor_rhs_21
 
   block ^lor_rhs_21:
-    %t131 = addr $pointers
-    %t132 = binary mul i64 0, 16
-    %t133 = index i8 [projection=array_element] %t131, %t132
-    %t134 = index ptr [projection=array_element] %t133, 1
-    %t135 = load typed ptr %t134
-    %t136 = copy ptr 0
-    %t137 = cmp ne ptr %t135, %t136
-    %t138 = cmp ne i64 %t137, 0
-    store typed i64 %t138, $lor__5
+    %t128 = addr $pointers
+    %t129 = binary mul i64 0, 16
+    %t130 = index i8 [projection=array_element] %t128, %t129
+    %t131 = index ptr [projection=array_element] %t130, 1
+    %t132 = load typed ptr %t131
+    %t133 = copy ptr 0
+    %t134 = cmp ne ptr %t132, %t133
+    store typed i64 %t134, $lor__5
     jump ^lor_end_23
 
   block ^lor_short_22:
@@ -319,19 +315,18 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_23
 
   block ^lor_end_23:
-    %t139 = load typed i64 $lor__5
-    branch %t139, ^lor_short_25, ^lor_rhs_24
+    %t135 = load typed i64 $lor__5
+    branch %t135, ^lor_short_25, ^lor_rhs_24
 
   block ^lor_rhs_24:
-    %t140 = addr $pointers
-    %t141 = binary mul i64 1, 16
-    %t142 = index i8 [projection=array_element] %t140, %t141
-    %t143 = index ptr [projection=array_element] %t142, 1
-    %t144 = load typed ptr %t143
-    %t145 = load typed i32 %t144
-    %t146 = cmp ne i32 %t145, 6
-    %t147 = cmp ne i64 %t146, 0
-    store typed i64 %t147, $lor__6
+    %t136 = addr $pointers
+    %t137 = binary mul i64 1, 16
+    %t138 = index i8 [projection=array_element] %t136, %t137
+    %t139 = index ptr [projection=array_element] %t138, 1
+    %t140 = load typed ptr %t139
+    %t141 = load typed i32 %t140
+    %t142 = cmp ne i32 %t141, 6
+    store typed i64 %t142, $lor__6
     jump ^lor_end_26
 
   block ^lor_short_25:
@@ -339,15 +334,15 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     jump ^lor_end_26
 
   block ^lor_end_26:
-    %t148 = load typed i64 $lor__6
+    %t143 = load typed i64 $lor__6
+    %t144 = convert trunc i32 i64 %t143
+    %t145 = load typed i32 $bad
+    %t146 = binary add nowrap i32 %t145, %t144
+    store typed i32 %t146, $bad
+    %t147 = load typed i32 $bad
+    %t148 = cmp ne i32 %t147, 0
     %t149 = convert trunc i32 i64 %t148
-    %t150 = load typed i32 $bad
-    %t151 = binary add nowrap i32 %t150, %t149
-    store typed i32 %t151, $bad
-    %t152 = load typed i32 $bad
-    %t153 = cmp ne i32 %t152, 0
-    %t154 = convert trunc i32 i64 %t153
-    return i32 %t154
+    return i32 %t149
 }
 function @escape(%p : ptr) -> void [binding=strong, object=_Z6escapePi] {
   slot $p : ptr

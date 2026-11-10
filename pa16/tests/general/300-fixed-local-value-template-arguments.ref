@@ -36,8 +36,7 @@ function @check_fixed_values() -> i32 [binding=weak, object=_Z18check_fixed_valu
   block ^land_rhs_4:
     %t3 = load typed i32 $second
     %t4 = cmp eq i32 %t3, 17
-    %t5 = cmp ne i64 %t4, 0
-    store typed i64 %t5, $land__2
+    store typed i64 %t4, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -45,14 +44,13 @@ function @check_fixed_values() -> i32 [binding=weak, object=_Z18check_fixed_valu
     jump ^land_end_6
 
   block ^land_end_6:
-    %t6 = load typed i64 $land__2
-    branch %t6, ^land_rhs_7, ^land_short_8
+    %t5 = load typed i64 $land__2
+    branch %t5, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t7 = load typed i32 $third
-    %t8 = cmp eq i32 %t7, 15
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__3
+    %t6 = load typed i32 $third
+    %t7 = cmp eq i32 %t6, 15
+    store typed i64 %t7, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -60,8 +58,8 @@ function @check_fixed_values() -> i32 [binding=weak, object=_Z18check_fixed_valu
     jump ^land_end_9
 
   block ^land_end_9:
-    %t10 = load typed i64 $land__3
-    branch %t10, ^cond_then_1, ^cond_else_2
+    %t8 = load typed i64 $land__3
+    branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -72,8 +70,8 @@ function @check_fixed_values() -> i32 [binding=weak, object=_Z18check_fixed_valu
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load typed i32 $cond__1
-    return i32 %t11
+    %t9 = load typed i32 $cond__1
+    return i32 %t9
 }
 function @check_fixed_values__2() -> i32 [binding=weak, object=_Z18check_fixed_valuesIiEiv] {
   slot $local : i32
@@ -96,8 +94,7 @@ function @check_fixed_values__2() -> i32 [binding=weak, object=_Z18check_fixed_v
   block ^land_rhs_4:
     %t3 = load typed i32 $second
     %t4 = cmp eq i32 %t3, 17
-    %t5 = cmp ne i64 %t4, 0
-    store typed i64 %t5, $land__2
+    store typed i64 %t4, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -105,14 +102,13 @@ function @check_fixed_values__2() -> i32 [binding=weak, object=_Z18check_fixed_v
     jump ^land_end_6
 
   block ^land_end_6:
-    %t6 = load typed i64 $land__2
-    branch %t6, ^land_rhs_7, ^land_short_8
+    %t5 = load typed i64 $land__2
+    branch %t5, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t7 = load typed i32 $third
-    %t8 = cmp eq i32 %t7, 15
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__3
+    %t6 = load typed i32 $third
+    %t7 = cmp eq i32 %t6, 15
+    store typed i64 %t7, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -120,8 +116,8 @@ function @check_fixed_values__2() -> i32 [binding=weak, object=_Z18check_fixed_v
     jump ^land_end_9
 
   block ^land_end_9:
-    %t10 = load typed i64 $land__3
-    branch %t10, ^cond_then_1, ^cond_else_2
+    %t8 = load typed i64 $land__3
+    branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -132,8 +128,8 @@ function @check_fixed_values__2() -> i32 [binding=weak, object=_Z18check_fixed_v
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load typed i32 $cond__1
-    return i32 %t11
+    %t9 = load typed i32 $cond__1
+    return i32 %t9
 }
 function @check_dependent_local() -> i32 [binding=weak, object=_Z21check_dependent_localIcEiv] {
   slot $size : i32

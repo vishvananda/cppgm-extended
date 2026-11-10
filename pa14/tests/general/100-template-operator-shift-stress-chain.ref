@@ -55,8 +55,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t42 = index i8 [projection=field] %t41, 0
     %t43 = load typed i32 %t42
     %t44 = cmp eq i32 %t43, 16
-    %t45 = cmp ne i64 %t44, 0
-    store typed i64 %t45, $land__2
+    store typed i64 %t44, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -64,8 +63,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t46 = load typed i64 $land__2
-    branch %t46, ^cond_then_1, ^cond_else_2
+    %t45 = load typed i64 $land__2
+    branch %t45, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -76,8 +75,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t47 = load typed i32 $cond__1
-    return i32 %t47
+    %t46 = load typed i32 $cond__1
+    return i32 %t46
 }
 function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZlsI5TokenER6StreamS2_RKT_] {
   slot $stream : ptr

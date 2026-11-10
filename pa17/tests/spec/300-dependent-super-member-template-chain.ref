@@ -26,8 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t10 = load typed i32 $value
     %t11 = cmp eq i32 %t10, 3
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $land__3
+    store typed i64 %t11, $land__3
     jump ^land_end_6
 
   block ^land_short_5:
@@ -35,8 +34,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t13 = load typed i64 $land__3
-    branch %t13, ^cond_then_1, ^cond_else_2
+    %t12 = load typed i64 $land__3
+    branch %t12, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__2
@@ -47,8 +46,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t14 = load typed i32 $cond__2
-    return i32 %t14
+    %t13 = load typed i32 $cond__2
+    return i32 %t13
 }
 function @layer_second___insert_(%this : ptr [object_bytes=1], %__param1 : i32, %position : ptr, %value : ptr [pass=by_address, object_bytes=4], %variant : obj<1x1> [classes=none]) -> i32 [binding=weak, object=_ZN5layerI6secondE7insert_I3tagEEiiPiRiT_, inline_hint=yes] {
   slot $this : ptr

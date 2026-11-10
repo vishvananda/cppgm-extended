@@ -226,15 +226,15 @@ function @Mid__operator_(%this : ptr [object_bytes=16], %other : ptr [pass=by_ad
     %t8 = index i8 %t7, -24
     %t9 = load typed i64 %t8
     %t10 = index i8 %t6, %t9
-    %t11 = call ptr @Shared__operator_(%t5, %t10)
-    %t12 = load typed ptr $other
-    %t13 = index i8 [projection=field] %t12, 8
-    %t14 = load typed i32 %t13
-    %t15 = load typed ptr $this
-    %t16 = index i8 [projection=field] %t15, 8
-    store typed i32 %t14, %t16
-    %t17 = load typed ptr $this
-    return ptr %t17
+    copyobj 4x4 %t10, %t5
+    %t11 = load typed ptr $other
+    %t12 = index i8 [projection=field] %t11, 8
+    %t13 = load typed i32 %t12
+    %t14 = load typed ptr $this
+    %t15 = index i8 [projection=field] %t14, 8
+    store typed i32 %t13, %t15
+    %t16 = load typed ptr $this
+    return ptr %t16
 }
 function @Outer__Outer(%this : ptr [object_bytes=48]) -> void [binding=weak, object=_ZN5OuterC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -317,19 +317,6 @@ function @Outer__Outer__2(%this : ptr [alias=noalias, object_bytes=48], %other :
     %t25 = index i8 %t24, 24
     store typed ptr %t25, %t23
     return void
-}
-function @Shared__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN6SharedaSERKS_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $other
-    copyobj 4x4 %t2, %t1
-    %t3 = load typed ptr $this
-    return ptr %t3
 }
 function @Shared__Shared__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6SharedC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr

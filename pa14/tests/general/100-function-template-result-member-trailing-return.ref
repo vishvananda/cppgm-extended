@@ -34,23 +34,10 @@ function @test(%token : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=w
     %t2 = addr $r
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed ptr $token
-    %t5 = call ptr @handler__operator_(%t3, %t4)
-    %t6 = addr $r
-    %t7 = call i32 @result_handler___get(%t6)
-    return i32 %t7
-}
-function @handler__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN7handleraSERKS_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $other
-    copyobj 4x4 %t2, %t1
-    %t3 = load typed ptr $this
-    return ptr %t3
+    copyobj 4x4 %t4, %t3
+    %t5 = addr $r
+    %t6 = call i32 @result_handler___get(%t5)
+    return i32 %t6
 }
 function @result_handler___get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN6resultI7handlerE3getEv, inline_hint=yes] {
   slot $this : ptr

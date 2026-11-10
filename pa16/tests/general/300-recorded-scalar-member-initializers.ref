@@ -57,8 +57,7 @@ function @addressed() -> u8 [binding=strong, object=_Z9addressedv] {
     %t7 = call i64 @observe(%t6)
     %t8 = call i64 @Bounds__high()
     %t9 = cmp eq i64 %t7, %t8
-    %t10 = cmp ne i64 %t9, 0
-    store typed i64 %t10, $land__1
+    store typed i64 %t9, $land__1
     jump ^land_end_3
 
   block ^land_short_2:
@@ -66,14 +65,13 @@ function @addressed() -> u8 [binding=strong, object=_Z9addressedv] {
     jump ^land_end_3
 
   block ^land_end_3:
-    %t11 = load typed i64 $land__1
-    branch %t11, ^land_rhs_4, ^land_short_5
+    %t10 = load typed i64 $land__1
+    branch %t10, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t12 = load volatile i64 $stored
-    %t13 = cmp eq i64 %t12, 9223372036854775807
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__2
+    %t11 = load volatile i64 $stored
+    %t12 = cmp eq i64 %t11, 9223372036854775807
+    store typed i64 %t12, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -81,9 +79,9 @@ function @addressed() -> u8 [binding=strong, object=_Z9addressedv] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t15 = load typed i64 $land__2
-    %t16 = convert trunc u8 i64 %t15
-    return u8 %t16
+    %t13 = load typed i64 $land__2
+    %t14 = convert trunc u8 i64 %t13
+    return u8 %t14
 }
 function @effects() -> i32 [binding=strong, object=_Z7effectsv] {
   slot $first : i32
@@ -131,8 +129,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_7:
     %t7 = call i32 @effects()
     %t8 = cmp eq i32 %t7, 59
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $land__3
+    store typed i64 %t8, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -140,14 +137,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t10 = load typed i64 $land__3
-    branch %t10, ^land_rhs_10, ^land_short_11
+    %t9 = load typed i64 $land__3
+    branch %t9, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t11 = load typed i32 @calls
-    %t12 = cmp eq i32 %t11, 2
-    %t13 = cmp ne i64 %t12, 0
-    store typed i64 %t13, $land__4
+    %t10 = load typed i32 @calls
+    %t11 = cmp eq i32 %t10, 2
+    store typed i64 %t11, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -155,8 +151,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t14 = load typed i64 $land__4
-    branch %t14, ^cond_then_1, ^cond_else_2
+    %t12 = load typed i64 $land__4
+    branch %t12, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -167,8 +163,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t15 = load typed i32 $cond__1
-    return i32 %t15
+    %t13 = load typed i32 $cond__1
+    return i32 %t13
 }
 function @Bounds__high() -> i64 [binding=weak, object=_ZN6Bounds4highEv, inline_hint=yes] {
   block ^entry:

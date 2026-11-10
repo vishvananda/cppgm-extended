@@ -30,8 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed ptr @transform_address
     %t6 = call i32 %t5($argobj__3, 4) as (%arg0 : obj<1x1> [classes=none], %arg1 : i32) -> i32
     %t7 = cmp ne i32 %t6, 3
-    %t8 = cmp ne i64 %t7, 0
-    store typed i64 %t8, $lor__1
+    store typed i64 %t7, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -39,9 +38,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t9 = load typed i64 $lor__1
-    %t10 = convert trunc i32 i64 %t9
-    return i32 %t10
+    %t8 = load typed i64 $lor__1
+    %t9 = convert trunc i32 i64 %t8
+    return i32 %t9
 }
 function @transform(%__param0 : obj<1x1> [classes=none], %t : i32) -> i32 [binding=weak, object=_Z9transformIJcsEJiEEi1SIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>

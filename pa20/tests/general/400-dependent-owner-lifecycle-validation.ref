@@ -28,8 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = load typed ptr %t13
     %t15 = load typed ptr $ptr
     %t16 = cmp eq ptr %t14, %t15
-    %t17 = cmp ne i64 %t16, 0
-    store typed i64 %t17, $land__2
+    store typed i64 %t16, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -37,8 +36,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t18 = load typed i64 $land__2
-    branch %t18, ^cond_then_1, ^cond_else_2
+    %t17 = load typed i64 $land__2
+    branch %t17, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -49,8 +48,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t19 = load typed i32 $cond__1
-    return i32 %t19
+    %t18 = load typed i32 $cond__1
+    return i32 %t18
 }
 function @copy_move_unwrap_like(%first : ptr, %last : ptr, %out_first : ptr) -> obj<16x8> [binding=weak, object=_Z21copy_move_unwrap_likeI14copy_algorithmPiS1_S1_E9pair_likeIT0_T2_ES3_T1_S4_] {
   slot $first : ptr

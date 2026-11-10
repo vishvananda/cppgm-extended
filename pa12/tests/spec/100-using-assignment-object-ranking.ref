@@ -112,14 +112,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t47 = addr $hidden
     %t48 = addr $arg__1
     call void @Hidden__Hidden(%t48, 7)
-    %t49 = call ptr @Hidden__operator___ov2(%t47, %t48)
-    %t50 = addr $hidden
-    %t51 = index i8 %t50, 0
-    %t52 = index i8 [projection=field] %t51, 0
-    %t53 = load typed u32 %t52
-    %t54 = cmp ne u32 %t53, 7
-    %t55 = convert trunc i32 i64 %t54
-    return i32 %t55
+    copyobj 4x4 %t48, %t47
+    %t49 = addr $hidden
+    %t50 = index i8 %t49, 0
+    %t51 = index i8 [projection=field] %t50, 0
+    %t52 = load typed u32 %t51
+    %t53 = cmp ne u32 %t52, 7
+    %t54 = convert trunc i32 i64 %t53
+    return i32 %t54
 }
 function @Value__Value(%this : ptr [object_bytes=4], %n : u32) -> void [binding=weak, object=_ZN5ValueC1Ej, inline_hint=yes] {
   slot $this : ptr
@@ -185,21 +185,6 @@ function @Hidden__Hidden(%this : ptr [object_bytes=4], %n : u32) -> void [bindin
     store typed u32 %t3, %t6
     return void
 }
-function @Hidden__operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN6HiddenaSEOS_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 0
-    %t3 = load typed ptr $other
-    %t4 = index i8 %t3, 0
-    %t5 = call ptr @Base__operator___ov4(%t2, %t4)
-    %t6 = load typed ptr $this
-    return ptr %t6
-}
 function @Base__Base__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -209,19 +194,6 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=4]) -> void [binding=
     %t2 = index i8 [projection=field] %t1, 0
     store typed u32 0, %t2
     return void
-}
-function @Base__operator___ov4(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN4BaseaSEOS_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $other
-    copyobj 4x4 %t2, %t1
-    %t3 = load typed ptr $this
-    return ptr %t3
 }
 alias object _ZN5ValueC2Ej = @Value__Value
 alias object _ZN6HiddenC2Ej = @Hidden__Hidden

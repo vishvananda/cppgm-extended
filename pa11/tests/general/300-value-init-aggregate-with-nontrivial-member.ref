@@ -80,8 +80,7 @@ function @value_init_aggregate_wrapper__check(%this : ptr [object_bytes=8]) -> i
     %t7 = index i8 [projection=field] %t6, 4
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 0
-    %t10 = cmp ne i64 %t9, 0
-    store typed i64 %t10, $land__1
+    store typed i64 %t9, $land__1
     jump ^land_end_3
 
   block ^land_short_2:
@@ -89,9 +88,9 @@ function @value_init_aggregate_wrapper__check(%this : ptr [object_bytes=8]) -> i
     jump ^land_end_3
 
   block ^land_end_3:
-    %t11 = load typed i64 $land__1
-    %t12 = convert trunc i32 i64 %t11
-    return i32 %t12
+    %t10 = load typed i64 $land__1
+    %t11 = convert trunc i32 i64 %t10
+    return i32 %t11
 }
 function @value_init_aggregate_with_int__value_init_aggregate_with_int(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN29value_init_aggregate_with_intC1Ev, inline_hint=yes] {
   slot $this : ptr

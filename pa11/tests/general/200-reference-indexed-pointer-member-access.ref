@@ -61,8 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = addr $index
     %t13 = call i32 @read_unsigned(%t11, %t12)
     %t14 = cmp ne i32 %t13, 19
-    %t15 = cmp ne i64 %t14, 0
-    store typed i64 %t15, $lor__1
+    store typed i64 %t14, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -70,9 +69,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t16 = load typed i64 $lor__1
-    %t17 = convert trunc i32 i64 %t16
-    return i32 %t17
+    %t15 = load typed i64 $lor__1
+    %t16 = convert trunc i32 i64 %t15
+    return i32 %t16
 }
 function @element__element__aggregate(%this : ptr [object_bytes=4], %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr

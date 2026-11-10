@@ -174,8 +174,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = load typed ptr @pointer
     %t21 = load typed ptr $expected
     %t22 = cmp ne ptr %t20, %t21
-    %t23 = cmp ne i64 %t22, 0
-    store typed i64 %t23, $lor__1
+    store typed i64 %t22, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -183,15 +182,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t24 = load typed i64 $lor__1
-    branch %t24, ^lor_short_5, ^lor_rhs_4
+    %t23 = load typed i64 $lor__1
+    branch %t23, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t25 = load typed ptr @explicit_pointer
-    %t26 = load typed ptr $expected
-    %t27 = cmp ne ptr %t25, %t26
-    %t28 = cmp ne i64 %t27, 0
-    store typed i64 %t28, $lor__2
+    %t24 = load typed ptr @explicit_pointer
+    %t25 = load typed ptr $expected
+    %t26 = cmp ne ptr %t24, %t25
+    store typed i64 %t26, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
@@ -199,15 +197,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t29 = load typed i64 $lor__2
-    branch %t29, ^lor_short_8, ^lor_rhs_7
+    %t27 = load typed i64 $lor__2
+    branch %t27, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t30 = load typed ptr @alias_reference
-    %t31 = load typed ptr $expected
-    %t32 = cmp ne ptr %t30, %t31
-    %t33 = cmp ne i64 %t32, 0
-    store typed i64 %t33, $lor__3
+    %t28 = load typed ptr @alias_reference
+    %t29 = load typed ptr $expected
+    %t30 = cmp ne ptr %t28, %t29
+    store typed i64 %t30, $lor__3
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -215,9 +212,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t34 = load typed i64 $lor__3
-    %t35 = convert trunc i32 i64 %t34
-    return i32 %t35
+    %t31 = load typed i64 $lor__3
+    %t32 = convert trunc i32 i64 %t31
+    return i32 %t32
 }
 function @Holder__Holder(%this : ptr [object_bytes=48]) -> void [unwind=no, binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
   slot $this : ptr

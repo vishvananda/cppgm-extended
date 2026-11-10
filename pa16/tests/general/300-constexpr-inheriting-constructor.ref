@@ -195,8 +195,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t49 = index i8 [projection=field] %t48, 0
     %t50 = load typed i32 %t49
     %t51 = cmp eq i32 %t50, 9
-    %t52 = cmp ne i64 %t51, 0
-    store typed i64 %t52, $land__2
+    store typed i64 %t51, $land__2
     jump ^land_end_25
 
   block ^land_short_24:
@@ -204,8 +203,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_25
 
   block ^land_end_25:
-    %t53 = load typed i64 $land__2
-    branch %t53, ^cond_then_20, ^cond_else_21
+    %t52 = load typed i64 $land__2
+    branch %t52, ^cond_then_20, ^cond_else_21
 
   block ^cond_then_20:
     store typed i32 0, $cond__1
@@ -216,8 +215,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_22
 
   block ^cond_end_22:
-    %t54 = load typed i32 $cond__1
-    return i32 %t54
+    %t53 = load typed i32 $cond__1
+    return i32 %t53
 }
 function @Plain__Plain(%this : ptr [object_bytes=4], %__param1 : i32) -> void [binding=weak, object=_ZN5PlainC1Ei, inline_hint=yes] {
   slot $this : ptr
