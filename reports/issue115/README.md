@@ -9,7 +9,10 @@ There is also a measurable native division-selection opportunity.
 
 This document records the initial analysis with unchanged compiler source.
 The subsequent production fixes and their qualification are documented in
-[FIXES.md](FIXES.md). The input transformations in this directory
+[FIXES.md](FIXES.md). The [follow-up and final comparison](FOLLOWUP.md) resolve
+the first iteration's Huffman regression and record the Myc index correction.
+The [compact current table](current-summary.md) lists overall performance and
+the remaining worst outliers. The input transformations in this directory
 are diagnostic counterfactuals, not proposed production passes. They localize
 the missed general transformations; their function-name restrictions select
 profiled experiments and must not become optimizer rules.

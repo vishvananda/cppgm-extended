@@ -1,0 +1,54 @@
+All 50 original-input cases; means from separate Clang/GM/GM/Clang and GCC/GM/GM/GCC blocks. Higher ratios are faster GM. Sorted by GM versus Clang.
+
+| Workload | GM (s) | Clang (s) | GM vs Clang ↑ | GM vs GCC ↑ |
+|---|---:|---:|---:|---:|
+| Compress::HuffDecode | 1.691 | 0.902 | 0.533× | 0.615× |
+| Maze::Generator | 3.363 | 1.857 | 0.552× | 0.585× |
+| Calculator::Ast | 3.142 | 2.289 | 0.729× | 0.875× |
+| Etc::Words | 2.745 | 2.152 | 0.784× | 0.984× |
+| Brainfuck::Array | 2.173 | 1.707 | 0.786× | 0.865× |
+| Etc::LogParser | 1.293 | 1.020 | 0.789× | 1.887× |
+| Sort::Merge | 1.408 | 1.145 | 0.813× | 0.833× |
+| Maze::BFS | 2.207 | 1.808 | 0.819× | 0.664× |
+| Distance::NGram | 2.646 | 2.210 | 0.835× | 0.912× |
+| Etc::GameOfLife | 1.252 | 1.060 | 0.847× | 0.707× |
+| Calculator::Interpreter | 3.418 | 2.950 | 0.863× | 0.973× |
+| Compress::ArithDecode | 2.288 | 1.983 | 0.867× | 0.804× |
+| Etc::TextRaytracer | 1.873 | 1.667 | 0.890× | 0.779× |
+| Etc::NeuralNet | 2.123 | 1.889 | 0.890× | 0.816× |
+| Compress::BWTEncode | 2.106 | 1.903 | 0.904× | 1.093× |
+| Maze::AStar | 2.644 | 2.393 | 0.905× | 0.769× |
+| Graph::AStar | 1.530 | 1.385 | 0.906× | 0.812× |
+| CLBG::Spectralnorm | 1.759 | 1.597 | 0.908× | 0.942× |
+| Hash::SHA256 | 1.847 | 1.681 | 0.910× | 0.950× |
+| CLBG::Mandelbrot | 1.832 | 1.668 | 0.911× | 0.877× |
+| CLBG::Nbody | 1.454 | 1.343 | 0.923× | 0.889× |
+| Distance::Jaro | 1.486 | 1.404 | 0.945× | 0.994× |
+| Compress::LZWDecode | 2.209 | 2.095 | 0.948× | 0.929× |
+| Json::ParseDom | 2.095 | 2.005 | 0.957× | 0.953× |
+| Hash::CRC32 | 0.339 | 0.327 | 0.963× | 3.074× |
+| Compress::LZWEncode | 2.139 | 2.082 | 0.973× | 0.876× |
+| Graph::DFS | 1.397 | 1.382 | 0.990× | 0.955× |
+| Compress::BWTDecode | 1.343 | 1.369 | 1.020× | 0.970× |
+| Etc::Sieve | 3.487 | 3.562 | 1.021× | 1.190× |
+| Sort::Quick | 1.333 | 1.361 | 1.021× | 1.085× |
+| Etc::CacheSimulation | 1.610 | 1.653 | 1.026× | 0.982× |
+| Matmul::T8 | 1.749 | 1.806 | 1.033× | 0.881× |
+| Graph::BFS | 1.139 | 1.182 | 1.038× | 1.051× |
+| Json::Generate | 1.643 | 1.713 | 1.043× | 1.027× |
+| Base64::Encode | 0.209 | 0.220 | 1.050× | 8.901× |
+| Matmul::Single | 1.532 | 1.615 | 1.054× | 0.908× |
+| Sort::Self | 1.292 | 1.363 | 1.055× | 0.974× |
+| Compress::ArithEncode | 1.677 | 1.772 | 1.056× | 1.045× |
+| Template::Parse | 2.024 | 2.156 | 1.065× | 1.149× |
+| Json::ParseMapping | 2.023 | 2.189 | 1.082× | 0.929× |
+| Brainfuck::Recursion | 1.945 | 2.107 | 1.083× | 0.934× |
+| Binarytrees::Obj | 1.823 | 1.990 | 1.092× | 0.949× |
+| Matmul::T4 | 1.756 | 1.944 | 1.108× | 0.917× |
+| CLBG::Fannkuchredux | 1.462 | 1.640 | 1.122× | 1.135× |
+| CSV::Parse | 1.622 | 1.865 | 1.150× | 1.171× |
+| Binarytrees::Arena | 2.442 | 2.818 | 1.154× | 1.017× |
+| Matmul::T16 | 2.237 | 2.726 | 1.219× | 0.990× |
+| Template::Regex | 1.626 | 2.139 | 1.315× | 0.909× |
+| Compress::HuffEncode | 1.367 | 1.987 | 1.453× | 1.319× |
+| Base64::Decode | 1.180 | 1.761 | 1.492× | 1.514× |

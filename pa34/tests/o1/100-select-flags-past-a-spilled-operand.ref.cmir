@@ -100,130 +100,114 @@ function @clamp
     load.i32 rdi, [rdi+<off14>]
     load.i32 rsi, [rsi+<off14>]
     sub.i32 rax, rcx
-    cmp.i32 rax, 0
     mov <gpr6>, 0
-    cmovl rax, <gpr6>
+    cmovs rax, <gpr6>
     cmp.i32 rax, 255
     mov <gpr6>, 255
     cmovg rax, <gpr6>
     sub.i32 r8, r9
-    cmp.i32 r8, 0
     mov <gpr6>, 0
-    cmovl r8, <gpr6>
+    cmovs r8, <gpr6>
     cmp.i32 r8, 255
     mov <gpr6>, 255
     cmovg r8, <gpr6>
     sub.i32 <gpr0>, <gpr1>
-    cmp.i32 <gpr0>, 0
     mov <gpr6>, 0
-    cmovl <gpr0>, <gpr6>
+    cmovs <gpr0>, <gpr6>
     cmp.i32 <gpr0>, 255
     mov <gpr6>, 255
     cmovg <gpr0>, <gpr6>
     sub.i32 <gpr2>, <gpr3>
-    cmp.i32 <gpr2>, 0
     mov <gpr6>, 0
-    cmovl <gpr2>, <gpr6>
+    cmovs <gpr2>, <gpr6>
     cmp.i32 <gpr2>, 255
     mov <gpr6>, 255
     cmovg <gpr2>, <gpr6>
     sub.i32 <gpr4>, [rbp-<off0>]
-    cmp.i32 <gpr4>, 0
     mov <gpr6>, 0
-    cmovl <gpr4>, <gpr6>
+    cmovs <gpr4>, <gpr6>
     cmp.i32 <gpr4>, 255
     mov <gpr6>, 255
     cmovg <gpr4>, <gpr6>
     load.i32 rcx, [rbp-<off1>]
     sub.i32 rcx, [rbp-<off2>]
-    cmp.i32 rcx, 0
     mov <gpr6>, 0
-    cmovl rcx, <gpr6>
+    cmovs rcx, <gpr6>
     cmp.i32 rcx, 255
     mov <gpr6>, 255
     cmovg rcx, <gpr6>
     load.i32 r9, [rbp-<off3>]
     sub.i32 r9, [rbp-<off4>]
-    cmp.i32 r9, 0
     mov <gpr6>, 0
-    cmovl r9, <gpr6>
+    cmovs r9, <gpr6>
     cmp.i32 r9, 255
     mov <gpr6>, 255
     cmovg r9, <gpr6>
     load.i32 <gpr1>, [rbp-<off5>]
     sub.i32 <gpr1>, [rbp-<off6>]
-    cmp.i32 <gpr1>, 0
     mov <gpr6>, 0
-    cmovl <gpr1>, <gpr6>
+    cmovs <gpr1>, <gpr6>
     cmp.i32 <gpr1>, 255
     mov <gpr6>, 255
     cmovg <gpr1>, <gpr6>
     load.i32 <gpr3>, [rbp-<off7>]
     sub.i32 <gpr3>, [rbp-<off8>]
-    cmp.i32 <gpr3>, 0
     mov <gpr6>, 0
-    cmovl <gpr3>, <gpr6>
+    cmovs <gpr3>, <gpr6>
     cmp.i32 <gpr3>, 255
     mov <gpr6>, 255
     cmovg <gpr3>, <gpr6>
     store.i32 [rbp-<off21>], <gpr3>
     load.i32 <gpr3>, [rbp-<off9>]
     sub.i32 <gpr3>, [rbp-<off10>]
-    cmp.i32 <gpr3>, 0
     mov <gpr6>, 0
-    cmovl <gpr3>, <gpr6>
+    cmovs <gpr3>, <gpr6>
     cmp.i32 <gpr3>, 255
     mov <gpr6>, 255
     cmovg <gpr3>, <gpr6>
     store.i32 [rbp-<off22>], <gpr3>
     load.i32 <gpr3>, [rbp-<off11>]
     sub.i32 <gpr3>, [rbp-<off12>]
-    cmp.i32 <gpr3>, 0
     mov <gpr6>, 0
-    cmovl <gpr3>, <gpr6>
+    cmovs <gpr3>, <gpr6>
     cmp.i32 <gpr3>, 255
     mov <gpr6>, 255
     cmovg <gpr3>, <gpr6>
     store.i32 [rbp-<off23>], <gpr3>
     load.i32 <gpr3>, [rbp-<off13>]
     sub.i32 <gpr3>, [rbp-<off14>]
-    cmp.i32 <gpr3>, 0
     mov <gpr6>, 0
-    cmovl <gpr3>, <gpr6>
+    cmovs <gpr3>, <gpr6>
     cmp.i32 <gpr3>, 255
     mov <gpr6>, 255
     cmovg <gpr3>, <gpr6>
     store.i32 [rbp-<off24>], <gpr3>
     load.i32 <gpr3>, [rbp-<off15>]
     sub.i32 <gpr3>, [rbp-<off16>]
-    cmp.i32 <gpr3>, 0
     mov <gpr6>, 0
-    cmovl <gpr3>, <gpr6>
+    cmovs <gpr3>, <gpr6>
     cmp.i32 <gpr3>, 255
     mov <gpr6>, 255
     cmovg <gpr3>, <gpr6>
     store.i32 [rbp-<off25>], <gpr3>
     load.i32 <gpr3>, [rbp-<off17>]
     sub.i32 <gpr3>, [rbp-<off18>]
-    cmp.i32 <gpr3>, 0
     mov <gpr6>, 0
-    cmovl <gpr3>, <gpr6>
+    cmovs <gpr3>, <gpr6>
     cmp.i32 <gpr3>, 255
     mov <gpr6>, 255
     cmovg <gpr3>, <gpr6>
     store.i32 [rbp-<off26>], <gpr3>
     load.i32 <gpr3>, [rbp-<off19>]
     sub.i32 <gpr3>, [rbp-<off20>]
-    cmp.i32 <gpr3>, 0
     mov <gpr6>, 0
-    cmovl <gpr3>, <gpr6>
+    cmovs <gpr3>, <gpr6>
     cmp.i32 <gpr3>, 255
     mov <gpr6>, 255
     cmovg <gpr3>, <gpr6>
     sub.i32 rdi, rsi
-    cmp.i32 rdi, 0
     mov <gpr6>, 0
-    cmovl rdi, <gpr6>
+    cmovs rdi, <gpr6>
     cmp.i32 rdi, 255
     mov <gpr6>, 255
     cmovg rdi, <gpr6>

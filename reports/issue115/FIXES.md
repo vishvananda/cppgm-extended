@@ -1,5 +1,9 @@
 # Issue 115: production fixes
 
+This records the first implementation and its measurements. The
+[follow-up](FOLLOWUP.md) resolves the Huffman encode regression discussed below,
+adds the allocation/aggregate/flag improvements and records final qualification.
+
 These changes implement the general transformations identified in the
 [initial analysis](README.md). They are on `fix/issue115-lowir-gaps`, based on
 LLVM worktree revision `8a56e881184e4e2161b4c2973f22e565f9e83bb1`.
