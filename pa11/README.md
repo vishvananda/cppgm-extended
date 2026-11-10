@@ -398,6 +398,14 @@ Within this milestone, PA11 should produce valid LowIR for ordinary
 non-polymorphic class code over the supported procedural subset. That LowIR is
 intended to be accepted by the later PA24 `lowir2native` backend for the
 supported cases.
+### Function annotation continuity
+
+Accept the supported GNU inline annotations on ordinary functions and retain
+that intent with the typed function facts. Later host-object lessons observe
+symbol/ABI behavior, and PA30 requires the documented forced-inline hosted
+substitution cases. An annotation does not replace lookup, type checking or
+ordinary function-body validation.
+
 ### Mode-dependent aggregate eligibility
 
 C++14 allows default member initializers in aggregates; C++11 keeps its
