@@ -15,7 +15,6 @@ function @X__g(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1X1
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = load typed i32 @N__K
-    %t2 = binary add nowrap i32 %t1, 1
-    return i32 %t2
+    %t1 = binary add nowrap i32 3, 1
+    return i32 %t1
 }

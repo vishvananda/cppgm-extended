@@ -13,8 +13,9 @@ use File::Find;
 use FindBin;
 use Getopt::Long;
 
-# The budget tolerance of each assignment's sidecars, in percent.
-my %tolerance = (pa24 => 100, pa32 => 10, pa33 => 10);
+# The source-value sidecars have authored outcomes and no generated budgets.
+# Other assignments retain their generated budget tolerances, in percent.
+my %tolerance = (pa10 => 0, pa16 => 0, pa24 => 100, pa32 => 10, pa33 => 10);
 
 my %o = (root => "$FindBin::Bin/..");
 GetOptions(\%o, 'root=s', 'backend=s', 'write') && !@ARGV

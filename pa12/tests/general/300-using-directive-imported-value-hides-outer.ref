@@ -3,8 +3,7 @@ global @A__B__C__i : i32 [storage=readonly, binding=internal, object=_ZN1A1B1CL1
 
 function @A__B__f() -> i32 [binding=strong, object=_ZN1A1B1fEv] {
   block ^entry:
-    %t1 = load typed i32 @A__B__C__i
-    return i32 %t1
+    return i32 2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

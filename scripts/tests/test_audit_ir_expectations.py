@@ -110,6 +110,35 @@ class AuditIrExpectationsTests(unittest.TestCase):
             stream.write("\n# why\ncount(call) == 0\n")
         self.assertEqual(self.audit().returncode, 0)
 
+    def test_source_value_outcomes_keep_authored_checks_without_budgets(self):
+        reference = """global @value : i32 [storage=readonly] = 7
+function @constant_read() -> i32 {
+  block ^entry:
+    return i32 7
+}
+"""
+        predicate = "# explicit-outcomes\n\nnone(load) in @constant_read\n"
+        for owner in ("pa10", "pa16"):
+            with self.subTest(owner=owner):
+                base = self.fixture(f"{owner}/tests/general/value")
+                base.with_suffix(".ref").write_text(reference)
+                self.sidecar(base).write_text(predicate)
+                self.assertEqual(self.audit().returncode, 0)
+                self.regenerate(base.parent)
+                self.assertEqual(self.sidecar(base).read_text(), predicate)
+                candidate = self.root / "candidate.lowir"
+                for text, status in [
+                    (reference, 0),
+                    (reference.replace("    return i32 7",
+                                       "    %value = load i32 @value\n"
+                                       "    return i32 %value"), 1),
+                ]:
+                    candidate.write_text(text)
+                    result = subprocess.run(
+                        ["perl", str(EXPECT), str(candidate), str(self.sidecar(base))],
+                        capture_output=True, text=True)
+                    self.assertEqual(result.returncode, status, result.stdout + result.stderr)
+
     def lowir_choice(self) -> Path:
         base = self.fixture("pa32/tests/o2/x")
         base.with_suffix(".t").write_text(POINTER_CHOICE)

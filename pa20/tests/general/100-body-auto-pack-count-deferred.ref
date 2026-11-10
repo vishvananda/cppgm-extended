@@ -27,16 +27,12 @@ function @count() -> u32 [binding=weak, object=_Z5countIJEEjv] {
 
   block ^entry:
     store typed i64 1, $value
-    %t1 = load typed i64 $value
-    %t2 = convert trunc u32 i64 %t1
-    return u32 %t2
+    return u32 1
 }
 function @count__2() -> u32 [binding=weak, object=_Z5countIJicEEjv] {
   slot $value : i64
 
   block ^entry:
     store typed i64 3, $value
-    %t1 = load typed i64 $value
-    %t2 = convert trunc u32 i64 %t1
-    return u32 %t2
+    return u32 3
 }
