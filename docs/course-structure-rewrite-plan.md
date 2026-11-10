@@ -310,6 +310,7 @@ and the exported course reproduces the same structure. The implementation includ
 - Harness, architecture, placement, scaffold and student-document audits passed.
 - Fresh export using immutable tools: 24,077 portable reference outputs matched,
   including 9,683 exit-status files; reference expectations and scaffolds passed.
+  The exported normal report passed 9,995/9,995 with supplied reference tools.
 - PA36 smoke passed, and course/student release calibration passed all 17 gates.
 - Against LLVM base `633c162d3`, frozen workload objects are identical at O0/O3;
   compiler instruction counts differ by -0.002%/+0.005% respectively.

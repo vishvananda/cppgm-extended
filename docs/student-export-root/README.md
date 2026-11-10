@@ -13,8 +13,8 @@ is maintained in [cppgm-extended](https://github.com/vishvananda/cppgm-extended)
 
 ## Environment and workflow
 
-Use Linux x86-64 with a C++11 compiler (normally `g++`), GNU make, Bash, Perl,
-Python 3, `curl` or `wget`, and standard archive/checksum tools. Later native
+Use Linux x86-64 with a current GCC or Clang compiler supporting C++17,
+GNU make, Bash, Perl, Python 3, `curl` or `wget`, and standard archive/checksum tools. Later native
 and debug checks need binutils and a debugger. Generated programs execute
 locally; use an isolated environment for autonomous agents.
 
