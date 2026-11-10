@@ -53,9 +53,9 @@ function @main
     frame_pointer keep
     epilogues duplicated
     slot $x -> [rbp-8] : obj<8x4>
-    slot $y -> [rbp-16] : obj<8x4>
+    slot $y -> [rbp-32] : obj<8x4>
     temp %vx -> [rbp-24] : obj<8x4>
-    temp %vy -> [rbp-32] : obj<8x4>
+    temp %vy -> [rbp-16] : obj<8x4>
 
   block ^entry
     mov rdi, 1
@@ -65,8 +65,7 @@ function @main
     copy_bytes 8x4, [rbp-8], [rbp-24]
     mov rdi, 3
     call @constant_high [args=(rdi)]
-    store.i64 [rbp-32], rax
-    copy_bytes 8x4, [rbp-16], [rbp-32]
+    store.i64 [rbp-16], rax
     load.i32 rax, [rbp-8]
     add.i32 rax, [rbp-4]
     add.i32 rax, [rbp-16]

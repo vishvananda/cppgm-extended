@@ -1,0 +1,3 @@
+# A scalar reader needs at most one memory operand, with any valid strategy.
+mem <= 1 in @flag
+mem <= 1 in @mix

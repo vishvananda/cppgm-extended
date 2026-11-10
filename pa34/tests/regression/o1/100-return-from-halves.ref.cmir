@@ -66,9 +66,8 @@ function @main
     mov rdi, 3
     call @constant_high [args=(rdi)]
     store.i64 [rbp-<off3>], rax
-    copy_bytes 8x4, [rbp-<off1>], [rbp-<off3>]
     load.i32 rax, [rbp-<off0>]
     add.i32 rax, [rbp-<off4>]
-    add.i32 rax, [rbp-<off1>]
+    add.i32 rax, [rbp-<off3>]
     add.i32 rax, [rbp-<off5>]
     ret rax
