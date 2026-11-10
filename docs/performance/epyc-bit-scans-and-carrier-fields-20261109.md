@@ -61,7 +61,13 @@ both the repeated stack reads and the more expensive bit-scan encoding.
 parameter/local storage sharing and register-home dataflow already expose a
 covering integer carrier; the backend can extract a contained subrange.
 An upper signed 32-bit field now needs a copy and arithmetic right shift,
-with no parameter store, reload or unused frame reservation.
+with no parameter store, reload or unused frame reservation. Interior
+extractions are committed only when the shared frame/ABI proof shows that
+materialization can disappear. This matters: the initial broad rewrite
+increased fmt's instructions by 0.199% and timed about 1.3% slower in a
+noisy local paired run. The bit-scan-only build was byte-identical to main
+for fmt. The final profitability guard restores that exact executable.
+No benchmark name, source pattern or CPU-model exception enters the policy.
 
 The analysis still meets predecessor facts and invalidates them for overlapping
 writes, aliases, calls and register clobbers. New extraction is limited to
@@ -74,11 +80,14 @@ was added. Emission/insertion helpers keep the existing dataflow module
 within the repository's file-size limit.
 
 The PA24 fixture checks basic object semantics at O0. PA33's maintainer lane
-also runs it at O1–O3, checking that eleven eligible callees need no object
+also runs raw and optimized LowIR at O0–O3, checking that eleven eligible callees need no object
 memory traffic or frame storage. It accepts different instructions and
 registers. Mutation, escaped storage, volatile reads, calls, unaligned/narrow
 fields, multiple uses, two-eightbyte objects, both branch paths and unsupported
-carrier shapes have execution checks. Student notes describe the general
+carrier shapes have execution checks. A retained-frame case bounds total
+MIR work without prescribing opcodes or registers; it catches an extraction
+that adds work while an escaped address still requires storage. The private
+checker is explicitly omitted from the export. Student notes describe the general
 coverage/lifetime/flags problem; PA24 does not acquire an optimized-code
 requirement from this follow-up.
 
@@ -90,19 +99,99 @@ A/A and paired blocks retain every observation. Changes are candidate/main:
 
 | Frozen input | Compile instructions, O0 | Compile instructions, O3 |
 |---|---:|---:|
-| compiler-loop | +0.0026% | -0.0181% |
-| frozen-semantic | +0.0033% | -0.0282% |
-| boost-flat-map | -0.0091% | -0.0530% |
+| compiler-loop | +0.0027% | -0.0292% |
+| frozen-semantic | +0.0103% | -0.0395% |
+| boost-flat-map | -0.0094% | -0.0582% |
 
 The corresponding LowIR dumps match byte for byte at both levels. Native
 objects are deterministic within each compiler. Local wall timings were
 contaminated by concurrent builds and are not used as a speed claim.
-A separate quiet-VM compiler timing run is retained alongside the counters.
+The final rewrite walks reachable blocks in instruction order after the
+available-carrier fixed point converges. Their independent input rows are
+unchanged, so insertion prefixes arrive ordered without a sort or sort
+scratch. A cheap ABI check rejects obviously retained frames before planning
+interior extraction. The remaining plans use the same storage-elision proof
+as final frame cleanup; unsuccessful plans restore the original loads.
 
-All 81 public O3 programs match GCC's exit codes and output hashes. Seventy-six
-candidate executables are byte-identical to main. Changed programs are Bullet,
-fmt, re2, re2-test-re2 and re2-test-search. Native instruction changes are
-negligible except fmt at +0.199%; this is not a claim about sub-percent timing.
+Local wall timings overlapped unrelated builds and are not a compiler speed
+claim. Earlier quiet-VM timing runs belong to rejected broad candidates and
+are retained separately. Final instruction-count changes above are tiny;
+the projection analysis runs only at O1 and above. The corresponding LowIR
+is unchanged, and repeated native objects are deterministic within each role.
+
+All 81 public O3 programs match GCC's exit codes and output hashes. Seventy-eight
+candidate executables are byte-identical to main, including fmt and Bullet.
+Only re2, re2-test-re2 and re2-test-search change; their native instruction
+ratios are within 0.003% of main. The final scalar and SSE objects are
+byte-identical to the independently timed compatible-prefix experiment.
+
+## Godot follow-up
+
+Fresh main CI results confirmed that the Godot gap was not merely a stale
+badge. Two clean full Godot builds, using immutable main and candidate
+compilers, both pass. The pinned source, C compiler, linker and CI flags
+are identical; GCC 15 and Clang 22 reference binaries use the same upstream
+revision. All five independent GDScript checksum oracles pass on every binary.
+The following Milan timing table is from the initial broad field candidate,
+before the profitability guard, and is diagnostic rather than a claim about
+the final branch. Three paired blocks include A/A controls:
+
+| Workload | Candidate vs main | Candidate vs GCC | Candidate vs Clang 22 |
+|---|---:|---:|---:|
+| dispatch | 1.068× | 1.066× | 0.942× |
+| arrays | 0.994× | 0.832× | 0.935× |
+| strings | 0.989× | 0.872× | 0.881× |
+| geometry | 1.031× | 1.108× | 1.000× |
+| scene | 1.082× | 0.996× | 0.899× |
+
+Do not treat the apparent dispatch/geometry/scene gains as an established
+algorithmic improvement. The core and GDScript objects are byte-identical to
+main; 31 of 2337 objects change, mainly rendering/physics dependencies.
+Some controls are noisy: geometry's Clang after-control differs by 9.2%,
+scene's main after-control by 4.4%, and several others exceed 1–2%.
+The arrays and strings gaps against the external compilers remain substantial.
+Their candidate/main changes are small (about −0.5% and −1.1% CPU speed),
+with no claim that this patch improves them. Native software profiles identify a separate gap from simdjson's bit enumeration.
+The arrays run spends 66.5% in `GDScriptFunction::call`, 9.5% in packed-array
+get, 8.5% in validated set and 7.3% in Variant assignment. GCC spends 64.6%,
+8.3%, 10.0% and 6.4% respectively. Strings split their work among the
+interpreter, `String::sprintf`, append/resize, integer formatting and libc
+allocation. These are sampling shares, not per-instruction hardware counts.
+
+Godot links with `-s`, so raw profiles initially lack engine symbol names.
+Relinking the same objects without stripping produces an identical `.text`;
+its symbol map resolves the original sampled addresses. Neither timed
+executable was replaced with a symbolized build.
+
+One concrete form to investigate is indirect dispatch: cppgm's sampled
+interpreter loop loads a target into a register and jumps through it, while
+GCC uses a memory-indirect jump. The existing encoder accepts memory targets.
+Folding needs a proof that the target register is dead at every successor,
+that its address survives, and that the load's effects/order are preserved.
+A mere adjacent instruction pattern is insufficient when the value is live
+past the jump. Its performance contribution remains unmeasured.
+
+The next optimization round should:
+
+1. Reduce interpreter operand decoding and packed-array get/set to small
+   fixed-caller workloads, preserving dynamic indices, bounds and Variant
+   type/error behavior.
+2. Compare native work and dependency chains with GCC and Clang. Inspect
+   repeated decoding, sign extensions, address calculation, dispatch and
+   register spills before attributing the difference to one EPYC instruction.
+3. Isolate string append/resize and formatting separately from libc allocation,
+   with equal allocation/output behavior and sufficient repeated work.
+4. Implement general typed-dataflow or instruction-selection improvements,
+   add independent reducers, and check the public suite and self-build cost.
+   Keep interpreter opcode numbers and benchmark identities out of policy.
+5. Repeat paired timing on the Intel and Milan lanes, retaining noisy runs
+   and checking several linked layouts before claiming a small gain.
+
+Godot Callgrind runs did not complete within their 180-second limit and
+provide no usable instruction totals. They are not included as evidence of
+an instruction improvement. Native timing observations are complete and
+were saved before the VM's one-hour automatic stop; profiling uses a later
+boot, kept separate from those observations.
 
 ## Validation and evidence
 
@@ -111,12 +200,18 @@ PA35 smoke, architecture/placement/format/file audits, harness checks, complete
 student export and its 42 fresh-client reference wrappers pass. The existing
 return-from-halves regression reference was regenerated because two unused
 frame reservations disappeared. No unrelated references were changed.
-Full PA35 release calibration and Godot profiling are recorded below when complete.
+The initial candidate passed full PA35 release calibration, 17/17. A later
+ordered-rewrite run passed all gate limits but fell short of the extra course
+scaling release margin (2.62× growth against a 3.00× limit, with a 25% release
+margin required). That timing attempt is retained. Final calibration is run
+separately after build contention has ended; no gate or margin is loosened.
+Generated calibration tables are retained with the raw evidence.
 
 Raw inputs, hashes, commands, all observations and rejected prototypes are under
 `/mnt/vizier/cppgm-codegen-data/20261109/epyc-sse-throughput/`.
 The frozen candidate compiler SHA256 is
-`2116426a79b0aad6c156b3f37308dea62914765b98940ccbcd1b35bd1581f772`.
-Relevant files include `final-metadata.json`, `phase-baseline/`,
+`7c2ee8342cbeeed0b5a6c581195ff6449f56b847660fed5db4163c973f1fe2e8`.
+Relevant files include `profit-metadata.json`, `phase-baseline/`,
 `repbsf-screen/`, `repbsf-references/`, `software-profiles/`, `counts/`,
-`compile-cost/`, `public-sanity/`, and the validation logs.
+`profit-compile-cost/`, `profit-public-sanity/`, `godot-native/`,
+`godot-symbolized-profiles.json`, and the validation logs.

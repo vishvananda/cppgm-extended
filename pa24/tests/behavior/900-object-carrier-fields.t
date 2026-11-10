@@ -1,4 +1,4 @@
-function @low_signed(%p : obj<8x8>) -> i32 {
+function @low_signed(%p : obj<8x8>) -> i32 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -8,7 +8,7 @@ function @low_signed(%p : obj<8x8>) -> i32 {
     return i32 %v
 }
 
-function @high_unsigned(%p : obj<8x8>) -> u32 {
+function @high_unsigned(%p : obj<8x8>) -> u32 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -18,7 +18,7 @@ function @high_unsigned(%p : obj<8x8>) -> u32 {
     return u32 %v
 }
 
-function @high_signed(%p : obj<8x8>) -> i32 {
+function @high_signed(%p : obj<8x8>) -> i32 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -28,7 +28,7 @@ function @high_signed(%p : obj<8x8>) -> i32 {
     return i32 %v
 }
 
-function @last_signed(%p : obj<8x8>) -> i8 {
+function @last_signed(%p : obj<8x8>) -> i8 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -38,7 +38,7 @@ function @last_signed(%p : obj<8x8>) -> i8 {
     return i8 %v
 }
 
-function @inner_unsigned(%p : obj<8x8>) -> u8 {
+function @inner_unsigned(%p : obj<8x8>) -> u8 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -48,7 +48,7 @@ function @inner_unsigned(%p : obj<8x8>) -> u8 {
     return u8 %v
 }
 
-function @unaligned_signed(%p : obj<8x8>) -> i16 {
+function @unaligned_signed(%p : obj<8x8>) -> i16 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -58,7 +58,7 @@ function @unaligned_signed(%p : obj<8x8>) -> i16 {
     return i16 %v
 }
 
-function @unaligned_unsigned(%p : obj<8x8>) -> u16 {
+function @unaligned_unsigned(%p : obj<8x8>) -> u16 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -68,7 +68,7 @@ function @unaligned_unsigned(%p : obj<8x8>) -> u16 {
     return u16 %v
 }
 
-function @last_half(%p : obj<8x8>) -> u16 {
+function @last_half(%p : obj<8x8>) -> u16 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -78,7 +78,7 @@ function @last_half(%p : obj<8x8>) -> u16 {
     return u16 %v
 }
 
-function @second_high(%p : obj<16x8>) -> i32 {
+function @second_high(%p : obj<16x8>) -> i32 [no_inline=yes] {
   slot $home : obj<16x8>
   block ^entry:
     %home = addr $home
@@ -88,7 +88,7 @@ function @second_high(%p : obj<16x8>) -> i32 {
     return i32 %v
 }
 
-function @cross_carriers(%p : obj<16x8>) -> u32 {
+function @cross_carriers(%p : obj<16x8>) -> u32 [no_inline=yes] {
   slot $home : obj<16x8>
   block ^entry:
     %home = addr $home
@@ -98,7 +98,7 @@ function @cross_carriers(%p : obj<16x8>) -> u32 {
     return u32 %v
 }
 
-function @after_mutation(%p : obj<8x8>) -> u32 {
+function @after_mutation(%p : obj<8x8>) -> u32 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -110,7 +110,7 @@ function @after_mutation(%p : obj<8x8>) -> u32 {
     return u32 %v
 }
 
-function @after_escape(%p : obj<8x8>) -> u32 {
+function @after_escape(%p : obj<8x8>) -> u32 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -121,7 +121,7 @@ function @after_escape(%p : obj<8x8>) -> u32 {
     return u32 %v
 }
 
-function @after_call(%p : obj<8x8>) -> u32 {
+function @after_call(%p : obj<8x8>) -> u32 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -132,7 +132,7 @@ function @after_call(%p : obj<8x8>) -> u32 {
     return u32 %v
 }
 
-function @observed_field(%p : obj<8x8>) -> i32 {
+function @observed_field(%p : obj<8x8>) -> i32 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -142,7 +142,7 @@ function @observed_field(%p : obj<8x8>) -> i32 {
     return i32 %v
 }
 
-function @mixed_carriers(%p : obj<16x8> [classes=integer_sse]) -> i32 {
+function @mixed_carriers(%p : obj<16x8> [classes=integer_sse]) -> i32 [no_inline=yes] {
   slot $home : obj<16x8>
   block ^entry:
     %home = addr $home
@@ -152,7 +152,7 @@ function @mixed_carriers(%p : obj<16x8> [classes=integer_sse]) -> i32 {
     return i32 %v
 }
 
-function @sse_carrier(%p : obj<8x8> [classes=sse]) -> i32 {
+function @sse_carrier(%p : obj<8x8> [classes=sse]) -> i32 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -162,17 +162,28 @@ function @sse_carrier(%p : obj<8x8> [classes=sse]) -> i32 {
     return i32 %v
 }
 
-function @stomp(%p : ptr) -> void {
+function @retained_frame(%p : obj<8x8>) -> i32 [no_inline=yes] {
+  slot $home : obj<8x8>
+  block ^entry:
+    %home = addr $home
+    copyobj 8x8 %p, %home
+    %field = index i8 [projection=field] %home, 4
+    %v = load i32 %field
+    call void @stomp(%home)
+    return i32 %v
+}
+
+function @stomp(%p : ptr) -> void [no_inline=yes] {
   block ^entry:
     %field = index i8 %p, 4
     store u32 4275878552, %field
     return void
 }
-function @clobber(%a : i64, %b : i64, %c : i64, %d : i64, %e : i64, %f : i64) -> void {
+function @clobber(%a : i64, %b : i64, %c : i64, %d : i64, %e : i64, %f : i64) -> void [no_inline=yes] {
   block ^entry:
     return void
 }
-function @both_fields(%p : obj<8x8>) -> i64 {
+function @both_fields(%p : obj<8x8>) -> i64 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -185,7 +196,7 @@ function @both_fields(%p : obj<8x8>) -> i64 {
     %v = binary add i64 %h, %l
     return i64 %v
 }
-function @branch_field(%p : obj<8x8>, %choose : i32) -> i32 {
+function @branch_field(%p : obj<8x8>, %choose : i32) -> i32 [no_inline=yes] {
   slot $home : obj<8x8>
   block ^entry:
     %home = addr $home
@@ -278,15 +289,19 @@ function @main() -> i32 [role=entry] {
     %b15 = cmp ne i32 %v15, -236792892
     %e15 = convert zext i32 i1 %b15
     store i64 -1017017724017666168, %small
+    %v16 = call i32 @retained_frame($small)
+    %b16 = cmp ne i32 %v16, -236792892
+    %e16 = convert zext i32 i1 %b16
+    store i64 -1017017724017666168, %small
     %both = call i64 @both_fields($small)
     %bad_both = cmp ne i64 %both, 7105768268
-    %e16 = convert zext i32 i1 %bad_both
-    %v17 = call i32 @branch_field($small, 0)
-    %bad17 = cmp ne i32 %v17, -1247373432
-    %e17 = convert zext i32 i1 %bad17
-    %v18 = call i32 @branch_field($small, 1)
-    %bad18 = cmp ne i32 %v18, -236792892
+    %e17 = convert zext i32 i1 %bad_both
+    %v18 = call i32 @branch_field($small, 0)
+    %bad18 = cmp ne i32 %v18, -1247373432
     %e18 = convert zext i32 i1 %bad18
+    %v19 = call i32 @branch_field($small, 1)
+    %bad19 = cmp ne i32 %v19, -236792892
+    %e19 = convert zext i32 i1 %bad19
     %sum1 = binary add i32 %e0, %e1
     %sum2 = binary add i32 %sum1, %e2
     %sum3 = binary add i32 %sum2, %e3
@@ -305,5 +320,6 @@ function @main() -> i32 [role=entry] {
     %sum16 = binary add i32 %sum15, %e16
     %sum17 = binary add i32 %sum16, %e17
     %sum18 = binary add i32 %sum17, %e18
-    return i32 %sum18
+    %sum19 = binary add i32 %sum18, %e19
+    return i32 %sum19
 }

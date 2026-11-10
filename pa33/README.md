@@ -181,6 +181,8 @@ A scalar field may already be contained in an incoming object register.
 Compare extracting its bytes with materializing and reloading the object.
 Prove byte coverage, signedness and carrier lifetime; preserve observable
 memory accesses and flags, and keep a fallback for unsupported boundaries.
+Count the work added as well as the memory work removed: an extraction can
+cost more than a load when the object and its frame still need storage.
 
 Check results at the ABI boundary as well as inside a function: incoming
 upper bits, caller clobbers, phi transfers, exceptional exits and frame

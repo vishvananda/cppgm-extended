@@ -1,7 +1,5 @@
 #include "native/select/frame_extraction.h"
 
-#include <algorithm>
-
 #include "native/mir/type_kinds.h"
 
 namespace native {
@@ -62,8 +60,6 @@ void insert_frame_extractions(Function& function, std::vector<std::pair<uint32_t
 {
 	if (extractions.empty())
 		return;
-	std::stable_sort(extractions.begin(), extractions.end(),
-		[](const std::pair<uint32_t, Inst>& a, const std::pair<uint32_t, Inst>& b) { return a.first < b.first; });
 	std::vector<Inst> insts;
 	insts.reserve(function.insts.size() + extractions.size());
 	std::vector<uint32_t> offsets(function.insts.size() + 1);
@@ -83,6 +79,92 @@ void insert_frame_extractions(Function& function, std::vector<std::pair<uint32_t
 		block.count = past - block.first;
 	}
 	function.insts.swap(insts);
+}
+
+// The same frame/ABI proof is used before committing field extractions and
+// after dead-store elimination. Ignored stores must be plain private frame
+// writes: any frame read or exposed address keeps materialization necessary.
+bool frame_storage_elision_allowed(const Function& function)
+{
+	return function.preserve_mask == 0 && function.stack_size != 0 && function.scratch_bytes == 0 &&
+		!function.variadic && !function.eh_records_pushed && function.eh.landings.empty() &&
+		function.debug_slots.empty() && function.aligned_base == 0;
+}
+
+bool removable_frame_storage(const Function& function, bool dead_stores)
+{
+	if (!frame_storage_elision_allowed(function))
+		return false;
+	for (const Inst& inst : function.insts)
+	{
+		switch (inst.op)
+		{
+		case Op::Mov:
+		case Op::Load:
+		case Op::Store:
+		case Op::Lea:
+		case Op::Add:
+		case Op::Sub:
+		case Op::And:
+		case Op::Or:
+		case Op::Xor:
+		case Op::Imul:
+		case Op::Neg:
+		case Op::Not:
+		case Op::Bswap:
+		case Op::Shl:
+		case Op::Shr:
+		case Op::Sar:
+		case Op::Rol:
+		case Op::Ror:
+		case Op::Cmp:
+		case Op::Test:
+		case Op::Bt:
+		case Op::Setcc:
+		case Op::Movzx:
+		case Op::Sext:
+		case Op::Zext:
+		case Op::Cqo:
+		case Op::Idiv:
+		case Op::Div:
+		case Op::Jcc:
+		case Op::Jmp:
+		case Op::CopyBytes:
+		case Op::ZeroBytes:
+		case Op::Ret:
+		case Op::FMov:
+		case Op::FAdd:
+		case Op::FSub:
+		case Op::FMul:
+		case Op::FDiv:
+		case Op::FNeg:
+		case Op::FAbs:
+		case Op::FCmp:
+		case Op::FSetcc:
+		case Op::Convert:
+		case Op::JumpTable:
+		case Op::MulWide:
+		case Op::ImulWide:
+		case Op::Trap:
+			break;
+		case Op::Nop:
+			continue;
+		default:
+			return false;
+		}
+		const Operand& dst = inst.ops[0];
+		if (dead_stores && inst.op == Op::Store && !(inst.flags & MF_VOLATILE) && dst.kind == OperandKind::Mem &&
+			dst.reg == kFrame && dst.index == kNoReg && dst.symbol == lowir::kNoId && dst.disp < 0 &&
+			-static_cast<int64_t>(dst.disp) <= function.stack_size &&
+			static_cast<int64_t>(dst.disp) + register_bytes(inst.type) <= 0)
+			continue;
+		for (unsigned k = 0; k < inst.nops; ++k)
+			if ((inst.ops[k].kind == OperandKind::Mem &&
+					(inst.ops[k].reg == kFrame || inst.ops[k].index == kFrame || inst.ops[k].reg == RSP)) ||
+				inst.ops[k].uses_reg(RSP) || inst.ops[k].uses_reg(RBP))
+				return false;
+	}
+	return true;
 }
 
 } // namespace native

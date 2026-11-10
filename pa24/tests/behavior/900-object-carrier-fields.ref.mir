@@ -311,6 +311,27 @@ function @sse_carrier
     load.i32 rax, [rbp-4]
     ret rax
 
+function @retained_frame
+  abi
+    param %p -> rdi : obj<8x8>
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+    slot $home -> [rbp-8] : obj<8x8>
+    param-slot %p -> [rbp-16] : obj<8x8>
+
+  block ^entry
+    store.i64 [rbp-16], rdi
+    lea rdi, [rbp-8]
+    copy_bytes 8x8, rdi, [rbp-16]
+    load.i32 rbx, [rdi+4]
+    call @stomp [args=(rdi)]
+    ret rbx
+
 function @stomp
   abi
     param %p -> rdi : ptr
@@ -413,8 +434,9 @@ function @main
     temp %b13 -> [rbp-96] : i64
     temp %b14 -> [rbp-104] : i64
     temp %b15 -> [rbp-112] : i64
-    temp %bad_both -> [rbp-120] : i64
-    temp %bad17 -> [rbp-128] : i64
+    temp %b16 -> [rbp-120] : i64
+    temp %bad_both -> [rbp-128] : i64
+    temp %bad18 -> [rbp-136] : i64
 
   block ^entry
     store.i64 [rbp-8], -1017017724017666168
@@ -564,12 +586,21 @@ function @main
     store.i64 [rbp-112], r10
     store.i64 [rbp-8], -1017017724017666168
     load.i64 rdi, [rbp-8]
+    call @retained_frame [args=(rdi)]
+    sext.i32 rax
+    mov rdx, -236792892
+    cmp.i32 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-120], r10
+    store.i64 [rbp-8], -1017017724017666168
+    load.i64 rdi, [rbp-8]
     call @both_fields [args=(rdi)]
     mov rdx, 7105768268
     cmp.i64 rax, rdx
     setne r10
     movzx r10, r10
-    store.i64 [rbp-120], r10
+    store.i64 [rbp-128], r10
     load.i64 rdi, [rbp-8]
     mov rsi, 0
     call @branch_field [args=(rsi,rdi)]
@@ -578,7 +609,7 @@ function @main
     cmp.i32 rax, rdx
     setne r10
     movzx r10, r10
-    store.i64 [rbp-128], r10
+    store.i64 [rbp-136], r10
     load.i64 rdi, [rbp-8]
     mov rsi, 1
     call @branch_field [args=(rsi,rdi)]
@@ -632,6 +663,9 @@ function @main
     add rbx, r11
     sext.i32 rbx
     load.i64 r11, [rbp-128]
+    add rbx, r11
+    sext.i32 rbx
+    load.i64 r11, [rbp-136]
     add rbx, r11
     sext.i32 rbx
     add rbx, rax

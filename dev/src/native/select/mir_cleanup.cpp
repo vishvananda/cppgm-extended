@@ -771,7 +771,7 @@ private:
 	// block only a host landing reaches (see edges).
 	std::vector<uint8_t> cut_;
 	std::vector<uint32_t> order_; // reverse postorder from the entry
-	std::vector<std::pair<uint32_t, Inst>> extractions_;
+	std::vector<std::pair<uint32_t, Inst>> extractions_, field_reads_;
 	uint32_t removed_ = 0;
 };
 
@@ -941,9 +941,17 @@ bool HomeForwarding::forward_narrow(uint32_t i, uint32_t end, const int32_t* hol
 			break;
 		}
 	}
-	if (holder == kNoReg || (shift != 0 && !flags_dead_after(f_.insts, i, i + std::min(end - i, 64u))))
+	if (holder == kNoReg)
 		return false;
-	return extract_integer_carrier(f_.insts[i], i, holder, shift, extractions_);
+	if (shift == 0)
+		return extract_integer_carrier(inst, i, holder, shift, extractions_);
+	if (!frame_storage_elision_allowed(f_) || !flags_dead_after(f_.insts, i, i + std::min(end - i, 64u)))
+		return false;
+	const Inst original = inst;
+	if (!extract_integer_carrier(inst, i, holder, shift, extractions_))
+		return false;
+	field_reads_.push_back(std::make_pair(i, original));
+	return true;
 }
 
 void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
@@ -1202,8 +1210,20 @@ uint32_t HomeForwarding::run()
 			}
 		}
 	}
-	for (uint32_t b : order_)
-		transfer(b, &in[static_cast<size_t>(b) * 16], true);
+	// The fixed point is complete. Rewriting reachable blocks in instruction
+	// order leaves their independent input facts unchanged and orders insertions.
+	for (uint32_t b = 0; b < n_; ++b)
+		if (evaluated[b] != 0)
+			transfer(b, &in[static_cast<size_t>(b) * 16], true);
+	// An interior extraction can cost more instructions than a load. Keep
+	// it when all materialization can disappear, including its reservation.
+	if (!field_reads_.empty() && !removable_frame_storage(f_, true))
+	{
+		for (const auto& read : field_reads_)
+			f_.insts[read.first] = read.second;
+		removed_ -= static_cast<uint32_t>(field_reads_.size());
+		extractions_.clear();
+	}
 	insert_frame_extractions(f_, extractions_);
 	return removed_;
 }
@@ -2591,76 +2611,11 @@ uint32_t forward_return_slots(Function& function)
 	return removed == 0 ? 0 : removed + forward_return_slots_once(function);
 }
 
-// O1+, leaves: frame storage no instruction uses (the
-// cleanups above took its last reads and writes) is not reserved. Whether
-// it did.
+// O1+, leaves: reserve no frame storage when every use has disappeared.
 bool drop_unused_frame(Function& function)
 {
-	if (function.preserve_mask != 0 || function.stack_size == 0 || function.scratch_bytes != 0 || function.variadic ||
-		function.eh_records_pushed || !function.eh.landings.empty() || !function.debug_slots.empty() ||
-		function.aligned_base != 0)
+	if (!removable_frame_storage(function, false))
 		return false;
-	for (const Inst& inst : function.insts)
-	{
-		switch (inst.op)
-		{
-		case Op::Mov:
-		case Op::Load:
-		case Op::Store:
-		case Op::Lea:
-		case Op::Add:
-		case Op::Sub:
-		case Op::And:
-		case Op::Or:
-		case Op::Xor:
-		case Op::Imul:
-		case Op::Neg:
-		case Op::Not:
-		case Op::Bswap:
-		case Op::Shl:
-		case Op::Shr:
-		case Op::Sar:
-		case Op::Rol:
-		case Op::Ror:
-		case Op::Cmp:
-		case Op::Test:
-		case Op::Bt:
-		case Op::Setcc:
-		case Op::Movzx:
-		case Op::Sext:
-		case Op::Zext:
-		case Op::Cqo:
-		case Op::Idiv:
-		case Op::Div:
-		case Op::Jcc:
-		case Op::Jmp:
-		case Op::CopyBytes:
-		case Op::ZeroBytes:
-		case Op::Ret:
-		case Op::FMov:
-		case Op::FAdd:
-		case Op::FSub:
-		case Op::FMul:
-		case Op::FDiv:
-		case Op::FNeg:
-		case Op::FAbs:
-		case Op::FCmp:
-		case Op::FSetcc:
-		case Op::Convert:
-		case Op::JumpTable:
-		case Op::MulWide:
-		case Op::ImulWide:
-		case Op::Trap:
-			break;
-		case Op::Nop:
-			continue;
-		default:
-			return false;
-		}
-		for (unsigned k = 0; k < inst.nops; ++k)
-			if (frame_based(inst.ops[k]) || inst.ops[k].uses_reg(RSP) || inst.ops[k].uses_reg(RBP))
-				return false;
-	}
 	function.stack_size = 0;
 	return true;
 }

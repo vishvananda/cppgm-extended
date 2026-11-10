@@ -54,7 +54,7 @@ endef
 test: test-regression
 
 test-regression: $(TEST_DEPS)
-	perl ../scripts/check_native_carrier_fields.pl $(LOWIR2NATIVE_APP) ../pa24/tests/behavior/900-object-carrier-fields.t
+	perl ../scripts/check_native_carrier_fields.pl $(LOWIR2NATIVE_APP) ../pa24/tests/behavior/900-object-carrier-fields.t $(LOWIROPT_APP)
 	$(call run_driver_census_bucket,$(DRIVER_CENSUS_TEST_ROOT))
 	$(call run_native_bucket,$(REGRESSION_O1_TEST_ROOT),-O1)
 	$(call run_native_bucket,$(REGRESSION_O2_TEST_ROOT),-O2)

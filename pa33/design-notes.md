@@ -195,6 +195,8 @@ Copy a carrier that still has readers, preserve sign or zero extension,
 and account for flags changed by shifts. Reads spanning carriers, escaped
 storage and volatile accesses need separate proofs. Once no access needs
 the storage, revisit frame reservation under the debug, exception and ABI rules.
+Include retained storage in the profitability decision. A longer extraction
+can add work if another reader, escaped address or call still needs the home.
 
 Instruction counts alone can miss expensive instruction forms. Compare
 measured throughput and latency on the supported CPUs, and preserve the
