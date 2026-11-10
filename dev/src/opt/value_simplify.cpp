@@ -1587,7 +1587,6 @@ bool Simplifier::convert_identity(Instruction& inst, Value& out)
 	if (op == ConvertOp::SExt || op == ConvertOp::ZExt)
 	{
 		const Instruction* cut = producer(inst.ops[0]);
-		const Type from = convert_source_type(inst);
 		const unsigned kept_bits = lowir::integer_bits(from.kind()) - (op == ConvertOp::SExt ? 1u : 0u);
 		if (cut != nullptr && cut->op == Opcode::Convert && static_cast<ConvertOp>(cut->sub) == ConvertOp::Trunc &&
 			inst.type.is_integer() && inst.type.kind() != TypeKind::I128 && from.is_integer() &&
