@@ -101,17 +101,16 @@ function @other_block
     epilogues duplicated
 
   block ^entry
-    lea r8, [rdi+rsi*8+<off0>]
+    lea rax, [rdi+rsi*8+<off0>]
     cmp.i1 rdx, 0
     jne ^read
 
   block ^done
-    mov rax, r8
     sub rax, rdi
     ret rax
 
   block ^read
-    load.i64 rax, [r8]
+    load.i64 rax, [rax]
     ret rax
 
 function @read_as_value
@@ -127,9 +126,9 @@ function @read_as_value
 
   block ^entry
     lea rax, [rsi+<off0>]
-    mov r8, rax
-    add r8, [rdi+rax*8]
-    ret r8
+    mov rcx, rax
+    add rcx, [rdi+rax*8]
+    ret rcx
 
 function @scale_kept
   abi
@@ -196,8 +195,8 @@ function @symbol_base
     epilogues duplicated
 
   block ^entry
-    mov r8, @table
-    load.i64 rax, [r8+rdi*8+<off0>]
+    mov rax, @table
+    load.i64 rax, [rax+rdi*8+<off0>]
     ret rax
 
 function @frame_base

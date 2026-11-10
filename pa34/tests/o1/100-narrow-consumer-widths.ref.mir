@@ -16,18 +16,17 @@ function @sum_bytes
     epilogues duplicated
 
   block ^entry
-    load.i8 r8, [rdi]
-    shl.u32 r8, 13
-    zext.i32 rax, r8
-    load.i8 r8, [rdi+1]
-    shl.u32 r8, 11
-    load.i8 r9, [rdi+2]
-    add.u32 r9, 91
+    load.i8 rax, [rdi]
+    shl.u32 rax, 13
+    load.i8 rcx, [rdi+1]
+    shl.u32 rcx, 11
+    load.i8 rdx, [rdi+2]
+    add.u32 rdx, 91
     load.i8 rdi, [rdi+3]
     imul.u32 rdi, 7
-    add rax, r8
-    add r9, rdi
-    add rax, r9
+    add rax, rcx
+    add rdx, rdi
+    add rax, rdx
     ret rax
 
 function @right
@@ -43,7 +42,7 @@ function @right
   block ^entry
     load.i8 rdi, [rdi]
     zext.i32 rax, rdi
-    shr rax, 7
+    shr.u32 rax, 7
     ret rax
 
 function @wide
@@ -172,20 +171,20 @@ function @main
     setne r15
     movzx r15, r15
     cmp.i64 [rbp-16], 4294967295
-    setne r8
-    movzx r8, r8
+    setne rcx
+    movzx rcx, rcx
     cmp.i64 [rbp-24], 4294967294
-    setne r9
-    movzx r9, r9
+    setne rdx
+    movzx rdx, rdx
     cmp.i64 rax, 2147483648
     setne rax
     movzx rax, rax
     or rbx, r12
     or r13, r14
-    or r15, r8
-    or r9, rax
+    or r15, rcx
+    or rdx, rax
     mov rax, rbx
     or rax, r13
-    or r15, r9
+    or r15, rdx
     or rax, r15
     ret rax

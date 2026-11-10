@@ -98,10 +98,10 @@ function @main
     setne rbx
     movzx rbx, rbx
     cmp.i64 @output+8, 0
-    setne r8
-    movzx r8, r8
+    setne rax
+    movzx rax, rax
+    or r12, r13
+    or rbx, rax
     mov rax, r12
-    or rax, r13
-    or rbx, r8
     or rax, rbx
     ret rax

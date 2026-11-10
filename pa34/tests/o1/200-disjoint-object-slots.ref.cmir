@@ -68,17 +68,17 @@ function @loop_overlap
     jne ^second
 
   block ^first
-    lea r8, [rbp-<off1>]
-    store.i32 [r8], 7
-    store.ptr [rbp-<off3>], r8
+    lea rax, [rbp-<off1>]
+    store.i32 [rax], 7
+    store.ptr [rbp-<off3>], rax
     store.i32 [rbp-<off4>], 1
     cmp.i32 [rbp-<off4>], 0
     je ^first
 
   block ^second
     store.i32 [rbp-<off2>], 9
-    load.ptr r8, [rbp-<off3>]
-    cmp.i32 [r8], 7
+    load.ptr rax, [rbp-<off3>]
+    cmp.i32 [rax], 7
     setne rax
     movzx rax, rax
     ret rax
@@ -105,7 +105,7 @@ function @main
     cmp.i32 rax, 9
     setne rax
     movzx rax, rax
-    or <gpr0>, rax
+    or.i32 <gpr0>, rax
     call @loop_overlap [args=()]
-    or rax, <gpr0>
+    or.i32 rax, <gpr0>
     ret rax

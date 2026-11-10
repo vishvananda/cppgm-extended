@@ -1317,8 +1317,8 @@ function @near_one
     vector.subps xmm0, xmm0, xmm1
     vector.andps xmm0, xmm0, xmm3
     vector.cmpps xmm0, xmm0, xmm2, 1
-    vector.movmskps r8, xmm0
-    vector.fromi32 xmm0, r8
+    vector.movmskps rax, xmm0
+    vector.fromi32 xmm0, rax
     fmov.v128 @result, xmm0
     ret
 
@@ -4535,8 +4535,8 @@ function @op_movmskps
 
   block ^entry
     fmov.v128 xmm0, [rdi]
-    vector.movmskps r8, xmm0
-    vector.fromi32 xmm0, r8
+    vector.movmskps rax, xmm0
+    vector.fromi32 xmm0, rax
     fmov.v128 @result, xmm0
     ret
 
@@ -4552,8 +4552,8 @@ function @op_movmskpd
 
   block ^entry
     fmov.v128 xmm0, [rdi]
-    vector.movmskpd r8, xmm0
-    vector.fromi32 xmm0, r8
+    vector.movmskpd rax, xmm0
+    vector.fromi32 xmm0, rax
     fmov.v128 @result, xmm0
     ret
 
@@ -4569,8 +4569,8 @@ function @op_pmovmskb
 
   block ^entry
     fmov.v128 xmm0, [rdi]
-    vector.pmovmskb r8, xmm0
-    vector.fromi32 xmm0, r8
+    vector.pmovmskb rax, xmm0
+    vector.fromi32 xmm0, rax
     fmov.v128 @result, xmm0
     ret
 
@@ -4588,9 +4588,9 @@ function @op_ptestz
     fmov.v128 xmm0, [rdi]
     fmov.v128 xmm1, [rdi+16]
     vector.ptestz xmm0, xmm1
-    sete r8
-    movzx r8, r8
-    vector.fromi32 xmm0, r8
+    sete rax
+    movzx rax, rax
+    vector.fromi32 xmm0, rax
     fmov.v128 @result, xmm0
     ret
 
@@ -4608,9 +4608,9 @@ function @op_ptestc
     fmov.v128 xmm0, [rdi]
     fmov.v128 xmm1, [rdi+16]
     vector.ptestc xmm0, xmm1
-    setb r8
-    movzx r8, r8
-    vector.fromi32 xmm0, r8
+    setb rax
+    movzx rax, rax
+    vector.fromi32 xmm0, rax
     fmov.v128 @result, xmm0
     ret
 
@@ -4628,9 +4628,9 @@ function @op_ptestnzc
     fmov.v128 xmm0, [rdi]
     fmov.v128 xmm1, [rdi+16]
     vector.ptestnzc xmm0, xmm1
-    seta r8
-    movzx r8, r8
-    vector.fromi32 xmm0, r8
+    seta rax
+    movzx rax, rax
+    vector.fromi32 xmm0, rax
     fmov.v128 @result, xmm0
     ret
 
@@ -4757,9 +4757,9 @@ function @op_toi32
 
   block ^entry
     fmov.v128 xmm0, [rdi]
-    vector.toi32 r8, xmm0
-    sext.i32 r8
-    vector.fromi32 xmm0, r8
+    vector.toi32 rax, xmm0
+    sext.i32 rax
+    vector.fromi32 xmm0, rax
     fmov.v128 @result, xmm0
     ret
 
@@ -4775,8 +4775,8 @@ function @op_toi64
 
   block ^entry
     fmov.v128 xmm0, [rdi]
-    vector.toi64 r8, xmm0
-    vector.fromi64 xmm0, r8
+    vector.toi64 rax, xmm0
+    vector.fromi64 xmm0, rax
     fmov.v128 @result, xmm0
     ret
 
@@ -4792,11 +4792,11 @@ function @same
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, [rdi]
-    xor r8, [rsi]
-    load.i64 r9, [rdi+8]
-    xor r9, [rsi+8]
-    or r8, r9
+    load.i64 rax, [rdi]
+    xor rax, [rsi]
+    load.i64 rcx, [rdi+8]
+    xor rcx, [rsi+8]
+    or rax, rcx
     sete rax
     movzx rax, rax
     ret rax

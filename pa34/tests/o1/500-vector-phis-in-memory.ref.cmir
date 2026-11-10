@@ -230,251 +230,251 @@ function @rotate
 
   block ^check
     vector.pshufd xmm1, xmm0, 3
-    vector.toi32 r8, xmm1
-    sext.i32 r8
-    vector.toi32 r9, xmm0
-    sext.i32 r9
-    add.i32 r8, r9
+    vector.toi32 rax, xmm1
+    sext.i32 rax
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
+    add.i32 rax, rcx
     fmov.v128 xmm15, [rbp-<off6>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off6>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 1
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 1
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off7>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off7>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 2
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 2
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off8>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off8>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 3
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 3
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off9>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off9>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 4
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 4
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off10>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off10>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 5
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 5
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off11>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off11>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 6
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 6
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off12>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off12>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 7
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 7
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off13>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off13>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 8
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 8
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off14>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off14>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 9
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 9
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off15>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off15>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 10
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 10
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off16>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off16>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 11
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 11
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off17>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off17>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 12
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 12
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off18>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off18>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 13
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 13
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off19>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off19>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 14
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 14
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off20>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off20>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 15
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 15
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off21>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off21>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 16
-    add.i32 r8, r9
-    add.i32 r8, rsi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 16
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off22>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r9, xmm0
-    sext.i32 r9
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off22>]
-    vector.toi32 rdi, xmm15
-    sext.i32 rdi
-    mov rsi, r9
-    sub.i32 rsi, rdi
-    imul.i32 r9, 17
-    lea.i32 rax, [r8+r9]
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 17
+    add.i32 rax, rcx
     add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off23>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r8, xmm0
-    sext.i32 r8
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off23>]
-    vector.toi32 r9, xmm15
-    sext.i32 r9
-    mov rdi, r8
-    sub.i32 rdi, r9
-    imul.i32 r8, 18
-    add.i32 rax, r8
-    add.i32 rax, rdi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 18
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off24>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r8, xmm0
-    sext.i32 r8
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off24>]
-    vector.toi32 r9, xmm15
-    sext.i32 r9
-    mov rdi, r8
-    sub.i32 rdi, r9
-    imul.i32 r8, 19
-    add.i32 rax, r8
-    add.i32 rax, rdi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 19
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     fmov.v128 xmm15, [rbp-<off25>]
     vector.pshufd xmm0, xmm15, 3
-    vector.toi32 r8, xmm0
-    sext.i32 r8
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
     fmov.v128 xmm15, [rbp-<off25>]
-    vector.toi32 r9, xmm15
-    sext.i32 r9
-    mov rdi, r8
-    sub.i32 rdi, r9
-    imul.i32 r8, 20
-    add.i32 rax, r8
-    add.i32 rax, rdi
+    vector.toi32 rdx, xmm15
+    sext.i32 rdx
+    mov rsi, rcx
+    sub.i32 rsi, rdx
+    imul.i32 rcx, 20
+    add.i32 rax, rcx
+    add.i32 rax, rsi
     ret rax
 
 function @main

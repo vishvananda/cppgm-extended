@@ -20,8 +20,8 @@ function @fill_bytes(%p : ptr, %s : ptr, %n : u32) -> void [binding=strong, obje
 
   block ^while_body_2:
     %t3 = load i8 %s
-    %t4 = index i8 %t2, 1
     store i8 %t3, %t2
+    %t4 = index i8 %t2, 1
     %t5 = binary sub u32 %t1, 1
     jump ^while_cond_1
 
@@ -39,8 +39,8 @@ function @fill_words(%p : ptr, %s : ptr, %n : u32) -> void [binding=strong, obje
 
   block ^while_body_2:
     %t3 = load typed u32 %s
-    %t4 = index i8 %t2, 4
     store typed u32 %t3, %t2
+    %t4 = index i8 %t2, 4
     %t5 = binary sub u32 %t1, 1
     jump ^while_cond_1
 
@@ -60,8 +60,8 @@ function @fill_wide(%p : ptr, %n : u32) -> void [binding=strong, object=_Z9fill_
     branch %t5, ^while_body_2, ^while_end_3
 
   block ^while_body_2:
-    %t6 = index i8 %t4, 16
     store typed i128 18446744073709551616, %t4
+    %t6 = index i8 %t4, 16
     jump ^while_cond_1
 
   block ^while_end_3:

@@ -5,10 +5,12 @@ count(call) <= 7
 count(load) <= 3
 count(store) <= 137
 count(phi) <= 3
-instructions <= 48 in @multiple
 instructions <= 48 in @addressed
 instructions <= 53 in @main
 
 # outcomes from 400-inline-discardable-single-call.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(call @addressed)
+none(call @multiple)
 none(call @single)
+absent(@multiple)
 absent(@single)

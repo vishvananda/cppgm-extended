@@ -30,13 +30,13 @@ function @dispatch
     jl ^left
 
   block ^right
-    xor rdx, 4
-    mov r8, rdx
+    mov rax, rdx
+    xor rax, 4
     mov <gpr0>, rdi
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case0
-    lea rax, [r8+<off0>]
+    add rax, 1
     ret rax
 
   block ^skip
@@ -48,13 +48,12 @@ function @dispatch
     ret rax
 
   block ^left
-    add rdx, 17
-    mov r8, rdx
+    lea rax, [rdx+<off0>]
     mov <gpr0>, rdi
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case1
-    lea rax, [r8-<off0>]
+    sub rax, 7
     ret rax
 
   block ^table
@@ -62,21 +61,18 @@ function @dispatch
     jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case2
-    lea rax, [r8+r8*2]
+    imul rax, 3
     ret rax
 
   block ^case3
-    mov rax, r8
     xor rax, 19
     ret rax
 
   block ^case4
-    mov rax, r8
     or rax, 16
     ret rax
 
   block ^case5
-    mov rax, r8
     and rax, 127
     ret rax
 

@@ -23,8 +23,8 @@ function @main
     epilogues duplicated
 
   block ^entry
-    load.ptr r8, @value_ptr
-    cmp.ptr r8, r8
+    load.ptr rax, @value_ptr
+    cmp.ptr rax, rax
     je ^check
 
   block ^bad
@@ -32,7 +32,7 @@ function @main
     ret rax
 
   block ^check
-    cmp.i64 [r8], 77
+    cmp.i64 [rax], 77
     setne rax
     movzx rax, rax
     ret rax

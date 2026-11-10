@@ -16,18 +16,17 @@ function @sum_bytes
     epilogues duplicated
 
   block ^entry
-    load.i8 r8, [rdi]
-    shl.u32 r8, 13
-    zext.i32 rax, r8
-    load.i8 r8, [rdi+<off0>]
-    shl.u32 r8, 11
-    load.i8 r9, [rdi+<off1>]
-    add.u32 r9, 91
+    load.i8 rax, [rdi]
+    shl.u32 rax, 13
+    load.i8 rcx, [rdi+<off0>]
+    shl.u32 rcx, 11
+    load.i8 rdx, [rdi+<off1>]
+    add.u32 rdx, 91
     load.i8 rdi, [rdi+<off2>]
     imul.u32 rdi, 7
-    add rax, r8
-    add r9, rdi
-    add rax, r9
+    add rax, rcx
+    add rdx, rdi
+    add rax, rdx
     ret rax
 
 function @right
@@ -43,7 +42,7 @@ function @right
   block ^entry
     load.i8 rdi, [rdi]
     zext.i32 rax, rdi
-    shr rax, 7
+    shr.u32 rax, 7
     ret rax
 
 function @wide
@@ -172,20 +171,20 @@ function @main
     setne <gpr4>
     movzx <gpr4>, <gpr4>
     cmp.i64 [rbp-<off1>], 4294967295
-    setne r8
-    movzx r8, r8
+    setne rcx
+    movzx rcx, rcx
     cmp.i64 [rbp-<off2>], 4294967294
-    setne r9
-    movzx r9, r9
+    setne rdx
+    movzx rdx, rdx
     cmp.i64 rax, 2147483648
     setne rax
     movzx rax, rax
     or <gpr0>, <gpr1>
     or <gpr2>, <gpr3>
-    or <gpr4>, r8
-    or r9, rax
+    or <gpr4>, rcx
+    or rdx, rax
     mov rax, <gpr0>
     or rax, <gpr2>
-    or <gpr4>, r9
+    or <gpr4>, rdx
     or rax, <gpr4>
     ret rax

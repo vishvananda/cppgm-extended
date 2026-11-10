@@ -70,9 +70,9 @@ function @dynamic_stack
     epilogues duplicated
 
   block ^entry
-    stack_alloc r8, rdi
-    store.i64 [r8], 37
-    load.i64 rax, [r8]
+    stack_alloc rax, rdi
+    store.i64 [rax], 37
+    load.i64 rax, [rax]
     ret rax
 
 function @floating_scratch

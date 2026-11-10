@@ -136,33 +136,33 @@ function @main
     call @volatile_fields [args=(rdi), unwind=no]
     mov rdi, @atomics
     call @atomic_fields [args=(rdi), unwind=no]
-    load.i64 r8, @zeroed+72
-    load.i64 r9, @zeroed
-    load.i64 rdi, @holes+8
+    load.i64 rax, @zeroed+72
+    load.i64 rcx, @zeroed
+    load.i64 rdx, @holes+8
     load.i64 rsi, @mixed+8
-    load.i64 rdx, @volatiles+8
-    load.i64 rcx, @atomics+8
-    cmp.i64 r9, 0
-    setne rax
-    movzx rax, rax
-    cmp.i64 r8, 0
-    setne r8
-    movzx r8, r8
-    cmp.i64 rdi, 22
-    setne rdi
-    movzx rdi, rdi
-    cmp.i64 rsi, 9
-    setne rsi
-    movzx rsi, rsi
-    cmp.i64 rdx, 0
-    setne rdx
-    movzx rdx, rdx
+    load.i64 rdi, @volatiles+8
+    load.i64 r8, @atomics+8
     cmp.i64 rcx, 0
     setne rcx
     movzx rcx, rcx
-    or rax, r8
-    or rdi, rsi
-    or rdx, rcx
-    or rax, rdi
-    or rax, rdx
+    cmp.i64 rax, 0
+    setne rax
+    movzx rax, rax
+    cmp.i64 rdx, 22
+    setne rdx
+    movzx rdx, rdx
+    cmp.i64 rsi, 9
+    setne rsi
+    movzx rsi, rsi
+    cmp.i64 rdi, 0
+    setne rdi
+    movzx rdi, rdi
+    cmp.i64 r8, 0
+    setne r8
+    movzx r8, r8
+    or.i32 rax, rcx
+    or.i32 rdx, rsi
+    or.i32 rdi, r8
+    or.i32 rax, rdx
+    or.i32 rax, rdi
     ret rax

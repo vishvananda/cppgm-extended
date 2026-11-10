@@ -41,26 +41,26 @@ function @walk_unavoidable
     epilogues duplicated
 
   block ^entry
-    load.i64 r9, @number
-    mov r8, rdi
-    mov rax, 0
+    load.i64 rdx, @number
+    mov rax, rdi
+    mov rcx, 0
 
   block ^loop
-    cmp.ptr r8, 0
+    cmp.ptr rax, 0
     je ^exit
 
   block ^body
-    cmp.i64 r9, 42
+    cmp.i64 rdx, 42
     jne ^failure
 
   block ^advance
-    load.ptr r8, [r8]
-    add rax, 1
-    cmp.ptr r8, 0
+    load.ptr rax, [rax]
+    add rcx, 1
+    cmp.ptr rax, 0
     jne ^body
 
   block ^exit
-    ret rax
+    ret rcx
 
   block ^failure
     mov rax, 99
@@ -82,28 +82,28 @@ function @walk_guarded
     je ^entry~exit
 
   block ^entry~loop
-    mov r8, rdi
-    mov r9, 0
+    mov rax, rdi
+    mov rcx, 0
 
   block ^loop
-    cmp.ptr r8, 0
+    cmp.ptr rax, 0
     je ^loop~exit
 
   block ^body
-    load.ptr r8, [r8]
-    add r9, 1
-    cmp.ptr r8, 0
+    load.ptr rax, [rax]
+    add rcx, 1
+    cmp.ptr rax, 0
     jne ^body
 
   block ^loop~exit
-    ret r9
+    ret rcx
 
   block ^exit
-    ret r9
+    ret rcx
 
   block ^entry~exit
-    mov r9, 0
-    ret r9
+    mov rax, 0
+    ret rax
 
 function @call_free_eh_load
   abi
@@ -127,16 +127,15 @@ function @call_free_eh_load
     je ^right
 
   block ^left
-    lea r8, [rdi+1]
-    store.i64 [rbp-16], r8
+    lea rax, [rdi+1]
+    store.i64 [rbp-16], rax
 
   block ^done
-    mov rax, r8
     ret rax
 
   block ^right
-    lea r8, [rdi-1]
-    store.i64 [rbp-16], r8
+    lea rax, [rdi-1]
+    store.i64 [rbp-16], rax
     jmp ^done
 
   block ^handler

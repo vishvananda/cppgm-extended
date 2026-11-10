@@ -46,10 +46,10 @@ function @clamp
     temp %c13 -> [rbp-48] : i32
 
   block ^entry
-    load.i32 r8, [rdi]
-    load.i32 r9, [rsi]
-    load.i32 rcx, [rdi+4]
-    load.i32 rax, [rsi+4]
+    load.i32 rax, [rdi]
+    load.i32 rcx, [rsi]
+    load.i32 r8, [rdi+4]
+    load.i32 r9, [rsi+4]
     load.i32 rbx, [rdi+8]
     load.i32 r12, [rsi+8]
     load.i32 r13, [rdi+12]
@@ -99,6 +99,13 @@ function @clamp
     store.i32 [rbp-216], r10
     load.i32 rdi, [rdi+60]
     load.i32 rsi, [rsi+60]
+    sub.i32 rax, rcx
+    cmp.i32 rax, 0
+    mov r11, 0
+    cmovl rax, r11
+    cmp.i32 rax, 255
+    mov r11, 255
+    cmovg rax, r11
     sub.i32 r8, r9
     cmp.i32 r8, 0
     mov r11, 0
@@ -106,13 +113,6 @@ function @clamp
     cmp.i32 r8, 255
     mov r11, 255
     cmovg r8, r11
-    sub.i32 rcx, rax
-    cmp.i32 rcx, 0
-    mov r11, 0
-    cmovl rcx, r11
-    cmp.i32 rcx, 255
-    mov r11, 255
-    cmovg rcx, r11
     sub.i32 rbx, r12
     cmp.i32 rbx, 0
     mov r11, 0
@@ -134,22 +134,22 @@ function @clamp
     cmp.i32 r15, 255
     mov r11, 255
     cmovg r15, r11
-    load.i32 r9, [rbp-64]
-    sub.i32 r9, [rbp-72]
+    load.i32 rcx, [rbp-64]
+    sub.i32 rcx, [rbp-72]
+    cmp.i32 rcx, 0
+    mov r11, 0
+    cmovl rcx, r11
+    cmp.i32 rcx, 255
+    mov r11, 255
+    cmovg rcx, r11
+    load.i32 r9, [rbp-80]
+    sub.i32 r9, [rbp-88]
     cmp.i32 r9, 0
     mov r11, 0
     cmovl r9, r11
     cmp.i32 r9, 255
     mov r11, 255
     cmovg r9, r11
-    load.i32 rax, [rbp-80]
-    sub.i32 rax, [rbp-88]
-    cmp.i32 rax, 0
-    mov r11, 0
-    cmovl rax, r11
-    cmp.i32 rax, 255
-    mov r11, 255
-    cmovg rax, r11
     load.i32 r12, [rbp-96]
     sub.i32 r12, [rbp-104]
     cmp.i32 r12, 0
@@ -227,13 +227,13 @@ function @clamp
     cmp.i32 rdi, 255
     mov r11, 255
     cmovg rdi, r11
-    store.i32 [rdx], r8
-    store.i32 [rdx+4], rcx
+    store.i32 [rdx], rax
+    store.i32 [rdx+4], r8
     store.i32 [rdx+8], rbx
     store.i32 [rdx+12], r13
     store.i32 [rdx+16], r15
-    store.i32 [rdx+20], r9
-    store.i32 [rdx+24], rax
+    store.i32 [rdx+20], rcx
+    store.i32 [rdx+24], r9
     store.i32 [rdx+28], r12
     load.i32 r11, [rbp-8]
     store.i32 [rdx+32], r11
@@ -249,62 +249,62 @@ function @clamp
     store.i32 [rdx+52], r11
     store.i32 [rdx+56], r14
     store.i32 [rdx+60], rdi
-    cmp.i32 r8, 0
-    setne r8
-    movzx r8, r8
-    add.i32 r8, 0
-    cmp.i32 rcx, 0
-    setne rcx
-    movzx rcx, rcx
-    add.i32 r8, rcx
-    cmp.i32 rbx, 0
-    setne rbx
-    movzx rbx, rbx
-    add.i32 r8, rbx
-    cmp.i32 r13, 0
-    setne r13
-    movzx r13, r13
-    add.i32 r8, r13
-    cmp.i32 r15, 0
-    setne r15
-    movzx r15, r15
-    add.i32 r8, r15
-    cmp.i32 r9, 0
-    setne r9
-    movzx r9, r9
-    add.i32 r8, r9
     cmp.i32 rax, 0
     setne rax
     movzx rax, rax
-    add.i32 r8, rax
+    add.i32 rax, 0
+    cmp.i32 r8, 0
+    setne r8
+    movzx r8, r8
+    add.i32 rax, r8
+    cmp.i32 rbx, 0
+    setne rbx
+    movzx rbx, rbx
+    add.i32 rax, rbx
+    cmp.i32 r13, 0
+    setne r13
+    movzx r13, r13
+    add.i32 rax, r13
+    cmp.i32 r15, 0
+    setne r15
+    movzx r15, r15
+    add.i32 rax, r15
+    cmp.i32 rcx, 0
+    setne rcx
+    movzx rcx, rcx
+    add.i32 rax, rcx
+    cmp.i32 r9, 0
+    setne r9
+    movzx r9, r9
+    add.i32 rax, r9
     cmp.i32 r12, 0
     setne r12
     movzx r12, r12
-    add.i32 r8, r12
+    add.i32 rax, r12
     cmp.i32 [rbp-8], 0
-    setne r9
-    movzx r9, r9
-    lea.i32 rax, [r8+r9]
+    setne rcx
+    movzx rcx, rcx
+    add.i32 rax, rcx
     cmp.i32 [rbp-16], 0
-    setne r8
-    movzx r8, r8
-    add.i32 rax, r8
+    setne rcx
+    movzx rcx, rcx
+    add.i32 rax, rcx
     cmp.i32 [rbp-24], 0
-    setne r8
-    movzx r8, r8
-    add.i32 rax, r8
+    setne rcx
+    movzx rcx, rcx
+    add.i32 rax, rcx
     cmp.i32 [rbp-32], 0
-    setne r8
-    movzx r8, r8
-    add.i32 rax, r8
+    setne rcx
+    movzx rcx, rcx
+    add.i32 rax, rcx
     cmp.i32 [rbp-40], 0
-    setne r8
-    movzx r8, r8
-    add.i32 rax, r8
+    setne rcx
+    movzx rcx, rcx
+    add.i32 rax, rcx
     cmp.i32 [rbp-48], 0
-    setne r8
-    movzx r8, r8
-    add.i32 rax, r8
+    setne rcx
+    movzx rcx, rcx
+    add.i32 rax, rcx
     cmp.i32 r14, 0
     setne r14
     movzx r14, r14

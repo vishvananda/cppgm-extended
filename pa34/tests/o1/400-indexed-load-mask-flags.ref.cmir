@@ -27,11 +27,11 @@ function @walk
     epilogues duplicated
 
   block ^entry
-    load.u16 r8, [rdi]
-    and r8, 7
+    load.u16 rax, [rdi]
+    and rax, 7
     mov <gpr0>, @offsets
-    load.i8 r8, [<gpr0>+r8]
-    load.ptr rax, [rdi+r8]
+    load.i8 rax, [<gpr0>+rax]
+    load.ptr rax, [rdi+rax]
     ret rax
 
 function @live_address
@@ -49,8 +49,8 @@ function @live_address
     mov rax, rdi
     mov <gpr0>, @offsets
     add rax, <gpr0>
-    load.i8 r8, [rax]
-    store.i8 [rsi], r8
+    load.i8 rcx, [rax]
+    store.i8 [rsi], rcx
     ret rax
 
 function @masked16
@@ -161,8 +161,8 @@ function @main
     mov rdi, 3
     lea rsi, [rbp-<off1>]
     call @live_address [args=(rsi,rdi)]
-    mov r8, @offsets+3
-    cmp.ptr rax, r8
+    mov rcx, @offsets+3
+    cmp.ptr rax, rcx
     sete <gpr4>
     movzx <gpr4>, <gpr4>
     cmp.i8 [rbp-<off1>], 24

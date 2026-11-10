@@ -1,3 +1,5 @@
 # outcomes from 400-inline-discardable-size-cap.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
 none(call @at_limit)
+none(call @too_large)
 absent(@at_limit)
+absent(@too_large)

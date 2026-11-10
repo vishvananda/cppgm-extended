@@ -18,7 +18,7 @@ function @masked_alias
     epilogues duplicated
 
   block ^entry
-    test.i32 [rdi], 127
+    test.u8 [rdi], 127
     mov rax, rdx
     cmovne rax, rsi
     ret rax
@@ -36,8 +36,8 @@ function @stored_after_mask
     epilogues duplicated
 
   block ^entry
-    load.i32 r8, [rdi]
-    and r8, 127
+    load.i32 rax, [rdi]
+    and.i32 rax, 127
     store.i32 [rdi], 0
     mov rax, rdx
     cmovne rax, rsi
@@ -55,12 +55,12 @@ function @shared_load
 
   block ^entry
     load.i32 rdi, [rdi]
-    test.i32 rdi, 127
+    test.u8 rdi, 127
     mov <gpr0>, 11
-    mov r8, 29
-    cmovne r8, <gpr0>
-    add.i32 r8, rdi
-    sext.i32 rax, r8
+    mov rax, 29
+    cmovne rax, <gpr0>
+    add.i32 rax, rdi
+    sext.i32 rax
     ret rax
 
 function @volatile_mask
@@ -77,7 +77,7 @@ function @volatile_mask
 
   block ^entry
     load.i32 rdi, [rdi]
-    test.i32 rdi, 127
+    test.u8 rdi, 127
     mov rax, rdx
     cmovne rax, rsi
     ret rax
@@ -98,8 +98,8 @@ function @main
 
   block ^loop
     store.i32 [rbp-<off0>], <gpr1>
-    mov r8, <gpr1>
-    and r8, 127
+    mov rax, <gpr1>
+    and.i32 rax, 127
     mov <gpr0>, 11
     mov <gpr2>, 29
     cmovne <gpr2>, <gpr0>
@@ -120,22 +120,22 @@ function @main
     mov rsi, 11
     mov rdx, 29
     call @stored_after_mask [args=(rdx,rsi,rdi)]
-    sext.i32 r8, <gpr1>
-    add r8, <gpr2>
+    sext.i32 rcx, <gpr1>
+    add rcx, <gpr2>
     cmp.i64 <gpr3>, <gpr2>
     setne <gpr3>
-    cmp.i64 <gpr4>, r8
+    cmp.i64 <gpr4>, rcx
     setne <gpr4>
     cmp.i64 <gpr5>, <gpr2>
     setne <gpr5>
     cmp.i64 rax, <gpr2>
     setne rax
     cmp.i32 [rbp-<off0>], 0
-    setne r8
+    setne rcx
     or <gpr3>, <gpr4>
     or <gpr5>, rax
     or <gpr3>, <gpr5>
-    or <gpr3>, r8
+    or <gpr3>, rcx
     cmp.u8 <gpr3>, 0
     jne ^failed
 

@@ -44,25 +44,25 @@ function @main
   block ^entry
     mov rdi, @fields
     call @sparse_fields [args=(rdi), unwind=no]
-    mov r8, 0
+    mov rax, 0
 
   block ^loop
-    lea r9, [r8*8]
+    lea rcx, [rax*8]
     mov r10, @fields
-    add r9, r10
-    cmp.i64 r8, 7
+    add rcx, r10
+    cmp.i64 rax, 7
     mov r11, 9
-    mov rdi, 0
-    cmove rdi, r11
-    cmp.i64 r8, 2
+    mov rdx, 0
+    cmove rdx, r11
+    cmp.i64 rax, 2
     mov r11, 77
-    cmove rdi, r11
-    cmp.i64 rdi, [r9]
+    cmove rdx, r11
+    cmp.i64 rdx, [rcx]
     jne ^fail
 
   block ^next
-    add r8, 1
-    cmp.i64 r8, 8
+    add rax, 1
+    cmp.i64 rax, 8
     jb ^loop
     jmp ^done
 

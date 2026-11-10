@@ -11,8 +11,6 @@ function @main() -> i64 [role=entry] {
   slot $source : i64
 
   block ^entry:
-    store i64 11, $source
-    store i64 17, $source
     store i64 23, $source
     %called = call i64 @identity(23)
     call void @mutate($source)
@@ -20,11 +18,10 @@ function @main() -> i64 [role=entry] {
     %changed = call i64 @identity(%t2)
     %bad_call = cmp ne i64 %called, 23
     %bad_change = cmp ne i64 %changed, 29
-    %t6 = load i64 $source
-    %bad_select = cmp ne i64 %t6, 29
+    %bad_select = cmp ne i64 %t2, 29
     %bad3 = binary or i64 %bad_call, %bad_change
     %bad9 = binary or i64 %bad_select, %bad3
-    switch %t6, ^wrong, 29:^done
+    switch %t2, ^wrong, 29:^done
 
   block ^done:
     return i64 %bad9

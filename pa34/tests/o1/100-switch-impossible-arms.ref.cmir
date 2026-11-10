@@ -269,9 +269,9 @@ function @record_default
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, @events
-    add r8, 1
-    store.i64 @events, r8
+    load.i64 rax, @events
+    add rax, 1
+    store.i64 @events, rax
     lea rax, [rdi+<off1>]
     ret rax
 
@@ -286,9 +286,9 @@ function @raise_default
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, @events
-    add r8, 1
-    store.i64 @events, r8
+    load.i64 rax, @events
+    add rax, 1
+    store.i64 @events, rax
     throw rdi
 
 function @main
@@ -309,9 +309,9 @@ function @main
     temp %next_errors -> [rbp-<off6>] : i64
 
   block ^entry
-    load.i64 r8, @seed
+    load.i64 rax, @seed
     store.i64 [rbp-<off0>], 0
-    store.i64 [rbp-<off1>], r8
+    store.i64 [rbp-<off1>], rax
     store.i64 [rbp-<off2>], 0
 
   block ^loop
@@ -324,23 +324,23 @@ function @main
     mov rax, <gpr0>
     sub rax, rdx
     mov <gpr1>, rax
-    lea r8, [<gpr1>+<gpr1>]
-    add r8, 3
-    mov <gpr2>, r8
+    lea rax, [<gpr1>+<gpr1>]
+    add rax, 3
+    mov <gpr2>, rax
     imul <gpr2>, [rbp-<off1>]
     mov rdi, <gpr1>
     load.i64 rsi, [rbp-<off1>]
     call @dense [args=(rsi,rdi)]
     mov <gpr3>, rax
-    lea r8, [<gpr1>-<off0>]
-    sext.i8 r8
-    mov rdi, r8
+    lea rax, [<gpr1>-<off0>]
+    sext.i8 rax
+    mov rdi, rax
     load.i64 rsi, [rbp-<off1>]
     call @signed_byte [args=(rsi,rdi)]
     mov <gpr4>, rax
-    lea r8, [<gpr1>+<off0>]
-    zext.i8 r8
-    mov rdi, r8
+    lea rax, [<gpr1>+<off0>]
+    zext.i8 rax
+    mov rdi, rax
     load.i64 rsi, [rbp-<off1>]
     call @unsigned_byte [args=(rsi,rdi)]
     mov <gpr5>, rax
@@ -379,8 +379,8 @@ function @main
     movzx <gpr2>, <gpr2>
     load.i64 <gpr0>, [rbp-<off4>]
     cmp.i64 <gpr0>, [rbp-<off3>]
-    setne r8
-    movzx r8, r8
+    setne rcx
+    movzx rcx, rcx
     cmp.i64 <gpr1>, [rbp-<off5>]
     setne <gpr1>
     movzx <gpr1>, <gpr1>
@@ -389,26 +389,25 @@ function @main
     movzx rax, rax
     or <gpr3>, <gpr4>
     or <gpr5>, <gpr2>
-    or r8, <gpr1>
+    or rcx, <gpr1>
     or <gpr3>, <gpr5>
-    or r8, rax
-    or <gpr3>, r8
+    or rcx, rax
+    or <gpr3>, rcx
     or <gpr3>, [rbp-<off2>]
     store.i64 [rbp-<off6>], <gpr3>
 
   block ^repeat
-    mov <gpr6>, 6364136223846793005
-    mov r8, <gpr6>
-    imul r8, [rbp-<off1>]
-    add r8, 1442695040888963407
-    load.i64 r9, [rbp-<off0>]
-    add r9, 1
-    cmp.i64 r9, 256
+    mov rax, 6364136223846793005
+    imul rax, [rbp-<off1>]
+    add rax, 1442695040888963407
+    load.i64 rcx, [rbp-<off0>]
+    add rcx, 1
+    cmp.i64 rcx, 256
     jae ^finished
 
   block ^repeat~loop
-    store.i64 [rbp-<off0>], r9
-    store.i64 [rbp-<off1>], r8
+    store.i64 [rbp-<off0>], rcx
+    store.i64 [rbp-<off1>], rax
     load.i64 <gpr6>, [rbp-<off6>]
     store.i64 [rbp-<off2>], <gpr6>
     jmp ^loop
@@ -431,13 +430,13 @@ function @main
     ret rax
 
   block ^handler
-    load_exception r8
-    load.i64 r9, @events
-    cmp.i64 r8, 99
+    load_exception rax
+    load.i64 rcx, @events
+    cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    cmp.i64 r9, 513
-    setne r9
-    movzx r9, r9
-    or rax, r9
+    cmp.i64 rcx, 513
+    setne rcx
+    movzx rcx, rcx
+    or rax, rcx
     ret rax

@@ -20,9 +20,7 @@ function @stored(%ret : ptr [pass=indirect_result, alias=exclusive_result, objec
 function @copied(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %p : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     %t1 = call i64 @peek(%p)
-    store i64 11, %ret
     %t2 = index i8 [projection=field] %ret, 8
-    store i64 13, %t2
     %t3 = index i8 [projection=field] %ret, 16
     store i64 17, %t3
     %t4 = index i8 [projection=field] %ret, 24
@@ -34,9 +32,7 @@ function @copied(%ret : ptr [pass=indirect_result, alias=exclusive_result, objec
 function @zeroed(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %p : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     %t1 = call i64 @peek(%p)
-    store typed i64 0, %ret
     %t2 = index i8 [projection=field] %ret, 8
-    store typed i64 0, %t2
     %t3 = index i8 [projection=field] %ret, 16
     store typed i64 0, %t3
     %t4 = index i8 [projection=field] %ret, 24
@@ -47,7 +43,6 @@ function @zeroed(%ret : ptr [pass=indirect_result, alias=exclusive_result, objec
 }
 function @escaped(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32]) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
-    store typed i64 0, %ret
     %t1 = index i8 [projection=field] %ret, 8
     store typed i64 0, %t1
     %t2 = index i8 [projection=field] %ret, 16

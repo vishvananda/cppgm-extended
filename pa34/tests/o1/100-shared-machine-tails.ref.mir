@@ -171,9 +171,9 @@ function @main
     mov rdi, rbx
     mov rsi, r12
     call @shared_store_paths [args=(rsi,rdi)]
-    load.i64 r8, [rbx]
+    load.i64 rcx, [rbx]
     cmp.i64 r12, 12
-    setb r9
+    setb rsi
     mov rax, r12
     mov r11, -6148914691236517205
     mul r11
@@ -181,32 +181,32 @@ function @main
     imul rdx, 3
     mov rax, r12
     sub rax, rdx
-    lea rdi, [rax+1]
-    test.u8 r9, r9
+    lea rdx, [rax+1]
+    test.u8 rsi, rsi
     mov r11, 0
-    cmove rdi, r11
-    cmp.i64 r8, rdi
-    setne r8
-    movzx r8, r8
+    cmove rdx, r11
+    cmp.i64 rcx, rdx
+    setne rcx
+    movzx rcx, rcx
     imul rax, 8
-    lea rdi, [r12*8]
-    mov rsi, -40
-    sub rsi, rax
-    mov rdx, -40
-    sub rdx, rdi
-    lea rsi, [rbx+rsi]
-    lea rdx, [rbx+rdx]
-    test.u8 r9, r9
-    cmove rsi, rbx
-    cmove rdx, rbx
-    cmp.ptr r13, rsi
+    lea rdx, [r12*8]
+    mov rdi, -40
+    sub rdi, rax
+    mov rax, -40
+    sub rax, rdx
+    lea rdi, [rbx+rdi]
+    lea rax, [rbx+rax]
+    test.u8 rsi, rsi
+    cmove rdi, rbx
+    cmove rax, rbx
+    cmp.ptr r13, rdi
     setne r13
     movzx r13, r13
-    cmp.ptr r14, rdx
+    cmp.ptr r14, rax
     setne r14
     movzx r14, r14
     or r13, r14
-    or r13, r8
+    or r13, rcx
     jne ^fail
 
   block ^next

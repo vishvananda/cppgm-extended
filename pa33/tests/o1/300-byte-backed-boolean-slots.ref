@@ -2,13 +2,7 @@ function @boolean_bytes(%x : i32) -> i32 [no_inline=yes] {
   block ^entry:
     %positive = cmp gt i32 %x, 0
     %t2 = convert trunc i1 i64 %positive
-    branch %positive, ^yes, ^done
-
-  block ^yes:
-    jump ^done
-
-  block ^done:
-    %t3 = phi i1 [^yes: %t2, ^entry: 0]
+    %t3 = select i1 %positive, %t2, 0
     %t4 = convert zext u8 i1 %t3
     %out = convert zext i32 u8 %t4
     return i32 %out

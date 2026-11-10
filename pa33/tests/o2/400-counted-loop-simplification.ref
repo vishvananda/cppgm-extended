@@ -12,7 +12,7 @@ function @strength_reduce() -> i64 [no_inline=yes] {
   block ^body:
     %scaled = binary mul i64 %i, 8
     store i64 %scaled, @result
-    %next = binary add i64 %i, 1
+    %next = binary add nowrap i64 %i, 1
     jump ^header
 
   block ^exit:

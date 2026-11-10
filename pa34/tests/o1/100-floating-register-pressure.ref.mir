@@ -220,14 +220,14 @@ function @main
     slot $cells -> [rbp-112] : obj<112x8>
 
   block ^entry
-    mov r8, 0
+    mov rax, 0
     fmov.f64 xmm0, 1.0
 
   block ^fill
-    fmov.f64 [rbp+r8*8-112], xmm0
+    fmov.f64 [rbp+rax*8-112], xmm0
     fmul.f64 xmm0, xmm0, 2.0
-    add r8, 1
-    cmp.i64 r8, 14
+    add rax, 1
+    cmp.i64 rax, 14
     jb ^fill
 
   block ^check
@@ -248,10 +248,10 @@ function @main
     fmov.f32 xmm0, 5.0f
     fmov.f32 xmm1, 2.0f
     call @keeps_minuend [args=(xmm0,xmm1)]
-    fne.f32 r8, xmm0, 1e+01f
+    fne.f32 rax, xmm0, 1e+01f
     or rbx, r12
     or r13, r14
     or rbx, r13
-    or rbx, r8
+    or rbx, rax
     sext.i32 rax, rbx
     ret rax

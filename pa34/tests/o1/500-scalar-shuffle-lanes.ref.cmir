@@ -549,8 +549,8 @@ function @main
     mov <gpr1>, 0
 
   block ^loop
-    lea r8, [<gpr0>+<gpr0>]
-    lea <gpr3>, [<gpr2>+r8*8]
+    lea rax, [<gpr0>+<gpr0>]
+    lea <gpr3>, [<gpr2>+rax*8]
     load.u32 <gpr4>, [<gpr3>]
     store.u32 [rbp-<off0>], <gpr4>
     load.u32 <gpr4>, [<gpr3>+<off0>]
@@ -559,557 +559,557 @@ function @main
     call @f32_0 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f32_1 [args=(rsi,rdi)]
     cmp.u32 @output, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f32_85 [args=(rsi,rdi)]
     cmp.u32 @output, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f32_170 [args=(rsi,rdi)]
     cmp.u32 @output, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f32_255 [args=(rsi,rdi)]
     cmp.u32 @output, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f32_27 [args=(rsi,rdi)]
     cmp.u32 @output, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_0 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_1 [args=(rsi,rdi)]
     cmp.u32 @output, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_4 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_5 [args=(rsi,rdi)]
     cmp.u32 @output, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_16 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_17 [args=(rsi,rdi)]
     cmp.u32 @output, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_20 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_21 [args=(rsi,rdi)]
     cmp.u32 @output, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_64 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_65 [args=(rsi,rdi)]
     cmp.u32 @output, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_68 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_69 [args=(rsi,rdi)]
     cmp.u32 @output, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_80 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_81 [args=(rsi,rdi)]
     cmp.u32 @output, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_84 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_85 [args=(rsi,rdi)]
     cmp.u32 @output, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_170 [args=(rsi,rdi)]
     cmp.u32 @output, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_255 [args=(rsi,rdi)]
     cmp.u32 @output, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @f64_228 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+8, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, 0
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @i32_0 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     mov rdi, <gpr3>
     lea rsi, @output
     call @i64_68 [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+4, <gpr4>
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     cmp.u32 @output+12, <gpr4>
     setne <gpr4>
     movzx <gpr4>, <gpr4>
@@ -1119,29 +1119,29 @@ function @main
     call @live_source [args=(rsi,rdi)]
     load.u32 <gpr5>, @output
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+4
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+8
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+12
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     load.u32 <gpr5>, @output+16
     cmp.u32 <gpr5>, [rbp-<off0>]
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
     add <gpr0>, 1
     cmp.i64 <gpr0>, 16
     jl ^loop

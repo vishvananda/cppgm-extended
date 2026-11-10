@@ -48,9 +48,9 @@ function @before_store
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, [rdi]
+    load.i64 rax, [rdi]
     store.i64 [rdi], 9
-    cmp.i64 r8, 5
+    cmp.i64 rax, 5
     mov <gpr0>, 11
     mov rax, 29
     cmove rax, <gpr0>

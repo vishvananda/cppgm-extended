@@ -269,9 +269,9 @@ function @record_default
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, @events
-    add r8, 1
-    store.i64 @events, r8
+    load.i64 rax, @events
+    add rax, 1
+    store.i64 @events, rax
     lea rax, [rdi+19]
     ret rax
 
@@ -286,9 +286,9 @@ function @raise_default
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, @events
-    add r8, 1
-    store.i64 @events, r8
+    load.i64 rax, @events
+    add rax, 1
+    store.i64 @events, rax
     throw rdi
 
 function @main
@@ -309,9 +309,9 @@ function @main
     temp %next_errors -> [rbp-56] : i64
 
   block ^entry
-    load.i64 r8, @seed
+    load.i64 rax, @seed
     store.i64 [rbp-8], 0
-    store.i64 [rbp-16], r8
+    store.i64 [rbp-16], rax
     store.i64 [rbp-24], 0
 
   block ^loop
@@ -324,23 +324,23 @@ function @main
     mov rax, r10
     sub rax, rdx
     mov rbx, rax
-    lea r8, [rbx+rbx]
-    add r8, 3
-    mov r12, r8
+    lea rax, [rbx+rbx]
+    add rax, 3
+    mov r12, rax
     imul r12, [rbp-16]
     mov rdi, rbx
     load.i64 rsi, [rbp-16]
     call @dense [args=(rsi,rdi)]
     mov r13, rax
-    lea r8, [rbx-6]
-    sext.i8 r8
-    mov rdi, r8
+    lea rax, [rbx-6]
+    sext.i8 rax
+    mov rdi, rax
     load.i64 rsi, [rbp-16]
     call @signed_byte [args=(rsi,rdi)]
     mov r14, rax
-    lea r8, [rbx+250]
-    zext.i8 r8
-    mov rdi, r8
+    lea rax, [rbx+250]
+    zext.i8 rax
+    mov rdi, rax
     load.i64 rsi, [rbp-16]
     call @unsigned_byte [args=(rsi,rdi)]
     mov r15, rax
@@ -379,8 +379,8 @@ function @main
     movzx r12, r12
     load.i64 r10, [rbp-40]
     cmp.i64 r10, [rbp-32]
-    setne r8
-    movzx r8, r8
+    setne rcx
+    movzx rcx, rcx
     cmp.i64 rbx, [rbp-48]
     setne rbx
     movzx rbx, rbx
@@ -389,26 +389,25 @@ function @main
     movzx rax, rax
     or r13, r14
     or r15, r12
-    or r8, rbx
+    or rcx, rbx
     or r13, r15
-    or r8, rax
-    or r13, r8
+    or rcx, rax
+    or r13, rcx
     or r13, [rbp-24]
     store.i64 [rbp-56], r13
 
   block ^repeat
-    mov r11, 6364136223846793005
-    mov r8, r11
-    imul r8, [rbp-16]
-    add r8, 1442695040888963407
-    load.i64 r9, [rbp-8]
-    add r9, 1
-    cmp.i64 r9, 256
+    mov rax, 6364136223846793005
+    imul rax, [rbp-16]
+    add rax, 1442695040888963407
+    load.i64 rcx, [rbp-8]
+    add rcx, 1
+    cmp.i64 rcx, 256
     jae ^finished
 
   block ^repeat~loop
-    store.i64 [rbp-8], r9
-    store.i64 [rbp-16], r8
+    store.i64 [rbp-8], rcx
+    store.i64 [rbp-16], rax
     load.i64 r11, [rbp-56]
     store.i64 [rbp-24], r11
     jmp ^loop
@@ -431,13 +430,13 @@ function @main
     ret rax
 
   block ^handler
-    load_exception r8
-    load.i64 r9, @events
-    cmp.i64 r8, 99
+    load_exception rax
+    load.i64 rcx, @events
+    cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    cmp.i64 r9, 513
-    setne r9
-    movzx r9, r9
-    or rax, r9
+    cmp.i64 rcx, 513
+    setne rcx
+    movzx rcx, rcx
+    or rax, rcx
     ret rax

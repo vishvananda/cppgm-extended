@@ -161,7 +161,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t26 = index i32 [projection=array_element] %t19, %t22
     %t27 = load typed i32 %t26
     %t28 = call i32 @quotients(%t25, %t27)
-    %t29 = cmp ne i32 %t28, %t25
+    %t29 = cmp ne i32 %t25, %t28
     branch %t29, ^if_then_12, ^if_end_13
 
   block ^if_then_12:

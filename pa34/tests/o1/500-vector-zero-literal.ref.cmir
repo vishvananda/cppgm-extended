@@ -105,8 +105,8 @@ function @main
   block ^entry
     vector.pzero xmm15
     fmov.v128 @memory, xmm15
-    load.i64 r8, @memory
-    or r8, @memory+8
+    load.i64 rax, @memory
+    or rax, @memory+8
     je ^returned
 
   block ^bad_store
@@ -115,8 +115,8 @@ function @main
 
   block ^returned
     call @nothing [args=()]
-    vector.toi64 r8, xmm0
-    cmp.i64 r8, 0
+    vector.toi64 rax, xmm0
+    cmp.i64 rax, 0
     je ^passed
 
   block ^bad_return
@@ -150,20 +150,20 @@ function @main
     mov rdi, 1
     call @chosen [args=(rdi)]
     fmov.v128 xmm15, [rbp-<off1>]
-    vector.toi32 r8, xmm15
-    sext.i32 r8
-    vector.toi32 r9, xmm0
-    sext.i32 r9
-    add.i32 r8, r9
-    cmp.i32 r8, 5
+    vector.toi32 rax, xmm15
+    sext.i32 rax
+    vector.toi32 rcx, xmm0
+    sext.i32 rcx
+    add.i32 rax, rcx
+    cmp.i32 rax, 5
     jne ^bad_join
 
   block ^operand
     vector.pzero xmm15
     vector.paddd xmm0, [rbp-<off0>], xmm15
-    vector.toi32 r8, xmm0
-    sext.i32 r8
-    cmp.i32 r8, 7
+    vector.toi32 rax, xmm0
+    sext.i32 rax
+    cmp.i32 rax, 7
     je ^stacked
 
   block ^bad_operand
@@ -203,8 +203,7 @@ function @main
     call @ninth [args=(xmm0,xmm1,<xmm0>,<xmm1>,<xmm2>,<xmm3>,<xmm4>,<xmm5>), stack=16]
     add rsp, 16
     sub.i32 rax, 7
-    or <gpr1>, rax
-    cmp.i32 <gpr1>, 0
+    or.i32 <gpr1>, rax
     je ^done
 
   block ^bad_stack

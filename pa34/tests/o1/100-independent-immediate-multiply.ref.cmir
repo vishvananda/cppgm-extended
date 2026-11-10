@@ -65,7 +65,7 @@ function @imul_word
 
   block ^entry
     imul.u32 rax, rdi, 0x0000000000000000ffffffff9e3779b9
-    xor rax, rdi
+    xor.u32 rax, rdi
     ret rax
 
 function @volatile_multiply
@@ -179,10 +179,10 @@ function @main
     setne <gpr1>
     movzx <gpr1>, <gpr1>
     cmp.i64 [rbp-<off2>], 0
-    setne r8
-    movzx r8, r8
+    setne rcx
+    movzx rcx, rcx
     or <gpr4>, <gpr5>
-    or <gpr1>, r8
+    or <gpr1>, rcx
     or <gpr4>, <gpr1>
     or rax, <gpr4>
     or rax, [rbp-<off1>]

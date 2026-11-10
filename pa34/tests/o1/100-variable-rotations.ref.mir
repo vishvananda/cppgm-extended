@@ -17,13 +17,13 @@ function @rotate_right
     epilogues duplicated
 
   block ^entry
-    mov r8, rsi
-    and r8, 63
+    mov rax, rsi
+    and rax, 63
     jne ^rotate
     ret rdi
 
   block ^rotate
-    mov rcx, r8
+    mov rcx, rax
     mov rax, rdi
     ror rax, rcx
     ret rax
@@ -50,28 +50,28 @@ function @with_live_values
     preserve rbx r12 r13
 
   block ^entry
-    mov rax, r8
     mov rbx, r9
-    mov r9, rcx
+    mov r9, r8
+    mov r8, rdx
+    mov rdx, rcx
     load.i64 r12, [rbp+16]
     load.i64 r13, [rbp+24]
-    mov r8, r9
-    and r8, 63
+    mov rax, rdx
+    and rax, 63
     je ^merge
 
   block ^rotate
-    mov rcx, r8
+    mov rcx, rax
     ror rdi, rcx
 
   block ^merge
-    add rdi, rsi
-    add rdx, rax
+    lea rax, [rdi+rsi]
+    add r8, r9
     add rbx, r12
     add rbx, r13
-    mov rax, rdi
-    xor rax, rdx
+    xor rax, r8
     xor rax, rbx
-    add rax, r9
+    add rax, rdx
     ret rax
 
 function @oracle
@@ -86,23 +86,23 @@ function @oracle
     epilogues duplicated
 
   block ^entry
-    mov r8, 0
-    mov rax, rdi
+    mov rax, 0
+    mov rcx, rdi
 
   block ^loop
-    cmp.i64 r8, rsi
+    cmp.i64 rax, rsi
     jb ^body
-    ret rax
+    ret rcx
 
   block ^body
-    ror rax, 1
-    add r8, 1
-    cmp.i64 r8, rsi
+    ror rcx, 1
+    add rax, 1
+    cmp.i64 rax, rsi
     jb ^body
-    ret rax
+    ret rcx
 
   block ^done
-    ret rax
+    ret rcx
 
 function @main
   abi
@@ -141,14 +141,14 @@ function @main
     store.i64 [rsp+8], r11
     call @with_live_values [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    lea r8, [r13+11]
-    xor r8, 55
-    xor r8, 165
-    add r8, rbx
+    lea rcx, [r13+11]
+    xor rcx, 55
+    xor rcx, 165
+    add rcx, rbx
     cmp.i64 r14, r13
     setne r14
     movzx r14, r14
-    cmp.i64 rax, r8
+    cmp.i64 rax, rcx
     setne rax
     movzx rax, rax
     or r14, rax

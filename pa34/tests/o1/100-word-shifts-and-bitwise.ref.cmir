@@ -193,23 +193,23 @@ function @main
     setne <gpr4>
     movzx <gpr4>, <gpr4>
     cmp.i64 [rbp-<off0>], 4294967295
-    setne r8
-    movzx r8, r8
+    setne rcx
+    movzx rcx, rcx
     cmp.i64 [rbp-<off1>], 4294967295
-    setne r9
-    movzx r9, r9
+    setne rdx
+    movzx rdx, rdx
     cmp.i64 [rbp-<off2>], 1
-    setne rdi
-    movzx rdi, rdi
+    setne rsi
+    movzx rsi, rsi
     cmp.u32 rax, 166105984
     setne rax
     movzx rax, rax
     or <gpr0>, <gpr1>
     or <gpr2>, <gpr3>
-    or <gpr4>, r8
-    or r9, rdi
+    or <gpr4>, rcx
+    or rdx, rsi
     or <gpr0>, <gpr2>
-    or <gpr4>, r9
+    or <gpr4>, rdx
     or <gpr0>, <gpr4>
     or rax, <gpr0>
     ret rax

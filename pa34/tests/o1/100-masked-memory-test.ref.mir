@@ -38,7 +38,7 @@ function @half_test
     epilogues duplicated
 
   block ^entry
-    test.u16 [rdi], 32768
+    test.u8 [rdi+1], 128
     je ^no
 
   block ^yes
@@ -61,7 +61,7 @@ function @signed_promotion
 
   block ^entry
     load.i8 rdi, [rdi]
-    test.i32 rdi, 256
+    test.u16 rdi, 256
     je ^no
 
   block ^yes
@@ -83,8 +83,8 @@ function @before_store
     epilogues duplicated
 
   block ^entry
-    load.i32 r8, [rdi]
-    and r8, 16
+    load.i32 rax, [rdi]
+    and.i32 rax, 16
     store.i32 [rdi], 0
     je ^no
 
@@ -108,7 +108,7 @@ function @volatile_test
 
   block ^entry
     load.u8 rdi, [rdi]
-    test.i32 rdi, 128
+    test.u8 rdi, 128
     je ^no
 
   block ^yes
@@ -147,7 +147,7 @@ function @before_call
 
   block ^entry
     load.i32 rbx, [rdi]
-    and rbx, 16
+    and.i32 rbx, 16
     call @clear [args=(rdi)]
     cmp.i32 rbx, 0
     je ^no
@@ -171,8 +171,7 @@ function @wide_mask
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, [rdi]
-    and r8, 4294967296
+    test.u8 [rdi+4], 1
     je ^no
 
   block ^yes
@@ -195,7 +194,7 @@ function @two_readers
 
   block ^entry
     load.i32 rax, [rdi]
-    test.i32 rax, 16
+    test.u8 rax, 16
     je ^no
 
   block ^yes
@@ -262,10 +261,10 @@ function @main
     or r15, rax
     add.i32 rbx, r12
     add.i32 r13, r14
-    load.i32 r8, [rbp-40]
-    add.i32 r8, [rbp-32]
+    load.i32 rax, [rbp-40]
+    add.i32 rax, [rbp-32]
     add.i32 rbx, r13
-    add.i32 rbx, r8
+    add.i32 rbx, rax
     add.i32 rbx, [rbp-24]
     cmp.i32 rbx, 7
     setne rax

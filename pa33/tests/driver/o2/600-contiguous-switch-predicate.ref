@@ -3463,23 +3463,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_235
 
   block ^for_cond_235:
-    %t546 = phi u32 [^for_end_234: %t504, ^if_end_251: %t582]
-    %t547 = phi u32 [^for_end_234: 0, ^if_end_251: %t583]
-    %t548 = cmp ult u32 %t547, 135
+    %t546 = phi u32 [^for_end_234: 0, ^if_end_251: %t583]
+    %t547 = phi u32 [^for_end_234: %t504, ^if_end_251: %t582]
+    %t548 = cmp ult u32 %t546, 135
     branch %t548, ^for_body_236, ^for_end_252
 
   block ^for_body_236:
-    %t549 = cmp ult u32 %t547, 128
+    %t549 = cmp ult u32 %t546, 128
     branch %t549, ^cond_then_237, ^cond_else_238
 
   block ^cond_then_237:
-    %t550 = convert zext i64 u32 %t547
+    %t550 = convert zext i64 u32 %t546
     %t551 = binary mul i64 %t550, -7046029254386353131
     %t552 = binary and i64 %t551, 65535
     jump ^cond_end_239
 
   block ^cond_else_238:
-    %t553 = binary sub u32 %t547, 128
+    %t553 = binary sub u32 %t546, 128
     %t554 = index i64 [projection=array_element] %t545, %t553
     %t555 = load typed i64 %t554
     jump ^cond_end_239
@@ -3510,7 +3510,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_240
 
   block ^for_end_244:
-    %t566 = binary umod u32 %t547, 4
+    %t566 = binary umod u32 %t546, 4
     %t567 = cmp eq u32 %t566, 0
     branch %t567, ^cond_then_245, ^cond_else_246
 
@@ -3523,7 +3523,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t569, ^cond_end_248, ^cond_else_247
 
   block ^cond_else_247:
-    %t570 = binary umod u32 %t547, 79
+    %t570 = binary umod u32 %t546, 79
     %t571 = copy i32 %t570
     %t572 = binary sub nowrap i32 %t571, 37
     jump ^cond_end_248
@@ -3547,8 +3547,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_end_251:
-    %t582 = binary add u32 %t546, 1
-    %t583 = binary add u32 %t547, 1
+    %t582 = binary add u32 %t547, 1
+    %t583 = binary add u32 %t546, 1
     jump ^for_cond_235
 
   block ^for_end_252:
@@ -3562,23 +3562,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_253
 
   block ^for_cond_253:
-    %t588 = phi u32 [^for_end_252: %t546, ^if_end_269: %t624]
-    %t589 = phi u32 [^for_end_252: 0, ^if_end_269: %t625]
-    %t590 = cmp ult u32 %t589, 137
+    %t588 = phi u32 [^for_end_252: 0, ^if_end_269: %t625]
+    %t589 = phi u32 [^for_end_252: %t547, ^if_end_269: %t624]
+    %t590 = cmp ult u32 %t588, 137
     branch %t590, ^for_body_254, ^for_end_270
 
   block ^for_body_254:
-    %t591 = cmp ult u32 %t589, 128
+    %t591 = cmp ult u32 %t588, 128
     branch %t591, ^cond_then_255, ^cond_else_256
 
   block ^cond_then_255:
-    %t592 = convert zext i64 u32 %t589
+    %t592 = convert zext i64 u32 %t588
     %t593 = binary mul i64 %t592, -7046029254386353131
     %t594 = binary and i64 %t593, 65535
     jump ^cond_end_257
 
   block ^cond_else_256:
-    %t595 = binary sub u32 %t589, 128
+    %t595 = binary sub u32 %t588, 128
     %t596 = index i64 [projection=array_element] %t587, %t595
     %t597 = load typed i64 %t596
     jump ^cond_end_257
@@ -3588,16 +3588,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_258
 
   block ^for_cond_258:
-    %t599 = phi u8 [^cond_end_257: 0, ^lor_end_261: %t606]
-    %t600 = phi u32 [^cond_end_257: 0, ^lor_end_261: %t607]
-    %t601 = cmp ult u32 %t600, 3
+    %t599 = phi u32 [^cond_end_257: 0, ^lor_end_261: %t607]
+    %t600 = phi u8 [^cond_end_257: 0, ^lor_end_261: %t606]
+    %t601 = cmp ult u32 %t599, 3
     branch %t601, ^for_body_259, ^for_end_262
 
   block ^for_body_259:
-    branch %t599, ^lor_end_261, ^lor_rhs_260
+    branch %t600, ^lor_end_261, ^lor_rhs_260
 
   block ^lor_rhs_260:
-    %t602 = index i64 [projection=array_element] %t584, %t600
+    %t602 = index i64 [projection=array_element] %t584, %t599
     %t603 = load typed i64 %t602
     %t604 = cmp eq i64 %t598, %t603
     jump ^lor_end_261
@@ -3605,16 +3605,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_end_261:
     %t605 = phi i64 [^lor_rhs_260: %t604, ^for_body_259: 1]
     %t606 = convert trunc u8 i64 %t605
-    %t607 = binary add u32 %t600, 1
+    %t607 = binary add u32 %t599, 1
     jump ^for_cond_258
 
   block ^for_end_262:
-    %t608 = binary umod u32 %t589, 4
+    %t608 = binary umod u32 %t588, 4
     %t609 = cmp eq u32 %t608, 0
     branch %t609, ^cond_then_263, ^cond_else_264
 
   block ^cond_then_263:
-    %t610 = select i32 %t599, 2147483646, 2147483647
+    %t610 = select i32 %t600, 2147483646, 2147483647
     jump ^cond_end_267
 
   block ^cond_else_264:
@@ -3622,7 +3622,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t611, ^cond_end_266, ^cond_else_265
 
   block ^cond_else_265:
-    %t612 = binary umod u32 %t589, 79
+    %t612 = binary umod u32 %t588, 79
     %t613 = copy i32 %t612
     %t614 = binary sub nowrap i32 %t613, 37
     jump ^cond_end_266
@@ -3633,7 +3633,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_end_267:
     %t616 = phi i32 [^cond_then_263: %t610, ^cond_end_266: %t615]
-    %t617 = convert zext i32 u8 %t599
+    %t617 = convert zext i32 u8 %t600
     %t618 = binary add nowrap i32 %t616, %t617
     %t619 = convert trunc i16 i64 %t598
     %t620 = call i32 @count_2_4(%t619, %t616)
@@ -3646,8 +3646,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_end_269:
-    %t624 = binary add u32 %t588, 1
-    %t625 = binary add u32 %t589, 1
+    %t624 = binary add u32 %t589, 1
+    %t625 = binary add u32 %t588, 1
     jump ^for_cond_253
 
   block ^for_end_270:
@@ -3660,23 +3660,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_271
 
   block ^for_cond_271:
-    %t629 = phi u32 [^for_end_270: %t588, ^if_end_287: %t665]
-    %t630 = phi u32 [^for_end_270: 0, ^if_end_287: %t666]
-    %t631 = cmp ult u32 %t630, 136
+    %t629 = phi u32 [^for_end_270: 0, ^if_end_287: %t666]
+    %t630 = phi u32 [^for_end_270: %t589, ^if_end_287: %t665]
+    %t631 = cmp ult u32 %t629, 136
     branch %t631, ^for_body_272, ^for_end_288
 
   block ^for_body_272:
-    %t632 = cmp ult u32 %t630, 128
+    %t632 = cmp ult u32 %t629, 128
     branch %t632, ^cond_then_273, ^cond_else_274
 
   block ^cond_then_273:
-    %t633 = convert zext i64 u32 %t630
+    %t633 = convert zext i64 u32 %t629
     %t634 = binary mul i64 %t633, -7046029254386353131
     %t635 = binary and i64 %t634, 65535
     jump ^cond_end_275
 
   block ^cond_else_274:
-    %t636 = binary sub u32 %t630, 128
+    %t636 = binary sub u32 %t629, 128
     %t637 = index i64 [projection=array_element] %t419, %t636
     %t638 = load typed i64 %t637
     jump ^cond_end_275
@@ -3707,7 +3707,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_276
 
   block ^for_end_280:
-    %t649 = binary umod u32 %t630, 4
+    %t649 = binary umod u32 %t629, 4
     %t650 = cmp eq u32 %t649, 0
     branch %t650, ^cond_then_281, ^cond_else_282
 
@@ -3720,7 +3720,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t652, ^cond_end_284, ^cond_else_283
 
   block ^cond_else_283:
-    %t653 = binary umod u32 %t630, 79
+    %t653 = binary umod u32 %t629, 79
     %t654 = copy i32 %t653
     %t655 = binary sub nowrap i32 %t654, 37
     jump ^cond_end_284
@@ -3744,8 +3744,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_end_287:
-    %t665 = binary add u32 %t629, 1
-    %t666 = binary add u32 %t630, 1
+    %t665 = binary add u32 %t630, 1
+    %t666 = binary add u32 %t629, 1
     jump ^for_cond_271
 
   block ^for_end_288:
@@ -3758,7 +3758,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_289
 
   block ^for_cond_289:
-    %t670 = phi u32 [^for_end_288: %t629, ^if_end_305: %t706]
+    %t670 = phi u32 [^for_end_288: %t630, ^if_end_305: %t706]
     %t671 = phi u32 [^for_end_288: 0, ^if_end_305: %t707]
     %t672 = cmp ult u32 %t671, 135
     branch %t672, ^for_body_290, ^for_end_306
@@ -5037,23 +5037,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_523
 
   block ^for_cond_523:
-    %t1208 = phi u32 [^for_end_522: %t1167, ^if_end_539: %t1244]
-    %t1209 = phi u32 [^for_end_522: 0, ^if_end_539: %t1245]
-    %t1210 = cmp ult u32 %t1209, 137
+    %t1208 = phi u32 [^for_end_522: 0, ^if_end_539: %t1245]
+    %t1209 = phi u32 [^for_end_522: %t1167, ^if_end_539: %t1244]
+    %t1210 = cmp ult u32 %t1208, 137
     branch %t1210, ^for_body_524, ^for_end_540
 
   block ^for_body_524:
-    %t1211 = cmp ult u32 %t1209, 128
+    %t1211 = cmp ult u32 %t1208, 128
     branch %t1211, ^cond_then_525, ^cond_else_526
 
   block ^cond_then_525:
-    %t1212 = convert zext i64 u32 %t1209
+    %t1212 = convert zext i64 u32 %t1208
     %t1213 = binary mul i64 %t1212, -7046029254386353131
     %t1214 = binary and i64 %t1213, 4294967295
     jump ^cond_end_527
 
   block ^cond_else_526:
-    %t1215 = binary sub u32 %t1209, 128
+    %t1215 = binary sub u32 %t1208, 128
     %t1216 = index i64 [projection=array_element] %t1002, %t1215
     %t1217 = load typed i64 %t1216
     jump ^cond_end_527
@@ -5084,7 +5084,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_528
 
   block ^for_end_532:
-    %t1228 = binary umod u32 %t1209, 4
+    %t1228 = binary umod u32 %t1208, 4
     %t1229 = cmp eq u32 %t1228, 0
     branch %t1229, ^cond_then_533, ^cond_else_534
 
@@ -5097,7 +5097,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1231, ^cond_end_536, ^cond_else_535
 
   block ^cond_else_535:
-    %t1232 = binary umod u32 %t1209, 79
+    %t1232 = binary umod u32 %t1208, 79
     %t1233 = copy i32 %t1232
     %t1234 = binary sub nowrap i32 %t1233, 37
     jump ^cond_end_536
@@ -5121,8 +5121,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_end_539:
-    %t1244 = binary add u32 %t1208, 1
-    %t1245 = binary add u32 %t1209, 1
+    %t1244 = binary add u32 %t1209, 1
+    %t1245 = binary add u32 %t1208, 1
     jump ^for_cond_523
 
   block ^for_end_540:
@@ -5136,22 +5136,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_541
 
   block ^for_cond_541:
-    %t1250 = phi u32 [^for_end_540: %t1208, ^if_end_557: %t1284]
-    %t1251 = phi u32 [^for_end_540: 0, ^if_end_557: %t1285]
-    %t1252 = cmp ult u32 %t1251, 136
+    %t1250 = phi u32 [^for_end_540: 0, ^if_end_557: %t1285]
+    %t1251 = phi u32 [^for_end_540: %t1209, ^if_end_557: %t1284]
+    %t1252 = cmp ult u32 %t1250, 136
     branch %t1252, ^for_body_542, ^for_end_558
 
   block ^for_body_542:
-    %t1253 = cmp ult u32 %t1251, 128
+    %t1253 = cmp ult u32 %t1250, 128
     branch %t1253, ^cond_then_543, ^cond_else_544
 
   block ^cond_then_543:
-    %t1254 = convert zext i64 u32 %t1251
+    %t1254 = convert zext i64 u32 %t1250
     %t1255 = binary mul i64 %t1254, -7046029254386353131
     jump ^cond_end_545
 
   block ^cond_else_544:
-    %t1256 = binary sub u32 %t1251, 128
+    %t1256 = binary sub u32 %t1250, 128
     %t1257 = index i64 [projection=array_element] %t1249, %t1256
     %t1258 = load typed i64 %t1257
     jump ^cond_end_545
@@ -5161,16 +5161,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_546
 
   block ^for_cond_546:
-    %t1260 = phi u8 [^cond_end_545: 0, ^lor_end_549: %t1267]
-    %t1261 = phi u32 [^cond_end_545: 0, ^lor_end_549: %t1268]
-    %t1262 = cmp ult u32 %t1261, 3
+    %t1260 = phi u32 [^cond_end_545: 0, ^lor_end_549: %t1268]
+    %t1261 = phi u8 [^cond_end_545: 0, ^lor_end_549: %t1267]
+    %t1262 = cmp ult u32 %t1260, 3
     branch %t1262, ^for_body_547, ^for_end_550
 
   block ^for_body_547:
-    branch %t1260, ^lor_end_549, ^lor_rhs_548
+    branch %t1261, ^lor_end_549, ^lor_rhs_548
 
   block ^lor_rhs_548:
-    %t1263 = index i64 [projection=array_element] %t1246, %t1261
+    %t1263 = index i64 [projection=array_element] %t1246, %t1260
     %t1264 = load typed i64 %t1263
     %t1265 = cmp eq i64 %t1259, %t1264
     jump ^lor_end_549
@@ -5178,16 +5178,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_end_549:
     %t1266 = phi i64 [^lor_rhs_548: %t1265, ^for_body_547: 1]
     %t1267 = convert trunc u8 i64 %t1266
-    %t1268 = binary add u32 %t1261, 1
+    %t1268 = binary add u32 %t1260, 1
     jump ^for_cond_546
 
   block ^for_end_550:
-    %t1269 = binary umod u32 %t1251, 4
+    %t1269 = binary umod u32 %t1250, 4
     %t1270 = cmp eq u32 %t1269, 0
     branch %t1270, ^cond_then_551, ^cond_else_552
 
   block ^cond_then_551:
-    %t1271 = select i32 %t1260, 2147483646, 2147483647
+    %t1271 = select i32 %t1261, 2147483646, 2147483647
     jump ^cond_end_555
 
   block ^cond_else_552:
@@ -5195,7 +5195,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1272, ^cond_end_554, ^cond_else_553
 
   block ^cond_else_553:
-    %t1273 = binary umod u32 %t1251, 79
+    %t1273 = binary umod u32 %t1250, 79
     %t1274 = copy i32 %t1273
     %t1275 = binary sub nowrap i32 %t1274, 37
     jump ^cond_end_554
@@ -5206,7 +5206,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_end_555:
     %t1277 = phi i32 [^cond_then_551: %t1271, ^cond_end_554: %t1276]
-    %t1278 = convert zext i32 u8 %t1260
+    %t1278 = convert zext i32 u8 %t1261
     %t1279 = binary add nowrap i32 %t1277, %t1278
     %t1280 = call i32 @count_6_0(%t1259, %t1277)
     %t1281 = cmp ne i32 %t1279, %t1280
@@ -5218,8 +5218,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_end_557:
-    %t1284 = binary add u32 %t1250, 1
-    %t1285 = binary add u32 %t1251, 1
+    %t1284 = binary add u32 %t1251, 1
+    %t1285 = binary add u32 %t1250, 1
     jump ^for_cond_541
 
   block ^for_end_558:
@@ -5233,22 +5233,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_559
 
   block ^for_cond_559:
-    %t1290 = phi u32 [^for_end_558: %t1250, ^if_end_575: %t1324]
-    %t1291 = phi u32 [^for_end_558: 0, ^if_end_575: %t1325]
-    %t1292 = cmp ult u32 %t1291, 135
+    %t1290 = phi u32 [^for_end_558: 0, ^if_end_575: %t1325]
+    %t1291 = phi u32 [^for_end_558: %t1251, ^if_end_575: %t1324]
+    %t1292 = cmp ult u32 %t1290, 135
     branch %t1292, ^for_body_560, ^for_end_576
 
   block ^for_body_560:
-    %t1293 = cmp ult u32 %t1291, 128
+    %t1293 = cmp ult u32 %t1290, 128
     branch %t1293, ^cond_then_561, ^cond_else_562
 
   block ^cond_then_561:
-    %t1294 = convert zext i64 u32 %t1291
+    %t1294 = convert zext i64 u32 %t1290
     %t1295 = binary mul i64 %t1294, -7046029254386353131
     jump ^cond_end_563
 
   block ^cond_else_562:
-    %t1296 = binary sub u32 %t1291, 128
+    %t1296 = binary sub u32 %t1290, 128
     %t1297 = index i64 [projection=array_element] %t1289, %t1296
     %t1298 = load typed i64 %t1297
     jump ^cond_end_563
@@ -5279,7 +5279,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_564
 
   block ^for_end_568:
-    %t1309 = binary umod u32 %t1291, 4
+    %t1309 = binary umod u32 %t1290, 4
     %t1310 = cmp eq u32 %t1309, 0
     branch %t1310, ^cond_then_569, ^cond_else_570
 
@@ -5292,7 +5292,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1312, ^cond_end_572, ^cond_else_571
 
   block ^cond_else_571:
-    %t1313 = binary umod u32 %t1291, 79
+    %t1313 = binary umod u32 %t1290, 79
     %t1314 = copy i32 %t1313
     %t1315 = binary sub nowrap i32 %t1314, 37
     jump ^cond_end_572
@@ -5315,8 +5315,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_end_575:
-    %t1324 = binary add u32 %t1290, 1
-    %t1325 = binary add u32 %t1291, 1
+    %t1324 = binary add u32 %t1291, 1
+    %t1325 = binary add u32 %t1290, 1
     jump ^for_cond_559
 
   block ^for_end_576:
@@ -5330,7 +5330,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_577
 
   block ^for_cond_577:
-    %t1330 = phi u32 [^for_end_576: %t1290, ^if_end_593: %t1364]
+    %t1330 = phi u32 [^for_end_576: %t1291, ^if_end_593: %t1364]
     %t1331 = phi u32 [^for_end_576: 0, ^if_end_593: %t1365]
     %t1332 = cmp ult u32 %t1331, 135
     branch %t1332, ^for_body_578, ^for_end_594

@@ -54,18 +54,18 @@ function @pressure
     add r13, r12
     add r14, r13
     add r15, r14
-    mov r8, r15
-    add r8, [rbp-8]
-    mov r9, r8
-    add r9, [rbp-16]
-    mov rdi, r9
-    add rdi, [rbp-24]
-    mov rsi, rdi
+    mov rax, r15
+    add rax, [rbp-8]
+    mov rcx, rax
+    add rcx, [rbp-16]
+    mov rdx, rcx
+    add rdx, [rbp-24]
+    mov rsi, rdx
     add rsi, [rbp-32]
     add rbx, 1
-    store.i64 [rbp-8], r8
-    store.i64 [rbp-16], r9
-    store.i64 [rbp-24], rdi
+    store.i64 [rbp-8], rax
+    store.i64 [rbp-16], rcx
+    store.i64 [rbp-24], rdx
     store.i64 [rbp-32], rsi
     cmp.i64 rbx, [rbp-40]
     jl ^for_body_2

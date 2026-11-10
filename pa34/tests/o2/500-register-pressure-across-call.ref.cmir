@@ -54,18 +54,18 @@ function @pressure
     add <gpr2>, <gpr1>
     add <gpr3>, <gpr2>
     add <gpr4>, <gpr3>
-    mov r8, <gpr4>
-    add r8, [rbp-<off1>]
-    mov r9, r8
-    add r9, [rbp-<off2>]
-    mov rdi, r9
-    add rdi, [rbp-<off3>]
-    mov rsi, rdi
+    mov rax, <gpr4>
+    add rax, [rbp-<off1>]
+    mov rcx, rax
+    add rcx, [rbp-<off2>]
+    mov rdx, rcx
+    add rdx, [rbp-<off3>]
+    mov rsi, rdx
     add rsi, [rbp-<off4>]
     add <gpr0>, 1
-    store.i64 [rbp-<off1>], r8
-    store.i64 [rbp-<off2>], r9
-    store.i64 [rbp-<off3>], rdi
+    store.i64 [rbp-<off1>], rax
+    store.i64 [rbp-<off2>], rcx
+    store.i64 [rbp-<off3>], rdx
     store.i64 [rbp-<off4>], rsi
     cmp.i64 <gpr0>, [rbp-<off0>]
     jl ^for_body_2

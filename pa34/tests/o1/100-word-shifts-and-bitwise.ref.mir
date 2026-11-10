@@ -193,23 +193,23 @@ function @main
     setne r15
     movzx r15, r15
     cmp.i64 [rbp-8], 4294967295
-    setne r8
-    movzx r8, r8
+    setne rcx
+    movzx rcx, rcx
     cmp.i64 [rbp-16], 4294967295
-    setne r9
-    movzx r9, r9
+    setne rdx
+    movzx rdx, rdx
     cmp.i64 [rbp-24], 1
-    setne rdi
-    movzx rdi, rdi
+    setne rsi
+    movzx rsi, rsi
     cmp.u32 rax, 166105984
     setne rax
     movzx rax, rax
     or rbx, r12
     or r13, r14
-    or r15, r8
-    or r9, rdi
+    or r15, rcx
+    or rdx, rsi
     or rbx, r13
-    or r15, r9
+    or r15, rdx
     or rbx, r15
     or rax, rbx
     ret rax

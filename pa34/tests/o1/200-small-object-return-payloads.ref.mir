@@ -17,9 +17,8 @@ function @byte_return
     slot $result -> [rbp-8] : obj<1x1>
 
   block ^entry
-    load.u8 rdi, [rdi]
-    mov rax, rdi
-    ret
+    load.u8 rax, [rdi]
+    ret rax
 
 function @half_return
   abi
@@ -33,9 +32,8 @@ function @half_return
     slot $result -> [rbp-8] : obj<2x2>
 
   block ^entry
-    load.u16 rdi, [rdi]
-    mov rax, rdi
-    ret
+    load.u16 rax, [rdi]
+    ret rax
 
 function @tail_return
   abi

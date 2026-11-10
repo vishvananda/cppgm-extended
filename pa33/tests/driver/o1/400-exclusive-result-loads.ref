@@ -1,12 +1,8 @@
 function @unpack(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %input : ptr [pass=by_address, object_bytes=8]) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
-    store typed i64 0, %ret
     %t1 = index i8 [projection=field] %ret, 8
-    store typed i64 0, %t1
     %t2 = index i8 [projection=field] %ret, 16
-    store typed i64 0, %t2
     %t3 = index i8 [projection=field] %ret, 24
-    store typed i64 0, %t3
     %t4 = load typed i64 %input
     %t5 = binary and i64 %t4, 1
     store typed i64 %t5, %ret

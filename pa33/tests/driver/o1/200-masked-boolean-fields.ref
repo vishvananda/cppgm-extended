@@ -49,23 +49,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t1 = phi u32 [^entry: 0, ^if_else_11: %t42]
+    %t1 = phi u32 [^entry: 0, ^if_else_11: %t41]
     %t2 = cmp ne u32 %t1, 1024
     branch %t2, ^for_body_2, ^for_end_12
 
   block ^for_body_2:
     %t3 = addr $value
     %t4 = binary and u32 %t1, 1
-    store u32 %t4, %t3
     %t5 = binary ushr u32 %t1, 1
     %t6 = binary and u32 %t5, 7
     %t7 = binary shl u32 %t6, 1
     %t8 = binary or u32 %t4, %t7
-    store u32 %t8, %t3
     %t9 = binary and u32 %t1, 134217727
     %t10 = binary shl u32 %t9, 4
     %t11 = binary or u32 %t8, %t10
-    store u32 %t11, %t3
     %t12 = binary ushr u32 %t1, 2
     %t13 = binary and u32 %t12, 1
     %t14 = binary shl u32 %t13, 31
@@ -82,51 +79,50 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_3:
     %t21 = call u8 @low_bit(%t3)
-    %t22 = load u8 $copied
-    %t23 = cmp ne u8 %t21, %t22
-    branch %t23, ^if_then_4, ^if_end_5
+    %t22 = cmp ne u8 %t17, %t21
+    branch %t22, ^if_then_4, ^if_end_5
 
   block ^if_then_4:
     return i32 1
 
   block ^if_end_5:
-    %t24 = call u8 @high_bit(%t3)
-    %t25 = binary and u32 %t1, 4
-    %t26 = cmp ne u32 %t25, 0
-    %t27 = convert zext i32 u8 %t24
-    %t28 = convert trunc i32 i64 %t26
-    %t29 = cmp ne i32 %t27, %t28
-    branch %t29, ^if_then_6, ^if_else_7
+    %t23 = call u8 @high_bit(%t3)
+    %t24 = binary and u32 %t1, 4
+    %t25 = cmp ne u32 %t24, 0
+    %t26 = convert zext i32 u8 %t23
+    %t27 = convert trunc i32 i64 %t25
+    %t28 = cmp ne i32 %t26, %t27
+    branch %t28, ^if_then_6, ^if_else_7
 
   block ^if_then_6:
     return i32 2
 
   block ^if_else_7:
-    %t30 = call u8 @wider_field(%t3)
-    %t31 = binary and u32 %t1, 14
-    %t32 = cmp ne u32 %t31, 0
-    %t33 = convert zext i32 u8 %t30
-    %t34 = convert trunc i32 i64 %t32
-    %t35 = cmp ne i32 %t33, %t34
-    branch %t35, ^if_then_8, ^if_end_9
+    %t29 = call u8 @wider_field(%t3)
+    %t30 = binary and u32 %t1, 14
+    %t31 = cmp ne u32 %t30, 0
+    %t32 = convert zext i32 u8 %t29
+    %t33 = convert trunc i32 i64 %t31
+    %t34 = cmp ne i32 %t32, %t33
+    branch %t34, ^if_then_8, ^if_end_9
 
   block ^if_then_8:
     return i32 3
 
   block ^if_end_9:
-    %t36 = call u8 @raw_xor(%t1)
-    %t37 = binary xor u32 %t1, 1
-    %t38 = cmp ne u32 %t37, 0
-    %t39 = convert zext i32 u8 %t36
-    %t40 = convert trunc i32 i64 %t38
-    %t41 = cmp ne i32 %t39, %t40
-    branch %t41, ^if_then_10, ^if_else_11
+    %t35 = call u8 @raw_xor(%t1)
+    %t36 = binary xor u32 %t1, 1
+    %t37 = cmp ne u32 %t36, 0
+    %t38 = convert zext i32 u8 %t35
+    %t39 = convert trunc i32 i64 %t37
+    %t40 = cmp ne i32 %t38, %t39
+    branch %t40, ^if_then_10, ^if_else_11
 
   block ^if_then_10:
     return i32 4
 
   block ^if_else_11:
-    %t42 = binary add u32 %t1, 1
+    %t41 = binary add u32 %t1, 1
     jump ^for_cond_1
 
   block ^for_end_12:

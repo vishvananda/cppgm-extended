@@ -18,59 +18,58 @@ function @probe
     epilogues duplicated
 
   block ^entry
-    mov rcx, rsi
-    mov rsi, rdi
-    mov rax, rdx
-    mov r8, 0
-    mov rdi, 1
-    mov rdx, 0
-    load.ptr r9, [rsi+r8*8]
-    cmp.ptr r9, -1
+    mov r8, rsi
+    mov r9, rdx
+    mov rax, 0
+    mov rdx, 1
+    mov rsi, 0
+    load.ptr rcx, [rdi+rax*8]
+    cmp.ptr rcx, -1
     jne ^occupied
     jmp ^found
 
   block ^end
-    ret rdx
+    ret rsi
 
   block ^loop
-    load.ptr r9, [rsi+r8*8]
-    cmp.ptr r9, -1
+    load.ptr rcx, [rdi+rax*8]
+    cmp.ptr rcx, -1
     jne ^occupied
 
   block ^empty_bucket
-    cmp.ptr rdx, 0
+    cmp.ptr rsi, 0
     je ^found
 
   block ^old_tomb
-    ret rdx
+    ret rsi
 
   block ^found
-    lea rax, [rsi+r8*8]
+    lea rax, [rdi+rax*8]
     ret rax
 
   block ^step
-    lea.i32 r9, [rdi+<off0>]
-    add.u32 r8, rdi
-    and.u32 r8, rax
-    mov rdi, r9
-    load.ptr r9, [rsi+r8*8]
-    cmp.ptr r9, -1
+    lea.i32 rcx, [rdx+<off0>]
+    add.u32 rax, rdx
+    and.u32 rax, r9
+    mov rdx, rcx
+    load.ptr rcx, [rdi+rax*8]
+    cmp.ptr rcx, -1
     je ^empty_bucket
 
   block ^occupied
-    cmp.ptr r9, rcx
+    cmp.ptr rcx, r8
     je ^found
 
   block ^check_tomb
-    cmp.ptr r9, -2
+    cmp.ptr rcx, -2
     jne ^step
 
   block ^check_null
-    cmp.ptr rdx, 0
+    cmp.ptr rsi, 0
     jne ^step
 
   block ^remember
-    lea rdx, [rsi+r8*8]
+    lea rsi, [rdi+rax*8]
     jmp ^step
 
 function @main

@@ -20,9 +20,9 @@ function @effect
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, @calls
-    add r8, 3
-    store.i64 @calls, r8
+    load.i64 rax, @calls
+    add rax, 3
+    store.i64 @calls, rax
     mov rax, rdi
     xor rax, 90
     ret rax
@@ -38,9 +38,9 @@ function @other
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, @calls
-    add r8, 5
-    store.i64 @calls, r8
+    load.i64 rax, @calls
+    add rax, 5
+    store.i64 @calls, rax
     mov rax, rdi
     xor rax, 91
     ret rax
@@ -163,63 +163,64 @@ function @main
     mov rax, <gpr2>
     sub rax, rdx
     mov <gpr4>, rax
-    mov r8, <gpr2>
-    and r8, 63
-    lea <gpr5>, [r8+<off0>]
+    mov rax, <gpr2>
+    and rax, 63
+    lea <gpr5>, [rax+<off0>]
     mov rdi, <gpr4>
     mov rsi, <gpr0>
     mov rdx, <gpr5>
     call @worker [args=(rdx,rsi,rdi)]
-    mov r8, rax
+    mov rcx, rax
     cmp.i64 <gpr4>, 6
-    sete r9
+    sete rsi
     cmp.i64 <gpr4>, 8
     sete rdi
-    test.u8 r9, r9
+    test.u8 rsi, rsi
     mov <gpr6>, 91
-    mov rsi, 90
-    cmovne rsi, <gpr6>
-    xor rsi, <gpr0>
-    xor rsi, 33
-    imul rsi, 17
-    add rsi, 11
-    shr rsi, 3
-    xor rsi, <gpr0>
-    mov rax, rsi
+    mov rax, 90
+    cmovne rax, <gpr6>
+    xor rax, <gpr0>
+    xor rax, 33
+    imul rax, 17
+    add rax, 11
+    shr rax, 3
+    mov r8, rax
+    xor r8, <gpr0>
+    mov rax, r8
     mov rdx, 0
     div <gpr5>
-    mov rcx, rax
-    mov rax, rsi
+    mov r9, rax
+    mov rax, r8
     cqo
     idiv <gpr5>
     cmp.i64 <gpr4>, 7
-    cmove rcx, rax
-    imul rcx, 13
-    add rcx, 29
-    xor rcx, 77
-    shl rcx, 5
-    or rcx, 7
-    add rcx, <gpr0>
-    xor rcx, 255
+    cmove r9, rax
+    imul r9, 13
+    add r9, 29
+    xor r9, 77
+    shl r9, 5
+    or r9, 7
+    add r9, <gpr0>
+    xor r9, 255
     test.u8 rdi, rdi
     mov <gpr6>, 999
-    cmovne rcx, <gpr6>
-    test.u8 r9, r9
-    mov <gpr6>, 5
-    mov r9, 3
     cmovne r9, <gpr6>
+    test.u8 rsi, rsi
+    mov <gpr6>, 5
+    mov rax, 3
+    cmovne rax, <gpr6>
     test.u8 rdi, rdi
     mov <gpr6>, 0
-    cmovne r9, <gpr6>
-    add <gpr3>, r9
-    load.i64 r9, @calls
-    cmp.i64 r8, rcx
-    setne r8
-    movzx r8, r8
-    cmp.i64 r9, <gpr3>
-    setne r9
-    movzx r9, r9
-    or r8, r9
+    cmovne rax, <gpr6>
+    add <gpr3>, rax
+    load.i64 rax, @calls
+    cmp.i64 rcx, r9
+    setne rcx
+    movzx rcx, rcx
+    cmp.i64 rax, <gpr3>
+    setne rax
+    movzx rax, rax
+    or rcx, rax
     jne ^fail
 
   block ^next
