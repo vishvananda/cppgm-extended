@@ -7,7 +7,9 @@ investigation started. Most of the largest gaps are failures to optimize legal
 LowIR forms, rather than missing source-language features or x86 instructions.
 There is also a measurable native division-selection opportunity.
 
-The compiler source is unchanged. The input transformations in this directory
+This document records the initial analysis with unchanged compiler source.
+The subsequent production fixes and their qualification are documented in
+[FIXES.md](FIXES.md). The input transformations in this directory
 are diagnostic counterfactuals, not proposed production passes. They localize
 the missed general transformations; their function-name restrictions select
 profiled experiments and must not become optimizer rules.
