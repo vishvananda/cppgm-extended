@@ -1583,14 +1583,16 @@ bool Simplifier::convert_identity(Instruction& inst, Value& out)
 		return true;
 	}
 	// An extension of a truncation that kept every bit the value can have.
+	// Sign extension also requires its sign bit clear, including i1's only bit.
 	if (op == ConvertOp::SExt || op == ConvertOp::ZExt)
 	{
 		const Instruction* cut = producer(inst.ops[0]);
 		const Type from = convert_source_type(inst);
+		const unsigned kept_bits = lowir::integer_bits(from.kind()) - (op == ConvertOp::SExt ? 1u : 0u);
 		if (cut != nullptr && cut->op == Opcode::Convert && static_cast<ConvertOp>(cut->sub) == ConvertOp::Trunc &&
 			inst.type.is_integer() && inst.type.kind() != TypeKind::I128 && from.is_integer() &&
 			cut->ops[0].is(ValueKind::Temp) && body_.temps[cut->ops[0].index].type == inst.type &&
-			(possible_bits(cut->ops[0], inst.type) >> (8 * storage_bytes(from) - 1)) == 0)
+			(kept_bits >= 64 || (possible_bits(cut->ops[0], inst.type) >> kept_bits) == 0))
 		{
 			out = cut->ops[0];
 			return true;

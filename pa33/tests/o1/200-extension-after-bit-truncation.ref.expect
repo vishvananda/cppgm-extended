@@ -1,0 +1,9 @@
+# explicit-outcomes
+
+# Behavioral execution checks the signed bit and discarded high bits.
+# Keep room for equivalent arithmetic or conversion sequences.
+instructions <= 6 in @sign_truth
+instructions <= 6 in @zero_bit
+instructions <= 4 in @zero_truth
+instructions <= 4 in @zero_byte
+instructions <= 6 in @sign_byte
