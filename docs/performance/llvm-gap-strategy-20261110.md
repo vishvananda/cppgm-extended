@@ -160,6 +160,87 @@ On store_motion, the complete LLVM's count panel reports blocked store
 forwarding down 7.65%, mispredictions down 4.49% and fetch stalls down 2.66%
 against the previous build. All outputs match; cycle outliers remain recorded.
 
+## Structural probes and casting-fact review
+
+The completed aggregate boundary prototype does not improve the full workload.
+Five symmetric three-way blocks compare native, the accepted 8f76ebb0d compiler
+and the prototype concurrently. Every two-side subsequence is ABBA. All 325
+objects and the executable match in all 32 observations, including native A/A.
+The accepted compiler measures 1.1331 times native elapsed; the prototype
+measures 1.1378. Prototype/accepted elapsed is 1.0042 (95% interval
+0.9978-1.0106); cycles are 1.0072 (1.0009-1.0134). Although blocked store
+forwarding falls about 15%, executed code remains essentially unchanged and
+code-cache misses rise. The prototype stays private. Its compile-instruction
+cost of about 1.2-1.4% at O1-O3 has not purchased a demonstrated runtime gain.
+
+One earlier number_literal ledger used a partial relink as its baseline.
+That overstated the aggregate and inlining probes' benefits. The authoritative
+full accepted baseline is `gap-step0-full-baseline-ledger-number-r2`; retain
+the older raw observations but do not use their comparisons. Corrected
+four-input aggregate results are in
+`gap-A-boundary-materialize-four-panel-summary-r3.json`, and corrected inliner
+oracle results are in `gap-C-oracle-ledger-summary-r4.json`. Neither oracle
+policy is a bound on a complete replacement inliner.
+
+Compact scalar frame homes and promotion of selected frame values into unused
+callee-saved registers also remain private. Their output comparisons pass,
+but neither moves executed footprint usefully; the latter increases executed
+instructions and code-cache misses. Static access counts do not establish
+that paying a save/restore cost benefits the executed path.
+
+The casting review confirms that the earlier pointer-copy, non-null and
+alignment-return fixes are present. It also demonstrates a remaining fact
+consumption gap at both O1 and O3: after `(x & 7) == 0` succeeds, clearing those
+bits again still emits an instruction. Separate successful tests of disjoint
+zero bits do not simplify a later test of their combined mask. These are
+optimization gaps, not observed incorrect C++ results. The LowIR contains
+the necessary tests. Value simplification retains equality and nonzero facts
+but does not project masked comparisons back into operand bit facts.
+Jump threading has additional bounded range proofs at O2+, so this is not a
+claim that the compiler has no range analysis.
+
+A private dominator-scoped bit-fact prototype removes the redundant masks.
+It tracks SSA values, restores facts when leaving a dominance region, and
+does not attach facts to mutable memory. Twenty-two control functions over
+65,536 inputs agree between GCC, Clang, the accepted compiler and the prototype
+at all four levels. The 35-provider LLVM relink produces all 325 objects and
+the executable identically to native. Frozen compile instructions rise 0.231%
+at O1, 0.219% at O2 and 0.219% at O3; O0 and RSS are unchanged within repeat
+variation. The first deterministic number_literal screen is nevertheless
+too small to justify qualification:
+
+| Metric | Prototype / accepted |
+| --- | ---: |
+| Executed distinct code bytes | 1.000104 |
+| Instructions | 0.999783 |
+| Bytes per executed instruction | 1.000081 |
+| Conditional branches | 0.999806 |
+| Calls | 1.000928 |
+| Modelled L2 code misses | 1.003733 |
+
+Adding consumption of known-one bits produces identical objects in all 35
+providers. These probes remain outside the compiler branch. No full LLVM
+build or elapsed gain is claimed for them.
+
+Source-line attribution needs two controls. Adding debug information preserves
+all executable sections in each of the 35 rebuilt objects. Native's linked
+code is identical too; cppgm's linked layout changes, so its debug image uses
+a fresh profile. Ambiguous overlapping line ranges are excluded, with unique
+address mappings checked against llvm-addr2line. Coverage is only about
+43% of native and 47% of cppgm executed instructions. Moreover, the two
+compilers assign inlined instructions to different source locations. Header
+totals therefore locate candidates; their differences are not removable work.
+
+Matching function counts provide useful counterexamples to that inference:
+`castFromDeclContext` executes nine instructions per call versus native's ten;
+`getNumParams` executes almost exactly the same instructions per call but is
+called more often. Some other apparent function excesses are work native
+outlines into a callee. Rank actual conditional jump instructions, excluding
+Callgrind's branch counts for REP iterations, then include the related callees
+before attributing a cost to a missing fact or selecting another fix. The
+next provider slice must also cover the newly identified high-cost routines
+outside the original 35 files.
+
 ## Evidence
 
 All raw records are under `/mnt/vizier/cppgm-llvm-evidence`:
@@ -183,3 +264,11 @@ All raw records are under `/mnt/vizier/cppgm-llvm-evidence`:
 - `gap-step0-baseline-audit-r2-validation-status.json`: architecture, file and placement checks.
 - `logs/gap-step0-baseline-main-r3-harness.log`: complete final harness pass.
 - `gap-step0-baseline-native-five-pairs-r1/`: all 22 raw observations and intervals.
+- `gap-A-boundary-materialize-full-threeway-r3/`: full aggregate prototype comparison.
+- `gap-step0-full-baseline-ledger-number-r2/`: corrected full baseline ledger.
+- `gap-source-line-attribution-r3/`: source-line localization with ambiguity exclusions.
+- `gap-casting-facts-r1/`: reductions, corrected bit-fact screen and function mechanism rankings.
+- `gap-D-mask-facts-controls-r2/`: 22-function independent compiler matrix.
+- `gap-D-mask-facts-full-output-r2/`: complete output comparison after the private relink.
+- `gap-D-mask-facts-four-level-frozen-r2/`: compile-cost measurements.
+- `gap-D-mask-facts-hw-panel-r2/`: all hardware observations and retained outlier flags.
