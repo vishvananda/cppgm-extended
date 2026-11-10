@@ -2,8 +2,7 @@ global @result : i32 [storage=readonly, binding=internal, object=_ZL6result] = 7
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = load typed i32 @result
-    %t2 = cmp ne i32 %t1, 7
-    %t3 = convert trunc i32 i64 %t2
-    return i32 %t3
+    %t1 = cmp ne i32 7, 7
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
 }

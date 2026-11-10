@@ -1,0 +1,11 @@
+# Whole register returns and untouched parameter copies use their final homes.
+none(copy_bytes) in @direct_pair
+none(copy_bytes) in @param_first
+stack_size <= 16 in @direct_pair
+stack_size <= 16 in @param_first
+# Partial objects, intervening calls and observable earlier accesses stay safe.
+has(copy_bytes) in @small_guard
+has(copy_bytes) in @delayed_pair
+has(copy_bytes) in @param_touched
+has(copy_bytes) in @param_escaped
+count(copy_bytes) == 2 in @param_twice

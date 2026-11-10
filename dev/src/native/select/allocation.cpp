@@ -607,11 +607,11 @@ void FunctionSelector::layout_slots()
 		for (const lowir::DebugLocal& local : program_.debug->functions[out_->symbol].locals)
 			if (local.slot < slot_state_.size() && slot_state_[local.slot] == SS_NORMAL)
 				out_->debug_slots.push_back(DebugSlot{ local.slot, slot_offset_[local.slot] });
-	// O1+: an object parameter whose one reader copies it whole into a slot
+	// An object parameter whose one reader copies it whole into a slot
 	// in the entry block (no predecessor), before anything else there
 	// touches the slot, keeps its home in the slot: the copy vanishes
 	// (emit_bulk).
-	if (level_ < 1 || blocks_.empty() || preds_first_[1] != preds_first_[0])
+	if (blocks_.empty() || preds_first_[1] != preds_first_[0])
 		return;
 	for (uint32_t p = 0; p < body.parameter_count; ++p)
 	{

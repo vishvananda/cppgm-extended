@@ -5,6 +5,5 @@ function @classify(%mode : ptr [pass=by_address, object_bytes=1]) -> i32 [bindin
   block ^entry:
     store typed ptr %mode, $mode
     store typed i32 42, $value
-    %t1 = load typed i32 $value
-    return i32 %t1
+    return i32 42
 }

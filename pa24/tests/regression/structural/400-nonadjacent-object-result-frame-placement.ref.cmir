@@ -36,13 +36,11 @@ function @forward_pair
     frame_pointer keep
     epilogues shared
     slot $result -> [rbp-<off0>] : obj<16x8>
-    temp %value -> [rbp-<off2>] : obj<16x8>
 
   block ^entry
     call @make_pair [args=()]
-    store.i64 [rbp-<off2>], rax
-    store.i64 [rbp-<off3>], rdx
-    copy_bytes 16x8, [rbp-<off0>], [rbp-<off2>]
+    store.i64 [rbp-<off0>], rax
+    store.i64 [rbp-<off1>], rdx
     load.i64 rax, [rbp-<off0>]
     load.i64 rdx, [rbp-<off1>]
     ret
@@ -55,13 +53,11 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    temp %value -> [rbp-<off0>] : obj<16x8>
 
   block ^entry
     call @forward_pair [args=()]
-    store.i64 [rbp-<off0>], rax
-    store.i64 [rbp-<off1>], rdx
-    copy_bytes 16x8, @result, [rbp-<off0>]
+    store.i64 @result, rax
+    store.i64 @result+8, rdx
     load.i64 r8, @result
     load.i64 r9, @result+8
     cmp.i64 r8, 17

@@ -1,0 +1,168 @@
+global @constants__width : i32 [storage=readonly, binding=internal, object=_ZN9constantsL5widthE] = 8
+global @constants__never : u8 [storage=readonly, binding=internal, object=_ZN9constantsL5neverE] = 0
+global @constants__always : u8 [storage=readonly, binding=internal, object=_ZN9constantsL6alwaysE] = 1
+global @touches : i32 [binding=strong] = zero
+global @mutable_value : i32 [binding=strong] = 3
+global @reference_value : ptr [binding=strong] = addr @mutable_value
+global @volatile_value : i32 [binding=internal, object=_ZL14volatile_value] = 19
+
+function @touch(%p : ptr) -> void [binding=strong, object=_Z5touchPi] {
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %p, $p
+    %t1 = load typed i32 @touches
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @touches
+    %t3 = load typed ptr $p
+    %t4 = load typed i32 %t3
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, %t3
+    return void
+}
+function @constant_read() -> i32 [binding=strong, object=_Z13constant_readv] {
+  block ^entry:
+    return i32 8
+}
+function @false_choice(%x : i32) -> i32 [binding=strong, object=_Z12false_choicei] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    jump ^if_else_2
+
+  block ^if_then_1:
+    %t1 = addr $x
+    call void @touch(%t1)
+    jump ^if_end_3
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t2 = load typed i32 $x
+    return i32 %t2
+}
+function @true_choice(%x : i32) -> i32 [binding=strong, object=_Z11true_choicei] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    jump ^if_then_1
+
+  block ^if_then_1:
+    %t1 = addr $x
+    call void @touch(%t1)
+    jump ^if_end_3
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t2 = load typed i32 $x
+    return i32 %t2
+}
+function @volatile_control() -> i32 [binding=strong, object=_Z16volatile_controlv] {
+  block ^entry:
+    %t1 = load volatile i32 @volatile_value
+    return i32 %t1
+}
+function @reference_control() -> i32 [binding=strong, object=_Z17reference_controlv] {
+  block ^entry:
+    store typed i32 11, @mutable_value
+    %t1 = load typed ptr @reference_value
+    %t2 = load typed i32 %t1
+    return i32 %t2
+}
+function @address_control() -> ptr [binding=strong, object=_Z15address_controlv] {
+  block ^entry:
+    %t1 = addr @constants__width
+    return ptr %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @constant_read()
+    %t2 = cmp ne i32 %t1, 8
+    branch %t2, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t3 = call i32 @false_choice(10)
+    %t4 = cmp ne i32 %t3, 10
+    branch %t4, ^if_then_4, ^lor_rhs_6
+
+  block ^lor_rhs_6:
+    %t5 = load typed i32 @touches
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    return i32 2
+
+  block ^if_else_5:
+    jump ^if_end_7
+
+  block ^if_end_7:
+    %t7 = call i32 @true_choice(10)
+    %t8 = cmp ne i32 %t7, 11
+    branch %t8, ^if_then_8, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t9 = load typed i32 @touches
+    %t10 = cmp ne i32 %t9, 1
+    branch %t10, ^if_then_8, ^if_else_9
+
+  block ^if_then_8:
+    return i32 3
+
+  block ^if_else_9:
+    jump ^if_end_11
+
+  block ^if_end_11:
+    %t11 = call i32 @volatile_control()
+    %t12 = cmp ne i32 %t11, 19
+    branch %t12, ^if_then_12, ^if_else_13
+
+  block ^if_then_12:
+    return i32 4
+
+  block ^if_else_13:
+    jump ^if_end_14
+
+  block ^if_end_14:
+    %t13 = call i32 @reference_control()
+    %t14 = cmp ne i32 %t13, 11
+    branch %t14, ^if_then_15, ^if_else_16
+
+  block ^if_then_15:
+    return i32 5
+
+  block ^if_else_16:
+    jump ^if_end_17
+
+  block ^if_end_17:
+    %t15 = call ptr @address_control()
+    %t16 = load typed i32 %t15
+    %t17 = cmp ne i32 %t16, 8
+    branch %t17, ^if_then_18, ^lor_rhs_20
+
+  block ^lor_rhs_20:
+    %t18 = call ptr @address_control()
+    %t19 = addr @constants__width
+    %t20 = cmp ne ptr %t18, %t19
+    branch %t20, ^if_then_18, ^if_else_19
+
+  block ^if_then_18:
+    return i32 6
+
+  block ^if_else_19:
+    jump ^if_end_21
+
+  block ^if_end_21:
+    return i32 0
+}

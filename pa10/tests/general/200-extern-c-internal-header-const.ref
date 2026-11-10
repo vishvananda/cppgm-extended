@@ -2,8 +2,7 @@ global @n__value : u32 [storage=readonly, linkage=c, binding=internal] = 12
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = load typed u32 @n__value
-    %t2 = cmp ne u32 %t1, 12
-    %t3 = convert trunc i32 i64 %t2
-    return i32 %t3
+    %t1 = cmp ne u32 12, 12
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
 }

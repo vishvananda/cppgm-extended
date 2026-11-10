@@ -65,6 +65,12 @@ bool FunctionLowering::literal_truth(const syntax::Expr& expr, bool& value) cons
 			e->facts->entity != nullptr && e->facts->entity->kind == sema::EntityKind::Variable
 		? static_cast<const sema::VariableEntity*>(e->facts->entity)
 		: nullptr;
+	if (named != nullptr && !named->member && !named->type->is_reference() &&
+		named->constant == sema::ConstantState::Value && (e->facts->type->cv & sema::kVolatile) == 0)
+	{
+		value = named->value.bits != 0;
+		return true;
+	}
 	if (named != nullptr && named->is_constexpr && !named->type->is_reference() &&
 		(e->facts->type->cv & sema::kVolatile) == 0)
 	{

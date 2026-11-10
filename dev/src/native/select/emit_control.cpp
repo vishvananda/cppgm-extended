@@ -922,7 +922,7 @@ void FunctionSelector::emit_switch(const Instruction& inst)
 		return;
 	}
 	Operand s = rm_operand(sel, type, kSelectScratch);
-	if (level_ >= 1 && emit_clustered_switch(inst, s, kind, fallback))
+	if (emit_clustered_switch(inst, s, kind, fallback))
 		return;
 	if (s.kind != OperandKind::Reg)
 	{
@@ -1027,7 +1027,8 @@ bool signed_kind(TypeKind kind)
 
 } // namespace
 
-// O1+: a switch as tests of its runs of consecutive values per target
+// Dense switches use bounded jump tables at every level. O1+ also tests
+// runs of consecutive values per target
 // (one compare for a single value or a run reaching the type's bound, a
 // subtract and an unsigned compare otherwise), the densest window of at
 // least three runs within 64 values for at most five targets last as a
@@ -1037,6 +1038,9 @@ bool signed_kind(TypeKind kind)
 bool FunctionSelector::emit_clustered_switch(
 	const Instruction& inst, const Operand& input, TypeKind kind, uint32_t fallback)
 {
+	// Small baseline switches need no case collection or sorting.
+	if (level_ < 1 && inst.extra_count < 2 * (kBitTestTargets + 1))
+		return false;
 	const lowir::FunctionBody& body = *body_;
 	Operand selector = input;
 	auto canonicalize = [&](bool word) {
@@ -1093,7 +1097,7 @@ bool FunctionSelector::emit_clustered_switch(
 			clusters.back().hi = c.first;
 		else
 			clusters.push_back(CaseCluster{ c.first, c.first, c.second });
-		if (std::find(targets.begin(), targets.end(), c.second) == targets.end())
+		if (targets.size() <= kBitTestTargets && std::find(targets.begin(), targets.end(), c.second) == targets.end())
 			targets.push_back(c.second);
 	}
 	// A dense switch of more targets: a bounds check and a jump through a
@@ -1134,6 +1138,8 @@ bool FunctionSelector::emit_clustered_switch(
 		++stats_.jump_tables;
 		return true;
 	}
+	if (level_ < 1)
+		return false;
 	// Validate before pricing windows; unsupported constants use the
 	// caller's general comparisons without any speculative emission.
 	bool prefix = clusters.front().lo == 0;

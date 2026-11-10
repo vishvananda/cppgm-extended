@@ -1,0 +1,1016 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @signed
+  abi
+    param %which -> rdi : i32
+    param %keep -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov <gpr0>, rdi
+    sub <gpr0>, -4
+    cmp.i64 <gpr0>, 11
+    ja ^fallback
+    jump_table <gpr0>, [^c0, ^c1, ^c2, ^c3, ^c4, ^c5, ^c6, ^c7, ^c8, ^c9, ^c10, ^c11]
+
+  block ^c0
+    add rsi, 7
+    ret rsi
+
+  block ^c1
+    add rsi, 20
+    ret rsi
+
+  block ^c2
+    add rsi, 33
+    ret rsi
+
+  block ^c3
+    add rsi, 46
+    ret rsi
+
+  block ^c4
+    add rsi, 59
+    ret rsi
+
+  block ^c5
+    add rsi, 72
+    ret rsi
+
+  block ^c6
+    add rsi, 85
+    ret rsi
+
+  block ^c7
+    add rsi, 98
+    ret rsi
+
+  block ^c8
+    add rsi, 111
+    ret rsi
+
+  block ^c9
+    add rsi, 124
+    ret rsi
+
+  block ^c10
+    add rsi, 137
+    ret rsi
+
+  block ^c11
+    add rsi, 150
+    ret rsi
+
+  block ^fallback
+    mov rax, -999
+    ret rax
+
+function @unsigned
+  abi
+    param %which -> rdi : u32
+    param %keep -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov <gpr0>, rdi
+    sub <gpr0>, 2147483644
+    cmp.i64 <gpr0>, 11
+    ja ^fallback
+    jump_table <gpr0>, [^c0, ^c1, ^c2, ^c3, ^c4, ^c5, ^c6, ^c7, ^c8, ^c9, ^c10, ^c11]
+
+  block ^c0
+    add rsi, 7
+    ret rsi
+
+  block ^c1
+    add rsi, 20
+    ret rsi
+
+  block ^c2
+    add rsi, 33
+    ret rsi
+
+  block ^c3
+    add rsi, 46
+    ret rsi
+
+  block ^c4
+    add rsi, 59
+    ret rsi
+
+  block ^c5
+    add rsi, 72
+    ret rsi
+
+  block ^c6
+    add rsi, 85
+    ret rsi
+
+  block ^c7
+    add rsi, 98
+    ret rsi
+
+  block ^c8
+    add rsi, 111
+    ret rsi
+
+  block ^c9
+    add rsi, 124
+    ret rsi
+
+  block ^c10
+    add rsi, 137
+    ret rsi
+
+  block ^c11
+    add rsi, 150
+    ret rsi
+
+  block ^fallback
+    mov rax, -999
+    ret rax
+
+function @holes
+  abi
+    param %which -> rdi : i64
+    param %keep -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov <gpr0>, rdi
+    cmp.i64 <gpr0>, 14
+    ja ^fallback
+    jump_table <gpr0>, [^c0, ^fallback, ^c1, ^fallback, ^c2, ^fallback, ^c3, ^fallback, ^c4, ^fallback, ^c5, ^fallback, ^c6, ^fallback, ^c7]
+
+  block ^c0
+    add rsi, 7
+    ret rsi
+
+  block ^c1
+    add rsi, 20
+    ret rsi
+
+  block ^c2
+    add rsi, 33
+    ret rsi
+
+  block ^c3
+    add rsi, 46
+    ret rsi
+
+  block ^c4
+    add rsi, 59
+    ret rsi
+
+  block ^c5
+    add rsi, 72
+    ret rsi
+
+  block ^c6
+    add rsi, 85
+    ret rsi
+
+  block ^c7
+    add rsi, 98
+    ret rsi
+
+  block ^fallback
+    mov rax, -999
+    ret rax
+
+function @negative
+  abi
+    param %which -> rdi : i64
+    param %keep -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov <gpr0>, rdi
+    sub <gpr0>, -20
+    cmp.i64 <gpr0>, 11
+    ja ^fallback
+    jump_table <gpr0>, [^c0, ^c1, ^c2, ^c3, ^c4, ^c5, ^c6, ^c7, ^c8, ^c9, ^c10, ^c11]
+
+  block ^c0
+    add rsi, 7
+    ret rsi
+
+  block ^c1
+    add rsi, 20
+    ret rsi
+
+  block ^c2
+    add rsi, 33
+    ret rsi
+
+  block ^c3
+    add rsi, 46
+    ret rsi
+
+  block ^c4
+    add rsi, 59
+    ret rsi
+
+  block ^c5
+    add rsi, 72
+    ret rsi
+
+  block ^c6
+    add rsi, 85
+    ret rsi
+
+  block ^c7
+    add rsi, 98
+    ret rsi
+
+  block ^c8
+    add rsi, 111
+    ret rsi
+
+  block ^c9
+    add rsi, 124
+    ret rsi
+
+  block ^c10
+    add rsi, 137
+    ret rsi
+
+  block ^c11
+    add rsi, 150
+    ret rsi
+
+  block ^fallback
+    mov rax, -999
+    ret rax
+
+function @duplicate
+  abi
+    param %which -> rdi : i64
+    param %keep -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov <gpr0>, rdi
+    sub <gpr0>, 1
+    cmp.i64 <gpr0>, 7
+    ja ^fallback
+    jump_table <gpr0>, [^c0, ^c1, ^c2, ^c3, ^c4, ^c5, ^c6, ^c7]
+
+  block ^c0
+    add rsi, 7
+    ret rsi
+
+  block ^c1
+    add rsi, 20
+    ret rsi
+
+  block ^c2
+    add rsi, 33
+    ret rsi
+
+  block ^c3
+    add rsi, 46
+    ret rsi
+
+  block ^c4
+    add rsi, 59
+    ret rsi
+
+  block ^c5
+    add rsi, 72
+    ret rsi
+
+  block ^c6
+    add rsi, 85
+    ret rsi
+
+  block ^c7
+    add rsi, 98
+    ret rsi
+
+  block ^c8
+    add rsi, 111
+    ret rsi
+
+  block ^fallback
+    mov rax, -999
+    ret rax
+
+function @sparse
+  abi
+    param %which -> rdi : i64
+    param %keep -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    cmp.i64 rdi, 0
+    je ^c0
+    cmp.i64 rdi, 10000
+    je ^c1
+    cmp.i64 rdi, 20000
+    je ^c2
+    cmp.i64 rdi, 30000
+    je ^c3
+    cmp.i64 rdi, 40000
+    je ^c4
+    cmp.i64 rdi, 50000
+    je ^c5
+    jmp ^fallback
+
+  block ^c0
+    add rsi, 7
+    ret rsi
+
+  block ^c1
+    add rsi, 20
+    ret rsi
+
+  block ^c2
+    add rsi, 33
+    ret rsi
+
+  block ^c3
+    add rsi, 46
+    ret rsi
+
+  block ^c4
+    add rsi, 59
+    ret rsi
+
+  block ^c5
+    add rsi, 72
+    ret rsi
+
+  block ^fallback
+    mov rax, -999
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve <gpr1>
+
+  block ^entry
+    mov rdi, -6
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    mov rdi, -5
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -4
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 60
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -3
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 73
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -2
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 86
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -1
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 0
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 112
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 1
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 125
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 138
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 3
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 151
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 4
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 164
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 5
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 177
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 6
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 190
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 7
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 203
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 8
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 9
+    mov rsi, 53
+    call @signed [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483642
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483643
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483644
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 60
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483645
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 73
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483646
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 86
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483647
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483648
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 112
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483649
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 125
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483650
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 138
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483651
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 151
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483652
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 164
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483653
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 177
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483654
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 190
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483655
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 203
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483656
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483657
+    mov rsi, 53
+    call @unsigned [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -2
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -1
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 0
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 60
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 1
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 73
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 3
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 4
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 86
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 5
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 6
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 7
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 8
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 112
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 9
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 10
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 125
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 11
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 12
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 138
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 13
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 14
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 151
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 15
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 16
+    mov rsi, 53
+    call @holes [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -22
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -21
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -20
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 60
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -19
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 73
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -18
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 86
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -17
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -16
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 112
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -15
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 125
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -14
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 138
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -13
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 151
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -12
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 164
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -11
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 177
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -10
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 190
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -9
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 203
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -8
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -7
+    mov rsi, 53
+    call @negative [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -1
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 0
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 1
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 60
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 73
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 3
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 86
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 4
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 5
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 112
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 6
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 125
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 7
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 138
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 8
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 151
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 9
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 10
+    mov rsi, 53
+    call @duplicate [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -1
+    mov rsi, 53
+    call @sparse [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 0
+    mov rsi, 53
+    call @sparse [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 60
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 10000
+    mov rsi, 53
+    call @sparse [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 73
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 20000
+    mov rsi, 53
+    call @sparse [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 86
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 30000
+    mov rsi, 53
+    call @sparse [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 40000
+    mov rsi, 53
+    call @sparse [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 112
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 50000
+    mov rsi, 53
+    call @sparse [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 125
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 50001
+    mov rsi, 53
+    call @sparse [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2147483647
+    mov rsi, 53
+    call @sparse [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -2147483648
+    mov rsi, 53
+    call @sparse [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -999
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    ret <gpr1>

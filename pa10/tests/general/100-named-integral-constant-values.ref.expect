@@ -1,0 +1,5 @@
+none(load) in @constant_read
+none(branch) in @false_choice
+none(branch) in @true_choice
+has(load) in @volatile_control
+has(load) in @reference_control

@@ -1,0 +1,6 @@
+none(load) in @constant_read
+none(load) in @mask_read
+none(branch) in @false_choice
+none(branch) in @true_choice
+has(load) in @reference_control
+has(call) in @static_member_control

@@ -1,0 +1,201 @@
+global @constants__value : i32 [storage=readonly, binding=internal, object=_ZN9constantsL5valueE] = 21
+global @constants__never : u8 [storage=readonly, binding=internal, object=_ZN9constantsL5neverE] = 0
+global @constants__always : u8 [storage=readonly, binding=internal, object=_ZN9constantsL6alwaysE] = 1
+global @constants__mask : i64 [storage=readonly, binding=internal, object=_ZN9constantsL4maskE] = -81985529216486896
+global @touches : i32 [binding=strong] = zero
+global @mutable_value : i32 [binding=strong] = zero
+global @reference_value : ptr [binding=strong] = addr @mutable_value
+
+function @touch() -> void [binding=strong, object=_Z5touchv] {
+  block ^entry:
+    %t1 = load typed i32 @touches
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @touches
+    return void
+}
+function @constant_read() -> i32 [binding=strong, object=_Z13constant_readv] {
+  block ^entry:
+    return i32 21
+}
+function @mask_read() -> i64 [binding=strong, object=_Z9mask_readv] {
+  block ^entry:
+    return i64 -81985529216486896
+}
+function @false_choice() -> i32 [binding=strong, object=_Z12false_choicev] {
+  block ^entry:
+    jump ^if_else_2
+
+  block ^if_then_1:
+    call void @touch()
+    jump ^if_end_3
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t1 = load typed i32 @touches
+    return i32 %t1
+}
+function @true_choice() -> i32 [binding=strong, object=_Z11true_choicev] {
+  block ^entry:
+    jump ^if_then_1
+
+  block ^if_then_1:
+    call void @touch()
+    jump ^if_end_3
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t1 = load typed i32 @touches
+    return i32 %t1
+}
+function @reference_control() -> i32 [binding=strong, object=_Z17reference_controlv] {
+  block ^entry:
+    store typed i32 0, @mutable_value
+    %t1 = load typed i32 @mutable_value
+    branch %t1, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    call void @touch()
+    jump ^if_end_3
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    store typed i32 1, @mutable_value
+    %t2 = load typed i32 @mutable_value
+    branch %t2, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    call void @touch()
+    jump ^if_end_6
+
+  block ^if_else_5:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t3 = load typed i32 @touches
+    return i32 %t3
+}
+function @object_effect() -> obj<1x1> [result_classes=none, binding=strong, object=_Z13object_effectv] {
+  slot $retobj__1 : obj<1x1>
+
+  block ^entry:
+    call void @touch()
+    %t1 = addr $retobj__1
+    zeroinit 1x1 %t1
+    return obj<1x1> $retobj__1
+}
+function @static_member_control() -> i32 [binding=strong, object=_Z21static_member_controlv] {
+  slot $discard__1 : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $discard__1
+    %t2 = call obj<1x1> @object_effect()
+    return i32 7
+}
+function @member_control(%x : i32) -> i32 [binding=strong, object=_Z14member_controli] {
+  slot $x : i32
+  slot $object : obj<4x4>
+
+  block ^entry:
+    store typed i32 %x, $x
+    %t1 = addr $object
+    %t2 = load typed i32 $x
+    call void @Member__Member(%t1, %t2)
+    %t3 = addr $object
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load typed i32 %t4
+    return i32 %t5
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @constant_read()
+    %t2 = cmp ne i32 %t1, 21
+    branch %t2, ^if_then_1, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t3 = call i64 @mask_read()
+    %t4 = cmp ne i64 %t3, -81985529216486896
+    branch %t4, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_4
+
+  block ^if_end_4:
+    %t5 = call i32 @false_choice()
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^if_then_5, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t7 = call i32 @true_choice()
+    %t8 = cmp ne i32 %t7, 1
+    branch %t8, ^if_then_5, ^if_else_6
+
+  block ^if_then_5:
+    return i32 2
+
+  block ^if_else_6:
+    jump ^if_end_8
+
+  block ^if_end_8:
+    %t9 = call i32 @reference_control()
+    %t10 = cmp ne i32 %t9, 2
+    branch %t10, ^if_then_9, ^if_else_10
+
+  block ^if_then_9:
+    return i32 3
+
+  block ^if_else_10:
+    jump ^if_end_11
+
+  block ^if_end_11:
+    %t11 = call i32 @static_member_control()
+    %t12 = cmp ne i32 %t11, 7
+    branch %t12, ^if_then_12, ^lor_rhs_14
+
+  block ^lor_rhs_14:
+    %t13 = load typed i32 @touches
+    %t14 = cmp ne i32 %t13, 3
+    branch %t14, ^if_then_12, ^if_else_13
+
+  block ^if_then_12:
+    return i32 4
+
+  block ^if_else_13:
+    jump ^if_end_15
+
+  block ^if_end_15:
+    %t15 = call i32 @member_control(31)
+    %t16 = cmp ne i32 %t15, 31
+    branch %t16, ^if_then_16, ^if_else_17
+
+  block ^if_then_16:
+    return i32 5
+
+  block ^if_else_17:
+    jump ^if_end_18
+
+  block ^if_end_18:
+    return i32 0
+}
+function @Member__Member(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN6MemberC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    return void
+}
+alias object _ZN6MemberC2Ei = @Member__Member

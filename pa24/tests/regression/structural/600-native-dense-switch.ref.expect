@@ -1,0 +1,7 @@
+# Dense switches select bounded tables; sparse switches keep comparisons.
+count(jump_table) == 1 in @signed
+count(jump_table) == 1 in @unsigned
+count(jump_table) == 1 in @holes
+count(jump_table) == 1 in @negative
+count(jump_table) == 1 in @duplicate
+none(jump_table) in @sparse

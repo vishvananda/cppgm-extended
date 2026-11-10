@@ -32,8 +32,7 @@ function @direct() -> i64 [binding=strong, object=_Z6directv] {
 
   block ^entry:
     store typed i64 -9223372036854775808, $value
-    %t1 = load typed i64 $value
-    return i64 %t1
+    return i64 -9223372036854775808
 }
 function @addressed() -> u8 [binding=strong, object=_Z9addressedv] {
   slot $low : i64
@@ -72,10 +71,9 @@ function @addressed() -> u8 [binding=strong, object=_Z9addressedv] {
 
   block ^land_rhs_4:
     %t12 = load volatile i64 $stored
-    %t13 = load typed i64 $high
-    %t14 = cmp eq i64 %t12, %t13
-    %t15 = cmp ne i64 %t14, 0
-    store typed i64 %t15, $land__2
+    %t13 = cmp eq i64 %t12, 9223372036854775807
+    %t14 = cmp ne i64 %t13, 0
+    store typed i64 %t14, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -83,9 +81,9 @@ function @addressed() -> u8 [binding=strong, object=_Z9addressedv] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t16 = load typed i64 $land__2
-    %t17 = convert trunc u8 i64 %t16
-    return u8 %t17
+    %t15 = load typed i64 $land__2
+    %t16 = convert trunc u8 i64 %t15
+    return u8 %t16
 }
 function @effects() -> i32 [binding=strong, object=_Z7effectsv] {
   slot $first : i32

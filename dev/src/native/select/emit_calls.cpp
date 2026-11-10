@@ -931,7 +931,7 @@ void FunctionSelector::emit_call(uint32_t id)
 		return;
 	if (t.cls == VClass::Memory)
 	{
-		// O1+: a result in registers whose only use is a copy right after
+		// A result in registers whose only use is a copy right after
 		// the call (past folded address arithmetic) goes straight to the copy's
 		// destination (no home, no copy: and no 16-byte reload of two 8-byte
 		// stores). Only when its eightbytes are all its bytes: a part store
@@ -943,8 +943,7 @@ void FunctionSelector::emit_call(uint32_t id)
 			adjacent = i != kNoId &&
 				(body.instructions[i].op == Opcode::Addr || body.instructions[i].op == Opcode::Index) &&
 				(temps_[body.instructions[i].result].flags & (TF_LAZY | TF_DEAD)) != 0;
-		if (level_ >= 1 && adjacent && copy->op == Opcode::CopyObject &&
-			resolve(copy->ops[0]) == Value::temp(inst.result) &&
+		if (adjacent && copy->op == Opcode::CopyObject && resolve(copy->ops[0]) == Value::temp(inst.result) &&
 			static_cast<uint64_t>(copy->immediate) == value_bytes(inst.type) &&
 			value_bytes(inst.type) == 8u * layout.result_parts && layout.result != ArgClass::X87 &&
 			layout.result != ArgClass::X87Pair && !(resolve(copy->ops[1]) == Value::temp(inst.result)))

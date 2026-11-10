@@ -39,9 +39,8 @@ function @classify(%input : obj<1x1> [classes=none]) -> i32 [binding=weak, objec
 
   block ^entry:
     store typed i32 0, $tag
-    %t1 = load typed i32 $tag
-    %t2 = cmp eq i32 %t1, 0
-    branch %t2, ^cond_then_1, ^cond_else_2
+    %t1 = cmp eq i32 0, 0
+    branch %t1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -52,8 +51,8 @@ function @classify(%input : obj<1x1> [classes=none]) -> i32 [binding=weak, objec
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load typed i32 $cond__1
-    return i32 %t3
+    %t2 = load typed i32 $cond__1
+    return i32 %t2
 }
 function @read_constant(%input : obj<1x1> [classes=none]) -> u32 [binding=weak, object=_Z13read_constantI17unsigned_constantILj1EEEjT_] {
   slot $input : obj<1x1>

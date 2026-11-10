@@ -327,13 +327,21 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 		// expression names no object that needs evaluating).
 		return integer(facts->type, facts->value);
 	}
-	// A constexpr 128-bit integer whose value no folded constant holds:
-	// read as its evaluated value too (no odr-use, 3.2p2).
+	// Read known integral constants from the declaration's semantic facts.
+	// Address and reference binding paths still designate their storage.
 	const sema::VariableEntity* constant = facts->category != sema::ValueCategory::PRValue &&
 			(e->kind == syntax::ExprKind::Id || e->kind == syntax::ExprKind::Member) && facts->entity != nullptr &&
 			facts->entity->kind == sema::EntityKind::Variable
 		? static_cast<const sema::VariableEntity*>(facts->entity)
 		: nullptr;
+	if (constant != nullptr && !constant->member && !constant->type->is_reference() &&
+		constant->constant == sema::ConstantState::Value && (facts->type->cv & sema::kVolatile) == 0)
+	{
+		if (e->kind == syntax::ExprKind::Member)
+			member_object(static_cast<const syntax::MemberExpr&>(*e));
+		return integer(facts->type, constant->value.bits);
+	}
+	// A constexpr 128-bit integer keeps its complete evaluated value.
 	if (constant != nullptr && constant->is_constexpr && constant->constant == sema::ConstantState::Object &&
 		sema::IsWideIntegral(facts->type) && (facts->type->cv & sema::kVolatile) == 0)
 	{
