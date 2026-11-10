@@ -33,15 +33,15 @@ function @scaled_sum
     frame_pointer keep
     epilogues duplicated
     preserve rbx r12 r13
+    temp %s -> [rbp-16] : f64
     param-slot %x -> [rbp-8] : f64
-    param-slot %y -> [rbp-16] : f64
-    temp %s -> [rbp-24] : f64
+    param-slot %y -> [rbp-24] : f64
 
   block ^entry
     mov r12, rdi
     mov r13, rsi
-    fmov.f64 [rbp-8], xmm0
-    fmov.f64 [rbp-16], xmm1
+    fmov.f64 xmm2, xmm0
+    fmov.f64 xmm3, xmm1
     cmp.i64 r13, 0
     jle ^entry~done
 
@@ -51,13 +51,13 @@ function @scaled_sum
 
   block ^loop
     fmov.f64 xmm0, [r12+rbx*8]
-    fmul.f64 xmm2, xmm0, [rbp-8]
-    fadd.f64 xmm2, xmm2, [rbp-16]
-    fcmp.f64 xmm2, xmm2
+    fmul.f64 xmm4, xmm0, xmm2
+    fadd.f64 xmm4, xmm4, xmm3
+    fcmp.f64 xmm4, xmm4
     jp ^loop~cold
 
   block ^loop~next
-    fmov.f64 xmm0, xmm2
+    fmov.f64 xmm0, xmm4
 
   block ^next
     fadd.f64 xmm1, xmm1, xmm0
@@ -67,12 +67,16 @@ function @scaled_sum
     jmp ^next~done
 
   block ^loop~cold
-    fmov.f64 [rbp-24], xmm1
+    fmov.f64 [rbp-16], xmm1
+    fmov.f64 [rbp-8], xmm2
+    fmov.f64 [rbp-24], xmm3
 
   block ^cold
     fmov.f64 xmm1, [rbp-8]
     call @slow [args=(xmm0,xmm1)]
-    fmov.f64 xmm1, [rbp-24]
+    fmov.f64 xmm1, [rbp-16]
+    fmov.f64 xmm2, [rbp-8]
+    fmov.f64 xmm3, [rbp-24]
     jmp ^next
 
   block ^next~done
