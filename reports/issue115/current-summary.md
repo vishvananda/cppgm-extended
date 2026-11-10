@@ -1,3 +1,6 @@
+This is the first qualified batch. See [the next outlier investigation](OUTLIERS.md)
+for the subsequent maze and Huffman improvements.
+
 Intel Xeon E5-2696 v4, generic x86-64, -O3; original frozen issue LowIR. Paired means; all 14 full runs pass 50/50. Myc index and Base64 source patches are excluded. Higher ratios mean faster GM.
 
 | Build | Total runtime (s) | Speed versus reference ↑ | Checks |
