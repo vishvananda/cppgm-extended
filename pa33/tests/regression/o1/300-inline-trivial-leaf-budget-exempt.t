@@ -1,55 +1,56 @@
+# Observable writes keep the helper's work when ordinary stores fold.
 global @sink : i64 = 0
 
 function @piece(%value : i64) -> void [binding=strong, unwind=no] {
   block ^entry:
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
     return void
 }
 
 function @tiny(%value : i64) -> void [binding=strong, unwind=no] {
   block ^entry:
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
     return void
 }
 
 function @small(%value : i64) -> void [binding=strong, unwind=no] {
   block ^entry:
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
     return void
 }
 

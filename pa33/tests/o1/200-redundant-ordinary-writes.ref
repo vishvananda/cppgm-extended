@@ -1,0 +1,34 @@
+global @ordinary : i64 = 19
+global @observable : i64 = 23
+
+function @same_value(%p : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    return void
+}
+function @overwrite(%p : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    store i64 37, %p
+    return void
+}
+function @volatile_writes(%p : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    store volatile i64 31, %p
+    store volatile i64 37, %p
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    call void @same_value(@ordinary)
+    %before = load i64 @ordinary
+    call void @overwrite(@ordinary)
+    call void @volatile_writes(@observable)
+    %after = load i64 @ordinary
+    %observed = load volatile i64 @observable
+    %bad0 = cmp ne i64 %before, 19
+    %bad1 = cmp ne i64 %after, 37
+    %bad2 = cmp ne i64 %observed, 37
+    %bad3 = binary or i64 %bad0, %bad1
+    %bad = binary or i64 %bad2, %bad3
+    %status = convert trunc i32 i64 %bad
+    return i32 %status
+}

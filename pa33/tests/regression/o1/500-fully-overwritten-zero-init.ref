@@ -42,7 +42,6 @@ function @retain_large_zero(%destination : ptr) -> void {
     %p48 = index i8 [projection=field] %destination, 48
     %p56 = index i8 [projection=field] %destination, 56
     %p64 = index i8 [projection=field] %destination, 64
-    store i64 0, %destination
     store i64 1, %p8
     store i64 2, %p16
     store i64 3, %p24

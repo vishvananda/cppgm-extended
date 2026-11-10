@@ -1,1035 +1,1036 @@
+# Observable writes keep the helper's work when ordinary stores fold.
 global @sink : i64 = 0
 
 function @at_limit(%value : i64) -> i64 [binding=internal, unwind=no] {
   block ^entry:
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
     return i64 %value
 }
 
 function @too_large(%value : i64) -> i64 [binding=internal, unwind=no] {
   block ^entry:
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
-    store i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
     return i64 %value
 }
 

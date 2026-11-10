@@ -10,9 +10,7 @@ function @split_entry_edge(%choose : i64, %left : i64, %right : i64) -> i64 [no_
     branch %more, ^body, ^exit
 
   block ^body:
-    %sum = binary add i64 %left, %right
     %difference = binary sub i64 %left, %right
-    store i64 %sum, @sink
     store i64 %difference, @sink
     %next = binary add i64 %i, 1
     jump ^header

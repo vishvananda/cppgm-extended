@@ -1,0 +1,2 @@
+# One final memory write suffices; no particular instruction is required.
+instructions <= 2 in @cover

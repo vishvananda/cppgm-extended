@@ -888,17 +888,17 @@ void MemoryForwarding::process(BlockId block)
 		}
 		else if (inst.op == Opcode::Store)
 		{
-			if (c_.level >= 2 && !(inst.flags & IF_VOLATILE) && ++stores == 2)
+			if (!(inst.flags & IF_VOLATILE) && ++stores == 2)
 				store_blocks_.push_back(block);
 			const Value v = inst.ops[0];
 			const uint64_t bytes = storage_bytes(inst.type);
 			const bool zero = (inst.type.is_pointer() ||
 								  (inst.type.is_integer() && inst.type.kind() != TypeKind::I128)) &&
 				v.is(ValueKind::Integer) && body_.literals[v.index].low == 0 && body_.literals[v.index].high == 0;
-			if ((inst.flags & IF_VOLATILE) == 0 && c_.level >= 2)
+			if ((inst.flags & IF_VOLATILE) == 0)
 			{
-				// O2+: a store of what the location already holds (O1
-				// keeps them: its inlining fixtures pad with such stores).
+				// An ordinary store of what the location already holds
+				// changes nothing. Volatile accesses remain observable.
 				const Known* found = find(key_of(inst.ops[1], inst.type));
 				if ((zero && known_zero(inst.ops[1], bytes)) ||
 					(found != nullptr && found->generation == generation_ && found->value == v))
@@ -1264,15 +1264,16 @@ void MemoryForwarding::drop_unread_writes()
 	}
 }
 
-// O2+: an ordinary store dies when a later store in the block overwrites
+// An ordinary store dies when a later store in the block overwrites
 // its bytes before anything may read them. Equal address values and types
-// prove this without a fixed object offset; escaped slot ranges also allow
-// a covering write. Only blocks already seen to contain two stores are walked.
+// prove this without a fixed object offset; byte ranges from the same known
+// root also allow a covering write. Only blocks already seen to contain two
+// stores are walked.
 const size_t kPendingStores = 32;
 
 void MemoryForwarding::drop_overwritten_stores()
 {
-	if (c_.level < 2 || store_blocks_.empty())
+	if (store_blocks_.empty())
 		return;
 	struct Pending
 	{
@@ -1301,8 +1302,8 @@ void MemoryForwarding::drop_overwritten_stores()
 				const AddressFacts at = facts_of(inst.ops[1]);
 				const uint64_t bytes = storage_bytes(inst.type);
 				// (An f80 store writes 10 of its 16 bytes.)
-				const bool fixed = at.base == ValueKind::Slot && escaped_[at.index];
-				if (inst.type.is_object() || inst.type.kind() == TypeKind::F80 || (!fixed && bytes > 8))
+				const bool known = at.base != ValueKind::None;
+				if (inst.type.is_object() || inst.type.kind() == TypeKind::F80 || (!known && bytes > 8))
 				{
 					pending.clear();
 					continue;
@@ -1315,9 +1316,9 @@ void MemoryForwarding::drop_overwritten_stores()
 						(p.address.is(ValueKind::Integer) && address.is(ValueKind::Integer) &&
 							body_.literals[p.address.index].low == body_.literals[address.index].low);
 					const bool same = equal && p.type == inst.type;
-					const bool covered = fixed && p.at.base == ValueKind::Slot && p.at.index == at.index &&
-						p.at.offset >= at.offset &&
-						p.at.offset + static_cast<int64_t>(p.bytes) <= at.offset + static_cast<int64_t>(bytes);
+					const uint64_t offset = static_cast<uint64_t>(p.at.offset) - static_cast<uint64_t>(at.offset);
+					const bool covered = known && p.at.base == at.base && p.at.index == at.index && offset <= bytes &&
+						p.bytes <= bytes - offset;
 					if (!same && !covered)
 					{
 						++k;
