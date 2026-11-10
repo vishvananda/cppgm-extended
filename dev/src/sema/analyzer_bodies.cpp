@@ -751,8 +751,8 @@ void Analyzer::scoped_statement(const syntax::Stmt& stmt, Scope* scope, BodyCont
 		const syntax::GotoStmt& jump = static_cast<const syntax::GotoStmt&>(stmt);
 		if (jump.target != nullptr)
 		{
-			if (!full_asm_ || body == nullptr)
-				error(stmt.location, "computed goto requires --full-asm inside a function");
+			if (body == nullptr)
+				error(stmt.location, "computed goto requires a function body");
 			ExprFacts* target = typed(*jump.target, scope);
 			const Type* type = decayed(target);
 			if (type->kind != TypeKind::Pointer || !IsVoid(type->element))

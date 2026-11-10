@@ -109,6 +109,7 @@ struct Syntax
 {
 	asm_model::Dialect dialect = asm_model::Dialect::Att;
 	bool register_prefix = true;
+	bool power_alignment = false; // .align uses an exponent on Darwin, bytes on ELF
 };
 
 // The input is user assembly after its frontend's placeholder expansion.

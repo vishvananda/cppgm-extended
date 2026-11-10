@@ -749,8 +749,6 @@ void Analyzer::effect_attributes(
 				function->noalias_result = true;
 			if (attribute->kind == syntax::AttributeKind::Naked)
 			{
-				if (!full_asm_)
-					error(attribute->location, "naked functions require --full-asm");
 				function->naked = true;
 				function->no_inline = true;
 			}

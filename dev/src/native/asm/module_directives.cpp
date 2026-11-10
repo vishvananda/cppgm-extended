@@ -224,12 +224,20 @@ bool ModuleAssembler::directive(const std::string& name, assembly::ModuleCursor&
 			else
 			{
 				const std::string flags = cursor.quoted();
-				if (flags.find_first_not_of("awx") != std::string::npos)
+				if (flags.find_first_not_of("awxMS") != std::string::npos)
 					cursor.fail("module section flags are not implemented");
 				kind = flags.find('x') != std::string::npos ? SectionKind::Text
 					: flags.find('w') != std::string::npos  ? SectionKind::Data
 					: flags.find('a') != std::string::npos  ? SectionKind::Rodata
 															: SectionKind::Metadata;
+				const bool strings = flags.find('M') != std::string::npos || flags.find('S') != std::string::npos;
+				if (strings)
+				{
+					if (target_ != Target::Linux || flags.find_first_not_of("MS") != std::string::npos ||
+						flags.find('M') == std::string::npos || flags.find('S') == std::string::npos)
+						cursor.fail("merged string metadata requires nonallocated ELF MS flags");
+					kind = SectionKind::MetadataStrings;
+				}
 				if (cursor.take(','))
 				{
 					cursor.take('@');
@@ -239,10 +247,12 @@ bool ModuleAssembler::directive(const std::string& name, assembly::ModuleCursor&
 						kind = SectionKind::Bss;
 					else if (type != "progbits")
 						cursor.fail("unsupported module section type");
+					if (strings && (type != "progbits" || !cursor.take(',') || cursor.number() != 1))
+						cursor.fail("merged string metadata requires byte-sized progbits entries");
 				}
 			}
 		}
-		else if (section_name == ".text")
+		if (section_name == ".text")
 			kind = SectionKind::Text;
 		else if (section_name == ".rodata")
 			kind = SectionKind::Rodata;

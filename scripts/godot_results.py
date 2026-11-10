@@ -36,7 +36,7 @@ def normalize(artifact, environment, run_url, details_url, raw_url):
     identity = dict(source=producer.COMMIT, configuration='headless-release',
                     workload_hashes=metadata['workload_hashes'], iterations=100000)
     flags = {label: dict(scons=metadata['flags'], command_manifest='commands-' + label + '.json',
-                        additional_cpp_flags=['--full-asm'] if label == 'cppgm' else [])
+                        additional_cpp_flags=[])
              for label in producer.LABELS}
     links = dict(run_url=run_url, details_url=details_url, raw_url=raw_url)
     base = dict(workload='godot', configuration='headless-release', optimization='O3',

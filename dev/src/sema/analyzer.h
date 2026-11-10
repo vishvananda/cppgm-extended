@@ -63,7 +63,6 @@ public:
 	// is not implicitly const (7.1.5p8 in C++11) and may return void (N3652).
 	void set_cxx14(bool on) { cxx14_ = on; }
 	void set_cxx17(bool on) { cxx17_ = on; }
-	void set_full_asm(bool on) { full_asm_ = on; }
 	// -fno-exceptions (hosted -c): allocation and deallocation functions'
 	// redeclarations are not compared (check_redeclared_exceptions).
 	void set_exceptions(bool on) { exceptions_ = on; }
@@ -1127,7 +1126,6 @@ private:
 	void structured_binding_declaration(const syntax::SimpleDecl& decl, const Specifiers& specifiers, Scope* scope);
 	// GNU asm statements (analyzer_asm.cpp).
 	void asm_statement(const syntax::AsmStmt& stmt, Scope* scope);
-	void full_asm_statement(const syntax::AsmStmt& stmt, Scope* scope);
 	void check_naked_definition(const FunctionEntity* function, const syntax::FunctionBody& body);
 	// ----------------------- builtin functions (analyzer_builtins.cpp)
 	// The registry's builtin `name` (lex/gnu_builtins.h), declared in the
@@ -1773,7 +1771,6 @@ private:
 	DeductionDefaultContext* deduction_default_context_ = nullptr;
 	LookupResult deduction_default_lookup(
 		Scope* scope, const Identifier* name, LookupFilter filter, const LookupResult& found);
-	bool full_asm_ = false;
 	bool exceptions_ = true;
 	bool ignore_narrowing_ = false;
 	const SourcePositions* positions_ = nullptr;

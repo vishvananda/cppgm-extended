@@ -307,8 +307,8 @@ ExprFacts* Analyzer::typed_form(const syntax::Expr& expr, Scope* scope)
 		return id_expression(static_cast<const syntax::IdExpr&>(expr), scope);
 	case syntax::ExprKind::LabelAddress:
 	{
-		if (!full_asm_ || body_ == nullptr || body_->function == nullptr)
-			error(expr.location, "label address requires --full-asm inside a function");
+		if (body_ == nullptr || body_->function == nullptr)
+			error(expr.location, "label address requires a function body");
 		const syntax::LabelAddressExpr& label = static_cast<const syntax::LabelAddressExpr&>(expr);
 		label.function = body_->function;
 		// A label address requires a definition, but is not a jump and

@@ -32,6 +32,11 @@ void Selector::set_position_independent(bool enabled)
 	state_->set_position_independent(enabled);
 }
 
+void Selector::set_target(Target target)
+{
+	state_->set_target(target);
+}
+
 void Selector::set_optimization_level(int level)
 {
 	state_->set_optimization_level(level);

@@ -3,13 +3,13 @@
 #include "sema/asm_statements.h"
 
 namespace lower {
-lowir::Value FunctionLowering::full_asm_exit_arguments(
+lowir::Value FunctionLowering::asm_exit_arguments(
 	const syntax::AsmStmt& stmt, std::vector<lowir::Type>& types, std::vector<lowir::Value>& values)
 {
 	if (!stmt.is_goto)
 		return lowir::Value::none();
 	const lowir::Type type = lowir::Type::scalar(lowir::TypeKind::I32);
-	const assembly::Packet& packet = *stmt.program->full;
+	const assembly::Packet& packet = *stmt.program->packet;
 	const uint32_t first = stmt.outputs.size + stmt.inputs.size;
 	for (uint32_t i = 0; i < stmt.labels.size; ++i)
 	{

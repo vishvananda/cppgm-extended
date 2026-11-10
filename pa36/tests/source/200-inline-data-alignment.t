@@ -16,3 +16,13 @@ extern "C" unsigned inline_numeric_address() {
     asm("movl 1f(%%rip),%0\n jmp 2f\n.balign 16\n1:\n.long 0x76543210\n2:\n" : "=r"(value));
     return value;
 }
+
+extern "C" const unsigned char* inline_target_align() {
+    const unsigned char* address;
+#if defined(__APPLE__)
+    asm("jmp 2f\n.align 6\n1: .byte 0x5a\n2: leaq 1b(%%rip),%0" : "=r"(address));
+#else
+    asm("jmp 2f\n.align 64\n1: .byte 0x5a\n2: leaq 1b(%%rip),%0" : "=r"(address));
+#endif
+    return address;
+}

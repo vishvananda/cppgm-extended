@@ -1,0 +1,1 @@
+declare function @query(%leaf : i32, %subleaf : i32, %output : ptr) -> void [unwind=no, role=cpu_query]

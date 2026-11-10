@@ -238,6 +238,20 @@ std::string ModuleCursor::quoted()
 					value = value * 8 + line_.text[position_++] - '0';
 				c = static_cast<char>(value);
 			}
+			else if (c == 'x')
+			{
+				const uint32_t first = position_;
+				unsigned value = 0;
+				while (position_ < line_.text.size() && digit(line_.text[position_]) < 16)
+					value = (value * 16 + digit(line_.text[position_++])) & 255u;
+				if (position_ == first)
+					fail("hexadecimal module escape requires a digit");
+				c = static_cast<char>(value);
+			}
+			else if (c == 'b')
+				c = '\b';
+			else if (c == 'f')
+				c = '\f';
 			else if (c == 'n')
 				c = '\n';
 			else if (c == 'r')

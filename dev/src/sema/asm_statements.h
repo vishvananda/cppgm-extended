@@ -1,16 +1,6 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include <vector>
-
-// GNU asm statements: their AT&T-syntax templates are not
-// assembled. Each instruction of the small set hosted headers write --
-// fences and spin hints, the read-modify-writes of an operand (locked: an
-// atomic one), exchanges and byte swaps -- is lifted to the operation it
-// performs on the statement's operands, which the lowering emits as LowIR;
-// any other template is rejected.
-
+// Typed GNU operands and their frontend-neutral assembly packet.
 namespace assembly {
 struct Packet;
 }
@@ -18,126 +8,10 @@ struct Packet;
 namespace sema {
 struct ConstValue;
 
-// How an operand is bound (its constraint's class): an object in memory,
-// a value in a register, an integral constant.
-enum class AsmOperandClass : uint8_t
-{
-	Memory,
-	Register,
-	Immediate,
-	Flag
-};
-
-enum class AsmFlag : uint8_t
-{
-	None,
-	Carry,
-	NotCarry,
-	Zero,
-	NotZero
-};
-
-// One asm operand as its constraint and type give it: outputs first, then
-// inputs (GCC's %N numbering); a `+` output is read too.
-struct AsmOperandInfo
-{
-	const char* name;
-	AsmOperandClass binding;
-	bool output;
-	bool read;
-	// The operand's size in bytes (its type's); an immediate's value.
-	uint32_t bytes;
-	uint64_t value;
-	// An input with a matching constraint ("0", "[name]"): the output
-	// whose register it starts that output in (0xff: none). The template
-	// names that register by either operand.
-	uint8_t tied;
-	// A single fixed GPR constraint (a, b, c, d, S, D), XMM class x, or zero.
-	char fixed;
-	AsmFlag flag;
-};
-
-enum class AsmOperation : uint8_t
-{
-	// mfence, lfence, sfence: a sequentially consistent fence.
-	Fence,
-	Add,
-	Sub,
-	And,
-	Or,
-	Xor,
-	Not,
-	Neg,
-	// xchg: the two operands' values swapped (memory with a register:
-	// atomically).
-	Exchange,
-	// bswap of a register operand.
-	ByteSwap,
-	Move,
-	CompareExchange,
-	JumpZero,
-	JumpNotZero,
-	BitSet,
-	BitReset,
-	BitComplement,
-	SetCarry,
-	SetNotCarry,
-	SetZero,
-	SetNotZero,
-	// pand: all 128 bits of two XMM operands, preserving condition flags.
-	PackedAnd,
-	// cpuid: immediate holds the a,b,c,d output indices in successive bytes.
-	CpuId,
-	// XGETBV: fixed ECX input, EAX and EDX outputs.
-	XGetBv
-};
-
-const uint8_t kAsmImmediateSource = 0xff;
-const uint8_t kAsmCaptureZero = 1;
-const uint8_t kAsmCaptureCarry = 2;
-
-// One lifted instruction, on the low `bytes` of its operands (an integer
-// of that size whatever their types: GAS and the CPU see bits).
-struct AsmInstruction
-{
-	AsmOperation operation;
-	// A `lock` prefix: an atomic read-modify-write of a memory destination.
-	bool locked;
-	uint8_t destination;
-	// An operand index, or kAsmImmediateSource for `immediate`.
-	uint8_t source;
-	// The operation's size in bytes: 1, 2, 4, 8, or 16 for PackedAnd.
-	uint8_t bytes;
-	uint8_t source_bytes;
-	uint8_t accumulator;
-	uint8_t flags;
-	uint64_t immediate;
-};
-
-// A lifted template: its instructions in order, then (a "memory"
-// clobber) a compiler barrier. Bit i of `registers`: operand i is bound to
-// a register (a copy of its value, which an output's object receives after
-// the template). `tied` (null when no input is): for each output, the
-// input whose value its register starts with, or 0xff. `unlifted` (null
-// when lifted): why the template is outside the set, in a function emitted
-// only where odr-used, whose emission reports it (Analyzer::asm_statement).
 struct AsmProgram
 {
-	const assembly::Packet* full = nullptr;
+	const assembly::Packet* packet = nullptr;
 	const ConstValue* addresses = nullptr;
-	const AsmInstruction* instructions;
-	uint32_t count;
-	uint32_t registers;
-	uint32_t reads;
-	uint32_t immediates;
-	const uint8_t* tied;
-	bool barrier;
-	const char* unlifted;
 };
-
-// Lifts `text` (the template's characters) over the operands; false, with
-// `error`, for a template outside the set.
-bool LiftAsmTemplate(const std::string& text, const AsmOperandInfo* operands, uint32_t count,
-	std::vector<AsmInstruction>& out, std::string& error);
 
 } // namespace sema

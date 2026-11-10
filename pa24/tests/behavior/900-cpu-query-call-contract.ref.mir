@@ -1,0 +1,70 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 80
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12
+    slot $first -> [rbp-32] : obj<32x8>
+    slot $second -> [rbp-64] : obj<32x8>
+
+  block ^entry
+    lea rbx, [rbp-24]
+    lea r12, [rbp-56]
+    store.i64 [rbp-32], 31
+    store.i64 [rbp-8], 37
+    store.i64 [rbp-64], 41
+    store.i64 [rbp-40], 43
+    store.i64 [rbx], 0
+    store.i64 [rbp-16], 0
+    store.i64 [r12], 1
+    store.i64 [rbp-48], 1
+    mov rdi, 0
+    mov rsi, 0
+    mov rdx, rbx
+    call @query [args=(rdx,rsi,rdi), unwind=no]
+    mov rdi, 0
+    mov rsi, 0
+    mov rdx, r12
+    call @query [args=(rdx,rsi,rdi), unwind=no]
+    load.i64 rbx, [rbx]
+    load.i64 r8, [rbp-16]
+    load.i64 r12, [r12]
+    load.i64 r9, [rbp-48]
+    load.i64 rdi, [rbp-32]
+    load.i64 rsi, [rbp-8]
+    load.i64 rdx, [rbp-64]
+    load.i64 rcx, [rbp-40]
+    cmp.i64 rbx, r12
+    setne rbx
+    movzx rbx, rbx
+    cmp.i64 r8, r9
+    setne r8
+    movzx r8, r8
+    cmp.i64 rdi, 31
+    setne rdi
+    movzx rdi, rdi
+    cmp.i64 rsi, 37
+    setne rsi
+    movzx rsi, rsi
+    cmp.i64 rdx, 41
+    setne rdx
+    movzx rdx, rdx
+    cmp.i64 rcx, 43
+    setne rcx
+    movzx rcx, rcx
+    or rbx, r8
+    or rbx, rdi
+    or rbx, rsi
+    or rbx, rdx
+    or rbx, rcx
+    ret rbx

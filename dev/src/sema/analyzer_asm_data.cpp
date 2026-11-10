@@ -1,7 +1,5 @@
 #include "sema/analyzer.h"
 
-#include "sema/asm_data.h"
-
 namespace sema {
 
 void Analyzer::asm_declaration(const syntax::AsmDecl& decl, Scope* scope)
@@ -17,26 +15,8 @@ void Analyzer::asm_declaration(const syntax::AsmDecl& decl, Scope* scope)
 	text.reserve(units.size() - 1);
 	for (size_t i = 0; i + 1 < units.size(); ++i)
 		text.push_back(static_cast<char>(units[i]));
-	if (full_asm_)
-	{
-		decl.full_source = arena_.copy_string(text.data(), text.size());
-		decl.full_size = static_cast<uint32_t>(text.size());
-		return;
-	}
-	std::vector<AsmDataImage> images;
-	std::string failure;
-	if (!LiftAsmData(text, images, failure))
-		error(decl.location, failure.c_str());
-	AsmDataSection* sections = arena_.allocate_array<AsmDataSection>(images.size());
-	for (size_t i = 0; i < images.size(); ++i)
-	{
-		const AsmDataImage& image = images[i];
-		sections[i] = AsmDataSection{ arena_.copy_string(image.name.data(), image.name.size()),
-			arena_.copy_array(image.bytes.data(), image.bytes.size()), static_cast<uint32_t>(image.bytes.size()),
-			image.strings };
-	}
-	decl.sections = sections;
-	decl.section_count = static_cast<uint32_t>(images.size());
+	decl.assembly_source = arena_.copy_string(text.data(), text.size());
+	decl.assembly_size = static_cast<uint32_t>(text.size());
 }
 
 } // namespace sema

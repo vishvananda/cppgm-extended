@@ -599,10 +599,10 @@ void Parser::resolve_labels(std::vector<Instruction>& instructions)
 bool Parser::directive(Instruction& inst)
 {
 	const std::string& name = inst.mnemonic;
-	if (name == ".p2align" || name == ".balign")
+	if (name == ".p2align" || name == ".balign" || name == ".align")
 	{
 		uint64_t alignment = integer();
-		if (name == ".p2align")
+		if (name == ".p2align" || (name == ".align" && state_ != nullptr && state_->power_alignment))
 		{
 			if (alignment > 20)
 				fail("assembly alignment exponent exceeds limit");

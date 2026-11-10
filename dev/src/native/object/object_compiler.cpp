@@ -234,6 +234,7 @@ ObjectCompiler::ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhMo
 	  share_entries_(optimization_level >= 1), eh_model_(eh_model), position_independent_(position_independent)
 {
 	image_.target = target;
+	selector_.set_target(target);
 	selector_.set_eh_model(eh_model);
 	selector_.set_position_independent(position_independent);
 	selector_.set_optimization_level(optimization_level);

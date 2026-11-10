@@ -279,8 +279,9 @@ The `cpu_query` function role identifies a compiler-owned native CPU query
 helper, declared as `void (i32, i32, ptr)` with fixed arity. Its arguments
 are the CPUID leaf, subleaf and writable storage for four consecutive
 32-bit results in EAX, EBX, ECX, EDX order. It executes the actual instruction
-and preserves callee-saved registers. PA29 uses this role for GNU CPUID
-statements; its body is supplied directly by the native backend.
+and preserves callee-saved registers. Its body is supplied directly by the native backend for typed LowIR producers.
+GNU assembly instead uses the shared assembly boundary and preserves its
+explicit instruction and operand contract.
 
 The `xstate_query` function role is a fixed-arity, effectful `i64 (i32)`
 declaration. It executes XGETBV with the input's low 32 bits in ECX and

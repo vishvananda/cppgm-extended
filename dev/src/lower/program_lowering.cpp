@@ -579,8 +579,6 @@ void ProgramLowering::declaration(const syntax::Decl& decl)
 	switch (decl.kind)
 	{
 	case syntax::DeclKind::Asm:
-		if (static_cast<const syntax::AsmDecl&>(decl).full_source == nullptr)
-			asm_declaration(static_cast<const syntax::AsmDecl&>(decl));
 		return;
 	case syntax::DeclKind::Namespace:
 		declarations(static_cast<const syntax::NamespaceDecl&>(decl).declarations);

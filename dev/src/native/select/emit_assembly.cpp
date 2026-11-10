@@ -60,8 +60,8 @@ const std::shared_ptr<const AssemblyPlan>& FunctionSelector::assembly_plan(const
 		std::vector<lowir::Value> arguments(inst.extra_count);
 		for (uint32_t i = 0; i < inst.extra_count; ++i)
 			arguments[i] = resolve(body_->operands[inst.extra_first + i]);
-		plan = bind_assembly(
-			*program_.assembly, static_cast<uint32_t>(inst.immediate), *body_, arguments, assembly_environment());
+		plan = bind_assembly(*program_.assembly, static_cast<uint32_t>(inst.immediate), *body_, arguments,
+			assembly_environment(), assembly_target_);
 	}
 	return plan;
 }

@@ -4,6 +4,7 @@
 
 #include "lowir/program.h"
 #include "native/mir/mir.h"
+#include "native/target.h"
 #include "support/telemetry.h"
 
 // LowIR -> MIR for one function definition: analysis, instruction
@@ -83,6 +84,7 @@ public:
 	// course's runtime ABI unless set).
 	void set_eh_model(EhModel model);
 	void set_position_independent(bool enabled);
+	void set_target(Target target);
 	// The optimization level of the functions selected from now on (0
 	// unless set): O1 and above lay out branches in the MIR itself
 	// (branch_layout.cpp), select the builtin strlen call prefix

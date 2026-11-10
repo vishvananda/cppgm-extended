@@ -17,7 +17,7 @@ void append_source(const syntax::Stmt* statement, std::string& text, uint32_t& e
 	{
 		const syntax::AsmStmt& source = *static_cast<const syntax::AsmStmt*>(statement);
 		environment = source.assembly_environment;
-		const assembly::Packet& packet = *source.program->full;
+		const assembly::Packet& packet = *source.program->packet;
 		for (uint32_t i = 0; i < packet.pieces.size; ++i)
 		{
 			const asm_model::Piece& piece = packet.pieces.data[i];

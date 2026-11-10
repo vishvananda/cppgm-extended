@@ -193,7 +193,8 @@ std::shared_ptr<AssemblyPlan> prepare_assembly_source(const lowir::AssemblyModul
 }
 
 std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& module, uint32_t id,
-	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments, AssemblyEnvironment& environment)
+	const lowir::FunctionBody& body, const std::vector<lowir::Value>& arguments, AssemblyEnvironment& environment,
+	Target target)
 {
 	std::string source;
 	std::vector<assembly::SymbolUse> symbols;
@@ -211,7 +212,12 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 			assembly::append_module_line(expanded, line);
 			expanded.text += '\n';
 		}
-		plan->instructions = assembly::parse(expanded.text, definition.dialect, expanded.symbols, expanded.labels);
+		assembly::Syntax syntax;
+		syntax.dialect = definition.dialect;
+		syntax.register_prefix = definition.dialect == asm_model::Dialect::Att;
+		syntax.power_alignment = target == Target::MacOS;
+		plan->instructions = assembly::parse(
+			expanded.text, definition.dialect, expanded.symbols, expanded.labels, nullptr, &syntax);
 	}
 	catch (const assembly::AssemblyError& error)
 	{

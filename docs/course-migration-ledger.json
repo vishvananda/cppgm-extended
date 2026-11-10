@@ -1,0 +1,364 @@
+{
+  "base": "534decb7f566613f9a8b7a605e88252a098c6057",
+  "status": "migration in progress; assignment numbers still original",
+  "baseline_counts": {
+    "modern_compile": 84,
+    "modern_run": 41,
+    "modern_link": 8,
+    "assembly": 182,
+    "legacy_asm_named": 35
+  },
+  "fixtures": [
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-branch-missing-flags-bad.t",
+      "new": "pa36/tests/source/100-gnu-asm-local-branch-entry-flags.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-branch-missing-flags-bad.ref",
+        "pa29/tests/compile/500-gnu-asm-branch-missing-flags-bad.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-branch-missing-flags-bad.t"
+      ],
+      "note": "General assembly acceptance; no inference of undeclared instruction effects."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-carry-without-producer-bad.t",
+      "new": "pa36/tests/source/100-gnu-asm-entry-flag-output.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-carry-without-producer-bad.ref",
+        "pa29/tests/compile/500-gnu-asm-carry-without-producer-bad.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-carry-without-producer-bad.t"
+      ],
+      "note": "General assembly acceptance; no inference of undeclared instruction effects."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-cas-missing-accumulator-bad.t",
+      "new": "pa36/tests/source/100-gnu-asm-declared-cas-operands.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-cas-missing-accumulator-bad.ref",
+        "pa29/tests/compile/500-gnu-asm-cas-missing-accumulator-bad.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-cas-missing-accumulator-bad.t"
+      ],
+      "note": "General assembly acceptance; no inference of undeclared instruction effects."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-cpuid-count-reject.t",
+      "new": "pa36/tests/source/100-gnu-asm-cpuid-count-reject.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-reject",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-cpuid-count-reject.ref",
+        "pa29/tests/compile/500-gnu-asm-cpuid-count-reject.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-cpuid-count-reject.t"
+      ],
+      "note": "Constraint or encoding rejection retained."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-cpuid-forms.t",
+      "new": "pa36/tests/source/100-gnu-asm-cpuid-forms.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-cpuid-forms.ref",
+        "pa29/tests/compile/500-gnu-asm-cpuid-forms.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-cpuid-forms.ref.stdout",
+        "pa29/tests/compile/500-gnu-asm-cpuid-forms.t"
+      ],
+      "note": "Source/object and LowIR roundtrip acceptance."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-cpuid-output-reject.t",
+      "new": "pa36/tests/source/100-gnu-asm-cpuid-output-reject.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-reject",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-cpuid-output-reject.ref",
+        "pa29/tests/compile/500-gnu-asm-cpuid-output-reject.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-cpuid-output-reject.t"
+      ],
+      "note": "Constraint or encoding rejection retained."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-cpuid-suffix-reject.t",
+      "new": "pa36/tests/source/100-gnu-asm-cpuid-suffix-reject.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-reject",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-cpuid-suffix-reject.ref",
+        "pa29/tests/compile/500-gnu-asm-cpuid-suffix-reject.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-cpuid-suffix-reject.t"
+      ],
+      "note": "Constraint or encoding rejection retained."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-flag-output-reference-bad.t",
+      "new": "pa36/tests/source/100-gnu-asm-flag-output-reference-bad.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-reject",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-flag-output-reference-bad.ref",
+        "pa29/tests/compile/500-gnu-asm-flag-output-reference-bad.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-flag-output-reference-bad.t"
+      ],
+      "note": "Constraint or encoding rejection retained."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-keyword-statement.t",
+      "new": "pa36/tests/source/100-gnu-asm-keyword-statement.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-keyword-statement.ref",
+        "pa29/tests/compile/500-gnu-asm-keyword-statement.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-keyword-statement.ref.stdout",
+        "pa29/tests/compile/500-gnu-asm-keyword-statement.t"
+      ],
+      "note": "Source/object and LowIR roundtrip acceptance."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-locked-notb-fence.t",
+      "new": "pa36/tests/source/100-gnu-asm-locked-notb-fence.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-locked-notb-fence.ref",
+        "pa29/tests/compile/500-gnu-asm-locked-notb-fence.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-locked-notb-fence.ref.stdout",
+        "pa29/tests/compile/500-gnu-asm-locked-notb-fence.t"
+      ],
+      "note": "Source/object and LowIR roundtrip acceptance."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-output-operand-statement.t",
+      "new": "pa36/tests/source/100-gnu-asm-output-operand-statement.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-output-operand-statement.ref",
+        "pa29/tests/compile/500-gnu-asm-output-operand-statement.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-output-operand-statement.ref.stdout",
+        "pa29/tests/compile/500-gnu-asm-output-operand-statement.t"
+      ],
+      "note": "Source/object and LowIR roundtrip acceptance."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-pand-count-reject.t",
+      "new": "pa36/tests/source/100-gnu-asm-pand-count-reject.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-reject",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-pand-count-reject.ref",
+        "pa29/tests/compile/500-gnu-asm-pand-count-reject.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-pand-count-reject.t"
+      ],
+      "note": "Constraint or encoding rejection retained."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-pand-forms.t",
+      "new": "pa36/tests/source/100-gnu-asm-pand-forms.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-pand-forms.ref",
+        "pa29/tests/compile/500-gnu-asm-pand-forms.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-pand-forms.ref.stdout",
+        "pa29/tests/compile/500-gnu-asm-pand-forms.t"
+      ],
+      "note": "Source/object and LowIR roundtrip acceptance."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-pand-gp-reject.t",
+      "new": "pa36/tests/source/100-gnu-asm-pand-gp-reject.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-reject",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-pand-gp-reject.ref",
+        "pa29/tests/compile/500-gnu-asm-pand-gp-reject.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-pand-gp-reject.t"
+      ],
+      "note": "Constraint or encoding rejection retained."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-pand-suffix-reject.t",
+      "new": "pa36/tests/source/100-gnu-asm-pand-suffix-reject.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-reject",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-pand-suffix-reject.ref",
+        "pa29/tests/compile/500-gnu-asm-pand-suffix-reject.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-pand-suffix-reject.t"
+      ],
+      "note": "Constraint or encoding rejection retained."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-volatile-memory-clobber-called.t",
+      "new": "pa36/tests/source/100-gnu-asm-volatile-memory-clobber-called.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-volatile-memory-clobber-called.ref",
+        "pa29/tests/compile/500-gnu-asm-volatile-memory-clobber-called.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-volatile-memory-clobber-called.ref.stdout",
+        "pa29/tests/compile/500-gnu-asm-volatile-memory-clobber-called.t"
+      ],
+      "note": "Source/object and LowIR roundtrip acceptance."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-volatile-statement.t",
+      "new": "pa36/tests/source/100-gnu-asm-volatile-statement.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-volatile-statement.ref",
+        "pa29/tests/compile/500-gnu-asm-volatile-statement.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-volatile-statement.ref.stdout",
+        "pa29/tests/compile/500-gnu-asm-volatile-statement.t"
+      ],
+      "note": "Source/object and LowIR roundtrip acceptance."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-xgetbv-constraint-reject.t",
+      "new": "pa36/tests/source/100-gnu-asm-declared-query-operands.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-xgetbv-constraint-reject.ref",
+        "pa29/tests/compile/500-gnu-asm-xgetbv-constraint-reject.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-xgetbv-constraint-reject.t"
+      ],
+      "note": "General assembly acceptance; no inference of undeclared instruction effects."
+    },
+    {
+      "old": "pa29/tests/compile/500-gnu-asm-xgetbv-forms.t",
+      "new": "pa36/tests/source/100-gnu-asm-xgetbv-forms.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-gnu-asm-xgetbv-forms.ref",
+        "pa29/tests/compile/500-gnu-asm-xgetbv-forms.ref.exit_status",
+        "pa29/tests/compile/500-gnu-asm-xgetbv-forms.ref.stdout",
+        "pa29/tests/compile/500-gnu-asm-xgetbv-forms.t"
+      ],
+      "note": "Source/object and LowIR roundtrip acceptance."
+    },
+    {
+      "old": "pa29/tests/compile/500-namespace-asm-executable-data-bad.t",
+      "new": "pa36/tests/source/200-namespace-asm-executable-section.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-namespace-asm-executable-data-bad.ref",
+        "pa29/tests/compile/500-namespace-asm-executable-data-bad.ref.exit_status",
+        "pa29/tests/compile/500-namespace-asm-executable-data-bad.t"
+      ],
+      "note": "General assembly acceptance; no inference of undeclared instruction effects."
+    },
+    {
+      "old": "pa29/tests/compile/500-namespace-asm-reserved-section-bad.t",
+      "new": "pa36/tests/source/200-namespace-asm-existing-text-section.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-namespace-asm-reserved-section-bad.ref",
+        "pa29/tests/compile/500-namespace-asm-reserved-section-bad.ref.exit_status",
+        "pa29/tests/compile/500-namespace-asm-reserved-section-bad.t"
+      ],
+      "note": "General assembly acceptance; no inference of undeclared instruction effects."
+    },
+    {
+      "old": "pa29/tests/compile/500-namespace-asm-unrestored-section-bad.t",
+      "new": "pa36/tests/source/200-namespace-asm-persistent-section-state.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/compile/500-namespace-asm-unrestored-section-bad.ref",
+        "pa29/tests/compile/500-namespace-asm-unrestored-section-bad.ref.exit_status",
+        "pa29/tests/compile/500-namespace-asm-unrestored-section-bad.t"
+      ],
+      "note": "General assembly acceptance; no inference of undeclared instruction effects."
+    },
+    {
+      "old": "pa29/tests/run/800-gnu-asm-cas-retry.t",
+      "new": "pa36/tests/source/200-gnu-asm-cas-retry.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu",
+      "companions": [
+        "pa29/tests/run/800-gnu-asm-cas-retry.ref.impl.exit_status",
+        "pa29/tests/run/800-gnu-asm-cas-retry.ref.program.exit_status",
+        "pa29/tests/run/800-gnu-asm-cas-retry.ref.program.stdout",
+        "pa29/tests/run/800-gnu-asm-cas-retry.t",
+        "pa29/tests/run/800-gnu-asm-cas-retry.t.1"
+      ],
+      "note": "Host-compiled native and LowIR-roundtrip observations."
+    },
+    {
+      "old": "pa29/tests/run/800-namespace-asm-data-sections.t",
+      "new": "pa36/tests/source/200-module-metadata-strings.t",
+      "feature": "assembly.shared_boundary",
+      "mode": "gnu++11",
+      "disposition": "required assembly control",
+      "profile": "gnu-compile",
+      "companions": [
+        "pa29/tests/run/800-namespace-asm-data-sections.inspect.expect",
+        "pa29/tests/run/800-namespace-asm-data-sections.platforms",
+        "pa29/tests/run/800-namespace-asm-data-sections.ref.impl.exit_status",
+        "pa29/tests/run/800-namespace-asm-data-sections.ref.inspect",
+        "pa29/tests/run/800-namespace-asm-data-sections.ref.program.exit_status",
+        "pa29/tests/run/800-namespace-asm-data-sections.ref.program.stdout",
+        "pa29/tests/run/800-namespace-asm-data-sections.t",
+        "pa29/tests/run/800-namespace-asm-data-sections.t.1"
+      ],
+      "note": "Explicit ELF section bytes, flags and entry size; source and LowIR-roundtrip objects."
+    }
+  ]
+}

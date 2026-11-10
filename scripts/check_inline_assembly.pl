@@ -128,7 +128,7 @@ for my $test (@tests)
 	@fixture_link = fixture_link_options($test);
 	my $profile = read_file(profile_path($test));
 	$profile =~ s/\s+\z//;
-	die "$test: unknown assembly profile '$profile'\n" if $profile !~ /\A(?:(?:lowir|gnu)(?:-reject)?|gnu-native|lowir-native(?:-reject)?)\z/;
+	die "$test: unknown assembly profile '$profile'\n" if $profile !~ /\A(?:(?:lowir|gnu)(?:-reject)?|gnu-native|gnu-compile|lowir-native(?:-reject)?)\z/;
 	my $directory = File::Spec->rel2abs(tempdir('case-XXXXXX', DIR => $out, CLEANUP => 0));
 	if ($profile =~ /-reject\z/)
 	{
@@ -141,13 +141,34 @@ for my $test (@tests)
 		}
 		my @cmd = $profile eq 'lowir-reject'
 			? ($lowir, '-o', "$directory/rejected.lowir", $source)
-			: ($app, ($profile =~ /^gnu/ ? ('--full-asm') : ()), '-O0', '-c', $native_source, '-o', "$directory/rejected.o");
+			: ($app, '-O0', '-c', $native_source, '-o', "$directory/rejected.o");
 		my $status = run_command_capture(cmd => \@cmd,
 			stdout => "$directory/reject.stdout", stderr => "$directory/reject.stderr",
 			timeout => get_timeout_from_env('CPPGM_BUILD_TEST_TIMEOUT_SEC', 30));
 		die "$test: expected a normal compiler rejection, got status $status; results: $directory\n"
 			if $status != 1;
 		print "$test: assembly rejection passed\n" unless $ENV{CPPGM_REPORT_QUIET};
+		next;
+	}
+	if ($profile eq 'gnu-compile')
+	{
+		for my $level (@levels)
+		{
+			command($directory, "$level.compile", $app, "-$level", '-c', $source, '-o', "$directory/$level.o");
+			(my $expect = $source) =~ s/\.t$/.inspect.expect/;
+			if (-f $expect)
+			{
+				command($directory, "$level.inspect", $^X, "$FindBin::Bin/check_object_expectations.pl", $expect, "$directory/$level.o");
+			}
+			my $lowered = "$directory/$level.lowir";
+			command($directory, "$level.lower", $app, '--emit-lowir', "-$level", '-o', $lowered, $source);
+			for my $input (canonical_inputs($directory, $lowered))
+			{
+				command($directory, "$level.roundtrip", $app, "-$level", '-c', $input, '-o', "$directory/roundtrip.o");
+				command($directory, "$level.roundtrip-inspect", $^X, "$FindBin::Bin/check_object_expectations.pl", $expect, "$directory/roundtrip.o") if -f $expect;
+			}
+		}
+		print "$test: assembly compile/roundtrip properties passed\n" unless $ENV{CPPGM_REPORT_QUIET};
 		next;
 	}
 	if ($profile eq 'lowir-native')
@@ -184,14 +205,13 @@ for my $test (@tests)
 			note_progress_state('compile', $test);
 			my $label = "input-$index-$level";
 			my $object = "$directory/$label.o";
-			my @flags = $profile =~ /\Agnu/ ? ('--full-asm') : ();
-			command($directory, "$label.compile", $app, @flags, "-$level", '-c', $input, '-o', $object);
+			command($directory, "$label.compile", $app, "-$level", '-c', $input, '-o', $object);
 			push @observations, observe($directory, $label, $object, $driver);
 			if ($profile =~ /\Agnu/)
 			{
 				my $lowered = "$directory/$label.lowir";
 				my $canonical = "$directory/$label.canonical.lowir";
-				command($directory, "$label.lower", $app, '--full-asm', '--emit-lowir', "-$level", '-o', $lowered, $source);
+				command($directory, "$label.lower", $app, '--emit-lowir', "-$level", '-o', $lowered, $source);
 				command($directory, "$label.read", $lowir, '-o', $canonical, $lowered);
 				command($directory, "$label.roundtrip-compile", $app, "-$level", '-c', $canonical, '-o', "$directory/$label.roundtrip.o");
 				push @observations, observe($directory, "$label.roundtrip", "$directory/$label.roundtrip.o", $driver);

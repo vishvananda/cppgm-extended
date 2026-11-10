@@ -103,7 +103,6 @@ struct Invocation
 	bool preprocess_only = false;
 	// -fsyntax-only: each source analyzed, nothing lowered or written.
 	bool syntax_only = false;
-	bool full_asm = false;
 	bool ignore_narrowing = false;
 	bool debug_info = false;
 	bool debug_types = false;
@@ -273,9 +272,7 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 	for (size_t i = 0; i < args.size(); ++i)
 	{
 		const std::string& arg = args[i];
-		if (arg == "--full-asm")
-			invocation.full_asm = true;
-		else if (arg == "-c")
+		if (arg == "-c")
 			invocation.compile_only = true;
 		else if (arg == "-fPIC" || arg == "-fpic")
 			invocation.position_independent = true;
@@ -544,7 +541,6 @@ bool compile_unit(
 			graph.names.reserve(unit.counters().bindings);
 			sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
 			analyzer.set_hosted(invocation.preprocessor.hosted);
-			analyzer.set_full_asm(invocation.full_asm);
 			analyzer.set_cxx14(invocation.preprocessor.cplusplus != "201103L");
 			analyzer.set_cxx17(invocation.preprocessor.cplusplus == "201703L");
 			analyzer.set_exceptions(invocation.preprocessor.modes.exceptions);

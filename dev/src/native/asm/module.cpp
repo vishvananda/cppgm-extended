@@ -15,6 +15,7 @@ namespace native {
 ModuleAssembler::ModuleAssembler(object::ObjectFile& out, Target target)
 	: out_(out), target_(target), symbols_(out, target), unwind_(out, target)
 {
+	syntax_.power_alignment = target == Target::MacOS;
 	section(".text", object::SectionKind::Text);
 }
 uint64_t ModuleAssembler::offset() const
@@ -127,7 +128,8 @@ void ModuleAssembler::append(const assembly::ModuleLine& line)
 		return;
 	}
 	const bool code_data = out_.sections[section_].kind == object::SectionKind::Text &&
-		(name == ".p2align" || name == ".balign" || name == ".zero" || name == ".space" || name == ".skip" ||
+		(name == ".p2align" || name == ".balign" || name == ".align" || name == ".zero" || name == ".space" ||
+			name == ".skip" ||
 			((name == ".byte" || name == ".short" || name == ".word" || name == ".long" || name == ".quad") &&
 				cursor.numeric()));
 	if (name[0] == '.' && !label && !syntax && !code_data)

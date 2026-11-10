@@ -13,9 +13,7 @@
 // storage is a slot or global used directly as a load/store operand, or a
 // pointer temporary. Generated temporaries, slots and blocks are unnamed
 // (printed by ordinal), so no source name can redirect them.
-namespace sema {
-struct AsmInstruction;
-}
+namespace sema {}
 
 namespace lower {
 
@@ -753,35 +751,9 @@ private:
 	void flatten_initializer(const sema::Type* type, const syntax::Expr* init, uint64_t offset, uint32_t location,
 		std::vector<InitElement>& out);
 	void if_statement(const syntax::IfStmt& stmt);
-	struct AsmState
-	{
-		std::vector<lowir::Value> addresses;
-		std::vector<lowir::Value> homes;
-		std::vector<RValue> values;
-		std::vector<lowir::Type> types;
-		std::vector<uint32_t> widths;
-		std::vector<bool> volatiles;
-		uint32_t outputs;
-		uint32_t registers;
-		RValue zero;
-		RValue carry;
-	};
-	void asm_bind_operands(const syntax::AsmStmt& stmt, AsmState& state);
-	Place asm_place(const AsmState& state, uint32_t index);
-	void asm_store(const AsmState& state, uint32_t index, RValue value);
-	RValue asm_source(const AsmState& state, const sema::AsmInstruction& instruction);
-	void asm_instruction(const sema::AsmInstruction& instruction, AsmState& state);
-	void asm_cpu_query(const sema::AsmInstruction& instruction, AsmState& state);
-	void asm_xstate_query(const sema::AsmInstruction& instruction, AsmState& state);
-	void asm_bit_instruction(const sema::AsmInstruction& instruction, AsmState& state, const RValue& source);
-	void asm_capture_flags(const sema::AsmInstruction& instruction, AsmState& state, const RValue& before,
-		const RValue& after, const RValue& source);
-	void asm_set_flag(const sema::AsmInstruction& instruction, AsmState& state);
-	// A GNU asm statement's lifted operations (sema/asm_statements.h).
 	void asm_statement(const syntax::AsmStmt& stmt);
-	void full_asm_statement(const syntax::AsmStmt& stmt);
 	void lower_naked_definition();
-	lowir::Value full_asm_exit_arguments(
+	lowir::Value asm_exit_arguments(
 		const syntax::AsmStmt& stmt, std::vector<lowir::Type>& types, std::vector<lowir::Value>& values);
 	void branch_asm_exits(const syntax::AsmStmt& stmt, lowir::Value selector);
 	void condition_branch(

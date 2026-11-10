@@ -87,7 +87,7 @@ def build(args, directory, source, compilers, cpus):
     launcher = directory / 'cppgm-launcher'
     launcher.write_text('#!/bin/sh\nhost=$1\nshift\nfor arg do\n'
                         '  if [ "$arg" = -c ]; then exec ' + shlex.quote(str(compilers['cppgm'])) +
-                        ' --full-asm "$@"; fi\ndone\nexec "$host" "$@"\n')
+                        ' "$@"; fi\ndone\nexec "$host" "$@"\n')
     launcher.chmod(0o755)
     for label in LABELS:
         tree = directory / ('build-' + label)

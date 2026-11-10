@@ -40,10 +40,8 @@ struct AsmDecl : Decl
 {
 	TokenSpelling text;
 	// Non-null after analysis, including an empty definition.
-	mutable const sema::AsmDataSection* sections = nullptr;
-	mutable uint32_t section_count = 0;
-	mutable const char* full_source = nullptr;
-	mutable uint32_t full_size = 0;
+	mutable const char* assembly_source = nullptr;
+	mutable uint32_t assembly_size = 0;
 };
 
 struct NamespaceDecl : Decl
