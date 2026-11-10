@@ -92,7 +92,11 @@ void FunctionLowering::copy_members(uint32_t location)
 	const uint32_t count = function_->init_count;
 	if (entity->key == TokenKind::KW_UNION && entity->contains_volatile)
 	{
-		copy_volatile_elements(lowir::Type::scalar(lowir::TypeKind::U8), source_object(), this_pointer(location),
+		// Both addresses emit instructions. Sequence them explicitly so the
+		// host compiler's argument evaluation order cannot change the LowIR.
+		const lowir::Value destination = this_pointer(location);
+		const lowir::Value source = source_object();
+		copy_volatile_elements(lowir::Type::scalar(lowir::TypeKind::U8), source, destination,
 			lowering_.size_of(entity->type, location), 1);
 		if (assignment)
 		{
