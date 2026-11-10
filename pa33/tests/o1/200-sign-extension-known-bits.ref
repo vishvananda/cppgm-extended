@@ -1,0 +1,113 @@
+function @divide_truth(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %truth = cmp ne i64 %x, 0
+    %bit = convert trunc i1 i64 %truth
+    %wide = convert sext i64 i1 %bit
+    %result = binary div i64 %wide, 2
+    return i64 %result
+}
+function @remainder_truth(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %truth = cmp ne i64 %x, 0
+    %bit = convert trunc i1 i64 %truth
+    %wide = convert sext i64 i1 %bit
+    %result = binary mod i64 %wide, 2
+    return i64 %result
+}
+function @unsigned_divide_truth(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %truth = cmp ne i64 %x, 0
+    %bit = convert trunc i1 i64 %truth
+    %wide = convert sext i64 i1 %bit
+    %result = binary udiv i64 %wide, 2
+    return i64 %result
+}
+function @mask_truth(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %truth = cmp ne i64 %x, 0
+    %bit = convert trunc i1 i64 %truth
+    %wide = convert sext i64 i1 %bit
+    %result = binary and i64 %wide, 128
+    return i64 %result
+}
+function @mask_low_bit(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %low = binary and i64 %x, 3
+    %bit = convert trunc i1 i64 %low
+    %wide = convert sext i64 i1 %bit
+    %result = binary and i64 %wide, -2
+    return i64 %result
+}
+function @remainder_word(%x : i64) -> i32 [no_inline=yes] {
+  block ^entry:
+    %truth = cmp ne i64 %x, 0
+    %bit = convert trunc i1 i64 %truth
+    %wide = convert sext i32 i1 %bit
+    %result = binary mod i32 %wide, 2
+    return i32 %result
+}
+function @unsigned_divide_word(%x : i64) -> u32 [no_inline=yes] {
+  block ^entry:
+    %truth = cmp ne i64 %x, 0
+    %bit = convert trunc i1 i64 %truth
+    %wide = convert sext u32 i1 %bit
+    %result = binary udiv u32 %wide, 2
+    return u32 %result
+}
+function @zero_extended_control(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %truth = cmp ne i64 %x, 0
+    return i64 %truth
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^next: %inext]
+    %x = binary sub i64 %i, 512
+    %truth = cmp ne i64 %x, 0
+    %negative_truth = binary sub i64 0, %truth
+    %negative_word = convert trunc i32 i64 %negative_truth
+    %low = binary and i64 %x, 1
+    %negative_low = binary mul i64 %low, -2
+    %high = binary mul i64 %truth, 128
+    %unsigned_half = binary mul i64 %truth, 9223372036854775807
+    %unsigned_word_half = convert trunc u32 i64 %truth
+    %expected_word_half = binary mul u32 %unsigned_word_half, 2147483647
+    %a = call i64 @divide_truth(%x)
+    %b = call i64 @remainder_truth(%x)
+    %c = call i64 @unsigned_divide_truth(%x)
+    %d = call i64 @mask_truth(%x)
+    %e = call i64 @mask_low_bit(%x)
+    %f = call i32 @remainder_word(%x)
+    %g = call u32 @unsigned_divide_word(%x)
+    %h = call i64 @zero_extended_control(%x)
+    %bad_a = cmp ne i64 %a, 0
+    %bad_b = cmp ne i64 %negative_truth, %b
+    %bad_c = cmp ne i64 %unsigned_half, %c
+    %bad_d = cmp ne i64 %high, %d
+    %bad_e = cmp ne i64 %negative_low, %e
+    %bad_f = cmp ne i32 %negative_word, %f
+    %bad_g = cmp ne u32 %expected_word_half, %g
+    %bad_h = cmp ne i64 %truth, %h
+    %ab = binary or i64 %bad_a, %bad_b
+    %cd = binary or i64 %bad_c, %bad_d
+    %ef = binary or i64 %bad_e, %bad_f
+    %gh = binary or i64 %bad_g, %bad_h
+    %abcd = binary or i64 %ab, %cd
+    %efgh = binary or i64 %ef, %gh
+    %bad = binary or i64 %abcd, %efgh
+    branch %bad, ^fail, ^next
+
+  block ^next:
+    %inext = binary add i64 %i, 1
+    %more = cmp ne i64 %inext, 1024
+    branch %more, ^loop, ^done
+
+  block ^fail:
+    return i64 1
+
+  block ^done:
+    return i64 0
+}

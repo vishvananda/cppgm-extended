@@ -1690,7 +1690,7 @@ bool Simplifier::phi_value(const Instruction& phi, Value& out)
 // every bit of the type otherwise (types up to 64 bits).
 uint64_t Simplifier::possible_bits(Value v, Type type, unsigned depth)
 {
-	const unsigned width = static_cast<unsigned>(8 * storage_bytes(type));
+	const unsigned width = type.is_integer() ? lowir::integer_bits(type.kind()) : 8 * storage_bytes(type);
 	const uint64_t all = width >= 64 ? ~static_cast<uint64_t>(0) : (static_cast<uint64_t>(1) << width) - 1;
 	Constant c;
 	Literal bits;
@@ -1727,7 +1727,7 @@ uint64_t Simplifier::possible_bits(Value v, Type type, unsigned depth)
 			!from.is_integer() || from.kind() == TypeKind::I128)
 			return all;
 		const uint64_t bits_from = possible_bits(def->ops[0], from, depth + 1);
-		const uint64_t sign = static_cast<uint64_t>(1) << (8 * storage_bytes(from) - 1);
+		const uint64_t sign = static_cast<uint64_t>(1) << (lowir::integer_bits(from.kind()) - 1);
 		return convert == ConvertOp::SExt && (bits_from & sign) != 0 ? all : bits_from & all;
 	}
 	if (def->op != Opcode::Binary)
