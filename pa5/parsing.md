@@ -182,3 +182,14 @@ boundary without relying on an unresolved mock name.
 Syntax fixtures may use unresolved names or omit semantic definitions because
 type checking is a later stage. The shared grammar and handout define the
 supported boundary; a few rejection cases test it.
+
+### Later syntax in the shared tree
+
+The required profile includes C++14/17 syntax at this parser boundary. Preserve
+fold operators/grouping, selection initializers and constexpr selection,
+structured-binding names, deduction-guide results and initialized/generic
+captures as syntax with source locations. Their owning later handouts specify
+the semantic work. A nested namespace definition can be represented as nested
+scopes without losing the original source range. Do not turn these forms into
+source fragments that a later assignment has to parse again. Keep the language
+mode in each invocation so persistent requests cannot inherit a previous mode.

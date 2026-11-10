@@ -295,7 +295,7 @@ The following are explicitly out of scope for PA17:
 - dependent-call and instantiation-timing behavior (PA18)
 - initializer-list template behavior
 - hosted/vendor-only extensions that happen to use templates
-- post-C++11 template-language features other than the variable templates above
+- template-language features beyond the required profile and the declarations above
 - broad multi-feature integration cases whose main assertion is that several
   completed template features compose
 

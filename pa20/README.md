@@ -192,8 +192,8 @@ PA20 supports the following in addition to the PA19 subset:
   and conversion operators over the supported class subset
 - explicit non-class functional casts between the supported integral and enum forms
 - `reinterpret_cast` between the supported pointer and integer forms
-- captureless lambda expressions plus the supported by-reference local and explicit/implicit `this`
-  capture subset
+- captureless and capturing lambda expressions over the supported object model,
+  including the required modern forms below
 - range-for statements over:
   - bounded arrays
   - supported class/member and ADL `begin` / `end` ranges whose iterator operations stay
@@ -213,7 +213,7 @@ To complete PA20, implement these goals:
    Supported scalar and array declarations should lower cleanly from `{...}` source forms,
    not only from `=` initializer syntax.
 
-3. Captureless lambda lowering.
+3. Closure lowering.
    Captureless lambdas should become callable lowered entities with deterministic LowIR.
    A function-local static declared in a lambda has distinct storage for each
    lambda expression and each enclosing function-template specialization; a
@@ -249,12 +249,18 @@ Complete ordinary by-copy, by-reference and default captures here, including
 mutable closures, captured arrays and `this`. Capture discovery follows source
 uses and scope, including callable objects; unevaluated uses do not create
 captures. Exception-aware capture cleanup remains PA21.
+Follow adopted [P0588R1](../doc/cwg/paper-p0588r1.txt) for implicit captures:
+a potentially evaluated reference can require a capture even when it is not
+an odr-use. Preserve observable copy initialization; a non-odr-use in the body
+still reads the original constant object under [CWG2083](../doc/cwg/cwg-2083.txt).
+
 
 C++14 adds `decltype(auto)` variables/returns, generic lambda parameters and
 initialized captures. Preserve the difference between a named expression and
 its parenthesized lvalue in `decltype(auto)`. Diagnose inconsistent returns,
 braced placeholder deduction and invalid declarator combinations. Deleted
-placeholder-return declarations need no nonexistent body. Initialized captures
+placeholder-return declarations need no nonexistent body. A use that requires
+an undeduced return type from an unavailable definition is rejected. Initialized captures
 deduce from the enclosing scope; their new name is available in the body,
 not its own initializer. Support the existing assignment and parenthesized
 forms, generic parameter packs and nested capture propagation.
@@ -285,11 +291,10 @@ instruction sequence or register allocation.
 
 The following are explicitly out of scope for PA20:
 
-- capturing lambdas other than the supported by-reference local / `this`-capture subset
+- exception-aware capture construction and failure cleanup (PA21)
 - `std::initializer_list` semantic interoperation
 - RTTI and `typeid`
 - `dynamic_cast`
-- placeholder return-type declarations without a visible definition body
 - range-declarations that require unsupported user-defined iterator or reference semantics
 - any PA20 feature path that depends on unsupported PA11-PA19 semantics
 

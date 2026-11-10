@@ -273,7 +273,7 @@ Comparison rules:
 
 The local suite is split by role:
 
-- `tests/spec/` contains small tests tied to specific C++11 syntax clauses.
+- `tests/spec/` contains small tests tied to the cited syntax clauses and selected language modes.
   These files begin with an `N3485 focus` comment.
 - `tests/general/` contains broader parser tests, cross-feature syntax
   combinations, and useful intake cases that are not a single-clause oracle.

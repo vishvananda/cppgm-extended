@@ -148,7 +148,7 @@ format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the
 checked-in `.ref` files.
 
 PA21 does not add a new source-language grammar format. It instead enables more
-of the already-accepted C++11 syntax to participate in semantic analysis and
+of the accepted source-language syntax to participate in semantic analysis and
 lowering.
 
 A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
@@ -166,10 +166,8 @@ treat `lowir.md` as authoritative. If they disagree about the PA21 lowering slic
 
 PA21 supports the following in addition to the PA20 subset:
 
-- capturing lambdas with supported explicit by-copy and by-reference captures of local
-  values, including class objects whose existing copy-construction path is supported
-- default `[=]` and `[&]` captures over the same supported local-value and `this` subset
-- explicit `this` capture for supported member-function cases
+- exception-aware construction/destruction of PA20 closures, including copied
+  objects, capture arrays and initialized captures
 - `std::initializer_list<T>` interoperation for supported scalar elements and
   class elements whose construction, copy, and destruction stay within the
   PA11/PA12/PA19 object and template subset
@@ -185,15 +183,12 @@ that subset. That LowIR should be accepted by PA24 `lowir2native` for the suppor
 
 To complete PA21, implement these goals:
 
-1. Capturing lambda lowering.
-   Explicit by-copy captures should materialize deterministic closure-object LowIR and the
-   resulting closure object should be callable through the existing class/method lowering
-   path. A catch parameter declared inside a lambda body is local to that body and is not an
-   implicit capture.
-   Follow adopted [P0588R1](../doc/cwg/paper-p0588r1.txt) for implicit captures:
-   a potentially evaluated reference can require a capture even when it is not
-   an odr-use. Preserve observable copy initialization; a non-odr-use in the body
-   still reads the original constant object under [CWG2083](../doc/cwg/cwg-2083.txt).
+1. Exception-aware closure construction.
+   Extend PA20's capture semantics with cleanup for a successfully constructed
+   capture prefix when a later initializer throws. Preserve the original
+   exception and destroy only the captures whose lifetime began. A catch
+   parameter declared inside a lambda body is local to that body and is not
+   an implicit capture.
 
 2. `std::initializer_list` interoperation.
    Supported braced-list calls should materialize deterministic lowered storage and expose

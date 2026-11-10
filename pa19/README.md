@@ -180,7 +180,7 @@ In `tests/general/300-incomplete-sizeof-partial-specialization-sfinae.t`,
 because the class is incomplete. That substitution failure removes the
 `has_comparator` specialization instead of rejecting the program, and
 `lazy<X>::value()` selects the fallback and returns zero. This selected
-compatibility rule does not bring other post-C++11 features into scope.
+compatibility rule does not bring features beyond the required profile into scope.
 
 ### Discarded dependent statements
 
@@ -203,7 +203,7 @@ The following are explicitly out of scope for PA19:
   machinery
 - member-pointer template behavior that depends on later member-pointer support
 - hosted/vendor-only extensions that happen to use templates
-- post-C++11 template-language features
+- template-language features beyond the required profile
 - backend/toolchain ownership that belongs to the later native and toolchain
   milestones
 

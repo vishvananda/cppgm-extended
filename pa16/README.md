@@ -355,7 +355,7 @@ corresponding clauses for the required later rules.
 The following are explicitly out of scope for PA16:
 
 - template language features that still remain deferred to PA17
-- post-C++11 constant-evaluation features
+- constant-evaluation operations beyond the required profile; lambda objects arrive with PA20
 - hosted/vendor-only compatibility forms that are not part of the standard C++ language
 
 Inputs that rely on those features have undefined behaviour for this milestone.

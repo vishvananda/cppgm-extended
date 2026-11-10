@@ -139,7 +139,7 @@ format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the checke
 `.ref` files.
 
 PA23 does not add a new source-language grammar format. It instead enables more
-of the already-accepted C++11 syntax to participate in semantic analysis and
+of the accepted source-language syntax to participate in semantic analysis and
 lowering.
 
 A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat

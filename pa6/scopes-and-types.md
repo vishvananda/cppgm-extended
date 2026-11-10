@@ -164,3 +164,13 @@ resolution arrive at their owning later assignments.
 Useful standard reading is N3485 3.4 (lookup), 7.1.6 (type specifiers and cv
 qualification), 7.3 (namespaces), and 8.3 (declarators), alongside the concrete
 course subset. The handout and this guide supply the prerequisites.
+
+### Edition-sensitive namespace and function facts
+
+Qualified C++17 namespace definitions reopen the same entities as nested
+braces. Resolve aliases without treating an alias as a new namespace body.
+In C++17, a non-throwing specification participates in function-type identity;
+in earlier modes retain the existing declaration metadata distinction. PA7
+uses that typed distinction for permitted pointer conversions, and later
+substitution/ABI work consumes it directly rather than recovering it from
+rendered type text.

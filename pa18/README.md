@@ -251,7 +251,7 @@ The following are explicitly out of scope for PA18:
   machinery
 - member-pointer template behavior that depends on later member-pointer support
 - hosted/vendor-only extensions that happen to use templates
-- post-C++11 template-language features
+- template-language features beyond the required profile
 - backend/toolchain ownership that belongs to the later native and toolchain
   milestones
 
