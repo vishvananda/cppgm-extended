@@ -1078,9 +1078,9 @@ void AggregateSlots::rewrite()
 // a copy from the value: the forms the splitting below reads field by field.
 // (Complex values move this way, as whole objects from slot to slot.)
 // Object values are immutable snapshots. Their value copies are aliases;
-// copies from storage are loads, and an object-valued copyobj is a store.
-// Canonicalize all three before looking for whole-object transfers, including
-// copies the inliner introduced. No source-language spelling is privileged.
+// copies from storage are loads. Whole-object transfers accept copyobj's
+// object values directly below, without cycling them through store and back.
+// Include copies the inliner introduced; no frontend spelling is privileged.
 bool canonicalize_object_values(FunctionBody& body)
 {
 	std::vector<Value> alias;
@@ -1100,17 +1100,6 @@ bool canonicalize_object_values(FunctionBody& body)
 				}
 				else
 					inst.op = Opcode::Load;
-				changed = true;
-			}
-			else if (inst.op == Opcode::CopyObject && inst.ops[0].is(ValueKind::Temp))
-			{
-				const Type type = body.temps[inst.ops[0].index].type;
-				if (!type.is_object())
-					continue;
-				inst.op = Opcode::Store;
-				inst.type = type;
-				inst.immediate = 0;
-				inst.sub = 0;
 				changed = true;
 			}
 		}
@@ -1152,6 +1141,10 @@ bool AggregateSlots::objects_through_slots()
 		return (inst.op == Opcode::Load || inst.op == Opcode::Store) && inst.type.is_object() &&
 			(inst.flags & IF_VOLATILE) == 0;
 	};
+	const auto object_copy = [&](const Instruction& inst) {
+		return inst.op == Opcode::CopyObject && inst.ops[0].is(ValueKind::Temp) &&
+			body_.temps[inst.ops[0].index].type.is_object();
+	};
 	// Per temp: 1 a whole load's value only whole stores have read, 2 not.
 	std::vector<uint8_t> stored;
 	for (BlockId b : body_.layout)
@@ -1171,7 +1164,7 @@ bool AggregateSlots::objects_through_slots()
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
 			const Instruction& inst = body_.instructions[i];
-			if (whole(inst) && inst.op == Opcode::Store)
+			if ((whole(inst) && inst.op == Opcode::Store) || object_copy(inst))
 				continue;
 			for_each_operand(body_, inst, [&](const Value& v) {
 				if (v.is(ValueKind::Temp) && stored[v.index] == 1)
@@ -1180,7 +1173,7 @@ bool AggregateSlots::objects_through_slots()
 		}
 	bool rewritten = false;
 	const auto copy = [&](Instruction& inst, Value from, Value to) {
-		const Type type = inst.type;
+		const Type type = object_copy(inst) ? body_.temps[inst.ops[0].index].type : inst.type;
 		inst.op = Opcode::CopyObject;
 		inst.ops[0] = from;
 		inst.ops[1] = to;
@@ -1194,7 +1187,7 @@ bool AggregateSlots::objects_through_slots()
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
 			Instruction& inst = body_.instructions[i];
-			if (!whole(inst))
+			if (!whole(inst) && !object_copy(inst))
 				continue;
 			if (inst.op == Opcode::Load)
 			{
@@ -1213,8 +1206,9 @@ bool AggregateSlots::objects_through_slots()
 			const Value to = inst.ops[1];
 			if (home[value.index] != kNoId)
 				copy(inst, Value::slot(home[value.index]), to);
-			else if (value.index < body_.parameter_count ||
-				body_.instructions[body_.temps[value.index].def].op == Opcode::Call)
+			else if (!object_copy(inst) &&
+				(value.index < body_.parameter_count ||
+					body_.instructions[body_.temps[value.index].def].op == Opcode::Call))
 				copy(inst, value, to);
 		}
 	return rewritten;
@@ -1222,11 +1216,18 @@ bool AggregateSlots::objects_through_slots()
 
 bool AggregateSlots::run()
 {
-	if (body_.slots.empty() &&
-		std::none_of(body_.temps.begin(), body_.temps.end(), [](const Temp& temp) { return temp.type.is_object(); }))
+	const bool object_values = std::any_of(
+		body_.temps.begin(), body_.temps.end(), [](const Temp& temp) { return temp.type.is_object(); });
+	if (body_.slots.empty() && !object_values)
 		return false;
-	bool rewritten = canonicalize_object_values(body_);
-	rewritten = objects_through_slots() || rewritten;
+	// Scalar-only SSA cannot contain an object alias or a loaded object value.
+	// Use the dense type table before walking the linked instructions twice.
+	bool rewritten = false;
+	if (object_values)
+	{
+		rewritten = canonicalize_object_values(body_);
+		rewritten = objects_through_slots() || rewritten;
+	}
 	analyze();
 	mark_recurrent_fields();
 	first_field_.assign(body_.slots.size(), kNoId);
