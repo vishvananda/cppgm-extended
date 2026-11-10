@@ -21,8 +21,7 @@ function @billions
     mov r11, 19342813113834067
     mul r11
     shr rdx, 11
-    mov rax, rdx
-    ret rax
+    ret rdx
 
 function @main
   abi

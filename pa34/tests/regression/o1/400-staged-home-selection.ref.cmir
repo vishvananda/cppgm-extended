@@ -76,8 +76,7 @@ function @copy_to_edge_home
     store.i64 [rbp-<off1>], r8
 
   block ^done
-    mov rax, r8
-    ret rax
+    ret r8
 
   block ^right
     load.i64 r8, [rbp-<off0>]
@@ -120,8 +119,7 @@ function @call_result_to_edge_home
     store.i64 [rbp-<off1>], r8
 
   block ^done
-    mov rax, r8
-    ret rax
+    ret r8
 
   block ^right
     load.i64 r8, [rbp-<off0>]

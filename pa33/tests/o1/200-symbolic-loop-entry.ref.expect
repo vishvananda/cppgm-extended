@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+# Keep the exit pointer and omit the proven empty volatile traversal.
+instructions <= 3 in @empty
+blocks <= 1 in @empty

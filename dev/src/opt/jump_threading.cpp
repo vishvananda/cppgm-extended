@@ -348,9 +348,9 @@ bool JumpThreading::evaluate(BlockId block, const Value* inputs, BlockId& target
 		const Instruction& inst = body_.instructions[i];
 		if (inst.op == Opcode::Phi)
 		{
-			// An input not literal leaves the phi undecided: only a use fails.
+			// Preserve symbolic SSA identity on this incoming edge as well as literals.
 			const Value in = *inputs++;
-			if (in.is_literal())
+			if (!in.is(ValueKind::None))
 			{
 				scratch_[inst.result] = in;
 				touched.push_back(inst.result);
@@ -392,7 +392,16 @@ bool JumpThreading::evaluate(BlockId block, const Value* inputs, BlockId& target
 		switch (inst.op)
 		{
 		case Opcode::Compare:
-			ok = la && lb && fold_compare(static_cast<ComparePredicate>(inst.sub), inst.type, a, b, r);
+			if (!inst.type.is_float() && value(inst.ops[0]) == value(inst.ops[1]) &&
+				!value(inst.ops[0]).is(ValueKind::None))
+			{
+				const ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
+				r = truth_constant(pred == ComparePredicate::Eq || pred == ComparePredicate::Le ||
+					pred == ComparePredicate::Ge || pred == ComparePredicate::Ule || pred == ComparePredicate::Uge);
+				ok = true;
+			}
+			else
+				ok = la && lb && fold_compare(static_cast<ComparePredicate>(inst.sub), inst.type, a, b, r);
 			break;
 		case Opcode::Binary:
 			ok = la && lb && fold_binary(static_cast<BinaryOp>(inst.sub), inst.type, a, b, r);
@@ -526,7 +535,7 @@ bool JumpThreading::constant_phis(bool counted)
 		// (the phis by its own computations, those by the branch); a use by
 		// one of its phis, from a back edge, is a use outside the threaded
 		// path. In-block use counts, less those at or before each value.
-		bool private_values = true;
+		bool private_values = true, repair_phis = false;
 		BlockId kept[2] = { kNoId, kNoId }; // successors holding uses past the block
 		for (InstId i = body_.blocks[m].first; i != kNoId; i = body_.instructions[i].next)
 			for_each_operand(body_, body_.instructions[i], [&](const Value& v) {
@@ -557,7 +566,14 @@ bool JumpThreading::constant_phis(bool counted)
 			if (use_dom_.empty())
 				find_use_dominators();
 			const BlockId holder = successor_holding(m, inst.result);
-			if (holder == kNoId || touched[holder] || (kept[0] != kNoId && kept[0] != holder && kept[1] != kNoId))
+			if (holder == kNoId && inst.op == Opcode::Phi &&
+				(inst.type.is_pointer() || (inst.type.is_integer() && inst.type.kind() != TypeKind::I128)) &&
+				work == 1 && body_.blocks[m].first == i && inst.next != term &&
+				body_.instructions[inst.next].op == Opcode::Compare &&
+				(body_.instructions[inst.next].sub == static_cast<uint8_t>(ComparePredicate::Eq) ||
+					body_.instructions[inst.next].sub == static_cast<uint8_t>(ComparePredicate::Ne)))
+				repair_phis = true;
+			else if (holder == kNoId || touched[holder] || (kept[0] != kNoId && kept[0] != holder && kept[1] != kNoId))
 				private_values = false;
 			else if (kept[0] == kNoId || kept[0] == holder)
 				kept[0] = holder;
@@ -566,7 +582,7 @@ bool JumpThreading::constant_phis(bool counted)
 		}
 		if (!private_values)
 			continue;
-		copyable = copyable && kept[0] == kNoId;
+		copyable = copyable && kept[0] == kNoId && !repair_phis;
 		// The phis' inputs per predecessor, in one pass over their lists.
 		const uint32_t first_pred = cfg_.pred_first[m], count = cfg_.pred_count(m);
 		uint32_t phis = 0;
@@ -617,6 +633,31 @@ bool JumpThreading::constant_phis(bool counted)
 			}
 			else if (jumps && copyable)
 				copies.push_back(k);
+		}
+		if (repair_phis)
+		{
+			// This block's phis can also be live after the exit. The existing
+			// demotion/promotion path repairs those uses and critical edges.
+			// Start with a jumping predecessor and a target without phis;
+			// other computations still obey the successor-holding check.
+			if (changed)
+				return true;
+			for (const auto& move : moves)
+			{
+				const BlockId predecessor = preds[move.first], target = move.second;
+				const InstId first = body_.blocks[target].first;
+				if (target == predecessor || body_.instructions[body_.blocks[predecessor].last].op != Opcode::Jump ||
+					(first != kNoId && body_.instructions[first].op == Opcode::Phi))
+					continue;
+				std::vector<std::pair<BlockId, BlockId>> redirects(1, std::make_pair(predecessor, target));
+				if (!demote_phis(m, redirects))
+					continue;
+				body_.instructions[body_.blocks[redirects[0].first].last].ops[0] = Value::block(target);
+				++c_.stats.branches_folded;
+				// Demotion may grow the layout; return before using its old iterators.
+				return true;
+			}
+			continue;
 		}
 		if (!moves.empty() && apply_moves(m, preds, phis, moves, touched))
 		{

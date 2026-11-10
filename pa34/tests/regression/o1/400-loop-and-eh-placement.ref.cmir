@@ -102,8 +102,8 @@ function @walk_guarded
     ret r9
 
   block ^entry~exit
-    mov r9, 0
-    ret r9
+    mov rax, 0
+    ret rax
 
 function @call_free_eh_load
   abi
@@ -131,8 +131,7 @@ function @call_free_eh_load
     store.i64 [rbp-<off1>], r8
 
   block ^done
-    mov rax, r8
-    ret rax
+    ret r8
 
   block ^right
     lea r8, [rdi-<off0>]

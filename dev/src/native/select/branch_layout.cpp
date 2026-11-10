@@ -23,7 +23,8 @@
 // function's MIR. Instructions stay in place; a kept block's range shrinks
 // past its dropped branches, and removed blocks' jumps lie outside every
 // range (moving them cost 3% of -O1 time on a 4M-instruction function).
-// Only branches change; no value, flag or frame fact does.
+// Return tails also shed consecutive register copies after duplication;
+// their last independent assignment can produce the ABI return register.
 namespace native {
 
 using lowir::kNoId;
@@ -305,6 +306,52 @@ uint32_t form_tail_jumps(Function& f)
 
 } // namespace
 
+namespace {
+
+// At most eight tail instructions; no call, two-address operation or
+// frame/callee-saved destination is crossed or retargeted. The scalar return
+// observes every surviving register read before its epilogue.
+void coalesce_return(Function& f, Block& block)
+{
+	uint32_t at = block.first + block.count - 1;
+	Inst result = f.insts[at];
+	auto gpr = [](const Operand& op) { return op.kind == OperandKind::Reg && op.reg < 16; };
+	auto wide = [](lowir::TypeKind k) {
+		return k == lowir::TypeKind::Void || k == lowir::TypeKind::Ptr || k == lowir::TypeKind::I64;
+	};
+	if (result.op != Op::Ret || result.nops != 1 || !gpr(result.ops[0]) || !wide(result.type))
+		return;
+	for (uint32_t work = 0; at > block.first && work < 8; ++work)
+	{
+		Inst& prior = f.insts[--at];
+		if (prior.op == Op::Nop)
+			continue;
+		const Reg dst = result.ops[0].reg;
+		if (prior.nops != 2 || !gpr(prior.ops[0]) || prior.ops[0].reg != dst || !(kCallerSavedGprs & (1u << dst)))
+			break;
+		if (prior.op == Op::Mov && wide(prior.type) && gpr(prior.ops[1]))
+		{
+			result.ops[0] = prior.ops[1];
+			prior.op = Op::Nop;
+			prior.nops = 0;
+			prior.ops[0] = prior.ops[1] = Operand();
+			continue;
+		}
+		const bool independent = prior.op == Op::Lea || prior.op == Op::Load || prior.op == Op::Sext ||
+			prior.op == Op::Zext || (prior.op == Op::Mov && wide(prior.type) && prior.ops[1].kind == OperandKind::Imm);
+		if (dst != RAX && independent)
+			prior.ops[0] = result.ops[0] = Operand::make_reg(RAX);
+		break;
+	}
+	uint32_t end = block.first + block.count - 1;
+	while (end > block.first && f.insts[end - 1].op == Op::Nop)
+		--end;
+	f.insts[end] = result;
+	block.count = end + 1 - block.first;
+}
+
+} // namespace
+
 uint32_t FunctionSelector::layout_branches()
 {
 	const bool addressed = !out_->code_labels.empty();
@@ -351,6 +398,11 @@ uint32_t FunctionSelector::layout_branches()
 		if (block.count == 0)
 			continue;
 		Inst& last = f.insts[block.first + block.count - 1];
+		if (last.op == Op::Ret)
+		{
+			coalesce_return(f, block);
+			continue;
+		}
 		if (last.op != Op::Jmp || last.ops[0].kind != OperandKind::Label)
 			continue;
 		uint32_t t = last.ops[0].symbol;
@@ -358,7 +410,10 @@ uint32_t FunctionSelector::layout_branches()
 			t = f.insts[f.blocks[t].first].ops[0].symbol;
 		if (t < blocks && t != b && f.blocks[t].count == 1 && f.insts[f.blocks[t].first].op == Op::Ret &&
 			(bare_returns || (f.insts[f.blocks[t].first].flags & MF_FRAMELESS) != 0))
+		{
 			last = f.insts[f.blocks[t].first];
+			coalesce_return(f, block);
+		}
 	}
 	// Host objects: the blocks the entry and the landing pads reach (a
 	// return copied over the jump to a returning block, or a test the

@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+# Preserve all three return choices while bounding the result-transfer work.
+instructions <= 34 in @probe

@@ -19,8 +19,7 @@ function @high
   block ^entry
     mov rax, rdi
     mul rsi
-    mov rax, rdx
-    ret rax
+    ret rdx
 
 function @square
   abi
@@ -35,8 +34,7 @@ function @square
   block ^entry
     mov rax, rdi
     mul rdi
-    mov rax, rdx
-    ret rax
+    ret rdx
 
 function @signed
   abi
@@ -52,8 +50,7 @@ function @signed
   block ^entry
     mov rax, rdi
     imul rsi
-    mov rax, rdx
-    ret rax
+    ret rdx
 
 function @literal
   abi
@@ -69,8 +66,7 @@ function @literal
     mov <gpr0>, 0x0000000000000000abcc77118461cefd
     mov rax, rdi
     mul <gpr0>
-    mov rax, rdx
-    ret rax
+    ret rdx
 
 function @shared
   abi

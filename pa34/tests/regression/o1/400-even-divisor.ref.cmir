@@ -21,8 +21,7 @@ function @billions
     mov <gpr0>, 19342813113834067
     mul <gpr0>
     shr rdx, 11
-    mov rax, rdx
-    ret rax
+    ret rdx
 
 function @main
   abi

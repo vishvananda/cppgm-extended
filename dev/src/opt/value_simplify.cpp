@@ -661,10 +661,12 @@ bool Simplifier::identity(Instruction& inst, Value& out)
 			return true;
 		}
 		// There and back: a floating value's bits through an integer, or an
-		// integer's through the other signedness.
+		// integer's through another signedness or a pointer of the same width.
 		if (const Instruction* retype = producer(inst.ops[0]))
 			if (retype->op == Opcode::Copy && retype->ops[0].is(ValueKind::Temp) &&
-				(float_twins(retype->type, inst.type) || (retype->type.is_integer() && inst.type.is_integer())) &&
+				(float_twins(retype->type, inst.type) || (retype->type.is_integer() && inst.type.is_integer()) ||
+					(retype->type.is_pointer() && inst.type.kind() == TypeKind::I64) ||
+					(retype->type.kind() == TypeKind::I64 && inst.type.is_pointer())) &&
 				body_.temps[retype->ops[0].index].type == inst.type)
 			{
 				out = retype->ops[0];
@@ -2722,7 +2724,8 @@ ExprKey Simplifier::expression_key(const Instruction& inst)
 	const Type type = scalar_operand_type(inst);
 	ExprKey key;
 	key.op = static_cast<uint8_t>(inst.op);
-	key.sub = inst.sub;
+	// Index projection labels carry no arithmetic or aliasing proof.
+	key.sub = inst.op == Opcode::Index ? 0 : inst.sub;
 	key.type = type_bits(inst.type);
 	key.immediate = static_cast<uint64_t>(inst.immediate);
 	key.a = key_of(inst.ops[0], type);

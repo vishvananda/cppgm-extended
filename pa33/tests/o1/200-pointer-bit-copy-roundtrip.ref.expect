@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+# Retain the pointer bits and combine both masks without intermediate retypes.
+instructions <= 2 in @masked
+instructions <= 1 in @pointer

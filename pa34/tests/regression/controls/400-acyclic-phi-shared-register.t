@@ -308,8 +308,40 @@ function @repeated_invariant_call_guard(%count : i64) -> i64 [unwind=no] {
     return i64 %with_b
 }
 
+# Verify every choice, including a source still observable after the merge.
+function @check_choices(%outer : i64, %inner : i64) -> i64 [unwind=no] {
+  block ^entry:
+    %single = call i64 @single_use_chain(%outer, %inner)
+    %last = call i64 @last_transfer_chain(%outer, %inner)
+    %last_store = load i64 @transfer_observed
+    %multi = call i64 @multi_use_guard(%outer, %inner)
+    %multi_store = load i64 @observed
+    %selected = select i64 %inner, 11, 22
+    %expected = select i64 %outer, 33, %selected
+    %expected_last_store = binary add i64 %selected, 1
+    %live = select i64 %inner, 44, 55
+    %expected_multi = select i64 %outer, 66, %live
+    %a = cmp ne i64 %single, %expected
+    %b = cmp ne i64 %last, %expected
+    %c = cmp ne i64 %last_store, %expected_last_store
+    %d = cmp ne i64 %multi, %expected_multi
+    %e = cmp ne i64 %multi_store, %live
+    %ab = binary or i64 %a, %b
+    %cd = binary or i64 %c, %d
+    %abcd = binary or i64 %ab, %cd
+    %bad = binary or i64 %abcd, %e
+    return i64 %bad
+}
+
 function @main() -> i64 [role=entry] {
   block ^entry:
+    %choice00 = call i64 @check_choices(0, 0)
+    %choice01 = call i64 @check_choices(0, 1)
+    %choice10 = call i64 @check_choices(1, 0)
+    %choice11 = call i64 @check_choices(1, 1)
+    %choice0 = binary or i64 %choice00, %choice01
+    %choice1 = binary or i64 %choice10, %choice11
+    %choices_bad = binary or i64 %choice0, %choice1
     %inner = call i64 @single_use_chain(0, 1)
     %outer = call i64 @single_use_chain(1, 0)
     %multi = call i64 @multi_use_guard(1, 1)
@@ -345,5 +377,6 @@ function @main() -> i64 [role=entry] {
     %bad20 = binary or i64 %bad18, %bad19
     %bad21 = binary or i64 %bad14, %bad17
     %bad = binary or i64 %bad20, %bad21
-    return i64 %bad
+    %all_bad = binary or i64 %bad, %choices_bad
+    return i64 %all_bad
 }
