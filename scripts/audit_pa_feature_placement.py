@@ -656,7 +656,7 @@ def feature_owner_errors(features: dict[str, FeatureMeta]) -> list[str]:
         if meta.owner_pa not in AUDITED_PAS:
             errors.append(
                 f"feature {feature_id} names owner {meta.owner_pa}, "
-                f"which is not one of the course's {COURSE_PA_COUNT} required or optional assignments"
+                f"which is not one of the course's {COURSE_PA_COUNT} assignments"
             )
         elif meta.owner_pa in NO_FEATURE_PAS:
             errors.append(

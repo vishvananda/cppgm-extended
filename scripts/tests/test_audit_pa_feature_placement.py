@@ -1474,7 +1474,7 @@ function @main() -> i32 {
         self.assertEqual(len(errors), 3)
         self.assertIn("feature feature.pa35 names owner pa35, which adds no language feature", errors)
         self.assertIn("feature feature.pa36 names owner pa36, which adds no language feature", errors)
-        self.assertTrue(any("pa37" in error and "36 required or optional assignments" in error for error in errors))
+        self.assertTrue(any("pa37" in error and "36 assignments" in error for error in errors))
 
     def test_live_feature_table_names_only_feature_owning_assignments(self) -> None:
         features = audit.load_feature_table(REPO_ROOT / audit.DEFAULT_TRACKER)

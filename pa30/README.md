@@ -26,7 +26,7 @@ To complete PA30, implement these goals:
 
 ### Prerequisites
 
-Complete PA28 before starting this assignment.
+Complete PA29 before starting this assignment.
 
 You will want to reuse:
 
@@ -167,7 +167,7 @@ New or newly required in PA30:
 
 ### Command-Line Contract
 
-PA30 continues extending the same `cppgm++` frontend used in PA25-PA28.
+PA30 continues extending the same `cppgm++` frontend used in PA25–PA29.
 
 Required preprocess forms:
 

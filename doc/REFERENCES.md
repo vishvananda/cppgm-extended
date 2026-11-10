@@ -19,7 +19,9 @@ editorial fixes. The C++17 PDF is the WG21-hosted working draft. Sources,
 dates, source revision and file SHA-256 hashes are recorded in
 [language-drafts.json](language-drafts.json). Copyright and contributor
 attribution remain with ISO/IEC and the original draft contributors/renderers.
-Text extraction may lose layout; consult HTML/PDF when punctuation matters.
+Chapter text, math images and internal chapter links work offline. Links to
+the source renderer’s separate lookup/index pages remain online. Text extraction
+may lose layout; consult HTML/PDF when punctuation matters.
 
 A newer draft does not silently replace an earlier-mode rule. Adopted defect
 resolutions and course extensions are stated separately, with the retained

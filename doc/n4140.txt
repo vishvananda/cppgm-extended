@@ -1,7 +1,7 @@
 N4140 reference
 N4140: C++14 working draft
 
-Offline copy of Tim Song’s 2017-07-20 HTML rendering of the N4140 LaTeX sources, including editorial fixes. This is not an ISO publication. Source, hashes and scope: language-drafts.json; reference guide.
+Offline chapter copy of Tim Song’s 2017-07-20 rendering of the N4140 LaTeX sources, including editorial fixes. This is not an ISO publication. Source and hashes: language-drafts.json; scope: reference guide. Links to the source’s separate indexes remain online.
 
 1 General [intro]
 
@@ -59776,7 +59776,7 @@ satisfy the requirements for a constexpr function.
 
 duration<long, ratio<60>> d0;       // holds a count of minutes using a long
 duration<long long, milli> d1;      // holds a count of milliseconds using a long long
-duration<double, ratio<1, 30>>  d2; // holds a count with a tick period of  of a second
+duration<double, ratio<1, 30>>  d2; // holds a count with a tick period of $\frac{1}{30}$ of a second
                                     // (30 Hz) using a double
 
  — end example ]
@@ -73125,7 +73125,7 @@ of the value_type, to the predicate returned by key_equal(),
 and to the hasher returned by hash_function()) is proportional to
 N in the average case and to N2 in the worst case, where N is
 a.size(). For unordered_multiset and unordered_multimap,
-the complexity of operator== is proportional to 
+the complexity of operator== is proportional to $\sum E_i^2$
 in the average case and to N2 in the worst case, where N is a.size(),
 and Ei is the size of the ith equivalent-key group in a.
 However, if the respective elements of each corresponding pair of
@@ -85516,7 +85516,7 @@ the first iterator in [first,last) such that no iterator in the range refers to 
 
 Complexity:
 At most
-
+$max(\lfloor{\frac{3}{2}} (N-1)\rfloor, 0)$
 applications of the corresponding predicate, where N is distance(first, last).
 
 25.4.8 Lexicographical comparison [alg.lex.comparison]
@@ -88225,12 +88225,15 @@ template<class Sseq> explicit linear_congruential_engine(Sseq& q);
 
 Effects: Constructs a linear_congruential_engine object.
  With
- 
+ $ k = \left\lceil \frac{\log_2 m}
+                        {32}
+            \right\rceil
+ $
  and a an array (or equivalent)
  of length k + 3,
  invokes q.generate(a+0, a+k+3)
  and then computes
- .
+ $ S = \left(\sum_{j=0}^{k-1}a_{j+3} \cdot 2^{32j} \right) \bmod m $.
  If
     c mod m  is 0
  and
@@ -88407,7 +88410,7 @@ Effects: Constructs a mersenne_twister_engine object.
  invokes q.generate(a+0, a+n · k)
  and then, iteratively for i = -n,…,-1,
  sets Xi
- to .
+ to $ \left(\sum_{j=0}^{k-1}a_{k(i+n)+j} \cdot 2^{32j} \right) \bmod 2^w $.
  Finally,
  if the most significant w-r bits of X-n
  are zero,
@@ -88544,7 +88547,7 @@ Then, to set each Xk,
  obtain new values  z0, …, zn-1 
  from n = ⌈ w/32 ⌉  successive invocations
  of e taken modulo 232.
- Set Xk to .
+ Set Xk to $ \left( \sum_{j=0}^{n-1} z_j \cdot 2^{32j}\right) \bmod m$.
 
 8
 
@@ -88563,7 +88566,7 @@ Effects: Constructs a subtract_with_carry_engine object.
  invokes q.generate(a+0, a+r · k)
  and then, iteratively for i = -r, …, -1,
  sets Xi
- to .
+ to $ \left(\sum_{j=0}^{k-1}a_{k(i+r)+j} \cdot 2^{32j} \right) \bmod m $.
  If X-1 is then 0,
  sets c to 1;
  otherwise sets c to 0.
@@ -88870,7 +88873,10 @@ The state transition is performed as follows:
 (2.1)
 
 Calculate an integer
-      .
+   $j = \left\lfloor \frac{k \cdot (Y - e_{\min})}
+                          {e_{\max} - e_{\min} +1}
+        \right\rfloor
+   $   .
 
 (2.2)
 
@@ -89169,7 +89175,7 @@ If a device has n states
    whose respective probabilities are
     P0, …, Pn-1 ,
    the device entropy S is defined as
-.
+$ S = - \sum_{i=0}^{n-1} P_i \cdot \log P_i $.
 
 26.5.7 Utilities [rand.util]
 
@@ -89291,7 +89297,23 @@ With m as the larger of s + 1 and n,
    transform the elements of the range:
    iteratively for  k = 0, …, m-1 ,
    calculate values
-   
+   \begin{eqnarray*}
+     r_1 & = &
+       1664525 \cdot \texttt{T}\left(     \texttt{begin[}k\texttt{]}
+                                    \ensuremath{\, \mathsf{xor} \,} \texttt{begin[}k+p\texttt{]}
+                                    \ensuremath{\, \mathsf{xor} \,} \texttt{begin[}k-1 \texttt{]}
+                               \right)
+     \\
+     r_2 & = & r_1 + \left\{
+       \begin{array}{cl}
+         s                                  & \mbox{,  } k = 0
+         \\
+         k \bmod n + \texttt{v[}k-1\texttt{]} & \mbox{,  } 0 < k \le s
+         \\
+         k \bmod n                          & \mbox{,  } s < k
+       \end{array}
+     \right.
+   \end{eqnarray*}
    and, in order,
    increment begin[k+p] by r1,
    increment begin[k+q] by r2,
@@ -89304,7 +89326,15 @@ Transform the elements of the range again,
    beginning where the previous step ended:
    iteratively for  k = m, …, m+n-1 ,
    calculate values
-   
+   \begin{eqnarray*}
+     r_3 & = &
+       1566083941 \cdot \texttt{T}\left( \texttt{begin[}k  \texttt{]}
+                                      + \texttt{begin[}k+p\texttt{]}
+                                      + \texttt{begin[}k-1\texttt{]}
+                                 \right)
+     \\
+     r_4 & = & r_3 - (k \bmod n)
+   \end{eqnarray*}
    and, in order,
    
    update begin[k+p] by xoring it with r3,
@@ -89412,7 +89442,10 @@ Effects:
  Invokes g() k times
  to obtain values  g0, …, gk-1 , respectively.
  Calculates a quantity
- 
+ \[
+   S = \sum_{i=0}^{k-1} (g_i - \texttt{g.min()})
+                        \cdot R^i
+ \]
  using arithmetic of type
  RealType.
 
@@ -89618,6 +89651,15 @@ produces bool values b
 distributed according to
 the discrete probability function
 
+\[%
+ P(b\,|\,p)
+      = \left\{ \begin{array}{lcl}
+          p    &  \mbox{if} & b = \texttt{true} \\
+          1-p  &  \mbox{if} & b = \texttt{false}
+        \end{array}\right.
+\; \mbox{.}
+\]
+
 class bernoulli_distribution{
 public:
  // types
@@ -89671,6 +89713,11 @@ A binomial_distribution random number distribution
 produces integer values i ≥ 0
 distributed according to
 the discrete probability function
+\[%
+ P(i\,|\,t,p)
+      = \binom{t}{i} \cdot p^i \cdot (1-p)^{t-i}
+\; \mbox{.}
+\]
 
 template<class IntType = int>
  class binomial_distribution{
@@ -89794,6 +89841,12 @@ produces random integers i ≥ 0
 distributed according to
 the discrete probability function
 
+\[%
+ P(i\,|\,k,p)
+      = \binom{k+i-1}{i} \cdot p^k \cdot (1-p)^i
+\; \mbox{.}
+\]
+
 template<class IntType = int>
  class negative_binomial_distribution{
 public:
@@ -89860,6 +89913,12 @@ produces integer values  i ≥ 0
 distributed according to
 the discrete probability function
 
+\[%
+ P(i\,|\,\mu)
+      = \frac{ e^{-\mu} \mu^{i} }
+             { i\,! }
+\; \mbox{.}
+\]
 The distribution parameter μ
 is also known as this distribution's mean.
 
@@ -89975,6 +90034,12 @@ A gamma_distribution random number distribution
 produces random numbers x > 0
 distributed according to
 the probability density function
+\[%
+ p(x\,|\,\alpha,\beta)
+      = \frac{e^{-x/\beta}}{\beta^{\alpha} \cdot \Gamma(\alpha)}
+        \, \cdot \, x^{\, \alpha-1}
+\; \mbox{.}
+\]
 
 template<class RealType = double>
  class gamma_distribution{
@@ -90039,6 +90104,13 @@ A weibull_distribution random number distribution
 produces random numbers x ≥ 0
 distributed according to
 the probability density function
+\[%
+ p(x\,|\,a,b)
+      =       \frac{a}{b}
+        \cdot \left(\frac{x}{b}\right)^{a-1}
+        \cdot \, \exp\left( -\left(\frac{x}{b}\right)^a\right)
+\; \mbox{.}
+\]
 
 template<class RealType = double>
  class weibull_distribution{
@@ -90102,6 +90174,14 @@ An extreme_value_distribution random number distribution
 produces random numbers x
 distributed according to
 the probability density function280
+\[%
+ p(x\,|\,a,b)
+      =       \frac{1}{b}
+        \cdot \exp\left(  \frac{a-x}{b}
+                       \,-\, \exp\left(\frac{a-x}{b}\right)
+                  \right)
+\; \mbox{.}
+\]
 
 template<class RealType = double>
  class extreme_value_distribution{
@@ -90178,7 +90258,17 @@ A normal_distribution random number distribution
 produces random numbers x
 distributed according to
 the probability density function
-
+\[%
+ p(x\,|\,\mu,\sigma)
+      = \frac{1}{\sigma \sqrt{2\pi}}
+        \cdot
+        % e^{-(x-\mu)^2 / (2\sigma^2)}
+        \exp{\left(- \, \frac{(x - \mu)^2}
+                             {2 \sigma^2}
+             \right)
+            }
+\; \mbox{.}
+\]
 The distribution parameters μ and σ
 are also known as this distribution's mean
 and standard deviation.
@@ -90245,6 +90335,17 @@ A lognormal_distribution random number distribution
 produces random numbers  x > 0 
 distributed according to
 the probability density function
+\[%
+ p(x\,|\,m,s)
+      = \frac{1}
+             {s x \sqrt{2 \pi}}
+        \cdot
+        \exp{\left(- \, \frac{(\ln{x} - m)^2}
+                             {2 s^2}
+             \right)
+            }
+\; \mbox{.}
+\]
 
 template<class RealType = double>
  class lognormal_distribution{
@@ -90308,6 +90409,12 @@ A chi_squared_distribution random number distribution
 produces random numbers x>0
 distributed according to
 the probability density function
+\[%
+ p(x\,|\,n)
+      =  \frac{ x^{(n/2)-1} \cdot e^{-x/2}}
+              {\Gamma(n/2) \cdot 2^{n/2}}
+\; \mbox{.}
+\]
 
 template<class RealType = double>
  class chi_squared_distribution{
@@ -90363,6 +90470,11 @@ A cauchy_distribution random number distribution
 produces random numbers x
 distributed according to
 the probability density function
+\[%
+ p(x\,|\,a,b)
+      = \left( \pi b \left( 1 + \left( \frac{x-a}{b}  \right)^2 \;\right)\right)^{-1}
+\; \mbox{.}
+\]
 
 template<class RealType = double>
  class cauchy_distribution{
@@ -90426,6 +90538,18 @@ A fisher_f_distribution random number distribution
 produces random numbers x≥0
 distributed according to
 the probability density function
+\[%
+ p(x\,|\,m,n)
+      = \frac{\Gamma\big((m+n)/2\big)}
+             {\Gamma(m/2) \; \Gamma(n/2)}
+        \cdot
+        \left(\frac{m}{n}\right)^{m/2}
+        \cdot
+        x^{(m/2)-1}
+        \cdot
+        {\left( 1 + \frac{m x}{n}  \right)}^{-(m+n)/2}
+\; \mbox{.}
+\]
 
 template<class RealType = double>
  class fisher_f_distribution{
@@ -90489,6 +90613,15 @@ A student_t_distribution random number distribution
 produces random numbers x
 distributed according to
 the probability density function
+\[%
+ p(x\,|\,n)
+      =  \frac{1}
+              {\sqrt{n \pi}}
+         \cdot \frac{\Gamma\big((n+1)/2\big)}
+                    {\Gamma(n/2)}
+         \cdot \left( 1+\frac{x^2}{n} \right) ^ {-(n+1)/2}
+\; \mbox{.}
+\]
 
 template<class RealType = double>
  class student_t_distribution{
@@ -90699,7 +90832,11 @@ also known as this distribution's interval boundaries, shall satisfy the relatio
 for i = 0, …, n-1 .
 Unless specified otherwise,
 the remaining n distribution parameters are calculated as:
-
+\[%
+ \rho_k = \;
+   \frac{w_k}{S \cdot (b_{k+1}-b_k)}
+   \; \mbox{ for } k = 0, \ldots, n\!-\!1,
+\]
 in which the values wk,
 commonly known as the weights, shall be non-negative, non-NaN, and non-infinity.
 Moreover, the following relation shall hold:
@@ -90874,6 +91011,15 @@ distributed over each subinterval
  [ bi, bi+1 ) 
 according to the probability density function
 
+\[%
+ p(x\,|\,b_0,\ldots,b_n,\;\rho_0,\ldots,\rho_n)
+      = \rho_i     \cdot {\frac{b_{i+1} - x}{b_{i+1} - b_i}}
+      + \rho_{i+1} \cdot {\frac{x - b_i}{b_{i+1} - b_i}}
+\; \mbox{,}
+\mbox{ for } b_i \le x < b_{i+1}
+\; \mbox{.}
+\]
+
 2
 
 The n+1 distribution parameters bi,
@@ -90886,6 +91032,11 @@ the remaining n+1 distribution parameters are calculated as
 in which the values wk,
 commonly known as the weights at boundaries, shall be non-negative, non-NaN, and non-infinity.
 Moreover, the following relation shall hold:
+\[%
+ 0 < S = \frac{1}{2}
+       \cdot \sum_{k=0}^{n-1} (w_k + w_{k+1}) \cdot (b_{k+1} - b_k)
+\; \mbox{.}
+\]
 
 template<class RealType = double>
  class piecewise_linear_distribution{
@@ -92422,7 +92573,7 @@ valarray
 template, which is one-dimensional.
 The set of one-dimensional index values specified by a
 gslice
-are 
+are $k = s + \sum_ji_jd_j$
 where the multidimensional indices ij range in value from
 0 to lij - 1.
 
