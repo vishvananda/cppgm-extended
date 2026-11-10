@@ -574,6 +574,12 @@ incoming two-word values and partially occupied carriers, then port the
 combined changes onto the rebased source while preserving main's aggregate
 improvements. Do not discard the workstream on the first prototype's result.
 
+The completed store_motion hardware panel confirms a residual regression:
+instructions are about 1.98% higher, group median cycles 2.18–3.03% higher,
+blocked store forwarding 4.76% higher and L2 code misses 5.65% higher. All 80
+outputs match; seven cycle outliers are retained. These counters support
+continuing the missing boundary work, not accepting this intermediate result.
+
 Evidence: `gap-A-native-word-parts-root-cause-r1/`, including the instruction
 attribution, three inliner traces, reduced failing programs and ablations;
 `gap-A-root-cause-opt-fold-late-{top40,full-output,ledger-number}-r1/`;
