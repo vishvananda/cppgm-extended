@@ -161,3 +161,12 @@ stage and its tests remain in the cumulative report.
 
 The detailed macro and directive explanations retain material from the
 CPPGM Foundation's 2013 handouts.
+### Numeric modes through preprocessing
+
+Accept `-std=c++11`, `-std=c++14` or `-std=c++17` before `-o`.
+Set `__cplusplus` to `201103L`, `201402L` or `201703L` respectively.
+Keep the selected token and literal rules through macro expansion, token
+pasting, stringizing and controlling expressions. Stringizing retains the
+separator spelling; evaluating an integer uses its value. This extends
+PA1–PA3's numeric contracts without requiring hosted include discovery.
+

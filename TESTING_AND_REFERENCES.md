@@ -68,18 +68,19 @@ the prefix. Report totals and failure markers are isolated too. For predictable 
 `.check` names for manual workflows. Reference filenames stay fixed. Report workers inherit the caller's environment
 without running shell login scripts.
 
-## Optional C++14/17 checks
+## Required language checks
 
-The C++11 correctness regressions remain in the required assignment suites.
-Selected later-language features are optional: `make test-modern-cxx` builds
-and runs PA29/PA31's `tests/modern-cxx/` suites; add `-nobuild` to reuse a build.
-Neither `make test` nor `make test-report` includes them. Reference CI runs
-them as a separate suite. Both the fixtures and their optional handout sections
-ship to students without adding assignment requirements.
+The [language profile](LANGUAGE_PROFILE.md) is part of the ordinary assignment
+suites and cumulative reports. `NAME.cxx-standard` selects the same mode for
+implementation and reference requests, including persistent batch requests.
+Driver/runtime fixtures can retain their existing `.flags` mode selection.
+No separate later-language target is needed.
 
-`make ref-test-modern-cxx` regenerates their references separately from the
-required suites; the student export runs both reference targets. Optional
-fixtures retain numbering, discovery and hygiene checks.
+LowIR controls can state `accept`, `reject` or `exit N` in `NAME.expect`.
+`accept` validates generated LowIR with the supplied reader without requiring
+a linkable program; `exit N` uses the supplied backend and checks its outcome.
+`NAME.stdout`, when present, checks exact output, including an empty file.
+These controls constrain behavior rather than instruction selection.
 
 PA29's optional x86 target-feature checks run with `make test-target-features`
 (or `-nobuild`). They require POPCNT and are excluded from cumulative reports.

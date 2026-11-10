@@ -483,7 +483,7 @@ sub build_wrapped_text_request
 		if ($input_profile eq 'stdin' || $input_profile eq 'stdin-combined')
 		{
 			my $stderr_file = ($input_profile eq 'stdin-combined') ? $test_out : "$test_out.stderr";
-			return ($test_out, $stderr_file, $test, {});
+			return ($test_out, $stderr_file, $test, {}, @language_args);
 		}
 
 		if ($input_profile eq 'sources')

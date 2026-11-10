@@ -1,4 +1,4 @@
-# Optional assembly boundary
+# Shared assembly boundary
 
 ## Code addresses and indirect branches
 

@@ -1,0 +1,9 @@
+pp-number 5 1'234
+whitespace-sequence 0 
+pp-number 7 0b10'01
+whitespace-sequence 0 
+pp-number 7 0xAB'CD
+whitespace-sequence 0 
+pp-number 11 12.3'4e+0'1
+new-line 0 
+eof

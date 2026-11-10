@@ -1,0 +1,6 @@
+preproc 1
+sof tests/spec/100-cxx14-separated-macro-numbers.t
+literal "1'000" array of 6 char 312730303000
+literal 0b1001 int 09000000
+literal 201402L long int BA12030000000000
+eof

@@ -1,0 +1,9 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type-alias Throwing pointer to function of () returning int
+    type-alias Safe pointer to function of () returning int
+    variable safe pointer to function of () returning int
+    variable ordinary pointer to function of () returning int
+end translation unit

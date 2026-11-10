@@ -212,7 +212,7 @@ The currently defined global `storage` values are:
 - `metadata_strings` (the same, with ELF `SHF_MERGE | SHF_STRINGS` and entry size 1)
 
 The metadata storage forms carry section bytes, rather than addressable C++
-objects. Namespace basic asm in PA29 produces them with internal names and
+objects. Typed producers can supply them with internal names and
 `object_root=yes`, so optimization retains their data. The native static
 linker's loadable image excludes them; host object emission preserves them.
 An untyped empty structured initializer is permitted for these forms and
@@ -2255,9 +2255,9 @@ scope origins after removing their function, and inlined instructions use the
 caller's scope. Native DWARF uses the recorded transitions to emit possibly
 discontiguous lexical block ranges and nests source locals under their block.
 
-## Optional assembly extension
+## Shared assembly transport
 
-Optional PA36 adds `assembly` template definitions and `asm` invocations with
+The required assembly boundary includes `assembly` template definitions and `asm` invocations with
 typed arguments, constraints, outputs and effects. Outgoing label tags feed
 ordinary LowIR control flow. Opaque `assembly_function` definitions retain
 typed call signatures while assembly owns the complete ABI entry and exit;
@@ -2267,7 +2267,8 @@ and source macro expansion while retaining typed symbol references. Template
 `environment` prefixes select module macro snapshots for inline and raw bodies.
 `code_label @name = ^block` inside an ordinary function names a real local code
 address; `indirect_jump <ptr>, ^target...` terminates with an explicit destination
-set. These optional forms preserve code identity and entry state; they do not
+set. These forms preserve code identity and entry state; they do not
 implicitly run source cleanups. Their full validation and lifetime rules are in
-[the assembly boundary](../pa36/assembly.md). These forms add no required PA8
-work and do not change PA29's bounded GNU compatibility contract.
+[the assembly boundary](../pa36/assembly.md). PA8 validates and round-trips these typed records and their invariants.
+PA36 later binds constraints, encodes instructions and observes native behavior.
+No C++ parser, register allocator or assembly encoder is required in PA8.

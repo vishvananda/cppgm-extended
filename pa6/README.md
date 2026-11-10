@@ -285,6 +285,16 @@ constant expression, so reading through one may supply an array bound.
 The PA6 output should preserve enough declaration and type information for PA7
 to add expression and call semantics without reparsing the source.
 
+### Namespaces and C++17 function types
+
+Qualified namespace definitions reopen the same namespace entities as
+nested braces. A namespace alias does not introduce a namespace that can
+be reopened. In C++17, retain the non-throwing specification in function
+type identity, including pointer and reference types. In earlier modes the
+specification remains declaration metadata under the existing contract.
+PA7 owns conversions, PA9 the ABI spelling and PA18 dependent deduction.
+See N4659 `[namespace.def]`, `[except.spec]` and `[dcl.fct]`.
+
 ### Out Of Scope
 
 PA6 does not require:

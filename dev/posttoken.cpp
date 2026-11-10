@@ -12,6 +12,7 @@ using namespace std;
 #include "preprocess/lexer/pp_lexer.h"
 #include "preprocess/source/source_buffer.h"
 #include "support/internal_error.h"
+#include "lex/language_mode.h"
 
 // posttoken: translation phases 1-6 and the tokenization part of phase 7 of
 // a C++ source file read from standard input, describing the resulting
@@ -47,9 +48,10 @@ int main(int argc, char** argv)
 		if (HasBatchStdinArg(argc, argv))
 			return RunNotImplementedBatchMode();
 
+		const LanguageMode mode = ReadTokenToolMode(argc, argv);
 		SourceBuffer source = SourceBuffer::ReadFrom(cin);
-		PPLexer lexer(source);
-		PostTokenizer tokens(lexer);
+		PPLexer lexer(source, mode.lexer_options());
+		PostTokenizer tokens(lexer, nullptr, mode.literals);
 		PostTokenWriter output(cout);
 		try
 		{

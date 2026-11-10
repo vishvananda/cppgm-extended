@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml/badge.svg)](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml)
 
-A C++11 compiler course designed for agents, with 35 cumulative assignments from
+A C++ compiler course designed for agents, with 36 cumulative assignments from
 preprocessing to native code, optimization and self-hosting. This repository
 contains a high-performance reference implementation in `dev/`; `pa1/` through
 `pa35/` hold the handouts, tests and wrappers.
@@ -145,9 +145,9 @@ cppgm++ runtime measures **codegen performance**: self-built versus GCC-built or
 
 ## Caveats
 
-- C++11 is the baseline; other dialects have only partial extension support.
+- The [required C++11/14/17 profile](LANGUAGE_PROFILE.md) covers selected features, not full conformance to every edition.
 - Targets are Linux x86-64 and optional Intel macOS; other architectures are unsupported.
-- Inline assembly has an [optional PA36 profile](pa36/README.md) (`--full-asm`); broader ISA coverage and cross-frontend qualification remain in progress.
+- [Integrated assembly](pa36/README.md) is required before hosted compatibility; its documented ISA profile remains bounded.
 - No C++ standard library is bundled; use a host-installed library.
 - The compiler may contain bugs.
 - Code generation may be poor for unfamiliar program shapes.
@@ -177,7 +177,7 @@ reference policy. Personal experiments go in `student.tests/`.
 The original C++ Grandmaster Certification course supplied early assignment
 material, tests and starter code. The cppgm-extended authors have substantially
 revised, combined, renumbered and extended that material into this independent
-35-assignment course. Today's handouts, harnesses and reference implementation
+36-assignment course. Today's handouts, harnesses and reference implementation
 describe this version; current PA numbers do not identify original CPPGM lessons.
 
 Copyright 2026 The cppgm-extended Authors. Project-maintained code and materials

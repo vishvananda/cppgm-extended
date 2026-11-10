@@ -1,4 +1,4 @@
-## CPPGM Programming Assignment 36 (optional inline assembly)
+## CPPGM Programming Assignment 36 (integrated assembly)
 
 ### Overview
 
@@ -7,14 +7,14 @@ C++ source describes operands and effects; another language frontend can supply
 that same contract directly as LowIR. Generate native instructions and object
 fixups with your own encoder.
 
-PA36 is optional and outside the required 35-assignment ladder. The current
-contract covers operands, local control flow, raw functions and module assembly below. The broader extensions at the end
-are separate goals. PA29's bounded GNU compatibility remains unchanged.
+This required milestone covers operands, local control flow, raw functions
+and module assembly before hosted compatibility. All source assembly uses this
+shared path. The broader extensions at the end remain outside the required profile.
 
 ### Prerequisites and starter kit
 
-Complete the native, host-object and optimization work through PA33. PA34 and
-PA35 are independent of this extension. Reuse your existing implementation in
+Complete the native and host ABI work through PA28. Optimizers are later
+lessons and are not prerequisites. Reuse your existing implementation in
 `dev/` and `dev/src/`; add reusable sources to `dev/frontend_source_sets.mk`.
 
 The starter kit supplies:
@@ -35,13 +35,13 @@ compiler in `dev/`; preserve the supplied fixtures and observers.
 
 ```sh
 lowir -o canonical.lowir program.lowir
-cppgm++ --full-asm -O0 -c source.cpp -o source.o
+cppgm++ -O0 -c source.cpp -o source.o
 cppgm++ -O0 -c program.lowir -o program.o
 ```
 
-`--full-asm` selects this optional C++ path. Preserve the default PA29 behavior.
-Assembly supplied through LowIR needs no C++ flag. Both paths must work at
-`-O0` and `-O3`, producing host-linkable x86-64 objects. The initial execution
+Source and direct LowIR use the same required path, producing host-linkable
+x86-64 objects at `-O0`. Later optimizer lessons repeat the preservation
+checks at `-O3`. The initial execution
 hosts are Linux and Intel macOS; qualify their object formats separately.
 
 ### Assignment boundary
@@ -103,7 +103,7 @@ ties, early writes, volatile places and over-aligned local storage. This adds
 assembly transfers, not a general wide-vector call ABI.
 
 Within a packet, support numeric `.byte`/`.short`/`.word`/`.long`/`.quad` data,
-`.zero`/`.space`/`.skip` fills and `.p2align`/`.balign`, including fill and
+`.zero`/`.space`/`.skip` fills and `.p2align`/`.balign`/`.align`, including fill and
 maximum-padding arguments. Preserve alignment in objects and standalone output.
 Local RIP-relative addresses can refer to embedded data.
 
@@ -115,7 +115,7 @@ outgoing edges and normal C++ scope-exit cleanup. Numeric label references
 count a `+` output twice. Represent destinations as real LowIR control flow;
 the shared boundary's exit-tag output can feed an ordinary `switch`.
 Preserve over-aligned local storage across declared register clobbers.
-Support GNU `__attribute__((naked))` functions under `--full-asm`. Their bodies
+Support GNU `__attribute__((naked))` functions in the required assembly profile. Their bodies
 contain only basic asm, nested braces and empty statements; reject extended
 operands and ordinary C++ statements. Combine their user source fragments so
 labels can span basic statements. The assembly owns all ABI inputs, results,
@@ -151,7 +151,7 @@ library. A compiler memory barrier must not introduce a hardware fence.
 
 ### Addressed control flow
 
-Under `--full-asm`, support GNU label addresses (`&&label`) and computed goto
+Support GNU label addresses (`&&label`) and computed goto
 (`goto *pointer;`). Label values have type `void*`, denote real code in the
 current function, and can initialize static dispatch tables. Preserve table
 identity across calls and keep different template specializations distinct.
@@ -176,12 +176,12 @@ Use all incoming paths when deciding whether a shared block is cold.
 
 ### Module assembly
 
-Under `--full-asm`, namespace asm uses the shared `assembly_global` boundary.
+Namespace asm uses the shared `assembly_global` boundary.
 Keep module invocations ordered and preserve their symbol/section state. Emit
 code, scalar data, pointer relocations, BSS, strings and alignment directly.
 Support `.text`, `.data`, `.bss`, `.rodata`, `.section`, the section stack and
 `.previous`; `.byte`/`.short`/`.word`/`.long`/`.quad`, `.zero`/`.space`/`.skip`,
-`.ascii`/`.asciz`/`.string`, and `.p2align`/`.balign`/`.align`. Respect target
+`.ascii`/`.asciz`/`.string`, and `.p2align`/`.balign`/`.align`/`.align`. Respect target
 alignment and section spelling differences.
 
 Preserve global/weak/local binding, hidden visibility, `.type`, `.size` and
@@ -288,9 +288,9 @@ Reject malformed syntax, inconsistent constraints and type errors with failure.
 Report unsupported native capabilities clearly. Exact diagnostic text is not
 part of the contract.
 
-Finish this optional subset with `make -C pa36 test`, while keeping the required
-`make test-report-through-pa33` and `make inception` checks passing. PA36 is not
-included in those reports or in the required course completion criteria.
+Finish this milestone with `make test-report-through-pa36` after its
+renumbering before hosted compatibility; it is part of normal reports.
+Later optimizer preservation checks do not add an O3 prerequisite here.
 
 ### Further extensions
 

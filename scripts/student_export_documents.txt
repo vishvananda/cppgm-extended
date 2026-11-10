@@ -213,3 +213,10 @@ pa8/lowir.md
 pa9/README.md
 shared/README.md
 student.tests/README.md
+LANGUAGE_PROFILE.md
+doc/REFERENCES.md
+doc/language-drafts.json
+doc/n4140.html
+doc/n4140.txt
+doc/n4659.pdf
+doc/n4659.txt

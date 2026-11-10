@@ -5,7 +5,7 @@
 PA21 finishes the deferred first-tier language features that sit on top of the existing
 single-inheritance object model:
 
-- capturing lambdas
+- exception-aware closure construction and cleanup
 - `std::initializer_list` semantic interoperation
 - RTTI and `typeid`
 - pointer- and reference-form `dynamic_cast`
@@ -331,6 +331,15 @@ To complete PA21, implement these goals:
    identical share one block, the later path jumping into the earlier block
    where the sequences coincide (the references share them so, and the
    comparison does not absorb the alternative).
+
+### Closure and aggregate failure cleanup
+
+PA20 now supplies ordinary and modern closure semantics. This lesson adds
+exception-aware destruction when a later capture or aggregate element throws,
+including copied `*this`, initialized captures and arrays. Destroy exactly the
+successfully constructed prefix, in reverse order, and preserve the original
+exception. Existing try/catch, initializer-list and RTTI interactions stay here.
+Use N4659 `[except.ctor]` with the owning initialization/lambda clauses.
 
 ### Out Of Scope
 

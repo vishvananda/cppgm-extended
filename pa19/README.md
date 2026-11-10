@@ -9,8 +9,8 @@ complicated: they are meant to uncover edge cases where a feature works alone
 but loses typed information, chooses the wrong specialization, instantiates too
 early, or fails during lowering when combined with another template mechanism.
 
-PA19 does not introduce a new isolated template feature. It is a composition
-surface over the earlier template assignments.
+PA19 integrates the earlier template assignments and introduces C++17
+discarded dependent statements after their deduction/constexpr prerequisites.
 
 PA19 still produces LowIR. It does not introduce a new output format.
 
@@ -181,6 +181,17 @@ because the class is incomplete. That substitution failure removes the
 `has_comparator` specialization instead of rejecting the program, and
 `lazy<X>::value()` selects the fallback and returns zero. This selected
 compatibility rule does not bring other post-C++11 features into scope.
+
+### Discarded dependent statements
+
+C++17 `if constexpr` evaluates its condition as a constant expression and
+instantiates the selected dependent branch. Parse both branches, diagnose
+nondependent errors at their normal phase, and avoid instantiating dependent
+operations in a discarded branch. Selected returns participate in deduced return
+type computation; a discarded dependent return does not impose its result type.
+Preserve this behavior when combined with earlier lookup, substitution and
+constant evaluation. See N4659 `[stmt.if]`; no optimizer is needed to satisfy
+this semantic rule.
 
 ### Out Of Scope
 

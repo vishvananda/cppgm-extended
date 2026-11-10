@@ -137,7 +137,8 @@ name or type-definition identifier. Scope separators do not delimit the two
 operands, so both `memberptr:ns::C:int` and `memberptr:C:ptr:int` are valid.
 Use the multiword `member-pointer <owner> <member-type>` form when the owner
 itself needs a constructor prefix such as `named:`; the canonical fact
-serializer uses this unambiguous form. A `function-type` fact contains a result
+serializer uses this unambiguous form. A `function-type-noexcept` fact describes a non-throwing function type with
+the same operands as `function-type`. A `function-type` fact contains a result
 type followed by zero or more parameter types; an empty parameter list is
 encoded with the Itanium `v` marker.
 
@@ -409,6 +410,15 @@ To complete this assignment, implement this behavior:
 
 If `abimangle` accepts a fact file and writes a different ABI name from the
 checked-in reference, the issue belongs in this assignment.
+
+### C++17 exception specifications in ABI facts
+
+Encode the existing non-throwing function-type facts according to the
+Itanium ABI. A non-throwing specification within a function type remains
+distinct where the ABI requires it; it is not an arbitrary suffix added to
+every function name. The fact interface already describes this independently
+of source parsing. PA32 later checks agreement with host-produced objects;
+use the retained Itanium reference and N4659 `[except.spec]`.
 
 ### Out Of Scope
 

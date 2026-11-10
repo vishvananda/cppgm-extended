@@ -1,0 +1,7 @@
+pp-number 4 1234
+whitespace-sequence 0 
+pp-number 6 0xABCD
+whitespace-sequence 0 
+pp-number 9 12.34e+01
+new-line 0 
+eof

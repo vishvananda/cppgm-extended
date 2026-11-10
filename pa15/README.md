@@ -252,6 +252,16 @@ Within this milestone, PA15 should produce valid LowIR for ordinary metaprogramm
 over the supported PA14 language subset. That LowIR is intended to be accepted
 by the later PA24 `lowir2native` backend for the supported cases.
 
+### Fold expressions
+
+In C++17, expand unary left/right folds and binary folds over the supported
+operators. Preserve their specified grouping, evaluation/short-circuit behavior
+and result type. Empty unary folds are permitted only for the operators with a
+defined identity; a binary fold starts with its initializer. Diagnose missing
+packs and incompatible operators. Use library-free reducers here; later alias,
+substitution and hosted-trait combinations consume the same rules.
+See N4659 `[expr.prim.fold]`.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA15:

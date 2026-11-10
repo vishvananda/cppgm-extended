@@ -2,7 +2,7 @@
 
 ### Overview
 
-PA20 closes the first large batch of ordinary C++11 language features that were deferred
+PA20 completes ordinary declarations, iteration and closures in the required language profile that were deferred
 while the compiler was still building its type, object, template, and backend layers.
 
 This milestone focuses on:
@@ -13,7 +13,7 @@ This milestone focuses on:
   (a C++14 feature, which the course accepts in C++11; clang and g++ reject it
   under `-std=c++11`)
 - direct braced initialization of supported scalar and array objects
-- captureless lambdas plus the supported by-reference local / `this`-capture subset
+- lambdas and the required C++14/17 closure and decomposition forms below
 - range-for over bounded arrays and supported user-defined `begin` / `end` ranges
 
 PA20 still produces LowIR. It does not introduce a new output format.
@@ -153,7 +153,7 @@ format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the checke
 `.ref` files.
 
 PA20 does not add a new source-language grammar format. It instead enables more
-of the already-accepted C++11 syntax to participate in semantic analysis and
+of the accepted source-language syntax to participate in semantic analysis and
 lowering.
 
 A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
@@ -243,6 +243,44 @@ The test suite also exercises a small remaining ordinary-language closure cluste
 direct braced-init expressions, direct aggregate construction, supported integral / enum
 functional casts, and pointer / integer `reinterpret_cast`.
 
+### Required modern declarations and closures
+
+Complete ordinary by-copy, by-reference and default captures here, including
+mutable closures, captured arrays and `this`. Capture discovery follows source
+uses and scope, including callable objects; unevaluated uses do not create
+captures. Exception-aware capture cleanup remains PA21.
+
+C++14 adds `decltype(auto)` variables/returns, generic lambda parameters and
+initialized captures. Preserve the difference between a named expression and
+its parenthesized lvalue in `decltype(auto)`. Diagnose inconsistent returns,
+braced placeholder deduction and invalid declarator combinations. Deleted
+placeholder-return declarations need no nonexistent body. Initialized captures
+deduce from the enclosing scope; their new name is available in the body,
+not its own initializer. Support the existing assignment and parenthesized
+forms, generic parameter packs and nested capture propagation.
+See N4140 `[dcl.spec.auto]`, `[expr.prim.lambda]` and
+[generalized capture wording](../doc/cwg/paper-n3648.txt).
+
+C++17 `[*this]` copies the enclosing object, retaining its copy/destruction
+and const/mutable behavior. Evaluate supported constexpr closures and captureless
+function-pointer conversions with normal identity/lifetime rules; forbidden
+constexpr operations still fail. See N4659 `[expr.prim.lambda]`,
+[P0018R3](../doc/cwg/paper-p0018r3.txt) and [P0170R1](../doc/cwg/paper-p0170r1.txt).
+
+Structured bindings support the existing array, member and tuple-protocol
+forms, including references and local tuple-trait declarations without the STL.
+Preserve the hidden object's lifetime, cv/ref category and lookup behavior.
+C++17 direct-list initialization of fixed-underlying enums requires one
+nonnarrowing element; copy-list initialization remains distinct.
+The existing cooked, raw and numeric-template literal-operator forms are
+required with declaration lookup and the original literal spelling.
+See N4659 `[dcl.struct.bind]`, `[dcl.init.list]` and `[over.literal]`.
+
+Use normal `tests/controls` with explicit modes. Compile-only `accept` checks
+validate well-formed LowIR without requiring external definitions; `exit N`
+checks run it with the supplied backend. Neither requires a particular
+instruction sequence or register allocation.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA20:
@@ -252,7 +290,6 @@ The following are explicitly out of scope for PA20:
 - RTTI and `typeid`
 - `dynamic_cast`
 - placeholder return-type declarations without a visible definition body
-- `decltype(auto)` (C++14; not in `pa20.gram`)
 - range-declarations that require unsupported user-defined iterator or reference semantics
 - any PA20 feature path that depends on unsupported PA11-PA19 semantics
 
@@ -269,7 +306,7 @@ ABI and inheritance closure work.
 So PA20 should leave behind:
 
 - a stable first-tier language-closure semantic layer
-- LowIR lowering for the ordinary non-advanced C++11 forms added here
+- LowIR lowering for the ordinary core-language forms added here
 - explicit remaining deferrals only where PA21 really needs to take over
 
 ### Design Notes (Non-Normative)

@@ -262,8 +262,7 @@ Optional sidecars include:
 - `x.env`: environment variables for one test, such as additional standard
   include paths
 - `x.no-exceptions`: compile a `tests/compile` input with `-fno-exceptions`
-- `x.cxx-standard`: select a language mode; C++14/17 cases belong to the
-  optional suite below
+- `x.cxx-standard`: select the required language mode below
 - `x.flags`: additional compiler flags for a `tests/run` input
 - `x.ref.impl.exit_status`, `x.ref.program.exit_status`, and
   `x.ref.program.stdout`: implementation and program-result references for
@@ -292,122 +291,16 @@ SFINAE contexts. `-Wnarrowing` or `-Werror=narrowing` restores the diagnostic;
 the last of these specific options wins. Without suppression, the compiler
 continues to reject narrowing conversions.
 
-### Optional C++14/17 Extensions
+### Required language prerequisites
 
-These extensions are not required to complete PA29 or any later assignment.
-The optional tests cover selected features, not full C++14/17 conformance.
-Their fixtures ship in `tests/modern-cxx/` and run only when selected explicitly:
-
-```sh
-make test-modern-cxx
-make check TEST=tests/modern-cxx/compile/600-hosted-generic-lambda.t
-```
-
-The optional compile and run tests cover digit separators, nested namespace
-definitions, `decltype(auto)` variable and return deduction, generic lambda
-parameters (including packs and forwarding), initialized lambda captures, and
-pack-expanded using-declarations. An initialized capture deduces its type from
-its initializer in the enclosing scope; its new name is visible in the lambda
-body. Both assignment and parenthesized initializers are supported; see the
-offline [generalized-capture wording](../doc/cwg/paper-n3648.txt).
-Preserve reference binding, moves, and cleanup if a later capture throws.
-C++17 `[*this]` captures copy the enclosing object, with its ordinary copy
-constructor, destruction and const/mutable behavior; see the offline
-[P0018R3 wording](../doc/cwg/paper-p0018r3.txt). Modern controls also cover
-constant expressions yielding direct member-pointer template arguments,
-including constexpr variables and calls ([N4268](../doc/cwg/paper-n4268.txt)).
-Generic-lambda capture discovery includes callable objects named as callees;
-unevaluated calls do not acquire captures. Keep recursive generic calls bound
-to their parameters and captured objects through the closure's stored members.
-Nested generic closures propagate captures through enclosing lambdas while
-their capture frames are still being built. Fixed local initializers use the
-enclosing object's type, including reference members and copied `*this`.
-An explicit lambda trailing return type can itself be `auto` in C++14 and
-later; deduce it from the body while preserving `decltype(auto)`'s reference
-semantics and the restrictions on nested function types.
-The optional C++17 lane also evaluates lambda closure objects in constant
-expressions, following [P0170R1's offline text](../doc/cwg/paper-p0170r1.txt).
-The original PDF is retained beside that text for its change formatting.
-Call operators can be explicitly or implicitly constexpr; captured values,
-references, initialized captures and captured `this` retain their normal
-object identity and lifetime. Non-generic captureless conversions yield
-function pointers that preserve the call operator's constexpr eligibility. A static local or
-other forbidden constexpr body construct prevents an inferred constant call.
-Direct brace initialization of a fixed-underlying enumeration accepts a single
-element that converts to the underlying type without narrowing. Copy-list
-initialization keeps its ordinary restrictions; see [P0138R2](../doc/cwg/paper-p0138r2.txt),
-[CWG2251](../doc/cwg/issue-2251.txt) and [CWG2374](../doc/cwg/issue-2374.txt).
-Class template deduction preserves brace initialization's initializer-list
-constructor phase and copy-deduction exceptions, including in condition declarations.
-
-In C++14 and later, contextual conversions such as array bounds and switch
-conditions can select among cv-qualified conversion overloads when all viable
-conversions lead to one permitted type. Distinct result types remain ambiguous.
-
-In C++14 and later, default member initializers do not disqualify an aggregate.
-Explicitly initialized members use the supplied values; omitted members use
-their default initializers in member order, including partial static tables
-and implicit array tails. Defaults can refer to earlier members; nonconstant
-defaults retain their evaluation order and effects. Retain the C++11 restriction in
-C++11 mode, along with the other aggregate restrictions in every mode.
-Preserve reference/value categories and reject invalid initializers and overload
-candidates. Digit separators keep their value in native floating literals and cooked
-literal-operator calls; raw and template literal operators retain the original
-characters. The selected language mode also controls later library interfaces.
-Deleted overloads with placeholder return types must not force deduction from
-a nonexistent body.
-
-In C++17 mode, `noexcept` is part of a function type: distinguish throwing and
-non-throwing types, allow discarding the guarantee, and preserve it through
-deduction. Static `constexpr` data members are implicitly inline; definitions
-across translation units denote one object, including arrays and class-valued
-members. PA31's optional suite checks the corresponding host ABI behavior.
-Template template parameters may use either `class` or `typename` in C++17,
-including packs, defaults and alias-template arguments; see
-[N4051](../doc/cwg/paper-n4051.txt). Earlier language modes retain the `class` requirement.
-
-Constructor-based class template argument deduction applies to temporary
-construction and initialized object declarations, including array references,
-constructor templates and dependent uses. Deduce first, then initialize the
-selected specialization with the usual access and conversion checks. In C++17,
-a same-class prvalue initializes its result object directly, without selecting a
-copy or move constructor. Preserve that behavior for returns, parameters and
-members, while retaining copy requirements for potentially overlapping base
-and delegating subobjects.
-For hosted compatibility in this mode, a conversion function returning that
-class by value can also construct the direct-initialization result. Compare
-its object binding with competing constructors; a constructor wins a tie.
-
-Declared deduction guides also contribute candidates in C++17. They are
-associated with their class template and never enter ordinary name lookup or
-emit functions. Preserve guide defaults and forwarding, consider declarations
-added after an earlier deduction, and prefer a declared guide when otherwise
-tied with an implicit guide. Reject invalid result types, equivalent guide
-declarations and explicit-guide selection in copy-list initialization; ordinary
-copy initialization considers only non-explicit candidates.
-Implicit constructor guides retain the class template's context while
-evaluating constructor-template defaults, including class parameter packs.
-
-Placeholder non-type template parameters (`auto`, `auto*`, `auto&` and
-`decltype(auto)`) deduce the argument's type as well as its value. Preserve
-function and object identities, reference binding and heterogeneous packs;
-the deduced type must still be a permitted C++17 template-argument type.
-
-Hosted C++17 allocation uses `std::align_val_t` declarations for
-objects aligned beyond `__STDCPP_DEFAULT_NEW_ALIGNMENT__`. Select alignment-aware
-allocation and deallocation overloads, including arrays, class fallback forms
-and constructor-failure cleanup. Preserve placement arguments and pass the
-object's alignment to the selected ABI. PA31's optional lane checks these
-operations with the host's `<new>` header.
-
-C++17 aggregates can include public, non-virtual bases. Initialize those bases
-before direct members, with the same brace elision, constant evaluation and
-cleanup rules as other aggregate elements. Keep C++11/14's base restriction.
-An overloaded operator's placeholder return type must be deduced before its
-result is used, just as for an ordinary function call.
-
-`make test` and the cumulative reports exclude these tests. The root
-`make test-modern-cxx` collects the optional PA29 and PA31 suites.
+The [language profile](../LANGUAGE_PROFILE.md) is taught and tested in the
+owning earlier assignments. Hosted headers consume those same type, deduction,
+constant-evaluation and closure rules. A language-only reducer belongs in its
+earlier lesson; host include/builtin/ABI consumers stay here or in PA31.
+The supplied `.cxx-standard` sidecars select required modes in normal tests.
+Later header concessions such as conditional `explicit(bool)`, alias-declaration
+initializers and `no_unique_address` remain bounded compatibility extensions;
+they do not imply full C++20/23 coverage.
 
 ### Hosted ABI Name Guidance
 
@@ -509,33 +402,9 @@ To complete PA29, implement hosted compatibility for:
   takes part in copy initialization, so a parse that accepts the form and
   discards the condition silently mis-ranks overloads.  Attributes interleave
   with the specifiers around it rather than preceding them all
-- GNU `cpuid` statements with fixed `a`, `b`, `c`, `d` register outputs
-  and read/write or matching inputs for the leaf and subleaf. Execute the
-  real CPU instruction through the typed LowIR `cpu_query` runtime role;
-  retain all four results, 32-bit writes clearing wider register halves,
-  operand evaluation once, condition flags and the native callee-save ABI
-- GNU `xgetbv` statements with fixed `a` and `d` outputs and a `c` input.
-  Return the real selected extended-control-register value through the typed
-  LowIR `xstate_query` role. Evaluate the index once, preserve condition flags,
-  and clear upper register halves on 32-bit writes. The caller must check CPU
-  and OS support before executing the instruction
-- GNU register-only `pand` statements over two 128-bit `x` vector operands,
-  including matching constraints. Lift all operand bits to integer AND,
-  evaluate each operand once, and preserve preceding condition flags
-- namespace basic asm data definitions: lift `.pushsection`, `.section`,
-  `.popsection`, `.ascii`, `.asciz` / `.string`, and `.byte` to nonloaded
-  PROGBITS section bytes. Custom section names use the token-safe LowIR subset
-  and begin with a letter, `_` or `.`; predefined loader, unwind, comment and
-  `.gnu.` sections are outside this form. String escapes include octal and
-  hexadecimal bytes, `\b`, `\f`, `\n`, `\r`, `\t`, quotes and backslashes;
-  supported explicit flags are empty or `MS` (mergeable byte strings, entry
-  size 1). Decode ordinary C++ literals and GAS string escapes once during
-  analysis, retain typed section facts, and emit their bytes and flags directly
-  through LowIR `storage=metadata` / `metadata_strings`. Executable section
-  flags, instruction templates and other directives are diagnosed, never
-  silently discarded or passed to an external assembler. Each definition must
-  restore its incoming section with balanced push/pop directives; a `.section`
-  switch is supported inside such a balanced definition
+- hosted assembly consumers use the shared assembly boundary from PA36.
+  Preserve the user instructions, declared operands/effects and module ordering;
+  do not replace selected strings with arithmetic or runtime-query operations
 - builtin traits, transforms, intrinsics, and builtin families used during
   hosted compile acceptance, including lowering `__builtin_abort` as a
   non-returning call to the host C runtime; fixed-arity hosted integer
@@ -588,7 +457,7 @@ To complete PA29, implement hosted compatibility for:
   headers, including post-declarator parameter
   attributes, explicit specializations of primary-template member functions,
   placeholder-return declarations without a body, such as a deleted overload
-  declared `auto` (a C++14 form that newer hosted headers use; PA20 leaves it
+  declared `auto` (a C++14 declaration form required by PA20; it remains
   out of scope, and like PA20's deduced return types it is accepted in every
   language mode), non-standard hex-float compile acceptance on ordinary
   floating types,

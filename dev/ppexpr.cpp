@@ -11,6 +11,7 @@ using namespace std;
 #include "preprocess/lexer/pp_lexer.h"
 #include "preprocess/source/source_buffer.h"
 #include "support/internal_error.h"
+#include "lex/language_mode.h"
 
 // ppexpr: translation phases 1-3 of a C++ source file read from standard
 // input, then the controlling expression on each logical line evaluated as
@@ -119,10 +120,11 @@ int main(int argc, char** argv)
 		if (HasBatchStdinArg(argc, argv))
 			return RunNotImplementedBatchMode();
 
+		const LanguageMode mode = ReadTokenToolMode(argc, argv);
 		SourceBuffer source = SourceBuffer::ReadFrom(cin);
-		PPLexer lexer(source);
+		PPLexer lexer(source, mode.lexer_options());
 		MockMacroDefinitions macros;
-		ControllingExpressionEvaluator evaluator(macros);
+		ControllingExpressionEvaluator evaluator(macros, mode.literals);
 		ResultWriter output(cout);
 		try
 		{

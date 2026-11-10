@@ -13,11 +13,7 @@ make inception                # PA34 completion
 The through report includes PA N; no separate PA N check is needed.
 PA35 ends with `make -C pa35 test`, which is not part of the report: its gates compare your compiler with the host and
 its own seed.
-Optional [PA36](pa36/README.md) ends with `make -C pa36 test` and is outside
-the cumulative reports. `make test` builds once and runs PA1–PA33;
-`make test-report` keeps going and summarizes failures. Use `ACTIVE_TEST_REPORT_PAS='pa8 pa10'`
-to narrow a report.
-
+Assembly is required before hosted compatibility and runs in normal reports.
 Suites select platform-specific checks automatically and list skips separately
 from passes. A fixture's `.platforms` sidecar limits the whole test;
 `.inspect.platforms` limits only inspection, keeping compilation and execution.
@@ -123,18 +119,23 @@ exactly.
 
 Reference implementations and checked outputs are not guaranteed bug-free.
 Preserve them by default. You may correct reference outputs when a reduced
-reproducer and cited C++11 rules—or the LowIR contract for IR-only cases—prove
+reproducer and cited rules for the selected edition—or the LowIR contract for IR-only cases—prove
 them incorrect. Document the proof and bundle revision. Compiler agreement
 alone is insufficient. Never weaken required behavior, coverage, or comparison
 rules.
 
-## Optional later-language extensions
+## Required language modes
 
-PA29 and PA31 describe optional C++14/17 extensions in their handouts.
-Their fixtures and references ship in `tests/modern-cxx/`, but these features
-are not required for any assignment. `make test` and cumulative reports exclude
-them. Use root `make test-modern-cxx` to build and run both optional suites,
-or the same target inside one assignment to run its suite.
+The [language profile](LANGUAGE_PROFILE.md) is required in the owning lessons.
+Mode-tagged checks run in normal tests and cumulative reports. A fixture's
+`NAME.cxx-standard` selects the same C++11/14/17 mode for implementation and
+reference requests; driver cases can use their `.flags` file. No separate
+later-language validation command is needed.
+
+An early LowIR control can state `accept` (validate LowIR without linking),
+`reject`, or `exit N` (run with the supplied backend) in `NAME.expect`.
+`NAME.stdout` checks exact output when supplied. The
+[offline drafts](doc/REFERENCES.md) retain edition and defect-report provenance.
 
 PA29 also has an optional `make test-target-features` suite for x86 POPCNT.
 It is excluded from required reports; see the PA29 handout for the CPU option.

@@ -1,0 +1,6 @@
+#include "300-constexpr-inline-member-identity.h"
+int main() {
+  return &Constants::number != other_number() || &Constants::color != other_color() ||
+         Constants::text != other_text() || &Holder<int>::value != other_template() ||
+         other_color()->blue != 5 || other_text()[1] != 'b' || *other_template() != 11;
+}

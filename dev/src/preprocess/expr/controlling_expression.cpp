@@ -235,8 +235,9 @@ void ControllingExpressionEvaluator::classify_character(const PPToken& pp)
 	// include its code point.
 	// Multicharacter literals stay outside the course's controlling
 	// expressions.
-	const CharacterLiteralValue character = EvaluateCharacterLiteral(
-		pp.spelling, pp.length, literals_ == NumberDialect::Cxx11 ? CharacterDialect::Course : CharacterDialect::Gnu);
+	const CharacterLiteralValue character = EvaluateCharacterLiteral(pp.spelling, pp.length,
+		(literals_ == NumberDialect::Gnu || literals_ == NumberDialect::GnuStream) ? CharacterDialect::Gnu
+																				   : CharacterDialect::Course);
 	if (!character.valid || character.multicharacter || character.suffix_begin != pp.length)
 		return;
 	token_.kind = TokenClass::Operand;

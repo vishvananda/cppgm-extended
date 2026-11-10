@@ -38,6 +38,8 @@ struct NumberLiteral
 enum class NumberDialect : uint8_t
 {
 	Cxx11,
+	Cxx14,
+	Cxx17,
 	Gnu,
 	GnuStream
 };

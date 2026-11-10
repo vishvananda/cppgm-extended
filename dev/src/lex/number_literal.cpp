@@ -222,8 +222,8 @@ NumberLiteral ClassifyHexadecimal(const char* text, uint32_t length, NumberDiale
 		end = DigitsEnd(text, length, begin, 16, dialect);
 		fraction_digits = end - begin;
 	}
-	if (dialect != NumberDialect::Cxx11 && end < length && (text[end] == 'p' || text[end] == 'P') &&
-		integer_digits + fraction_digits != 0)
+	if (dialect != NumberDialect::Cxx11 && dialect != NumberDialect::Cxx14 && end < length &&
+		(text[end] == 'p' || text[end] == 'P') && integer_digits + fraction_digits != 0)
 	{
 		uint32_t exponent = end + 1;
 		if (exponent < length && (text[exponent] == '+' || text[exponent] == '-'))
@@ -295,14 +295,15 @@ NumberLiteral ClassifyFloating(const char* text, uint32_t length, uint32_t value
 		result.type = FundamentalType::LongDouble;
 	}
 	else if (suffix_length == 1 && (text[value_end] == 'q' || text[value_end] == 'Q') &&
-		dialect != NumberDialect::Cxx11)
+		(dialect == NumberDialect::Gnu || dialect == NumberDialect::GnuStream))
 	{
 		// GNU's `q` and `Q` name __float128 in both compilation and the
 		// typed preprocessor stream; `l` and `L` name long double.
 		result.kind = NumberLiteralKind::Floating;
 		result.type = FundamentalType::GnuFloat128;
 	}
-	else if (dialect != NumberDialect::Cxx11 && ExtendedFloatingSuffix(text + value_end, suffix_length, result.type))
+	else if ((dialect == NumberDialect::Gnu || dialect == NumberDialect::GnuStream) &&
+		ExtendedFloatingSuffix(text + value_end, suffix_length, result.type))
 	{
 		// C++23's (and GCC's) f16, f32, f64, f128, f32x, f64x.
 		result.kind = NumberLiteralKind::Floating;

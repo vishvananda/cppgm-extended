@@ -47,9 +47,9 @@ void EmitSpelledToken(IPPTokenStream& output, PPTokenKind kind, const std::strin
 
 } // namespace
 
-void EmitPPTokens(const SourceBuffer& source, IPPTokenStream& output)
+void EmitPPTokens(const SourceBuffer& source, IPPTokenStream& output, const PPLexerOptions& options)
 {
-	PPLexer lexer(source);
+	PPLexer lexer(source, options);
 	SourceLineCursor lines(source);
 	std::string text;
 	for (;;)

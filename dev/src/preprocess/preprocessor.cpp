@@ -106,8 +106,11 @@ Preprocessor::Preprocessor(const PreprocessorOptions& options, const std::string
 {
 	expander_.set_input(&source_);
 	source_.set_hosted(hosted_);
-	expander_.set_binary_exponents(hosted_);
-	expander_.set_digit_separators(hosted_);
+	const bool separators = hosted_ || options.literals != NumberDialect::Cxx11;
+	const bool exponents = hosted_ || options.literals == NumberDialect::Cxx17;
+	source_.set_number_syntax(separators, exponents);
+	expander_.set_binary_exponents(exponents);
+	expander_.set_digit_separators(separators);
 	expander_.set_hosted_recursion(hosted_);
 	SourceFile* primary = files_.open(path);
 	if (primary == nullptr)

@@ -442,6 +442,7 @@ dev_support_files=(
 copy_tracked_paths \
   .gitignore \
   Makefile \
+  LANGUAGE_PROFILE.md \
   doc \
   student.tests \
   shared \

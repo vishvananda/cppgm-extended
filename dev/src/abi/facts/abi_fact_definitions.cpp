@@ -254,14 +254,16 @@ AbiNode CaseReader::type_form(std::uint32_t line, const FactWord* words, std::ui
 		break;
 	case ABI_FACT_TYPE_FUNCTION_TYPE:
 	case ABI_FACT_TYPE_FUNCTION_TYPE_VARIADIC:
+	case ABI_FACT_TYPE_FUNCTION_TYPE_NOEXCEPT:
 	{
 		const AbiNode result = compact_type(line, operands[0].text, operands[0].length);
 		std::vector<AbiNode> params;
 		for (std::uint32_t i = 1; i < n; ++i)
 			params.push_back(compact_type(line, operands[i].text, operands[i].length));
 		drop_void_parameter(graph_, params);
-		return graph_.function_type(
-			result, params.data(), params.size(), form.type_form == ABI_FACT_TYPE_FUNCTION_TYPE_VARIADIC, 0);
+		return graph_.function_type(result, params.data(), params.size(),
+			form.type_form == ABI_FACT_TYPE_FUNCTION_TYPE_VARIADIC, 0,
+			form.type_form == ABI_FACT_TYPE_FUNCTION_TYPE_NOEXCEPT);
 	}
 	case ABI_FACT_TYPE_MEMBER_POINTER:
 		if (n == 2)

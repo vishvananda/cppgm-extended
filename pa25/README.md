@@ -306,6 +306,15 @@ To complete PA25, implement these goals:
    `thread_local` objects are destroyed at exit, before process-exit
    destructors, as the host C library does.
 
+### C++17 inline identity across translation units
+
+Inline variables, implicitly inline static constexpr members and template
+instances denote one object across the linked translation units. Preserve
+one-time initialization, array/class-valued storage and address equality.
+Declaration order and a later inline definition must not invent a second
+object. These checks use the existing separate-compilation/driver paths;
+host-library consumers remain in PA32. See N4659 `[dcl.fct.spec]` and `[basic.def.odr]`.
+
 ### Out Of Scope
 
 The following are out of scope for PA25:

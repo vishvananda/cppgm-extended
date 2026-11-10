@@ -1,9 +1,9 @@
-# Compile-Time-First C++11 Compiler Architecture
+# Compile-Time-First C++ Compiler Architecture
 
 ## Purpose
 
 This specification defines the production architecture for a self-contained
-x86-64 C++11 compiler targeting Linux and Intel macOS. It is normative and intended for implementation
+x86-64 C++ compiler implementing the required C++11/14/17 profile on Linux and Intel macOS. It is normative and intended for implementation
 reviews and architecture audits.
 
 Compile-time performance is a property of semantic design, not a mode that may

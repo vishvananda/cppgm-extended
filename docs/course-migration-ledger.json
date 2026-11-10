@@ -359,6 +359,2672 @@
         "pa29/tests/run/800-namespace-asm-data-sections.t.1"
       ],
       "note": "Explicit ELF section bytes, flags and entry size; source and LowIR-roundtrip objects."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-aggregate-base-prvalue-copy-required-reject.t",
+      "new": "pa12/tests/controls/400-aggregate-base-prvalue-copy-required-reject.t",
+      "feature": "value.initialization",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-aggregate-base-prvalue-copy-required-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-aggregate-base-prvalue-copy-required-reject.ref",
+        "pa29/tests/modern-cxx/compile/500-aggregate-base-prvalue-copy-required-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-aggregate-base-prvalue-copy-required-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-mixed-using-scoped-bad.t",
+      "new": "pa5/tests/spec/100-attribute-grammar-mixed-using-scoped-bad.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-mixed-using-scoped-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-mixed-using-scoped-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-mixed-using-scoped-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-mixed-using-scoped-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-gnu-packed.t",
+      "new": "pa29/tests/compile/500-attribute-grammar-using-gnu-packed.t",
+      "feature": "attribute.vendor",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-gnu-packed.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-gnu-packed.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-gnu-packed.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-gnu-packed.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-gnu-packed.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-prefix.t",
+      "new": "pa5/tests/spec/100-attribute-grammar-using-prefix.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-prefix.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-prefix.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-prefix.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-prefix.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-prefix.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx14-bad.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-abstract-pointer-empty-cxx14-bad.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx14-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx17.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-abstract-pointer-empty-cxx17.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx17.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx17.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx17.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx17.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx17.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-bare-using-keyword-cxx14.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-bare-using-keyword-cxx14.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-bare-using-keyword-cxx14.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-bare-using-keyword-cxx14.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-bare-using-keyword-cxx14.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-bare-using-keyword-cxx14.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-bare-using-keyword-cxx14.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx14-bad.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-empty-list-cxx14-bad.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx14-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx17.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-empty-list-cxx17.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx17.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx17.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx17.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx17.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx17.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx14-bad.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-function-type-empty-cxx14-bad.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx14-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx17.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-function-type-empty-cxx17.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx17.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx17.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx17.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx17.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx17.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-known-packed-cxx14-bad.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-known-packed-cxx14-bad.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-known-packed-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-known-packed-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-known-packed-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-known-packed-cxx14-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-other-keyword-attributes-cxx14.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-other-keyword-attributes-cxx14.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-other-keyword-attributes-cxx14.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-other-keyword-attributes-cxx14.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-other-keyword-attributes-cxx14.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-other-keyword-attributes-cxx14.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-other-keyword-attributes-cxx14.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx14-bad.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-post-name-used-cxx14-bad.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx14-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx17.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-post-name-used-cxx17.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx17.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx17.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx17.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx17.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx17.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx14-bad.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-statement-empty-cxx14-bad.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx14-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx17.t",
+      "new": "pa5/tests/spec/100-attribute-prefix-mode-statement-empty-cxx17.t",
+      "feature": "syntax.attribute_using_prefix",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx17.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx17.ref",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx17.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx17.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx17.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-contextual-distinct-result-reject.t",
+      "new": "pa12/tests/controls/400-contextual-distinct-result-reject.t",
+      "feature": "class.conversion_operator",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-contextual-distinct-result-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-contextual-distinct-result-reject.ref",
+        "pa29/tests/modern-cxx/compile/500-contextual-distinct-result-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-contextual-distinct-result-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-cxx11-aggregate-member-initializers-reject.t",
+      "new": "pa12/tests/controls/400-cxx11-aggregate-member-initializers-reject.t",
+      "feature": "value.initialization",
+      "mode": "c++11",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-cxx11-aggregate-member-initializers-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-cxx11-aggregate-member-initializers-reject.ref",
+        "pa29/tests/modern-cxx/compile/500-cxx11-aggregate-member-initializers-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-cxx11-aggregate-member-initializers-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-cxx11-direct-conversion-ambiguous.t",
+      "new": "pa12/tests/controls/400-cxx11-direct-conversion-ambiguous.t",
+      "feature": "class.conversion_operator",
+      "mode": "c++11",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-cxx11-direct-conversion-ambiguous.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-cxx11-direct-conversion-ambiguous.ref",
+        "pa29/tests/modern-cxx/compile/500-cxx11-direct-conversion-ambiguous.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-cxx11-direct-conversion-ambiguous.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-cxx11-prvalue-copy-required-reject.t",
+      "new": "pa12/tests/controls/400-cxx11-prvalue-copy-required-reject.t",
+      "feature": "value.initialization",
+      "mode": "c++11",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-cxx11-prvalue-copy-required-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-cxx11-prvalue-copy-required-reject.ref",
+        "pa29/tests/modern-cxx/compile/500-cxx11-prvalue-copy-required-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-cxx11-prvalue-copy-required-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-cxx14-deleted-placeholder-return-overload.t",
+      "new": "pa20/tests/controls/300-cxx14-deleted-placeholder-return-overload.t",
+      "feature": "support.auto",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-cxx14-deleted-placeholder-return-overload.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-cxx14-deleted-placeholder-return-overload.h",
+        "pa29/tests/modern-cxx/compile/500-cxx14-deleted-placeholder-return-overload.ref",
+        "pa29/tests/modern-cxx/compile/500-cxx14-deleted-placeholder-return-overload.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-cxx14-deleted-placeholder-return-overload.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-cxx14-deleted-placeholder-return-overload.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-cxx14-private-member-aggregate-reject.t",
+      "new": "pa12/tests/controls/400-cxx14-private-member-aggregate-reject.t",
+      "feature": "value.initialization",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-cxx14-private-member-aggregate-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-cxx14-private-member-aggregate-reject.ref",
+        "pa29/tests/modern-cxx/compile/500-cxx14-private-member-aggregate-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-cxx14-private-member-aggregate-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-cxx17-mode-gated-weak-from-this-member.t",
+      "new": "pa14/tests/controls/300-cxx17-mode-gated-weak-from-this-member.t",
+      "feature": "template.class",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-cxx17-mode-gated-weak-from-this-member.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-cxx17-mode-gated-weak-from-this-member.ref",
+        "pa29/tests/modern-cxx/compile/500-cxx17-mode-gated-weak-from-this-member.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-cxx17-mode-gated-weak-from-this-member.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-cxx17-mode-gated-weak-from-this-member.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-explicit-defaulted-aggregate-reject.t",
+      "new": "pa12/tests/controls/400-explicit-defaulted-aggregate-reject.t",
+      "feature": "value.initialization",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-explicit-defaulted-aggregate-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-explicit-defaulted-aggregate-reject.ref",
+        "pa29/tests/modern-cxx/compile/500-explicit-defaulted-aggregate-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-explicit-defaulted-aggregate-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-guaranteed-elision-overlapping-base-reject.t",
+      "new": "pa12/tests/controls/400-guaranteed-elision-overlapping-base-reject.t",
+      "feature": "value.initialization",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-guaranteed-elision-overlapping-base-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-guaranteed-elision-overlapping-base-reject.ref",
+        "pa29/tests/modern-cxx/compile/500-guaranteed-elision-overlapping-base-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-guaranteed-elision-overlapping-base-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-hosted-digit-separator-exponent-bad.t",
+      "new": "pa20/tests/controls/300-digit-separator-exponent-bad.t",
+      "feature": "literal.separators_and_operators",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separator-exponent-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separator-exponent-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separator-exponent-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separator-exponent-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-hosted-digit-separator-prefix-bad.t",
+      "new": "pa20/tests/controls/300-digit-separator-prefix-bad.t",
+      "feature": "literal.separators_and_operators",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separator-prefix-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separator-prefix-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separator-prefix-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separator-prefix-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-hosted-digit-separators.t",
+      "new": "pa20/tests/controls/300-digit-separators.t",
+      "feature": "literal.separators_and_operators",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separators.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separators.ref",
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separators.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separators.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-hosted-digit-separators.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-alias-extension-bad.t",
+      "new": "pa6/tests/spec/100-hosted-nested-namespace-alias-extension-bad.t",
+      "feature": "lookup.nested_namespace",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-alias-extension-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-alias-extension-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-alias-extension-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-alias-extension-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-definition.t",
+      "new": "pa16/tests/controls/300-nested-namespace-definition.t",
+      "feature": "lookup.nested_namespace",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-definition.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-definition.ref",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-definition.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-definition.ref.stdout",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-definition.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-global-bad.t",
+      "new": "pa5/tests/spec/100-hosted-nested-namespace-global-bad.t",
+      "feature": "syntax.nested_namespace",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-global-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-global-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-global-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-global-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-inline-bad.t",
+      "new": "pa5/tests/spec/100-hosted-nested-namespace-inline-bad.t",
+      "feature": "syntax.nested_namespace",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-inline-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-inline-bad.ref",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-inline-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/500-hosted-nested-namespace-inline-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-aggregate-default-member-constant.t",
+      "new": "pa15/tests/controls/300-aggregate-default-member-constant.t",
+      "feature": "value.initialization",
+      "mode": "gnu++11",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-aggregate-default-member-constant.flags",
+        "pa29/tests/modern-cxx/compile/600-aggregate-default-member-constant.ref",
+        "pa29/tests/modern-cxx/compile/600-aggregate-default-member-constant.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-aggregate-default-member-constant.ref.stdout",
+        "pa29/tests/modern-cxx/compile/600-aggregate-default-member-constant.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-constexpr-lambda-cxx14-bad.t",
+      "new": "pa20/tests/controls/300-constexpr-lambda-cxx14-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-cxx14-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-constexpr-lambda-dangling-reference-bad.t",
+      "new": "pa20/tests/controls/300-constexpr-lambda-dangling-reference-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-dangling-reference-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-dangling-reference-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-dangling-reference-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-dangling-reference-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-constexpr-lambda-duplicate-bad.t",
+      "new": "pa20/tests/controls/300-constexpr-lambda-duplicate-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-duplicate-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-duplicate-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-duplicate-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-duplicate-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-constexpr-lambda-nonliteral-capture-bad.t",
+      "new": "pa20/tests/controls/300-constexpr-lambda-nonliteral-capture-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-nonliteral-capture-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-nonliteral-capture-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-nonliteral-capture-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-nonliteral-capture-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-constexpr-lambda-static-local-bad.t",
+      "new": "pa20/tests/controls/300-constexpr-lambda-static-local-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-static-local-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-static-local-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-static-local-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-constexpr-lambda-static-local-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-constexpr-parenthesized-initialized-captures.t",
+      "new": "pa20/tests/controls/300-constexpr-parenthesized-initialized-captures.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-constexpr-parenthesized-initialized-captures.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-constexpr-parenthesized-initialized-captures.ref",
+        "pa29/tests/modern-cxx/compile/600-constexpr-parenthesized-initialized-captures.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-constexpr-parenthesized-initialized-captures.ref.stdout",
+        "pa29/tests/modern-cxx/compile/600-constexpr-parenthesized-initialized-captures.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-deduction-guide-helper-enclosing-context-bad.t",
+      "new": "pa18/tests/controls/400-deduction-guide-helper-enclosing-context-bad.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-deduction-guide-helper-enclosing-context-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-deduction-guide-helper-enclosing-context-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-deduction-guide-helper-enclosing-context-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-deduction-guide-helper-enclosing-context-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-deduction-guide-required-constructor-argument.t",
+      "new": "pa18/tests/controls/400-deduction-guide-required-constructor-argument.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-deduction-guide-required-constructor-argument.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-deduction-guide-required-constructor-argument.ref",
+        "pa29/tests/modern-cxx/compile/600-deduction-guide-required-constructor-argument.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-deduction-guide-required-constructor-argument.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-fixed-enum-class-conversion-bad.t",
+      "new": "pa20/tests/controls/300-fixed-enum-class-conversion-bad.t",
+      "feature": "initialization.fixed_enum",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-class-conversion-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-class-conversion-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-class-conversion-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-class-conversion-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-fixed-enum-copy-list-bad.t",
+      "new": "pa20/tests/controls/300-fixed-enum-copy-list-bad.t",
+      "feature": "initialization.fixed_enum",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-copy-list-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-copy-list-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-copy-list-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-copy-list-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-fixed-enum-cxx14-bad.t",
+      "new": "pa20/tests/controls/300-fixed-enum-cxx14-bad.t",
+      "feature": "initialization.fixed_enum",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-cxx14-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-fixed-enum-floating-bad.t",
+      "new": "pa20/tests/controls/300-fixed-enum-floating-bad.t",
+      "feature": "initialization.fixed_enum",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-floating-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-floating-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-floating-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-floating-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-fixed-enum-narrow-bad.t",
+      "new": "pa20/tests/controls/300-fixed-enum-narrow-bad.t",
+      "feature": "initialization.fixed_enum",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-narrow-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-narrow-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-narrow-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-narrow-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-fixed-enum-negative-bad.t",
+      "new": "pa20/tests/controls/300-fixed-enum-negative-bad.t",
+      "feature": "initialization.fixed_enum",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-negative-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-negative-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-negative-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-negative-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-fixed-enum-runtime-narrow-bad.t",
+      "new": "pa20/tests/controls/300-fixed-enum-runtime-narrow-bad.t",
+      "feature": "initialization.fixed_enum",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-runtime-narrow-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-runtime-narrow-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-runtime-narrow-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-runtime-narrow-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-fixed-enum-scoped-source-bad.t",
+      "new": "pa20/tests/controls/300-fixed-enum-scoped-source-bad.t",
+      "feature": "initialization.fixed_enum",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-scoped-source-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-scoped-source-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-scoped-source-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-fixed-enum-scoped-source-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-generic-fixed-initializer-no-capture-bad.t",
+      "new": "pa20/tests/controls/300-generic-fixed-initializer-no-capture-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-generic-fixed-initializer-no-capture-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-generic-fixed-initializer-no-capture-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-generic-fixed-initializer-no-capture-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-generic-fixed-initializer-no-capture-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-guide-copy-explicit-reject.t",
+      "new": "pa18/tests/controls/400-guide-copy-explicit-reject.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-guide-copy-explicit-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-guide-copy-explicit-reject.ref",
+        "pa29/tests/modern-cxx/compile/600-guide-copy-explicit-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-guide-copy-explicit-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-guide-duplicate-reject.t",
+      "new": "pa18/tests/controls/400-guide-duplicate-reject.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-guide-duplicate-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-guide-duplicate-reject.ref",
+        "pa29/tests/modern-cxx/compile/600-guide-duplicate-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-guide-duplicate-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-guide-result-not-specialization-reject.t",
+      "new": "pa18/tests/controls/400-guide-result-not-specialization-reject.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-guide-result-not-specialization-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-guide-result-not-specialization-reject.ref",
+        "pa29/tests/modern-cxx/compile/600-guide-result-not-specialization-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-guide-result-not-specialization-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-guide-result-wrong-template-reject.t",
+      "new": "pa18/tests/controls/400-guide-result-wrong-template-reject.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-guide-result-wrong-template-reject.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-guide-result-wrong-template-reject.ref",
+        "pa29/tests/modern-cxx/compile/600-guide-result-wrong-template-reject.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-guide-result-wrong-template-reject.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-braced-bad.t",
+      "new": "pa20/tests/controls/300-decltype-auto-braced-bad.t",
+      "feature": "support.decltype_auto",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-braced-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-braced-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-braced-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-braced-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-inconsistent-return-bad.t",
+      "new": "pa20/tests/controls/300-decltype-auto-inconsistent-return-bad.t",
+      "feature": "support.decltype_auto",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-inconsistent-return-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-inconsistent-return-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-inconsistent-return-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-inconsistent-return-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-pointer-bad.t",
+      "new": "pa20/tests/controls/300-decltype-auto-pointer-bad.t",
+      "feature": "support.decltype_auto",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-pointer-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-pointer-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-pointer-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto-pointer-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto.t",
+      "new": "pa20/tests/controls/300-decltype-auto.t",
+      "feature": "support.decltype_auto",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto.ref",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto.ref.stdout",
+        "pa29/tests/modern-cxx/compile/600-hosted-decltype-auto.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-hosted-generic-lambda.t",
+      "new": "pa20/tests/controls/300-generic-lambda.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-hosted-generic-lambda.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-hosted-generic-lambda.ref",
+        "pa29/tests/modern-cxx/compile/600-hosted-generic-lambda.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-hosted-generic-lambda.ref.stdout",
+        "pa29/tests/modern-cxx/compile/600-hosted-generic-lambda.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-conversion-bad.t",
+      "new": "pa7/tests/spec/300-hosted-noexcept-function-conversion-bad.t",
+      "feature": "function.noexcept",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-conversion-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-conversion-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-conversion-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-conversion-bad.t"
+      ],
+      "note": "Required core-language check; no host headers or native-link prerequisite."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-types.t",
+      "new": "pa22/tests/controls/300-noexcept-function-types.t",
+      "feature": "function.noexcept",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-types.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-types.ref",
+        "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-types.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-types.ref.stdout",
+        "pa29/tests/modern-cxx/compile/600-hosted-noexcept-function-types.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-hosted-using-pack-missing-pack-bad.t",
+      "new": "pa18/tests/controls/300-using-pack-missing-pack-bad.t",
+      "feature": "template.using_pack",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-hosted-using-pack-missing-pack-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-hosted-using-pack-missing-pack-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-hosted-using-pack-missing-pack-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-hosted-using-pack-missing-pack-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-hosted-using-pack-overloads.t",
+      "new": "pa22/tests/controls/300-using-pack-overloads.t",
+      "feature": "template.using_pack",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-hosted-using-pack-overloads.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-hosted-using-pack-overloads.ref",
+        "pa29/tests/modern-cxx/compile/600-hosted-using-pack-overloads.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-hosted-using-pack-overloads.ref.stdout",
+        "pa29/tests/modern-cxx/compile/600-hosted-using-pack-overloads.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-init-capture-braced-list-bad.t",
+      "new": "pa20/tests/controls/300-init-capture-braced-list-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-init-capture-braced-list-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-init-capture-braced-list-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-init-capture-braced-list-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-init-capture-braced-list-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-init-capture-cxx11-bad.t",
+      "new": "pa20/tests/controls/300-init-capture-cxx11-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++11",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-init-capture-cxx11-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-init-capture-cxx11-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-init-capture-cxx11-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-init-capture-cxx11-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-init-capture-duplicate-bad.t",
+      "new": "pa20/tests/controls/300-init-capture-duplicate-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-init-capture-duplicate-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-init-capture-duplicate-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-init-capture-duplicate-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-init-capture-duplicate-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-init-capture-parameter-bad.t",
+      "new": "pa20/tests/controls/300-init-capture-parameter-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-init-capture-parameter-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-init-capture-parameter-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-init-capture-parameter-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-init-capture-parameter-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-init-capture-scope-bad.t",
+      "new": "pa20/tests/controls/300-init-capture-scope-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-init-capture-scope-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-init-capture-scope-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-init-capture-scope-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-init-capture-scope-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-member-pointer-variable-cxx11-bad.t",
+      "new": "pa22/tests/controls/300-member-pointer-variable-cxx11-bad.t",
+      "feature": "template.nttp.pointer_member",
+      "mode": "c++11",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-member-pointer-variable-cxx11-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-member-pointer-variable-cxx11-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-member-pointer-variable-cxx11-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-member-pointer-variable-cxx11-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-member-pointer-variable-cxx14-bad.t",
+      "new": "pa22/tests/controls/300-member-pointer-variable-cxx14-bad.t",
+      "feature": "template.nttp.pointer_member",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-member-pointer-variable-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-member-pointer-variable-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-member-pointer-variable-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-member-pointer-variable-cxx14-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-nested-generic-outer-no-capture-bad.t",
+      "new": "pa20/tests/controls/300-nested-generic-outer-no-capture-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-nested-generic-outer-no-capture-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-nested-generic-outer-no-capture-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-nested-generic-outer-no-capture-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-nested-generic-outer-no-capture-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-cxx11-bad.t",
+      "new": "pa20/tests/controls/300-parenthesized-initialized-capture-cxx11-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++11",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-cxx11-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-cxx11-bad.flags",
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-cxx11-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-cxx11-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-cxx11-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-empty-bad.t",
+      "new": "pa20/tests/controls/300-parenthesized-initialized-capture-empty-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-empty-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-empty-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-empty-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-empty-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-multiple-bad.t",
+      "new": "pa20/tests/controls/300-parenthesized-initialized-capture-multiple-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-multiple-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-multiple-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-multiple-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-parenthesized-initialized-capture-multiple-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-star-this-cxx11-bad.t",
+      "new": "pa20/tests/controls/300-star-this-cxx11-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++11",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-star-this-cxx11-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-star-this-cxx11-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-star-this-cxx11-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-star-this-cxx11-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-star-this-cxx14-bad.t",
+      "new": "pa20/tests/controls/300-star-this-cxx14-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-star-this-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-star-this-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-star-this-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-star-this-cxx14-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-star-this-deleted-copy-bad.t",
+      "new": "pa20/tests/controls/300-star-this-deleted-copy-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-star-this-deleted-copy-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-star-this-deleted-copy-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-star-this-deleted-copy-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-star-this-deleted-copy-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-star-this-duplicate-bad.t",
+      "new": "pa20/tests/controls/300-star-this-duplicate-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-star-this-duplicate-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-star-this-duplicate-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-star-this-duplicate-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-star-this-duplicate-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-star-this-nonmutable-bad.t",
+      "new": "pa20/tests/controls/300-star-this-nonmutable-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-star-this-nonmutable-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-star-this-nonmutable-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-star-this-nonmutable-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-star-this-nonmutable-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-star-this-outside-bad.t",
+      "new": "pa20/tests/controls/300-star-this-outside-bad.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-star-this-outside-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-star-this-outside-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-star-this-outside-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-star-this-outside-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-star-this-types.t",
+      "new": "pa20/tests/controls/300-star-this-types.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-star-this-types.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-star-this-types.ref",
+        "pa29/tests/modern-cxx/compile/600-star-this-types.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-star-this-types.ref.stdout",
+        "pa29/tests/modern-cxx/compile/600-star-this-types.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-template-template-typename-cxx14-bad.t",
+      "new": "pa17/tests/controls/300-template-template-typename-cxx14-bad.t",
+      "feature": "template.template_parameter",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-template-template-typename-cxx14-bad.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-template-template-typename-cxx14-bad.ref",
+        "pa29/tests/modern-cxx/compile/600-template-template-typename-cxx14-bad.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-template-template-typename-cxx14-bad.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/compile/600-template-template-typename.t",
+      "new": "pa17/tests/controls/300-template-template-typename.t",
+      "feature": "template.template_parameter",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/compile/600-template-template-typename.cxx-standard",
+        "pa29/tests/modern-cxx/compile/600-template-template-typename.ref",
+        "pa29/tests/modern-cxx/compile/600-template-template-typename.ref.exit_status",
+        "pa29/tests/modern-cxx/compile/600-template-template-typename.ref.stdout",
+        "pa29/tests/modern-cxx/compile/600-template-template-typename.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-aggregate-base-computed-address.t",
+      "new": "pa12/tests/controls/400-aggregate-base-computed-address.t",
+      "feature": "value.initialization",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-aggregate-base-computed-address.flags",
+        "pa29/tests/modern-cxx/run/800-aggregate-base-computed-address.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-aggregate-base-computed-address.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-aggregate-base-computed-address.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-aggregate-base-computed-address.t",
+        "pa29/tests/modern-cxx/run/800-aggregate-base-computed-address.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-aggregate-default-member-cleanup.t",
+      "new": "pa21/tests/controls/300-aggregate-default-member-cleanup.t",
+      "feature": "value.initialization",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-aggregate-default-member-cleanup.flags",
+        "pa29/tests/modern-cxx/run/800-aggregate-default-member-cleanup.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-aggregate-default-member-cleanup.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-aggregate-default-member-cleanup.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-aggregate-default-member-cleanup.t",
+        "pa29/tests/modern-cxx/run/800-aggregate-default-member-cleanup.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-aggregate-member-initializers.t",
+      "new": "pa15/tests/controls/300-aggregate-member-initializers.t",
+      "feature": "value.initialization",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-aggregate-member-initializers.flags",
+        "pa29/tests/modern-cxx/run/800-aggregate-member-initializers.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-aggregate-member-initializers.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-aggregate-member-initializers.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-aggregate-member-initializers.t",
+        "pa29/tests/modern-cxx/run/800-aggregate-member-initializers.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-aggregate-public-bases.t",
+      "new": "pa22/tests/controls/300-aggregate-public-bases.t",
+      "feature": "value.initialization",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-aggregate-public-bases.flags",
+        "pa29/tests/modern-cxx/run/800-aggregate-public-bases.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-aggregate-public-bases.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-aggregate-public-bases.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-aggregate-public-bases.t",
+        "pa29/tests/modern-cxx/run/800-aggregate-public-bases.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-class-template-constructor-deduction.t",
+      "new": "pa20/tests/controls/400-class-template-constructor-deduction.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-class-template-constructor-deduction.flags",
+        "pa29/tests/modern-cxx/run/800-class-template-constructor-deduction.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-class-template-constructor-deduction.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-class-template-constructor-deduction.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-class-template-constructor-deduction.t",
+        "pa29/tests/modern-cxx/run/800-class-template-constructor-deduction.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-constant-member-pointer-template-arguments.t",
+      "new": "pa22/tests/controls/300-constant-member-pointer-template-arguments.t",
+      "feature": "template.nttp.pointer_member",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-constant-member-pointer-template-arguments.flags",
+        "pa29/tests/modern-cxx/run/800-constant-member-pointer-template-arguments.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-constant-member-pointer-template-arguments.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-constant-member-pointer-template-arguments.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-constant-member-pointer-template-arguments.t",
+        "pa29/tests/modern-cxx/run/800-constant-member-pointer-template-arguments.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-constexpr-lambda-callbacks.t",
+      "new": "pa20/tests/controls/300-constexpr-lambda-callbacks.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-callbacks.flags",
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-callbacks.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-callbacks.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-callbacks.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-callbacks.t",
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-callbacks.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-constexpr-lambda-closures.t",
+      "new": "pa20/tests/controls/300-constexpr-lambda-closures.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-closures.flags",
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-closures.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-closures.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-closures.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-closures.t",
+        "pa29/tests/modern-cxx/run/800-constexpr-lambda-closures.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-contextual-conversion-overloads.t",
+      "new": "pa12/tests/controls/400-contextual-conversion-overloads.t",
+      "feature": "class.conversion_operator",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-contextual-conversion-overloads.flags",
+        "pa29/tests/modern-cxx/run/800-contextual-conversion-overloads.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-contextual-conversion-overloads.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-contextual-conversion-overloads.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-contextual-conversion-overloads.t",
+        "pa29/tests/modern-cxx/run/800-contextual-conversion-overloads.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-deduced-operator-result.t",
+      "new": "pa20/tests/controls/300-deduced-operator-result.t",
+      "feature": "support.auto",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-deduced-operator-result.flags",
+        "pa29/tests/modern-cxx/run/800-deduced-operator-result.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduced-operator-result.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduced-operator-result.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-deduced-operator-result.t",
+        "pa29/tests/modern-cxx/run/800-deduced-operator-result.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-deduction-condition-declarations.t",
+      "new": "pa18/tests/controls/400-deduction-condition-declarations.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-deduction-condition-declarations.flags",
+        "pa29/tests/modern-cxx/run/800-deduction-condition-declarations.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduction-condition-declarations.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduction-condition-declarations.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-deduction-condition-declarations.t",
+        "pa29/tests/modern-cxx/run/800-deduction-condition-declarations.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-deduction-constructor-pack-default.t",
+      "new": "pa18/tests/controls/400-deduction-constructor-pack-default.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-deduction-constructor-pack-default.flags",
+        "pa29/tests/modern-cxx/run/800-deduction-constructor-pack-default.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduction-constructor-pack-default.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduction-constructor-pack-default.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-deduction-constructor-pack-default.t",
+        "pa29/tests/modern-cxx/run/800-deduction-constructor-pack-default.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-deduction-guide-constructor-defaults.t",
+      "new": "pa18/tests/controls/400-deduction-guide-constructor-defaults.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-deduction-guide-constructor-defaults.flags",
+        "pa29/tests/modern-cxx/run/800-deduction-guide-constructor-defaults.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduction-guide-constructor-defaults.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduction-guide-constructor-defaults.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-deduction-guide-constructor-defaults.t",
+        "pa29/tests/modern-cxx/run/800-deduction-guide-constructor-defaults.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-deduction-guide-member-helper-context.t",
+      "new": "pa18/tests/controls/400-deduction-guide-member-helper-context.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-deduction-guide-member-helper-context.flags",
+        "pa29/tests/modern-cxx/run/800-deduction-guide-member-helper-context.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduction-guide-member-helper-context.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduction-guide-member-helper-context.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-deduction-guide-member-helper-context.t",
+        "pa29/tests/modern-cxx/run/800-deduction-guide-member-helper-context.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-deduction-list-constructor-phases.t",
+      "new": "pa21/tests/controls/300-deduction-list-constructor-phases.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-deduction-list-constructor-phases.flags",
+        "pa29/tests/modern-cxx/run/800-deduction-list-constructor-phases.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduction-list-constructor-phases.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-deduction-list-constructor-phases.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-deduction-list-constructor-phases.t",
+        "pa29/tests/modern-cxx/run/800-deduction-list-constructor-phases.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-direct-conversion-result.t",
+      "new": "pa17/tests/controls/300-direct-conversion-result.t",
+      "feature": "class.conversion_operator",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-direct-conversion-result.flags",
+        "pa29/tests/modern-cxx/run/800-direct-conversion-result.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-direct-conversion-result.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-direct-conversion-result.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-direct-conversion-result.t",
+        "pa29/tests/modern-cxx/run/800-direct-conversion-result.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-empty-aggregate-base-assignment.t",
+      "new": "pa22/tests/controls/300-empty-aggregate-base-assignment.t",
+      "feature": "value.initialization",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-empty-aggregate-base-assignment.flags",
+        "pa29/tests/modern-cxx/run/800-empty-aggregate-base-assignment.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-empty-aggregate-base-assignment.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-empty-aggregate-base-assignment.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-empty-aggregate-base-assignment.t",
+        "pa29/tests/modern-cxx/run/800-empty-aggregate-base-assignment.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-fixed-enum-direct-lists.t",
+      "new": "pa20/tests/controls/300-fixed-enum-direct-lists.t",
+      "feature": "initialization.fixed_enum",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-fixed-enum-direct-lists.flags",
+        "pa29/tests/modern-cxx/run/800-fixed-enum-direct-lists.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-fixed-enum-direct-lists.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-fixed-enum-direct-lists.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-fixed-enum-direct-lists.t",
+        "pa29/tests/modern-cxx/run/800-fixed-enum-direct-lists.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-floating-separator-native.t",
+      "new": "pa20/tests/controls/300-floating-separator-native.t",
+      "feature": "literal.separators_and_operators",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-floating-separator-native.flags",
+        "pa29/tests/modern-cxx/run/800-floating-separator-native.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-floating-separator-native.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-floating-separator-native.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-floating-separator-native.t",
+        "pa29/tests/modern-cxx/run/800-floating-separator-native.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-generic-capture-fixed-initializer.t",
+      "new": "pa20/tests/controls/300-generic-capture-fixed-initializer.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-generic-capture-fixed-initializer.flags",
+        "pa29/tests/modern-cxx/run/800-generic-capture-fixed-initializer.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-generic-capture-fixed-initializer.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-generic-capture-fixed-initializer.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-generic-capture-fixed-initializer.t",
+        "pa29/tests/modern-cxx/run/800-generic-capture-fixed-initializer.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-generic-fixed-reference-member.t",
+      "new": "pa20/tests/controls/300-generic-fixed-reference-member.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-generic-fixed-reference-member.flags",
+        "pa29/tests/modern-cxx/run/800-generic-fixed-reference-member.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-generic-fixed-reference-member.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-generic-fixed-reference-member.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-generic-fixed-reference-member.t",
+        "pa29/tests/modern-cxx/run/800-generic-fixed-reference-member.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-generic-lambda-captured-callable.t",
+      "new": "pa20/tests/controls/300-generic-lambda-captured-callable.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-generic-lambda-captured-callable.flags",
+        "pa29/tests/modern-cxx/run/800-generic-lambda-captured-callable.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-generic-lambda-captured-callable.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-generic-lambda-captured-callable.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-generic-lambda-captured-callable.t",
+        "pa29/tests/modern-cxx/run/800-generic-lambda-captured-callable.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-guaranteed-prvalue-construction.t",
+      "new": "pa12/tests/controls/400-guaranteed-prvalue-construction.t",
+      "feature": "value.initialization",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-guaranteed-prvalue-construction.flags",
+        "pa29/tests/modern-cxx/run/800-guaranteed-prvalue-construction.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-guaranteed-prvalue-construction.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-guaranteed-prvalue-construction.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-guaranteed-prvalue-construction.t",
+        "pa29/tests/modern-cxx/run/800-guaranteed-prvalue-construction.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-hosted-constexpr-inline-member-run.t",
+      "new": "pa25/tests/general/300-constexpr-inline-member-identity.t",
+      "feature": "object.inline_identity",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-hosted-constexpr-inline-member-run.flags",
+        "pa29/tests/modern-cxx/run/800-hosted-constexpr-inline-member-run.h",
+        "pa29/tests/modern-cxx/run/800-hosted-constexpr-inline-member-run.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-hosted-constexpr-inline-member-run.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-hosted-constexpr-inline-member-run.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-hosted-constexpr-inline-member-run.t",
+        "pa29/tests/modern-cxx/run/800-hosted-constexpr-inline-member-run.t.1",
+        "pa29/tests/modern-cxx/run/800-hosted-constexpr-inline-member-run.t.2"
+      ],
+      "note": "Cross-translation-unit identity belongs to separate compilation."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-hosted-generic-lambda-run.t",
+      "new": "pa20/tests/controls/300-generic-lambda-run.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-hosted-generic-lambda-run.flags",
+        "pa29/tests/modern-cxx/run/800-hosted-generic-lambda-run.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-hosted-generic-lambda-run.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-hosted-generic-lambda-run.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-hosted-generic-lambda-run.t",
+        "pa29/tests/modern-cxx/run/800-hosted-generic-lambda-run.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-initialized-lambda-captures.t",
+      "new": "pa21/tests/controls/300-initialized-lambda-captures.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-initialized-lambda-captures.flags",
+        "pa29/tests/modern-cxx/run/800-initialized-lambda-captures.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-initialized-lambda-captures.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-initialized-lambda-captures.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-initialized-lambda-captures.t",
+        "pa29/tests/modern-cxx/run/800-initialized-lambda-captures.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-lambda-placeholder-return.t",
+      "new": "pa20/tests/controls/300-lambda-placeholder-return.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-lambda-placeholder-return.flags",
+        "pa29/tests/modern-cxx/run/800-lambda-placeholder-return.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-lambda-placeholder-return.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-lambda-placeholder-return.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-lambda-placeholder-return.t",
+        "pa29/tests/modern-cxx/run/800-lambda-placeholder-return.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-namespace-init-capture.t",
+      "new": "pa20/tests/controls/300-namespace-init-capture.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-namespace-init-capture.flags",
+        "pa29/tests/modern-cxx/run/800-namespace-init-capture.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-namespace-init-capture.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-namespace-init-capture.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-namespace-init-capture.t",
+        "pa29/tests/modern-cxx/run/800-namespace-init-capture.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-nested-template-local.t",
+      "new": "pa20/tests/controls/300-nested-template-local.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-nested-template-local.flags",
+        "pa29/tests/modern-cxx/run/800-nested-template-local.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-nested-template-local.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-nested-template-local.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-nested-template-local.t",
+        "pa29/tests/modern-cxx/run/800-nested-template-local.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-nested-template-reference.t",
+      "new": "pa20/tests/controls/300-nested-template-reference.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-nested-template-reference.flags",
+        "pa29/tests/modern-cxx/run/800-nested-template-reference.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-nested-template-reference.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-nested-template-reference.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-nested-template-reference.t",
+        "pa29/tests/modern-cxx/run/800-nested-template-reference.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-parenthesized-initialized-captures.t",
+      "new": "pa21/tests/controls/300-parenthesized-initialized-captures.t",
+      "feature": "support.lambda",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-parenthesized-initialized-captures.flags",
+        "pa29/tests/modern-cxx/run/800-parenthesized-initialized-captures.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-parenthesized-initialized-captures.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-parenthesized-initialized-captures.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-parenthesized-initialized-captures.t",
+        "pa29/tests/modern-cxx/run/800-parenthesized-initialized-captures.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-placeholder-template-values.t",
+      "new": "pa20/tests/controls/300-placeholder-template-values.t",
+      "feature": "template.placeholder_nttp",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-placeholder-template-values.flags",
+        "pa29/tests/modern-cxx/run/800-placeholder-template-values.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-placeholder-template-values.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-placeholder-template-values.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-placeholder-template-values.t",
+        "pa29/tests/modern-cxx/run/800-placeholder-template-values.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-star-this-cleanup.t",
+      "new": "pa21/tests/controls/300-star-this-cleanup.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-star-this-cleanup.flags",
+        "pa29/tests/modern-cxx/run/800-star-this-cleanup.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-star-this-cleanup.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-star-this-cleanup.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-star-this-cleanup.t",
+        "pa29/tests/modern-cxx/run/800-star-this-cleanup.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-star-this-constexpr-generic.t",
+      "new": "pa20/tests/controls/300-star-this-constexpr-generic.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-star-this-constexpr-generic.flags",
+        "pa29/tests/modern-cxx/run/800-star-this-constexpr-generic.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-star-this-constexpr-generic.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-star-this-constexpr-generic.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-star-this-constexpr-generic.t",
+        "pa29/tests/modern-cxx/run/800-star-this-constexpr-generic.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-star-this-nested.t",
+      "new": "pa20/tests/controls/300-star-this-nested.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-star-this-nested.flags",
+        "pa29/tests/modern-cxx/run/800-star-this-nested.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-star-this-nested.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-star-this-nested.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-star-this-nested.t",
+        "pa29/tests/modern-cxx/run/800-star-this-nested.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-star-this-runtime.t",
+      "new": "pa20/tests/controls/300-star-this-runtime.t",
+      "feature": "support.lambda",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-star-this-runtime.flags",
+        "pa29/tests/modern-cxx/run/800-star-this-runtime.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-star-this-runtime.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-star-this-runtime.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-star-this-runtime.t",
+        "pa29/tests/modern-cxx/run/800-star-this-runtime.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-static-aggregate-default-context.t",
+      "new": "pa12/tests/controls/400-static-aggregate-default-context.t",
+      "feature": "value.initialization",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-context.flags",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-context.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-context.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-context.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-context.t",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-context.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-static-aggregate-default-effects.t",
+      "new": "pa12/tests/controls/400-static-aggregate-default-effects.t",
+      "feature": "value.initialization",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-effects.flags",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-effects.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-effects.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-effects.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-effects.t",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-effects.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-static-aggregate-default-members.t",
+      "new": "pa12/tests/controls/400-static-aggregate-default-members.t",
+      "feature": "value.initialization",
+      "mode": "c++14",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-members.flags",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-members.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-members.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-members.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-members.t",
+        "pa29/tests/modern-cxx/run/800-static-aggregate-default-members.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-tuple-reference-binding-completes-member-lookup.t",
+      "new": "pa20/tests/controls/300-tuple-reference-binding-completes-member-lookup.t",
+      "feature": "support.structured_binding",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-tuple-reference-binding-completes-member-lookup.flags",
+        "pa29/tests/modern-cxx/run/800-tuple-reference-binding-completes-member-lookup.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-tuple-reference-binding-completes-member-lookup.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-tuple-reference-binding-completes-member-lookup.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-tuple-reference-binding-completes-member-lookup.t",
+        "pa29/tests/modern-cxx/run/800-tuple-reference-binding-completes-member-lookup.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/modern-cxx/run/800-user-deduction-guides.t",
+      "new": "pa18/tests/controls/400-user-deduction-guides.t",
+      "feature": "template.class_deduction",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/modern-cxx/run/800-user-deduction-guides.flags",
+        "pa29/tests/modern-cxx/run/800-user-deduction-guides.ref.impl.exit_status",
+        "pa29/tests/modern-cxx/run/800-user-deduction-guides.ref.program.exit_status",
+        "pa29/tests/modern-cxx/run/800-user-deduction-guides.ref.program.stdout",
+        "pa29/tests/modern-cxx/run/800-user-deduction-guides.t",
+        "pa29/tests/modern-cxx/run/800-user-deduction-guides.t.1"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa31/tests/modern-cxx/link/600-aligned-allocation.t",
+      "new": "pa31/tests/link/600-aligned-allocation.t",
+      "feature": "hosted.modern_language",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa31/tests/modern-cxx/link/600-aligned-allocation.flags",
+        "pa31/tests/modern-cxx/link/600-aligned-allocation.ref.impl.exit_status",
+        "pa31/tests/modern-cxx/link/600-aligned-allocation.ref.program.exit_status",
+        "pa31/tests/modern-cxx/link/600-aligned-allocation.ref.program.stdout",
+        "pa31/tests/modern-cxx/link/600-aligned-allocation.t",
+        "pa31/tests/modern-cxx/link/600-aligned-allocation.t.1"
+      ],
+      "note": "Host headers, runtime ABI or external object-provider integration consumes the required core language."
+    },
+    {
+      "old": "pa31/tests/modern-cxx/link/600-aligned-global-placement.t",
+      "new": "pa31/tests/link/600-aligned-global-placement.t",
+      "feature": "hosted.modern_language",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa31/tests/modern-cxx/link/600-aligned-global-placement.flags",
+        "pa31/tests/modern-cxx/link/600-aligned-global-placement.ref.impl.exit_status",
+        "pa31/tests/modern-cxx/link/600-aligned-global-placement.ref.program.exit_status",
+        "pa31/tests/modern-cxx/link/600-aligned-global-placement.ref.program.stdout",
+        "pa31/tests/modern-cxx/link/600-aligned-global-placement.t",
+        "pa31/tests/modern-cxx/link/600-aligned-global-placement.t.1"
+      ],
+      "note": "Host headers, runtime ABI or external object-provider integration consumes the required core language."
+    },
+    {
+      "old": "pa31/tests/modern-cxx/link/600-hosted-aggregate-member-initializers.t",
+      "new": "pa31/tests/link/600-hosted-aggregate-member-initializers.t",
+      "feature": "hosted.modern_language",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa31/tests/modern-cxx/link/600-hosted-aggregate-member-initializers.flags",
+        "pa31/tests/modern-cxx/link/600-hosted-aggregate-member-initializers.ref.impl.exit_status",
+        "pa31/tests/modern-cxx/link/600-hosted-aggregate-member-initializers.ref.program.exit_status",
+        "pa31/tests/modern-cxx/link/600-hosted-aggregate-member-initializers.ref.program.stdout",
+        "pa31/tests/modern-cxx/link/600-hosted-aggregate-member-initializers.t",
+        "pa31/tests/modern-cxx/link/600-hosted-aggregate-member-initializers.t.1"
+      ],
+      "note": "Host headers, runtime ABI or external object-provider integration consumes the required core language."
+    },
+    {
+      "old": "pa31/tests/modern-cxx/link/600-hosted-atomic-prvalue.t",
+      "new": "pa31/tests/link/600-hosted-atomic-prvalue.t",
+      "feature": "hosted.modern_language",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa31/tests/modern-cxx/link/600-hosted-atomic-prvalue.flags",
+        "pa31/tests/modern-cxx/link/600-hosted-atomic-prvalue.ref.impl.exit_status",
+        "pa31/tests/modern-cxx/link/600-hosted-atomic-prvalue.ref.program.exit_status",
+        "pa31/tests/modern-cxx/link/600-hosted-atomic-prvalue.ref.program.stdout",
+        "pa31/tests/modern-cxx/link/600-hosted-atomic-prvalue.t",
+        "pa31/tests/modern-cxx/link/600-hosted-atomic-prvalue.t.1"
+      ],
+      "note": "Host headers, runtime ABI or external object-provider integration consumes the required core language."
+    },
+    {
+      "old": "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.t",
+      "new": "pa31/tests/link/600-hosted-noexcept-function-abi.t",
+      "feature": "hosted.modern_language",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.flags",
+        "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.h",
+        "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.lib.provider.cpp",
+        "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.link.flags",
+        "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.ref.impl.exit_status",
+        "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.ref.program.exit_status",
+        "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.ref.program.stdout",
+        "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.t",
+        "pa31/tests/modern-cxx/link/600-hosted-noexcept-function-abi.t.1"
+      ],
+      "note": "Host headers, runtime ABI or external object-provider integration consumes the required core language."
+    },
+    {
+      "old": "pa31/tests/modern-cxx/link/600-inline-default-initialization.t",
+      "new": "pa31/tests/link/600-inline-default-initialization.t",
+      "feature": "hosted.modern_language",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa31/tests/modern-cxx/link/600-inline-default-initialization.flags",
+        "pa31/tests/modern-cxx/link/600-inline-default-initialization.h",
+        "pa31/tests/modern-cxx/link/600-inline-default-initialization.lib.provider.cpp",
+        "pa31/tests/modern-cxx/link/600-inline-default-initialization.link.flags",
+        "pa31/tests/modern-cxx/link/600-inline-default-initialization.ref.impl.exit_status",
+        "pa31/tests/modern-cxx/link/600-inline-default-initialization.ref.program.exit_status",
+        "pa31/tests/modern-cxx/link/600-inline-default-initialization.ref.program.stdout",
+        "pa31/tests/modern-cxx/link/600-inline-default-initialization.t",
+        "pa31/tests/modern-cxx/link/600-inline-default-initialization.t.1",
+        "pa31/tests/modern-cxx/link/600-inline-default-initialization.t.2"
+      ],
+      "note": "Host headers, runtime ABI or external object-provider integration consumes the required core language."
+    },
+    {
+      "old": "pa31/tests/modern-cxx/link/600-inline-late-static-definition.t",
+      "new": "pa31/tests/link/600-inline-late-static-definition.t",
+      "feature": "hosted.modern_language",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa31/tests/modern-cxx/link/600-inline-late-static-definition.flags",
+        "pa31/tests/modern-cxx/link/600-inline-late-static-definition.h",
+        "pa31/tests/modern-cxx/link/600-inline-late-static-definition.lib.provider.cpp",
+        "pa31/tests/modern-cxx/link/600-inline-late-static-definition.link.flags",
+        "pa31/tests/modern-cxx/link/600-inline-late-static-definition.ref.impl.exit_status",
+        "pa31/tests/modern-cxx/link/600-inline-late-static-definition.ref.program.exit_status",
+        "pa31/tests/modern-cxx/link/600-inline-late-static-definition.ref.program.stdout",
+        "pa31/tests/modern-cxx/link/600-inline-late-static-definition.t",
+        "pa31/tests/modern-cxx/link/600-inline-late-static-definition.t.1",
+        "pa31/tests/modern-cxx/link/600-inline-late-static-definition.t.2"
+      ],
+      "note": "Host headers, runtime ABI or external object-provider integration consumes the required core language."
+    },
+    {
+      "old": "pa31/tests/modern-cxx/link/600-standard-deduction-guides.t",
+      "new": "pa31/tests/link/600-standard-deduction-guides.t",
+      "feature": "hosted.modern_language",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa31/tests/modern-cxx/link/600-standard-deduction-guides.flags",
+        "pa31/tests/modern-cxx/link/600-standard-deduction-guides.ref.impl.exit_status",
+        "pa31/tests/modern-cxx/link/600-standard-deduction-guides.ref.program.exit_status",
+        "pa31/tests/modern-cxx/link/600-standard-deduction-guides.ref.program.stdout",
+        "pa31/tests/modern-cxx/link/600-standard-deduction-guides.t",
+        "pa31/tests/modern-cxx/link/600-standard-deduction-guides.t.1"
+      ],
+      "note": "Host headers, runtime ABI or external object-provider integration consumes the required core language."
+    },
+    {
+      "old": "pa29/tests/compile/600-fold-expression-alias-decltype-result.t",
+      "new": "pa18/tests/controls/400-fold-expression-alias-decltype-result.t",
+      "feature": "template.fold",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/compile/600-fold-expression-alias-decltype-result.ref",
+        "pa29/tests/compile/600-fold-expression-alias-decltype-result.ref.exit_status",
+        "pa29/tests/compile/600-fold-expression-alias-decltype-result.ref.stdout",
+        "pa29/tests/compile/600-fold-expression-alias-decltype-result.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/compile/600-fold-expression-template-arg-trait.t",
+      "new": "pa18/tests/controls/400-fold-expression-template-arg-trait.t",
+      "feature": "template.fold",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/compile/600-fold-expression-template-arg-trait.ref",
+        "pa29/tests/compile/600-fold-expression-template-arg-trait.ref.exit_status",
+        "pa29/tests/compile/600-fold-expression-template-arg-trait.ref.stdout",
+        "pa29/tests/compile/600-fold-expression-template-arg-trait.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/compile/600-structured-binding-class-decomposition.t",
+      "new": "pa20/tests/controls/300-structured-binding-class-decomposition.t",
+      "feature": "support.structured_binding",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/compile/600-structured-binding-class-decomposition.ref",
+        "pa29/tests/compile/600-structured-binding-class-decomposition.ref.exit_status",
+        "pa29/tests/compile/600-structured-binding-class-decomposition.ref.stdout",
+        "pa29/tests/compile/600-structured-binding-class-decomposition.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/compile/600-structured-binding-function-template-body.t",
+      "new": "pa20/tests/controls/300-structured-binding-function-template-body.t",
+      "feature": "support.structured_binding",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/compile/600-structured-binding-function-template-body.ref",
+        "pa29/tests/compile/600-structured-binding-function-template-body.ref.exit_status",
+        "pa29/tests/compile/600-structured-binding-function-template-body.ref.stdout",
+        "pa29/tests/compile/600-structured-binding-function-template-body.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa29/tests/compile/600-structured-binding-range-for-template-body.t",
+      "new": "pa20/tests/controls/300-structured-binding-range-for-template-body.t",
+      "feature": "support.structured_binding",
+      "mode": "c++17",
+      "disposition": "required semantic control",
+      "companions": [
+        "pa29/tests/compile/600-structured-binding-range-for-template-body.ref",
+        "pa29/tests/compile/600-structured-binding-range-for-template-body.ref.exit_status",
+        "pa29/tests/compile/600-structured-binding-range-for-template-body.ref.stdout",
+        "pa29/tests/compile/600-structured-binding-range-for-template-body.t"
+      ],
+      "note": "Compile-only controls validate LowIR with the supplied reader; executable controls use the supplied backend."
+    },
+    {
+      "old": "pa21/tests/controls/100-capture-function-reference.t",
+      "new": "pa20/tests/controls/200-capture-function-reference.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/controls/100-capture-function-reference.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/controls/100-decltype-paren-copy-capture.t",
+      "new": "pa20/tests/controls/200-decltype-paren-copy-capture.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/controls/100-decltype-paren-copy-capture.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/controls/100-lambda-array-capture-by-copy.t",
+      "new": "pa20/tests/controls/200-lambda-array-capture-by-copy.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/controls/100-lambda-array-capture-by-copy.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/controls/100-potential-result-copy-capture-original-value.t",
+      "new": "pa20/tests/controls/200-potential-result-copy-capture-original-value.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/controls/100-potential-result-copy-capture-original-value.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/100-bad-reference-capture.t",
+      "new": "pa20/tests/general/200-bad-reference-capture.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/100-bad-reference-capture.ref",
+        "pa21/tests/general/100-bad-reference-capture.ref.exit_status",
+        "pa21/tests/general/100-bad-reference-capture.ref.stdout",
+        "pa21/tests/general/100-bad-reference-capture.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/100-capture-ellipsis-not-pack-bad.t",
+      "new": "pa20/tests/general/200-capture-ellipsis-not-pack-bad.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/100-capture-ellipsis-not-pack-bad.ref.exit_status",
+        "pa21/tests/general/100-capture-ellipsis-not-pack-bad.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/100-capturing-lambda-local.t",
+      "new": "pa20/tests/general/200-capturing-lambda-local.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/100-capturing-lambda-local.ref",
+        "pa21/tests/general/100-capturing-lambda-local.ref.exit_status",
+        "pa21/tests/general/100-capturing-lambda-local.ref.stdout",
+        "pa21/tests/general/100-capturing-lambda-local.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/100-lambda-capture-mutable.t",
+      "new": "pa20/tests/general/200-lambda-capture-mutable.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/100-lambda-capture-mutable.ref",
+        "pa21/tests/general/100-lambda-capture-mutable.ref.exit_status",
+        "pa21/tests/general/100-lambda-capture-mutable.ref.stdout",
+        "pa21/tests/general/100-lambda-capture-mutable.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/100-lambda-default-capture-ignores-global.t",
+      "new": "pa20/tests/general/200-lambda-default-capture-ignores-global.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/100-lambda-default-capture-ignores-global.ref",
+        "pa21/tests/general/100-lambda-default-capture-ignores-global.ref.exit_status",
+        "pa21/tests/general/100-lambda-default-capture-ignores-global.ref.stdout",
+        "pa21/tests/general/100-lambda-default-capture-ignores-global.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/100-local-class-lambda-enclosing-capture-bad.t",
+      "new": "pa20/tests/general/200-local-class-lambda-enclosing-capture-bad.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/100-local-class-lambda-enclosing-capture-bad.ref",
+        "pa21/tests/general/100-local-class-lambda-enclosing-capture-bad.ref.exit_status",
+        "pa21/tests/general/100-local-class-lambda-enclosing-capture-bad.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-captured-this-explicit-member-call.t",
+      "new": "pa20/tests/general/200-captured-this-explicit-member-call.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-captured-this-explicit-member-call.ref",
+        "pa21/tests/general/200-captured-this-explicit-member-call.ref.exit_status",
+        "pa21/tests/general/200-captured-this-explicit-member-call.ref.stdout",
+        "pa21/tests/general/200-captured-this-explicit-member-call.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-capturing-lambda-reference-parameter-name.t",
+      "new": "pa20/tests/general/200-capturing-lambda-reference-parameter-name.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-capturing-lambda-reference-parameter-name.ref",
+        "pa21/tests/general/200-capturing-lambda-reference-parameter-name.ref.exit_status",
+        "pa21/tests/general/200-capturing-lambda-reference-parameter-name.ref.stdout",
+        "pa21/tests/general/200-capturing-lambda-reference-parameter-name.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-capturing-lambda-template-argument-trivial-dtor.t",
+      "new": "pa20/tests/general/200-capturing-lambda-template-argument-trivial-dtor.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-capturing-lambda-template-argument-trivial-dtor.ref",
+        "pa21/tests/general/200-capturing-lambda-template-argument-trivial-dtor.ref.exit_status",
+        "pa21/tests/general/200-capturing-lambda-template-argument-trivial-dtor.ref.stdout",
+        "pa21/tests/general/200-capturing-lambda-template-argument-trivial-dtor.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-class-copy-capture-local.t",
+      "new": "pa20/tests/general/200-class-copy-capture-local.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-class-copy-capture-local.ref",
+        "pa21/tests/general/200-class-copy-capture-local.ref.exit_status",
+        "pa21/tests/general/200-class-copy-capture-local.ref.stdout",
+        "pa21/tests/general/200-class-copy-capture-local.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-default-capture-this-explicit-member-call.t",
+      "new": "pa20/tests/general/200-default-capture-this-explicit-member-call.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-default-capture-this-explicit-member-call.ref",
+        "pa21/tests/general/200-default-capture-this-explicit-member-call.ref.exit_status",
+        "pa21/tests/general/200-default-capture-this-explicit-member-call.ref.stdout",
+        "pa21/tests/general/200-default-capture-this-explicit-member-call.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-default-capture-this-implicit-member-call.t",
+      "new": "pa20/tests/general/200-default-capture-this-implicit-member-call.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-default-capture-this-implicit-member-call.ref",
+        "pa21/tests/general/200-default-capture-this-implicit-member-call.ref.exit_status",
+        "pa21/tests/general/200-default-capture-this-implicit-member-call.ref.stdout",
+        "pa21/tests/general/200-default-capture-this-implicit-member-call.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-distinct-lambda-member-template-types.t",
+      "new": "pa20/tests/general/200-distinct-lambda-member-template-types.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-distinct-lambda-member-template-types.ref",
+        "pa21/tests/general/200-distinct-lambda-member-template-types.ref.exit_status",
+        "pa21/tests/general/200-distinct-lambda-member-template-types.ref.stdout",
+        "pa21/tests/general/200-distinct-lambda-member-template-types.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-explicit-this-capture-implicit-return.t",
+      "new": "pa20/tests/general/200-explicit-this-capture-implicit-return.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-explicit-this-capture-implicit-return.ref",
+        "pa21/tests/general/200-explicit-this-capture-implicit-return.ref.exit_status",
+        "pa21/tests/general/200-explicit-this-capture-implicit-return.ref.stdout",
+        "pa21/tests/general/200-explicit-this-capture-implicit-return.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-explicit-this-capture-lambda-local.t",
+      "new": "pa20/tests/general/200-explicit-this-capture-lambda-local.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-explicit-this-capture-lambda-local.ref",
+        "pa21/tests/general/200-explicit-this-capture-lambda-local.ref.exit_status",
+        "pa21/tests/general/200-explicit-this-capture-lambda-local.ref.stdout",
+        "pa21/tests/general/200-explicit-this-capture-lambda-local.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-member-template-explicit-capturing-lambda-call.t",
+      "new": "pa20/tests/general/200-member-template-explicit-capturing-lambda-call.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-member-template-explicit-capturing-lambda-call.ref",
+        "pa21/tests/general/200-member-template-explicit-capturing-lambda-call.ref.exit_status",
+        "pa21/tests/general/200-member-template-explicit-capturing-lambda-call.ref.stdout",
+        "pa21/tests/general/200-member-template-explicit-capturing-lambda-call.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-nested-capturing-lambda-return-owner.t",
+      "new": "pa20/tests/general/200-nested-capturing-lambda-return-owner.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-nested-capturing-lambda-return-owner.ref",
+        "pa21/tests/general/200-nested-capturing-lambda-return-owner.ref.exit_status",
+        "pa21/tests/general/200-nested-capturing-lambda-return-owner.ref.stdout",
+        "pa21/tests/general/200-nested-capturing-lambda-return-owner.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-nested-capturing-lambda-template-constructor-owner.t",
+      "new": "pa20/tests/general/200-nested-capturing-lambda-template-constructor-owner.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-nested-capturing-lambda-template-constructor-owner.ref",
+        "pa21/tests/general/200-nested-capturing-lambda-template-constructor-owner.ref.exit_status",
+        "pa21/tests/general/200-nested-capturing-lambda-template-constructor-owner.ref.stdout",
+        "pa21/tests/general/200-nested-capturing-lambda-template-constructor-owner.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-nested-lambda-local-shadow-capture.t",
+      "new": "pa20/tests/general/200-nested-lambda-local-shadow-capture.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-nested-lambda-local-shadow-capture.ref",
+        "pa21/tests/general/200-nested-lambda-local-shadow-capture.ref.exit_status",
+        "pa21/tests/general/200-nested-lambda-local-shadow-capture.ref.stdout",
+        "pa21/tests/general/200-nested-lambda-local-shadow-capture.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-nontrivial-copy-capture-dependency.t",
+      "new": "pa20/tests/general/200-nontrivial-copy-capture-dependency.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-nontrivial-copy-capture-dependency.ref",
+        "pa21/tests/general/200-nontrivial-copy-capture-dependency.ref.exit_status",
+        "pa21/tests/general/200-nontrivial-copy-capture-dependency.ref.stdout",
+        "pa21/tests/general/200-nontrivial-copy-capture-dependency.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa21/tests/general/200-qualified-function-template-dual-capturing-lambda-call.t",
+      "new": "pa20/tests/general/200-qualified-function-template-dual-capturing-lambda-call.t",
+      "feature": "support.lambda.capture",
+      "disposition": "required normal lane",
+      "companions": [
+        "pa21/tests/general/200-qualified-function-template-dual-capturing-lambda-call.ref",
+        "pa21/tests/general/200-qualified-function-template-dual-capturing-lambda-call.ref.exit_status",
+        "pa21/tests/general/200-qualified-function-template-dual-capturing-lambda-call.ref.stdout",
+        "pa21/tests/general/200-qualified-function-template-dual-capturing-lambda-call.t"
+      ],
+      "note": "Ordinary capture foundation precedes modern closures; exception-aware variants remain in PA21."
+    },
+    {
+      "old": "pa36/tests/reject/100-alternative-columns.t",
+      "new": "pa8/tests/general/300-assembly-alternative-columns.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-alternative-columns.assembly-profile",
+        "pa36/tests/reject/100-alternative-columns.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-argument-type-conflict.t",
+      "new": "pa8/tests/general/300-assembly-argument-type-conflict.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-argument-type-conflict.assembly-profile",
+        "pa36/tests/reject/100-argument-type-conflict.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-assembly-function-duplicate.t",
+      "new": "pa8/tests/general/300-assembly-assembly-function-duplicate.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-assembly-function-duplicate.assembly-profile",
+        "pa36/tests/reject/100-assembly-function-duplicate.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-assembly-function-ordinary-body.t",
+      "new": "pa8/tests/general/300-assembly-assembly-function-ordinary-body.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-assembly-function-ordinary-body.assembly-profile",
+        "pa36/tests/reject/100-assembly-function-ordinary-body.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-assembly-function-register-setup.t",
+      "new": "pa8/tests/general/300-assembly-assembly-function-register-setup.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-assembly-function-register-setup.assembly-profile",
+        "pa36/tests/reject/100-assembly-function-register-setup.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-assembly-function-runtime-input.t",
+      "new": "pa8/tests/general/300-assembly-assembly-function-runtime-input.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-assembly-function-runtime-input.assembly-profile",
+        "pa36/tests/reject/100-assembly-function-runtime-input.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-code-label-duplicate-owner.t",
+      "new": "pa8/tests/general/300-assembly-code-label-duplicate-owner.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-code-label-duplicate-owner.assembly-profile",
+        "pa36/tests/reject/100-code-label-duplicate-owner.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-code-label-unknown-block.t",
+      "new": "pa8/tests/general/300-assembly-code-label-unknown-block.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-code-label-unknown-block.assembly-profile",
+        "pa36/tests/reject/100-code-label-unknown-block.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-environment-prefix-bound.t",
+      "new": "pa8/tests/general/300-assembly-environment-prefix-bound.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-environment-prefix-bound.assembly-profile",
+        "pa36/tests/reject/100-environment-prefix-bound.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-exit-output-has-no-alternatives.t",
+      "new": "pa8/tests/general/300-assembly-exit-output-has-no-alternatives.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-exit-output-has-no-alternatives.assembly-profile",
+        "pa36/tests/reject/100-exit-output-has-no-alternatives.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-exit-output-needs-i32.t",
+      "new": "pa8/tests/general/300-assembly-exit-output-needs-i32.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-exit-output-needs-i32.assembly-profile",
+        "pa36/tests/reject/100-exit-output-needs-i32.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-exit-output-without-label.t",
+      "new": "pa8/tests/general/300-assembly-exit-output-without-label.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-exit-output-without-label.assembly-profile",
+        "pa36/tests/reject/100-exit-output-without-label.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-exit-tag-overflow.t",
+      "new": "pa8/tests/general/300-assembly-exit-tag-overflow.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-exit-tag-overflow.assembly-profile",
+        "pa36/tests/reject/100-exit-tag-overflow.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-exit-tag-runtime.t",
+      "new": "pa8/tests/general/300-assembly-exit-tag-runtime.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-exit-tag-runtime.assembly-profile",
+        "pa36/tests/reject/100-exit-tag-runtime.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-exit-tag-zero.t",
+      "new": "pa8/tests/general/300-assembly-exit-tag-zero.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-exit-tag-zero.assembly-profile",
+        "pa36/tests/reject/100-exit-tag-zero.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-indirect-jump-nonpointer.t",
+      "new": "pa8/tests/general/300-assembly-indirect-jump-nonpointer.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-indirect-jump-nonpointer.assembly-profile",
+        "pa36/tests/reject/100-indirect-jump-nonpointer.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-indirect-jump-unaddressed.t",
+      "new": "pa8/tests/general/300-assembly-indirect-jump-unaddressed.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-indirect-jump-unaddressed.assembly-profile",
+        "pa36/tests/reject/100-indirect-jump-unaddressed.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-invalid-placeholder.t",
+      "new": "pa8/tests/general/300-assembly-invalid-placeholder.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-invalid-placeholder.assembly-profile",
+        "pa36/tests/reject/100-invalid-placeholder.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-invalid-register-view.t",
+      "new": "pa8/tests/general/300-assembly-invalid-register-view.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-invalid-register-view.assembly-profile",
+        "pa36/tests/reject/100-invalid-register-view.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-invalid-tie.t",
+      "new": "pa8/tests/general/300-assembly-invalid-tie.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-invalid-tie.assembly-profile",
+        "pa36/tests/reject/100-invalid-tie.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-label-needs-i32.t",
+      "new": "pa8/tests/general/300-assembly-label-needs-i32.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-label-needs-i32.assembly-profile",
+        "pa36/tests/reject/100-label-needs-i32.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-label-without-exit-output.t",
+      "new": "pa8/tests/general/300-assembly-label-without-exit-output.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-label-without-exit-output.assembly-profile",
+        "pa36/tests/reject/100-label-without-exit-output.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-module-argument-bound.t",
+      "new": "pa8/tests/general/300-assembly-module-argument-bound.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-module-argument-bound.assembly-profile",
+        "pa36/tests/reject/100-module-argument-bound.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-module-output.t",
+      "new": "pa8/tests/general/300-assembly-module-output.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-module-output.assembly-profile",
+        "pa36/tests/reject/100-module-output.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-module-runtime-register.t",
+      "new": "pa8/tests/general/300-assembly-module-runtime-register.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-module-runtime-register.assembly-profile",
+        "pa36/tests/reject/100-module-runtime-register.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-noreturn-continuation.t",
+      "new": "pa8/tests/general/300-assembly-noreturn-continuation.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-noreturn-continuation.assembly-profile",
+        "pa36/tests/reject/100-noreturn-continuation.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-noreturn-output.t",
+      "new": "pa8/tests/general/300-assembly-noreturn-output.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-noreturn-output.assembly-profile",
+        "pa36/tests/reject/100-noreturn-output.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-overlapping-commutative-pairs.t",
+      "new": "pa8/tests/general/300-assembly-overlapping-commutative-pairs.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-overlapping-commutative-pairs.assembly-profile",
+        "pa36/tests/reject/100-overlapping-commutative-pairs.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
+    },
+    {
+      "old": "pa36/tests/reject/100-range-word-overflow.t",
+      "new": "pa8/tests/general/300-assembly-range-word-overflow.t",
+      "feature": "assembly.transport",
+      "disposition": "required reader rejection",
+      "companions": [
+        "pa36/tests/reject/100-range-word-overflow.assembly-profile",
+        "pa36/tests/reject/100-range-word-overflow.t"
+      ],
+      "note": "No native binding or encoding needed; canonical LowIR reader must reject this malformed contract."
     }
   ]
 }

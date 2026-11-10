@@ -161,8 +161,9 @@ void PostTokenizer::convert_number(const PPToken& pp)
 
 void PostTokenizer::convert_character(const PPToken& pp)
 {
-	const CharacterLiteralValue value = EvaluateCharacterLiteral(
-		pp.spelling, pp.length, literals_ == NumberDialect::Cxx11 ? CharacterDialect::Course : CharacterDialect::Gnu);
+	const CharacterLiteralValue value = EvaluateCharacterLiteral(pp.spelling, pp.length,
+		(literals_ == NumberDialect::Gnu || literals_ == NumberDialect::GnuStream) ? CharacterDialect::Gnu
+																				   : CharacterDialect::Course);
 	if (!value.valid)
 		return;
 	set_scalar(LiteralForm::Character, value.type, value.code_point);

@@ -31,6 +31,33 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_required_later_language_forms_have_distinct_owners(self):
+        table = audit.load_feature_table(REPO_ROOT / audit.DEFAULT_TRACKER)
+        cases = {
+            "namespace outer::inner {}": ("syntax.nested_namespace", "pa5"),
+            "template<auto N> struct Value {};": ("template.placeholder_nttp", "pa18"),
+            "template<class... T> int sum(T... x) { return (x + ...); }": ("template.fold", "pa15"),
+            "template<class T> struct Box {}; Box(int)->Box<int>;": ("template.class_deduction", "pa18"),
+            "if constexpr (sizeof(T)==4) return 1;": ("stmt.if_constexpr", "pa19"),
+            "auto& [a,b] = values;": ("support.structured_binding", "pa20"),
+        }
+        for source, (feature, owner) in cases.items():
+            with self.subTest(source=source):
+                self.assertIn(feature, audit.detect_features(source))
+                self.assertEqual(table[feature].owner_pa, owner)
+
+    def test_pack_declarators_and_trailing_returns_are_not_new_features(self):
+        for source in ("template<class... T> void f(T*...);",
+                       "template<class... T> struct X<T&...>;",
+                       "template<class T> auto f(T)->Box<T>;",
+                       "new auto[2];"):
+            with self.subTest(source=source):
+                hits = audit.detect_features(source)
+                self.assertFalse({"template.fold", "template.class_deduction", "support.structured_binding"} & hits.keys())
+        for source in ("template<auto (*F)()->int> struct X;", "template<auto N> struct X;"):
+            self.assertNotIn("support.auto", audit.detect_features(source))
+        self.assertNotIn("template.placeholder_nttp", audit.detect_features("template<auto (*F)()->int> struct X;"))
+
     def test_direct_reference_errors_do_not_require_function_deduction(self) -> None:
         for parameters in ("T & &&value", "T && &value", "T && &&value", "T & (&&value)"):
             for head in ("class T", "class T, int N = sizeof(T)"):
@@ -410,14 +437,14 @@ function @main() -> i32 {
             self.assertEqual(audit.iter_test_files(root, ["pa8"]), [spec])
             self.assertIn(debug, audit.iter_local_test_files(root, ["pa8"]))
 
-    def test_modern_cxx_lane_keeps_numbering_without_course_requirements(self) -> None:
+    def test_later_language_directory_is_not_excluded_from_placement(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             optional = root / "pa29/tests/modern-cxx/compile/501-extension.t"
             required = root / "pa29/tests/compile/500-required.t"
             write(optional, "auto identity = [](auto value) { return value; };\n")
             write(required, "int value;\n")
-            self.assertEqual(audit.iter_test_files(root, ["pa29"]), [required])
+            self.assertEqual(audit.iter_test_files(root, ["pa29"]), [required, optional])
             self.assertIn(optional, audit.iter_local_test_files(root, ["pa29"]))
             findings = audit.scan_test_hygiene(root, ["pa29"])
             self.assertTrue(any(f.kind == "test-number" and "501-extension" in f.path

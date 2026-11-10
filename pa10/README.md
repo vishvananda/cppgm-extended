@@ -410,6 +410,16 @@ observes it.)
 
 The generated LowIR for this supported subset is intended to be accepted by the
 later PA24 `lowir2native` backend.
+### Selection initializer scope
+
+In C++17, support an initializer statement before an `if` or `switch`
+condition. Its declarations remain visible in the condition and selected
+substatement, including `else`, and their scope ends after the complete
+selection statement. Evaluate the initializer once; preserve normal cleanup
+and shadowing. This procedural feature does not require `if constexpr`, which
+is assigned after template substitution in PA19. See N4659 `[stmt.if]` and
+`[stmt.switch]`.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for this PA10 milestone:

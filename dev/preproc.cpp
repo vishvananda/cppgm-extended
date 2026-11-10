@@ -11,6 +11,7 @@
 using namespace std;
 
 #include "lex/post_token_writer.h"
+#include "lex/language_mode.h"
 #include "lex/post_tokenizer.h"
 #include "preprocess/preprocessor.h"
 #include "support/internal_error.h"
@@ -88,7 +89,7 @@ bool PreprocessSource(const PreprocessorOptions& options, const string& path, Po
 		Preprocessor preprocessor(options, path);
 		try
 		{
-			PostTokenizer tokens(preprocessor);
+			PostTokenizer tokens(preprocessor, nullptr, options.literals);
 			for (;;)
 			{
 				const PostToken& token = tokens.next();
@@ -148,6 +149,15 @@ int main(int argc, char** argv)
 			throw InvocationError(telemetry::kUnavailable);
 		if (stats)
 			args.erase(args.begin());
+
+		if (!args.empty() && args[0].compare(0, 5, "-std=") == 0)
+		{
+			const LanguageMode mode = ReadLanguageMode(args[0].substr(5));
+			options.cplusplus = mode.cplusplus;
+			options.strict = mode.strict;
+			options.literals = mode.literals;
+			args.erase(args.begin());
+		}
 
 		if (args.size() < 3 || args[0] != "-o")
 			throw InvocationError("invalid usage");

@@ -1,6 +1,6 @@
 # Agent instructions
 
-Build one cumulative C++11 compiler for Linux x86-64, working through PA1–PA35.
+Build one cumulative C++ compiler with the required C++11/14/17 profile for Linux x86-64, working through PA1–PA35.
 Read the current `paN/README.md` and [Testing and references](TESTING_AND_REFERENCES.md)
 before changing code. [Project layout](PROJECT_LAYOUT.md) gives the assignment map.
 
@@ -44,7 +44,7 @@ with no allocator-specific diagnostics.
 
 Checked-in contract fixtures and the handout define the assignment. Reference
 tools are provided for observation; behavior outside
-the fixtures can contain bugs. Prefer the handout and C++11 standard to copying
+the fixtures can contain bugs. Prefer the handout and selected language edition and cited defect resolutions to copying
 an erroneous reference result. Diagnostic text is not graded.
 
 PA8's harness uses `lowir-ref` to compare roundtrips and `lowir2native-ref` to

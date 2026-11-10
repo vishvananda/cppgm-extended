@@ -247,34 +247,17 @@ and use the correct ABI names.
 The checked-in tests are hosted link/runtime smokes, ABI spelling checks, and
 object-inspection checks rather than direct N3485 clause tests.
 
-### Optional C++17 ABI Extensions
+### Required C++14/17 host integration
 
-This extension is not required to complete PA31 or any later assignment.
-After implementing PA29's optional function-type support, preserve C++17
-`noexcept` distinctions in host ABI names and runtime type information.
-Host-compiled and compiler-generated objects must agree on function-pointer
-types, template arguments, conversions and exception matching.
-
-The optional lane also checks C++14 aggregate member initialization with
-hosted library members, building on PA29's initialization rules. C++17 inline
-variables retain one address across translation units, including when `inline`
-appears on a later definition. Inline static class members receive their
-required initialization once, including default construction without a written
-initializer.
-
-Hosted C++17 allocation also uses `<new>`'s alignment-aware declarations.
-Preserve placement arguments, array cookies and constructor-failure cleanup
-when selecting and calling allocation/deallocation overloads.
-
-The fixtures ship in `tests/modern-cxx/link/`. Run them explicitly:
-
-```sh
-make test-modern-cxx
-make check TEST=tests/modern-cxx/link/600-hosted-noexcept-function-abi.t
-```
-
-`make test` and cumulative reports exclude this suite. The root
-`make test-modern-cxx` runs both PA29 and PA31's optional suites.
+Normal `tests/link/` checks preserve the required earlier language profile
+through host ABI names, runtime type information and exception matching.
+C++17 `noexcept` function types must agree with host-produced objects.
+Aggregate initialization with library members, inline-variable address identity
+and one-time static initialization consume PA12/PA16/PA25 semantics.
+Alignment-aware allocation uses the real `<new>` declarations, including
+placement arguments, array cookies and constructor-failure cleanup.
+Library deduction guides consume PA18's rules. Run these with ordinary
+`make test`, or select a fixture with `make check TEST=tests/link/<file>.t`.
 
 ### Required Implementation Surface
 

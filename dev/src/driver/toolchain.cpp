@@ -14,6 +14,7 @@
 #include "abi/itanium/abi_encoding_error.h"
 #include "driver/host_environment.h"
 #include "lex/post_token_writer.h"
+#include "lex/language_mode.h"
 #include "lex/post_tokenizer.h"
 #include "lower/program_lowering.h"
 #include "lowir/text_reader.h"
@@ -31,33 +32,12 @@
 
 namespace driver {
 
-// -std=<standard>: __cplusplus of C++11 (this implementation's language),
-// or of C++14 or C++17, whose mode-gated hosted declarations a header may
-// be read for, in the GNU dialect (gnu++NN) or the strict ISO one (c++NN,
-// `strict`: the host's macros for it, as the host compiler's -std=c++NN
-// defines them); other standards are refused.
+// Source dialect and feature gates share the token tools' standard names.
 void language_standard(const std::string& standard, PreprocessorOptions& options)
 {
-	static const struct
-	{
-		const char* names[4];
-		const char* value;
-	} kStandards[] = { { { "c++11", "gnu++11", "c++0x", "gnu++0x" }, "201103L" },
-		{ { "c++14", "gnu++14", "c++1y", "gnu++1y" }, "201402L" },
-		{ { "c++17", "gnu++17", "c++1z", "gnu++1z" }, "201703L" } };
-	for (const auto& entry : kStandards)
-	{
-		for (const char* name : entry.names)
-		{
-			if (standard == name)
-			{
-				options.cplusplus = entry.value;
-				options.strict = standard.compare(0, 3, "gnu") != 0;
-				return;
-			}
-		}
-	}
-	throw InvocationError("unsupported language standard: " + standard);
+	const LanguageMode mode = ReadLanguageMode(standard);
+	options.cplusplus = mode.cplusplus;
+	options.strict = mode.strict;
 }
 
 bool sse_option(const std::string& option, uint8_t& level)

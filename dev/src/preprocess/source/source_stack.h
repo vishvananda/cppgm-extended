@@ -110,6 +110,11 @@ public:
 	// Hosted lexical extensions (hexadecimal pp-numbers and opaque comment
 	// bytes) in the files entered from now on.
 	void set_hosted(bool enabled) { hosted_ = enabled; }
+	void set_number_syntax(bool separators, bool exponents)
+	{
+		digit_separators_ = separators;
+		binary_exponents_ = exponents;
+	}
 
 	// Skipped groups ([cpp.cond] 16.1p6): reads to the `#` of the next
 	// directive in the current file; false at the file's end.
@@ -139,6 +144,8 @@ private:
 	bool at_end_;
 	bool allow_va_args_;
 	bool hosted_;
+	bool digit_separators_ = false;
+	bool binary_exponents_ = false;
 	uint32_t directive_location_;
 	telemetry::Counter tokens_read_;
 };

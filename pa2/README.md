@@ -563,3 +563,16 @@ Apart from `string-literals` and `user-defined-string-literals` each `preprocess
 To output a token you can use the `DebugPostTokenOutputStream` class from the starter code.
 
 You will need to write UTF-8 and UTF-16 decoders and encoders for string and character literals.  Recall that UTF-32 encoding/decoding is trivial (UTF-32 code units are one-to-one with code points).
+### Later numeric literal forms
+
+Accept the PA1 language-mode option. In C++14 and later, binary integer
+literals and digit separators are required. A separator must lie between
+valid digits of the corresponding digit sequence; remove separators for
+value conversion while retaining the original spelling for user-defined
+literal dispatch. C++17 adds hexadecimal floating literals with a binary
+exponent. Keep C++11's existing literal grammar in the default mode, and do
+not enable GNU extended suffixes merely by selecting a later ISO mode.
+Use N4140/N4659 `[lex.icon]`, `[lex.fcon]` and `[lex.ext]`; see
+[the reference guide](../doc/REFERENCES.md). Normal tests select modes with
+`.cxx-standard` sidecars.
+

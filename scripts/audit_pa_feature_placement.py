@@ -431,6 +431,15 @@ RULES: tuple[FeatureRule, ...] = (
                 ref_patterns=(rx(r"operator_(?:new|delete)_array|delete_array|array_cookie"),)),
     FeatureRule("lookup.using_directive", (rx(r"\busing\s+namespace\b|\busing\s+[A-Za-z_][A-Za-z0-9_:<>]*::[A-Za-z_]"),)),
     FeatureRule("support.lambda", (rx(r"(?<!operator)(?<!operator new)(?<!operator delete)\[[^]\n]*\]\s*\([^)]*\)\s*(?:mutable\s*)?(?:noexcept\s*)?(?:->|\{)"),)),
+    FeatureRule("syntax.nested_namespace", (rx(r"\bnamespace\s+[A-Za-z_]\w*\s*::"),)),
+    FeatureRule("syntax.attribute_using_prefix", (rx(r"\[\[\s*using\s+[A-Za-z_]\w*\s*:"),)),
+    FeatureRule("template.placeholder_nttp", ()),
+    FeatureRule("template.fold", ()),
+    FeatureRule("template.using_pack", (rx(r"\busing\s+[^;=]+::\s*\w+\s*\.\.\.\s*;"),)),
+    FeatureRule("template.class_deduction", ()),
+    FeatureRule("stmt.if_constexpr", (rx(r"\bif\s+constexpr\s*\("),)),
+    FeatureRule("support.structured_binding", (rx(r"\bauto\s*(?:&&?|const)?\s*\[\s*[A-Za-z_]\w*\s*(?:,|\])"),)),
+    FeatureRule("support.decltype_auto", (rx(r"\bdecltype\s*\(\s*auto\s*\)"),)),
     FeatureRule("support.lambda.capture", ()),
     FeatureRule("support.lambda.capture.ref_this", ()),
     FeatureRule("support.range_for",
@@ -943,7 +952,7 @@ def matching_delimiter(code: str, start: int, open_char: str, close_char: str,
             continue
         if c == open_char:
             depth += 1
-        elif c == close_char:
+        elif c == close_char and not (close_char == ">" and i > 0 and code[i - 1] == "-"):
             depth -= 1
             if depth == 0:
                 return i
@@ -1017,7 +1026,7 @@ def find_template_headers(code: str) -> list[TemplateHeader]:
             i += 1
         if i >= len(code) or code[i] != "<":
             continue
-        end = matching_delimiter(code, i, "<", ">")
+        end = matching_delimiter(code, i, "<", ">", skip_groups=True)
         if end is None:
             continue
         params = split_top_level_commas(code[i + 1:end])
@@ -1164,6 +1173,39 @@ def detect_structured_template_features(code: str) -> dict[str, FeatureHit]:
                 add_source_hit(hits, "template.friend", "source:friend declaration inside class template")
     if re.search(r"\bsizeof\s*\.\.\.", code):
         add_source_hit(hits, "template.pack", "source:sizeof... pack expression")
+    return hits
+
+
+def detect_modern_template_features(code: str) -> dict[str, FeatureHit]:
+    hits: dict[str, FeatureHit] = {}
+    class_names = set()
+    for header in find_template_headers(code):
+        match = re.match(r"\s*(?:class|struct)\s+([A-Za-z_]\w*)", code[header.end:])
+        if match:
+            class_names.add(match.group(1))
+    for match in re.finditer(r"\b([A-Za-z_]\w*)\s*\([^;{}]*\)\s*->\s*[A-Za-z_]\w*\s*<[^;{}]+>\s*;", code):
+        if match.group(1) in class_names:
+            add_source_hit(hits, "template.class_deduction", "source:" + match.group(0))
+    stack = []
+    operators = r"(?:<<|>>|&&|\|\||==|!=|<=|>=|[+*/%&|^<>=!,-])"
+    for index, char in enumerate(code):
+        if char == "(":
+            stack.append(index)
+        elif char == ")" and stack:
+            start = stack.pop()
+            inner = code[start + 1:index].strip()
+            if "..." not in inner:
+                continue
+            # Folds have their own parentheses. A function/declarator's
+            # parameter parentheses do not turn T*... into a fold.
+            prefix = code[:start].rstrip()
+            preceding = re.search(r"([A-Za-z_]\w*)$", prefix)
+            if preceding and preceding.group(1) not in {"return", "co_return"}:
+                continue
+            if re.fullmatch(r"\.\.\.\s*" + operators + r".+", inner, re.S) or re.fullmatch(
+                r".+?" + operators + r"\s*\.\.\.(?:\s*" + operators + r".+)?", inner, re.S
+            ):
+                add_source_hit(hits, "template.fold", "source:" + code[start:index + 1])
     return hits
 
 
@@ -1380,11 +1422,22 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
     local_static_code = strip_invalid_condition_storage(no_comments)
     declared_intrinsics = declared_intrinsic_like_names(code)
     hits: dict[str, FeatureHit] = {}
+    # A placeholder in a template parameter is not an auto variable or a
+    # deduced function return. Keep locations stable while masking headers.
+    without_template_headers = list(code)
+    for header in find_template_headers(code):
+        for index in range(header.start, header.end):
+            without_template_headers[index] = " "
+        if any(re.search(r"\bauto\b", param) and "->" not in param for param in header.params):
+            add_source_hit(hits, "template.placeholder_nttp", "source:" + code[header.start:header.end])
+    placeholder_code = "".join(without_template_headers)
     if exception_code != code:
         hits["function.dynamic_exception_spec"] = FeatureHit(
             "function.dynamic_exception_spec", ["source:dynamic exception specification"])
     for rule in RULES:
         haystack = no_comments if rule.use_raw else code
+        if rule.feature_id in {"support.auto", "support.decltype_auto"}:
+            haystack = placeholder_code
         if rule.feature_id in {"class.nested_type", "class.using_declaration"}:
             haystack = class_code
         if rule.feature_id == "exception.try_catch":
@@ -1435,6 +1488,8 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
         for evidence in structured_hit.evidence:
             if evidence not in hit.evidence:
                 hit.evidence.append(evidence)
+    for feature_id, modern_hit in detect_modern_template_features(code).items():
+        hits[feature_id] = modern_hit
     for feature_id, lambda_hit in detect_lambda_capture_features(code).items():
         hit = hits.setdefault(feature_id, FeatureHit(feature_id))
         for evidence in lambda_hit.evidence:
@@ -1595,11 +1650,9 @@ def iter_test_files(root: Path, pas: Iterable[str]) -> list[Path]:
     for pa in pas:
         test_root = root / pa / "tests"
         if test_root.exists():
-            # Optional debug preservation and later-language lanes do not add
-            # features to the required assignment contract. Keep their inputs
-            # in the separate hygiene and numbering scans.
+            # Debug preservation has a separate lane; all language fixtures are required.
             files.extend(path for path in suite_test_files(test_root)
-                         if not {"debuginfo", "modern-cxx"}.intersection(
+                         if not {"debuginfo"}.intersection(
                              path.relative_to(test_root).parts))
     return files
 
@@ -2495,13 +2548,13 @@ def row_for(path: Path,
         "preprocessing" if current_number in {1, 2, 3, 4} else
         "lowir-introduction" if current_pa == "pa8" else
         "lowir-backend" if (current_pa == "pa24" and path.suffix != ".cpp")
-        or assembly_profile in {"lowir", "lowir-reject"} else
+        or assembly_profile in {"lowir", "lowir-reject", "lowir-native", "lowir-native-reject"} else
         "abi-facts" if current_pa == "pa9" else
         "cpp-source"
     )
     raw_hits = (detect_features(detection_source, ref_text, relative_path.as_posix())
                 if input_contract == "cpp-source" else {})
-    if assembly_profile in {"lowir", "gnu", "gnu-native", "lowir-reject", "gnu-reject"}:
+    if assembly_profile in {"lowir", "gnu", "gnu-native", "gnu-compile", "lowir-reject", "gnu-reject", "lowir-native", "lowir-native-reject"}:
         raw_hits["assembly.shared_boundary"] = FeatureHit(
             "assembly.shared_boundary", [f"source:assembly-profile={assembly_profile}"])
     host_eh_evidence = host_eh_object_evidence(path, current_pa, detection_source)

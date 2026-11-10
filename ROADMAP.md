@@ -17,6 +17,7 @@ under `dev/` and `dev/src/`.
 | PA25 | separate compilation and the `cppgm++` compile/link driver |
 | PA26 | host exception metadata and runtime-helper facts |
 | PA27-PA28 | host-linkable objects and host C++ ABI/runtime interoperation |
+| PA36 | shared assembly constraints, integrated encoding and object behavior |
 | PA29-PA31 | hosted source/header compatibility and hosted link/runtime behavior |
 | PA32-PA33 | LowIR and machine/backend optimization |
 | PA34 | staged self-host ladder and inception |
@@ -30,8 +31,9 @@ files into that model. Compiler stages construct typed targets and call the
 same encoder directly; the fact text format is not an internal compiler
 transport.
 
-## Optional extensions
+## Required language and assembly profile
 
-[PA36](pa36/README.md) develops general inline assembly and a shared backend
-contract for other language frontends. It is outside the required 35-assignment
-ladder and currently has a partial reference implementation.
+The [required language profile](LANGUAGE_PROFILE.md) places the supported
+C++14/17 forms in their core lessons. The shared LowIR assembly transport is
+introduced in PA8; integrated assembly follows PA28 host ABI work and precedes
+hosted compatibility. Normal reports include these required checks.

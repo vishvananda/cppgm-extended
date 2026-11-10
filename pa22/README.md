@@ -248,6 +248,15 @@ To complete PA22, implement these goals:
 6. Ambiguity handling.
    Ambiguous inherited member names must not silently resolve.
 
+### Later-language interactions with the complete object model
+
+Apply C++17 aggregate-base initialization and pack-expanded using declarations
+to the completed non-virtual multiple-inheritance model. Retain base order,
+lookup ambiguity and cleanup across distinct subobjects. Modern cases whose
+observations require member pointers or multiple bases remain here even when
+their isolated deduction syntax was introduced earlier. This is not a new
+STL requirement. See N4659 `[dcl.init.aggr]`, `[namespace.udecl]` and `[temp.arg.nontype]`.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA22:

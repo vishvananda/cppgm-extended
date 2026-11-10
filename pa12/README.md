@@ -493,6 +493,31 @@ it must not read array bytes or function instructions as a pointer. Preserve
 that distinction for initialization, return, arguments, assignment and builtin
 operands, while ordinary scalar reference conversions still load their values.
 
+### Required C++14/17 initialization and allocation
+
+In C++14 and later, contextual conversion sites may select cv-qualified
+conversion overloads when their viable conversions produce one permitted type;
+different result types remain ambiguous. Preserve overload ranking and the
+actual conversion call (N4140 `[conv]`).
+
+For C++14 aggregates, omitted elements use their default member initializers
+in member order, including array tails. C++17 aggregate bases initialize before
+direct members. Preserve reference binding and observable effects. In C++17,
+a same-class prvalue directly initializes its result object for variables,
+returns, parameters and members, without requiring an accessible copy/move
+constructor. Potentially overlapping base/delegating subobjects retain their
+copy requirements. Earlier-mode negative checks remain required. See N4659
+`[dcl.init.aggr]`, `[dcl.init]`, `[class.copy.elision]`.
+
+C++17 inline variables and implicitly inline static constexpr members use
+ordinary initialization and lifetime rules; PA25 adds cross-TU identity.
+For over-aligned `new`, select the available alignment-aware allocation and
+deallocation declarations, preserving placement arguments and failure cleanup.
+The alignment argument describes the allocated type, including arrays.
+The core contract can use minimal declarations of `std::align_val_t` and the
+allocation functions; PA32 adds the real host `<new>` integration.
+See N4659 `[basic.align]`, `[expr.new]`, `[expr.delete]` and `[dcl.fct.spec]`.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA12:

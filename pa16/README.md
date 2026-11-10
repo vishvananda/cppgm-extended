@@ -335,6 +335,21 @@ a user-defined reference conversion is followed by decay. Apply the recorded
 standard suffix to that pointer, and retain ordinary pointer lifetime and
 one-past-array checks; a pointer to a destroyed temporary is not publishable.
 
+### Constant evaluation across the required modes
+
+The existing relaxed constexpr body subset remains required: local variables,
+assignments, branches and bounded loops can participate when every evaluated
+operation satisfies the constant-expression rules. Retain lifetime, forbidden
+body-operation and nonconstant-evaluation diagnostics. This course extension
+is also available in its existing C++11 tests; selecting C++14/17 must not
+change those earlier expectations.
+
+Apply the selected edition's aggregate initialization and C++17 result-object
+rules during constant evaluation, including default member initializers and
+inline static constexpr members. Lambda constant evaluation is introduced with
+closures in PA20. Read N4140 `[dcl.constexpr]` and `[expr.const]`, then N4659's
+corresponding clauses for the required later rules.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA16:

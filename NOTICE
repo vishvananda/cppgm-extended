@@ -8,7 +8,7 @@ with inherited material.
 
 cppgm-extended is an independently maintained adaptation. Its authors have
 substantially edited, consolidated, renumbered and extended the original
-course into 35 assignments. The compiler implementation, reference tools,
+course into 36 assignments. The compiler implementation, reference tools,
 regenerated outputs and current teaching sequence are maintained by this
 project. Current PA numbers do not correspond to original CPPGM numbering.
 
@@ -28,3 +28,8 @@ clang/test/CXX/class.derived/class.member.lookup/p9.cpp. Copyright belongs to
 the LLVM Project
 contributors. These portions are licensed under Apache-2.0 WITH LLVM-exception;
 the complete upstream license is retained in doc/llvm-license.txt.
+
+The offline C++ drafts under doc/ retain their original ISO/IEC and WG21
+attribution. N4140 is reproduced from Tim Song’s public source rendering;
+N4659 is the WG21-hosted working draft. Source revisions and checksums are
+recorded in doc/language-drafts.json; see doc/REFERENCES.md.

@@ -8,6 +8,7 @@ using namespace std;
 #include "preprocess/tokens/DebugPPTokenStream.h"
 #include "preprocess/tokens/pp_token_emitter.h"
 #include "support/internal_error.h"
+#include "lex/language_mode.h"
 
 // pptoken: translation phases 1-3 of a C++ source file read from standard
 // input, describing the resulting preprocessing tokens on standard output.
@@ -42,11 +43,12 @@ int main(int argc, char** argv)
 		if (HasBatchStdinArg(argc, argv))
 			return RunNotImplementedBatchMode();
 
+		const LanguageMode mode = ReadTokenToolMode(argc, argv);
 		SourceBuffer source = SourceBuffer::ReadFrom(cin);
 		DebugPPTokenStream output;
 		try
 		{
-			EmitPPTokens(source, output);
+			EmitPPTokens(source, output, mode.lexer_options());
 		}
 		catch (const SourceError& e)
 		{

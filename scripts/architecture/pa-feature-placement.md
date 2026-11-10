@@ -7,9 +7,18 @@ either as its owner; the auditor rejects a table that does. Optional PA36 owns
 the shared assembly extension outside that sequence. N3485 references
 refer to `../../doc/n3485.txt`.
 
-| Feature Family | Canonical Owner PA | Owner Cluster | N3485 Reference | Auditor Status | Required Detections |
+| Feature Family | Canonical Owner PA | Owner Cluster | Versioned Reference | Auditor Status | Required Detections |
 | --- | --- | ---: | --- | --- | --- |
 | `assembly.shared_boundary` | `pa36` | 100 | N/A: optional frontend-neutral assembly contract | covered | `.assembly-profile` selects GNU source or LowIR assembly, including malformed-contract tests; independent of directory and assignment numbering. |
+| `syntax.nested_namespace` | `pa5` | 100 | N4659 `[namespace.def]` | covered | C++17 qualified namespace definitions; namespace aliases are not opened as namespaces. |
+| `syntax.attribute_using_prefix` | `pa5` | 100 | N4659 `[dcl.attr.grammar]` | covered | C++17 attribute using-prefix syntax; vendor effects retain their later owners. |
+| `template.placeholder_nttp` | `pa18` | 400 | N4659 `[temp.param]`, `[temp.arg.nontype]` | covered | Deduction of non-type parameter types; distinguish trailing-return function pointer parameter types. |
+| `template.fold` | `pa15` | 300 | N4659 `[expr.prim.fold]` | covered | Unary/binary folds, permitted operators, empty packs and grouping; not declarator pack expansions. |
+| `template.using_pack` | `pa18` | 300 | N4659 `[namespace.udecl]` | covered | Pack-expanded using declarations; materialized multiple-base interactions remain PA22. |
+| `template.class_deduction` | `pa18` | 400 | N4659 `[over.match.class.deduct]`, `[temp.deduct.guide]` | covered | Declared deduction guide signatures and result specializations; whole consumers inherit later prerequisites. |
+| `stmt.if_constexpr` | `pa19` | 300 | N4659 `[stmt.if]` | covered | Dependent discarded statements after constant evaluation and substitution. |
+| `support.structured_binding` | `pa20` | 300 | N4659 `[dcl.struct.bind]` | covered | Arrays, member decomposition and locally declared tuple protocol. |
+| `support.decltype_auto` | `pa20` | 100 | N4140 `[dcl.spec.auto]` | covered | Variable/return placeholders; template-parameter placeholders belong to deduction in PA18. |
 | `lowir.procedural` | `pa10` | 100 | N/A: CPPGM LowIR lowering contract | pending | `--emit-lowir` source tests, functions/globals, procedural statements, scalar expressions. |
 | `stmt.condition_declaration` | `pa10` | 100 | 6.4 `[stmt.select]`, 6.7 `[stmt.dcl]` | pending | `if`/`switch` condition declarations and condition-scope lifetime. |
 | `expr.reference` | `pa10` | 100 | 8.3.2 `[dcl.ref]`, 8.5.3 `[dcl.init.ref]` | pending | lvalue references, reference parameters/locals, reference calls, reference aliasing. |
@@ -73,11 +82,11 @@ refer to `../../doc/n3485.txt`.
 | `lookup.using_directive` | `pa7` | 200 | 7.3.4 `[namespace.udir]`, 3.4.6 `[basic.lookup.udir]` | pending | using directives, imported value lookup, ambiguity, hiding, and function-body lookup effects. LowIR tests using procedural imported lookup need a PA10-or-later LowIR owner; class/template contexts inherit their enclosing feature owner. |
 | `support.lambda` | `pa20` | 200 | 5.1.2 `[expr.prim.lambda]` | pending | Captureless lambda semantic/lowering support. |
 | `support.lambda.capture.ref_this` | `pa20` | 200 | 5.1.2 `[expr.prim.lambda]` | pending | Explicit by-reference local capture and explicit/implicit `this` capture in the PA20-supported subset. |
-| `support.lambda.capture` | `pa21` | 100 | 5.1.2 `[expr.prim.lambda]` | pending | By-copy, default, mutable, and broader capturing-lambda closure object support. |
+| `support.lambda.capture` | `pa20` | 200 | 5.1.2 `[expr.prim.lambda]` | pending | By-copy, default, mutable, and broader capturing-lambda closure object support. |
 | `support.range_for` | `pa20` | 100 | 6.5.4 `[stmt.ranged]` | pending | Range-for semantic/lowering support over already-owned begin/end and array forms. |
 | `support.decltype` | `pa6` | 200 | 7.1.6.2 `[dcl.type.simple]` | pending | `decltype` type analysis. LowIR tests inherit the enclosing feature owner unless `decltype` itself is the primary semantic assertion. |
 | `support.auto` | `pa20` | 100 | 7.1.6.4 `[dcl.spec.auto]` | pending | `auto` in declarations and non-template return type deduction. |
-| `support.bodyless_placeholder_return` | `pa29` | 500 | N/A: C++14 placeholder-return extension | pending | Bodyless function declarations with a deduced `auto` return, including deleted overloads accepted while compiling newer hosted headers. PA20 owns only definitions with a visible deduction body. |
+| `support.bodyless_placeholder_return` | `pa20` | 100 | N4140 `[dcl.spec.auto]` | pending | Bodyless function declarations with a deduced `auto` return, including deleted overloads accepted while compiling newer hosted headers. Deleted declarations do not require a deduction body. |
 | `support.host_predefined_macro` | `pa29` | 300 | N/A: hosted predefined macro import | pending | Host/compiler predefined macros imported from the configured host toolchain, including compiler/target identity macros, `__SIZE_TYPE__`, `__PTRDIFF_TYPE__`, `__CHAR_BIT__`, and other type/limit/width macros. |
 | `support.preprocessor_probe` | `pa29` | 300 | N/A: hosted preprocessor compatibility | pending | Hosted preprocessor probe operators and function-like probes such as `__has_builtin`, `__has_feature`, `__has_extension`, `__has_include`, `__has_attribute`, and `__is_identifier`. |
 | `rtti.typeid` | `pa21` | 100 | 5.2.8 `[expr.typeid]` | pending | `typeid(type-id)`, supported `typeid(expr)`, and deterministic RTTI/typeinfo LowIR for the PA21 RTTI subset. |

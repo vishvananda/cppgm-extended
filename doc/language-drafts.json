@@ -1,0 +1,30 @@
+{
+  "scope": "Reference material, not a requirement for complete language or library conformance. Retain N3485 and separately adopted defect-report provenance.",
+  "references": [
+    {
+      "draft": "N4140",
+      "language": "C++14",
+      "date": "2014-10-07",
+      "source": "https://timsong-cpp.github.io/cppwp/n4140/",
+      "source_commit": "33503631fcd9d89af619bfeab1ab12fe7622bf57",
+      "primary_source_tag": "https://github.com/cplusplus/draft/tree/n4140",
+      "rendered_on": "2017-07-20",
+      "format": "Combined HTML and text; includes the rendering\u2019s editorial fixes; not an ISO publication.",
+      "files": {
+        "n4140.html": "ae4a05a475d257c7b3cbe4167230b6dafdb010e723315135f354f3b263014667",
+        "n4140.txt": "1d46aa2f3c7a4636f622894006250d9dac0151850348c34fb1eeb6894c849641"
+      }
+    },
+    {
+      "draft": "N4659",
+      "language": "C++17",
+      "date": "2017-03-21",
+      "source": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4659.pdf",
+      "text_extraction": "pypdf layout extraction; PDF retains formatting and page numbers.",
+      "files": {
+        "n4659.pdf": "642b26867e3803d66696b240b7913042c4ccc37b9b0478b330de247d1daec9d1",
+        "n4659.txt": "9329ed8cb3805975ab4437da83ca7c211abf62775566f5baca6eab893d7c4be1"
+      }
+    }
+  ]
+}

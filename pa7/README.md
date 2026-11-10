@@ -302,6 +302,15 @@ Your semantic model should retain enough information for later assignments to
 add class-aware conversion ranking and richer overload resolution without
 reparsing the source.
 
+### Non-throwing function conversions
+
+In C++17, a non-throwing function pointer may convert to its throwing
+counterpart; the reverse conversion is invalid. Preserve the distinction
+through overload selection and calls. This is type/conversion work, not a
+requirement to implement exception unwinding in PA7. The negative and positive
+mode-tagged checks use the ordinary semantic dump interface.
+See N4659 `[conv.fctptr]`.
+
 ### Out Of Scope
 
 PA7 does not require:

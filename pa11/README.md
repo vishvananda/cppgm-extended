@@ -398,6 +398,15 @@ Within this milestone, PA11 should produce valid LowIR for ordinary
 non-polymorphic class code over the supported procedural subset. That LowIR is
 intended to be accepted by the later PA24 `lowir2native` backend for the
 supported cases.
+### Mode-dependent aggregate eligibility
+
+C++14 allows default member initializers in aggregates; C++11 keeps its
+restriction. C++17 permits the supported public non-virtual aggregate bases.
+Retain access, constructor and virtual-function restrictions from the selected
+edition rather than treating every class as an aggregate. PA12 owns result-object
+initialization and cleanup; multiple-base interactions remain PA22.
+See N4140/N4659 `[dcl.init.aggr]`.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA11:

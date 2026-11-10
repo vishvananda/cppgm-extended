@@ -274,6 +274,17 @@ implemented language surface, including:
 - the dependent-name and instantiation behavior strictly required to make the
   specialization model work
 
+### Later template declarations
+
+Variable templates remain required, including the existing C++11 extension.
+In C++17, a template-template parameter may use `typename` as well as `class`,
+including defaults, packs and alias-template arguments. Earlier modes retain
+the `class` requirement. Represent placeholder non-type parameter declarations
+without prematurely assigning every argument an integer type; PA18 performs
+their deduction and validates permitted argument kinds.
+See N4140 `[temp]`, N4659 `[temp.param]`, and
+[the retained N4051 wording](../doc/cwg/paper-n4051.txt).
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA17:

@@ -668,6 +668,7 @@ enum AbiFactTypeForm : std::uint8_t
 	ABI_FACT_TYPE_TAGGED,
 	ABI_FACT_TYPE_FUNCTION_TYPE,
 	ABI_FACT_TYPE_FUNCTION_TYPE_VARIADIC,
+	ABI_FACT_TYPE_FUNCTION_TYPE_NOEXCEPT,
 	ABI_FACT_TYPE_MEMBER_POINTER
 };
 
@@ -679,7 +680,7 @@ inline const char* spelling(AbiFactTypeForm value)
 		"vendor", "builtin-transform", "named", "name", "template", "std-template", "template-param",
 		"template-param-subst", "template-param-template", "member", "member-template", "decltype", "decltype-id",
 		"lambda-closure", "local-type", "namespace-lambda", "tagged", "function-type", "function-type-variadic",
-		"member-pointer" };
+		"function-type-noexcept", "member-pointer" };
 	return kWords[value];
 }
 

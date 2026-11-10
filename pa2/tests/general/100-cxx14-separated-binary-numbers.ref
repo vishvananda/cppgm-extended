@@ -1,0 +1,5 @@
+literal 1'234 int D2040000
+literal 0b10'01 int 09000000
+literal 0xAB'CD int CDAB0000
+literal 12.3'4e+0'1 double 9A99999999D95E40
+eof

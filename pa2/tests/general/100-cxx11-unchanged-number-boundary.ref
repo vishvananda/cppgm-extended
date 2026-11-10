@@ -1,0 +1,4 @@
+literal 1234 int D2040000
+literal 0xABCD int CDAB0000
+literal 12.34e+01 double 9A99999999D95E40
+eof

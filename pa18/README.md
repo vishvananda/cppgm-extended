@@ -223,6 +223,26 @@ body also forms a nondependent specialization. Its local alias can name member
 types without `typename`; an argument using a dependent qualifier retains the
 usual disambiguation and substitution rules.
 
+### C++17 deduction and expanded using declarations
+
+Deduce constructor-based class template arguments before initializing the
+selected specialization. Include the existing constructor-template, array
+reference, default and pack cases. Declared deduction guides add candidates
+associated with their class template, not ordinary callable functions.
+Preserve explicitness, defaults and the copy-deduction/list-initialization
+rules; diagnose equivalent guides and invalid result specializations.
+See N4659 `[over.match.class.deduct]` and `[temp.deduct.guide]`.
+
+Placeholder non-type parameters (`auto`, `auto*`, `auto&`, `decltype(auto)`)
+deduce type and value while retaining object/function identity, references
+and heterogeneous packs. The resulting argument must still be a permitted
+C++17 template argument. Trailing-return function-pointer parameter types
+are distinct from a placeholder whose argument type is deduced.
+Pack-expanded using declarations import the corresponding names; diagnose a
+missing pack. Multiple-base object-model observations remain in PA22.
+Preserve C++17 `noexcept` function-type distinctions through substitution.
+See N4659 `[temp.arg.nontype]`, `[namespace.udecl]` and `[temp.deduct]`.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA18:

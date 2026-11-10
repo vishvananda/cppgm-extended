@@ -1,0 +1,10 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type-alias Item int
+    scope namespace outer
+      scope namespace inner
+        variable value int
+        variable second int
+end translation unit

@@ -7,6 +7,8 @@
 #   foo+       means 1 or more foo
 #   (foo)      groups symbols together for application of the above operators
 #
+# Required C++11/14/17 forms and the GNU assembly profile share this grammar.
+# Mode restrictions and semantic prerequisites are specified by the handouts.
 # PA5 and later cppgm++ frontend assignments use this same source grammar. The
 # grammar defines accepted source syntax only; each assignment README defines the
 # semantic and lowering subset required at that stage.
@@ -19,6 +21,7 @@ translation-unit:
 	declaration* ST_EOF
 
 declaration:
+	attribute-specifier-seq declaration
 	empty-declaration
 	namespace-definition
 	namespace-alias-definition
@@ -32,6 +35,9 @@ declaration:
 	static-assert-declaration
 	special-member-definition
 	function-definition
+	deduction-guide
+	structured-binding-declaration
+	asm-declaration
 	simple-declaration
 
 empty-declaration:
@@ -39,6 +45,7 @@ empty-declaration:
 
 namespace-definition:
 	KW_INLINE? KW_NAMESPACE TT_IDENTIFIER? OP_LBRACE declaration* OP_RBRACE
+	KW_NAMESPACE TT_IDENTIFIER (OP_COLON2 TT_IDENTIFIER)+ OP_LBRACE declaration* OP_RBRACE
 
 namespace-alias-definition:
 	KW_NAMESPACE TT_IDENTIFIER OP_ASS qualified-id OP_SEMICOLON
@@ -47,7 +54,7 @@ using-directive:
 	KW_USING KW_NAMESPACE qualified-id OP_SEMICOLON
 
 using-declaration:
-	KW_USING qualified-id OP_SEMICOLON
+	KW_USING qualified-id OP_DOTS? OP_SEMICOLON
 
 alias-declaration:
 	KW_USING TT_IDENTIFIER OP_ASS type-id OP_SEMICOLON
@@ -74,7 +81,7 @@ template-parameter:
 
 type-parameter:
 	type-parameter-key OP_DOTS? TT_IDENTIFIER? default-template-argument?
-	KW_TEMPLATE template-parameter-clause KW_CLASS TT_IDENTIFIER? default-template-argument?
+	KW_TEMPLATE template-parameter-clause type-parameter-key TT_IDENTIFIER? default-template-argument?
 
 type-parameter-key:
 	KW_CLASS
@@ -285,6 +292,7 @@ namespace-name:
 	TT_IDENTIFIER
 
 decltype-specifier:
+	KW_DECLTYPE OP_LPAREN KW_AUTO OP_RPAREN
 	KW_DECLTYPE OP_LPAREN expression OP_RPAREN
 
 init-declarator-list:
@@ -408,9 +416,13 @@ labeled-statement:
 	KW_CASE expression OP_COLON statement
 	KW_DEFAULT OP_COLON statement
 
+selection-initializer:
+	simple-declaration
+	expression OP_SEMICOLON
+
 selection-statement:
-	KW_IF OP_LPAREN condition OP_RPAREN statement (KW_ELSE statement)?
-	KW_SWITCH OP_LPAREN condition OP_RPAREN statement
+	KW_IF KW_CONSTEXPR? OP_LPAREN selection-initializer? condition OP_RPAREN statement (KW_ELSE statement)?
+	KW_SWITCH OP_LPAREN selection-initializer? condition OP_RPAREN statement
 
 iteration-statement:
 	KW_WHILE OP_LPAREN condition OP_RPAREN statement
@@ -429,6 +441,7 @@ jump-statement:
 	KW_BREAK OP_SEMICOLON
 	KW_CONTINUE OP_SEMICOLON
 	KW_GOTO TT_IDENTIFIER OP_SEMICOLON
+	KW_GOTO OP_STAR expression OP_SEMICOLON
 	KW_RETURN expression? OP_SEMICOLON
 	KW_THROW assignment-expression? OP_SEMICOLON
 
@@ -600,6 +613,7 @@ primary-expression:
 	id-expression
 	OP_LPAREN expression OP_RPAREN
 	lambda-expression
+	fold-expression
 	braced-init-list
 
 braced-init-list:
@@ -609,7 +623,7 @@ lambda-expression:
 	lambda-introducer lambda-declarator? compound-statement
 
 lambda-declarator:
-	parameter-clause KW_MUTABLE? noexcept-specification? trailing-return-type?
+	parameter-clause KW_MUTABLE? KW_CONSTEXPR? noexcept-specification? trailing-return-type?
 
 lambda-introducer:
 	OP_LSQUARE lambda-capture? OP_RSQUARE
@@ -630,6 +644,8 @@ capture:
 	TT_IDENTIFIER
 	OP_AMP TT_IDENTIFIER
 	KW_THIS
+	OP_STAR KW_THIS
+	OP_AMP? TT_IDENTIFIER initializer
 
 id-expression:
 	unqualified-id
@@ -733,3 +749,72 @@ close-angle-bracket:
 	OP_GT
 	ST_RSHIFT_1
 	ST_RSHIFT_2
+
+# Required later-language / assembly additions; semantic owners are in LANGUAGE_PROFILE.md.
+deduction-guide:
+	KW_EXPLICIT? TT_IDENTIFIER parameter-clause OP_ARROW template-id OP_SEMICOLON
+
+structured-binding-declaration:
+	KW_CONST? KW_VOLATILE? KW_AUTO ref-qualifier? OP_LSQUARE identifier-list OP_RSQUARE initializer OP_SEMICOLON
+
+identifier-list:
+	TT_IDENTIFIER (OP_COMMA TT_IDENTIFIER)*
+
+attribute-specifier-seq:
+	attribute-specifier+
+
+attribute-specifier:
+	OP_LSQUARE OP_LSQUARE attribute-using-prefix? attribute-list? OP_RSQUARE OP_RSQUARE
+
+attribute-using-prefix:
+	KW_USING TT_IDENTIFIER OP_COLON
+
+attribute-list:
+	attribute (OP_COMMA attribute?)*
+
+attribute:
+	qualified-id (OP_LPAREN argument-list? OP_RPAREN)? OP_DOTS?
+
+fold-expression:
+	OP_LPAREN cast-expression fold-operator OP_DOTS OP_RPAREN
+	OP_LPAREN OP_DOTS fold-operator cast-expression OP_RPAREN
+	OP_LPAREN cast-expression fold-operator OP_DOTS fold-operator cast-expression OP_RPAREN
+
+fold-operator:
+	additive-operator
+	multiplicative-operator
+	shift-operator
+	relational-operator
+	equality-operator
+	assignment-operator
+	OP_AMP
+	OP_BOR
+	OP_XOR
+	OP_LAND
+	OP_LOR
+	OP_COMMA
+	OP_DOTSTAR
+	OP_ARROWSTAR
+
+asm-declaration:
+	KW_ASM asm-qualifier* OP_LPAREN asm-string-literal+ asm-operands? OP_RPAREN OP_SEMICOLON
+
+asm-qualifier:
+	KW_VOLATILE
+	KW_INLINE
+	KW_GOTO
+
+asm-operands:
+	OP_COLON asm-operand-list? (OP_COLON asm-operand-list? (OP_COLON asm-clobber-list? (OP_COLON identifier-list)?)?)?
+
+asm-operand-list:
+	asm-operand (OP_COMMA asm-operand)*
+
+asm-operand:
+	(OP_LSQUARE TT_IDENTIFIER OP_RSQUARE)? asm-string-literal OP_LPAREN expression OP_RPAREN
+
+asm-clobber-list:
+	asm-string-literal (OP_COMMA asm-string-literal)*
+
+asm-string-literal:
+	TT_LITERAL
