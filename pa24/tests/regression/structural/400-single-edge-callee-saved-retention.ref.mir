@@ -38,8 +38,7 @@ function @keep_across_edge
   block ^continuation
     mov rdi, 30
     call @bump [args=(rdi)]
-    mov r8, rax
-    add rbx, r8
+    add rbx, rax
     ret rbx
 
 function @main

@@ -107,9 +107,8 @@ function @read_before_call
     add r12, 100
     add r12, r14
     call @produce [args=()]
-    mov r8, rax
-    store.i64 [rbx], r8
-    add r12, r8
+    store.i64 [rbx], rax
+    add r12, rax
     ret r12
 
 function @main

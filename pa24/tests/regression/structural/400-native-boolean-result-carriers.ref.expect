@@ -4,3 +4,7 @@ none(movzx) in @unsigned_byte
 none(movzx) in @pointer_byte
 # A full-width result must still discard any dirty high register bits.
 has(movzx) in @signed_wide
+# A branch of the ABI byte ignores its upper bits; a widened branch cannot.
+none(and) in @branch_byte
+none(mov) in @branch_byte ^entry
+has(and) in @branch_wide

@@ -70,8 +70,7 @@ function @main
     mov rdi, 1
     mov rdx, 7
     call @dispatch [args=(rdx,rsi,rdi)]
-    mov r8, rax
-    cmp.i64 r8, 7
+    cmp.i64 rax, 7
     je ^good
     jmp ^bad
 

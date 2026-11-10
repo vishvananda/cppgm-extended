@@ -993,9 +993,7 @@ void FunctionSelector::emit_call(uint32_t id)
 		finish_result(inst, d);
 		return;
 	}
-	// A straight-line function keeps the result in rax; with more blocks it
-	// moves to an allocated register, as the reference places it. A block-
-	// local result feeding one two-address operation goes to its home when
+	// A block-local result feeding one two-address operation goes to its home when
 	// the call's arguments occupy every general caller-saved register.
 	const uint32_t general = ((1u << R8) | (1u << R9) | (1u << RDI) | (1u << RSI)) & ~excluded_;
 	const uint32_t caller_saved = kCallerSavedGprs & kAllocatableGprs;
@@ -1017,14 +1015,20 @@ void FunctionSelector::emit_call(uint32_t id)
 			!(resolve(user.ops[1]) == self);
 		terminal = stored || (user.op == Opcode::Return && user.type == inst.type);
 	}
-	// O1+ prefers rax wherever no instruction of the result's interval
-	// clobbers it. A byte result only a branch reads (which tests its byte)
-	// needs no normalization.
-	const Reg d = result_reg(inst, level_ >= 1 || body.layout.size() == 1 || terminal ? RAX : kNoReg);
+	// Keep the ABI register wherever the result's interval permits it.
+	const Reg d = result_reg(inst, RAX);
 	load_into(d, Operand::make_reg(RAX), TypeKind::I64);
-	const bool byte_tested = level_ >= 1 && register_bytes(kind) == 1 && t.uses == 1 && t.user != kNoId &&
-		body.instructions[t.user].op == Opcode::Branch && !(t.flags & (TF_GLOBAL | TF_HOMED)) && d != kSelectScratch &&
-		d != kEmitScratch;
+	bool byte_tested = false;
+	if (register_bytes(kind) == 1 && t.uses == 1 && t.user != kNoId && !(t.flags & (TF_GLOBAL | TF_HOMED)) &&
+		d != kSelectScratch && d != kEmitScratch)
+	{
+		const Instruction& user = body.instructions[t.user];
+		// A widened alias can resolve to this result while its branch still
+		// tests the wider type. Only omit normalization for actual byte reads.
+		byte_tested = (user.op == Opcode::Branch &&
+						  (level_ >= 1 || register_bytes(type_of(user.ops[0]).kind()) == 1)) ||
+			(user.op == Opcode::Compare && register_bytes(user.type.kind()) == 1);
+	}
 	// A same-width ABI return, like a same-width store, observes only the
 	// result's own bits. Do not widen it just to return those bits again.
 	if (!terminal && !byte_tested && !(level_ >= 1 && byte_only_[inst.result]))

@@ -41,8 +41,7 @@ function @__cppgm_406d61696e
     mov rdi, 1
     mov rsi, 41
     call @f [args=(rsi,rdi)]
-    mov r8, rax
-    cmp.i64 r8, 41
+    cmp.i64 rax, 41
     je ^good
     jmp ^bad
 

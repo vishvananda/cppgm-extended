@@ -36,6 +36,25 @@ function @forward_wide(%a : i64, %b : i64) -> i64 [unwind=no] {
     %wide = convert zext i64 i1 %result
     return i64 %wide
 }
+function @branch_byte(%a : i64, %b : i64) -> i32 [unwind=no] {
+  block ^entry:
+    %result = call i1 @signed_byte(%a, %b)
+    branch %result, ^yes, ^no
+  block ^yes:
+    return i32 1
+  block ^no:
+    return i32 0
+}
+function @branch_wide(%a : i64, %b : i64) -> i32 [unwind=no] {
+  block ^entry:
+    %result = call i1 @signed_byte(%a, %b)
+    %wide = convert zext i64 i1 %result
+    branch %wide, ^yes, ^no
+  block ^yes:
+    return i32 1
+  block ^no:
+    return i32 0
+}
 function @main() -> i32 [role=entry, unwind=no] {
   slot $input : obj<16x8>
   block ^entry:
@@ -73,6 +92,18 @@ function @main() -> i32 [role=entry, unwind=no] {
     %value10 = call i64 @forward_wide(2, 1)
     %bad10 = cmp ne i64 %value10, 0
     %any10 = binary or i1 %any9, %bad10
-    %exit = convert zext i32 i1 %any10
+    %value11 = call i32 @branch_byte(-2, 1)
+    %bad11 = cmp ne i32 %value11, 1
+    %any11 = binary or i1 %any10, %bad11
+    %value12 = call i32 @branch_byte(2, 1)
+    %bad12 = cmp ne i32 %value12, 0
+    %any12 = binary or i1 %any11, %bad12
+    %value13 = call i32 @branch_wide(-2, 1)
+    %bad13 = cmp ne i32 %value13, 1
+    %any13 = binary or i1 %any12, %bad13
+    %value14 = call i32 @branch_wide(2, 1)
+    %bad14 = cmp ne i32 %value14, 0
+    %any14 = binary or i1 %any13, %bad14
+    %exit = convert zext i32 i1 %any14
     return i32 %exit
 }

@@ -16,5 +16,5 @@ function @main
     epilogues shared
 
   block ^entry
-    add rdi, 2 !dbg(tests/debuginfo/machine/100-lowir2native-machine-add.t, 3, 10)
+    add.i32 rdi, 2 !dbg(tests/debuginfo/machine/100-lowir2native-machine-add.t, 3, 10)
     ret rdi

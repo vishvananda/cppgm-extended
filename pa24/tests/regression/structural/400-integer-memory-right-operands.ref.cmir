@@ -317,7 +317,6 @@ function @main
     mov rsi, 0
     mov rdx, 4
     call @add_byte_indexed [args=(rdx,rsi,rdi)]
-    sext.i8 rax
     cmp.i64 <gpr3>, 14
     setne <gpr3>
     movzx <gpr3>, <gpr3>
