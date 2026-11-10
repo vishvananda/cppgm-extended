@@ -363,3 +363,13 @@ The duplicated-epilogue bound has also been rerun against the correct full
 baseline (`gap-B-epilogue-bound-r2.json`). Even assuming short jumps to shared
 tails, it can remove at most 39,907 executed bytes (0.424%). This still does not
 support epilogue sharing as the main footprint remedy.
+
+A separate B2 screen lowers the register allocator's price for opening another
+callee-saved register from two weighted accesses to one. All 40 provider objects
+change and all 325 workload outputs still match. Push/pop executions rise about
+4%, while stack loads/stores fall 2.6--3.0%, as predicted. However, executed
+footprint falls only 0.138%, instructions rise 0.610%, and modeled L2 code misses
+rise 1.920%; hardware code misses rise 0.740%. Frozen compile instructions fall
+about 0.22% at O1--O3. The register/memory tradeoff moves, but the intended code
+cache benefit does not. Keep this prototype private rather than adopting the
+lower opening price. Evidence: `gap-B-callee-save-price-*`.
