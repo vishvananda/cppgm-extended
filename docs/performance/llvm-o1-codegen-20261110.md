@@ -380,3 +380,53 @@ Raw evidence is in `o1-qualified-microcode-profile-r4/`,
 `o1-return-and-microcode-diagnostic-r1-*` under the evidence root. The accepted
 receipt binds the final source, all tool hashes, normal checks, independent
 controls and full LLVM observation. LLVM O2 and O3 remain deferred.
+
+
+## Static text census of the qualified compiler
+
+The qualified `194ce80d0` LLVM image has 120,396,882 bytes in `.text`, compared
+with 70,178,329 bytes in the native image: 71.6% more static text. The unique
+nonzero text-symbol addresses number 227,064 versus 150,647. This does not
+mean 71.6% more instructions execute; the full workload executes about 7% more.
+
+Matching raw symbol names helps separate larger implementations from different
+emission sets. Across 128,969 common names, named function sizes total
+95,907,597 versus 62,637,883 bytes, a ratio of 1.5311. The common strong-name
+cohort is 1.5501 times native. The common weak-name cohort is 1.5225 times
+native, and the common internal-name cohort is 1.3830 times native. Named
+cohort sizes can overlap aliases; the total-address census deduplicates them.
+Internal naming and optimizer clones also differ, so unmatched names are not
+evidence of unused code by themselves.
+
+Large static growth includes cold target-specific builtin switches, which
+must not be mistaken for the hot working set. This census motivates checking
+inlining cost and repeated branch/aggregate code, but each change still needs
+a workload screen. A prototype combining pure integer comparison branches
+increases instructions and is rejected. Extending Boolean carrier reasoning
+initially exposes a wide fused test reading unspecified upper bits; the
+corrected private prototype passes output checks but still increases
+instructions and remains unaccepted. A 32-bit ALU encoding prototype has no
+established counter benefit either. None of these changes enters the qualified
+tree.
+
+A new result-table prototype handles empty case arms feeding one shared phi,
+while retaining nontrivial arms and the original default. Replacing power
+constants by an ordinary table load hides the alignment fact, so a revised
+prototype stores exponents for power-valued groups and represents their result
+as a shift of one. This keeps the property visible in LowIR rather than in
+private frontend data. Its first 32-unit screen reduces cycles by about 3%
+and I-cache misses by 2.5%, with flat instructions and all outputs identical.
+These remain private screens, not full LLVM acceptance or progress to 5%.
+
+The original screen set omits `DataLayout.cpp` and `SemaType.cpp`; both are
+now included in a 34-unit set for subsequent screening. The frozen compile
+gate rejects the first SSA-cost inlining prototype despite its LLVM screen
+improvement: it expands LowIR from 118,143 to 121,163 instructions on the frozen
+input and adds about 2.5% compiler instructions. Moving the cost accounting out
+of required source substitution does not remove that growth cost. A more
+conservative admission policy is being tested before any adoption.
+
+Evidence: `o1-qualified-text-cohorts-r1.json`,
+`o1-profiled-34-provider-units-r1.json`, and the `o1-phi-switch-table-*`,
+`o1-object-return-tail-*`, `o1-ssa-inline-cost-*`,
+`o1-boolean-carriers-*` and `o1-compact-positive-word-*` directories.
