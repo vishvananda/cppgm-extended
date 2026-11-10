@@ -584,3 +584,72 @@ Evidence: `gap-A-native-word-parts-root-cause-r1/`, including the instruction
 attribution, three inliner traces, reduced failing programs and ablations;
 `gap-A-root-cause-opt-fold-late-{top40,full-output,ledger-number}-r1/`;
 `compiler-gap-rebased-535ed-r1/` and `gap-rebased-535ed-full-output-r1/`.
+
+### Continue the combined changes on the rebased source
+
+The private combined prototype now preserves main's partial aggregate splitting
+and other changes. Incoming I128 parameter and call-result words are defined
+at their ABI boundary, with the same definitions used by liveness, register
+allocation and emission. The first mixed-toolchain control exposed simultaneous
+definitions competing for a register: the first word could take the second
+word's planned global register. Reserving both destinations repairs that conflict.
+The completed incoming variant passes 32 mixed ABI cases, 52 IR replay/casting
+checks and 16 reduced controls. Its 40-provider LLVM relink reproduces all 325
+objects and the executable byte for byte.
+
+These screens use the new full LLVM baseline built from `a30986549`; they must
+not be compared directly with the preceding pre-rebase percentages.
+
+| Rebased private variant | Instructions | Executed bytes | Modeled L2 code misses |
+| --- | ---: | ---: | ---: |
+| Ported combined repairs | +1.793% | +1.192% | +4.093% |
+| Incoming scalar words | +0.689% | +0.183% | +1.303% |
+| Also support 9–15-byte values | +0.596% | +0.216% | +0.124% |
+| Also model short zero writes as scalar accesses | +0.669% | +0.182% | +0.235% |
+
+Partially occupied carriers read exactly the source object's bytes and pad only
+private destination homes. Sixteen mixed GCC/Clang guard-page cases cover all
+sizes from nine through fifteen bytes at O0–O3. The other 84 ABI/replay controls
+and all 325 workload outputs also pass. These are correctness and mechanism
+screens, not full LLVM qualification or runtime acceptance.
+
+The incoming variant's hardware panel still shows blocked store forwarding
+up 5.08%, L2 code misses up 2.22% and instructions up about 0.65%. Cycle group
+medians range from -0.17% to +3.10%; all 80 outputs match and all 20 flagged
+outliers are retained. The predicted store-forwarding reduction is absent.
+
+Investigating that discrepancy found another missing interaction in the actual
+`CmpPredicate::getMatching` body: the empty optional initializes one byte with
+`zeroinit`. Treating it only as a bulk span prevents the entire return slot from
+being split. A follow-up models short zero writes as scalar accesses and rewrites
+them only when their slot splits. Combined with the preceding changes, it removes
+all return-object memory operations from the actual LLVM function; its assembly
+has no stack memory operands or stack adjustment. Its normal register saves
+remain. The 84 ABI/replay checks, sixteen guard-page cases and sixteen additional
+optional-value cases pass, as do all 325 workload objects and the executable.
+The hardware panel now reduces blocked store forwarding by 0.92% relative to
+the rebased accepted compiler. That is better than the preceding prototype's
+5.08% increase, but substantially below the intended reduction. Instructions
+remain about 0.7% higher; code misses rise 1.41%. Cycle group medians range from
+-0.59% to +1.48%, with eleven outliers retained and all eighty outputs equal.
+This is not a demonstrated runtime improvement.
+
+The paired frozen compile-cost check against the rebased compiler measures
++0.485%, -0.175%, +0.830% and +0.804% instructions at O0–O3, with RSS growth at most
+0.11%. O0 output is unchanged. The separate cumulative O1–O3 comparison remains
+below the campaign's post-level-move baseline. The O2/O3 batch costs exceed the
+ordinary 0.5% gate, so reduce unnecessary analysis and representation work
+before qualification; do not hide that cost behind cumulative headroom.
+
+The user requested continued investigation of unintended regressions. The
+latest instruction attribution leaves 7.18 million extra instructions, led by
+2.36 million register moves, 0.92 million stack loads and 0.60 million stack
+stores. Calls rise by 266 thousand. Several helpers become out of line, so
+trace their admission and conversion costs on identical input before changing
+thresholds. Preserve the successful incoming-word and optional-storage fixes
+while testing these interactions; no aggregate workstream is accepted yet.
+
+Evidence: `gap-A-{combined,incoming,partial}-rebased-*`,
+`gap-A-incoming-rebased-hw-panel-r2/`, `gap-A-partial-code-shape-r3/`,
+`gap-A-scalar-zero-code-shape-r4/`, `gap-A-scalar-zero-rebased-*`,
+`gap-A-scalar-zero-guard-controls-r4/` and `gap-A-optional-zero-controls-r4/`.
