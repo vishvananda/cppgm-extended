@@ -1835,19 +1835,21 @@ const int32_t kFoldDistance = 8;
 // move a read past anything except aliases and constants.
 bool FunctionSelector::fold_mask_load(Value v, Value mask, uint32_t and_id)
 {
-	if (mask.kind != ValueKind::Integer || literal(mask).high != 0 || literal(mask).low > INT32_MAX ||
-		v.index < body_->parameter_count || body_->temps[v.index].def == kNoId)
+	if (mask.kind != ValueKind::Integer || v.index < body_->parameter_count || body_->temps[v.index].def == kNoId)
 		return false;
 	TempInfo& t = temps_[v.index];
 	const uint32_t id = body_->temps[v.index].def;
 	const Instruction& load = body_->instructions[id];
-	if (load.op != Opcode::Load || (load.flags & lowir::IF_VOLATILE) || !load.type.is_integer() ||
-		load.type.kind() == TypeKind::I1 || load.type.kind() == TypeKind::I128 ||
-		(t.flags & (TF_GLOBAL | TF_ALIAS | TF_LAZY)) || t.uses != 1 || t.user != and_id ||
-		inst_block_[id] != inst_block_[and_id])
+	if (load.op != Opcode::Load || (load.flags & lowir::IF_VOLATILE) ||
+		!(load.type.is_integer() || load.type.is_pointer()) || load.type.kind() == TypeKind::I1 ||
+		load.type.kind() == TypeKind::I128 || (t.flags & (TF_GLOBAL | TF_ALIAS | TF_LAZY)) || t.uses != 1 ||
+		t.user != and_id || inst_block_[id] != inst_block_[and_id])
 		return false;
-	const unsigned bits = lowir::integer_bits(load.type.kind());
-	if (bits < 64 && literal(mask).low >= (uint64_t(1) << bits))
+	const unsigned bits = load.type.is_pointer() ? 64 : lowir::integer_bits(load.type.kind());
+	const lowir::Type type = body_->instructions[and_id].type;
+	const unsigned tested = type.is_pointer() ? 64 : lowir::integer_bits(type.kind());
+	const uint64_t observed = literal(mask).low & (tested == 64 ? ~uint64_t(0) : (uint64_t(1) << tested) - 1);
+	if (bits < 64 && observed >= (uint64_t(1) << bits))
 		return false;
 	if (t.flags & TF_FOLDED)
 		return true;
@@ -2037,6 +2039,69 @@ void FunctionSelector::find_folds()
 		const Value self = Value::temp(inst.result);
 		const bool left = resolve(user.ops[0]) == self;
 		const bool right = resolve(user.ops[1]) == self;
+
+		// Canonical sign/zero extensions may already be aliases. Fold the
+		// original load only when the mask discards every promoted bit.
+		if (level_ >= 1 && inst.op == Opcode::Load && user.op == Opcode::Binary &&
+			static_cast<lowir::BinaryOp>(user.sub) == lowir::BinaryOp::And && left != right)
+		{
+			const Value mask = resolve(user.ops[left ? 1 : 0]);
+			const lowir::Literal bits = mask.kind == ValueKind::Integer ? literal(mask) : lowir::Literal{};
+			const TypeKind kind = user.type.kind();
+			const bool normalized = kind == TypeKind::I64 || kind == TypeKind::U32 ||
+				(kind == TypeKind::I32 && bits.low < 0xffffffff);
+			if (mask.kind == ValueKind::Integer && bits.high == 0 && normalized &&
+				(bits.low == 0xff || bits.low == 0xffff || bits.low == 0xffffffff) &&
+				fold_mask_load(self, mask, user_id))
+			{
+				const Value address = resolve(inst.ops[0]);
+				if (address.kind == ValueKind::Temp && temps_[address.index].block == b &&
+					temps_[address.index].last < pos_[user_id])
+					temps_[address.index].last = pos_[user_id];
+				return;
+			}
+		}
+
+		// A mask discards the promoted bits of this single-use extension.
+		// Consecutive ordinary load/extension/and: no memory effect moves.
+		if (level_ >= 1 && inst.op == Opcode::Convert && user.op == Opcode::Binary &&
+			static_cast<lowir::BinaryOp>(user.sub) == lowir::BinaryOp::And && inst.type == user.type &&
+			(inst.sub == static_cast<uint8_t>(lowir::ConvertOp::SExt) ||
+				inst.sub == static_cast<uint8_t>(lowir::ConvertOp::ZExt)))
+		{
+			const Value mask = resolve(user.ops[left ? 1 : 0]), value = resolve(inst.ops[0]);
+			if (left != right && mask.kind == ValueKind::Integer && value.kind == ValueKind::Temp &&
+				value.index >= body.parameter_count && body.temps[value.index].def != kNoId)
+			{
+				const lowir::Literal bits = literal(mask);
+				const unsigned bytes = bits.high == 0 ? (bits.low == 0xff                ? 1
+																: bits.low == 0xffff     ? 2
+																: bits.low == 0xffffffff ? 4
+																						 : 0)
+													  : 0;
+				const TypeKind kind = user.type.kind();
+				const bool normalized = kind == TypeKind::I64 || kind == TypeKind::U32 ||
+					(kind == TypeKind::I32 && bytes < 4);
+				const lowir::InstId load_id = body.temps[value.index].def;
+				const Instruction& load = body.instructions[load_id];
+				TempInfo& loaded = temps_[value.index];
+				if (bytes != 0 && normalized && load.op == Opcode::Load && load.type.is_integer() &&
+					load.type.kind() != TypeKind::I1 && !(load.flags & lowir::IF_VOLATILE) &&
+					load.type == lowir::convert_source_type(inst) && register_bytes(load.type.kind()) >= bytes &&
+					loaded.uses == 1 && loaded.user == id && !(loaded.flags & (TF_GLOBAL | TF_ALIAS | TF_LAZY)) &&
+					inst_block_[load_id] == b && load.next == id && inst.next == user_id)
+				{
+					t.flags |= TF_FOLDED;
+					loaded.flags |= TF_FOLDED;
+					++stats_.folded_loads;
+					const Value address = resolve(load.ops[0]);
+					if (address.kind == ValueKind::Temp && temps_[address.index].block == b &&
+						temps_[address.index].last < pos_[user_id])
+						temps_[address.index].last = pos_[user_id];
+					return;
+				}
+			}
+		}
 		const bool logical_not = inst.op == Opcode::Unary &&
 			static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::Not &&
 			(inst.type.is_integer() || inst.type.is_pointer()) && inst.type.kind() != TypeKind::I128;

@@ -84,10 +84,10 @@ function @integer_copy_arithmetic
     slot $value -> [rbp-8] : i64
 
   block ^entry
-    lea r8, [rbp-8]
-    lea r9, [r8+1]
-    sub r9, 1
-    cmp.i64 r9, r8
+    lea rax, [rbp-8]
+    lea rcx, [rax+1]
+    sub rcx, 1
+    cmp.i64 rcx, rax
     setne rax
     movzx rax, rax
     ret rax
@@ -137,10 +137,10 @@ function @global_integer_arithmetic
     epilogues duplicated
 
   block ^entry
-    mov r8, @global_value
-    lea r9, [r8+1]
-    sub r9, 1
-    cmp.i64 r9, r8
+    mov rax, @global_value
+    lea rcx, [rax+1]
+    sub rcx, 1
+    cmp.i64 rcx, rax
     setne rax
     movzx rax, rax
     ret rax

@@ -823,6 +823,19 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 				finish_function(
 					program, s, stats, options, nounwind, unwritten, moved_late ? &moved : nullptr, bit_tables);
 	}
+
+	if (options.level == 1)
+		for (SymbolId symbol : program.order)
+			if (program.symbols[symbol].kind == SymbolKind::FunctionDefinition &&
+				program.functions[program.symbols[symbol].detail].body != nullptr &&
+				program.functions[program.symbols[symbol].detail].body->code_labels.empty())
+			{
+				FunctionContext context(program, symbol, stats, options.level);
+				const PooledContext pooled(context, context_pool());
+				enable_verify(context, options);
+				if (has_loop(context) && RUN_PASS(sink_counter_steps))
+					compact_body(program, context.body);
+			}
 	count_program(program, stats.instructions_out, stats.blocks_out);
 	stats.optimize_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
 }

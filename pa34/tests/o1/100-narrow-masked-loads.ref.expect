@@ -1,0 +1,8 @@
+# explicit-outcomes
+
+# Returning the retained bits fits one memory operation and a return.
+instructions <= 2 in @byte
+instructions <= 2 in @half
+instructions <= 2 in @word
+instructions <= 2 in @signed_word
+instructions <= 2 in @signed_byte

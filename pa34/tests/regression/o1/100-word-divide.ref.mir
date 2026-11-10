@@ -208,11 +208,11 @@ function @main
     setne r15
     movzx r15, r15
     cmp.i64 [rbp-16], -11
-    setne r8
-    movzx r8, r8
+    setne rcx
+    movzx rcx, rcx
     cmp.i32 [rbp-24], -2147483648
-    setne r9
-    movzx r9, r9
+    setne rdx
+    movzx rdx, rdx
     cmp.i16 rax, -10922
     setne rax
     movzx rax, rax
@@ -220,7 +220,7 @@ function @main
     or.i32 rbx, r13
     or.i32 rbx, r14
     or.i32 rbx, r15
-    or.i32 rbx, r8
-    or.i32 rbx, r9
+    or.i32 rbx, rcx
+    or.i32 rbx, rdx
     or.i32 rax, rbx
     ret rax

@@ -877,6 +877,47 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 		finish_result(inst, d);
 		return;
 	}
+
+	if (level_ >= 1 && op == BinaryOp::And)
+	{
+		Value source = resolve(inst.ops[0]), mask = resolve(inst.ops[1]);
+		if (source.kind == ValueKind::Integer)
+			std::swap(source, mask);
+		if (mask.kind == ValueKind::Integer && source.kind == ValueKind::Temp &&
+			source.index >= body_->parameter_count && body_->temps[source.index].def != kNoId)
+		{
+			const lowir::Literal bits = literal(mask);
+			const unsigned bytes = bits.high == 0 ? (bits.low == 0xff                ? 1
+															: bits.low == 0xffff     ? 2
+															: bits.low == 0xffffffff ? 4
+																					 : 0)
+												  : 0;
+			const bool normalized = kind == TypeKind::I64 || kind == TypeKind::U32 ||
+				(kind == TypeKind::I32 && bytes < 4);
+			const Instruction& producer = body_->instructions[body_->temps[source.index].def];
+			if (producer.op == Opcode::Convert && (temps_[source.index].flags & TF_FOLDED))
+				source = resolve(producer.ops[0]);
+			if (source.kind != ValueKind::Temp || source.index < body_->parameter_count ||
+				body_->temps[source.index].def == kNoId)
+				throw InternalError("folded mask source is not an integer load");
+			const Instruction& load = body_->instructions[body_->temps[source.index].def];
+			if (bytes != 0 && normalized && load.op == Opcode::Load && load.type.is_integer() &&
+				load.type.kind() != TypeKind::I1 && !(load.flags & lowir::IF_VOLATILE) &&
+				register_bytes(load.type.kind()) >= bytes && temps_[source.index].uses == 1 &&
+				(temps_[source.index].flags & TF_FOLDED))
+			{
+				const Operand address = address_operand(load.ops[0], kSelectScratch);
+				const Reg d = result_reg(inst, kNoReg, kNoReg, mem_regs(address));
+				emit2(Op::Load,
+					bytes == 1       ? TypeKind::U8
+						: bytes == 2 ? TypeKind::U16
+									 : TypeKind::U32,
+					Operand::make_reg(d), address);
+				finish_result(inst, d);
+				return;
+			}
+		}
+	}
 	const bool commutative = op != BinaryOp::Sub;
 	const bool wide_mem = kind == TypeKind::I64 || kind == TypeKind::Ptr || kind == TypeKind::I32 ||
 		kind == TypeKind::U32;

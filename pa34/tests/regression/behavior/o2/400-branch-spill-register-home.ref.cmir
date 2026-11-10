@@ -37,8 +37,8 @@ function @accumulate
     store.i8 [rbp-<off0>], 3
 
   block ^join
-    load.i8 r8, [rbp-<off0>]
-    lea rax, [r8+<off0>]
+    load.i8 rax, [rbp-<off0>]
+    add rax, 20
     ret rax
 
   block ^call

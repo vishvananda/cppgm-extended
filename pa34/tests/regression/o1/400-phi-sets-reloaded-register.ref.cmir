@@ -58,9 +58,9 @@ function @walk
     jbe ^done
 
   block ^body
-    lea.i32 r8, [<gpr3>-<off0>]
-    store.u32 [rbp-<off3>], r8
-    mov r8, 0
+    lea.i32 rax, [<gpr3>-<off0>]
+    store.u32 [rbp-<off3>], rax
+    mov rax, 0
     mov <gpr2>, 0
     store.i64 [rbp-<off4>], 1
     store.i64 [rbp-<off5>], 2
@@ -70,69 +70,69 @@ function @walk
     store.i64 [rbp-<off9>], 6
     mov <gpr1>, 7
     mov <gpr0>, 8
-    mov rax, 9
-    mov rcx, 10
-    mov rdx, 11
+    mov r9, 9
+    mov r8, 10
+    mov rdi, 11
     mov rsi, 12
-    mov rdi, 13
-    mov r9, 14
+    mov rdx, 13
+    mov rcx, 14
     store.u32 [rbp-<off10>], <gpr3>
 
   block ^inner
     load.ptr <gpr5>, [rbp-<off0>]
-    load.i64 <gpr3>, [<gpr5>+r8*8]
-    lea <gpr4>, [r8+<off0>]
+    load.i64 <gpr3>, [<gpr5>+rax*8]
+    lea <gpr4>, [rax+<off0>]
     imul <gpr2>, <gpr4>
     xor <gpr2>, <gpr3>
     store.i64 [rbp-<off11>], <gpr2>
-    lea <gpr2>, [r8+<off1>]
+    lea <gpr2>, [rax+<off1>]
     imul <gpr2>, [rbp-<off4>]
     xor <gpr2>, <gpr3>
     store.i64 [rbp-<off12>], <gpr2>
-    lea <gpr2>, [r8+<off2>]
+    lea <gpr2>, [rax+<off2>]
     imul <gpr2>, [rbp-<off5>]
     xor <gpr2>, <gpr3>
     store.i64 [rbp-<off13>], <gpr2>
-    lea <gpr2>, [r8+<off3>]
+    lea <gpr2>, [rax+<off3>]
     imul <gpr2>, [rbp-<off6>]
     xor <gpr2>, <gpr3>
     store.i64 [rbp-<off14>], <gpr2>
-    lea <gpr2>, [r8+<off4>]
+    lea <gpr2>, [rax+<off4>]
     imul <gpr2>, [rbp-<off7>]
     xor <gpr2>, <gpr3>
     store.i64 [rbp-<off15>], <gpr2>
-    lea <gpr2>, [r8+<off5>]
+    lea <gpr2>, [rax+<off5>]
     imul <gpr2>, [rbp-<off8>]
     xor <gpr2>, <gpr3>
     store.i64 [rbp-<off16>], <gpr2>
-    lea <gpr2>, [r8+<off6>]
+    lea <gpr2>, [rax+<off6>]
     imul <gpr2>, [rbp-<off9>]
     xor <gpr2>, <gpr3>
-    lea <gpr4>, [r8+<off7>]
+    lea <gpr4>, [rax+<off7>]
     imul <gpr1>, <gpr4>
     xor <gpr1>, <gpr3>
-    lea <gpr4>, [r8+<off8>]
+    lea <gpr4>, [rax+<off8>]
     imul <gpr0>, <gpr4>
     xor <gpr0>, <gpr3>
-    lea <gpr4>, [r8+<off9>]
-    imul rax, <gpr4>
-    xor rax, <gpr3>
-    lea <gpr4>, [r8+<off10>]
-    imul rcx, <gpr4>
-    xor rcx, <gpr3>
-    lea <gpr4>, [r8+<off11>]
-    imul rdx, <gpr4>
-    xor rdx, <gpr3>
-    lea <gpr4>, [r8+<off12>]
-    imul rsi, <gpr4>
-    xor rsi, <gpr3>
-    lea <gpr4>, [r8+<off13>]
-    imul rdi, <gpr4>
-    xor rdi, <gpr3>
-    lea <gpr4>, [r8+<off14>]
+    lea <gpr4>, [rax+<off9>]
     imul r9, <gpr4>
     xor r9, <gpr3>
-    add r8, 1
+    lea <gpr4>, [rax+<off10>]
+    imul r8, <gpr4>
+    xor r8, <gpr3>
+    lea <gpr4>, [rax+<off11>]
+    imul rdi, <gpr4>
+    xor rdi, <gpr3>
+    lea <gpr4>, [rax+<off12>]
+    imul rsi, <gpr4>
+    xor rsi, <gpr3>
+    lea <gpr4>, [rax+<off13>]
+    imul rdx, <gpr4>
+    xor rdx, <gpr3>
+    lea <gpr4>, [rax+<off14>]
+    imul rcx, <gpr4>
+    xor rcx, <gpr3>
+    add rax, 1
     cmp.i64 <gpr3>, 99
     je ^inner~found
 
@@ -146,14 +146,14 @@ function @walk
     add <gpr3>, <gpr2>
     add <gpr3>, <gpr1>
     add <gpr3>, <gpr0>
-    add <gpr3>, rax
-    add <gpr3>, rcx
-    add <gpr3>, rdx
-    add <gpr3>, rsi
-    add <gpr3>, rdi
     add <gpr3>, r9
+    add <gpr3>, r8
+    add <gpr3>, rdi
+    add <gpr3>, rsi
+    add <gpr3>, rdx
+    add <gpr3>, rcx
     add <gpr3>, [rbp-<off2>]
-    cmp.i64 r8, 4
+    cmp.i64 rax, 4
     jge ^next~head
 
   block ^next~inner

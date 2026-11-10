@@ -53,8 +53,8 @@ function @probe
 
   block ^entry
     mov <gpr1>, @data
-    load.i64 r8, @a
-    store.i64 [rbp-<off1>], r8
+    load.i64 rax, @a
+    store.i64 [rbp-<off1>], rax
     load.i64 <gpr4>, @b
     load.i64 <gpr3>, @c
     load.i64 <gpr2>, @d
@@ -68,13 +68,13 @@ function @probe
   block ^body
     store.i64 [<gpr1>+<gpr0>*8], <gpr0>
     call @noop [args=(), unwind=no]
-    mov r8, <gpr4>
-    add r8, [rbp-<off1>]
-    lea r9, [<gpr3>+<gpr2>]
-    lea r8, [r8+r9+<off0>]
+    mov rax, <gpr4>
+    add rax, [rbp-<off1>]
+    lea rcx, [<gpr3>+<gpr2>]
+    lea rax, [rax+rcx+<off0>]
     add <gpr0>, 1
     store.i64 [rbp-<off0>], <gpr0>
-    cmp.i64 r8, 17
+    cmp.i64 rax, 17
     je ^condition
 
   block ^failure

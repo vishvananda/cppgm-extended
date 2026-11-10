@@ -25,20 +25,20 @@ function @count_below
     epilogues duplicated
 
   block ^entry
-    mov r8, 0
-    mov r9, 0
+    mov rax, 0
+    mov rcx, 0
 
   block ^loop
-    load.u32 rcx, [rdi+r8*4]
-    cmp.i64 rcx, rdx
-    adc r9, 0
-    add r8, 1
-    cmp.i64 r8, rsi
+    load.u32 r8, [rdi+rax*4]
+    cmp.i64 r8, rdx
+    adc rcx, 0
+    add rax, 1
+    cmp.i64 rax, rsi
     jb ^loop
-    ret r9
+    ret rcx
 
   block ^done
-    ret r9
+    ret rcx
 
 function @count_at_least
   abi
@@ -190,7 +190,7 @@ function @main
     add rax, r15
     add rbx, r13
     add rax, rbx
-    load.i32 r8, [rbp-16]
-    add.i32 r8, [rbp-8]
-    add.i32 rax, r8
+    load.i32 rcx, [rbp-16]
+    add.i32 rcx, [rbp-8]
+    add.i32 rax, rcx
     ret rax

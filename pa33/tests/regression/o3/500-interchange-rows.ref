@@ -437,8 +437,8 @@ function @reads_inner() -> void [no_inline=yes] {
   block ^next:
     %cell = index f64 %r, %j
     store typed f64 %sum, %cell
-    %j1 = binary add i64 %j, 1
     %e = binary add i64 %j, %k1
+    %j1 = binary add i64 %j, 1
     %d = cmp lt i64 %e, 60
     branch %d, ^columns, ^done
 

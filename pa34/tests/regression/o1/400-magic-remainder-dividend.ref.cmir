@@ -19,27 +19,26 @@ function @main
     epilogues duplicated
 
   block ^entry
-    load.i32 r8, @last
-    mov r9, 0
+    load.i32 rax, @last
+    mov rcx, 0
 
   block ^loop
-    imul r8, 3877
-    lea rdi, [r8+<off0>]
-    imul rax, rdi, 502748801
+    imul rax, 3877
+    lea rsi, [rax+<off0>]
+    imul rax, rsi, 502748801
     sar rax, 46
-    mov rdx, rdi
+    mov rdx, rsi
     sar rdx, 63
     sub rax, rdx
     imul rax, 139968
-    mov rdx, rdi
+    mov rdx, rsi
     sub rdx, rax
-    mov r8, rdx
-    store.i32 @last, r8
-    add.i32 r9, 1
-    cmp.i32 r9, 5
+    mov rax, rdx
+    store.i32 @last, rax
+    add.i32 rcx, 1
+    cmp.i32 rcx, 5
     jl ^loop
 
   block ^done
-    mov rax, r8
     and.i32 rax, 255
     ret rax

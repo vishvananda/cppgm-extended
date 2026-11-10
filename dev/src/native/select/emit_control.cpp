@@ -98,7 +98,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 			if (sig == nullptr)
 				return;
 			const CallLayout& layout = emission_layout(id, sig, false);
-			rbp_free_ = layout.stack_bytes == 0 && layout.stack_align <= 16;
+			rbp_free_ = layout.stack_align <= 16;
 		}
 	});
 	allocate_globals();
@@ -666,11 +666,15 @@ Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set, bool bra
 	const TypeKind kind = type.is_pointer() ? TypeKind::Ptr : type.kind();
 	Type test_type = type;
 	Value x = resolve(conj.ops[0]), y = resolve(conj.ops[1]);
+	bool folded_memory = false;
 	// A promoted narrow load folded by fold_mask_load still reads its
 	// original bytes: the mask was proved to ignore the promoted bits.
 	for (Value v : { x, y })
 		if (v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_FOLDED))
+		{
 			test_type = body_->instructions[body_->temps[v.index].def].type;
+			folded_memory = true;
+		}
 	const auto tested = [&](Value v) { return v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_TESTED); };
 	if (tested(x))
 		std::swap(x, y);
@@ -710,6 +714,29 @@ Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set, bool bra
 		{
 			load_into(kEmitScratch, b, kind);
 			b = Operand::make_reg(kEmitScratch);
+		}
+
+		if (level_ >= 1 && b.kind == OperandKind::Imm && (a.kind == OperandKind::Mem || a.kind == OperandKind::Reg))
+		{
+			const unsigned original = register_bytes(test_type.kind());
+			const uint64_t all = original == 8 ? ~uint64_t(0) : (uint64_t(1) << (8 * original)) - 1;
+			const uint64_t mask = static_cast<uint64_t>(b.imm) & all;
+			if (mask != 0)
+			{
+				const unsigned offset = a.kind == OperandKind::Mem && folded_memory
+					? static_cast<unsigned>(__builtin_ctzll(mask)) / 8
+					: 0;
+				const uint64_t window = mask >> (8 * offset);
+				const unsigned bytes = window <= 0xff ? 1 : window <= 0xffff ? 2 : window <= 0xffffffff ? 4 : 8;
+				if (bytes < original && offset + bytes <= original &&
+					(a.kind != OperandKind::Mem || static_cast<int64_t>(a.disp) + offset <= INT32_MAX))
+				{
+					if (a.kind == OperandKind::Mem)
+						a = a.displaced(static_cast<int32_t>(offset));
+					b = Operand::make_imm(static_cast<int64_t>(window));
+					test_type = Type::scalar(bytes == 1 ? TypeKind::U8 : bytes == 2 ? TypeKind::U16 : TypeKind::U32);
+				}
+			}
 		}
 		// A register predicate lets the processor fuse its following branch.
 		// Memory-immediate forms with a displacement cannot fuse on all x86 CPUs.

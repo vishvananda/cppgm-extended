@@ -17,13 +17,13 @@ function @clean
     epilogues duplicated
 
   block ^entry
-    mov r8, 0
+    mov rax, 0
     fmov.f64 xmm1, 0.0
 
   block ^head
-    lea r9, [r8*8]
-    add r9, rdi
-    fmov.f64 xmm0, [r9]
+    lea rcx, [rax*8]
+    add rcx, rdi
+    fmov.f64 xmm0, [rcx]
     fcmp.f64 xmm0, xmm0
     jp ^skip
 
@@ -31,15 +31,15 @@ function @clean
     fadd.f64 xmm1, xmm1, xmm0
 
   block ^next
-    add r8, 1
-    cmp.i64 r8, rsi
+    add rax, 1
+    cmp.i64 rax, rsi
     jl ^head
     ret xmm1
 
   block ^skip
     fadd.f64 xmm1, xmm1, 1e+03
-    add r8, 1
-    cmp.i64 r8, rsi
+    add rax, 1
+    cmp.i64 rax, rsi
     jl ^head
     ret xmm1
 
@@ -61,28 +61,28 @@ function @main
     fsub.f64 xmm0, 0.0, 0.0
     fdiv.f64 xmm1, xmm0, xmm0
     fmov.f64 [rdi], 1.5
-    mov r8, rdi
-    add r8, 8
-    fmov.f64 [r8], xmm1
-    mov r8, rdi
-    add r8, 16
-    fmov.f64 [r8], 2.5
-    mov r8, rdi
-    add r8, 24
-    fmov.f64 [r8], 3.0
+    mov rax, rdi
+    add rax, 8
+    fmov.f64 [rax], xmm1
+    mov rax, rdi
+    add rax, 16
+    fmov.f64 [rax], 2.5
+    mov rax, rdi
+    add rax, 24
+    fmov.f64 [rax], 3.0
     mov rsi, 4
     call @clean [args=(rsi,rdi)]
-    fptosi.f64.i32 r8, xmm0
-    sext.i32 r8
+    fptosi.f64.i32 rcx, xmm0
+    sext.i32 rcx
     mov r11, 2190262207
-    mov rax, r8
+    mov rax, rcx
     imul rax, r11
     sar rax, 39
-    mov rdx, r8
+    mov rdx, rcx
     sar rdx, 63
     sub rax, rdx
     imul rax, 251
-    mov rdx, r8
+    mov rdx, rcx
     sub rdx, rax
     mov rax, rdx
     ret rax

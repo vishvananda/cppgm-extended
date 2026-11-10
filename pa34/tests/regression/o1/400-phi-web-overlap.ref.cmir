@@ -21,42 +21,41 @@ function @walk
     epilogues duplicated
 
   block ^entry
-    mov rdx, rsi
-    mov rsi, rdi
-    mov rdi, @table
-    mov r8, rdx
-    mov rax, 0
+    mov r8, rsi
+    mov rsi, @table
+    mov rax, r8
+    mov rcx, 0
 
   block ^head
-    load.i64 r9, [rdi+r8*8]
-    cmp.i64 r9, rsi
+    load.i64 rdx, [rsi+rax*8]
+    cmp.i64 rdx, rdi
     jl ^step
 
   block ^back
-    mov r8, rdx
+    mov rax, r8
 
   block ^tail
-    add r9, 1
-    add rax, r9
-    cmp.i64 rax, rsi
+    add rdx, 1
+    add rcx, rdx
+    cmp.i64 rcx, rdi
     jl ^tail~head
-    ret rax
+    ret rcx
 
   block ^tail~head
-    load.i64 r9, [rdi+r8*8]
-    cmp.i64 r9, rsi
+    load.i64 rdx, [rsi+rax*8]
+    cmp.i64 rdx, rdi
     jge ^back
 
   block ^step
-    add r8, 1
-    add r9, 1
-    add rax, r9
-    cmp.i64 rax, rsi
+    add rax, 1
+    add rdx, 1
+    add rcx, rdx
+    cmp.i64 rcx, rdi
     jl ^tail~head
-    ret rax
+    ret rcx
 
   block ^out
-    ret rax
+    ret rcx
 
 function @main
   abi

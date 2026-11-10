@@ -513,14 +513,15 @@ void StrengthReduction::shift_counters(uint32_t loop)
 void StrengthReduction::sink_steps(uint32_t loop)
 {
 	const Loop& l = forest_.loops[loop];
-	const BlockId b = l.header;
-	if (l.blocks.size() != 1)
+	const BlockId b = l.latches.size() == 1 ? l.latches[0] : kNoId;
+	if (b == kNoId)
 		return;
 	const InstId term = body_.blocks[b].last;
 	std::vector<InstId> order;
 	auto read_order = [&]() {
 		order.clear();
-		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		for (InstId i = body_.blocks[b].first; i != kNoId && (b == l.header || order.size() <= 64);
+			i = body_.instructions[i].next)
 			order.push_back(i);
 	};
 	auto reads = [&](InstId i, TempId t) {
@@ -529,12 +530,15 @@ void StrengthReduction::sink_steps(uint32_t loop)
 		return found;
 	};
 	read_order();
+	if (b != l.header && order.size() > 64)
+		return;
 	const size_t phis = static_cast<size_t>(std::find_if(order.begin(), order.end(), [&](InstId i) {
 		return body_.instructions[i].op != Opcode::Phi;
 	}) - order.begin());
-	for (size_t p = 0; p < phis; ++p)
+	for (InstId p = body_.blocks[l.header].first; p != kNoId && body_.instructions[p].op == Opcode::Phi;
+		p = body_.instructions[p].next)
 	{
-		const Instruction phi = body_.instructions[order[p]];
+		const Instruction phi = body_.instructions[p];
 		const Value next = phi_incoming(body_, phi, b);
 		if (!next.is(ValueKind::Temp) || next.index < body_.parameter_count)
 			continue;
@@ -542,6 +546,19 @@ void StrengthReduction::sink_steps(uint32_t loop)
 		const size_t at = static_cast<size_t>(std::find(order.begin() + phis, order.end(), step) - order.begin());
 		if (at == order.size() || !is_pure(body_.instructions[step]) || !reads(step, phi.result))
 			continue;
+		if (b != l.header)
+		{
+			const Instruction& update = body_.instructions[step];
+			const bool scalar = update.type.is_pointer() ||
+				(update.type.is_integer() && storage_bytes(update.type) <= 8);
+			const bool arithmetic = update.op == Opcode::Binary &&
+				(update.sub == static_cast<uint8_t>(BinaryOp::Add) ||
+					update.sub == static_cast<uint8_t>(BinaryOp::Sub));
+			if (!scalar || !(update.op == Opcode::Index || arithmetic) || !(update.ops[0] == Value::temp(phi.result)) ||
+				!update.ops[1].is(ValueKind::Integer))
+				continue;
+		}
+
 		// (An address steps from the phi at the access that reads it.)
 		size_t last = at;
 		carried_.assign(1, phi.result);

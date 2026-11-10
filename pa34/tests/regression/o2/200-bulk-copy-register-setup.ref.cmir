@@ -33,8 +33,8 @@ function @main
     epilogues duplicated
 
   block ^entry
-    load.ptr r8, @dst_ptr
-    load.ptr r9, @src_ptr
-    copy_bytes 16x8, r8, r9
+    load.ptr rax, @dst_ptr
+    load.ptr rcx, @src_ptr
+    copy_bytes 16x8, rax, rcx
     load.i64 rax, @dst
     ret rax

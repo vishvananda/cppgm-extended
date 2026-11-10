@@ -130,8 +130,8 @@ function @mask_read_again
     and rax, 9223372036854775807
     fmov.f64 xmm0, rax
     fmul.f64 xmm0, xmm0, 0.5
-    fmov.f64 r8, xmm0
-    sub rax, r8
+    fmov.f64 rcx, xmm0
+    sub rax, rcx
     ret rax
 
 function @other_mask
@@ -145,9 +145,9 @@ function @other_mask
     epilogues duplicated
 
   block ^entry
-    fmov.f64 r8, xmm0
-    and r8, 9223372036854775806
-    fmov.f64 xmm0, r8
+    fmov.f64 rax, xmm0
+    and rax, 9223372036854775806
+    fmov.f64 xmm0, rax
     ret xmm0
 
 function @integer_source
@@ -177,9 +177,9 @@ function @narrower_source
 
   block ^entry
     fadd.f32 xmm0, xmm0, 1.0f
-    fmov.f32 r8, xmm0
-    and r8, 9223372036854775807
-    fmov.f64 xmm0, r8
+    fmov.f32 rax, xmm0
+    and rax, 9223372036854775807
+    fmov.f64 xmm0, rax
     ret xmm0
 
 function @main
@@ -201,20 +201,20 @@ function @main
   block ^entry
     fmov.f64 xmm0, @negative_nan
     call @magnitude64 [args=(xmm0)]
-    fmov.f64 r8, xmm0
-    cmp.i64 r8, 9221120237041090561
+    fmov.f64 rax, xmm0
+    cmp.i64 rax, 9221120237041090561
     setne <gpr0>
     movzx <gpr0>, <gpr0>
     fmov.f64 xmm0, -0.0
     call @magnitude64 [args=(xmm0)]
-    fmov.f64 r8, xmm0
-    cmp.i64 r8, 0
+    fmov.f64 rax, xmm0
+    cmp.i64 rax, 0
     setne <gpr1>
     movzx <gpr1>, <gpr1>
     fmov.f32 xmm0, @negative_nan32
     call @magnitude32 [args=(xmm0)]
-    fmov.f32 r8, xmm0
-    cmp.i32 r8, 2143289345
+    fmov.f32 rax, xmm0
+    cmp.i32 rax, 2143289345
     setne <gpr2>
     movzx <gpr2>, <gpr2>
     fmov.f64 xmm0, -2.5
@@ -240,8 +240,8 @@ function @main
     store.i64 [rbp-<off3>], <gpr5>
     fmov.f64 xmm0, -1.0000000000000002
     call @other_mask [args=(xmm0)]
-    fmov.f64 r8, xmm0
-    cmp.i64 r8, 4607182418800017408
+    fmov.f64 rax, xmm0
+    cmp.i64 rax, 4607182418800017408
     setne <gpr5>
     movzx <gpr5>, <gpr5>
     store.i64 [rbp-<off4>], <gpr5>
@@ -251,21 +251,21 @@ function @main
     store.i64 [rbp-<off5>], <gpr5>
     fmov.f32 xmm0, 0.5f
     call @narrower_source [args=(xmm0)]
-    fmov.f64 r8, xmm0
-    cmp.i64 r8, 1069547520
-    setne r8
-    movzx r8, r8
+    fmov.f64 rax, xmm0
+    cmp.i64 rax, 1069547520
+    setne rax
+    movzx rax, rax
     or <gpr0>, <gpr1>
     or <gpr2>, <gpr3>
     or <gpr4>, [rbp-<off1>]
-    load.i64 r9, [rbp-<off2>]
-    or r9, [rbp-<off3>]
-    load.i64 rdi, [rbp-<off4>]
-    or rdi, [rbp-<off5>]
+    load.i64 rcx, [rbp-<off2>]
+    or rcx, [rbp-<off3>]
+    load.i64 rdx, [rbp-<off4>]
+    or rdx, [rbp-<off5>]
     or <gpr0>, <gpr2>
-    or <gpr4>, r9
+    or <gpr4>, rcx
     or <gpr0>, <gpr4>
-    or <gpr0>, rdi
-    or <gpr0>, r8
+    or <gpr0>, rdx
+    or <gpr0>, rax
     sext.i32 rax, <gpr0>
     ret rax

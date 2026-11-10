@@ -85,19 +85,19 @@ function @scaled_sum
 
   block ^entry
     fmov.f64 xmm1, xmm0
-    mov r8, 0
+    mov rax, 0
     fmov.f64 xmm0, 0.0
 
   block ^head
-    cmp.i64 r8, rsi
+    cmp.i64 rax, rsi
     jl ^body
     ret xmm0
 
   block ^body
-    fmul.f64 xmm2, [rdi+r8*8], xmm1
+    fmul.f64 xmm2, [rdi+rax*8], xmm1
     fadd.f64 xmm0, xmm0, xmm2
-    add r8, 1
-    cmp.i64 r8, rsi
+    add rax, 1
+    cmp.i64 rax, rsi
     jl ^body
     ret xmm0
 

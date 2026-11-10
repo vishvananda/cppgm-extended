@@ -47,11 +47,11 @@ function @full
     epilogues duplicated
 
   block ^entry
-    mov r8, rdi
+    mov rax, rdi
 
   block ^head
-    sub r8, 1
-    store.i64 [rsi], r8
+    sub rax, 1
+    store.i64 [rsi], rax
     jne ^head
 
   block ^done

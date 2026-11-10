@@ -27,22 +27,22 @@ function @sum_products
     ret rsi
 
   block ^entry~loop
-    mov r8, 0
-    mov r9, 0
+    mov rax, 0
+    mov rcx, 0
 
   block ^loop
-    load.i32 rcx, [rdi+r8*4]
-    imul.i32 rcx, rcx
-    add.i32 r9, rcx
-    add r8, 1
-    cmp.i32 r8, rsi
+    load.i32 r8, [rdi+rax*4]
+    imul.i32 r8, r8
+    add.i32 rcx, r8
+    add rax, 1
+    cmp.i32 rax, rsi
     jl ^loop
 
   block ^loop~end
-    mov r8, r9
+    mov rax, rcx
 
   block ^end
-    store.i32 [rdx], r8
+    store.i32 [rdx], rax
     ret rsi
 
   block ^done

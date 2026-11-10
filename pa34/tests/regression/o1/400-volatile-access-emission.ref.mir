@@ -19,8 +19,8 @@ function @spin_flag
     store.i32 [rbp-8], 0
     store.i32 [rbp-8], 1
     load.i32 rax, [rbp-8]
-    load.i32 r8, [rbp-8]
-    add.i32 rax, r8
+    load.i32 rcx, [rbp-8]
+    add.i32 rax, rcx
     ret rax
 
 function @main

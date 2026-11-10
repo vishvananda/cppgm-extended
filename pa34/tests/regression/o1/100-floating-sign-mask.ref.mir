@@ -130,8 +130,8 @@ function @mask_read_again
     and rax, 9223372036854775807
     fmov.f64 xmm0, rax
     fmul.f64 xmm0, xmm0, 0.5
-    fmov.f64 r8, xmm0
-    sub rax, r8
+    fmov.f64 rcx, xmm0
+    sub rax, rcx
     ret rax
 
 function @other_mask
@@ -145,9 +145,9 @@ function @other_mask
     epilogues duplicated
 
   block ^entry
-    fmov.f64 r8, xmm0
-    and r8, 9223372036854775806
-    fmov.f64 xmm0, r8
+    fmov.f64 rax, xmm0
+    and rax, 9223372036854775806
+    fmov.f64 xmm0, rax
     ret xmm0
 
 function @integer_source
@@ -177,9 +177,9 @@ function @narrower_source
 
   block ^entry
     fadd.f32 xmm0, xmm0, 1.0f
-    fmov.f32 r8, xmm0
-    and r8, 9223372036854775807
-    fmov.f64 xmm0, r8
+    fmov.f32 rax, xmm0
+    and rax, 9223372036854775807
+    fmov.f64 xmm0, rax
     ret xmm0
 
 function @main
@@ -201,20 +201,20 @@ function @main
   block ^entry
     fmov.f64 xmm0, @negative_nan
     call @magnitude64 [args=(xmm0)]
-    fmov.f64 r8, xmm0
-    cmp.i64 r8, 9221120237041090561
+    fmov.f64 rax, xmm0
+    cmp.i64 rax, 9221120237041090561
     setne rbx
     movzx rbx, rbx
     fmov.f64 xmm0, -0.0
     call @magnitude64 [args=(xmm0)]
-    fmov.f64 r8, xmm0
-    cmp.i64 r8, 0
+    fmov.f64 rax, xmm0
+    cmp.i64 rax, 0
     setne r12
     movzx r12, r12
     fmov.f32 xmm0, @negative_nan32
     call @magnitude32 [args=(xmm0)]
-    fmov.f32 r8, xmm0
-    cmp.i32 r8, 2143289345
+    fmov.f32 rax, xmm0
+    cmp.i32 rax, 2143289345
     setne r13
     movzx r13, r13
     fmov.f64 xmm0, -2.5
@@ -240,8 +240,8 @@ function @main
     store.i64 [rbp-32], r10
     fmov.f64 xmm0, -1.0000000000000002
     call @other_mask [args=(xmm0)]
-    fmov.f64 r8, xmm0
-    cmp.i64 r8, 4607182418800017408
+    fmov.f64 rax, xmm0
+    cmp.i64 rax, 4607182418800017408
     setne r10
     movzx r10, r10
     store.i64 [rbp-40], r10
@@ -251,21 +251,21 @@ function @main
     store.i64 [rbp-48], r10
     fmov.f32 xmm0, 0.5f
     call @narrower_source [args=(xmm0)]
-    fmov.f64 r8, xmm0
-    cmp.i64 r8, 1069547520
-    setne r8
-    movzx r8, r8
+    fmov.f64 rax, xmm0
+    cmp.i64 rax, 1069547520
+    setne rax
+    movzx rax, rax
     or rbx, r12
     or r13, r14
     or r15, [rbp-16]
-    load.i64 r9, [rbp-24]
-    or r9, [rbp-32]
-    load.i64 rdi, [rbp-40]
-    or rdi, [rbp-48]
+    load.i64 rcx, [rbp-24]
+    or rcx, [rbp-32]
+    load.i64 rdx, [rbp-40]
+    or rdx, [rbp-48]
     or rbx, r13
-    or r15, r9
+    or r15, rcx
     or rbx, r15
-    or rbx, rdi
-    or rbx, r8
+    or rbx, rdx
+    or rbx, rax
     sext.i32 rax, rbx
     ret rax

@@ -1,0 +1,166 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @byte
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u8 rax, [rdi]
+    ret rax
+
+function @half
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u16 rax, [rdi]
+    ret rax
+
+function @word
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u32 rax, [rdi]
+    ret rax
+
+function @signed_word
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u32 rax, [rdi]
+    ret rax
+
+function @signed_byte
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u8 rax, [rdi]
+    ret rax
+
+function @no_widen_byte
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i8 rax, [rdi]
+    and rax, 65535
+    ret rax
+
+function @no_widen_half
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i16 rax, [rdi]
+    and rax, 4294967295
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    slot $data -> [rbp-8] : i64
+    temp %b5 -> [rbp-16] : i64
+
+  block ^entry
+    store.i64 [rbp-8], -1
+    lea rdi, [rbp-8]
+    call @byte [args=(rdi)]
+    cmp.i64 rax, 255
+    setne rbx
+    movzx rbx, rbx
+    lea rdi, [rbp-8]
+    call @half [args=(rdi)]
+    cmp.i64 rax, 65535
+    setne r12
+    movzx r12, r12
+    lea rdi, [rbp-8]
+    call @word [args=(rdi)]
+    cmp.i64 rax, 4294967295
+    setne r13
+    movzx r13, r13
+    lea rdi, [rbp-8]
+    call @signed_word [args=(rdi)]
+    cmp.i64 rax, 4294967295
+    setne r14
+    movzx r14, r14
+    store.i64 [rbp-8], 255
+    lea rdi, [rbp-8]
+    call @signed_byte [args=(rdi)]
+    cmp.i64 rax, 255
+    setne r15
+    movzx r15, r15
+    lea rdi, [rbp-8]
+    call @no_widen_byte [args=(rdi)]
+    cmp.i64 rax, 65535
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-16], r10
+    store.i64 [rbp-8], 65535
+    lea rdi, [rbp-8]
+    call @no_widen_half [args=(rdi)]
+    cmp.i64 rax, 4294967295
+    setne rax
+    movzx rax, rax
+    or rbx, r12
+    or rbx, r13
+    or rbx, r14
+    or rbx, r15
+    or rbx, [rbp-16]
+    or rax, rbx
+    ret rax

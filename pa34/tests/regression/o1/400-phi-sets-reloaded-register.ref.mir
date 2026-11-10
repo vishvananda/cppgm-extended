@@ -58,9 +58,9 @@ function @walk
     jbe ^done
 
   block ^body
-    lea.i32 r8, [r14-1]
-    store.u32 [rbp-128], r8
-    mov r8, 0
+    lea.i32 rax, [r14-1]
+    store.u32 [rbp-128], rax
+    mov rax, 0
     mov r13, 0
     store.i64 [rbp-56], 1
     store.i64 [rbp-64], 2
@@ -70,69 +70,69 @@ function @walk
     store.i64 [rbp-96], 6
     mov r12, 7
     mov rbx, 8
-    mov rax, 9
-    mov rcx, 10
-    mov rdx, 11
+    mov r9, 9
+    mov r8, 10
+    mov rdi, 11
     mov rsi, 12
-    mov rdi, 13
-    mov r9, 14
+    mov rdx, 13
+    mov rcx, 14
     store.u32 [rbp-120], r14
 
   block ^inner
     load.ptr r10, [rbp-112]
-    load.i64 r14, [r10+r8*8]
-    lea r15, [r8+1]
+    load.i64 r14, [r10+rax*8]
+    lea r15, [rax+1]
     imul r13, r15
     xor r13, r14
     store.i64 [rbp-8], r13
-    lea r13, [r8+4]
+    lea r13, [rax+4]
     imul r13, [rbp-56]
     xor r13, r14
     store.i64 [rbp-16], r13
-    lea r13, [r8+7]
+    lea r13, [rax+7]
     imul r13, [rbp-64]
     xor r13, r14
     store.i64 [rbp-24], r13
-    lea r13, [r8+10]
+    lea r13, [rax+10]
     imul r13, [rbp-72]
     xor r13, r14
     store.i64 [rbp-32], r13
-    lea r13, [r8+13]
+    lea r13, [rax+13]
     imul r13, [rbp-80]
     xor r13, r14
     store.i64 [rbp-40], r13
-    lea r13, [r8+16]
+    lea r13, [rax+16]
     imul r13, [rbp-88]
     xor r13, r14
     store.i64 [rbp-48], r13
-    lea r13, [r8+19]
+    lea r13, [rax+19]
     imul r13, [rbp-96]
     xor r13, r14
-    lea r15, [r8+22]
+    lea r15, [rax+22]
     imul r12, r15
     xor r12, r14
-    lea r15, [r8+25]
+    lea r15, [rax+25]
     imul rbx, r15
     xor rbx, r14
-    lea r15, [r8+28]
-    imul rax, r15
-    xor rax, r14
-    lea r15, [r8+31]
-    imul rcx, r15
-    xor rcx, r14
-    lea r15, [r8+34]
-    imul rdx, r15
-    xor rdx, r14
-    lea r15, [r8+37]
-    imul rsi, r15
-    xor rsi, r14
-    lea r15, [r8+40]
-    imul rdi, r15
-    xor rdi, r14
-    lea r15, [r8+43]
+    lea r15, [rax+28]
     imul r9, r15
     xor r9, r14
-    add r8, 1
+    lea r15, [rax+31]
+    imul r8, r15
+    xor r8, r14
+    lea r15, [rax+34]
+    imul rdi, r15
+    xor rdi, r14
+    lea r15, [rax+37]
+    imul rsi, r15
+    xor rsi, r14
+    lea r15, [rax+40]
+    imul rdx, r15
+    xor rdx, r14
+    lea r15, [rax+43]
+    imul rcx, r15
+    xor rcx, r14
+    add rax, 1
     cmp.i64 r14, 99
     je ^inner~found
 
@@ -146,14 +146,14 @@ function @walk
     add r14, r13
     add r14, r12
     add r14, rbx
-    add r14, rax
-    add r14, rcx
-    add r14, rdx
-    add r14, rsi
-    add r14, rdi
     add r14, r9
+    add r14, r8
+    add r14, rdi
+    add r14, rsi
+    add r14, rdx
+    add r14, rcx
     add r14, [rbp-104]
-    cmp.i64 r8, 4
+    cmp.i64 rax, 4
     jge ^next~head
 
   block ^next~inner

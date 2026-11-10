@@ -71,17 +71,17 @@ function @copy_to_edge_home
     je ^right
 
   block ^left
-    load.i64 r8, [rbp-<off0>]
-    add r8, 1
-    store.i64 [rbp-<off1>], r8
+    load.i64 rax, [rbp-<off0>]
+    add rax, 1
+    store.i64 [rbp-<off1>], rax
 
   block ^done
-    ret r8
+    ret rax
 
   block ^right
-    load.i64 r8, [rbp-<off0>]
-    sub r8, 1
-    store.i64 [rbp-<off1>], r8
+    load.i64 rax, [rbp-<off0>]
+    sub rax, 1
+    store.i64 [rbp-<off1>], rax
     jmp ^done
 
   block ^handler
@@ -114,17 +114,17 @@ function @call_result_to_edge_home
     je ^right
 
   block ^left
-    load.i64 r8, [rbp-<off0>]
-    add r8, 2
-    store.i64 [rbp-<off1>], r8
+    load.i64 rax, [rbp-<off0>]
+    add rax, 2
+    store.i64 [rbp-<off1>], rax
 
   block ^done
-    ret r8
+    ret rax
 
   block ^right
-    load.i64 r8, [rbp-<off0>]
-    sub r8, 2
-    store.i64 [rbp-<off1>], r8
+    load.i64 rax, [rbp-<off0>]
+    sub rax, 2
+    store.i64 [rbp-<off1>], rax
     jmp ^done
 
   block ^handler
@@ -152,19 +152,19 @@ function @load_with_dead_address
   block ^entry
     mov <gpr0>, rdi
     eh_push ^handler, 0
-    load.i64 r8, @keep1
-    store.i64 [rbp-<off0>], r8
-    load.i64 r8, @keep2
-    store.i64 [rbp-<off1>], r8
-    load.i64 r8, @keep3
-    store.i64 [rbp-<off2>], r8
-    load.i64 r8, @keep4
-    store.i64 [rbp-<off3>], r8
-    load.i64 r8, @keep5
-    store.i64 [rbp-<off4>], r8
-    load.ptr r8, @number_pointer
-    load.i64 r8, [r8]
-    store.i64 [rbp-<off5>], r8
+    load.i64 rax, @keep1
+    store.i64 [rbp-<off0>], rax
+    load.i64 rax, @keep2
+    store.i64 [rbp-<off1>], rax
+    load.i64 rax, @keep3
+    store.i64 [rbp-<off2>], rax
+    load.i64 rax, @keep4
+    store.i64 [rbp-<off3>], rax
+    load.i64 rax, @keep5
+    store.i64 [rbp-<off4>], rax
+    load.ptr rax, @number_pointer
+    load.i64 rax, [rax]
+    store.i64 [rbp-<off5>], rax
     mov rdi, 11
     call @identity [args=(rdi), unwind=no]
     eh_pop
@@ -172,29 +172,28 @@ function @load_with_dead_address
     je ^right
 
   block ^left
-    load.i64 r8, [rbp-<off0>]
-    add r8, [rbp-<off1>]
-    load.i64 r9, [rbp-<off2>]
-    add r9, [rbp-<off3>]
-    add r8, r9
-    add r8, [rbp-<off4>]
-    add r8, 3
-    store.i64 [rbp-<off6>], r8
+    load.i64 rax, [rbp-<off0>]
+    add rax, [rbp-<off1>]
+    load.i64 rcx, [rbp-<off2>]
+    add rcx, [rbp-<off3>]
+    add rax, rcx
+    add rax, [rbp-<off4>]
+    add rax, 3
+    store.i64 [rbp-<off6>], rax
 
   block ^done
-    mov rax, r8
     add rax, [rbp-<off5>]
     ret rax
 
   block ^right
-    load.i64 r8, [rbp-<off0>]
-    add r8, [rbp-<off1>]
-    load.i64 r9, [rbp-<off2>]
-    add r9, [rbp-<off3>]
-    add r8, r9
-    add r8, [rbp-<off4>]
-    sub r8, 3
-    store.i64 [rbp-<off6>], r8
+    load.i64 rax, [rbp-<off0>]
+    add rax, [rbp-<off1>]
+    load.i64 rcx, [rbp-<off2>]
+    add rcx, [rbp-<off3>]
+    add rax, rcx
+    add rax, [rbp-<off4>]
+    sub rax, 3
+    store.i64 [rbp-<off6>], rax
     jmp ^done
 
   block ^handler

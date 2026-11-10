@@ -1,0 +1,155 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @high
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.u8 [rdi+<off0>], 128
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @interior
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.u8 [rdi+<off1>], 129
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @wide_holes
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.u32 [rdi], 65537
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @word_high
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.u8 [rdi+<off2>], 128
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $data -> [rbp-<off0>] : i64
+    temp %z1 -> [rbp-<off1>] : i32
+    temp %z2 -> [rbp-<off2>] : i32
+
+  block ^entry
+    store.i64 [rbp-<off0>], -1
+    lea rdi, [rbp-<off0>]
+    call @high [args=(rdi)]
+    cmp.i32 rax, 1
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    lea rdi, [rbp-<off0>]
+    call @interior [args=(rdi)]
+    cmp.i32 rax, 1
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    lea rdi, [rbp-<off0>]
+    call @wide_holes [args=(rdi)]
+    cmp.i32 rax, 1
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    lea rdi, [rbp-<off0>]
+    call @word_high [args=(rdi)]
+    cmp.i32 rax, 1
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    store.i64 [rbp-<off0>], 0
+    lea rdi, [rbp-<off0>]
+    call @high [args=(rdi)]
+    sext.i32 <gpr4>, rax
+    lea rdi, [rbp-<off0>]
+    call @interior [args=(rdi)]
+    sext.i32 <gpr5>, rax
+    store.i32 [rbp-<off1>], <gpr5>
+    lea rdi, [rbp-<off0>]
+    call @wide_holes [args=(rdi)]
+    sext.i32 <gpr5>, rax
+    store.i32 [rbp-<off2>], <gpr5>
+    lea rdi, [rbp-<off0>]
+    call @word_high [args=(rdi)]
+    sext.i32 rax
+    or <gpr0>, <gpr1>
+    or <gpr0>, <gpr2>
+    or <gpr0>, <gpr3>
+    or <gpr0>, <gpr4>
+    or.i32 <gpr0>, [rbp-<off1>]
+    sext.i32 <gpr0>
+    or.i32 <gpr0>, [rbp-<off2>]
+    sext.i32 <gpr0>
+    or rax, <gpr0>
+    ret rax

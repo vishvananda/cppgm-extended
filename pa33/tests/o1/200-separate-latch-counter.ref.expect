@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+# Keep the bounded traversal and the control that uses the updated counter.
+instructions <= 16 in @walk
+instructions <= 14 in @next_used

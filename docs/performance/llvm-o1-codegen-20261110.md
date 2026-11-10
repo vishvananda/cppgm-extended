@@ -34,8 +34,10 @@ Ratios below are **cppgm-built LLVM / native-built LLVM**; smaller is better.
 | Qualified small frame-copy fix, `f64db5623` | 52.740 s | 44.225 s | 1.1925 | 1.0887 | 1.1967 | 1.2107 |
 | Three dataflow improvements, private diagnostic | 52.030 s | 44.295 s | 1.1746 | 1.0826 | 1.1864 | 1.2092 |
 | Four qualified improvements, `9287a3c51` | 52.385 s | 44.225 s | 1.1845 | 1.0822 | 1.1898 | 1.2131 |
+| Qualified return/dataflow batch, `f9dcf8899` | 51.925 s | 44.230 s | 1.1740 | 1.0765 | 1.1898 | 1.2182 |
 | Symbolic loop entry plus Index CSE, private diagnostic | 52.290 s | 44.220 s | 1.1825 | 1.0811 | 1.1895 | 1.2144 |
 | Sixth preserved register with fixed call areas, private diagnostic | 52.005 s | 44.660 s | 1.1645 | 1.0809 | 1.1845 | 1.2191 |
+| Four frame/scheduling/mask/register groups, private R3 | 51.590 s | 44.200 s | 1.1672 | 1.0700 | 1.1748 | 1.1948 |
 
 All completed rows passed output equality; the latest full runs
 had 100% PMU coverage. The private diagnostic establishes a useful direction,
@@ -228,10 +230,58 @@ equivalent direct return in RAX. It now executes all four branch choices
 and verifies the selected values, earlier store and simultaneously live
 value at O0 through O3. It imposes no register-allocation prescription.
 
-The new batch's full LLVM rebuild is running. It has no completed runtime
-result yet, and the elapsed target remains unmet. The RBP and separate-latch
-scheduling probes remain private. The latter extends an existing one-block
+The qualified batch's full LLVM rebuild finishes at 51.925 seconds versus
+44.230 seconds, with all 325 objects and the executable identical in every
+observation. Its elapsed ratio is 1.1740; the target remains unmet. The
+RBP and separate-latch scheduling probes subsequently join the next private
+batch. The latter extends an existing one-block
 loop scheduler to a sole separate latch, bounded to 64 instructions and
 constant integer/pointer updates. It removes a real back-edge copy and
 passes GCC/Clang controls at all levels. Its frozen O0 and O3 objects are
 identical to the baseline, with essentially flat compiler instruction cost.
+
+## Four-group frame and code-size batch
+
+The next private compiler combines the fixed-call-area RBP proof, bounded
+separate-latch scheduling, narrower masked loads and mask-window tests, and
+preference for shorter caller-saved register encodings. It leaves O0 code
+unchanged. Its frozen instruction ratios against `f9dcf8899` are 1.00013
+at O0 and 1.00052 at O3, with flat peak memory. GCC/Clang behavior checks
+at O0 through O3 include 16 ABI/loop functions over 8,192 trials, 12 masked
+load functions over 65,536 trials, and 16 mask-test functions over 65,536
+trials. Negative controls cover atomic/volatile accesses, values retained
+across an aliasing write, and sign-promoted byte/halfword values whose
+neighbors must not be read instead.
+
+This compiler builds all 3,365 LLVM C++ translation units. Its resulting
+Clang passes complete native output equality at 51.590 versus 44.200 seconds:
+1.1672 times native elapsed, 1.0700 times instructions, 1.1748 times cycles,
+1.1948 times I-cache misses and 1.3304 times instruction-fetch stall counts.
+PMU coverage is 100%. The remaining cycle gap still includes approximately
+9.8% worse cycles per instruction. This is a modest improvement, not a
+resolution of the remaining gap. Local wins include a 109-to-96-byte
+`getTranslationUnitDecl` and about 1.8% less ASTContext object text from the
+register preference alone; those sizes are not runtime weight estimates.
+
+Regression construction then exposes a missed alias form: canonical sign
+extensions can already have disappeared before load folding. The next
+candidate applies the same bounded read-width proof to that form. Its
+`signed_word` and `signed_byte` cases now each need one load and a return;
+controls needing sign-promoted high bits still use the original narrow read
+and mask. This revision is undergoing normal qualification and has no full
+LLVM runtime result yet. Required regressions belong to PA33 for the loop
+schedule and PA34 for native masks, frame/ABI and load-width controls.
+
+A separate size ablation halves hinted and loop-site admission caps and
+disables original-size admission of already-grown callees. Across 32
+profile-selected LLVM units text falls from 13,557,255 to 12,752,745 bytes.
+On the two fixed heavy inputs its A/A plus ABBA screen instead executes
+1.3% more instructions, 0.7% more cycles and 3.1% more I-cache misses, with
+flat elapsed time. All outputs match native, but the ablation is rejected:
+less total text alone does not identify the needed hot-code improvement.
+
+Raw evidence for these measurements is in `o1-codegen-packet-private-r3-*`,
+`o1-codegen-packet-diagnostic-r3-*`, `o1-codegen-packet-store-motion-profile-r3/`,
+`o1-codegen-packet-*-cases-r3/` and `o1-inline-size-top32-*` under the evidence
+root. The alias correction's cross-compiler checks and frozen gate are in
+the corresponding `r4` directories.

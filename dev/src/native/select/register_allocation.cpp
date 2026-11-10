@@ -252,7 +252,7 @@ const uint64_t kLoopSlack = 4096;
 // instruction and block, plus a fixed allowance).
 const uint64_t kLivenessStepsPerItem = 64;
 const uint64_t kLivenessSlack = 4096;
-const Reg kGlobalCallerOrder[] = { R8, R9, RDI, RSI, RDX, RCX, RAX };
+const Reg kGlobalCallerOrder[] = { RAX, RCX, RDX, RSI, RDI, R8, R9 };
 const Reg kGlobalCalleeOrder[] = { RBX, R12, R13, R14, R15, RBP }; // RBP: rbp_free_ only
 
 inline int32_t read_slot(int32_t base, int32_t pos)

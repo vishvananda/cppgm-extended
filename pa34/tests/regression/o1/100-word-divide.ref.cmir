@@ -208,11 +208,11 @@ function @main
     setne <gpr5>
     movzx <gpr5>, <gpr5>
     cmp.i64 [rbp-<off1>], -11
-    setne r8
-    movzx r8, r8
+    setne rcx
+    movzx rcx, rcx
     cmp.i32 [rbp-<off2>], -2147483648
-    setne r9
-    movzx r9, r9
+    setne rdx
+    movzx rdx, rdx
     cmp.i16 rax, -10922
     setne rax
     movzx rax, rax
@@ -220,7 +220,7 @@ function @main
     or.i32 <gpr1>, <gpr3>
     or.i32 <gpr1>, <gpr4>
     or.i32 <gpr1>, <gpr5>
-    or.i32 <gpr1>, r8
-    or.i32 <gpr1>, r9
+    or.i32 <gpr1>, rcx
+    or.i32 <gpr1>, rdx
     or.i32 rax, <gpr1>
     ret rax

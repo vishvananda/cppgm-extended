@@ -83,21 +83,23 @@ function @shared
     temp %x -> [rbp-16] : i128
 
   block ^entry
-    mov r9, rdx
+    mov r8, rsi
+    mov rsi, rdx
+    mov r9, rcx
     zext.i128 [rbp-16], rdi
     load.i64 rax, [rbp-16]
-    mul rsi
-    mov r8, rdx
-    cmp.i64 rcx, 0
+    mul r8
+    mov rcx, rdx
+    cmp.i64 r9, 0
     je ^done
 
   block ^more
     load.i64 rax, [rbp-16]
-    mul r9
-    add r8, rdx
+    mul rsi
+    add rcx, rdx
 
   block ^done
-    ret r8
+    ret rcx
 
 function @main
   abi

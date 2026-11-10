@@ -34,6 +34,7 @@ namespace {
 // RBP, last of the callee-saved registers, only without a frame pointer
 // (rbp_free_).
 const Reg kGprOrder[] = { R8, R9, RDI, RSI, RDX, RCX, RAX, RBX, R12, R13, R14, R15, RBP };
+const Reg kCompactGprOrder[] = { RAX, RCX, RDX, RSI, RDI, R8, R9, RBX, R12, R13, R14, R15, RBP };
 const Reg kCalleeFirstOrder[] = { RBX, R12, R13, R14, R15, RBP, R8, R9, RDI, RSI, RDX, RCX, RAX };
 
 // The conversion scratch area (x87 transfers, saved rbx), sized as the
@@ -77,7 +78,7 @@ bool fixed_stack(const Function& f)
 		}
 		accesses += frame ? 1 : 0;
 	}
-	return !areas || accesses <= kAreaFrameAccessCap;
+	return !areas || accesses <= kAreaFrameAccessCap || (f.preserve_mask & (1u << RBP)) != 0;
 }
 
 // O1+, without EH (its landings are edges this graph lacks): object slots
@@ -713,6 +714,7 @@ Reg FunctionSelector::allocate(uint32_t temp, uint32_t exclude, Reg prefer0, Reg
 		return kNoReg;
 	}
 	const Reg* order = (t.forbid & kCallerSavedGprs) == (kCallerSavedGprs & kAllocatableGprs) ? kCalleeFirstOrder
+		: level_ >= 1                                                                         ? kCompactGprOrder
 																							  : kGprOrder;
 	for (unsigned k = 0; k < 13; ++k)
 		if (allowed & (1u << order[k]))

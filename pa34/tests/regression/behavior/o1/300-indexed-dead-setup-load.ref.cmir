@@ -22,8 +22,8 @@ function @read_value
     epilogues duplicated
 
   block ^entry
-    mov r8, @values
-    load.i64 rax, [r8+rdi*8]
+    mov rax, @values
+    load.i64 rax, [rax+rdi*8]
     ret rax
 
 function @main

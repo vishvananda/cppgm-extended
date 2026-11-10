@@ -1,0 +1,155 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @high
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.u8 [rdi+7], 128
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @interior
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.u8 [rdi+5], 129
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @wide_holes
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.u32 [rdi], 65537
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @word_high
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.u8 [rdi+3], 128
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    slot $data -> [rbp-8] : i64
+    temp %z1 -> [rbp-16] : i32
+    temp %z2 -> [rbp-24] : i32
+
+  block ^entry
+    store.i64 [rbp-8], -1
+    lea rdi, [rbp-8]
+    call @high [args=(rdi)]
+    cmp.i32 rax, 1
+    setne rbx
+    movzx rbx, rbx
+    lea rdi, [rbp-8]
+    call @interior [args=(rdi)]
+    cmp.i32 rax, 1
+    setne r12
+    movzx r12, r12
+    lea rdi, [rbp-8]
+    call @wide_holes [args=(rdi)]
+    cmp.i32 rax, 1
+    setne r13
+    movzx r13, r13
+    lea rdi, [rbp-8]
+    call @word_high [args=(rdi)]
+    cmp.i32 rax, 1
+    setne r14
+    movzx r14, r14
+    store.i64 [rbp-8], 0
+    lea rdi, [rbp-8]
+    call @high [args=(rdi)]
+    sext.i32 r15, rax
+    lea rdi, [rbp-8]
+    call @interior [args=(rdi)]
+    sext.i32 r10, rax
+    store.i32 [rbp-16], r10
+    lea rdi, [rbp-8]
+    call @wide_holes [args=(rdi)]
+    sext.i32 r10, rax
+    store.i32 [rbp-24], r10
+    lea rdi, [rbp-8]
+    call @word_high [args=(rdi)]
+    sext.i32 rax
+    or rbx, r12
+    or rbx, r13
+    or rbx, r14
+    or rbx, r15
+    or.i32 rbx, [rbp-16]
+    sext.i32 rbx
+    or.i32 rbx, [rbp-24]
+    sext.i32 rbx
+    or rax, rbx
+    ret rax

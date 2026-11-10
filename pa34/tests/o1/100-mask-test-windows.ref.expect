@@ -1,0 +1,6 @@
+# explicit-outcomes
+
+# Bound mask setup and the two observable outcomes without choosing registers.
+instructions <= 6 in @high
+instructions <= 6 in @interior
+instructions <= 6 in @word_high

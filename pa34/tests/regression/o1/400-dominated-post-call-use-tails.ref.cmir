@@ -75,20 +75,20 @@ function @post_call_tails
     load.i64 rax, [rbp-<off0>]
     add rax, [rbp-<off0>]
     add rax, [rbp-<off0>]
-    load.i64 r8, [rbp-<off1>]
-    add r8, [rbp-<off1>]
-    add r8, [rbp-<off1>]
-    load.i64 r9, [rbp-<off2>]
-    add r9, [rbp-<off2>]
-    add r9, [rbp-<off2>]
-    load.i64 rdi, [rbp-<off3>]
-    add rdi, [rbp-<off3>]
-    add rdi, [rbp-<off3>]
-    load.i64 rsi, [rbp-<off4>]
-    add rsi, [rbp-<off4>]
-    add rsi, [rbp-<off4>]
-    load.i64 rdx, [rbp-<off5>]
-    load.i64 rcx, [rbp-<off6>]
+    load.i64 rcx, [rbp-<off1>]
+    add rcx, [rbp-<off1>]
+    add rcx, [rbp-<off1>]
+    load.i64 rdx, [rbp-<off2>]
+    add rdx, [rbp-<off2>]
+    add rdx, [rbp-<off2>]
+    load.i64 rsi, [rbp-<off3>]
+    add rsi, [rbp-<off3>]
+    add rsi, [rbp-<off3>]
+    load.i64 rdi, [rbp-<off4>]
+    add rdi, [rbp-<off4>]
+    add rdi, [rbp-<off4>]
+    load.i64 r8, [rbp-<off5>]
+    load.i64 r9, [rbp-<off6>]
     load.i64 <gpr0>, [rbp-<off7>]
     load.i64 <gpr1>, [rbp-<off8>]
     add <gpr1>, 1
@@ -101,18 +101,18 @@ function @post_call_tails
     load.i64 <gpr5>, [rbp-<off8>]
     add <gpr5>, 2
     store.i64 [rbp-<off9>], <gpr5>
-    add rax, r8
-    add r9, rdi
-    add rax, r9
-    add rax, rsi
-    lea rdx, [rdx+<gpr2>+<off0>]
-    lea rcx, [rcx+<gpr3>+<off0>]
+    add rax, rcx
+    add rdx, rsi
+    add rax, rdx
+    add rax, rdi
+    lea r8, [r8+<gpr2>+<off0>]
+    lea r9, [r9+<gpr3>+<off0>]
     lea <gpr0>, [<gpr0>+<gpr4>+<off0>]
     add <gpr1>, [rbp-<off9>]
-    add rdx, rcx
+    add r8, r9
     add <gpr0>, <gpr1>
-    add rdx, <gpr0>
-    add rax, rdx
+    add r8, <gpr0>
+    add rax, r8
     ret rax
 
   block ^handler

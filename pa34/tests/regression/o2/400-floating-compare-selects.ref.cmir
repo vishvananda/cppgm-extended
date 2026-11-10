@@ -27,8 +27,8 @@ function @lt_f80
   block ^entry
     fpext.f64.f80 [rbp-<off0>], xmm0
     fpext.f64.f80 [rbp-<off1>], xmm1
-    flt.f80 r8, [rbp-<off0>], [rbp-<off1>]
-    test.u8 r8, r8
+    flt.f80 rax, [rbp-<off0>], [rbp-<off1>]
+    test.u8 rax, rax
     mov rax, rsi
     cmovne rax, rdi
     ret rax
@@ -51,8 +51,8 @@ function @ult_f80
   block ^entry
     fpext.f64.f80 [rbp-<off0>], xmm0
     fpext.f64.f80 [rbp-<off1>], xmm1
-    fult.f80 r8, [rbp-<off0>], [rbp-<off1>]
-    test.u8 r8, r8
+    fult.f80 rax, [rbp-<off0>], [rbp-<off1>]
+    test.u8 rax, rax
     mov rax, rsi
     cmovne rax, rdi
     ret rax
@@ -223,8 +223,8 @@ function @eq_f64
     epilogues duplicated
 
   block ^entry
-    feq.f64 r8, xmm0, xmm1
-    test.u8 r8, r8
+    feq.f64 rax, xmm0, xmm1
+    test.u8 rax, rax
     mov rax, rsi
     cmovne rax, rdi
     ret rax
@@ -243,8 +243,8 @@ function @ne_f64
     epilogues duplicated
 
   block ^entry
-    fne.f64 r8, xmm0, xmm1
-    test.u8 r8, r8
+    fne.f64 rax, xmm0, xmm1
+    test.u8 rax, rax
     mov rax, rsi
     cmovne rax, rdi
     ret rax
@@ -415,8 +415,8 @@ function @eq_f32
     epilogues duplicated
 
   block ^entry
-    feq.f32 r8, xmm0, xmm1
-    test.u8 r8, r8
+    feq.f32 rax, xmm0, xmm1
+    test.u8 rax, rax
     mov rax, rsi
     cmovne rax, rdi
     ret rax
@@ -435,8 +435,8 @@ function @ne_f32
     epilogues duplicated
 
   block ^entry
-    fne.f32 r8, xmm0, xmm1
-    test.u8 r8, r8
+    fne.f32 rax, xmm0, xmm1
+    test.u8 rax, rax
     mov rax, rsi
     cmovne rax, rdi
     ret rax

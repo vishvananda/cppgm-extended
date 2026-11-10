@@ -53,8 +53,8 @@ function @probe
 
   block ^entry
     mov r12, @data
-    load.i64 r8, @a
-    store.i64 [rbp-16], r8
+    load.i64 rax, @a
+    store.i64 [rbp-16], rax
     load.i64 r15, @b
     load.i64 r14, @c
     load.i64 r13, @d
@@ -68,13 +68,13 @@ function @probe
   block ^body
     store.i64 [r12+rbx*8], rbx
     call @noop [args=(), unwind=no]
-    mov r8, r15
-    add r8, [rbp-16]
-    lea r9, [r14+r13]
-    lea r8, [r8+r9+7]
+    mov rax, r15
+    add rax, [rbp-16]
+    lea rcx, [r14+r13]
+    lea rax, [rax+rcx+7]
     add rbx, 1
     store.i64 [rbp-8], rbx
-    cmp.i64 r8, 17
+    cmp.i64 rax, 17
     je ^condition
 
   block ^failure
