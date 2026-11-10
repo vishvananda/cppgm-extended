@@ -39,6 +39,8 @@ Ratios below are **cppgm-built LLVM / native-built LLVM**; smaller is better.
 | Sixth preserved register with fixed call areas, private diagnostic | 52.005 s | 44.660 s | 1.1645 | 1.0809 | 1.1845 | 1.2191 |
 | Four frame/scheduling/mask/register groups, private R3 | 51.590 s | 44.200 s | 1.1672 | 1.0700 | 1.1748 | 1.1948 |
 | Qualified frame/mask batch including alias form, `fc5519bc3` | 51.845 s | 44.165 s | 1.1739 | 1.0699 | 1.1776 | 1.1856 |
+| Four memory/microcode changes, private diagnostic | 52.460 s | 44.950 s | 1.1671 | 1.0703 | 1.1779 | 1.2017 |
+| Qualified alignment/return/copy batch, `194ce80d0` | 52.800 s | 45.340 s | 1.1645 | 1.0701 | 1.1793 | 1.1989 |
 
 All completed rows passed output equality; the latest full runs
 had 100% PMU coverage. The private diagnostic establishes a useful direction,
@@ -308,3 +310,73 @@ Raw evidence for these measurements is in `o1-codegen-packet-private-r3-*`,
 `o1-codegen-packet-*-cases-r3/` and `o1-inline-size-top32-*` under the evidence
 root. The alias correction's cross-compiler checks and frozen gate are in
 the corresponding `r4` directories.
+
+
+## Microcode attribution and alignment-return facts
+
+A new PMU breakdown on the same frozen heavy input finds conditional branches
+at 1.1646 times native and near calls/returns at 1.2469 times native. Missing
+uop-delivery slots are 1.2900 times native; microcode-sequencer uops are
+2.0057 times native. These are one-input diagnostic ratios. They do not mean
+that microcode accounts for half the whole-program slowdown.
+
+Sampling microcode-sequencer uops, with instruction offsets resolved relative
+to ELF symbols to handle ASLR, identifies concrete code differences:
+
+| Routine | Before | After `194ce80d0` |
+| --- | --- | --- |
+| `ASTContext::getFunctionTypeInternal` | Two 138-byte string copies | Direct chunks; 3,199 to 3,457 bytes |
+| `NamedDecl::getLinkageInternal` | 136-byte string zeroing | Direct stores; 164 to 226 bytes |
+| `TypeLocVisitor<NextLoc>::Visit` | 13 alignment divisions | No divisions; 1,276 to 1,068 bytes |
+| `DataLayout::getTypeAllocSize` | Four alignment divisions | No divisions; 656 bytes either way |
+| `DataLayout::getIntegerAlignment` | Byte store followed by wider reload | Exact payload return; 87 to 75 bytes |
+
+The first two changes trade additional instruction bytes for avoiding string
+startup overhead. They therefore require workload measurement, even though
+the microcode operation disappears. The first combined full run of those
+changes, exact small returns, shifted-power proofs and copy-home facts is
+1.1671 times native elapsed. Adding the callee-return proof yields 1.1645.
+The instruction and cycle ratios are effectively flat between these runs;
+the small elapsed difference does not establish a substantial incremental
+win. The 5% target remains unmet.
+
+The missing alignment fact is visible in typed SSA: a function returns only
+1, 4 or 8, with those alternatives merging through a phi and sometimes a
+narrowing conversion. The previous caller proof accepted literal returns
+only. The new bounded proof follows copies, integer conversions, selects and
+phis, rejecting zero, nonpowers, unsupported operations, cycles beyond its
+budget, weak/replaceable definitions and incompatible call results. Calls and
+their side effects stay. Each value walk memoizes at most sixteen callee
+queries; it does no repeated unbounded body scans. A full-width shift of one
+also needs no separate count-range proof on a defined execution. Narrow
+sign-extension controls retain the range restriction.
+
+The other fixes read byte/halfword aggregate return payloads at their actual
+width, share the direct-copy/zeroing policy through 256 bytes between emission
+and clobber analysis, and retain GPR home facts across copies that clobber only
+the reserved scratch registers. O0 output remains identical.
+
+Qualification passes 10,583/10,583 strict tests, all architecture and global
+placement audits, fresh PA33/34 placement, the harness, debug checks, self-host
+through PA5, inception, and PA36 quick/smoke. All 64 producer/level checks across
+four independent GCC/Clang matrices pass. Controls include all aggregate
+payload sizes from 1 through 16 bytes, copy boundaries around 128 and 256,
+canaries and live scalar values, signed extension, nonpower/zero alternatives,
+side effects and a host-compiled strong override of a weak definition.
+Required regressions live in PA33 and PA34. A leftover maintainer control
+required exactly `rep movsb` for 129 bytes. It now executes native and driver
+paths at all four levels, leaving encoding choice to the compiler.
+
+The frozen compile gate against `fc5519bc3` reports instruction ratios of
+1.000008 at O0 and 0.999828 at O3, with flat memory. The full LLVM build uses
+all 3,365 C++ units without fallback and retains identical generated headers.
+Every measured object and the linked cppgm executable matches native, with
+100% PMU coverage. The final full comparison is 1.0701 times instructions,
+1.1793 times cycles, 1.1989 times I-cache misses and 1.3475 times fetch stalls.
+The remaining CPI cost is about 10.2% above native.
+
+Raw evidence is in `o1-qualified-microcode-profile-r4/`,
+`o1-qualified-frontend-and-branches-r4/`, `o1-return-and-microcode-main-*`, and
+`o1-return-and-microcode-diagnostic-r1-*` under the evidence root. The accepted
+receipt binds the final source, all tool hashes, normal checks, independent
+controls and full LLVM observation. LLVM O2 and O3 remain deferred.
