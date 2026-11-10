@@ -923,11 +923,12 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 	const Op mop = ops[static_cast<unsigned>(op)];
 	const Operand dst = Operand::make_reg(d);
 	const bool bitwise = op == BinaryOp::And || op == BinaryOp::Or || op == BinaryOp::Xor;
-	// O1+: u32 arithmetic in its 32-bit form, which zero-extends (no
-	// renormalization), and i32 arithmetic only its low bits are read of,
-	// whose flags a test of the result then reads.
-	const bool word = level_ >= 1 && !bitwise &&
-		(kind == TypeKind::U32 || (kind == TypeKind::I32 && low_read(inst.result)));
+	// A 32-bit unsigned operation zero-extends its wrapping result itself.
+	// Baseline signed arithmetic uses its own width and extends when a
+	// reader needs it. O1+ can instead keep a canonical 64-bit nowrap
+	// result for its readers and their tests (find_low_reads).
+	const bool word = !bitwise &&
+		(kind == TypeKind::U32 || (kind == TypeKind::I32 && (level_ < 1 || low_read(inst.result))));
 	const TypeKind width = b.kind == OperandKind::Mem || word ? kind : TypeKind::I64;
 	if (a.kind == OperandKind::Reg && a.reg == d)
 		emit2(mop, width, dst, b);
@@ -1102,18 +1103,26 @@ void FunctionSelector::emit_compare(const Instruction& inst)
 		load_into(kSelectScratch, a, kind == TypeKind::Ptr ? TypeKind::Ptr : kind);
 		a = Operand::make_reg(kSelectScratch);
 	}
-	const Reg d = result_reg(inst, dying_reg(inst.ops[0]), dying_reg(inst.ops[1]));
+	const TempInfo& t = temps_[inst.result];
+	const Instruction* user = t.uses == 1 && t.user != kNoId ? &body_->instructions[t.user] : nullptr;
+	const bool byte_return = level_ == 0 && user != nullptr && user->op == Opcode::Return &&
+		register_bytes(user->type.kind()) == 1 && resolve(user->ops[0]) == Value::temp(inst.result) &&
+		inst_block_[t.user] == block_ && pos_[t.user] == position_ + 1;
+	const Reg d = result_reg(inst, byte_return ? RAX : dying_reg(inst.ops[0]),
+		byte_return ? dying_reg(inst.ops[0]) : dying_reg(inst.ops[1]));
 	emit2(Op::Cmp, compare_width(inst, a), a, b);
 	Inst& set = emit1(Op::Setcc, TypeKind::Void, Operand::make_reg(d));
 	set.sub = int_cond(pred);
 	// O1+: a result whose one reader stores its byte needs no extension.
-	const TempInfo& t = temps_[inst.result];
-	const Instruction* user = t.uses == 1 && t.user != kNoId ? &body_->instructions[t.user] : nullptr;
 	const bool byte_stored = level_ >= 1 && user != nullptr && user->op == Opcode::Store &&
 		register_bytes(user->type.kind()) == 1 && resolve(user->ops[0]) == Value::temp(inst.result) &&
 		!(resolve(user->ops[1]) == Value::temp(inst.result)) && !(t.flags & (TF_GLOBAL | TF_HOMED)) &&
 		d != kSelectScratch && d != kEmitScratch;
-	if (!byte_stored && !(level_ >= 1 && byte_only_[inst.result]))
+	// SETcc defines every bit of the Boolean byte an ABI return observes.
+	// A spilled or shared carrier retains the usual full-register value.
+	const bool returned = byte_return && !(t.flags & (TF_GLOBAL | TF_HOMED)) && d != kSelectScratch &&
+		d != kEmitScratch;
+	if (!returned && !byte_stored && !(level_ >= 1 && byte_only_[inst.result]))
 		emit2(Op::Movzx, TypeKind::Void, Operand::make_reg(d), Operand::make_reg(d));
 	finish_result(inst, d);
 }

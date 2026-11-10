@@ -30,7 +30,7 @@ function @main
 
   block ^body
     load.i32 r8, [rbp-<off0>]
-    add r8, 1
+    add.i32 r8, 1
     store.i32 [rbp-<off0>], r8
     jmp ^cond
 

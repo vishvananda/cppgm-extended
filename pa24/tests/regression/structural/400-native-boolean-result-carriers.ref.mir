@@ -1,0 +1,219 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @dirty
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rax, -1
+    ret rax
+
+function @signed_byte
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    return i1 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12
+
+  block ^entry
+    mov rbx, rdi
+    mov r12, rsi
+    call @dirty [args=(), unwind=no]
+    cmp.i64 rbx, r12
+    setl rax
+    ret rax
+
+function @unsigned_byte
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    return i1 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    cmp.i64 rdi, rsi
+    setb rax
+    ret rax
+
+function @pointer_byte
+  abi
+    param %p -> rdi : ptr
+    return i1 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    cmp.ptr rdi, 0
+    setne rax
+    ret rax
+
+function @forward_byte
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    return i1 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    call @signed_byte [args=(rsi,rdi), unwind=no]
+    ret rax
+
+function @signed_wide
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12
+
+  block ^entry
+    mov rbx, rdi
+    mov r12, rsi
+    call @dirty [args=(), unwind=no]
+    cmp.i64 rbx, r12
+    setl rbx
+    movzx rbx, rbx
+    ret rbx
+
+function @forward_wide
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    call @forward_byte [args=(rsi,rdi), unwind=no]
+    and rax, 1
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12
+    slot $input -> [rbp-16] : obj<16x8>
+
+  block ^entry
+    lea rbx, [rbp-16]
+    store.i64 [rbx], -2147483648
+    mov rdi, -2
+    mov rsi, 1
+    call @signed_byte [args=(rsi,rdi), unwind=no]
+    and rax, 1
+    cmp.i1 rax, 1
+    setne r12
+    movzx r12, r12
+    mov rdi, 2
+    mov rsi, 1
+    call @signed_byte [args=(rsi,rdi), unwind=no]
+    and rax, 1
+    cmp.i1 rax, 0
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    mov rdi, -1
+    mov rsi, 0
+    call @unsigned_byte [args=(rsi,rdi), unwind=no]
+    and rax, 1
+    cmp.i1 rax, 0
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    mov rdi, 0
+    mov rsi, -1
+    call @unsigned_byte [args=(rsi,rdi), unwind=no]
+    and rax, 1
+    cmp.i1 rax, 1
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    mov rdi, 0
+    call @pointer_byte [args=(rdi), unwind=no]
+    and rax, 1
+    cmp.i1 rax, 0
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    mov rdi, rbx
+    call @pointer_byte [args=(rdi), unwind=no]
+    and rax, 1
+    cmp.i1 rax, 1
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    mov rdi, 2
+    mov rsi, 1
+    call @forward_byte [args=(rsi,rdi), unwind=no]
+    and rax, 1
+    cmp.i1 rax, 0
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    mov rdi, -2
+    mov rsi, 1
+    call @signed_wide [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 1
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    mov rdi, 2
+    mov rsi, 1
+    call @signed_wide [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 0
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    mov rdi, -2
+    mov rsi, 1
+    call @forward_wide [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 1
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    mov rdi, 2
+    mov rsi, 1
+    call @forward_wide [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 0
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    ret r12

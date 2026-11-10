@@ -1,0 +1,12 @@
+# Known safe 32-bit divisors use the word operation at baseline.
+has(idiv.i32) in @signed_quotient
+has(idiv.i32) in @signed_remainder
+has(idiv.i32) in @negative_quotient
+has(div.i32) in @unsigned_quotient
+has(div.i32) in @unsigned_max_divisor
+has(idiv.i32) in @unsigned_signed_op
+has(div.i32) in @signed_unsigned_op
+has(idiv.i32) in @from_pointer
+# Preserve the existing non-trapping INT_MIN / -1 behavior.
+none(idiv.i32) in @negative_one
+none(idiv.i32) in @dynamic

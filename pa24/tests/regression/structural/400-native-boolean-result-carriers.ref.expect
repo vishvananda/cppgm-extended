@@ -1,0 +1,6 @@
+# SETcc already defines the ABI Boolean byte.
+none(movzx) in @signed_byte
+none(movzx) in @unsigned_byte
+none(movzx) in @pointer_byte
+# A full-width result must still discard any dirty high register bits.
+has(movzx) in @signed_wide

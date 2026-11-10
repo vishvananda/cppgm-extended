@@ -229,18 +229,23 @@ void FunctionSelector::narrow_params_observed(std::vector<uint8_t>& observed)
 				// (`nowrap` computes at 64 bits unextended, for readers that may
 				// read the upper bits.)
 				safe = ((op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub || op == lowir::BinaryOp::Mul) &&
-						   (!(inst.flags & lowir::IF_NO_WRAP) || low_read(inst.result))) ||
-					(op == lowir::BinaryOp::And && small_mask(inst)) ||
-					// (A divide by a variable word divides at 32 bits.)
-					((op == lowir::BinaryOp::Div || op == lowir::BinaryOp::Mod || op == lowir::BinaryOp::UDiv ||
-						 op == lowir::BinaryOp::UMod) &&
-						(inst.type.kind() == TypeKind::I32 || inst.type.kind() == TypeKind::U32) &&
-						resolve(inst.ops[1]).kind != ValueKind::Integer);
+						   (level_ < 1 || !(inst.flags & lowir::IF_NO_WRAP) || low_read(inst.result))) ||
+					(op == lowir::BinaryOp::And && small_mask(inst));
+				if ((op == lowir::BinaryOp::Div || op == lowir::BinaryOp::Mod || op == lowir::BinaryOp::UDiv ||
+						op == lowir::BinaryOp::UMod) &&
+					word_divide_hardware(inst))
+				{
+					// Share the selected width: baseline dynamic division is
+					// 64-bit, as are optimized constant forms such as a shift.
+					int64_t divisor = 0;
+					safe = divide_form(inst, divisor) == DivideForm::Hardware;
+				}
 				if (op == lowir::BinaryOp::Shl || op == lowir::BinaryOp::Shr || op == lowir::BinaryOp::UShr)
 				{
 					// (A count is read in cl; a left shift's bits move up.)
 					check(inst.ops[0],
-						op == lowir::BinaryOp::Shl && (!(inst.flags & lowir::IF_NO_WRAP) || low_read(inst.result)));
+						op == lowir::BinaryOp::Shl &&
+							(level_ < 1 || !(inst.flags & lowir::IF_NO_WRAP) || low_read(inst.result)));
 					check(inst.ops[1], true);
 					return;
 				}

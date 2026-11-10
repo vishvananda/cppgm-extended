@@ -3,13 +3,14 @@
 #include "native/mir/type_kinds.h"
 
 // Integer division and remainder. A divisor that is not a constant uses
-// the hardware divide (cqo/idiv or a zeroed rdx and div: rax and rdx). At
-// O1 and above that is 32 bits wide for a 32-bit type: the 64-bit divide
+// the hardware divide (cqo/idiv or a zeroed rdx and div: rax and rdx).
+// A 32-bit type can use a 32-bit operation: the 64-bit divide
 // costs far more on x86 cores before Ice Lake and Zen 3, and a 32-bit one
-// reads only the low halves, so neither operand needs a conversion. (A
-// constant divisor keeps the 64-bit divide, as does O0, where -1 is not yet
-// a constant: x / -1 of INT_MIN does not trap there, as GCC's negation does
-// not.) An unsigned power of two is a shift or a mask at every level. At O1 and
+// reads only the low halves, so neither operand needs a conversion.
+// Signed -1 keeps the 64-bit divide. At O0 a computed divisor does too,
+// because -1 is not necessarily a constant yet: INT_MIN / -1 must keep
+// its existing non-trapping result. An unsigned power of two is a shift
+// or a mask at every level. At O1 and
 // above the other constants avoid the divide (14-18 cycles on current x86
 // against 3-4 for a multiply; T. Granlund and P. Montgomery, "Division by
 // Invariant Integers using Multiplication", PLDI 1994; H. Warren, Hacker's
@@ -322,14 +323,26 @@ void FunctionSelector::emit_divide_unsigned_shift(const Instruction& inst, uint6
 	finish_result(inst, d);
 }
 
+bool FunctionSelector::word_divide_hardware(const Instruction& inst) const
+{
+	const TypeKind kind = inst.type.kind();
+	if (kind != TypeKind::I32 && kind != TypeKind::U32)
+		return false;
+	const Value divisor = resolve(inst.ops[1]);
+	// A known divisor other than signed -1 cannot overflow a 32-bit
+	// quotient. Baseline dynamic divisors retain their wider operation.
+	const bool safe_constant = divisor.kind == ValueKind::Integer &&
+		(is_unsigned_op(static_cast<BinaryOp>(inst.sub)) || static_cast<uint32_t>(literal(divisor).low) != UINT32_MAX);
+	return safe_constant || (level_ >= 1 && divisor.kind != ValueKind::Integer);
+}
+
 void FunctionSelector::emit_divide_hardware(const Instruction& inst)
 {
 	const TypeKind kind = inst.type.kind();
 	const BinaryOp op = static_cast<BinaryOp>(inst.sub);
 	const bool unsigned_op = is_unsigned_op(op);
 	const bool remainder = is_remainder(op);
-	const bool word = level_ >= 1 && (kind == TypeKind::I32 || kind == TypeKind::U32) &&
-		resolve(inst.ops[1]).kind != ValueKind::Integer;
+	const bool word = word_divide_hardware(inst);
 	const Operand a = rm_operand(inst.ops[0], inst.type, kSelectScratch);
 	Operand b = rm_operand(inst.ops[1], inst.type, kEmitScratch);
 	const bool convert_a = !word && narrow_integer(kind) && (unsigned_op == signed_integer(kind));

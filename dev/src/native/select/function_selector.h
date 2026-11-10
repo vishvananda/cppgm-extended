@@ -161,6 +161,7 @@ public:
 	void emit_divide(const lowir::Instruction& inst);
 	DivideForm divide_form(const lowir::Instruction& inst, int64_t& divisor) const;
 	void emit_divide_unsigned_shift(const lowir::Instruction& inst, uint64_t divisor);
+	bool word_divide_hardware(const lowir::Instruction& inst) const;
 	void emit_divide_hardware(const lowir::Instruction& inst);
 	Reg divide_dividend(const lowir::Instruction& inst);
 	void emit_divide_constant(const lowir::Instruction& inst, DivideForm form, int64_t divisor);

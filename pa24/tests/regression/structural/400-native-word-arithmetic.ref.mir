@@ -1,0 +1,174 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @unsigned_add
+  abi
+    param %a -> rdi : u32
+    param %b -> rsi : u32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    add.u32 rdi, rsi
+    ret rdi
+
+function @unsigned_sub
+  abi
+    param %a -> rdi : u32
+    param %b -> rsi : u32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    sub.u32 rdi, rsi
+    ret rdi
+
+function @unsigned_mul
+  abi
+    param %a -> rdi : u32
+    param %b -> rsi : u32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    imul.u32 rdi, rsi
+    ret rdi
+
+function @signed_add
+  abi
+    param %a -> rdi : i32
+    param %b -> rsi : i32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    add.i32 rdi, rsi
+    sext.i32 rdi
+    ret rdi
+
+function @signed_sub
+  abi
+    param %a -> rdi : i32
+    param %b -> rsi : i32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    sub.i32 rdi, rsi
+    sext.i32 rdi
+    ret rdi
+
+function @signed_mul
+  abi
+    param %a -> rdi : i32
+    param %b -> rsi : i32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    imul.i32 rdi, rsi
+    sext.i32 rdi
+    ret rdi
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+
+  block ^entry
+    mov rdi, 4294967295
+    mov rsi, 1
+    call @unsigned_add [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 0
+    setne rbx
+    movzx rbx, rbx
+    mov rdi, 2147483647
+    mov rsi, 1
+    call @unsigned_add [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 2147483648
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 0
+    mov rsi, 1
+    call @unsigned_sub [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 4294967295
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 4294967294
+    mov rsi, 3
+    call @unsigned_mul [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 4294967290
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 2147483647
+    mov rsi, 1
+    call @signed_add [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -2147483648
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, -2147483648
+    mov rsi, -1
+    call @signed_add [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 2147483647
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, -2147483648
+    mov rsi, 1
+    call @signed_sub [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, 2147483647
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 1073741824
+    mov rsi, 2
+    call @signed_mul [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -2147483648
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, -5
+    mov rsi, 3
+    call @signed_mul [args=(rsi,rdi), unwind=no]
+    cmp.i64 rax, -15
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    ret rbx

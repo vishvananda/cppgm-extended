@@ -1,0 +1,35 @@
+extern "C" int cpp_sd(int a, int b) { return a / b; }
+extern "C" int cpp_sm(int a, int b) { return a % b; }
+extern "C" unsigned cpp_ud(unsigned a, unsigned b) { return a / b; }
+extern "C" unsigned cpp_um(unsigned a, unsigned b) { return a % b; }
+extern "C" int cpp_cs(int a) { return a / 8; }
+extern "C" unsigned cpp_cu(unsigned a) { return a / 3; }
+extern "C" unsigned cpp_power(unsigned a) { return a / 8; }
+extern "C" int cpp_add(int a, int b) { return a + b; }
+extern "C" int cpp_right(int a) { return a >> 3; }
+extern "C" unsigned cpp_uright(unsigned a) { return a >> 3; }
+extern "C" long dirty_sd(unsigned long, unsigned long);
+extern "C" long dirty_sm(unsigned long, unsigned long);
+extern "C" long dirty_ud(unsigned long, unsigned long);
+extern "C" long dirty_um(unsigned long, unsigned long);
+extern "C" long dirty_cs(unsigned long, unsigned long);
+extern "C" long dirty_cu(unsigned long, unsigned long);
+extern "C" long dirty_power(unsigned long, unsigned long);
+extern "C" long dirty_add(unsigned long, unsigned long);
+extern "C" long dirty_right(unsigned long, unsigned long);
+extern "C" long dirty_uright(unsigned long, unsigned long);
+int main() {
+    int bad = 0;
+    bad += dirty_sd(0x12345678ffffffe1UL, 0x6543210000000007UL) != -4;
+    bad += dirty_sd(0x12345678ffffffe1UL, 0x65432100fffffff9UL) != 4;
+    bad += dirty_sm(0x12345678ffffffe1UL, 0x6543210000000007UL) != -3;
+    bad += dirty_ud(0x12345678ffffffffUL, 0x6543210000000003UL) != 1431655765L;
+    bad += dirty_um(0x12345678ffffffffUL, 0x6543210000000003UL) != 0;
+    bad += dirty_cs(0x1234567880000000UL, 0) != -268435456;
+    bad += dirty_cu(0x12345678ffffffffUL, 0) != 1431655765L;
+    bad += dirty_power(0x12345678ffffffffUL, 0) != 536870911;
+    bad += dirty_add(0x12345678ffffffe1UL, 0x6543210000000007UL) != -24;
+    bad += dirty_right(0x12345678ffffffe1UL, 0) != -4;
+    bad += dirty_uright(0x12345678ffffffffUL, 0) != 536870911;
+    return bad != 0;
+}

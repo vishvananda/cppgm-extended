@@ -1,0 +1,14 @@
+# Typed word arithmetic establishes unsigned canonical results itself.
+has(add.u32) in @unsigned_add
+has(sub.u32) in @unsigned_sub
+has(imul.u32) in @unsigned_mul
+none(zext) in @unsigned_add
+none(zext) in @unsigned_sub
+none(zext) in @unsigned_mul
+# A signed result subsequently read wider retains its sign extension.
+has(add.i32) in @signed_add
+has(sub.i32) in @signed_sub
+has(imul.i32) in @signed_mul
+has(sext) in @signed_add
+has(sext) in @signed_sub
+has(sext) in @signed_mul
