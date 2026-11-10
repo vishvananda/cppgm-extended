@@ -59,7 +59,7 @@ jobs:
 
       - name: Run the architecture audits
         run: |
-          make audit-lowir-contract audit-compiler-layout \
+          make audit-student-documents audit-lowir-contract audit-compiler-layout \
             audit-compiler-exceptions audit-frontend-source-sets \
             audit-builtin-registry-tables audit-scaffold-spellings
 

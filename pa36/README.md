@@ -1,4 +1,4 @@
-# CPPGM Programming Assignment 35: Optimizing the compiler
+# CPPGM Programming Assignment 36: Optimizing the compiler
 
 Complete PA35, then make the compiler you built fast in two senses: the code
 it generates, judged by compiling `cppgm++` with itself and running the

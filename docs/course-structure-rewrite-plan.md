@@ -1,9 +1,9 @@
 # Required assembly and later-language course integration
 
 Maintainer plan, 2026-11-10; not a student handout or export document.
-Implementation is in progress on this branch. The required assignment order,
-language profile and ordinary discovery now follow this plan; qualification
-and the migration ledger record the remaining review.
+Implemented on this branch. The required assignment order, language profile
+and ordinary discovery follow this plan. The migration ledger records the
+fixture dispositions; qualification is recorded below.
 
 ## Base and coordination
 
@@ -302,3 +302,16 @@ Completion means the normal course teaches and tests the existing supported
 language profile and assembly path; later compatibility lessons consume those
 features; default reports cover their required cases on both supported hosts;
 and the exported course reproduces the same structure. The implementation includes compiler, test harness, handout and export changes.
+
+## Qualification
+
+- Strict ordinary report: 10,556/10,556; debug-info checks passed.
+- Self-host through PA5 passed; inception matched every object and the compiler.
+- Harness, architecture, placement, scaffold and student-document audits passed.
+- Fresh export using immutable tools: 24,077 portable reference outputs matched,
+  including 9,683 exit-status files; reference expectations and scaffolds passed.
+- PA36 smoke passed, and course/student release calibration passed all 17 gates.
+- Against LLVM base `633c162d3`, frozen workload objects are identical at O0/O3;
+  compiler instruction counts differ by -0.002%/+0.005% respectively.
+- PR #123 runs supported Linux toolchain checks; the Intel macOS lane was
+  dispatched separately. CI results remain separate from local qualification.

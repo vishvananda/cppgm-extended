@@ -32,6 +32,12 @@ my @rules = (
 my @errors;
 for my $doc (@docs) {
     my $text = read_text("$o{root}/$doc");
+    if ($doc =~ m{^pa(\d+)/README\.md$}) {
+        my $owner = $1;
+        my ($title) = $text =~ /^\#+ CPPGM Programming Assignment (\d+)\b/m;
+        push @errors, "$doc:1: assignment title must identify PA$owner"
+            if !defined($title) || $title != $owner;
+    }
     for my $rule (@rules) {
         my $pattern = $rule->[1];
         while ($text =~ /$pattern/g) {
