@@ -1,0 +1,148 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @read_object
+  abi
+    param %source -> rdi : ptr
+    return obj<8x8> -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $result -> [rbp-<off0>] : obj<8x8>
+
+  block ^entry
+    load.i64 rdi, [rdi]
+    store.i64 [rbp-<off0>], rdi
+    load.i64 rax, [rbp-<off0>]
+    ret
+
+function @write_object
+  abi
+    param %destination -> rdi : ptr
+    param %source -> rsi : ptr
+    param %choice -> rdx : i1
+    param %a -> rcx : i64
+    param %b -> r8 : i64
+    param %c -> r9 : i64
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $selected -> [rbp-<off0>] : i64
+    param-slot %destination -> [rbp-<off1>] : ptr
+    param-slot %source -> [rbp-<off2>] : ptr
+    param-slot %a -> [rbp-<off3>] : i64
+    param-slot %b -> [rbp-<off4>] : i64
+    param-slot %c -> [rbp-<off5>] : i64
+
+  block ^entry
+    store.ptr [rbp-<off1>], rdi
+    store.ptr [rbp-<off2>], rsi
+    store.i64 [rbp-<off3>], rcx
+    store.i64 [rbp-<off4>], r8
+    store.i64 [rbp-<off5>], r9
+    cmp.i1 rdx, 0
+    jne ^left
+    jmp ^right
+
+  block ^left
+    store.i64 [rbp-<off0>], 1
+    jmp ^join
+
+  block ^right
+    store.i64 [rbp-<off0>], 2
+    jmp ^join
+
+  block ^join
+    load.i64 r8, [rbp-<off0>]
+    store.i64 [rdi], r8
+    load.ptr rdi, [rbp-<off2>]
+    call @read_object [args=(rdi), unwind=no]
+    load.ptr <gpr0>, [rbp-<off1>]
+    store.i64 [<gpr0>+<off0>], rax
+    load.ptr <gpr0>, [rbp-<off2>]
+    load.i64 r8, [<gpr0>]
+    load.ptr <gpr0>, [rbp-<off1>]
+    store.i64 [<gpr0>], r8
+    load.ptr <gpr0>, [rbp-<off1>]
+    load.i64 <gpr1>, [rbp-<off3>]
+    store.i64 [<gpr0>+<off1>], <gpr1>
+    load.ptr <gpr0>, [rbp-<off1>]
+    load.i64 <gpr1>, [rbp-<off4>]
+    store.i64 [<gpr0>+<off2>], <gpr1>
+    load.ptr <gpr0>, [rbp-<off1>]
+    load.i64 <gpr1>, [rbp-<off5>]
+    store.i64 [<gpr0>+<off3>], <gpr1>
+    ret
+
+function @check
+  abi
+    param %choice -> rdi : i1
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve <gpr2> <gpr3>
+    slot $destination -> [rbp-<off5>] : obj<48x8>
+    slot $source -> [rbp-<off6>] : obj<24x8>
+
+  block ^entry
+    lea <gpr2>, [rbp-<off5>]
+    lea <gpr3>, [rbp-<off6>]
+    store.i64 [<gpr2>], 0
+    store.i64 [<gpr2>+<off0>], 0
+    store.i64 [<gpr3>], 41
+    store.i64 [<gpr3>+<off0>], 77
+    mov rsi, <gpr3>
+    mov rdx, rdi
+    mov rdi, <gpr2>
+    mov rcx, 9
+    mov r8, 10
+    mov r9, 11
+    call @write_object [args=(rcx,rdx,rsi,rdi,r8,r9), unwind=no]
+    load.i64 r8, [<gpr2>+<off0>]
+    load.i64 <gpr3>, [<gpr3>+<off0>]
+    load.i64 <gpr2>, [<gpr2>]
+    cmp.i64 r8, 41
+    setne r8
+    movzx r8, r8
+    cmp.i64 <gpr3>, 77
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    cmp.i64 <gpr2>, 41
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    or r8, <gpr3>
+    or r8, <gpr2>
+    ret r8
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve <gpr2>
+
+  block ^entry
+    mov rdi, 1
+    call @check [args=(rdi), unwind=no]
+    mov <gpr2>, rax
+    sext.i32 <gpr2>
+    mov rdi, 0
+    call @check [args=(rdi), unwind=no]
+    sext.i32 rax
+    or <gpr2>, rax
+    ret <gpr2>

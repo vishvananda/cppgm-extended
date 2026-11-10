@@ -12,8 +12,8 @@ volatile const int volatile_value = 19;
 
 void touch(int* p) { ++touches; ++*p; }
 int constant_read() { return constants::width; }
-int false_choice(int x) { if (constants::never) touch(&x); return x; }
-int true_choice(int x) { if (constants::always) touch(&x); return x; }
+int false_choice(int x) { if (constants::never) { touch(&x); } return x; }
+int true_choice(int x) { if (constants::always) { touch(&x); } return x; }
 int volatile_control() { return volatile_value; }
 int reference_control() { mutable_value = 11; return reference_value; }
 const int* address_control() { return &constants::width; }

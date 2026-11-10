@@ -1,0 +1,148 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @read_object
+  abi
+    param %source -> rdi : ptr
+    return obj<8x8> -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $result -> [rbp-8] : obj<8x8>
+
+  block ^entry
+    load.i64 rdi, [rdi]
+    store.i64 [rbp-8], rdi
+    load.i64 rax, [rbp-8]
+    ret
+
+function @write_object
+  abi
+    param %destination -> rdi : ptr
+    param %source -> rsi : ptr
+    param %choice -> rdx : i1
+    param %a -> rcx : i64
+    param %b -> r8 : i64
+    param %c -> r9 : i64
+    return void -> void
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $selected -> [rbp-8] : i64
+    param-slot %destination -> [rbp-16] : ptr
+    param-slot %source -> [rbp-24] : ptr
+    param-slot %a -> [rbp-32] : i64
+    param-slot %b -> [rbp-40] : i64
+    param-slot %c -> [rbp-48] : i64
+
+  block ^entry
+    store.ptr [rbp-16], rdi
+    store.ptr [rbp-24], rsi
+    store.i64 [rbp-32], rcx
+    store.i64 [rbp-40], r8
+    store.i64 [rbp-48], r9
+    cmp.i1 rdx, 0
+    jne ^left
+    jmp ^right
+
+  block ^left
+    store.i64 [rbp-8], 1
+    jmp ^join
+
+  block ^right
+    store.i64 [rbp-8], 2
+    jmp ^join
+
+  block ^join
+    load.i64 r8, [rbp-8]
+    store.i64 [rdi], r8
+    load.ptr rdi, [rbp-24]
+    call @read_object [args=(rdi), unwind=no]
+    load.ptr r10, [rbp-16]
+    store.i64 [r10+16], rax
+    load.ptr r10, [rbp-24]
+    load.i64 r8, [r10]
+    load.ptr r10, [rbp-16]
+    store.i64 [r10], r8
+    load.ptr r10, [rbp-16]
+    load.i64 r11, [rbp-32]
+    store.i64 [r10+24], r11
+    load.ptr r10, [rbp-16]
+    load.i64 r11, [rbp-40]
+    store.i64 [r10+32], r11
+    load.ptr r10, [rbp-16]
+    load.i64 r11, [rbp-48]
+    store.i64 [r10+40], r11
+    ret
+
+function @check
+  abi
+    param %choice -> rdi : i1
+    return i32 -> rax
+  frame
+    stack_size 96
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12
+    slot $destination -> [rbp-48] : obj<48x8>
+    slot $source -> [rbp-72] : obj<24x8>
+
+  block ^entry
+    lea rbx, [rbp-48]
+    lea r12, [rbp-72]
+    store.i64 [rbx], 0
+    store.i64 [rbx+16], 0
+    store.i64 [r12], 41
+    store.i64 [r12+16], 77
+    mov rsi, r12
+    mov rdx, rdi
+    mov rdi, rbx
+    mov rcx, 9
+    mov r8, 10
+    mov r9, 11
+    call @write_object [args=(rcx,rdx,rsi,rdi,r8,r9), unwind=no]
+    load.i64 r8, [rbx+16]
+    load.i64 r12, [r12+16]
+    load.i64 rbx, [rbx]
+    cmp.i64 r8, 41
+    setne r8
+    movzx r8, r8
+    cmp.i64 r12, 77
+    setne r12
+    movzx r12, r12
+    cmp.i64 rbx, 41
+    setne rbx
+    movzx rbx, rbx
+    or r8, r12
+    or r8, rbx
+    ret r8
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+
+  block ^entry
+    mov rdi, 1
+    call @check [args=(rdi), unwind=no]
+    mov rbx, rax
+    sext.i32 rbx
+    mov rdi, 0
+    call @check [args=(rdi), unwind=no]
+    sext.i32 rax
+    or rbx, rax
+    ret rbx

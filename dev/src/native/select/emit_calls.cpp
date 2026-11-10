@@ -948,6 +948,11 @@ void FunctionSelector::emit_call(uint32_t id)
 			value_bytes(inst.type) == 8u * layout.result_parts && layout.result != ArgClass::X87 &&
 			layout.result != ArgClass::X87Pair && !(resolve(copy->ops[1]) == Value::temp(inst.result)))
 		{
+			// Argument setup and the call have consumed their input registers.
+			// Retire those bindings before resolving the later copy's address:
+			// a retained parameter may now need its saved frame home.
+			release_dying(position_);
+			retire_dying();
 			const Operand dst = address_operand(copy->ops[1], kSelectScratch);
 			if (dst.kind == OperandKind::Mem)
 			{
