@@ -244,12 +244,34 @@ ValueSet switched_to(const FunctionBody& body, const Instruction& sw, BlockId to
 	return s;
 }
 
-// An integer extension: its source width, its own, and whether it signs.
+// The values of `s` (of `bits` width) each plus `delta`, wrapping.
+ValueSet shifted(const ValueSet& s, uint64_t delta, unsigned bits)
+{
+	const uint64_t max = ones(bits);
+	ValueSet r;
+	r.lost = s.lost;
+	for (unsigned i = 0; i < s.n; ++i)
+	{
+		const uint64_t a = (s.lo[i] + delta) & max, b = (s.hi[i] + delta) & max;
+		if (a <= b)
+			r.add(a, b);
+		else
+		{
+			r.add(0, b);
+			r.add(a, max);
+		}
+	}
+	return r;
+}
+
+// An integer extension: its source width, its own, and whether it signs;
+// or, at one width (from == to), the addition of the constant `add`.
 struct Extension
 {
 	unsigned from;
 	unsigned to;
 	bool sign;
+	uint64_t add;
 };
 
 class JumpThreading
@@ -267,6 +289,8 @@ private:
 	bool demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool copy_thread(BlockId s, InstId tail, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, unsigned& bits) const;
+	bool split_switch_cases(BlockId p, BlockId s, Value x, unsigned qbits, const ValueSet& query, BlockId on_true,
+		BlockId on_false, TempId cresult);
 	bool accessed_entering(BlockId p, Value v);
 	Value stripped(Value v, std::vector<Extension>& chain) const;
 	ValueSet related(Value cx, ValueSet f, unsigned bits, Value v, unsigned vbits) const;
@@ -1076,6 +1100,7 @@ bool JumpThreading::known_compares(bool literals)
 		std::vector<std::pair<BlockId, BlockId>> redirects; // (predecessor, target)
 		std::vector<std::pair<BlockId, BlockId>> merges;    // (merge block, its predecessor)
 		std::vector<BlockId> merge_targets;
+		bool cases = false;
 		for (uint32_t pi = cfg_.pred_first[s]; pi < cfg_.pred_first[s + 1]; ++pi)
 		{
 			const BlockId p = cfg_.preds[pi];
@@ -1088,6 +1113,10 @@ bool JumpThreading::known_compares(bool literals)
 				redirects.push_back(std::make_pair(p, outcome));
 				continue;
 			}
+			// A switch's cases for a block that only tests x part ways.
+			if (!literals && !switching && phis == 0 && copied == 0 && c_.level >= 2 &&
+				split_switch_cases(p, s, x, qbits, query, on_true, on_false, cresult))
+				cases = true;
 			if (x_phi == kNoId || literals || !mergeable(p, s, v))
 				continue;
 			const Instruction& vphi = body_.instructions[body_.temps[v.index].def];
@@ -1122,6 +1151,12 @@ bool JumpThreading::known_compares(bool literals)
 				if (copy != kNoId)
 					redirects.push_back(std::make_pair(copy, merge_targets[m]));
 			}
+			c_.invalidate_cfg();
+			c_.ensure_cfg();
+			changed = true;
+		}
+		if (cases)
+		{
 			c_.invalidate_cfg();
 			c_.ensure_cfg();
 			changed = true;
@@ -1241,6 +1276,63 @@ bool JumpThreading::edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, u
 	return true;
 }
 
+// Predecessor `p` of test block `s` -- only a compare of x with a literal
+// and the branch on it, or that branch alone -- ends in a switch on x (or
+// a value x extends, one extending it, or either plus a constant): each of
+// its cases for `s` whose value decides the compare (`query`: the values
+// sent to `on_true`) goes straight to the decided side, whose phis take
+// what `s` brought them. The switch's other edges to `s` stay.
+bool JumpThreading::split_switch_cases(BlockId p, BlockId s, Value x, unsigned qbits, const ValueSet& query,
+	BlockId on_true, BlockId on_false, TempId cresult)
+{
+	const InstId t = body_.blocks[p].last;
+	if (t == kNoId || body_.instructions[t].op != Opcode::Switch || !body_.instructions[t].ops[0].is(ValueKind::Temp) ||
+		(cfg_.flags[p] & BF_HANDLER) != 0)
+		return false;
+	const Value cx = body_.instructions[t].ops[0];
+	const unsigned bits = value_bits(body_.temps[cx.index].type);
+	bool changed = false;
+	for (uint32_t k = 0; bits != 0 && k + 1 < body_.instructions[t].extra_count; k += 2)
+	{
+		const uint32_t at = body_.instructions[t].extra_first + k;
+		const Value key = body_.operands[at];
+		if (body_.operands[at + 1].index != s || !key.is(ValueKind::Integer))
+			continue;
+		ValueSet one;
+		one.add(body_.literals[key.index].low & ones(bits), body_.literals[key.index].low & ones(bits));
+		const int holds = decided_by(related(cx, one, bits, x, qbits), query);
+		const BlockId target = holds < 0 ? kNoId : holds ? on_true : on_false;
+		if (target == kNoId || target == s || target == p || (cfg_.flags[target] & BF_HANDLER) != 0)
+			continue;
+		bool had_edge = false, ok = true;
+		for_each_successor(body_, body_.instructions[t], [&](BlockId& b) { had_edge = had_edge || b == target; });
+		for (InstId i = body_.blocks[target].first; i != kNoId && body_.instructions[i].op == Opcode::Phi && ok;
+			i = body_.instructions[i].next)
+		{
+			const Value from_s = phi_incoming(body_, body_.instructions[i], s);
+			ok = !from_s.is(ValueKind::None) && !(cresult != kNoId && from_s == Value::temp(cresult)) &&
+				(!had_edge || phi_incoming(body_, body_.instructions[i], p) == from_s);
+		}
+		if (!ok)
+			continue;
+		for (InstId i = body_.blocks[target].first; i != kNoId && body_.instructions[i].op == Opcode::Phi && !had_edge;
+			i = body_.instructions[i].next)
+		{
+			Instruction& phi = body_.instructions[i];
+			std::vector<Value> pairs(
+				body_.operands.begin() + phi.extra_first, body_.operands.begin() + phi.extra_first + phi.extra_count);
+			pairs.push_back(Value::block(p));
+			pairs.push_back(phi_incoming(body_, phi, s));
+			phi.extra_first = append_operands(body_, pairs.data(), static_cast<uint32_t>(pairs.size()));
+			phi.extra_count = static_cast<uint32_t>(pairs.size());
+		}
+		body_.operands[body_.instructions[t].extra_first + k + 1] = Value::block(target);
+		++c_.stats.branches_folded;
+		changed = true;
+	}
+	return changed;
+}
+
 // Whether control leaving `p` has loaded or stored through pointer v: in p
 // or the blocks before it that are each the next one's only predecessor
 // (at most kFactDepth). The blocks are read as they were at the first query;
@@ -1279,23 +1371,36 @@ bool JumpThreading::accessed_entering(BlockId p, Value v)
 	return false;
 }
 
-// v without the integer extensions defining it (the outermost first in
-// `chain`).
+// v without the integer extensions and additions of a constant defining
+// it (the outermost first in `chain`): an opcode less its first
+// enumerator, switched on, is read as the opcode again.
 Value JumpThreading::stripped(Value v, std::vector<Extension>& chain) const
 {
 	chain.clear();
 	while (v.is(ValueKind::Temp) && v.index >= body_.parameter_count && chain.size() < 4)
 	{
 		const InstId d = body_.temps[v.index].def;
-		if (d == kNoId || body_.instructions[d].op != Opcode::Convert)
+		if (d == kNoId)
 			break;
 		const Instruction& inst = body_.instructions[d];
+		const BinaryOp sum = static_cast<BinaryOp>(inst.sub);
+		const unsigned width = inst.type.is_integer() ? value_bits(inst.type) : 0;
+		if (inst.op == Opcode::Binary && (sum == BinaryOp::Add || sum == BinaryOp::Sub) && width != 0 &&
+			inst.ops[0].is(ValueKind::Temp) && inst.ops[1].is(ValueKind::Integer))
+		{
+			const uint64_t k = body_.literals[inst.ops[1].index].low;
+			chain.push_back(Extension{ width, width, false, (sum == BinaryOp::Add ? k : 0 - k) & ones(width) });
+			v = inst.ops[0];
+			continue;
+		}
+		if (inst.op != Opcode::Convert)
+			break;
 		const ConvertOp op = static_cast<ConvertOp>(inst.sub);
 		const unsigned from = value_bits(convert_source_type(inst)), to = value_bits(inst.type);
 		if ((op != ConvertOp::ZExt && op != ConvertOp::SExt) || from == 0 || to == 0 || from >= to ||
 			!convert_source_type(inst).is_integer() || !inst.type.is_integer())
 			break;
-		chain.push_back(Extension{ from, to, op == ConvertOp::SExt });
+		chain.push_back(Extension{ from, to, op == ConvertOp::SExt, 0 });
 		v = inst.ops[0];
 	}
 	return v;
@@ -1319,14 +1424,14 @@ ValueSet JumpThreading::related(Value cx, ValueSet f, unsigned bits, Value v, un
 	{
 		if (e.to != w)
 			return unknown;
-		f = unextended(f, e.from, e.to, e.sign);
+		f = e.from == e.to ? shifted(f, 0 - e.add, w) : unextended(f, e.from, e.to, e.sign);
 		w = e.from;
 	}
 	for (size_t i = up.size(); i-- > 0;)
 	{
 		if (up[i].from != w)
 			return unknown;
-		f = extended(f, up[i].from, up[i].to, up[i].sign);
+		f = up[i].from == up[i].to ? shifted(f, up[i].add, w) : extended(f, up[i].from, up[i].to, up[i].sign);
 		w = up[i].to;
 	}
 	return w == vbits ? f : unknown;
