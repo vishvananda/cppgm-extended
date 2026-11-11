@@ -72,8 +72,12 @@ public:
 	bool advanced_compare(Instruction& inst);
 	bool top_range_compare(Instruction& inst);
 	bool offset_equality(Instruction& inst);
+	bool field_step(Instruction& inst);
 
 private:
+	Value retyped(Value v, unsigned width) const;
+	const Instruction* binary(Value v, unsigned width, BinaryOp op, uint64_t& literal) const;
+	Value unmasked(Value v, unsigned width, uint64_t kept) const;
 	bool power_of_two(Value value, Type type, unsigned& budget, unsigned width = 64);
 	Value resolve(Value v) { return facts_.resolve(v); }
 	uint64_t possible_bits(Value v, Type t) { return facts_.possible_bits(v, t); }
@@ -690,6 +694,95 @@ bool IntegerPatterns::offset_equality(Instruction& inst)
 	return true;
 }
 
+// The value a chain of copies at one width retypes.
+Value IntegerPatterns::retyped(Value v, unsigned width) const
+{
+	for (const Instruction* def = producer(v); def != nullptr && def->op == Opcode::Copy; def = producer(v))
+	{
+		const Value from = def->ops[0];
+		if (!def->type.is_integer() || lowir::integer_bits(def->type.kind()) != width || !from.is(ValueKind::Temp) ||
+			!body_.temps[from.index].type.is_integer() ||
+			lowir::integer_bits(body_.temps[from.index].type.kind()) != width)
+			break;
+		v = from;
+	}
+	return v;
+}
+
+// The `op` at `width` that makes v from a value and a literal, whose bits
+// `literal` receives.
+const Instruction* IntegerPatterns::binary(Value v, unsigned width, BinaryOp op, uint64_t& literal) const
+{
+	const Instruction* def = producer(retyped(v, width));
+	Constant c;
+	Literal bits;
+	if (def == nullptr || def->op != Opcode::Binary || static_cast<BinaryOp>(def->sub) != op ||
+		!def->type.is_integer() || lowir::integer_bits(def->type.kind()) != width ||
+		!literal_constant(body_, def->ops[1], c) || !integer_bits(def->type, c, bits))
+		return nullptr;
+	literal = bits.low;
+	return def;
+}
+
+// v without the masks that keep every one of the `kept` bits.
+Value IntegerPatterns::unmasked(Value v, unsigned width, uint64_t kept) const
+{
+	uint64_t mask = 0;
+	for (const Instruction* def = binary(v, width, BinaryOp::And, mask); def != nullptr && (mask & kept) == kept;
+		def = binary(v, width, BinaryOp::And, mask))
+		v = def->ops[0];
+	return v;
+}
+
+// A bit-field at the top of its storage unit, stepped and written back:
+// `((x >> k) + c) << k | (x & low k bits)` is `x + (c << k)`. The step's
+// carries leave at the unit's top as they leave the field's, and the sum
+// keeps the bits under the field.
+bool IntegerPatterns::field_step(Instruction& inst)
+{
+	if (inst.op != Opcode::Binary || static_cast<BinaryOp>(inst.sub) != BinaryOp::Or || !inst.type.is_integer() ||
+		inst.type.kind() == TypeKind::I128 || inst.type.kind() == TypeKind::I1)
+		return false;
+	const unsigned width = lowir::integer_bits(inst.type.kind());
+	const uint64_t all = width >= 64 ? ~uint64_t(0) : (uint64_t(1) << width) - 1;
+	for (unsigned k = 0; k < 2; ++k)
+	{
+		uint64_t count = 0, step = 0, read = 0, mask = 0;
+		const Instruction* placed = binary(inst.ops[k], width, BinaryOp::Shl, count);
+		if (placed == nullptr || count == 0 || count >= width)
+			continue;
+		// Under the shift only the field's own bits of each value count.
+		const uint64_t kept = all >> count, low = (uint64_t(1) << count) - 1;
+		const Value sum = unmasked(placed->ops[0], width, kept);
+		const Instruction* stepped = binary(sum, width, BinaryOp::Add, step);
+		const bool down = stepped == nullptr;
+		if (down && (stepped = binary(sum, width, BinaryOp::Sub, step)) == nullptr)
+			continue;
+		const Value field = unmasked(stepped->ops[0], width, kept);
+		const Instruction* shift = binary(field, width, BinaryOp::UShr, read);
+		if (shift == nullptr && (shift = binary(field, width, BinaryOp::Shr, read)) == nullptr)
+			continue;
+		const Instruction* rest = binary(inst.ops[1 - k], width, BinaryOp::And, mask);
+		if (read != count || rest == nullptr || (mask & all) != low ||
+			!(retyped(rest->ops[0], width) == retyped(shift->ops[0], width)))
+			continue;
+		const Value unit = retyped(rest->ops[0], width);
+		Value from = Value::none();
+		for (const Value v : { rest->ops[0], shift->ops[0], unit })
+			if (v.is(ValueKind::Temp) && body_.temps[v.index].type == inst.type)
+				from = v;
+		if (from.is(ValueKind::None))
+			continue;
+		inst.sub = static_cast<uint8_t>(BinaryOp::Add);
+		inst.flags = 0;
+		inst.ops[0] = from;
+		inst.ops[1] = integer_value(
+			body_, normalize_integer(inst.type, Literal{ ((down ? 0 - step : step) << count) & all, 0 }));
+		return true;
+	}
+	return false;
+}
+
 } // namespace
 
 bool simplify_integer_compare(
@@ -705,6 +798,13 @@ bool simplify_integer_conversion(
 {
 	IntegerPatterns patterns(body, uses, facts);
 	return patterns.narrow_truncation(instruction);
+}
+
+bool simplify_field_step(
+	FunctionBody& body, const std::vector<uint32_t>& uses, IntegerPatternFacts& facts, Instruction& instruction)
+{
+	IntegerPatterns patterns(body, uses, facts);
+	return patterns.field_step(instruction);
 }
 
 bool simplify_pointer_distance(FunctionBody& body, IntegerPatternFacts& facts, BlockId block, InstId& prev, InstId id)

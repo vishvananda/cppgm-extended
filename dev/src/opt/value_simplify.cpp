@@ -3046,6 +3046,9 @@ void Simplifier::process_block(BlockId block)
 		}
 		if (inst.op == Opcode::Compare && simplify_integer_compare(body_, uses_, *this, inst))
 			changed_ = true;
+		if (inst.op == Opcode::Binary && static_cast<BinaryOp>(inst.sub) == BinaryOp::Or &&
+			simplify_field_step(body_, uses_, *this, inst))
+			changed_ = true;
 		if (reassociate(inst) || narrow_truncation(inst) || mask_or(inst) || packed_part(inst) ||
 			unsigned_division(inst) || even_product_halved(inst) || exact_reciprocal(inst) || merge_index(inst) ||
 			narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) || readonly_table_address(inst))
