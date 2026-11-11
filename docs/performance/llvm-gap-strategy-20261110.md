@@ -1401,3 +1401,206 @@ changes instructions -0.010%, -6.906%, -3.080% and -2.765% at O0–O3 against
 r24, essentially unchanged from r29. Its LLVM output check and ledger remain
 pending. Evidence: gap-C-mid-cost-versus-main-r29.json;
 gap-C-switch-cost-batch-r30/summary.json.
+
+### Continued cost-model controls and higher-level measurements
+
+Fetched origin and attempted the requested rebase on 2026-11-11. Origin/main
+is still 04d285786, already an ancestor of this worktree; Git reports the
+branch up to date. The following measurements use immutable binaries from
+that base. No private inliner policy has been adopted.
+
+r30 now passes all 325 objects and the linked executable. Three subsequent
+controls retain the same 24/36 base allowances:
+
+- r31 consumes typed branch predictions in the existing callee CFG. It
+  discounts known cost on predicted rare paths while preserving a quarter
+  for copied code; unpriced operations remain unpriced. This analysis is
+  built per callee, not per call site.
+- r33 prices address calculations before examining the indexed element
+  type. A constant local address used exactly once as a load/store address
+  receives the discount for folding the backend already performs. Shared,
+  returned or passed addresses retain their cost. This removes double
+  counting, not a new memory transformation.
+- r34 gives a loop call one additional removed-call cost as a benefit.
+  Actual copy growth and caller budgets are unchanged; it does not restore
+  the former fourfold body-size allowance.
+
+All four controls reproduce every workload output. The following changes
+are against the matching r24 43-provider slice, on store_motion:
+
+| Control | Executed bytes | Instructions | Calls | Modeled L2 code misses |
+| --- | ---: | ---: | ---: | ---: |
+| r30 switch prices | -2.055% | +2.937% | +10.430% | -2.953% |
+| r31 rare-path prices | -1.983% | +2.743% | +9.649% | -3.004% |
+| r33 address prices | -1.821% | +2.473% | +8.503% | -2.422% |
+| r34 loop benefit | -1.709% | +2.065% | +6.655% | -2.241% |
+
+r34's frozen compile instructions change -0.004%, -5.875%, -2.292% and
+-1.975% at O0–O3 against r24. Its 80-observation O1 hardware screen preserves
+all outputs and all ten flagged cycle outliers. Instructions rise 1.94–1.97%,
+micro-operations 2.34%; store-forward blocks fall 3.49%, hardware L2 code
+misses 1.89%, TLB walk cycles 6.94% and fetch stalls 1.82%.
+Cycle changes range from -0.44% to +1.26% across event groups: no resolved
+runtime win. The remaining extra callees include SmallPtrSet::insert_imp,
+FoldingSetNodeID::AddInteger and redeclaration accessors. Unresolved
+address-only symbols are retained but are not treated as identified callees.
+
+The same private policy was screened at O2/O3 using new full r32 baselines
+at the matching producer level, with native O2/O3 oracles. Both sets of 325
+objects and executables match. Hardware instructions rise 1.68%/1.73%;
+cycles rise 1.31–3.66%/0.43–1.32% across event groups. Store-forward blocks
+improve substantially, but extra work and instruction fetch costs prevent
+a win. Six/twenty flagged outliers are retained. This is a reason to keep
+investigating the replacement model, not to ship it or report a gain.
+
+Local LLVM 22.1.2 InlineCost.cpp exposes another controlled difference:
+direct calls cost an instruction, argument setup and a five-instruction
+call penalty. The prototype uses a smaller call overhead. Private r36
+tests six units plus argument setup for both nested and removed calls.
+r37 separately tests LLVM's default 45/65 ordinary/hinted allowances in
+those units. These are diagnostics; the two IRs and their simplifications
+are not assumed to have identical cost. Both results remain pending.
+
+The accepted r24 compiler also rebuilt all 2,577 target C++ units of LLVM
+at O2 and O3, without fallback. Unpaired build times under load were 351.54
+and 386.88 seconds; these are capacity observations, not speed comparisons.
+Both resulting LLVMs reproduce all 325 frozen cppgm objects and the linked
+executable. The full O2 trial has completed 32 observations in five paired
+blocks, including native A/A, with every output identical and binaries and
+inputs unchanged:
+
+| LLVM producer | Elapsed/native, mean [95% interval] | Cycles/native, mean [95% interval] |
+| --- | --- | --- |
+| Prior O2 tables-cost-returns r4 | 1.1838 [1.1537, 1.2138] | 1.1861 [1.1689, 1.2033] |
+| Accepted main/aggregate O2 r32 | 1.1380 [1.1274, 1.1487] | 1.1475 [1.1408, 1.1542] |
+
+The paired elapsed change is -3.835% [-6.226%, -1.445%]; cycle change is
+-3.247% [-4.438%, -2.056%]. Instructions fall 1.155%, instruction-cache
+misses 5.345% and fetch stalls 5.783%. The cycle-ratio drop is 3.862 points
+[2.400, 5.323]. This compares the complete accepted changes with the prior
+O2 checkpoint, not the private inliner, and is not isolated attribution to
+one aggregate change. O2 is still outside the 5% target. O3 timing follows.
+The cumulative compile baseline remains 8f76ebb0d.
+
+Evidence: gap-C-{switch-cost,predicted-cost,address-cost,loop-benefit}-versus-main-*
+JSON summaries; gap-C-loop-benefit-extra-calls-r34.json;
+gap-C-loop-benefit-O{1,2,3}-hardware-r35/summary.json;
+gap-C-o23-screen-r35.json;
+gap-C-main-04d-O2-full-workload-r32/summary.json.
+
+r36 and r37 now pass all 325 objects and the linked executable. Raising
+the call price alone leaves extra work: r36 number_literal/store_motion
+instructions are +1.545%/+1.812% and calls +4.594%/+5.232% against the
+matching r24 slice. r37's separate allowance control recovers that loss:
+
+| r37 against matching r24 slice | Executed bytes | Instructions | Calls | Modeled L2 code misses |
+| --- | ---: | ---: | ---: | ---: |
+| number_literal | -0.412% | -0.400% | -3.722% | -3.203% |
+| store_motion | -0.437% | -0.315% | -4.198% | -1.136% |
+
+Frozen compile instructions for r37 fall 3.367%, 2.485% and 2.326% at
+O1–O3 against r24. Its hardware screen has instructions -0.35%, blocked
+store-forward loads -11.83%, TLB second-level hits -6.17% and
+micro-operations -0.61%, but L2 code misses +0.12% and fetch stalls +0.75%.
+Cycle ratios vary from -4.73% to +0.77% with 27 flagged observations
+retained. Do not treat that spread as a resolved runtime gain.
+
+r39 adds constant-argument path pricing. When the entry branch directly
+tests an integer parameter, a per-callee summary records each outcome's
+remaining cost using the existing CFG. A call site with a literal argument
+evaluates the typed predicate; it does not clone or rescan the callee.
+Normal inlining and constant propagation still perform all transformations.
+Safety checks, raw copy limits and the non-growing rule stay unchanged.
+This is a limited implementation of context pricing, not general partial
+evaluation or function-pointer specialization.
+
+The equality, signed-comparison and reversed-comparison controls retain
+observable effects and results in sixteen GCC/Clang/before/after executions
+at O0–O3. The new compiler removes the three constant fast-path calls that
+r37 retained. This control uses host linking; an initial attempt with the
+course executable linker failed to resolve printf and is retained in the
+log. All 325 LLVM-produced objects and the compiler also match. Eighteen
+of the 43 provider objects change from r37. Against r24, number_literal/
+store_motion instructions change -0.468%/-0.276%, calls -3.812%/-4.206%,
+executed bytes -0.383%/-0.405%, and modeled L2 code misses -4.565%/-1.809%.
+The r39-versus-r37 hardware screen shows L2 code misses -1.11%, fetch stalls
+-3.28% and branch mispredictions -0.56%; instructions are approximately
+flat. Nine flagged observations are retained. Full-workload confirmation
+is still required.
+
+Six PA33 LowIR/source lanes at O1–O3 report no behavior failure. Five
+reference/quality differences remain: two exact-conversion fact comparisons,
+the hinted 23-call body, the whole-body fast-wrapper size cap, and a vector
+callee rejected because its instructions are unpriced. Expectations have
+not been changed. r41 supplies prices for explicit vector operations from
+the existing VectorShape vocabulary and ordinary f32/f64 operations. That
+restores the vector check; the other four differences remain. All 43 LLVM
+provider objects and the entire linked binary equal r39 exactly. The
+redundant unfinished ledgers were stopped, with artifacts retained, and
+r39's evidence reused by hash. r41 independently passed the full object
+and executable replay before that reuse.
+
+r42 removes analysis left over from the deleted dispatch admission rule.
+The replacement model was still completing callee dominators/loop forests
+and scanning caller bodies for a result it ignored. Removing that work
+reduces frozen compile instructions by 0.593%, 0.572% and 0.550% at O1–O3
+against r41. Frozen outputs at all four levels, the 43 provider objects and
+the complete LLVM binary are identical. This is a confirmed compile-cost
+recovery inside the private policy, not a new codegen result. Known-function
+argument specialization remains a separate missing capability; do not
+restore the old shape cap simply to consume its former analysis.
+
+The fast-wrapper cap was checked separately without changing its fixture.
+Over 100,000 calls the new and accepted builds produce equal results.
+The fast-path whole-process instruction count differs by five instructions
+total; the slow path saves 199,995, approximately two per call. This supports
+reviewing the whole-body cap, but an isolated wrapper does not establish
+the workload's instruction-cache behavior. The 23-call hinted body is also
+a policy expectation: an inline hint does not require copying all its calls.
+Any adoption must retain behavior, no-inline and meaningful quality checks,
+then pass normal strict tests, audits, self-host and performance gates.
+
+A full private O1 LLVM build of r42 is queued after the accepted O3 timing.
+It will replay all 325 objects and the compiler, then run the four-input
+ledger and hardware screen against full r24. Many small extra callees in
+the native comparison are unchanged by the current slice; only the complete
+build can establish the effect outside those 43 providers. No replacement
+policy is adopted, and no 5% target is claimed.
+
+Evidence: gap-C-{call-cost,native-allowance,entry-specialization}-versus-main-*
+JSON summaries; gap-C-{call-cost,native-allowance}-hardware-r38/summary.json;
+gap-C-entry-controls-r39/receipt.json;
+gap-C-entry-specialization-hardware-r40/summary.json;
+gap-C-entry-course-tests-r40/summary.json;
+gap-C-vector-course-tests-r41/summary.json;
+gap-C-vector-cost-evidence-reuse-r41.json;
+gap-C-prune-analysis-batch-r42/summary.json;
+gap-C-wrapper-guard-r44/summary.json;
+queue_gap_C_cost_model_full_r43.py.
+
+The r42 cumulative gate has also completed against the unchanged 8f76ebb0d
+baseline: O0 +0.445%, O1 -4.474%, O2 -4.413%, O3 -4.428% compile
+instructions. RSS ratios are 1.00009, 1.00007, 0.99998 and 1.00092.
+All repeated outputs match and frozen inputs and binaries remain unchanged.
+These savings do not establish runtime improvement; no additional runtime
+credit is claimed for the private policy. Evidence:
+gap-C-cost-model-cumulative-r43/summary.json.
+
+The accepted O3 full-workload trial has completed all 32 observations, with
+every object and executable identical and binaries and inputs unchanged:
+
+| LLVM producer | Elapsed/native, mean [95% interval] | Cycles/native, mean [95% interval] |
+| --- | --- | --- |
+| Prior O3 tables-cost-returns r4 | 1.2025 [1.1829, 1.2221] | 1.2032 [1.1965, 1.2100] |
+| Accepted main/aggregate O3 r32 | 1.1763 [1.1099, 1.2427] | 1.1630 [1.1562, 1.1698] |
+
+Paired elapsed changes -2.184% [-7.291%, +2.924%], so the wall-time gain
+is unresolved. Cycles change -3.341% [-4.243%, -2.439%], instructions
+-1.229%, instruction-cache misses -5.072%, and fetch stalls -5.739%.
+The cycle-ratio drop is 4.022 points [2.920, 5.125]. This is the complete
+accepted main/aggregate checkpoint compared with prior r4; it is not the
+private replacement inliner or isolated attribution to one pass. O3 also
+remains outside the 5% target. Evidence:
+gap-C-main-04d-O3-full-workload-r32/summary.json.
+
+The private r43 full LLVM build has now started after the O3 trial ended.
