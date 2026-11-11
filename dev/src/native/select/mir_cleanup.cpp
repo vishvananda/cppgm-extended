@@ -273,6 +273,109 @@ TailCopies duplicate_short_tails(Function& f)
 // the low half zero-extended); the copy becomes a nop, as for `imul b, 2|4|8`.
 // `imul b, k` of a k the emitter reduces to a lea and a shift computes
 // that lea from a.
+namespace {
+
+// insts[i] copies all of register a into b and insts[i + 1] updates b:
+// the lea (or lea and shift) from a that replaces the pair, when there is one.
+bool fuse_copy_into_lea(std::vector<Inst>& insts, uint32_t i, uint32_t end)
+{
+	const Inst& copy = insts[i];
+	if (i + 1 >= end || !plain_gpr(copy.ops[0]) || !plain_gpr(copy.ops[1]) || copy.ops[0].reg == copy.ops[1].reg)
+		return false;
+	const Reg a = copy.ops[1].reg, b = copy.ops[0].reg;
+	Inst& next = insts[i + 1];
+	if (next.nops < 2 || !(next.ops[0].kind == OperandKind::Reg && next.ops[0].reg == b))
+		return false;
+	// Widths: a shift is 32-bit only at u32 (emitter shift), other
+	// ALU operations at their type's (emitter alu).
+	const bool shift = next.op == Op::Shl;
+	const bool narrow = next.type == lowir::TypeKind::U32 || (!shift && next.type == lowir::TypeKind::I32);
+	const bool wide = shift
+		? !narrow
+		: next.type == lowir::TypeKind::Void || next.type == lowir::TypeKind::Ptr || next.type == lowir::TypeKind::I64;
+	Operand mem;
+	const Operand& src = next.ops[1];
+	if (next.op == Op::Lea)
+	{
+		if (src.kind != OperandKind::Mem || src.symbol != lowir::kNoId || !(src.reg == b || src.index == b) ||
+			src.reg >= 16 || (src.index != kNoReg && src.index >= 16))
+			return false;
+		if (src.index == b && a == RSP)
+			return false;
+		mem = src;
+		if (mem.reg == b)
+			mem.reg = a;
+		if (mem.index == b)
+			mem.index = a;
+	}
+	else
+	{
+		if ((!wide && !narrow) || !flags_dead_after(insts, i + 1, end))
+			return false;
+		// A 32-bit operation's immediate is its low half.
+		if (next.op == Op::Add && src.kind == OperandKind::Imm &&
+			(narrow || (src.imm >= INT32_MIN && src.imm <= INT32_MAX)))
+			mem = Operand::make_mem(a, static_cast<int32_t>(static_cast<uint32_t>(src.imm)));
+		else if (next.op == Op::Sub && src.kind == OperandKind::Imm &&
+			(narrow || (src.imm > INT32_MIN && src.imm <= INT32_MAX)))
+			mem = Operand::make_mem(a, static_cast<int32_t>(0u - static_cast<uint32_t>(src.imm)));
+		else if (next.op == Op::Add && plain_gpr(src) && src.reg != b && (a != RSP || src.reg != RSP))
+			mem = src.reg == RSP ? Operand::make_mem(RSP, 0, a, 1) : Operand::make_mem(a, 0, src.reg, 1);
+		else if (a == RSP)
+			return false;
+		else if (next.op == Op::Shl && src.kind == OperandKind::Imm && src.imm == 1)
+			mem = Operand::make_mem(a, 0, a, 1);
+		else if (next.op == Op::Shl && src.kind == OperandKind::Imm && (src.imm == 2 || src.imm == 3))
+			mem = Operand::make_mem(kNoReg, 0, a, static_cast<uint8_t>(1u << src.imm));
+		else if (next.op == Op::Imul && src.kind == OperandKind::Imm && src.imm == 2)
+			mem = Operand::make_mem(a, 0, a, 1);
+		else if (next.op == Op::Imul && src.kind == OperandKind::Imm && (src.imm == 4 || src.imm == 8))
+			mem = Operand::make_mem(kNoReg, 0, a, static_cast<uint8_t>(src.imm));
+		else if (next.op == Op::Imul && wide && src.kind == OperandKind::Imm && src.imm > 0)
+		{
+			// The emitter's strength reduction (lea for an odd 3, 5
+			// or 9, then a shift) from a: the copy becomes the lea.
+			int64_t odd = src.imm;
+			int64_t shift = 0;
+			while ((odd & 1) == 0)
+			{
+				odd >>= 1;
+				++shift;
+			}
+			if (odd != 3 && odd != 5 && odd != 9)
+				return false;
+			insts[i].op = Op::Lea;
+			insts[i].type = lowir::TypeKind::Void;
+			insts[i].ops[1] = Operand::make_mem(a, 0, a, static_cast<uint8_t>(odd - 1));
+			if (shift != 0)
+			{
+				next.op = Op::Shl;
+				next.type = lowir::TypeKind::Void;
+				next.ops[1] = Operand::make_imm(shift);
+			}
+			else
+			{
+				next.op = Op::Nop;
+				next.nops = 0;
+				next.ops[0] = next.ops[1] = Operand();
+			}
+			return true;
+		}
+		else
+			return false;
+	}
+	next.op = Op::Lea;
+	next.nops = 2;
+	next.type = narrow ? lowir::TypeKind::I32 : lowir::TypeKind::Void;
+	next.ops[1] = mem;
+	insts[i].op = Op::Nop;
+	insts[i].nops = 0;
+	insts[i].ops[0] = insts[i].ops[1] = Operand();
+	return true;
+}
+
+} // namespace
+
 // Linear.
 uint32_t fuse_copies_into_lea(Function& function)
 {
@@ -282,103 +385,8 @@ uint32_t fuse_copies_into_lea(Function& function)
 	{
 		const uint32_t end = block.first + block.count;
 		for (uint32_t i = block.first; i + 1 < end; ++i)
-		{
-			const Inst& copy = insts[i];
-			if (copy.op != Op::Mov || !plain_gpr(copy.ops[0]) || !plain_gpr(copy.ops[1]) ||
-				copy.ops[0].reg == copy.ops[1].reg)
-				continue;
-			const Reg a = copy.ops[1].reg, b = copy.ops[0].reg;
-			Inst& next = insts[i + 1];
-			if (next.nops < 2 || !(next.ops[0].kind == OperandKind::Reg && next.ops[0].reg == b))
-				continue;
-			// Widths: a shift is 32-bit only at u32 (emitter shift), other
-			// ALU operations at their type's (emitter alu).
-			const bool shift = next.op == Op::Shl;
-			const bool narrow = next.type == lowir::TypeKind::U32 || (!shift && next.type == lowir::TypeKind::I32);
-			const bool wide = shift ? !narrow
-									: next.type == lowir::TypeKind::Void || next.type == lowir::TypeKind::Ptr ||
-					next.type == lowir::TypeKind::I64;
-			Operand mem;
-			const Operand& src = next.ops[1];
-			if (next.op == Op::Lea)
-			{
-				if (src.kind != OperandKind::Mem || src.symbol != lowir::kNoId || !(src.reg == b || src.index == b) ||
-					src.reg >= 16 || (src.index != kNoReg && src.index >= 16))
-					continue;
-				if (src.index == b && a == RSP)
-					continue;
-				mem = src;
-				if (mem.reg == b)
-					mem.reg = a;
-				if (mem.index == b)
-					mem.index = a;
-			}
-			else
-			{
-				if ((!wide && !narrow) || !flags_dead_after(insts, i + 1, end))
-					continue;
-				// A 32-bit operation's immediate is its low half.
-				if (next.op == Op::Add && src.kind == OperandKind::Imm &&
-					(narrow || (src.imm >= INT32_MIN && src.imm <= INT32_MAX)))
-					mem = Operand::make_mem(a, static_cast<int32_t>(static_cast<uint32_t>(src.imm)));
-				else if (next.op == Op::Sub && src.kind == OperandKind::Imm &&
-					(narrow || (src.imm > INT32_MIN && src.imm <= INT32_MAX)))
-					mem = Operand::make_mem(a, static_cast<int32_t>(0u - static_cast<uint32_t>(src.imm)));
-				else if (next.op == Op::Add && plain_gpr(src) && src.reg != b && (a != RSP || src.reg != RSP))
-					mem = src.reg == RSP ? Operand::make_mem(RSP, 0, a, 1) : Operand::make_mem(a, 0, src.reg, 1);
-				else if (a == RSP)
-					continue;
-				else if (next.op == Op::Shl && src.kind == OperandKind::Imm && src.imm == 1)
-					mem = Operand::make_mem(a, 0, a, 1);
-				else if (next.op == Op::Shl && src.kind == OperandKind::Imm && (src.imm == 2 || src.imm == 3))
-					mem = Operand::make_mem(kNoReg, 0, a, static_cast<uint8_t>(1u << src.imm));
-				else if (next.op == Op::Imul && src.kind == OperandKind::Imm && src.imm == 2)
-					mem = Operand::make_mem(a, 0, a, 1);
-				else if (next.op == Op::Imul && src.kind == OperandKind::Imm && (src.imm == 4 || src.imm == 8))
-					mem = Operand::make_mem(kNoReg, 0, a, static_cast<uint8_t>(src.imm));
-				else if (next.op == Op::Imul && wide && src.kind == OperandKind::Imm && src.imm > 0)
-				{
-					// The emitter's strength reduction (lea for an odd 3, 5
-					// or 9, then a shift) from a: the copy becomes the lea.
-					int64_t odd = src.imm;
-					int64_t shift = 0;
-					while ((odd & 1) == 0)
-					{
-						odd >>= 1;
-						++shift;
-					}
-					if (odd != 3 && odd != 5 && odd != 9)
-						continue;
-					insts[i].op = Op::Lea;
-					insts[i].type = lowir::TypeKind::Void;
-					insts[i].ops[1] = Operand::make_mem(a, 0, a, static_cast<uint8_t>(odd - 1));
-					if (shift != 0)
-					{
-						next.op = Op::Shl;
-						next.type = lowir::TypeKind::Void;
-						next.ops[1] = Operand::make_imm(shift);
-					}
-					else
-					{
-						next.op = Op::Nop;
-						next.nops = 0;
-						next.ops[0] = next.ops[1] = Operand();
-					}
-					++fused;
-					continue;
-				}
-				else
-					continue;
-			}
-			next.op = Op::Lea;
-			next.nops = 2;
-			next.type = narrow ? lowir::TypeKind::I32 : lowir::TypeKind::Void;
-			next.ops[1] = mem;
-			insts[i].op = Op::Nop;
-			insts[i].nops = 0;
-			insts[i].ops[0] = insts[i].ops[1] = Operand();
-			++fused;
-		}
+			if (insts[i].op == Op::Mov && fuse_copy_into_lea(insts, i, end))
+				++fused;
 	}
 	return fused;
 }
@@ -1874,6 +1882,62 @@ bool fuse_scaled_add(std::vector<Inst>& insts, uint32_t i, uint32_t end)
 	return true;
 }
 
+// insts[i] copies all of register s into d (a wide move, or a 32-bit
+// zero-extension of a register whose upper half is zero). When the block
+// writes d again in full with no branch or other instruction between, and
+// every reader of d up to there can name s instead (none updates d in
+// place, none follows a write of s), the readers take s and the copy goes.
+bool forward_register_copy(std::vector<Inst>& insts, uint32_t i, uint32_t end)
+{
+	const Reg d = insts[i].ops[0].reg, s = insts[i].ops[1].reg;
+	if (d == s || d == RSP || d == RBP || s == RSP || s == RBP || s == R10 || s == R11)
+		return false;
+	bool dirty = false, killed = false;
+	uint32_t last = i;
+	for (uint32_t j = i + 1; j < end && j - i <= 24 && !killed; ++j)
+	{
+		const Inst& next = insts[j];
+		if (next.op == Op::Nop)
+			continue;
+		if (!simple_inst(next))
+			return false;
+		const bool counted = next.op >= Op::Shl && next.op <= Op::Ror && next.ops[1].kind != OperandKind::Imm;
+		const Reg w = written_reg(next);
+		if (reads_reg(next, d) || (counted && d == RCX))
+		{
+			if (dirty || counted || (w == d && reads_destination(next)))
+				return false;
+			last = j;
+		}
+		killed = w == d;
+		dirty = dirty || w == s;
+	}
+	if (!killed)
+		return false;
+	for (uint32_t k = i + 1; k <= last; ++k)
+	{
+		Inst& next = insts[k];
+		const bool writes = written_reg(next) == d;
+		for (unsigned n = 0; n < next.nops; ++n)
+		{
+			Operand& op = next.ops[n];
+			if (op.kind == OperandKind::Mem)
+			{
+				if (op.reg == d)
+					op.reg = s;
+				if (op.index == d)
+					op.index = s;
+			}
+			else if (op.kind == OperandKind::Reg && op.reg == d && !(n == 0 && writes))
+				op.reg = s;
+		}
+	}
+	insts[i].op = Op::Nop;
+	insts[i].nops = 0;
+	insts[i].ops[0] = insts[i].ops[1] = Operand();
+	return true;
+}
+
 } // namespace
 
 // O1+: `add b, imm` next to `add b, c` (c another register, the same
@@ -1972,6 +2036,21 @@ uint32_t fuse_adds_and_extensions(Function& function)
 					++removed;
 					continue;
 				}
+			}
+			// A full copy whose readers can name its source.
+			if ((inst.op == Op::Mov || (inst.op == Op::Zext && narrow_kind(inst.type))) && inst.nops == 2 &&
+				plain_gpr(inst.ops[0]) && plain_gpr(inst.ops[1]) &&
+				(inst.op == Op::Mov || ((known >> inst.ops[1].reg) & 1u)))
+			{
+				if (forward_register_copy(insts, i, end))
+				{
+					++removed;
+					continue;
+				}
+				// The copy of a zero-extended value fuses as a move does (the
+				// instruction left in its place is tracked below).
+				if (inst.op == Op::Zext && fuse_copy_into_lea(insts, i, end))
+					++removed;
 			}
 			// The redundant extension.
 			const bool in_place_zext = inst.op == Op::Zext && narrow_kind(inst.type) && plain_gpr(inst.ops[0]) &&
