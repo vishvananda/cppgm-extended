@@ -451,16 +451,23 @@ Type AggregateSlots::hinted_filler(SlotId slot, uint64_t gap, uint64_t end) cons
 bool widen_integer_fields(SlotFacts& facts, uint64_t size)
 {
 	uint64_t needed = 0;
-	for (const Field& f : facts.fields)
-		for (const Field& g : facts.fields)
-			if (f.offset < g.offset + storage_bytes(g.type) && g.offset < f.offset + storage_bytes(f.type) &&
+	for (size_t i = 0; i < facts.fields.size(); ++i)
+	{
+		const Field& f = facts.fields[i];
+		const uint64_t end = f.offset + storage_bytes(f.type);
+		for (size_t j = i + 1; j < facts.fields.size() && facts.fields[j].offset < end; ++j)
+		{
+			const Field& g = facts.fields[j];
+			if (f.offset < g.offset + storage_bytes(g.type) &&
 				!(f.offset == g.offset &&
 					(f.type == g.type || float_twins(f.type, g.type) || integer_twins(f.type, g.type))))
 			{
-				if (f.offset / 8 >= 64)
+				if (f.offset / 8 >= 64 || g.offset / 8 >= 64)
 					return false;
-				needed |= uint64_t(1) << (f.offset / 8);
+				needed |= (uint64_t(1) << (f.offset / 8)) | (uint64_t(1) << (g.offset / 8));
 			}
+		}
+	}
 	if (needed == 0)
 		return true;
 	for (uint32_t chunk = 0; chunk < 64; ++chunk)
@@ -497,6 +504,15 @@ bool widen_integer_fields(SlotFacts& facts, uint64_t size)
 bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 {
 	std::vector<Field>& fields = facts.fields;
+	// Access frequency does not change the storage shape. Collapse repeated
+	// descriptors before testing overlap, and inspect only intersecting ranges.
+	// Scalar widths and the finite type vocabulary bound each overlap window.
+	std::sort(fields.begin(), fields.end(), [](const Field& x, const Field& y) {
+		return x.offset < y.offset || (x.offset == y.offset && x.type.kind() < y.type.kind());
+	});
+	fields.erase(std::unique(fields.begin(), fields.end(),
+					 [](const Field& x, const Field& y) { return x.offset == y.offset && x.type == y.type; }),
+		fields.end());
 	facts.partial = !facts.spans.empty() && size > 8 * kMaxFields;
 	if (facts.partial && facts.recurrent.empty())
 		return false;
