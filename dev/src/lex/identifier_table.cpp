@@ -8,16 +8,36 @@ namespace {
 
 const uint32_t kInitialSlots = 1024;
 
-// FNV-1a over the spelling's bytes.
+// A multiplicative hash of the spelling, eight bytes at a time; the last
+// step takes the bytes left (the first and last four, which overlap below
+// eight, or the first, middle and last of fewer than four).
 uint32_t HashSpelling(const char* spelling, uint32_t length)
 {
-	uint32_t hash = 2166136261u;
-	for (uint32_t i = 0; i < length; ++i)
+	const uint64_t kMultiplier = 0x9E3779B97F4A7C15ull;
+	uint64_t hash = (length + 1) * kMultiplier;
+	for (; length > 8; spelling += 8, length -= 8)
 	{
-		hash ^= static_cast<unsigned char>(spelling[i]);
-		hash *= 16777619u;
+		uint64_t word;
+		std::memcpy(&word, spelling, 8);
+		hash = (hash ^ word) * kMultiplier;
+		hash ^= hash >> 32;
 	}
-	return hash;
+	uint64_t rest = 0;
+	if (length >= 4)
+	{
+		uint32_t low, high;
+		std::memcpy(&low, spelling, 4);
+		std::memcpy(&high, spelling + length - 4, 4);
+		rest = (static_cast<uint64_t>(high) << 32) | low;
+	}
+	else if (length != 0)
+	{
+		rest = static_cast<unsigned char>(spelling[0]) |
+			(static_cast<uint64_t>(static_cast<unsigned char>(spelling[length >> 1])) << 8) |
+			(static_cast<uint64_t>(static_cast<unsigned char>(spelling[length - 1])) << 16);
+	}
+	hash = (hash ^ rest) * kMultiplier;
+	return static_cast<uint32_t>(hash >> 32);
 }
 
 } // namespace
