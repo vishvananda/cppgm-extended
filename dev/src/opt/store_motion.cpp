@@ -489,7 +489,9 @@ bool StoreMotion::run()
 			if (!read_accesses(loop))
 				continue;
 			// (A location not stored on every pass, or a loop with calls:
-			// its loads alone.)
+			// its loads alone.) A loop with calls skips the first search:
+			// the list must not keep the locations of the loop before.
+			locations_.clear();
 			loads_only_ = !calls_.empty();
 			if (!loads_only_)
 				find_locations(loop);

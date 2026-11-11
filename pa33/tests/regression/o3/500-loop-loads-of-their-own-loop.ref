@@ -1,0 +1,115 @@
+declare function @malloc(%arg0 : i64) -> ptr [unwind=no, linkage=c, binding=strong]
+declare function @free(%arg0 : ptr) -> void [unwind=no, linkage=c, binding=strong]
+
+global @hits : i32 = 0
+
+function @pick(%i : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %h = load i32 @hits
+    %h1 = binary add i32 %h, 1
+    store i32 %h1, @hits
+    %odd = binary and i32 %i, 1
+    return i32 %odd
+}
+function @count(%n : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i32 [^entry: 0, ^next: %j]
+    %q = phi ptr [^entry: 0, ^next: %r]
+    %go = cmp lt i32 %i, %n
+    branch %go, ^body, ^test
+
+  block ^test:
+    %h = load i32 @hits
+    %late = cmp eq i32 %h, 1000
+    branch %late, ^body, ^after
+
+  block ^body:
+    %k = call i32 @pick(%i)
+    branch %k, ^add, ^next
+
+  block ^add:
+    %none = cmp eq ptr %q, 0
+    branch %none, ^make, ^split_6
+
+  block ^make:
+    %m = call ptr @malloc(8)
+    store i32 0, %m
+    jump ^bump
+
+  block ^split_6:
+    %t10 = load i32 %q
+    jump ^bump
+
+  block ^bump:
+    %c = phi i32 [^split_6: %t10, ^make: 0]
+    %p = phi ptr [^split_6: %q, ^make: %m]
+    %c1 = binary add i32 %c, 1
+    store i32 %c1, %p
+    jump ^next
+
+  block ^next:
+    %r = phi ptr [^body: %q, ^bump: %p]
+    %j = binary add i32 %i, 1
+    jump ^head
+
+  block ^after:
+    branch %q, ^split_10, ^zero
+
+  block ^split_10:
+    %t16 = load i32 %q
+    %t17 = cmp gt i32 %t16, 0
+    branch %t17, ^loop_preheader_11, ^wide_tail_15
+
+  block ^loop_preheader_11:
+    %t18 = binary and i32 %t16, -8
+    branch %t18, ^loop_preheader_12, ^wide_tail_15
+
+  block ^loop_preheader_12:
+    %t19 = binary sub i32 %t16, %t18
+    jump ^unrolled_13
+
+  block ^unrolled_13:
+    %t20 = phi i32 [^loop_preheader_12: %t16, ^unrolled_13: %t22]
+    %t21 = phi i32 [^loop_preheader_12: 0, ^unrolled_13: %t23]
+    %t22 = binary sub nowrap i32 %t20, 8
+    %t23 = binary add i32 %t21, 8
+    %t24 = cmp ne i32 %t19, %t22
+    branch %t24, ^unrolled_13, ^loop_exit_14
+
+  block ^loop_exit_14:
+    %t25 = cmp gt i32 %t22, 0
+    branch %t25, ^wide_tail_15, ^loop_exit_17
+
+  block ^wide_tail_15:
+    %t26 = phi i32 [^split_10: %t16, ^loop_exit_14: %t22, ^loop_preheader_11: %t16]
+    %t27 = phi i32 [^split_10: 0, ^loop_exit_14: %t23, ^loop_preheader_11: 0]
+    jump ^drain
+
+  block ^drain:
+    %v = phi i32 [^wide_tail_15: %t26, ^drain: %v1]
+    %t = phi i32 [^wide_tail_15: %t27, ^drain: %t1]
+    %v1 = binary sub i32 %v, 1
+    %t1 = binary add i32 %t, 1
+    %more = cmp gt i32 %v1, 0
+    branch %more, ^drain, ^loop_exit_17
+
+  block ^loop_exit_17:
+    %t33 = phi i32 [^drain: %v1, ^loop_exit_14: %t22]
+    %t34 = phi i32 [^drain: %t1, ^loop_exit_14: %t23]
+    store i32 %t33, %q
+    call void @free(%q)
+    return i32 %t34
+
+  block ^zero:
+    return i32 0
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call i32 @count(10)
+    %h = load i32 @hits
+    %s = binary add i32 %a, %h
+    return i32 %s
+}
