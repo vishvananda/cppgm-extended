@@ -77,23 +77,23 @@ function @main
     mov rdi, -2147483648
     mov rsi, 1
     call @negative32 [args=(rsi,rdi)]
-    mov rbx, rax
+    zext.i32 rbx, rax
     mov rdi, 2147483647
     mov rsi, -1
     call @negative32 [args=(rsi,rdi)]
-    mov r12, rax
+    zext.i32 r12, rax
     mov rdi, 9223372036854775807
     mov rsi, 1
     call @nonnegative64 [args=(rsi,rdi)]
-    mov r13, rax
+    zext.i32 r13, rax
     mov rdi, -9223372036854775808
     mov rsi, -1
     call @nonnegative64 [args=(rsi,rdi)]
-    mov r14, rax
+    zext.i32 r14, rax
     mov rdi, 2147483647
     mov rsi, 1
     call @mixed_conditions [args=(rsi,rdi)]
-    mov r15, rax
+    zext.i32 r15, rax
     mov rdi, -2147483648
     mov rsi, -1
     call @mixed_conditions [args=(rsi,rdi)]

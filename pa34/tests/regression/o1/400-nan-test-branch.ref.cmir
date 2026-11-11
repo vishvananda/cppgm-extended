@@ -77,9 +77,9 @@ function @main
     sar rax, 39
     mov rdx, rcx
     sar rdx, 63
-    sub rax, rdx
+    sub.u32 rax, rdx
     imul rax, 251
-    mov rdx, rcx
-    sub rdx, rax
-    mov rax, rdx
+    zext.i32 rdx, rcx
+    sub.u32 rdx, rax
+    zext.i32 rax, rdx
     ret rax

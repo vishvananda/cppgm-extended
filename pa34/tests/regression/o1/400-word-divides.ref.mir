@@ -22,7 +22,7 @@ function @by_seven
     sar rax, 34
     mov rdx, rdi
     sar rdx, 63
-    sub rax, rdx
+    sub.u32 rax, rdx
     ret rax
 
 function @by_minus_seven
@@ -42,8 +42,8 @@ function @by_minus_seven
     sar rax, 34
     mov rdx, rdi
     sar rdx, 63
-    sub rdx, rax
-    mov rax, rdx
+    sub.u32 rdx, rax
+    zext.i32 rax, rdx
     ret rax
 
 function @rest_of
@@ -61,11 +61,11 @@ function @rest_of
     sar rax, 46
     mov rdx, rdi
     sar rdx, 63
-    sub rax, rdx
+    sub.u32 rax, rdx
     imul rax, 139968
-    mov rdx, rdi
-    sub rdx, rax
-    mov rax, rdx
+    zext.i32 rdx, rdi
+    sub.u32 rdx, rax
+    zext.i32 rax, rdx
     ret rax
 
 function @unsigned_by_ten
@@ -121,30 +121,30 @@ function @main
   block ^entry
     mov rdi, -50
     call @by_seven [args=(rdi)]
-    mov rbx, rax
+    zext.i32 rbx, rax
     mov rdi, 50
     call @by_minus_seven [args=(rdi)]
-    mov r12, rax
+    zext.i32 r12, rax
     mov rdi, 200000
     call @rest_of [args=(rdi)]
-    mov r13, rax
+    zext.i32 r13, rax
     mov rdi, -1
     call @unsigned_by_ten [args=(rdi)]
-    mov r14, rax
+    zext.i32 r14, rax
     mov rdi, -1
     call @unsigned_by_seven [args=(rdi)]
     add.i32 rbx, r12
     add.i32 rbx, r13
     add.i32 rbx, r14
-    add rbx, rax
+    add.u32 rbx, rax
     sext.i32 rbx
     imul rax, rbx, 1374389535
     sar rax, 37
     mov rdx, rbx
     sar rdx, 63
-    sub rax, rdx
+    sub.u32 rax, rdx
     imul rax, 100
-    mov rdx, rbx
-    sub rdx, rax
-    mov rax, rdx
+    zext.i32 rdx, rbx
+    sub.u32 rdx, rax
+    zext.i32 rax, rdx
     ret rax

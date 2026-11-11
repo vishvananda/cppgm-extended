@@ -27,8 +27,8 @@ function @chain
     epilogues duplicated
 
   block ^entry
-    mov r8, rdx
-    mov rax, rdi
+    zext.i32 r8, rdx
+    zext.i32 rax, rdi
     cqo.i32
     idiv.i32 rsi
     cqo.i32
@@ -48,7 +48,7 @@ function @seen
     epilogues duplicated
 
   block ^entry
-    load.i32 rax, [rdi]
+    load.u32 rax, [rdi]
     ret rax
 
 function @through
@@ -90,7 +90,7 @@ function @main
     mov rdx, 3
     mov rcx, 4
     call @chain [args=(rcx,rdx,rsi,rdi)]
-    mov rbx, rax
+    zext.i32 rbx, rax
     mov rdi, @cell
     call @through [args=(rdi)]
     sub.i32 rbx, 2

@@ -38,7 +38,7 @@ function @bit
 
   block ^entry
     test.i32 rdi, 1024
-    mov rax, rdx
+    zext.i32 rax, rdx
     cmovne rax, rsi
     ret rax
 
@@ -77,29 +77,29 @@ function @main
     mov rdx, 10
     mov rcx, 20
     call @pick [args=(rcx,rdx,rsi,rdi)]
-    mov rbx, rax
+    zext.i32 rbx, rax
     mov rdi, 4
     mov rsi, 3
     mov rdx, 10
     mov rcx, 20
     call @pick [args=(rcx,rdx,rsi,rdi)]
-    mov r12, rax
+    zext.i32 r12, rax
     mov rdi, 1024
     mov rsi, 1
     mov rdx, 2
     call @bit [args=(rdx,rsi,rdi)]
-    mov r13, rax
+    zext.i32 r13, rax
     mov rdi, 1023
     mov rsi, 1
     mov rdx, 2
     call @bit [args=(rdx,rsi,rdi)]
-    mov r14, rax
+    zext.i32 r14, rax
     mov rdi, 6
     mov rsi, 3
     mov rdx, 100
     call @shared [args=(rdx,rsi,rdi)]
-    add rbx, r12
-    add rax, rbx
+    add.u32 rbx, r12
+    add.u32 rax, rbx
     imul.i32 r13, 10
     add.i32 r13, r14
     add.i32 rax, r13

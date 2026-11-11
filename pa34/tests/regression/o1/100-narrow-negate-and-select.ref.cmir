@@ -16,7 +16,7 @@ function @negate
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
+    zext.i32 rax, rdi
     neg rax
     ret rax
 
@@ -33,7 +33,7 @@ function @larger
 
   block ^entry
     cmp.i32 rdi, rsi
-    mov rax, rsi
+    zext.i32 rax, rsi
     cmovg rax, rdi
     ret rax
 

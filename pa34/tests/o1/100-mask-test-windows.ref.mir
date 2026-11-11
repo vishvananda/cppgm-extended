@@ -131,24 +131,23 @@ function @main
     store.i64 [rbp-8], 0
     lea rdi, [rbp-8]
     call @high [args=(rdi)]
-    sext.i32 r15, rax
+    zext.i32 r15, rax
     lea rdi, [rbp-8]
     call @interior [args=(rdi)]
-    sext.i32 r10, rax
+    zext.i32 r10, rax
     store.i32 [rbp-16], r10
     lea rdi, [rbp-8]
     call @wide_holes [args=(rdi)]
-    sext.i32 r10, rax
+    zext.i32 r10, rax
     store.i32 [rbp-24], r10
     lea rdi, [rbp-8]
     call @word_high [args=(rdi)]
     sext.i32 rax
-    or rbx, r12
-    or rbx, r13
-    or rbx, r14
-    or rbx, r15
+    or.u32 rbx, r12
+    or.u32 rbx, r13
+    or.u32 rbx, r14
+    or.u32 rbx, r15
     or.i32 rbx, [rbp-16]
-    sext.i32 rbx
     or.i32 rbx, [rbp-24]
     sext.i32 rbx
     or rax, rbx

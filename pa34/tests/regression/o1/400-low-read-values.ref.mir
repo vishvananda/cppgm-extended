@@ -31,7 +31,7 @@ function @sum_products
     mov rcx, 0
 
   block ^loop
-    load.i32 r8, [rdi+rax*4]
+    load.u32 r8, [rdi+rax*4]
     imul.i32 r8, r8
     add.i32 rcx, r8
     add rax, 1
@@ -39,7 +39,7 @@ function @sum_products
     jl ^loop
 
   block ^loop~end
-    mov rax, rcx
+    zext.i32 rax, rcx
 
   block ^end
     store.i32 [rdx], rax
@@ -60,7 +60,7 @@ function @divides
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
+    zext.i32 rax, rdi
     cqo.i32
     idiv.i32 rsi
     cmp.i32 rdx, 0
@@ -92,11 +92,11 @@ function @main
     mov rsi, 3
     lea rdx, @table+12
     call @sum_products [args=(rdx,rsi,rdi)]
-    load.i32 rbx, @table+12
+    load.u32 rbx, @table+12
     mov rdi, 9
     mov rsi, 3
     call @divides [args=(rsi,rdi)]
-    mov r12, rax
+    zext.i32 r12, rax
     mov rdi, 9
     mov rsi, 4
     call @divides [args=(rsi,rdi)]

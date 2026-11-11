@@ -39,13 +39,13 @@ function @main
     mov <gpr1>, rax
     mov rdi, 999999999
     call @billions [args=(rdi)]
-    mov <gpr2>, rax
+    zext.i32 <gpr2>, rax
     mov rdi, 1000000000
     call @billions [args=(rdi)]
-    add <gpr2>, rax
+    add.u32 <gpr2>, rax
     mov rax, <gpr1>
     mov <gpr0>, -6067343680855748867
     mul <gpr0>
     shr rdx, 26
-    lea rax, [rdx+<gpr2>]
+    lea.i32 rax, [rdx+<gpr2>]
     ret rax

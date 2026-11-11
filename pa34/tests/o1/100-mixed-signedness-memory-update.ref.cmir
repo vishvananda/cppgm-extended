@@ -90,7 +90,7 @@ function @volatile_update
 
   block ^entry
     load.u8 rax, [rdi]
-    add rax, 1
+    add.u32 rax, 1
     zext.i8 rax
     store.i8 [rdi], rax
     ret
@@ -124,7 +124,7 @@ function @live_old_value
 
   block ^entry
     load.u8 rax, [rdi]
-    lea rcx, [rax+<off0>]
+    lea.i32 rcx, [rax+<off0>]
     store.i8 [rdi], rcx
     ret rax
 
@@ -222,14 +222,14 @@ function @main
     cmp.i64 [rbp-<off0>], 0
     setne rax
     movzx rax, rax
-    or <gpr0>, <gpr1>
-    or <gpr2>, <gpr3>
-    or <gpr4>, [rbp-<off1>]
-    load.i64 rcx, [rbp-<off2>]
-    or rcx, [rbp-<off3>]
-    or <gpr0>, <gpr2>
-    or <gpr4>, rcx
-    or <gpr0>, <gpr4>
-    or <gpr0>, [rbp-<off4>]
-    or rax, <gpr0>
+    or.u32 <gpr0>, <gpr1>
+    or.u32 <gpr2>, <gpr3>
+    or.u32 <gpr4>, [rbp-<off1>]
+    load.u32 rcx, [rbp-<off2>]
+    or.u32 rcx, [rbp-<off3>]
+    or.u32 <gpr0>, <gpr2>
+    or.u32 <gpr4>, rcx
+    or.u32 <gpr0>, <gpr4>
+    or.u32 <gpr0>, [rbp-<off4>]
+    or.u32 rax, <gpr0>
     ret rax

@@ -21,7 +21,7 @@ function @bit
     epilogues duplicated
 
   block ^entry
-    mov rcx, rsi
+    zext.i32 rcx, rsi
     mov rax, 1
     shl rax, rcx
     and.u32 rax, [rdi]

@@ -591,7 +591,7 @@ void FunctionSelector::fold_entry_extensions(size_t first)
 // moves goes to `late` (register, address).
 void FunctionSelector::stage_call_arguments(const Instruction& inst, const lowir::Signature* sig,
 	const lowir::Parameter* params, const CallLayout& layout, uint32_t& arg_mask,
-	std::vector<std::pair<Reg, uint32_t>>& late, uint32_t& late_mask)
+	std::vector<std::pair<Reg, uint32_t>>& late, uint32_t& late_mask, uint32_t& narrow_mask)
 {
 	const lowir::FunctionBody& body = *body_;
 	for (uint32_t a = 0; a < inst.extra_count; ++a)
@@ -749,6 +749,9 @@ void FunctionSelector::stage_call_arguments(const Instruction& inst, const lowir
 			else
 				move.src = src;
 			arg_mask |= 1u << part.reg;
+			// (A host callee extends the narrow integer it reads past its width.)
+			if (eh_model_ == EhModel::Host && !memory_value && !address && narrow_integer(type.kind()) && part.reg < 16)
+				narrow_mask |= 1u << part.reg;
 			moves_.push_back(move);
 		}
 	}
@@ -771,8 +774,22 @@ void FunctionSelector::stage_call_arguments(const Instruction& inst, const lowir
 		move.src = Operand::make_imm(layout.xmms);
 		moves_.push_back(move);
 		arg_mask |= 1u << RAX;
+		if (eh_model_ == EhModel::Host)
+			narrow_mask |= 1u << RAX;
 	}
 }
+
+namespace {
+
+// The call facts a signature's boundary states.
+uint16_t boundary_flags(const lowir::Signature& sig)
+{
+	return static_cast<uint16_t>((sig.boundary.arity == ir_model::CAM_VARIADIC ? MF_VARIADIC : 0) |
+		(sig.boundary.unwind == ir_model::CUM_NO ? MF_UNWIND_NO : 0) |
+		(sig.boundary.returns == ir_model::CRM_NORETURN ? MF_NORETURN : 0));
+}
+
+} // namespace
 
 void FunctionSelector::emit_call(uint32_t id)
 {
@@ -813,7 +830,8 @@ void FunctionSelector::emit_call(uint32_t id)
 	// Register arguments formed after the moves: (register, address).
 	std::vector<std::pair<Reg, uint32_t>> late;
 	uint32_t late_mask = 0;
-	stage_call_arguments(inst, sig, params, layout, arg_mask, late, late_mask);
+	uint32_t narrow_mask = 0;
+	stage_call_arguments(inst, sig, params, layout, arg_mask, late, late_mask, narrow_mask);
 	const bool variadic = sig->boundary.arity == ir_model::CAM_VARIADIC;
 	Operand target;
 	const Value callee = resolve(inst.ops[0]);
@@ -903,13 +921,9 @@ void FunctionSelector::emit_call(uint32_t id)
 	}
 	Inst& call = emit1(Op::Call, TypeKind::Void, target);
 	call.aux = arg_mask;
+	call.sub = pack_narrow_arguments(narrow_mask);
 	call.aux2 = layout.stack_bytes;
-	if (variadic)
-		call.flags |= MF_VARIADIC;
-	if (sig->boundary.unwind == ir_model::CUM_NO)
-		call.flags |= MF_UNWIND_NO;
-	if (sig->boundary.returns == ir_model::CRM_NORETURN)
-		call.flags |= MF_NORETURN;
+	call.flags |= boundary_flags(*sig);
 	// O1+: a direct strlen call of one pointer (in rdi) with a 64-bit
 	// result first probes the string's first 16 bytes inline and calls
 	// only when they hold no NUL (the probe writes rax, xmm0 and xmm1,

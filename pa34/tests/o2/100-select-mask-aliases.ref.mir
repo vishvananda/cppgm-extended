@@ -36,7 +36,7 @@ function @stored_after_mask
     epilogues duplicated
 
   block ^entry
-    load.i32 rax, [rdi]
+    load.u32 rax, [rdi]
     and.i32 rax, 127
     store.i32 [rdi], 0
     mov rax, rdx
@@ -54,7 +54,7 @@ function @shared_load
     epilogues duplicated
 
   block ^entry
-    load.i32 rdi, [rdi]
+    load.u32 rdi, [rdi]
     test.u8 rdi, 127
     mov r11, 11
     mov rax, 29
@@ -76,7 +76,7 @@ function @volatile_mask
     epilogues duplicated
 
   block ^entry
-    load.i32 rdi, [rdi]
+    load.u32 rdi, [rdi]
     test.u8 rdi, 127
     mov rax, rdx
     cmovne rax, rsi
@@ -94,11 +94,11 @@ function @main
     slot $data -> [rbp-8] : i32
 
   block ^entry
-    mov rbx, -256
+    mov rbx, 0xffffffffffffffff00000000ffffff00
 
   block ^loop
     store.i32 [rbp-8], rbx
-    mov rax, rbx
+    zext.i32 rax, rbx
     and.i32 rax, 127
     mov r11, 11
     mov r12, 29
@@ -132,10 +132,10 @@ function @main
     setne rax
     cmp.i32 [rbp-8], 0
     setne rcx
-    or r13, r14
-    or r15, rax
-    or r13, r15
-    or r13, rcx
+    or.u32 r13, r14
+    or.u32 r15, rax
+    or.u32 r13, r15
+    or.u32 r13, rcx
     cmp.u8 r13, 0
     jne ^failed
 

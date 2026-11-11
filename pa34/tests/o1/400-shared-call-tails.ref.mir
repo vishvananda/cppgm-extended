@@ -162,7 +162,7 @@ function @main
     mov rax, r12
     sub rax, rdx
     mov r14, rax
-    mov rax, r12
+    zext.i32 rax, r12
     and rax, 63
     lea r15, [rax+1]
     mov rdi, r14

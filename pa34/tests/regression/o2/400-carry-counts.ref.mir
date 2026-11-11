@@ -108,7 +108,7 @@ function @count_float
 
   block ^entry
     fcmp.f64 xmm0, xmm1
-    mov rax, rdi
+    zext.i32 rax, rdi
     sbb.i32 rax, -1
     ret rax
 
@@ -148,49 +148,49 @@ function @main
     mov rsi, 4
     mov rdx, 8
     call @count_below [args=(rdx,rsi,rdi)]
-    mov rbx, rax
+    zext.i32 rbx, rax
     mov rdi, 5
     mov rsi, 5
     mov rdx, 10
     call @count_at_least [args=(rdx,rsi,rdi)]
-    mov r12, rax
+    zext.i32 r12, rax
     mov rdi, 5
     mov rsi, 6
     mov rdx, 10
     call @down_below [args=(rdx,rsi,rdi)]
-    mov r13, rax
+    zext.i32 r13, rax
     mov rdi, 6
     mov rsi, 5
     mov rdx, 10
     call @down_at_least [args=(rdx,rsi,rdi)]
-    mov r14, rax
+    zext.i32 r14, rax
     mov rdi, 100
     fmov.f64 xmm0, 2.0
     fmov.f64 xmm1, 1.0
     call @count_float [args=(rdi,xmm0,xmm1)]
-    mov r15, rax
+    zext.i32 r15, rax
     mov rdi, 100
     fmov.f64 xmm0, 1.0
     fmov.f64 xmm1, 2.0
     call @count_float [args=(rdi,xmm0,xmm1)]
-    mov r10, rax
+    zext.i32 r10, rax
     store.i32 [rbp-8], r10
     mov rdi, -1
     mov rsi, 0
     mov rdx, 7
     call @count_signed [args=(rdx,rsi,rdi)]
     store.i32 [rbp-16], r15
-    mov r15, rax
+    zext.i32 r15, rax
     mov rdi, 5
     mov rsi, 6
     mov rdx, 10
     call @count_at_least [args=(rdx,rsi,rdi)]
-    add rbx, r12
-    add r13, r14
-    add rax, r15
-    add rbx, r13
-    add rax, rbx
-    load.i32 rcx, [rbp-16]
+    add.u32 rbx, r12
+    add.u32 r13, r14
+    add.u32 rax, r15
+    add.u32 rbx, r13
+    add.u32 rax, rbx
+    load.u32 rcx, [rbp-16]
     add.i32 rcx, [rbp-8]
     add.i32 rax, rcx
     ret rax

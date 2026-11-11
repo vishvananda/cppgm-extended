@@ -17,7 +17,7 @@ function @signed_quotient
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
+    zext.i32 rax, rdi
     cqo.i32
     idiv.i32 rsi
     ret rax
@@ -34,10 +34,10 @@ function @signed_remainder
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
+    zext.i32 rax, rdi
     cqo.i32
     idiv.i32 rsi
-    mov rax, rdx
+    zext.i32 rax, rdx
     ret rax
 
 function @unsigned_quotient
@@ -52,7 +52,7 @@ function @unsigned_quotient
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
+    zext.i32 rax, rdi
     mov rdx, 0
     div.i32 rsi
     ret rax
@@ -69,10 +69,10 @@ function @unsigned_remainder
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
+    zext.i32 rax, rdi
     mov rdx, 0
     div.i32 rsi
-    mov rax, rdx
+    zext.i32 rax, rdx
     ret rax
 
 function @signed_memory
@@ -87,11 +87,11 @@ function @signed_memory
     epilogues duplicated
 
   block ^entry
-    load.i32 rsi, [rsi]
-    mov rax, rdi
+    load.u32 rsi, [rsi]
+    zext.i32 rax, rdi
     cqo.i32
     idiv.i32 rsi
-    mov rax, rdx
+    zext.i32 rax, rdx
     ret rax
 
 function @wide
@@ -163,23 +163,23 @@ function @main
     mov rdi, -2147483647
     mov rsi, -7
     call @signed_quotient [args=(rsi,rdi)]
-    mov <gpr1>, rax
+    zext.i32 <gpr1>, rax
     mov rdi, -2147483647
     mov rsi, 7
     call @signed_remainder [args=(rsi,rdi)]
-    mov <gpr2>, rax
+    zext.i32 <gpr2>, rax
     mov rdi, 4294967289
     mov rsi, 7
     call @unsigned_quotient [args=(rsi,rdi)]
-    mov <gpr3>, rax
+    zext.i32 <gpr3>, rax
     mov rdi, 4294967289
     mov rsi, 10
     call @unsigned_remainder [args=(rsi,rdi)]
-    mov <gpr4>, rax
+    zext.i32 <gpr4>, rax
     mov rdi, -11
     lea rsi, [rbp-<off0>]
     call @signed_memory [args=(rsi,rdi)]
-    mov <gpr5>, rax
+    zext.i32 <gpr5>, rax
     mov rdi, -77
     mov rsi, 7
     call @wide [args=(rsi,rdi)]
@@ -187,7 +187,7 @@ function @main
     store.i64 [rbp-<off1>], <gpr6>
     mov rdi, -2147483648
     call @negative_one [args=(rdi)]
-    mov <gpr6>, rax
+    zext.i32 <gpr6>, rax
     store.i32 [rbp-<off2>], <gpr6>
     mov rdi, -32768
     mov rsi, 3

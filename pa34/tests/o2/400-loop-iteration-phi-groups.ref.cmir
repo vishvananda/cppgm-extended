@@ -37,7 +37,7 @@ function @walk
   block ^entry
     mov <gpr2>, rdi
     mov <gpr3>, rsi
-    mov <gpr0>, rcx
+    zext.i32 <gpr0>, rcx
     cmp.ptr <gpr2>, 0
     setne rax
     movzx rax, rax
@@ -209,7 +209,7 @@ function @walk
 
   block ^step7
     add.i32 rcx, 8
-    mov rax, rsi
+    zext.i32 rax, rsi
     shr rax, 0
     and rax, 1
     imul rax, 8
@@ -228,7 +228,7 @@ function @walk
     mov rax, <gpr2>
 
   block ^step7~tail
-    mov <gpr1>, rcx
+    zext.i32 <gpr1>, rcx
     mov rdx, rax
     jmp ^tail
 
@@ -290,7 +290,7 @@ function @walk
     jge ^finish_tail
 
   block ^tail~head
-    mov rcx, <gpr1>
+    zext.i32 rcx, <gpr1>
     cmp.i64 rdi, [rbp-<off0>]
     jb ^byte
 
@@ -378,7 +378,7 @@ function @main
     cmp.i64 rax, 0
     setne rax
     movzx rax, rax
-    or <gpr0>, <gpr1>
-    or <gpr0>, <gpr2>
-    or rax, <gpr0>
+    or.u32 <gpr0>, <gpr1>
+    or.u32 <gpr0>, <gpr2>
+    or.u32 rax, <gpr0>
     ret rax

@@ -30,7 +30,7 @@ struct Inst
 	Op op;
 	lowir::TypeKind type = lowir::TypeKind::Void;  // T of typed forms
 	lowir::TypeKind type2 = lowir::TypeKind::Void; // conversion destination
-	uint8_t sub = 0;                               // Cond, ConvKind, WideOp, compare predicate
+	uint8_t sub = 0;                               // Cond, ConvKind, WideOp, compare predicate; Call: narrow_arguments
 	uint16_t flags = 0;
 	uint8_t nops = 0;
 	uint32_t aux = 0;      // Call: argument register mask; Copy/Zero: bytes; EhPush: kind; EhCatch: selector;
@@ -41,6 +41,28 @@ struct Inst
 	uint32_t eh = 0;       // host EH Call: 1 + its landing (EhTables::landings), 0: none
 	Operand ops[3];
 };
+
+// A call's `sub`: the integer argument registers whose bits 32-63 the callee
+// does not read (bit k: kArgGprs[k]; bit 6: rax, a variadic call's vector
+// count). A host object's narrow integer arguments: psABI 3.2.3 leaves the
+// bits above their width unspecified, so a callee extends what it reads.
+inline uint8_t pack_narrow_arguments(uint32_t gprs)
+{
+	uint8_t bits = (gprs & (1u << RAX)) ? 0x40 : 0;
+	for (unsigned k = 0; k < 6; ++k)
+		if (gprs & (1u << kArgGprs[k]))
+			bits |= static_cast<uint8_t>(1u << k);
+	return bits;
+}
+
+inline uint32_t narrow_arguments(const Inst& call)
+{
+	uint32_t gprs = (call.sub & 0x40) ? 1u << RAX : 0u;
+	for (unsigned k = 0; k < 6; ++k)
+		if (call.sub & (1u << k))
+			gprs |= 1u << kArgGprs[k];
+	return gprs;
+}
 
 // One ABI location of a parameter or result: a register, or an incoming
 // stack offset from RBP. Two-eightbyte values have two entries.

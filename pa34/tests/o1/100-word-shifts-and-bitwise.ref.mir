@@ -78,7 +78,7 @@ function @bitwise
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
+    zext.i32 rax, rdi
     xor.u32 rax, rsi
     ret rax
 
@@ -109,7 +109,7 @@ function @variable
     epilogues duplicated
 
   block ^entry
-    mov rcx, rsi
+    zext.i32 rcx, rsi
     mov rax, rdi
     shr rax, rcx
     ret rax
@@ -153,7 +153,7 @@ function @main
     mov r12, rax
     mov rdi, -2147483648
     call @signed_return [args=(rdi)]
-    mov r13, rax
+    zext.i32 r13, rax
     mov rdi, 4294967295
     call @unsigned_arithmetic [args=(rdi)]
     mov r14, rax

@@ -106,7 +106,7 @@ function @variable
   block ^entry
     load.i8 rdi, [rdi]
     zext.i32 rax, rdi
-    mov rcx, rsi
+    zext.i32 rcx, rsi
     shl rax, rcx
     zext.i32 rax
     ret rax

@@ -107,5 +107,4 @@ function @main
     fmov.f64 xmm1, 1.0
     call @scaled_sum [args=(rsi,rdi,xmm0,xmm1)]
     fptosi.f64.i32 rax, xmm0
-    sext.i32 rax
     ret rax

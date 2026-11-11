@@ -21,11 +21,11 @@ function @pack
     mov rcx, 0
 
   block ^head
-    shl rcx, 1
+    shl.u32 rcx, 1
     load.u8 rdx, [rdi+rax]
     and rdx, 1
-    mov r8, rcx
-    or r8, 1
+    zext.i32 r8, rcx
+    or.u32 r8, 1
     test.u8 rdx, rdx
     cmovne rcx, r8
     add rax, 1

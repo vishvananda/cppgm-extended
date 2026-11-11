@@ -255,17 +255,17 @@ function @main
     cmp.i64 rax, 1069547520
     setne rax
     movzx rax, rax
-    or rbx, r12
-    or r13, r14
-    or r15, [rbp-16]
-    load.i64 rcx, [rbp-24]
-    or rcx, [rbp-32]
-    load.i64 rdx, [rbp-40]
-    or rdx, [rbp-48]
-    or rbx, r13
-    or r15, rcx
-    or rbx, r15
-    or rbx, rdx
-    or rbx, rax
+    or.u32 rbx, r12
+    or.u32 r13, r14
+    or.u32 r15, [rbp-16]
+    load.u32 rcx, [rbp-24]
+    or.u32 rcx, [rbp-32]
+    load.u32 rdx, [rbp-40]
+    or.u32 rdx, [rbp-48]
+    or.u32 rbx, r13
+    or.u32 r15, rcx
+    or.u32 rbx, r15
+    or.u32 rbx, rdx
+    or.u32 rbx, rax
     sext.i32 rax, rbx
     ret rax

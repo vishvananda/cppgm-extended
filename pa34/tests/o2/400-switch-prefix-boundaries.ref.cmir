@@ -208,257 +208,257 @@ function @main
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 0
     call @signed_prefix [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 3
     call @signed_prefix [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 4
     call @signed_prefix [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 7
     call @signed_prefix [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 8
     call @signed_prefix [args=(rdi)]
     cmp.i64 rax, 33
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 15
     call @signed_prefix [args=(rdi)]
     cmp.i64 rax, 33
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 16
     call @signed_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 2147483647
     call @signed_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, -1
     call @gapped [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 0
     call @gapped [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 3
     call @gapped [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 4
     call @gapped [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 7
     call @gapped [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 8
     call @gapped [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 11
     call @gapped [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 12
     call @gapped [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, -2147483648
     call @signed_cases [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, -5
     call @signed_cases [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, -4
     call @signed_cases [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, -1
     call @signed_cases [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 0
     call @signed_cases [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 3
     call @signed_cases [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 4
     call @signed_cases [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 0
     call @unsigned_prefix [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 3
     call @unsigned_prefix [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 4
     call @unsigned_prefix [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 7
     call @unsigned_prefix [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 8
     call @unsigned_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 2147483648
     call @unsigned_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 4294967295
     call @unsigned_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, -1
     call @wide_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 0
     call @wide_prefix [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 7
     call @wide_prefix [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 8
     call @wide_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 4294967296
     call @wide_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 9223372036854775807
     call @wide_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 0
     call @byte_prefix [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 3
     call @byte_prefix [args=(rdi)]
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 4
     call @byte_prefix [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 7
     call @byte_prefix [args=(rdi)]
     cmp.i64 rax, 22
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 8
     call @byte_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or.u32 <gpr1>, rax
     mov rdi, 255
     call @byte_prefix [args=(rdi)]
     cmp.i64 rax, 99
     setne rax
     movzx rax, rax
-    or rax, <gpr1>
+    or.u32 rax, <gpr1>
     ret rax

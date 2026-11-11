@@ -151,6 +151,5 @@ function @main
     call @many [args=()]
     fmov.f64 xmm0, @output
     fptosi.f64.i32 rax, xmm0
-    sext.i32 rax
     sub.i32 rax, 6
     ret rax

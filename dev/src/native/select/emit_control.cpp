@@ -146,6 +146,8 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 	if (level_ >= 2)
 		narrow_variable_divides(out);
 	const uint32_t mir_instructions = level_ >= 1 ? layout_branches() : static_cast<uint32_t>(out.insts.size());
+	if (level_ >= 1)
+		narrow_unread_halves(out);
 	++stats_.functions;
 	stats_.lowir_instructions += body_->instructions.size();
 	stats_.mir_instructions += mir_instructions;

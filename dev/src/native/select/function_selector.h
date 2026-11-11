@@ -279,7 +279,7 @@ public:
 	bool small_mask(const lowir::Instruction& inst) const;
 	void stage_call_arguments(const lowir::Instruction& inst, const lowir::Signature* sig,
 		const lowir::Parameter* params, const CallLayout& layout, uint32_t& arg_mask,
-		std::vector<std::pair<Reg, uint32_t>>& late, uint32_t& late_mask);
+		std::vector<std::pair<Reg, uint32_t>>& late, uint32_t& late_mask, uint32_t& narrow_mask);
 	void emit_call(uint32_t inst_id);
 	void emit_return(const lowir::Instruction& inst);
 	void emit_va_start(const lowir::Instruction& inst);

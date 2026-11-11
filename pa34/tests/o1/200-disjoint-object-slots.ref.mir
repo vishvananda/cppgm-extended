@@ -16,7 +16,7 @@ function @observe
     epilogues duplicated
 
   block ^entry
-    load.i32 rax, [rdi]
+    load.u32 rax, [rdi]
     ret rax
 
 function @probe
@@ -96,7 +96,7 @@ function @main
   block ^entry
     mov rdi, 1
     call @probe [args=(rdi)]
-    mov rbx, rax
+    zext.i32 rbx, rax
     mov rdi, 0
     call @probe [args=(rdi)]
     cmp.i32 rbx, 7

@@ -145,8 +145,8 @@ function @main
     cmp.i64 rax, 14
     setne rax
     movzx rax, rax
-    or rbx, r12
-    or rbx, r13
-    or rbx, r14
-    or rax, rbx
+    or.u32 rbx, r12
+    or.u32 rbx, r13
+    or.u32 rbx, r14
+    or.u32 rax, rbx
     ret rax

@@ -145,8 +145,8 @@ function @main
     cmp.i64 rax, 14
     setne rax
     movzx rax, rax
-    or <gpr1>, <gpr2>
-    or <gpr1>, <gpr3>
-    or <gpr1>, <gpr4>
-    or rax, <gpr1>
+    or.u32 <gpr1>, <gpr2>
+    or.u32 <gpr1>, <gpr3>
+    or.u32 <gpr1>, <gpr4>
+    or.u32 rax, <gpr1>
     ret rax

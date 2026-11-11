@@ -160,7 +160,7 @@ function @narrow_wraps
     epilogues duplicated
 
   block ^entry
-    add rsi, 1
+    add.u32 rsi, 1
     sext.i32 rsi
     lea rax, [rdi+rsi]
     sub rax, rdi

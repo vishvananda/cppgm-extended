@@ -158,7 +158,7 @@ for my $test (@tests)
 			my $body = function_body($test, $mir, 'spin_flag');
 			die "$test: native lowering removed or merged volatile traffic\n"
 				if scalar(() = $body =~ /^\s+store\.i32 /mg) != 2 ||
-				   scalar(() = $body =~ /^\s+load\.i32 /mg) != 2;
+				   scalar(() = $body =~ /^\s+load\.[iu]32 /mg) != 2;
 		}
 		next;
 	}

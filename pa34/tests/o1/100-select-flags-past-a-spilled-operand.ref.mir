@@ -46,59 +46,59 @@ function @clamp
     temp %c13 -> [rbp-48] : i32
 
   block ^entry
-    load.i32 rax, [rdi]
-    load.i32 rcx, [rsi]
-    load.i32 r8, [rdi+4]
-    load.i32 r9, [rsi+4]
-    load.i32 rbx, [rdi+8]
-    load.i32 r12, [rsi+8]
-    load.i32 r13, [rdi+12]
-    load.i32 r14, [rsi+12]
-    load.i32 r15, [rdi+16]
-    load.i32 r10, [rsi+16]
+    load.u32 rax, [rdi]
+    load.u32 rcx, [rsi]
+    load.u32 r8, [rdi+4]
+    load.u32 r9, [rsi+4]
+    load.u32 rbx, [rdi+8]
+    load.u32 r12, [rsi+8]
+    load.u32 r13, [rdi+12]
+    load.u32 r14, [rsi+12]
+    load.u32 r15, [rdi+16]
+    load.u32 r10, [rsi+16]
     store.i32 [rbp-56], r10
-    load.i32 r10, [rdi+20]
+    load.u32 r10, [rdi+20]
     store.i32 [rbp-64], r10
-    load.i32 r10, [rsi+20]
+    load.u32 r10, [rsi+20]
     store.i32 [rbp-72], r10
-    load.i32 r10, [rdi+24]
+    load.u32 r10, [rdi+24]
     store.i32 [rbp-80], r10
-    load.i32 r10, [rsi+24]
+    load.u32 r10, [rsi+24]
     store.i32 [rbp-88], r10
-    load.i32 r10, [rdi+28]
+    load.u32 r10, [rdi+28]
     store.i32 [rbp-96], r10
-    load.i32 r10, [rsi+28]
+    load.u32 r10, [rsi+28]
     store.i32 [rbp-104], r10
-    load.i32 r10, [rdi+32]
+    load.u32 r10, [rdi+32]
     store.i32 [rbp-112], r10
-    load.i32 r10, [rsi+32]
+    load.u32 r10, [rsi+32]
     store.i32 [rbp-120], r10
-    load.i32 r10, [rdi+36]
+    load.u32 r10, [rdi+36]
     store.i32 [rbp-128], r10
-    load.i32 r10, [rsi+36]
+    load.u32 r10, [rsi+36]
     store.i32 [rbp-136], r10
-    load.i32 r10, [rdi+40]
+    load.u32 r10, [rdi+40]
     store.i32 [rbp-144], r10
-    load.i32 r10, [rsi+40]
+    load.u32 r10, [rsi+40]
     store.i32 [rbp-152], r10
-    load.i32 r10, [rdi+44]
+    load.u32 r10, [rdi+44]
     store.i32 [rbp-160], r10
-    load.i32 r10, [rsi+44]
+    load.u32 r10, [rsi+44]
     store.i32 [rbp-168], r10
-    load.i32 r10, [rdi+48]
+    load.u32 r10, [rdi+48]
     store.i32 [rbp-176], r10
-    load.i32 r10, [rsi+48]
+    load.u32 r10, [rsi+48]
     store.i32 [rbp-184], r10
-    load.i32 r10, [rdi+52]
+    load.u32 r10, [rdi+52]
     store.i32 [rbp-192], r10
-    load.i32 r10, [rsi+52]
+    load.u32 r10, [rsi+52]
     store.i32 [rbp-200], r10
-    load.i32 r10, [rdi+56]
+    load.u32 r10, [rdi+56]
     store.i32 [rbp-208], r10
-    load.i32 r10, [rsi+56]
+    load.u32 r10, [rsi+56]
     store.i32 [rbp-216], r10
-    load.i32 rdi, [rdi+60]
-    load.i32 rsi, [rsi+60]
+    load.u32 rdi, [rdi+60]
+    load.u32 rsi, [rsi+60]
     sub.i32 rax, rcx
     mov r11, 0
     cmp.i32 rax, 0
@@ -134,7 +134,7 @@ function @clamp
     cmp.i32 r15, 255
     mov r11, 255
     cmovg r15, r11
-    load.i32 rcx, [rbp-64]
+    load.u32 rcx, [rbp-64]
     sub.i32 rcx, [rbp-72]
     mov r11, 0
     cmp.i32 rcx, 0
@@ -142,7 +142,7 @@ function @clamp
     cmp.i32 rcx, 255
     mov r11, 255
     cmovg rcx, r11
-    load.i32 r9, [rbp-80]
+    load.u32 r9, [rbp-80]
     sub.i32 r9, [rbp-88]
     mov r11, 0
     cmp.i32 r9, 0
@@ -150,7 +150,7 @@ function @clamp
     cmp.i32 r9, 255
     mov r11, 255
     cmovg r9, r11
-    load.i32 r12, [rbp-96]
+    load.u32 r12, [rbp-96]
     sub.i32 r12, [rbp-104]
     mov r11, 0
     cmp.i32 r12, 0
@@ -158,7 +158,7 @@ function @clamp
     cmp.i32 r12, 255
     mov r11, 255
     cmovg r12, r11
-    load.i32 r14, [rbp-112]
+    load.u32 r14, [rbp-112]
     sub.i32 r14, [rbp-120]
     mov r11, 0
     cmp.i32 r14, 0
@@ -167,7 +167,7 @@ function @clamp
     mov r11, 255
     cmovg r14, r11
     store.i32 [rbp-8], r14
-    load.i32 r14, [rbp-128]
+    load.u32 r14, [rbp-128]
     sub.i32 r14, [rbp-136]
     mov r11, 0
     cmp.i32 r14, 0
@@ -176,7 +176,7 @@ function @clamp
     mov r11, 255
     cmovg r14, r11
     store.i32 [rbp-16], r14
-    load.i32 r14, [rbp-144]
+    load.u32 r14, [rbp-144]
     sub.i32 r14, [rbp-152]
     mov r11, 0
     cmp.i32 r14, 0
@@ -185,7 +185,7 @@ function @clamp
     mov r11, 255
     cmovg r14, r11
     store.i32 [rbp-24], r14
-    load.i32 r14, [rbp-160]
+    load.u32 r14, [rbp-160]
     sub.i32 r14, [rbp-168]
     mov r11, 0
     cmp.i32 r14, 0
@@ -194,7 +194,7 @@ function @clamp
     mov r11, 255
     cmovg r14, r11
     store.i32 [rbp-32], r14
-    load.i32 r14, [rbp-176]
+    load.u32 r14, [rbp-176]
     sub.i32 r14, [rbp-184]
     mov r11, 0
     cmp.i32 r14, 0
@@ -203,7 +203,7 @@ function @clamp
     mov r11, 255
     cmovg r14, r11
     store.i32 [rbp-40], r14
-    load.i32 r14, [rbp-192]
+    load.u32 r14, [rbp-192]
     sub.i32 r14, [rbp-200]
     mov r11, 0
     cmp.i32 r14, 0
@@ -212,7 +212,7 @@ function @clamp
     mov r11, 255
     cmovg r14, r11
     store.i32 [rbp-48], r14
-    load.i32 r14, [rbp-208]
+    load.u32 r14, [rbp-208]
     sub.i32 r14, [rbp-216]
     mov r11, 0
     cmp.i32 r14, 0
@@ -235,17 +235,17 @@ function @clamp
     store.i32 [rdx+20], rcx
     store.i32 [rdx+24], r9
     store.i32 [rdx+28], r12
-    load.i32 r11, [rbp-8]
+    load.u32 r11, [rbp-8]
     store.i32 [rdx+32], r11
-    load.i32 r11, [rbp-16]
+    load.u32 r11, [rbp-16]
     store.i32 [rdx+36], r11
-    load.i32 r11, [rbp-24]
+    load.u32 r11, [rbp-24]
     store.i32 [rdx+40], r11
-    load.i32 r11, [rbp-32]
+    load.u32 r11, [rbp-32]
     store.i32 [rdx+44], r11
-    load.i32 r11, [rbp-40]
+    load.u32 r11, [rbp-40]
     store.i32 [rdx+48], r11
-    load.i32 r11, [rbp-48]
+    load.u32 r11, [rbp-48]
     store.i32 [rdx+52], r11
     store.i32 [rdx+56], r14
     store.i32 [rdx+60], rdi

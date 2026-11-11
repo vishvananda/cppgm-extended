@@ -90,7 +90,7 @@ function @volatile_update
 
   block ^entry
     load.u8 rax, [rdi]
-    add rax, 1
+    add.u32 rax, 1
     zext.i8 rax
     store.i8 [rdi], rax
     ret
@@ -124,7 +124,7 @@ function @live_old_value
 
   block ^entry
     load.u8 rax, [rdi]
-    lea rcx, [rax+1]
+    lea.i32 rcx, [rax+1]
     store.i8 [rdi], rcx
     ret rax
 
@@ -222,14 +222,14 @@ function @main
     cmp.i64 [rbp-8], 0
     setne rax
     movzx rax, rax
-    or rbx, r12
-    or r13, r14
-    or r15, [rbp-16]
-    load.i64 rcx, [rbp-24]
-    or rcx, [rbp-32]
-    or rbx, r13
-    or r15, rcx
-    or rbx, r15
-    or rbx, [rbp-40]
-    or rax, rbx
+    or.u32 rbx, r12
+    or.u32 r13, r14
+    or.u32 r15, [rbp-16]
+    load.u32 rcx, [rbp-24]
+    or.u32 rcx, [rbp-32]
+    or.u32 rbx, r13
+    or.u32 r15, rcx
+    or.u32 rbx, r15
+    or.u32 rbx, [rbp-40]
+    or.u32 rax, rbx
     ret rax

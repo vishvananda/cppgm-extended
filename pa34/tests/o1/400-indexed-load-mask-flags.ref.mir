@@ -64,7 +64,7 @@ function @masked16
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
+    zext.i32 rax, rdi
     and rax, 127
     mov r11, 1000
     cmove rax, r11
@@ -81,7 +81,7 @@ function @masked8
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
+    zext.i32 rax, rdi
     and rax, 63
     mov r11, 1000
     cmove rax, r11
@@ -98,8 +98,8 @@ function @signed16
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
-    and rax, -32768
+    zext.i32 rax, rdi
+    and.u32 rax, -32768
     cmp.i16 rax, 0
     mov r11, 1000
     cmovge rax, r11
@@ -116,8 +116,8 @@ function @signed8
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
-    and rax, -128
+    zext.i32 rax, rdi
+    and.u32 rax, -128
     cmp.i8 rax, 0
     mov r11, 1000
     cmovge rax, r11

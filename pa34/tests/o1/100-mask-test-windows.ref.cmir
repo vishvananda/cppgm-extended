@@ -131,24 +131,23 @@ function @main
     store.i64 [rbp-<off0>], 0
     lea rdi, [rbp-<off0>]
     call @high [args=(rdi)]
-    sext.i32 <gpr4>, rax
+    zext.i32 <gpr4>, rax
     lea rdi, [rbp-<off0>]
     call @interior [args=(rdi)]
-    sext.i32 <gpr5>, rax
+    zext.i32 <gpr5>, rax
     store.i32 [rbp-<off1>], <gpr5>
     lea rdi, [rbp-<off0>]
     call @wide_holes [args=(rdi)]
-    sext.i32 <gpr5>, rax
+    zext.i32 <gpr5>, rax
     store.i32 [rbp-<off2>], <gpr5>
     lea rdi, [rbp-<off0>]
     call @word_high [args=(rdi)]
     sext.i32 rax
-    or <gpr0>, <gpr1>
-    or <gpr0>, <gpr2>
-    or <gpr0>, <gpr3>
-    or <gpr0>, <gpr4>
+    or.u32 <gpr0>, <gpr1>
+    or.u32 <gpr0>, <gpr2>
+    or.u32 <gpr0>, <gpr3>
+    or.u32 <gpr0>, <gpr4>
     or.i32 <gpr0>, [rbp-<off1>]
-    sext.i32 <gpr0>
     or.i32 <gpr0>, [rbp-<off2>]
     sext.i32 <gpr0>
     or rax, <gpr0>

@@ -34,6 +34,5 @@ function @main
     fmov.f64 xmm0, 4.0
     call @both [args=(xmm0)]
     fptosi.f64.i32 rax, xmm0
-    sext.i32 rax
     sub.i32 rax, 6
     ret rax

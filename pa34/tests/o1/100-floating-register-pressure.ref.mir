@@ -249,9 +249,9 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @keeps_minuend [args=(xmm0,xmm1)]
     fne.f32 rax, xmm0, 1e+01f
-    or rbx, r12
-    or r13, r14
-    or rbx, r13
-    or rbx, rax
+    or.u32 rbx, r12
+    or.u32 r13, r14
+    or.u32 rbx, r13
+    or.u32 rbx, rax
     sext.i32 rax, rbx
     ret rax

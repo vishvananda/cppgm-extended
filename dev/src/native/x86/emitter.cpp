@@ -583,7 +583,8 @@ bool frame_slot(const Operand& op, int32_t& offset)
 bool reload_of(const Inst& inst, int32_t offset)
 {
 	int32_t at = 0;
-	return inst.op == Op::Load && (inst.type == TypeKind::I64 || inst.type == TypeKind::Ptr) &&
+	return inst.op == Op::Load &&
+		(inst.type == TypeKind::I64 || inst.type == TypeKind::Ptr || inst.type == TypeKind::U32) &&
 		frame_slot(inst.ops[1], at) && at == offset;
 }
 
@@ -592,14 +593,19 @@ bool reload_of(const Inst& inst, int32_t offset)
 bool FunctionEmitter::carried_reload(const Inst& inst)
 {
 	int32_t offset = 0;
-	if (inst.op != Op::Load || (inst.type != TypeKind::I64 && inst.type != TypeKind::Ptr) ||
+	if (inst.op != Op::Load ||
+		(inst.type != TypeKind::I64 && inst.type != TypeKind::Ptr && inst.type != TypeKind::U32) ||
 		!frame_slot(inst.ops[1], offset))
 		return false;
 	for (size_t k = 0; k < carries_.size(); ++k)
 	{
 		if (carries_[k].offset != offset)
 			continue;
-		asm_.mov_rr(inst.ops[0].reg, carries_[k].reg);
+		// (The low word of the home, where that is all the reload reads.)
+		if (inst.type == TypeKind::U32)
+			asm_.mov_load(inst.ops[0].reg, RM::r(carries_[k].reg), 4, false);
+		else
+			asm_.mov_rr(inst.ops[0].reg, carries_[k].reg);
 		if (!relax_pass_)
 			++stats_.scratch_carried_reloads;
 		return true;
@@ -1104,6 +1110,8 @@ void FunctionEmitter::ret(const Function& function, const Inst& inst, bool last)
 			if (a.reg != XMM0)
 				asm_.sse(0, 0x28, XMM0, RM::r(a.reg));
 		}
+		else if (narrow_integer(inst.type) && a.reg != RAX)
+			asm_.mov_load(RAX, RM::r(a.reg), 4, false); // its callers read no more (psABI 3.2.3)
 		else
 			asm_.mov_rr(RAX, a.reg);
 	}
@@ -1641,7 +1649,9 @@ void FunctionEmitter::bit_test(const Inst& inst)
 {
 	const Operand& a = inst.ops[0];
 	const Operand& b = inst.ops[1];
-	const unsigned w = register_bytes(inst.type);
+	// A 64-bit test of a mask below bit 31 sets the flags of its 32-bit form.
+	const bool low_mask = inst.op == Op::Test && b.kind == OperandKind::Imm && b.imm >= 0 && b.imm <= 0x7fffffffll;
+	const unsigned w = low_mask && register_bytes(inst.type) == 8 ? 4 : register_bytes(inst.type);
 	const uint8_t prefix = w == 2 ? 0x66 : 0;
 	if (inst.op == Op::Bt)
 	{

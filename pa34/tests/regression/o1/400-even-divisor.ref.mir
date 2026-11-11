@@ -39,13 +39,13 @@ function @main
     mov rbx, rax
     mov rdi, 999999999
     call @billions [args=(rdi)]
-    mov r12, rax
+    zext.i32 r12, rax
     mov rdi, 1000000000
     call @billions [args=(rdi)]
-    add r12, rax
+    add.u32 r12, rax
     mov rax, rbx
     mov r11, -6067343680855748867
     mul r11
     shr rdx, 26
-    lea rax, [rdx+r12]
+    lea.i32 rax, [rdx+r12]
     ret rax

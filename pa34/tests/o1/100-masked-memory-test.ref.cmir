@@ -83,7 +83,7 @@ function @before_store
     epilogues duplicated
 
   block ^entry
-    load.i32 rax, [rdi]
+    load.u32 rax, [rdi]
     and.i32 rax, 16
     store.i32 [rdi], 0
     je ^no
@@ -146,7 +146,7 @@ function @before_call
     preserve <gpr0>
 
   block ^entry
-    load.i32 <gpr0>, [rdi]
+    load.u32 <gpr0>, [rdi]
     and.i32 <gpr0>, 16
     call @clear [args=(rdi)]
     cmp.i32 <gpr0>, 0
@@ -193,7 +193,7 @@ function @two_readers
     epilogues duplicated
 
   block ^entry
-    load.i32 rax, [rdi]
+    load.u32 rax, [rdi]
     test.u8 rax, 16
     je ^no
 
@@ -223,19 +223,19 @@ function @main
     store.i64 [rbp-<off0>], 4295000208
     lea rdi, [rbp-<off0>]
     call @byte_test [args=(rdi)]
-    mov <gpr0>, rax
+    zext.i32 <gpr0>, rax
     lea rdi, [rbp-<off0>]
     call @half_test [args=(rdi)]
-    mov <gpr1>, rax
+    zext.i32 <gpr1>, rax
     lea rdi, [rbp-<off0>]
     call @signed_promotion [args=(rdi)]
-    mov <gpr2>, rax
+    zext.i32 <gpr2>, rax
     lea rdi, [rbp-<off0>]
     call @volatile_test [args=(rdi)]
-    mov <gpr3>, rax
+    zext.i32 <gpr3>, rax
     lea rdi, [rbp-<off0>]
     call @wide_mask [args=(rdi)]
-    mov <gpr4>, rax
+    zext.i32 <gpr4>, rax
     lea rdi, [rbp-<off0>]
     call @two_readers [args=(rdi)]
     cmp.i32 rax, 32912
@@ -245,11 +245,11 @@ function @main
     lea rdi, [rbp-<off0>]
     call @before_store [args=(rdi)]
     store.i32 [rbp-<off2>], <gpr4>
-    mov <gpr4>, rax
+    zext.i32 <gpr4>, rax
     store.i32 [rbp-<off0>], 32912
     lea rdi, [rbp-<off0>]
     call @before_call [args=(rdi)]
-    mov <gpr5>, rax
+    zext.i32 <gpr5>, rax
     store.i32 [rbp-<off3>], <gpr5>
     lea rdi, [rbp-<off0>]
     call @byte_test [args=(rdi)]
@@ -261,7 +261,7 @@ function @main
     or <gpr4>, rax
     add.i32 <gpr0>, <gpr1>
     add.i32 <gpr2>, <gpr3>
-    load.i32 rax, [rbp-<off4>]
+    load.u32 rax, [rbp-<off4>]
     add.i32 rax, [rbp-<off3>]
     add.i32 <gpr0>, <gpr2>
     add.i32 <gpr0>, rax

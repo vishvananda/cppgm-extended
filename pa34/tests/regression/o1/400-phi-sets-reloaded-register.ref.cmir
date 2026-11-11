@@ -38,7 +38,7 @@ function @walk
   block ^entry
     store.ptr [rbp-<off0>], rdi
     store.u32 [rbp-<off1>], rdx
-    mov <gpr3>, rsi
+    zext.i32 <gpr3>, rsi
     store.i64 [rbp-<off2>], 0
 
   block ^head
@@ -166,8 +166,8 @@ function @walk
     ja ^body
 
   block ^done
-    load.i64 <gpr5>, [rbp-<off2>]
-    mov rax, <gpr5>
+    load.u32 <gpr5>, [rbp-<off2>]
+    zext.i32 rax, <gpr5>
     and.u32 rax, 255
     ret rax
 
@@ -198,7 +198,7 @@ function @main
     mov rsi, 6
     mov rdx, 0
     call @walk [args=(rdx,rsi,rdi)]
-    mov <gpr0>, rax
+    zext.i32 <gpr0>, rax
     store.i64 [rbp-<off12>], 99
     lea rdi, [rbp-<off14>]
     mov rsi, 6

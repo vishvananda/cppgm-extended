@@ -68,7 +68,7 @@ function @element
   block ^entry
     sext.i32 rsi
     add rsi, rdx
-    load.i32 rax, [rdi+rsi*4]
+    load.u32 rax, [rdi+rsi*4]
     ret rax
 
 function @main

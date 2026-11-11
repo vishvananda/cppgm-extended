@@ -96,8 +96,8 @@ function @main
     cmp.i64 rax, 65
     setne rax
     movzx rax, rax
-    or <gpr1>, <gpr2>
-    or <gpr3>, rax
-    mov rax, <gpr1>
-    or rax, <gpr3>
+    or.u32 <gpr1>, <gpr2>
+    or.u32 <gpr3>, rax
+    zext.i32 rax, <gpr1>
+    or.u32 rax, <gpr3>
     ret rax

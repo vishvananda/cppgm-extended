@@ -20,7 +20,7 @@ function @low
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
+    zext.i32 rax, rdi
 
   block ^head
     sub.i32 rax, 1
@@ -70,7 +70,7 @@ function @main
   block ^entry
     mov rdi, 3
     call @low [args=(rdi)]
-    mov rbx, rax
+    zext.i32 rbx, rax
     mov rdi, 3
     mov rsi, @out
     call @full [args=(rsi,rdi)]

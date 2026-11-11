@@ -72,7 +72,7 @@ function @variable
     epilogues duplicated
 
   block ^entry
-    mov rcx, rsi
+    zext.i32 rcx, rsi
     mov rax, rdi
     shl rax, rcx
     ret rax
@@ -93,16 +93,16 @@ function @main
     mov rdx, 1
     mov rcx, 4
     call @walk [args=(rcx,rdx,rsi,rdi)]
-    mov <gpr0>, rax
+    zext.i32 <gpr0>, rax
     mov rdi, 3
     mov rsi, 2
     call @variable [args=(rsi,rdi)]
-    mov <gpr1>, rax
+    zext.i32 <gpr1>, rax
     mov rdi, 1
     mov rsi, 2
     mov rdx, 4
     mov rcx, 8
     call @in_rcx [args=(rcx,rdx,rsi,rdi)]
-    add <gpr0>, <gpr1>
-    add rax, <gpr0>
+    add.u32 <gpr0>, <gpr1>
+    add.u32 rax, <gpr0>
     ret rax

@@ -37,7 +37,7 @@ function @probe
     lea.i32 rcx, [r8+1]
     add.u32 rax, r8
     and.u32 rax, rdx
-    mov r8, rcx
+    zext.i32 r8, rcx
     load.ptr rcx, [rdi+rax*8]
     cmp.ptr rcx, -1
     jne ^occupied

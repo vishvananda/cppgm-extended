@@ -97,6 +97,12 @@ TailCopies duplicate_short_tails(Function& function);
 // successor. Returns the jumps retargeted.
 uint32_t thread_decided_tests(Function& function, const lowir::Program& program);
 
+// On the laid-out function: an instruction whose result nothing reads above
+// bit 31 takes its 32-bit form (a copy, a load, an address, an addition), and
+// an extension in place of such a value goes. Returns the instructions
+// changed.
+uint32_t narrow_unread_halves(Function& function);
+
 // A block starting with the compare of registers each of its predecessors
 // ends with reads the flags they left. Returns the compares dropped.
 uint32_t drop_repeated_compares(Function& function);

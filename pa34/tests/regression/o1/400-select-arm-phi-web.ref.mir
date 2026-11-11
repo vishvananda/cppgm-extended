@@ -18,7 +18,7 @@ function @flip
 
   block ^entry
     sub rsi, 1
-    mov rcx, rsi
+    zext.i32 rcx, rsi
     mov rax, 1
     shl rax, rcx
     mov rcx, rax
@@ -56,9 +56,9 @@ function @main
     mov rdi, 6
     mov rsi, 4
     call @flip [args=(rsi,rdi)]
-    mov rbx, rax
+    zext.i32 rbx, rax
     mov rdi, 1
     mov rsi, 3
     call @flip [args=(rsi,rdi)]
-    add rax, rbx
+    add.u32 rax, rbx
     ret rax

@@ -165,11 +165,10 @@ function @main
     fadd.f64 xmm0, [rbp-<off3>], xmm0
     fadd.f64 xmm1, xmm1, xmm0
     fptosi.f64.i32 <gpr0>, xmm1
-    sext.i32 <gpr0>
     lea rdi, [rbp-<off0>]
     fmov.f64 xmm0, 7.0
     call @less [args=(rdi,xmm0)]
-    mov <gpr1>, rax
+    zext.i32 <gpr1>, rax
     lea rdi, [rbp-<off0>]
     fmov.f64 xmm0, 5.0
     call @more [args=(rdi,xmm0)]

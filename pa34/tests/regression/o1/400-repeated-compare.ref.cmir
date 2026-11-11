@@ -93,30 +93,30 @@ function @main
     mov rdi, 1
     mov rsi, 2
     call @three_way [args=(rsi,rdi)]
-    mov <gpr0>, rax
+    zext.i32 <gpr0>, rax
     mov rdi, 2
     mov rsi, 1
     call @three_way [args=(rsi,rdi)]
-    mov <gpr1>, rax
+    zext.i32 <gpr1>, rax
     mov rdi, 2
     mov rsi, 2
     call @three_way [args=(rsi,rdi)]
-    mov <gpr2>, rax
+    zext.i32 <gpr2>, rax
     mov rdi, 1
     mov rsi, 2
     mov rdx, 0
     call @not_every_edge [args=(rdx,rsi,rdi)]
-    mov <gpr3>, rax
+    zext.i32 <gpr3>, rax
     mov rdi, 2
     mov rsi, 2
     mov rdx, 0
     call @not_every_edge [args=(rdx,rsi,rdi)]
-    mov <gpr4>, rax
+    zext.i32 <gpr4>, rax
     mov rdi, 2
     mov rsi, 2
     mov rdx, 1
     call @not_every_edge [args=(rdx,rsi,rdi)]
-    mov <gpr5>, rax
+    zext.i32 <gpr5>, rax
     store.i32 [rbp-<off0>], <gpr5>
     mov rdi, 3
     mov rsi, 2
@@ -129,13 +129,12 @@ function @main
     add.i32 <gpr3>, <gpr4>
     add.i32 <gpr3>, [rbp-<off0>]
     add.i32 <gpr3>, rax
-    add <gpr0>, <gpr3>
-    sext.i32 <gpr0>
+    add.u32 <gpr0>, <gpr3>
     zext.i32 <gpr5>, <gpr0>
     imul rax, <gpr5>, 1374389535
     shr rax, 38
     imul rax, 200
-    mov rdx, <gpr5>
-    sub rdx, rax
-    mov rax, rdx
+    zext.i32 rdx, <gpr5>
+    sub.u32 rdx, rax
+    zext.i32 rax, rdx
     ret rax

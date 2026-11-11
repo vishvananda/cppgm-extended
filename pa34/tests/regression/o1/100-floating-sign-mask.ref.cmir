@@ -255,17 +255,17 @@ function @main
     cmp.i64 rax, 1069547520
     setne rax
     movzx rax, rax
-    or <gpr0>, <gpr1>
-    or <gpr2>, <gpr3>
-    or <gpr4>, [rbp-<off1>]
-    load.i64 rcx, [rbp-<off2>]
-    or rcx, [rbp-<off3>]
-    load.i64 rdx, [rbp-<off4>]
-    or rdx, [rbp-<off5>]
-    or <gpr0>, <gpr2>
-    or <gpr4>, rcx
-    or <gpr0>, <gpr4>
-    or <gpr0>, rdx
-    or <gpr0>, rax
+    or.u32 <gpr0>, <gpr1>
+    or.u32 <gpr2>, <gpr3>
+    or.u32 <gpr4>, [rbp-<off1>]
+    load.u32 rcx, [rbp-<off2>]
+    or.u32 rcx, [rbp-<off3>]
+    load.u32 rdx, [rbp-<off4>]
+    or.u32 rdx, [rbp-<off5>]
+    or.u32 <gpr0>, <gpr2>
+    or.u32 <gpr4>, rcx
+    or.u32 <gpr0>, <gpr4>
+    or.u32 <gpr0>, rdx
+    or.u32 <gpr0>, rax
     sext.i32 rax, <gpr0>
     ret rax
