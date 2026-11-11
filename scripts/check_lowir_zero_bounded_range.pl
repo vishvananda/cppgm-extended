@@ -122,7 +122,7 @@ for my $test (@tests)
 			run_optimizer($app, $test, $directory, $level);
 	}
 
-	for my $level ('O0', 'O1')
+	for my $level ('O0')
 	{
 		for my $name ('fold_zero_bounded', 'fold_with_accept_phi')
 		{
@@ -132,7 +132,7 @@ for my $test (@tests)
 		}
 	}
 
-	for my $level ('O2', 'O3')
+	for my $level ('O1', 'O2', 'O3')
 	{
 		for my $name ('fold_zero_bounded', 'fold_with_accept_phi')
 		{

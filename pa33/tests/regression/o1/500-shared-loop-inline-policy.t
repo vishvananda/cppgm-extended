@@ -1,3 +1,7 @@
+# Each loop costs more than an ordinary callee may and less than a hinted one:
+# the shared loop stays a call, the hinted and the single-use loops go inline.
+global @sink : i64 = 0
+
 function @shared_loop(%limit : i64) -> i64 [binding=strong] {
   block ^entry:
     jump ^loop
@@ -8,6 +12,62 @@ function @shared_loop(%limit : i64) -> i64 [binding=strong] {
     branch %more, ^body, ^done
 
   block ^body:
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
     %next = binary add i64 %index, 2
     jump ^loop
 
@@ -37,6 +97,62 @@ function @single_loop(%limit : i64) -> i64 [binding=internal] {
     branch %more, ^body, ^done
 
   block ^body:
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
     %next = binary add i64 %index, 2
     jump ^loop
 
@@ -61,6 +177,62 @@ function @hinted_loop(%limit : i64) -> i64
     branch %more, ^body, ^done
 
   block ^body:
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
+    store volatile i64 %index, @sink
     %next = binary add i64 %index, 2
     jump ^loop
 

@@ -40,6 +40,10 @@ const uint32_t kFoldedFailures = 16;
 // caller's guard, and a larger callee full of calls stays out of a large
 // caller's code outside loops (kOutsideLoopBudget).
 const uint32_t kWrapperCap = 32;
+// What a callee may cost its site beyond the call it replaces (a hinted
+// callee's larger).
+const uint32_t kAllowance = 45;
+const uint32_t kHintAllowance = 65;
 // Partial inlining (O2+, late wave): the copy's caps (a hinted callee's
 // larger), doubled at a loop site.
 const uint32_t kPartialCap = 24;
@@ -1638,7 +1642,11 @@ bool InlineWaveRunner::admit(
 	{
 		const bool hint = (m.flags & SF_INLINE_HINT) != 0;
 		// (-O3 admits a quarter more, as LLVM's -O3 threshold is to its -O2 one.)
-		const uint32_t allowance = (hint ? 65 : 45) * (options_.level >= 3 ? 5 : 4) / 4;
+		// (The late wave's allowance for a hinted callee is a diagnostic control.)
+		const uint32_t hinted = wave_ == InlineWave::Late && options_.limits.hint_late_cap != 0
+			? options_.limits.hint_late_cap
+			: kHintAllowance;
+		const uint32_t allowance = (hint ? hinted : kAllowance) * (options_.level >= 3 ? 5 : 4) / 4;
 		uint32_t hot, unpriced;
 		const FunctionBody& caller_body = *program_.functions[program_.symbols[graph_.functions[caller_]].detail].body;
 		call_cost_after_constants(shape, caller_body, call, hot, unpriced);

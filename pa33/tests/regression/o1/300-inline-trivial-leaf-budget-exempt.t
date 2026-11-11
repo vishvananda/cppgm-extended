@@ -51,6 +51,10 @@ function @small(%value : i64) -> void [binding=strong, unwind=no] {
     store volatile i64 %value, @sink
     store volatile i64 %value, @sink
     store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
     return void
 }
 

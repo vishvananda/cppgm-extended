@@ -123,11 +123,14 @@ for my $test (@tests)
 		my $main = function_body($test, $lowir, 'main');
 		my $names = address_names($main);
 		# Internal, readonly, NUL-terminated strings: classify's byte load
-		# and switch are decided at each such call.
+		# and switch are decided at each such call. From O2: argument
+		# specialization decides them, and O1 has none (classify's other
+		# path, forty calls, costs more than a call site may take inline).
 		for my $global ('letter', 'digit', 'high_byte')
 		{
 			die "$test: $level did not fold the readonly string byte of " .
-				"\@$global\n" if reads_global_byte($main, $names, $global);
+				"\@$global\n"
+				if $level ne 'O1' && reads_global_byte($main, $names, $global);
 		}
 		# A GNU weak string may be replaced at link time and a writable one
 		# may change, so their bytes are read at run time.

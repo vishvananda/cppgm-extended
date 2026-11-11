@@ -103,11 +103,11 @@ my @tests = collect_tests($root,
 	qr/(?:\d{3}-branch-boolean-conversion|\d{3}-negated-boolean-compare|\d{3}-duplicate-block-loads|\d{3}-staged-copy-forwarding|\d{3}-aggregate-slot-scalar-replacement|\d{3}-inline-growth-budget-boundary|\d{3}-inline-trivial-leaf-budget-exempt|\d{3}-truncate-noreturn-continuation|\d{3}-inline-discardable-size-cap|\d{3}-inline-single-call-caller-budget|\d{3}-inline-hint-late-nonleaf|\d{3}-nonzero-underflow-predicate|\d{3}-adjacent-noalias-scalar-copy|\d{3}-shared-loop-inline-policy|\d{3}-cold-path-discounted-inlining|\d{3}-phi-integrity-survivors|\d{3}-nonzero-underflow-value-proof|\d{3}-loop-carried-store-forwarding|\d{3}-volatile-access-preservation)\.t$/);
 die "No LowIR survivor-property tests found under $root\n" if !@tests;
 
-# The budget fixtures' 50 copies of a 32-instruction @piece fit the default
-# per-caller budget of the ordinary and late waves together; this budget
-# (each wave's, through the documented diagnostic control) runs out after
-# 20 copies in each wave.
-my @caller_budget = ('--inline-limit', 'caller-budget=640');
+# The budget fixtures' 50 copies of @piece fit the default per-caller budget
+# of the ordinary and late waves together; this budget (each wave's, through
+# the documented diagnostic control) is spent by exactly 20 copies in each
+# wave: a copy is charged its 31 stores less the 7 of the call it replaces.
+my @caller_budget = ('--inline-limit', 'caller-budget=480');
 
 for my $test (@tests)
 {
