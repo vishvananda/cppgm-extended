@@ -1273,8 +1273,12 @@ void FunctionSelector::assign_registers()
 				const uint32_t j = v.kind == ValueKind::Temp && cand[v.index] >= 0 ? web_local[cand[v.index]] : 0;
 				if (j == 0 || j - 1 == k || pred == kNoId || !blocks_[pred].reachable)
 					continue;
-				moves[k * n + (j - 1)] += loop_splitter_.weights[pred];
-				moves[(j - 1) * n + k] += loop_splitter_.weights[pred];
+				// (Of two edges run as often, the back edge's counts more: a
+				// transfer there keeps a latch's test from the header.)
+				const uint64_t carried = loop_splitter_.weights[pred] +
+					(pred >= inst_block_[body.temps[temp].def] ? 1 : 0);
+				moves[k * n + (j - 1)] += carried;
+				moves[(j - 1) * n + k] += carried;
 			}
 		}
 		for (size_t k = 0; k < n; ++k)
