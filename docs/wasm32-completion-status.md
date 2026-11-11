@@ -7,7 +7,7 @@ or a green partial suite does not complete PA37.
 | Requirement | Current evidence | Remaining qualification |
 | --- | --- | --- |
 | Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes; source and text paths in PA37 | Broader C++ target headers and all ABI-sensitive class facts |
-| Scalar and aggregate execution | 23 fixtures at O0–O3; LLVM caller into cppgm aggregate provider | Wide integers/floats, varargs, complete type/layout edge cases |
+| Scalar and aggregate execution | 23 fixtures at O0–O3; LLVM caller into cppgm aggregate provider | Scalar i128 legalization, remaining float formats and complete type/layout edge cases |
 | CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
 | Standard objects and own static linker | Linking-v2 writer/reader/own linker; both LLVM interop directions at O0–O3; GNU/BSD archive probes; 32 normal fixtures | Complete EH-tag/wide/runtime object profile and malformed-feature/relocation cases |
 | C++ runtime | Dynamic initializer execution in a core start function | Allocation, virtual dispatch, RTTI, local statics, finalization and cross-compiler modern EH |
@@ -124,8 +124,30 @@ Frozen native instruction counts versus `d7b8cd4c8` are 3,055,879,786 versus
 (-0.0021%). Generated objects are identical. Commands, hashes and every
 observation remain in `perf-wasi/`; these counts make no wall-time claim.
 
-Full portable C++ classes/RTTI/EH, wide scalar legalization, varargs, SIMD,
-quality and benchmarks remain required work. The next variadic reducer is
-`wasm-varargs-probe.cpp` outside Git: source acceptance still assumes AMD64's
-`__va_list_tag`, while this target's argument list is a pointer. Its lowering
-and the backend boundary must use the target representation together.
+Full portable C++ classes/RTTI/EH, wide scalar legalization, SIMD, quality
+and benchmarks remain required work. Variadic qualification follows below.
+
+
+## Variadic checkpoint
+
+`92d37bcee` preserves explicit unnamed scalar types and aggregate shapes in
+LowIR and implements target `va_list`, caller-owned buffers, promoted scalar
+arguments, singleton/empty/indirect records, owned copies, recursion and WASI
+formatted output. The shared argument-fact record remains 12 bytes and
+`FunctionBody` remains 248 bytes. The LLVM empty-record `va_arg` discrepancy
+is recorded separately in the maintainer reference evidence; a behavioral
+fixture checks the correct empty-record semantics independently.
+
+The strict cumulative report passes 10725/10725; PA37 passes 54/54 with both
+host-built and self-built tools. Debug info, PA5 self-host, byte-identical
+inception, PA36 smoke, the complete harness, architecture/format/file checks
+and Clang 21 syntax checks pass. The student export regenerates consistently;
+a fresh bundle client passes its 270-document inventory and all 43 wrappers.
+Placement checks report no early placement errors; eight inherited header
+division warnings remain. Raw results have the prefix `varargs-`.
+
+Frozen native compilers compare the preceding WASI compiler and this snapshot:
+O0 changes from 3,055,699,746 to 3,056,095,465 instructions (+0.0130%); O3
+from 9,896,896,312 to 9,897,026,753 (+0.0013%). Objects remain byte-identical.
+Every observation, immutable binary, input hash and candidate source patch is
+retained in `perf-varargs-final/`; no wall-time claim is made.
