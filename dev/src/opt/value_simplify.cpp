@@ -2850,6 +2850,13 @@ void Simplifier::process_block(BlockId block)
 	// found by an order-independent signature of their (block, input)
 	// pairs, each signature's phis chained in block order.
 	uint32_t phis = 0;
+	if (retype_copy_phis(c_, block, repl_, uses_))
+	{
+		nonzero_.resize(body_.temps.size(), 0);
+		equal_.resize(body_.temps.size(), Value::none());
+		ordinal_.resize(body_.instructions.size(), 0);
+		changed_ = true;
+	}
 	for (InstId i = body_.blocks[block].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
 		i = body_.instructions[i].next)
 		++phis;

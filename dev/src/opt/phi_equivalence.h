@@ -15,4 +15,11 @@ private:
 };
 uint64_t phi_signature(
 	const lowir::FunctionBody& body, const std::vector<lowir::BlockId>& block_of, const lowir::Instruction& phi);
+// A phi whose every input is a retyping copy from one other type of the same
+// width (a pointer's bits as i64, an integer in the other signedness), a
+// zero or the phi itself becomes that copy of a phi of the copies' sources.
+// Inputs are read through `replacements`, which grows with `uses` for the
+// new phis; a new phi precedes the block's other phis.
+bool retype_copy_phis(FunctionContext& context, lowir::BlockId block, std::vector<lowir::Value>& replacements,
+	std::vector<uint32_t>& uses);
 } // namespace opt

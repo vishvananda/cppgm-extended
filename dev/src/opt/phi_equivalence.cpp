@@ -1,4 +1,5 @@
 #include "opt/phi_equivalence.h"
+#include "lowir/builder.h"
 #include "opt/scalar_fold.h"
 #include <cstring>
 namespace opt {
@@ -109,6 +110,109 @@ uint64_t phi_signature(const FunctionBody& body_, const std::vector<BlockId>& bl
 		sum += h ^ (h >> 31);
 	}
 	return sum ^ (bits * 0x165667b19e3779f9ull) ^ phi.extra_count;
+}
+
+// Aggregate promotion leaves such a phi beside the phi of the sources
+// themselves (a pointer member read whole as i64): the two then merge, the
+// copy folds with a copy back, and a test of one decides a test of the other.
+// The copies and the phi name one register, so no instruction is added.
+bool retype_copy_phis(FunctionContext& c, BlockId block, std::vector<Value>& replacements, std::vector<uint32_t>& uses)
+{
+	FunctionBody& body = c.body;
+	const auto resolve = [&](Value v) {
+		while (v.is(ValueKind::Temp) && !replacements[v.index].is(ValueKind::None))
+			v = replacements[v.index];
+		return v;
+	};
+	const auto retyped = [](Type t) {
+		return t.is_pointer() || (t.is_integer() && t.kind() != TypeKind::I1 && t.kind() != TypeKind::I128);
+	};
+	const auto zero = [&](Value v) {
+		Constant k;
+		return literal_constant(body, v, k) && k.kind == ValueKind::Integer && (k.bits.low | k.bits.high) == 0;
+	};
+	std::vector<Value> pairs;
+	bool changed = false;
+	InstId next = kNoId;
+	for (InstId id = body.blocks[block].first; id != kNoId && body.instructions[id].op == Opcode::Phi; id = next)
+	{
+		const Instruction phi = body.instructions[id];
+		next = phi.next;
+		if (!retyped(phi.type) || phi.extra_count == 0)
+			continue;
+		// The sources' one type, and each edge's source.
+		Type from = phi.type;
+		bool all = true;
+		pairs.clear();
+		for (uint32_t k = 0; k < phi.extra_count && all; k += 2)
+		{
+			Value in = resolve(body.operands[phi.extra_first + k + 1]);
+			const Instruction* copy = in.is(ValueKind::Temp) && in.index >= body.parameter_count &&
+					body.temps[in.index].def != kNoId
+				? &body.instructions[body.temps[in.index].def]
+				: nullptr;
+			if (in.is(ValueKind::Temp) && in.index == phi.result)
+				in = Value::none(); // the new phi itself, named below
+			else if (copy != nullptr && copy->op == Opcode::Copy && (copy->flags & IF_NONNULL) == 0)
+			{
+				in = resolve(copy->ops[0]);
+				const Type type = in.is(ValueKind::Temp) ? body.temps[in.index].type : phi.type;
+				all = in.is(ValueKind::Temp) ? type != phi.type && retyped(type) &&
+						storage_bytes(type) == storage_bytes(phi.type) && (from == phi.type || from == type)
+											 : zero(in);
+				if (all && in.is(ValueKind::Temp))
+					from = type;
+			}
+			else
+				all = zero(in);
+			pairs.push_back(body.operands[phi.extra_first + k]);
+			pairs.push_back(in);
+		}
+		if (!all || from == phi.type)
+			continue;
+		Instruction merged = make_instruction(Opcode::Phi, from);
+		merged.location = phi.location;
+		const InstId at = append_instruction(body, merged);
+		const TempId result = append_temp(body, from, at);
+		replacements.resize(body.temps.size(), Value::none());
+		uses.resize(body.temps.size(), 0);
+		uses[result] = 1;
+		for (uint32_t k = 1; k < pairs.size(); k += 2)
+		{
+			const Value old = resolve(body.operands[phi.extra_first + k]);
+			if (old.is(ValueKind::Temp) && old.index != phi.result && uses[old.index] != 0xffffffffu &&
+				uses[old.index] != 0)
+				--uses[old.index];
+			if (pairs[k].is(ValueKind::None))
+				pairs[k] = Value::temp(result);
+			if (pairs[k].is(ValueKind::Temp) && uses[pairs[k].index] != 0xffffffffu)
+				++uses[pairs[k].index];
+		}
+		const uint32_t first = append_operands(body, pairs.data(), static_cast<uint32_t>(pairs.size()));
+		body.instructions[at].result = result;
+		body.instructions[at].extra_first = first;
+		body.instructions[at].extra_count = static_cast<uint32_t>(pairs.size());
+		// The phi's instruction becomes the copy, after the block's phis.
+		InstId prev = kNoId, last = kNoId;
+		for (InstId i = body.blocks[block].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
+			i = body.instructions[i].next)
+		{
+			prev = i == id ? last : prev;
+			last = i;
+		}
+		unlink_after(body, block, prev, id);
+		Instruction copy = make_instruction(Opcode::Copy, phi.type);
+		copy.result = phi.result;
+		copy.location = phi.location;
+		copy.ops[0] = Value::temp(result);
+		body.instructions[id] = copy;
+		insert_after(body, block, last == id ? prev : last, id);
+		insert_after(body, block, kNoId, at);
+		c.block_of.resize(body.instructions.size(), kNoId);
+		c.block_of[at] = block;
+		changed = true;
+	}
+	return changed;
 }
 
 } // namespace opt
