@@ -19,6 +19,11 @@ bool simplify_integer_arithmetic(lowir::FunctionBody& body, const std::vector<ui
 	IntegerPatternFacts& facts, lowir::BlockId block, lowir::InstId& previous, lowir::InstId instruction);
 bool simplify_integer_conversion(lowir::FunctionBody& body, const std::vector<uint32_t>& uses,
 	IntegerPatternFacts& facts, lowir::Instruction& instruction);
+// A compare of a successor (`x + 1 > y`), of an advanced pointer with its
+// base (`p + n == p`) or of an offset value with a count that reaches the
+// type's greatest value (`x - a < n`), rewritten in place to compare x or n.
+bool simplify_integer_compare(lowir::FunctionBody& body, const std::vector<uint32_t>& uses, IntegerPatternFacts& facts,
+	lowir::Instruction& instruction);
 bool simplify_pointer_distance(lowir::FunctionBody& body, IntegerPatternFacts& facts, lowir::BlockId block,
 	lowir::InstId& previous, lowir::InstId instruction);
 // The caller has identified a truncation or right shift of an i128 pack.

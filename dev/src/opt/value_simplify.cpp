@@ -2974,6 +2974,8 @@ void Simplifier::process_block(BlockId block)
 			changed_ = true;
 			continue;
 		}
+		if (inst.op == Opcode::Compare && simplify_integer_compare(body_, uses_, *this, inst))
+			changed_ = true;
 		if (reassociate(inst) || narrow_truncation(inst) || mask_or(inst) || packed_part(inst) ||
 			unsigned_division(inst) || even_product_halved(inst) || exact_reciprocal(inst) || merge_index(inst) ||
 			narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) || readonly_table_address(inst))

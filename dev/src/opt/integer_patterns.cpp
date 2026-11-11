@@ -68,6 +68,9 @@ public:
 	bool variable_power_division(BlockId block, InstId& prev, InstId id);
 	bool round_power_alignment(BlockId block, InstId& prev, InstId id);
 	bool narrow_truncation(Instruction& inst);
+	bool successor_compare(Instruction& inst);
+	bool advanced_compare(Instruction& inst);
+	bool top_range_compare(Instruction& inst);
 
 private:
 	bool power_of_two(Value value, Type type, unsigned& budget, unsigned width = 64);
@@ -488,7 +491,158 @@ Value PointerDistance::emit(BlockId block, InstId& prev, uint32_t location)
 	return value;
 }
 
+// `x + 1 > y` and `x + 1 <= y`, unsigned, of an x that is not its type's
+// greatest value (the sum does not wrap), are `x >= y` and `x < y`: a
+// vector's `size + 1 > capacity` compares the two words it loaded.
+bool IntegerPatterns::successor_compare(Instruction& inst)
+{
+	if (inst.op != Opcode::Compare || !inst.type.is_integer() || inst.type.kind() == TypeKind::I128)
+		return false;
+	// The sum on the left: ugt, ule; on the right: ult, uge.
+	unsigned side = 0;
+	ComparePredicate to = ComparePredicate::Uge;
+	switch (static_cast<ComparePredicate>(inst.sub))
+	{
+	case ComparePredicate::Ugt:
+		break;
+	case ComparePredicate::Ule:
+		to = ComparePredicate::Ult;
+		break;
+	case ComparePredicate::Ult:
+		side = 1;
+		to = ComparePredicate::Ule;
+		break;
+	case ComparePredicate::Uge:
+		side = 1;
+		to = ComparePredicate::Ugt;
+		break;
+	default:
+		return false;
+	}
+	const Instruction* sum = producer(inst.ops[side]);
+	Constant one;
+	if (sum == nullptr || sum->op != Opcode::Binary || static_cast<BinaryOp>(sum->sub) != BinaryOp::Add ||
+		sum->type != inst.type || !sum->ops[0].is(ValueKind::Temp) || !constant(sum->ops[1], inst.type, one) ||
+		!is_integer(inst.type, one, 1))
+		return false;
+	const unsigned width = lowir::integer_bits(inst.type.kind());
+	const uint64_t all = width >= 64 ? ~static_cast<uint64_t>(0) : (static_cast<uint64_t>(1) << width) - 1;
+	if (possible_bits(sum->ops[0], inst.type) == all)
+		return false;
+	inst.ops[side] = sum->ops[0];
+	inst.sub = static_cast<uint8_t>(to);
+	return true;
+}
+
+// `p + n == p`, of an inbounds `index` (its address calculation does not
+// wrap) or of a product that cannot reach the address width, is `n == 0`:
+// an empty range's `begin + size != begin` tests the size alone. A
+// literal factor of n that cannot wrap its type leaves n's other factor.
+bool IntegerPatterns::advanced_compare(Instruction& inst)
+{
+	const ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
+	if (inst.op != Opcode::Compare || !inst.type.is_pointer() ||
+		(pred != ComparePredicate::Eq && pred != ComparePredicate::Ne))
+		return false;
+	for (unsigned side = 0; side < 2; ++side)
+	{
+		const Instruction* step = producer(inst.ops[side]);
+		if (step == nullptr || step->op != Opcode::Index || !step->ops[1].is(ValueKind::Temp) ||
+			!(resolve(step->ops[0]) == resolve(inst.ops[1 - side])) || storage_bytes(step->type) == 0)
+			continue;
+		Value n = resolve(step->ops[1]);
+		Type type = body_.temps[n.index].type;
+		if (!type.is_integer() || type.kind() == TypeKind::I128 || type.kind() == TypeKind::I1)
+			return false;
+		const unsigned width = lowir::integer_bits(type.kind());
+		const uint64_t all = width >= 64 ? ~static_cast<uint64_t>(0) : (static_cast<uint64_t>(1) << width) - 1;
+		if (step->index_bounds() != IndexBounds::InBounds &&
+			(width != 64 || possible_bits(n, type) > all / storage_bytes(step->type)))
+			return false;
+		for (unsigned depth = 0; depth < 2; ++depth)
+		{
+			const Instruction* scaled = producer(n);
+			Constant c;
+			Literal k;
+			if (scaled == nullptr || scaled->op != Opcode::Binary || scaled->type != type ||
+				!scaled->ops[0].is(ValueKind::Temp) || !constant(scaled->ops[1], type, c) ||
+				!integer_bits(type, c, k) || k.high != 0 || k.low == 0)
+				break;
+			const BinaryOp op = static_cast<BinaryOp>(scaled->sub);
+			const uint64_t from = possible_bits(scaled->ops[0], type);
+			if (!(op == BinaryOp::Mul && from <= all / k.low) &&
+				!(op == BinaryOp::Shl && k.low < width && from <= (all >> k.low)))
+				break;
+			n = resolve(scaled->ops[0]);
+		}
+		inst.ops[0] = n;
+		inst.ops[1] = integer_value(body_, Literal{ 0, 0 });
+		inst.type = type;
+		return true;
+	}
+	return false;
+}
+
+// `x - a < n`, unsigned, of a range [a, a + n) that ends at the type's
+// greatest value is `x >= a` (and its negation `x < a`): the two markers
+// -2 and -1 of a pointer set take one compare of the value itself.
+bool IntegerPatterns::top_range_compare(Instruction& inst)
+{
+	if (inst.op != Opcode::Compare || !inst.type.is_integer() || inst.type.kind() == TypeKind::I128 ||
+		inst.type.kind() == TypeKind::I1)
+		return false;
+	const unsigned width = lowir::integer_bits(inst.type.kind());
+	const uint64_t all = width >= 64 ? ~static_cast<uint64_t>(0) : (static_cast<uint64_t>(1) << width) - 1;
+	Constant c;
+	Literal bits;
+	if (!constant(inst.ops[1], inst.type, c) || !integer_bits(inst.type, c, bits))
+		return false;
+	uint64_t count = bits.low & all;
+	bool inside = true;
+	switch (static_cast<ComparePredicate>(inst.sub))
+	{
+	case ComparePredicate::Ult:
+		break;
+	case ComparePredicate::Uge:
+		inside = false;
+		break;
+	case ComparePredicate::Ugt:
+		inside = false;
+		[[fallthrough]];
+	case ComparePredicate::Ule:
+		if (count == all)
+			return false;
+		++count;
+		break;
+	default:
+		return false;
+	}
+	const Instruction* moved = producer(inst.ops[0]);
+	if (count == 0 || moved == nullptr || moved->op != Opcode::Binary || moved->type != inst.type ||
+		!moved->ops[0].is(ValueKind::Temp) || !constant(moved->ops[1], inst.type, c) ||
+		!integer_bits(inst.type, c, bits))
+		return false;
+	const BinaryOp op = static_cast<BinaryOp>(moved->sub);
+	if (op != BinaryOp::Sub && op != BinaryOp::Add)
+		return false;
+	const uint64_t low = (op == BinaryOp::Sub ? bits.low : 0 - bits.low) & all;
+	if (((low + count) & all) != 0)
+		return false;
+	inst.ops[0] = moved->ops[0];
+	inst.ops[1] = integer_value(body_, normalize_integer(inst.type, Literal{ low, 0 }));
+	inst.sub = static_cast<uint8_t>(inside ? ComparePredicate::Uge : ComparePredicate::Ult);
+	return true;
+}
+
 } // namespace
+
+bool simplify_integer_compare(
+	FunctionBody& body, const std::vector<uint32_t>& uses, IntegerPatternFacts& facts, Instruction& instruction)
+{
+	IntegerPatterns patterns(body, uses, facts);
+	return patterns.successor_compare(instruction) || patterns.advanced_compare(instruction) ||
+		patterns.top_range_compare(instruction);
+}
 
 bool simplify_integer_conversion(
 	FunctionBody& body, const std::vector<uint32_t>& uses, IntegerPatternFacts& facts, Instruction& instruction)
