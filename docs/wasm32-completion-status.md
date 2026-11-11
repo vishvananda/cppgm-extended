@@ -22,3 +22,32 @@ or a green partial suite does not complete PA37.
 All raw results, probes, pinned binaries and performance observations live outside
 Git under `/mnt/vizier/cppgm-wasm32-evidence`. Earlier qualification applies only
 to its recorded snapshot; it does not establish qualification of later changes.
+
+## Qualified object checkpoint
+
+`f547e4f42` is the object/linker checkpoint on local LLVM base `dd9641977`.
+It passes the strict cumulative report (10684/10684), PA37 with both host-built
+and self-built tools (32/32), debug info, PA5 self-host, byte-identical inception,
+PA36 smoke, architecture/format/file/placement audits and the complete harness.
+The student export regenerates references consistently; a fresh bundle client
+passes its 270-document inventory and all 43 wrapper checks. File audits retain
+eight pre-existing header-division warnings and add none.
+
+Frozen native A/B compiler binaries compare this checkpoint against its parent
+`18368732f`, including the same LLVM work. On the frozen semantic-overload input:
+
+| Compile level | Baseline instructions | Candidate instructions | Change |
+| --- | ---: | ---: | ---: |
+| O0 | 3,055,723,160 | 3,055,513,696 | -0.0069% |
+| O3 | 9,788,354,299 | 9,788,509,998 | +0.0016% |
+
+Generated native objects are byte-identical at both levels. This does not make
+a wall-time claim. Immutable binaries, commands, input hashes, raw counters and
+the candidate patch are retained in `perf-object/` under the evidence directory.
+
+Remaining runtime probes are explicit gaps: SDK 34 startup uses imported
+`__memory_base` as well as `__stack_pointer`; C++ entry-point adapters are needed
+for its `__main_void`/`__main_argc_argv` conventions. A Wasm `long double` source
+probe also exposed a frontend lowering gap: it has binary128 storage/shape facts
+but still misses the existing soft-float classification path. These are work
+for the next ABI/runtime stage, not reasons to mark PA37 complete.

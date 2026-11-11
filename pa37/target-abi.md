@@ -85,8 +85,11 @@ repeated exported calls. The core start function does not call `main`.
 
 For a WASI command, use Preview 1 startup and I/O imports, initialize before
 calling the user entry point, run required finalization and preserve the exit
-status. At the C ABI boundary, zero-argument `main` is `main`; the argument-taking
-form is `__main_argc_argv`. Source programs still spell both forms `main`.
+status. The supplied startup calls `__main_void` for the zero-argument form
+and `__main_argc_argv` for the argument-taking form. Supply the entry adapters
+needed by the pinned runtime, including its compatibility `main` signature.
+Source programs still spell both forms `main`; freestanding exports do not
+acquire WASI startup behavior.
 
 The test dependencies pin WASI SDK 34.0, Wasmtime and `wasm-tools` in
 [`wasm_tools.json`](../scripts/wasm_tools.json). The SDK supplies reference
