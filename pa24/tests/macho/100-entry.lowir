@@ -1,4 +1,35 @@
-function @main() -> i64 [role=entry] {
+global @initial_alignment : i64 = 1
+
+function @initialize() -> void [role=init] {
+  slot $aligned : obj<16x16>
   block ^entry:
+    %address = addr $aligned
+    %bits = copy i64 %address
+    %alignment = binary and i64 %bits, 15
+    store i64 %alignment, @initial_alignment
+    return void
+}
+
+function @main(%argc : i32, %argv : ptr) -> i64 [role=entry] {
+  slot $aligned : obj<16x16>
+  block ^entry:
+    %address = addr $aligned
+    %bits = copy i64 %address
+    %alignment = binary and i64 %bits, 15
+    %initialized = load i64 @initial_alignment
+    %both = binary or i64 %alignment, %initialized
+    %aligned = cmp eq i64 %both, 0
+    %has_argc = cmp gt i32 %argc, 0
+    %has_argv = cmp ne ptr %argv, 0
+    %arguments = binary and i64 %has_argc, %has_argv
+    %valid = binary and i64 %aligned, %arguments
+    branch %valid, ^success, ^failure
+  block ^success:
+    %first = load ptr %argv
+    %named = cmp ne ptr %first, 0
+    branch %named, ^finish, ^failure
+  block ^finish:
     return i64 37
+  block ^failure:
+    return i64 99
 }
