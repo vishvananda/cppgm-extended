@@ -714,8 +714,11 @@ Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set, bool bra
 		}
 		if (b.kind == OperandKind::Mem || b.kind == OperandKind::Symbol)
 		{
-			load_into(kEmitScratch, b, kind);
-			b = Operand::make_reg(kEmitScratch);
+			// A widened memory operand can become the first operand after the
+			// swap above. Preserve its scratch register when loading the other.
+			const Reg scratch = a.kind == OperandKind::Reg && a.reg == kEmitScratch ? kSelectScratch : kEmitScratch;
+			load_into(scratch, b, kind);
+			b = Operand::make_reg(scratch);
 		}
 
 		if (level_ >= 1 && b.kind == OperandKind::Imm && (a.kind == OperandKind::Mem || a.kind == OperandKind::Reg))

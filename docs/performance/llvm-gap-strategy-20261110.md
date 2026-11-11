@@ -1058,3 +1058,48 @@ gap-C-native-dynamic-join-r17; gap-C-native-oracle-current-r17.json;
 gap-C-native-oracle-output-r17; gap-C-native-oracle-bisect-r17;
 gap-C-oracle-{caller,edge}-bisect-r17; gap-C-oracle-mir-failure-r17;
 gap-C-native-oracle-buildmi-top1-r17b; gap-C-reghigh-reduction-r17{,b,c,d}.
+
+
+### Scratch-register correctness repair exposed by the oracle
+
+Replaying the actual optimized host LowIR through the O0 backend passes and
+produces the native object. The O1 selector instead widens a spilled byte into
+R11, swaps it into the first operand of a tested AND, then loads the other
+operand into R11 as well. The resulting test is mask against itself. In LLVM,
+this incorrectly classifies an XMM register as an eight-bit register and emits
+MOV8rr. Inlining isHReg exposes the defect by giving a shared shift another use,
+so it no longer folds into a single-use bit test.
+
+The selector now preserves the first operand's scratch register when loading
+the second. PA34's behavior regression keeps enough values live to spill the
+promoted byte and the reused mask. It checks clear, set and out-of-byte bits.
+The old compiler fails O1–O3; the fix passes O0–O3. Another 128 private controls
+cover widths, signedness, operand order, inverted predicates and all levels.
+The exact single-edge LLVM reproducer now emits the native object.
+
+Validation passes: strict report 10,616/10,616, debug information, self-host
+through PA5 in a new object root, PA36 smoke, architecture/format/file audits
+and global placement. The fixture needs no move. Against r17, frozen compile
+instructions change -0.0044%, +0.0019%, +0.0059% and +0.0057% at O0–O3;
+all four output objects remain identical and RSS stays within 0.06%.
+Cumulative growth against 8f76ebb0d is +0.4454%, -0.7614%, -1.5526% and
+-1.8466%. This correctness fix does not reset the baseline or claim runtime gain.
+
+With the repair, the partial native-decision oracle reproduces all 325 frozen
+objects and the linked compiler byte for byte. Its number_literal screen has
+calls down 5.50%, instructions down 0.99% and modeled L2 code misses down 4.07%
+against r17, while executed bytes rise 0.090%. The other inputs and hardware
+panel are still running. The oracle is private diagnostic data, not a proposed
+name-based compiler policy. A separate controlled probe changes only ordinary
+inlining's growth charge from the greater of original/final size to final size;
+its purpose is to test whether stale charges exhaust budgets after successful
+simplification. Existing admission caps, safety checks and unit limits remain.
+
+Evidence: gap-C-host-ir-r17/receipt.json;
+gap-C-host-ir-replay-r17/output-equality.json;
+gap-C-scratch-{regression-proof,controls,validation}-r18;
+gap-C-scratch-{batch,cumulative}-r18/summary.json;
+gap-C-scratch-edge-top1-r18/test.json;
+gap-C-scratch-oracle-{top43,output}-r18;
+gap-C-scratch-oracle-ledger-number_literal-r18;
+gap-C-final-charge-compiler-r18; gap-C-original-price-trace-compiler-r18.
