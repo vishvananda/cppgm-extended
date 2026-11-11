@@ -17,9 +17,9 @@ function @truth_zero(%x : i64, %y : i64) -> i64 [no_inline=yes] {
 }
 function @pointer_null(%p : ptr) -> ptr [no_inline=yes] {
   block ^entry:
-    %null = cmp eq ptr %p, 0
     %adjusted = index i8 %p, -8
-    %r = select ptr %null, %p, %adjusted
+    %t2 = cmp eq ptr %p, 0
+    %r = select ptr %t2, %p, %adjusted
     return ptr %r
 }
 function @unequal_literal(%x : i64, %y : i64) -> i64 [no_inline=yes] {

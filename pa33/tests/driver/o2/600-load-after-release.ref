@@ -54,47 +54,122 @@ function @release__ov3(%big : ptr) -> void [binding=strong, object=_Z7releaseP4H
 function @sum_after_delete(%big : ptr [pass=by_address, object_bytes=1048592], %n : i32) -> i64 [binding=strong, object=_Z16sum_after_deleteR3Bigi, no_inline=yes] {
   block ^entry:
     call void @release(%big)
-    jump ^for_cond_1
+    %t1 = binary and i32 %n, -4
+    %t2 = cmp gt i32 %t1, 0
+    branch %t2, ^loop_preheader_1, ^wide_tail_3
 
-  block ^for_cond_1:
-    %t1 = phi i64 [^entry: 0, ^for_body_2: %t11]
-    %t2 = phi i64 [^entry: 1, ^for_body_2: %t10]
-    %t3 = convert trunc exact i32 i64 %t1
-    %t4 = cmp lt i32 %t3, %n
-    branch %t4, ^for_body_2, ^for_end_3
+  block ^loop_preheader_1:
+    jump ^unrolled_2
 
-  block ^for_body_2:
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t29]
+    %t4 = phi i64 [^loop_preheader_1: 1, ^unrolled_2: %t28]
     %t5 = index i8 [projection=field] %big, 8
     %t6 = load typed ptr %t5
-    %t7 = index inbounds i8 [projection=array_element] %t6, %t1
+    %t7 = index inbounds i8 [projection=array_element] %t6, %t3
     %t8 = load i8 %t7
     %t9 = convert sext i64 i8 %t8
-    %t10 = binary add nowrap i64 %t9, %t2
-    %t11 = binary add nowrap i64 %t1, 1
-    jump ^for_cond_1
+    %t10 = binary add nowrap i64 %t4, %t9
+    %t11 = load typed ptr %t5
+    %t12 = index inbounds i8 [projection=array_element] %t11, %t3
+    %t13 = index inbounds i8 [projection=array_element] %t12, 1
+    %t14 = load i8 %t13
+    %t15 = convert sext i64 i8 %t14
+    %t16 = binary add nowrap i64 %t10, %t15
+    %t17 = load typed ptr %t5
+    %t18 = index inbounds i8 [projection=array_element] %t17, %t3
+    %t19 = index inbounds i8 [projection=array_element] %t18, 2
+    %t20 = load i8 %t19
+    %t21 = convert sext i64 i8 %t20
+    %t22 = binary add nowrap i64 %t16, %t21
+    %t23 = load typed ptr %t5
+    %t24 = index inbounds i8 [projection=array_element] %t23, %t3
+    %t25 = index inbounds i8 [projection=array_element] %t24, 3
+    %t26 = load i8 %t25
+    %t27 = convert sext i64 i8 %t26
+    %t28 = binary add nowrap i64 %t22, %t27
+    %t29 = binary add nowrap i64 %t3, 4
+    %t30 = convert trunc exact i32 i64 %t29
+    %t31 = cmp ne i32 %t1, %t30
+    branch %t31, ^unrolled_2, ^wide_tail_3
 
-  block ^for_end_3:
-    return i64 %t2
+  block ^wide_tail_3:
+    %t32 = phi i32 [^entry: 0, ^unrolled_2: %t30]
+    %t33 = phi i64 [^entry: 1, ^unrolled_2: %t28]
+    %t34 = convert sext i64 i32 %t32
+    jump ^for_cond_4
+
+  block ^for_cond_4:
+    %t35 = phi i64 [^wide_tail_3: %t34, ^for_body_5: %t45]
+    %t36 = phi i64 [^wide_tail_3: %t33, ^for_body_5: %t44]
+    %t37 = convert trunc exact i32 i64 %t35
+    %t38 = cmp lt i32 %t37, %n
+    branch %t38, ^for_body_5, ^for_end_6
+
+  block ^for_body_5:
+    %t39 = index i8 [projection=field] %big, 8
+    %t40 = load typed ptr %t39
+    %t41 = index inbounds i8 [projection=array_element] %t40, %t35
+    %t42 = load i8 %t41
+    %t43 = convert sext i64 i8 %t42
+    %t44 = binary add nowrap i64 %t36, %t43
+    %t45 = binary add nowrap i64 %t35, 1
+    jump ^for_cond_4
+
+  block ^for_end_6:
+    return i64 %t36
 }
 function @fill_after_delete(%big : ptr [pass=by_address, object_bytes=8388616], %out : ptr, %n : i32) -> void [binding=strong, object=_Z17fill_after_deleteR6BiggerPli, no_inline=yes] {
   block ^entry:
     call void @release__ov2(%big)
-    jump ^for_cond_1
+    %t1 = binary and i32 %n, -4
+    %t2 = cmp gt i32 %t1, 0
+    branch %t2, ^loop_preheader_1, ^wide_tail_3
 
-  block ^for_cond_1:
-    %t1 = phi i64 [^entry: 0, ^for_body_2: %t6]
-    %t2 = convert trunc exact i32 i64 %t1
-    %t3 = cmp lt i32 %t2, %n
-    branch %t3, ^for_body_2, ^for_end_3
+  block ^loop_preheader_1:
+    jump ^unrolled_2
 
-  block ^for_body_2:
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t15]
     %t4 = load typed i64 %big
-    %t5 = index inbounds i64 [projection=array_element] %out, %t1
+    %t5 = index inbounds i64 [projection=array_element] %out, %t3
     store typed i64 %t4, %t5
-    %t6 = binary add nowrap i64 %t1, 1
-    jump ^for_cond_1
+    %t6 = load typed i64 %big
+    %t7 = index inbounds i64 [projection=array_element] %out, %t3
+    %t8 = index inbounds i64 [projection=array_element] %t7, 1
+    store typed i64 %t6, %t8
+    %t9 = load typed i64 %big
+    %t10 = index inbounds i64 [projection=array_element] %out, %t3
+    %t11 = index inbounds i64 [projection=array_element] %t10, 2
+    store typed i64 %t9, %t11
+    %t12 = load typed i64 %big
+    %t13 = index inbounds i64 [projection=array_element] %out, %t3
+    %t14 = index inbounds i64 [projection=array_element] %t13, 3
+    store typed i64 %t12, %t14
+    %t15 = binary add nowrap i64 %t3, 4
+    %t16 = convert trunc exact i32 i64 %t15
+    %t17 = cmp ne i32 %t1, %t16
+    branch %t17, ^unrolled_2, ^wide_tail_3
 
-  block ^for_end_3:
+  block ^wide_tail_3:
+    %t18 = phi i32 [^entry: 0, ^unrolled_2: %t16]
+    %t19 = convert sext i64 i32 %t18
+    jump ^for_cond_4
+
+  block ^for_cond_4:
+    %t20 = phi i64 [^wide_tail_3: %t19, ^for_body_5: %t25]
+    %t21 = convert trunc exact i32 i64 %t20
+    %t22 = cmp lt i32 %t21, %n
+    branch %t22, ^for_body_5, ^for_end_6
+
+  block ^for_body_5:
+    %t23 = load typed i64 %big
+    %t24 = index inbounds i64 [projection=array_element] %out, %t20
+    store typed i64 %t23, %t24
+    %t25 = binary add nowrap i64 %t20, 1
+    jump ^for_cond_4
+
+  block ^for_end_6:
     return void
 }
 function @sum_after_branch_delete(%big : ptr [pass=by_address, object_bytes=16777232], %n : i32, %f : i32) -> i64 [binding=strong, object=_Z23sum_after_branch_deleteR4Hugeii, no_inline=yes] {
@@ -111,51 +186,132 @@ function @sum_after_branch_delete(%big : ptr [pass=by_address, object_bytes=1677
 
   block ^if_end_3:
     %t2 = phi i64 [^if_then_1: 0, ^if_else_2: %t1]
-    jump ^for_cond_4
+    %t3 = binary and i32 %n, -4
+    %t4 = cmp gt i32 %t3, 0
+    branch %t4, ^loop_preheader_4, ^wide_tail_6
 
-  block ^for_cond_4:
-    %t3 = phi i64 [^if_end_3: 0, ^for_body_5: %t13]
-    %t4 = phi i64 [^if_end_3: %t2, ^for_body_5: %t12]
-    %t5 = convert trunc exact i32 i64 %t3
-    %t6 = cmp lt i32 %t5, %n
-    branch %t6, ^for_body_5, ^for_end_6
+  block ^loop_preheader_4:
+    jump ^unrolled_5
 
-  block ^for_body_5:
+  block ^unrolled_5:
+    %t5 = phi i64 [^loop_preheader_4: 0, ^unrolled_5: %t31]
+    %t6 = phi i64 [^loop_preheader_4: %t2, ^unrolled_5: %t30]
     %t7 = index i8 [projection=field] %big, 8
     %t8 = load typed ptr %t7
-    %t9 = index inbounds i8 [projection=array_element] %t8, %t3
+    %t9 = index inbounds i8 [projection=array_element] %t8, %t5
     %t10 = load i8 %t9
     %t11 = convert sext i64 i8 %t10
-    %t12 = binary add nowrap i64 %t11, %t4
-    %t13 = binary add nowrap i64 %t3, 1
-    jump ^for_cond_4
+    %t12 = binary add nowrap i64 %t6, %t11
+    %t13 = load typed ptr %t7
+    %t14 = index inbounds i8 [projection=array_element] %t13, %t5
+    %t15 = index inbounds i8 [projection=array_element] %t14, 1
+    %t16 = load i8 %t15
+    %t17 = convert sext i64 i8 %t16
+    %t18 = binary add nowrap i64 %t12, %t17
+    %t19 = load typed ptr %t7
+    %t20 = index inbounds i8 [projection=array_element] %t19, %t5
+    %t21 = index inbounds i8 [projection=array_element] %t20, 2
+    %t22 = load i8 %t21
+    %t23 = convert sext i64 i8 %t22
+    %t24 = binary add nowrap i64 %t18, %t23
+    %t25 = load typed ptr %t7
+    %t26 = index inbounds i8 [projection=array_element] %t25, %t5
+    %t27 = index inbounds i8 [projection=array_element] %t26, 3
+    %t28 = load i8 %t27
+    %t29 = convert sext i64 i8 %t28
+    %t30 = binary add nowrap i64 %t24, %t29
+    %t31 = binary add nowrap i64 %t5, 4
+    %t32 = convert trunc exact i32 i64 %t31
+    %t33 = cmp ne i32 %t3, %t32
+    branch %t33, ^unrolled_5, ^wide_tail_6
 
-  block ^for_end_6:
-    return i64 %t4
+  block ^wide_tail_6:
+    %t34 = phi i32 [^if_end_3: 0, ^unrolled_5: %t32]
+    %t35 = phi i64 [^if_end_3: %t2, ^unrolled_5: %t30]
+    %t36 = convert sext i64 i32 %t34
+    jump ^for_cond_7
+
+  block ^for_cond_7:
+    %t37 = phi i64 [^wide_tail_6: %t36, ^for_body_8: %t47]
+    %t38 = phi i64 [^wide_tail_6: %t35, ^for_body_8: %t46]
+    %t39 = convert trunc exact i32 i64 %t37
+    %t40 = cmp lt i32 %t39, %n
+    branch %t40, ^for_body_8, ^for_end_9
+
+  block ^for_body_8:
+    %t41 = index i8 [projection=field] %big, 8
+    %t42 = load typed ptr %t41
+    %t43 = index inbounds i8 [projection=array_element] %t42, %t37
+    %t44 = load i8 %t43
+    %t45 = convert sext i64 i8 %t44
+    %t46 = binary add nowrap i64 %t38, %t45
+    %t47 = binary add nowrap i64 %t37, 1
+    jump ^for_cond_7
+
+  block ^for_end_9:
+    return i64 %t38
 }
 function @sum_kept(%big : ptr [pass=by_address, object_bytes=1048592], %n : i32) -> i64 [binding=strong, object=_Z8sum_keptR3Bigi, no_inline=yes] {
   block ^entry:
     %t1 = index i8 [projection=field] %big, 8
     %t2 = load ptr %t1
-    jump ^for_cond_1
+    %t3 = binary and i32 %n, -4
+    %t4 = cmp gt i32 %t3, 0
+    branch %t4, ^loop_preheader_1, ^wide_tail_3
 
-  block ^for_cond_1:
-    %t3 = phi i64 [^entry: 0, ^for_body_2: %t11]
-    %t4 = phi i64 [^entry: 0, ^for_body_2: %t10]
-    %t5 = convert trunc exact i32 i64 %t3
-    %t6 = cmp lt i32 %t5, %n
-    branch %t6, ^for_body_2, ^for_end_3
+  block ^loop_preheader_1:
+    jump ^unrolled_2
 
-  block ^for_body_2:
-    %t7 = index inbounds i8 [projection=array_element] %t2, %t3
+  block ^unrolled_2:
+    %t5 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t26]
+    %t6 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t25]
+    %t7 = index inbounds i8 [projection=array_element] %t2, %t5
     %t8 = load i8 %t7
     %t9 = convert sext i64 i8 %t8
-    %t10 = binary add nowrap i64 %t9, %t4
-    %t11 = binary add nowrap i64 %t3, 1
-    jump ^for_cond_1
+    %t10 = binary add nowrap i64 %t6, %t9
+    %t11 = index inbounds i8 [projection=array_element] %t2, %t5
+    %t12 = index inbounds i8 [projection=array_element] %t11, 1
+    %t13 = load i8 %t12
+    %t14 = convert sext i64 i8 %t13
+    %t15 = binary add nowrap i64 %t10, %t14
+    %t16 = index inbounds i8 [projection=array_element] %t2, %t5
+    %t17 = index inbounds i8 [projection=array_element] %t16, 2
+    %t18 = load i8 %t17
+    %t19 = convert sext i64 i8 %t18
+    %t20 = binary add nowrap i64 %t15, %t19
+    %t21 = index inbounds i8 [projection=array_element] %t2, %t5
+    %t22 = index inbounds i8 [projection=array_element] %t21, 3
+    %t23 = load i8 %t22
+    %t24 = convert sext i64 i8 %t23
+    %t25 = binary add nowrap i64 %t20, %t24
+    %t26 = binary add nowrap i64 %t5, 4
+    %t27 = convert trunc exact i32 i64 %t26
+    %t28 = cmp ne i32 %t3, %t27
+    branch %t28, ^unrolled_2, ^wide_tail_3
 
-  block ^for_end_3:
-    return i64 %t4
+  block ^wide_tail_3:
+    %t29 = phi i32 [^entry: 0, ^unrolled_2: %t27]
+    %t30 = phi i64 [^entry: 0, ^unrolled_2: %t25]
+    %t31 = convert sext i64 i32 %t29
+    jump ^for_cond_4
+
+  block ^for_cond_4:
+    %t32 = phi i64 [^wide_tail_3: %t31, ^for_body_5: %t40]
+    %t33 = phi i64 [^wide_tail_3: %t30, ^for_body_5: %t39]
+    %t34 = convert trunc exact i32 i64 %t32
+    %t35 = cmp lt i32 %t34, %n
+    branch %t35, ^for_body_5, ^for_end_6
+
+  block ^for_body_5:
+    %t36 = index inbounds i8 [projection=array_element] %t2, %t32
+    %t37 = load i8 %t36
+    %t38 = convert sext i64 i8 %t37
+    %t39 = binary add nowrap i64 %t33, %t38
+    %t40 = binary add nowrap i64 %t32, 1
+    jump ^for_cond_4
+
+  block ^for_end_6:
+    return i64 %t33
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $out : obj<16x8>
@@ -208,19 +364,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t2, %t20
     %t21 = load volatile i32 @zero
     %t22 = call i64 @sum_after_branch_delete(%t19, %t21, 1)
-    branch %t22, ^if_then_7, ^if_else_8
+    branch %t22, ^if_then_7, ^delete_nonnull_8
 
   block ^if_then_7:
     return i32 4
 
-  block ^if_else_8:
-    %t23 = cmp ne ptr %t1, 0
-    branch %t23, ^delete_nonnull_9, ^delete_end_10
-
-  block ^delete_nonnull_9:
+  block ^delete_nonnull_8:
     call void @operatordelete(%t1)
-    jump ^delete_end_10
-
-  block ^delete_end_10:
     return i32 0
 }

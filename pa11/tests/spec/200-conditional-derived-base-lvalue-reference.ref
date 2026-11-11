@@ -16,8 +16,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = index i8 %t5, 0
     %t7 = index i8 [projection=field] %t6, 0
     store typed i32 2, %t7
-    store u8 0, $flag
-    %t8 = load u8 $flag
+    store typed u8 0, $flag
+    %t8 = load typed u8 $flag
     branch %t8, ^condaddr_then_1, ^condaddr_else_2
 
   block ^condaddr_then_1:

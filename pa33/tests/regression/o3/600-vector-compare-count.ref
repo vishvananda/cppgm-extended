@@ -1,10 +1,51 @@
 function @count(%p : ptr) -> i32 [no_inline=yes] {
   block ^entry:
+    branch 1, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t1 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t25]
+    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t26]
+    %t3 = index i32 %p, %t2
+    %t4 = load typed i32 %t3
+    %t5 = cmp ne i32 %t4, 0
+    %t6 = convert trunc i32 i64 %t5
+    %t7 = binary add nowrap i32 %t1, %t6
+    %t8 = binary add nowrap i64 %t2, 1
+    %t9 = index i32 %p, %t8
+    %t10 = load typed i32 %t9
+    %t11 = cmp ne i32 %t10, 0
+    %t12 = convert trunc i32 i64 %t11
+    %t13 = binary add nowrap i32 %t7, %t12
+    %t14 = binary add nowrap i64 %t2, 2
+    %t15 = index i32 %p, %t14
+    %t16 = load typed i32 %t15
+    %t17 = cmp ne i32 %t16, 0
+    %t18 = convert trunc i32 i64 %t17
+    %t19 = binary add nowrap i32 %t13, %t18
+    %t20 = binary add nowrap i64 %t2, 3
+    %t21 = index i32 %p, %t20
+    %t22 = load typed i32 %t21
+    %t23 = cmp ne i32 %t22, 0
+    %t24 = convert trunc i32 i64 %t23
+    %t25 = binary add nowrap i32 %t19, %t24
+    %t26 = binary add nowrap i64 %t2, 4
+    %t27 = cmp ne i64 %t26, 256
+    branch %t27, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    branch 0, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t28 = phi i32 [^entry: 0, ^loop_exit_3: %t25]
+    %t29 = phi i64 [^entry: 0, ^loop_exit_3: %t26]
     jump ^loop
 
   block ^loop:
-    %s = phi i32 [^entry: 0, ^loop: %s1]
-    %i = phi i64 [^entry: 0, ^loop: %i1]
+    %s = phi i32 [^wide_tail_4: %t28, ^loop: %s1]
+    %i = phi i64 [^wide_tail_4: %t29, ^loop: %i1]
     %a = index i32 %p, %i
     %v = load typed i32 %a
     %c = cmp ne i32 %v, 0
@@ -15,7 +56,8 @@ function @count(%p : ptr) -> i32 [no_inline=yes] {
     branch %more, ^loop, ^done
 
   block ^done:
-    return i32 %s1
+    %t39 = phi i32 [^loop: %s1, ^loop_exit_3: %t25]
+    return i32 %t39
 }
 function @main() -> i32 [role=entry] {
   slot $a : obj<1024x16>

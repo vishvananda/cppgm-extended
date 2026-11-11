@@ -19,7 +19,7 @@ function @operator_(%ret : ptr [pass=indirect_result, alias=exclusive_result, ob
     %t8 = binary mul nowrap i64 %t5, %t7
     %t9 = load typed ptr $size
     %t10 = index i8 [projection=field] %t9, 8
-    %t11 = load u8 %t10
+    %t11 = load typed u8 %t10
     call void @Size__Size(%ret, %t8, %t11)
     return void
 }
@@ -71,7 +71,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load typed i64 $call__3
     %t5 = cmp ge i64 %t4, 5
     %t6 = convert trunc u8 i64 %t5
-    store u8 %t6, $result
+    store typed u8 %t6, $result
     call void @Size___Size(%t1)
     call void @Size___Size(%t2)
     eh_end
@@ -82,7 +82,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cleanup_action_3
 
   block ^call_unwind_end_6:
-    %t7 = load u8 $result
+    %t7 = load typed u8 $result
     %t8 = cmp eq u8 %t7, 0
     branch %t8, ^if_then_7, ^lor_rhs_10
 
@@ -178,10 +178,10 @@ function @Size__Size(%this : ptr [object_bytes=16], %n : i64, %s : u8) -> void [
     %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
-    %t4 = load u8 $s
+    %t4 = load typed u8 $s
     %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 8
-    store u8 %t4, %t6
+    store typed u8 %t4, %t6
     return void
 }
 function @Size___Size(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4SizeD1Ev, inline_hint=yes] {

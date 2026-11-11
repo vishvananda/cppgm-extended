@@ -87,22 +87,21 @@ function @oracle
 
   block ^entry
     mov rax, 0
-    mov rcx, rdi
 
   block ^loop
     cmp.i64 rax, rsi
     jb ^body
-    ret rcx
+    ret rdi
 
   block ^body
-    ror rcx, 1
+    ror rdi, 1
     add rax, 1
     cmp.i64 rax, rsi
     jb ^body
-    ret rcx
+    ret rdi
 
   block ^done
-    ret rcx
+    ret rdi
 
 function @main
   abi

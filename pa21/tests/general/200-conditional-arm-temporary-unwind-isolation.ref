@@ -29,7 +29,7 @@ function @use(%__param0 : ptr [pass=by_address, object_bytes=4], %fail : u8) -> 
   block ^entry:
     store typed ptr %__param0, $__param0
     store u8 %fail, $fail
-    %t1 = load u8 $fail
+    %t1 = load typed u8 $fail
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
@@ -52,7 +52,7 @@ function @use__ov2(%__param0 : ptr [pass=by_address, object_bytes=4], %fail : u8
   block ^entry:
     store typed ptr %__param0, $__param0
     store u8 %fail, $fail
-    %t1 = load u8 $fail
+    %t1 = load typed u8 $fail
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
@@ -120,14 +120,14 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     store typed i32 0, $result
     store typed i32 0, $caught
     eh_try ^catch_dispatch_1
-    %t1 = load u8 $same_type
+    %t1 = load typed u8 $same_type
     branch %t1, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     store u8 0, $lifetime__6
     store u8 0, $lifetime__3
     eh_try ^call_unwind_dispatch_13
-    %t2 = load u8 $first
+    %t2 = load typed u8 $first
     eh_end
     branch %t2, ^cond_then_7, ^cond_else_8
 
@@ -174,7 +174,7 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     store u8 1, $lifetime__3
     eh_end
     eh_try ^call_unwind_dispatch_13
-    %t4 = load u8 $fail
+    %t4 = load typed u8 $fail
     %t5 = call i32 @use(%t3, %t4)
     store typed i32 %t5, $call__4
     %t6 = load typed i32 $call__4
@@ -189,7 +189,7 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     store u8 1, $lifetime__6
     eh_end
     eh_try ^call_unwind_dispatch_13
-    %t8 = load u8 $fail
+    %t8 = load typed u8 $fail
     %t9 = call i32 @use(%t7, %t8)
     store typed i32 %t9, $call__7
     %t10 = load typed i32 $call__7
@@ -226,7 +226,7 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     store u8 0, $lifetime__13
     store u8 0, $lifetime__10
     eh_try ^call_unwind_dispatch_30
-    %t20 = load u8 $first
+    %t20 = load typed u8 $first
     eh_end
     branch %t20, ^cond_then_24, ^cond_else_25
 
@@ -273,7 +273,7 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     store u8 1, $lifetime__10
     eh_end
     eh_try ^call_unwind_dispatch_30
-    %t22 = load u8 $fail
+    %t22 = load typed u8 $fail
     %t23 = call i32 @use(%t21, %t22)
     store typed i32 %t23, $call__11
     %t24 = load typed i32 $call__11
@@ -288,7 +288,7 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     store u8 1, $lifetime__13
     eh_end
     eh_try ^call_unwind_dispatch_30
-    %t26 = load u8 $fail
+    %t26 = load typed u8 $fail
     %t27 = call i32 @use__ov2(%t25, %t26)
     store typed i32 %t27, $call__14
     %t28 = load typed i32 $call__14
@@ -376,11 +376,11 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
 
   block ^lor_rhs_45:
     %t49 = load typed i32 @left_destructions
-    %t50 = load u8 $first
+    %t50 = load typed u8 $first
     branch %t50, ^lor_short_52, ^lor_rhs_51
 
   block ^lor_rhs_51:
-    %t51 = load u8 $same_type
+    %t51 = load typed u8 $same_type
     %t52 = cmp ne u8 %t51, 0
     store typed i64 %t52, $lor__19
     jump ^lor_end_53
@@ -417,11 +417,11 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
 
   block ^lor_rhs_54:
     %t57 = load typed i32 @right_destructions
-    %t58 = load u8 $first
+    %t58 = load typed u8 $first
     branch %t58, ^lor_short_61, ^lor_rhs_60
 
   block ^lor_rhs_60:
-    %t59 = load u8 $same_type
+    %t59 = load typed u8 $same_type
     %t60 = cmp ne u8 %t59, 0
     store typed i64 %t60, $lor__22
     jump ^lor_end_62
@@ -458,7 +458,7 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
 
   block ^lor_rhs_63:
     %t65 = load typed i32 $caught
-    %t66 = load u8 $fail
+    %t66 = load typed u8 $fail
     branch %t66, ^cond_then_66, ^cond_else_67
 
   block ^cond_then_66:
@@ -485,7 +485,7 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
 
   block ^lor_rhs_69:
     %t70 = load typed i32 $result
-    %t71 = load u8 $fail
+    %t71 = load typed u8 $fail
     branch %t71, ^cond_then_72, ^cond_else_73
 
   block ^cond_then_72:
@@ -493,11 +493,11 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     jump ^cond_end_74
 
   block ^cond_else_73:
-    %t72 = load u8 $first
+    %t72 = load typed u8 $first
     branch %t72, ^lor_short_79, ^lor_rhs_78
 
   block ^lor_rhs_78:
-    %t73 = load u8 $same_type
+    %t73 = load typed u8 $same_type
     %t74 = cmp ne u8 %t73, 0
     store typed i64 %t74, $lor__28
     jump ^lor_end_80
@@ -551,10 +551,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $same : i32
 
   block ^entry:
-    store u8 0, $first
+    store typed u8 0, $first
     call void @reset()
     eh_try ^catch_dispatch_1
-    %t1 = load u8 $first
+    %t1 = load typed u8 $first
     branch %t1, ^cond_then_4, ^cond_else_5
 
   block ^cond_then_4:

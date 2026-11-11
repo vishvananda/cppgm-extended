@@ -204,7 +204,6 @@ function @main
     mov rsi, 6
     mov rdx, 0
     call @walk [args=(rdx,rsi,rdi)]
-    add.u32 rbx, rax
-    zext.i32 rax, rbx
+    add.u32 rax, rbx
     and.i32 rax, 127
     ret rax

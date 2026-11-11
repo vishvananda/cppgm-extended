@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @observer
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load u8 %t2
+    %t3 = load typed u8 %t2
     branch %t3, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
@@ -197,7 +197,7 @@ function @Observer__Observer(%this : ptr [object_bytes=1]) -> void [binding=weak
     %t39 = convert trunc u8 i64 %t38
     %t40 = load typed ptr $this
     %t41 = index i8 [projection=field] %t40, 0
-    store u8 %t39, %t41
+    store typed u8 %t39, %t41
     return void
 }
 function @Point__Point(%this : ptr [object_bytes=4], %n : i32) -> void [binding=weak, object=_ZN5PointC1Ei, inline_hint=yes] {

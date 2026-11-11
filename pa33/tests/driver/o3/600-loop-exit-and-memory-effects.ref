@@ -15,56 +15,55 @@ function @alter(%p : ptr, %i : u32) -> void [binding=strong, object=_Z5alterPjj,
 }
 function @run(%p : ptr, %out : ptr, %n : u32, %flag : u8) -> u32 [binding=strong, object=_Z3runPjS_jb, no_inline=yes] {
   block ^entry:
-    %t1 = cmp ugt u32 %n, 0
-    branch %t1, ^for_body_1, ^for_end_9
+    branch %n, ^for_body_1, ^for_end_9
 
   block ^for_body_1:
-    %t2 = phi u32 [^for_iter_8: %t10, ^entry: 0]
-    %t3 = phi u32 [^for_iter_8: %t16, ^entry: 0]
+    %t1 = phi u32 [^for_iter_8: %t9, ^entry: 0]
+    %t2 = phi u32 [^for_iter_8: %t15, ^entry: 0]
     branch %flag, ^if_then_2, ^if_else_3
 
   block ^if_then_2:
-    %t4 = index inbounds u32 [projection=array_element] %p, %t3
-    %t5 = load typed u32 %t4
-    %t6 = binary add u32 %t5, %t2
+    %t3 = index inbounds u32 [projection=array_element] %p, %t2
+    %t4 = load typed u32 %t3
+    %t5 = binary add u32 %t4, %t1
     jump ^if_end_4
 
   block ^if_else_3:
-    %t7 = index inbounds u32 [projection=array_element] %p, %t3
-    %t8 = load typed u32 %t7
-    %t9 = binary xor u32 %t8, %t2
+    %t6 = index inbounds u32 [projection=array_element] %p, %t2
+    %t7 = load typed u32 %t6
+    %t8 = binary xor u32 %t7, %t1
     jump ^if_end_4
 
   block ^if_end_4:
-    %t10 = phi u32 [^if_then_2: %t6, ^if_else_3: %t9]
-    %t11 = index inbounds u32 [projection=array_element] %p, %t3
-    %t12 = load typed u32 %t11
-    %t13 = binary and u32 %t12, 1
-    branch %t13, ^if_then_5, ^if_end_6
+    %t9 = phi u32 [^if_then_2: %t5, ^if_else_3: %t8]
+    %t10 = index inbounds u32 [projection=array_element] %p, %t2
+    %t11 = load typed u32 %t10
+    %t12 = binary and u32 %t11, 1
+    branch %t12, ^if_then_5, ^if_end_6
 
   block ^if_then_5:
-    store typed u32 %t10, %out
+    store typed u32 %t9, %out
     jump ^if_end_6
 
   block ^if_end_6:
-    %t14 = binary and u32 %t3, 7
-    %t15 = cmp eq u32 %t14, 3
-    branch %t15, ^if_then_7, ^for_iter_8
+    %t13 = binary and u32 %t2, 7
+    %t14 = cmp eq u32 %t13, 3
+    branch %t14, ^if_then_7, ^for_iter_8
 
   block ^if_then_7:
-    call void @alter(%out, %t3)
+    call void @alter(%out, %t2)
     jump ^for_iter_8
 
   block ^for_iter_8:
-    %t16 = binary add u32 %t3, 1
-    %t17 = cmp ult u32 %t16, %n
-    branch %t17, ^for_body_1, ^for_end_9
+    %t15 = binary add u32 %t2, 1
+    %t16 = cmp ult u32 %t15, %n
+    branch %t16, ^for_body_1, ^for_end_9
 
   block ^for_end_9:
-    %t18 = phi u32 [^entry: 0, ^for_iter_8: %t10]
-    %t19 = load typed u32 %out
-    %t20 = binary add u32 %t19, %t18
-    return u32 %t20
+    %t17 = phi u32 [^entry: 0, ^for_iter_8: %t9]
+    %t18 = load typed u32 %out
+    %t19 = binary add u32 %t18, %t17
+    return u32 %t19
 }
 function @locate(%wanted : u32) -> u32 [binding=strong, object=_Z6locatej, no_inline=yes] {
   slot $values : obj<16x4>
@@ -160,168 +159,303 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     store volatile u32 3, $start
     %t1 = addr $data
-    jump ^for_body_1
+    branch 1, ^loop_preheader_1, ^wide_tail_4
 
-  block ^for_body_1:
-    %t2 = phi u32 [^for_body_1: %t6, ^entry: 0]
-    %t3 = load volatile u32 $start
-    %t4 = binary add u32 %t3, %t2
-    %t5 = index inbounds u32 [projection=array_element] %t1, %t2
-    store typed u32 %t4, %t5
-    %t6 = binary add u32 %t2, 1
-    %t7 = cmp ult u32 %t6, 33
-    branch %t7, ^for_body_1, ^for_cond_2
+  block ^loop_preheader_1:
+    jump ^unrolled_2
 
-  block ^for_cond_2:
-    %t8 = phi u32 [^for_iter_11: %t56, ^for_body_1: 0]
-    %t9 = cmp ule u32 %t8, 33
-    branch %t9, ^for_body_3, ^for_end_12
+  block ^unrolled_2:
+    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t22]
+    %t3 = convert trunc exact u32 i64 %t2
+    %t4 = load volatile u32 $start
+    %t5 = binary add u32 %t3, %t4
+    %t6 = index inbounds u32 [projection=array_element] %t1, %t2
+    store typed u32 %t5, %t6
+    %t7 = binary add nowrap u32 %t3, 1
+    %t8 = load volatile u32 $start
+    %t9 = binary add u32 %t7, %t8
+    %t10 = index inbounds u32 [projection=array_element] %t1, %t2
+    %t11 = index inbounds u32 [projection=array_element] %t10, 1
+    store typed u32 %t9, %t11
+    %t12 = binary add nowrap u32 %t3, 2
+    %t13 = load volatile u32 $start
+    %t14 = binary add u32 %t12, %t13
+    %t15 = index inbounds u32 [projection=array_element] %t1, %t2
+    %t16 = index inbounds u32 [projection=array_element] %t15, 2
+    store typed u32 %t14, %t16
+    %t17 = binary add nowrap u32 %t3, 3
+    %t18 = load volatile u32 $start
+    %t19 = binary add u32 %t17, %t18
+    %t20 = index inbounds u32 [projection=array_element] %t1, %t2
+    %t21 = index inbounds u32 [projection=array_element] %t20, 3
+    store typed u32 %t19, %t21
+    %t22 = binary add nowrap i64 %t2, 4
+    %t23 = convert trunc exact u32 i64 %t22
+    %t24 = cmp ne u32 %t23, 32
+    branch %t24, ^unrolled_2, ^loop_exit_3
 
-  block ^for_body_3:
-    %t10 = phi u32 [^if_end_10: %t54, ^for_cond_2: 0]
-    store typed u32 17, $out
-    %t11 = cmp ugt u32 %t8, 0
-    branch %t11, ^loop_preheader_4, ^for_end_7
+  block ^loop_exit_3:
+    branch 1, ^wide_tail_4, ^for_cond_6
 
-  block ^loop_preheader_4:
-    branch %t10, ^for_body_5, ^loop_preheader_6
+  block ^wide_tail_4:
+    %t25 = phi u32 [^entry: 0, ^loop_exit_3: %t23]
+    jump ^for_body_5
 
   block ^for_body_5:
-    %t12 = phi u32 [^for_body_5: %t26, ^loop_preheader_4: 0]
-    %t13 = phi u32 [^for_body_5: %t25, ^loop_preheader_4: 17]
-    %t14 = phi u32 [^for_body_5: %t17, ^loop_preheader_4: 0]
-    %t15 = index inbounds u32 [projection=array_element] %t1, %t12
-    %t16 = load typed u32 %t15
-    %t17 = binary add u32 %t16, %t14
-    %t18 = binary and u32 %t16, 1
-    %t19 = select u32 %t18, %t17, %t13
-    %t20 = binary and u32 %t12, 7
-    %t21 = cmp eq u32 %t20, 3
-    %t22 = binary add u32 %t12, 3
-    %t23 = binary add u32 %t22, %t19
-    %t24 = cmp eq u32 %t20, 3
-    %t25 = select u32 %t24, %t23, %t19
-    %t26 = binary add u32 %t12, 1
-    %t27 = cmp ult u32 %t26, %t8
-    branch %t27, ^for_body_5, ^for_end_7
+    %t26 = phi u32 [^for_body_5: %t30, ^wide_tail_4: %t25]
+    %t27 = load volatile u32 $start
+    %t28 = binary add u32 %t27, %t26
+    %t29 = index inbounds u32 [projection=array_element] %t1, %t26
+    store typed u32 %t28, %t29
+    %t30 = binary add u32 %t26, 1
+    %t31 = cmp ult u32 %t30, 33
+    branch %t31, ^for_body_5, ^for_cond_6
 
-  block ^loop_preheader_6:
-    %t28 = phi u32 [^loop_preheader_6: %t42, ^loop_preheader_4: 0]
-    %t29 = phi u32 [^loop_preheader_6: %t41, ^loop_preheader_4: 17]
-    %t30 = phi u32 [^loop_preheader_6: %t33, ^loop_preheader_4: 0]
-    %t31 = index inbounds u32 [projection=array_element] %t1, %t28
-    %t32 = load typed u32 %t31
-    %t33 = binary xor u32 %t30, %t32
-    %t34 = binary and u32 %t32, 1
-    %t35 = select u32 %t34, %t33, %t29
-    %t36 = binary and u32 %t28, 7
-    %t37 = cmp eq u32 %t36, 3
-    %t38 = binary add u32 %t28, 3
-    %t39 = binary add u32 %t35, %t38
-    %t40 = cmp eq u32 %t36, 3
-    %t41 = select u32 %t40, %t39, %t35
-    %t42 = binary add u32 %t28, 1
-    %t43 = cmp ult u32 %t42, %t8
-    branch %t43, ^loop_preheader_6, ^for_end_7
+  block ^for_cond_6:
+    %t32 = phi u32 [^for_iter_25: %t145, ^for_body_5: 0, ^loop_exit_3: 0]
+    %t33 = cmp ule u32 %t32, 33
+    branch %t33, ^for_body_7, ^for_end_26
 
-  block ^for_end_7:
-    %t44 = phi u32 [^for_body_3: 17, ^for_body_5: %t25, ^loop_preheader_6: %t41]
-    %t45 = phi u32 [^for_body_3: 0, ^for_body_5: %t17, ^loop_preheader_6: %t33]
-    %t46 = addr $out
-    %t47 = cmp ne u32 %t10, 0
-    %t48 = convert trunc u8 i64 %t47
-    %t49 = call u32 @run(%t1, %t46, %t8, %t48)
-    %t50 = binary add u32 %t45, %t44
-    %t51 = cmp ne u32 %t49, %t50
-    branch %t51, ^if_then_9, ^lor_rhs_8
+  block ^for_body_7:
+    %t34 = phi u32 [^if_end_24: %t143, ^for_cond_6: 0]
+    store typed u32 17, $out
+    branch %t32, ^loop_preheader_8, ^for_end_21
 
-  block ^lor_rhs_8:
-    %t52 = load typed u32 $out
-    %t53 = cmp ne u32 %t52, %t44
-    branch %t53, ^if_then_9, ^if_end_10
+  block ^loop_preheader_8:
+    branch %t34, ^loop_preheader_9, ^loop_preheader_15
 
-  block ^if_then_9:
+  block ^loop_preheader_9:
+    %t35 = binary and u32 %t32, 4294967294
+    branch %t35, ^loop_preheader_10, ^wide_tail_13
+
+  block ^loop_preheader_10:
+    jump ^unrolled_11
+
+  block ^unrolled_11:
+    %t36 = phi i64 [^loop_preheader_10: 0, ^unrolled_11: %t62]
+    %t37 = phi u32 [^loop_preheader_10: 17, ^unrolled_11: %t61]
+    %t38 = phi u32 [^loop_preheader_10: 0, ^unrolled_11: %t54]
+    %t39 = convert trunc exact u32 i64 %t36
+    %t40 = index inbounds u32 [projection=array_element] %t1, %t36
+    %t41 = load typed u32 %t40
+    %t42 = binary add u32 %t38, %t41
+    %t43 = binary and u32 %t41, 1
+    %t44 = select u32 %t43, %t42, %t37
+    %t45 = binary and u32 %t39, 7
+    %t46 = binary add u32 %t39, 3
+    %t47 = binary add u32 %t44, %t46
+    %t48 = cmp eq u32 %t45, 3
+    %t49 = select u32 %t48, %t47, %t44
+    %t50 = binary add nowrap u32 %t39, 1
+    %t51 = index inbounds u32 [projection=array_element] %t1, %t36
+    %t52 = index inbounds u32 [projection=array_element] %t51, 1
+    %t53 = load typed u32 %t52
+    %t54 = binary add u32 %t42, %t53
+    %t55 = binary and u32 %t53, 1
+    %t56 = select u32 %t55, %t54, %t49
+    %t57 = binary and u32 %t50, 7
+    %t58 = binary add u32 %t39, 4
+    %t59 = binary add u32 %t56, %t58
+    %t60 = cmp eq u32 %t57, 3
+    %t61 = select u32 %t60, %t59, %t56
+    %t62 = binary add nowrap i64 %t36, 2
+    %t63 = convert trunc exact u32 i64 %t62
+    %t64 = cmp ne u32 %t35, %t63
+    branch %t64, ^unrolled_11, ^loop_exit_12
+
+  block ^loop_exit_12:
+    %t65 = cmp ult u32 %t63, %t32
+    branch %t65, ^wide_tail_13, ^for_end_21
+
+  block ^wide_tail_13:
+    %t66 = phi u32 [^loop_preheader_9: 0, ^loop_exit_12: %t63]
+    %t67 = phi u32 [^loop_preheader_9: 17, ^loop_exit_12: %t61]
+    %t68 = phi u32 [^loop_preheader_9: 0, ^loop_exit_12: %t54]
+    jump ^for_body_14
+
+  block ^for_body_14:
+    %t69 = phi u32 [^for_body_14: %t82, ^wide_tail_13: %t66]
+    %t70 = phi u32 [^for_body_14: %t81, ^wide_tail_13: %t67]
+    %t71 = phi u32 [^for_body_14: %t74, ^wide_tail_13: %t68]
+    %t72 = index inbounds u32 [projection=array_element] %t1, %t69
+    %t73 = load typed u32 %t72
+    %t74 = binary add u32 %t73, %t71
+    %t75 = binary and u32 %t73, 1
+    %t76 = select u32 %t75, %t74, %t70
+    %t77 = binary and u32 %t69, 7
+    %t78 = binary add u32 %t69, 3
+    %t79 = binary add u32 %t78, %t76
+    %t80 = cmp eq u32 %t77, 3
+    %t81 = select u32 %t80, %t79, %t76
+    %t82 = binary add u32 %t69, 1
+    %t83 = cmp ult u32 %t82, %t32
+    branch %t83, ^for_body_14, ^for_end_21
+
+  block ^loop_preheader_15:
+    %t84 = binary and u32 %t32, 4294967294
+    branch %t84, ^loop_preheader_16, ^wide_tail_19
+
+  block ^loop_preheader_16:
+    jump ^unrolled_17
+
+  block ^unrolled_17:
+    %t85 = phi i64 [^loop_preheader_16: 0, ^unrolled_17: %t111]
+    %t86 = phi u32 [^loop_preheader_16: 17, ^unrolled_17: %t110]
+    %t87 = phi u32 [^loop_preheader_16: 0, ^unrolled_17: %t103]
+    %t88 = convert trunc exact u32 i64 %t85
+    %t89 = index inbounds u32 [projection=array_element] %t1, %t85
+    %t90 = load typed u32 %t89
+    %t91 = binary xor u32 %t87, %t90
+    %t92 = binary and u32 %t90, 1
+    %t93 = select u32 %t92, %t91, %t86
+    %t94 = binary and u32 %t88, 7
+    %t95 = binary add u32 %t88, 3
+    %t96 = binary add u32 %t93, %t95
+    %t97 = cmp eq u32 %t94, 3
+    %t98 = select u32 %t97, %t96, %t93
+    %t99 = binary add nowrap u32 %t88, 1
+    %t100 = index inbounds u32 [projection=array_element] %t1, %t85
+    %t101 = index inbounds u32 [projection=array_element] %t100, 1
+    %t102 = load typed u32 %t101
+    %t103 = binary xor u32 %t91, %t102
+    %t104 = binary and u32 %t102, 1
+    %t105 = select u32 %t104, %t103, %t98
+    %t106 = binary and u32 %t99, 7
+    %t107 = binary add u32 %t88, 4
+    %t108 = binary add u32 %t105, %t107
+    %t109 = cmp eq u32 %t106, 3
+    %t110 = select u32 %t109, %t108, %t105
+    %t111 = binary add nowrap i64 %t85, 2
+    %t112 = convert trunc exact u32 i64 %t111
+    %t113 = cmp ne u32 %t84, %t112
+    branch %t113, ^unrolled_17, ^loop_exit_18
+
+  block ^loop_exit_18:
+    %t114 = cmp ult u32 %t112, %t32
+    branch %t114, ^wide_tail_19, ^for_end_21
+
+  block ^wide_tail_19:
+    %t115 = phi u32 [^loop_preheader_15: 0, ^loop_exit_18: %t112]
+    %t116 = phi u32 [^loop_preheader_15: 17, ^loop_exit_18: %t110]
+    %t117 = phi u32 [^loop_preheader_15: 0, ^loop_exit_18: %t103]
+    jump ^loop_preheader_20
+
+  block ^loop_preheader_20:
+    %t118 = phi u32 [^loop_preheader_20: %t131, ^wide_tail_19: %t115]
+    %t119 = phi u32 [^loop_preheader_20: %t130, ^wide_tail_19: %t116]
+    %t120 = phi u32 [^loop_preheader_20: %t123, ^wide_tail_19: %t117]
+    %t121 = index inbounds u32 [projection=array_element] %t1, %t118
+    %t122 = load typed u32 %t121
+    %t123 = binary xor u32 %t120, %t122
+    %t124 = binary and u32 %t122, 1
+    %t125 = select u32 %t124, %t123, %t119
+    %t126 = binary and u32 %t118, 7
+    %t127 = binary add u32 %t118, 3
+    %t128 = binary add u32 %t125, %t127
+    %t129 = cmp eq u32 %t126, 3
+    %t130 = select u32 %t129, %t128, %t125
+    %t131 = binary add u32 %t118, 1
+    %t132 = cmp ult u32 %t131, %t32
+    branch %t132, ^loop_preheader_20, ^for_end_21
+
+  block ^for_end_21:
+    %t133 = phi u32 [^for_body_7: 17, ^for_body_14: %t81, ^loop_preheader_20: %t130, ^loop_exit_18: %t110, ^loop_exit_12: %t61]
+    %t134 = phi u32 [^for_body_7: 0, ^for_body_14: %t74, ^loop_preheader_20: %t123, ^loop_exit_18: %t103, ^loop_exit_12: %t54]
+    %t135 = addr $out
+    %t136 = cmp ne u32 %t34, 0
+    %t137 = convert trunc u8 i64 %t136
+    %t138 = call u32 @run(%t1, %t135, %t32, %t137)
+    %t139 = binary add u32 %t134, %t133
+    %t140 = cmp ne u32 %t138, %t139
+    branch %t140, ^if_then_23, ^lor_rhs_22
+
+  block ^lor_rhs_22:
+    %t141 = load typed u32 $out
+    %t142 = cmp ne u32 %t141, %t133
+    branch %t142, ^if_then_23, ^if_end_24
+
+  block ^if_then_23:
     return i32 1
 
-  block ^if_end_10:
-    %t54 = binary add u32 %t10, 1
-    %t55 = cmp ult u32 %t54, 2
-    branch %t55, ^for_body_3, ^for_iter_11
-
-  block ^for_iter_11:
-    %t56 = binary add u32 %t8, 1
-    jump ^for_cond_2
-
-  block ^for_end_12:
-    %t57 = call u32 @run(0, %t1, 0, 1)
-    %t58 = load volatile u32 $start
-    %t59 = cmp ne u32 %t57, %t58
-    branch %t59, ^if_then_13, ^for_cond_14
-
-  block ^if_then_13:
-    return i32 2
-
-  block ^for_cond_14:
-    %t60 = call u32 @locate(0)
-    %t61 = cmp ne u32 %t60, 4
-    branch %t61, ^if_then_27, ^lor_rhs_15
-
-  block ^lor_rhs_15:
-    %t62 = call u32 @reverse(0)
-    %t63 = cmp ne u32 %t62, 4
-    branch %t63, ^if_then_27, ^if_end_16
-
-  block ^if_end_16:
-    %t64 = call u32 @locate(2)
-    branch %t64, ^if_then_27, ^lor_rhs_17
-
-  block ^lor_rhs_17:
-    %t65 = call u32 @reverse(2)
-    branch %t65, ^if_then_27, ^if_end_18
-
-  block ^if_end_18:
-    %t66 = call u32 @locate(4)
-    %t67 = cmp ne u32 %t66, 1
-    branch %t67, ^if_then_27, ^lor_rhs_19
-
-  block ^lor_rhs_19:
-    %t68 = call u32 @reverse(4)
-    %t69 = cmp ne u32 %t68, 1
-    branch %t69, ^if_then_27, ^if_end_20
-
-  block ^if_end_20:
-    %t70 = call u32 @locate(6)
-    %t71 = cmp ne u32 %t70, 2
-    branch %t71, ^if_then_27, ^lor_rhs_21
-
-  block ^lor_rhs_21:
-    %t72 = call u32 @reverse(6)
-    %t73 = cmp ne u32 %t72, 2
-    branch %t73, ^if_then_27, ^if_end_22
-
-  block ^if_end_22:
-    %t74 = call u32 @locate(8)
-    %t75 = cmp ne u32 %t74, 3
-    branch %t75, ^if_then_27, ^lor_rhs_23
-
-  block ^lor_rhs_23:
-    %t76 = call u32 @reverse(8)
-    %t77 = cmp ne u32 %t76, 3
-    branch %t77, ^if_then_27, ^if_end_24
-
   block ^if_end_24:
-    %t78 = call u32 @locate(10)
-    %t79 = cmp ne u32 %t78, 4
-    branch %t79, ^if_then_27, ^lor_rhs_25
+    %t143 = binary add u32 %t34, 1
+    %t144 = cmp ult u32 %t143, 2
+    branch %t144, ^for_body_7, ^for_iter_25
 
-  block ^lor_rhs_25:
-    %t80 = call u32 @reverse(10)
-    %t81 = cmp ne u32 %t80, 4
-    branch %t81, ^if_then_27, ^if_end_26
+  block ^for_iter_25:
+    %t145 = binary add u32 %t32, 1
+    jump ^for_cond_6
 
-  block ^if_end_26:
-    return i32 0
+  block ^for_end_26:
+    %t146 = call u32 @run(0, %t1, 0, 1)
+    %t147 = load volatile u32 $start
+    %t148 = cmp ne u32 %t146, %t147
+    branch %t148, ^if_then_27, ^for_cond_28
 
   block ^if_then_27:
+    return i32 2
+
+  block ^for_cond_28:
+    %t149 = call u32 @locate(0)
+    %t150 = cmp ne u32 %t149, 4
+    branch %t150, ^if_then_41, ^lor_rhs_29
+
+  block ^lor_rhs_29:
+    %t151 = call u32 @reverse(0)
+    %t152 = cmp ne u32 %t151, 4
+    branch %t152, ^if_then_41, ^if_end_30
+
+  block ^if_end_30:
+    %t153 = call u32 @locate(2)
+    branch %t153, ^if_then_41, ^lor_rhs_31
+
+  block ^lor_rhs_31:
+    %t154 = call u32 @reverse(2)
+    branch %t154, ^if_then_41, ^if_end_32
+
+  block ^if_end_32:
+    %t155 = call u32 @locate(4)
+    %t156 = cmp ne u32 %t155, 1
+    branch %t156, ^if_then_41, ^lor_rhs_33
+
+  block ^lor_rhs_33:
+    %t157 = call u32 @reverse(4)
+    %t158 = cmp ne u32 %t157, 1
+    branch %t158, ^if_then_41, ^if_end_34
+
+  block ^if_end_34:
+    %t159 = call u32 @locate(6)
+    %t160 = cmp ne u32 %t159, 2
+    branch %t160, ^if_then_41, ^lor_rhs_35
+
+  block ^lor_rhs_35:
+    %t161 = call u32 @reverse(6)
+    %t162 = cmp ne u32 %t161, 2
+    branch %t162, ^if_then_41, ^if_end_36
+
+  block ^if_end_36:
+    %t163 = call u32 @locate(8)
+    %t164 = cmp ne u32 %t163, 3
+    branch %t164, ^if_then_41, ^lor_rhs_37
+
+  block ^lor_rhs_37:
+    %t165 = call u32 @reverse(8)
+    %t166 = cmp ne u32 %t165, 3
+    branch %t166, ^if_then_41, ^if_end_38
+
+  block ^if_end_38:
+    %t167 = call u32 @locate(10)
+    %t168 = cmp ne u32 %t167, 4
+    branch %t168, ^if_then_41, ^lor_rhs_39
+
+  block ^lor_rhs_39:
+    %t169 = call u32 @reverse(10)
+    %t170 = cmp ne u32 %t169, 4
+    branch %t170, ^if_then_41, ^if_end_40
+
+  block ^if_end_40:
+    return i32 0
+
+  block ^if_then_41:
     return i32 3
 }

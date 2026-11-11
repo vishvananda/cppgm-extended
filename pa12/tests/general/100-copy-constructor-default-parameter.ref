@@ -50,7 +50,7 @@ function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [p
     %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
-    %t4 = load u8 $add
+    %t4 = load typed u8 $add
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

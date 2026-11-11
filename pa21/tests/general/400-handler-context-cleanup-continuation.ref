@@ -26,7 +26,7 @@ function @choose(%first : u8) -> i32 [binding=strong, object=_Z6chooseb] {
   block ^entry:
     store u8 %first, $first
     eh_try ^catch_dispatch_1
-    %t1 = load u8 $first
+    %t1 = load typed u8 $first
     branch %t1, ^if_then_4, ^if_else_5
 
   block ^if_then_4:

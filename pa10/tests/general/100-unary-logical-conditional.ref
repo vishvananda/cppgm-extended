@@ -38,14 +38,14 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
   block ^lor_end_3:
     %t6 = load typed i64 $lor__1
     %t7 = convert trunc u8 i64 %t6
-    store u8 %t7, $b
+    store typed u8 %t7, $b
     %t8 = load typed i32 $x
     %t9 = binary add nowrap i32 %t8, 1
     store typed i32 %t9, $x
     %t10 = load typed i32 $y
     %t11 = binary add nowrap i32 %t10, 1
     store typed i32 %t11, $y
-    %t12 = load u8 $b
+    %t12 = load typed u8 $b
     branch %t12, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:

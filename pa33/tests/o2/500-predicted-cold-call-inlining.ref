@@ -37,13 +37,13 @@ function @likely_call(%tag : u32, %x : u32) -> u32 [binding=strong, object=_Z11l
 }
 function @ordinary_call(%tag : u32, %x : u32) -> u32 {
   block ^entry:
-    branch %tag, ^warm, ^inline_entry_2
+    branch %tag, ^warm, ^compute
 
   block ^warm:
     %next = binary add u32 %x, 1
     return u32 %next
 
-  block ^inline_entry_2:
+  block ^compute:
     %t1_2 = binary ushr u32 %x, 13
     %t2_3 = binary xor u32 %x, %t1_2
     %t3_4 = binary mul u32 %t2_3, 2246822507

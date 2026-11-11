@@ -235,13 +235,14 @@ function @keep_variant_test(%p : ptr, %n : i64) -> void [no_inline=yes] {
     branch %odd, ^left, ^latch
 
   block ^left:
-    store i64 0, %at
+    %t6 = index i64 %p, %t2
+    store i64 0, %t6
     jump ^latch
 
   block ^latch:
     %next = binary add nowrap i64 %t2, 1
-    %t7 = cmp lt i64 %next, %n
-    branch %t7, ^body, ^exit
+    %t8 = cmp lt i64 %next, %n
+    branch %t8, ^body, ^exit
 
   block ^exit:
     return void

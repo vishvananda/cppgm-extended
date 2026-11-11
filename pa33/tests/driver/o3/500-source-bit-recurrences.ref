@@ -278,33 +278,32 @@ global @__bit_table_1 : obj<64x4> [storage=readonly, binding=internal] = {
 
 function @update_word(%data : ptr, %length : i64, %value : u32) -> u32 [linkage=c, binding=strong] {
   block ^entry:
-    %t1 = cmp ugt i64 %length, 0
-    branch %t1, ^loop_preheader_1, ^for_end_3
+    branch %length, ^loop_preheader_1, ^for_end_3
 
   block ^loop_preheader_1:
-    %t2 = addr @__bit_table_0
+    %t1 = addr @__bit_table_0
     jump ^for_body_2
 
   block ^for_body_2:
-    %t3 = phi u32 [^for_body_2: %t14, ^loop_preheader_1: %value]
-    %t4 = phi i64 [^for_body_2: %t15, ^loop_preheader_1: 0]
-    %t5 = index inbounds u8 [projection=array_element] %data, %t4
-    %t6 = load u8 %t5
-    %t7 = convert zext u32 u8 %t6
-    %t8 = binary xor u32 %t7, %t3
-    %t9 = binary and u32 %t8, 255
-    %t10 = convert zext i64 u32 %t9
-    %t11 = index u32 %t2, %t10
-    %t12 = load u32 %t11
-    %t13 = binary ushr u32 %t8, 8
-    %t14 = binary xor u32 %t12, %t13
-    %t15 = binary add i64 %t4, 1
-    %t16 = cmp ult i64 %t15, %length
-    branch %t16, ^for_body_2, ^for_end_3
+    %t2 = phi u32 [^for_body_2: %t13, ^loop_preheader_1: %value]
+    %t3 = phi i64 [^for_body_2: %t14, ^loop_preheader_1: 0]
+    %t4 = index inbounds u8 [projection=array_element] %data, %t3
+    %t5 = load u8 %t4
+    %t6 = convert zext u32 u8 %t5
+    %t7 = binary xor u32 %t6, %t2
+    %t8 = binary and u32 %t7, 255
+    %t9 = convert zext i64 u32 %t8
+    %t10 = index u32 %t1, %t9
+    %t11 = load u32 %t10
+    %t12 = binary ushr u32 %t7, 8
+    %t13 = binary xor u32 %t11, %t12
+    %t14 = binary add i64 %t3, 1
+    %t15 = cmp ult i64 %t14, %length
+    branch %t15, ^for_body_2, ^for_end_3
 
   block ^for_end_3:
-    %t17 = phi u32 [^entry: %value, ^for_body_2: %t14]
-    return u32 %t17
+    %t16 = phi u32 [^entry: %value, ^for_body_2: %t13]
+    return u32 %t16
 }
 function @update_nibble(%value : u32) -> u32 [linkage=c, binding=strong] {
   block ^entry:
@@ -319,24 +318,66 @@ function @update_nibble(%value : u32) -> u32 [linkage=c, binding=strong] {
 }
 function @oracle(%value : u32, %polynomial : u32, %steps : u32) -> u32 [binding=strong, object=_Z6oraclejjj, no_inline=yes] {
   block ^entry:
-    %t1 = cmp ugt u32 %steps, 0
-    branch %t1, ^for_body_1, ^for_end_2
+    branch %steps, ^loop_preheader_1, ^for_end_7
 
-  block ^for_body_1:
-    %t2 = phi u32 [^for_body_1: %t8, ^entry: %value]
-    %t3 = phi u32 [^for_body_1: %t9, ^entry: 0]
+  block ^loop_preheader_1:
+    %t1 = binary and u32 %steps, 4294967292
+    branch %t1, ^loop_preheader_2, ^wide_tail_5
+
+  block ^loop_preheader_2:
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t2 = phi u32 [^loop_preheader_2: %value, ^unrolled_3: %t23]
+    %t3 = phi u32 [^loop_preheader_2: 0, ^unrolled_3: %t24]
     %t4 = binary ushr u32 %t2, 1
     %t5 = binary and u32 %t2, 1
     %t6 = binary sub u32 0, %t5
     %t7 = binary and u32 %polynomial, %t6
     %t8 = binary xor u32 %t4, %t7
-    %t9 = binary add u32 %t3, 1
-    %t10 = cmp ult u32 %t9, %steps
-    branch %t10, ^for_body_1, ^for_end_2
+    %t9 = binary ushr u32 %t8, 1
+    %t10 = binary and u32 %t8, 1
+    %t11 = binary sub u32 0, %t10
+    %t12 = binary and u32 %polynomial, %t11
+    %t13 = binary xor u32 %t9, %t12
+    %t14 = binary ushr u32 %t13, 1
+    %t15 = binary and u32 %t13, 1
+    %t16 = binary sub u32 0, %t15
+    %t17 = binary and u32 %polynomial, %t16
+    %t18 = binary xor u32 %t14, %t17
+    %t19 = binary ushr u32 %t18, 1
+    %t20 = binary and u32 %t18, 1
+    %t21 = binary sub u32 0, %t20
+    %t22 = binary and u32 %polynomial, %t21
+    %t23 = binary xor u32 %t19, %t22
+    %t24 = binary add nowrap u32 %t3, 4
+    %t25 = cmp ne u32 %t1, %t24
+    branch %t25, ^unrolled_3, ^loop_exit_4
 
-  block ^for_end_2:
-    %t11 = phi u32 [^entry: %value, ^for_body_1: %t8]
-    return u32 %t11
+  block ^loop_exit_4:
+    %t26 = cmp ult u32 %t24, %steps
+    branch %t26, ^wide_tail_5, ^for_end_7
+
+  block ^wide_tail_5:
+    %t27 = phi u32 [^loop_preheader_1: %value, ^loop_exit_4: %t23]
+    %t28 = phi u32 [^loop_preheader_1: 0, ^loop_exit_4: %t24]
+    jump ^for_body_6
+
+  block ^for_body_6:
+    %t29 = phi u32 [^for_body_6: %t35, ^wide_tail_5: %t27]
+    %t30 = phi u32 [^for_body_6: %t36, ^wide_tail_5: %t28]
+    %t31 = binary ushr u32 %t29, 1
+    %t32 = binary and u32 %t29, 1
+    %t33 = binary sub u32 0, %t32
+    %t34 = binary and u32 %polynomial, %t33
+    %t35 = binary xor u32 %t31, %t34
+    %t36 = binary add u32 %t30, 1
+    %t37 = cmp ult u32 %t36, %steps
+    branch %t37, ^for_body_6, ^for_end_7
+
+  block ^for_end_7:
+    %t38 = phi u32 [^entry: %value, ^for_body_6: %t35, ^loop_exit_4: %t23]
+    return u32 %t38
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $data : obj<65x1>
@@ -344,95 +385,98 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = load volatile u32 @seed
     %t2 = addr $data
-    jump ^for_body_1
+    jump ^unrolled_1
 
-  block ^for_body_1:
-    %t3 = phi u32 [^for_body_1: %t10, ^entry: 0]
-    %t4 = phi u32 [^for_body_1: %t6, ^entry: %t1]
+  block ^unrolled_1:
+    %t3 = phi i64 [^unrolled_1: %t25, ^entry: 0]
+    %t4 = phi u32 [^unrolled_1: %t21, ^entry: %t1]
     %t5 = binary mul u32 %t4, 1664525
     %t6 = binary add u32 %t5, 1013904223
     %t7 = binary ushr u32 %t6, 24
     %t8 = convert trunc u8 u32 %t7
     %t9 = index inbounds u8 [projection=array_element] %t2, %t3
     store u8 %t8, %t9
-    %t10 = binary add u32 %t3, 1
-    %t11 = cmp ult u32 %t10, 65
-    branch %t11, ^for_body_1, ^for_body_2
+    %t10 = binary mul u32 %t6, 1664525
+    %t11 = binary add u32 %t10, 1013904223
+    %t12 = binary ushr u32 %t11, 24
+    %t13 = convert trunc u8 u32 %t12
+    %t14 = index inbounds u8 [projection=array_element] %t9, 1
+    store u8 %t13, %t14
+    %t15 = binary mul u32 %t11, 1664525
+    %t16 = binary add u32 %t15, 1013904223
+    %t17 = binary ushr u32 %t16, 24
+    %t18 = convert trunc u8 u32 %t17
+    %t19 = index inbounds u8 [projection=array_element] %t9, 2
+    store u8 %t18, %t19
+    %t20 = binary mul u32 %t16, 1664525
+    %t21 = binary add u32 %t20, 1013904223
+    %t22 = binary ushr u32 %t21, 24
+    %t23 = convert trunc u8 u32 %t22
+    %t24 = index inbounds u8 [projection=array_element] %t9, 3
+    store u8 %t23, %t24
+    %t25 = binary add nowrap i64 %t3, 4
+    %t26 = convert trunc exact u32 i64 %t25
+    %t27 = cmp ne u32 %t26, 64
+    branch %t27, ^unrolled_1, ^for_body_2
 
   block ^for_body_2:
-    %t12 = phi u32 [^if_end_11: %t54, ^for_body_1: 0]
-    %t13 = phi u32 [^if_end_11: %t15, ^for_body_1: %t6]
-    %t14 = binary mul u32 %t13, 1664525
-    %t15 = binary add u32 %t14, 1013904223
-    %t16 = cmp ugt u32 %t12, 0
-    branch %t16, ^for_body_3, ^if_end_9
+    %t28 = binary mul u32 %t21, 1664525
+    %t29 = binary add u32 %t28, 1013904223
+    %t30 = binary ushr u32 %t29, 24
+    %t31 = convert trunc u8 u32 %t30
+    %t32 = index inbounds u8 [projection=array_element] %t2, 64
+    store u8 %t31, %t32
+    jump ^for_body_3
 
   block ^for_body_3:
-    %t17 = phi u32 [^for_body_3: %t24, ^for_body_2: 0]
-    %t18 = phi u32 [^for_body_3: %t23, ^for_body_2: %t15]
-    %t19 = index inbounds u8 [projection=array_element] %t2, %t17
-    %t20 = load u8 %t19
-    %t21 = convert zext u32 u8 %t20
-    %t22 = binary xor u32 %t21, %t18
-    %t23 = call u32 @oracle(%t22, 2197175160, 8)
-    %t24 = binary add u32 %t17, 1
-    %t25 = cmp ult u32 %t24, %t12
-    branch %t25, ^for_body_3, ^split_4
+    %t33 = phi u32 [^if_end_9: %t59, ^for_body_2: 0]
+    %t34 = phi u32 [^if_end_9: %t36, ^for_body_2: %t29]
+    %t35 = binary mul u32 %t34, 1664525
+    %t36 = binary add u32 %t35, 1013904223
+    branch %t33, ^for_body_4, ^for_end_5
 
-  block ^split_4:
-    %t26 = cmp ugt u32 %t12, 0
-    branch %t26, ^loop_preheader_5, ^for_end_7
+  block ^for_body_4:
+    %t37 = phi u32 [^for_body_4: %t44, ^for_body_3: 0]
+    %t38 = phi u32 [^for_body_4: %t43, ^for_body_3: %t36]
+    %t39 = index inbounds u8 [projection=array_element] %t2, %t37
+    %t40 = load u8 %t39
+    %t41 = convert zext u32 u8 %t40
+    %t42 = binary xor u32 %t41, %t38
+    %t43 = call u32 @oracle(%t42, 2197175160, 8)
+    %t44 = binary add u32 %t37, 1
+    %t45 = cmp ult u32 %t44, %t33
+    branch %t45, ^for_body_4, ^for_end_5
 
-  block ^loop_preheader_5:
-    %t27 = addr @__bit_table_0
-    %t28 = convert zext i64 u32 %t12
-    jump ^for_body_6
+  block ^for_end_5:
+    %t46 = phi u32 [^for_body_3: %t36, ^for_body_4: %t43]
+    %t47 = convert zext i64 u32 %t33
+    %t48 = call u32 @update_word(%t2, %t47, %t36)
+    %t49 = cmp ne u32 %t48, %t46
+    branch %t49, ^if_then_6, ^if_end_7
 
-  block ^for_body_6:
-    %t29 = phi u32 [^for_body_6: %t40, ^loop_preheader_5: %t15]
-    %t30 = phi i64 [^for_body_6: %t41, ^loop_preheader_5: 0]
-    %t31 = index inbounds u8 [projection=array_element] %t2, %t30
-    %t32 = load u8 %t31
-    %t33 = convert zext u32 u8 %t32
-    %t34 = binary xor u32 %t33, %t29
-    %t35 = binary and u32 %t34, 255
-    %t36 = convert zext i64 u32 %t35
-    %t37 = index u32 %t27, %t36
-    %t38 = load u32 %t37
-    %t39 = binary ushr u32 %t34, 8
-    %t40 = binary xor u32 %t38, %t39
-    %t41 = binary add i64 %t30, 1
-    %t42 = cmp ult i64 %t41, %t28
-    branch %t42, ^for_body_6, ^for_end_7
-
-  block ^for_end_7:
-    %t43 = phi u32 [^split_4: %t15, ^for_body_6: %t40]
-    %t44 = cmp ne u32 %t23, %t43
-    branch %t44, ^if_then_8, ^if_end_9
-
-  block ^if_then_8:
+  block ^if_then_6:
     return i32 1
 
-  block ^if_end_9:
-    %t45 = binary and u32 %t15, 15
-    %t46 = convert zext i64 u32 %t45
-    %t47 = addr @__bit_table_1
-    %t48 = index u32 %t47, %t46
-    %t49 = load u32 %t48
-    %t50 = binary ushr u32 %t15, 4
-    %t51 = binary xor u32 %t49, %t50
-    %t52 = call u32 @oracle(%t15, 2813935905, 4)
-    %t53 = cmp ne u32 %t52, %t51
-    branch %t53, ^if_then_10, ^if_end_11
+  block ^if_end_7:
+    %t50 = binary and u32 %t36, 15
+    %t51 = convert zext i64 u32 %t50
+    %t52 = addr @__bit_table_1
+    %t53 = index u32 %t52, %t51
+    %t54 = load u32 %t53
+    %t55 = binary ushr u32 %t36, 4
+    %t56 = binary xor u32 %t54, %t55
+    %t57 = call u32 @oracle(%t36, 2813935905, 4)
+    %t58 = cmp ne u32 %t57, %t56
+    branch %t58, ^if_then_8, ^if_end_9
 
-  block ^if_then_10:
+  block ^if_then_8:
     return i32 2
 
-  block ^if_end_11:
-    %t54 = binary add u32 %t12, 1
-    %t55 = cmp ule u32 %t54, 65
-    branch %t55, ^for_body_2, ^for_end_12
+  block ^if_end_9:
+    %t59 = binary add u32 %t33, 1
+    %t60 = cmp ule u32 %t59, 65
+    branch %t60, ^for_body_3, ^for_end_10
 
-  block ^for_end_12:
+  block ^for_end_10:
     return i32 0
 }

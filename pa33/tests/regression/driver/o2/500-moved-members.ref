@@ -34,46 +34,6 @@ function @boxed(%to : ptr, %from : ptr) -> void [binding=strong, object=_Z5boxed
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $a : obj<32x8>
-  slot $b : obj<32x8>
-
   block ^entry:
-    %t1 = addr $a
-    store typed f64 1, %t1
-    %t2 = index i8 [projection=field] %t1, 8
-    store typed f64 2, %t2
-    %t3 = index i8 %t1, 16
-    %t4 = copy nonnull ptr %t3
-    store typed f64 3, %t4
-    %t5 = index i8 [projection=field] %t4, 8
-    store typed f64 4, %t5
-    %t6 = addr $b
-    jump ^for_cond_1
-
-  block ^for_cond_1:
-    %t7 = phi i64 [^entry: 0, ^for_body_2: %t18]
-    %t8 = phi i64 [^entry: 0, ^for_body_2: %t17]
-    %t9 = cmp lt i64 %t8, 2
-    branch %t9, ^for_body_2, ^inline_cont_3
-
-  block ^for_body_2:
-    %t10 = copy i64 %t7
-    %t11 = index inbounds i8 [projection=array_element] %t6, %t10
-    %t12 = index inbounds i8 [projection=array_element] %t1, %t10
-    %t13 = load typed f64 %t12
-    store typed f64 %t13, %t11
-    %t14 = index i8 [projection=field] %t12, 8
-    %t15 = index i8 [projection=field] %t11, 8
-    %t16 = load typed f64 %t14
-    store typed f64 %t16, %t15
-    %t17 = binary add nowrap i64 %t8, 1
-    %t18 = binary add i64 %t7, 16
-    jump ^for_cond_1
-
-  block ^inline_cont_3:
-    %t19 = index i8 [projection=field] %t6, 24
-    %t20 = load typed f64 %t19
-    %t21 = convert fptosi i32 f64 %t20
-    %t22 = binary add nowrap i32 %t21, 3
-    return i32 %t22
+    return i32 7
 }

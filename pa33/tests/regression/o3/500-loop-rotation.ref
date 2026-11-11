@@ -4,22 +4,45 @@ global @last : i64 = 0
 
 function @count_down(%n : i32) -> void [no_inline=yes] {
   block ^entry:
-    branch %n, ^loop_preheader_1, ^done
+    branch %n, ^split_1, ^done
 
-  block ^loop_preheader_1:
-    %t1 = load i64 @last
+  block ^split_1:
+    %t1 = load typed i64 @last
+    %t2 = binary and i32 %n, -8
     %next = binary sub nowrap i32 %n, 1
+    branch %t2, ^loop_preheader_2, ^wide_tail_5
+
+  block ^loop_preheader_2:
+    %t4 = binary sub i32 %next, %t2
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t5 = phi i64 [^loop_preheader_2: %t1, ^unrolled_3: %t7]
+    %t6 = phi i32 [^loop_preheader_2: %next, ^unrolled_3: %t8]
+    %t7 = binary mul i64 %t5, 6561
+    %t8 = binary sub nowrap i32 %t6, 8
+    %t9 = cmp ne i32 %t4, %t8
+    branch %t9, ^unrolled_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t10 = binary sub nowrap i32 %t6, 7
+    branch %t10, ^wide_tail_5, ^loop_exit_7
+
+  block ^wide_tail_5:
+    %t11 = phi i64 [^split_1: %t1, ^loop_exit_4: %t7]
+    %t12 = phi i32 [^split_1: %next, ^loop_exit_4: %t8]
     jump ^body
 
   block ^body:
-    %t3 = phi i64 [^body: %w, ^loop_preheader_1: %t1]
-    %t4 = phi i32 [^body: %t6, ^loop_preheader_1: %next]
-    %w = binary mul i64 %t3, 3
-    %t6 = binary sub nowrap i32 %t4, 1
-    branch %t4, ^body, ^loop_exit_3
+    %v = phi i64 [^wide_tail_5: %t11, ^body: %w]
+    %t14 = phi i32 [^body: %t16, ^wide_tail_5: %t12]
+    %w = binary mul i64 %v, 3
+    %t16 = binary sub nowrap i32 %t14, 1
+    branch %t14, ^body, ^loop_exit_7
 
-  block ^loop_exit_3:
-    store typed i64 %w, @last
+  block ^loop_exit_7:
+    %t17 = phi i64 [^body: %w, ^loop_exit_4: %t7]
+    store typed i64 %t17, @last
     jump ^done
 
   block ^done:

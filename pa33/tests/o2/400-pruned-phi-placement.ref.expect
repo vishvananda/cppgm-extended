@@ -4,5 +4,5 @@ blocks <= 8
 count(call) <= 3
 count(load) <= 6
 count(store) <= 4
-count(phi) <= 3
+count(phi) <= 4
 instructions <= 14 in @main

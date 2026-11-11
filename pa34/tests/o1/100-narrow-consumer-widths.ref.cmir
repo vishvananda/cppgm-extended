@@ -72,9 +72,8 @@ function @zero
 
   block ^entry
     load.i8 rdi, [rdi]
-    zext.i32 rdi
-    shl.u32 rdi, 0
     zext.i32 rax, rdi
+    shl.u32 rax, 0
     ret rax
 
 function @identity
@@ -89,8 +88,8 @@ function @identity
 
   block ^entry
     load.i8 rdi, [rdi]
-    imul.u32 rdi, 1
     zext.i32 rax, rdi
+    imul.u32 rax, 1
     ret rax
 
 function @variable
@@ -106,10 +105,10 @@ function @variable
 
   block ^entry
     load.i8 rdi, [rdi]
-    zext.i32 rdi
-    mov rcx, rsi
-    shl rdi, rcx
     zext.i32 rax, rdi
+    mov rcx, rsi
+    shl rax, rcx
+    zext.i32 rax
     ret rax
 
 function @main

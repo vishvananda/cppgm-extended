@@ -11,7 +11,7 @@ function @Resolver__resolve(%this : ptr [object_bytes=8], %value : i32) -> ptr [
     %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = index i8 [projection=field] %t5, 0
-    store u8 %t3, %t6
+    store typed u8 %t3, %t6
     %t7 = load typed i32 $value
     %t8 = binary mul nowrap i32 %t7, 2
     %t9 = load typed ptr $this
@@ -37,7 +37,7 @@ function @Resolver__go(%this : ptr [object_bytes=8], %value : i32) -> i32 [bindi
     store typed ptr %t3, $resolved
     %t4 = load typed ptr $resolved
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load u8 %t5
+    %t6 = load typed u8 %t5
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

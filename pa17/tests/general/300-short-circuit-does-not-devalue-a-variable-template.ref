@@ -13,17 +13,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $land__4 : i64
 
   block ^entry:
-    store u8 1, $warmed_small
-    store u8 1, $warmed_large
+    store typed u8 1, $warmed_small
+    store typed u8 1, $warmed_large
     call void @later()
     call void @later__2()
     store typed i32 1, $small_answer
     store typed i32 2, $large_answer
-    %t1 = load u8 $warmed_small
+    %t1 = load typed u8 $warmed_small
     branch %t1, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t2 = load u8 $warmed_large
+    %t2 = load typed u8 $warmed_large
     %t3 = cmp ne u8 %t2, 0
     store typed i64 %t3, $land__2
     jump ^land_end_6

@@ -16,8 +16,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $left
     %t2 = addr $right
     call void @lookup__exchange(%t1, %t2)
-    store u8 0, $first
-    store u8 1, $second
+    store typed u8 0, $first
+    store typed u8 1, $second
     %t3 = addr $reference
     %t4 = addr $first
     %t5 = addr $reference
@@ -47,7 +47,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t14, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t15 = load u8 $first
+    %t15 = load typed u8 $first
     %t16 = cmp ne u8 %t15, 0
     store typed i64 %t16, $land__4
     jump ^land_end_9
@@ -61,7 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t17, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t18 = load u8 $second
+    %t18 = load typed u8 $second
     %t19 = cmp eq u8 %t18, 0
     %t20 = cmp ne i64 %t19, 0
     store typed i64 %t20, $land__5
@@ -119,16 +119,16 @@ function @lookup__exchange__2(%left : obj<8x8>, %right : ptr [pass=by_address, o
     %t2 = addr $left
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
-    %t5 = load u8 %t4
-    store u8 %t5, $temporary
+    %t5 = load typed u8 %t4
+    store typed u8 %t5, $temporary
     %t6 = load typed ptr $right
-    %t7 = load u8 %t6
+    %t7 = load typed u8 %t6
     %t8 = addr $left
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load typed ptr %t9
-    store u8 %t7, %t10
-    %t11 = load u8 $temporary
+    store typed u8 %t7, %t10
+    %t11 = load typed u8 $temporary
     %t12 = load typed ptr $right
-    store u8 %t11, %t12
+    store typed u8 %t11, %t12
     return void
 }

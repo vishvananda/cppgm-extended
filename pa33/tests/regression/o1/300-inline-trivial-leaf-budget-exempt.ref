@@ -48,10 +48,18 @@ function @small(%value : i64) -> void [unwind=no, binding=strong] {
     store volatile i64 %value, @sink
     store volatile i64 %value, @sink
     store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
     return void
 }
 function @driver(%value : i64) -> void [binding=strong] {
   block ^entry:
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
+    store volatile i64 %value, @sink
     store volatile i64 %value, @sink
     store volatile i64 %value, @sink
     store volatile i64 %value, @sink

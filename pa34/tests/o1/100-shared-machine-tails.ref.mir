@@ -21,10 +21,9 @@ function @shared_cases
     epilogues duplicated
 
   block ^entry
-    mov r10, rsi
-    cmp.i64 r10, 11
+    cmp.i64 rsi, 11
     ja ^fallback
-    jump_table r10, [^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11]
+    jump_table rsi, [^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11]
 
   block ^case9
     lea rax, [rdi-40]
@@ -53,10 +52,9 @@ function @distinct_cases
     epilogues duplicated
 
   block ^entry
-    mov r10, rsi
-    cmp.i64 r10, 11
+    cmp.i64 rsi, 11
     ja ^fallback
-    jump_table r10, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5, ^case6, ^case7, ^case8, ^case9, ^case10, ^case11]
+    jump_table rsi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5, ^case6, ^case7, ^case8, ^case9, ^case10, ^case11]
 
   block ^case0
     lea rax, [rdi-40]
@@ -121,10 +119,9 @@ function @shared_store_paths
     epilogues duplicated
 
   block ^entry
-    mov r10, rsi
-    cmp.i64 r10, 11
+    cmp.i64 rsi, 11
     ja ^fallback
-    jump_table r10, [^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11]
+    jump_table rsi, [^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11, ^case9, ^case10, ^case11]
 
   block ^case9
     store.i64 [rdi], 1

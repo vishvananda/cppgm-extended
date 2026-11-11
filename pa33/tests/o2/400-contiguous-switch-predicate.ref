@@ -1,38 +1,33 @@
 function @interval_i8_low(%x : i8, %count : i32) -> i32 [no_inline=yes] {
   block ^entry:
     %t1 = binary sub i8 %x, 1
-    %t2 = cmp ult i8 %t1, 3
     %next = binary add i32 %count, 1
-    %t4 = cmp ult i8 %t1, 3
-    %t5 = select i32 %t4, %next, %count
-    return i32 %t5
+    %t3 = cmp ult i8 %t1, 3
+    %t4 = select i32 %t3, %next, %count
+    return i32 %t4
 }
 function @interval_u8_sign(%x : u8, %count : i32) -> i32 [no_inline=yes] {
   block ^entry:
     %t1 = binary sub u8 %x, 127
-    %t2 = cmp ult u8 %t1, 3
     %next = binary add i32 %count, 1
-    %t4 = cmp ult u8 %t1, 3
-    %t5 = select i32 %t4, %next, %count
-    return i32 %t5
+    %t3 = cmp ult u8 %t1, 3
+    %t4 = select i32 %t3, %next, %count
+    return i32 %t4
 }
 function @interval_i32_sign(%x : i32, %count : i32) -> i32 [no_inline=yes] {
   block ^entry:
     %t1 = binary sub i32 %x, 2147483647
-    %t2 = cmp ult i32 %t1, 3
     %next = binary add i32 %count, 1
-    %t4 = cmp ult i32 %t1, 3
-    %t5 = select i32 %t4, %next, %count
-    return i32 %t5
+    %t3 = cmp ult i32 %t1, 3
+    %t4 = select i32 %t3, %next, %count
+    return i32 %t4
 }
 function @interval_i64_high(%x : i64, %count : i32) -> i32 [no_inline=yes] {
   block ^entry:
-    %t1 = binary sub i64 %x, -3
-    %t2 = cmp ult i64 %t1, 3
     %next = binary add i32 %count, 1
-    %t4 = cmp ult i64 %t1, 3
-    %t5 = select i32 %t4, %next, %count
-    return i32 %t5
+    %t2 = cmp uge i64 %x, -3
+    %t3 = select i32 %t2, %next, %count
+    return i32 %t3
 }
 function @interval_i64_cyclic(%x : i64, %count : i32) -> i32 [no_inline=yes] {
   block ^entry:
@@ -61,11 +56,10 @@ function @interval_i16_sparse(%x : i16, %count : i32) -> i32 [no_inline=yes] {
 function @interval_u16_unsorted(%x : u16, %count : i32) -> i32 [no_inline=yes] {
   block ^entry:
     %t1 = binary sub u16 %x, 17
-    %t2 = cmp ult u16 %t1, 3
     %next = binary add i32 %count, 1
-    %t4 = cmp ult u16 %t1, 3
-    %t5 = select i32 %t4, %next, %count
-    return i32 %t5
+    %t3 = cmp ult u16 %t1, 3
+    %t4 = select i32 %t3, %next, %count
+    return i32 %t4
 }
 function @wide_selector(%x : i128, %count : i32) -> i32 [no_inline=yes] {
   block ^entry:

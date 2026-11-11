@@ -29,7 +29,7 @@ function @f(%h : ptr [pass=by_address, object_bytes=8], %in : ptr [pass=by_addre
     store typed ptr %in, $in
     store u8 %cond, $cond
     %t1 = addr $local
-    %t2 = load u8 $cond
+    %t2 = load typed u8 $cond
     branch %t2, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:

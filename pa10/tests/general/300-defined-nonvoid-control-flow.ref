@@ -52,7 +52,7 @@ function @maybe_value(%enabled : u8) -> i32 [binding=strong, object=_Z11maybe_va
 
   block ^entry:
     store u8 %enabled, $enabled
-    %t1 = load u8 $enabled
+    %t1 = load typed u8 $enabled
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

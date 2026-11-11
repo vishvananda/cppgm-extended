@@ -1012,12 +1012,11 @@ function @float_chooses_int(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_
     %v = load typed f32 %p
     %q = index f32 %y, %i
     %w = load typed f32 %q
-    %t = cmp lt f32 %v, %w
     %o = index i32 %d, %i
     %a = load typed i32 %o
     %b = binary add i32 %a, 1
-    %t32 = cmp lt f32 %v, %w
-    %r = select i32 %t32, %a, %b
+    %t31 = cmp lt f32 %v, %w
+    %r = select i32 %t31, %a, %b
     store typed i32 %r, %o
     %next = binary add nowrap i64 %i, 1
     %c = cmp lt i64 %next, %n

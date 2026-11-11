@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store u8 %t2, %t4
     %t5 = addr $no
     %t6 = index i8 [projection=field] %t5, 1
-    store u8 0, %t6
+    store typed u8 0, %t6
     %t7 = addr $yes
     %t8 = convert trunc u8 i32 0
     %t9 = addr $yes
@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store u8 %t8, %t10
     %t11 = addr $yes
     %t12 = index i8 [projection=field] %t11, 1
-    store u8 1, %t12
+    store typed u8 1, %t12
     %t13 = addr $no
     %t14 = call u8 @convert(%t13)
     branch %t14, ^lor_short_2, ^lor_rhs_1
@@ -54,7 +54,7 @@ function @convert(%proxy : ptr [pass=by_address, object_bytes=2]) -> u8 [binding
     %t3 = addr $tmpref__1
     store typed ptr %t3, $value
     %t4 = load typed ptr $value
-    %t5 = load u8 %t4
+    %t5 = load typed u8 %t4
     return u8 %t5
 }
 function @Proxy__operatorbool(%this : ptr [object_bytes=2]) -> u8 [binding=weak, object=_ZNK5ProxycvbEv, inline_hint=yes] {
@@ -64,6 +64,6 @@ function @Proxy__operatorbool(%this : ptr [object_bytes=2]) -> u8 [binding=weak,
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 1
-    %t3 = load u8 %t2
+    %t3 = load typed u8 %t2
     return u8 %t3
 }

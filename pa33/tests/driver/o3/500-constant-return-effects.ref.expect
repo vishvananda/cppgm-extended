@@ -1,6 +1,6 @@
 # budget from 500-constant-return-effects.ref: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
 instructions <= 271
-blocks <= 30
+blocks <= 31
 count(call) <= 140
 count(load) <= 10
 count(store) <= 10
@@ -9,3 +9,4 @@ instructions <= 8 in @touch
 instructions <= 103 in @exercise
 instructions <= 110 in @general_literals
 instructions <= 55 in @main
+instructions <= 30 in @mixed

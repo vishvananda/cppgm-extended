@@ -66,7 +66,7 @@ function @test_trait_impl(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i
     store typed ptr %__param0, $__param0
     store typed ptr %__param1, $__param1
     store u8 %expected, $expected
-    %t1 = load u8 $expected
+    %t1 = load typed u8 $expected
     %t2 = convert zext i32 u8 %t1
     %t3 = cmp eq i32 0, %t2
     branch %t3, ^cond_then_1, ^cond_else_2
@@ -93,7 +93,7 @@ function @test_trait_impl__2(%__param0 : ptr, %__param1 : ptr, %expected : u8) -
     store typed ptr %__param0, $__param0
     store typed ptr %__param1, $__param1
     store u8 %expected, $expected
-    %t1 = load u8 $expected
+    %t1 = load typed u8 $expected
     %t2 = convert zext i32 u8 %t1
     %t3 = cmp eq i32 0, %t2
     branch %t3, ^cond_then_1, ^cond_else_2

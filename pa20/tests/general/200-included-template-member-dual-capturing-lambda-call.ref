@@ -43,7 +43,7 @@ function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> voi
     copyobj 8x8 %if_fn, %t1
     %t2 = addr $else_fn
     copyobj 8x8 %else_fn, %t2
-    %t3 = load u8 $cond
+    %t3 = load typed u8 $cond
     branch %t3, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

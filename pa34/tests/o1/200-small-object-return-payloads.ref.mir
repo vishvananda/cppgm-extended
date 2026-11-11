@@ -60,38 +60,38 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    slot $input -> [rbp-16] : obj<16x8>
-    slot $byte -> [rbp-24] : obj<1x1>
-    slot $half -> [rbp-32] : obj<2x2>
-    slot $tail -> [rbp-48] : obj<9x1>
-    temp %byte -> [rbp-56] : obj<1x1>
-    temp %half -> [rbp-64] : obj<2x2>
-    temp %tail -> [rbp-80] : obj<9x1>
+    slot $input -> [rbp-24] : obj<16x8>
+    slot $byte -> [rbp-56] : obj<1x1>
+    slot $half -> [rbp-64] : obj<2x2>
+    slot $tail -> [rbp-80] : obj<9x1>
+    temp %byte -> [rbp-8] : obj<1x1>
+    temp %half -> [rbp-32] : obj<2x2>
+    temp %tail -> [rbp-48] : obj<9x1>
 
   block ^entry
-    store.i64 [rbp-16], -1
-    store.u8 [rbp-8], 137
-    lea rdi, [rbp-16]
+    store.i64 [rbp-24], -1
+    store.u8 [rbp-16], 137
+    lea rdi, [rbp-24]
     call @byte_return [args=(rdi)]
-    store.i64 [rbp-56], rax
-    lea rdi, [rbp-16]
+    store.i64 [rbp-8], rax
+    lea rdi, [rbp-24]
     call @half_return [args=(rdi)]
-    store.i64 [rbp-64], rax
-    lea rdi, [rbp-16]
+    store.i64 [rbp-32], rax
+    lea rdi, [rbp-24]
     call @tail_return [args=(rdi)]
-    store.i64 [rbp-80], rax
-    store.i64 [rbp-72], rdx
-    copy_bytes 1x1, [rbp-24], [rbp-56]
-    cmp.u8 [rbp-56], 255
+    store.i64 [rbp-48], rax
+    store.i64 [rbp-40], rdx
+    copy_bytes 1x1, [rbp-56], [rbp-8]
+    cmp.u8 [rbp-8], 255
     setne rax
     movzx rax, rax
-    cmp.u16 [rbp-64], 65535
+    cmp.u16 [rbp-32], 65535
     setne rcx
     movzx rcx, rcx
-    cmp.i64 [rbp-80], -1
+    cmp.i64 [rbp-48], -1
     setne rdx
     movzx rdx, rdx
-    cmp.u8 [rbp-72], 137
+    cmp.u8 [rbp-40], 137
     setne rsi
     movzx rsi, rsi
     or rax, rcx

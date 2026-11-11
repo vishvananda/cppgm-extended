@@ -8,8 +8,8 @@ function @butterfly(%a : ptr, %m : i64, %half : i64, %n : i64) -> f64 [no_inline
     jump ^body
 
   block ^body:
-    %t3 = phi i64 [^entry: 0, ^next: %t19]
-    %t4 = phi i64 [^entry: %t1, ^next: %t20]
+    %t3 = phi i64 [^entry: 0, ^next: %t20]
+    %t4 = phi i64 [^entry: %t1, ^next: %t21]
     %k = phi i64 [^entry: 0, ^next: %step]
     %t = phi f64 [^entry: 0, ^next: %u]
     %fo = copy i64 %t4
@@ -28,11 +28,12 @@ function @butterfly(%a : ptr, %m : i64, %half : i64, %n : i64) -> f64 [no_inline
 
   block ^next:
     %v = phi f64 [^body: %z, ^rare: %r]
-    store f64 %v, %q
+    %t17 = index i8 %a, %no
+    store f64 %v, %t17
     %u = binary add f64 %t, %v
     %step = binary add i64 %m, %k
-    %t19 = binary add i64 %t3, %t2
-    %t20 = binary add i64 %t4, %t2
+    %t20 = binary add i64 %t3, %t2
+    %t21 = binary add i64 %t4, %t2
     %c = cmp lt i64 %step, %n
     branch %c, ^body, ^done
 
@@ -41,23 +42,62 @@ function @butterfly(%a : ptr, %m : i64, %half : i64, %n : i64) -> f64 [no_inline
 }
 function @pairs(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
   block ^entry:
+    %t1 = binary and i64 %n, -4
+    %t2 = cmp gt i64 %t1, 0
+    branch %t2, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t22]
+    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t21]
+    %t5 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t20]
+    %t6 = index i8 %a, %t3
+    %t7 = load i64 %t6
+    %t8 = binary add i64 %t5, %t7
+    %t9 = binary add i64 %t3, 16
+    %t10 = index i8 %a, %t9
+    %t11 = load i64 %t10
+    %t12 = binary add i64 %t8, %t11
+    %t13 = binary add i64 %t3, 32
+    %t14 = index i8 %a, %t13
+    %t15 = load i64 %t14
+    %t16 = binary add i64 %t12, %t15
+    %t17 = binary add i64 %t3, 48
+    %t18 = index i8 %a, %t17
+    %t19 = load i64 %t18
+    %t20 = binary add i64 %t16, %t19
+    %t21 = binary add nowrap i64 %t4, 4
+    %t22 = binary add i64 %t3, 64
+    %t23 = cmp ne i64 %t1, %t21
+    branch %t23, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t24 = cmp lt i64 %t21, %n
+    branch %t24, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t25 = phi i64 [^entry: 0, ^loop_exit_3: %t22]
+    %t26 = phi i64 [^entry: 0, ^loop_exit_3: %t21]
+    %t27 = phi i64 [^entry: 0, ^loop_exit_3: %t20]
     jump ^body
 
   block ^body:
-    %t1 = phi i64 [^entry: 0, ^body: %t9]
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %s = phi i64 [^entry: 0, ^body: %sum]
-    %o = copy i64 %t1
-    %p = index i8 %a, %o
+    %t28 = phi i64 [^wide_tail_4: %t25, ^body: %t35]
+    %i = phi i64 [^wide_tail_4: %t26, ^body: %next]
+    %s = phi i64 [^wide_tail_4: %t27, ^body: %sum]
+    %p = index i8 %a, %t28
     %v = load i64 %p
     %sum = binary add i64 %s, %v
     %next = binary add nowrap i64 %i, 1
-    %t9 = binary add i64 %t1, 16
+    %t35 = binary add i64 %t28, 16
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
   block ^done:
-    return i64 %sum
+    %t37 = phi i64 [^body: %sum, ^loop_exit_3: %t20]
+    return i64 %t37
 }
 function @scaled(%a : ptr, %m : i64, %n : i64) -> i64 [no_inline=yes] {
   block ^entry:

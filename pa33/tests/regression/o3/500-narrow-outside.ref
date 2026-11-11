@@ -135,12 +135,12 @@ function @byte_of_parameter(%first : ptr, %count : i32, %v : i32) -> i8 [binding
 }
 function @short_of_phi(%first : ptr, %count : i32, %c : i1, %v : i32, %w : i32) -> i16 [binding=strong, no_inline=yes] {
   block ^entry:
-    %more = cmp gt i32 %count, 0
-    branch %more, ^loop_preheader_1, ^done
+    %t1 = cmp gt i32 %count, 0
+    branch %t1, ^loop_preheader_1, ^done
 
   block ^loop_preheader_1:
     %t2 = cmp ugt i32 %count, 8
-    %t3 = binary and i64 %more, %t2
+    %t3 = binary and i64 %t1, %t2
     %v2 = binary add i32 %v, 3
     %t5 = select i32 %c, %v2, %w
     %t6 = convert trunc i16 i32 %t5
@@ -206,25 +206,63 @@ function @byte_shift_stays(%first : ptr, %count : i32, %v : i32) -> i8 [binding=
     branch %more, ^loop_preheader_1, ^done
 
   block ^loop_preheader_1:
+    %t2 = binary and i32 %count, -2
+    %t3 = cmp gt i32 %t2, 0
+    branch %t3, ^loop_preheader_2, ^wide_tail_5
+
+  block ^loop_preheader_2:
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t4 = phi i8 [^loop_preheader_2: 0, ^unrolled_3: %t20]
+    %t5 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t21]
+    %t6 = index i8 %first, %t5
+    %t7 = load i8 %t6
+    %t8 = convert sext i32 i8 %t7
+    %t9 = binary shr i32 %t8, %v
+    %t10 = convert sext i32 i8 %t4
+    %t11 = binary add nowrap i32 %t9, %t10
+    %t12 = convert trunc i8 i32 %t11
+    %t13 = convert sext i32 i8 %t12
+    %t14 = index i8 %first, %t5
+    %t15 = index i8 %t14, 1
+    %t16 = load i8 %t15
+    %t17 = convert sext i32 i8 %t16
+    %t18 = binary shr i32 %t17, %v
+    %t19 = binary add nowrap i32 %t18, %t13
+    %t20 = convert trunc i8 i32 %t19
+    %t21 = binary add nowrap i64 %t5, 2
+    %t22 = convert trunc exact i32 i64 %t21
+    %t23 = cmp ne i32 %t2, %t22
+    branch %t23, ^unrolled_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t24 = cmp lt i32 %t22, %count
+    branch %t24, ^wide_tail_5, ^done
+
+  block ^wide_tail_5:
+    %t25 = phi i8 [^loop_preheader_1: 0, ^loop_exit_4: %t20]
+    %t26 = phi i32 [^loop_preheader_1: 0, ^loop_exit_4: %t22]
+    %t27 = convert sext i64 i32 %t26
     jump ^loop
 
   block ^loop:
-    %sum = phi i8 [^loop_preheader_1: 0, ^loop: %next_sum]
-    %t3 = phi i64 [^loop_preheader_1: 0, ^loop: %t11]
-    %p = index i8 %first, %t3
+    %sum = phi i8 [^wide_tail_5: %t25, ^loop: %next_sum]
+    %t29 = phi i64 [^wide_tail_5: %t27, ^loop: %t37]
+    %p = index i8 %first, %t29
     %x = load i8 %p
     %ex = convert sext i32 i8 %x
     %a = binary shr i32 %ex, %v
     %es = convert sext i32 i8 %sum
     %b = binary add nowrap i32 %a, %es
     %next_sum = convert trunc i8 i32 %b
-    %t11 = binary add nowrap i64 %t3, 1
-    %next = convert trunc exact i32 i64 %t11
+    %t37 = binary add nowrap i64 %t29, 1
+    %next = convert trunc exact i32 i64 %t37
     %again = cmp lt i32 %next, %count
     branch %again, ^loop, ^done
 
   block ^done:
-    %r = phi i8 [^entry: 0, ^loop: %next_sum]
+    %r = phi i8 [^entry: 0, ^loop: %next_sum, ^loop_exit_4: %t20]
     return i8 %r
 }
 function @main() -> i32 [role=entry] {

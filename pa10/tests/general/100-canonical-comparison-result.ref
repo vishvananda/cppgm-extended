@@ -10,8 +10,8 @@ function @less_than(%left : i32, %right : i32) -> u8 [binding=strong, object=_Z9
     %t2 = load typed i32 $right
     %t3 = cmp lt i32 %t1, %t2
     %t4 = convert trunc u8 i64 %t3
-    store u8 %t4, $result
-    %t5 = load u8 $result
+    store typed u8 %t4, $result
+    %t5 = load typed u8 $result
     return u8 %t5
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

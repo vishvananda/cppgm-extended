@@ -77,7 +77,7 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
     eh_cleanup ^catch_cleanup_6
     eh_try ^call_unwind_dispatch_9
     %t8 = addr $arg__1
-    %t9 = load u8 @choose
+    %t9 = load typed u8 @choose
     eh_end
     jump ^call_unwind_end_13
 
@@ -168,7 +168,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load typed i32 $k
     %t4 = cmp ne i32 %t3, 0
     %t5 = convert trunc u8 i64 %t4
-    store u8 %t5, @choose
+    store typed u8 %t5, @choose
     store typed i32 0, @drops
     eh_try ^catch_dispatch_5
     %t6 = call i32 @f()

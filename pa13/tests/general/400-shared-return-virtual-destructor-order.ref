@@ -30,7 +30,7 @@ function @choose(%first : u8) -> i32 [binding=strong, object=_Z6chooseb] {
     store u8 %first, $first
     %t1 = addr $value
     call void @Base__Base(%t1)
-    %t2 = load u8 $first
+    %t2 = load typed u8 $first
     branch %t2, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

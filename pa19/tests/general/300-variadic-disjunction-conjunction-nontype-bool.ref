@@ -20,21 +20,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $land__6 : i64
 
   block ^entry:
-    store u8 1, $a
-    store u8 0, $b
-    store u8 1, $c
-    store u8 0, $d
+    store typed u8 1, $a
+    store typed u8 0, $b
+    store typed u8 1, $c
+    store typed u8 0, $d
     %t1 = cmp ne u8 1, 0
     %t2 = convert trunc u8 i64 %t1
-    store u8 %t2, $e
+    store typed u8 %t2, $e
     %t3 = cmp ne u8 0, 0
     %t4 = convert trunc u8 i64 %t3
-    store u8 %t4, $f
-    %t5 = load u8 $a
+    store typed u8 %t4, $f
+    %t5 = load typed u8 $a
     branch %t5, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t6 = load u8 $b
+    %t6 = load typed u8 $b
     %t7 = cmp eq u8 %t6, 0
     %t8 = cmp ne i64 %t7, 0
     store typed i64 %t8, $land__2
@@ -49,7 +49,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t9, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t10 = load u8 $c
+    %t10 = load typed u8 $c
     %t11 = cmp ne u8 %t10, 0
     store typed i64 %t11, $land__3
     jump ^land_end_9
@@ -63,7 +63,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t12, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t13 = load u8 $d
+    %t13 = load typed u8 $d
     %t14 = cmp eq u8 %t13, 0
     %t15 = cmp ne i64 %t14, 0
     store typed i64 %t15, $land__4
@@ -78,7 +78,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t16, ^land_rhs_13, ^land_short_14
 
   block ^land_rhs_13:
-    %t17 = load u8 $e
+    %t17 = load typed u8 $e
     %t18 = cmp ne u8 %t17, 0
     store typed i64 %t18, $land__5
     jump ^land_end_15
@@ -92,7 +92,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t19, ^land_rhs_16, ^land_short_17
 
   block ^land_rhs_16:
-    %t20 = load u8 $f
+    %t20 = load typed u8 $f
     %t21 = cmp eq u8 %t20, 0
     %t22 = cmp ne i64 %t21, 0
     store typed i64 %t22, $land__6

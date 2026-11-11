@@ -60,22 +60,58 @@ function @nine_passes(%k : i64) -> i64 [no_inline=yes] {
   block ^entry:
     %p = addr $s
     call void @keep(%p)
+    branch 1, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t2 = phi i64 [^loop_preheader_1: %k, ^unrolled_2: %t19]
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t20]
+    %t4 = binary mul i64 %k, %t2
+    %t5 = binary sub i64 %t4, %k
+    %t6 = binary mul i64 %k, %t5
+    %t7 = binary add i64 %t6, 1
+    %t8 = binary mul i64 %k, %t7
+    %t9 = binary sub i64 %t8, %k
+    %t10 = binary mul i64 %k, %t9
+    %t11 = binary add i64 %t10, 1
+    %t12 = binary mul i64 %k, %t11
+    %t13 = binary sub i64 %t12, %k
+    %t14 = binary mul i64 %k, %t13
+    %t15 = binary add i64 %t14, 1
+    %t16 = binary mul i64 %k, %t15
+    %t17 = binary sub i64 %t16, %k
+    %t18 = binary mul i64 %k, %t17
+    %t19 = binary add i64 %t18, 1
+    %t20 = binary add nowrap i64 %t3, 4
+    %t21 = cmp ne i64 %t20, 8
+    branch %t21, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    branch 1, ^wide_tail_4, ^loop_exit_6
+
+  block ^wide_tail_4:
+    %t22 = phi i64 [^entry: %k, ^loop_exit_3: %t19]
+    %t23 = phi i64 [^entry: 0, ^loop_exit_3: %t20]
     jump ^body
 
   block ^body:
-    %t2 = phi i64 [^body: %out, ^entry: %k]
-    %t3 = phi i64 [^body: %next, ^entry: 0]
-    %v0 = binary mul i64 %k, %t2
+    %t24 = phi i64 [^body: %out, ^wide_tail_4: %t22]
+    %t25 = phi i64 [^body: %next, ^wide_tail_4: %t23]
+    %v0 = binary mul i64 %k, %t24
     %v1 = binary sub i64 %v0, %k
     %v2 = binary mul i64 %k, %v1
     %out = binary add i64 %v2, 1
-    %next = binary add nowrap i64 %t3, 1
-    %t9 = cmp lt i64 %next, 9
-    branch %t9, ^body, ^loop_exit_2
+    %next = binary add nowrap i64 %t25, 1
+    %t31 = cmp lt i64 %next, 9
+    branch %t31, ^body, ^loop_exit_6
 
-  block ^loop_exit_2:
-    store i64 %t2, %p
-    %r = binary add i64 %out, %t2
+  block ^loop_exit_6:
+    %t32 = phi i64 [^body: %t24, ^loop_exit_3: %t15]
+    %t33 = phi i64 [^body: %out, ^loop_exit_3: %t19]
+    store i64 %t32, %p
+    %r = binary add i64 %t32, %t33
     return i64 %r
 }
 function @five_passes_within_size(%k : i64) -> i64 [no_inline=yes] {

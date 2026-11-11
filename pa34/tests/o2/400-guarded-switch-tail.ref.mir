@@ -32,8 +32,7 @@ function @dispatch
   block ^right
     mov rax, rdx
     xor rax, 4
-    mov r10, rdi
-    jump_table r10, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+    jump_table rdi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case0
     add rax, 1
@@ -49,16 +48,14 @@ function @dispatch
 
   block ^left
     lea rax, [rdx+17]
-    mov r10, rdi
-    jump_table r10, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+    jump_table rdi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case1
     sub rax, 7
     ret rax
 
   block ^table
-    mov r10, rdi
-    jump_table r10, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+    jump_table rdi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case2
     imul rax, 3

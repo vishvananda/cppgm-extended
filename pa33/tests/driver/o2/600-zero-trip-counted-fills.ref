@@ -11,40 +11,122 @@ global @__constexpr_template__2 [storage=readonly, binding=internal] = {
 
 function @fill_bytes(%p : ptr, %s : ptr, %n : u32) -> void [binding=strong, object=_Z10fill_bytesPcPKcj, no_inline=yes] {
   block ^entry:
-    jump ^while_cond_1
+    %t1 = binary and u32 %n, 4294967288
+    branch %t1, ^loop_preheader_1, ^wide_tail_3
 
-  block ^while_cond_1:
-    %t1 = phi u32 [^entry: %n, ^while_body_2: %t5]
-    %t2 = phi ptr [^entry: %p, ^while_body_2: %t4]
-    branch %t1, ^while_body_2, ^while_end_3
+  block ^loop_preheader_1:
+    %t2 = binary sub u32 %n, %t1
+    jump ^unrolled_2
 
-  block ^while_body_2:
-    %t3 = load i8 %s
-    store i8 %t3, %t2
-    %t4 = index inbounds i8 %t2, 1
-    %t5 = binary sub u32 %t1, 1
-    jump ^while_cond_1
+  block ^unrolled_2:
+    %t3 = phi u32 [^loop_preheader_1: %n, ^unrolled_2: %t19]
+    %t4 = phi ptr [^loop_preheader_1: %p, ^unrolled_2: %t21]
+    %t5 = load i8 %s
+    %t6 = index inbounds i8 %t4, 1
+    store i8 %t5, %t4
+    %t7 = load i8 %s
+    %t8 = index inbounds i8 %t4, 2
+    store i8 %t7, %t6
+    %t9 = load i8 %s
+    %t10 = index inbounds i8 %t4, 3
+    store i8 %t9, %t8
+    %t11 = load i8 %s
+    %t12 = index inbounds i8 %t4, 4
+    store i8 %t11, %t10
+    %t13 = load i8 %s
+    %t14 = index inbounds i8 %t4, 5
+    store i8 %t13, %t12
+    %t15 = load i8 %s
+    %t16 = index inbounds i8 %t4, 6
+    store i8 %t15, %t14
+    %t17 = load i8 %s
+    %t18 = index inbounds i8 %t4, 7
+    store i8 %t17, %t16
+    %t19 = binary sub u32 %t3, 8
+    %t20 = load i8 %s
+    store i8 %t20, %t18
+    %t21 = index inbounds i8 %t4, 8
+    %t22 = cmp ne u32 %t2, %t19
+    branch %t22, ^unrolled_2, ^wide_tail_3
 
-  block ^while_end_3:
+  block ^wide_tail_3:
+    %t23 = phi u32 [^entry: %n, ^unrolled_2: %t19]
+    %t24 = phi ptr [^entry: %p, ^unrolled_2: %t21]
+    jump ^while_cond_4
+
+  block ^while_cond_4:
+    %t25 = phi u32 [^wide_tail_3: %t23, ^while_body_5: %t29]
+    %t26 = phi ptr [^wide_tail_3: %t24, ^while_body_5: %t28]
+    branch %t25, ^while_body_5, ^while_end_6
+
+  block ^while_body_5:
+    %t27 = load i8 %s
+    store i8 %t27, %t26
+    %t28 = index inbounds i8 %t26, 1
+    %t29 = binary sub u32 %t25, 1
+    jump ^while_cond_4
+
+  block ^while_end_6:
     return void
 }
 function @fill_words(%p : ptr, %s : ptr, %n : u32) -> void [binding=strong, object=_Z10fill_wordsPjPKjj, no_inline=yes] {
   block ^entry:
-    jump ^while_cond_1
+    %t1 = binary and u32 %n, 4294967288
+    branch %t1, ^loop_preheader_1, ^wide_tail_3
 
-  block ^while_cond_1:
-    %t1 = phi u32 [^entry: %n, ^while_body_2: %t5]
-    %t2 = phi ptr [^entry: %p, ^while_body_2: %t4]
-    branch %t1, ^while_body_2, ^while_end_3
+  block ^loop_preheader_1:
+    %t2 = binary sub u32 %n, %t1
+    jump ^unrolled_2
 
-  block ^while_body_2:
-    %t3 = load typed u32 %s
-    store typed u32 %t3, %t2
-    %t4 = index inbounds i8 %t2, 4
-    %t5 = binary sub u32 %t1, 1
-    jump ^while_cond_1
+  block ^unrolled_2:
+    %t3 = phi u32 [^loop_preheader_1: %n, ^unrolled_2: %t19]
+    %t4 = phi ptr [^loop_preheader_1: %p, ^unrolled_2: %t21]
+    %t5 = load typed u32 %s
+    %t6 = index inbounds i8 %t4, 4
+    store typed u32 %t5, %t4
+    %t7 = load typed u32 %s
+    %t8 = index inbounds i8 %t4, 8
+    store typed u32 %t7, %t6
+    %t9 = load typed u32 %s
+    %t10 = index inbounds i8 %t4, 12
+    store typed u32 %t9, %t8
+    %t11 = load typed u32 %s
+    %t12 = index inbounds i8 %t4, 16
+    store typed u32 %t11, %t10
+    %t13 = load typed u32 %s
+    %t14 = index inbounds i8 %t4, 20
+    store typed u32 %t13, %t12
+    %t15 = load typed u32 %s
+    %t16 = index inbounds i8 %t4, 24
+    store typed u32 %t15, %t14
+    %t17 = load typed u32 %s
+    %t18 = index inbounds i8 %t4, 28
+    store typed u32 %t17, %t16
+    %t19 = binary sub u32 %t3, 8
+    %t20 = load typed u32 %s
+    store typed u32 %t20, %t18
+    %t21 = index inbounds i8 %t4, 32
+    %t22 = cmp ne u32 %t2, %t19
+    branch %t22, ^unrolled_2, ^wide_tail_3
 
-  block ^while_end_3:
+  block ^wide_tail_3:
+    %t23 = phi u32 [^entry: %n, ^unrolled_2: %t19]
+    %t24 = phi ptr [^entry: %p, ^unrolled_2: %t21]
+    jump ^while_cond_4
+
+  block ^while_cond_4:
+    %t25 = phi u32 [^wide_tail_3: %t23, ^while_body_5: %t29]
+    %t26 = phi ptr [^wide_tail_3: %t24, ^while_body_5: %t28]
+    branch %t25, ^while_body_5, ^while_end_6
+
+  block ^while_body_5:
+    %t27 = load typed u32 %s
+    store typed u32 %t27, %t26
+    %t28 = index inbounds i8 %t26, 4
+    %t29 = binary sub u32 %t25, 1
+    jump ^while_cond_4
+
+  block ^while_end_6:
     return void
 }
 function @fill_wide(%p : ptr, %n : u32) -> void [binding=strong, object=_Z9fill_widePoj, no_inline=yes] {
@@ -52,19 +134,53 @@ function @fill_wide(%p : ptr, %n : u32) -> void [binding=strong, object=_Z9fill_
     %t1 = convert zext i64 u32 %n
     %t2 = binary mul i64 %t1, 16
     %t3 = index i8 %p, %t2
-    jump ^while_cond_1
+    %t4 = copy i64 %p
+    %t5 = copy i64 %t3
+    %t6 = binary sub i64 %t5, %t4
+    %t7 = binary and i64 %t6, -128
+    branch %t7, ^loop_preheader_1, ^wide_tail_3
 
-  block ^while_cond_1:
-    %t4 = phi ptr [^entry: %p, ^while_body_2: %t6]
-    %t5 = cmp ne ptr %t4, %t3
-    branch %t5, ^while_body_2, ^while_end_3
+  block ^loop_preheader_1:
+    %t8 = binary add i64 %t4, %t7
+    jump ^unrolled_2
 
-  block ^while_body_2:
-    store typed i128 18446744073709551616, %t4
-    %t6 = index inbounds i8 %t4, 16
-    jump ^while_cond_1
+  block ^unrolled_2:
+    %t9 = phi ptr [^loop_preheader_1: %p, ^unrolled_2: %t17]
+    %t10 = index inbounds i8 %t9, 16
+    store typed i128 18446744073709551616, %t9
+    %t11 = index inbounds i8 %t9, 32
+    store typed i128 18446744073709551616, %t10
+    %t12 = index inbounds i8 %t9, 48
+    store typed i128 18446744073709551616, %t11
+    %t13 = index inbounds i8 %t9, 64
+    store typed i128 18446744073709551616, %t12
+    %t14 = index inbounds i8 %t9, 80
+    store typed i128 18446744073709551616, %t13
+    %t15 = index inbounds i8 %t9, 96
+    store typed i128 18446744073709551616, %t14
+    %t16 = index inbounds i8 %t9, 112
+    store typed i128 18446744073709551616, %t15
+    store typed i128 18446744073709551616, %t16
+    %t17 = index inbounds i8 %t9, 128
+    %t18 = copy i64 %t17
+    %t19 = cmp ne i64 %t8, %t18
+    branch %t19, ^unrolled_2, ^wide_tail_3
 
-  block ^while_end_3:
+  block ^wide_tail_3:
+    %t20 = phi ptr [^entry: %p, ^unrolled_2: %t17]
+    jump ^while_cond_4
+
+  block ^while_cond_4:
+    %t21 = phi ptr [^wide_tail_3: %t20, ^while_body_5: %t23]
+    %t22 = cmp ne ptr %t3, %t21
+    branch %t22, ^while_body_5, ^while_end_6
+
+  block ^while_body_5:
+    store typed i128 18446744073709551616, %t21
+    %t23 = index inbounds i8 %t21, 16
+    jump ^while_cond_4
+
+  block ^while_end_6:
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -138,43 +254,42 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t26, ^if_then_9, ^lor_rhs_8
 
   block ^lor_rhs_8:
-    %t27 = load typed u32 %t10
-    %t28 = cmp ne u32 %t27, 16843009
-    branch %t28, ^if_then_9, ^if_end_10
+    %t27 = index inbounds u32 [projection=array_element] %t2, 1
+    %t28 = load typed u32 %t27
+    %t29 = cmp ne u32 %t28, 16843009
+    branch %t29, ^if_then_9, ^if_end_10
 
   block ^if_then_9:
     return i32 2
 
   block ^if_end_10:
-    %t29 = addr $wide
-    zeroinit 32x16 %t29
-    %t30 = load volatile u32 $two
-    call void @fill_wide(%t29, %t30)
-    jump ^for_cond_11
-
-  block ^for_cond_11:
-    %t31 = phi u32 [^if_end_10: 0, ^if_end_15: %t38]
-    %t32 = cmp ult u32 %t31, 2
-    branch %t32, ^for_body_12, ^for_end_16
-
-  block ^for_body_12:
-    %t33 = index inbounds i128 [projection=array_element] %t29, %t31
+    %t30 = addr $wide
+    zeroinit 32x16 %t30
+    %t31 = load volatile u32 $two
+    call void @fill_wide(%t30, %t31)
+    %t32 = load i64 %t30
+    %t33 = index i8 [projection=field] %t30, 8
     %t34 = load i64 %t33
-    %t35 = index i8 [projection=field] %t33, 8
-    %t36 = load i64 %t35
-    %t37 = cmp ne i64 %t36, 1
-    branch %t37, ^if_then_14, ^lor_rhs_13
+    %t35 = cmp ne i64 %t34, 1
+    branch %t35, ^if_then_15, ^lor_rhs_11
+
+  block ^lor_rhs_11:
+    branch %t32, ^if_then_15, ^if_end_12
+
+  block ^if_end_12:
+    %t36 = index inbounds i128 [projection=array_element] %t30, 1
+    %t37 = load i64 %t36
+    %t38 = index i8 [projection=field] %t30, 24
+    %t39 = load i64 %t38
+    %t40 = cmp ne i64 %t39, 1
+    branch %t40, ^if_then_15, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    branch %t34, ^if_then_14, ^if_end_15
+    branch %t37, ^if_then_15, ^if_end_14
 
-  block ^if_then_14:
-    return i32 3
-
-  block ^if_end_15:
-    %t38 = binary add u32 %t31, 1
-    jump ^for_cond_11
-
-  block ^for_end_16:
+  block ^if_end_14:
     return i32 0
+
+  block ^if_then_15:
+    return i32 3
 }

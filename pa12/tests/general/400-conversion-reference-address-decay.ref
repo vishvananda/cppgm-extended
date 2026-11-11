@@ -193,8 +193,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t57 = call ptr @Buffer__operatorArray_(%t56)
     %t58 = cmp ne ptr %t57, 0
     %t59 = convert trunc u8 i64 %t58
-    store u8 %t59, $present
-    %t60 = load u8 $present
+    store typed u8 %t59, $present
+    %t60 = load typed u8 $present
     %t61 = cmp eq u8 %t60, 0
     branch %t61, ^if_then_20, ^if_else_21
 
@@ -289,8 +289,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t104 = call ptr @Callable__operatorFunction_(%t103)
     %t105 = cmp ne ptr %t104, 0
     %t106 = convert trunc u8 i64 %t105
-    store u8 %t106, $callable
-    %t107 = load u8 $callable
+    store typed u8 %t106, $callable
+    %t107 = load typed u8 $callable
     %t108 = cmp eq u8 %t107, 0
     branch %t108, ^if_then_35, ^if_else_36
 

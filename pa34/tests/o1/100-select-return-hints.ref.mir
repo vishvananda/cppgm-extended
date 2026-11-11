@@ -100,12 +100,12 @@ function @main
     frame_pointer keep
     epilogues duplicated
     preserve rbx r12 r13 r14 r15
-    slot $data -> [rbp-16] : obj<16x8>
-    temp %a -> [rbp-24] : i64
+    slot $data -> [rbp-24] : obj<16x8>
+    temp %a -> [rbp-8] : i64
 
   block ^entry
-    lea rbx, [rbp-16]
-    lea rdi, [rbp-8]
+    lea rbx, [rbp-24]
+    lea rdi, [rbp-16]
     call @adjust [args=(rdi)]
     mov r12, rax
     mov rdi, 0
@@ -116,7 +116,7 @@ function @main
     cmp.ptr rax, 0
     setne r13
     movzx r13, r13
-    lea rdi, [rbp-8]
+    lea rdi, [rbp-16]
     call @adjust_predicate_first [args=(rdi)]
     mov r14, rax
     mov rdi, 0
@@ -125,7 +125,7 @@ function @main
     store.i64 [rbx], 5
     mov rdi, rbx
     call @before_store [args=(rdi)]
-    store.i64 [rbp-24], r12
+    store.i64 [rbp-8], r12
     mov r12, rax
     store.i64 [rbx], 5
     mov rdi, rbx
@@ -142,7 +142,7 @@ function @main
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
-    load.i64 r10, [rbp-24]
+    load.i64 r10, [rbp-8]
     or r13, r10
     or r14, r15
     or r12, rax

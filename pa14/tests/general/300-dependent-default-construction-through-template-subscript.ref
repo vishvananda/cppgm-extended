@@ -45,7 +45,7 @@ function @tiny_assoc_unsignedchar_value_box___tiny_assoc(%this : ptr [object_byt
     call void @value_box__value_box(%t4)
     %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 8
-    store u8 0, %t6
+    store typed u8 0, %t6
     return void
 }
 function @tiny_assoc_unsignedchar_value_box___subscript(%this : ptr [object_bytes=12], %key : ptr [pass=by_address, object_bytes=1]) -> ptr [unwind=no, binding=weak, object=_ZN10tiny_assocIh9value_boxE9subscriptERKh, inline_hint=yes] {
@@ -58,7 +58,7 @@ function @tiny_assoc_unsignedchar_value_box___subscript(%this : ptr [object_byte
     store typed ptr %key, $key
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 8
-    %t3 = load u8 %t2
+    %t3 = load typed u8 %t2
     %t4 = cmp eq u8 %t3, 0
     branch %t4, ^if_then_1, ^lor_rhs_3
 
@@ -86,7 +86,7 @@ function @tiny_assoc_unsignedchar_value_box___subscript(%this : ptr [object_byte
     copyobj 4x4 %t19, %t18
     %t20 = load typed ptr $this
     %t21 = index i8 [projection=field] %t20, 8
-    store u8 1, %t21
+    store typed u8 1, %t21
     jump ^if_end_4
 
   block ^if_else_2:

@@ -1,24 +1,53 @@
 function @private_slot(%p : ptr, %q : ptr, %n : i64) -> i64 [no_inline=yes] {
   block ^entry:
     %has = cmp gt i64 %n, 0
-    branch %has, ^loop_preheader_1, ^done
+    branch %has, ^split_1, ^done
 
-  block ^loop_preheader_1:
+  block ^split_1:
     %t2 = load i64 %q
-    %limit = load typed i64 %p
-    %c = binary add i64 %limit, %t2
+    %t3 = load typed i64 %p
+    %c = binary add i64 %t2, %t3
+    %t5 = binary and i64 %n, -8
+    %t6 = cmp gt i64 %t5, 0
+    branch %t6, ^loop_preheader_2, ^wide_tail_5
+
+  block ^loop_preheader_2:
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t7 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t17]
+    %t8 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t16]
+    %t9 = binary add i64 %c, %t8
+    %t10 = binary add i64 %c, %t9
+    %t11 = binary add i64 %c, %t10
+    %t12 = binary add i64 %c, %t11
+    %t13 = binary add i64 %c, %t12
+    %t14 = binary add i64 %c, %t13
+    %t15 = binary add i64 %c, %t14
+    %t16 = binary add i64 %c, %t15
+    %t17 = binary add nowrap i64 %t7, 8
+    %t18 = cmp ne i64 %t5, %t17
+    branch %t18, ^unrolled_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t19 = cmp lt i64 %t17, %n
+    branch %t19, ^wide_tail_5, ^done
+
+  block ^wide_tail_5:
+    %t20 = phi i64 [^split_1: 0, ^loop_exit_4: %t17]
+    %t21 = phi i64 [^split_1: 0, ^loop_exit_4: %t16]
     jump ^loop
 
   block ^loop:
-    %i = phi i64 [^loop_preheader_1: 0, ^loop: %next]
-    %sum = phi i64 [^loop_preheader_1: 0, ^loop: %more]
+    %i = phi i64 [^wide_tail_5: %t20, ^loop: %next]
+    %sum = phi i64 [^wide_tail_5: %t21, ^loop: %more]
     %more = binary add i64 %sum, %c
     %next = binary add nowrap i64 %i, 1
     %again = cmp lt i64 %next, %n
     branch %again, ^loop, ^done
 
   block ^done:
-    %r = phi i64 [^entry: 0, ^loop: %more]
+    %r = phi i64 [^entry: 0, ^loop: %more, ^loop_exit_4: %t16]
     return i64 %r
 }
 function @escaped_slot(%p : ptr, %q : ptr, %n : i64, %out : ptr) -> i64 [no_inline=yes] {
@@ -28,11 +57,41 @@ function @escaped_slot(%p : ptr, %q : ptr, %n : i64, %out : ptr) -> i64 [no_inli
     %a = addr $s
     store typed ptr %a, %out
     %has = cmp gt i64 %n, 0
-    branch %has, ^loop, ^done
+    branch %has, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t3 = binary and i64 %n, -2
+    %t4 = cmp gt i64 %t3, 0
+    branch %t4, ^loop_preheader_2, ^wide_tail_5
+
+  block ^loop_preheader_2:
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t5 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t11]
+    %t6 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t10]
+    copyobj 16x8 %q, $s
+    %t7 = load typed i64 %p
+    %t8 = binary add i64 %t6, %t7
+    copyobj 16x8 %q, $s
+    %t9 = load typed i64 %p
+    %t10 = binary add i64 %t8, %t9
+    %t11 = binary add nowrap i64 %t5, 2
+    %t12 = cmp ne i64 %t3, %t11
+    branch %t12, ^unrolled_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t13 = cmp lt i64 %t11, %n
+    branch %t13, ^wide_tail_5, ^done
+
+  block ^wide_tail_5:
+    %t14 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t11]
+    %t15 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t10]
+    jump ^loop
 
   block ^loop:
-    %i = phi i64 [^entry: 0, ^loop: %next]
-    %sum = phi i64 [^entry: 0, ^loop: %more]
+    %i = phi i64 [^wide_tail_5: %t14, ^loop: %next]
+    %sum = phi i64 [^wide_tail_5: %t15, ^loop: %more]
     copyobj 16x8 %q, $s
     %limit = load typed i64 %p
     %more = binary add i64 %sum, %limit
@@ -41,6 +100,6 @@ function @escaped_slot(%p : ptr, %q : ptr, %n : i64, %out : ptr) -> i64 [no_inli
     branch %again, ^loop, ^done
 
   block ^done:
-    %r = phi i64 [^entry: 0, ^loop: %more]
+    %r = phi i64 [^entry: 0, ^loop: %more, ^loop_exit_4: %t10]
     return i64 %r
 }

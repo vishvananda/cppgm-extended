@@ -6,7 +6,7 @@ function @parse(%error : u8) -> obj<4x4> [binding=strong, object=_Z5parseb] {
 
   block ^entry:
     store u8 %error, $error
-    %t1 = load u8 $error
+    %t1 = load typed u8 $error
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

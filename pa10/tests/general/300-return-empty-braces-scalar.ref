@@ -3,7 +3,7 @@ function @parse_number_token(%error : u8) -> i64 [binding=strong, object=_Z18par
 
   block ^entry:
     store u8 %error, $error
-    %t1 = load u8 $error
+    %t1 = load typed u8 $error
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

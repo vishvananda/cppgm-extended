@@ -41,26 +41,25 @@ function @walk_unavoidable
     epilogues duplicated
 
   block ^entry
-    load.i64 rdx, @number
-    mov rax, rdi
-    mov rcx, 0
+    load.i64 rcx, @number
+    mov rax, 0
 
   block ^loop
-    cmp.ptr rax, 0
+    cmp.ptr rdi, 0
     je ^exit
 
   block ^body
-    cmp.i64 rdx, 42
+    cmp.i64 rcx, 42
     jne ^failure
 
   block ^advance
-    load.ptr rax, [rax]
-    add rcx, 1
-    cmp.ptr rax, 0
+    load.ptr rdi, [rdi]
+    add rax, 1
+    cmp.ptr rdi, 0
     jne ^body
 
   block ^exit
-    ret rcx
+    ret rax
 
   block ^failure
     mov rax, 99
@@ -82,24 +81,23 @@ function @walk_guarded
     je ^entry~exit
 
   block ^entry~loop
-    mov rax, rdi
-    mov rcx, 0
+    mov rax, 0
 
   block ^loop
-    cmp.ptr rax, 0
+    cmp.ptr rdi, 0
     je ^loop~exit
 
   block ^body
-    load.ptr rax, [rax]
-    add rcx, 1
-    cmp.ptr rax, 0
+    load.ptr rdi, [rdi]
+    add rax, 1
+    cmp.ptr rdi, 0
     jne ^body
 
   block ^loop~exit
-    ret rcx
+    ret rax
 
   block ^exit
-    ret rcx
+    ret rax
 
   block ^entry~exit
     mov rax, 0

@@ -70,22 +70,70 @@ function @nonnegative(%p : ptr, %bound : i64) -> i64 [no_inline=yes] {
 function @signed_range(%first : i64, %bound : i64) -> i64 [no_inline=yes] {
   block ^entry:
     %more = cmp lt i64 %first, %bound
-    branch %more, ^body, ^done
+    branch %more, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    branch 1, ^loop_preheader_2, ^wide_tail_6
+
+  block ^loop_preheader_2:
+    %t2 = binary sub i64 %bound, %first
+    %t3 = binary and i64 %t2, -4
+    %t4 = cmp gt i64 %t3, 0
+    branch %t4, ^loop_preheader_3, ^wide_tail_6
+
+  block ^loop_preheader_3:
+    %t5 = binary add i64 %first, %t3
+    jump ^unrolled_4
+
+  block ^unrolled_4:
+    %t6 = phi i64 [^loop_preheader_3: 0, ^unrolled_4: %t26]
+    %t7 = phi i64 [^loop_preheader_3: %first, ^unrolled_4: %t27]
+    %t8 = binary mod i64 %t7, 8
+    %t9 = binary div i64 %t7, 4
+    %t10 = binary add i64 %t8, %t9
+    %t11 = binary add i64 %t6, %t10
+    %t12 = binary add nowrap i64 %t7, 1
+    %t13 = binary mod i64 %t12, 8
+    %t14 = binary div i64 %t12, 4
+    %t15 = binary add i64 %t13, %t14
+    %t16 = binary add i64 %t11, %t15
+    %t17 = binary add nowrap i64 %t7, 2
+    %t18 = binary mod i64 %t17, 8
+    %t19 = binary div i64 %t17, 4
+    %t20 = binary add i64 %t18, %t19
+    %t21 = binary add i64 %t16, %t20
+    %t22 = binary add nowrap i64 %t7, 3
+    %t23 = binary mod i64 %t22, 8
+    %t24 = binary div i64 %t22, 4
+    %t25 = binary add i64 %t23, %t24
+    %t26 = binary add i64 %t21, %t25
+    %t27 = binary add nowrap i64 %t7, 4
+    %t28 = cmp ne i64 %t5, %t27
+    branch %t28, ^unrolled_4, ^loop_exit_5
+
+  block ^loop_exit_5:
+    %t29 = cmp lt i64 %t27, %bound
+    branch %t29, ^wide_tail_6, ^done
+
+  block ^wide_tail_6:
+    %t30 = phi i64 [^loop_preheader_1: 0, ^loop_exit_5: %t26, ^loop_preheader_2: 0]
+    %t31 = phi i64 [^loop_preheader_1: %first, ^loop_exit_5: %t27, ^loop_preheader_2: %first]
+    jump ^body
 
   block ^body:
-    %t2 = phi i64 [^body: %total, ^entry: 0]
-    %t3 = phi i64 [^body: %next, ^entry: %first]
-    %rem = binary mod i64 %t3, 8
-    %quot = binary div i64 %t3, 4
+    %t32 = phi i64 [^body: %total, ^wide_tail_6: %t30]
+    %t33 = phi i64 [^body: %next, ^wide_tail_6: %t31]
+    %rem = binary mod i64 %t33, 8
+    %quot = binary div i64 %t33, 4
     %part = binary add i64 %rem, %quot
-    %total = binary add i64 %part, %t2
-    %next = binary add nowrap i64 %t3, 1
-    %t9 = cmp lt i64 %next, %bound
-    branch %t9, ^body, ^done
+    %total = binary add i64 %part, %t32
+    %next = binary add nowrap i64 %t33, 1
+    %t39 = cmp lt i64 %next, %bound
+    branch %t39, ^body, ^done
 
   block ^done:
-    %t10 = phi i64 [^entry: 0, ^body: %total]
-    return i64 %t10
+    %t40 = phi i64 [^entry: 0, ^body: %total, ^loop_exit_5: %t26]
+    return i64 %t40
 }
 function @wrapping_counter() -> i64 [no_inline=yes] {
   block ^entry:

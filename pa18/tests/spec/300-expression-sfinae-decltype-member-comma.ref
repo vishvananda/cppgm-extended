@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $yes
     %t2 = addr $yes
     %t3 = index i8 [projection=field] %t2, 0
-    store u8 1, %t3
+    store typed u8 1, %t3
     %t4 = addr $no
     %t5 = addr $yes
     %t6 = call u8 @has_value(%t5, 0)
@@ -51,7 +51,7 @@ function @has_value(%value : ptr [pass=by_address, object_bytes=1], %__param1 : 
     store typed i32 %__param1, $__param1
     %t1 = load typed ptr $value
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load u8 %t2
+    %t3 = load typed u8 %t2
     return u8 %t3
 }
 function @has_value__2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : i64) -> u8 [binding=weak, object=_Z9has_valueI7missingEbRKT_l] {

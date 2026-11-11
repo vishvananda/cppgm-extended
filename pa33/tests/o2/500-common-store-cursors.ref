@@ -32,20 +32,19 @@ function @stream(%left : ptr, %right : ptr, %output : ptr, %length : i64) -> voi
     %b_at = index i32 %right, %j
     %a = load i32 %a_at
     %b = load i32 %b_at
-    %take_a = cmp le i32 %a, %b
     %left_at = index i32 %output, %k
     %advanced_i = binary add i64 %i, 1
     %right_at = index i32 %output, %k
     %advanced_j = binary add i64 %j, 1
-    %t14 = cmp le i32 %a, %b
-    %t15 = select i32 %t14, %a, %b
-    %t16 = cmp le i32 %a, %b
-    %t17 = select i64 %t16, %advanced_i, %i
-    %t18 = cmp le i32 %a, %b
-    %t19 = select i64 %t18, %j, %advanced_j
-    store i32 %t15, %left_at
-    %next_i = copy i64 %t17
-    %next_j = copy i64 %t19
+    %t13 = cmp le i32 %a, %b
+    %t14 = select i32 %t13, %a, %b
+    %t15 = cmp le i32 %a, %b
+    %t16 = select i64 %t15, %advanced_i, %i
+    %t17 = cmp le i32 %a, %b
+    %t18 = select i64 %t17, %j, %advanced_j
+    store i32 %t14, %left_at
+    %next_i = copy i64 %t16
+    %next_j = copy i64 %t18
     %next_k = binary add i64 %k, 1
     jump ^head
 
@@ -68,20 +67,19 @@ function @stream_reverse(%left : ptr, %right : ptr, %output : ptr, %length : i64
     %b_at = index i32 %right, %j
     %a = load i32 %a_at
     %b = load i32 %b_at
-    %take_a = cmp ge i32 %a, %b
     %left_at = index i32 %output, %k
     %advanced_i = binary sub i64 %i, 1
     %right_at = index i32 %output, %k
     %advanced_j = binary sub i64 %j, 1
-    %t14 = cmp ge i32 %a, %b
-    %t15 = select i32 %t14, %a, %b
-    %t16 = cmp ge i32 %a, %b
-    %t17 = select i64 %t16, %advanced_i, %i
-    %t18 = cmp ge i32 %a, %b
-    %t19 = select i64 %t18, %j, %advanced_j
-    store i32 %t15, %left_at
-    %next_i = copy i64 %t17
-    %next_j = copy i64 %t19
+    %t13 = cmp ge i32 %a, %b
+    %t14 = select i32 %t13, %a, %b
+    %t15 = cmp ge i32 %a, %b
+    %t16 = select i64 %t15, %advanced_i, %i
+    %t17 = cmp ge i32 %a, %b
+    %t18 = select i64 %t17, %j, %advanced_j
+    store i32 %t14, %left_at
+    %next_i = copy i64 %t16
+    %next_j = copy i64 %t18
     %next_k = binary add i64 %k, 1
     jump ^head
 
@@ -132,18 +130,23 @@ function @main() -> i32 [role=entry] {
     branch %all, ^fail, ^check_reverse
 
   block ^check_reverse:
+    %t27 = index i32 %output, 1
+    %t28 = index i32 %output, 2
+    %t29 = index i32 %output, 3
+    %t30 = index i32 %output, 4
+    %t31 = index i32 %output, 5
     call void @stream_reverse(%left, %right, %output, %length)
     %r0 = load i32 %output
     %bad_r0 = cmp ne i32 %r0, 16
-    %r1 = load i32 %p1
+    %r1 = load i32 %t27
     %bad_r1 = cmp ne i32 %r1, 15
-    %r2 = load i32 %p2
+    %r2 = load i32 %t28
     %bad_r2 = cmp ne i32 %r2, 14
-    %r3 = load i32 %p3
+    %r3 = load i32 %t29
     %bad_r3 = cmp ne i32 %r3, 13
-    %r4 = load i32 %p4
+    %r4 = load i32 %t30
     %bad_r4 = cmp ne i32 %r4, 10
-    %r5 = load i32 %p5
+    %r5 = load i32 %t31
     %bad_r5 = cmp ne i32 %r5, 9
     %r_bad1 = binary or i64 %bad_r0, %bad_r1
     %r_bad2 = binary or i64 %bad_r2, %r_bad1

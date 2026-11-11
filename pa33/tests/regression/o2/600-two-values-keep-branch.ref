@@ -22,25 +22,23 @@ function @both(%mask : i64, %p : ptr) -> i64 [binding=strong, no_inline=yes] {
 }
 function @one_arm(%mask : i64, %p : ptr) -> i64 [binding=strong, no_inline=yes] {
   block ^entry:
-    %c = cmp ugt i64 %mask, 1
     %next = binary ushr i64 %mask, 1
     %step = index i8 %p, 1
-    %t4 = cmp ugt i64 %mask, 1
-    %t5 = select i64 %t4, %next, 128
-    %t6 = cmp ugt i64 %mask, 1
-    %t7 = select ptr %t6, %step, %p
-    %d = binary sub ptr %t7, %p
-    %r = binary add i64 %t5, %d
+    %t3 = cmp ugt i64 %mask, 1
+    %t4 = select i64 %t3, %next, 128
+    %t5 = cmp ugt i64 %mask, 1
+    %t6 = select ptr %t5, %step, %p
+    %d = binary sub ptr %t6, %p
+    %r = binary add i64 %t4, %d
     return i64 %r
 }
 function @one_value(%mask : i64) -> i64 [binding=strong, no_inline=yes] {
   block ^entry:
-    %c = cmp ugt i64 %mask, 1
     %next = binary ushr i64 %mask, 1
     %other = binary add i64 %mask, 128
-    %t4 = cmp ugt i64 %mask, 1
-    %t5 = select i64 %t4, %next, %other
-    return i64 %t5
+    %t3 = cmp ugt i64 %mask, 1
+    %t4 = select i64 %t3, %next, %other
+    return i64 %t4
 }
 function @main() -> i32 [role=entry] {
   block ^entry:

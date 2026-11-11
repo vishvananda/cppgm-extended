@@ -7,7 +7,7 @@ function @use(%__param0 : ptr [pass=by_address, object_bytes=1], %value : u8) ->
   block ^entry:
     store typed ptr %__param0, $__param0
     store u8 %value, $value
-    %t1 = load u8 $value
+    %t1 = load typed u8 $value
     return u8 %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

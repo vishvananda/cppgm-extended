@@ -229,12 +229,12 @@ function @cycle_a(%n : u32) -> u32 [binding=strong, object=_Z7cycle_aj] {
     return u32 1
 
   block ^if_end_2:
-    %t2 = binary sub u32 %n, 1
-    %t3 = cmp eq u32 %t2, 0
-    branch %t3, ^inline_cont_4, ^if_end_3
+    %t2 = cmp eq u32 %n, 1
+    branch %t2, ^inline_cont_4, ^if_end_3
 
   block ^if_end_3:
-    %t4 = call u32 @cycle_b(%t2)
+    %t3 = binary sub u32 %n, 1
+    %t4 = call u32 @cycle_b(%t3)
     jump ^inline_cont_4
 
   block ^inline_cont_4:
@@ -345,365 +345,352 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t2 = phi u32 [^entry: 0, ^cond_then_32: %t52]
-    %t3 = phi u32 [^entry: %t1, ^cond_then_32: %t8]
-    %t4 = cmp ult u32 %t2, 32
-    branch %t4, ^loop_preheader_2, ^for_end_35
+    %t2 = phi u32 [^entry: %t1, ^cond_then_30: %t6, ^inline_entry_29: %t6]
+    %t3 = phi u32 [^entry: 0, ^cond_then_30: %t50, ^inline_entry_29: 1]
+    %t4 = cmp ult u32 %t3, 32
+    branch %t4, ^for_body_2, ^for_end_32
 
-  block ^loop_preheader_2:
-    jump ^for_body_3
+  block ^for_body_2:
+    %t5 = binary mul u32 %t2, 1664525
+    %t6 = binary add u32 %t5, 1013904223
+    %t7 = binary and u32 %t6, 31
+    %t8 = copy i32 %t7
+    %t9 = addr $leaf
+    %t10 = binary and u32 %t3, 1
+    %t11 = copy i32 %t10
+    store typed i32 %t11, %t9
+    %t12 = binary add i32 %t8, -18
+    %t13 = index i8 [projection=field] %t9, 4
+    store typed i32 %t12, %t13
+    %t14 = index i8 [projection=field] %t9, 8
+    store typed ptr 0, %t14
+    %t15 = index i8 [projection=field] %t9, 16
+    store typed ptr 0, %t15
+    %t16 = addr $root
+    store typed i32 2, %t16
+    %t17 = binary add i32 %t8, -13
+    %t18 = index i8 [projection=field] %t16, 4
+    store typed i32 %t17, %t18
+    %t19 = index i8 [projection=field] %t16, 8
+    %t20 = index i8 [projection=field] %t16, 16
+    store typed ptr %t9, %t20
+    store typed ptr %t16, %t19
+    jump ^for_cond_3
 
-  block ^for_body_3:
-    %t5 = phi u32 [^loop_preheader_2: %t2, ^cond_end_33: %t52]
-    %t6 = phi u32 [^loop_preheader_2: %t3, ^cond_end_33: %t8]
-    %t7 = binary mul u32 %t6, 1664525
-    %t8 = binary add u32 %t7, 1013904223
-    %t9 = binary and u32 %t8, 31
-    %t10 = copy i32 %t9
-    %t11 = addr $leaf
-    %t12 = binary and u32 %t5, 1
-    %t13 = copy i32 %t12
-    store typed i32 %t13, %t11
-    %t14 = binary add i32 %t10, -18
-    %t15 = index i8 [projection=field] %t11, 4
-    store typed i32 %t14, %t15
-    %t16 = index i8 [projection=field] %t11, 8
-    store typed ptr 0, %t16
-    %t17 = index i8 [projection=field] %t11, 16
-    store typed ptr 0, %t17
-    %t18 = addr $root
-    store typed i32 2, %t18
-    %t19 = binary add i32 %t10, -13
-    %t20 = index i8 [projection=field] %t18, 4
-    store typed i32 %t19, %t20
-    %t21 = index i8 [projection=field] %t18, 8
-    %t22 = index i8 [projection=field] %t18, 16
-    store typed ptr %t11, %t22
-    store typed ptr %t18, %t21
-    jump ^for_cond_4
+  block ^for_cond_3:
+    %t21 = phi u32 [^for_body_2: 0, ^lor_rhs_10: %t31]
+    %t22 = cmp ult u32 %t21, 17
+    branch %t22, ^for_body_4, ^for_end_12
 
-  block ^for_cond_4:
-    %t23 = phi u32 [^for_body_3: 0, ^lor_rhs_11: %t33]
-    %t24 = cmp ult u32 %t23, 17
-    branch %t24, ^for_body_5, ^for_end_13
-
-  block ^for_body_5:
+  block ^for_body_4:
     store typed u32 0, @depth_sum
     store typed u32 0, @observations
-    %t25 = load typed i32 %t20
-    %t26 = load typed i32 %t11
-    branch %t26, ^cond_then_6, ^cond_else_7
+    %t23 = load typed i32 %t18
+    %t24 = load typed i32 %t9
+    branch %t24, ^cond_then_5, ^cond_else_6
 
-  block ^cond_then_6:
-    %t27 = load typed i32 %t15
-    %t28 = unary neg i32 %t27
-    jump ^cond_end_8
+  block ^cond_then_5:
+    %t25 = load typed i32 %t13
+    %t26 = unary neg i32 %t25
+    jump ^cond_end_7
 
-  block ^cond_else_7:
-    %t29 = load typed i32 %t15
-    jump ^cond_end_8
+  block ^cond_else_6:
+    %t27 = load typed i32 %t13
+    jump ^cond_end_7
 
-  block ^cond_end_8:
-    %t30 = phi i32 [^cond_then_6: %t28, ^cond_else_7: %t29]
-    %t31 = binary add nowrap i32 %t25, %t30
-    %t32 = call i32 @walk(%t18, %t23)
-    %t33 = binary add u32 %t23, 1
-    %t34 = copy i32 %t33
-    %t35 = binary mul nowrap i32 %t31, %t34
-    %t36 = cmp ne i32 %t32, %t35
-    branch %t36, ^if_then_9, ^if_end_10
+  block ^cond_end_7:
+    %t28 = phi i32 [^cond_then_5: %t26, ^cond_else_6: %t27]
+    %t29 = binary add nowrap i32 %t23, %t28
+    %t30 = call i32 @walk(%t16, %t21)
+    %t31 = binary add u32 %t21, 1
+    %t32 = copy i32 %t31
+    %t33 = binary mul nowrap i32 %t29, %t32
+    %t34 = cmp ne i32 %t30, %t33
+    branch %t34, ^if_then_8, ^if_end_9
 
-  block ^if_then_9:
+  block ^if_then_8:
     return i32 1
 
-  block ^if_end_10:
-    %t37 = load typed u32 @observations
-    %t38 = binary mul u32 %t33, 2
-    %t39 = cmp ne u32 %t37, %t38
-    branch %t39, ^if_then_12, ^lor_rhs_11
+  block ^if_end_9:
+    %t35 = load typed u32 @observations
+    %t36 = binary mul u32 %t31, 2
+    %t37 = cmp ne u32 %t35, %t36
+    branch %t37, ^if_then_11, ^lor_rhs_10
 
-  block ^lor_rhs_11:
-    %t40 = load typed u32 @depth_sum
-    %t41 = binary mul u32 %t23, %t33
-    %t42 = cmp ne u32 %t40, %t41
-    branch %t42, ^if_then_12, ^for_cond_4
+  block ^lor_rhs_10:
+    %t38 = load typed u32 @depth_sum
+    %t39 = binary mul u32 %t21, %t31
+    %t40 = cmp ne u32 %t38, %t39
+    branch %t40, ^if_then_11, ^for_cond_3
 
-  block ^if_then_12:
+  block ^if_then_11:
     return i32 2
 
-  block ^for_end_13:
+  block ^for_end_12:
     store volatile u32 0, @trace
-    %t43 = cmp uge u32 %t5, 1
-    branch %t43, ^loop_preheader_14, ^for_end_16
+    %t41 = cmp uge u32 %t3, 1
+    branch %t41, ^loop_preheader_13, ^for_end_15
 
-  block ^loop_preheader_14:
-    jump ^for_body_15
+  block ^loop_preheader_13:
+    jump ^for_body_14
 
-  block ^for_body_15:
-    %t44 = phi u32 [^for_body_15: %t48, ^loop_preheader_14: 1]
-    %t45 = phi u32 [^for_body_15: %t47, ^loop_preheader_14: 0]
-    %t46 = binary mul u32 %t45, 33
-    %t47 = binary add u32 %t46, %t44
-    %t48 = binary add u32 %t44, 1
-    %t49 = cmp ule u32 %t48, %t5
-    branch %t49, ^for_body_15, ^for_end_16
+  block ^for_body_14:
+    %t42 = phi u32 [^for_body_14: %t46, ^loop_preheader_13: 1]
+    %t43 = phi u32 [^for_body_14: %t45, ^loop_preheader_13: 0]
+    %t44 = binary mul u32 %t43, 33
+    %t45 = binary add u32 %t44, %t42
+    %t46 = binary add u32 %t42, 1
+    %t47 = cmp ule u32 %t46, %t3
+    branch %t47, ^for_body_14, ^for_end_15
 
-  block ^for_end_16:
-    %t50 = phi u32 [^for_end_13: 0, ^for_body_15: %t47]
-    %t51 = call u32 @cycle_a(%t5)
-    %t52 = binary add u32 %t5, 1
-    %t53 = cmp ne u32 %t51, %t52
-    branch %t53, ^if_then_18, ^lor_rhs_17
+  block ^for_end_15:
+    %t48 = phi u32 [^for_end_12: 0, ^for_body_14: %t45]
+    %t49 = call u32 @cycle_a(%t3)
+    %t50 = binary add u32 %t3, 1
+    %t51 = cmp ne u32 %t49, %t50
+    branch %t51, ^if_then_17, ^lor_rhs_16
 
-  block ^lor_rhs_17:
-    %t54 = load volatile u32 @trace
-    %t55 = cmp ne u32 %t54, %t50
-    branch %t55, ^if_then_18, ^if_end_19
+  block ^lor_rhs_16:
+    %t52 = load volatile u32 @trace
+    %t53 = cmp ne u32 %t52, %t48
+    branch %t53, ^if_then_17, ^if_end_18
 
-  block ^if_then_18:
+  block ^if_then_17:
     return i32 3
 
-  block ^if_end_19:
+  block ^if_end_18:
     store volatile u32 0, @trace
-    %t56 = cmp eq u32 %t5, 0
-    branch %t56, ^inline_cont_21, ^if_end_20
+    %t54 = cmp eq u32 %t3, 0
+    branch %t54, ^lor_rhs_20, ^if_end_19
 
-  block ^if_end_20:
-    %t57 = call u32 @cycle_b(%t5)
-    %t58 = cmp ne u32 %t52, %t57
-    branch %t58, ^if_then_23, ^lor_rhs_22
+  block ^if_end_19:
+    %t55 = call u32 @cycle_b(%t3)
+    %t56 = cmp ne u32 %t50, %t55
+    branch %t56, ^if_then_21, ^lor_rhs_20
 
-  block ^inline_cont_21:
-    %t59 = cmp ne u32 %t52, 1
-    branch %t59, ^if_then_23, ^lor_rhs_22
+  block ^lor_rhs_20:
+    %t57 = load volatile u32 @trace
+    %t58 = cmp ne u32 %t57, %t48
+    branch %t58, ^if_then_21, ^if_end_22
 
-  block ^lor_rhs_22:
-    %t60 = load volatile u32 @trace
-    %t61 = cmp ne u32 %t60, %t50
-    branch %t61, ^if_then_23, ^if_end_24
-
-  block ^if_then_23:
+  block ^if_then_21:
     return i32 4
 
-  block ^if_end_24:
-    %t62 = binary umod u32 %t5, 9
+  block ^if_end_22:
+    %t59 = binary umod u32 %t3, 9
     store typed u32 0, @fan_calls
-    %t63 = call u32 @fan_a(%t62)
-    %t64 = binary shl u32 1, %t62
-    %t65 = cmp ne u32 %t63, %t64
-    branch %t65, ^if_then_26, ^lor_rhs_25
+    %t60 = call u32 @fan_a(%t59)
+    %t61 = binary shl u32 1, %t59
+    %t62 = cmp ne u32 %t60, %t61
+    branch %t62, ^if_then_24, ^lor_rhs_23
 
-  block ^lor_rhs_25:
-    %t66 = load typed u32 @fan_calls
-    %t67 = binary shl u32 2, %t62
-    %t68 = binary sub u32 %t67, 1
-    %t69 = cmp ne u32 %t66, %t68
-    branch %t69, ^if_then_26, ^if_end_27
+  block ^lor_rhs_23:
+    %t63 = load typed u32 @fan_calls
+    %t64 = binary shl u32 2, %t59
+    %t65 = binary sub u32 %t64, 1
+    %t66 = cmp ne u32 %t63, %t65
+    branch %t66, ^if_then_24, ^if_end_25
 
-  block ^if_then_26:
+  block ^if_then_24:
     return i32 5
 
-  block ^if_end_27:
+  block ^if_end_25:
     store typed u32 0, @fan_calls
-    %t70 = call u32 @fan_b(%t62)
-    %t71 = cmp ne u32 %t64, %t70
-    branch %t71, ^if_then_29, ^lor_rhs_28
+    %t67 = call u32 @fan_b(%t59)
+    %t68 = cmp ne u32 %t61, %t67
+    branch %t68, ^if_then_27, ^lor_rhs_26
 
-  block ^lor_rhs_28:
-    %t72 = load typed u32 @fan_calls
-    %t73 = cmp ne u32 %t68, %t72
-    branch %t73, ^if_then_29, ^if_end_30
+  block ^lor_rhs_26:
+    %t69 = load typed u32 @fan_calls
+    %t70 = cmp ne u32 %t65, %t69
+    branch %t70, ^if_then_27, ^if_end_28
 
-  block ^if_then_29:
+  block ^if_then_27:
     return i32 6
 
-  block ^if_end_30:
-    %t74 = call u32 @kept(%t5)
-    %t75 = cmp ne u32 %t52, %t74
-    branch %t75, ^if_then_34, ^inline_entry_31
+  block ^if_end_28:
+    %t71 = call u32 @kept(%t3)
+    %t72 = cmp ne u32 %t50, %t71
+    branch %t72, ^if_then_31, ^inline_entry_29
 
-  block ^inline_entry_31:
-    branch %t5, ^cond_then_32, ^cond_end_33
+  block ^inline_entry_29:
+    branch %t3, ^cond_then_30, ^for_cond_1
 
-  block ^cond_then_32:
-    %t76 = call u32 @kept_peer(%t5)
-    %t77 = cmp ne u32 %t52, %t76
-    branch %t77, ^if_then_34, ^for_cond_1
+  block ^cond_then_30:
+    %t73 = call u32 @kept_peer(%t3)
+    %t74 = cmp ne u32 %t50, %t73
+    branch %t74, ^if_then_31, ^for_cond_1
 
-  block ^cond_end_33:
-    %t78 = cmp ne u32 %t52, 1
-    branch %t78, ^if_then_34, ^for_body_3
-
-  block ^if_then_34:
+  block ^if_then_31:
     return i32 7
 
-  block ^for_end_35:
-    %t79 = addr $bad
-    store typed i32 4, %t79
-    %t80 = index i8 [projection=field] %t79, 4
-    store typed i32 0, %t80
-    %t81 = index i8 [projection=field] %t79, 8
-    store typed ptr 0, %t81
-    %t82 = index i8 [projection=field] %t79, 16
-    store typed ptr 0, %t82
+  block ^for_end_32:
+    %t75 = addr $bad
+    store typed i32 4, %t75
+    %t76 = index i8 [projection=field] %t75, 4
+    store typed i32 0, %t76
+    %t77 = index i8 [projection=field] %t75, 8
+    store typed ptr 0, %t77
+    %t78 = index i8 [projection=field] %t75, 16
+    store typed ptr 0, %t78
     store typed u32 0, @depth_sum
     store typed u32 0, @cleanups
     store typed u32 0, @fail_calls
     store typed u32 0, @observations
-    eh_try ^catch_dispatch_37
-    eh_try ^call_unwind_dispatch_36
-    %t83 = call i32 @walk(%t79, 1)
+    eh_try ^catch_dispatch_34
+    eh_try ^call_unwind_dispatch_33
+    %t79 = call i32 @walk(%t75, 1)
     eh_end
-    %t84 = load typed u32 @cleanups
-    %t85 = binary add u32 %t84, 1
-    store typed u32 %t85, @cleanups
+    %t80 = load typed u32 @cleanups
+    %t81 = binary add u32 %t80, 1
+    store typed u32 %t81, @cleanups
     eh_end
     return i32 8
 
-  block ^call_unwind_dispatch_36:
+  block ^call_unwind_dispatch_33:
     eh_catch @__external_rtti__int, 1
     eh_cleanup
-    %t86 = load typed u32 @cleanups
-    %t87 = binary add u32 %t86, 1
-    store typed u32 %t87, @cleanups
+    %t82 = load typed u32 @cleanups
+    %t83 = binary add u32 %t82, 1
+    store typed u32 %t83, @cleanups
     eh_end
     eh_end
-    jump ^catch_entry_38
+    jump ^catch_entry_35
 
-  block ^catch_dispatch_37:
+  block ^catch_dispatch_34:
     eh_catch @__external_rtti__int, 1
-    jump ^catch_entry_38
+    jump ^catch_entry_35
 
-  block ^catch_entry_38:
-    %t88 = exception ptr
-    %t89 = exception_selector i32
-    %t90 = cmp eq i32 %t89, 1
-    branch %t90, ^catch_body_39, ^catch_next_43
+  block ^catch_entry_35:
+    %t84 = exception ptr
+    %t85 = exception_selector i32
+    %t86 = cmp eq i32 %t85, 1
+    branch %t86, ^catch_body_36, ^catch_next_40
 
-  block ^catch_body_39:
-    %t91 = call ptr @__external_runtime____cxa_begin_catch(%t88)
-    eh_cleanup ^catch_cleanup_42
-    %t92 = load typed i32 %t91
-    %t93 = cmp ne i32 %t92, 4
-    branch %t93, ^if_then_40, ^if_end_41
+  block ^catch_body_36:
+    %t87 = call ptr @__external_runtime____cxa_begin_catch(%t84)
+    eh_cleanup ^catch_cleanup_39
+    %t88 = load typed i32 %t87
+    %t89 = cmp ne i32 %t88, 4
+    branch %t89, ^if_then_37, ^if_end_38
 
-  block ^if_then_40:
+  block ^if_then_37:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 9
 
-  block ^if_end_41:
+  block ^if_end_38:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    %t94 = load typed u32 @observations
+    %t90 = load typed u32 @observations
+    %t91 = cmp ne u32 %t90, 1
+    branch %t91, ^if_then_44, ^lor_rhs_41
+
+  block ^catch_cleanup_39:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^catch_next_40:
+    resume
+
+  block ^lor_rhs_41:
+    %t92 = load typed u32 @fail_calls
+    %t93 = cmp ne u32 %t92, 1
+    branch %t93, ^if_then_44, ^lor_rhs_42
+
+  block ^lor_rhs_42:
+    %t94 = load typed u32 @cleanups
     %t95 = cmp ne u32 %t94, 1
-    branch %t95, ^if_then_47, ^lor_rhs_44
+    branch %t95, ^if_then_44, ^lor_rhs_43
 
-  block ^catch_cleanup_42:
-    call void @__external_runtime____cxa_end_catch()
-    eh_end
-    resume
-
-  block ^catch_next_43:
-    resume
-
-  block ^lor_rhs_44:
-    %t96 = load typed u32 @fail_calls
+  block ^lor_rhs_43:
+    %t96 = load typed u32 @depth_sum
     %t97 = cmp ne u32 %t96, 1
-    branch %t97, ^if_then_47, ^lor_rhs_45
+    branch %t97, ^if_then_44, ^if_end_45
 
-  block ^lor_rhs_45:
-    %t98 = load typed u32 @cleanups
-    %t99 = cmp ne u32 %t98, 1
-    branch %t99, ^if_then_47, ^lor_rhs_46
-
-  block ^lor_rhs_46:
-    %t100 = load typed u32 @depth_sum
-    %t101 = cmp ne u32 %t100, 1
-    branch %t101, ^if_then_47, ^if_end_48
-
-  block ^if_then_47:
+  block ^if_then_44:
     return i32 10
 
-  block ^if_end_48:
+  block ^if_end_45:
     store typed u32 0, @depth_sum
     store typed u32 0, @cleanups
     store typed u32 0, @fail_calls
     store typed u32 0, @observations
     store typed u32 1, @argument_throw
-    eh_try ^catch_dispatch_50
-    eh_try ^call_unwind_dispatch_49
-    %t102 = call i32 @walk(%t79, 1)
+    eh_try ^catch_dispatch_47
+    eh_try ^call_unwind_dispatch_46
+    %t98 = call i32 @walk(%t75, 1)
     eh_end
-    %t103 = load typed u32 @cleanups
-    %t104 = binary add u32 %t103, 1
-    store typed u32 %t104, @cleanups
+    %t99 = load typed u32 @cleanups
+    %t100 = binary add u32 %t99, 1
+    store typed u32 %t100, @cleanups
     eh_end
     return i32 11
 
-  block ^call_unwind_dispatch_49:
+  block ^call_unwind_dispatch_46:
     eh_catch @__external_rtti__int, 2
     eh_cleanup
-    %t105 = load typed u32 @cleanups
-    %t106 = binary add u32 %t105, 1
-    store typed u32 %t106, @cleanups
+    %t101 = load typed u32 @cleanups
+    %t102 = binary add u32 %t101, 1
+    store typed u32 %t102, @cleanups
     eh_end
     eh_end
-    jump ^catch_entry_51
+    jump ^catch_entry_48
 
-  block ^catch_dispatch_50:
+  block ^catch_dispatch_47:
     eh_catch @__external_rtti__int, 2
-    jump ^catch_entry_51
+    jump ^catch_entry_48
 
-  block ^catch_entry_51:
-    %t107 = exception ptr
-    %t108 = exception_selector i32
-    %t109 = cmp eq i32 %t108, 2
-    branch %t109, ^catch_body_52, ^catch_next_56
+  block ^catch_entry_48:
+    %t103 = exception ptr
+    %t104 = exception_selector i32
+    %t105 = cmp eq i32 %t104, 2
+    branch %t105, ^catch_body_49, ^catch_next_53
 
-  block ^catch_body_52:
-    %t110 = call ptr @__external_runtime____cxa_begin_catch(%t107)
-    eh_cleanup ^catch_cleanup_55
-    %t111 = load typed i32 %t110
-    %t112 = cmp ne i32 %t111, 77
-    branch %t112, ^if_then_53, ^if_end_54
+  block ^catch_body_49:
+    %t106 = call ptr @__external_runtime____cxa_begin_catch(%t103)
+    eh_cleanup ^catch_cleanup_52
+    %t107 = load typed i32 %t106
+    %t108 = cmp ne i32 %t107, 77
+    branch %t108, ^if_then_50, ^if_end_51
 
-  block ^if_then_53:
+  block ^if_then_50:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 12
 
-  block ^if_end_54:
+  block ^if_end_51:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    %t113 = load typed u32 @observations
-    branch %t113, ^if_then_60, ^lor_rhs_57
+    %t109 = load typed u32 @observations
+    branch %t109, ^if_then_57, ^lor_rhs_54
 
-  block ^catch_cleanup_55:
+  block ^catch_cleanup_52:
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
-  block ^catch_next_56:
+  block ^catch_next_53:
     resume
 
-  block ^lor_rhs_57:
-    %t114 = load typed u32 @fail_calls
-    branch %t114, ^if_then_60, ^lor_rhs_58
+  block ^lor_rhs_54:
+    %t110 = load typed u32 @fail_calls
+    branch %t110, ^if_then_57, ^lor_rhs_55
 
-  block ^lor_rhs_58:
-    %t115 = load typed u32 @cleanups
-    %t116 = cmp ne u32 %t115, 1
-    branch %t116, ^if_then_60, ^lor_rhs_59
+  block ^lor_rhs_55:
+    %t111 = load typed u32 @cleanups
+    %t112 = cmp ne u32 %t111, 1
+    branch %t112, ^if_then_57, ^lor_rhs_56
 
-  block ^lor_rhs_59:
-    %t117 = load typed u32 @depth_sum
-    %t118 = cmp ne u32 %t117, 1
-    branch %t118, ^if_then_60, ^if_end_61
+  block ^lor_rhs_56:
+    %t113 = load typed u32 @depth_sum
+    %t114 = cmp ne u32 %t113, 1
+    branch %t114, ^if_then_57, ^if_end_58
 
-  block ^if_then_60:
+  block ^if_then_57:
     return i32 13
 
-  block ^if_end_61:
+  block ^if_end_58:
     return i32 0
 }

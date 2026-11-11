@@ -19,7 +19,7 @@ function @choose(%ret : ptr [pass=indirect_result, alias=exclusive_result, objec
     %t1 = addr $base
     %t2 = addr @local_control
     call void @Owner__Owner(%t1, %t2)
-    %t3 = load u8 $local
+    %t3 = load typed u8 $local
     branch %t3, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:

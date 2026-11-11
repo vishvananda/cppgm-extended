@@ -6,3 +6,6 @@ count(load) <= 3
 count(store) <= 5
 count(phi) <= 4
 instructions <= 16 in @split_entry_edge
+
+# outcomes from 400-bounded-loop-preheader.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(phi)

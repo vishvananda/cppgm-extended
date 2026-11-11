@@ -66,7 +66,7 @@ function @main() -> i64 [role=entry] {
   block ^loop:
     %i = phi i64 [^entry: 0, ^next: %inext]
     %x = binary sub i64 %i, 512
-    %truth = cmp ne i64 %x, 0
+    %truth = cmp ne i64 %i, 512
     %negative_truth = binary sub i64 0, %truth
     %negative_word = convert trunc i32 i64 %negative_truth
     %low = binary and i64 %x, 1

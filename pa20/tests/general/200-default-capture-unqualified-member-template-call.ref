@@ -75,7 +75,7 @@ function @parser_test__parse(%this : ptr [object_bytes=4], %message : i32, %chec
     store typed i32 %message, $message
     store typed ptr %check, $check
     store u8 %skip, $skip
-    %t1 = load u8 $skip
+    %t1 = load typed u8 $skip
     %t2 = cmp eq u8 %t1, 0
     branch %t2, ^if_then_1, ^if_else_2
 

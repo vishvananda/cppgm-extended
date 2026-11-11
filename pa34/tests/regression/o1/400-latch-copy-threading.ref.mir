@@ -17,39 +17,38 @@ function @walk
     epilogues duplicated
 
   block ^entry
-    mov rax, rdi
-    mov rdx, 0
     mov rcx, 0
+    mov rax, 0
 
   block ^head
-    cmp.i64 rax, 0
+    cmp.i64 rdi, 0
     je ^zero
 
   block ^body
-    lea rdi, [rax-1]
-    add rcx, rax
-    mov rax, rdi
+    lea rdx, [rdi-1]
+    add rax, rdi
+    mov rdi, rdx
 
   block ^latch
-    add rdx, 1
-    cmp.i64 rdx, rsi
+    add rcx, 1
+    cmp.i64 rcx, rsi
     jl ^latch~head
-    ret rcx
+    ret rax
 
   block ^latch~head
-    cmp.i64 rax, 0
+    cmp.i64 rdi, 0
     jne ^body
 
   block ^zero
-    add rcx, 100
-    mov rax, 1
-    add rdx, 1
-    cmp.i64 rdx, rsi
+    add rax, 100
+    mov rdi, 1
+    add rcx, 1
+    cmp.i64 rcx, rsi
     jl ^body
-    ret rcx
+    ret rax
 
   block ^out
-    ret rcx
+    ret rax
 
 function @main
   abi

@@ -144,21 +144,57 @@ function @throwing(%x : i32) -> i32 [binding=strong, object=_Z8throwingi, no_inl
 }
 function @recursion(%x : i32) -> i32 [binding=strong, object=_Z9recursioni, no_inline=yes] {
   block ^0:
+    %t1 = cmp gt i32 %x, 0
+    branch %t1, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    %t2 = binary and i32 %x, -8
+    branch %t2, ^loop_preheader_2, ^wide_tail_4
+
+  block ^loop_preheader_2:
+    %t3 = binary sub i32 %x, %t2
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t4 = phi i32 [^loop_preheader_2: 0, ^unrolled_3: %t21]
+    %t5 = phi i32 [^loop_preheader_2: %x, ^unrolled_3: %t20]
+    %t6 = binary sub nowrap i32 %t5, 1
+    %t7 = binary add i32 %t4, %t5
+    %t8 = binary sub nowrap i32 %t5, 2
+    %t9 = binary add i32 %t6, %t7
+    %t10 = binary sub nowrap i32 %t5, 3
+    %t11 = binary add i32 %t8, %t9
+    %t12 = binary sub nowrap i32 %t5, 4
+    %t13 = binary add i32 %t10, %t11
+    %t14 = binary sub nowrap i32 %t5, 5
+    %t15 = binary add i32 %t12, %t13
+    %t16 = binary sub nowrap i32 %t5, 6
+    %t17 = binary add i32 %t14, %t15
+    %t18 = binary sub nowrap i32 %t5, 7
+    %t19 = binary add i32 %t16, %t17
+    %t20 = binary sub nowrap i32 %t5, 8
+    %t21 = binary add i32 %t18, %t19
+    %t22 = cmp ne i32 %t3, %t20
+    branch %t22, ^unrolled_3, ^wide_tail_4
+
+  block ^wide_tail_4:
+    %t23 = phi i32 [^0: 0, ^unrolled_3: %t21, ^loop_preheader_1: 0]
+    %t24 = phi i32 [^0: %x, ^unrolled_3: %t20, ^loop_preheader_1: %x]
     jump ^entry
 
   block ^entry:
-    %t1 = phi i32 [^0: 0, ^cond_then_2: %t4]
-    %t2 = phi i32 [^0: %x, ^cond_then_2: %t5]
-    %t3 = cmp gt i32 %t2, 0
-    branch %t3, ^cond_then_2, ^cond_end_3
+    %t25 = phi i32 [^wide_tail_4: %t23, ^cond_then_6: %t28]
+    %t26 = phi i32 [^wide_tail_4: %t24, ^cond_then_6: %t29]
+    %t27 = cmp gt i32 %t26, 0
+    branch %t27, ^cond_then_6, ^cond_end_7
 
-  block ^cond_then_2:
-    %t4 = binary add i32 %t2, %t1
-    %t5 = binary sub nowrap i32 %t2, 1
+  block ^cond_then_6:
+    %t28 = binary add i32 %t25, %t26
+    %t29 = binary sub nowrap i32 %t26, 1
     jump ^entry
 
-  block ^cond_end_3:
-    return i32 %t1
+  block ^cond_end_7:
+    return i32 %t25
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $input : i32

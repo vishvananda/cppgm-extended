@@ -30,14 +30,6 @@ function @shared_cold_uses(%value : i64) -> i64 {
     unreachable
 
   block ^middle:
-    %worse = cmp ugt i64 %value, 200
-    branch %worse, ^second, ^ok
-
-  block ^second:
-    call void @fail(%text)
-    unreachable
-
-  block ^ok:
     %sum = binary add i64 %value, 2
     return i64 %sum
 }

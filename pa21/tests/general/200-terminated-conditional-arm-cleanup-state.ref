@@ -28,7 +28,7 @@ function @use(%__param0 : ptr [pass=by_address, object_bytes=4], %fail : u8) -> 
   block ^entry:
     store typed ptr %__param0, $__param0
     store u8 %fail, $fail
-    %t1 = load u8 $fail
+    %t1 = load typed u8 $fail
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
@@ -78,7 +78,7 @@ function @exercise(%first : u8, %second : u8) -> i32 [binding=strong, object=_Z8
     store u8 0, $lifetime__6
     store u8 0, $lifetime__2
     eh_try ^call_unwind_dispatch_16
-    %t1 = load u8 $first
+    %t1 = load typed u8 $first
     eh_end
     branch %t1, ^discard_cond_then_5, ^discard_cond_else_6
 
@@ -149,7 +149,7 @@ function @exercise(%first : u8, %second : u8) -> i32 [binding=strong, object=_Z8
     jump ^discard_cond_end_7
 
   block ^discard_cond_else_6:
-    %t5 = load u8 $second
+    %t5 = load typed u8 $second
     branch %t5, ^cond_then_9, ^cond_else_10
 
   block ^cond_then_9:
@@ -283,11 +283,11 @@ function @exercise(%first : u8, %second : u8) -> i32 [binding=strong, object=_Z8
 
   block ^lor_rhs_38:
     %t39 = load typed i32 $caught
-    %t40 = load u8 $first
+    %t40 = load typed u8 $first
     branch %t40, ^lor_short_45, ^lor_rhs_44
 
   block ^lor_rhs_44:
-    %t41 = load u8 $second
+    %t41 = load typed u8 $second
     %t42 = cmp ne u8 %t41, 0
     store typed i64 %t42, $lor__16
     jump ^lor_end_46

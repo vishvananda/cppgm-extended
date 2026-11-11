@@ -50,5 +50,4 @@ function @main
     mov rdi, 41
     lea rsi, [rbp-<off0>]
     call @through [args=(rsi,rdi)]
-    sext.i32 rax
     ret rax

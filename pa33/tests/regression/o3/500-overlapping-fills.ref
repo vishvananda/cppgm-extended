@@ -8,17 +8,52 @@ global @other : obj<320x8> = {
 function @same_object() -> void [no_inline=yes] {
   block ^entry:
     %second = index i64 @table, 1
+    branch 1, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t14]
+    %t3 = index i64 @table, %t2
+    store i64 1, %t3
+    %t4 = index i64 %second, %t2
+    store i64 2, %t4
+    %t5 = binary add nowrap i64 %t2, 1
+    %t6 = index i64 @table, %t5
+    store i64 1, %t6
+    %t7 = index i64 %second, %t5
+    store i64 2, %t7
+    %t8 = binary add nowrap i64 %t2, 2
+    %t9 = index i64 @table, %t8
+    store i64 1, %t9
+    %t10 = index i64 %second, %t8
+    store i64 2, %t10
+    %t11 = binary add nowrap i64 %t2, 3
+    %t12 = index i64 @table, %t11
+    store i64 1, %t12
+    %t13 = index i64 %second, %t11
+    store i64 2, %t13
+    %t14 = binary add nowrap i64 %t2, 4
+    %t15 = cmp ne i64 %t14, 28
+    branch %t15, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    branch 1, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t16 = phi i64 [^entry: 0, ^loop_exit_3: %t14]
     jump ^body
 
   block ^body:
-    %t2 = phi i64 [^body: %next, ^entry: 0]
-    %p = index i64 @table, %t2
+    %t17 = phi i64 [^body: %next, ^wide_tail_4: %t16]
+    %p = index i64 @table, %t17
     store i64 1, %p
-    %q = index i64 %second, %t2
+    %q = index i64 %second, %t17
     store i64 2, %q
-    %next = binary add nowrap i64 %t2, 1
-    %t6 = cmp lt i64 %next, 30
-    branch %t6, ^body, ^done
+    %next = binary add nowrap i64 %t17, 1
+    %t21 = cmp lt i64 %next, 30
+    branch %t21, ^body, ^done
 
   block ^done:
     return void

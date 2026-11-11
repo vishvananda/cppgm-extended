@@ -35,8 +35,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__8 : i64
 
   block ^entry:
-    store u8 0, $first
-    %t1 = load u8 $first
+    store typed u8 0, $first
+    %t1 = load typed u8 $first
     branch %t1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

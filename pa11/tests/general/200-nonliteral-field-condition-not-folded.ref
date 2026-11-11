@@ -10,14 +10,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $empty
     %t2 = addr $empty
     %t3 = index i8 [projection=field] %t2, 0
-    store u8 0, %t3
+    store typed u8 0, %t3
     %t4 = addr $empty
     %t5 = index i8 [projection=field] %t4, 8
     store typed ptr 0, %t5
     %t6 = addr $full
     %t7 = addr $full
     %t8 = index i8 [projection=field] %t7, 0
-    store u8 0, %t8
+    store typed u8 0, %t8
     %t9 = addr $one
     %t10 = addr $full
     %t11 = index i8 [projection=field] %t10, 8
@@ -79,6 +79,6 @@ function @state__read(%this : ptr [object_bytes=16]) -> u8 [binding=weak, object
   block ^if_end_3:
     %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load u8 %t11
+    %t12 = load typed u8 %t11
     return u8 %t12
 }

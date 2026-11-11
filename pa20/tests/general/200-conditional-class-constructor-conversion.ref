@@ -12,7 +12,7 @@ function @pick(%keep : u8, %b : obj<4x4>) -> obj<4x4> [binding=strong, object=_Z
     %t1 = addr $b
     copyobj 4x4 %b, %t1
     %t2 = addr $retobj__1
-    %t3 = load u8 $keep
+    %t3 = load typed u8 $keep
     branch %t3, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:

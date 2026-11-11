@@ -25,7 +25,7 @@ function @f(%x : i32) -> u8 [binding=weak, object=_Z1fIiEbT_] {
 
   block ^entry:
     store typed i32 %x, $x
-    store u8 1, $b
-    %t1 = load u8 $b
+    store typed u8 1, $b
+    %t1 = load typed u8 $b
     return u8 %t1
 }

@@ -489,84 +489,63 @@ function @negative(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z8neg
     %t1 = addr $data
     zeroinit 32x1 %t1
     %t2 = binary umod u32 %seed, 32
-    %t3 = cmp eq u32 %mode, 1
-    branch %t3, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t4 = binary mul u32 %seed, 129
-    %t5 = convert trunc u8 u32 %t4
-    %t6 = index inbounds u8 [projection=array_element] %t1, %t2
-    store u8 %t5, %t6
-    jump ^if_end_13
+    %t3 = binary mul u32 %seed, 129
+    %t4 = convert trunc u8 u32 %t3
+    %t5 = index inbounds u8 [projection=array_element] %t1, %t2
+    store u8 %t4, %t5
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t7 = cmp eq u32 %mode, 2
-    branch %t7, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t6 = load typed u32 @calls
+    %t7 = binary add u32 %t6, 1
+    store typed u32 %t7, @calls
+    %t8 = binary add u32 %seed, 17
+    %t9 = convert trunc u8 u32 %t8
+    %t10 = binary ushr u32 %seed, 5
+    %t11 = binary umod u32 %t10, 32
+    %t12 = index inbounds u8 [projection=array_element] %t1, %t11
+    %t13 = load u8 %t12
+    %t14 = binary xor u8 %t9, %t13
+    store u8 %t14, %t12
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t8 = load typed u32 @calls
-    %t9 = binary add u32 %t8, 1
-    store typed u32 %t9, @calls
-    %t10 = binary add u32 %seed, 17
-    %t11 = convert trunc u8 u32 %t10
-    %t12 = binary ushr u32 %seed, 5
-    %t13 = binary umod u32 %t12, 32
-    %t14 = index inbounds u8 [projection=array_element] %t1, %t13
-    %t15 = load u8 %t14
-    %t16 = binary xor u8 %t11, %t15
-    store u8 %t16, %t14
-    jump ^if_end_13
+    %t15 = binary and u32 %seed, 255
+    %t16 = copy i32 %t15
+    %t17 = call ptr @memset(%t1, %t16, 32)
+    %t18 = index inbounds u8 [projection=array_element] %t17, %t2
+    %t19 = load u8 %t18
+    %t20 = convert zext i64 u8 %t19
+    return i64 %t20
 
-  block ^if_end_4:
-    %t17 = cmp eq u32 %mode, 3
-    branch %t17, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t21 = call ptr @memset(%t1, 13, 16)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t18 = binary and u32 %seed, 255
-    %t19 = copy i32 %t18
-    %t20 = call ptr @memset(%t1, %t19, 32)
-    %t21 = index inbounds u8 [projection=array_element] %t20, %t2
-    %t22 = load u8 %t21
-    %t23 = convert zext i64 u8 %t22
-    return i64 %t23
+    %t22 = index inbounds u8 [projection=array_element] %t1, %t2
+    %t23 = load volatile u8 %t22
+    %t24 = convert zext i64 u8 %t23
+    return i64 %t24
 
-  block ^if_else_6:
-    %t24 = cmp eq u32 %mode, 4
-    branch %t24, ^if_then_7, ^if_end_8
+  block ^land_rhs_6:
+    %t25 = binary and u32 %seed, 1
+    branch %t25, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t25 = call ptr @memset(%t1, 13, 16)
-    jump ^if_end_13
+    %t26 = binary and u32 %seed, 255
+    %t27 = copy i32 %t26
+    %t28 = call ptr @memset(%t1, %t27, 32)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t26 = cmp eq u32 %mode, 5
-    branch %t26, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t27 = index inbounds u8 [projection=array_element] %t1, %t2
-    %t28 = load volatile u8 %t27
-    %t29 = convert zext i64 u8 %t28
-    return i64 %t29
-
-  block ^if_else_10:
-    %t30 = cmp eq u32 %mode, 6
-    branch %t30, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t31 = binary and u32 %seed, 1
-    branch %t31, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t32 = binary and u32 %seed, 255
-    %t33 = copy i32 %t32
-    %t34 = call ptr @memset(%t1, %t33, 32)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t35 = index inbounds u8 [projection=array_element] %t1, %t2
-    %t36 = load u8 %t35
-    %t37 = convert zext i64 u8 %t36
-    return i64 %t37
+    %t29 = index inbounds u8 [projection=array_element] %t1, %t2
+    %t30 = load u8 %t29
+    %t31 = convert zext i64 u8 %t30
+    return i64 %t31
 }
 function @positive__2(%seed : u32) -> i64 [binding=weak, object=_Z8positiveIhLi165EEyj, no_inline=yes] {
   block ^entry:
@@ -579,84 +558,63 @@ function @negative__2(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z8
     %t1 = addr $data
     %t2 = call ptr @memset(%t1, 165, 32)
     %t3 = binary umod u32 %seed, 32
-    %t4 = cmp eq u32 %mode, 1
-    branch %t4, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t5 = binary mul u32 %seed, 129
-    %t6 = convert trunc u8 u32 %t5
-    %t7 = index inbounds u8 [projection=array_element] %t1, %t3
-    store u8 %t6, %t7
-    jump ^if_end_13
+    %t4 = binary mul u32 %seed, 129
+    %t5 = convert trunc u8 u32 %t4
+    %t6 = index inbounds u8 [projection=array_element] %t1, %t3
+    store u8 %t5, %t6
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t8 = cmp eq u32 %mode, 2
-    branch %t8, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t7 = load typed u32 @calls
+    %t8 = binary add u32 %t7, 1
+    store typed u32 %t8, @calls
+    %t9 = binary add u32 %seed, 17
+    %t10 = convert trunc u8 u32 %t9
+    %t11 = binary ushr u32 %seed, 5
+    %t12 = binary umod u32 %t11, 32
+    %t13 = index inbounds u8 [projection=array_element] %t1, %t12
+    %t14 = load u8 %t13
+    %t15 = binary xor u8 %t10, %t14
+    store u8 %t15, %t13
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t9 = load typed u32 @calls
-    %t10 = binary add u32 %t9, 1
-    store typed u32 %t10, @calls
-    %t11 = binary add u32 %seed, 17
-    %t12 = convert trunc u8 u32 %t11
-    %t13 = binary ushr u32 %seed, 5
-    %t14 = binary umod u32 %t13, 32
-    %t15 = index inbounds u8 [projection=array_element] %t1, %t14
-    %t16 = load u8 %t15
-    %t17 = binary xor u8 %t12, %t16
-    store u8 %t17, %t15
-    jump ^if_end_13
+    %t16 = binary and u32 %seed, 255
+    %t17 = copy i32 %t16
+    %t18 = call ptr @memset(%t1, %t17, 32)
+    %t19 = index inbounds u8 [projection=array_element] %t18, %t3
+    %t20 = load u8 %t19
+    %t21 = convert zext i64 u8 %t20
+    return i64 %t21
 
-  block ^if_end_4:
-    %t18 = cmp eq u32 %mode, 3
-    branch %t18, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t22 = call ptr @memset(%t1, 13, 16)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t19 = binary and u32 %seed, 255
-    %t20 = copy i32 %t19
-    %t21 = call ptr @memset(%t1, %t20, 32)
-    %t22 = index inbounds u8 [projection=array_element] %t21, %t3
-    %t23 = load u8 %t22
-    %t24 = convert zext i64 u8 %t23
-    return i64 %t24
+    %t23 = index inbounds u8 [projection=array_element] %t1, %t3
+    %t24 = load volatile u8 %t23
+    %t25 = convert zext i64 u8 %t24
+    return i64 %t25
 
-  block ^if_else_6:
-    %t25 = cmp eq u32 %mode, 4
-    branch %t25, ^if_then_7, ^if_end_8
+  block ^land_rhs_6:
+    %t26 = binary and u32 %seed, 1
+    branch %t26, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t26 = call ptr @memset(%t1, 13, 16)
-    jump ^if_end_13
+    %t27 = binary and u32 %seed, 255
+    %t28 = copy i32 %t27
+    %t29 = call ptr @memset(%t1, %t28, 32)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t27 = cmp eq u32 %mode, 5
-    branch %t27, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t28 = index inbounds u8 [projection=array_element] %t1, %t3
-    %t29 = load volatile u8 %t28
-    %t30 = convert zext i64 u8 %t29
-    return i64 %t30
-
-  block ^if_else_10:
-    %t31 = cmp eq u32 %mode, 6
-    branch %t31, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t32 = binary and u32 %seed, 1
-    branch %t32, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t33 = binary and u32 %seed, 255
-    %t34 = copy i32 %t33
-    %t35 = call ptr @memset(%t1, %t34, 32)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t36 = index inbounds u8 [projection=array_element] %t1, %t3
-    %t37 = load u8 %t36
-    %t38 = convert zext i64 u8 %t37
-    return i64 %t38
+    %t30 = index inbounds u8 [projection=array_element] %t1, %t3
+    %t31 = load u8 %t30
+    %t32 = convert zext i64 u8 %t31
+    return i64 %t32
 }
 function @positive__3(%seed : u32) -> i64 [binding=weak, object=_Z8positiveIhLin1EEyj, no_inline=yes] {
   block ^entry:
@@ -669,84 +627,63 @@ function @negative__3(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z8
     %t1 = addr $data
     %t2 = call ptr @memset(%t1, -1, 32)
     %t3 = binary umod u32 %seed, 32
-    %t4 = cmp eq u32 %mode, 1
-    branch %t4, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t5 = binary mul u32 %seed, 129
-    %t6 = convert trunc u8 u32 %t5
-    %t7 = index inbounds u8 [projection=array_element] %t1, %t3
-    store u8 %t6, %t7
-    jump ^if_end_13
+    %t4 = binary mul u32 %seed, 129
+    %t5 = convert trunc u8 u32 %t4
+    %t6 = index inbounds u8 [projection=array_element] %t1, %t3
+    store u8 %t5, %t6
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t8 = cmp eq u32 %mode, 2
-    branch %t8, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t7 = load typed u32 @calls
+    %t8 = binary add u32 %t7, 1
+    store typed u32 %t8, @calls
+    %t9 = binary add u32 %seed, 17
+    %t10 = convert trunc u8 u32 %t9
+    %t11 = binary ushr u32 %seed, 5
+    %t12 = binary umod u32 %t11, 32
+    %t13 = index inbounds u8 [projection=array_element] %t1, %t12
+    %t14 = load u8 %t13
+    %t15 = binary xor u8 %t10, %t14
+    store u8 %t15, %t13
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t9 = load typed u32 @calls
-    %t10 = binary add u32 %t9, 1
-    store typed u32 %t10, @calls
-    %t11 = binary add u32 %seed, 17
-    %t12 = convert trunc u8 u32 %t11
-    %t13 = binary ushr u32 %seed, 5
-    %t14 = binary umod u32 %t13, 32
-    %t15 = index inbounds u8 [projection=array_element] %t1, %t14
-    %t16 = load u8 %t15
-    %t17 = binary xor u8 %t12, %t16
-    store u8 %t17, %t15
-    jump ^if_end_13
+    %t16 = binary and u32 %seed, 255
+    %t17 = copy i32 %t16
+    %t18 = call ptr @memset(%t1, %t17, 32)
+    %t19 = index inbounds u8 [projection=array_element] %t18, %t3
+    %t20 = load u8 %t19
+    %t21 = convert zext i64 u8 %t20
+    return i64 %t21
 
-  block ^if_end_4:
-    %t18 = cmp eq u32 %mode, 3
-    branch %t18, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t22 = call ptr @memset(%t1, 13, 16)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t19 = binary and u32 %seed, 255
-    %t20 = copy i32 %t19
-    %t21 = call ptr @memset(%t1, %t20, 32)
-    %t22 = index inbounds u8 [projection=array_element] %t21, %t3
-    %t23 = load u8 %t22
-    %t24 = convert zext i64 u8 %t23
-    return i64 %t24
+    %t23 = index inbounds u8 [projection=array_element] %t1, %t3
+    %t24 = load volatile u8 %t23
+    %t25 = convert zext i64 u8 %t24
+    return i64 %t25
 
-  block ^if_else_6:
-    %t25 = cmp eq u32 %mode, 4
-    branch %t25, ^if_then_7, ^if_end_8
+  block ^land_rhs_6:
+    %t26 = binary and u32 %seed, 1
+    branch %t26, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t26 = call ptr @memset(%t1, 13, 16)
-    jump ^if_end_13
+    %t27 = binary and u32 %seed, 255
+    %t28 = copy i32 %t27
+    %t29 = call ptr @memset(%t1, %t28, 32)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t27 = cmp eq u32 %mode, 5
-    branch %t27, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t28 = index inbounds u8 [projection=array_element] %t1, %t3
-    %t29 = load volatile u8 %t28
-    %t30 = convert zext i64 u8 %t29
-    return i64 %t30
-
-  block ^if_else_10:
-    %t31 = cmp eq u32 %mode, 6
-    branch %t31, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t32 = binary and u32 %seed, 1
-    branch %t32, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t33 = binary and u32 %seed, 255
-    %t34 = copy i32 %t33
-    %t35 = call ptr @memset(%t1, %t34, 32)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t36 = index inbounds u8 [projection=array_element] %t1, %t3
-    %t37 = load u8 %t36
-    %t38 = convert zext i64 u8 %t37
-    return i64 %t38
+    %t30 = index inbounds u8 [projection=array_element] %t1, %t3
+    %t31 = load u8 %t30
+    %t32 = convert zext i64 u8 %t31
+    return i64 %t32
 }
 function @positive__4(%seed : u32) -> i64 [binding=weak, object=_Z8positiveItLi0EEyj, no_inline=yes] {
   slot $data : obj<64x2>
@@ -767,84 +704,63 @@ function @negative__4(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z8
     %t1 = addr $data
     zeroinit 64x1 %t1
     %t2 = binary umod u32 %seed, 32
-    %t3 = cmp eq u32 %mode, 1
-    branch %t3, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t4 = binary mul u32 %seed, 129
-    %t5 = convert trunc u16 u32 %t4
-    %t6 = index inbounds u16 [projection=array_element] %t1, %t2
-    store typed u16 %t5, %t6
-    jump ^if_end_13
+    %t3 = binary mul u32 %seed, 129
+    %t4 = convert trunc u16 u32 %t3
+    %t5 = index inbounds u16 [projection=array_element] %t1, %t2
+    store typed u16 %t4, %t5
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t7 = cmp eq u32 %mode, 2
-    branch %t7, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t6 = load typed u32 @calls
+    %t7 = binary add u32 %t6, 1
+    store typed u32 %t7, @calls
+    %t8 = binary add u32 %seed, 17
+    %t9 = convert trunc u8 u32 %t8
+    %t10 = binary ushr u32 %seed, 5
+    %t11 = binary umod u32 %t10, 64
+    %t12 = index inbounds u8 [projection=array_element] %t1, %t11
+    %t13 = load u8 %t12
+    %t14 = binary xor u8 %t9, %t13
+    store u8 %t14, %t12
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t8 = load typed u32 @calls
-    %t9 = binary add u32 %t8, 1
-    store typed u32 %t9, @calls
-    %t10 = binary add u32 %seed, 17
-    %t11 = convert trunc u8 u32 %t10
-    %t12 = binary ushr u32 %seed, 5
-    %t13 = binary umod u32 %t12, 64
-    %t14 = index inbounds u8 [projection=array_element] %t1, %t13
-    %t15 = load u8 %t14
-    %t16 = binary xor u8 %t11, %t15
-    store u8 %t16, %t14
-    jump ^if_end_13
+    %t15 = binary and u32 %seed, 255
+    %t16 = copy i32 %t15
+    %t17 = call ptr @memset(%t1, %t16, 64)
+    %t18 = index inbounds u16 [projection=array_element] %t17, %t2
+    %t19 = load typed u16 %t18
+    %t20 = convert zext i64 u16 %t19
+    return i64 %t20
 
-  block ^if_end_4:
-    %t17 = cmp eq u32 %mode, 3
-    branch %t17, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t21 = call ptr @memset(%t1, 13, 32)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t18 = binary and u32 %seed, 255
-    %t19 = copy i32 %t18
-    %t20 = call ptr @memset(%t1, %t19, 64)
-    %t21 = index inbounds u16 [projection=array_element] %t20, %t2
-    %t22 = load typed u16 %t21
-    %t23 = convert zext i64 u16 %t22
-    return i64 %t23
+    %t22 = index inbounds u16 [projection=array_element] %t1, %t2
+    %t23 = load volatile u16 %t22
+    %t24 = convert zext i64 u16 %t23
+    return i64 %t24
 
-  block ^if_else_6:
-    %t24 = cmp eq u32 %mode, 4
-    branch %t24, ^if_then_7, ^if_end_8
+  block ^land_rhs_6:
+    %t25 = binary and u32 %seed, 1
+    branch %t25, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t25 = call ptr @memset(%t1, 13, 32)
-    jump ^if_end_13
+    %t26 = binary and u32 %seed, 255
+    %t27 = copy i32 %t26
+    %t28 = call ptr @memset(%t1, %t27, 64)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t26 = cmp eq u32 %mode, 5
-    branch %t26, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t27 = index inbounds u16 [projection=array_element] %t1, %t2
-    %t28 = load volatile u16 %t27
-    %t29 = convert zext i64 u16 %t28
-    return i64 %t29
-
-  block ^if_else_10:
-    %t30 = cmp eq u32 %mode, 6
-    branch %t30, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t31 = binary and u32 %seed, 1
-    branch %t31, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t32 = binary and u32 %seed, 255
-    %t33 = copy i32 %t32
-    %t34 = call ptr @memset(%t1, %t33, 64)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t35 = index inbounds u16 [projection=array_element] %t1, %t2
-    %t36 = load typed u16 %t35
-    %t37 = convert zext i64 u16 %t36
-    return i64 %t37
+    %t29 = index inbounds u16 [projection=array_element] %t1, %t2
+    %t30 = load typed u16 %t29
+    %t31 = convert zext i64 u16 %t30
+    return i64 %t31
 }
 function @positive__5(%seed : u32) -> i64 [binding=weak, object=_Z8positiveItLi165EEyj, no_inline=yes] {
   block ^entry:
@@ -857,84 +773,63 @@ function @negative__5(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z8
     %t1 = addr $data
     %t2 = call ptr @memset(%t1, 165, 64)
     %t3 = binary umod u32 %seed, 32
-    %t4 = cmp eq u32 %mode, 1
-    branch %t4, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t5 = binary mul u32 %seed, 129
-    %t6 = convert trunc u16 u32 %t5
-    %t7 = index inbounds u16 [projection=array_element] %t1, %t3
-    store typed u16 %t6, %t7
-    jump ^if_end_13
+    %t4 = binary mul u32 %seed, 129
+    %t5 = convert trunc u16 u32 %t4
+    %t6 = index inbounds u16 [projection=array_element] %t1, %t3
+    store typed u16 %t5, %t6
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t8 = cmp eq u32 %mode, 2
-    branch %t8, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t7 = load typed u32 @calls
+    %t8 = binary add u32 %t7, 1
+    store typed u32 %t8, @calls
+    %t9 = binary add u32 %seed, 17
+    %t10 = convert trunc u8 u32 %t9
+    %t11 = binary ushr u32 %seed, 5
+    %t12 = binary umod u32 %t11, 64
+    %t13 = index inbounds u8 [projection=array_element] %t1, %t12
+    %t14 = load u8 %t13
+    %t15 = binary xor u8 %t10, %t14
+    store u8 %t15, %t13
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t9 = load typed u32 @calls
-    %t10 = binary add u32 %t9, 1
-    store typed u32 %t10, @calls
-    %t11 = binary add u32 %seed, 17
-    %t12 = convert trunc u8 u32 %t11
-    %t13 = binary ushr u32 %seed, 5
-    %t14 = binary umod u32 %t13, 64
-    %t15 = index inbounds u8 [projection=array_element] %t1, %t14
-    %t16 = load u8 %t15
-    %t17 = binary xor u8 %t12, %t16
-    store u8 %t17, %t15
-    jump ^if_end_13
+    %t16 = binary and u32 %seed, 255
+    %t17 = copy i32 %t16
+    %t18 = call ptr @memset(%t1, %t17, 64)
+    %t19 = index inbounds u16 [projection=array_element] %t18, %t3
+    %t20 = load typed u16 %t19
+    %t21 = convert zext i64 u16 %t20
+    return i64 %t21
 
-  block ^if_end_4:
-    %t18 = cmp eq u32 %mode, 3
-    branch %t18, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t22 = call ptr @memset(%t1, 13, 32)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t19 = binary and u32 %seed, 255
-    %t20 = copy i32 %t19
-    %t21 = call ptr @memset(%t1, %t20, 64)
-    %t22 = index inbounds u16 [projection=array_element] %t21, %t3
-    %t23 = load typed u16 %t22
-    %t24 = convert zext i64 u16 %t23
-    return i64 %t24
+    %t23 = index inbounds u16 [projection=array_element] %t1, %t3
+    %t24 = load volatile u16 %t23
+    %t25 = convert zext i64 u16 %t24
+    return i64 %t25
 
-  block ^if_else_6:
-    %t25 = cmp eq u32 %mode, 4
-    branch %t25, ^if_then_7, ^if_end_8
+  block ^land_rhs_6:
+    %t26 = binary and u32 %seed, 1
+    branch %t26, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t26 = call ptr @memset(%t1, 13, 32)
-    jump ^if_end_13
+    %t27 = binary and u32 %seed, 255
+    %t28 = copy i32 %t27
+    %t29 = call ptr @memset(%t1, %t28, 64)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t27 = cmp eq u32 %mode, 5
-    branch %t27, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t28 = index inbounds u16 [projection=array_element] %t1, %t3
-    %t29 = load volatile u16 %t28
-    %t30 = convert zext i64 u16 %t29
-    return i64 %t30
-
-  block ^if_else_10:
-    %t31 = cmp eq u32 %mode, 6
-    branch %t31, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t32 = binary and u32 %seed, 1
-    branch %t32, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t33 = binary and u32 %seed, 255
-    %t34 = copy i32 %t33
-    %t35 = call ptr @memset(%t1, %t34, 64)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t36 = index inbounds u16 [projection=array_element] %t1, %t3
-    %t37 = load typed u16 %t36
-    %t38 = convert zext i64 u16 %t37
-    return i64 %t38
+    %t30 = index inbounds u16 [projection=array_element] %t1, %t3
+    %t31 = load typed u16 %t30
+    %t32 = convert zext i64 u16 %t31
+    return i64 %t32
 }
 function @positive__6(%seed : u32) -> i64 [binding=weak, object=_Z8positiveItLin1EEyj, no_inline=yes] {
   block ^entry:
@@ -947,84 +842,63 @@ function @negative__6(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z8
     %t1 = addr $data
     %t2 = call ptr @memset(%t1, -1, 64)
     %t3 = binary umod u32 %seed, 32
-    %t4 = cmp eq u32 %mode, 1
-    branch %t4, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t5 = binary mul u32 %seed, 129
-    %t6 = convert trunc u16 u32 %t5
-    %t7 = index inbounds u16 [projection=array_element] %t1, %t3
-    store typed u16 %t6, %t7
-    jump ^if_end_13
+    %t4 = binary mul u32 %seed, 129
+    %t5 = convert trunc u16 u32 %t4
+    %t6 = index inbounds u16 [projection=array_element] %t1, %t3
+    store typed u16 %t5, %t6
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t8 = cmp eq u32 %mode, 2
-    branch %t8, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t7 = load typed u32 @calls
+    %t8 = binary add u32 %t7, 1
+    store typed u32 %t8, @calls
+    %t9 = binary add u32 %seed, 17
+    %t10 = convert trunc u8 u32 %t9
+    %t11 = binary ushr u32 %seed, 5
+    %t12 = binary umod u32 %t11, 64
+    %t13 = index inbounds u8 [projection=array_element] %t1, %t12
+    %t14 = load u8 %t13
+    %t15 = binary xor u8 %t10, %t14
+    store u8 %t15, %t13
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t9 = load typed u32 @calls
-    %t10 = binary add u32 %t9, 1
-    store typed u32 %t10, @calls
-    %t11 = binary add u32 %seed, 17
-    %t12 = convert trunc u8 u32 %t11
-    %t13 = binary ushr u32 %seed, 5
-    %t14 = binary umod u32 %t13, 64
-    %t15 = index inbounds u8 [projection=array_element] %t1, %t14
-    %t16 = load u8 %t15
-    %t17 = binary xor u8 %t12, %t16
-    store u8 %t17, %t15
-    jump ^if_end_13
+    %t16 = binary and u32 %seed, 255
+    %t17 = copy i32 %t16
+    %t18 = call ptr @memset(%t1, %t17, 64)
+    %t19 = index inbounds u16 [projection=array_element] %t18, %t3
+    %t20 = load typed u16 %t19
+    %t21 = convert zext i64 u16 %t20
+    return i64 %t21
 
-  block ^if_end_4:
-    %t18 = cmp eq u32 %mode, 3
-    branch %t18, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t22 = call ptr @memset(%t1, 13, 32)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t19 = binary and u32 %seed, 255
-    %t20 = copy i32 %t19
-    %t21 = call ptr @memset(%t1, %t20, 64)
-    %t22 = index inbounds u16 [projection=array_element] %t21, %t3
-    %t23 = load typed u16 %t22
-    %t24 = convert zext i64 u16 %t23
-    return i64 %t24
+    %t23 = index inbounds u16 [projection=array_element] %t1, %t3
+    %t24 = load volatile u16 %t23
+    %t25 = convert zext i64 u16 %t24
+    return i64 %t25
 
-  block ^if_else_6:
-    %t25 = cmp eq u32 %mode, 4
-    branch %t25, ^if_then_7, ^if_end_8
+  block ^land_rhs_6:
+    %t26 = binary and u32 %seed, 1
+    branch %t26, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t26 = call ptr @memset(%t1, 13, 32)
-    jump ^if_end_13
+    %t27 = binary and u32 %seed, 255
+    %t28 = copy i32 %t27
+    %t29 = call ptr @memset(%t1, %t28, 64)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t27 = cmp eq u32 %mode, 5
-    branch %t27, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t28 = index inbounds u16 [projection=array_element] %t1, %t3
-    %t29 = load volatile u16 %t28
-    %t30 = convert zext i64 u16 %t29
-    return i64 %t30
-
-  block ^if_else_10:
-    %t31 = cmp eq u32 %mode, 6
-    branch %t31, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t32 = binary and u32 %seed, 1
-    branch %t32, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t33 = binary and u32 %seed, 255
-    %t34 = copy i32 %t33
-    %t35 = call ptr @memset(%t1, %t34, 64)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t36 = index inbounds u16 [projection=array_element] %t1, %t3
-    %t37 = load typed u16 %t36
-    %t38 = convert zext i64 u16 %t37
-    return i64 %t38
+    %t30 = index inbounds u16 [projection=array_element] %t1, %t3
+    %t31 = load typed u16 %t30
+    %t32 = convert zext i64 u16 %t31
+    return i64 %t32
 }
 function @positive__7(%seed : u32) -> i64 [binding=weak, object=_Z8positiveIjLi0EEyj, no_inline=yes] {
   slot $data : obj<128x4>
@@ -1045,83 +919,62 @@ function @negative__7(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z8
     %t1 = addr $data
     zeroinit 128x1 %t1
     %t2 = binary umod u32 %seed, 32
-    %t3 = cmp eq u32 %mode, 1
-    branch %t3, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t4 = binary mul u32 %seed, 129
-    %t5 = index inbounds u32 [projection=array_element] %t1, %t2
-    store typed u32 %t4, %t5
-    jump ^if_end_13
+    %t3 = binary mul u32 %seed, 129
+    %t4 = index inbounds u32 [projection=array_element] %t1, %t2
+    store typed u32 %t3, %t4
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t6 = cmp eq u32 %mode, 2
-    branch %t6, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t5 = load typed u32 @calls
+    %t6 = binary add u32 %t5, 1
+    store typed u32 %t6, @calls
+    %t7 = binary add u32 %seed, 17
+    %t8 = convert trunc u8 u32 %t7
+    %t9 = binary ushr u32 %seed, 5
+    %t10 = binary umod u32 %t9, 128
+    %t11 = index inbounds u8 [projection=array_element] %t1, %t10
+    %t12 = load u8 %t11
+    %t13 = binary xor u8 %t8, %t12
+    store u8 %t13, %t11
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t7 = load typed u32 @calls
-    %t8 = binary add u32 %t7, 1
-    store typed u32 %t8, @calls
-    %t9 = binary add u32 %seed, 17
-    %t10 = convert trunc u8 u32 %t9
-    %t11 = binary ushr u32 %seed, 5
-    %t12 = binary umod u32 %t11, 128
-    %t13 = index inbounds u8 [projection=array_element] %t1, %t12
-    %t14 = load u8 %t13
-    %t15 = binary xor u8 %t10, %t14
-    store u8 %t15, %t13
-    jump ^if_end_13
+    %t14 = binary and u32 %seed, 255
+    %t15 = copy i32 %t14
+    %t16 = call ptr @memset(%t1, %t15, 128)
+    %t17 = index inbounds u32 [projection=array_element] %t16, %t2
+    %t18 = load typed u32 %t17
+    %t19 = convert zext i64 u32 %t18
+    return i64 %t19
 
-  block ^if_end_4:
-    %t16 = cmp eq u32 %mode, 3
-    branch %t16, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t20 = call ptr @memset(%t1, 13, 64)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t17 = binary and u32 %seed, 255
-    %t18 = copy i32 %t17
-    %t19 = call ptr @memset(%t1, %t18, 128)
-    %t20 = index inbounds u32 [projection=array_element] %t19, %t2
-    %t21 = load typed u32 %t20
-    %t22 = convert zext i64 u32 %t21
-    return i64 %t22
+    %t21 = index inbounds u32 [projection=array_element] %t1, %t2
+    %t22 = load volatile u32 %t21
+    %t23 = convert zext i64 u32 %t22
+    return i64 %t23
 
-  block ^if_else_6:
-    %t23 = cmp eq u32 %mode, 4
-    branch %t23, ^if_then_7, ^if_end_8
+  block ^land_rhs_6:
+    %t24 = binary and u32 %seed, 1
+    branch %t24, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t24 = call ptr @memset(%t1, 13, 64)
-    jump ^if_end_13
+    %t25 = binary and u32 %seed, 255
+    %t26 = copy i32 %t25
+    %t27 = call ptr @memset(%t1, %t26, 128)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t25 = cmp eq u32 %mode, 5
-    branch %t25, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t26 = index inbounds u32 [projection=array_element] %t1, %t2
-    %t27 = load volatile u32 %t26
-    %t28 = convert zext i64 u32 %t27
-    return i64 %t28
-
-  block ^if_else_10:
-    %t29 = cmp eq u32 %mode, 6
-    branch %t29, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t30 = binary and u32 %seed, 1
-    branch %t30, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t31 = binary and u32 %seed, 255
-    %t32 = copy i32 %t31
-    %t33 = call ptr @memset(%t1, %t32, 128)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t34 = index inbounds u32 [projection=array_element] %t1, %t2
-    %t35 = load typed u32 %t34
-    %t36 = convert zext i64 u32 %t35
-    return i64 %t36
+    %t28 = index inbounds u32 [projection=array_element] %t1, %t2
+    %t29 = load typed u32 %t28
+    %t30 = convert zext i64 u32 %t29
+    return i64 %t30
 }
 function @positive__8(%seed : u32) -> i64 [binding=weak, object=_Z8positiveIjLi165EEyj, no_inline=yes] {
   block ^entry:
@@ -1134,83 +987,62 @@ function @negative__8(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z8
     %t1 = addr $data
     %t2 = call ptr @memset(%t1, 165, 128)
     %t3 = binary umod u32 %seed, 32
-    %t4 = cmp eq u32 %mode, 1
-    branch %t4, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t5 = binary mul u32 %seed, 129
-    %t6 = index inbounds u32 [projection=array_element] %t1, %t3
-    store typed u32 %t5, %t6
-    jump ^if_end_13
+    %t4 = binary mul u32 %seed, 129
+    %t5 = index inbounds u32 [projection=array_element] %t1, %t3
+    store typed u32 %t4, %t5
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t7 = cmp eq u32 %mode, 2
-    branch %t7, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t6 = load typed u32 @calls
+    %t7 = binary add u32 %t6, 1
+    store typed u32 %t7, @calls
+    %t8 = binary add u32 %seed, 17
+    %t9 = convert trunc u8 u32 %t8
+    %t10 = binary ushr u32 %seed, 5
+    %t11 = binary umod u32 %t10, 128
+    %t12 = index inbounds u8 [projection=array_element] %t1, %t11
+    %t13 = load u8 %t12
+    %t14 = binary xor u8 %t9, %t13
+    store u8 %t14, %t12
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t8 = load typed u32 @calls
-    %t9 = binary add u32 %t8, 1
-    store typed u32 %t9, @calls
-    %t10 = binary add u32 %seed, 17
-    %t11 = convert trunc u8 u32 %t10
-    %t12 = binary ushr u32 %seed, 5
-    %t13 = binary umod u32 %t12, 128
-    %t14 = index inbounds u8 [projection=array_element] %t1, %t13
-    %t15 = load u8 %t14
-    %t16 = binary xor u8 %t11, %t15
-    store u8 %t16, %t14
-    jump ^if_end_13
+    %t15 = binary and u32 %seed, 255
+    %t16 = copy i32 %t15
+    %t17 = call ptr @memset(%t1, %t16, 128)
+    %t18 = index inbounds u32 [projection=array_element] %t17, %t3
+    %t19 = load typed u32 %t18
+    %t20 = convert zext i64 u32 %t19
+    return i64 %t20
 
-  block ^if_end_4:
-    %t17 = cmp eq u32 %mode, 3
-    branch %t17, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t21 = call ptr @memset(%t1, 13, 64)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t18 = binary and u32 %seed, 255
-    %t19 = copy i32 %t18
-    %t20 = call ptr @memset(%t1, %t19, 128)
-    %t21 = index inbounds u32 [projection=array_element] %t20, %t3
-    %t22 = load typed u32 %t21
-    %t23 = convert zext i64 u32 %t22
-    return i64 %t23
+    %t22 = index inbounds u32 [projection=array_element] %t1, %t3
+    %t23 = load volatile u32 %t22
+    %t24 = convert zext i64 u32 %t23
+    return i64 %t24
 
-  block ^if_else_6:
-    %t24 = cmp eq u32 %mode, 4
-    branch %t24, ^if_then_7, ^if_end_8
+  block ^land_rhs_6:
+    %t25 = binary and u32 %seed, 1
+    branch %t25, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t25 = call ptr @memset(%t1, 13, 64)
-    jump ^if_end_13
+    %t26 = binary and u32 %seed, 255
+    %t27 = copy i32 %t26
+    %t28 = call ptr @memset(%t1, %t27, 128)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t26 = cmp eq u32 %mode, 5
-    branch %t26, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t27 = index inbounds u32 [projection=array_element] %t1, %t3
-    %t28 = load volatile u32 %t27
-    %t29 = convert zext i64 u32 %t28
-    return i64 %t29
-
-  block ^if_else_10:
-    %t30 = cmp eq u32 %mode, 6
-    branch %t30, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t31 = binary and u32 %seed, 1
-    branch %t31, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t32 = binary and u32 %seed, 255
-    %t33 = copy i32 %t32
-    %t34 = call ptr @memset(%t1, %t33, 128)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t35 = index inbounds u32 [projection=array_element] %t1, %t3
-    %t36 = load typed u32 %t35
-    %t37 = convert zext i64 u32 %t36
-    return i64 %t37
+    %t29 = index inbounds u32 [projection=array_element] %t1, %t3
+    %t30 = load typed u32 %t29
+    %t31 = convert zext i64 u32 %t30
+    return i64 %t31
 }
 function @positive__9(%seed : u32) -> i64 [binding=weak, object=_Z8positiveIjLin1EEyj, no_inline=yes] {
   block ^entry:
@@ -1223,83 +1055,62 @@ function @negative__9(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z8
     %t1 = addr $data
     %t2 = call ptr @memset(%t1, -1, 128)
     %t3 = binary umod u32 %seed, 32
-    %t4 = cmp eq u32 %mode, 1
-    branch %t4, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t5 = binary mul u32 %seed, 129
-    %t6 = index inbounds u32 [projection=array_element] %t1, %t3
-    store typed u32 %t5, %t6
-    jump ^if_end_13
+    %t4 = binary mul u32 %seed, 129
+    %t5 = index inbounds u32 [projection=array_element] %t1, %t3
+    store typed u32 %t4, %t5
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t7 = cmp eq u32 %mode, 2
-    branch %t7, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t6 = load typed u32 @calls
+    %t7 = binary add u32 %t6, 1
+    store typed u32 %t7, @calls
+    %t8 = binary add u32 %seed, 17
+    %t9 = convert trunc u8 u32 %t8
+    %t10 = binary ushr u32 %seed, 5
+    %t11 = binary umod u32 %t10, 128
+    %t12 = index inbounds u8 [projection=array_element] %t1, %t11
+    %t13 = load u8 %t12
+    %t14 = binary xor u8 %t9, %t13
+    store u8 %t14, %t12
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t8 = load typed u32 @calls
-    %t9 = binary add u32 %t8, 1
-    store typed u32 %t9, @calls
-    %t10 = binary add u32 %seed, 17
-    %t11 = convert trunc u8 u32 %t10
-    %t12 = binary ushr u32 %seed, 5
-    %t13 = binary umod u32 %t12, 128
-    %t14 = index inbounds u8 [projection=array_element] %t1, %t13
-    %t15 = load u8 %t14
-    %t16 = binary xor u8 %t11, %t15
-    store u8 %t16, %t14
-    jump ^if_end_13
+    %t15 = binary and u32 %seed, 255
+    %t16 = copy i32 %t15
+    %t17 = call ptr @memset(%t1, %t16, 128)
+    %t18 = index inbounds u32 [projection=array_element] %t17, %t3
+    %t19 = load typed u32 %t18
+    %t20 = convert zext i64 u32 %t19
+    return i64 %t20
 
-  block ^if_end_4:
-    %t17 = cmp eq u32 %mode, 3
-    branch %t17, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t21 = call ptr @memset(%t1, 13, 64)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t18 = binary and u32 %seed, 255
-    %t19 = copy i32 %t18
-    %t20 = call ptr @memset(%t1, %t19, 128)
-    %t21 = index inbounds u32 [projection=array_element] %t20, %t3
-    %t22 = load typed u32 %t21
-    %t23 = convert zext i64 u32 %t22
-    return i64 %t23
+    %t22 = index inbounds u32 [projection=array_element] %t1, %t3
+    %t23 = load volatile u32 %t22
+    %t24 = convert zext i64 u32 %t23
+    return i64 %t24
 
-  block ^if_else_6:
-    %t24 = cmp eq u32 %mode, 4
-    branch %t24, ^if_then_7, ^if_end_8
+  block ^land_rhs_6:
+    %t25 = binary and u32 %seed, 1
+    branch %t25, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t25 = call ptr @memset(%t1, 13, 64)
-    jump ^if_end_13
+    %t26 = binary and u32 %seed, 255
+    %t27 = copy i32 %t26
+    %t28 = call ptr @memset(%t1, %t27, 128)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t26 = cmp eq u32 %mode, 5
-    branch %t26, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t27 = index inbounds u32 [projection=array_element] %t1, %t3
-    %t28 = load volatile u32 %t27
-    %t29 = convert zext i64 u32 %t28
-    return i64 %t29
-
-  block ^if_else_10:
-    %t30 = cmp eq u32 %mode, 6
-    branch %t30, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t31 = binary and u32 %seed, 1
-    branch %t31, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t32 = binary and u32 %seed, 255
-    %t33 = copy i32 %t32
-    %t34 = call ptr @memset(%t1, %t33, 128)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t35 = index inbounds u32 [projection=array_element] %t1, %t3
-    %t36 = load typed u32 %t35
-    %t37 = convert zext i64 u32 %t36
-    return i64 %t37
+    %t29 = index inbounds u32 [projection=array_element] %t1, %t3
+    %t30 = load typed u32 %t29
+    %t31 = convert zext i64 u32 %t30
+    return i64 %t31
 }
 function @positive__10(%seed : u32) -> i64 [binding=weak, object=_Z8positiveIyLi0EEyj, no_inline=yes] {
   slot $data : obj<256x8>
@@ -1319,81 +1130,60 @@ function @negative__10(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z
     %t1 = addr $data
     zeroinit 256x1 %t1
     %t2 = binary umod u32 %seed, 32
-    %t3 = cmp eq u32 %mode, 1
-    branch %t3, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t4 = binary mul u32 %seed, 129
-    %t5 = convert zext i64 u32 %t4
-    %t6 = index inbounds i64 [projection=array_element] %t1, %t2
-    store typed i64 %t5, %t6
-    jump ^if_end_13
+    %t3 = binary mul u32 %seed, 129
+    %t4 = convert zext i64 u32 %t3
+    %t5 = index inbounds i64 [projection=array_element] %t1, %t2
+    store typed i64 %t4, %t5
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t7 = cmp eq u32 %mode, 2
-    branch %t7, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t6 = load typed u32 @calls
+    %t7 = binary add u32 %t6, 1
+    store typed u32 %t7, @calls
+    %t8 = binary add u32 %seed, 17
+    %t9 = convert trunc u8 u32 %t8
+    %t10 = binary ushr u32 %seed, 5
+    %t11 = binary umod u32 %t10, 256
+    %t12 = index inbounds u8 [projection=array_element] %t1, %t11
+    %t13 = load u8 %t12
+    %t14 = binary xor u8 %t9, %t13
+    store u8 %t14, %t12
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t8 = load typed u32 @calls
-    %t9 = binary add u32 %t8, 1
-    store typed u32 %t9, @calls
-    %t10 = binary add u32 %seed, 17
-    %t11 = convert trunc u8 u32 %t10
-    %t12 = binary ushr u32 %seed, 5
-    %t13 = binary umod u32 %t12, 256
-    %t14 = index inbounds u8 [projection=array_element] %t1, %t13
-    %t15 = load u8 %t14
-    %t16 = binary xor u8 %t11, %t15
-    store u8 %t16, %t14
-    jump ^if_end_13
+    %t15 = binary and u32 %seed, 255
+    %t16 = copy i32 %t15
+    %t17 = call ptr @memset(%t1, %t16, 256)
+    %t18 = index inbounds i64 [projection=array_element] %t17, %t2
+    %t19 = load typed i64 %t18
+    return i64 %t19
 
-  block ^if_end_4:
-    %t17 = cmp eq u32 %mode, 3
-    branch %t17, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t20 = call ptr @memset(%t1, 13, 128)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t18 = binary and u32 %seed, 255
-    %t19 = copy i32 %t18
-    %t20 = call ptr @memset(%t1, %t19, 256)
-    %t21 = index inbounds i64 [projection=array_element] %t20, %t2
-    %t22 = load typed i64 %t21
+    %t21 = index inbounds i64 [projection=array_element] %t1, %t2
+    %t22 = load volatile i64 %t21
     return i64 %t22
 
-  block ^if_else_6:
-    %t23 = cmp eq u32 %mode, 4
+  block ^land_rhs_6:
+    %t23 = binary and u32 %seed, 1
     branch %t23, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t24 = call ptr @memset(%t1, 13, 128)
-    jump ^if_end_13
+    %t24 = binary and u32 %seed, 255
+    %t25 = copy i32 %t24
+    %t26 = call ptr @memset(%t1, %t25, 256)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t25 = cmp eq u32 %mode, 5
-    branch %t25, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t26 = index inbounds i64 [projection=array_element] %t1, %t2
-    %t27 = load volatile i64 %t26
-    return i64 %t27
-
-  block ^if_else_10:
-    %t28 = cmp eq u32 %mode, 6
-    branch %t28, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t29 = binary and u32 %seed, 1
-    branch %t29, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t30 = binary and u32 %seed, 255
-    %t31 = copy i32 %t30
-    %t32 = call ptr @memset(%t1, %t31, 256)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t33 = index inbounds i64 [projection=array_element] %t1, %t2
-    %t34 = load typed i64 %t33
-    return i64 %t34
+    %t27 = index inbounds i64 [projection=array_element] %t1, %t2
+    %t28 = load typed i64 %t27
+    return i64 %t28
 }
 function @positive__11(%seed : u32) -> i64 [binding=weak, object=_Z8positiveIyLi165EEyj, no_inline=yes] {
   block ^entry:
@@ -1406,81 +1196,60 @@ function @negative__11(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z
     %t1 = addr $data
     %t2 = call ptr @memset(%t1, 165, 256)
     %t3 = binary umod u32 %seed, 32
-    %t4 = cmp eq u32 %mode, 1
-    branch %t4, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t5 = binary mul u32 %seed, 129
-    %t6 = convert zext i64 u32 %t5
-    %t7 = index inbounds i64 [projection=array_element] %t1, %t3
-    store typed i64 %t6, %t7
-    jump ^if_end_13
+    %t4 = binary mul u32 %seed, 129
+    %t5 = convert zext i64 u32 %t4
+    %t6 = index inbounds i64 [projection=array_element] %t1, %t3
+    store typed i64 %t5, %t6
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t8 = cmp eq u32 %mode, 2
-    branch %t8, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t7 = load typed u32 @calls
+    %t8 = binary add u32 %t7, 1
+    store typed u32 %t8, @calls
+    %t9 = binary add u32 %seed, 17
+    %t10 = convert trunc u8 u32 %t9
+    %t11 = binary ushr u32 %seed, 5
+    %t12 = binary umod u32 %t11, 256
+    %t13 = index inbounds u8 [projection=array_element] %t1, %t12
+    %t14 = load u8 %t13
+    %t15 = binary xor u8 %t10, %t14
+    store u8 %t15, %t13
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t9 = load typed u32 @calls
-    %t10 = binary add u32 %t9, 1
-    store typed u32 %t10, @calls
-    %t11 = binary add u32 %seed, 17
-    %t12 = convert trunc u8 u32 %t11
-    %t13 = binary ushr u32 %seed, 5
-    %t14 = binary umod u32 %t13, 256
-    %t15 = index inbounds u8 [projection=array_element] %t1, %t14
-    %t16 = load u8 %t15
-    %t17 = binary xor u8 %t12, %t16
-    store u8 %t17, %t15
-    jump ^if_end_13
+    %t16 = binary and u32 %seed, 255
+    %t17 = copy i32 %t16
+    %t18 = call ptr @memset(%t1, %t17, 256)
+    %t19 = index inbounds i64 [projection=array_element] %t18, %t3
+    %t20 = load typed i64 %t19
+    return i64 %t20
 
-  block ^if_end_4:
-    %t18 = cmp eq u32 %mode, 3
-    branch %t18, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t21 = call ptr @memset(%t1, 13, 128)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t19 = binary and u32 %seed, 255
-    %t20 = copy i32 %t19
-    %t21 = call ptr @memset(%t1, %t20, 256)
-    %t22 = index inbounds i64 [projection=array_element] %t21, %t3
-    %t23 = load typed i64 %t22
+    %t22 = index inbounds i64 [projection=array_element] %t1, %t3
+    %t23 = load volatile i64 %t22
     return i64 %t23
 
-  block ^if_else_6:
-    %t24 = cmp eq u32 %mode, 4
+  block ^land_rhs_6:
+    %t24 = binary and u32 %seed, 1
     branch %t24, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t25 = call ptr @memset(%t1, 13, 128)
-    jump ^if_end_13
+    %t25 = binary and u32 %seed, 255
+    %t26 = copy i32 %t25
+    %t27 = call ptr @memset(%t1, %t26, 256)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t26 = cmp eq u32 %mode, 5
-    branch %t26, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t27 = index inbounds i64 [projection=array_element] %t1, %t3
-    %t28 = load volatile i64 %t27
-    return i64 %t28
-
-  block ^if_else_10:
-    %t29 = cmp eq u32 %mode, 6
-    branch %t29, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t30 = binary and u32 %seed, 1
-    branch %t30, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t31 = binary and u32 %seed, 255
-    %t32 = copy i32 %t31
-    %t33 = call ptr @memset(%t1, %t32, 256)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t34 = index inbounds i64 [projection=array_element] %t1, %t3
-    %t35 = load typed i64 %t34
-    return i64 %t35
+    %t28 = index inbounds i64 [projection=array_element] %t1, %t3
+    %t29 = load typed i64 %t28
+    return i64 %t29
 }
 function @positive__12(%seed : u32) -> i64 [binding=weak, object=_Z8positiveIyLin1EEyj, no_inline=yes] {
   block ^entry:
@@ -1493,79 +1262,58 @@ function @negative__12(%seed : u32, %mode : u32) -> i64 [binding=weak, object=_Z
     %t1 = addr $data
     %t2 = call ptr @memset(%t1, -1, 256)
     %t3 = binary umod u32 %seed, 32
-    %t4 = cmp eq u32 %mode, 1
-    branch %t4, ^if_then_1, ^if_end_2
+    switch %mode, ^if_end_8, 1:^if_then_1, 2:^if_then_2, 3:^if_then_3, 4:^if_then_4, 5:^if_then_5, 6:^land_rhs_6
 
   block ^if_then_1:
-    %t5 = binary mul u32 %seed, 129
-    %t6 = convert zext i64 u32 %t5
-    %t7 = index inbounds i64 [projection=array_element] %t1, %t3
-    store typed i64 %t6, %t7
-    jump ^if_end_13
+    %t4 = binary mul u32 %seed, 129
+    %t5 = convert zext i64 u32 %t4
+    %t6 = index inbounds i64 [projection=array_element] %t1, %t3
+    store typed i64 %t5, %t6
+    jump ^if_end_8
 
-  block ^if_end_2:
-    %t8 = cmp eq u32 %mode, 2
-    branch %t8, ^if_then_3, ^if_end_4
+  block ^if_then_2:
+    %t7 = load typed u32 @calls
+    %t8 = binary add u32 %t7, 1
+    store typed u32 %t8, @calls
+    %t9 = binary add u32 %seed, 17
+    %t10 = convert trunc u8 u32 %t9
+    %t11 = binary ushr u32 %seed, 5
+    %t12 = binary umod u32 %t11, 256
+    %t13 = index inbounds u8 [projection=array_element] %t1, %t12
+    %t14 = load u8 %t13
+    %t15 = binary xor u8 %t10, %t14
+    store u8 %t15, %t13
+    jump ^if_end_8
 
   block ^if_then_3:
-    %t9 = load typed u32 @calls
-    %t10 = binary add u32 %t9, 1
-    store typed u32 %t10, @calls
-    %t11 = binary add u32 %seed, 17
-    %t12 = convert trunc u8 u32 %t11
-    %t13 = binary ushr u32 %seed, 5
-    %t14 = binary umod u32 %t13, 256
-    %t15 = index inbounds u8 [projection=array_element] %t1, %t14
-    %t16 = load u8 %t15
-    %t17 = binary xor u8 %t12, %t16
-    store u8 %t17, %t15
-    jump ^if_end_13
+    %t16 = binary and u32 %seed, 255
+    %t17 = copy i32 %t16
+    %t18 = call ptr @memset(%t1, %t17, 256)
+    %t19 = index inbounds i64 [projection=array_element] %t18, %t3
+    %t20 = load typed i64 %t19
+    return i64 %t20
 
-  block ^if_end_4:
-    %t18 = cmp eq u32 %mode, 3
-    branch %t18, ^if_then_5, ^if_else_6
+  block ^if_then_4:
+    %t21 = call ptr @memset(%t1, 13, 128)
+    jump ^if_end_8
 
   block ^if_then_5:
-    %t19 = binary and u32 %seed, 255
-    %t20 = copy i32 %t19
-    %t21 = call ptr @memset(%t1, %t20, 256)
-    %t22 = index inbounds i64 [projection=array_element] %t21, %t3
-    %t23 = load typed i64 %t22
+    %t22 = index inbounds i64 [projection=array_element] %t1, %t3
+    %t23 = load volatile i64 %t22
     return i64 %t23
 
-  block ^if_else_6:
-    %t24 = cmp eq u32 %mode, 4
+  block ^land_rhs_6:
+    %t24 = binary and u32 %seed, 1
     branch %t24, ^if_then_7, ^if_end_8
 
   block ^if_then_7:
-    %t25 = call ptr @memset(%t1, 13, 128)
-    jump ^if_end_13
+    %t25 = binary and u32 %seed, 255
+    %t26 = copy i32 %t25
+    %t27 = call ptr @memset(%t1, %t26, 256)
+    jump ^if_end_8
 
   block ^if_end_8:
-    %t26 = cmp eq u32 %mode, 5
-    branch %t26, ^if_then_9, ^if_else_10
-
-  block ^if_then_9:
-    %t27 = index inbounds i64 [projection=array_element] %t1, %t3
-    %t28 = load volatile i64 %t27
-    return i64 %t28
-
-  block ^if_else_10:
-    %t29 = cmp eq u32 %mode, 6
-    branch %t29, ^land_rhs_11, ^if_end_13
-
-  block ^land_rhs_11:
-    %t30 = binary and u32 %seed, 1
-    branch %t30, ^if_then_12, ^if_end_13
-
-  block ^if_then_12:
-    %t31 = binary and u32 %seed, 255
-    %t32 = copy i32 %t31
-    %t33 = call ptr @memset(%t1, %t32, 256)
-    jump ^if_end_13
-
-  block ^if_end_13:
-    %t34 = index inbounds i64 [projection=array_element] %t1, %t3
-    %t35 = load typed i64 %t34
-    return i64 %t35
+    %t28 = index inbounds i64 [projection=array_element] %t1, %t3
+    %t29 = load typed i64 %t28
+    return i64 %t29
 }

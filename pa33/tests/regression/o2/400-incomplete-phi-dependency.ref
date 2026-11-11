@@ -7,17 +7,17 @@ global @result : i64 = 0
 function @main() -> i64 [role=entry] {
   block ^entry:
     %t1 = load i64 @take_outer
-    branch %t1, ^loop_preheader_1, ^exit
+    branch %t1, ^split_1, ^exit
 
-  block ^loop_preheader_1:
-    %take = load i64 @take_path
+  block ^split_1:
+    %t2 = load i64 @take_path
     %again = load i64 @repeat_inner
     %right = load i64 @take_right
     %t5 = select i64 %right, 9, 7
     jump ^inner_header
 
   block ^inner_header:
-    branch %take, ^choose, ^inner_merge
+    branch %t2, ^choose, ^inner_merge
 
   block ^choose:
     store i64 %t5, @result

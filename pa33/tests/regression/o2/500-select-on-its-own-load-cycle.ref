@@ -29,11 +29,47 @@ function @walk(%a : ptr, %n : i64) -> i64 [binding=strong] {
 }
 function @scan(%a : ptr, %n : i64) -> i64 [binding=strong] {
   block ^entry:
+    %t1 = binary and i64 %n, -4
+    %t2 = cmp gt i64 %t1, 0
+    branch %t2, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t24]
+    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t23]
+    %t5 = index f64 [projection=array_element] %a, %t3
+    %t6 = load typed f64 %t5
+    %t7 = cmp gt f64 %t6, 0
+    %t8 = select i64 %t7, %t3, %t4
+    %t9 = binary add nowrap i64 %t3, 1
+    %t10 = index f64 [projection=array_element] %a, %t9
+    %t11 = load typed f64 %t10
+    %t12 = cmp gt f64 %t11, 0
+    %t13 = select i64 %t12, %t9, %t8
+    %t14 = binary add nowrap i64 %t3, 2
+    %t15 = index f64 [projection=array_element] %a, %t14
+    %t16 = load typed f64 %t15
+    %t17 = cmp gt f64 %t16, 0
+    %t18 = select i64 %t17, %t14, %t13
+    %t19 = binary add nowrap i64 %t3, 3
+    %t20 = index f64 [projection=array_element] %a, %t19
+    %t21 = load typed f64 %t20
+    %t22 = cmp gt f64 %t21, 0
+    %t23 = select i64 %t22, %t19, %t18
+    %t24 = binary add nowrap i64 %t3, 4
+    %t25 = cmp ne i64 %t1, %t24
+    branch %t25, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t26 = phi i64 [^entry: 0, ^unrolled_2: %t24]
+    %t27 = phi i64 [^entry: 0, ^unrolled_2: %t23]
     jump ^loop
 
   block ^loop:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %best = phi i64 [^entry: 0, ^body: %t7]
+    %i = phi i64 [^wide_tail_3: %t26, ^body: %next]
+    %best = phi i64 [^wide_tail_3: %t27, ^body: %t34]
     %more = cmp lt i64 %i, %n
     branch %more, ^body, ^done
 
@@ -41,7 +77,7 @@ function @scan(%a : ptr, %n : i64) -> i64 [binding=strong] {
     %at = index f64 [projection=array_element] %a, %i
     %value = load typed f64 %at
     %positive = cmp gt f64 %value, 0
-    %t7 = select i64 %positive, %i, %best
+    %t34 = select i64 %positive, %i, %best
     %next = binary add nowrap i64 %i, 1
     jump ^loop
 

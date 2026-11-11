@@ -6,9 +6,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__2 : i32
 
   block ^entry:
-    store u8 1, $c
+    store typed u8 1, $c
     %t1 = addr $same
-    %t2 = load u8 $c
+    %t2 = load typed u8 $c
     branch %t2, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:
@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^cleanup_resume_4
     %t3 = addr $sliced
     %t4 = addr $arg__1
-    %t5 = load u8 $c
+    %t5 = load typed u8 $c
     eh_end
     jump ^call_unwind_end_8
 

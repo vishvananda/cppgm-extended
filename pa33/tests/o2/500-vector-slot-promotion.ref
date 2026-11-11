@@ -38,24 +38,14 @@ function @main() -> i32 [role=entry] {
     %start_1 = vector pzero
     %one_2 = vector fromf64 1.5
     %step_3 = vector unpcklpd %one_2, %one_2
-    jump ^loop_1
-
-  block ^loop_1:
-    %t4 = phi v128 [^entry: %start_1, ^body_2: %new_7]
-    %i_5 = phi i32 [^entry: 0, ^body_2: %next_8]
-    %more_6 = cmp lt i32 %i_5, 4
-    branch %more_6, ^body_2, ^done_3
-
-  block ^body_2:
-    %new_7 = vector addpd %t4, %step_3
-    %next_8 = binary add nowrap i32 %i_5, 1
-    jump ^loop_1
-
-  block ^done_3:
-    %high_9 = vector unpckhpd %t4, %t4
-    %low_10 = vector addsd %t4, %high_9
-    %result_11 = vector tof64 %low_10
-    %whole = convert fptosi i32 f64 %result_11
+    %t4 = vector addpd %start_1, %step_3
+    %t5 = vector addpd %t4, %step_3
+    %t6 = vector addpd %t5, %step_3
+    %t7 = vector addpd %t6, %step_3
+    %high_8 = vector unpckhpd %t7, %t7
+    %low_9 = vector addsd %t7, %high_8
+    %result_10 = vector tof64 %low_9
+    %whole = convert fptosi i32 f64 %result_10
     %total = binary add i32 %whole, 18
     return i32 %total
 }

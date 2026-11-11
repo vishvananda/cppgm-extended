@@ -5,22 +5,9 @@ function @empty(%p : ptr, %hits : ptr) -> ptr [no_inline=yes] {
 }
 function @nonempty(%p : ptr, %hits : ptr) -> ptr [no_inline=yes] {
   block ^entry:
-    %begin = index i8 [projection=field] %p, 24
     %end = index i8 %p, 32
-    jump ^test
-
-  block ^test:
-    %it = phi ptr [^entry: %begin, ^body: %next]
-    %more = cmp ne ptr %end, %it
-    branch %more, ^body, ^exit
-
-  block ^body:
     store volatile i64 13, %hits
-    %next = index i8 %it, 8
-    jump ^test
-
-  block ^exit:
-    return ptr %it
+    return ptr %end
 }
 function @main() -> i64 [role=entry] {
   slot $array : obj<64x8>

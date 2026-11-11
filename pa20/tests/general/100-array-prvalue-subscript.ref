@@ -4,9 +4,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $arraytmp__2
-    store u8 1, %t1
+    store typed u8 1, %t1
     %t2 = index inbounds u8 [projection=array_element] %t1, 0
-    %t3 = load u8 %t2
+    %t3 = load typed u8 %t2
     branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

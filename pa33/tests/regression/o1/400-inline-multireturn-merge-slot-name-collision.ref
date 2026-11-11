@@ -28,8 +28,8 @@ function @object_callee(%p : ptr, %take_p : u8) -> i64 {
 }
 function @object_caller(%p : ptr, %take_p : u8, %out : ptr) -> void {
   block ^entry:
-    %t1 = copy i64 %p
-    %t2 = select i64 %take_p, %t1, 0
-    store i64 %t2, %out
+    %t2 = select ptr %take_p, %p, 0
+    %t1 = copy i64 %t2
+    store i64 %t1, %out
     return void
 }

@@ -2,56 +2,185 @@ declare function @use(%x : i64) -> void [linkage=c, binding=strong]
 
 function @rows(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
   block ^entry:
+    %t1 = cmp gt i64 %n, 1
+    branch %t1, ^loop_preheader_1, ^wide_tail_5
+
+  block ^loop_preheader_1:
+    %t2 = binary sub i64 %n, 1
+    %t3 = binary and i64 %t2, -4
+    %t4 = cmp gt i64 %t3, 0
+    branch %t4, ^loop_preheader_2, ^wide_tail_5
+
+  block ^loop_preheader_2:
+    %t5 = binary add i64 %t3, 1
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t6 = phi i64 [^loop_preheader_2: 164, ^unrolled_3: %t23]
+    %t7 = phi i64 [^loop_preheader_2: 1, ^unrolled_3: %t22]
+    %t8 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t21]
+    %t9 = index i8 %a, %t6
+    %t10 = load i64 %t9
+    %t11 = binary add i64 %t8, %t10
+    %t12 = index i8 %t9, %t6
+    %t13 = load i64 %t12
+    %t14 = binary add i64 %t13, %t11
+    %t15 = binary add i64 %t6, 328
+    %t16 = index i8 %a, %t15
+    %t17 = load i64 %t16
+    %t18 = binary add i64 %t14, %t17
+    %t19 = index i8 %t16, %t15
+    %t20 = load i64 %t19
+    %t21 = binary add i64 %t20, %t18
+    %t22 = binary add nowrap i64 %t7, 4
+    %t23 = binary add i64 %t6, 656
+    %t24 = cmp ne i64 %t5, %t22
+    branch %t24, ^unrolled_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t25 = cmp lt i64 %t22, %n
+    branch %t25, ^wide_tail_5, ^done
+
+  block ^wide_tail_5:
+    %t26 = phi i64 [^entry: 164, ^loop_exit_4: %t23, ^loop_preheader_1: 164]
+    %t27 = phi i64 [^entry: 1, ^loop_exit_4: %t22, ^loop_preheader_1: 1]
+    %t28 = phi i64 [^entry: 0, ^loop_exit_4: %t21, ^loop_preheader_1: 0]
     jump ^body
 
   block ^body:
-    %t1 = phi i64 [^entry: 164, ^body: %t12]
-    %i = phi i64 [^entry: 1, ^body: %next]
-    %s = phi i64 [^entry: 0, ^body: %sum]
-    %m = copy i64 %t1
-    %p = index i8 %a, %m
+    %t29 = phi i64 [^wide_tail_5: %t26, ^body: %t39]
+    %i = phi i64 [^wide_tail_5: %t27, ^body: %next]
+    %s = phi i64 [^wide_tail_5: %t28, ^body: %sum]
+    %p = index i8 %a, %t29
     %v = load i64 %p
     %x = binary add i64 %s, %v
-    %q = index i8 %p, %m
+    %q = index i8 %p, %t29
     %w = load i64 %q
     %sum = binary add i64 %w, %x
     %next = binary add i64 %i, 2
-    %t12 = binary add i64 %t1, 328
+    %t39 = binary add i64 %t29, 328
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
   block ^done:
-    return i64 %sum
+    %t41 = phi i64 [^body: %sum, ^loop_exit_4: %t21]
+    return i64 %t41
 }
 function @down(%a : ptr, %n : i32) -> i64 [no_inline=yes] {
   block ^entry:
     %t1 = convert sext i64 i32 %n
     %t2 = binary mul i64 %t1, 164
+    %t3 = cmp gt i32 %n, 0
+    branch %t3, ^loop_preheader_1, ^wide_tail_5
+
+  block ^loop_preheader_1:
+    %t4 = binary and i32 %n, -4
+    branch %t4, ^loop_preheader_2, ^wide_tail_5
+
+  block ^loop_preheader_2:
+    %t5 = binary sub i32 %n, %t4
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t6 = phi i64 [^loop_preheader_2: %t2, ^unrolled_3: %t25]
+    %t7 = phi i32 [^loop_preheader_2: %n, ^unrolled_3: %t24]
+    %t8 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t23]
+    %t9 = index i8 %a, %t6
+    %t10 = load i64 %t9
+    %t11 = binary add i64 %t8, %t10
+    %t12 = binary add i64 %t6, -164
+    %t13 = index i8 %a, %t12
+    %t14 = load i64 %t13
+    %t15 = binary add i64 %t11, %t14
+    %t16 = binary add i64 %t6, -328
+    %t17 = index i8 %a, %t16
+    %t18 = load i64 %t17
+    %t19 = binary add i64 %t15, %t18
+    %t20 = binary add i64 %t6, -492
+    %t21 = index i8 %a, %t20
+    %t22 = load i64 %t21
+    %t23 = binary add i64 %t19, %t22
+    %t24 = binary sub nowrap i32 %t7, 4
+    %t25 = binary add i64 %t6, -656
+    %t26 = cmp ne i32 %t5, %t24
+    branch %t26, ^unrolled_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t27 = cmp gt i32 %t24, 0
+    branch %t27, ^wide_tail_5, ^done
+
+  block ^wide_tail_5:
+    %t28 = phi i64 [^entry: %t2, ^loop_exit_4: %t25, ^loop_preheader_1: %t2]
+    %t29 = phi i32 [^entry: %n, ^loop_exit_4: %t24, ^loop_preheader_1: %n]
+    %t30 = phi i64 [^entry: 0, ^loop_exit_4: %t23, ^loop_preheader_1: 0]
     jump ^body
 
   block ^body:
-    %t3 = phi i64 [^entry: %t2, ^body: %t11]
-    %i = phi i32 [^entry: %n, ^body: %next]
-    %s = phi i64 [^entry: 0, ^body: %sum]
-    %m = copy i64 %t3
-    %p = index i8 %a, %m
+    %t31 = phi i64 [^wide_tail_5: %t28, ^body: %t38]
+    %i = phi i32 [^wide_tail_5: %t29, ^body: %next]
+    %s = phi i64 [^wide_tail_5: %t30, ^body: %sum]
+    %p = index i8 %a, %t31
     %v = load i64 %p
     %sum = binary add i64 %s, %v
     %next = binary sub nowrap i32 %i, 1
-    %t11 = binary add i64 %t3, -164
+    %t38 = binary add i64 %t31, -164
     %c = cmp gt i32 %next, 0
     branch %c, ^body, ^done
 
   block ^done:
-    return i64 %sum
+    %t40 = phi i64 [^body: %sum, ^loop_exit_4: %t23]
+    return i64 %t40
 }
 function @wraps(%a : ptr, %n : i32) -> i64 [no_inline=yes] {
   block ^entry:
+    %t1 = binary and i32 %n, -4
+    branch %t1, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t2 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t27]
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t26]
+    %t4 = convert sext i64 i32 %t2
+    %t5 = binary mul i64 %t4, 164
+    %t6 = index i8 %a, %t5
+    %t7 = load i64 %t6
+    %t8 = binary add i64 %t3, %t7
+    %t9 = binary add i32 %t2, 1
+    %t10 = convert sext i64 i32 %t9
+    %t11 = binary mul i64 %t10, 164
+    %t12 = index i8 %a, %t11
+    %t13 = load i64 %t12
+    %t14 = binary add i64 %t8, %t13
+    %t15 = binary add i32 %t2, 2
+    %t16 = convert sext i64 i32 %t15
+    %t17 = binary mul i64 %t16, 164
+    %t18 = index i8 %a, %t17
+    %t19 = load i64 %t18
+    %t20 = binary add i64 %t14, %t19
+    %t21 = binary add i32 %t2, 3
+    %t22 = convert sext i64 i32 %t21
+    %t23 = binary mul i64 %t22, 164
+    %t24 = index i8 %a, %t23
+    %t25 = load i64 %t24
+    %t26 = binary add i64 %t20, %t25
+    %t27 = binary add i32 %t2, 4
+    %t28 = cmp ne i32 %t1, %t27
+    branch %t28, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t29 = cmp ne i32 %n, %t27
+    branch %t29, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t30 = phi i32 [^entry: 0, ^loop_exit_3: %t27]
+    %t31 = phi i64 [^entry: 0, ^loop_exit_3: %t26]
     jump ^body
 
   block ^body:
-    %i = phi i32 [^entry: 0, ^body: %next]
-    %s = phi i64 [^entry: 0, ^body: %sum]
+    %i = phi i32 [^wide_tail_4: %t30, ^body: %next]
+    %s = phi i64 [^wide_tail_4: %t31, ^body: %sum]
     %w = convert sext i64 i32 %i
     %m = binary mul i64 %w, 164
     %p = index i8 %a, %m
@@ -62,15 +191,56 @@ function @wraps(%a : ptr, %n : i32) -> i64 [no_inline=yes] {
     branch %c, ^body, ^done
 
   block ^done:
-    return i64 %sum
+    %t41 = phi i64 [^body: %sum, ^loop_exit_3: %t26]
+    return i64 %t41
 }
 function @cheap(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
   block ^entry:
+    %t1 = binary and i64 %n, -4
+    %t2 = cmp gt i64 %t1, 0
+    branch %t2, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t24]
+    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t23]
+    %t5 = binary mul i64 %t3, 9
+    %t6 = binary mul i64 %t3, 8
+    %t7 = binary add i64 %t4, %t5
+    %t8 = binary add i64 %t6, %t7
+    %t9 = binary add nowrap i64 %t3, 1
+    %t10 = binary mul i64 %t9, 9
+    %t11 = binary mul i64 %t9, 8
+    %t12 = binary add i64 %t8, %t10
+    %t13 = binary add i64 %t11, %t12
+    %t14 = binary add nowrap i64 %t3, 2
+    %t15 = binary mul i64 %t14, 9
+    %t16 = binary mul i64 %t14, 8
+    %t17 = binary add i64 %t13, %t15
+    %t18 = binary add i64 %t16, %t17
+    %t19 = binary add nowrap i64 %t3, 3
+    %t20 = binary mul i64 %t19, 9
+    %t21 = binary mul i64 %t19, 8
+    %t22 = binary add i64 %t18, %t20
+    %t23 = binary add i64 %t21, %t22
+    %t24 = binary add nowrap i64 %t3, 4
+    %t25 = cmp ne i64 %t1, %t24
+    branch %t25, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t26 = cmp lt i64 %t24, %n
+    branch %t26, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t27 = phi i64 [^entry: 0, ^loop_exit_3: %t24]
+    %t28 = phi i64 [^entry: 0, ^loop_exit_3: %t23]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %s = phi i64 [^entry: 0, ^body: %sum]
+    %i = phi i64 [^wide_tail_4: %t27, ^body: %next]
+    %s = phi i64 [^wide_tail_4: %t28, ^body: %sum]
     %m = binary mul i64 %i, 9
     %t = binary mul i64 %i, 8
     %x = binary add i64 %s, %m
@@ -80,7 +250,8 @@ function @cheap(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
     branch %c, ^body, ^done
 
   block ^done:
-    return i64 %sum
+    %t37 = phi i64 [^body: %sum, ^loop_exit_3: %t23]
+    return i64 %t37
 }
 function @calls(%n : i64) -> void [no_inline=yes] {
   block ^entry:
@@ -107,23 +278,63 @@ function @stride(%a : ptr, %s : i32, %n : i32) -> i64 [no_inline=yes] {
     branch %g, ^loop_preheader_1, ^done
 
   block ^loop_preheader_1:
+    %t2 = binary and i32 %n, -4
+    %t3 = cmp gt i32 %t2, 0
+    branch %t3, ^loop_preheader_2, ^wide_tail_5
+
+  block ^loop_preheader_2:
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t4 = phi i32 [^loop_preheader_2: 0, ^unrolled_3: %t23]
+    %t5 = phi i32 [^loop_preheader_2: 0, ^unrolled_3: %t22]
+    %t6 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t21]
+    %t7 = index i64 %a, %t4
+    %t8 = load i64 %t7
+    %t9 = binary add i64 %t6, %t8
+    %t10 = binary add nowrap i32 %s, %t4
+    %t11 = index i64 %a, %t10
+    %t12 = load i64 %t11
+    %t13 = binary add i64 %t9, %t12
+    %t14 = binary add nowrap i32 %s, %t10
+    %t15 = index i64 %a, %t14
+    %t16 = load i64 %t15
+    %t17 = binary add i64 %t13, %t16
+    %t18 = binary add nowrap i32 %s, %t14
+    %t19 = index i64 %a, %t18
+    %t20 = load i64 %t19
+    %t21 = binary add i64 %t17, %t20
+    %t22 = binary add nowrap i32 %t5, 4
+    %t23 = binary add nowrap i32 %s, %t18
+    %t24 = cmp ne i32 %t2, %t22
+    branch %t24, ^unrolled_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t25 = cmp lt i32 %t22, %n
+    branch %t25, ^wide_tail_5, ^done
+
+  block ^wide_tail_5:
+    %t26 = phi i32 [^loop_preheader_1: 0, ^loop_exit_4: %t23]
+    %t27 = phi i32 [^loop_preheader_1: 0, ^loop_exit_4: %t22]
+    %t28 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t21]
+    %t29 = convert sext i64 i32 %t26
+    %t30 = convert sext i64 i32 %s
     jump ^body
 
   block ^body:
-    %t2 = phi i32 [^loop_preheader_1: 0, ^body: %t10]
-    %i = phi i32 [^loop_preheader_1: 0, ^body: %next]
-    %t = phi i64 [^loop_preheader_1: 0, ^body: %sum]
-    %m = copy i32 %t2
-    %p = index i64 %a, %m
+    %t31 = phi i64 [^wide_tail_5: %t29, ^body: %t38]
+    %i = phi i32 [^wide_tail_5: %t27, ^body: %next]
+    %t = phi i64 [^wide_tail_5: %t28, ^body: %sum]
+    %p = index i64 %a, %t31
     %v = load i64 %p
     %sum = binary add i64 %t, %v
     %next = binary add nowrap i32 %i, 1
-    %t10 = binary add nowrap i32 %t2, %s
+    %t38 = binary add nowrap i64 %t31, %t30
     %c = cmp lt i32 %next, %n
     branch %c, ^body, ^done
 
   block ^done:
-    %r = phi i64 [^entry: 0, ^body: %sum]
+    %r = phi i64 [^entry: 0, ^body: %sum, ^loop_exit_4: %t21]
     return i64 %r
 }
 function @offset(%a : ptr, %s : i64, %from : i64, %n : i64) -> i64 [no_inline=yes] {
@@ -150,11 +361,51 @@ function @offset(%a : ptr, %s : i64, %from : i64, %n : i64) -> i64 [no_inline=ye
 }
 function @changing(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
   block ^entry:
+    %t1 = binary and i64 %n, -4
+    %t2 = cmp gt i64 %t1, 0
+    branch %t2, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t24]
+    %t4 = phi i64 [^loop_preheader_1: 1, ^unrolled_2: %t23]
+    %t5 = binary mul i64 %t3, %t4
+    %t6 = index i8 %a, %t5
+    %t7 = load i64 %t6
+    %t8 = binary add i64 %t4, %t7
+    %t9 = binary add nowrap i64 %t3, 1
+    %t10 = binary mul i64 %t8, %t9
+    %t11 = index i8 %a, %t10
+    %t12 = load i64 %t11
+    %t13 = binary add i64 %t8, %t12
+    %t14 = binary add nowrap i64 %t3, 2
+    %t15 = binary mul i64 %t13, %t14
+    %t16 = index i8 %a, %t15
+    %t17 = load i64 %t16
+    %t18 = binary add i64 %t13, %t17
+    %t19 = binary add nowrap i64 %t3, 3
+    %t20 = binary mul i64 %t18, %t19
+    %t21 = index i8 %a, %t20
+    %t22 = load i64 %t21
+    %t23 = binary add i64 %t18, %t22
+    %t24 = binary add nowrap i64 %t3, 4
+    %t25 = cmp ne i64 %t1, %t24
+    branch %t25, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t26 = cmp lt i64 %t24, %n
+    branch %t26, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t27 = phi i64 [^entry: 0, ^loop_exit_3: %t24]
+    %t28 = phi i64 [^entry: 1, ^loop_exit_3: %t23]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %t = phi i64 [^entry: 1, ^body: %sum]
+    %i = phi i64 [^wide_tail_4: %t27, ^body: %next]
+    %t = phi i64 [^wide_tail_4: %t28, ^body: %sum]
     %m = binary mul i64 %i, %t
     %p = index i8 %a, %m
     %v = load i64 %p
@@ -164,5 +415,6 @@ function @changing(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
     branch %c, ^body, ^done
 
   block ^done:
-    return i64 %sum
+    %t37 = phi i64 [^body: %sum, ^loop_exit_3: %t23]
+    return i64 %t37
 }

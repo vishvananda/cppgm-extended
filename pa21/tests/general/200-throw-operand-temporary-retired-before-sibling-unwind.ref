@@ -80,7 +80,7 @@ function @exercise(%take_throw : u8) -> void [binding=strong, object=_Z8exercise
   block ^entry:
     store u8 %take_throw, $take_throw
     %t1 = addr $scope
-    %t2 = load u8 $take_throw
+    %t2 = load typed u8 $take_throw
     branch %t2, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

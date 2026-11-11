@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $q
     %t5 = addr $q
     %t6 = index i8 [projection=field] %t5, 0
-    store u8 1, %t6
+    store typed u8 1, %t6
     %t7 = addr @__strlit__1
     %t8 = addr $q
     %t9 = index i8 [projection=field] %t8, 8
@@ -158,7 +158,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     store typed ptr %final_lookup, $final_lookup
     %t1 = load typed ptr $qualified
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load u8 %t2
+    %t3 = load typed u8 %t2
     branch %t3, ^land_rhs_3, ^if_else_2
 
   block ^land_rhs_3:
@@ -184,7 +184,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
   block ^if_end_4:
     %t15 = load typed ptr $qualified
     %t16 = index i8 [projection=field] %t15, 0
-    %t17 = load u8 %t16
+    %t17 = load typed u8 %t16
     %t18 = cmp eq u8 %t17, 0
     branch %t18, ^land_rhs_7, ^if_else_6
 
@@ -207,7 +207,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     store typed ptr 0, $current
     %t24 = load typed ptr $qualified
     %t25 = index i8 [projection=field] %t24, 0
-    %t26 = load u8 %t25
+    %t26 = load typed u8 %t25
     branch %t26, ^if_then_9, ^if_else_10
 
   block ^if_then_9:
@@ -284,7 +284,7 @@ function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, ob
     store typed ptr %final_lookup, $final_lookup
     %t1 = load typed ptr $qualified
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load u8 %t2
+    %t3 = load typed u8 %t2
     branch %t3, ^land_rhs_3, ^if_else_2
 
   block ^land_rhs_3:
@@ -310,7 +310,7 @@ function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, ob
   block ^if_end_4:
     %t15 = load typed ptr $qualified
     %t16 = index i8 [projection=field] %t15, 0
-    %t17 = load u8 %t16
+    %t17 = load typed u8 %t16
     %t18 = cmp eq u8 %t17, 0
     branch %t18, ^land_rhs_7, ^if_else_6
 
@@ -333,7 +333,7 @@ function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, ob
     store typed ptr 0, $current
     %t24 = load typed ptr $qualified
     %t25 = index i8 [projection=field] %t24, 0
-    %t26 = load u8 %t25
+    %t26 = load typed u8 %t25
     branch %t26, ^if_then_9, ^if_else_10
 
   block ^if_then_9:

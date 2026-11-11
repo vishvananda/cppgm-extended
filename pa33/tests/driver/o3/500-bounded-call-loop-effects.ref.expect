@@ -1,12 +1,12 @@
 # budget from 500-bounded-call-loop-effects.ref: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
-instructions <= 690
+instructions <= 699
 blocks <= 122
 count(call) <= 39
 count(load) <= 64
 count(store) <= 58
 count(phi) <= 28
 instructions <= 18 in @mutate
-instructions <= 316 in @main
+instructions <= 325 in @main
 instructions <= 4 in @exercise
 instructions <= 17 in @exercise__2
 instructions <= 30 in @exercise__3

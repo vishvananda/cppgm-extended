@@ -61,10 +61,9 @@ function @worker
 
   block ^entry
     mov <gpr0>, rsi
-    mov <gpr1>, rdi
-    cmp.i64 <gpr1>, 7
+    cmp.i64 rdi, 7
     ja ^fallback
-    jump_table <gpr1>, [^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c6, ^entry~c7]
+    jump_table rdi, [^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c6, ^entry~c7]
 
   block ^entry~c5
     store.i64 [rbp-<off0>], rdx
@@ -144,41 +143,41 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve <gpr0> <gpr2> <gpr3> <gpr4> <gpr5>
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
 
   block ^entry
-    mov <gpr2>, 0
+    mov <gpr1>, 0
     mov <gpr0>, 781331
-    mov <gpr3>, 0
+    mov <gpr2>, 0
 
   block ^loop
-    mov <gpr6>, 6364136223846793005
-    imul <gpr0>, <gpr6>
+    mov <gpr5>, 6364136223846793005
+    imul <gpr0>, <gpr5>
     add <gpr0>, 1
-    mov rax, <gpr2>
-    mov <gpr6>, -2049638230412172401
-    mul <gpr6>
+    mov rax, <gpr1>
+    mov <gpr5>, -2049638230412172401
+    mul <gpr5>
     shr rdx, 3
     imul rdx, 9
-    mov rax, <gpr2>
+    mov rax, <gpr1>
     sub rax, rdx
-    mov <gpr4>, rax
-    mov rax, <gpr2>
+    mov <gpr3>, rax
+    mov rax, <gpr1>
     and rax, 63
-    lea <gpr5>, [rax+<off0>]
-    mov rdi, <gpr4>
+    lea <gpr4>, [rax+<off0>]
+    mov rdi, <gpr3>
     mov rsi, <gpr0>
-    mov rdx, <gpr5>
+    mov rdx, <gpr4>
     call @worker [args=(rdx,rsi,rdi)]
     mov rcx, rax
-    cmp.i64 <gpr4>, 6
+    cmp.i64 <gpr3>, 6
     sete rsi
-    cmp.i64 <gpr4>, 8
+    cmp.i64 <gpr3>, 8
     sete rdi
     test.u8 rsi, rsi
-    mov <gpr6>, 91
+    mov <gpr5>, 91
     mov rax, 90
-    cmovne rax, <gpr6>
+    cmovne rax, <gpr5>
     xor rax, <gpr0>
     xor rax, 33
     imul rax, 17
@@ -188,12 +187,12 @@ function @main
     xor r8, <gpr0>
     mov rax, r8
     mov rdx, 0
-    div <gpr5>
+    div <gpr4>
     mov r9, rax
     mov rax, r8
     cqo
-    idiv <gpr5>
-    cmp.i64 <gpr4>, 7
+    idiv <gpr4>
+    cmp.i64 <gpr3>, 7
     cmove r9, rax
     imul r9, 13
     add r9, 29
@@ -203,29 +202,29 @@ function @main
     add r9, <gpr0>
     xor r9, 255
     test.u8 rdi, rdi
-    mov <gpr6>, 999
-    cmovne r9, <gpr6>
+    mov <gpr5>, 999
+    cmovne r9, <gpr5>
     test.u8 rsi, rsi
-    mov <gpr6>, 5
+    mov <gpr5>, 5
     mov rax, 3
-    cmovne rax, <gpr6>
+    cmovne rax, <gpr5>
     test.u8 rdi, rdi
-    mov <gpr6>, 0
-    cmovne rax, <gpr6>
-    add <gpr3>, rax
+    mov <gpr5>, 0
+    cmovne rax, <gpr5>
+    add <gpr2>, rax
     load.i64 rax, @calls
     cmp.i64 rcx, r9
     setne rcx
     movzx rcx, rcx
-    cmp.i64 rax, <gpr3>
+    cmp.i64 rax, <gpr2>
     setne rax
     movzx rax, rax
     or rcx, rax
     jne ^fail
 
   block ^next
-    add <gpr2>, 1
-    cmp.i64 <gpr2>, 4096
+    add <gpr1>, 1
+    cmp.i64 <gpr1>, 4096
     jne ^loop
     jmp ^done
 

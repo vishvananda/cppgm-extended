@@ -132,40 +132,40 @@ function @main
     frame_pointer keep
     epilogues duplicated
     preserve rbx r12 r13 r14 r15
-    slot $node -> [rbp-32] : obj<32x8>
-    slot $out -> [rbp-40] : i8
-    temp %ok5 -> [rbp-48] : i64
-    temp %ok6 -> [rbp-56] : i64
-    temp %ok7 -> [rbp-64] : i64
-    temp %ok8 -> [rbp-72] : i64
-    temp %ok9 -> [rbp-80] : i64
-    temp %ok10 -> [rbp-88] : i64
+    slot $node -> [rbp-88] : obj<32x8>
+    slot $out -> [rbp-8] : i8
+    temp %ok5 -> [rbp-16] : i64
+    temp %ok6 -> [rbp-24] : i64
+    temp %ok7 -> [rbp-32] : i64
+    temp %ok8 -> [rbp-40] : i64
+    temp %ok9 -> [rbp-48] : i64
+    temp %ok10 -> [rbp-56] : i64
 
   block ^entry
-    lea rbx, [rbp-16]
-    lea r12, [rbp-8]
+    lea rbx, [rbp-72]
+    lea r12, [rbp-64]
     store.ptr [rbx], rbx
     store.ptr [r12], r12
-    store.u16 [rbp-32], 6
-    lea rdi, [rbp-32]
+    store.u16 [rbp-88], 6
+    lea rdi, [rbp-88]
     call @walk [args=(rdi)]
     cmp.ptr rax, rbx
     sete rbx
     movzx rbx, rbx
-    store.u16 [rbp-32], 7
-    lea rdi, [rbp-32]
+    store.u16 [rbp-88], 7
+    lea rdi, [rbp-88]
     call @walk [args=(rdi)]
     cmp.ptr rax, r12
     sete r12
     movzx r12, r12
     mov rdi, 3
-    lea rsi, [rbp-40]
+    lea rsi, [rbp-8]
     call @live_address [args=(rsi,rdi)]
     mov rcx, @offsets+3
     cmp.ptr rax, rcx
     sete r13
     movzx r13, r13
-    cmp.i8 [rbp-40], 24
+    cmp.i8 [rbp-8], 24
     sete r14
     movzx r14, r14
     mov rdi, 65535
@@ -178,37 +178,37 @@ function @main
     cmp.i32 rax, 63
     sete r10
     movzx r10, r10
-    store.i64 [rbp-48], r10
+    store.i64 [rbp-16], r10
     mov rdi, 128
     call @masked16 [args=(rdi)]
     cmp.i32 rax, 1000
     sete r10
     movzx r10, r10
-    store.i64 [rbp-56], r10
+    store.i64 [rbp-24], r10
     mov rdi, 128
     call @masked8 [args=(rdi)]
     cmp.i32 rax, 1000
     sete r10
     movzx r10, r10
-    store.i64 [rbp-64], r10
+    store.i64 [rbp-32], r10
     mov rdi, -1
     call @signed16 [args=(rdi)]
     cmp.i32 rax, -32768
     sete r10
     movzx r10, r10
-    store.i64 [rbp-72], r10
+    store.i64 [rbp-40], r10
     mov rdi, -1
     call @signed8 [args=(rdi)]
     cmp.i32 rax, -128
     sete r10
     movzx r10, r10
-    store.i64 [rbp-80], r10
+    store.i64 [rbp-48], r10
     mov rdi, 1
     call @signed16 [args=(rdi)]
     cmp.i32 rax, 1000
     sete r10
     movzx r10, r10
-    store.i64 [rbp-88], r10
+    store.i64 [rbp-56], r10
     mov rdi, 1
     call @signed8 [args=(rdi)]
     cmp.i32 rax, 1000
@@ -218,12 +218,12 @@ function @main
     and rbx, r13
     and rbx, r14
     and rbx, r15
+    and rbx, [rbp-16]
+    and rbx, [rbp-24]
+    and rbx, [rbp-32]
+    and rbx, [rbp-40]
     and rbx, [rbp-48]
     and rbx, [rbp-56]
-    and rbx, [rbp-64]
-    and rbx, [rbp-72]
-    and rbx, [rbp-80]
-    and rbx, [rbp-88]
     and rbx, rax
     sete rax
     movzx rax, rax

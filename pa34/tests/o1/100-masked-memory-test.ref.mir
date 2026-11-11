@@ -61,7 +61,7 @@ function @signed_promotion
 
   block ^entry
     load.i8 rdi, [rdi]
-    test.u16 rdi, 256
+    test.i32 rdi, 256
     je ^no
 
   block ^yes

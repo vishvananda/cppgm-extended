@@ -61,10 +61,9 @@ function @worker
 
   block ^entry
     mov rbx, rsi
-    mov r10, rdi
-    cmp.i64 r10, 7
+    cmp.i64 rdi, 7
     ja ^fallback
-    jump_table r10, [^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c6, ^entry~c7]
+    jump_table rdi, [^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c6, ^entry~c7]
 
   block ^entry~c5
     store.i64 [rbp-8], rdx

@@ -32,8 +32,7 @@ function @dispatch
   block ^right
     mov rax, rdx
     xor rax, 4
-    mov <gpr0>, rdi
-    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+    jump_table rdi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case0
     add rax, 1
@@ -49,16 +48,14 @@ function @dispatch
 
   block ^left
     lea rax, [rdx+<off0>]
-    mov <gpr0>, rdi
-    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+    jump_table rdi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case1
     sub rax, 7
     ret rax
 
   block ^table
-    mov <gpr0>, rdi
-    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+    jump_table rdi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^case2
     imul rax, 3
@@ -87,7 +84,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve <gpr1>
+    preserve <gpr0>
 
   block ^entry
     mov rdi, 0
@@ -97,8 +94,8 @@ function @main
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    mov <gpr1>, rax
-    or <gpr1>, 0
+    mov <gpr0>, rax
+    or <gpr0>, 0
     mov rdi, 1
     mov rsi, 0
     mov rdx, 43
@@ -106,7 +103,7 @@ function @main
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 2
     mov rsi, 0
     mov rdx, 43
@@ -114,7 +111,7 @@ function @main
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 3
     mov rsi, 0
     mov rdx, 43
@@ -122,7 +119,7 @@ function @main
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 4
     mov rsi, 0
     mov rdx, 43
@@ -130,7 +127,7 @@ function @main
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 5
     mov rsi, 0
     mov rdx, 43
@@ -138,7 +135,7 @@ function @main
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 6
     mov rsi, 0
     mov rdx, 43
@@ -146,7 +143,7 @@ function @main
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 4294967296
     mov rsi, 0
     mov rdx, 43
@@ -154,7 +151,7 @@ function @main
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, -1
     mov rsi, 0
     mov rdx, 43
@@ -162,7 +159,7 @@ function @main
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 0
     mov rsi, -3
     mov rdx, 43
@@ -170,7 +167,7 @@ function @main
     cmp.i64 rax, 61
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 1
     mov rsi, -3
     mov rdx, 43
@@ -178,7 +175,7 @@ function @main
     cmp.i64 rax, 53
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 2
     mov rsi, -3
     mov rdx, 43
@@ -186,7 +183,7 @@ function @main
     cmp.i64 rax, 180
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 3
     mov rsi, -3
     mov rdx, 43
@@ -194,7 +191,7 @@ function @main
     cmp.i64 rax, 47
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 4
     mov rsi, -3
     mov rdx, 43
@@ -202,7 +199,7 @@ function @main
     cmp.i64 rax, 60
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 5
     mov rsi, -3
     mov rdx, 43
@@ -210,7 +207,7 @@ function @main
     cmp.i64 rax, 60
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 6
     mov rsi, -3
     mov rdx, 43
@@ -218,7 +215,7 @@ function @main
     cmp.i64 rax, 45
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 4294967296
     mov rsi, -3
     mov rdx, 43
@@ -226,7 +223,7 @@ function @main
     cmp.i64 rax, 4294967339
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, -1
     mov rsi, -3
     mov rdx, 43
@@ -234,7 +231,7 @@ function @main
     cmp.i64 rax, -44
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 0
     mov rsi, 1
     mov rdx, 43
@@ -242,7 +239,7 @@ function @main
     cmp.i64 rax, 48
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 1
     mov rsi, 1
     mov rdx, 43
@@ -250,7 +247,7 @@ function @main
     cmp.i64 rax, 40
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 2
     mov rsi, 1
     mov rdx, 43
@@ -258,7 +255,7 @@ function @main
     cmp.i64 rax, 141
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 3
     mov rsi, 1
     mov rdx, 43
@@ -266,7 +263,7 @@ function @main
     cmp.i64 rax, 60
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 4
     mov rsi, 1
     mov rdx, 43
@@ -274,7 +271,7 @@ function @main
     cmp.i64 rax, 63
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 5
     mov rsi, 1
     mov rdx, 43
@@ -282,7 +279,7 @@ function @main
     cmp.i64 rax, 47
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 6
     mov rsi, 1
     mov rdx, 43
@@ -290,7 +287,7 @@ function @main
     cmp.i64 rax, 45
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, 4294967296
     mov rsi, 1
     mov rdx, 43
@@ -298,7 +295,7 @@ function @main
     cmp.i64 rax, 4294967339
     setne rax
     movzx rax, rax
-    or <gpr1>, rax
+    or <gpr0>, rax
     mov rdi, -1
     mov rsi, 1
     mov rdx, 43
@@ -306,5 +303,5 @@ function @main
     cmp.i64 rax, -44
     setne rax
     movzx rax, rax
-    or rax, <gpr1>
+    or rax, <gpr0>
     ret rax

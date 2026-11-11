@@ -184,7 +184,7 @@ function @overloaded(%first : u8, %a : ptr [pass=by_address, object_bytes=1], %b
     store u8 %first, $first
     store typed ptr %a, $a
     store typed ptr %b, $b
-    %t1 = load u8 $first
+    %t1 = load typed u8 $first
     branch %t1, ^land_rhs_1, ^land_short_2
 
   block ^land_rhs_1:
@@ -214,7 +214,7 @@ function @overloaded_false(%first : u8, %a : ptr [pass=by_address, object_bytes=
     store u8 %first, $first
     store typed ptr %a, $a
     store typed ptr %b, $b
-    %t1 = load u8 $first
+    %t1 = load typed u8 $first
     branch %t1, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
@@ -242,7 +242,7 @@ function @converted(%first : u8, %x : ptr [pass=by_address, object_bytes=4]) -> 
   block ^entry:
     store u8 %first, $first
     store typed ptr %x, $x
-    %t1 = load u8 $first
+    %t1 = load typed u8 $first
     branch %t1, ^land_rhs_1, ^land_short_2
 
   block ^land_rhs_1:

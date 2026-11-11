@@ -94,8 +94,55 @@ function @wrapper(%fast : i32, %x : i64) -> i64 [unwind=no, binding=strong, no_i
     %s33 = binary xor i64 %s32, 71
     %s34 = binary mul i64 %s33, 73
     %s35 = binary xor i64 %s34, 75
-    %result = call i64 @shared_work(%s35)
-    return i64 %result
+    %w0_37 = binary mul i64 %s35, 3
+    %w1_38 = binary xor i64 %w0_37, 5
+    %w2_39 = binary mul i64 %w1_38, 7
+    %w3_40 = binary xor i64 %w2_39, 9
+    %w4_41 = binary mul i64 %w3_40, 11
+    %w5_42 = binary xor i64 %w4_41, 13
+    %w6_43 = binary mul i64 %w5_42, 15
+    %w7_44 = binary xor i64 %w6_43, 17
+    %w8_45 = binary mul i64 %w7_44, 19
+    %w9_46 = binary xor i64 %w8_45, 21
+    %w10_47 = binary mul i64 %w9_46, 23
+    %w11_48 = binary xor i64 %w10_47, 25
+    %w12_49 = binary mul i64 %w11_48, 27
+    %w13_50 = binary xor i64 %w12_49, 29
+    %w14_51 = binary mul i64 %w13_50, 31
+    %w15_52 = binary xor i64 %w14_51, 33
+    %w16_53 = binary mul i64 %w15_52, 35
+    %w17_54 = binary xor i64 %w16_53, 37
+    %w18_55 = binary mul i64 %w17_54, 39
+    %w19_56 = binary xor i64 %w18_55, 41
+    %w20_57 = binary mul i64 %w19_56, 43
+    %w21_58 = binary xor i64 %w20_57, 45
+    %w22_59 = binary mul i64 %w21_58, 47
+    %w23_60 = binary xor i64 %w22_59, 49
+    %w24_61 = binary mul i64 %w23_60, 51
+    %w25_62 = binary xor i64 %w24_61, 53
+    %w26_63 = binary mul i64 %w25_62, 55
+    %w27_64 = binary xor i64 %w26_63, 57
+    %w28_65 = binary mul i64 %w27_64, 59
+    %w29_66 = binary xor i64 %w28_65, 61
+    %w30_67 = binary mul i64 %w29_66, 63
+    %w31_68 = binary xor i64 %w30_67, 65
+    %w32_69 = binary mul i64 %w31_68, 67
+    %w33_70 = binary xor i64 %w32_69, 69
+    %w34_71 = binary mul i64 %w33_70, 71
+    %w35_72 = binary xor i64 %w34_71, 73
+    %w36_73 = binary mul i64 %w35_72, 75
+    %w37_74 = binary xor i64 %w36_73, 77
+    %w38_75 = binary mul i64 %w37_74, 79
+    %w39_76 = binary xor i64 %w38_75, 81
+    %w40_77 = binary mul i64 %w39_76, 83
+    %w41_78 = binary xor i64 %w40_77, 85
+    %w42_79 = binary mul i64 %w41_78, 87
+    %w43_80 = binary xor i64 %w42_79, 89
+    %w44_81 = binary mul i64 %w43_80, 91
+    %w45_82 = binary xor i64 %w44_81, 93
+    %w46_83 = binary mul i64 %w45_82, 95
+    %w47_84 = binary xor i64 %w46_83, 97
+    return i64 %w47_84
 }
 function @hot_loop(%n : i64, %x : i64) -> i64 [unwind=no, binding=strong, no_inline=yes] {
   block ^entry:
@@ -151,18 +198,46 @@ function @hot_loop(%n : i64, %x : i64) -> i64 [unwind=no, binding=strong, no_inl
     %w45_47 = binary xor i64 %w44_46, 93
     %w46_48 = binary mul i64 %w45_47, 95
     %w47_49 = binary xor i64 %w46_48, 97
+    %t50 = binary and i64 %n, -8
+    branch %t50, ^loop_preheader_2, ^wide_tail_5
+
+  block ^loop_preheader_2:
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t51 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t61]
+    %t52 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t60]
+    %t53 = binary add i64 %w47_49, %t52
+    %t54 = binary add i64 %w47_49, %t53
+    %t55 = binary add i64 %w47_49, %t54
+    %t56 = binary add i64 %w47_49, %t55
+    %t57 = binary add i64 %w47_49, %t56
+    %t58 = binary add i64 %w47_49, %t57
+    %t59 = binary add i64 %w47_49, %t58
+    %t60 = binary add i64 %w47_49, %t59
+    %t61 = binary add i64 %t51, 8
+    %t62 = cmp ne i64 %t50, %t61
+    branch %t62, ^unrolled_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t63 = cmp ne i64 %n, %t61
+    branch %t63, ^wide_tail_5, ^done
+
+  block ^wide_tail_5:
+    %t64 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t61]
+    %t65 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t60]
     jump ^loop
 
   block ^loop:
-    %i = phi i64 [^loop_preheader_1: 0, ^loop: %next]
-    %sum = phi i64 [^loop_preheader_1: 0, ^loop: %added]
+    %i = phi i64 [^wide_tail_5: %t64, ^loop: %next]
+    %sum = phi i64 [^wide_tail_5: %t65, ^loop: %added]
     %added = binary add i64 %sum, %w47_49
     %next = binary add i64 %i, 1
     %more = cmp ne i64 %n, %next
     branch %more, ^loop, ^done
 
   block ^done:
-    %result = phi i64 [^entry: 0, ^loop: %added]
+    %result = phi i64 [^entry: 0, ^loop: %added, ^loop_exit_4: %t60]
     return i64 %result
 }
 function @main() -> i32 [role=entry] {

@@ -12,7 +12,7 @@ function @f(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_byt
     %t3 = addr $t
     %t4 = index i8 [projection=field] %t3, 0
     store typed i32 9, %t4
-    %t5 = load u8 $b
+    %t5 = load typed u8 $b
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

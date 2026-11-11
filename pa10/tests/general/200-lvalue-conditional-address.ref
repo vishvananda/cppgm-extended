@@ -8,7 +8,7 @@ function @f(%a : ptr [pass=by_address, object_bytes=4], %b : ptr [pass=by_addres
     store typed ptr %a, $a
     store typed ptr %b, $b
     store u8 %c, $c
-    %t1 = load u8 $c
+    %t1 = load typed u8 $c
     branch %t1, ^condaddr_then_1, ^condaddr_else_2
 
   block ^condaddr_then_1:

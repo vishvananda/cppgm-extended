@@ -1,21 +1,65 @@
 function @count(%p : ptr, %e : ptr, %k : f32) -> i64 [no_inline=yes] {
   block ^entry:
+    %t1 = copy i64 %p
+    %t2 = copy i64 %e
+    %t3 = binary sub i64 %t2, %t1
+    %t4 = binary and i64 %t3, -32
+    branch %t4, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    %t5 = binary add i64 %t1, %t4
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t6 = phi ptr [^loop_preheader_1: %p, ^unrolled_2: %t27]
+    %t7 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t26]
+    %t8 = load f32 %t6
+    %t9 = binary add i64 %t7, 1
+    %t10 = cmp ge f32 %k, %t8
+    %t11 = select i64 %t10, %t9, %t7
+    %t12 = index i8 %t6, 8
+    %t13 = load f32 %t12
+    %t14 = binary add i64 %t11, 1
+    %t15 = cmp ge f32 %k, %t13
+    %t16 = select i64 %t15, %t14, %t11
+    %t17 = index i8 %t6, 16
+    %t18 = load f32 %t17
+    %t19 = binary add i64 %t16, 1
+    %t20 = cmp ge f32 %k, %t18
+    %t21 = select i64 %t20, %t19, %t16
+    %t22 = index i8 %t6, 24
+    %t23 = load f32 %t22
+    %t24 = binary add i64 %t21, 1
+    %t25 = cmp ge f32 %k, %t23
+    %t26 = select i64 %t25, %t24, %t21
+    %t27 = index i8 %t6, 32
+    %t28 = copy i64 %t27
+    %t29 = cmp ne i64 %t5, %t28
+    branch %t29, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t30 = cmp ne ptr %e, %t27
+    branch %t30, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t31 = phi ptr [^entry: %p, ^loop_exit_3: %t27]
+    %t32 = phi i64 [^entry: 0, ^loop_exit_3: %t26]
     jump ^body
 
   block ^body:
-    %q = phi ptr [^entry: %p, ^body: %next]
-    %n = phi i64 [^entry: 0, ^body: %m]
+    %q = phi ptr [^wide_tail_4: %t31, ^body: %next]
+    %n = phi i64 [^wide_tail_4: %t32, ^body: %m]
     %v = load f32 %q
-    %c = cmp ge f32 %k, %v
     %up = binary add i64 %n, 1
-    %t6 = cmp ge f32 %k, %v
-    %m = select i64 %t6, %up, %n
+    %t37 = cmp ge f32 %k, %v
+    %m = select i64 %t37, %up, %n
     %next = index i8 %q, 8
     %more = cmp ne ptr %e, %next
     branch %more, ^body, ^done
 
   block ^done:
-    return i64 %m
+    %t41 = phi i64 [^body: %m, ^loop_exit_3: %t26]
+    return i64 %t41
 }
 function @equal(%a : f64, %b : f64, %x : i64, %y : i64) -> i64 [no_inline=yes] {
   block ^entry:

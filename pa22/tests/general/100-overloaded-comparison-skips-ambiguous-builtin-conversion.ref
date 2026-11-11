@@ -13,7 +13,7 @@ function @test(%v : u8) -> i32 [binding=strong, object=_Z4testb] {
 
   block ^entry:
     store u8 %v, $v
-    %t1 = load u8 $v
+    %t1 = load typed u8 $v
     branch %t1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

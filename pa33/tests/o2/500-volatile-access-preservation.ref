@@ -33,8 +33,7 @@ function @main() -> i32 [role=entry] {
     %first_3 = load volatile i32 $flag__1
     %second_4 = load volatile i32 $flag__1
     %sum_5 = binary add i32 %first_3, %second_4
-    %total = binary add i32 %sum_5, 18
-    %bad = cmp ne i32 %total, 20
+    %bad = cmp ne i32 %sum_5, 2
     %wide = convert zext i32 u8 %bad
     return i32 %wide
 }

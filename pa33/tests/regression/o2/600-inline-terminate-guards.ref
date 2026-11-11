@@ -41,68 +41,11 @@ function @typed(%value : i64) -> i64 [unwind=no] {
 }
 function @caller(%value : i64) -> i64 {
   block ^entry:
-    eh_try ^guard_3
-    %small_1 = cmp lt i64 %value, 1000
-    branch %small_1, ^fast_1, ^slow_2
-
-  block ^fast_1:
-    %r_2 = binary mul i64 %value, 3
-    eh_end
-    jump ^inline_cont_4
-
-  block ^slow_2:
-    %p_3 = call i64 @poke(%value)
-    eh_end
-    jump ^inline_cont_4
-
-  block ^guard_3:
-    eh_catch_all, 1
-    %e_4 = exception ptr
-    call void @report(%e_4)
-    unreachable
-
-  block ^inline_cont_4:
-    %a = phi i64 [^fast_1: %r_2, ^slow_2: %p_3]
-    eh_try ^dispatch
-    eh_try ^guard_7
-    %small_6 = cmp lt i64 %a, 1000
-    branch %small_6, ^fast_5, ^slow_6
-
-  block ^fast_5:
-    %r_7 = binary mul i64 %a, 3
-    eh_end
-    jump ^inline_cont_8
-
-  block ^slow_6:
-    %p_8 = call i64 @poke(%a)
-    eh_end
-    jump ^inline_cont_8
-
-  block ^guard_7:
-    eh_catch_all, 1
-    %e_9 = exception ptr
-    call void @report(%e_9)
-    unreachable
-
-  block ^inline_cont_8:
-    %b = phi i64 [^fast_5: %r_7, ^slow_6: %p_8]
+    %a = call i64 @checked(%value)
+    %b = call i64 @checked(%a)
     %c = call i64 @typed(%b)
-    eh_end
     %s = binary add i64 %a, %c
     return i64 %s
-
-  block ^dispatch:
-    eh_catch @bang_type, 1
-    %selector = exception_selector i32
-    %matched = cmp eq i32 %selector, 1
-    branch %matched, ^caught, ^next
-
-  block ^caught:
-    %d = call i64 @checked(%value)
-    return i64 %d
-
-  block ^next:
-    resume
 }
 function @main() -> i32 [role=entry] {
   block ^entry:

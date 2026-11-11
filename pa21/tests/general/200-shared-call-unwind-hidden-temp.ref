@@ -46,7 +46,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, alias=exclusive_result, 
   block ^if_end_3:
     %t5 = addr $token
     call void @Tok__Tok(%t5)
-    store u8 0, $output
+    store typed u8 0, $output
     jump ^do_body_4
 
   block ^do_body_4:
@@ -94,7 +94,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, alias=exclusive_result, 
     %t19 = call u8 @process(%t16, %t18, 0)
     store u8 %t19, $call__3
     %t20 = load u8 $call__3
-    store u8 %t20, $output
+    store typed u8 %t20, $output
     eh_end
     jump ^if_end_14
 
@@ -149,7 +149,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, alias=exclusive_result, 
     %t38 = call u8 @process(%t35, %t37, 0)
     store u8 %t38, $call__7
     %t39 = load u8 $call__7
-    store u8 %t39, $output
+    store typed u8 %t39, $output
     eh_end
     jump ^if_end_22
 
@@ -182,7 +182,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, alias=exclusive_result, 
     %t50 = call u8 @process(%t47, %t49, 1)
     store u8 %t50, $call__10
     %t51 = load u8 $call__10
-    store u8 %t51, $output
+    store typed u8 %t51, $output
     eh_end
     jump ^if_end_22
 
@@ -193,7 +193,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, alias=exclusive_result, 
     jump ^do_cond_5
 
   block ^do_cond_5:
-    %t52 = load u8 $output
+    %t52 = load typed u8 $output
     %t53 = convert zext i32 u8 %t52
     %t54 = cmp eq i32 %t53, 0
     branch %t54, ^do_body_4, ^do_end_6

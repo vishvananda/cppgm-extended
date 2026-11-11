@@ -19,7 +19,7 @@ function @run(%value : i32, %flag : u8) -> i32 [binding=strong, object=_Z3runib]
     switch %t2, ^switch_default_8, 1:^switch_case_6, 2:^switch_case_7
 
   block ^switch_case_6:
-    %t3 = load u8 $flag
+    %t3 = load typed u8 $flag
     branch %t3, ^if_then_9, ^if_else_10
 
   block ^if_then_9:

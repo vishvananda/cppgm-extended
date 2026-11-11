@@ -1,7 +1,5 @@
 function @select(%condition : u8) -> u8 {
   block ^entry:
-    %t1 = select i64 %condition, 30064771072, 0
-    %t2 = binary ushr i64 %t1, 32
-    %result = convert trunc u8 i64 %t2
-    return u8 %result
+    %t1 = select u8 %condition, 7, 0
+    return u8 %t1
 }

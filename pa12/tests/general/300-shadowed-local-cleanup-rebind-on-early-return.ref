@@ -7,7 +7,7 @@ function @f(%b : u8) -> i32 [binding=strong, object=_Z1fb] {
     store u8 %b, $b
     %t1 = addr $guard
     call void @Guard__Guard(%t1)
-    %t2 = load u8 $b
+    %t2 = load typed u8 $b
     branch %t2, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

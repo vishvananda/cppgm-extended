@@ -31,10 +31,32 @@ function @equal_states(%n : i64, %update : i1, %out : ptr) -> i32 [no_inline=yes
 }
 function @different_seeds(%n : i64, %out : ptr) -> i32 [no_inline=yes] {
   block ^entry:
+    %t1 = binary and i64 %n, -8
+    branch %t1, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t3]
+    store volatile i32 11, %out
+    store volatile i32 11, %out
+    store volatile i32 11, %out
+    store volatile i32 11, %out
+    store volatile i32 11, %out
+    store volatile i32 11, %out
+    store volatile i32 11, %out
+    store volatile i32 11, %out
+    %t3 = binary add i64 %t2, 8
+    %t4 = cmp ne i64 %t1, %t3
+    branch %t4, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t5 = phi i64 [^entry: 0, ^unrolled_2: %t3]
     jump ^loop
 
   block ^loop:
-    %i = phi i64 [^entry: 0, ^join: %next_i]
+    %i = phi i64 [^wide_tail_3: %t5, ^join: %next_i]
     store volatile i32 11, %out
     %more = cmp ult i64 %i, %n
     branch %more, ^join, ^exit

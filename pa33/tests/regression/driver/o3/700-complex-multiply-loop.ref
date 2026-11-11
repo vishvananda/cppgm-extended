@@ -5,9 +5,9 @@ function @sum_scaled(%v : ptr, %w : i128 [classes=integer_integer]) -> f64 [bind
     %t1 = index i8 [projection=field] %v, 8
     %t2 = load typed i64 %t1
     %t3 = cmp gt i64 %t2, 0
-    branch %t3, ^loop_preheader_1, ^for_end_6
+    branch %t3, ^split_1, ^for_end_6
 
-  block ^loop_preheader_1:
+  block ^split_1:
     %t4 = load typed ptr %v
     %t5 = convert trunc i64 i128 %w
     %t6 = binary ushr i128 %w, 64
@@ -17,8 +17,8 @@ function @sum_scaled(%v : ptr, %w : i128 [classes=integer_integer]) -> f64 [bind
     jump ^for_body_2
 
   block ^for_body_2:
-    %t10 = phi i64 [^complex_end_5: %t29, ^loop_preheader_1: 0]
-    %t11 = phi f64 [^complex_end_5: %t28, ^loop_preheader_1: 0]
+    %t10 = phi i64 [^complex_end_5: %t29, ^split_1: 0]
+    %t11 = phi f64 [^complex_end_5: %t28, ^split_1: 0]
     %t12 = index inbounds obj<16x8> [projection=array_element] %t4, %t10
     %t13 = load f64 %t12
     %t14 = index i8 [projection=field] %t12, 8

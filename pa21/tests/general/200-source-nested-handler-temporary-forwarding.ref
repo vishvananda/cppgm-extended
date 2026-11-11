@@ -93,7 +93,7 @@ function @probe(%nested_handler : u8) -> i32 [binding=strong, object=_Z5probeb] 
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_6
-    %t8 = load u8 $nested_handler
+    %t8 = load typed u8 $nested_handler
     branch %t8, ^if_then_7, ^if_else_8
 
   block ^if_then_7:

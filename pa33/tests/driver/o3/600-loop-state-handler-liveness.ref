@@ -151,8 +151,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t1 = phi i32 [^if_end_22: %t1, ^for_end_23: %t33, ^entry: 0]
-    %t2 = phi i32 [^if_end_22: %t32, ^entry: -1, ^for_end_23: -1]
+    %t1 = phi i32 [^if_end_22: %t1, ^for_end_23: %t32, ^entry: 0]
+    %t2 = phi i32 [^if_end_22: %t31, ^entry: -1, ^for_end_23: -1]
     %t3 = cmp le i32 %t2, %t1
     branch %t3, ^for_cond_2, ^for_end_23
 
@@ -181,79 +181,78 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^for_end_6:
     %t15 = phi i32 [^for_cond_2: 3, ^for_body_4: %t11, ^if_else_5: %t11]
-    %t16 = cmp ge i32 %t2, 0
-    %t17 = cmp lt i32 %t2, %t1
-    %t18 = cmp ge i32 %t2, 0
-    %t19 = select i64 %t18, %t17, 0
+    %t16 = cmp lt i32 %t2, %t1
+    %t17 = cmp ge i32 %t2, 0
+    %t18 = select i64 %t17, %t16, 0
     store volatile i32 0, @observed
-    %t20 = call i32 @overwritten(%t1, %t2)
-    branch %t19, ^cond_then_7, ^cond_end_8
+    %t19 = call i32 @overwritten(%t1, %t2)
+    branch %t18, ^cond_then_7, ^cond_end_8
 
   block ^cond_then_7:
-    %t21 = binary add nowrap i32 %t2, 17
-    %t22 = cmp ne i32 %t20, %t21
-    branch %t22, ^if_then_9, ^if_end_10
+    %t20 = binary add nowrap i32 %t2, 17
+    %t21 = cmp ne i32 %t19, %t20
+    branch %t21, ^if_then_9, ^if_end_10
 
   block ^cond_end_8:
-    %t23 = cmp ne i32 %t15, %t20
-    branch %t23, ^if_then_9, ^if_end_10
+    %t22 = cmp ne i32 %t15, %t19
+    branch %t22, ^if_then_9, ^if_end_10
 
   block ^if_then_9:
     return i32 1
 
   block ^if_end_10:
-    %t24 = load volatile i32 @observed
-    branch %t19, ^cond_end_12, ^cond_else_11
+    %t23 = load volatile i32 @observed
+    branch %t18, ^cond_end_12, ^cond_else_11
 
   block ^cond_else_11:
-    branch %t24, ^if_then_13, ^if_end_14
+    branch %t23, ^if_then_13, ^if_end_14
 
   block ^cond_end_12:
-    %t25 = cmp ne i32 %t24, 17
-    branch %t25, ^if_then_13, ^if_end_14
+    %t24 = cmp ne i32 %t23, 17
+    branch %t24, ^if_then_13, ^if_end_14
 
   block ^if_then_13:
     return i32 2
 
   block ^if_end_14:
     store volatile i32 0, @observed
-    %t26 = call i32 @visible(%t1, %t2)
-    branch %t19, ^cond_end_16, ^cond_else_15
+    %t25 = call i32 @visible(%t1, %t2)
+    branch %t18, ^cond_end_16, ^cond_else_15
 
   block ^cond_else_15:
-    %t27 = cmp ne i32 %t15, %t26
-    branch %t27, ^if_then_17, ^if_end_18
+    %t26 = cmp ne i32 %t15, %t25
+    branch %t26, ^if_then_17, ^if_end_18
 
   block ^cond_end_16:
-    %t28 = binary add nowrap i32 %t2, %t15
-    %t29 = cmp ne i32 %t26, %t28
-    branch %t29, ^if_then_17, ^if_end_18
+    %t27 = binary add nowrap i32 %t2, %t15
+    %t28 = cmp ne i32 %t25, %t27
+    branch %t28, ^if_then_17, ^if_end_18
 
   block ^if_then_17:
     return i32 3
 
   block ^if_end_18:
-    %t30 = load volatile i32 @observed
-    branch %t19, ^cond_end_20, ^cond_else_19
+    %t29 = load volatile i32 @observed
+    branch %t18, ^cond_end_20, ^cond_else_19
 
   block ^cond_else_19:
-    branch %t30, ^if_then_21, ^if_end_22
+    branch %t29, ^if_then_21, ^if_end_22
 
   block ^cond_end_20:
-    %t31 = cmp ne i32 %t15, %t30
-    branch %t31, ^if_then_21, ^if_end_22
+    %t30 = cmp ne i32 %t15, %t29
+    branch %t30, ^if_then_21, ^if_end_22
 
   block ^if_then_21:
     return i32 4
 
   block ^if_end_22:
-    %t32 = binary add nowrap i32 %t2, 1
+    %t31 = binary add nowrap i32 %t2, 1
     jump ^for_cond_1
 
   block ^for_end_23:
-    %t33 = binary add nowrap i32 %t1, 1
-    %t34 = cmp le i32 %t33, 8
-    branch %t34, ^for_cond_1, ^for_end_24
+    %t32 = binary add nowrap i32 %t1, 1
+    %t33 = cmp le i32 %t32, 8
+    branch %t33, ^for_cond_1, ^for_end_24
 
   block ^for_end_24:
     return i32 0

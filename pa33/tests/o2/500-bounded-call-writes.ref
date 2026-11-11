@@ -56,11 +56,51 @@ function @store_loop(%out : ptr [pass=indirect_result, alias=exclusive_result, o
   block ^entry:
     zeroinit 32x8 %out
     %value = load i64 %input
+    %t2 = binary and i64 %n, -8
+    branch %t2, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t21]
+    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t20]
+    %t5 = index i8 %out, 24
+    store i64 %t3, %t5
+    %t6 = binary add i64 %value, %t4
+    %t7 = binary add i64 %t3, 1
+    store i64 %t7, %t5
+    %t8 = binary add i64 %value, %t6
+    %t9 = binary add i64 %t3, 2
+    store i64 %t9, %t5
+    %t10 = binary add i64 %value, %t8
+    %t11 = binary add i64 %t3, 3
+    store i64 %t11, %t5
+    %t12 = binary add i64 %value, %t10
+    %t13 = binary add i64 %t3, 4
+    store i64 %t13, %t5
+    %t14 = binary add i64 %value, %t12
+    %t15 = binary add i64 %t3, 5
+    store i64 %t15, %t5
+    %t16 = binary add i64 %value, %t14
+    %t17 = binary add i64 %t3, 6
+    store i64 %t17, %t5
+    %t18 = binary add i64 %value, %t16
+    %t19 = binary add i64 %t3, 7
+    store i64 %t19, %t5
+    %t20 = binary add i64 %value, %t18
+    %t21 = binary add i64 %t3, 8
+    %t22 = cmp ne i64 %t2, %t21
+    branch %t22, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t23 = phi i64 [^entry: 0, ^unrolled_2: %t21]
+    %t24 = phi i64 [^entry: 0, ^unrolled_2: %t20]
     jump ^loop
 
   block ^loop:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %sum = phi i64 [^entry: 0, ^body: %added]
+    %i = phi i64 [^wide_tail_3: %t23, ^body: %next]
+    %sum = phi i64 [^wide_tail_3: %t24, ^body: %added]
     %more = cmp ult i64 %i, %n
     branch %more, ^body, ^done
 

@@ -52,9 +52,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $s : obj<1x1>
 
   block ^entry:
-    store u8 1, $c
+    store typed u8 1, $c
     %t1 = addr $s
-    %t2 = load u8 $c
+    %t2 = load typed u8 $c
     branch %t2, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:

@@ -48,5 +48,4 @@ function @main
     mul <gpr0>
     shr rdx, 26
     lea rax, [rdx+<gpr2>]
-    sext.i32 rax
     ret rax

@@ -354,7 +354,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_14
 
   block ^for_cond_14:
-    %t29 = phi u32 [^for_end_13: 0, ^if_end_43: %t72]
+    %t29 = phi u32 [^for_end_13: 0, ^if_end_43: %t70]
     %t30 = cmp ne u32 %t29, 32
     branch %t30, ^for_body_15, ^for_end_44
 
@@ -411,184 +411,182 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_28
 
   block ^cond_else_27:
-    %t47 = cmp eq u32 %t29, 3
-    %t48 = index i8 %t3, 352
-    %t49 = cmp eq u32 %t29, 3
-    %t50 = select ptr %t49, %t48, %t27
+    %t47 = index i8 %t3, 352
+    %t48 = cmp eq u32 %t29, 3
+    %t49 = select ptr %t48, %t47, %t27
     jump ^cond_end_28
 
   block ^cond_end_28:
-    %t51 = phi ptr [^cond_then_26: %t46, ^cond_else_27: %t50]
+    %t50 = phi ptr [^cond_then_26: %t46, ^cond_else_27: %t49]
     jump ^cond_end_29
 
   block ^cond_end_29:
-    %t52 = phi ptr [^cond_then_24: %t44, ^cond_end_28: %t51]
+    %t51 = phi ptr [^cond_then_24: %t44, ^cond_end_28: %t50]
     jump ^cond_end_30
 
   block ^cond_end_30:
-    %t53 = phi ptr [^cond_then_22: %t42, ^cond_end_29: %t52]
-    %t54 = call ptr @different(%t27, %t28, %t29)
-    %t55 = cmp ne ptr %t53, %t54
-    branch %t55, ^if_then_31, ^if_end_32
+    %t52 = phi ptr [^cond_then_22: %t42, ^cond_end_29: %t51]
+    %t53 = call ptr @different(%t27, %t28, %t29)
+    %t54 = cmp ne ptr %t52, %t53
+    branch %t54, ^if_then_31, ^if_end_32
 
   block ^if_then_31:
     return i32 6
 
   block ^if_end_32:
-    %t56 = cmp eq u32 %t29, 0
-    branch %t56, ^cond_then_33, ^cond_else_34
+    %t55 = cmp eq u32 %t29, 0
+    branch %t55, ^cond_then_33, ^cond_else_34
 
   block ^cond_then_33:
-    %t57 = index inbounds i8 %t3, 120
+    %t56 = index inbounds i8 %t3, 120
     jump ^cond_end_41
 
   block ^cond_else_34:
-    %t58 = cmp eq u32 %t29, 1
-    branch %t58, ^cond_then_35, ^cond_else_36
+    %t57 = cmp eq u32 %t29, 1
+    branch %t57, ^cond_then_35, ^cond_else_36
 
   block ^cond_then_35:
-    %t59 = index inbounds i8 %t3, 88
+    %t58 = index inbounds i8 %t3, 88
     jump ^cond_end_40
 
   block ^cond_else_36:
-    %t60 = cmp eq u32 %t29, 2
-    branch %t60, ^cond_then_37, ^cond_else_38
+    %t59 = cmp eq u32 %t29, 2
+    branch %t59, ^cond_then_37, ^cond_else_38
 
   block ^cond_then_37:
-    %t61 = index inbounds i8 %t3, 176
+    %t60 = index inbounds i8 %t3, 176
     jump ^cond_end_39
 
   block ^cond_else_38:
+    %t61 = index i8 %t3, 112
     %t62 = cmp eq u32 %t29, 3
-    %t63 = index i8 %t3, 112
-    %t64 = cmp eq u32 %t29, 3
-    %t65 = select ptr %t64, %t63, %t27
+    %t63 = select ptr %t62, %t61, %t27
     jump ^cond_end_39
 
   block ^cond_end_39:
-    %t66 = phi ptr [^cond_then_37: %t61, ^cond_else_38: %t65]
+    %t64 = phi ptr [^cond_then_37: %t60, ^cond_else_38: %t63]
     jump ^cond_end_40
 
   block ^cond_end_40:
-    %t67 = phi ptr [^cond_then_35: %t59, ^cond_end_39: %t66]
+    %t65 = phi ptr [^cond_then_35: %t58, ^cond_end_39: %t64]
     jump ^cond_end_41
 
   block ^cond_end_41:
-    %t68 = phi ptr [^cond_then_33: %t57, ^cond_end_40: %t67]
-    %t69 = copy i64 %t27
-    %t70 = call ptr @from_word(%t69, %t29)
-    %t71 = cmp ne ptr %t68, %t70
-    branch %t71, ^if_then_42, ^if_end_43
+    %t66 = phi ptr [^cond_then_33: %t56, ^cond_end_40: %t65]
+    %t67 = copy i64 %t27
+    %t68 = call ptr @from_word(%t67, %t29)
+    %t69 = cmp ne ptr %t66, %t68
+    branch %t69, ^if_then_42, ^if_end_43
 
   block ^if_then_42:
     return i32 14
 
   block ^if_end_43:
-    %t72 = binary add u32 %t29, 1
+    %t70 = binary add u32 %t29, 1
     jump ^for_cond_14
 
   block ^for_end_44:
-    %t73 = call i64 @wide(-16)
-    %t74 = cmp ne i64 %t73, -1
-    branch %t74, ^if_then_45, ^if_end_46
+    %t71 = call i64 @wide(-16)
+    %t72 = cmp ne i64 %t71, -1
+    branch %t72, ^if_then_45, ^if_end_46
 
   block ^if_then_45:
     return i32 7
 
   block ^if_end_46:
-    %t75 = call i64 @wide(-15)
-    %t76 = cmp ne i64 %t75, -9223372036854775808
-    branch %t76, ^if_then_47, ^if_else_48
+    %t73 = call i64 @wide(-15)
+    %t74 = cmp ne i64 %t73, -9223372036854775808
+    branch %t74, ^if_then_47, ^if_else_48
 
   block ^if_then_47:
     return i32 8
 
   block ^if_else_48:
-    %t77 = call i64 @wide(-14)
-    %t78 = cmp ne i64 %t77, 9223372036854775807
-    branch %t78, ^if_then_50, ^lor_rhs_49
+    %t75 = call i64 @wide(-14)
+    %t76 = cmp ne i64 %t75, 9223372036854775807
+    branch %t76, ^if_then_50, ^lor_rhs_49
 
   block ^lor_rhs_49:
-    %t79 = call i64 @wide(-13)
-    branch %t79, ^if_then_50, ^if_end_51
+    %t77 = call i64 @wide(-13)
+    branch %t77, ^if_then_50, ^if_end_51
 
   block ^if_then_50:
     return i32 9
 
   block ^if_end_51:
-    %t80 = call i64 @wide(0)
-    %t81 = cmp ne i64 %t80, 123
-    branch %t81, ^if_then_53, ^lor_rhs_52
+    %t78 = call i64 @wide(0)
+    %t79 = cmp ne i64 %t78, 123
+    branch %t79, ^if_then_53, ^lor_rhs_52
 
   block ^lor_rhs_52:
-    %t82 = call i64 @wide(-1)
-    %t83 = cmp ne i64 %t82, 123
-    branch %t83, ^if_then_53, ^if_end_54
+    %t80 = call i64 @wide(-1)
+    %t81 = cmp ne i64 %t80, 123
+    branch %t81, ^if_then_53, ^if_end_54
 
   block ^if_then_53:
     return i32 10
 
   block ^if_end_54:
     store typed i32 0, @effects
-    %t84 = call i32 @holes(1)
-    %t85 = cmp ne i32 %t84, 47
-    branch %t85, ^if_then_58, ^lor_rhs_55
+    %t82 = call i32 @holes(1)
+    %t83 = cmp ne i32 %t82, 47
+    branch %t83, ^if_then_58, ^lor_rhs_55
 
   block ^lor_rhs_55:
-    %t86 = call i32 @holes(3)
-    %t87 = cmp ne i32 %t86, 47
-    branch %t87, ^if_then_58, ^lor_rhs_56
+    %t84 = call i32 @holes(3)
+    %t85 = cmp ne i32 %t84, 47
+    branch %t85, ^if_then_58, ^lor_rhs_56
 
   block ^lor_rhs_56:
-    %t88 = call i32 @holes(0)
-    %t89 = cmp ne i32 %t88, 31
-    branch %t89, ^if_then_58, ^lor_rhs_57
+    %t86 = call i32 @holes(0)
+    %t87 = cmp ne i32 %t86, 31
+    branch %t87, ^if_then_58, ^lor_rhs_57
 
   block ^lor_rhs_57:
-    %t90 = load typed i32 @effects
-    %t91 = cmp ne i32 %t90, 2
-    branch %t91, ^if_then_58, ^if_end_59
+    %t88 = load typed i32 @effects
+    %t89 = cmp ne i32 %t88, 2
+    branch %t89, ^if_then_58, ^if_end_59
 
   block ^if_then_58:
     return i32 11
 
   block ^if_end_59:
-    %t92 = call i32 @dense_default(-1)
-    %t93 = cmp ne i32 %t92, 47
-    branch %t93, ^if_then_63, ^lor_rhs_60
+    %t90 = call i32 @dense_default(-1)
+    %t91 = cmp ne i32 %t90, 47
+    branch %t91, ^if_then_63, ^lor_rhs_60
 
   block ^lor_rhs_60:
-    %t94 = call i32 @dense_default(4)
-    %t95 = cmp ne i32 %t94, 47
-    branch %t95, ^if_then_63, ^lor_rhs_61
+    %t92 = call i32 @dense_default(4)
+    %t93 = cmp ne i32 %t92, 47
+    branch %t93, ^if_then_63, ^lor_rhs_61
 
   block ^lor_rhs_61:
-    %t96 = call i32 @dense_default(2)
-    %t97 = cmp ne i32 %t96, 41
-    branch %t97, ^if_then_63, ^lor_rhs_62
+    %t94 = call i32 @dense_default(2)
+    %t95 = cmp ne i32 %t94, 41
+    branch %t95, ^if_then_63, ^lor_rhs_62
 
   block ^lor_rhs_62:
-    %t98 = load typed i32 @effects
-    %t99 = cmp ne i32 %t98, 4
-    branch %t99, ^if_then_63, ^if_end_64
+    %t96 = load typed i32 @effects
+    %t97 = cmp ne i32 %t96, 4
+    branch %t97, ^if_then_63, ^if_end_64
 
   block ^if_then_63:
     return i32 12
 
   block ^if_end_64:
-    %t100 = call i32 @side_case(0)
-    %t101 = cmp ne i32 %t100, 31
-    branch %t101, ^if_then_67, ^lor_rhs_65
+    %t98 = call i32 @side_case(0)
+    %t99 = cmp ne i32 %t98, 31
+    branch %t99, ^if_then_67, ^lor_rhs_65
 
   block ^lor_rhs_65:
-    %t102 = call i32 @side_case(1)
-    %t103 = cmp ne i32 %t102, 37
-    branch %t103, ^if_then_67, ^lor_rhs_66
+    %t100 = call i32 @side_case(1)
+    %t101 = cmp ne i32 %t100, 37
+    branch %t101, ^if_then_67, ^lor_rhs_66
 
   block ^lor_rhs_66:
-    %t104 = load typed i32 @effects
-    %t105 = cmp ne i32 %t104, 5
-    branch %t105, ^if_then_67, ^if_end_68
+    %t102 = load typed i32 @effects
+    %t103 = cmp ne i32 %t102, 5
+    branch %t103, ^if_then_67, ^if_end_68
 
   block ^if_then_67:
     return i32 13

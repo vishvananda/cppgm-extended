@@ -111,7 +111,7 @@ function @up_le(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
 }
 function @up_ult(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
-    %t1 = cmp ugt i64 %n, 0
+    %t1 = cmp ne i64 %n, 0
     %t2 = cmp uge i64 %n, 4
     %t3 = binary and i64 %t1, %t2
     branch %t3, ^loop_preheader_1, ^loop_preheader_5
@@ -167,7 +167,7 @@ function @up_ult(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
 function @up_ule(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     %t1 = binary add i64 %n, 1
-    %t2 = cmp ugt i64 %t1, 0
+    %t2 = cmp ne i64 %n, -1
     %t3 = cmp uge i64 %t1, 4
     %t4 = binary and i64 %t2, %t3
     branch %t4, ^loop_preheader_1, ^loop_preheader_5
@@ -503,7 +503,7 @@ function @narrow_counter(%d : ptr, %x : ptr, %n : i32) -> void [no_inline=yes] {
 }
 function @narrow_unsigned(%d : ptr, %x : ptr, %n : u32) -> void [no_inline=yes] {
   block ^entry:
-    %t1 = cmp ugt u32 %n, 0
+    %t1 = cmp ne u32 %n, 0
     %t2 = cmp uge u32 %n, 4
     %t3 = binary and i64 %t1, %t2
     branch %t3, ^loop_preheader_1, ^loop_preheader_5
@@ -663,10 +663,51 @@ function @pointer_counter(%d : ptr, %e : ptr) -> void [no_inline=yes] {
 }
 function @step_two(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
+    %t1 = binary and i64 %n, -8
+    branch %t1, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t22]
+    %t3 = index i32 %x, %t2
+    %t4 = load typed i32 %t3
+    %t5 = binary add i32 %t4, 1
+    %t6 = index i32 %d, %t2
+    store typed i32 %t5, %t6
+    %t7 = binary add i64 %t2, 2
+    %t8 = index i32 %x, %t7
+    %t9 = load typed i32 %t8
+    %t10 = binary add i32 %t9, 1
+    %t11 = index i32 %d, %t7
+    store typed i32 %t10, %t11
+    %t12 = binary add i64 %t2, 4
+    %t13 = index i32 %x, %t12
+    %t14 = load typed i32 %t13
+    %t15 = binary add i32 %t14, 1
+    %t16 = index i32 %d, %t12
+    store typed i32 %t15, %t16
+    %t17 = binary add i64 %t2, 6
+    %t18 = index i32 %x, %t17
+    %t19 = load typed i32 %t18
+    %t20 = binary add i32 %t19, 1
+    %t21 = index i32 %d, %t17
+    store typed i32 %t20, %t21
+    %t22 = binary add i64 %t2, 8
+    %t23 = cmp ne i64 %t1, %t22
+    branch %t23, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t24 = cmp ne i64 %n, %t22
+    branch %t24, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t25 = phi i64 [^entry: 0, ^loop_exit_3: %t22]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^entry: 0, ^body: %next]
+    %i = phi i64 [^wide_tail_4: %t25, ^body: %next]
     %p = index i32 %x, %i
     %v = load typed i32 %p
     %r = binary add i32 %v, 1

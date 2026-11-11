@@ -37,45 +37,154 @@ function @main() -> i32 [role=entry] {
     %point = index i8 %table, 16
     store ptr %point, %obj
     %state = index i8 %obj, 8
-    store u8 1, %state
     %count = index i8 %obj, 12
-    store i32 0, %count
-    %t6 = addr @flip
-    %t7 = addr @tally
-    jump ^loop
+    store u8 0, %state
+    store i32 1, %count
+    %t6 = binary xor u8 0, 1
+    store u8 %t6, %state
+    %t7 = index i8 %point, 8
+    %t8 = load ptr %t7
+    %t9 = cmp eq ptr %t8, @tally
+    branch %t9, ^split_1, ^split_3
 
-  block ^loop:
-    %i = phi i32 [^entry: 0, ^split_5: %next]
-    %vptr = load ptr %obj
-    %f = load ptr %vptr
-    %t11 = cmp eq ptr %f, %t6
-    branch %t11, ^inline_entry_2, ^split_8
+  block ^split_1:
+    %t10 = load i32 %count
+    %t11 = binary add i32 %t10, 1
+    store i32 %t11, %count
+    jump ^split_2
 
-  block ^inline_entry_2:
-    %v_12 = load u8 %state
-    %w_13 = binary xor u8 %v_12, 1
-    store u8 %w_13, %state
-    jump ^split_3
+  block ^split_2:
+    %t12 = load ptr %obj
+    %t13 = load ptr %t12
+    %t14 = cmp eq ptr %t13, @flip
+    branch %t14, ^split_4, ^split_9
 
   block ^split_3:
-    %again = phi ptr [^split_8: %t28, ^inline_entry_2: %vptr]
-    %slot = index i8 %again, 8
-    %g = load ptr %slot
-    %t17 = cmp eq ptr %g, %t7
-    branch %t17, ^inline_entry_4, ^split_7
+    call void %t8(%obj) as (%this : ptr) -> void
+    jump ^split_2
 
-  block ^inline_entry_4:
-    %v_18 = load i32 %count
-    %w_19 = binary add i32 %v_18, 1
-    store i32 %w_19, %count
+  block ^split_4:
+    %t15 = load u8 %state
+    %t16 = binary xor u8 %t15, 1
+    store u8 %t16, %state
     jump ^split_5
 
   block ^split_5:
-    %next = binary add nowrap i32 %i, 1
-    %more = cmp lt i32 %next, 6
-    branch %more, ^loop, ^done
+    %t17 = phi ptr [^split_4: %t12, ^split_9: %t27]
+    %t18 = index i8 %t17, 8
+    %t19 = load ptr %t18
+    %t20 = cmp eq ptr %t19, @tally
+    branch %t20, ^split_6, ^split_8
 
-  block ^done:
+  block ^split_6:
+    %t21 = load i32 %count
+    %t22 = binary add i32 %t21, 1
+    store i32 %t22, %count
+    jump ^split_7
+
+  block ^split_7:
+    %t23 = load ptr %obj
+    %t24 = load ptr %t23
+    %t25 = cmp eq ptr %t24, @flip
+    branch %t25, ^split_10, ^split_15
+
+  block ^split_8:
+    call void %t19(%obj) as (%this : ptr) -> void
+    jump ^split_7
+
+  block ^split_9:
+    %t26 = call ptr %t13(%obj) as (%this : ptr) -> ptr
+    %t27 = load ptr %obj
+    jump ^split_5
+
+  block ^split_10:
+    %t28 = load u8 %state
+    %t29 = binary xor u8 %t28, 1
+    store u8 %t29, %state
+    jump ^split_11
+
+  block ^split_11:
+    %t30 = phi ptr [^split_10: %t23, ^split_15: %t40]
+    %t31 = index i8 %t30, 8
+    %t32 = load ptr %t31
+    %t33 = cmp eq ptr %t32, @tally
+    branch %t33, ^split_12, ^split_14
+
+  block ^split_12:
+    %t34 = load i32 %count
+    %t35 = binary add i32 %t34, 1
+    store i32 %t35, %count
+    jump ^split_13
+
+  block ^split_13:
+    %t36 = load ptr %obj
+    %t37 = load ptr %t36
+    %t38 = cmp eq ptr %t37, @flip
+    branch %t38, ^split_16, ^split_21
+
+  block ^split_14:
+    call void %t32(%obj) as (%this : ptr) -> void
+    jump ^split_13
+
+  block ^split_15:
+    %t39 = call ptr %t24(%obj) as (%this : ptr) -> ptr
+    %t40 = load ptr %obj
+    jump ^split_11
+
+  block ^split_16:
+    %t41 = load u8 %state
+    %t42 = binary xor u8 %t41, 1
+    store u8 %t42, %state
+    jump ^split_17
+
+  block ^split_17:
+    %t43 = phi ptr [^split_16: %t36, ^split_21: %t53]
+    %t44 = index i8 %t43, 8
+    %t45 = load ptr %t44
+    %t46 = cmp eq ptr %t45, @tally
+    branch %t46, ^split_18, ^split_20
+
+  block ^split_18:
+    %t47 = load i32 %count
+    %t48 = binary add i32 %t47, 1
+    store i32 %t48, %count
+    jump ^split_19
+
+  block ^split_19:
+    %t49 = load ptr %obj
+    %t50 = load ptr %t49
+    %t51 = cmp eq ptr %t50, @flip
+    branch %t51, ^split_22, ^split_27
+
+  block ^split_20:
+    call void %t45(%obj) as (%this : ptr) -> void
+    jump ^split_19
+
+  block ^split_21:
+    %t52 = call ptr %t37(%obj) as (%this : ptr) -> ptr
+    %t53 = load ptr %obj
+    jump ^split_17
+
+  block ^split_22:
+    %t54 = load u8 %state
+    %t55 = binary xor u8 %t54, 1
+    store u8 %t55, %state
+    jump ^split_23
+
+  block ^split_23:
+    %t56 = phi ptr [^split_22: %t49, ^split_27: %t68]
+    %t57 = index i8 %t56, 8
+    %t58 = load ptr %t57
+    %t59 = cmp eq ptr %t58, @tally
+    branch %t59, ^split_24, ^split_26
+
+  block ^split_24:
+    %t60 = load i32 %count
+    %t61 = binary add i32 %t60, 1
+    store i32 %t61, %count
+    jump ^split_25
+
+  block ^split_25:
     call void @other(%obj)
     %s = load u8 %state
     %wide = convert zext i32 u8 %s
@@ -84,12 +193,12 @@ function @main() -> i32 [role=entry] {
     %result = binary add i32 %hundreds, %n
     return i32 %result
 
-  block ^split_7:
-    call void %g(%obj) as (%this : ptr) -> void
-    jump ^split_5
+  block ^split_26:
+    call void %t58(%obj) as (%this : ptr) -> void
+    jump ^split_25
 
-  block ^split_8:
-    %t27 = call ptr %f(%obj) as (%this : ptr) -> ptr
-    %t28 = load ptr %obj
-    jump ^split_3
+  block ^split_27:
+    %t67 = call ptr %t50(%obj) as (%this : ptr) -> ptr
+    %t68 = load ptr %obj
+    jump ^split_23
 }

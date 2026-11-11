@@ -78,7 +78,7 @@ function @logic__tribool__tribool(%this : ptr [object_bytes=4], %initial : u8) -
   block ^entry:
     store typed ptr %this, $this
     store u8 %initial, $initial
-    %t1 = load u8 $initial
+    %t1 = load typed u8 $initial
     branch %t1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

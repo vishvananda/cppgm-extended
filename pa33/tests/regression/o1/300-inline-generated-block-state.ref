@@ -8,9 +8,9 @@ function @entry(%value : i64) -> i64 {
 function @branch(%value : i64) -> i64 {
   block ^entry:
     %positive = cmp gt i64 %value, 0
-    branch %positive, ^inline_entry_1, ^no
+    branch %positive, ^yes, ^no
 
-  block ^inline_entry_1:
+  block ^yes:
     %adjusted_2 = binary add i64 %value, 1
     return i64 %adjusted_2
 

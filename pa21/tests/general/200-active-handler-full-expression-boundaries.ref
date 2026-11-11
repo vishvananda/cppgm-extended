@@ -47,7 +47,7 @@ function @use(%__param0 : ptr [pass=by_address, object_bytes=1], %fail : u8) -> 
   block ^entry:
     store typed ptr %__param0, $__param0
     store u8 %fail, $fail
-    %t1 = load u8 $fail
+    %t1 = load typed u8 $fail
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

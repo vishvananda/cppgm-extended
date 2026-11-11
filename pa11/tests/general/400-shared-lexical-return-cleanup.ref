@@ -27,7 +27,7 @@ function @choose(%first : u8, %trace : ptr) -> i32 [binding=strong, object=_Z6ch
     jump ^cleanup_resume_1
 
   block ^call_unwind_end_3:
-    %t6 = load u8 $first
+    %t6 = load typed u8 $first
     branch %t6, ^if_then_4, ^if_else_5
 
   block ^if_then_4:

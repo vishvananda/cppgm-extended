@@ -20,26 +20,24 @@ function @walk
     preserve <gpr0>
 
   block ^entry
-    mov r8, rdx
-    mov rax, rcx
-    mov rcx, 0
-    mov rdx, 0
+    mov rax, 0
+    mov r8, 0
 
   block ^head
-    shl rcx, 1
-    lea r9, [rcx+<off0>]
-    mov <gpr0>, rax
+    shl rax, 1
+    lea r9, [rax+<off0>]
+    mov <gpr0>, rcx
     and <gpr0>, rdi
-    add rcx, 2
+    add rax, 2
     test.i64 <gpr0>, <gpr0>
-    cmove rcx, r9
-    shr rax, 1
-    add rdx, 1
-    cmp.i64 rdx, rsi
+    cmove rax, r9
+    shr rcx, 1
+    add r8, 1
+    cmp.i64 r8, rsi
     jb ^head
 
   block ^done
-    lea rax, [rcx+r8]
+    add rax, rdx
     ret rax
 
 function @in_rcx
@@ -107,5 +105,4 @@ function @main
     call @in_rcx [args=(rcx,rdx,rsi,rdi)]
     add <gpr0>, <gpr1>
     add rax, <gpr0>
-    sext.i32 rax
     ret rax

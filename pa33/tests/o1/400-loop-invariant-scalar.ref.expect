@@ -6,3 +6,6 @@ count(load) <= 6
 count(store) <= 4
 count(phi) <= 4
 instructions <= 15 in @main
+
+# outcomes from 400-loop-invariant-scalar.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(phi)

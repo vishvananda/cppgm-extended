@@ -37,7 +37,7 @@ function @bit
     epilogues duplicated
 
   block ^entry
-    test.u16 rdi, 1024
+    test.i32 rdi, 1024
     mov rax, rdx
     cmovne rax, rsi
     ret rax

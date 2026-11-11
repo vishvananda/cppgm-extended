@@ -19,7 +19,7 @@ function @begin(%ret : ptr [pass=indirect_result, alias=exclusive_result, object
 
   block ^entry:
     store u8 %empty, $empty
-    %t1 = load u8 $empty
+    %t1 = load typed u8 $empty
     branch %t1, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:

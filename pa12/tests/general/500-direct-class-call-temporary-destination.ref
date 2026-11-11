@@ -47,8 +47,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     store typed i32 0, @trace
-    store u8 1, $first
-    %t1 = load u8 $first
+    store typed u8 1, $first
+    %t1 = load typed u8 $first
     branch %t1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

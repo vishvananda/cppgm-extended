@@ -2,20 +2,52 @@ declare function @use(%p : ptr) -> void
 
 function @sum_down(%n : i64, %total : i64) -> i64 [no_inline=yes] {
   block ^0:
+    %t1 = binary and i64 %n, -8
+    branch %t1, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    %t2 = binary sub i64 %n, %t1
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: %total, ^unrolled_2: %t20]
+    %t4 = phi i64 [^loop_preheader_1: %n, ^unrolled_2: %t19]
+    %t5 = binary sub i64 %t4, 1
+    %t6 = binary add i64 %t3, %t4
+    %t7 = binary sub i64 %t4, 2
+    %t8 = binary add i64 %t5, %t6
+    %t9 = binary sub i64 %t4, 3
+    %t10 = binary add i64 %t7, %t8
+    %t11 = binary sub i64 %t4, 4
+    %t12 = binary add i64 %t9, %t10
+    %t13 = binary sub i64 %t4, 5
+    %t14 = binary add i64 %t11, %t12
+    %t15 = binary sub i64 %t4, 6
+    %t16 = binary add i64 %t13, %t14
+    %t17 = binary sub i64 %t4, 7
+    %t18 = binary add i64 %t15, %t16
+    %t19 = binary sub i64 %t4, 8
+    %t20 = binary add i64 %t17, %t18
+    %t21 = cmp ne i64 %t2, %t19
+    branch %t21, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t22 = phi i64 [^0: %total, ^unrolled_2: %t20]
+    %t23 = phi i64 [^0: %n, ^unrolled_2: %t19]
     jump ^entry
 
   block ^entry:
-    %t1 = phi i64 [^0: %total, ^more: %t]
-    %t2 = phi i64 [^0: %n, ^more: %m]
-    %c = cmp eq i64 %t2, 0
+    %t24 = phi i64 [^wide_tail_3: %t22, ^more: %t]
+    %t25 = phi i64 [^wide_tail_3: %t23, ^more: %m]
+    %c = cmp eq i64 %t25, 0
     branch %c, ^done, ^more
 
   block ^done:
-    return i64 %t1
+    return i64 %t24
 
   block ^more:
-    %t = binary add i64 %t2, %t1
-    %m = binary sub i64 %t2, 1
+    %t = binary add i64 %t24, %t25
+    %m = binary sub i64 %t25, 1
     jump ^entry
 }
 function @step(%n : i32, %k : i32) -> i32 [no_inline=yes] {
@@ -36,19 +68,49 @@ function @step(%n : i32, %k : i32) -> i32 [no_inline=yes] {
 }
 function @walk(%p : ptr, %n : i64) -> void [no_inline=yes] {
   block ^0:
+    %t1 = binary and i64 %n, -8
+    branch %t1, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    %t2 = binary sub i64 %n, %t1
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: %n, ^unrolled_2: %t11]
+    store i64 %t3, %p
+    %t4 = binary sub i64 %t3, 1
+    store i64 %t4, %p
+    %t5 = binary sub i64 %t3, 2
+    store i64 %t5, %p
+    %t6 = binary sub i64 %t3, 3
+    store i64 %t6, %p
+    %t7 = binary sub i64 %t3, 4
+    store i64 %t7, %p
+    %t8 = binary sub i64 %t3, 5
+    store i64 %t8, %p
+    %t9 = binary sub i64 %t3, 6
+    store i64 %t9, %p
+    %t10 = binary sub i64 %t3, 7
+    store i64 %t10, %p
+    %t11 = binary sub i64 %t3, 8
+    %t12 = cmp ne i64 %t2, %t11
+    branch %t12, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t13 = phi i64 [^0: %n, ^unrolled_2: %t11]
     jump ^entry
 
   block ^entry:
-    %t1 = phi i64 [^0: %n, ^more: %m]
-    %c = cmp eq i64 %t1, 0
+    %t14 = phi i64 [^wide_tail_3: %t13, ^more: %m]
+    %c = cmp eq i64 %t14, 0
     branch %c, ^done, ^more
 
   block ^done:
     return void
 
   block ^more:
-    store i64 %t1, %p
-    %m = binary sub i64 %t1, 1
+    store i64 %t14, %p
+    %m = binary sub i64 %t14, 1
     jump ^entry
 }
 function @local(%n : i64) -> i64 [no_inline=yes] {

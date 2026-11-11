@@ -8,7 +8,7 @@ function @choose(%ret : ptr [pass=indirect_result, alias=exclusive_result, objec
     store u8 %use_local, $use_local
     %t1 = addr $local
     call void @Value__Value(%t1, 22)
-    %t2 = load u8 $use_local
+    %t2 = load typed u8 $use_local
     branch %t2, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:

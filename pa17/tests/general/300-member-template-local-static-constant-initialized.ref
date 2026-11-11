@@ -38,7 +38,7 @@ function @function_n_void___assign_to(%this : ptr [object_bytes=1], %__param1 : 
   block ^entry:
     store typed ptr %this, $this
     store u8 %skip, $skip
-    %t1 = load u8 $skip
+    %t1 = load typed u8 $skip
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

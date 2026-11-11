@@ -45,7 +45,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^call_unwind_end_2:
     eh_try ^cleanup_action_3
     %t2 = addr $arg__2
-    %t3 = load u8 @choose_second
+    %t3 = load typed u8 @choose_second
     eh_end
     jump ^call_unwind_end_7
 

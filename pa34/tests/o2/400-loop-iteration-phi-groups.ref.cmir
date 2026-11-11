@@ -38,7 +38,6 @@ function @walk
     mov <gpr2>, rdi
     mov <gpr3>, rsi
     mov <gpr0>, rcx
-    mov rdi, r8
     cmp.ptr <gpr2>, 0
     setne rax
     movzx rax, rax
@@ -52,40 +51,41 @@ function @walk
     store.i64 [rbp-<off0>], rdx
 
   block ^start
+    mov rdi, r8
     call @touch [args=(rdi)]
-    mov r8, rax
-    mov rsi, 0
-    mov <gpr1>, <gpr2>
+    mov r9, rax
     mov rdi, 0
+    mov rdx, <gpr2>
+    mov r8, 0
     mov rcx, 0
 
   block ^head
-    cmp.i64 rsi, [rbp-<off0>]
+    cmp.i64 rdi, [rbp-<off0>]
     jb ^byte
 
   block ^finish
-    ret rdi
+    ret r8
 
   block ^tail
-    add rsi, 1
-    cmp.i32 rcx, <gpr0>
+    add rdi, 1
+    cmp.i32 <gpr1>, <gpr0>
     jge ^finish_tail
 
   block ^tail~head
-    mov <gpr1>, rax
-    cmp.i64 rsi, [rbp-<off0>]
+    mov rcx, <gpr1>
+    cmp.i64 rdi, [rbp-<off0>]
     jae ^finish
 
   block ^byte
-    load.u8 rdx, [<gpr3>+rsi]
+    load.u8 rsi, [<gpr3>+rdi]
 
   block ^step0
-    lea.i32 r9, [rcx+<off0>]
-    mov rax, rdx
+    lea.i32 <gpr1>, [rcx+<off0>]
+    mov rax, rsi
     shr rax, 7
     and rax, 1
     imul rax, 8
-    load.ptr rax, [<gpr1>+rax+<off0>]
+    load.ptr rax, [rdx+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -93,68 +93,61 @@ function @walk
     cmp.u8 [rax+<off0>], 0
     jne ^leaf0
 
-  block ^check0~merge0
-    mov <gpr1>, rax
-
   block ^merge0
-    cmp.i32 r9, <gpr0>
+    cmp.i32 <gpr1>, <gpr0>
     jl ^step1
 
   block ^merge0~tail
-    mov rcx, r9
-    mov rax, <gpr1>
-    add rsi, 1
-    cmp.i32 rcx, <gpr0>
+    mov rdx, rax
+    add rdi, 1
+    cmp.i32 <gpr1>, <gpr0>
     jl ^tail~head
 
   block ^finish_tail
-    ret rdi
+    ret r8
 
   block ^leaf0
     load.u8 rax, [rax+<off1>]
-    store.u8 [r8+rdi], rax
-    add rdi, 1
-    mov <gpr1>, <gpr2>
-    cmp.i32 r9, <gpr0>
+    store.u8 [r9+r8], rax
+    add r8, 1
+    mov rax, <gpr2>
+    cmp.i32 <gpr1>, <gpr0>
     jge ^merge0~tail
 
   block ^step1
-    lea.i32 r9, [rcx+<off1>]
-    mov rax, rdx
-    shr rax, 6
-    and rax, 1
-    imul rax, 8
-    load.ptr rax, [<gpr1>+rax+<off0>]
-    cmp.ptr rax, 0
-    je ^step6~tail
+    lea.i32 <gpr1>, [rcx+<off1>]
+    mov rdx, rsi
+    shr rdx, 6
+    and rdx, 1
+    imul rdx, 8
+    load.ptr rdx, [rax+rdx+<off0>]
+    cmp.ptr rdx, 0
+    je ^tail
 
   block ^check1
-    cmp.u8 [rax+<off0>], 0
+    cmp.u8 [rdx+<off0>], 0
     jne ^leaf1
 
-  block ^check1~merge1
-    mov <gpr1>, rax
-
   block ^merge1
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
     jmp ^step2
 
   block ^leaf1
-    load.u8 rax, [rax+<off1>]
-    store.u8 [r8+rdi], rax
-    add rdi, 1
-    mov <gpr1>, <gpr2>
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    load.u8 rdx, [rdx+<off1>]
+    store.u8 [r9+r8], rdx
+    add r8, 1
+    mov rdx, <gpr2>
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
 
   block ^step2
-    lea.i32 r9, [rcx+<off2>]
-    mov rax, rdx
+    lea.i32 <gpr1>, [rcx+<off2>]
+    mov rax, rsi
     shr rax, 5
     and rax, 1
     imul rax, 8
-    load.ptr rax, [<gpr1>+rax+<off0>]
+    load.ptr rax, [rdx+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -163,28 +156,28 @@ function @walk
     jne ^leaf2
 
   block ^check2~merge2
-    mov <gpr1>, rax
+    mov rdx, rax
 
   block ^merge2
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
     jmp ^step3
 
   block ^leaf2
     load.u8 rax, [rax+<off1>]
-    store.u8 [r8+rdi], rax
-    add rdi, 1
-    mov <gpr1>, <gpr2>
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    store.u8 [r9+r8], rax
+    add r8, 1
+    mov rdx, <gpr2>
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
 
   block ^step3
-    lea.i32 r9, [rcx+<off3>]
-    mov rax, rdx
+    lea.i32 <gpr1>, [rcx+<off3>]
+    mov rax, rsi
     shr rax, 4
     and rax, 1
     imul rax, 8
-    load.ptr rax, [<gpr1>+rax+<off0>]
+    load.ptr rax, [rdx+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -193,28 +186,28 @@ function @walk
     jne ^leaf3
 
   block ^check3~merge3
-    mov <gpr1>, rax
+    mov rdx, rax
 
   block ^merge3
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
     jmp ^step4
 
   block ^leaf3
     load.u8 rax, [rax+<off1>]
-    store.u8 [r8+rdi], rax
-    add rdi, 1
-    mov <gpr1>, <gpr2>
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    store.u8 [r9+r8], rax
+    add r8, 1
+    mov rdx, <gpr2>
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
 
   block ^step4
-    lea.i32 r9, [rcx+<off4>]
-    mov rax, rdx
+    lea.i32 <gpr1>, [rcx+<off4>]
+    mov rax, rsi
     shr rax, 3
     and rax, 1
     imul rax, 8
-    load.ptr rax, [<gpr1>+rax+<off0>]
+    load.ptr rax, [rdx+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -223,28 +216,28 @@ function @walk
     jne ^leaf4
 
   block ^check4~merge4
-    mov <gpr1>, rax
+    mov rdx, rax
 
   block ^merge4
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
     jmp ^step5
 
   block ^leaf4
     load.u8 rax, [rax+<off1>]
-    store.u8 [r8+rdi], rax
-    add rdi, 1
-    mov <gpr1>, <gpr2>
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    store.u8 [r9+r8], rax
+    add r8, 1
+    mov rdx, <gpr2>
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
 
   block ^step5
-    lea.i32 r9, [rcx+<off5>]
-    mov rax, rdx
+    lea.i32 <gpr1>, [rcx+<off5>]
+    mov rax, rsi
     shr rax, 2
     and rax, 1
     imul rax, 8
-    load.ptr rax, [<gpr1>+rax+<off0>]
+    load.ptr rax, [rdx+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -253,28 +246,28 @@ function @walk
     jne ^leaf5
 
   block ^check5~merge5
-    mov <gpr1>, rax
+    mov rdx, rax
 
   block ^merge5
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
     jmp ^step6
 
   block ^leaf5
     load.u8 rax, [rax+<off1>]
-    store.u8 [r8+rdi], rax
-    add rdi, 1
-    mov <gpr1>, <gpr2>
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    store.u8 [r9+r8], rax
+    add r8, 1
+    mov rdx, <gpr2>
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
 
   block ^step6
-    lea.i32 r9, [rcx+<off6>]
-    mov rax, rdx
+    lea.i32 <gpr1>, [rcx+<off6>]
+    mov rax, rsi
     shr rax, 1
     and rax, 1
     imul rax, 8
-    load.ptr rax, [<gpr1>+rax+<off0>]
+    load.ptr rax, [rdx+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -283,49 +276,50 @@ function @walk
     jne ^leaf6
 
   block ^check6~merge6
-    mov <gpr1>, rax
+    mov rdx, rax
 
   block ^merge6
-    cmp.i32 r9, <gpr0>
-    jl ^step7
-
-  block ^merge6~tail
-    mov rcx, r9
-    mov rax, <gpr1>
-    jmp ^tail
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
+    jmp ^step7
 
   block ^step6~tail
-    mov rcx, r9
+    mov rdx, rax
     jmp ^tail
 
   block ^leaf6
     load.u8 rax, [rax+<off1>]
-    store.u8 [r8+rdi], rax
-    add rdi, 1
-    mov <gpr1>, <gpr2>
-    cmp.i32 r9, <gpr0>
-    jge ^merge6~tail
+    store.u8 [r9+r8], rax
+    add r8, 1
+    mov rdx, <gpr2>
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^tail
 
   block ^step7
     add.i32 rcx, 8
-    mov rax, rdx
+    mov rax, rsi
     shr rax, 0
     and rax, 1
     imul rax, 8
-    load.ptr rax, [<gpr1>+rax+<off0>]
+    load.ptr rax, [rdx+rax+<off0>]
     cmp.ptr rax, 0
-    je ^tail
+    je ^step7~tail
 
   block ^check7
     cmp.u8 [rax+<off0>], 0
-    je ^tail
+    jne ^leaf7
+
+  block ^step7~tail
+    mov <gpr1>, rcx
+    mov rdx, rax
+    jmp ^tail
 
   block ^leaf7
     load.u8 rax, [rax+<off1>]
-    store.u8 [r8+rdi], rax
-    add rdi, 1
+    store.u8 [r9+r8], rax
+    add r8, 1
     mov rax, <gpr2>
-    jmp ^tail
+    jmp ^step7~tail
 
   block ^empty
     mov rax, 0
@@ -354,7 +348,7 @@ function @main
     store.u8 [rax+<off0>], 1
     store.u8 [rcx+<off4>], 1
     store.ptr [rbp-<off6>], rax
-    store.ptr [rbp-<off0>], rcx
+    store.ptr [rbp-<off7>], rcx
     store.i16 [rbp-<off4>], 61610
     lea rdi, [rbp-<off1>]
     lea rsi, [rbp-<off4>]
@@ -395,7 +389,7 @@ function @main
     cmp.i64 rax, 0
     setne <gpr2>
     movzx <gpr2>, <gpr2>
-    store.ptr [rbp-<off0>], 0
+    store.ptr [rbp-<off7>], 0
     lea rdi, [rbp-<off1>]
     lea rsi, [rbp-<off4>]
     mov rdx, 1

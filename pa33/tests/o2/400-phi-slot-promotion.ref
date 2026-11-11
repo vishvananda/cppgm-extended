@@ -5,6 +5,39 @@ function @main() -> i64 [role=entry] {
     %choose = load i64 @choose_loop
     %t2 = select i64 %choose, 9, 7
     %t3 = cmp lt i64 %t2, 12
-    %t4 = select i64 %t3, 12, %t2
-    return i64 %t4
+    branch %t3, ^loop_preheader_1, ^wide_tail_5
+
+  block ^loop_preheader_1:
+    %t4 = binary sub i64 12, %t2
+    %t5 = binary and i64 %t4, -8
+    %t6 = cmp gt i64 %t5, 0
+    branch %t6, ^loop_preheader_2, ^wide_tail_5
+
+  block ^loop_preheader_2:
+    %t7 = binary add i64 %t2, %t5
+    jump ^unrolled_3
+
+  block ^unrolled_3:
+    %t8 = phi i64 [^loop_preheader_2: %t2, ^unrolled_3: %t9]
+    %t9 = binary add nowrap i64 %t8, 8
+    %t10 = cmp ne i64 %t7, %t9
+    branch %t10, ^unrolled_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t11 = cmp ge i64 %t9, 12
+    branch %t11, ^exit, ^wide_tail_5
+
+  block ^wide_tail_5:
+    %t12 = phi i64 [^entry: %t2, ^loop_exit_4: %t9, ^loop_preheader_1: %t2]
+    jump ^latch
+
+  block ^latch:
+    %t13 = phi i64 [^latch: %next, ^wide_tail_5: %t12]
+    %next = binary add i64 %t13, 1
+    %done = cmp ge i64 %next, 12
+    branch %done, ^exit, ^latch
+
+  block ^exit:
+    %t16 = phi i64 [^latch: %next, ^loop_exit_4: %t9]
+    return i64 %t16
 }

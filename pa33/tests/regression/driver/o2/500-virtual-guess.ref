@@ -65,21 +65,20 @@ function @lone(%p : ptr) -> i32 [binding=strong, object=_Z4loneP4Lone] {
     branch %t3, ^1, ^2
 
   block ^1:
-    %t4 = copy nonnull ptr %p
-    %t5 = index i8 [projection=field] %t4, 8
-    %t6 = load typed i32 %t5
-    %t7 = binary add nowrap i32 %t6, 1
-    store typed i32 %t7, %t5
+    %t4 = index i8 [projection=field] %p, 8
+    %t5 = load typed i32 %t4
+    %t6 = binary add nowrap i32 %t5, 1
+    store typed i32 %t6, %t4
     jump ^3
 
   block ^2:
-    %t8 = call i32 %t2(%p) as (%arg0 : ptr [object_bytes=16]) -> i32
+    %t7 = call i32 %t2(%p) as (%arg0 : ptr [object_bytes=16]) -> i32
     jump ^3
 
   block ^3:
-    %t9 = phi i32 [^2: %t8, ^1: %t7]
-    %t10 = binary add nowrap i32 %t9, 1
-    return i32 %t10
+    %t8 = phi i32 [^1: %t6, ^2: %t7]
+    %t9 = binary add nowrap i32 %t8, 1
+    return i32 %t9
 }
 function @base(%p : ptr) -> i32 [binding=strong, object=_Z4baseP4Base] {
   block ^entry:

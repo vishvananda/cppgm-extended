@@ -29,7 +29,7 @@ function @check(%populate : u8, %expected_constructed : i32) -> i32 [binding=str
     store typed i32 0, @constructed
     store typed i32 0, @destroyed
     %t1 = addr $holder
-    %t2 = load u8 $populate
+    %t2 = load typed u8 $populate
     call void @Holder__Holder(%t1, 7, %t2)
     %t3 = addr $holder
     call void @Holder___Holder(%t3)
@@ -105,7 +105,7 @@ function @Holder__Holder(%this : ptr [object_bytes=2], %seed : i32, %populate : 
     call void @Member__Member(%t5, %t7)
     eh_end
     eh_cleanup ^constructor_cleanup_2
-    %t8 = load u8 $populate
+    %t8 = load typed u8 $populate
     %t9 = cmp eq u8 %t8, 0
     branch %t9, ^if_then_3, ^if_else_4
 

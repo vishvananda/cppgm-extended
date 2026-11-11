@@ -71,22 +71,54 @@ function @allocated(%existing : ptr, %v : i32) -> i32 [binding=strong, object=_Z
 }
 function @zero_trip(%p : ptr, %n : u32) -> i32 [binding=strong, object=_Z9zero_tripPKij, no_inline=yes] {
   block ^entry:
-    jump ^for_cond_1
+    %t1 = binary and u32 %n, 4294967288
+    branch %t1, ^loop_preheader_1, ^wide_tail_3
 
-  block ^for_cond_1:
-    %t1 = phi u32 [^entry: 0, ^for_body_2: %t6]
-    %t2 = phi i32 [^entry: 0, ^for_body_2: %t5]
-    %t3 = cmp ult u32 %t1, %n
-    branch %t3, ^for_body_2, ^for_end_3
+  block ^loop_preheader_1:
+    jump ^unrolled_2
 
-  block ^for_body_2:
+  block ^unrolled_2:
+    %t2 = phi u32 [^loop_preheader_1: 0, ^unrolled_2: %t20]
+    %t3 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t19]
     %t4 = load typed i32 %p
-    %t5 = binary add nowrap i32 %t4, %t2
-    %t6 = binary add u32 %t1, 1
-    jump ^for_cond_1
+    %t5 = binary add nowrap i32 %t3, %t4
+    %t6 = load typed i32 %p
+    %t7 = binary add nowrap i32 %t5, %t6
+    %t8 = load typed i32 %p
+    %t9 = binary add nowrap i32 %t7, %t8
+    %t10 = load typed i32 %p
+    %t11 = binary add nowrap i32 %t9, %t10
+    %t12 = load typed i32 %p
+    %t13 = binary add nowrap i32 %t11, %t12
+    %t14 = load typed i32 %p
+    %t15 = binary add nowrap i32 %t13, %t14
+    %t16 = load typed i32 %p
+    %t17 = binary add nowrap i32 %t15, %t16
+    %t18 = load typed i32 %p
+    %t19 = binary add nowrap i32 %t17, %t18
+    %t20 = binary add nowrap u32 %t2, 8
+    %t21 = cmp ne u32 %t1, %t20
+    branch %t21, ^unrolled_2, ^wide_tail_3
 
-  block ^for_end_3:
-    return i32 %t2
+  block ^wide_tail_3:
+    %t22 = phi u32 [^entry: 0, ^unrolled_2: %t20]
+    %t23 = phi i32 [^entry: 0, ^unrolled_2: %t19]
+    jump ^for_cond_4
+
+  block ^for_cond_4:
+    %t24 = phi u32 [^wide_tail_3: %t22, ^for_body_5: %t29]
+    %t25 = phi i32 [^wide_tail_3: %t23, ^for_body_5: %t28]
+    %t26 = cmp ult u32 %t24, %n
+    branch %t26, ^for_body_5, ^for_end_6
+
+  block ^for_body_5:
+    %t27 = load typed i32 %p
+    %t28 = binary add nowrap i32 %t25, %t27
+    %t29 = binary add u32 %t24, 1
+    jump ^for_cond_4
+
+  block ^for_end_6:
+    return i32 %t25
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $input : i32
@@ -112,101 +144,103 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t7, ^if_then_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
-    %t8 = load typed i32 %t3
-    %t9 = cmp ne i32 %t8, 10
-    branch %t9, ^if_then_2, ^if_end_3
+    %t8 = index i8 [projection=field] %t1, 4
+    %t9 = load typed i32 %t8
+    %t10 = cmp ne i32 %t9, 10
+    branch %t10, ^if_then_2, ^if_end_3
 
   block ^if_then_2:
     return i32 1
 
   block ^if_end_3:
-    %t10 = call i32 @fields(%t1, %t4)
-    %t11 = cmp ne i32 %t10, 14
-    branch %t11, ^if_then_5, ^lor_rhs_4
+    %t11 = call i32 @fields(%t1, %t4)
+    %t12 = cmp ne i32 %t11, 14
+    branch %t12, ^if_then_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t12 = load typed i32 %t5
-    %t13 = cmp ne i32 %t12, 10
-    branch %t13, ^if_then_5, ^if_end_6
+    %t13 = index i8 [projection=field] %t4, 4
+    %t14 = load typed i32 %t13
+    %t15 = cmp ne i32 %t14, 10
+    branch %t15, ^if_then_5, ^if_end_6
 
   block ^if_then_5:
     return i32 2
 
   block ^if_end_6:
-    %t14 = load volatile i32 $input
-    store typed i32 %t14, $x
+    %t16 = load volatile i32 $input
+    store typed i32 %t16, $x
     store typed i32 1, $y
-    %t15 = addr $x
-    %t16 = call i32 @aliases(%t15, %t15)
-    %t17 = cmp ne i32 %t16, 17
-    branch %t17, ^if_then_8, ^lor_rhs_7
+    %t17 = addr $x
+    %t18 = call i32 @aliases(%t17, %t17)
+    %t19 = cmp ne i32 %t18, 17
+    branch %t19, ^if_then_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load typed i32 $x
-    %t19 = cmp ne i32 %t18, 10
-    branch %t19, ^if_then_8, ^if_end_9
+    %t20 = load typed i32 $x
+    %t21 = cmp ne i32 %t20, 10
+    branch %t21, ^if_then_8, ^if_end_9
 
   block ^if_then_8:
     return i32 3
 
   block ^if_end_9:
-    %t20 = load volatile i32 $input
-    store typed i32 %t20, $x
-    %t21 = addr $y
-    %t22 = call i32 @aliases(%t15, %t21)
-    %t23 = cmp ne i32 %t22, 14
-    branch %t23, ^if_then_11, ^lor_rhs_10
+    %t22 = load volatile i32 $input
+    store typed i32 %t22, $x
+    %t23 = addr $y
+    %t24 = call i32 @aliases(%t17, %t23)
+    %t25 = cmp ne i32 %t24, 14
+    branch %t25, ^if_then_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t24 = load typed i32 $y
-    %t25 = cmp ne i32 %t24, 10
-    branch %t25, ^if_then_11, ^if_end_12
+    %t26 = load typed i32 $y
+    %t27 = cmp ne i32 %t26, 10
+    branch %t27, ^if_then_11, ^if_end_12
 
   block ^if_then_11:
     return i32 4
 
   block ^if_end_12:
     store typed u32 305419896, $bits
-    %t26 = addr $bits
-    %t27 = call u32 @bytes(%t26, %t26)
-    %t28 = cmp ne u32 %t27, 120
-    branch %t28, ^if_then_13, ^if_else_14
+    %t28 = addr $bits
+    %t29 = call u32 @bytes(%t28, %t28)
+    %t30 = cmp ne u32 %t29, 120
+    branch %t30, ^if_then_13, ^if_else_14
 
   block ^if_then_13:
     return i32 5
 
   block ^if_else_14:
-    %t29 = load volatile i32 $input
-    %t30 = call i32 @call_path(%t29)
-    %t31 = cmp ne i32 %t30, 11
-    branch %t31, ^if_then_16, ^lor_rhs_15
+    %t31 = load volatile i32 $input
+    %t32 = call i32 @call_path(%t31)
+    %t33 = cmp ne i32 %t32, 11
+    branch %t33, ^if_then_16, ^lor_rhs_15
 
   block ^lor_rhs_15:
-    %t32 = load volatile i32 $input
-    %t33 = call i32 @private_slot(%t15, %t32)
-    %t34 = cmp ne i32 %t33, 7
-    branch %t34, ^if_then_16, ^if_end_17
+    %t34 = load volatile i32 $input
+    %t35 = call i32 @private_slot(%t17, %t34)
+    %t36 = cmp ne i32 %t35, 7
+    branch %t36, ^if_then_16, ^if_end_17
 
   block ^if_then_16:
     return i32 6
 
   block ^if_end_17:
-    %t35 = load volatile i32 $input
-    %t36 = call i32 @allocated(%t21, %t35)
-    %t37 = cmp ne i32 %t36, 10
-    branch %t37, ^if_then_18, ^if_else_19
+    %t37 = load volatile i32 $input
+    %t38 = call i32 @allocated(%t23, %t37)
+    %t39 = cmp ne i32 %t38, 10
+    branch %t39, ^if_then_18, ^if_else_19
 
   block ^if_then_18:
     return i32 7
 
   block ^if_else_19:
-    %t38 = call i32 @zero_trip(0, 0)
-    branch %t38, ^if_then_21, ^lor_rhs_20
+    %t40 = call i32 @zero_trip(0, 0)
+    branch %t40, ^if_then_21, ^lor_rhs_20
 
   block ^lor_rhs_20:
-    %t39 = call i32 @zero_trip(%t15, 3)
-    %t40 = cmp ne i32 %t39, 27
-    branch %t40, ^if_then_21, ^if_end_22
+    %t41 = call i32 @zero_trip(%t17, 3)
+    %t42 = cmp ne i32 %t41, 27
+    branch %t42, ^if_then_21, ^if_end_22
 
   block ^if_then_21:
     return i32 8

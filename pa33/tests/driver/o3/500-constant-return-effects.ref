@@ -70,38 +70,12 @@ function @exercise(%value : u32) -> u32 [binding=strong, object=_Z8exercisej, no
     call void @touch(%t23)
     %t24 = binary add u32 %value, 12
     call void @touch(%t24)
-    call void @touch(%t14)
-    call void @touch(%t15)
-    call void @touch(%t16)
-    call void @touch(%t17)
-    call void @touch(%t18)
-    call void @touch(%t19)
-    call void @touch(%t20)
-    call void @touch(%t21)
-    call void @touch(%t22)
-    call void @touch(%t23)
-    call void @touch(%t24)
-    %t25 = binary add u32 %value, 13
-    call void @touch(%t25)
-    %t26 = binary and u32 %t14, 1
-    %t27 = select u32 %t26, 5, 1
-    call void @touch(%t15)
-    call void @touch(%t16)
-    call void @touch(%t17)
-    call void @touch(%t18)
-    call void @touch(%t19)
-    call void @touch(%t20)
-    call void @touch(%t21)
-    call void @touch(%t22)
-    call void @touch(%t23)
-    call void @touch(%t24)
-    call void @touch(%t25)
-    %t28 = binary add u32 %value, 14
-    call void @touch(%t28)
-    %t29 = binary and u32 %t15, 1
-    %t30 = binary add u32 %t27, 8
-    %t31 = select u32 %t29, %t30, %t27
-    return u32 %t31
+    %t25 = call u8 @mixed(%t14)
+    %t26 = select u32 %t25, 5, 1
+    %t27 = call u8 @mixed(%t15)
+    %t28 = binary add u32 %t26, 8
+    %t29 = select u32 %t27, %t28, %t26
+    return u32 %t29
 }
 function @general_literals(%value : u32) -> u32 [binding=strong, object=_Z16general_literalsj, no_inline=yes] {
   block ^entry:
@@ -300,4 +274,33 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_18:
     return i32 0
+}
+function @mixed(%value : u32) -> u8 [binding=weak, object=_Z5mixedj, inline_hint=yes] {
+  block ^entry:
+    call void @touch(%value)
+    %t1 = binary add u32 %value, 1
+    call void @touch(%t1)
+    %t2 = binary add u32 %value, 2
+    call void @touch(%t2)
+    %t3 = binary add u32 %value, 3
+    call void @touch(%t3)
+    %t4 = binary add u32 %value, 4
+    call void @touch(%t4)
+    %t5 = binary add u32 %value, 5
+    call void @touch(%t5)
+    %t6 = binary add u32 %value, 6
+    call void @touch(%t6)
+    %t7 = binary add u32 %value, 7
+    call void @touch(%t7)
+    %t8 = binary add u32 %value, 8
+    call void @touch(%t8)
+    %t9 = binary add u32 %value, 9
+    call void @touch(%t9)
+    %t10 = binary add u32 %value, 10
+    call void @touch(%t10)
+    %t11 = binary add u32 %value, 11
+    call void @touch(%t11)
+    %t12 = binary and u32 %value, 1
+    %t13 = convert trunc u8 u32 %t12
+    return u8 %t13
 }

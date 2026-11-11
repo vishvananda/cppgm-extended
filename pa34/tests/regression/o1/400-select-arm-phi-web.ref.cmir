@@ -61,5 +61,4 @@ function @main
     mov rsi, 3
     call @flip [args=(rsi,rdi)]
     add rax, <gpr0>
-    sext.i32 rax
     ret rax

@@ -24,9 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = load typed i32 @observed
     %t2 = binary add i32 %t1, 8
     store typed i32 %t2, @observed
-    %t3 = binary add i32 %t1, 19
-    %t4 = cmp ne i32 %t3, 19
-    %t5 = select i64 %t4, 1, 0
-    %t6 = convert trunc i32 i64 %t5
-    return i32 %t6
+    %t3 = select i64 %t1, 1, 0
+    %t4 = convert trunc i32 i64 %t3
+    return i32 %t4
 }

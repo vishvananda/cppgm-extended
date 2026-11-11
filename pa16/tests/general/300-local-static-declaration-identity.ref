@@ -41,7 +41,7 @@ function @pick(%second : u8) -> i32 [binding=weak, object=_Z4pickILi3EEib] {
 
   block ^entry:
     store u8 %second, $second
-    %t1 = load u8 $second
+    %t1 = load typed u8 $second
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

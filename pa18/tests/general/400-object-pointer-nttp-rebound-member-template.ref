@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = load u8 @ns__mark
+    %t1 = load typed u8 @ns__mark
     branch %t1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -46,13 +46,13 @@ function @factory_class__ns__mark_int_int___factory_class(%this : ptr [object_by
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr @ns__mark
-    store u8 1, %t1
+    store typed u8 1, %t1
     return void
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     %t1 = call u8 @ns__core___cppgm_class_template_identity_1___init()
-    store u8 %t1, @ns__init
+    store typed u8 %t1, @ns__init
     return void
 }
 alias object _ZN2ns4coreI14factory_markerIXadL_ZNS_4markEEEEE10holder_argC2Ev = @ns__core___cppgm_class_template_identity_1___holder_arg__holder_arg

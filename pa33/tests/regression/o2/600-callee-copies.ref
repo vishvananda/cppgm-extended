@@ -40,31 +40,32 @@ function @count(%p : ptr, %n : i64, %f : ptr) -> i64 [binding=strong] {
 }
 function @main() -> i32 [role=entry] {
   block ^entry:
-    jump ^entry_1
-
-  block ^entry_1:
-    %t1 = phi i64 [^step_2: %t10, ^entry: 0]
-    %t2 = phi i64 [^step_2: %m_9, ^entry: 4]
-    %t3 = phi ptr [^step_2: %q_6, ^entry: @data]
-    %more_4 = cmp gt i64 %t2, 1
-    branch %more_4, ^step_2, ^none_3
-
-  block ^step_2:
-    %a_5 = load typed i64 %t3
-    %q_6 = index i8 %t3, 8
-    %b_7 = load typed i64 %q_6
-    %c_8 = cmp lt i64 %a_5, %b_7
-    %m_9 = binary sub i64 %t2, 1
-    %t10 = binary add i64 %t1, %c_8
-    jump ^entry_1
-
-  block ^none_3:
+    %t1 = load typed i64 @data
+    %t2 = index i8 @data, 8
+    %t3 = load typed i64 %t2
+    %t4 = cmp lt i64 %t1, %t3
+    %t5 = index i8 @data, 16
+    %t6 = load typed i64 %t5
+    %t7 = cmp lt i64 %t3, %t6
+    %t8 = binary add i64 %t4, %t7
+    %t9 = index i8 @data, 24
+    %t10 = load typed i64 %t9
+    %t11 = cmp lt i64 %t6, %t10
+    %t12 = binary add i64 %t8, %t11
     %pick = load volatile i64 @data
     %up = cmp gt i64 %pick, 4
     %which = select ptr %up, @more, @less
-    %descending = call i64 @count(@data, 4, %which)
-    %scaled = binary mul i64 %t1, 10
-    %all = binary add i64 %descending, %scaled
+    %t16 = call i64 %which(%t1, %t3) as (%l : i64, %r : i64) -> i64
+    %t17 = load typed i64 %t2
+    %t18 = load typed i64 %t5
+    %t19 = call i64 %which(%t17, %t18) as (%l : i64, %r : i64) -> i64
+    %t20 = binary add i64 %t16, %t19
+    %t21 = load typed i64 %t5
+    %t22 = load typed i64 %t9
+    %t23 = call i64 %which(%t21, %t22) as (%l : i64, %r : i64) -> i64
+    %t24 = binary add i64 %t20, %t23
+    %scaled = binary mul i64 %t12, 10
+    %all = binary add i64 %scaled, %t24
     %r = convert trunc i32 i64 %all
     return i32 %r
 }

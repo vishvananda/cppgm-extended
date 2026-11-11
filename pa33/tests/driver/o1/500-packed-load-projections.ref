@@ -53,75 +53,69 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = index i8 [projection=field] %t1, 4
     store typed f32 -3f, %t2
     %t3 = index i8 %t1, 8
-    %t4 = copy nonnull ptr %t3
-    store u8 2, %t4
-    %t5 = index i8 [projection=field] %t4, 4
-    store typed f32 0f, %t5
-    %t6 = index i8 %t1, 16
-    %t7 = copy nonnull ptr %t6
-    store u8 3, %t7
-    %t8 = index i8 [projection=field] %t7, 4
-    store typed f32 -0f, %t8
-    %t9 = index i8 %t1, 24
-    %t10 = copy nonnull ptr %t9
-    store u8 4, %t10
-    %t11 = index i8 [projection=field] %t10, 4
-    store typed f32 1f, %t11
-    %t12 = index i8 %t1, 32
-    %t13 = copy nonnull ptr %t12
-    store u8 5, %t13
-    %t14 = index i8 [projection=field] %t13, 4
-    store typed f32 3f, %t14
-    %t15 = index i8 %t1, 40
-    %t16 = copy nonnull ptr %t15
-    store u8 6, %t16
-    %t17 = index i8 [projection=field] %t16, 4
-    store typed f32 5f, %t17
-    %t18 = index i8 %t1, 48
-    %t19 = copy nonnull ptr %t18
-    store u8 7, %t19
-    %t20 = index i8 [projection=field] %t19, 4
-    store typed f32 7f, %t20
-    %t21 = call u32 @count_samples(3f, %t1, 7)
-    %t22 = cmp ne u32 %t21, 5
-    branch %t22, ^if_then_2, ^lor_rhs_1
+    store u8 2, %t3
+    %t4 = index i8 [projection=field] %t1, 12
+    store typed f32 0f, %t4
+    %t5 = index i8 %t1, 16
+    store u8 3, %t5
+    %t6 = index i8 [projection=field] %t1, 20
+    store typed f32 -0f, %t6
+    %t7 = index i8 %t1, 24
+    store u8 4, %t7
+    %t8 = index i8 [projection=field] %t1, 28
+    store typed f32 1f, %t8
+    %t9 = index i8 %t1, 32
+    store u8 5, %t9
+    %t10 = index i8 [projection=field] %t1, 36
+    store typed f32 3f, %t10
+    %t11 = index i8 %t1, 40
+    store u8 6, %t11
+    %t12 = index i8 [projection=field] %t1, 44
+    store typed f32 5f, %t12
+    %t13 = index i8 %t1, 48
+    store u8 7, %t13
+    %t14 = index i8 [projection=field] %t1, 52
+    store typed f32 7f, %t14
+    %t15 = call u32 @count_samples(3f, %t1, 7)
+    %t16 = cmp ne u32 %t15, 5
+    branch %t16, ^if_then_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
-    %t23 = call u32 @count_samples(-1f, %t1, 7)
-    %t24 = cmp ne u32 %t23, 1
-    branch %t24, ^if_then_2, ^if_end_3
+    %t17 = call u32 @count_samples(-1f, %t1, 7)
+    %t18 = cmp ne u32 %t17, 1
+    branch %t18, ^if_then_2, ^if_end_3
 
   block ^if_then_2:
     return i32 1
 
   block ^if_end_3:
-    %t25 = addr $patterns
-    copyobj 24x4 @__constexpr_template__1, %t25
+    %t19 = addr $patterns
+    copyobj 24x4 @__constexpr_template__1, %t19
     jump ^for_cond_4
 
   block ^for_cond_4:
-    %t26 = phi u32 [^if_end_3: 0, ^if_end_7: %t35]
-    %t27 = cmp ult u32 %t26, 6
-    branch %t27, ^for_body_5, ^for_end_8
+    %t20 = phi u32 [^if_end_3: 0, ^if_end_7: %t29]
+    %t21 = cmp ult u32 %t20, 6
+    branch %t21, ^for_body_5, ^for_end_8
 
   block ^for_body_5:
-    %t28 = addr $sample
-    %t29 = convert trunc u8 u32 %t26
-    store u8 %t29, %t28
-    %t30 = index i8 [projection=field] %t28, 4
-    store typed f32 0f, %t30
-    %t31 = index inbounds u32 [projection=array_element] %t25, %t26
-    copyobj 4x1 %t31, %t30
-    %t32 = call u32 @float_field(%t28)
-    %t33 = load typed u32 %t31
-    %t34 = cmp ne u32 %t32, %t33
-    branch %t34, ^if_then_6, ^if_end_7
+    %t22 = addr $sample
+    %t23 = convert trunc u8 u32 %t20
+    store u8 %t23, %t22
+    %t24 = index i8 [projection=field] %t22, 4
+    store typed f32 0f, %t24
+    %t25 = index inbounds u32 [projection=array_element] %t19, %t20
+    copyobj 4x1 %t25, %t24
+    %t26 = call u32 @float_field(%t22)
+    %t27 = load typed u32 %t25
+    %t28 = cmp ne u32 %t26, %t27
+    branch %t28, ^if_then_6, ^if_end_7
 
   block ^if_then_6:
     return i32 2
 
   block ^if_end_7:
-    %t35 = binary add u32 %t26, 1
+    %t29 = binary add u32 %t20, 1
     jump ^for_cond_4
 
   block ^for_end_8:

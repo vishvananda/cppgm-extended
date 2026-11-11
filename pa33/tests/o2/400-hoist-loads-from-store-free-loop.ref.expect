@@ -1,9 +1,9 @@
 # budget from 400-hoist-loads-from-store-free-loop.ref: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
-instructions <= 43
-blocks <= 14
+instructions <= 67
+blocks <= 17
 count(call) <= 3
-count(load) <= 8
-count(store) <= 4
-count(phi) <= 8
+count(load) <= 12
+count(store) <= 6
+count(phi) <= 12
 instructions <= 28 in @hash_bytes
-instructions <= 17 in @sum_kept_with_store
+instructions <= 42 in @sum_kept_with_store

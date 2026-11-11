@@ -6,11 +6,54 @@ function @disjoint_state(%index : u8, %other : u8, %count : u32) -> u32 [unwind=
     %selected = index u8 %base, %index
     %read = index u8 %base, %other
     store u8 3, %read
+    %t4 = binary and u32 %count, 4294967292
+    branch %t4, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t5 = phi u32 [^loop_preheader_1: 7, ^unrolled_2: %t29]
+    %t6 = phi u32 [^loop_preheader_1: 0, ^unrolled_2: %t30]
+    %t7 = convert trunc u8 u32 %t6
+    store u8 %t7, %selected
+    %t8 = load u8 %read
+    %t9 = convert zext u32 u8 %t8
+    %t10 = binary add u32 %t6, %t9
+    %t11 = binary add u32 %t5, %t10
+    %t12 = binary add nowrap u32 %t6, 1
+    %t13 = convert trunc u8 u32 %t12
+    store u8 %t13, %selected
+    %t14 = load u8 %read
+    %t15 = convert zext u32 u8 %t14
+    %t16 = binary add u32 %t12, %t15
+    %t17 = binary add u32 %t11, %t16
+    %t18 = binary add nowrap u32 %t6, 2
+    %t19 = convert trunc u8 u32 %t18
+    store u8 %t19, %selected
+    %t20 = load u8 %read
+    %t21 = convert zext u32 u8 %t20
+    %t22 = binary add u32 %t18, %t21
+    %t23 = binary add u32 %t17, %t22
+    %t24 = binary add nowrap u32 %t6, 3
+    %t25 = convert trunc u8 u32 %t24
+    store u8 %t25, %selected
+    %t26 = load u8 %read
+    %t27 = convert zext u32 u8 %t26
+    %t28 = binary add u32 %t24, %t27
+    %t29 = binary add u32 %t23, %t28
+    %t30 = binary add nowrap u32 %t6, 4
+    %t31 = cmp ne u32 %t4, %t30
+    branch %t31, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t32 = phi u32 [^entry: 7, ^unrolled_2: %t29]
+    %t33 = phi u32 [^entry: 0, ^unrolled_2: %t30]
     jump ^loop
 
   block ^loop:
-    %t4 = phi u32 [^entry: 7, ^body: %sum]
-    %i = phi u32 [^entry: 0, ^body: %next]
+    %t34 = phi u32 [^wide_tail_3: %t32, ^body: %sum]
+    %i = phi u32 [^wide_tail_3: %t33, ^body: %next]
     %more = cmp ult u32 %i, %count
     branch %more, ^body, ^end
 
@@ -20,12 +63,12 @@ function @disjoint_state(%index : u8, %other : u8, %count : u32) -> u32 [unwind=
     %read_byte = load u8 %read
     %amount = convert zext u32 u8 %read_byte
     %step = binary add u32 %i, %amount
-    %sum = binary add u32 %step, %t4
+    %sum = binary add u32 %t34, %step
     %next = binary add u32 %i, 1
     jump ^loop
 
   block ^end:
-    return u32 %t4
+    return u32 %t34
 }
 function @overlap_chain(%index : u8) -> i64 [unwind=no, no_inline=yes] {
   slot $state : obj<272x8>

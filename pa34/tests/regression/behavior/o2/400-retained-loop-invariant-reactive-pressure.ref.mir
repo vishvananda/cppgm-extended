@@ -123,12 +123,12 @@ function @walk
     frame_pointer keep
     epilogues duplicated
     preserve rbx r12 r13 r14
-    slot $fallback -> [rbp-8] : u32
-    slot $payload -> [rbp-16] : u32
+    slot $fallback -> [rbp-16] : u32
+    slot $payload -> [rbp-8] : u32
 
   block ^entry
     mov r14, rcx
-    store.u32 [rbp-8], rdx
+    store.u32 [rbp-16], rdx
     lea rbx, [rdi+24]
     load.ptr rax, [rbx]
     lea rdi, [rax+32]
@@ -173,7 +173,7 @@ function @walk
 
   block ^outer_done
     mov rdi, r14
-    lea rsi, [rbp-8]
+    lea rsi, [rbp-16]
     call @append [args=(rsi,rdi), unwind=no]
     ret
 
@@ -185,9 +185,9 @@ function @walk
     load.u32 rsi, [rax]
     mov rdi, r13
     call @payload [args=(rsi,rdi), unwind=no]
-    store.u32 [rbp-16], rax
+    store.u32 [rbp-8], rax
     mov rdi, r14
-    lea rsi, [rbp-16]
+    lea rsi, [rbp-8]
     call @append [args=(rsi,rdi), unwind=no]
     load.ptr rax, [rbx]
     lea rdi, [rax+56]

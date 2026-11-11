@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $r
     %t2 = addr $r
     %t3 = index i8 [projection=field] %t2, 0
-    store u8 1, %t3
+    store typed u8 1, %t3
     %t4 = addr $r
     %t5 = call i64 @result__operatorbool_type(%t4)
     %t6 = binary add i64 %t5, 1
@@ -32,7 +32,7 @@ function @result__operatorbool_type(%this : ptr [object_bytes=1]) -> i64 [bindin
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load u8 %t2
+    %t3 = load typed u8 %t2
     branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

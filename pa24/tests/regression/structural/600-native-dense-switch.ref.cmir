@@ -17,8 +17,7 @@ function @signed
     epilogues shared
 
   block ^entry
-    mov <gpr0>, rdi
-    sub <gpr0>, -4
+    lea <gpr0>, [rdi+<off0>]
     cmp.i64 <gpr0>, 11
     ja ^fallback
     jump_table <gpr0>, [^c0, ^c1, ^c2, ^c3, ^c4, ^c5, ^c6, ^c7, ^c8, ^c9, ^c10, ^c11]
@@ -87,8 +86,7 @@ function @unsigned
     epilogues shared
 
   block ^entry
-    mov <gpr0>, rdi
-    sub <gpr0>, 2147483644
+    lea <gpr0>, [rdi-<off0>]
     cmp.i64 <gpr0>, 11
     ja ^fallback
     jump_table <gpr0>, [^c0, ^c1, ^c2, ^c3, ^c4, ^c5, ^c6, ^c7, ^c8, ^c9, ^c10, ^c11]
@@ -157,10 +155,9 @@ function @holes
     epilogues shared
 
   block ^entry
-    mov <gpr0>, rdi
-    cmp.i64 <gpr0>, 14
+    cmp.i64 rdi, 14
     ja ^fallback
-    jump_table <gpr0>, [^c0, ^fallback, ^c1, ^fallback, ^c2, ^fallback, ^c3, ^fallback, ^c4, ^fallback, ^c5, ^fallback, ^c6, ^fallback, ^c7]
+    jump_table rdi, [^c0, ^fallback, ^c1, ^fallback, ^c2, ^fallback, ^c3, ^fallback, ^c4, ^fallback, ^c5, ^fallback, ^c6, ^fallback, ^c7]
 
   block ^c0
     add rsi, 7
@@ -210,8 +207,7 @@ function @negative
     epilogues shared
 
   block ^entry
-    mov <gpr0>, rdi
-    sub <gpr0>, -20
+    lea <gpr0>, [rdi+<off1>]
     cmp.i64 <gpr0>, 11
     ja ^fallback
     jump_table <gpr0>, [^c0, ^c1, ^c2, ^c3, ^c4, ^c5, ^c6, ^c7, ^c8, ^c9, ^c10, ^c11]
@@ -280,8 +276,7 @@ function @duplicate
     epilogues shared
 
   block ^entry
-    mov <gpr0>, rdi
-    sub <gpr0>, 1
+    lea <gpr0>, [rdi-<off1>]
     cmp.i64 <gpr0>, 7
     ja ^fallback
     jump_table <gpr0>, [^c0, ^c1, ^c2, ^c3, ^c4, ^c5, ^c6, ^c7]

@@ -5,7 +5,7 @@ function @make(%b : u8) -> obj<4x4> [binding=strong, object=_Z4makeb] {
   block ^entry:
     store u8 %b, $b
     %t1 = addr $retobj__1
-    %t2 = load u8 $b
+    %t2 = load typed u8 $b
     branch %t2, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:

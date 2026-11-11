@@ -783,7 +783,7 @@ function @case_2__f(%flag : u8) -> i32 [binding=strong, object=_ZN6case_21fEb] {
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
-    %t13 = load u8 $flag
+    %t13 = load typed u8 $flag
     branch %t13, ^if_then_14, ^if_else_15
 
   block ^if_then_14:

@@ -1,11 +1,46 @@
 function @signed_scale(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes] {
   block ^entry:
     %scale = convert sitofp f64 i64 %k
+    %t2 = binary and i64 %n, -4
+    branch %t2, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t24]
+    %t4 = phi f64 [^loop_preheader_1: 0, ^unrolled_2: %t23]
+    %t5 = index f64 %p, %t3
+    %t6 = load f64 %t5
+    %t7 = binary mul f64 %scale, %t6
+    %t8 = binary add f64 %t4, %t7
+    %t9 = binary add i64 %t3, 1
+    %t10 = index f64 %p, %t9
+    %t11 = load f64 %t10
+    %t12 = binary mul f64 %scale, %t11
+    %t13 = binary add f64 %t8, %t12
+    %t14 = binary add i64 %t3, 2
+    %t15 = index f64 %p, %t14
+    %t16 = load f64 %t15
+    %t17 = binary mul f64 %scale, %t16
+    %t18 = binary add f64 %t13, %t17
+    %t19 = binary add i64 %t3, 3
+    %t20 = index f64 %p, %t19
+    %t21 = load f64 %t20
+    %t22 = binary mul f64 %scale, %t21
+    %t23 = binary add f64 %t18, %t22
+    %t24 = binary add i64 %t3, 4
+    %t25 = cmp ne i64 %t2, %t24
+    branch %t25, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t26 = phi i64 [^entry: 0, ^unrolled_2: %t24]
+    %t27 = phi f64 [^entry: 0, ^unrolled_2: %t23]
     jump ^cond
 
   block ^cond:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %sum = phi f64 [^entry: 0, ^body: %total]
+    %i = phi i64 [^wide_tail_3: %t26, ^body: %next]
+    %sum = phi f64 [^wide_tail_3: %t27, ^body: %total]
     %more = cmp ult i64 %i, %n
     branch %more, ^body, ^done
 
@@ -23,11 +58,46 @@ function @signed_scale(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes] {
 function @unsigned_scale(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes] {
   block ^entry:
     %scale = convert uitofp f64 i64 %k
+    %t2 = binary and i64 %n, -4
+    branch %t2, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t24]
+    %t4 = phi f64 [^loop_preheader_1: 0, ^unrolled_2: %t23]
+    %t5 = index f64 %p, %t3
+    %t6 = load f64 %t5
+    %t7 = binary mul f64 %scale, %t6
+    %t8 = binary add f64 %t4, %t7
+    %t9 = binary add i64 %t3, 1
+    %t10 = index f64 %p, %t9
+    %t11 = load f64 %t10
+    %t12 = binary mul f64 %scale, %t11
+    %t13 = binary add f64 %t8, %t12
+    %t14 = binary add i64 %t3, 2
+    %t15 = index f64 %p, %t14
+    %t16 = load f64 %t15
+    %t17 = binary mul f64 %scale, %t16
+    %t18 = binary add f64 %t13, %t17
+    %t19 = binary add i64 %t3, 3
+    %t20 = index f64 %p, %t19
+    %t21 = load f64 %t20
+    %t22 = binary mul f64 %scale, %t21
+    %t23 = binary add f64 %t18, %t22
+    %t24 = binary add i64 %t3, 4
+    %t25 = cmp ne i64 %t2, %t24
+    branch %t25, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t26 = phi i64 [^entry: 0, ^unrolled_2: %t24]
+    %t27 = phi f64 [^entry: 0, ^unrolled_2: %t23]
     jump ^cond
 
   block ^cond:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %sum = phi f64 [^entry: 0, ^body: %total]
+    %i = phi i64 [^wide_tail_3: %t26, ^body: %next]
+    %sum = phi f64 [^wide_tail_3: %t27, ^body: %total]
     %more = cmp ult i64 %i, %n
     branch %more, ^body, ^done
 
@@ -45,11 +115,46 @@ function @unsigned_scale(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes] {
 function @narrow_scale(%p : ptr, %n : i64, %k : i32) -> f32 [no_inline=yes] {
   block ^entry:
     %scale = convert sitofp f32 i32 %k
+    %t2 = binary and i64 %n, -4
+    branch %t2, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t24]
+    %t4 = phi f32 [^loop_preheader_1: 0f, ^unrolled_2: %t23]
+    %t5 = index f32 %p, %t3
+    %t6 = load f32 %t5
+    %t7 = binary mul f32 %scale, %t6
+    %t8 = binary add f32 %t4, %t7
+    %t9 = binary add i64 %t3, 1
+    %t10 = index f32 %p, %t9
+    %t11 = load f32 %t10
+    %t12 = binary mul f32 %scale, %t11
+    %t13 = binary add f32 %t8, %t12
+    %t14 = binary add i64 %t3, 2
+    %t15 = index f32 %p, %t14
+    %t16 = load f32 %t15
+    %t17 = binary mul f32 %scale, %t16
+    %t18 = binary add f32 %t13, %t17
+    %t19 = binary add i64 %t3, 3
+    %t20 = index f32 %p, %t19
+    %t21 = load f32 %t20
+    %t22 = binary mul f32 %scale, %t21
+    %t23 = binary add f32 %t18, %t22
+    %t24 = binary add i64 %t3, 4
+    %t25 = cmp ne i64 %t2, %t24
+    branch %t25, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t26 = phi i64 [^entry: 0, ^unrolled_2: %t24]
+    %t27 = phi f32 [^entry: 0f, ^unrolled_2: %t23]
     jump ^cond
 
   block ^cond:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %sum = phi f32 [^entry: 0f, ^body: %total]
+    %i = phi i64 [^wide_tail_3: %t26, ^body: %next]
+    %sum = phi f32 [^wide_tail_3: %t27, ^body: %total]
     %more = cmp ult i64 %i, %n
     branch %more, ^body, ^done
 
@@ -66,11 +171,47 @@ function @narrow_scale(%p : ptr, %n : i64, %k : i32) -> f32 [no_inline=yes] {
 }
 function @wide_source(%p : ptr, %n : i64, %k : i128) -> f64 [no_inline=yes] {
   block ^entry:
+    %t1 = binary and i64 %n, -4
+    branch %t1, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t24]
+    %t3 = phi f64 [^loop_preheader_1: 0, ^unrolled_2: %t23]
+    %t4 = convert sitofp f64 i128 %k
+    %t5 = index f64 %p, %t2
+    %t6 = load f64 %t5
+    %t7 = binary mul f64 %t4, %t6
+    %t8 = binary add f64 %t3, %t7
+    %t9 = binary add i64 %t2, 1
+    %t10 = index f64 %p, %t9
+    %t11 = load f64 %t10
+    %t12 = binary mul f64 %t4, %t11
+    %t13 = binary add f64 %t8, %t12
+    %t14 = binary add i64 %t2, 2
+    %t15 = index f64 %p, %t14
+    %t16 = load f64 %t15
+    %t17 = binary mul f64 %t4, %t16
+    %t18 = binary add f64 %t13, %t17
+    %t19 = binary add i64 %t2, 3
+    %t20 = index f64 %p, %t19
+    %t21 = load f64 %t20
+    %t22 = binary mul f64 %t4, %t21
+    %t23 = binary add f64 %t18, %t22
+    %t24 = binary add i64 %t2, 4
+    %t25 = cmp ne i64 %t1, %t24
+    branch %t25, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t26 = phi i64 [^entry: 0, ^unrolled_2: %t24]
+    %t27 = phi f64 [^entry: 0, ^unrolled_2: %t23]
     jump ^cond
 
   block ^cond:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %sum = phi f64 [^entry: 0, ^body: %total]
+    %i = phi i64 [^wide_tail_3: %t26, ^body: %next]
+    %sum = phi f64 [^wide_tail_3: %t27, ^body: %total]
     %more = cmp ult i64 %i, %n
     branch %more, ^body, ^done
 
@@ -89,11 +230,50 @@ function @wide_source(%p : ptr, %n : i64, %k : i128) -> f64 [no_inline=yes] {
 function @operand_read_again(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes] {
   block ^entry:
     %scale = convert sitofp f64 i64 %k
+    %t2 = binary and i64 %n, -4
+    branch %t2, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t28]
+    %t4 = phi f64 [^loop_preheader_1: 0, ^unrolled_2: %t27]
+    %t5 = binary add i64 %k, %t3
+    %t6 = index f64 %p, %t5
+    %t7 = load f64 %t6
+    %t8 = binary mul f64 %scale, %t7
+    %t9 = binary add f64 %t4, %t8
+    %t10 = binary add i64 %t3, 1
+    %t11 = binary add i64 %k, %t10
+    %t12 = index f64 %p, %t11
+    %t13 = load f64 %t12
+    %t14 = binary mul f64 %scale, %t13
+    %t15 = binary add f64 %t9, %t14
+    %t16 = binary add i64 %t3, 2
+    %t17 = binary add i64 %k, %t16
+    %t18 = index f64 %p, %t17
+    %t19 = load f64 %t18
+    %t20 = binary mul f64 %scale, %t19
+    %t21 = binary add f64 %t15, %t20
+    %t22 = binary add i64 %t3, 3
+    %t23 = binary add i64 %k, %t22
+    %t24 = index f64 %p, %t23
+    %t25 = load f64 %t24
+    %t26 = binary mul f64 %scale, %t25
+    %t27 = binary add f64 %t21, %t26
+    %t28 = binary add i64 %t3, 4
+    %t29 = cmp ne i64 %t2, %t28
+    branch %t29, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t30 = phi i64 [^entry: 0, ^unrolled_2: %t28]
+    %t31 = phi f64 [^entry: 0, ^unrolled_2: %t27]
     jump ^cond
 
   block ^cond:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %sum = phi f64 [^entry: 0, ^body: %total]
+    %i = phi i64 [^wide_tail_3: %t30, ^body: %next]
+    %sum = phi f64 [^wide_tail_3: %t31, ^body: %total]
     %more = cmp ult i64 %i, %n
     branch %more, ^body, ^done
 
@@ -111,11 +291,50 @@ function @operand_read_again(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes
 }
 function @varying_source(%p : ptr, %n : i64) -> f64 [no_inline=yes] {
   block ^entry:
+    %t1 = binary and i64 %n, -4
+    branch %t1, ^loop_preheader_1, ^wide_tail_3
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t27]
+    %t3 = phi f64 [^loop_preheader_1: 0, ^unrolled_2: %t26]
+    %t4 = convert uitofp f64 i64 %t2
+    %t5 = index f64 %p, %t2
+    %t6 = load f64 %t5
+    %t7 = binary mul f64 %t4, %t6
+    %t8 = binary add f64 %t3, %t7
+    %t9 = binary add i64 %t2, 1
+    %t10 = convert uitofp f64 i64 %t9
+    %t11 = index f64 %p, %t9
+    %t12 = load f64 %t11
+    %t13 = binary mul f64 %t10, %t12
+    %t14 = binary add f64 %t8, %t13
+    %t15 = binary add i64 %t2, 2
+    %t16 = convert uitofp f64 i64 %t15
+    %t17 = index f64 %p, %t15
+    %t18 = load f64 %t17
+    %t19 = binary mul f64 %t16, %t18
+    %t20 = binary add f64 %t14, %t19
+    %t21 = binary add i64 %t2, 3
+    %t22 = convert uitofp f64 i64 %t21
+    %t23 = index f64 %p, %t21
+    %t24 = load f64 %t23
+    %t25 = binary mul f64 %t22, %t24
+    %t26 = binary add f64 %t20, %t25
+    %t27 = binary add i64 %t2, 4
+    %t28 = cmp ne i64 %t1, %t27
+    branch %t28, ^unrolled_2, ^wide_tail_3
+
+  block ^wide_tail_3:
+    %t29 = phi i64 [^entry: 0, ^unrolled_2: %t27]
+    %t30 = phi f64 [^entry: 0, ^unrolled_2: %t26]
     jump ^cond
 
   block ^cond:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %sum = phi f64 [^entry: 0, ^body: %total]
+    %i = phi i64 [^wide_tail_3: %t29, ^body: %next]
+    %sum = phi f64 [^wide_tail_3: %t30, ^body: %total]
     %more = cmp ult i64 %i, %n
     branch %more, ^body, ^done
 
