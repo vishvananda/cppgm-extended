@@ -26,6 +26,7 @@ private:
 	FunctionContext& c_;
 	FunctionBody& body_;
 	std::vector<BlockId> block_of_;
+	std::vector<uint32_t> uses_; // per temp, as the pass began
 
 	const Instruction* producer(Value v) const
 	{
@@ -105,6 +106,7 @@ private:
 	uint64_t possible_ones(Value v, Type type, unsigned depth) const;
 	bool field_load(InstId id);
 	bool shifted_test(BlockId block, InstId& prev, Value& tested, uint32_t location);
+	bool shifted_compare(BlockId block, InstId& prev, InstId id);
 	bool whole_shift(InstId id);
 	bool field_store(BlockId block, InstId& prev, InstId id);
 };
@@ -208,6 +210,40 @@ bool FieldAccess::shifted_test(BlockId block, InstId& prev, Value& tested, uint3
 	moved.ops[1] = integer_value(body_, Literal{ mask << count, 0 });
 	moved.location = location;
 	tested = Value::temp(body_.instructions[emit(block, prev, moved)].result);
+	return true;
+}
+
+// `cmp eq (and (shr x, c), m), k` (or `ne`), the shift and the mask read by
+// nothing else: `cmp eq (and x, m << c), k << c`, the field compared where
+// it lies in its word. (Late: the passes that gather a field's tests read
+// the field's own value.)
+bool FieldAccess::shifted_compare(BlockId block, InstId& prev, InstId id)
+{
+	const Instruction seen = body_.instructions[id];
+	const Instruction* conj = producer(seen.ops[0]);
+	if (conj == nullptr || conj->op != Opcode::Binary || static_cast<BinaryOp>(conj->sub) != BinaryOp::And ||
+		conj->type != seen.type || conj->result >= uses_.size() || uses_[conj->result] != 1)
+		return false;
+	const Type type = conj->type;
+	const unsigned bits = type.is_integer() ? lowir::integer_bits(type.kind()) : 0;
+	uint64_t mask, count, k;
+	bool arithmetic;
+	if (bits == 0 || bits > 64 || !literal(conj->ops[1], bits, mask) || !literal(seen.ops[1], bits, k))
+		return false;
+	const Instruction* shift = right_shift(conj->ops[0], type, count, arithmetic);
+	// (An immediate is 32 bits, sign-extended.)
+	if (shift == nullptr || shift->result >= uses_.size() || uses_[shift->result] != 1 || count == 0 || mask == 0 ||
+		mask > (ones(bits) >> count) || (mask << count) > 0x7fffffffull || (k & ~mask) != 0)
+		return false;
+	Instruction moved = make_instruction(Opcode::Binary, type);
+	moved.sub = static_cast<uint8_t>(BinaryOp::And);
+	moved.ops[0] = shift->ops[0];
+	moved.ops[1] = integer_value(body_, normalize_integer(type, Literal{ mask << count, 0 }));
+	moved.location = seen.location;
+	const Value field = Value::temp(body_.instructions[emit(block, prev, moved)].result);
+	Instruction& out = body_.instructions[id];
+	out.ops[0] = field;
+	out.ops[1] = integer_value(body_, normalize_integer(type, Literal{ k << count, 0 }));
 	return true;
 }
 
@@ -331,6 +367,16 @@ bool FieldAccess::run(bool loads)
 {
 	map_instruction_blocks(body_, block_of_);
 	bool changed = false;
+	if (!loads)
+	{
+		uses_.assign(body_.temps.size(), 0);
+		for (BlockId b : body_.layout)
+			for (InstId id = body_.blocks[b].first; id != kNoId; id = body_.instructions[id].next)
+				for_each_operand(body_, body_.instructions[id], [&](const Value& v) {
+					if (v.is(ValueKind::Temp))
+						++uses_[v.index];
+				});
+	}
 	for (BlockId b : body_.layout)
 	{
 		InstId prev = kNoId;
@@ -344,17 +390,19 @@ bool FieldAccess::run(bool loads)
 					changed = field_load(id) || whole_shift(id) || changed;
 				continue;
 			}
-			const bool test = seen.op == Opcode::Branch ||
-				(seen.op == Opcode::Compare && seen.type.is_integer() &&
-					(static_cast<ComparePredicate>(seen.sub) == ComparePredicate::Eq ||
-						static_cast<ComparePredicate>(seen.sub) == ComparePredicate::Ne) &&
-					literal(seen.ops[1], 64, zero) && zero == 0);
+			const bool equality = seen.op == Opcode::Compare && seen.type.is_integer() &&
+				(static_cast<ComparePredicate>(seen.sub) == ComparePredicate::Eq ||
+					static_cast<ComparePredicate>(seen.sub) == ComparePredicate::Ne) &&
+				literal(seen.ops[1], 64, zero);
+			const bool test = seen.op == Opcode::Branch || (equality && zero == 0);
 			Value tested = seen.ops[0];
 			if (test && tested.is(ValueKind::Temp) && shifted_test(b, prev, tested, seen.location))
 			{
 				body_.instructions[id].ops[0] = tested;
 				changed = true;
 			}
+			else if (equality && zero != 0 && shifted_compare(b, prev, id))
+				changed = true;
 			else if (seen.op == Opcode::Store)
 				changed = field_store(b, prev, id) || changed;
 		}
