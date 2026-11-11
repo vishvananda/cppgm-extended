@@ -153,7 +153,7 @@ Every observation, immutable binary, input hash and candidate source patch is
 retained in `perf-varargs-final/`; no wall-time claim is made.
 
 
-## Scalar i128 implementation (qualification in progress)
+## Scalar i128 checkpoint
 
 The selector now preserves scalar i128 snapshots, literal halves, narrow views,
 volatile storage, signed/unsigned comparisons, carry/borrow, bit operations,
@@ -172,5 +172,28 @@ values crossing source merges remain in slots, and the shared optimizer may
 expand them into i64 halves. Scalar typed control results are now validated,
 including the required else arm of a value-producing if.
 
-Complete native/export checks and qualification on the latest committed LLVM
-base are still pending. This is not a completed assignment checkpoint.
+`091293697` is rebased onto local LLVM tip `ac254985a`. The strict report
+passes 10731/10731, and PA37 passes 60/60 with both host-built and self-built
+tools. Debug-info checks, PA5 self-host, byte-identical inception and PA36
+smoke (3/3) pass. Architecture/source/format/scaffold/file checks and Clang 21
+syntax checks pass; the eight inherited file-audit warnings remain. The
+complete harness passes. Placement qualification is still running.
+
+The student export regenerates consistently, including the current LLVM
+branch's informational MIR references. A fresh bundle client passes its
+270-document inventory and all 43 wrapper checks. The previous informational
+reference-only regeneration commit was superseded during the rebase by the
+newer LLVM references. Logs have the prefix `i128-`.
+
+The native performance comparison uses frozen binaries on the same LLVM base,
+rebuilding the preceding Wasm source set and reusing identical common/native
+objects. At O0, instructions change from 3,058,641,559 to 3,058,753,481
+(+0.0037%); at O3 from 9,951,635,124 to 9,951,563,214 (-0.00072%). Objects
+are byte-identical. Build commands, baseline source archive, input paths,
+binary hashes and every observation are retained in `perf-i128-rebased/`.
+These counts make no wall-time claim.
+
+Full classes/RTTI/EH, SIMD, remaining target type/layout boundaries, quality,
+benchmarks and final complete qualification remain required. Concrete class
+layout/member-pointer reducers are recorded in the maintainer reference
+evidence; this checkpoint does not complete PA37.

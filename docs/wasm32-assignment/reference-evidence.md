@@ -151,3 +151,42 @@ puts its empty read last to avoid relying on that reference defect. A separate
 cppgm behavior test checks empty records between narrow values without consuming
 a slot. This does not prescribe the reference compiler's erroneous cursor
 advance as a student requirement.
+
+
+## Scalar i128 and the next class boundary
+
+The scalar i128 checkpoint is `091293697` on local LLVM base `ac254985a`.
+An SDK 34 assembly probe confirms two i64 arguments and an indirect result,
+including compiler-rt multiplication/division and integer/float conversions.
+The numerical fixture's digest (1897815904) agrees with independent GCC 15 and
+Clang 21 builds. Commands, assembly, immutable binaries and all observations
+are retained in the external evidence directory.
+
+Class support is still incomplete. Three independent LLVM/cppgm reducers
+make the next changes concrete:
+
+- `class-layout-probe.cpp`: LLVM accepts an eight-byte polymorphic object
+  containing a vptr and int; cppgm fails that assertion.
+  `Analyzer::place_table_pointer` uses a fixed 64-bit count before placing
+  members, despite using the target pointer size for size/alignment.
+- `class-member-pointer-neighbor-probe.cpp`: a member-function pointer followed
+  by a sentinel works with LLVM and traps with cppgm. The semantic size is
+  correctly eight bytes, but lowering still uses the native i128 carrier and
+  64-bit function/adjustment words. A pointer stored alone can appear to work;
+  the neighboring field exposes the representation mismatch.
+- `class-virtual-probe.cpp`: vtable/typeinfo output still requires a target
+  C++ runtime and target-sized table entries/headers. Native eight-byte table
+  strides and sixteen-byte RTTI address points remain in lowering.
+
+Retain those reducers for the class stage. Use one typed target C++ ABI policy
+for pointer-word width and member-pointer tagging, carry it through layout,
+constants, data emission and calls, and preserve native output. Wasm's function
+member discriminator is in the adjustment word; mixed producer tests must
+check both directions, field neighbors, multiple/virtual inheritance, nulls,
+RTTI, guards and destruction. An internally consistent but native-shaped
+representation does not establish target ABI compatibility.
+
+The pinned LLVM default Wasm target rejects source `_Float16` and `__bf16`;
+`half-reference-probe.cpp` records that capability check. Do not infer their
+public C ABI from native half conventions or silently use an x86 helper ABI.
+The target's binary128 and i128 boundaries are independently established.
