@@ -1,0 +1,10 @@
+<svg data-original-label="self compile speed vs clang" data-original-message="3.9×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="self compile speed vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; measured 8287f480c7b5bdb2074c8941689aa36f9c233bd7; 87 commits behind main: 3.9×*">
+  <title>self compile speed vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; measured 8287f480c7b5bdb2074c8941689aa36f9c233bd7; 87 commits behind main: 3.9×*</title>
+  <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
+  <g clip-path="url(#badge)">
+    <rect width="64" height="24" fill="#555"/>
+    <rect x="64" width="56" height="24" fill="#14532d"/>
+  </g>
+  <text x="32" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" textLength="52" lengthAdjust="spacingAndGlyphs">CI Intel</text>
+  <text x="92" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">3.9×*</text>
+</svg>

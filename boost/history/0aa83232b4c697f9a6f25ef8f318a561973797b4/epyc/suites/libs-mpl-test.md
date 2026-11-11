@@ -1,0 +1,109 @@
+# libs/mpl/test
+
+All original oracles passed for all three compilers. Seconds are child CPU, one clean campaign per compiler. Test execution includes startup and GDB; small timings need repeats.
+
+| Test | Kind | Compile cppgm | GCC | Clang | Test cppgm | GCC | Clang |
+|---|---|---:|---:|---:|---:|---:|---:|
+| increased_arity.test | COMPILE | 0.334550 | 0.784199 | 0.750587 | — | — | — |
+| largest_int.test | COMPILE | 0.118087 | 0.206429 | 0.255881 | — | — | — |
+| msvc_is_class.test | COMPILE | 0.014407 | 0.024819 | 0.035313 | — | — | — |
+| template_arity.test | COMPILE | 0.117555 | 0.203817 | 0.251316 | — | — | — |
+| is_seq.test | COMPILE | 0.005178 | 0.012290 | 0.025823 | — | — | — |
+| token_equal.test | COMPILE | 0.005251 | 0.012921 | 0.025588 | — | — | — |
+| advance.test | COMPILE | 0.128642 | 0.231296 | 0.301883 | — | — | — |
+| always.test | COMPILE | 0.130083 | 0.236874 | 0.312745 | — | — | — |
+| apply.test | COMPILE | 0.140421 | 0.248578 | 0.323196 | — | — | — |
+| apply_wrap.test | COMPILE | 0.121756 | 0.205181 | 0.323171 | — | — | — |
+| arithmetic.test | COMPILE | 0.131499 | 0.232757 | 0.372806 | — | — | — |
+| as_sequence.test | COMPILE | 0.138781 | 0.262267 | 0.388751 | — | — | — |
+| assert.test | COMPILE | 0.037237 | 0.052447 | 0.102409 | — | — | — |
+| at.test | COMPILE | 0.139201 | 0.255023 | 0.335588 | — | — | — |
+| back.test | COMPILE | 0.131451 | 0.241745 | 0.318645 | — | — | — |
+| bind.test | COMPILE | 0.129562 | 0.230131 | 0.301104 | — | — | — |
+| bitwise.test | COMPILE | 0.131227 | 0.239082 | 0.308574 | — | — | — |
+| bool.test | RUN | 0.120169 | 0.204551 | 0.286393 | 0.001443 | 0.001592 | 0.001796 |
+| comparison.test | COMPILE | 0.130797 | 0.231532 | 0.307797 | — | — | — |
+| contains.test | COMPILE | 0.156547 | 0.286077 | 0.365148 | — | — | — |
+| copy.test | COMPILE | 0.183796 | 0.383183 | 0.443090 | — | — | — |
+| copy_if.test | COMPILE | 0.163400 | 0.321133 | 0.388282 | — | — | — |
+| count.test | COMPILE | 0.157325 | 0.294689 | 0.375831 | — | — | — |
+| count_if.test | COMPILE | 0.164169 | 0.291848 | 0.389420 | — | — | — |
+| deque.test | COMPILE | 0.155256 | 0.304272 | 0.379090 | — | — | — |
+| distance.test | COMPILE | 0.145214 | 0.321403 | 0.352036 | — | — | — |
+| empty.test | COMPILE | 0.128672 | 0.285019 | 0.310435 | — | — | — |
+| equal.test | COMPILE | 0.147912 | 0.332951 | 0.356268 | — | — | — |
+| erase.test | COMPILE | 0.167797 | 0.331911 | 0.412426 | — | — | — |
+| erase_range.test | COMPILE | 0.159038 | 0.296836 | 0.393625 | — | — | — |
+| eval_if.test | COMPILE | 0.121255 | 0.211389 | 0.297097 | — | — | — |
+| filter_view.test | COMPILE | 0.157942 | 0.307487 | 0.391351 | — | — | — |
+| find.test | COMPILE | 0.156585 | 0.288207 | 0.381029 | — | — | — |
+| find_if.test | COMPILE | 0.162049 | 0.299053 | 0.382413 | — | — | — |
+| fold.test | COMPILE | 0.170587 | 0.325648 | 0.406400 | — | — | — |
+| for_each.test | RUN | 0.240949 | 0.580409 | 0.630108 | 0.001815 | 0.001526 | 0.002389 |
+| front.test | COMPILE | 0.136415 | 0.247585 | 0.320452 | — | — | — |
+| get_tag_def.test | COMPILE | 0.121664 | 0.199267 | 0.265911 | — | — | — |
+| has_xxx.test | COMPILE | 0.132137 | 0.226484 | 0.312450 | — | — | — |
+| identity.test | COMPILE | 0.138668 | 0.236545 | 0.358019 | — | — | — |
+| if.test | COMPILE | 0.118724 | 0.207362 | 0.318914 | — | — | — |
+| index_of.test | COMPILE | 0.147839 | 0.283282 | 0.375987 | — | — | — |
+| inherit.test | COMPILE | 0.124838 | 0.220883 | 0.284134 | — | — | — |
+| insert.test | COMPILE | 0.169107 | 0.341197 | 0.421745 | — | — | — |
+| insert_range.test | COMPILE | 0.224677 | 0.532637 | 0.616711 | — | — | — |
+| int.test | RUN | 0.121445 | 0.224841 | 0.298166 | 0.001766 | 0.001654 | 0.001586 |
+| char.test | RUN | 0.124076 | 0.227006 | 0.304930 | 0.001619 | 0.001738 | 0.001836 |
+| char_unsigned.test | RUN | 0.124225 | 0.266516 | 0.290262 | 0.001610 | 0.001932 | 0.001824 |
+| integral_c.test | RUN | 0.132672 | 0.260682 | 0.358878 | 0.001541 | 0.001724 | 0.001779 |
+| integral_c_unsigned.test | RUN | 0.133222 | 0.255992 | 0.336987 | 0.001428 | 0.001387 | 0.001592 |
+| is_placeholder.test | COMPILE | 0.119174 | 0.210788 | 0.286613 | — | — | — |
+| is_sequence.test | COMPILE | 0.140995 | 0.261022 | 0.325818 | — | — | — |
+| iterator_tags.test | COMPILE | 0.119593 | 0.217977 | 0.294783 | — | — | — |
+| joint_view.test | COMPILE | 0.158342 | 0.304330 | 0.389356 | — | — | — |
+| lambda.test | COMPILE | 0.142307 | 0.282540 | 0.363561 | — | — | — |
+| lambda_args.test | COMPILE | 0.135427 | 0.268132 | 0.357669 | — | — | — |
+| list.test | COMPILE | 0.142372 | 0.272723 | 0.353969 | — | — | — |
+| list_c.test | COMPILE | 0.145860 | 0.316371 | 0.362904 | — | — | — |
+| logical.test | COMPILE | 0.116202 | 0.243548 | 0.287519 | — | — | — |
+| lower_bound.test | COMPILE | 0.146570 | 0.324588 | 0.364922 | — | — | — |
+| map.test | COMPILE | 0.171633 | 0.379823 | 0.451353 | — | — | — |
+| max_element.test | COMPILE | 0.148622 | 0.265562 | 0.348480 | — | — | — |
+| min_max.test | COMPILE | 0.122223 | 0.229957 | 0.287186 | — | — | — |
+| multiset.test | COMPILE | 0.155058 | 0.302127 | 0.379395 | — | — | — |
+| next.test | COMPILE | 0.118207 | 0.210186 | 0.284366 | — | — | — |
+| no_has_xxx.test | COMPILE | 0.126611 | 0.223250 | 0.306799 | — | — | — |
+| numeric_ops.test | COMPILE | 0.135536 | 0.259280 | 0.343647 | — | — | — |
+| pair_view.test | COMPILE | 0.154302 | 0.298275 | 0.397374 | — | — | — |
+| partition.test | COMPILE | 0.163634 | 0.338321 | 0.443671 | — | — | — |
+| pop_front.test | COMPILE | 0.134865 | 0.261496 | 0.361061 | — | — | — |
+| push_back.test | COMPILE | 0.117856 | 0.220823 | 0.304447 | — | — | — |
+| push_front.test | COMPILE | 0.140661 | 0.264765 | 0.360148 | — | — | — |
+| quote.test | COMPILE | 0.119496 | 0.211158 | 0.294218 | — | — | — |
+| range_c.test | COMPILE | 0.146270 | 0.278187 | 0.365355 | — | — | — |
+| remove.test | COMPILE | 0.153796 | 0.303758 | 0.385001 | — | — | — |
+| remove_if.test | COMPILE | 0.160551 | 0.319536 | 0.385052 | — | — | — |
+| replace.test | COMPILE | 0.170190 | 0.347790 | 0.408794 | — | — | — |
+| replace_if.test | COMPILE | 0.172044 | 0.345789 | 0.419432 | — | — | — |
+| reverse.test | COMPILE | 0.164156 | 0.331973 | 0.400800 | — | — | — |
+| same_as.test | COMPILE | 0.130727 | 0.232019 | 0.293969 | — | — | — |
+| set.test | COMPILE | 0.208595 | 0.518578 | 0.599165 | — | — | — |
+| set_c.test | COMPILE | 0.156283 | 0.308502 | 0.406694 | — | — | — |
+| single_view.test | COMPILE | 0.145603 | 0.285352 | 0.352285 | — | — | — |
+| size.test | COMPILE | 0.140800 | 0.263208 | 0.332396 | — | — | — |
+| size_t.test | RUN | 0.125105 | 0.232057 | 0.294732 | 0.001561 | 0.001776 | 0.001892 |
+| sizeof.test | COMPILE | 0.116232 | 0.210722 | 0.272049 | — | — | — |
+| sort.test | COMPILE | 0.181775 | 0.398737 | 0.452294 | — | — | — |
+| stable_partition.test | COMPILE | 0.172409 | 0.346915 | 0.412179 | — | — | — |
+| transform.test | COMPILE | 0.177953 | 0.372896 | 0.467715 | — | — | — |
+| transform_view.test | COMPILE | 0.151481 | 0.288809 | 0.362632 | — | — | — |
+| unique.test | COMPILE | 0.155480 | 0.301014 | 0.380429 | — | — | — |
+| unpack_args.test | COMPILE | 0.147757 | 0.276546 | 0.352174 | — | — | — |
+| upper_bound.test | COMPILE | 0.146839 | 0.285047 | 0.357399 | — | — | — |
+| vector.test | COMPILE | 0.167290 | 0.364955 | 0.440827 | — | — | — |
+| vector_c.test | COMPILE | 0.150655 | 0.280846 | 0.377724 | — | — | — |
+| zip_view.test | COMPILE | 0.206066 | 0.469652 | 0.549767 | — | — | — |
+| string.test | RUN | 0.295555 | 0.908020 | 0.782112 | 0.001361 | 0.001378 | 0.001287 |
+| issue_69.test | RUN | 0.015418 | 0.032126 | 0.041814 | 0.000667 | 0.000650 | 0.001458 |
+| issue_84.test | RUN | 0.035832 | 0.067532 | 0.073051 | 0.000597 | 0.000662 | 0.001300 |
+
+Compiler command and timing observations: [cppgm](https://github.com/vishvananda/cppgm-extended/actions/runs/42570114108) · [gcc](https://github.com/vishvananda/cppgm-extended/actions/runs/42570114108) · [clang](https://github.com/vishvananda/cppgm-extended/actions/runs/42570114108).
+
+[Reviewed outcomes and per-test records](../results.json) · [Host and toolchains](../metadata.json)
