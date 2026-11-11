@@ -2849,9 +2849,11 @@ bool Simplifier::reuse_quotient(BlockId block, InstId& prev, InstId id)
 	return true;
 }
 
-// Only truth is observed: ((x >> k) & m) != 0 can test x & (m << k).
-// Require every observed bit below the shifted-in region, for arithmetic
-// shifts too. Single-use producers make the replacement remove work.
+// Only truth is observed: ((x >> k) & m) != 0 can test x & (m << k), and
+// ((x >> k) & m) == c is (x & (m << k)) == (c << k): a bit-field is tested
+// where it lies in its word. Require every observed bit below the
+// shifted-in region, for arithmetic shifts too. Single-use producers make
+// the replacement remove work.
 bool Simplifier::shifted_truth_mask(BlockId block, InstId& prev, InstId id)
 {
 	const Instruction& seen = body_.instructions[id];
@@ -2862,12 +2864,13 @@ bool Simplifier::shifted_truth_mask(BlockId block, InstId& prev, InstId id)
 		!mask->type.is_integer() || mask->type.kind() == TypeKind::I128 || uses_[mask->result] != 1)
 		return false;
 	const Type type = mask->type;
-	Constant zero;
+	Constant compared;
+	Literal want{ 0, 0 };
 	if (seen.op == Opcode::Compare &&
 		(seen.type != type ||
 			(static_cast<ComparePredicate>(seen.sub) != ComparePredicate::Eq &&
 				static_cast<ComparePredicate>(seen.sub) != ComparePredicate::Ne) ||
-			!constant(seen.ops[1], type, zero) || !is_integer(type, zero, 0)))
+			!constant(seen.ops[1], type, compared) || !integer_bits(type, compared, want) || want.high != 0))
 		return false;
 	for (unsigned k = 0; k < 2; ++k)
 	{
@@ -2880,7 +2883,7 @@ bool Simplifier::shifted_truth_mask(BlockId block, InstId& prev, InstId id)
 		const unsigned width = lowir::integer_bits(type.kind());
 		if (!constant(shift->ops[1], type, c) || !integer_bits(type, c, count) || count.high != 0 || count.low == 0 ||
 			count.low >= width || !constant(mask->ops[1 - k], type, m) || !integer_bits(type, m, bits) ||
-			bits.low == 0 || (bits.low >> (width - count.low)) != 0)
+			bits.low == 0 || (bits.low >> (width - count.low)) != 0 || (want.low & ~bits.low) != 0)
 			continue;
 		Instruction direct = make_instruction(Opcode::Binary, type);
 		direct.sub = static_cast<uint8_t>(BinaryOp::And);
@@ -2893,6 +2896,8 @@ bool Simplifier::shifted_truth_mask(BlockId block, InstId& prev, InstId id)
 		insert_after(body_, block, prev, at);
 		prev = at;
 		body_.instructions[id].ops[0] = Value::temp(temp);
+		if (want.low != 0)
+			body_.instructions[id].ops[1] = literal(integer_constant(type, Literal{ want.low << count.low, 0 }));
 		repl_.resize(body_.temps.size(), Value::none());
 		uses_.resize(body_.temps.size(), 0);
 		// Successor edge facts can name the newly inserted truth value.

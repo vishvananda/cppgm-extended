@@ -636,9 +636,10 @@ bool IntegerPatterns::top_range_compare(Instruction& inst)
 }
 
 // `x + a == k` (and `x - a`, and `!=`) is `x == k - a`; an equality of a
-// value retyped at its width (an `int` read as `unsigned`) compares the
-// value as it was. An opcode less its first enumerator, compared with a
-// literal, is then the stored byte compared in memory (narrow_compare).
+// value retyped at its width (an `int` read as `unsigned`), or truncated
+// with no set bit dropped, compares the value as it was. An opcode less its
+// first enumerator, compared with a literal, is then the stored byte
+// compared in memory (narrow_compare).
 bool IntegerPatterns::offset_equality(Instruction& inst)
 {
 	const ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
@@ -659,6 +660,23 @@ bool IntegerPatterns::offset_equality(Instruction& inst)
 			return false;
 		inst.ops[0] = moved->ops[0];
 		inst.ops[1] = integer_value(body_, normalize_integer(from, k));
+		inst.type = from;
+		return true;
+	}
+	if (moved->op == Opcode::Convert)
+	{
+		// A truncation that drops no set bit (a flag of a bit-field's word,
+		// returned as `bool`): the wide value has the truncated one's bits.
+		const Type from = convert_source_type(*moved);
+		const unsigned width = lowir::integer_bits(inst.type.kind());
+		if (static_cast<ConvertOp>(moved->sub) != ConvertOp::Trunc || !from.is_integer() ||
+			from.kind() == TypeKind::I128 || from.kind() == TypeKind::I1 || width >= 64)
+			return false;
+		const uint64_t all = (static_cast<uint64_t>(1) << width) - 1;
+		if ((possible_bits(moved->ops[0], from) & ~all) != 0)
+			return false;
+		inst.ops[0] = moved->ops[0];
+		inst.ops[1] = integer_value(body_, normalize_integer(from, Literal{ k.low & all, 0 }));
 		inst.type = from;
 		return true;
 	}

@@ -728,11 +728,20 @@ Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set)
 			const uint64_t mask = static_cast<uint64_t>(b.imm) & all;
 			if (mask != 0)
 			{
-				const unsigned offset = a.kind == OperandKind::Mem && folded_memory
+				unsigned offset = a.kind == OperandKind::Mem && folded_memory
 					? static_cast<unsigned>(__builtin_ctzll(mask)) / 8
 					: 0;
-				const uint64_t window = mask >> (8 * offset);
-				const unsigned bytes = window <= 0xff ? 1 : window <= 0xffff ? 2 : window <= 0xffffffff ? 4 : 8;
+				uint64_t window = mask >> (8 * offset);
+				unsigned bytes = window <= 0xff ? 1 : window <= 0xffff ? 2 : window <= 0xffffffff ? 4 : 8;
+				// (Two bytes of a wider operand are tested as four: a 16-bit
+				// immediate changes the instruction's length under its prefix,
+				// which the decoder predicts wrongly.)
+				if (bytes == 2 && original >= 4)
+				{
+					offset = std::min(offset, original - 4);
+					window = mask >> (8 * offset);
+					bytes = 4;
+				}
 				if (bytes < original && offset + bytes <= original &&
 					(a.kind != OperandKind::Mem || static_cast<int64_t>(a.disp) + offset <= INT32_MAX))
 				{
