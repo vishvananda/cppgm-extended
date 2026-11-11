@@ -1,22 +1,18 @@
-function @leaf(%cond : i1, %p : ptr) -> obj<8x8> {
-  slot $retobj__1 : obj<8x8>
-
+function @leaf(%cond : i1, %p : ptr) -> i64 {
   block ^entry:
     branch %cond, ^then, ^else
 
   block ^then:
-    %t1 = addr $retobj__1
-    store ptr %p, %t1
-    return obj<8x8> $retobj__1
+    %t1 = copy i64 %p
+    return i64 %t1
 
   block ^else:
-    %t2 = addr $retobj__1
-    store ptr 0, %t2
-    return obj<8x8> $retobj__1
+    return i64 0
 }
 function @caller(%cond : i1, %p : ptr, %out : ptr) -> void {
   block ^entry:
-    %t1 = select ptr %cond, %p, 0
-    store ptr %t1, %out
+    %t1 = copy i64 %p
+    %t2 = select i64 %cond, %t1, 0
+    store i64 %t2, %out
     return void
 }

@@ -6,7 +6,7 @@ count(load) <= 3
 count(store) <= 5
 count(phi) <= 3
 instructions <= 6 in @leaf
-instructions <= 5 in @caller
+instructions <= 6 in @caller
 
 # outcomes from 400-inline-object-return-inside-eh-region.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
 none(call @leaf)

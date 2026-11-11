@@ -15,25 +15,21 @@ function @caller(%x : i64, %take_x : u8) -> i64 {
     %t2 = select i64 %take_x, %x, %t2_1
     return i64 %t2
 }
-function @object_callee(%p : ptr, %take_p : u8) -> obj<8x8> {
-  slot $__o1inl0__retmergeobj__1 : obj<8x8>
-
+function @object_callee(%p : ptr, %take_p : u8) -> i64 {
   block ^entry:
     branch %take_p, ^take_p, ^take_null
 
   block ^take_p:
-    %t1 = addr $__o1inl0__retmergeobj__1
-    store ptr %p, %t1
-    return obj<8x8> $__o1inl0__retmergeobj__1
+    %t1 = copy i64 %p
+    return i64 %t1
 
   block ^take_null:
-    %t2 = addr $__o1inl0__retmergeobj__1
-    store ptr 0, %t2
-    return obj<8x8> $__o1inl0__retmergeobj__1
+    return i64 0
 }
 function @object_caller(%p : ptr, %take_p : u8, %out : ptr) -> void {
   block ^entry:
-    %t1 = select ptr %take_p, %p, 0
-    store ptr %t1, %out
+    %t1 = copy i64 %p
+    %t2 = select i64 %take_p, %t1, 0
+    store i64 %t2, %out
     return void
 }

@@ -5,15 +5,18 @@ function @capture(%p : ptr) -> void [no_inline=yes] {
     store ptr %p, @published
     return void
 }
-function @returned_value(%source : ptr) -> obj<8x4> [no_inline=yes] {
-  slot $out : obj<8x4>
-
+function @returned_value(%source : ptr) -> i64 [no_inline=yes] {
   block ^entry:
-    %destination = addr $out
-    copyobj 8x4 %source, %destination
-    return obj<8x4> $out
+    %a = load u32 %source
+    %t2 = convert zext i64 u32 %a
+    %next = index u32 %source, 1
+    %b = load u32 %next
+    %t5 = convert zext i64 u32 %b
+    %t6 = binary shl i64 %t5, 32
+    %t7 = binary or i64 %t2, %t6
+    return i64 %t7
 }
-function @captured_value(%source : ptr) -> obj<8x4> [no_inline=yes] {
+function @captured_value(%source : ptr) -> i64 [no_inline=yes] {
   slot $out : obj<8x4>
 
   block ^entry:
@@ -25,7 +28,8 @@ function @captured_value(%source : ptr) -> obj<8x4> [no_inline=yes] {
     store u32 %a, %destination
     %high = index i8 %destination, 4
     store u32 %b, %high
-    return obj<8x4> $out
+    %t6 = load i64 $out
+    return i64 %t6
 }
 function @returned_address(%source : ptr) -> ptr [no_inline=yes] {
   slot $out : obj<8x4>
@@ -40,33 +44,29 @@ function @returned_address(%source : ptr) -> ptr [no_inline=yes] {
     store u32 %b, %high
     return ptr %destination
 }
-function @volatile_value(%source : ptr) -> obj<8x4> [no_inline=yes] {
-  slot $out : obj<8x4>
-
+function @volatile_value(%source : ptr) -> i64 [no_inline=yes] {
   block ^entry:
-    %destination = addr $out
     %a = load volatile u32 %source
     %next = index u32 %source, 1
     %b = load volatile u32 %next
-    store u32 %a, %destination
-    %high = index i8 %destination, 4
-    store u32 %b, %high
-    return obj<8x4> $out
+    %t4 = convert zext i64 u32 %a
+    %t5 = convert zext i64 u32 %b
+    %t6 = binary shl i64 %t5, 32
+    %t7 = binary or i64 %t4, %t6
+    return i64 %t7
 }
-function @observed_frame(%source : ptr) -> obj<8x4> [no_inline=yes] {
-  slot $out : obj<8x4>
-
+function @observed_frame(%source : ptr) -> i64 [no_inline=yes] {
   block ^entry:
     %frame = frame_address
     call void @capture(%frame)
-    %destination = addr $out
     %a = load u32 %source
+    %t3 = convert zext i64 u32 %a
     %next = index u32 %source, 1
     %b = load u32 %next
-    store u32 %a, %destination
-    %high = index i8 %destination, 4
-    store u32 %b, %high
-    return obj<8x4> $out
+    %t6 = convert zext i64 u32 %b
+    %t7 = binary shl i64 %t6, 32
+    %t8 = binary or i64 %t3, %t7
+    return i64 %t8
 }
 function @main() -> i32 [role=entry] {
   block ^entry:

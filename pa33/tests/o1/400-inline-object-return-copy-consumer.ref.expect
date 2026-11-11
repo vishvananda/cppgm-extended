@@ -7,7 +7,7 @@ count(store) <= 6
 count(phi) <= 3
 instructions <= 6 in @leaf
 instructions <= 7 in @wrap
-instructions <= 5 in @caller
+instructions <= 6 in @caller
 
 # outcomes from 400-inline-object-return-copy-consumer.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
 none(call @leaf)

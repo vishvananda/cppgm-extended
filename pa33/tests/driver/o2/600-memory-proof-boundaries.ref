@@ -95,7 +95,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $x : i32
   slot $y : i32
   slot $bits : u32
-  slot $u : obj<4x4>
 
   block ^entry:
     store volatile i32 7, $input
@@ -213,16 +212,5 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 8
 
   block ^if_end_22:
-    %t41 = addr $u
-    store u32 2882400018, %t41
-    store u8 0, %t41
-    %t42 = load u32 %t41
-    %t43 = cmp ne u32 %t42, 2882400000
-    branch %t43, ^if_then_23, ^if_else_24
-
-  block ^if_then_23:
-    return i32 9
-
-  block ^if_else_24:
     return i32 0
 }

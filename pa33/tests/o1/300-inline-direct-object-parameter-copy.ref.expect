@@ -10,4 +10,6 @@ instructions <= 4 in @main
 
 # outcomes from 300-inline-direct-object-parameter-copy.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
 none(call @read_object)
+none(load)
 none(store)
+none(copyobj)

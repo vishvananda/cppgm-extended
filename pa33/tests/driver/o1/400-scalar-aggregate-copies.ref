@@ -101,7 +101,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = binary add u32 %t10, %t11
     %t13 = convert trunc u8 u32 %t12
     %t14 = addr $source
-    %t15 = index u8 [projection=array_element] %t14, %t8
+    %t15 = index inbounds u8 [projection=array_element] %t14, %t8
     store u8 %t13, %t15
     %t16 = binary add u32 %t8, 1
     jump ^for_cond_3
@@ -136,7 +136,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t35, ^for_body_7, ^for_end_17
 
   block ^for_body_7:
-    %t36 = index u8 [projection=array_element] %t17, %t34
+    %t36 = index inbounds u8 [projection=array_element] %t17, %t34
     %t37 = load u8 %t36
     %t38 = cmp uge u32 %t34, 4
     branch %t38, ^land_rhs_8, ^cond_else_10
@@ -147,13 +147,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_then_9:
     %t40 = binary sub u32 %t34, 4
-    %t41 = index u8 [projection=array_element] %t18, %t40
+    %t41 = index inbounds u8 [projection=array_element] %t18, %t40
     %t42 = load u8 %t41
     %t43 = cmp ne u8 %t37, %t42
     branch %t43, ^if_then_11, ^if_end_12
 
   block ^cond_else_10:
-    %t44 = index u8 [projection=array_element] %t6, %t34
+    %t44 = index inbounds u8 [projection=array_element] %t6, %t34
     %t45 = load u8 %t44
     %t46 = cmp ne u8 %t37, %t45
     branch %t46, ^if_then_11, ^if_end_12
@@ -162,19 +162,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_end_12:
-    %t47 = index u8 [projection=array_element] %t28, %t34
+    %t47 = index inbounds u8 [projection=array_element] %t28, %t34
     %t48 = load u8 %t47
     %t49 = cmp ult u32 %t34, 12
     branch %t49, ^cond_then_13, ^cond_else_14
 
   block ^cond_then_13:
-    %t50 = index u8 [projection=array_element] %t18, %t34
+    %t50 = index inbounds u8 [projection=array_element] %t18, %t34
     %t51 = load u8 %t50
     %t52 = cmp ne u8 %t48, %t51
     branch %t52, ^if_then_15, ^if_end_16
 
   block ^cond_else_14:
-    %t53 = index u8 [projection=array_element] %t6, %t34
+    %t53 = index inbounds u8 [projection=array_element] %t6, %t34
     %t54 = load u8 %t53
     %t55 = cmp ne u8 %t48, %t54
     branch %t55, ^if_then_15, ^if_end_16

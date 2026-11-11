@@ -19,7 +19,7 @@ function @sum_scaled(%v : ptr, %w : i128 [classes=integer_integer]) -> f64 [bind
   block ^for_body_2:
     %t10 = phi i64 [^complex_end_5: %t29, ^loop_preheader_1: 0]
     %t11 = phi f64 [^complex_end_5: %t28, ^loop_preheader_1: 0]
-    %t12 = index obj<16x8> [projection=array_element] %t4, %t10
+    %t12 = index inbounds obj<16x8> [projection=array_element] %t4, %t10
     %t13 = load f64 %t12
     %t14 = index i8 [projection=field] %t12, 8
     %t15 = load f64 %t14
