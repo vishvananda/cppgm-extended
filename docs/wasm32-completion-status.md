@@ -6,13 +6,13 @@ or a green partial suite does not complete PA37.
 
 | Requirement | Current evidence | Remaining qualification |
 | --- | --- | --- |
-| Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes; source and text paths in PA37 | Broader target headers and all ABI-sensitive class facts |
+| Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes; source and text paths in PA37 | Broader C++ target headers and all ABI-sensitive class facts |
 | Scalar and aggregate execution | 23 fixtures at O0–O3; LLVM caller into cppgm aggregate provider | Wide integers/floats, varargs, complete type/layout edge cases |
 | CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
 | Standard objects and own static linker | Linking-v2 writer/reader/own linker; both LLVM interop directions at O0–O3; GNU/BSD archive probes; 32 normal fixtures | Complete EH-tag/wide/runtime object profile and malformed-feature/relocation cases |
 | C++ runtime | Dynamic initializer execution in a core start function | Allocation, virtual dispatch, RTTI, local statics, finalization and cross-compiler modern EH |
 | Modern EH execution dependency | Pinned Wasmtime executes an independent try_table/throw probe | Compiler lowering, tags, cleanup/catch/rethrow and runtime libraries |
-| WASI commands and freestanding reactors | Freestanding module exports and memory | Pinned sysroot/runtime, startup/args/I/O/exit, repeated-export state checks |
+| WASI commands and freestanding reactors | Freestanding module exports and memory | Repeated-export state checks and broader C++ services |
 | SIMD and shared optimization | Shared LowIR optimizer; native-only aggregate carrier rewrite gated by target ABI | Portable SIMD legalization, target costs, local/stack cleanup and published quality envelopes |
 | Robust diagnostics and determinism | Bad target/version/shape tests; bounded MIR validation | Complete malformed object/feature/signature/relocation coverage and deterministic multi-object linking |
 | Course material and export | PA37 handout/design notes, target/MIR scaffolds, offline source/licence pins, normal Perl runner | Final scope and scaffold review, complete reference-tool prerequisites, clean export qualification |
@@ -101,12 +101,30 @@ reported 28 informational PA34 MIR/compact-MIR differences; `2ccb2dff5`
 regenerates just those 14 affected fixtures through the normal reference target.
 Export qualification will be repeated with the next runtime checkpoint.
 
-## WASI runtime work in progress
+## WASI runtime checkpoint
 
-Local command probes now run both main signatures through the pinned SDK CRT,
-libc and compiler-rt with cppgm's own linker. Target header selection, core
-object exports, constructor wrappers, argument setup, heap growth, stream I/O
-and finalization have focused tests. The PA37 suite is 46/46, including mixed
-LLVM/cppgm objects with both linkers. These changes still need their broader
-qualification. Full portable C++ classes/RTTI/EH, wide scalar legalization,
-varargs, SIMD, quality and benchmarks remain required work.
+`3c152bd73` runs both main signatures through the pinned SDK CRT, libc and
+compiler-rt with cppgm's own linker. Target header selection, core object exports,
+constructor wrappers, argument setup, heap growth, stream I/O and finalization
+have focused tests. Archive extraction precedes section collection so dead
+references can bring in strong replacements for live weak fallbacks; a reducer
+pins this behavior without naming a runtime implementation.
+
+The strict report passes 10703/10703; PA37 passes 47/47 with host-built and
+self-built tools, including mixed LLVM/cppgm objects with both linkers. Debug
+info, PA5 self-host, byte-identical inception, PA36 smoke, the full harness,
+architecture/source/format/file audits and Clang 21 syntax checks pass. The
+student export regenerates consistently, including all 47 Wasm controls. A
+fresh reference-bundle client passes its 270-document inventory and 43 wrappers.
+Placement verification is recorded separately in `wasi-placement.log`.
+
+Frozen native instruction counts versus `d7b8cd4c8` are 3,055,879,786 versus
+3,055,728,337 at O0 (-0.0050%) and 9,896,313,186 versus 9,896,110,222 at O3
+(-0.0021%). Generated objects are identical. Commands, hashes and every
+observation remain in `perf-wasi/`; these counts make no wall-time claim.
+
+Full portable C++ classes/RTTI/EH, wide scalar legalization, varargs, SIMD,
+quality and benchmarks remain required work. The next variadic reducer is
+`wasm-varargs-probe.cpp` outside Git: source acceptance still assumes AMD64's
+`__va_list_tag`, while this target's argument list is a pointer. Its lowering
+and the backend boundary must use the target representation together.
