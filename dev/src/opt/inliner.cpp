@@ -11,13 +11,8 @@ using namespace lowir;
 
 namespace {
 
-// Ordinary wave: callee size caps (a call-free single-block body; other
-// call-free bodies; a body whose hot code calls; a hinted one), the
-// per-caller growth budget and the trivial leaf every budget admits.
-const uint32_t kOrdinaryLeafCap = 40;
-const uint32_t kOrdinaryCap = 24;
-const uint32_t kOrdinaryCallCap = 6;
-const uint32_t kHintCap = 96;
+// Ordinary wave: the per-caller growth budget and the trivial leaf every
+// budget admits (a callee's own charge is priced in admit).
 const uint32_t kCallerBudget = 1536;
 // Additional call-containing copies in an already large caller, outside
 // its loops. Small helpers retain ordinary admission: losing a setter or
@@ -41,38 +36,10 @@ const uint32_t kFoldedCap = 40;
 const uint32_t kFoldedHintCap = 80;
 const uint32_t kFoldedCallerBudget = 2048;
 const uint32_t kFoldedFailures = 16;
-// Fast-path admission (multi-block, loop-free callees whose calls lie off
-// a call-free path from the entry to a return): that path's size cap and
-// the whole body's (hinted larger), both doubled at a loop site.
-const uint32_t kFastPathCap = 24;
-const uint32_t kFastPathHintCap = 48;
-const uint32_t kFastPathTotalCap = 96;
-const uint32_t kFastPathTotalHintCap = 160;
-// A wrapper keeps large callees out of its slow paths, so its fast path
-// stays small enough to inline. From O2 recognize a larger wrapper body:
-// an already expanded slow path must not make it absorb more slow work.
-// The size of a callee admitted into a leaf wrapper stays separate.
+// A small original wrapper: one this size with a constant result folds its
+// caller's guard, and a larger callee full of calls stays out of a large
+// caller's code outside loops (kOutsideLoopBudget).
 const uint32_t kWrapperCap = 32;
-const uint32_t kFastWrapperBodyCap = 64;
-const uint32_t kSlowSiteCap = 16;
-// From O2, a discardable body up to this size whose path to a return
-// calls only callees every wave copies whole (forced, trivial leaves:
-// emplace_back's construct and forward) keeps callees larger than
-// kWrapperCap out of its slow paths.
-const uint32_t kLeafWrapperCap = 96;
-// A callee whose loop calls through a pointer the site passes as a known
-// function is copied up to this size (the call turns direct).
-const uint32_t kDispatchCap = 96;
-// A loop around one call inlined whole (admit).
-const uint32_t kTinyLoopCap = 12;
-// Late wave: a call-free single-block body, any other body, a hinted one.
-const uint32_t kLateLeafCap = 40;
-const uint32_t kLateCap = 6;
-const uint32_t kLateHintCap = 48;
-// From O2, a body without calls outside cold blocks: its cap in both
-// waves, also when it holds a loop and has several callers (O1 keeps such
-// a loop out of line).
-const uint32_t kCallFreeCap = 48;
 // Partial inlining (O2+, late wave): the copy's caps (a hinted callee's
 // larger), doubled at a loop site.
 const uint32_t kPartialCap = 24;
@@ -101,20 +68,9 @@ const uint32_t kRecursiveTotal = 320;
 const uint32_t kRecursiveDepth = 2;
 const uint32_t kRecursiveChainDepth = 8;
 const uint32_t kRecursiveTreeCalls = 2;
-// From O2, a caller this unit never copies into another (no call site
-// here, or larger than any cap admits it at a loop site, kFastPathTotal-
-// HintCap doubled, and not a single-call candidate) takes hinted and
-// call-free callees with at most kSettledCalls call sites up to half again
-// their caps: its growth costs no other copy, and few copies are made.
-// (Callees full of calls keep their caps: pa33 pins them.)
-const uint32_t kSettledSize = 2 * kFastPathTotalHintCap;
-const uint32_t kSettledScaleNum = 3;
-const uint32_t kSettledScaleDen = 2;
-const uint32_t kSettledCalls = 3;
-const uint32_t kSettledFewCalls = 2;
-const uint32_t kSettledFewCap = 128;
-const uint32_t kSettledCallShare = 8;
-const uint32_t kSettledSmallCaller = 128;
+// A caller from this size is large: no site copies it into another caller
+// except as a single-call candidate.
+const uint32_t kSettledSize = 320;
 struct EntryCost
 {
 	uint32_t parameter = kNoId;
@@ -151,10 +107,7 @@ struct Shape
 								// of its natural loops
 	bool unsafe = false;
 	bool unwinds = false;
-	// Instructions on the longest call-free path from the entry to a return
-	// (with a loop: in every block such a path reaches).
-	uint32_t fast = 0;
-	bool fast_return = false;     // one of them returns
+	bool fast_return = false;     // a call-free path from the entry reaches a return
 	bool allocates = false;       // hot code calls an allocation function (a growth path)
 	bool constant_result = false; // every normal return is the same integer literal
 };
@@ -341,16 +294,6 @@ bool cheap_shape_instruction(const Instruction& inst)
 }
 
 uint32_t addressed_slot(const FunctionBody& body, Value v);
-
-// A callee with a short call-free path to a return around a slower calling
-// path. (Not a growth path: vector::_M_realloc_append returns without a
-// call on a path no call takes, a zero length with no old buffer.)
-bool fast_path_of(const Shape& shape, bool hint, uint32_t scale)
-{
-	return shape.blocks > 1 && shape.hot_call && !shape.loop && shape.fast_return && !shape.allocates &&
-		shape.fast <= (hint ? kFastPathHintCap : kFastPathCap) * scale &&
-		shape.hot <= (hint ? kFastPathTotalHintCap : kFastPathTotalCap) * scale;
-}
 
 bool phi_type(Type type)
 {
@@ -773,10 +716,7 @@ Shape shape_of(
 			const BlockId b = work.back();
 			work.pop_back();
 			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
-			{
-				++shape.fast;
 				shape.fast_return = shape.fast_return || body.instructions[i].op == Opcode::Return;
-			}
 			for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
 			{
 				const BlockId s = cfg.succs[k];
@@ -786,38 +726,6 @@ Shape shape_of(
 					work.push_back(s);
 				}
 			}
-		}
-		// Loop-free, the fast path is the longest path through the region
-		// from the entry to a return: what one call executes there, not
-		// every alternative path the region holds.
-		if (!shape.loop && region[body.layout[0]])
-		{
-			std::vector<uint32_t> longest(cfg.block_count, 0);
-			std::vector<uint8_t> returns(cfg.block_count, 0);
-			for (uint32_t r = static_cast<uint32_t>(cfg.rpo.size()); r-- > 0;)
-			{
-				const BlockId b = cfg.rpo[r];
-				if (!region[b])
-					continue;
-				uint32_t own = 0, tail = 0;
-				for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
-				{
-					++own;
-					returns[b] = returns[b] || body.instructions[i].op == Opcode::Return;
-				}
-				for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
-				{
-					const BlockId s = cfg.succs[k];
-					if (region[s] && returns[s] && cfg.rpo_index[s] > r)
-					{
-						tail = longest[s] > tail ? longest[s] : tail;
-						returns[b] = 1;
-					}
-				}
-				longest[b] = own + tail;
-			}
-			if (returns[body.layout[0]])
-				shape.fast = longest[body.layout[0]];
 		}
 	}
 	if (shape.blocks == 1)
@@ -1560,7 +1468,6 @@ private:
 	bool cleanup_welcome(const Shape& shape, bool handler_code, bool loop_site) const;
 	bool admit(
 		uint32_t callee, const Instruction& call, bool handler_code, bool loop_site, uint32_t& charge, bool& once);
-	bool leaf_return_path(const FunctionBody& body, const Cfg& cfg) const;
 	bool admit_partial(uint32_t g, const Instruction& call, bool handler_code, bool loop_site, PartialCut& partial,
 		uint32_t& charge, const FunctionBody* source);
 	bool process(SymbolId caller);
@@ -1584,12 +1491,8 @@ private:
 	CallGraph graph_;
 	std::vector<Shape> shapes_;
 	uint32_t caller_ = kNoId;
-	// The caller has a loop (its own or an inlined one) or EH regions.
+	// The caller has a loop (its own or an inlined one).
 	bool caller_loop_ = false;
-	bool caller_eh_ = false;
-	bool caller_wrapper_ = false;      // a fast-path wrapper (kWrapperCap)
-	bool caller_leaf_wrapper_ = false; // kLeafWrapperCap
-	bool caller_settled_ = false;      // never copied into another (kSettledSize)
 	// A callee's loop moves into any caller. (The O0 back end gave a
 	// function at most seven cross-block registers and none to one with
 	// EH regions, so a second loop nest, or a loop in a function with
@@ -1928,63 +1831,11 @@ SymbolId InlineWaveRunner::folded_copy(
 	return copy;
 }
 
-// Whether a path from the entry reaches a return through blocks whose
-// calls all go to callees every wave copies whole (forced, or trivial
-// call-free leaves).
-bool InlineWaveRunner::leaf_return_path(const FunctionBody& body, const Cfg& cfg) const
-{
-	auto leaf_calls = [&](BlockId b) {
-		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
-		{
-			const Instruction& inst = body.instructions[i];
-			if (inst.op != Opcode::Call)
-				continue;
-			if (!inst.ops[0].is(ValueKind::Symbol) || graph_.function_of(inst.ops[0].index) == kNoId)
-				return false;
-			const uint32_t g = graph_.function_of(inst.ops[0].index);
-			const bool forced = (program_.symbols[inst.ops[0].index].metadata.flags & SF_FORCE_INLINE) != 0;
-			if (!forced && (shapes_[g].size > kTrivialLeaf || shapes_[g].call))
-				return false;
-		}
-		return true;
-	};
-	std::vector<uint8_t> seen(cfg.block_count, 0);
-	std::vector<BlockId> work;
-	if (body.layout.empty() || !leaf_calls(body.layout[0]))
-		return false;
-	seen[body.layout[0]] = 1;
-	work.push_back(body.layout[0]);
-	while (!work.empty())
-	{
-		const BlockId b = work.back();
-		work.pop_back();
-		if (body.instructions[body.blocks[b].last].op == Opcode::Return)
-			return true;
-		for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
-		{
-			const BlockId s = cfg.succs[k];
-			if (!seen[s] && cfg.reachable(s) && leaf_calls(s))
-			{
-				seen[s] = 1;
-				work.push_back(s);
-			}
-		}
-	}
-	return false;
-}
-
 bool InlineWaveRunner::process(SymbolId caller)
 {
 	caller_ = graph_.index_of[caller];
 	caller_cfg_changed_ = false;
 	caller_loop_ = shapes_[caller_].loop;
-	caller_eh_ = shapes_[caller_].eh;
-	caller_wrapper_ = shapes_[caller_].fast_return &&
-		shapes_[caller_].hot <= (options_.level >= 2 ? kFastWrapperBodyCap : kWrapperCap);
-	caller_settled_ = options_.level >= 2 &&
-		(graph_.calls_in[caller_] == 0 ||
-			(shapes_[caller_].size > kSettledSize &&
-				!(discardable(program_, caller) && graph_.calls_in[caller_] == 1)));
 	const uint32_t default_budget = options_.limits.caller_budget != 0 ? options_.limits.caller_budget : kCallerBudget;
 	budget_ = default_budget;
 	outside_loop_budget_ = kOutsideLoopBudget;
@@ -2001,8 +1852,6 @@ bool InlineWaveRunner::process(SymbolId caller)
 		build_cfg_light(program_, body, cfg);
 	if (!source_required_ && caller_loop_)
 		complete_cfg(cfg);
-	caller_leaf_wrapper_ = !caller_wrapper_ && options_.level >= 2 && shapes_[caller_].hot <= kLeafWrapperCap &&
-		discardable(program_, caller) && leaf_return_path(body, cfg);
 	// Any ordinary path from a landing may still carry its exception.
 	// A merge with a normal path is not enough to prove otherwise.
 	const size_t policy_blocks = source_required_ ? 0 : body.blocks.size();
