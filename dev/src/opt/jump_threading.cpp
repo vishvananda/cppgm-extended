@@ -2780,6 +2780,19 @@ bool split_branch_compares(FunctionContext& context)
 	if (changed)
 	{
 		count_uses(body, uses);
+		// (A compare whose every reader took a copy goes.)
+		for (BlockId b : body.layout)
+			for (InstId prev = kNoId, i = body.blocks[b].first; i != kNoId;)
+			{
+				const Instruction& inst = body.instructions[i];
+				const InstId next = inst.next;
+				if (inst.op == Opcode::Compare && inst.result < branch_uses.size() && uses[inst.result] == 0 &&
+					branch_uses[inst.result] + select_uses[inst.result] != 0)
+					unlink_after(body, b, prev, i);
+				else
+					prev = i;
+				i = next;
+			}
 		map_instruction_blocks(body, context.block_of);
 		context.invalidate_uses();
 		context.invalidate_block_of();
