@@ -543,6 +543,9 @@ void Simplifier::substitute(Instruction& inst)
 				r = def.ops[0];
 		}
 		edited_ = edited_ || !(inst.ops[i] == r);
+		// (A branch or switch an equality decided: reported, so the driver's
+		// next round folds it.)
+		changed_ = changed_ || (i == 0 && r.is_literal() && (inst.op == Opcode::Branch || inst.op == Opcode::Switch));
 		inst.ops[i] = r;
 	}
 	for (uint32_t k = 0; k < inst.extra_count; ++k)
@@ -1262,6 +1265,15 @@ bool Simplifier::edge_equality(BlockId from, BlockId to, Value& x, Value& y) con
 		return false;
 	const bool taken = term.ops[1].index == to;
 	const Instruction* def = producer(term.ops[0]);
+	// A branch on an integer itself: zero where it was not taken.
+	if ((def == nullptr || def->op != Opcode::Compare) && !taken && term.ops[0].is(ValueKind::Temp) &&
+		body_.temps[term.ops[0].index].type.is_integer())
+	{
+		x = term.ops[0];
+		y = const_cast<Simplifier*>(this)->literal(
+			integer_constant(body_.temps[term.ops[0].index].type, Literal{ 0, 0 }));
+		return true;
+	}
 	if (def == nullptr || def->op != Opcode::Compare || def->type.is_float())
 		return false;
 	const ComparePredicate pred = static_cast<ComparePredicate>(def->sub);
