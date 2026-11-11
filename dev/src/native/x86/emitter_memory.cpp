@@ -145,8 +145,9 @@ void FunctionEmitter::copy_bytes(const Inst& inst)
 		const unsigned limit = function_->wide_bulk ? copy_chunk_limit(src, bytes) : 16;
 		while (limit >= 16 && bytes - offset >= 16)
 		{
-			asm_.sse(0xf3, 0x6f, kX15, from.displaced(static_cast<int32_t>(offset)));
-			asm_.sse_store(0xf3, 0x7f, to.displaced(static_cast<int32_t>(offset)), kX15);
+			// (movups: a byte shorter than movdqu, the same move.)
+			asm_.sse(0, 0x10, kX15, from.displaced(static_cast<int32_t>(offset)));
+			asm_.sse_store(0, 0x11, to.displaced(static_cast<int32_t>(offset)), kX15);
 			offset += 16;
 		}
 		if (offset == bytes)
@@ -219,10 +220,10 @@ void FunctionEmitter::zero_bytes(const Inst& inst)
 	if (bytes == 16 || (function_->wide_bulk && bytes > 16 && bytes <= 256))
 	{
 		// 16-byte chunks of a cleared xmm15, then scalar stores.
-		asm_.op(0x66, false, 0x0fef, 2, kX15 & 15, RM::r(kX15)); // pxor xmm15, xmm15
+		asm_.sse(0, 0x57, kX15, RM::r(kX15)); // xorps xmm15, xmm15
 		uint32_t offset = 0;
 		for (; bytes - offset >= 16; offset += 16)
-			asm_.sse_store(0xf3, 0x7f, to.displaced(static_cast<int32_t>(offset)), kX15);
+			asm_.sse_store(0, 0x11, to.displaced(static_cast<int32_t>(offset)), kX15); // movups
 		const unsigned widths[4] = { 8, 4, 2, 1 };
 		for (unsigned k = 0; k < 4; ++k)
 			for (; bytes - offset >= widths[k]; offset += widths[k])

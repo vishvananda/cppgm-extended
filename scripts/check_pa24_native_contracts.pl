@@ -188,45 +188,62 @@ sub has_register_and_width
 	return 0;
 }
 
+sub vector_opcode
+{
+	# The opcode after 0f of an SSE instruction at $offset, with its ModRM
+	# byte and mandatory prefix (0 for none), past an optional REX prefix.
+	my ($code, $offset) = @_;
+	my $prefix = ord(substr($code, $offset, 1));
+	my $opcode = $offset;
+	if($prefix == 0x66 || $prefix == 0xf3) {
+		++$opcode;
+	}
+	else {
+		$prefix = 0;
+	}
+	return () if $opcode + 3 >= length($code);
+	my $rex = ord(substr($code, $opcode, 1));
+	++$opcode if $rex >= 0x40 && $rex <= 0x4f;
+	return () if $opcode + 2 >= length($code) ||
+		ord(substr($code, $opcode, 1)) != 0x0f;
+	return ($prefix, ord(substr($code, $opcode + 1, 1)),
+		ord(substr($code, $opcode + 2, 1)));
+}
+
 sub has_vector_copy_pair
 {
+	# An unaligned 16-byte load and store: movdqu (f3 0f 6f, f3 0f 7f) or
+	# movups (0f 10, 0f 11) with a memory operand.
 	my ($code) = @_;
 	my ($load, $store) = (0, 0);
 	for(my $offset = 0; $offset + 2 < length($code); ++$offset) {
-		next if ord(substr($code, $offset, 1)) != 0xf3;
-		my $opcode = $offset + 1;
-		my $prefix = ord(substr($code, $opcode, 1));
-		++$opcode if $prefix >= 0x40 && $prefix <= 0x4f;
-		next if $opcode + 1 >= length($code) ||
-			ord(substr($code, $opcode, 1)) != 0x0f;
-		my $second = ord(substr($code, $opcode + 1, 1));
-		$load = 1 if $second == 0x6f;
-		$store = 1 if $second == 0x7f;
+		my ($prefix, $second, $modrm) = vector_opcode($code, $offset);
+		next if !defined($second) || ($modrm >> 6) == 3;
+		$load = 1 if ($prefix == 0xf3 && $second == 0x6f) ||
+			($prefix == 0 && $second == 0x10);
+		$store = 1 if ($prefix == 0xf3 && $second == 0x7f) ||
+			($prefix == 0 && $second == 0x11);
 	}
 	return $load && $store;
 }
 
 sub has_vector_zero_store
 {
+	# A register cleared against itself (pxor: 66 0f ef, xorps: 0f 57) and
+	# an unaligned 16-byte store of it.
 	my ($code) = @_;
 	my ($clear, $store) = (0, 0);
 	for(my $offset = 0; $offset + 2 < length($code); ++$offset) {
-		my $prefix = ord(substr($code, $offset, 1));
-		next if $prefix != 0x66 && $prefix != 0xf3;
-		my $opcode = $offset + 1;
-		my $rex = ord(substr($code, $opcode, 1));
-		++$opcode if $rex >= 0x40 && $rex <= 0x4f;
-		next if $opcode + 2 >= length($code) ||
-			ord(substr($code, $opcode, 1)) != 0x0f;
-		my $second = ord(substr($code, $opcode + 1, 1));
-		my $modrm = ord(substr($code, $opcode + 2, 1));
-		if($prefix == 0x66 && $second == 0xef && ($modrm >> 6) == 3) {
+		my ($prefix, $second, $modrm) = vector_opcode($code, $offset);
+		next if !defined($second);
+		if((($prefix == 0x66 && $second == 0xef) ||
+				($prefix == 0 && $second == 0x57)) && ($modrm >> 6) == 3) {
 			my $left = ($modrm >> 3) & 7;
 			my $right = $modrm & 7;
 			$clear = 1 if $left == $right;
 		}
-		$store = 1 if $prefix == 0xf3 && $second == 0x7f &&
-			($modrm >> 6) != 3;
+		$store = 1 if (($prefix == 0xf3 && $second == 0x7f) ||
+				($prefix == 0 && $second == 0x11)) && ($modrm >> 6) != 3;
 	}
 	return $clear && $store;
 }

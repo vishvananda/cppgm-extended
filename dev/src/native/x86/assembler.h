@@ -136,9 +136,11 @@ public:
 	void alu_rr(unsigned digit, Reg dst, const RM& src, unsigned bytes);       // dst op= src
 	void alu_mr(unsigned digit, const RM& dst, Reg src, unsigned bytes);       // [dst] op= src
 	void alu_ri(unsigned digit, const RM& dst, int64_t value, unsigned bytes); // value fits imm32
+	void test_ri(const RM& dst, int64_t value, unsigned bytes);                // value fits imm32
 	void shift_ri(unsigned digit, const RM& dst, unsigned count, unsigned bytes);
 	void shift_cl(unsigned digit, const RM& dst, unsigned bytes);
 	void unary(unsigned digit, const RM& dst, unsigned bytes); // F7 /digit
+	void step(const RM& dst, bool down, unsigned bytes);       // inc or dec
 	void imul_rr(Reg dst, const RM& src, unsigned bytes);
 	void imul_rri(Reg dst, const RM& src, int32_t value, unsigned bytes);
 	void setcc(Cond cond, Reg dst);

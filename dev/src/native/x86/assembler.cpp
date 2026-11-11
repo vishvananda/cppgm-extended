@@ -364,6 +364,18 @@ void Assembler::alu_mr(unsigned digit, const RM& dst, Reg src, unsigned bytes)
 
 void Assembler::alu_ri(unsigned digit, const RM& dst, int64_t value, unsigned bytes)
 {
+	// The accumulator's forms have no ModRM byte (04+ ib, 05+ iw/id): one
+	// byte shorter where the immediate is not a sign-extended byte.
+	if (dst.is_reg && dst.reg == RAX && (bytes == 1 || !fits_i8(value)))
+	{
+		if (bytes == 2)
+			byte(0x66);
+		else if (bytes == 8)
+			byte(0x48);
+		byte(static_cast<uint8_t>(digit * 8 + (bytes == 1 ? 4 : 5)));
+		imm(value, bytes == 1 ? 1 : bytes == 2 ? 2 : 4);
+		return;
+	}
 	if (bytes == 1)
 	{
 		op(0, false, 0x80, 1, digit, dst, true, 1);
@@ -380,6 +392,23 @@ void Assembler::alu_ri(unsigned digit, const RM& dst, int64_t value, unsigned by
 		op(bytes == 2 ? 0x66 : 0, bytes == 8, 0x81, 1, digit, dst, false, n);
 		imm(value, n);
 	}
+}
+
+void Assembler::test_ri(const RM& dst, int64_t value, unsigned bytes)
+{
+	const unsigned n = bytes == 1 ? 1 : bytes == 2 ? 2 : 4;
+	if (dst.is_reg && dst.reg == RAX)
+	{
+		// A8 ib, A9 iw/id: the accumulator's form.
+		if (bytes == 2)
+			byte(0x66);
+		else if (bytes == 8)
+			byte(0x48);
+		byte(bytes == 1 ? 0xa8 : 0xa9);
+	}
+	else
+		op(bytes == 2 ? 0x66 : 0, bytes == 8, bytes == 1 ? 0xf6 : 0xf7, 1, 0, dst, bytes == 1, n);
+	imm(value, n);
 }
 
 void Assembler::shift_ri(unsigned digit, const RM& dst, unsigned count, unsigned bytes)
@@ -402,6 +431,11 @@ void Assembler::shift_cl(unsigned digit, const RM& dst, unsigned bytes)
 void Assembler::unary(unsigned digit, const RM& dst, unsigned bytes)
 {
 	op(bytes == 2 ? 0x66 : 0, bytes == 8, bytes == 1 ? 0xf6 : 0xf7, 1, digit, dst, bytes == 1);
+}
+
+void Assembler::step(const RM& dst, bool down, unsigned bytes)
+{
+	op(bytes == 2 ? 0x66 : 0, bytes == 8, bytes == 1 ? 0xfe : 0xff, 1, down ? 1 : 0, dst, bytes == 1);
 }
 
 void Assembler::imul_rr(Reg dst, const RM& src, unsigned bytes)

@@ -999,7 +999,10 @@ void FunctionEmitter::prologue(const Function& function)
 	}
 	if (omit_fp_)
 	{
-		if (unwind_.reserve != 0)
+		// (One word is a push of any register: a byte for the subtract's four.)
+		if (unwind_.reserve == 8)
+			asm_.push(RAX);
+		else if (unwind_.reserve != 0)
 			asm_.alu_ri(5, RM::r(RSP), unwind_.reserve, 8);
 		at.reserve_end = asm_.size() - base;
 		if (first)
@@ -1315,14 +1318,26 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 		{
 			std::swap(address.base, address.index);
 		}
-		if (inst.type == TypeKind::I32)
+		// The register's own next or previous value is inc or dec where
+		// nothing reads the flags.
+		if (address.base == a.reg && address.index == kNoReg && (address.disp == 1 || address.disp == -1) &&
+			address.symbol == 0xffffffffu && address.label == 0xffffffffu && !flags_read_after(function, index))
+			asm_.step(RM::r(a.reg), address.disp == -1, inst.type == TypeKind::I32 ? 4 : 8);
+		else if (inst.type == TypeKind::I32)
 			asm_.op(0, false, 0x8d, 1, a.reg, address);
 		else
 			asm_.lea(a.reg, address);
 		break;
 	}
 	case Op::Add:
-		alu(0, inst);
+	case Op::Sub:
+		// One more or less is inc or dec, a byte shorter, where nothing reads
+		// the flags (those two leave the carry as it was).
+		if (b.kind == OperandKind::Imm && (b.imm == 1 || b.imm == -1) && !flags_read_after(function, index))
+			asm_.step(rm(a), (inst.op == Op::Sub) == (b.imm == 1),
+				inst.type == TypeKind::Void || inst.type == TypeKind::Ptr ? 8 : register_bytes(inst.type));
+		else
+			alu(inst.op == Op::Add ? 0 : 5, inst);
 		argument_area(inst);
 		break;
 	case Op::Or:
@@ -1330,10 +1345,6 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 		break;
 	case Op::And:
 		alu(4, inst);
-		break;
-	case Op::Sub:
-		alu(5, inst);
-		argument_area(inst);
 		break;
 	case Op::Xor:
 		alu(6, inst);
@@ -1650,9 +1661,7 @@ void FunctionEmitter::bit_test(const Inst& inst)
 	}
 	if (w < 8 || fits_i32(b.imm))
 	{
-		const unsigned n = w == 1 ? 1 : w == 2 ? 2 : 4;
-		asm_.op(prefix, w == 8, w == 1 ? 0xf6 : 0xf7, 1, 0, rm(a), w == 1, n);
-		asm_.imm(narrowed(b.imm, w), n);
+		asm_.test_ri(rm(a), narrowed(b.imm, w), w);
 		return;
 	}
 	const Reg s = scratch(inst);

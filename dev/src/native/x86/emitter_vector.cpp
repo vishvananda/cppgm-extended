@@ -282,7 +282,7 @@ void FunctionEmitter::vector_special(const Inst& inst)
 	switch (static_cast<VectorOp>(inst.sub))
 	{
 	case VectorOp::Pzero:
-		asm_.sse(0x66, 0xef, d, RM::r(d));
+		asm_.sse(0, 0x57, d, RM::r(d)); // xorps: a byte shorter than pxor
 		break;
 	case VectorOp::Fromf32:
 		// movss between registers keeps the destination's other lanes.
