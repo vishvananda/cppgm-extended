@@ -446,7 +446,10 @@ bool finish_loops(FunctionContext& context, int level)
 		RUN_PASS(fold_nonzero_tests);
 		RUN_PASS(simplify_values);
 		RUN_PASS(cleanup_cfg);
-		RUN_PASS(forward_memory);
+		// (A load the preheader now makes leaves a phi of itself at the
+		// header: folded, what reads it can leave the loop too.)
+		if (RUN_PASS(forward_memory))
+			RUN_PASS(simplify_values);
 		RUN_PASS(remove_dead_code);
 		hoist_loops(context);
 		changed = true;
