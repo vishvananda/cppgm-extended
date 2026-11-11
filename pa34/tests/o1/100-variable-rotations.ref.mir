@@ -160,12 +160,11 @@ function @main
     add rbx, 1
     cmp.i64 rbx, 128
     jb ^loop
-    jmp ^done
-
-  block ^fail
-    mov rax, 1
-    ret rax
 
   block ^done
     mov rax, 0
+    ret rax
+
+  block ^fail
+    mov rax, 1
     ret rax

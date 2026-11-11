@@ -28,16 +28,16 @@ function @signed_prefix
     mov rax, 11
     ret rax
 
-  block ^case_1
-    mov rax, 22
+  block ^default
+    mov rax, 99
     ret rax
 
   block ^case_2
     mov rax, 33
     ret rax
 
-  block ^default
-    mov rax, 99
+  block ^case_1
+    mov rax, 22
     ret rax
 
 function @gapped
@@ -62,12 +62,12 @@ function @gapped
     mov rax, 11
     ret rax
 
-  block ^case_1
-    mov rax, 22
-    ret rax
-
   block ^default
     mov rax, 99
+    ret rax
+
+  block ^case_1
+    mov rax, 22
     ret rax
 
 function @signed_cases
@@ -92,12 +92,12 @@ function @signed_cases
     mov rax, 11
     ret rax
 
-  block ^case_1
-    mov rax, 22
-    ret rax
-
   block ^default
     mov rax, 99
+    ret rax
+
+  block ^case_1
+    mov rax, 22
     ret rax
 
 function @unsigned_prefix
@@ -121,12 +121,12 @@ function @unsigned_prefix
     mov rax, 11
     ret rax
 
-  block ^case_1
-    mov rax, 22
-    ret rax
-
   block ^default
     mov rax, 99
+    ret rax
+
+  block ^case_1
+    mov rax, 22
     ret rax
 
 function @wide_prefix
@@ -150,12 +150,12 @@ function @wide_prefix
     mov rax, 11
     ret rax
 
-  block ^case_1
-    mov rax, 22
-    ret rax
-
   block ^default
     mov rax, 99
+    ret rax
+
+  block ^case_1
+    mov rax, 22
     ret rax
 
 function @byte_prefix
@@ -179,12 +179,12 @@ function @byte_prefix
     mov rax, 11
     ret rax
 
-  block ^case_1
-    mov rax, 22
-    ret rax
-
   block ^default
     mov rax, 99
+    ret rax
+
+  block ^case_1
+    mov rax, 22
     ret rax
 
 function @main

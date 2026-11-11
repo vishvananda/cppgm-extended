@@ -48,6 +48,12 @@ uint32_t fold_call_targets(Function& function);
 // removed.
 uint32_t drop_redundant_constants(Function& function);
 
+// `mov r, 0` between a compare and the reader of its flags (a select's zero
+// arm) moves above the compare, where the emitter makes it an xor: nothing
+// from the compare to the move names r or takes a scratch register. Returns
+// the number moved.
+uint32_t hoist_zeroes(Function& function);
+
 // Reloads of a temp's frame home a register still holds go or become
 // register copies (feeding the scratch's readers directly). Returns the
 // instructions removed.

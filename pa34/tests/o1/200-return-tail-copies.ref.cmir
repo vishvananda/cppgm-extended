@@ -23,13 +23,21 @@ function @probe
     mov r9, 0
     load.ptr rcx, [rdi+rax*8]
     cmp.ptr rcx, -1
-    jne ^occupied
-    jmp ^found
+    je ^found
 
-  block ^end
-    ret r9
+  block ^occupied
+    cmp.ptr rcx, rsi
+    je ^found
 
-  block ^loop
+  block ^check_tomb
+    cmp.ptr rcx, -2
+    je ^check_null
+
+  block ^step
+    lea.i32 rcx, [r8+<off0>]
+    add.u32 rax, r8
+    and.u32 rax, rdx
+    mov r8, rcx
     load.ptr rcx, [rdi+rax*8]
     cmp.ptr rcx, -1
     jne ^occupied
@@ -41,27 +49,6 @@ function @probe
   block ^old_tomb
     ret r9
 
-  block ^found
-    lea rax, [rdi+rax*8]
-    ret rax
-
-  block ^step
-    lea.i32 rcx, [r8+<off0>]
-    add.u32 rax, r8
-    and.u32 rax, rdx
-    mov r8, rcx
-    load.ptr rcx, [rdi+rax*8]
-    cmp.ptr rcx, -1
-    je ^empty_bucket
-
-  block ^occupied
-    cmp.ptr rcx, rsi
-    je ^found
-
-  block ^check_tomb
-    cmp.ptr rcx, -2
-    jne ^step
-
   block ^check_null
     cmp.ptr r9, 0
     jne ^step
@@ -69,6 +56,19 @@ function @probe
   block ^remember
     lea r9, [rdi+rax*8]
     jmp ^step
+
+  block ^loop
+    load.ptr rcx, [rdi+rax*8]
+    cmp.ptr rcx, -1
+    jne ^occupied
+    jmp ^empty_bucket
+
+  block ^found
+    lea rax, [rdi+rax*8]
+    ret rax
+
+  block ^end
+    ret r9
 
 function @main
   abi

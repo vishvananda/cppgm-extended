@@ -38,14 +38,6 @@ function @dispatch
     add rax, 1
     ret rax
 
-  block ^skip
-    ret rdx
-
-  block ^outside
-    mov rax, rdx
-    xor rax, rdi
-    ret rax
-
   block ^left
     lea rax, [rdx+17]
     jump_table rdi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
@@ -54,24 +46,32 @@ function @dispatch
     sub rax, 7
     ret rax
 
-  block ^table
-    jump_table rdi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
-
-  block ^case2
-    imul rax, 3
-    ret rax
-
-  block ^case3
-    xor rax, 19
+  block ^case5
+    and rax, 127
     ret rax
 
   block ^case4
     or rax, 16
     ret rax
 
-  block ^case5
-    and rax, 127
+  block ^case3
+    xor rax, 19
     ret rax
+
+  block ^case2
+    imul rax, 3
+    ret rax
+
+  block ^outside
+    mov rax, rdx
+    xor rax, rdi
+    ret rax
+
+  block ^skip
+    ret rdx
+
+  block ^table
+    jump_table rdi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
   block ^impossible
     trap

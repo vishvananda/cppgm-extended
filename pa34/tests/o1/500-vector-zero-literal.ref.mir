@@ -29,11 +29,11 @@ function @chosen
     vector.fromi32 xmm0, r10
     ret xmm0
 
-  block ^join
-    ret xmm0
-
   block ^entry~join
     vector.pzero xmm0
+    ret xmm0
+
+  block ^join
     ret xmm0
 
 function @nothing
@@ -170,10 +170,6 @@ function @main
     mov rax, 5
     ret rax
 
-  block ^bad_join
-    mov rax, 4
-    ret rax
-
   block ^stacked
     sub rsp, 16
     fmov.v128 xmm0, [rbp-16]
@@ -212,4 +208,8 @@ function @main
 
   block ^done
     mov rax, 0
+    ret rax
+
+  block ^bad_join
+    mov rax, 4
     ret rax

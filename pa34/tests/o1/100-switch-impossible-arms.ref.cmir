@@ -31,24 +31,24 @@ function @dense
     lea rax, [rsi+rsi*2]
     ret rax
 
-  block ^case1
-    lea rax, [rsi+rsi*4]
-    ret rax
-
-  block ^case2
-    imul rax, rsi, 7
-    ret rax
-
-  block ^case3
-    lea rax, [rsi+rsi*8]
+  block ^case5
+    imul rax, rsi, 13
     ret rax
 
   block ^case4
     imul rax, rsi, 11
     ret rax
 
-  block ^case5
-    imul rax, rsi, 13
+  block ^case3
+    lea rax, [rsi+rsi*8]
+    ret rax
+
+  block ^case2
+    imul rax, rsi, 7
+    ret rax
+
+  block ^case1
+    lea rax, [rsi+rsi*4]
     ret rax
 
   block ^dead
@@ -73,24 +73,24 @@ function @signed_byte
     lea rax, [rsi+rsi*2]
     ret rax
 
-  block ^case1
-    lea rax, [rsi+rsi*4]
-    ret rax
-
-  block ^case2
-    imul rax, rsi, 7
-    ret rax
-
-  block ^case3
-    lea rax, [rsi+rsi*8]
+  block ^case5
+    imul rax, rsi, 13
     ret rax
 
   block ^case4
     imul rax, rsi, 11
     ret rax
 
-  block ^case5
-    imul rax, rsi, 13
+  block ^case3
+    lea rax, [rsi+rsi*8]
+    ret rax
+
+  block ^case2
+    imul rax, rsi, 7
+    ret rax
+
+  block ^case1
+    lea rax, [rsi+rsi*4]
     ret rax
 
   block ^dead
@@ -115,24 +115,24 @@ function @unsigned_byte
     lea rax, [rsi+rsi*2]
     ret rax
 
-  block ^case1
-    lea rax, [rsi+rsi*4]
-    ret rax
-
-  block ^case2
-    imul rax, rsi, 7
-    ret rax
-
-  block ^case3
-    lea rax, [rsi+rsi*8]
+  block ^case5
+    imul rax, rsi, 13
     ret rax
 
   block ^case4
     imul rax, rsi, 11
     ret rax
 
-  block ^case5
-    imul rax, rsi, 13
+  block ^case3
+    lea rax, [rsi+rsi*8]
+    ret rax
+
+  block ^case2
+    imul rax, rsi, 7
+    ret rax
+
+  block ^case1
+    lea rax, [rsi+rsi*4]
     ret rax
 
   block ^dead
@@ -158,24 +158,24 @@ function @defined_default
     lea rax, [rsi+rsi*2]
     ret rax
 
-  block ^case1
-    lea rax, [rsi+rsi*4]
-    ret rax
-
-  block ^case2
-    imul rax, rsi, 7
-    ret rax
-
-  block ^case3
-    lea rax, [rsi+rsi*8]
+  block ^case5
+    imul rax, rsi, 13
     ret rax
 
   block ^case4
     imul rax, rsi, 11
     ret rax
 
-  block ^case5
-    imul rax, rsi, 13
+  block ^case3
+    lea rax, [rsi+rsi*8]
+    ret rax
+
+  block ^case2
+    imul rax, rsi, 7
+    ret rax
+
+  block ^case1
+    lea rax, [rsi+rsi*4]
     ret rax
 
   block ^dead
@@ -206,32 +206,32 @@ function @throwing_default
     lea rax, [rsi+rsi*2]
     ret rax
 
-  block ^case1
-    lea rax, [rsi+rsi*4]
-    ret rax
-
-  block ^case2
-    imul rax, rsi, 7
-    ret rax
-
-  block ^case3
-    lea rax, [rsi+rsi*8]
+  block ^case5
+    imul rax, rsi, 13
     ret rax
 
   block ^case4
     imul rax, rsi, 11
     ret rax
 
-  block ^case5
-    imul rax, rsi, 13
+  block ^case3
+    lea rax, [rsi+rsi*8]
     ret rax
 
-  block ^dead
-    trap
+  block ^case2
+    imul rax, rsi, 7
+    ret rax
+
+  block ^case1
+    lea rax, [rsi+rsi*4]
+    ret rax
 
   block ^raise
     mov rdi, rsi
     call @raise_default [args=(rdi), returns=noreturn]
+    trap
+
+  block ^dead
     trap
 
 function @all_dead_cases

@@ -1557,6 +1557,40 @@ uint32_t drop_redundant_constants(Function& function)
 	return removed;
 }
 
+uint32_t hoist_zeroes(Function& function)
+{
+	std::vector<Inst>& insts = function.insts;
+	uint32_t moved = 0;
+	for (const Block& block : function.blocks)
+		for (uint32_t i = block.first + 1; i < block.first + block.count; ++i)
+		{
+			const Inst& zero = insts[i];
+			if (zero.op != Op::Mov || zero.nops != 2 || !plain_gpr(zero.ops[0]) || !zero.ops[1].is_imm() ||
+				zero.ops[1].imm != 0)
+				continue;
+			const Reg r = zero.ops[0].reg;
+			// Back over what keeps the flags, to the compare that set them.
+			uint32_t k = i;
+			while (k > block.first)
+			{
+				const Inst& above = insts[k - 1];
+				const bool keeps = above.op == Op::Mov || above.op == Op::Load || above.op == Op::Store ||
+					above.op == Op::Lea || above.op == Op::Nop;
+				const bool compare = above.op == Op::Cmp || above.op == Op::Test;
+				if ((!keeps && !compare) || !simple_inst(above) || reads_or_writes(above, r))
+					break;
+				--k;
+				if (compare)
+				{
+					std::rotate(insts.begin() + k, insts.begin() + i, insts.begin() + i + 1);
+					++moved;
+					break;
+				}
+			}
+		}
+	return moved;
+}
+
 namespace {
 
 // Fold an address sum into its immediately following load only when the

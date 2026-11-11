@@ -160,12 +160,11 @@ function @main
     add <gpr0>, 1
     cmp.i64 <gpr0>, 128
     jb ^loop
-    jmp ^done
-
-  block ^fail
-    mov rax, 1
-    ret rax
 
   block ^done
     mov rax, 0
+    ret rax
+
+  block ^fail
+    mov rax, 1
     ret rax

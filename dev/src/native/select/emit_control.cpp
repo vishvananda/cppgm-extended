@@ -120,6 +120,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 		drop_redundant_copies(out);
 		fold_call_targets(out);
 		drop_redundant_constants(out);
+		hoist_zeroes(out);
 		forward_float_homes(out);
 		forward_frame_copies(out, frame_objects_);
 		stats_.dead_frame_stores += drop_dead_frame_stores(out, frame_objects_);
@@ -138,6 +139,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 		drop_redundant_copies(out);
 		fold_call_targets(out);
 		drop_redundant_constants(out);
+		hoist_zeroes(out);
 		forward_float_homes(out);
 		forward_frame_copies(out, frame_objects_);
 	}

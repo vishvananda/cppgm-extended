@@ -63,12 +63,12 @@ function @worker
     mov rbx, rsi
     cmp.i64 rdi, 7
     ja ^fallback
-    jump_table rdi, [^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c5, ^entry~c6, ^entry~c7]
+    jump_table rdi, [^entry~c1, ^entry~c1, ^entry~c1, ^entry~c1, ^entry~c1, ^entry~c1, ^entry~c6, ^entry~c7]
 
-  block ^entry~c5
+  block ^entry~c7
     store.i64 [rbp-8], rdx
 
-  block ^c5
+  block ^c7
     mov rdi, rbx
     call @effect [args=(rdi)]
     xor rax, 33
@@ -76,8 +76,8 @@ function @worker
     add rax, 11
     shr rax, 3
     xor rax, rbx
-    mov rdx, 0
-    div [rbp-8]
+    cqo
+    idiv [rbp-8]
     imul rax, 13
     add rax, 29
     xor rax, 77
@@ -109,10 +109,10 @@ function @worker
     xor rax, 255
     ret rax
 
-  block ^entry~c7
+  block ^entry~c1
     store.i64 [rbp-8], rdx
 
-  block ^c7
+  block ^c1
     mov rdi, rbx
     call @effect [args=(rdi)]
     xor rax, 33
@@ -120,8 +120,8 @@ function @worker
     add rax, 11
     shr rax, 3
     xor rax, rbx
-    cqo
-    idiv [rbp-8]
+    mov rdx, 0
+    div [rbp-8]
     imul rax, 13
     add rax, 29
     xor rax, 77
@@ -208,8 +208,8 @@ function @main
     mov r11, 5
     mov rax, 3
     cmovne rax, r11
-    test.u8 rdi, rdi
     mov r11, 0
+    test.u8 rdi, rdi
     cmovne rax, r11
     add r13, rax
     load.i64 rax, @calls
@@ -226,12 +226,11 @@ function @main
     add r12, 1
     cmp.i64 r12, 4096
     jne ^loop
-    jmp ^done
-
-  block ^fail
-    mov rax, 1
-    ret rax
 
   block ^done
     mov rax, 0
+    ret rax
+
+  block ^fail
+    mov rax, 1
     ret rax

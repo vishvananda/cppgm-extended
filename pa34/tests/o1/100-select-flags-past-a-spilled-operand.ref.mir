@@ -101,59 +101,68 @@ function @clamp
     load.i32 rsi, [rsi+60]
     sub.i32 rax, rcx
     mov r11, 0
-    cmovs rax, r11
+    cmp.i32 rax, 0
+    cmovl rax, r11
     cmp.i32 rax, 255
     mov r11, 255
     cmovg rax, r11
     sub.i32 r8, r9
     mov r11, 0
-    cmovs r8, r11
+    cmp.i32 r8, 0
+    cmovl r8, r11
     cmp.i32 r8, 255
     mov r11, 255
     cmovg r8, r11
     sub.i32 rbx, r12
     mov r11, 0
-    cmovs rbx, r11
+    cmp.i32 rbx, 0
+    cmovl rbx, r11
     cmp.i32 rbx, 255
     mov r11, 255
     cmovg rbx, r11
     sub.i32 r13, r14
     mov r11, 0
-    cmovs r13, r11
+    cmp.i32 r13, 0
+    cmovl r13, r11
     cmp.i32 r13, 255
     mov r11, 255
     cmovg r13, r11
     sub.i32 r15, [rbp-56]
     mov r11, 0
-    cmovs r15, r11
+    cmp.i32 r15, 0
+    cmovl r15, r11
     cmp.i32 r15, 255
     mov r11, 255
     cmovg r15, r11
     load.i32 rcx, [rbp-64]
     sub.i32 rcx, [rbp-72]
     mov r11, 0
-    cmovs rcx, r11
+    cmp.i32 rcx, 0
+    cmovl rcx, r11
     cmp.i32 rcx, 255
     mov r11, 255
     cmovg rcx, r11
     load.i32 r9, [rbp-80]
     sub.i32 r9, [rbp-88]
     mov r11, 0
-    cmovs r9, r11
+    cmp.i32 r9, 0
+    cmovl r9, r11
     cmp.i32 r9, 255
     mov r11, 255
     cmovg r9, r11
     load.i32 r12, [rbp-96]
     sub.i32 r12, [rbp-104]
     mov r11, 0
-    cmovs r12, r11
+    cmp.i32 r12, 0
+    cmovl r12, r11
     cmp.i32 r12, 255
     mov r11, 255
     cmovg r12, r11
     load.i32 r14, [rbp-112]
     sub.i32 r14, [rbp-120]
     mov r11, 0
-    cmovs r14, r11
+    cmp.i32 r14, 0
+    cmovl r14, r11
     cmp.i32 r14, 255
     mov r11, 255
     cmovg r14, r11
@@ -161,7 +170,8 @@ function @clamp
     load.i32 r14, [rbp-128]
     sub.i32 r14, [rbp-136]
     mov r11, 0
-    cmovs r14, r11
+    cmp.i32 r14, 0
+    cmovl r14, r11
     cmp.i32 r14, 255
     mov r11, 255
     cmovg r14, r11
@@ -169,7 +179,8 @@ function @clamp
     load.i32 r14, [rbp-144]
     sub.i32 r14, [rbp-152]
     mov r11, 0
-    cmovs r14, r11
+    cmp.i32 r14, 0
+    cmovl r14, r11
     cmp.i32 r14, 255
     mov r11, 255
     cmovg r14, r11
@@ -177,7 +188,8 @@ function @clamp
     load.i32 r14, [rbp-160]
     sub.i32 r14, [rbp-168]
     mov r11, 0
-    cmovs r14, r11
+    cmp.i32 r14, 0
+    cmovl r14, r11
     cmp.i32 r14, 255
     mov r11, 255
     cmovg r14, r11
@@ -185,7 +197,8 @@ function @clamp
     load.i32 r14, [rbp-176]
     sub.i32 r14, [rbp-184]
     mov r11, 0
-    cmovs r14, r11
+    cmp.i32 r14, 0
+    cmovl r14, r11
     cmp.i32 r14, 255
     mov r11, 255
     cmovg r14, r11
@@ -193,7 +206,8 @@ function @clamp
     load.i32 r14, [rbp-192]
     sub.i32 r14, [rbp-200]
     mov r11, 0
-    cmovs r14, r11
+    cmp.i32 r14, 0
+    cmovl r14, r11
     cmp.i32 r14, 255
     mov r11, 255
     cmovg r14, r11
@@ -201,13 +215,15 @@ function @clamp
     load.i32 r14, [rbp-208]
     sub.i32 r14, [rbp-216]
     mov r11, 0
-    cmovs r14, r11
+    cmp.i32 r14, 0
+    cmovl r14, r11
     cmp.i32 r14, 255
     mov r11, 255
     cmovg r14, r11
     sub.i32 rdi, rsi
     mov r11, 0
-    cmovs rdi, r11
+    cmp.i32 rdi, 0
+    cmovl rdi, r11
     cmp.i32 rdi, 255
     mov r11, 255
     cmovg rdi, r11

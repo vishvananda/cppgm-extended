@@ -143,12 +143,11 @@ function @main
     add.i32 <gpr1>, 1
     cmp.i32 <gpr1>, 256
     jl ^loop
-    jmp ^done
-
-  block ^failed
-    mov rax, 1
-    ret rax
 
   block ^done
     mov rax, 0
+    ret rax
+
+  block ^failed
+    mov rax, 1
     ret rax
