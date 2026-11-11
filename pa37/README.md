@@ -10,7 +10,8 @@ registers, instruction forms or calling conventions.
 
 Complete PA34 and the earlier cumulative assignments first. Continue working
 in `dev/` and shared modules under `dev/src/`.
-[Design notes](design-notes.md) suggest an approach.
+[Design notes](design-notes.md) suggest an approach. The
+[target and ABI contract](target-abi.md) defines the shared boundary.
 
 ### Targets and required behavior
 
@@ -146,7 +147,7 @@ prescribed. A successful compile must never hide a fallback to host code.
 
 ### Testing
 
-Install the pinned runtime and validator once:
+Install the pinned runtime, validator and reference SDK once:
 
 ```sh
 perl ../scripts/install_wasm_tools.pl --prefix ../obj/wasm-tools

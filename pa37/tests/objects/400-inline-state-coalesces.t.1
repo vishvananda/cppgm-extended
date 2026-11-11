@@ -1,0 +1,2 @@
+inline int& shared() { static int value = 7; return value; }
+extern "C" int* first_address() { return &shared(); }

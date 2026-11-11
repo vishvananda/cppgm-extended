@@ -29,10 +29,26 @@ enum class Immediate : std::uint8_t
 	Table
 };
 
+// Standard linking-v2 relocation vocabulary; indices retain symbol/type identity.
+enum class RelocationKind : std::uint8_t
+{
+	FunctionIndex = 0,
+	TableIndex = 1,
+	TableIndexI32 = 2,
+	MemoryAddress = 3,
+	MemoryAddressSigned = 4,
+	MemoryAddressI32 = 5,
+	TypeIndex = 6,
+	GlobalIndex = 7,
+	TagIndex = 10,
+	TableNumber = 20
+};
+
 // name, binary opcode, immediate form, diagnostic spelling
 // clang-format off: clang-format reflows this list differently on every run.
 #define CPPGM_WASM_OPERATIONS(X) \
 	X(Unreachable, 0x00, None, "unreachable") \
+	X(Nop, 0x01, None, "nop") \
 	X(Block, 0x02, BlockType, "block") \
 	X(Loop, 0x03, BlockType, "loop") \
 	X(If, 0x04, BlockType, "if") \
@@ -59,12 +75,23 @@ enum class Immediate : std::uint8_t
 	X(I32Load8U, 0x2d, Memory, "i32.load8_u") \
 	X(I32Load16S, 0x2e, Memory, "i32.load16_s") \
 	X(I32Load16U, 0x2f, Memory, "i32.load16_u") \
+	X(I64Load8S, 0x30, Memory, "i64.load8_s") \
+	X(I64Load8U, 0x31, Memory, "i64.load8_u") \
+	X(I64Load16S, 0x32, Memory, "i64.load16_s") \
+	X(I64Load16U, 0x33, Memory, "i64.load16_u") \
+	X(I64Load32S, 0x34, Memory, "i64.load32_s") \
+	X(I64Load32U, 0x35, Memory, "i64.load32_u") \
 	X(I32Store, 0x36, Memory, "i32.store") \
 	X(I64Store, 0x37, Memory, "i64.store") \
 	X(F32Store, 0x38, Memory, "f32.store") \
 	X(F64Store, 0x39, Memory, "f64.store") \
 	X(I32Store8, 0x3a, Memory, "i32.store8") \
 	X(I32Store16, 0x3b, Memory, "i32.store16") \
+	X(I64Store8, 0x3c, Memory, "i64.store8") \
+	X(I64Store16, 0x3d, Memory, "i64.store16") \
+	X(I64Store32, 0x3e, Memory, "i64.store32") \
+	X(MemorySize, 0x3f, Index, "memory.size") \
+	X(MemoryGrow, 0x40, Index, "memory.grow") \
 	X(I32Const, 0x41, Signed, "i32.const") \
 	X(I64Const, 0x42, Signed, "i64.const") \
 	X(F32Const, 0x43, Float32, "f32.const") \
@@ -165,9 +192,18 @@ enum class Immediate : std::uint8_t
 	X(F64Div, 0xa3, None, "f64.div") \
 	X(F64Min, 0xa4, None, "f64.min") \
 	X(F64Max, 0xa5, None, "f64.max") \
+	X(F64Copysign, 0xa6, None, "f64.copysign") \
 	X(I32WrapI64, 0xa7, None, "i32.wrap_i64") \
+	X(I32TruncF32S, 0xa8, None, "i32.trunc_f32_s") \
+	X(I32TruncF32U, 0xa9, None, "i32.trunc_f32_u") \
+	X(I32TruncF64S, 0xaa, None, "i32.trunc_f64_s") \
+	X(I32TruncF64U, 0xab, None, "i32.trunc_f64_u") \
 	X(I64ExtendI32S, 0xac, None, "i64.extend_i32_s") \
 	X(I64ExtendI32U, 0xad, None, "i64.extend_i32_u") \
+	X(I64TruncF32S, 0xae, None, "i64.trunc_f32_s") \
+	X(I64TruncF32U, 0xaf, None, "i64.trunc_f32_u") \
+	X(I64TruncF64S, 0xb0, None, "i64.trunc_f64_s") \
+	X(I64TruncF64U, 0xb1, None, "i64.trunc_f64_u") \
 	X(F32ConvertI32S, 0xb2, None, "f32.convert_i32_s") \
 	X(F32ConvertI32U, 0xb3, None, "f32.convert_i32_u") \
 	X(F32ConvertI64S, 0xb4, None, "f32.convert_i64_s") \
@@ -184,6 +220,9 @@ enum class Immediate : std::uint8_t
 	X(F64ReinterpretI64, 0xbf, None, "f64.reinterpret_i64") \
 	X(I32Extend8S, 0xc0, None, "i32.extend8_s") \
 	X(I32Extend16S, 0xc1, None, "i32.extend16_s") \
+	X(I64Extend8S, 0xc2, None, "i64.extend8_s") \
+	X(I64Extend16S, 0xc3, None, "i64.extend16_s") \
+	X(I64Extend32S, 0xc4, None, "i64.extend32_s") \
 	X(I32TruncSatF32S, 0xfc00, None, "i32.trunc_sat_f32_s") \
 	X(I32TruncSatF32U, 0xfc01, None, "i32.trunc_sat_f32_u") \
 	X(I32TruncSatF64S, 0xfc02, None, "i32.trunc_sat_f64_s") \

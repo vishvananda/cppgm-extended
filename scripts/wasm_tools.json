@@ -13,6 +13,13 @@
         "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.263.0/wasm-tools-1.263.0-aarch64-linux.tar.gz",
         "sha256": "773b5e6bf957f0d93a9a337c9c5fc4c35509706301a80799f57a76fa367fd1ca",
         "directory": "wasm-tools-1.263.0-aarch64-linux"
+      },
+      "wasi-sdk": {
+        "version": "34.0",
+        "kind": "sdk",
+        "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-arm64-linux.tar.gz",
+        "sha256": "f7e243dff54d60bcc576e94d6166b69f410f2500ae4a9ceef34315be10e77971",
+        "directory": "wasi-sdk-34.0-arm64-linux"
       }
     },
     "aarch64-macos": {
@@ -27,6 +34,13 @@
         "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.263.0/wasm-tools-1.263.0-aarch64-macos.tar.gz",
         "sha256": "b568f04746a699c4068b8d751779b60b501cf2cab6d259a3bc973eb5eeb1f62b",
         "directory": "wasm-tools-1.263.0-aarch64-macos"
+      },
+      "wasi-sdk": {
+        "version": "34.0",
+        "kind": "sdk",
+        "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-arm64-macos.tar.gz",
+        "sha256": "9c59398106b417f8f14913380fdf0097a8cc0ff4af9eb3ce0065a859e88d49e9",
+        "directory": "wasi-sdk-34.0-arm64-macos"
       }
     },
     "x86_64-linux": {
@@ -41,6 +55,13 @@
         "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.263.0/wasm-tools-1.263.0-x86_64-linux.tar.gz",
         "sha256": "21c036c1740a0552124c79c6e2170cb61c5b016005671a6d5bc06cf642165431",
         "directory": "wasm-tools-1.263.0-x86_64-linux"
+      },
+      "wasi-sdk": {
+        "version": "34.0",
+        "kind": "sdk",
+        "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-linux.tar.gz",
+        "sha256": "b761e3a0721dbae9c09a0059e5fdb2bf917d1b4a8a7b430fb3b5aafb0984b2c4",
+        "directory": "wasi-sdk-34.0-x86_64-linux"
       }
     },
     "x86_64-macos": {
@@ -55,6 +76,13 @@
         "url": "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.263.0/wasm-tools-1.263.0-x86_64-macos.tar.gz",
         "sha256": "909061aba8c069aeed8cb0933e50973a9c8e869bbd6a7819176b49871a338424",
         "directory": "wasm-tools-1.263.0-x86_64-macos"
+      },
+      "wasi-sdk": {
+        "version": "34.0",
+        "kind": "sdk",
+        "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-macos.tar.gz",
+        "sha256": "87d27fa8adc68dee59bfbf2e22a6d34ef717c34d6bf1d8af2a56fc929d9ce0eb",
+        "directory": "wasi-sdk-34.0-x86_64-macos"
       }
     }
   }

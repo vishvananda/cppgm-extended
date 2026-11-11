@@ -1,0 +1,107 @@
+#include "wasm/object_reader.h"
+
+#include <algorithm>
+#include <set>
+
+namespace wasm {
+
+namespace {
+
+void validate_chunk(const ObjectChunk& chunk, const Object& object)
+{
+	std::vector<std::pair<uint32_t, uint32_t>> ranges;
+	for (const Relocation& relocation : chunk.relocations)
+	{
+		const unsigned kind = static_cast<unsigned>(relocation.kind);
+		const bool fixed = kind == 2 || kind == 5;
+		const uint32_t width = fixed ? 4 : 5;
+		if (relocation.offset > chunk.bytes.data.size() || width > chunk.bytes.data.size() - relocation.offset)
+			throw WasmError("Wasm relocation exceeds its code/data body");
+		if (!fixed)
+		{
+			Cursor value(chunk.bytes.data.data() + relocation.offset, width);
+			if (kind == 1 || kind == 4)
+				value.signed_leb();
+			else
+				value.u32();
+			value.done();
+		}
+		ranges.push_back({ relocation.offset, relocation.offset + width });
+		if (kind == 6)
+		{
+			if (relocation.index >= object.types.size())
+				throw WasmError("invalid Wasm type relocation index");
+			continue;
+		}
+		if (relocation.index >= object.symbols.size())
+			throw WasmError("invalid Wasm symbol relocation index");
+		const uint8_t expected = kind <= 2 ? 0 : kind <= 5 ? 1 : kind == 7 ? 2 : kind == 10 ? 4 : 5;
+		if (object.symbols[relocation.index].kind != expected)
+			throw WasmError("Wasm relocation kind does not match its symbol");
+	}
+	std::sort(ranges.begin(), ranges.end());
+	for (size_t i = 1; i < ranges.size(); ++i)
+		if (ranges[i - 1].second > ranges[i].first)
+			throw WasmError("overlapping Wasm relocations");
+}
+
+} // namespace
+
+void validate_object(const Object& object)
+{
+	const std::set<std::string> supported{ "mutable-globals", "sign-ext", "nontrapping-fptoint", "bulk-memory",
+		"bulk-memory-opt", "multivalue", "reference-types", "call-indirect-overlong", "simd128", "exception-handling" };
+	for (const auto& feature : object.features)
+		if ((feature.first != '+' && feature.first != '-' && feature.first != '=') ||
+			(feature.first != '-' && supported.count(feature.second) == 0))
+			throw WasmError("unsupported Wasm object feature: " + feature.second);
+	for (const auto& function : object.functions)
+	{
+		if (function.type >= object.types.size())
+			throw WasmError("Wasm function references an invalid signature");
+		if (!function.imported && (function.code.bytes.data.empty() || function.code.bytes.data.back() != 0x0b))
+			throw WasmError("Wasm function body is empty or unterminated");
+		validate_chunk(function.code, object);
+	}
+	for (const auto& data : object.data)
+		validate_chunk(data.contents, object);
+	std::set<std::string> names;
+	for (const ObjectSymbol& symbol : object.symbols)
+	{
+		if (!symbol.local() && symbol.kind != 3 && !names.insert(symbol.name).second)
+			throw WasmError("duplicate name in Wasm object symbol table: " + symbol.name);
+		if (symbol.local() && symbol.undefined())
+			throw WasmError("local Wasm symbol cannot be undefined");
+		if (symbol.kind == 0)
+		{
+			if (symbol.index >= object.functions.size() ||
+				object.functions[symbol.index].imported != symbol.undefined())
+				throw WasmError("Wasm function symbol/import mismatch");
+		}
+		else if (symbol.kind == 1 && !symbol.undefined())
+		{
+			if (symbol.index >= object.data.size())
+				throw WasmError("invalid Wasm data symbol segment");
+			const uint64_t size = object.data[symbol.index].contents.bytes.data.size();
+			if (symbol.offset > size || symbol.size > size - symbol.offset)
+				throw WasmError("Wasm data symbol exceeds its segment");
+		}
+		else if (symbol.kind == 2 && (symbol.index >= object.global_imports.size() || !symbol.undefined()))
+			throw WasmError("invalid Wasm global symbol");
+		else if (symbol.kind == 5 && (symbol.index != 0 || !symbol.undefined()))
+			throw WasmError("invalid Wasm table symbol");
+	}
+	for (const auto& initializer : object.initializers)
+	{
+		if (initializer.second >= object.symbols.size())
+			throw WasmError("invalid Wasm initializer symbol");
+		const auto& symbol = object.symbols[initializer.second];
+		if (symbol.kind != 0 || symbol.undefined())
+			throw WasmError("Wasm initializer is not a defined function");
+		const Signature& type = object.types[object.functions[symbol.index].type];
+		if (!type.parameters.empty() || type.result != ValueType::Void)
+			throw WasmError("Wasm initializer signature is not void()");
+	}
+}
+
+} // namespace wasm

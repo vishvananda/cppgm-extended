@@ -1,0 +1,3 @@
+__attribute__((weak)) int chosen = 3;
+extern "C" __attribute__((weak)) int choice() { return 5; }
+extern "C" int from_weak() { return chosen + choice(); }

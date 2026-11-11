@@ -132,7 +132,7 @@ bool ends_with(const std::string& value, const char* suffix)
 
 bool object_name(const std::string& name)
 {
-	return ends_with(name, ".o") || ends_with(name, ".obj");
+	return ends_with(name, ".o") || ends_with(name, ".obj") || ends_with(name, ".a");
 }
 
 // -O<level> as GCC reads it: -O is -O1, -Os, -Oz and -Og keep their nearest
@@ -760,9 +760,10 @@ std::string find_library(const Invocation& invocation, const std::string& name)
 	for (const std::string& directory : invocation.library_paths)
 	{
 		const std::string base = directory + (ends_with(directory, "/") ? "" : "/") + "lib" + name;
-		for (const char* suffix : { ".o", ".obj" })
+		for (const char* suffix : { ".o", ".obj", ".a" })
 		{
-			if (regular_file(base + suffix))
+			if ((std::string(suffix) != ".a" || target_model::is_wasm(invocation.target)) &&
+				regular_file(base + suffix))
 				return base + suffix;
 		}
 	}
@@ -818,40 +819,93 @@ int link_mode(const Invocation& invocation)
 
 // One translation unit's posttoken records (`sof`, the PA2 tokens, `eof`);
 // false after an error.
+bool wasm_input(const Input& input, const Invocation& invocation, const backend::Options& options,
+	std::vector<wasm::Object>& objects, std::string& error)
+{
+	if (input.kind == Input::Kind::Object || input.kind == Input::Kind::Library)
+	{
+		if (invocation.compile_only)
+			throw InvocationError("-c requires a source or LowIR input");
+		try
+		{
+			wasm::read_link_inputs(
+				input.kind == Input::Kind::Library ? find_library(invocation, input.name) : input.name, objects);
+			return true;
+		}
+		catch (const wasm::WasmError& failure)
+		{
+			error = failure.what();
+			return false;
+		}
+	}
+	lowir::Program program;
+	if (input.kind == Input::Kind::LowIR)
+	{
+		if (!lowir::read_program_files(program, { input.name }, error))
+			return false;
+	}
+	else
+	{
+		program.target = invocation.target;
+		program.explicit_target = true;
+		lower::ProgramLowering lowering(program);
+		lowering.set_optimizing(invocation.optimizer.level >= 2);
+		lowering.set_exceptions(invocation.preprocessor.modes.exceptions);
+		lowering.set_strict_aliasing(invocation.strict_aliasing);
+		UnitWork work;
+		double front_ms = 0;
+		const auto start = std::chrono::steady_clock::now();
+		if (!lower_source(input.name, invocation, lowering, work, front_ms, start))
+			return false;
+		lowering.finish();
+	}
+	std::string dump = "machine_ir wasm32 1\n";
+	wasm::Object object;
+	if (!wasm::compile_object(program, options, object, dump, error))
+		return false;
+	objects.push_back(std::move(object));
+	return true;
+}
+
 int wasm_mode(const Invocation& invocation)
 {
-	if (invocation.compile_only)
-		throw InvocationError("relocatable Wasm object emission is not yet implemented");
-	lowir::Program program;
-	program.target = invocation.target;
-	program.explicit_target = true;
-	lower::ProgramLowering lowering(program);
-	lowering.set_optimizing(invocation.optimizer.level >= 2);
-	lowering.set_exceptions(invocation.preprocessor.modes.exceptions);
-	lowering.set_strict_aliasing(invocation.strict_aliasing);
-	UnitWork work;
-	double front_ms = 0;
-	const auto start = std::chrono::steady_clock::now();
-	for (const Input& input : invocation.inputs)
-	{
-		if (input.kind != Input::Kind::Source)
-			throw InvocationError("this Wasm path currently requires C++ source inputs");
-		if (!lower_source(input.name, invocation, lowering, work, front_ms, start))
-			return EXIT_FAILURE;
-	}
-	lowering.finish();
+	if (invocation.compile_only && invocation.inputs.size() != 1 && !invocation.output.empty())
+		throw InvocationError("cannot specify -o with -c and several inputs");
 	backend::Options options;
 	options.target = invocation.target;
 	options.output = invocation.output.empty() ? "a.wasm" : invocation.output;
 	options.optimization_level = invocation.optimizer.level;
 	options.exports = invocation.exports;
 	options.optimizer = &invocation.optimizer;
-	check_output(invocation, options.output);
 	std::string error;
-	if (!wasm::compile_program(program, options, error))
+	std::vector<wasm::Object> objects;
+	for (const Input& input : invocation.inputs)
 	{
-		std::cerr << "ERROR: " << error << std::endl;
-		return EXIT_FAILURE;
+		if (!wasm_input(input, invocation, options, objects, error))
+		{
+			std::cerr << "ERROR: " << error << std::endl;
+			return EXIT_FAILURE;
+		}
+		if (invocation.compile_only)
+		{
+			options.output = invocation.output.empty() ? default_object_name(input.name) : invocation.output;
+			check_output(invocation, options.output);
+			if (!wasm::output_objects(objects, options, true, error))
+			{
+				std::cerr << "ERROR: " << error << std::endl;
+				return EXIT_FAILURE;
+			}
+			objects.clear();
+		}
+	}
+	if (!invocation.compile_only)
+	{
+		check_output(invocation, options.output);
+		if (!wasm::output_objects(objects, options, false, error))
+		{
+			std::cerr << "ERROR: " << error << std::endl;
+			return EXIT_FAILURE;
+		}
 	}
 	return EXIT_SUCCESS;
 }

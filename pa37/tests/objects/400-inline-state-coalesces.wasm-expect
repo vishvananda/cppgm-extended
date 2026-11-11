@@ -1,0 +1,1 @@
+{"source":true,"units":["400-inline-state-coalesces.t.1","400-inline-state-coalesces.t.2"],"calls":[{"export":"observe","result":"12"}],"llvm_interop":true}

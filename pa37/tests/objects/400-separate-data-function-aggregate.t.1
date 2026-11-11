@@ -1,0 +1,5 @@
+int state = 7;
+extern "C" int bump(int x) { state += x; return state; }
+extern "C" int (*address())(int) { return bump; }
+struct Pair { int x, y; };
+extern "C" Pair adjust(Pair p) { p.x += 2; p.y *= 3; return p; }

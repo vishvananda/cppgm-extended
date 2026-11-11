@@ -18,6 +18,14 @@ public:
 	explicit WasmError(const std::string& message) : std::runtime_error(message) {}
 };
 
+struct Relocation
+{
+	RelocationKind kind;
+	std::uint32_t offset;
+	std::uint32_t index;
+	std::int64_t addend;
+};
+
 struct Instruction
 {
 	Op op;
@@ -32,6 +40,8 @@ struct Function
 	std::vector<ValueType> locals;
 	std::vector<Instruction> instructions;
 	std::vector<std::uint64_t> operands;
+	// Offsets here identify operands; encoding converts them to byte offsets.
+	std::vector<Relocation> relocations;
 	std::uint32_t parameter_count = 0;
 	std::uint32_t frame_bytes = 0;
 	std::uint32_t location = 0;
@@ -42,6 +52,11 @@ struct Function
 			static_cast<std::uint32_t>(values.size()) };
 		operands.insert(operands.end(), values.begin(), values.end());
 		instructions.push_back(Instruction{ op, range, location });
+	}
+
+	void relocate(RelocationKind kind, std::uint32_t index, std::uint32_t operand = 0, std::int64_t addend = 0)
+	{
+		relocations.push_back(Relocation{ kind, instructions.back().operands.first + operand, index, addend });
 	}
 };
 

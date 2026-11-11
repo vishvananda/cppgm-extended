@@ -93,6 +93,7 @@ void Selector::prepare_frame()
 	saved_stack_ = add_local(ValueType::I32);
 	frame_ = add_local(ValueType::I32);
 	out_.emit(Op::GlobalGet, { 0 });
+	out_.relocate(RelocationKind::GlobalIndex, module_.stack_symbol);
 	out_.emit(Op::LocalTee, { saved_stack_ });
 	out_.emit(Op::I32Const, { out_.frame_bytes });
 	out_.emit(Op::I32Sub);
@@ -103,6 +104,7 @@ void Selector::prepare_frame()
 	}
 	out_.emit(Op::LocalTee, { frame_ });
 	out_.emit(Op::I32Const, { module_.stack_floor });
+	out_.relocate(RelocationKind::MemoryAddressSigned, module_.stack_low_symbol);
 	out_.emit(Op::I32LtU);
 	out_.emit(Op::If, { static_cast<uint8_t>(ValueType::Void) });
 	out_.emit(Op::Unreachable);
@@ -115,6 +117,7 @@ void Selector::prepare_frame()
 	out_.emit(Op::End);
 	out_.emit(Op::LocalGet, { frame_ });
 	out_.emit(Op::GlobalSet, { 0 });
+	out_.relocate(RelocationKind::GlobalIndex, module_.stack_symbol);
 	for (uint32_t i = 0; i < objects_.size(); ++i)
 	{
 		if (objects_[i] == kNoId)

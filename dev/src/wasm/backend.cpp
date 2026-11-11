@@ -3,7 +3,7 @@
 #include <cstdio>
 
 #include "opt/optimizer.h"
-#include "wasm/module.h"
+#include "wasm/object_reader.h"
 
 namespace wasm {
 
@@ -30,7 +30,8 @@ bool write_file(const std::string& path, const void* data, size_t size, std::str
 
 } // namespace
 
-bool compile_program(lowir::Program& program, const backend::Options& options, std::string& error)
+bool compile_object(
+	lowir::Program& program, const backend::Options& options, Object& object, std::string& dump, std::string& error)
 {
 	if (!program.explicit_target || program.target != options.target)
 	{
@@ -51,11 +52,32 @@ bool compile_program(lowir::Program& program, const backend::Options& options, s
 		optimization.has_gnu_sincos = false;
 		opt::OptimizerStats stats;
 		opt::optimize_program(program, optimization, &stats);
+		make_object(program, options, object, dump);
+		return options.machine_ir.empty() || write_file(options.machine_ir, dump.data(), dump.size(), error);
+	}
+	catch (const WasmError& failure)
+	{
+		error = failure.what();
+		return false;
+	}
+}
+
+bool output_objects(
+	const std::vector<Object>& objects, const backend::Options& options, bool relocatable, std::string& error)
+{
+	try
+	{
+		for (const Object& object : objects)
+			validate_object(object);
 		Bytes bytes;
-		std::string dump = "machine_ir wasm32 1\n";
-		encode_module(program, options, bytes, dump);
-		if (!options.machine_ir.empty() && !write_file(options.machine_ir, dump.data(), dump.size(), error))
-			return false;
+		if (relocatable)
+		{
+			if (objects.size() != 1)
+				throw WasmError("one source input is required for a Wasm object output");
+			write_object(objects.front(), bytes);
+		}
+		else
+			link_objects(objects, options, bytes);
 		return options.output.empty() || write_file(options.output, bytes.data.data(), bytes.data.size(), error);
 	}
 	catch (const WasmError& failure)
@@ -63,6 +85,13 @@ bool compile_program(lowir::Program& program, const backend::Options& options, s
 		error = failure.what();
 		return false;
 	}
+}
+
+bool compile_program(lowir::Program& program, const backend::Options& options, std::string& error)
+{
+	Object object;
+	std::string dump = "machine_ir wasm32 1\n";
+	return compile_object(program, options, object, dump, error) && output_objects({ object }, options, false, error);
 }
 
 } // namespace wasm

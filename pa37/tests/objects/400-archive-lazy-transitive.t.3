@@ -1,0 +1,3 @@
+int colliding = 99;
+extern "C" int unprovided(int);
+extern "C" int unused_archive_member() { return unprovided(colliding); }

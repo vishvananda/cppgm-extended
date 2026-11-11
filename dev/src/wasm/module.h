@@ -25,13 +25,14 @@ struct Module
 	std::vector<uint32_t> definition_types;
 	std::vector<uint32_t> addresses;
 	std::vector<lowir::SymbolId> definitions;
-	Bytes data;
 	uint32_t stack_floor = 0;
-	uint32_t stack_top = 0;
 	uint32_t initializer = lowir::kNoId;
+	bool relocatable = false;
+	uint32_t stack_symbol = lowir::kNoId;
+	uint32_t stack_low_symbol = lowir::kNoId;
+	uint32_t table_symbol = lowir::kNoId;
 };
 
 void prepare_module(const lowir::Program& program, Module& module);
-void encode_module(lowir::Program& program, const backend::Options& options, Bytes& output, std::string& dump);
 
 } // namespace wasm

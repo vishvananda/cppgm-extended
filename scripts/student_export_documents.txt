@@ -250,6 +250,7 @@ pa35/README.md
 pa36/README.md
 pa37/README.md
 pa37/design-notes.md
+pa37/target-abi.md
 pa4/README.md
 pa4/directives.md
 pa4/macros.md

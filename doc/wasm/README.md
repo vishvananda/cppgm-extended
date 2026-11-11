@@ -21,7 +21,7 @@ The ABI/linking documents retain their upstream
 [repository license index](spec-LICENSE) identifies its scope. Original
 authorship and copyright remain with their upstream contributors.
 
-The runtime and validator versions/checksums are pinned separately in
+The runtime, validator and WASI SDK versions/checksums are pinned separately in
 `scripts/wasm_tools.json`. They are test tools, not compiler backend
 dependencies. No downloaded executables or runtime observations are stored
 in this reference bundle.

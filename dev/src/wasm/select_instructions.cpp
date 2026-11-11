@@ -133,14 +133,17 @@ void Selector::instruction(const lowir::Instruction& inst)
 		return;
 	case Opcode::StackSave:
 		out_.emit(Op::GlobalGet, { 0 });
+		out_.relocate(RelocationKind::GlobalIndex, module_.stack_symbol);
 		break;
 	case Opcode::StackRestore:
 		value(inst.ops[0], program_.pointer_type());
 		out_.emit(Op::GlobalSet, { 0 });
+		out_.relocate(RelocationKind::GlobalIndex, module_.stack_symbol);
 		return;
 	case Opcode::StackAlloc:
 	{
 		out_.emit(Op::GlobalGet, { 0 });
+		out_.relocate(RelocationKind::GlobalIndex, module_.stack_symbol);
 		const Type size_type = operand_type(inst.ops[0], Type::scalar(TypeKind::I64));
 		value(inst.ops[0], size_type);
 		if (value_type(size_type) == ValueType::I64)
@@ -149,7 +152,9 @@ void Selector::instruction(const lowir::Instruction& inst)
 		out_.emit(Op::I32Const, { static_cast<uint64_t>(int64_t(-16)) });
 		out_.emit(Op::I32And);
 		out_.emit(Op::GlobalSet, { 0 });
+		out_.relocate(RelocationKind::GlobalIndex, module_.stack_symbol);
 		out_.emit(Op::GlobalGet, { 0 });
+		out_.relocate(RelocationKind::GlobalIndex, module_.stack_symbol);
 		break;
 	}
 	default:

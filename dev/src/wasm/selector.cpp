@@ -88,14 +88,17 @@ void Selector::value(Value operand, Type type)
 		break;
 	case ValueKind::Symbol:
 	{
-		uint32_t address = module_.addresses[operand.index];
-		if (is_function_kind(program_.symbols[operand.index].kind))
-			address = module_.function_indices[operand.index] == kNoId ? kNoId
-																	   : module_.function_indices[operand.index] + 1;
-		if (address == kNoId)
+		const bool function = is_function_kind(program_.symbols[operand.index].kind);
+		uint32_t address = function ? module_.function_indices[operand.index] : module_.addresses[operand.index];
+		if (address == kNoId && !module_.relocatable)
 			throw WasmError(
 				"undefined Wasm symbol: " + std::string(program_.spelling(program_.symbols[operand.index].name)));
+		if (module_.relocatable)
+			address = function ? address + 1 : 0;
+		else if (function)
+			++address;
 		out_.emit(Op::I32Const, { address });
+		out_.relocate(function ? RelocationKind::TableIndex : RelocationKind::MemoryAddressSigned, operand.index);
 		break;
 	}
 	default:
@@ -181,6 +184,7 @@ void Selector::restore_stack()
 	{
 		out_.emit(Op::LocalGet, { saved_stack_ });
 		out_.emit(Op::GlobalSet, { 0 });
+		out_.relocate(RelocationKind::GlobalIndex, module_.stack_symbol);
 	}
 }
 

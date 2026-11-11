@@ -36,7 +36,7 @@ ValueType value_type(lowir::Type type)
 	}
 }
 
-void encode_function(const Function& function, Bytes& output)
+void encode_function(const Function& function, Bytes& output, std::vector<Relocation>* relocations)
 {
 	Bytes body;
 	uint32_t groups = 0;
@@ -52,6 +52,8 @@ void encode_function(const Function& function, Bytes& output)
 		body.unsigned_leb(i - first);
 		body.byte(static_cast<uint8_t>(function.locals[first]));
 	}
+	std::vector<Relocation> encoded;
+	size_t next_relocation = 0;
 	for (const Instruction& inst : function.instructions)
 	{
 		const unsigned opcode = static_cast<unsigned>(inst.op);
@@ -62,34 +64,42 @@ void encode_function(const Function& function, Bytes& output)
 		}
 		else
 			body.byte(opcode);
-		const uint64_t* operands = inst.operands.count == 0 ? nullptr : function.operands.data() + inst.operands.first;
-		switch (immediate_form(inst.op))
-		{
-		case Immediate::None:
-			break;
-		case Immediate::Signed:
-			body.signed_leb(static_cast<int64_t>(operands[0]));
-			break;
-		case Immediate::Float32:
-			body.fixed(operands[0], 4);
-			break;
-		case Immediate::Float64:
-			body.fixed(operands[0], 8);
-			break;
-		case Immediate::BlockType:
-			body.byte(static_cast<uint8_t>(operands[0]));
-			break;
-		case Immediate::Table:
+		const Immediate form = immediate_form(inst.op);
+		if (form == Immediate::Table)
 			body.unsigned_leb(inst.operands.count - 1);
-			for (uint32_t i = 0; i < inst.operands.count; ++i)
-				body.unsigned_leb(operands[i]);
-			break;
-		default:
-			for (uint32_t i = 0; i < inst.operands.count; ++i)
-				body.unsigned_leb(operands[i]);
+		for (uint32_t i = 0; i < inst.operands.count; ++i)
+		{
+			const uint32_t operand = inst.operands.first + i;
+			const uint64_t value = function.operands[operand];
+			if (relocations != nullptr && next_relocation < function.relocations.size() &&
+				function.relocations[next_relocation].offset == operand)
+			{
+				Relocation relocation = function.relocations[next_relocation++];
+				relocation.offset = static_cast<uint32_t>(body.data.size());
+				encoded.push_back(relocation);
+				for (unsigned part = 0; part < 5; ++part)
+					body.byte(((value >> (7 * part)) & 0x7f) | (part == 4 ? 0 : 0x80));
+			}
+			else if (form == Immediate::Signed)
+				body.signed_leb(static_cast<int64_t>(value));
+			else if (form == Immediate::Float32 || form == Immediate::Float64)
+				body.fixed(value, form == Immediate::Float32 ? 4 : 8);
+			else if (form == Immediate::BlockType)
+				body.byte(static_cast<uint8_t>(value));
+			else
+				body.unsigned_leb(value);
 		}
 	}
+	if (relocations != nullptr && next_relocation != function.relocations.size())
+		throw WasmError("Wasm relocation does not identify an encoded operand");
+
 	output.unsigned_leb(body.data.size());
+	if (relocations != nullptr)
+		for (Relocation relocation : encoded)
+		{
+			relocation.offset += static_cast<uint32_t>(output.data.size());
+			relocations->push_back(relocation);
+		}
 	output.append(body);
 }
 

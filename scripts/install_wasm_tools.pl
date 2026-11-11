@@ -5,7 +5,7 @@ use warnings;
 use Digest::SHA;
 use Fcntl qw(:flock);
 use File::Copy qw(copy);
-use File::Path qw(make_path);
+use File::Path qw(make_path remove_tree);
 use File::Spec;
 use File::Temp qw(tempdir);
 use FindBin;
@@ -44,7 +44,8 @@ my $tools = $manifest->{hosts}{"$architecture-$system"}
 my $installed = -f "$prefix/installed.json" ? read_json("$prefix/installed.json") : {};
 for my $name (sort keys %$tools) {
     my $tool = $tools->{$name};
-    my $binary = "$prefix/bin/$name";
+    my $sdk = ($tool->{kind} // '') eq 'sdk';
+    my $binary = $sdk ? "$prefix/wasi-sdk/bin/clang++" : "$prefix/bin/$name";
     next if -x $binary && ($installed->{$name}{archive_sha256} // '') eq $tool->{sha256}
         && ($installed->{$name}{binary_sha256} // '') eq digest($binary);
     my $temporary = tempdir('wasm-tools-XXXXXX', DIR => $prefix, CLEANUP => 1);
@@ -56,6 +57,15 @@ for my $name (sort keys %$tools) {
         or die "Archive checksum mismatch for $name $tool->{version}\n";
     system('tar', '-xf', $archive, '-C', $temporary) == 0
         or die "Cannot extract $name\n";
+    if ($sdk) {
+        remove_tree("$prefix/wasi-sdk");
+        rename("$temporary/$tool->{directory}", "$prefix/wasi-sdk")
+            or die "Cannot install WASI SDK: $!\n";
+        $installed->{$name} = {
+            version => $tool->{version}, archive_sha256 => $tool->{sha256}, binary_sha256 => digest($binary)
+        };
+        next;
+    }
     my $source = "$temporary/$tool->{directory}/$name";
     copy($source, "$binary.new") or die "Cannot install $name: $!\n";
     chmod(0755, "$binary.new") or die "Cannot make $name executable: $!\n";
@@ -63,6 +73,12 @@ for my $name (sort keys %$tools) {
     $installed->{$name} = {
         version => $tool->{version}, archive_sha256 => $tool->{sha256}, binary_sha256 => digest($binary)
     };
+}
+for my $tool (['clang++', 'wasm-ref-clang++'], ['wasm-ld', 'wasm-ref-ld'], ['llvm-ar', 'wasm-ref-ar']) {
+    my ($source, $name) = @$tool;
+    my $link = "$prefix/bin/$name";
+    unlink($link) if -l $link;
+    symlink("../wasi-sdk/bin/$source", $link) or die "Cannot link $name: $!\n";
 }
 open(my $marker, '>', "$prefix/installed.json") or die "$prefix: $!\n";
 print $marker JSON::PP->new->canonical->pretty->encode($installed);

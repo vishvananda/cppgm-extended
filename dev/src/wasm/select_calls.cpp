@@ -47,11 +47,14 @@ void Selector::call(const lowir::Instruction& inst)
 			throw WasmError(
 				"undefined Wasm function: " + std::string(program_.spelling(program_.symbols[inst.ops[0].index].name)));
 		out_.emit(Op::Call, { function });
+		out_.relocate(RelocationKind::FunctionIndex, inst.ops[0].index);
 	}
 	else
 	{
 		value(inst.ops[0], program_.pointer_type());
 		out_.emit(Op::CallIndirect, { module_.signature_types[signature_id], 0 });
+		out_.relocate(RelocationKind::TypeIndex, module_.signature_types[signature_id]);
+		out_.relocate(RelocationKind::TableNumber, module_.table_symbol, 1);
 	}
 	if (signature->boundary.returns == ir_model::CRM_NORETURN)
 	{

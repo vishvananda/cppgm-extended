@@ -113,7 +113,7 @@ bool Validator::numeric(Op op)
 		output = ValueType::I32;
 		count = code == 0x45 || code == 0x50 ? 1 : 2;
 	}
-	else if (code >= 0x67 && code <= 0xa5)
+	else if (code >= 0x67 && code <= 0xa6)
 	{
 		input = output = code <= 0x78 ? ValueType::I32
 			: code <= 0x8a            ? ValueType::I64
@@ -123,6 +123,12 @@ bool Validator::numeric(Op op)
 				code >= 0xa0
 			? 2
 			: 1;
+	}
+	else if ((code >= 0xa8 && code <= 0xab) || (code >= 0xae && code <= 0xb1))
+	{
+		const unsigned conversion = code - (code <= 0xab ? 0xa8 : 0xae);
+		input = conversion < 2 ? ValueType::F32 : ValueType::F64;
+		output = code <= 0xab ? ValueType::I32 : ValueType::I64;
 	}
 	else if (code >= 0xfc00 && code <= 0xfc07)
 	{
@@ -180,6 +186,11 @@ bool Validator::numeric(Op op)
 			input = ValueType::F64;
 			output = ValueType::I64;
 			break;
+		case Op::I64Extend8S:
+		case Op::I64Extend16S:
+		case Op::I64Extend32S:
+			input = output = ValueType::I64;
+			break;
 		case Op::I32Extend8S:
 		case Op::I32Extend16S:
 			input = output = ValueType::I32;
@@ -200,6 +211,16 @@ void Validator::instruction(const Instruction& inst)
 		return;
 	switch (inst.op)
 	{
+	case Op::Nop:
+		return;
+	case Op::MemorySize:
+	case Op::MemoryGrow:
+		if (operand(inst) != 0)
+			throw WasmError("invalid Wasm memory index");
+		if (inst.op == Op::MemoryGrow)
+			pop(ValueType::I32);
+		push(ValueType::I32);
+		return;
 	case Op::Unreachable:
 		unreachable();
 		return;
@@ -337,17 +358,21 @@ void Validator::instruction(const Instruction& inst)
 		break;
 	}
 	const unsigned code = static_cast<unsigned>(inst.op);
-	if ((code >= 0x28 && code <= 0x2f) || (code >= 0x36 && code <= 0x3b))
+	if (code >= 0x28 && code <= 0x3e)
 	{
 		const bool store = code >= 0x36;
-		const ValueType type = inst.op == Op::I64Load || inst.op == Op::I64Store ? ValueType::I64
-			: inst.op == Op::F32Load || inst.op == Op::F32Store                  ? ValueType::F32
-			: inst.op == Op::F64Load || inst.op == Op::F64Store                  ? ValueType::F64
-																				 : ValueType::I32;
-		const unsigned alignment = code == 0x2c || code == 0x2d || code == 0x3a ? 0
-			: code == 0x2e || code == 0x2f || code == 0x3b                      ? 1
-			: type == ValueType::I64 || type == ValueType::F64                  ? 3
-																				: 2;
+		const ValueType type = code == 0x29 || (code >= 0x30 && code <= 0x35) || code == 0x37 || code >= 0x3c
+			? ValueType::I64
+			: code == 0x2a || code == 0x38 ? ValueType::F32
+			: code == 0x2b || code == 0x39 ? ValueType::F64
+										   : ValueType::I32;
+		const unsigned alignment = code == 0x2c || code == 0x2d || code == 0x30 || code == 0x31 || code == 0x3a ||
+				code == 0x3c
+			? 0
+			: code == 0x2e || code == 0x2f || code == 0x32 || code == 0x33 || code == 0x3b || code == 0x3d ? 1
+			: code == 0x34 || code == 0x35 || code == 0x3e                                                 ? 2
+			: type == ValueType::I64 || type == ValueType::F64                                             ? 3
+																										   : 2;
 		if (operand(inst) > alignment || operand(inst, 1) > UINT32_MAX)
 			throw WasmError("invalid Wasm memory immediate");
 		if (store)
