@@ -2,7 +2,7 @@
 
 Status: implementation in progress, 2026-11-11. The working branch is
 `feature/wasm32-backend`, rebased onto the latest committed local `opt/llvm-gap-claude` at
-`190c9a162`. Compiler changes are isolated in
+`f66180b12`. Compiler changes are isolated in
 `/mnt/vizier/cppgm-wasm32-backend`; the main checkout is unchanged.
 
 The active student documents are [PA37](../pa37/README.md) and its
@@ -80,10 +80,43 @@ changes Wasm's typed public ABI. The transformation now requires a typed ABI
 capability; it leaves Wasm boundaries intact. Native scalar rewrites clear the
 object-only shape facts. Other LowIR optimizations remain shared.
 
+Qualification: the rebased strict report passes 10,674/10,674; all 23 Wasm
+fixtures pass with host-built and self-built tools. Debug-info, PA36 smoke,
+byte-identical inception, self-host through PA5, architecture/format/file and
+placement audits, harness tests and a regenerated student export pass. The
+exported reference bundle and all 43 wrappers install successfully.
+
+Matched immutable binaries measured against the previous stage on the
+`190c9a162` snapshot add 0.0026% O0 / 0.0020% O3 compiler instructions and emit
+identical native objects. The subsequent LLVM rebase includes that branch's
+own native fix, so those measurements must not be presented as its combined
+cost. Wall-time A/A calibration drifted by roughly 9–10%; its paired timings
+are retained but do not support a timing regression conclusion.
+
 This still leaves object linking, the reverse mixed-producer call direction,
 varargs, wide values, full portable runtime/EH and SIMD qualification. The
 summary shape intentionally does not claim to encode arbitrary member offsets;
 a future ABI that needs those must carry the additional typed projections.
+
+## Next object implementation boundary
+
+The next step must emit real Wasm linking-v2 objects, not embedded LowIR.
+Retain typed symbol/type/global/table relocation identities in the selected
+MIR before encoding. Function calls, function-pointer constants, global
+addresses, call-indirect type indices and the stack pointer need distinct
+relocation kinds; matching numeric immediates after emission is insufficient.
+Use the existing shared global-data fixups for data relocations. Resolve
+symbols/COMDATs and deduplicate function types before patching object fields.
+
+A local LLVM 22 object probe confirms imports of `env.__linear_memory`,
+`env.__stack_pointer`, external functions and the indirect function table;
+its code uses FUNCTION_INDEX_LEB, GLOBAL_INDEX_LEB, MEMORY_ADDR_LEB/SLEB and
+TABLE_INDEX_SLEB relocations. The ELF/Mach-O source naming already retains
+correct Itanium object names in Wasm LowIR, so do not add a second mangler.
+LLD also resolves `__stack_low`; probe its layout with live data and selected
+stack options before adopting it for object-mode bounds checks. Probe source,
+object, decoded sections and relocation inventory stay in the external
+`object-profile` evidence directory.
 
 ## Placement and scope
 
