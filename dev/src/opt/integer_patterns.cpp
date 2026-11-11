@@ -639,7 +639,8 @@ bool IntegerPatterns::top_range_compare(Instruction& inst)
 	return true;
 }
 
-// `x + a == k` (and `x - a`, and `!=`) is `x == k - a`; an equality of a
+// `x + a == k` (and `x - a`, and `!=`) is `x == k - a`, unless the sum is the
+// step of the counter x (a phi that reads it); an equality of a
 // value retyped at its width (an `int` read as `unsigned`), or truncated
 // with no set bit dropped, compares the value as it was. An opcode less its
 // first enumerator, compared with a literal, is then the stored byte
@@ -688,6 +689,13 @@ bool IntegerPatterns::offset_equality(Instruction& inst)
 	if (moved->op != Opcode::Binary || moved->type != inst.type || (op != BinaryOp::Add && op != BinaryOp::Sub) ||
 		!constant(moved->ops[1], inst.type, c) || !integer_bits(inst.type, c, a))
 		return false;
+	// (A counter's step, which its phi reads too, stays the compared value:
+	// the counter then steps in place and the step's flags are the test's.)
+	const Instruction* counter = uses_[moved->result] > 1 ? producer(moved->ops[0]) : nullptr;
+	if (counter != nullptr && counter->op == Opcode::Phi)
+		for (uint32_t k = 1; k < counter->extra_count; k += 2)
+			if (body_.operands[counter->extra_first + k] == Value::temp(moved->result))
+				return false;
 	inst.ops[0] = moved->ops[0];
 	inst.ops[1] = integer_value(
 		body_, normalize_integer(inst.type, Literal{ op == BinaryOp::Sub ? k.low + a.low : k.low - a.low, 0 }));

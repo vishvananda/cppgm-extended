@@ -2189,15 +2189,19 @@ void Simplifier::canonicalize(Instruction& inst)
 		swap = true;
 	else if (x.is(ValueKind::Temp) && y.is(ValueKind::Temp) && x.index > y.index)
 		swap = is_commutative(inst);
-	if (!swap)
-		return;
-	if (is_commutative(inst))
+	if (swap && is_commutative(inst))
 		std::swap(x, y);
-	else if (inst.op == Opcode::Compare)
+	else if (swap && inst.op == Opcode::Compare)
 	{
 		std::swap(x, y);
 		inst.sub = static_cast<uint8_t>(swapped(static_cast<ComparePredicate>(inst.sub)));
 	}
+	// Unsigned `x > 0` and `x <= 0` are `x != 0` and `x == 0`: a count's
+	// own decrement then sets the flags of its test.
+	const ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
+	if (inst.op == Opcode::Compare && (pred == ComparePredicate::Ugt || pred == ComparePredicate::Ule) &&
+		y.is(ValueKind::Integer) && body_.literals[y.index].low == 0 && body_.literals[y.index].high == 0)
+		inst.sub = static_cast<uint8_t>(pred == ComparePredicate::Ugt ? ComparePredicate::Ne : ComparePredicate::Eq);
 }
 
 // A comparison of an extended narrow integer with a literal the narrow
