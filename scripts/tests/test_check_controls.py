@@ -375,7 +375,7 @@ class ZeroBoundedControlTests(unittest.TestCase):
             #!/usr/bin/env python3
             import pathlib, sys
             args = sys.argv[1:]
-            source = (pathlib.Path(args[-1]) if args[0] in ['-O0', '-O1'] else
+            source = (pathlib.Path(args[-1]) if args[0] == '-O0' else
                       pathlib.Path(__file__).parent / 'optimized.lowir')
             pathlib.Path(args[args.index('-o') + 1]).write_text(source.read_text())
             """))
