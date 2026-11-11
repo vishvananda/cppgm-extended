@@ -1,0 +1,2390 @@
+{
+  "baseline_commit": "93beb5c39",
+  "baseline_program_sha256": "65679c4e14204832b0c007669d4bdc910cd5312ff51ceeee15df5bb1c3c79f1d",
+  "identity": {
+    "qualified_compiler": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/compiler-qualified",
+    "qualified_compiler_sha256": "d0350021f0295d138b9702dc9c5e25bb1b75352246f01edbfabc7e12f51565db",
+    "measured_compiler_sha256": "d0350021f0295d138b9702dc9c5e25bb1b75352246f01edbfabc7e12f51565db",
+    "measured_object_sha256": "500db84758760bea91c2bdd64c3a4004ad44a464ffa61e4c31713d1bcadf93aa",
+    "qualified_object_sha256": "500db84758760bea91c2bdd64c3a4004ad44a464ffa61e4c31713d1bcadf93aa",
+    "objects_byte_identical": true,
+    "input_sha256": "9390c91b369825692de847860c7c79e0436aebd7d2a735453da23ee24d199919"
+  },
+  "focused": {
+    "next-field-twins-cpu30": {
+      "Compress::ArithDecode": {
+        "runtime_seconds": {
+          "baseline": 2.25725,
+          "candidate": 2.1625,
+          "efficiency": 1.043815028901734,
+          "saved_percent": 4.197585557647576,
+          "aa_spread": 0.02134281903068036
+        },
+        "instructions": {
+          "baseline": 9402037383.25,
+          "candidate": 8928917335.5,
+          "efficiency": 1.0529873925329052,
+          "saved_percent": 5.032101325111482,
+          "aa_spread": 6.594315538066553e-09
+        },
+        "cycles": {
+          "baseline": 7818669243.25,
+          "candidate": 7647579136.25,
+          "efficiency": 1.0223717994873727,
+          "saved_percent": 2.188225408661526,
+          "aa_spread": 0.023832442456435787
+        }
+      },
+      "Etc::LogParser": {
+        "runtime_seconds": {
+          "baseline": 1.32525,
+          "candidate": 1.3345,
+          "efficiency": 0.9930685650056201,
+          "saved_percent": -0.6979815129220857,
+          "aa_spread": 0.040878122634367964
+        },
+        "instructions": {
+          "baseline": 14047789233.75,
+          "candidate": 14047789248.75,
+          "efficiency": 0.9999999989322164,
+          "saved_percent": -1.0677836392858353e-07,
+          "aa_spread": 1.0464279998068093e-08
+        },
+        "cycles": {
+          "baseline": 4268096837.5,
+          "candidate": 4274863103.75,
+          "efficiency": 0.9984171969754857,
+          "saved_percent": -0.15853122615567816,
+          "aa_spread": 0.0037616210785762494
+        }
+      },
+      "Etc::NeuralNet": {
+        "runtime_seconds": {
+          "baseline": 2.18825,
+          "candidate": 2.15175,
+          "efficiency": 1.016962937144185,
+          "saved_percent": 1.6679995430138317,
+          "aa_spread": 0.009124087591240837
+        },
+        "instructions": {
+          "baseline": 18168866641.25,
+          "candidate": 18168866692.5,
+          "efficiency": 0.9999999971792407,
+          "saved_percent": -2.820759403832085e-07,
+          "aa_spread": 8.255880423746476e-10
+        },
+        "cycles": {
+          "baseline": 7670015927.0,
+          "candidate": 7668295808.75,
+          "efficiency": 1.0002243155836577,
+          "saved_percent": 0.02242652774611109,
+          "aa_spread": 0.002152528134432119
+        }
+      },
+      "Brainfuck::Array": {
+        "runtime_seconds": {
+          "baseline": 2.00375,
+          "candidate": 2.0905,
+          "efficiency": 0.9585027505381488,
+          "saved_percent": -4.329382407985016,
+          "aa_spread": 0.006350757205667024
+        },
+        "instructions": {
+          "baseline": 16301178807.0,
+          "candidate": 16301178903.25,
+          "efficiency": 0.9999999940955191,
+          "saved_percent": -5.904480904206366e-07,
+          "aa_spread": 1.4722860708360486e-09
+        },
+        "cycles": {
+          "baseline": 5722874599.25,
+          "candidate": 5906674494.5,
+          "efficiency": 0.9688826774827113,
+          "saved_percent": -3.2116708493680424,
+          "aa_spread": 7.670514001856255e-06
+        }
+      },
+      "Compress::HuffDecode": {
+        "runtime_seconds": {
+          "baseline": 1.03775,
+          "candidate": 1.07775,
+          "efficiency": 0.9628856413825099,
+          "saved_percent": -3.854492893278727,
+          "aa_spread": 0.0073800738007380184
+        },
+        "instructions": {
+          "baseline": 14730379509.75,
+          "candidate": 14730379426.25,
+          "efficiency": 1.0000000056685574,
+          "saved_percent": 5.668557290228193e-07,
+          "aa_spread": 5.7025006938715705e-09
+        },
+        "cycles": {
+          "baseline": 3699049357.0,
+          "candidate": 3698622205.25,
+          "efficiency": 1.0001154894245197,
+          "saved_percent": 0.011547608825268618,
+          "aa_spread": 0.00023932380174118695
+        }
+      },
+      "Compress::HuffEncode": {
+        "runtime_seconds": {
+          "baseline": 1.533,
+          "candidate": 1.53725,
+          "efficiency": 0.9972353228167181,
+          "saved_percent": -0.2772341813437773,
+          "aa_spread": 0.021476510067114152
+        },
+        "instructions": {
+          "baseline": 15136696817.0,
+          "candidate": 15136696831.0,
+          "efficiency": 0.9999999990750954,
+          "saved_percent": -9.249045973547254e-08,
+          "aa_spread": 1.5855506907413996e-09
+        },
+        "cycles": {
+          "baseline": 5013332010.25,
+          "candidate": 5013606283.0,
+          "efficiency": 0.9999452943181977,
+          "saved_percent": -0.005470867467760598,
+          "aa_spread": 0.0009238432586592404
+        }
+      }
+    },
+    "next-field-twins-repeat": {
+      "Brainfuck::Array": {
+        "runtime_seconds": {
+          "baseline": 1.9651666666666667,
+          "candidate": 1.9266666666666667,
+          "efficiency": 1.0199826989619376,
+          "saved_percent": 1.9591213637520144,
+          "aa_spread": 0.014933058702368829
+        },
+        "instructions": {
+          "baseline": 16301178526.166666,
+          "candidate": 16301178490.666666,
+          "efficiency": 1.0000000021777566,
+          "saved_percent": 2.1777566416858463e-07,
+          "aa_spread": 4.968965905405298e-09
+        },
+        "cycles": {
+          "baseline": 5728307073.166667,
+          "candidate": 5730229840.833333,
+          "efficiency": 0.9996644519120395,
+          "saved_percent": -0.03356607182727345,
+          "aa_spread": 0.00276155362498387
+        }
+      },
+      "Compress::ArithDecode": {
+        "runtime_seconds": {
+          "baseline": 2.199,
+          "candidate": 2.1141666666666667,
+          "efficiency": 1.0401261332282221,
+          "saved_percent": 3.8578141579505676,
+          "aa_spread": 0.0004262574595055302
+        },
+        "instructions": {
+          "baseline": 9402037059.666666,
+          "candidate": 8928917032.666666,
+          "efficiency": 1.0529873920061166,
+          "saved_percent": 5.032101277600942,
+          "aa_spread": 6.275235664432444e-09
+        },
+        "cycles": {
+          "baseline": 7886549140.166667,
+          "candidate": 7706927959.0,
+          "efficiency": 1.0233064564924224,
+          "saved_percent": 2.277563709732633,
+          "aa_spread": 0.00016543661983403624
+        }
+      },
+      "Compress::HuffDecode": {
+        "runtime_seconds": {
+          "baseline": 0.9488333333333333,
+          "candidate": 0.9803333333333333,
+          "efficiency": 0.9678680720843251,
+          "saved_percent": -3.319866502722646,
+          "aa_spread": 0.020309477756286443
+        },
+        "instructions": {
+          "baseline": 14730379232.166666,
+          "candidate": 14730379181.333334,
+          "efficiency": 1.000000003450918,
+          "saved_percent": 3.4509181068287376e-07,
+          "aa_spread": 1.154077500231665e-09
+        },
+        "cycles": {
+          "baseline": 3790578733.1666665,
+          "candidate": 3726655313.8333335,
+          "efficiency": 1.0171530270309812,
+          "saved_percent": 1.686376245770027,
+          "aa_spread": 0.001312103687713062
+        }
+      }
+    },
+    "next-full-outlier-control": {
+      "Compress::BWTEncode": {
+        "runtime_seconds": {
+          "baseline": 2.14375,
+          "candidate": 2.1342499999999998,
+          "efficiency": 1.004451212369685,
+          "saved_percent": 0.4431486880466462,
+          "aa_spread": 0.02810304449648715
+        },
+        "instructions": {
+          "baseline": 7431130969.0,
+          "candidate": 7431130901.5,
+          "efficiency": 1.000000009083409,
+          "saved_percent": 9.083408691878958e-07,
+          "aa_spread": 3.633363609978346e-09
+        },
+        "cycles": {
+          "baseline": 7242785133.25,
+          "candidate": 7231194189.0,
+          "efficiency": 1.0016029087239329,
+          "saved_percent": 0.16003435193443494,
+          "aa_spread": 0.006390666090347885
+        }
+      },
+      "Json::ParseMapping": {
+        "runtime_seconds": {
+          "baseline": 2.9050000000000002,
+          "candidate": 3.25775,
+          "efficiency": 0.89171974522293,
+          "saved_percent": -12.142857142857144,
+          "aa_spread": 0.0183839247541685
+        },
+        "instructions": {
+          "baseline": 16668445639.0,
+          "candidate": 16668445458.25,
+          "efficiency": 1.0000000108438427,
+          "saved_percent": 1.0843842601637732e-06,
+          "aa_spread": 2.9396862721853267e-09
+        },
+        "cycles": {
+          "baseline": 6317782644.5,
+          "candidate": 6409372556.25,
+          "efficiency": 0.9857100034447697,
+          "saved_percent": -1.4497160935052822,
+          "aa_spread": 0.007699957641676192
+        }
+      },
+      "Json::Generate": {
+        "runtime_seconds": {
+          "baseline": 1.90525,
+          "candidate": 1.818,
+          "efficiency": 1.047992299229923,
+          "saved_percent": 4.579451515549138,
+          "aa_spread": 0.04816157431382706
+        },
+        "instructions": {
+          "baseline": 13715832998.75,
+          "candidate": 13715832929.25,
+          "efficiency": 1.0000000050671367,
+          "saved_percent": 5.06713659920166e-07,
+          "aa_spread": 8.092836956130611e-09
+        },
+        "cycles": {
+          "baseline": 5543989071.5,
+          "candidate": 5351737415.0,
+          "efficiency": 1.0359232229819706,
+          "saved_percent": 3.46774955759398,
+          "aa_spread": 0.03617747424849094
+        }
+      }
+    },
+    "next-json-repeat-cpu43": {
+      "Json::ParseMapping": {
+        "runtime_seconds": {
+          "baseline": 2.353833333333333,
+          "candidate": 2.327,
+          "efficiency": 1.0115312992407963,
+          "saved_percent": 1.1399844225731037,
+          "aa_spread": 0.019781144781144677
+        },
+        "instructions": {
+          "baseline": 16668445481.0,
+          "candidate": 16668445491.666666,
+          "efficiency": 0.9999999993600683,
+          "saved_percent": -6.399316632155205e-08,
+          "aa_spread": 0.0
+        },
+        "cycles": {
+          "baseline": 6414562841.166667,
+          "candidate": 6357359387.666667,
+          "efficiency": 1.0089979895758254,
+          "saved_percent": 0.8917747774312201,
+          "aa_spread": 0.005376900543147101
+        }
+      }
+    }
+  },
+  "compile": {
+    "O0": {
+      "candidate_over_baseline_instructions": 0.9999933082200226,
+      "baseline_instructions": 3291687723.5,
+      "candidate_instructions": 3291665696.25
+    },
+    "O3": {
+      "candidate_over_baseline_instructions": 1.0000049126046322,
+      "baseline_instructions": 9263161480.75,
+      "candidate_instructions": 9263206987.0
+    }
+  },
+  "public": [
+    {
+      "name": "CoyoteBench/huffbench",
+      "baseline": {
+        "frontend_cpu": 0.044,
+        "compile_cpu_O0": 0.046,
+        "compile_rss_O0": 51440,
+        "size_O0": 21024,
+        "run_cpu_O0": 45.983,
+        "exit_code_O0": 0,
+        "output_O0": "b8d252eba8b467f646041ce1e0eaab0c99704e65d77cb1fe50dcee886014359d",
+        "compile_cpu_O3": 0.048,
+        "compile_rss_O3": 51440,
+        "size_O3": 16840,
+        "run_cpu_O3": 11.354,
+        "exit_code_O3": 0,
+        "output_O3": "b8d252eba8b467f646041ce1e0eaab0c99704e65d77cb1fe50dcee886014359d"
+      },
+      "candidate": {
+        "frontend_cpu": 0.042,
+        "compile_cpu_O0": 0.044,
+        "compile_rss_O0": 51976,
+        "size_O0": 21024,
+        "run_cpu_O0": 45.702,
+        "exit_code_O0": 0,
+        "output_O0": "b8d252eba8b467f646041ce1e0eaab0c99704e65d77cb1fe50dcee886014359d",
+        "compile_cpu_O3": 0.051,
+        "compile_rss_O3": 51976,
+        "size_O3": 16840,
+        "run_cpu_O3": 10.939,
+        "exit_code_O3": 0,
+        "output_O3": "b8d252eba8b467f646041ce1e0eaab0c99704e65d77cb1fe50dcee886014359d"
+      }
+    },
+    {
+      "name": "Stanford/Bubblesort",
+      "baseline": {
+        "frontend_cpu": 0.013,
+        "compile_cpu_O0": 0.013,
+        "compile_rss_O0": 26616,
+        "size_O0": 17096,
+        "run_cpu_O0": 0.057,
+        "exit_code_O0": 0,
+        "output_O0": "5fae9b6afd5af80543c442e15544576cd927ef7937bb1447ca9377e95bba896a",
+        "compile_cpu_O3": 0.017,
+        "compile_rss_O3": 26616,
+        "size_O3": 17096,
+        "run_cpu_O3": 0.024,
+        "exit_code_O3": 0,
+        "output_O3": "5fae9b6afd5af80543c442e15544576cd927ef7937bb1447ca9377e95bba896a",
+        "run_instructions": 126463038
+      },
+      "candidate": {
+        "frontend_cpu": 0.013,
+        "compile_cpu_O0": 0.013,
+        "compile_rss_O0": 26632,
+        "size_O0": 17096,
+        "run_cpu_O0": 0.057,
+        "exit_code_O0": 0,
+        "output_O0": "5fae9b6afd5af80543c442e15544576cd927ef7937bb1447ca9377e95bba896a",
+        "compile_cpu_O3": 0.016,
+        "compile_rss_O3": 26632,
+        "size_O3": 17096,
+        "run_cpu_O3": 0.025,
+        "exit_code_O3": 0,
+        "output_O3": "5fae9b6afd5af80543c442e15544576cd927ef7937bb1447ca9377e95bba896a",
+        "run_instructions": 126463052
+      }
+    },
+    {
+      "name": "Stanford/FloatMM",
+      "baseline": {
+        "frontend_cpu": 0.013,
+        "compile_cpu_O0": 0.014,
+        "compile_rss_O0": 26616,
+        "size_O0": 17120,
+        "run_cpu_O0": 1.272,
+        "exit_code_O0": 0,
+        "output_O0": "1b89813c61fe5461ce88537980565fee76acc7f2aa60fee9886aadacede75c6e",
+        "compile_cpu_O3": 0.018,
+        "compile_rss_O3": 26616,
+        "size_O3": 17120,
+        "run_cpu_O3": 0.125,
+        "exit_code_O3": 0,
+        "output_O3": "1b89813c61fe5461ce88537980565fee76acc7f2aa60fee9886aadacede75c6e",
+        "run_instructions": 1118759691
+      },
+      "candidate": {
+        "frontend_cpu": 0.013,
+        "compile_cpu_O0": 0.013,
+        "compile_rss_O0": 26632,
+        "size_O0": 17120,
+        "run_cpu_O0": 1.259,
+        "exit_code_O0": 0,
+        "output_O0": "1b89813c61fe5461ce88537980565fee76acc7f2aa60fee9886aadacede75c6e",
+        "compile_cpu_O3": 0.017,
+        "compile_rss_O3": 26632,
+        "size_O3": 17120,
+        "run_cpu_O3": 0.124,
+        "exit_code_O3": 0,
+        "output_O3": "1b89813c61fe5461ce88537980565fee76acc7f2aa60fee9886aadacede75c6e",
+        "run_instructions": 1118759691
+      }
+    },
+    {
+      "name": "bg/binarytrees/2",
+      "baseline": {
+        "frontend_cpu": 0.114,
+        "compile_cpu_O0": 0.114,
+        "compile_rss_O0": 29748,
+        "size_O0": 18776,
+        "run_cpu_O0": 0.668,
+        "exit_code_O0": 0,
+        "output_O0": "3b9e63e2b3523d282d08c35b889a2343c0ee7a24a2540ce6a41bc58f782cd7ff",
+        "compile_cpu_O3": 0.121,
+        "compile_rss_O3": 29040,
+        "size_O3": 21752,
+        "run_cpu_O3": 0.607,
+        "exit_code_O3": 0,
+        "output_O3": "3b9e63e2b3523d282d08c35b889a2343c0ee7a24a2540ce6a41bc58f782cd7ff",
+        "run_instructions": 5778842687
+      },
+      "candidate": {
+        "frontend_cpu": 0.112,
+        "compile_cpu_O0": 0.112,
+        "compile_rss_O0": 29728,
+        "size_O0": 18776,
+        "run_cpu_O0": 0.66,
+        "exit_code_O0": 0,
+        "output_O0": "3b9e63e2b3523d282d08c35b889a2343c0ee7a24a2540ce6a41bc58f782cd7ff",
+        "compile_cpu_O3": 0.12,
+        "compile_rss_O3": 29084,
+        "size_O3": 21752,
+        "run_cpu_O3": 0.601,
+        "exit_code_O3": 0,
+        "output_O3": "3b9e63e2b3523d282d08c35b889a2343c0ee7a24a2540ce6a41bc58f782cd7ff",
+        "run_instructions": 5778842687
+      }
+    },
+    {
+      "name": "bg/fasta/1",
+      "baseline": {
+        "frontend_cpu": 0.081,
+        "compile_cpu_O0": 0.085,
+        "compile_rss_O0": 51440,
+        "size_O0": 27624,
+        "run_cpu_O0": 1.842,
+        "exit_code_O0": 0,
+        "output_O0": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+        "compile_cpu_O3": 0.093,
+        "compile_rss_O3": 51440,
+        "size_O3": 17680,
+        "run_cpu_O3": 0.224,
+        "exit_code_O3": 0,
+        "output_O3": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+        "run_instructions": 1692730787
+      },
+      "candidate": {
+        "frontend_cpu": 0.081,
+        "compile_cpu_O0": 0.086,
+        "compile_rss_O0": 51976,
+        "size_O0": 27624,
+        "run_cpu_O0": 1.839,
+        "exit_code_O0": 0,
+        "output_O0": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+        "compile_cpu_O3": 0.091,
+        "compile_rss_O3": 51976,
+        "size_O3": 17680,
+        "run_cpu_O3": 0.225,
+        "exit_code_O3": 0,
+        "output_O3": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+        "run_instructions": 1694397456
+      }
+    },
+    {
+      "name": "bg/nbody/1",
+      "baseline": {
+        "frontend_cpu": 0.04,
+        "compile_cpu_O0": 0.043,
+        "compile_rss_O0": 51440,
+        "size_O0": 39912,
+        "run_cpu_O0": 0.422,
+        "exit_code_O0": 0,
+        "output_O0": "0357c0f874330dc654b260f6347c8c6d71a515b054c4c35b9242160c141ff46d",
+        "compile_cpu_O3": 0.06,
+        "compile_rss_O3": 51440,
+        "size_O3": 26112,
+        "run_cpu_O3": 0.178,
+        "exit_code_O3": 0,
+        "output_O3": "0357c0f874330dc654b260f6347c8c6d71a515b054c4c35b9242160c141ff46d",
+        "run_instructions": 1208137440
+      },
+      "candidate": {
+        "frontend_cpu": 0.041,
+        "compile_cpu_O0": 0.045,
+        "compile_rss_O0": 51976,
+        "size_O0": 39912,
+        "run_cpu_O0": 0.423,
+        "exit_code_O0": 0,
+        "output_O0": "0357c0f874330dc654b260f6347c8c6d71a515b054c4c35b9242160c141ff46d",
+        "compile_cpu_O3": 0.059,
+        "compile_rss_O3": 51976,
+        "size_O3": 26112,
+        "run_cpu_O3": 0.176,
+        "exit_code_O3": 0,
+        "output_O3": "0357c0f874330dc654b260f6347c8c6d71a515b054c4c35b9242160c141ff46d",
+        "run_instructions": 1208137445
+      }
+    }
+  ],
+  "fasta_fixed_launch": [
+    {
+      "label": "a",
+      "calibration": true,
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/fasta-control/1-a.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/fixes/execute-fd",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/public-candidate/bg_fasta_1/cppgm/-O3/a.out",
+        "2500000"
+      ],
+      "seconds": 0.597184928948991,
+      "sha256": "b3d558aa053f84a4365e8a33e4b78acdac2759a079e6a5786f9b925737db06e3",
+      "output_sha256": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+      "perf": "# started on Wed Nov 11 05:04:41 2026\n\n563631124;;cycles:u;224971168;100.00;;\n1697364382;;instructions:u;224971168;100.00;;\n273684385;;branches:u;224971168;100.00;;\n712687;;branch-misses:u;224971168;100.00;;\n"
+    },
+    {
+      "label": "a",
+      "calibration": true,
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/fasta-control/2-a.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/fixes/execute-fd",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/public-candidate/bg_fasta_1/cppgm/-O3/a.out",
+        "2500000"
+      ],
+      "seconds": 0.6051109150284901,
+      "sha256": "b3d558aa053f84a4365e8a33e4b78acdac2759a079e6a5786f9b925737db06e3",
+      "output_sha256": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+      "perf": "# started on Wed Nov 11 05:04:41 2026\n\n567856497;;cycles:u;227428071;100.00;;\n1697364451;;instructions:u;227428071;100.00;;\n273684406;;branches:u;227428071;100.00;;\n998715;;branch-misses:u;227428071;100.00;;\n"
+    },
+    {
+      "label": "a",
+      "calibration": false,
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/fasta-control/3-a.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/fixes/execute-fd",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/public-candidate/bg_fasta_1/cppgm/-O3/a.out",
+        "2500000"
+      ],
+      "seconds": 0.6466607539914548,
+      "sha256": "b3d558aa053f84a4365e8a33e4b78acdac2759a079e6a5786f9b925737db06e3",
+      "output_sha256": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+      "perf": "# started on Wed Nov 11 05:04:42 2026\n\n564233691;;cycles:u;225437665;100.00;;\n1697364244;;instructions:u;225437665;100.00;;\n273684343;;branches:u;225437665;100.00;;\n660939;;branch-misses:u;225437665;100.00;;\n"
+    },
+    {
+      "label": "b",
+      "calibration": false,
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/fasta-control/4-b.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/fixes/execute-fd",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/public-candidate/bg_fasta_1/cppgm/-O3/a.out",
+        "2500000"
+      ],
+      "seconds": 0.48319303803145885,
+      "sha256": "80a8ccd013004a5da1885546d8cdbf4f15aa98740de11234fd5758e10f9b1f3d",
+      "output_sha256": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+      "perf": "# started on Wed Nov 11 05:04:43 2026\n\n563777636;;cycles:u;223847690;100.00;;\n1697364709;;instructions:u;223847690;100.00;;\n273684472;;branches:u;223847690;100.00;;\n726464;;branch-misses:u;223847690;100.00;;\n"
+    },
+    {
+      "label": "b",
+      "calibration": false,
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/fasta-control/5-b.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/fixes/execute-fd",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/public-candidate/bg_fasta_1/cppgm/-O3/a.out",
+        "2500000"
+      ],
+      "seconds": 0.5325326629681513,
+      "sha256": "80a8ccd013004a5da1885546d8cdbf4f15aa98740de11234fd5758e10f9b1f3d",
+      "output_sha256": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+      "perf": "# started on Wed Nov 11 05:04:43 2026\n\n569662870;;cycles:u;226823842;100.00;;\n1697364410;;instructions:u;226823842;100.00;;\n273684397;;branches:u;226823842;100.00;;\n1061161;;branch-misses:u;226823842;100.00;;\n"
+    },
+    {
+      "label": "a",
+      "calibration": false,
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/fasta-control/6-a.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/fixes/execute-fd",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/public-candidate/bg_fasta_1/cppgm/-O3/a.out",
+        "2500000"
+      ],
+      "seconds": 0.5330148870125413,
+      "sha256": "b3d558aa053f84a4365e8a33e4b78acdac2759a079e6a5786f9b925737db06e3",
+      "output_sha256": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+      "perf": "# started on Wed Nov 11 05:04:44 2026\n\n562264186;;cycles:u;223185997;100.00;;\n1697364419;;instructions:u;223185997;100.00;;\n273684390;;branches:u;223185997;100.00;;\n511042;;branch-misses:u;223185997;100.00;;\n"
+    },
+    {
+      "label": "a",
+      "calibration": false,
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/fasta-control/7-a.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/fixes/execute-fd",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/public-candidate/bg_fasta_1/cppgm/-O3/a.out",
+        "2500000"
+      ],
+      "seconds": 0.6322394839953631,
+      "sha256": "b3d558aa053f84a4365e8a33e4b78acdac2759a079e6a5786f9b925737db06e3",
+      "output_sha256": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+      "perf": "# started on Wed Nov 11 05:04:44 2026\n\n561761274;;cycles:u;223725408;100.00;;\n1697364467;;instructions:u;223725408;100.00;;\n273684406;;branches:u;223725408;100.00;;\n513585;;branch-misses:u;223725408;100.00;;\n"
+    },
+    {
+      "label": "b",
+      "calibration": false,
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/fasta-control/8-b.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/fixes/execute-fd",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/public-candidate/bg_fasta_1/cppgm/-O3/a.out",
+        "2500000"
+      ],
+      "seconds": 0.64945424196776,
+      "sha256": "80a8ccd013004a5da1885546d8cdbf4f15aa98740de11234fd5758e10f9b1f3d",
+      "output_sha256": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+      "perf": "# started on Wed Nov 11 05:04:45 2026\n\n562414995;;cycles:u;224181355;100.00;;\n1697364134;;instructions:u;224181355;100.00;;\n273684313;;branches:u;224181355;100.00;;\n513904;;branch-misses:u;224181355;100.00;;\n"
+    },
+    {
+      "label": "b",
+      "calibration": false,
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/fasta-control/9-b.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/fixes/execute-fd",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/public-candidate/bg_fasta_1/cppgm/-O3/a.out",
+        "2500000"
+      ],
+      "seconds": 0.7002743619959801,
+      "sha256": "80a8ccd013004a5da1885546d8cdbf4f15aa98740de11234fd5758e10f9b1f3d",
+      "output_sha256": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+      "perf": "# started on Wed Nov 11 05:04:45 2026\n\n562377282;;cycles:u;223851225;100.00;;\n1697364322;;instructions:u;223851225;100.00;;\n273684367;;branches:u;223851225;100.00;;\n515020;;branch-misses:u;223851225;100.00;;\n"
+    },
+    {
+      "label": "a",
+      "calibration": false,
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/fasta-control/10-a.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/fixes/execute-fd",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/public-candidate/bg_fasta_1/cppgm/-O3/a.out",
+        "2500000"
+      ],
+      "seconds": 0.4556540980702266,
+      "sha256": "b3d558aa053f84a4365e8a33e4b78acdac2759a079e6a5786f9b925737db06e3",
+      "output_sha256": "e3600e481ef68b6cd9ac155f93f40ff06a4094128f62895eb37b28ebad7cab72",
+      "perf": "# started on Wed Nov 11 05:04:46 2026\n\n561302467;;cycles:u;222279670;100.00;;\n1697364119;;instructions:u;222279670;100.00;;\n273684314;;branches:u;222279670;100.00;;\n508390;;branch-misses:u;222279670;100.00;;\n"
+    }
+  ],
+  "full_summary": {
+    "seconds": {
+      "baseline": 94.34285,
+      "candidate": 92.47145,
+      "efficiency": 1.0202375976585205,
+      "saved_percent": 1.9836161404918284
+    },
+    "instructions": {
+      "baseline": 788837569417.0,
+      "candidate": 788375055268.0,
+      "efficiency": 1.0005866676601567,
+      "saved_percent": 0.05863236830134788
+    },
+    "cycles": {
+      "baseline": 427839295046.0,
+      "candidate": 428820551431.0,
+      "efficiency": 0.9977117319080779,
+      "saved_percent": -0.22935162720256752
+    }
+  },
+  "full_observations": [
+    {
+      "label": "AA-1",
+      "binary": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/signedness-rmw",
+      "sha256": "65679c4e14204832b0c007669d4bdc910cd5312ff51ceeee15df5bb1c3c79f1d",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/full-control/AA-1.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/signedness-rmw"
+      ],
+      "started_at": "2026-11-11T05:07:01.399833+00:00",
+      "load_before": [
+        63.99462890625,
+        66.51611328125,
+        47.25390625
+      ],
+      "load_after": [
+        24.7041015625,
+        52.2705078125,
+        44.50341796875
+      ],
+      "wall_seconds": 118.21023506799247,
+      "total_seconds": 96.272,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.797
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.454
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 1.93
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 1.893
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.545
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.61
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.324
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.583
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 2.189
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.28
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.671
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 1.971
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 1.889
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.564
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.297
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.766
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 2.093
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.529
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.272
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 2.053
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.352
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 1.996
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 2.23
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.555
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 1.102
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.426
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 1.248
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.401
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.751
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.886
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.317
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.343
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 2.917
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 1.881
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 2.146
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.803
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.481
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.865
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.561
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.873
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 2.224
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.477
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.406
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 1.066
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.717
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 2.386
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 2.114
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 2.105
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.514
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.419
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:07:01 2026\n\n434070770487;;cycles:u;152593581780;100.00;;\n788837572931;;instructions:u;152593581780;100.00;;\n122725640928;;branches:u;152593581780;100.00;;\n1624405037;;branch-misses:u;152593581780;100.00;;\n"
+    },
+    {
+      "label": "AA-2",
+      "binary": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/signedness-rmw",
+      "sha256": "65679c4e14204832b0c007669d4bdc910cd5312ff51ceeee15df5bb1c3c79f1d",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/full-control/AA-2.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/signedness-rmw"
+      ],
+      "started_at": "2026-11-11T05:08:59.638516+00:00",
+      "load_before": [
+        24.7041015625,
+        52.2705078125,
+        44.50341796875
+      ],
+      "load_after": [
+        65.35546875,
+        53.8701171875,
+        45.67041015625
+      ],
+      "wall_seconds": 113.40351425402332,
+      "total_seconds": 92.5536,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.86
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.209
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 1.801
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 1.819
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.587
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.667
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.361
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.213
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 1.799
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.04
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.533
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 1.93
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 1.901
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.535
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.222
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.718
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 2.053
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.553
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.266
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 2.283
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.514
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 2.123
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 2.124
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.346
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 0.943
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.248
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 1.109
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.295
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.576
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.778
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.306
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.268
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 2.587
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 1.852
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 2.039
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.769
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.522
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.982
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.577
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.721
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 1.993
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.342
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.311
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 0.989
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.688
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 2.182
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 1.946
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 2.061
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.474
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.542
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:08:59 2026\n\n432868980989;;cycles:u;147527498721;100.00;;\n788837567091;;instructions:u;147527498721;100.00;;\n122725635830;;branches:u;147527498721;100.00;;\n1627625331;;branch-misses:u;147527498721;100.00;;\n"
+    },
+    {
+      "label": "A1",
+      "binary": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/signedness-rmw",
+      "sha256": "65679c4e14204832b0c007669d4bdc910cd5312ff51ceeee15df5bb1c3c79f1d",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/full-control/A1.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/signedness-rmw"
+      ],
+      "started_at": "2026-11-11T05:10:53.070738+00:00",
+      "load_before": [
+        65.35546875,
+        53.8701171875,
+        45.67041015625
+      ],
+      "load_after": [
+        76.197265625,
+        63.82958984375,
+        50.3974609375
+      ],
+      "wall_seconds": 118.00451332202647,
+      "total_seconds": 96.1863,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.808
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.486
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 2.049
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 2.057
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.675
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.625
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.208
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.616
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 1.824
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.115
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.586
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 2.053
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 2.078
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.677
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.608
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 2.071
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 2.307
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.619
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.213
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 2.041
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.279
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 1.879
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 2.152
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.427
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 1.013
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.396
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 1.168
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.451
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.608
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.915
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.333
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.461
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 3.101
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 2.107
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 1.965
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.588
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.462
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.865
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.402
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.745
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 2.006
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.401
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.453
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 1.026
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.651
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 2.194
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 2.07
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 2.204
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.604
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.544
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:10:53 2026\n\n430157968477;;cycles:u;152525059879;100.00;;\n788837571220;;instructions:u;152525059879;100.00;;\n122725640914;;branches:u;152525059879;100.00;;\n1624108434;;branch-misses:u;152525059879;100.00;;\n"
+    },
+    {
+      "label": "B1",
+      "binary": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy",
+      "sha256": "4d9900ba5be55b340ce9ee1782d6758d37e5c14518695570971d6d14062b55a5",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/full-control/B1.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy"
+      ],
+      "started_at": "2026-11-11T05:12:51.104683+00:00",
+      "load_before": [
+        76.197265625,
+        63.82958984375,
+        50.3974609375
+      ],
+      "load_after": [
+        32.1396484375,
+        53.388671875,
+        48.27685546875
+      ],
+      "wall_seconds": 114.0533430010546,
+      "total_seconds": 92.9799,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.783
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.188
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 1.803
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 1.849
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.442
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.605
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.408
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.207
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 1.805
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.102
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.531
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 2.143
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 2.188
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.622
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.376
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.797
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 2.161
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.596
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.321
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 2.172
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.347
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 2.026
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 1.967
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.419
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 0.971
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.237
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 1.104
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.364
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.563
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.913
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.337
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.493
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 2.39
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 1.841
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 1.377
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.482
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.422
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.835
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.538
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.931
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 2.189
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.415
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.361
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 1.159
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.778
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 2.279
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 2.168
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 2.156
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.418
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.4
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:12:51 2026\n\n430467754526;;cycles:u;146224685920;100.00;;\n788375055414;;instructions:u;146224685920;100.00;;\n122639280972;;branches:u;146224685920;100.00;;\n1627188061;;branch-misses:u;146224685920;100.00;;\n"
+    },
+    {
+      "label": "B2",
+      "binary": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy",
+      "sha256": "4d9900ba5be55b340ce9ee1782d6758d37e5c14518695570971d6d14062b55a5",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/full-control/B2.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy"
+      ],
+      "started_at": "2026-11-11T05:14:45.179277+00:00",
+      "load_before": [
+        32.1396484375,
+        53.388671875,
+        48.27685546875
+      ],
+      "load_after": [
+        21.7890625,
+        42.89794921875,
+        45.056640625
+      ],
+      "wall_seconds": 112.68603992392309,
+      "total_seconds": 91.963,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.924
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.283
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 1.849
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 2.095
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.509
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.597
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.239
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.373
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 2.078
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.179
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.799
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 1.959
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 1.966
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.461
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.213
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.763
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 2.026
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.562
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.175
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 1.973
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.288
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 1.738
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 2.089
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.481
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 1.071
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.378
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 1.093
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.354
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.452
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.75
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.311
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.256
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 2.553
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 1.848
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 1.498
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.414
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.455
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.831
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.428
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.601
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 2.062
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.426
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.515
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 1.043
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.627
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 2.027
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 2.034
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 2.215
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.524
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.578
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:14:45 2026\n\n427173348336;;cycles:u;146682280652;100.00;;\n788375055122;;instructions:u;146682280652;100.00;;\n122639281119;;branches:u;146682280652;100.00;;\n1628259783;;branch-misses:u;146682280652;100.00;;\n"
+    },
+    {
+      "label": "A2",
+      "binary": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/signedness-rmw",
+      "sha256": "65679c4e14204832b0c007669d4bdc910cd5312ff51ceeee15df5bb1c3c79f1d",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/full-control/A2.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/signedness-rmw"
+      ],
+      "started_at": "2026-11-11T05:16:37.894525+00:00",
+      "load_before": [
+        21.7890625,
+        42.89794921875,
+        45.056640625
+      ],
+      "load_after": [
+        86.74853515625,
+        58.10400390625,
+        50.16357421875
+      ],
+      "wall_seconds": 113.13671304192394,
+      "total_seconds": 92.4994,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.733
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.427
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 1.942
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 1.957
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.573
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.651
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.263
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.592
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 1.955
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.152
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.597
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 2.009
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 1.946
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.501
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.264
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.858
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 2.053
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.516
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.211
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 1.95
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.311
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 1.783
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 2.02
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.458
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 0.993
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.346
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 1.125
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.341
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.494
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.798
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.318
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.379
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 2.619
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 1.844
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 1.636
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.432
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.379
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.827
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.467
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.765
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 2.024
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.37
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.378
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 1.041
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.64
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 2.257
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 2.116
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 2.192
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.517
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.479
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:16:37 2026\n\n425520621615;;cycles:u;147458106633;100.00;;\n788837567614;;instructions:u;147458106633;100.00;;\n122725636236;;branches:u;147458106633;100.00;;\n1625133825;;branch-misses:u;147458106633;100.00;;\n"
+    }
+  ],
+  "changed_lowir_functions": [
+    {
+      "function": "@static_fn_index_c_parse_string",
+      "before_instructions": 384,
+      "after_instructions": 388
+    },
+    {
+      "function": "@static_fn_index_c_regex_parse",
+      "before_instructions": 1464,
+      "after_instructions": 1464
+    },
+    {
+      "function": "@static_fn_index_c_arith_decode_run",
+      "before_instructions": 255,
+      "after_instructions": 245
+    },
+    {
+      "function": "@Mandelbrot_run",
+      "before_instructions": 180,
+      "after_instructions": 178
+    }
+  ],
+  "raw_data": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111",
+  "midpoint_diagnostic": {
+    "runtime_seconds": {
+      "baseline": 2.17125,
+      "candidate": 2.0505,
+      "efficiency": 1.0588880760790051,
+      "saved_percent": 5.5613126079447355,
+      "aa_spread": 0.04070556309362283
+    },
+    "instructions": {
+      "baseline": 8928912251.5,
+      "candidate": 7752853341.75,
+      "efficiency": 1.1516936872024637,
+      "saved_percent": 13.171357009947426,
+      "aa_spread": 1.679935879295158e-08
+    },
+    "cycles": {
+      "baseline": 7680702460.5,
+      "candidate": 7334863527.75,
+      "efficiency": 1.0471500160080125,
+      "saved_percent": 4.502699258675447,
+      "aa_spread": 0.002991711123919938
+    }
+  },
+  "rejected_dispatch_probe": {
+    "runtime_seconds": {
+      "baseline": 2.059,
+      "candidate": 2.3815,
+      "efficiency": 0.8645811463363428,
+      "saved_percent": -15.662943176299171,
+      "aa_spread": 0.0004844961240310086
+    },
+    "instructions": {
+      "baseline": 16301178139.5,
+      "candidate": 16416734868.25,
+      "efficiency": 0.9929610406894317,
+      "saved_percent": -0.7088857489998768,
+      "aa_spread": 1.1655598708415482e-09
+    },
+    "cycles": {
+      "baseline": 5742192394.25,
+      "candidate": 6640782503.0,
+      "efficiency": 0.8646861106587879,
+      "saved_percent": -15.648902841531598,
+      "aa_spread": 0.002002841328142546
+    }
+  },
+  "method": "Frozen corrected LowIR and binaries; fixed argv0, disabled ASLR, pinned CPU30/NUMA1; two A/A calibrations, two ABBA blocks plus three-block repeat. Full suite uses cores30-33 and one ABBA block after AA. Ratios higher is better."
+}

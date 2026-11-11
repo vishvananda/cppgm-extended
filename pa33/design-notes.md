@@ -80,6 +80,11 @@ that all its accesses are understood. Splitting an aggregate may expose more
 promotable fields. Preserve padding, bit-fields, volatile members, alignment
 and ABI carriers; splitting every object is not always profitable.
 
+Signed and unsigned views of one integer width describe the same stored bits.
+They need not force an adjacent field into a shared carrier. Preserve each
+reader's extension, Boolean normalization, differently sized overlaps and
+whole-object copy semantics when using this fact.
+
 An indexed region can stay in memory while disjoint scalar fields are
 promoted. Bound every possible indexed access, including its full width.
 If a fixed access straddles that region, retain all overlapping accesses

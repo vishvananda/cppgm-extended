@@ -95,13 +95,6 @@ bool signed_kind(Type type)
 	}
 }
 
-// Signed and unsigned integer types of one width.
-bool integer_twins(Type a, Type b)
-{
-	return a.is_integer() && b.is_integer() && a.kind() != b.kind() && a.kind() != TypeKind::I1 &&
-		b.kind() != TypeKind::I1 && integer_bits(a.kind()) == integer_bits(b.kind());
-}
-
 class SlotPromotion
 {
 public:

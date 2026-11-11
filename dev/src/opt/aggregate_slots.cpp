@@ -454,7 +454,8 @@ bool widen_integer_fields(SlotFacts& facts, uint64_t size)
 	for (const Field& f : facts.fields)
 		for (const Field& g : facts.fields)
 			if (f.offset < g.offset + storage_bytes(g.type) && g.offset < f.offset + storage_bytes(f.type) &&
-				!(f.offset == g.offset && (f.type == g.type || float_twins(f.type, g.type))))
+				!(f.offset == g.offset &&
+					(f.type == g.type || float_twins(f.type, g.type) || integer_twins(f.type, g.type))))
 			{
 				if (f.offset / 8 >= 64)
 					return false;
@@ -592,6 +593,10 @@ bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 			return false;
 		if (!unique.empty() && unique.back().offset == f.offset)
 		{
+			// A signedness-only view needs no wider carrier. Slot promotion
+			// retypes each access while keeping independent fields separate.
+			if (integer_twins(unique.back().type, f.type))
+				continue;
 			// (An integer carrying a floating field's bits: the field stays
 			// floating, and promotion retypes the integer accesses.)
 			if (float_twins(unique.back().type, f.type))
@@ -1588,7 +1593,7 @@ bool AggregateSlots::same_fields(const SlotAddress& x, const SlotAddress& y, uin
 		const uint64_t at = f.offset - y.offset + x.offset;
 		bool found = false;
 		for (const Field& g : facts_[x.slot].fields)
-			found = found || (g.offset == at && g.type == f.type);
+			found = found || (g.offset == at && (g.type == f.type || integer_twins(g.type, f.type)));
 		if (!found)
 			return false;
 	}

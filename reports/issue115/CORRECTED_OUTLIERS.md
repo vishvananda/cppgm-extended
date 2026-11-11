@@ -62,3 +62,5 @@ The strict report passes 10,629/10,629 tests. Debug-info checks, self-host throu
 The remaining profiles point to interpreter dispatch and retained tape state in Brainfuck, regex-machine state/control traffic in LogParser, signed midpoint/range work in arithmetic decoding, and dot-product live ranges plus libm cost in NeuralNet. NeuralNet spends roughly 30% of Clang samples and 25% of GM samples in exp/libm; that share alone does not explain the remaining generated-code gap. These are follow-up investigations, not completed optimizations or evidence for a new IR extension.
 
 Raw commands, hashes, all observations, calibration runs, profiles and disassembly are retained in `/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111`. The final compiler emits a byte-identical Myc object to the measured frozen candidate; [the JSON record](corrected-outliers-20261111.json) includes that identity and the detailed per-case full-suite results.
+
+The [independent integer-field follow-up](FIELD_VIEWS.md) records the next arithmetic-decoder improvement and its separate qualification.

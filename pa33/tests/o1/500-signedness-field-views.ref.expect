@@ -1,0 +1,13 @@
+# explicit-outcomes
+
+# Recurrent neighboring fields do not require repeated packing or memory.
+instructions <= 21 in @byte_counter
+none(load) in @byte_counter
+none(store) in @byte_counter
+instructions <= 13 in @width_views
+none(load) in @width_views
+none(store) in @width_views
+none(load) in @copy_views
+none(store) in @copy_views
+count(load) >= 1 in @volatile_view
+count(store) >= 1 in @volatile_view

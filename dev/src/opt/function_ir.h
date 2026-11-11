@@ -351,6 +351,14 @@ inline lowir::InstId append_copy(
 }
 lowir::TempId append_temp(lowir::FunctionBody& body, lowir::Type type, lowir::InstId def);
 lowir::Value integer_value(lowir::FunctionBody& body, lowir::Literal bits);
+// Signed and unsigned integer views of the same stored value bits. i1 has
+// distinct normalization semantics despite sharing byte storage with i8.
+inline bool integer_twins(lowir::Type a, lowir::Type b)
+{
+	return a.is_integer() && b.is_integer() && a.kind() != b.kind() && a.kind() != lowir::TypeKind::I1 &&
+		b.kind() != lowir::TypeKind::I1 && lowir::integer_bits(a.kind()) == lowir::integer_bits(b.kind());
+}
+
 // Whether one is a floating type and the other an integer type of its width:
 // a retyping copy moves the bits between them.
 inline bool float_twins(lowir::Type a, lowir::Type b)

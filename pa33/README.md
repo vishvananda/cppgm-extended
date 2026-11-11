@@ -394,6 +394,10 @@ Source-driver cases also compare execution before and after LowIR
 serialization. Failed cases are checked by exit status. See Quality Bar
 for the sidecar syntax.
 
+Private fields accessed through signed and unsigned views of one width should
+remain eligible for scalar replacement. Preserve bit patterns, each reader's
+interpretation, Boolean conversions, true overlaps and observable accesses.
+
 Whole-vector values stored in private aggregates can remain whole through
 copies and zero initialization. Use typed access and escape facts to avoid
 scalar memory round trips; preserve observable writes and volatile accesses.
