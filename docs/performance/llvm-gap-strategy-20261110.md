@@ -1282,3 +1282,122 @@ Evidence: gap-C-main-04d-validation-r24.json;
 gap-C-main-04d-{batch,output}-r24; gap-C-main-04d-O1-r24-llvm-build-status.json;
 gap-C-exact-leaf-compiler-r25; gap-C-exact-leaf-controls-r25{,b};
 gap-C-exact-leaf-batch-r25/summary.json.
+
+### Full rebase checks and the missing packed-value prices
+
+The full r24 O1 LLVM rebuild succeeds. It reproduces all 325 frozen native
+objects and the linked compiler. All four deterministic ledger inputs pass.
+Against r17, executed bytes change by less than 0.023% and instructions by
+-0.105% to +0.287%; modeled L2 code misses fall 0.75–1.49%. The hardware
+panel retains all 80 observations, including five flagged cycle outliers.
+Its cycle medians vary from -0.19% to +0.80% against r17 across event groups;
+this is not a resolved runtime improvement. All outputs match. The rebase
+does not reset the cumulative compile-cost baseline: r24 remains +0.443%,
+-0.691%, -1.456% and -1.685% at O0–O3 against 8f76ebb0d.
+
+r25 also reproduces every workload output. Against the matching r24
+43-provider slice, its number_literal/store_motion calls change
+-0.948%/-0.348%, executed bytes -0.011%/+0.017%, instructions
+-0.148%/-0.046%, and modeled L2 misses -1.307%/-0.166%. Range-fact
+consumption helps some accessors, but this is insufficient as a standalone
+runtime result.
+
+The next private comparison, r26, uses one net hot-cost test for ordinary
+and late admission (12, or 18 with an inline hint), prices calls inside
+forwarding wrappers, and retains the safety and definition-removing policies.
+It removes the former ordinary/late shape caps and loop multiplier. Frozen
+compile instructions fall 15.49%, 12.40% and 12.69% at O1–O3, but the runtime
+ledger exposes the cost: relative to r17, number_literal/store_motion execute
+2.14%/2.40% fewer distinct code bytes and make 42.21%/54.78% more calls.
+Instructions rise 8.87%/11.44% and modeled L2 misses rise 0.87%/1.53%.
+All 325 outputs match. Faster compilation is not an acceptable substitute
+for the codegen objective.
+
+r27 adds a compact summary of single-block pure bodies and the parameters
+they use. When all used arguments are literals, normal inlining and folding
+can remove their work. This fixes the existing affine-i128/ordered-floating
+constant-call quality check, and all 325 workload outputs still match, but
+the ledger barely changes. This is a profitability prediction, not permission
+to discard effects or assume that every arithmetic operation folds. General
+multi-block constant-argument specialization remains unfinished.
+
+A diagnostic shape trace reproduces all 43 uninstrumented r27 objects.
+It identifies a confounder in the cost model: aggregation has converted
+small class values into packed i128 values, while the model rejects every
+body containing an unpriced i128 operation or object copy. Examples include
+a reverse-iterator copy whose final body is a 12-byte copy and a return
+(788,796 extra calls), small DenseMap range accessors, APInt move helpers,
+and an EVT legality check. The latter has a small scalar body but an
+i128-to-i64 extraction is enough to reject it. These are diagnostic symbol
+attributions, not names used by any optimization policy.
+
+The largest extra callee, SmallVector<unsigned>::push_back, accounts for
+4,158,338 extra calls on store_motion. Its optimized cost is 27 at one
+observed shape, with a short path around a growth call; it has no unpriced
+operations. Thus packed-value pricing cannot explain the entire regression.
+Retain these two causes separately and test both before abandoning the
+replacement policy.
+
+r28 prices two-word integer operations and fixed copies of at most 64 bytes
+without changing the 12/18 thresholds. Its estimates count scalar word
+operations, not a promise about final register allocation. r29 changes only
+the thresholds to 24/36 on top of r28. These are private controls. Neither
+policy is adopted; evaluate the output-checked ledger and hardware screen
+before considering production changes. The r28 O1 tests retain five
+reference/quality differences: two added exact-conversion facts, and three
+inlining expectations. The affine constant-call failure is gone. Do not
+blindly update policy-pinning references or raise caps to satisfy them.
+
+Evidence: gap-C-main-04d-full-checks-r24.json;
+gap-C-main-04d-full-four-panel-r24.json;
+gap-C-main-04d-full-hardware-r24/summary.json;
+gap-C-exact-leaf-versus-main-r25.json;
+gap-C-unified-cost-{batch,panel}-r26;
+gap-C-constant-cost-{batch,panel}-r27;
+gap-C-unified-extra-call-shapes-r27.json;
+gap-C-unified-shapes-r27/receipt.json;
+gap-C-packed-o1-tests-r28/all-compare-summary.json.
+
+r28's completed ledger confirms that packed-value prices explain a substantial
+part, but not all, of the regression. Against r17, number_literal/store_motion
+calls now rise 25.48%/32.43% rather than 42.21%/54.78%, instructions rise
+6.00%/7.40%, executed bytes fall 2.65%/2.86%, and modeled L2 misses fall
+3.56%/2.42%. All 325 objects and the linked compiler match. Frozen compile
+instructions against r24 fall 15.03%, 11.71% and 12.01% at O1–O3.
+
+r29 also reproduces all 325 objects and the compiler, with frozen compile
+instructions down 6.91%, 3.08% and 2.77% at O1–O3 against r24. Its completed
+number_literal ledger against the matching r24 slice shows calls +8.49%,
+instructions +2.35% and executed bytes -1.89%. Its store_motion hardware
+panel completes all 80 observations with identical outputs and eleven
+flagged cycle outliers retained. Instructions rise about 2.85%, store-forward
+blocks 3.24% and micro-operations 3.35%; L2 code misses fall 3.66%, TLB
+second-level hits 2.38%, TLB walk cycles 8.04% and fetch stalls 2.37%.
+Cycle changes range from -0.13% to +0.82% across event groups. Footprint
+improves, but the remaining extra work consumes that benefit. Do not claim a
+whole-workload or elapsed-time win from this screen.
+
+The next private control, r30, prices a switch's comparison/branch pairs
+instead of rejecting every switch-containing body. Residual callees include
+DeclContext::isFunctionOrMethod and ValueLatticeElement::destroy. Keep r29's
+24/36 thresholds so this tests missing cost coverage separately from a
+threshold increase. Another follow-up to inspect is branch-prediction facts:
+SmallVector's reserve path uses LLVM_LIKELY, but the callee hot-cost summary
+only discounts noreturn paths. The existing caller-side rare-region walk
+does consume these predictions, at O2 and above. Any extension should reuse
+typed branch facts and the existing CFG, preserve the cost of copied cold
+code, and measure both code footprint and calls. It is not implemented yet.
+
+Evidence: gap-C-packed-cost-{batch,panel,output}-r28;
+gap-C-mid-cost-{batch,output,hardware}-r29;
+gap-C-mid-extra-calls-r29.json;
+gap-C-switch-cost-compiler-r30/receipt.json.
+
+r29's second deterministic input has completed. Against the matching r24
+slice, store_motion has calls +11.05%, instructions +3.04%, executed bytes
+-2.03%, and modeled L2 code misses -4.32%; number_literal modeled L2 misses
+fall 5.45%. These agree with the hardware tradeoff above. r30's frozen gate
+changes instructions -0.010%, -6.906%, -3.080% and -2.765% at O0–O3 against
+r24, essentially unchanged from r29. Its LLVM output check and ledger remain
+pending. Evidence: gap-C-mid-cost-versus-main-r29.json;
+gap-C-switch-cost-batch-r30/summary.json.
