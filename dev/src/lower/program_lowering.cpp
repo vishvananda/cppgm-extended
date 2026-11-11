@@ -369,6 +369,11 @@ void ProgramLowering::finish()
 		}
 		if (defined == kLocalObject)
 			continue;
+		// A call that declared the base entry reaches the code only through
+		// this name, which no instruction of the unit ties to the complete
+		// entry: an internal complete entry is then an object root.
+		if (defined != lowir::kNoId && program_.symbols[alias.target].metadata.binding == ir_model::SBM_INTERNAL)
+			program_.symbols[alias.target].metadata.flags |= lowir::SF_OBJECT_ROOT;
 		program_.aliases.push_back(lowir::ObjectAlias{ alias.object, alias.target });
 		if (by_object_.size() <= alias.object)
 			by_object_.resize(std::max<size_t>(alias.object + 1, by_object_.size() * 2), lowir::kNoId);
@@ -792,8 +797,11 @@ void ProgramLowering::emit_definition(
 	if (copy)
 		program_.symbols[symbol].metadata.binding = ir_model::SBM_INTERNAL;
 	// An explicit instantiation definition roots what it instantiates
-	// (14.7.2p5: a prior explicit specialization is not instantiated).
-	if ((variant == EntryVariant::Base && !function->is_constexpr) ||
+	// (14.7.2p5: a prior explicit specialization is not instantiated). A
+	// base entry another object may name is a root; an internal one is
+	// kept by what refers to it.
+	const bool internal = program_.symbols[symbol].metadata.binding == ir_model::SBM_INTERNAL;
+	if ((variant == EntryVariant::Base && !function->is_constexpr && !internal) ||
 		rooted_destructors_.find(function) != PointerMap::kMissing ||
 		(!copy && function->explicit_instantiation && (function->instantiated || !function->is_inline)))
 		program_.symbols[symbol].metadata.flags |= lowir::SF_OBJECT_ROOT;
@@ -808,9 +816,6 @@ void ProgramLowering::emit_definition(
 	if (variant == EntryVariant::Complete && (function->constructor || function->destructor) &&
 		!HiddenBaseParameters(function, EntryVariant::Base))
 	{
-		// An internal complete entry is its base entry's root too.
-		if (program_.symbols[symbol].metadata.binding == ir_model::SBM_INTERNAL && !function->is_constexpr)
-			program_.symbols[symbol].metadata.flags |= lowir::SF_OBJECT_ROOT;
 		const std::string base = function_object(function, EntryVariant::Base);
 		base_object = intern(base.data(), static_cast<uint32_t>(base.size()));
 		entry_aliases_.push_back(EntryAlias{ base_object, symbol, EquivalentEntries(*graph_, function) });

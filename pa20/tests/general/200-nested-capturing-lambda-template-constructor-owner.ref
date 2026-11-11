@@ -58,7 +58,7 @@ function @Analyzer____lambda_Analyzer__lookup_functions_t83_85__operator__(%this
     call void @Function_void_Scope_____operator__(%t13, %t14)
     return void
 }
-function @Function_void_Scope_____Function(%this : ptr [object_bytes=1], %f : obj<16x8>) -> void [binding=internal, object=_ZN8FunctionIFvR5ScopeEEC1IZZN8Analyzer16lookup_functionsEiENKUlvE_clEvEUlS1_E_EET_, object_root=yes, inline_hint=yes] {
+function @Function_void_Scope_____Function(%this : ptr [object_bytes=1], %f : obj<16x8>) -> void [binding=internal, object=_ZN8FunctionIFvR5ScopeEEC1IZZN8Analyzer16lookup_functionsEiENKUlvE_clEvEUlS1_E_EET_, inline_hint=yes] {
   slot $this : ptr
   slot $f : obj<16x8>
 

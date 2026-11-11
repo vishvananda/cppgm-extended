@@ -143,7 +143,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load typed i32 $cond__1
     return i32 %t6
 }
-function @local__local(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=internal, object=_ZZ5firstvEN5localC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @local__local(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=internal, object=_ZZ5firstvEN5localC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -157,7 +157,7 @@ function @local__local(%this : ptr [object_bytes=8]) -> void [unwind=no, binding
     store typed ptr %t5, %t3
     return void
 }
-function @local__local__2(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=internal, object=_ZZ6secondvEN5localC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @local__local__2(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=internal, object=_ZZ6secondvEN5localC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

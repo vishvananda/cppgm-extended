@@ -35,7 +35,7 @@ function @map_like_value_type___end(%this : ptr [object_bytes=1]) -> obj<1x1> [r
     call void @map_iter_value_type___map_iter(%t1)
     return obj<1x1> $retobj__1
 }
-function @map_const_iter_value_type___map_const_iter__ov2(%this : ptr [object_bytes=1], %x : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN14map_const_iterIZN7builder1fEvE10value_typeEC1E8map_iterIS1_E, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @map_const_iter_value_type___map_const_iter__ov2(%this : ptr [object_bytes=1], %x : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN14map_const_iterIZN7builder1fEvE10value_typeEC1E8map_iterIS1_E, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $x : obj<1x1>
 
@@ -54,7 +54,7 @@ function @use_const_ref(%__param0 : ptr [pass=by_address, object_bytes=1]) -> vo
     store typed ptr %__param0, $__param0
     return void
 }
-function @map_iter_value_type___map_iter(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZN8map_iterIZN7builder1fEvE10value_typeEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @map_iter_value_type___map_iter(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZN8map_iterIZN7builder1fEvE10value_typeEC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

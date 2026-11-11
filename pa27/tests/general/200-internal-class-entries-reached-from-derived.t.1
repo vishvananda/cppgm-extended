@@ -1,0 +1,87 @@
+extern "C" int printf(const char*, ...);
+
+int observed = 0;
+
+namespace
+{
+struct Inline
+{
+  Inline() : value(1) { observed += 1; }
+  ~Inline() { observed += 10; }
+  int value;
+};
+
+struct FromInline : Inline
+{
+  FromInline();
+  ~FromInline();
+};
+
+FromInline::FromInline() { observed += 100; }
+FromInline::~FromInline() { observed += 1000; }
+
+template<class T>
+struct Holder
+{
+  Holder() : value(T()) { observed += 2; }
+  ~Holder() { observed += 20; }
+  T value;
+};
+
+struct FromTemplate : Holder<long>
+{
+  FromTemplate() { observed += 200; }
+};
+
+struct Root
+{
+  Root() { observed += 3; }
+  virtual ~Root() { observed += 30; }
+};
+
+struct Mid : virtual Root
+{
+  Mid() { observed += 300; }
+  ~Mid() { observed += 3000; }
+};
+
+struct Leaf : Mid
+{
+  Leaf() { observed += 30000; }
+};
+
+// No object of these classes is made.
+struct NeverMade
+{
+  NeverMade() { observed += 7; }
+  ~NeverMade() { observed += 70; }
+};
+
+struct NeverDerived : NeverMade
+{
+  NeverDerived();
+};
+
+NeverDerived::NeverDerived() { observed += 700; }
+}
+
+int main()
+{
+  {
+    FromInline a;
+    printf("%d\n", observed);
+  }
+  printf("%d\n", observed);
+  {
+    FromTemplate b;
+    printf("%d\n", observed);
+  }
+  printf("%d\n", observed);
+  {
+    Root* r = new Leaf;
+    printf("%d\n", observed);
+    delete r;
+  }
+  printf("%d\n", observed);
+  return observed == 1111 + 222 + 33333 ? 0 : 1;
+}

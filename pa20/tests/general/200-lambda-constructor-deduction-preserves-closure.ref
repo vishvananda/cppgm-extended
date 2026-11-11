@@ -54,7 +54,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load typed i32 $cond__3
     return i32 %t15
 }
-function @Sink__Sink(%this : ptr [object_bytes=4], %function : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_0EET_, object_root=yes, inline_hint=yes] {
+function @Sink__Sink(%this : ptr [object_bytes=4], %function : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_0EET_, inline_hint=yes] {
   slot $this : ptr
   slot $function : obj<1x1>
 
@@ -67,7 +67,7 @@ function @Sink__Sink(%this : ptr [object_bytes=4], %function : obj<1x1> [classes
     store typed i32 %t2, %t4
     return void
 }
-function @Sink__Sink__2(%this : ptr [object_bytes=4], %function : obj<8x8>) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_1EET_, object_root=yes, inline_hint=yes] {
+function @Sink__Sink__2(%this : ptr [object_bytes=4], %function : obj<8x8>) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_1EET_, inline_hint=yes] {
   slot $this : ptr
   slot $function : obj<8x8>
 

@@ -1,4 +1,6 @@
 namespace {
+int destroyed = 0;
+
 struct Analyzer {
   Analyzer();
   ~Analyzer();
@@ -6,11 +8,25 @@ struct Analyzer {
 };
 
 Analyzer::Analyzer() : x(0) {}
-Analyzer::~Analyzer() {}
+Analyzer::~Analyzer() { ++destroyed; }
+
+// A derived class's constructor and destructor call the base entries.
+struct Checked : Analyzer {
+  Checked();
+  ~Checked();
+};
+
+Checked::Checked() {}
+Checked::~Checked() {}
 }
 
 int main()
 {
-  Analyzer a;
-  return a.x;
+  {
+    Analyzer a;
+    Checked c;
+    if (a.x + c.x != 0)
+      return 1;
+  }
+  return destroyed == 2 ? 0 : 1;
 }

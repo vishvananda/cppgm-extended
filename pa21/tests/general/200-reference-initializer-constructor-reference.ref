@@ -602,7 +602,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t84 = load typed i32 $cond__4
     return i32 %t84
 }
-function @H__H(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZ18construction_probeEN1HC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @H__H(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZ18construction_probeEN1HC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $local : obj<8x4>
   slot $s : ptr
@@ -668,7 +668,7 @@ function @H__H(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_
     eh_end
     return void
 }
-function @H___H(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=internal, object=_ZZ18construction_probeEN1HD1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @H___H(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=internal, object=_ZZ18construction_probeEN1HD1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

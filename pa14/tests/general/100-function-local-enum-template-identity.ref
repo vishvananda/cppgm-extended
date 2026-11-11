@@ -20,14 +20,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @g()
     return i32 0
 }
-function @A_T___A(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZN1AIZ1fvE1TEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @A_T___A(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZN1AIZ1fvE1TEC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return void
 }
-function @A_T___A__2(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZN1AIZ1gvE1TEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @A_T___A__2(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZN1AIZ1gvE1TEC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

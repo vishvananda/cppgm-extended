@@ -70,7 +70,7 @@ function @Maker__two(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=
     call void @Box_Piece____Box__2(%t5)
     return i32 %t4
 }
-function @Box_Piece___Box(%this : ptr [object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Box_Piece___Box(%this : ptr [object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceEC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -80,7 +80,7 @@ function @Box_Piece___Box(%this : ptr [object_bytes=4]) -> void [binding=interna
     store typed i32 0, %t2
     return void
 }
-function @Box_Piece____Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceED1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Box_Piece____Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceED1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $tmpobj__1 : obj<8x8>
   slot $function_exception__2 : ptr
@@ -112,7 +112,7 @@ function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, retu
     call void @std_terminate()
     return void
 }
-function @Box_Piece___Box__2(%this : ptr [object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Box_Piece___Box__2(%this : ptr [object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceEC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -122,7 +122,7 @@ function @Box_Piece___Box__2(%this : ptr [object_bytes=4]) -> void [binding=inte
     store typed i32 0, %t2
     return void
 }
-function @Box_Piece____Box__2(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceED1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Box_Piece____Box__2(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceED1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $tmpobj__1 : obj<8x8>
   slot $function_exception__2 : ptr
@@ -148,7 +148,7 @@ function @Box_Piece____Box__2(%this : ptr [object_bytes=4]) -> void [unwind=no, 
     call void @cppgm_call_terminate(%t4)
     return void
 }
-function @Box_Piece___Guard__Guard(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceE5GuardC1ERS2_, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Box_Piece___Guard__Guard(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceE5GuardC1ERS2_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $owner : ptr
 
@@ -175,7 +175,7 @@ function @Box_Piece___Guard__operator__(%this : ptr [object_bytes=8]) -> void [b
     store typed i32 %t6, %t4
     return void
 }
-function @Box_Piece___Guard__Guard__2(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceE5GuardC1ERS2_, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Box_Piece___Guard__Guard__2(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceE5GuardC1ERS2_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $owner : ptr
 

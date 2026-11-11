@@ -64,7 +64,7 @@ function @visit__2(%first : ptr, %last : ptr) -> void [binding=weak, object=_Z5v
     call void @cleanup___cleanup__2(%t8)
     return void
 }
-function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=internal, object=_ZZ5visitIiEvPT_S1_EN7cleanupD1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=internal, object=_ZZ5visitIiEvPT_S1_EN7cleanupD1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $function_exception__1 : ptr
 
@@ -117,7 +117,7 @@ function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, retu
     call void @std_terminate()
     return void
 }
-function @cleanup___cleanup__2(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=internal, object=_ZZ5visitIlEvPT_S1_EN7cleanupD1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @cleanup___cleanup__2(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=internal, object=_ZZ5visitIlEvPT_S1_EN7cleanupD1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $function_exception__1 : ptr
 

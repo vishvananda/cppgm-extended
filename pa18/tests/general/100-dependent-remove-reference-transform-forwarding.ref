@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @S__g(%t2)
     return i32 0
 }
-function @function_G___function(%this : ptr [object_bytes=1], %f : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN8functionIZN1S1gEvE1GEC1ES1_, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @function_G___function(%this : ptr [object_bytes=1], %f : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN8functionIZN1S1gEvE1GEC1ES1_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $f : obj<1x1>
 
@@ -40,7 +40,7 @@ function @move(%t : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=inter
     %t1 = load typed ptr $t
     return ptr %t1
 }
-function @value_func__value_func(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN10value_funcC1IZN1S1gEvE1GEEOT_, object_root=yes, inline_hint=yes] {
+function @value_func__value_func(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN10value_funcC1IZN1S1gEvE1GEEOT_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
   slot $s : obj<1x1>
@@ -54,7 +54,7 @@ function @value_func__value_func(%this : ptr [object_bytes=1], %p : ptr [pass=by
     call void @stored_G___stored(%t1, %t3)
     return void
 }
-function @stored_G___stored(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN6storedIZN1S1gEvE1GEC1EOS1_, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @stored_G___stored(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN6storedIZN1S1gEvE1GEC1EOS1_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

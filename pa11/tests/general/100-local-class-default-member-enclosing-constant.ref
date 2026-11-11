@@ -45,7 +45,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load typed i32 $cond__1
     return i32 %t10
 }
-function @Record__Record(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZZ4mainEN6RecordC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Record__Record(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZZ4mainEN6RecordC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

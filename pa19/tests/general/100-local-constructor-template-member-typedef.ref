@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Wrap_constActiveInterval____Wrap(%t2, %t3)
     return i32 0
 }
-function @Wrap_ActiveInterval____Wrap(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZN4WrapIPZ4mainE14ActiveIntervalEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Wrap_ActiveInterval____Wrap(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZN4WrapIPZ4mainE14ActiveIntervalEC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -20,7 +20,7 @@ function @Wrap_ActiveInterval____Wrap(%this : ptr [object_bytes=8]) -> void [bin
     store typed ptr 0, %t2
     return void
 }
-function @Wrap_constActiveInterval____Wrap(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=internal, object=_ZN4WrapIPKZ4mainE14ActiveIntervalEC1IPS0_EERKS_IT_E, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Wrap_constActiveInterval____Wrap(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=internal, object=_ZN4WrapIPKZ4mainE14ActiveIntervalEC1IPS0_EERKS_IT_E, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

@@ -181,6 +181,7 @@ private:
 	FlatMap<uint32_t, uint32_t, WordHash32> equivalent_targets_;
 	lowir::JumpThunk shared_entry_;
 	std::vector<lowir::EquivalentEntry> shared_aliases_;
+	std::vector<uint8_t> pruned_; // per program symbol: a function prune_functions left out (empty when none)
 	std::vector<std::pair<lowir::SymbolId, lowir::SymbolId>> code_labels_;
 	std::vector<const char*> runtime_names_; // the first image-local symbols
 	uint32_t program_symbols_ = 0;
@@ -613,8 +614,23 @@ void ObjectCompiler::prune_functions()
 					reach(item.address);
 			}
 	}
+	// An alias is a second name of its target's code. Another object uses
+	// it only where it can name the target (a root above); this one does
+	// through a declaration of that name (define_alias).
+	bool local_target = false;
 	for (const lowir::ObjectAlias& alias : program_.aliases)
-		reach(alias.target);
+		local_target = local_target ||
+			(range_of[alias.target] != lowir::kNoId && ranges_[range_of[alias.target]].dropped);
+	if (local_target)
+	{
+		std::vector<uint8_t> declared(program_.names.size(), 0);
+		for (lowir::SymbolId s = 0; s < program_.symbols.size(); ++s)
+			if (program_.symbols[s].kind == lowir::SymbolKind::FunctionDeclaration)
+				declared[object_name(s)] = 1;
+		for (const lowir::ObjectAlias& alias : program_.aliases)
+			if (declared[alias.object])
+				reach(alias.target);
+	}
 	while (!work.empty())
 	{
 		const uint32_t r = work.back();
@@ -623,7 +639,13 @@ void ObjectCompiler::prune_functions()
 			reach(fixups[k].target);
 	}
 	for (const CodeRange& range : ranges_)
-		stats_.pruned_functions += range.dropped ? 1 : 0;
+	{
+		if (!range.dropped)
+			continue;
+		++stats_.pruned_functions;
+		pruned_.resize(program_.symbols.size(), 0);
+		pruned_[range.symbol] = 1;
+	}
 }
 
 void ObjectCompiler::place_text()
@@ -1112,8 +1134,10 @@ void ObjectCompiler::add_assembly_symbols()
 
 void ObjectCompiler::add_aliases()
 {
+	// (A function left out has no other name either.)
 	for (const lowir::ObjectAlias& alias : program_.aliases)
-		define_alias(alias.object, object_symbol(alias.target));
+		if (alias.target >= pruned_.size() || !pruned_[alias.target])
+			define_alias(alias.object, object_symbol(alias.target));
 	for (lowir::SymbolId s = 0; s < program_.symbols.size(); ++s)
 	{
 		const lowir::Symbol& symbol = program_.symbols[s];

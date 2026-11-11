@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @Local__Local(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZZ1fvEN5LocalC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Local__Local(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZZ1fvEN5LocalC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -41,7 +41,7 @@ function @Ops_Policy___iter_move(%i : ptr [pass=by_address, object_bytes=1]) -> 
     %t2 = call ptr @move_like(%t1)
     return ptr %t2
 }
-function @Local__Local__ov3(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=internal, object=_ZZ1fvEN5LocalC1EOS_, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @Local__Local__ov3(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=internal, object=_ZZ1fvEN5LocalC1EOS_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $cit
     return i32 0
 }
-function @wrap_local____wrap(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZN4wrapIPZ4mainE5localEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @wrap_local____wrap(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZN4wrapIPZ4mainE5localEC1Ev, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -21,7 +21,7 @@ function @wrap_local____wrap(%this : ptr [object_bytes=8]) -> void [binding=inte
     store typed ptr 0, %t2
     return void
 }
-function @wrap_constlocal____wrap(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=internal, object=_ZN4wrapIPKZ4mainE5localEC1IPS0_EERKS_IT_E, prefer_local=yes, object_root=yes, inline_hint=yes] {
+function @wrap_constlocal____wrap(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=internal, object=_ZN4wrapIPKZ4mainE5localEC1IPS0_EERKS_IT_E, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
