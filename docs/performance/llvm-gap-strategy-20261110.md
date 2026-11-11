@@ -987,3 +987,74 @@ gap-A-low-word-{onoff,cumulative}-frozen-r17;
 gap-A-low-word-O1-r17-llvm-build-status.json;
 gap-A-low-word-full-{output,hardware}-r17;
 gap-A-low-word-full-ledger-number_literal-r17.
+
+### Completed r17 comparison and the next inlining interaction
+
+The five symmetric blocks are complete: 32 observations including native A/A,
+with all 325 objects and the linked compiler identical in every observation.
+No inputs or binaries changed. Compared with rebased accepted, r17 averages
+0.98005 times the cycles (95% interval 0.96048–0.99961). The cycle ratio to native
+falls from 1.10995 to 1.08778. This is a 2.217-point mean improvement, but its
+lower 95% bound is only 0.047 point; do not spend the mean as proven compile-cost
+headroom. The existing ordinary and cumulative compile-cost gates already pass.
+
+Elapsed time averages 1.06952 times native (95% interval 0.96356–1.17548), and
+0.99494 times accepted (0.93887–1.05102). This does not meet the 1.05 target or
+establish an elapsed improvement. Whole-workload instruction-cache misses fall
+2.05% and fetch-stall counts fall 2.27% against accepted, consistent with the
+footprint mechanism. Retain every observation, including the noisy elapsed runs.
+
+All four deterministic panels are now complete. Ratios below are r17/native:
+
+| Input | Executed bytes | Instructions | Bytes/instruction | Conditional branches | Calls | Modeled L2 code misses |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| number_literal | 1.311 | 1.040 | 1.094 | 1.121 | 1.160 | 1.156 |
+| store_motion | 1.312 | 1.055 | 1.085 | 1.108 | 1.146 | 1.150 |
+| program_lowering | 1.306 | 1.063 | 1.083 | 1.120 | 1.145 | 1.168 |
+| class_templates | 1.305 | 1.071 | 1.083 | 1.132 | 1.141 | 1.161 |
+
+Continue investigating interactions rather than abandoning aggregate promotion.
+A decoded call-edge comparison finds tiny helpers returning out of line after
+the aggregate change. For example, QualType::operator-> entries rise from 1,278
+to 54,986 on number_literal, and several flag accessors reappear. Their callers
+reach ordinary/late budgets of zero to two. This is an unintended interaction
+to investigate; moving a callee's self instructions into its caller does not
+make that work disappear. Total call instructions rise 0.52% against accepted
+despite the other aggregate gains.
+
+The diagnostic admission trace changes no decisions: all 43 provider objects
+and the linked slice match r17 byte for byte. Native inline remarks for the same
+43 providers also preserve every allocated section and normalized relocation;
+only debug information and corresponding symbol indexes change. Joining the
+remarks yields 264,432 unambiguous matching caller/callee pairs, including
+9,935 possible new admissions and 6,746 possible new declines. An experimental
+compiler follows those matched choices while retaining safety checks and
+required source inlining. Unmatched choices retain r17's policy. This partial
+oracle is a diagnostic, not a production policy or a complete upper bound.
+
+The oracle fails correctness before its performance screen: Clang crashes in
+X86FixupBWInstImpl::getSuperRegDestIfDead while compiling constant_expressions.
+Object bisection isolates X86InstrInfo.cpp; caller bisection isolates
+X86InstrInfo::copyPhysReg; edge bisection isolates inlining isHReg(Register).
+The emitted LLVM machine IR changes valid XMM-register copies into MOV8rr with
+XMM operands. The later crash is a consequence of this earlier wrong opcode.
+An empty diagnostic filter reproduces the original object exactly, and the
+complete filter reproduces the oracle object exactly. Keeping BuildMI out of
+line alone passes and is not the cause. Small synthetic register-class tests,
+including two wrapper types and externally defined class tables, currently
+pass at O0–O3; they do not yet reproduce the failure. Reduce the actual failing
+path and repair the compiler before resuming the oracle ledger. Do not interpret
+this failed diagnostic as a performance result, or undo the aggregate milestone
+to hide the newly exposed defect.
+
+The production checkpoint remains cf3e0fca5. A fresh fetch after the completed
+comparison still finds origin/main at 535ed4f12, already an ancestor; no rebase
+is needed.
+
+Evidence: gap-A-low-word-full-workload-r17/summary.json;
+gap-A-low-word-full-four-panel-r17.json; gap-C-admission-trace-equivalence-r17;
+gap-C-call-edges-r17; gap-C-native-all-inline-remarks-r17/receipt.json;
+gap-C-native-dynamic-join-r17; gap-C-native-oracle-current-r17.json;
+gap-C-native-oracle-output-r17; gap-C-native-oracle-bisect-r17;
+gap-C-oracle-{caller,edge}-bisect-r17; gap-C-oracle-mir-failure-r17;
+gap-C-native-oracle-buildmi-top1-r17b; gap-C-reghigh-reduction-r17{,b,c,d}.
