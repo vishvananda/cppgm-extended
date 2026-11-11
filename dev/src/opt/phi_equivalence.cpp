@@ -112,10 +112,12 @@ uint64_t phi_signature(const FunctionBody& body_, const std::vector<BlockId>& bl
 	return sum ^ (bits * 0x165667b19e3779f9ull) ^ phi.extra_count;
 }
 
-// Aggregate promotion leaves such a phi beside the phi of the sources
+// Aggregate promotion leaves a phi of copies beside the phi of the sources
 // themselves (a pointer member read whole as i64): the two then merge, the
 // copy folds with a copy back, and a test of one decides a test of the other.
-// The copies and the phi name one register, so no instruction is added.
+// A block copied for a predecessor leaves each copy's field address to a phi
+// where one address of the phi of the objects serves. The copies and the phi
+// name one register, and a constant step joins its uses' addresses.
 bool retype_copy_phis(FunctionContext& c, BlockId block, std::vector<Value>& replacements, std::vector<uint32_t>& uses)
 {
 	FunctionBody& body = c.body;
@@ -131,6 +133,17 @@ bool retype_copy_phis(FunctionContext& c, BlockId block, std::vector<Value>& rep
 		Constant k;
 		return literal_constant(body, v, k) && k.kind == ValueKind::Integer && (k.bits.low | k.bits.high) == 0;
 	};
+	// Two steps by one constant, stated alike.
+	const auto same_step = [&](const Instruction& a, const Instruction& b) {
+		Constant x, y;
+		return a.type == b.type && a.sub == b.sub && a.flags == b.flags && a.order == b.order &&
+			literal_constant(body, a.ops[1], x) && literal_constant(body, b.ops[1], y) &&
+			same_constant(Type::scalar(TypeKind::I64), x, y);
+	};
+	// (A loop's pointer keeps its own phi: the loop passes read its step.)
+	bool header = false;
+	for (uint32_t k = c.cfg.pred_first[block]; k < c.cfg.pred_first[block + 1]; ++k)
+		header = header || c.cfg.dominates(block, c.cfg.preds[k]);
 	std::vector<Value> pairs;
 	bool changed = false;
 	InstId next = kNoId;
@@ -140,22 +153,23 @@ bool retype_copy_phis(FunctionContext& c, BlockId block, std::vector<Value>& rep
 		next = phi.next;
 		if (!retyped(phi.type) || phi.extra_count == 0)
 			continue;
-		// The sources' one type, and each edge's source.
+		// The sources' one type and each edge's source; or the one step.
 		Type from = phi.type;
+		InstId step = kNoId;
 		bool all = true;
 		pairs.clear();
 		for (uint32_t k = 0; k < phi.extra_count && all; k += 2)
 		{
 			Value in = resolve(body.operands[phi.extra_first + k + 1]);
-			const Instruction* copy = in.is(ValueKind::Temp) && in.index >= body.parameter_count &&
+			const Instruction* def = in.is(ValueKind::Temp) && in.index >= body.parameter_count &&
 					body.temps[in.index].def != kNoId
 				? &body.instructions[body.temps[in.index].def]
 				: nullptr;
 			if (in.is(ValueKind::Temp) && in.index == phi.result)
 				in = Value::none(); // the new phi itself, named below
-			else if (copy != nullptr && copy->op == Opcode::Copy && (copy->flags & IF_NONNULL) == 0)
+			else if (def != nullptr && def->op == Opcode::Copy && (def->flags & IF_NONNULL) == 0 && step == kNoId)
 			{
-				in = resolve(copy->ops[0]);
+				in = resolve(def->ops[0]);
 				const Type type = in.is(ValueKind::Temp) ? body.temps[in.index].type : phi.type;
 				all = in.is(ValueKind::Temp) ? type != phi.type && retyped(type) &&
 						storage_bytes(type) == storage_bytes(phi.type) && (from == phi.type || from == type)
@@ -163,12 +177,20 @@ bool retype_copy_phis(FunctionContext& c, BlockId block, std::vector<Value>& rep
 				if (all && in.is(ValueKind::Temp))
 					from = type;
 			}
+			else if (def != nullptr && def->op == Opcode::Index && def->ops[1].is_literal() && !header &&
+				from == phi.type && k == (step == kNoId ? 0 : k) &&
+				(step == kNoId || same_step(body.instructions[step], *def)))
+			{
+				step = body.temps[in.index].def;
+				in = resolve(def->ops[0]);
+				all = in.is(ValueKind::Temp);
+			}
 			else
-				all = zero(in);
+				all = step == kNoId && zero(in);
 			pairs.push_back(body.operands[phi.extra_first + k]);
 			pairs.push_back(in);
 		}
-		if (!all || from == phi.type)
+		if (!all || (from == phi.type && step == kNoId))
 			continue;
 		Instruction merged = make_instruction(Opcode::Phi, from);
 		merged.location = phi.location;
@@ -192,7 +214,8 @@ bool retype_copy_phis(FunctionContext& c, BlockId block, std::vector<Value>& rep
 		body.instructions[at].result = result;
 		body.instructions[at].extra_first = first;
 		body.instructions[at].extra_count = static_cast<uint32_t>(pairs.size());
-		// The phi's instruction becomes the copy, after the block's phis.
+		// The phi's instruction becomes the copy or the step, after the
+		// block's phis.
 		InstId prev = kNoId, last = kNoId;
 		for (InstId i = body.blocks[block].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
 			i = body.instructions[i].next)
@@ -201,11 +224,11 @@ bool retype_copy_phis(FunctionContext& c, BlockId block, std::vector<Value>& rep
 			last = i;
 		}
 		unlink_after(body, block, prev, id);
-		Instruction copy = make_instruction(Opcode::Copy, phi.type);
-		copy.result = phi.result;
-		copy.location = phi.location;
-		copy.ops[0] = Value::temp(result);
-		body.instructions[id] = copy;
+		Instruction after = step == kNoId ? make_instruction(Opcode::Copy, phi.type) : body.instructions[step];
+		after.result = phi.result;
+		after.location = phi.location;
+		after.ops[0] = Value::temp(result);
+		body.instructions[id] = after;
 		insert_after(body, block, last == id ? prev : last, id);
 		insert_after(body, block, kNoId, at);
 		c.block_of.resize(body.instructions.size(), kNoId);
