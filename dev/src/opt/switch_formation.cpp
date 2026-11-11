@@ -241,6 +241,9 @@ struct Test
 // The most blocks one switch replaces, and the most case values.
 const uint32_t kRegionBlocks = 24;
 const uint64_t kMaxCases = 256;
+// The fewest runs that take a jump table whatever their targets (the
+// selector's kJumpTableClusters).
+const uint64_t kTableRuns = 6;
 
 class SwitchFormer
 {
@@ -479,9 +482,10 @@ void SwitchFormer::sides(
 // them, become one switch of the head on that value: each target outside
 // the region takes the values its edges carry, the largest set the
 // default (the others at most kMaxCases values together, as fewer runs
-// than the region's tests), when every target's phis agree across the
-// region's edges into it. A region that does not qualify gives up its
-// last block (each was reached only from those before it) and tries again.
+// than the region's tests, or as many from kTableRuns), when every
+// target's phis agree across the region's edges into it. A region that
+// does not qualify gives up its last block (each was reached only from
+// those before it) and tries again.
 bool SwitchFormer::form(BlockId head)
 {
 	Test first;
@@ -606,7 +610,9 @@ bool SwitchFormer::form_region(const std::vector<BlockId>& region, const std::ve
 			cases += count(exits[e].second);
 			runs += exits[e].second.size();
 		}
-	if (cases > kMaxCases || runs >= replaced)
+	// (As many runs as tests replaced: a switch only from the count that
+	// takes a jump table, kTableRuns.)
+	if (cases > kMaxCases || runs > replaced || (runs == replaced && runs < kTableRuns))
 		return false;
 	// Each target's phis: one value across the region's edges into it.
 	for (const std::pair<BlockId, Ranges>& exit : exits)
