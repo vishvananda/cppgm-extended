@@ -53,6 +53,9 @@ AbiValue classify_value(lowir::Type type, ir_model::AggregateShape shape, lowir:
 		return AbiValue{ Passing::Ignore, lowir::Type::scalar(lowir::TypeKind::Void) };
 	if (shape.count == 1)
 	{
+		if ((shape.element == AggregateElement::F128 || shape.element == AggregateElement::I128) && type.bytes == 16 &&
+			lowir::data_alignment(type) <= 16)
+			return AbiValue{ Passing::Expand, lowir::Type::scalar(lowir::TypeKind::I64) };
 		const lowir::Type scalar = scalar_type(shape.element, pointer);
 		if (lowir::storage_bytes(scalar) == type.bytes && lowir::data_alignment(scalar) >= lowir::data_alignment(type))
 			return AbiValue{ Passing::Coerce, scalar };

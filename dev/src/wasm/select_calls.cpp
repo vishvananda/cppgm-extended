@@ -10,6 +10,8 @@ void Selector::call(const lowir::Instruction& inst)
 	if (signature == nullptr || signature->boundary.arity != ir_model::CAM_FIXED ||
 		signature->parameter_count != inst.extra_count)
 		throw WasmError("Wasm call requires a fixed typed boundary");
+	if (builtin_call(inst, *signature))
+		return;
 	const uint32_t signature_id = static_cast<uint32_t>(signature - program_.signatures.data());
 	const Boundary& boundary = module_.boundaries[signature_id];
 	const Parameter* parameters = program_.parameters_of(*signature);
@@ -36,6 +38,13 @@ void Selector::call(const lowir::Instruction& inst)
 		{
 			address(source);
 			out_.emit(memory_op(argument.scalar, false), { 0, 0 });
+		}
+		else if (argument.passing == Passing::Expand)
+		{
+			address(source);
+			out_.emit(Op::I64Load, { 0, 0 });
+			address(source);
+			out_.emit(Op::I64Load, { 0, 8 });
 		}
 		else
 			value(source, argument.scalar);

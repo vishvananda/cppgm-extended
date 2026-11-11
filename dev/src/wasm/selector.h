@@ -18,6 +18,7 @@ private:
 	void constant(lowir::Literal bits, lowir::Type type);
 	void instruction(const lowir::Instruction& inst);
 	void call(const lowir::Instruction& inst);
+	bool builtin_call(const lowir::Instruction& inst, const lowir::Signature& signature);
 	void return_value(const lowir::Instruction& inst);
 	bool object_instruction(const lowir::Instruction& inst);
 	void prepare_locals();

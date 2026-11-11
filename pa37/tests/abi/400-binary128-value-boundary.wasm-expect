@@ -1,0 +1,1 @@
+{"source":true,"units":["400-binary128-value-boundary.t.1"],"llvm_interop":true,"exports":["echo_quad"],"abi":{"echo_quad":{"params":["i32","i64","i64"],"results":[]}},"calls":[{"export":"observe","result":"1"},{"export":"observe_precise","result":"1"}]}

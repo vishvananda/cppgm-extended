@@ -9,6 +9,7 @@ enum class Passing : uint8_t
 	Direct,
 	Ignore,
 	Coerce,
+	Expand,
 	Indirect
 };
 

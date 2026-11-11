@@ -17,6 +17,8 @@ void function_types(const lowir::Program& program, Module& module)
 		Boundary boundary;
 		std::vector<uint8_t> key;
 		boundary.result = classify_value(source.result, source.boundary.result_shape, program.pointer_type());
+		if (boundary.result.passing == Passing::Expand)
+			boundary.result.passing = Passing::Indirect;
 		if (boundary.result.passing == Passing::Indirect)
 			signature.parameters.push_back(ValueType::I32);
 		const lowir::Parameter* parameters = program.parameters_of(source);
@@ -25,6 +27,8 @@ void function_types(const lowir::Program& program, Module& module)
 			const AbiValue argument = classify_value(parameters[i].type, parameters[i].shape, program.pointer_type());
 			boundary.parameters.push_back(argument);
 			if (argument.passing != Passing::Ignore)
+				signature.parameters.push_back(value_type(argument.scalar));
+			if (argument.passing == Passing::Expand)
 				signature.parameters.push_back(value_type(argument.scalar));
 		}
 		signature.result = boundary.result.passing == Passing::Indirect || boundary.result.passing == Passing::Ignore

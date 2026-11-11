@@ -13,8 +13,12 @@ void Selector::prepare_locals()
 		hidden_result_ = add_local(ValueType::I32);
 	}
 	for (const AbiValue& parameter : boundary_.parameters)
+	{
 		if (parameter.passing != Passing::Ignore)
 			add_local(value_type(parameter.scalar));
+		if (parameter.passing == Passing::Expand)
+			add_local(value_type(parameter.scalar));
+	}
 	out_.parameter_count = static_cast<uint32_t>(out_.locals.size());
 	locals_.resize(body_.temps.size(), kNoId);
 	incoming_.resize(body_.parameter_count, kNoId);
@@ -31,6 +35,11 @@ void Selector::prepare_locals()
 			}
 			if (passing == Passing::Coerce)
 				incoming_[i] = next++;
+			else if (passing == Passing::Expand)
+			{
+				incoming_[i] = next;
+				next += 2;
+			}
 		}
 		locals_[i] = add_local(body_.temps[i].type.is_object() ? ValueType::I32 : value_type(body_.temps[i].type));
 	}
@@ -129,6 +138,12 @@ void Selector::prepare_frame()
 			out_.emit(Op::LocalGet, { locals_[i] });
 			out_.emit(Op::LocalGet, { incoming_[i] });
 			out_.emit(memory_op(boundary_.parameters[i].scalar, true), { 0, 0 });
+			if (boundary_.parameters[i].passing == Passing::Expand)
+			{
+				out_.emit(Op::LocalGet, { locals_[i] });
+				out_.emit(Op::LocalGet, { incoming_[i] + 1 });
+				out_.emit(Op::I64Store, { 0, 8 });
+			}
 		}
 	}
 }

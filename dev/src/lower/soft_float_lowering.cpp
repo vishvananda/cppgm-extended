@@ -35,7 +35,7 @@ namespace {
 // Operand and result kinds of a routine: h binary16, b bfloat16, q
 // binary128, f float, d double, x long double, i int, u unsigned int, l
 // long (and unsigned long; libgcc's comparisons return their word-mode
-// CMPtype), t __int128 (and unsigned).
+// CMPtype), c target-word comparison result, t __int128 (and unsigned).
 struct SoftFloatSpec
 {
 	const char* name;
@@ -50,12 +50,12 @@ const SoftFloatSpec kSoftFloat[] = {
 	{ "__multf3", "qq", 'q' },
 	{ "__divtf3", "qq", 'q' },
 	{ "__negtf2", "q", 'q' },
-	{ "__eqtf2", "qq", 'l' },
-	{ "__netf2", "qq", 'l' },
-	{ "__lttf2", "qq", 'l' },
-	{ "__letf2", "qq", 'l' },
-	{ "__gttf2", "qq", 'l' },
-	{ "__getf2", "qq", 'l' },
+	{ "__eqtf2", "qq", 'c' },
+	{ "__netf2", "qq", 'c' },
+	{ "__lttf2", "qq", 'c' },
+	{ "__letf2", "qq", 'c' },
+	{ "__gttf2", "qq", 'c' },
+	{ "__getf2", "qq", 'c' },
 	{ "__extendsftf2", "f", 'q' },
 	{ "__extenddftf2", "d", 'q' },
 	{ "__extendxftf2", "x", 'q' },
@@ -99,7 +99,7 @@ const SoftFloatSpec kSoftFloat[] = {
 static_assert(sizeof(kSoftFloat) / sizeof(kSoftFloat[0]) == static_cast<size_t>(SoftFloatHelper::Count),
 	"one entry per soft-float routine");
 
-lowir::Type SpecType(char code)
+lowir::Type SpecType(char code, target_model::Target target)
 {
 	switch (code)
 	{
@@ -120,6 +120,9 @@ lowir::Type SpecType(char code)
 		return lowir::Type::scalar(lowir::TypeKind::U32);
 	case 't':
 		return lowir::Type::scalar(lowir::TypeKind::I128);
+	case 'c':
+		return lowir::Type::scalar(
+			target_model::data_layout(target).pointer_bytes == 4 ? lowir::TypeKind::I32 : lowir::TypeKind::I64);
 	default:
 		return lowir::Type::scalar(lowir::TypeKind::I64);
 	}
@@ -651,19 +654,29 @@ lowir::SymbolId ProgramLowering::soft_float_helper(SoftFloatHelper which)
 	{
 		lowir::Parameter parameter = lowir::Parameter();
 		parameter.name = argument_name(i);
-		parameter.type = SpecType(spec.parameters[i]);
+		parameter.type = SpecType(spec.parameters[i], program_.target);
 		// Darwin's compiler-rt half-conversion entry points take/return
 		// the representation as an integer, unlike ordinary _Float16 calls.
 		parameter.classes = darwin_host_objects() && spec.parameters[i] == 'h'
 			? static_cast<uint8_t>(lowir::OC_STATED | lowir::EB_INTEGER)
 			: soft_float_classes(SpecKind(spec.parameters[i]));
+		if (target_model::is_wasm(program_.target) && spec.parameters[i] == 'q')
+		{
+			parameter.shape.count = 1;
+			parameter.shape.element = ir_model::AggregateElement::F128;
+		}
 		program_.parameters.push_back(parameter);
 	}
 	signature.parameter_count = count;
-	signature.result = SpecType(spec.result);
+	signature.result = SpecType(spec.result, program_.target);
 	signature.boundary.result_classes = darwin_host_objects() && spec.result == 'h'
 		? static_cast<uint8_t>(lowir::OC_STATED | lowir::EB_INTEGER)
 		: soft_float_classes(SpecKind(spec.result));
+	if (target_model::is_wasm(program_.target) && spec.result == 'q')
+	{
+		signature.boundary.result_shape.count = 1;
+		signature.boundary.result_shape.element = ir_model::AggregateElement::F128;
+	}
 	signature.boundary.unwind = ir_model::CUM_NO;
 	program_.declare_function(symbol, lowir::SymbolKind::FunctionDeclaration, program_.add_signature(signature));
 	lowir::SymbolMetadata& metadata = program_.symbols[symbol].metadata;
@@ -684,7 +697,7 @@ RValue FunctionLowering::soft_call(SoftFloatHelper which, const RValue& first, c
 	if (second != nullptr)
 		arguments_.push_back(second->value);
 	RValue result;
-	result.type = SpecType(kSoftFloat[static_cast<size_t>(which)].result);
+	result.type = SpecType(kSoftFloat[static_cast<size_t>(which)].result, lowering_.program_.target);
 	result.value = emit_call(
 		result.type, lowir::Value::symbol(lowering_.soft_float_helper(which)), base, lowir::kNoId, false);
 	return result;
@@ -693,7 +706,7 @@ RValue FunctionLowering::soft_call(SoftFloatHelper which, const RValue& first, c
 RValue FunctionLowering::soft_constant(SoftFloat kind, uint64_t low, uint64_t high)
 {
 	// The bits stored in a slot of their own, read as one value.
-	const lowir::Type type = SpecType(kind == SoftFloat::Half ? 'h' : 'q');
+	const lowir::Type type = SpecType(kind == SoftFloat::Half ? 'h' : 'q', lowering_.program_.target);
 	Place storage = Place();
 	storage.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::SoftFloat, type));
 	const lowir::Value address = address_of(storage);
