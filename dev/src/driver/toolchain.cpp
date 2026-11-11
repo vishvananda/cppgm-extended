@@ -80,6 +80,8 @@ struct Invocation
 	bool compile_only = false;
 	bool position_independent = false;
 	bool red_zone = true;
+	// -ffunction-sections: each function in a section of its own.
+	bool function_sections = false;
 	bool preprocess_only = false;
 	// -fsyntax-only: each source analyzed, nothing lowered or written.
 	bool syntax_only = false;
@@ -269,6 +271,8 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 		}
 		else if (arg == "-mred-zone" || arg == "-mno-red-zone")
 			invocation.red_zone = arg == "-mred-zone";
+		else if (arg == "-ffunction-sections" || arg == "-fno-function-sections")
+			invocation.function_sections = arg == "-ffunction-sections";
 		else if (arg == "-pthread")
 			pthread = true;
 		else if (arg == "-E")
@@ -520,7 +524,7 @@ bool compile_unit(
 	stats.clocks = invocation.stats;
 	stats.census = invocation.function_census;
 	native::ObjectBuilder builder(program, stats, eh_model, invocation.optimizer.level, invocation.position_independent,
-		invocation.target, invocation.red_zone);
+		invocation.target, invocation.red_zone, invocation.function_sections);
 	// At -O0 each definition is encoded as the lowering completes it; an
 	// optimizing level keeps the program until the optimizer has run.
 	if (invocation.optimizer.level == 0)
@@ -647,7 +651,7 @@ bool compile_lowir_unit(
 	stats.census = invocation.function_census;
 	object.path = path;
 	if (!native::compile_object(program, object, error, &stats, eh_model, invocation.optimizer.level,
-			invocation.position_independent, invocation.target, invocation.red_zone))
+			invocation.position_independent, invocation.target, invocation.red_zone, invocation.function_sections))
 	{
 		std::cerr << "ERROR: " << path << ": " << error << std::endl;
 		return false;

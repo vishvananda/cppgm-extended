@@ -1,0 +1,49 @@
+#include <cstdio>
+
+// No object defines this function. The link succeeds only when the
+// function that calls it has a section of its own, which the linker
+// discards with --gc-sections because nothing refers to it.
+int defined_nowhere(int);
+
+int never_referenced(int x)
+{
+	return defined_nowhere(x) + 1;
+}
+
+template <class T> T largest(T a, T b)
+{
+	return a < b ? b : a;
+}
+
+static int twice(int x)
+{
+	return 2 * x;
+}
+
+struct Failure
+{
+	int code;
+};
+
+int checked(int x)
+{
+	if (x > 3)
+		throw Failure{ x };
+	return twice(x);
+}
+
+int main()
+{
+	int total = largest(3, 7);
+	try
+	{
+		for (int i = 0; i < 6; ++i)
+			total += checked(i);
+	}
+	catch (const Failure& failure)
+	{
+		total += 100 * failure.code;
+	}
+	std::printf("%d\n", total);
+	return total == 7 + 0 + 2 + 4 + 6 + 400 ? 0 : 1;
+}

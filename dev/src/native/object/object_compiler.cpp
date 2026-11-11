@@ -115,7 +115,7 @@ class ObjectCompiler
 {
 public:
 	ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level,
-		bool position_independent, Target target, bool red_zone);
+		bool position_independent, Target target, bool red_zone, bool function_sections);
 
 	// Selects and encodes one function definition.
 	void function(lowir::SymbolId symbol);
@@ -150,6 +150,7 @@ private:
 	bool nonlocal_function(uint32_t image_symbol);
 	uint32_t shared_section(const char* name, SectionKind kind);
 	uint32_t own_section(const char* name, lowir::SymbolId symbol, SectionKind kind, uint32_t& spelling);
+	uint32_t separate_section(const char* name, SectionKind kind, uint32_t& spelling);
 	uint32_t shared_relro_section();
 	uint32_t named_section(lowir::NameId name, SectionKind kind);
 	lowir::NameId object_name(lowir::SymbolId symbol) const;
@@ -195,6 +196,7 @@ private:
 	// members of COMDAT groups (image symbol, section).
 	EhModel eh_model_;
 	bool position_independent_;
+	bool function_sections_; // -ffunction-sections (ELF): no function shares its section
 	std::vector<UnwindEntry> unwind_;
 	std::vector<uint8_t> cfi_pool_;
 	std::vector<uint8_t> lsda_pool_;
@@ -230,9 +232,10 @@ private:
 };
 
 ObjectCompiler::ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level,
-	bool position_independent, Target target, bool red_zone)
+	bool position_independent, Target target, bool red_zone, bool function_sections)
 	: program_(program), stats_(stats), selector_(program), emitter_(image_, runtime_, stats.emit),
-	  share_entries_(optimization_level >= 1), eh_model_(eh_model), position_independent_(position_independent)
+	  share_entries_(optimization_level >= 1), eh_model_(eh_model), position_independent_(position_independent),
+	  function_sections_(function_sections && target == Target::Linux)
 {
 	image_.target = target;
 	selector_.set_target(target);
@@ -284,9 +287,15 @@ uint32_t ObjectCompiler::own_section(const char* name, lowir::SymbolId symbol, S
 {
 	// COMDAT members share their section name (the group's signature
 	// identifies them): one string however many groups.
+	grouped_.push_back(symbol);
+	return separate_section(name, kind, spelling);
+}
+
+// A section of one definition: the sections of a name share its string.
+uint32_t ObjectCompiler::separate_section(const char* name, SectionKind kind, uint32_t& spelling)
+{
 	if (spelling == 0)
 		spelling = out_->add_string(name, std::strlen(name));
-	grouped_.push_back(symbol);
 	return out_->add_section(spelling, kind, 1);
 }
 
@@ -627,9 +636,10 @@ void ObjectCompiler::place_text()
 		if (range.dropped)
 			continue;
 		const bool comdat = range.symbol < program_.symbols.size() && comdat_definition(range.symbol);
-		range.section = comdat ? own_section(".text", range.symbol, SectionKind::Text,
-									 section_names_[static_cast<unsigned>(SectionKind::Text)])
-							   : shared_section(".text", SectionKind::Text);
+		uint32_t& spelling = section_names_[static_cast<unsigned>(SectionKind::Text)];
+		range.section = comdat   ? own_section(".text", range.symbol, SectionKind::Text, spelling)
+			: function_sections_ ? separate_section(".text", SectionKind::Text, spelling)
+								 : shared_section(".text", SectionKind::Text);
 		object::Section& section = out_->sections[range.section];
 		const ImageSymbol& symbol = image_.symbol(range.symbol);
 		const uint32_t align = symbol.code_align;
@@ -1337,9 +1347,9 @@ void ObjectCompiler::finish(ObjectFile& out)
 }
 
 ObjectBuilder::ObjectBuilder(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level,
-	bool position_independent, Target target, bool red_zone)
-	: compiler_(
-		  new ObjectCompiler(program, stats, eh_model, optimization_level, position_independent, target, red_zone))
+	bool position_independent, Target target, bool red_zone, bool function_sections)
+	: compiler_(new ObjectCompiler(
+		  program, stats, eh_model, optimization_level, position_independent, target, red_zone, function_sections))
 {}
 
 ObjectBuilder::~ObjectBuilder()
@@ -1471,13 +1481,14 @@ void recover_jump_thunks(lowir::Program& program, EhModel eh_model)
 }
 
 bool compile_object(lowir::Program& program, object::ObjectFile& out, std::string& error, ObjectStats* stats,
-	EhModel eh_model, int optimization_level, bool position_independent, Target target, bool red_zone)
+	EhModel eh_model, int optimization_level, bool position_independent, Target target, bool red_zone,
+	bool function_sections)
 {
 	ObjectStats local;
 	try
 	{
 		ObjectBuilder builder(program, stats != nullptr ? *stats : local, eh_model, optimization_level,
-			position_independent, target, red_zone);
+			position_independent, target, red_zone, function_sections);
 		builder.finish(out);
 	}
 	catch (const BackendError& e)

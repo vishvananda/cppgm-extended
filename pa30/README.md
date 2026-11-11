@@ -164,6 +164,10 @@ New or newly required in PA30:
   honored or harmlessly accepted when they do not affect the tested output
 - `-mno-red-zone` disables use of the x86-64 SysV red zone for local storage;
   `-mred-zone` enables it, and the last of these options wins
+- `-ffunction-sections` gives each function of an ELF object a `.text`
+  section of its own, so the linker can discard a function that nothing
+  refers to (`--gc-sections`); `-fno-function-sections` restores the shared
+  section, and the last of these options wins
 
 ### Command-Line Contract
 

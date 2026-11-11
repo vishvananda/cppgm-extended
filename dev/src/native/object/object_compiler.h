@@ -30,7 +30,9 @@
 //   their spellings at the same place.
 // - Functions go to .text, read-only globals to .rodata (after the
 //   floating constants), zero-initialized writable globals to .bss, the
-//   others to .data, each in definition order.
+//   others to .data, each in definition order. With `function_sections`
+//   (-ffunction-sections, ELF objects) every function has a .text section
+//   of its own, in the same order, so a linker can order or discard each.
 // - The init and fini roles become .init_array and .fini_array entries:
 //   link mode runs every object's initialization in link order before
 //   `main` and the finalizations in reverse order after it.
@@ -87,7 +89,7 @@ class ObjectBuilder : public lowir::DefinitionSink
 public:
 	ObjectBuilder(lowir::Program& program, ObjectStats& stats, EhModel eh_model = EhModel::Course,
 		int optimization_level = 0, bool position_independent = false, Target target = Target::Linux,
-		bool red_zone = true);
+		bool red_zone = true, bool function_sections = false);
 	~ObjectBuilder();
 
 	ObjectBuilder(const ObjectBuilder&) = delete;
@@ -116,6 +118,6 @@ void recover_jump_thunks(lowir::Program& program, EhModel eh_model);
 // propagates.
 bool compile_object(lowir::Program& program, object::ObjectFile& out, std::string& error, ObjectStats* stats,
 	EhModel eh_model = EhModel::Course, int optimization_level = 0, bool position_independent = false,
-	Target target = Target::Linux, bool red_zone = true);
+	Target target = Target::Linux, bool red_zone = true, bool function_sections = false);
 
 } // namespace native
