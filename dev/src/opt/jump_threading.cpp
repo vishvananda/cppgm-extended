@@ -286,6 +286,7 @@ public:
 private:
 	bool known_edges();
 	bool known_compares();
+	bool bypass(BlockId p, BlockId s, BlockId target, TempId cresult);
 	bool demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool copy_thread(BlockId s, InstId tail, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, unsigned& bits) const;
@@ -935,6 +936,9 @@ bool JumpThreading::known_compares()
 {
 	c_.entry_uses(thread_jumps, !touched_);
 	bool changed = false;
+	// The block map mergeable reads: taken at its first use, and again once
+	// a step has placed instructions.
+	bool mapped = false;
 	const std::vector<BlockId> layout = body_.layout;
 	for (BlockId s : layout)
 	{
@@ -1122,7 +1126,14 @@ bool JumpThreading::known_compares()
 			if (!switching && phis == 0 && copied == 0 && c_.level >= 2 &&
 				split_switch_cases(p, s, x, qbits, query, on_true, on_false, cresult))
 				cases = true;
-			if (x_phi == kNoId || !mergeable(p, s, v))
+			if (x_phi == kNoId)
+				continue;
+			if (!mapped)
+			{
+				c_.entry_block_of(thread_jumps, !touched_ && !changed);
+				mapped = true;
+			}
+			if (!mergeable(p, s, v))
 				continue;
 			const Instruction& vphi = body_.instructions[body_.temps[v.index].def];
 			for (uint32_t qi = cfg_.pred_first[p]; qi < cfg_.pred_first[p + 1]; ++qi)
@@ -1170,6 +1181,7 @@ bool JumpThreading::known_compares()
 			continue;
 		if (copied != 0)
 		{
+			mapped = false;
 			if (copy_thread(s, tail, redirects))
 				changed = true;
 			continue;
@@ -1177,46 +1189,12 @@ bool JumpThreading::known_compares()
 		// The phis go to slots their predecessors store (promoted again
 		// once the pass is done), so a bypassing predecessor leaves its
 		// value where every use finds it.
+		mapped = mapped && phis == 0;
 		if (phis != 0 && !demote_phis(s, redirects))
 			continue;
 		for (const std::pair<BlockId, BlockId>& r : redirects)
-		{
-			const BlockId p = r.first, target = r.second;
-			// The target's phis: the predecessor brings what the test block
-			// brought (one input per predecessor: a disagreeing existing one
-			// keeps the edge).
-			bool ok = true;
-			for (InstId i = body_.blocks[target].first; i != kNoId && body_.instructions[i].op == Opcode::Phi && ok;
-				i = body_.instructions[i].next)
-			{
-				const Value from_s = phi_incoming(body_, body_.instructions[i], s);
-				const Value from_p = phi_incoming(body_, body_.instructions[i], p);
-				ok = !from_s.is(ValueKind::None) && !(cresult != kNoId && from_s == Value::temp(cresult)) &&
-					(from_p.is(ValueKind::None) || from_p == from_s);
-			}
-			if (!ok)
-				continue;
-			bool had_edge = false;
-			Instruction& pt = body_.instructions[body_.blocks[p].last];
-			for_each_successor(body_, pt, [&](BlockId& b) { had_edge = had_edge || b == target; });
-			for (InstId i = body_.blocks[target].first;
-				i != kNoId && body_.instructions[i].op == Opcode::Phi && !had_edge; i = body_.instructions[i].next)
-			{
-				Instruction& phi = body_.instructions[i];
-				std::vector<Value> pairs(body_.operands.begin() + phi.extra_first,
-					body_.operands.begin() + phi.extra_first + phi.extra_count);
-				pairs.push_back(Value::block(p));
-				pairs.push_back(phi_incoming(body_, phi, s));
-				phi.extra_first = append_operands(body_, pairs.data(), static_cast<uint32_t>(pairs.size()));
-				phi.extra_count = static_cast<uint32_t>(pairs.size());
-			}
-			for_each_successor(body_, body_.instructions[body_.blocks[p].last], [&](BlockId& b) {
-				if (b == s)
-					b = target;
-			});
-			++c_.stats.branches_folded;
-			changed = true;
-		}
+			if (bypass(r.first, s, r.second, cresult))
+				changed = true;
 		if (!redirects.empty() && changed)
 		{
 			c_.invalidate_cfg();
@@ -1224,6 +1202,45 @@ bool JumpThreading::known_compares()
 		}
 	}
 	return changed;
+}
+
+// Sends p's edges into the test block s to `target`. The target's phis: the
+// predecessor brings what the test block brought (one input per
+// predecessor: a disagreeing existing one keeps the edge, and so does the
+// test's own compare `cresult`, which p does not compute).
+bool JumpThreading::bypass(BlockId p, BlockId s, BlockId target, TempId cresult)
+{
+	bool ok = true;
+	for (InstId i = body_.blocks[target].first; i != kNoId && body_.instructions[i].op == Opcode::Phi && ok;
+		i = body_.instructions[i].next)
+	{
+		const Value from_s = phi_incoming(body_, body_.instructions[i], s);
+		const Value from_p = phi_incoming(body_, body_.instructions[i], p);
+		ok = !from_s.is(ValueKind::None) && !(cresult != kNoId && from_s == Value::temp(cresult)) &&
+			(from_p.is(ValueKind::None) || from_p == from_s);
+	}
+	if (!ok)
+		return false;
+	bool had_edge = false;
+	Instruction& pt = body_.instructions[body_.blocks[p].last];
+	for_each_successor(body_, pt, [&](BlockId& b) { had_edge = had_edge || b == target; });
+	for (InstId i = body_.blocks[target].first; i != kNoId && body_.instructions[i].op == Opcode::Phi && !had_edge;
+		i = body_.instructions[i].next)
+	{
+		Instruction& phi = body_.instructions[i];
+		std::vector<Value> pairs(
+			body_.operands.begin() + phi.extra_first, body_.operands.begin() + phi.extra_first + phi.extra_count);
+		pairs.push_back(Value::block(p));
+		pairs.push_back(phi_incoming(body_, phi, s));
+		phi.extra_first = append_operands(body_, pairs.data(), static_cast<uint32_t>(pairs.size()));
+		phi.extra_count = static_cast<uint32_t>(pairs.size());
+	}
+	for_each_successor(body_, body_.instructions[body_.blocks[p].last], [&](BlockId& b) {
+		if (b == s)
+			b = target;
+	});
+	++c_.stats.branches_folded;
+	return true;
 }
 
 // The values a branch ending `cur` admits on its edge to `to`: those of
