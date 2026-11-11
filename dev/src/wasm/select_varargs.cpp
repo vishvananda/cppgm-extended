@@ -36,7 +36,15 @@ void Selector::pack_variadic(const lowir::Instruction& inst, const lowir::Signat
 		else
 		{
 			frame_address(call_areas_[inst.extra_first + index]);
-			if (type.is_object())
+			if (type.kind() == TypeKind::I128)
+			{
+				wide_part(source, 0);
+				out_.emit(Op::I64Store, { 0, 0 });
+				frame_address(call_areas_[inst.extra_first + index]);
+				wide_part(source, 1);
+				out_.emit(Op::I64Store, { 0, 8 });
+			}
+			else if (type.is_object())
 			{
 				address(source);
 				out_.emit(Op::I32Const, { type.bytes });
@@ -89,13 +97,13 @@ void Selector::va_arg(const lowir::Instruction& inst)
 	out_.emit(Op::I32Const, { storage_bytes(storage) });
 	out_.emit(Op::I32Add);
 	out_.emit(Op::I32Store, { 0, 0 });
-	if (inst.type.is_object())
+	if (memory_value(inst.type))
 	{
 		address(Value::temp(inst.result));
 		out_.emit(Op::LocalGet, { cursor });
 		if (passing.passing == Passing::Indirect)
 			out_.emit(Op::I32Load, { 0, 0 });
-		out_.emit(Op::I32Const, { inst.type.bytes });
+		out_.emit(Op::I32Const, { storage_bytes(inst.type) });
 		out_.emit(Op::MemoryCopy, { 0, 0 });
 	}
 	else

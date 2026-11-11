@@ -6,7 +6,7 @@ using namespace lowir;
 
 void Selector::instruction(const lowir::Instruction& inst)
 {
-	if (object_instruction(inst))
+	if (object_instruction(inst) || wide_instruction(inst))
 		return;
 	switch (inst.op)
 	{
@@ -15,7 +15,7 @@ void Selector::instruction(const lowir::Instruction& inst)
 	{
 		value(inst.ops[0], inst.type);
 		const Type actual = operand_type(inst.ops[0], inst.type);
-		const ValueType source = value_type(actual.is_object() ? inst.type : actual);
+		const ValueType source = value_type(memory_value(actual) ? inst.type : actual);
 		const ValueType result = value_type(inst.type);
 		if (inst.ops[0].is(ValueKind::Temp) && source != result)
 		{
@@ -54,10 +54,7 @@ void Selector::instruction(const lowir::Instruction& inst)
 	case Opcode::Index:
 	{
 		address(inst.ops[0]);
-		const Type offset_type = operand_type(inst.ops[1], Type::scalar(TypeKind::I64));
-		value(inst.ops[1], offset_type);
-		if (value_type(offset_type) == ValueType::I64)
-			out_.emit(Op::I32WrapI64);
+		value(inst.ops[1], Type::scalar(TypeKind::U32));
 		out_.emit(Op::I32Const, { storage_bytes(inst.type) });
 		out_.emit(Op::I32Mul);
 		out_.emit(Op::I32Add);

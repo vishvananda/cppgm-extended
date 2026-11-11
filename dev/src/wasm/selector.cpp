@@ -60,9 +60,9 @@ void Selector::value(Value operand, Type type)
 	{
 		out_.emit(Op::LocalGet, { locals_[operand.index] });
 		const Type actual = body_.temps[operand.index].type;
-		if (actual.is_object())
+		if (memory_value(actual))
 		{
-			if (!type.is_pointer())
+			if (!type.is_pointer() || actual.kind() == TypeKind::I128)
 				out_.emit(memory_op(type, false), { 0, 0 });
 			break;
 		}
@@ -108,6 +108,11 @@ void Selector::value(Value operand, Type type)
 
 void Selector::address(Value operand)
 {
+	if (operand.is(ValueKind::Temp) && memory_value(body_.temps[operand.index].type))
+	{
+		out_.emit(Op::LocalGet, { locals_[operand.index] });
+		return;
+	}
 	if (!operand.is(ValueKind::Slot))
 	{
 		value(operand, program_.pointer_type());
@@ -142,6 +147,15 @@ void Selector::normalize(Type type)
 void Selector::condition(Value operand)
 {
 	const Type type = operand_type(operand, Type::scalar(TypeKind::I64));
+	if (type.kind() == TypeKind::I128)
+	{
+		wide_part(operand, 0);
+		wide_part(operand, 1);
+		out_.emit(Op::I64Or);
+		out_.emit(Op::I64Eqz);
+		out_.emit(Op::I32Eqz);
+		return;
+	}
 	value(operand, type);
 	if (value_type(type) == ValueType::I64)
 	{
@@ -247,12 +261,22 @@ void Selector::phi_copies(BlockId from, BlockId to)
 		const auto& phi = body_.instructions[i];
 		if (phi.op != Opcode::Phi)
 			break;
-		value(opt::phi_incoming(body_, phi, from), phi.type);
+		const Value incoming = opt::phi_incoming(body_, phi, from);
+		if (phi.type.kind() == TypeKind::I128)
+		{
+			wide_part(incoming, 0);
+			wide_part(incoming, 1);
+		}
+		else
+			value(incoming, phi.type);
 		destinations.push_back(phi.result);
 	}
 	// All readers precede every write, including cycles and overlapping moves.
 	for (auto i = destinations.rbegin(); i != destinations.rend(); ++i)
-		out_.emit(Op::LocalSet, { locals_[*i] });
+		if (body_.temps[*i].type.kind() == TypeKind::I128)
+			store_wide(Value::temp(*i));
+		else
+			out_.emit(Op::LocalSet, { locals_[*i] });
 }
 
 void Selector::edge(BlockId from, BlockId to)

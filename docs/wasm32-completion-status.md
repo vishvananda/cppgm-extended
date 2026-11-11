@@ -7,7 +7,7 @@ or a green partial suite does not complete PA37.
 | Requirement | Current evidence | Remaining qualification |
 | --- | --- | --- |
 | Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes; source and text paths in PA37 | Broader C++ target headers and all ABI-sensitive class facts |
-| Scalar and aggregate execution | 23 fixtures at O0–O3; LLVM caller into cppgm aggregate provider | Scalar i128 legalization, remaining float formats and complete type/layout edge cases |
+| Scalar and aggregate execution | Qualified binary128 and variadic boundaries; scalar i128 selection and mixed LLVM calls now implemented | Finish i128 checkpoint qualification, remaining float formats and complete type/layout edge cases |
 | CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
 | Standard objects and own static linker | Linking-v2 writer/reader/own linker; both LLVM interop directions at O0–O3; GNU/BSD archive probes; 32 normal fixtures | Complete EH-tag/wide/runtime object profile and malformed-feature/relocation cases |
 | C++ runtime | Dynamic initializer execution in a core start function | Allocation, virtual dispatch, RTTI, local statics, finalization and cross-compiler modern EH |
@@ -151,3 +151,26 @@ O0 changes from 3,055,699,746 to 3,056,095,465 instructions (+0.0130%); O3
 from 9,896,896,312 to 9,897,026,753 (+0.0013%). Objects remain byte-identical.
 Every observation, immutable binary, input hash and candidate source patch is
 retained in `perf-varargs-final/`; no wall-time claim is made.
+
+
+## Scalar i128 implementation (qualification in progress)
+
+The selector now preserves scalar i128 snapshots, literal halves, narrow views,
+volatile storage, signed/unsigned comparisons, carry/borrow, bit operations,
+word-boundary shifts and narrow/wide integer conversions. Its public ABI uses
+two i64 arguments and an indirect result, shared with ordinary/indirect calls,
+singleton records and variadic buffers. Backend legalization turns costly
+arithmetic and f32/f64 conversions into typed calls to supplied compiler-rt;
+existing binary128 conversions use the same wide integer boundary.
+
+Six required behavioral fixtures cover these operations, loops, overlapping
+LowIR storage views, exact ABI signatures, both producer/linker directions and
+numerical checks at O0–O3. The 256-iteration numerical digest is 1897815904 with
+independent GCC 15 and Clang 21 native builds and with the Wasm compiler. The
+existing LowIR restriction against i128 phi/select remains unchanged; wide
+values crossing source merges remain in slots, and the shared optimizer may
+expand them into i64 halves. Scalar typed control results are now validated,
+including the required else arm of a value-producing if.
+
+Complete native/export checks and qualification on the latest committed LLVM
+base are still pending. This is not a completed assignment checkpoint.

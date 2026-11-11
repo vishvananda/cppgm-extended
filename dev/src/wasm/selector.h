@@ -24,6 +24,13 @@ private:
 	bool builtin_call(const lowir::Instruction& inst, const lowir::Signature& signature);
 	void return_value(const lowir::Instruction& inst);
 	bool object_instruction(const lowir::Instruction& inst);
+	bool wide_instruction(const lowir::Instruction& inst);
+	void wide_part(lowir::Value value, unsigned part);
+	void store_wide(lowir::Value destination);
+	void wide_binary(const lowir::Instruction& inst);
+	void wide_compare(const lowir::Instruction& inst);
+	void wide_shift(const lowir::Instruction& inst);
+	void wide_convert(const lowir::Instruction& inst);
 	void prepare_locals();
 	void prepare_frame();
 	void frame_address(uint32_t offset);
@@ -63,6 +70,8 @@ private:
 	std::vector<uint32_t> variadic_areas_;
 	std::vector<uint32_t> variadic_copies_;
 	std::vector<lowir::Type> argument_types_;
+	uint32_t wide_low_ = lowir::kNoId;
+	uint32_t wide_high_ = lowir::kNoId;
 	uint32_t variadic_parameter_ = lowir::kNoId;
 	uint32_t hidden_result_ = lowir::kNoId;
 	uint32_t frame_ = lowir::kNoId;

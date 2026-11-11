@@ -44,7 +44,7 @@ void Selector::prepare_locals()
 				next += 2;
 			}
 		}
-		locals_[i] = add_local(body_.temps[i].type.is_object() ? ValueType::I32 : value_type(body_.temps[i].type));
+		locals_[i] = add_local(memory_value(body_.temps[i].type) ? ValueType::I32 : value_type(body_.temps[i].type));
 	}
 }
 
@@ -78,7 +78,7 @@ void Selector::prepare_frame()
 		slots_[i] = reserve(body_.slots[i].type);
 	objects_.resize(body_.temps.size(), kNoId);
 	for (uint32_t i = 0; i < body_.temps.size(); ++i)
-		if (body_.temps[i].type.is_object() &&
+		if (memory_value(body_.temps[i].type) &&
 			!(i < body_.parameter_count && boundary_.parameters[i].passing == Passing::Indirect))
 			objects_[i] = reserve(body_.temps[i].type);
 	call_areas_.resize(body_.operands.size(), kNoId);

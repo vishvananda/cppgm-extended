@@ -71,7 +71,11 @@ Preserve narrow signedness at calls and memory accesses. Wide integers and
 binary128 values need legalization and ABI handling even when arithmetic is
 supplied by helpers. Source `long double` on Wasm is not an x87 value with a
 different byte count. Reuse constant/soft-float work only where its format and
-rounding agree with the target.
+rounding agree with the target. Keep wide integer values typed through
+optimization, then legalize operations and helper calls at the target boundary.
+A helper call needs the same argument/result classification as an ordinary
+call, including hidden results; splitting a value must preserve carries,
+signed comparisons and shifts at the word boundary.
 
 Keep section indices, symbol identities, function indices, table entries,
 types, tags and linear-memory addresses distinct while constructing objects.

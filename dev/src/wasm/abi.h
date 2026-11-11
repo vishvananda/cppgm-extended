@@ -25,6 +25,13 @@ struct Boundary
 	AbiValue result;
 };
 
+inline bool memory_value(lowir::Type type)
+{
+	return type.is_object() || type.kind() == lowir::TypeKind::I128;
+}
+
+void legalize_wide_helpers(lowir::Program& program);
+
 AbiValue classify_value(lowir::Type type, ir_model::AggregateShape shape, lowir::Type pointer);
 lowir::Type variadic_storage(lowir::Type type, AbiValue passing);
 

@@ -1,0 +1,18 @@
+#include <stdarg.h>
+using U = unsigned __int128;
+using I = __int128;
+struct Wrapper { U value; };
+extern "C" U identity(U value) { return value; }
+extern "C" U combine(int a, U first, unsigned long long small, U second, int b) {
+ return (first ^ second) + small + a + b;
+}
+extern "C" Wrapper wrapped(Wrapper value) { ++value.value; return value; }
+extern "C" U variadic(int tag, ...) {
+ va_list list; va_start(list, tag);
+ unsigned first = va_arg(list, unsigned);
+ U second = va_arg(list, U);
+ I third = va_arg(list, I);
+ int fourth = va_arg(list, int);
+ va_end(list);
+ return second + first + third + fourth;
+}

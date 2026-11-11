@@ -47,6 +47,8 @@ lowir::Type scalar_type(ir_model::AggregateElement element, lowir::Type pointer)
 AbiValue classify_value(lowir::Type type, ir_model::AggregateShape shape, lowir::Type pointer)
 {
 	using ir_model::AggregateElement;
+	if (type.kind() == lowir::TypeKind::I128)
+		return AbiValue{ Passing::Expand, lowir::Type::scalar(lowir::TypeKind::I64) };
 	if (!type.is_object())
 		return AbiValue{ Passing::Direct, type };
 	if (shape.element == AggregateElement::None)

@@ -270,9 +270,11 @@ void Validator::instruction(const Instruction& inst)
 	case Op::If:
 		if (inst.op == Op::If)
 			pop(ValueType::I32);
-		if (operand(inst) != static_cast<uint8_t>(ValueType::Void))
-			throw WasmError("unsupported Wasm control result");
-		controls_.push_back(Control{ inst.op, stack_.size(), ValueType::Void });
+		if (operand(inst) > 255 ||
+			(operand(inst) != static_cast<uint8_t>(ValueType::Void) &&
+				*spelling(static_cast<ValueType>(operand(inst))) == '\0'))
+			throw WasmError("invalid Wasm control result");
+		controls_.push_back(Control{ inst.op, stack_.size(), static_cast<ValueType>(operand(inst)) });
 		return;
 	case Op::Else:
 		if (controls_.back().kind != Op::If || controls_.back().alternate)
@@ -283,6 +285,9 @@ void Validator::instruction(const Instruction& inst)
 		return;
 	case Op::End:
 	{
+		if (controls_.back().kind == Op::If && !controls_.back().alternate &&
+			controls_.back().result != ValueType::Void)
+			throw WasmError("Wasm value-producing if requires an else arm");
 		finish_arm();
 		const ValueType result = controls_.back().result;
 		controls_.pop_back();

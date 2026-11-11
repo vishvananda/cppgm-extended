@@ -42,10 +42,18 @@ void Selector::call(const lowir::Instruction& inst)
 		}
 		else if (argument.passing == Passing::Expand)
 		{
-			address(source);
-			out_.emit(Op::I64Load, { 0, 0 });
-			address(source);
-			out_.emit(Op::I64Load, { 0, 8 });
+			if (parameters[i].type.kind() == TypeKind::I128)
+			{
+				wide_part(source, 0);
+				wide_part(source, 1);
+			}
+			else
+			{
+				address(source);
+				out_.emit(Op::I64Load, { 0, 0 });
+				address(source);
+				out_.emit(Op::I64Load, { 0, 8 });
+			}
 		}
 		else
 			value(source, argument.scalar);
@@ -75,7 +83,7 @@ void Selector::call(const lowir::Instruction& inst)
 	}
 	if (boundary.result.passing == Passing::Coerce)
 		out_.emit(memory_op(boundary.result.scalar, true), { 0, 0 });
-	else if (!inst.type.is_void() && !inst.type.is_object())
+	else if (!inst.type.is_void() && !memory_value(inst.type))
 	{
 		normalize(inst.type);
 		out_.emit(Op::LocalSet, { locals_[inst.result] });
@@ -87,9 +95,20 @@ void Selector::return_value(const lowir::Instruction& inst)
 	if (boundary_.result.passing == Passing::Indirect)
 	{
 		out_.emit(Op::LocalGet, { hidden_result_ });
-		address(inst.ops[0]);
-		out_.emit(Op::I32Const, { signature_.result.bytes });
-		out_.emit(Op::MemoryCopy, { 0, 0 });
+		if (signature_.result.kind() == TypeKind::I128)
+		{
+			wide_part(inst.ops[0], 0);
+			out_.emit(Op::I64Store, { 0, 0 });
+			out_.emit(Op::LocalGet, { hidden_result_ });
+			wide_part(inst.ops[0], 1);
+			out_.emit(Op::I64Store, { 0, 8 });
+		}
+		else
+		{
+			address(inst.ops[0]);
+			out_.emit(Op::I32Const, { storage_bytes(signature_.result) });
+			out_.emit(Op::MemoryCopy, { 0, 0 });
+		}
 	}
 	else if (boundary_.result.passing == Passing::Coerce)
 	{
