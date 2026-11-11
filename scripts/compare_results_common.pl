@@ -1700,6 +1700,8 @@ sub validate_lowir_instruction
 	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*phi\s+($type_pattern)\s+\[(.*)\]$/)
 	{
 		my ($destination, $type, $incoming_text) = ($1, $2, $3);
+		push @$errors, "$context addressed block cannot have phi inputs"
+			if $state->{addressed_blocks}{$block};
 		my @incoming = split(/\s*,\s*/, lowir_trim($incoming_text));
 		push @$errors, "$context phi requires an incoming edge"
 			if scalar(@incoming) == 0;
@@ -1778,7 +1780,7 @@ sub validate_lowir_instruction
 		$state->{temps}{$1} = undef;
 		return 0;
 	}
-	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*index\s+([A-Za-z0-9_]+)(?:\s+\[projection=([A-Za-z0-9_]+)\])?\s+(.+?),\s+(.+)$/)
+	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*index\s+(?:inbounds\s+)?([A-Za-z0-9_]+)(?:\s+\[projection=([A-Za-z0-9_]+)\])?\s+(.+?),\s+(.+)$/)
 	{
 		if (defined($3) &&
 		    $3 ne 'array_element' &&
@@ -2058,6 +2060,22 @@ sub validate_lowir_instruction
 		}
 		return 0;
 	}
+	if ($line =~ /^indirect_jump\s+(.+?),\s*(.+)$/)
+	{
+		validate_lowir_pointer_operand($1, $state, $errors, "$context indirect jump");
+		for my $target (split(/\s*,\s*/, $2))
+		{
+			if ($target !~ /^\^([A-Za-z0-9_]+)$/)
+			{
+				push @$errors, "$context indirect jump has invalid destination '$target'";
+				next;
+			}
+			push @$errors, "$context indirect jump destination $target has no code label"
+				if !$state->{addressed_blocks}{$1};
+			validate_lowir_operand($target, $state, $errors, "$context indirect jump");
+		}
+		return 1;
+	}
 	if ($line =~ /^jump\s+(\^[A-Za-z0-9_]+)$/)
 	{
 		validate_lowir_operand($1, $state, $errors, "$context jump");
@@ -2196,11 +2214,20 @@ sub validate_lowir_structure
 
 		my %temps = map { $_->{name} => $_->{type} } @$params_or_error;
 		my %all_temps = %temps;
+		my %addressed_blocks;
+		my %code_labels;
 		for (my $scan = $i + 1;
 		     $scan < scalar(@lines) && $lines[$scan] !~ /^\}$/; ++$scan)
 		{
 			$all_temps{$1} = 1
 				if $lines[$scan] =~ /^\s*%([A-Za-z0-9_]+)\s*=/;
+			if ($lines[$scan] =~ /^\s*code_label \@([A-Za-z0-9_.]+)\s*=\s*\^([A-Za-z0-9_]+)$/)
+			{
+				push @errors, "function \@$name has duplicate code label \@$1"
+					if $code_labels{$1}++;
+				$addressed_blocks{$2} = 1;
+				$all_symbols->{$1} = 1;
+			}
 		}
 		my %slots;
 		my %blocks;
@@ -2223,6 +2250,14 @@ sub validate_lowir_structure
 				push @errors, "function \@$name has duplicate slot \$$1"
 					if exists($slots{$1});
 				$slots{$1} = $2;
+				next;
+			}
+
+			if ($body =~ /^\s*code_label \@([A-Za-z0-9_.]+)\s*=\s*\^([A-Za-z0-9_]+)$/)
+			{
+				push @errors, "function \@$name declares code label after blocks started"
+					if $saw_block;
+				push @block_targets, $2;
 				next;
 			}
 
@@ -2259,6 +2294,7 @@ sub validate_lowir_structure
 				all_temps => \%all_temps,
 				slots => \%slots,
 				block_targets => \@block_targets,
+				addressed_blocks => \%addressed_blocks,
 				all_symbols => $all_symbols,
 				function_symbols => $function_symbols,
 				global_symbols => $global_symbols,
@@ -2785,6 +2821,10 @@ sub validate_lowir_text
 	my %global_symbols;
 	my %global_types;
 	my $type_pattern = lowir_type_pattern();
+	while ($data =~ /^\s*code_label \@([A-Za-z0-9_.]+)\s*=\s*\^[A-Za-z0-9_]+\s*$/gm)
+	{
+		$all_symbols{$1} = 1;
+	}
 	while ($data =~ /^global @([A-Za-z0-9_]+)(?:\s+readonly)?\s*:\s*($type_pattern)((?:\s+\[[^\]]+\])*)\s*=/gm)
 	{
 		$all_symbols{$1} = 1;
@@ -4517,7 +4557,7 @@ sub lowir_executed_finalizer_actions
 			{
 				$value{$1} = [$2, 0];
 			}
-			elsif ($line =~ /^(%\S+) = index \S+(?: \[[^\]]*\])? (%\S+), (\S+)$/)
+			elsif ($line =~ /^(%\S+) = index (?:inbounds )?\S+(?: \[[^\]]*\])? (%\S+), (\S+)$/)
 			{
 				my ($out, $base, $step) = ($1, $read->($2), $read->($3));
 				return undef if ref($base) ne 'ARRAY' || !defined($step) || ref($step);

@@ -38,7 +38,7 @@ function @suite__except__2(%this : ptr [object_bytes=1], %f : ptr [pass=by_addre
     store typed ptr %reason, $reason
     %t1 = load typed ptr $f
     %t2 = load typed ptr $reason
-    %t3 = index i8 [projection=array_element] %t2, 0
+    %t3 = index inbounds i8 [projection=array_element] %t2, 0
     %t4 = load i8 %t3
     %t5 = convert sext i32 i8 %t4
     return i32 %t5

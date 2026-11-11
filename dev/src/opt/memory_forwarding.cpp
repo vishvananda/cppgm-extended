@@ -1676,10 +1676,8 @@ bool MemoryForwarding::run()
 	drop_unread_writes();
 	drop_overwritten_stores();
 	if (body_.code_labels.empty())
-	{
 		sink_slot_stores();
-		phi_loads();
-	}
+	phi_loads();
 	return changed_;
 }
 
@@ -1801,7 +1799,7 @@ void MemoryForwarding::phi_loads()
 				(load.type.is_integer() ? load.type.kind() != TypeKind::I128
 										: load.type.is_pointer() || load.type.kind() == TypeKind::F32 ||
 							load.type.kind() == TypeKind::F64) &&
-				(cfg_.flags[b] & BF_HANDLER) == 0 && !written)
+				(cfg_.flags[b] & (BF_HANDLER | BF_ADDRESS)) == 0 && !written)
 			{
 				Value address = load.ops[0];
 				for (unsigned step = 0; step < 3 && address.is(ValueKind::Temp); ++step)
@@ -1921,7 +1919,7 @@ static unsigned chain_above(const Cfg& cfg, BlockId block, BlockId chain[kChainB
 	unsigned length = 0;
 	for (BlockId b = cfg.preds[cfg.pred_first[block]];; b = cfg.preds[cfg.pred_first[b]])
 	{
-		if (length == kChainBlocks || (cfg.flags[b] & BF_HANDLER) != 0 || b == block)
+		if (length == kChainBlocks || (cfg.flags[b] & (BF_HANDLER | BF_ADDRESS)) != 0 || b == block)
 			return 0;
 		chain[length++] = b;
 		const uint32_t preds = cfg.pred_count(b);

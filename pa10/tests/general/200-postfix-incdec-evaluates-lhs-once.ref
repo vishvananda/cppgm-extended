@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = load typed i32 @index
     %t3 = binary add nowrap i32 %t2, 1
     store typed i32 %t3, @index
-    %t4 = index i32 [projection=array_element] %t1, %t2
+    %t4 = index inbounds i32 [projection=array_element] %t1, %t2
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t5, 1
     store typed i32 %t6, %t4
@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_1:
     %t9 = addr @values
-    %t10 = index i32 [projection=array_element] %t9, 0
+    %t10 = index inbounds i32 [projection=array_element] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp ne i32 %t11, 1
     store typed i64 %t12, $lor__1

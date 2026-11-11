@@ -739,6 +739,7 @@ bool Validator::check_operands(InstId id, const Instruction& inst)
 			return fail("invalid operand for the instruction");
 	}
 	if (inst.sub >= rule.sub_limit || static_cast<unsigned>(inst.order) >= kMemoryOrderCount ||
+		(inst.op == Opcode::Index && static_cast<unsigned>(inst.index_bounds()) >= kIndexBoundsCount) ||
 		inst.location > body_->locations.size() ||
 		((inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit) && inst.immediate == 0))
 		return fail("invalid instruction field");

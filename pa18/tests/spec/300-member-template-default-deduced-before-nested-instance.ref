@@ -139,7 +139,7 @@ function @rev_S____operator__(%this : ptr [object_bytes=8]) -> ptr [binding=weak
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = binary mul i64 1, 4
-    %t5 = index i8 %t3, %t4
+    %t5 = index inbounds i8 %t3, %t4
     store typed ptr %t5, %t2
     %t6 = load typed ptr $this
     return ptr %t6
@@ -157,7 +157,7 @@ function @rev_S____operator_(%this : ptr [object_bytes=8]) -> ptr [binding=weak,
     %t4 = load typed ptr $tmp
     %t5 = binary mul i64 1, 4
     %t6 = binary sub i64 0, %t5
-    %t7 = index i8 %t4, %t6
+    %t7 = index inbounds i8 %t4, %t6
     store typed ptr %t7, $tmp
     return ptr %t7
 }

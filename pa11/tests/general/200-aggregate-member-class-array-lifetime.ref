@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = addr @global
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = binary mul i64 2, 16
-    %t12 = index i8 [projection=array_element] %t10, %t11
+    %t12 = index inbounds i8 [projection=array_element] %t10, %t11
     %t13 = index i8 [projection=field] %t12, 8
     %t14 = load typed i32 %t13
     %t15 = cmp ne i32 %t14, 3
@@ -71,7 +71,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t29 = addr $local
     %t30 = index i8 [projection=field] %t29, 0
     %t31 = binary mul i64 0, 16
-    %t32 = index i8 [projection=array_element] %t30, %t31
+    %t32 = index inbounds i8 [projection=array_element] %t30, %t31
     %t33 = index i8 [projection=field] %t32, 8
     %t34 = load typed i32 %t33
     %t35 = cmp ne i32 %t34, 4
@@ -81,7 +81,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t36 = addr $local
     %t37 = index i8 [projection=field] %t36, 0
     %t38 = binary mul i64 2, 16
-    %t39 = index i8 [projection=array_element] %t37, %t38
+    %t39 = index inbounds i8 [projection=array_element] %t37, %t38
     %t40 = index i8 [projection=field] %t39, 8
     %t41 = load typed i32 %t40
     %t42 = cmp ne i32 %t41, 6
@@ -91,13 +91,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t43 = addr $local
     %t44 = index i8 [projection=field] %t43, 0
     %t45 = binary mul i64 1, 16
-    %t46 = index i8 [projection=array_element] %t44, %t45
+    %t46 = index inbounds i8 [projection=array_element] %t44, %t45
     %t47 = index i8 [projection=field] %t46, 0
     %t48 = load typed ptr %t47
     %t49 = addr $local
     %t50 = index i8 [projection=field] %t49, 0
     %t51 = binary mul i64 1, 16
-    %t52 = index i8 [projection=array_element] %t50, %t51
+    %t52 = index inbounds i8 [projection=array_element] %t50, %t51
     %t53 = cmp ne ptr %t48, %t52
     branch %t53, ^if_then_7, ^if_else_8
 
@@ -146,9 +146,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t68 = addr $grid
     %t69 = index i8 [projection=field] %t68, 0
     %t70 = binary mul i64 1, 32
-    %t71 = index i8 [projection=array_element] %t69, %t70
+    %t71 = index inbounds i8 [projection=array_element] %t69, %t70
     %t72 = binary mul i64 1, 16
-    %t73 = index i8 [projection=array_element] %t71, %t72
+    %t73 = index inbounds i8 [projection=array_element] %t71, %t72
     %t74 = index i8 [projection=field] %t73, 8
     %t75 = load typed i32 %t74
     %t76 = cmp ne i32 %t75, 10
@@ -158,17 +158,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t77 = addr $grid
     %t78 = index i8 [projection=field] %t77, 0
     %t79 = binary mul i64 1, 32
-    %t80 = index i8 [projection=array_element] %t78, %t79
+    %t80 = index inbounds i8 [projection=array_element] %t78, %t79
     %t81 = binary mul i64 0, 16
-    %t82 = index i8 [projection=array_element] %t80, %t81
+    %t82 = index inbounds i8 [projection=array_element] %t80, %t81
     %t83 = index i8 [projection=field] %t82, 0
     %t84 = load typed ptr %t83
     %t85 = addr $grid
     %t86 = index i8 [projection=field] %t85, 0
     %t87 = binary mul i64 1, 32
-    %t88 = index i8 [projection=array_element] %t86, %t87
+    %t88 = index inbounds i8 [projection=array_element] %t86, %t87
     %t89 = binary mul i64 0, 16
-    %t90 = index i8 [projection=array_element] %t88, %t89
+    %t90 = index inbounds i8 [projection=array_element] %t88, %t89
     %t91 = cmp ne ptr %t84, %t90
     branch %t91, ^if_then_18, ^if_else_19
 

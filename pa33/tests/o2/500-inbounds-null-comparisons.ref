@@ -1,0 +1,57 @@
+function @element_null(%base : ptr, %offset : i64) -> i1 [no_inline=yes] {
+  block ^entry:
+    %null = cmp eq ptr %base, 0
+    return i1 %null
+}
+function @element_nonnull(%base : ptr, %offset : i64) -> i1 [no_inline=yes] {
+  block ^entry:
+    %nonnull = cmp ne ptr %base, 0
+    return i1 %nonnull
+}
+function @wrapping(%base : ptr, %offset : i64) -> i1 [no_inline=yes] {
+  block ^entry:
+    %p = index i8 [projection=array_element] %base, %offset
+    %null = cmp eq ptr %p, 0
+    return i1 %null
+}
+function @mixed(%base : ptr, %offset : i64) -> i1 [no_inline=yes] {
+  block ^entry:
+    %first = index i8 %base, %offset
+    %null = cmp eq ptr %first, 0
+    return i1 %null
+}
+function @conditional(%flag : i1, %base : ptr, %offset : i64) -> i1 [no_inline=yes] {
+  block ^entry:
+    %p = index i32 %base, %offset
+    %t2 = select ptr %flag, %p, %base
+    %null = cmp eq ptr %t2, 0
+    return i1 %null
+}
+function @main() -> i32 [role=entry] {
+  slot $cells : obj<16x4>
+
+  block ^entry:
+    %base = addr $cells
+    %end = index inbounds i32 %base, 4
+    %middle = index inbounds i8 %base, 8
+    store volatile i32 29, %middle
+    %observed = load volatile i32 %middle
+    %bad_value = cmp ne i32 %observed, 29
+    %one_past = call i1 @element_nonnull(%base, 4)
+    %negative = call i1 @element_nonnull(%end, -2)
+    %null_zero = call i1 @element_null(0, 0)
+    %raw = call i1 @wrapping(1024, -1024)
+    %chain = call i1 @mixed(2048, -2048)
+    %skipped = call i1 @conditional(0, 0, 3)
+    %selected = call i1 @conditional(1, %base, 2)
+    %a = binary and i64 %one_past, %negative
+    %b = binary and i64 %null_zero, %raw
+    %c = binary and i64 %chain, %skipped
+    %ab = binary and i64 %a, %b
+    %ok = binary and i64 %c, %ab
+    %bad = cmp ne i64 %ok, 1
+    %bad0 = binary or i64 %bad_value, %bad
+    %bad1 = binary or i64 %selected, %bad0
+    %status = convert trunc i32 i64 %bad1
+    return i32 %status
+}

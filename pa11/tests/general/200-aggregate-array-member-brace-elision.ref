@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed u32 0, %t13
     %t14 = addr $numbers
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = index u32 [projection=array_element] %t15, 0
+    %t16 = index inbounds u32 [projection=array_element] %t15, 0
     %t17 = load typed u32 %t16
     %t18 = cmp ne u32 %t17, 7
     branch %t18, ^if_then_1, ^if_else_2
@@ -37,7 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_3:
     %t19 = addr $numbers
     %t20 = index i8 [projection=field] %t19, 0
-    %t21 = index u32 [projection=array_element] %t20, 1
+    %t21 = index inbounds u32 [projection=array_element] %t20, 1
     %t22 = load typed u32 %t21
     %t23 = cmp ne u32 %t22, 0
     branch %t23, ^if_then_4, ^if_else_5
@@ -51,7 +51,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_6:
     %t24 = addr $numbers
     %t25 = index i8 [projection=field] %t24, 0
-    %t26 = index u32 [projection=array_element] %t25, 3
+    %t26 = index inbounds u32 [projection=array_element] %t25, 3
     %t27 = load typed u32 %t26
     %t28 = cmp ne u32 %t27, 0
     branch %t28, ^if_then_7, ^if_else_8
@@ -81,7 +81,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 11, %t40
     %t41 = addr $text
     %t42 = index i8 [projection=field] %t41, 0
-    %t43 = index i8 [projection=array_element] %t42, 0
+    %t43 = index inbounds i8 [projection=array_element] %t42, 0
     %t44 = load i8 %t43
     %t45 = convert sext i32 i8 %t44
     %t46 = cmp ne i32 %t45, 104
@@ -96,7 +96,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_12:
     %t47 = addr $text
     %t48 = index i8 [projection=field] %t47, 0
-    %t49 = index i8 [projection=array_element] %t48, 1
+    %t49 = index inbounds i8 [projection=array_element] %t48, 1
     %t50 = load i8 %t49
     %t51 = convert sext i32 i8 %t50
     %t52 = cmp ne i32 %t51, 105
@@ -111,7 +111,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_15:
     %t53 = addr $text
     %t54 = index i8 [projection=field] %t53, 0
-    %t55 = index i8 [projection=array_element] %t54, 2
+    %t55 = index inbounds i8 [projection=array_element] %t54, 2
     %t56 = load i8 %t55
     %t57 = convert sext i32 i8 %t56
     %t58 = cmp ne i32 %t57, 0

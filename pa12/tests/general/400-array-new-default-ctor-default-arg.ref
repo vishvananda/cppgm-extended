@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t1, $items
     %t9 = load typed ptr $items
     %t10 = binary mul i64 0, 4
-    %t11 = index i8 [projection=array_element] %t9, %t10
+    %t11 = index inbounds i8 [projection=array_element] %t9, %t10
     %t12 = index i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp eq i32 %t13, 7
@@ -50,7 +50,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_6:
     %t15 = load typed ptr $items
     %t16 = binary mul i64 1, 4
-    %t17 = index i8 [projection=array_element] %t15, %t16
+    %t17 = index inbounds i8 [projection=array_element] %t15, %t16
     %t18 = index i8 [projection=field] %t17, 0
     %t19 = load typed i32 %t18
     %t20 = cmp eq i32 %t19, 7

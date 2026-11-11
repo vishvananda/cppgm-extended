@@ -28,9 +28,9 @@ function @main(%argc : i32, %__param1 : ptr) -> i32 [role=entry, binding=strong,
     store typed ptr %t8, %t7
     %t9 = addr $h
     %t10 = index i8 [projection=field] %t9, 8
-    %t11 = index ptr [projection=array_element] %t10, 0
+    %t11 = index inbounds ptr [projection=array_element] %t10, 0
     %t12 = load typed ptr %t11
-    %t13 = index i8 [projection=array_element] %t12, 0
+    %t13 = index inbounds i8 [projection=array_element] %t12, 0
     %t14 = load i8 %t13
     %t15 = convert sext i32 i8 %t14
     %t16 = cmp eq i32 %t15, 74
@@ -39,9 +39,9 @@ function @main(%argc : i32, %__param1 : ptr) -> i32 [role=entry, binding=strong,
   block ^land_rhs_4:
     %t17 = addr $h
     %t18 = index i8 [projection=field] %t17, 8
-    %t19 = index ptr [projection=array_element] %t18, 0
+    %t19 = index inbounds ptr [projection=array_element] %t18, 0
     %t20 = load typed ptr %t19
-    %t21 = index i8 [projection=array_element] %t20, 2
+    %t21 = index inbounds i8 [projection=array_element] %t20, 2
     %t22 = load i8 %t21
     %t23 = convert sext i32 i8 %t22
     %t24 = cmp eq i32 %t23, 108

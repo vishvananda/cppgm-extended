@@ -3143,6 +3143,12 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 					const BlockId sb = c_.block_of[s];
 					unlink_after(body_, sb, previous_in_block(body_, sb, s), s);
 					insert_after(body_, pre, previous_in_block(body_, pre, body_.blocks[pre].last), s);
+					if (!on_entry)
+					{
+						body_.instructions[s].flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT | IF_NONNULL));
+						if (body_.instructions[s].op == Opcode::Index)
+							body_.instructions[s].set_index_bounds(IndexBounds::None);
+					}
 					c_.block_of[s] = pre;
 					c_.invalidate_block_of();
 				}

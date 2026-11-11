@@ -17,7 +17,7 @@ global @through_pointer : ptr [binding=strong] = zero
 function @advance() -> ptr [binding=strong, object=_Z7advancev] {
   block ^entry:
     %t1 = addr @values
-    %t2 = index i32 [projection=array_element] %t1, 2
+    %t2 = index inbounds i32 [projection=array_element] %t1, 2
     store typed ptr %t2, @current
     %t3 = load typed ptr @current
     return ptr %t3
@@ -39,7 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t5 = addr @values
-    %t6 = index i32 [projection=array_element] %t5, 1
+    %t6 = index inbounds i32 [projection=array_element] %t5, 1
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 11
     store typed i64 %t8, $land__2
@@ -56,7 +56,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_7:
     %t10 = load typed ptr @advanced
     %t11 = addr @values
-    %t12 = index i32 [projection=array_element] %t11, 2
+    %t12 = index inbounds i32 [projection=array_element] %t11, 2
     %t13 = cmp eq ptr %t10, %t12
     store typed i64 %t13, $land__3
     jump ^land_end_9
@@ -120,14 +120,14 @@ function @Observer__Observer(%this : ptr [object_bytes=1]) -> void [binding=weak
     store typed ptr %this, $this
     %t1 = load typed ptr @middle
     %t2 = addr @values
-    %t3 = index i32 [projection=array_element] %t2, 1
+    %t3 = index inbounds i32 [projection=array_element] %t2, 1
     %t4 = cmp eq ptr %t1, %t3
     branch %t4, ^land_rhs_1, ^land_short_2
 
   block ^land_rhs_1:
     %t5 = load typed ptr @reference
     %t6 = addr @values
-    %t7 = index i32 [projection=array_element] %t6, 1
+    %t7 = index inbounds i32 [projection=array_element] %t6, 1
     %t8 = cmp eq ptr %t5, %t7
     store typed i64 %t8, $land__1
     jump ^land_end_3
@@ -143,7 +143,7 @@ function @Observer__Observer(%this : ptr [object_bytes=1]) -> void [binding=weak
   block ^land_rhs_4:
     %t10 = load typed ptr @alias
     %t11 = addr @values
-    %t12 = index i32 [projection=array_element] %t11, 1
+    %t12 = index inbounds i32 [projection=array_element] %t11, 1
     %t13 = cmp eq ptr %t10, %t12
     store typed i64 %t13, $land__2
     jump ^land_end_6

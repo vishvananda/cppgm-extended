@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $values
     %t5 = addr $values
     %t6 = binary mul i64 1, 4
-    %t7 = index i8 %t5, %t6
+    %t7 = index inbounds i8 %t5, %t6
     %t8 = call i32 @C_int___f(%t3, %t4, %t7)
     return i32 %t8
 }

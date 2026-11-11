@@ -46,7 +46,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 %t4
     %t6 = addr @pair_array
     %t7 = binary mul i64 1, 8
-    %t8 = index i8 [projection=array_element] %t6, %t7
+    %t8 = index inbounds i8 [projection=array_element] %t6, %t7
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = binary add nowrap i32 %t5, %t10

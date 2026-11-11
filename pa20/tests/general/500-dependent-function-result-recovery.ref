@@ -16,14 +16,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr @src
     %t3 = addr @src
     %t4 = binary mul i64 2, 4
-    %t5 = index i8 %t3, %t4
+    %t5 = index inbounds i8 %t3, %t4
     %t6 = addr @dst
     %t7 = call obj<16x8> @lib__copy_unwrap_iters(%t2, %t5, %t6)
     copyobj 16x8 %t7, %t1
     %t8 = addr @src
     %t9 = addr @src
     %t10 = binary mul i64 2, 4
-    %t11 = index i8 %t9, %t10
+    %t11 = index inbounds i8 %t9, %t10
     %t12 = call ptr @lib__selected_unwrap_range(%t8, %t11)
     %t13 = addr $wrapped
     %t14 = addr @src
@@ -35,7 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 8x8 %t18, %t17
     %t19 = call ptr @lib__address_unwrap_iter($argobj__2)
     %t20 = addr @dst
-    %t21 = index i32 [projection=array_element] %t20, 1
+    %t21 = index inbounds i32 [projection=array_element] %t20, 1
     %t22 = load typed i32 %t21
     %t23 = binary sub nowrap i32 %t22, 2
     return i32 %t23
@@ -185,11 +185,11 @@ function @lib__copy_impl__operator__(%this : ptr [object_bytes=1], %first : ptr,
     store typed i32 %t5, %t6
     %t7 = load typed ptr $first
     %t8 = binary mul i64 1, 4
-    %t9 = index i8 %t7, %t8
+    %t9 = index inbounds i8 %t7, %t8
     store typed ptr %t9, $first
     %t10 = load typed ptr $result
     %t11 = binary mul i64 1, 4
-    %t12 = index i8 %t10, %t11
+    %t12 = index inbounds i8 %t10, %t11
     store typed ptr %t12, $result
     jump ^while_cond_1
 

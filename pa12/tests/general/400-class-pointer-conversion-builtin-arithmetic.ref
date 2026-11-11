@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $p
     %t7 = call ptr @pointer__operatorint_(%t6)
     %t8 = binary mul i64 1, 4
-    %t9 = index i8 %t7, %t8
+    %t9 = index inbounds i8 %t7, %t8
     %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 2
     branch %t11, ^cond_then_1, ^cond_else_2

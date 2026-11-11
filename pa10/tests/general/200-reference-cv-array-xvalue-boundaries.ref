@@ -20,15 +20,15 @@ function @case_0__check_case() -> i32 [binding=strong, object=_ZN6case_010check_
     %t2 = addr $a
     store typed ptr %t2, $r
     %t3 = load typed ptr $r
-    %t4 = index i32 [projection=array_element] %t3, 0
+    %t4 = index inbounds i32 [projection=array_element] %t3, 0
     %t5 = addr $a
-    %t6 = index i32 [projection=array_element] %t5, 0
+    %t6 = index inbounds i32 [projection=array_element] %t5, 0
     %t7 = cmp ne ptr %t4, %t6
     branch %t7, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
     %t8 = load typed ptr $r
-    %t9 = index i32 [projection=array_element] %t8, 1
+    %t9 = index inbounds i32 [projection=array_element] %t8, 1
     %t10 = load typed i32 %t9
     %t11 = cmp ne i32 %t10, 2
     store typed i64 %t11, $lor__1
@@ -55,20 +55,20 @@ function @case_1__check_case() -> i32 [binding=strong, object=_ZN6case_110check_
     store typed ptr %t2, $r
     %t3 = load typed ptr $r
     %t4 = binary mul i64 0, 8
-    %t5 = index i8 [projection=array_element] %t3, %t4
-    %t6 = index i32 [projection=array_element] %t5, 0
+    %t5 = index inbounds i8 [projection=array_element] %t3, %t4
+    %t6 = index inbounds i32 [projection=array_element] %t5, 0
     %t7 = addr $a
     %t8 = binary mul i64 0, 8
-    %t9 = index i8 [projection=array_element] %t7, %t8
-    %t10 = index i32 [projection=array_element] %t9, 0
+    %t9 = index inbounds i8 [projection=array_element] %t7, %t8
+    %t10 = index inbounds i32 [projection=array_element] %t9, 0
     %t11 = cmp ne ptr %t6, %t10
     branch %t11, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
     %t12 = load typed ptr $r
     %t13 = binary mul i64 1, 8
-    %t14 = index i8 [projection=array_element] %t12, %t13
-    %t15 = index i32 [projection=array_element] %t14, 1
+    %t14 = index inbounds i8 [projection=array_element] %t12, %t13
+    %t15 = index inbounds i32 [projection=array_element] %t14, 1
     %t16 = load typed i32 %t15
     %t17 = cmp ne i32 %t16, 4
     store typed i64 %t17, $lor__1
@@ -94,15 +94,15 @@ function @case_2__check_case() -> i32 [binding=strong, object=_ZN6case_210check_
     %t2 = addr $a
     store typed ptr %t2, $r
     %t3 = load typed ptr $r
-    %t4 = index i32 [projection=array_element] %t3, 0
+    %t4 = index inbounds i32 [projection=array_element] %t3, 0
     %t5 = addr $a
-    %t6 = index i32 [projection=array_element] %t5, 0
+    %t6 = index inbounds i32 [projection=array_element] %t5, 0
     %t7 = cmp ne ptr %t4, %t6
     branch %t7, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
     %t8 = load typed ptr $r
-    %t9 = index i32 [projection=array_element] %t8, 1
+    %t9 = index inbounds i32 [projection=array_element] %t8, 1
     %t10 = load typed i32 %t9
     %t11 = cmp ne i32 %t10, 2
     store typed i64 %t11, $lor__1
@@ -127,10 +127,10 @@ function @case_3__check_case() -> i32 [binding=strong, object=_ZN6case_310check_
     %t2 = addr $a
     store typed ptr %t2, $r
     %t3 = load typed ptr $r
-    %t4 = index i32 [projection=array_element] %t3, 1
+    %t4 = index inbounds i32 [projection=array_element] %t3, 1
     store volatile i32 5, %t4
     %t5 = addr $a
-    %t6 = index i32 [projection=array_element] %t5, 1
+    %t6 = index inbounds i32 [projection=array_element] %t5, 1
     %t7 = load typed i32 %t6
     %t8 = binary sub nowrap i32 %t7, 5
     return i32 %t8

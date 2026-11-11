@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t3, %t5
     %t6 = addr $values
     %t7 = binary mul i64 2, 8
-    %t8 = index i8 %t6, %t7
+    %t8 = index inbounds i8 %t6, %t7
     %t9 = addr $buffer
     %t10 = index i8 [projection=field] %t9, 8
     store typed ptr %t8, %t10

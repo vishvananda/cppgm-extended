@@ -240,6 +240,8 @@ bool CfgCleanup::preserve_definitions(const std::vector<uint8_t>& dead)
 			// It now runs where it did not: its facts may not hold there
 			// (lowir.md "Instruction Facts").
 			body_.instructions[d].flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT | IF_NONNULL));
+			if (body_.instructions[d].op == Opcode::Index)
+				body_.instructions[d].set_index_bounds(IndexBounds::None);
 			c_.block_of[d] = entry;
 			at = d;
 			state[t] = 1;

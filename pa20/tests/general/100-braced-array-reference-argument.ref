@@ -4,7 +4,7 @@ function @first(%a : ptr [pass=by_address, object_bytes=12]) -> i32 [binding=str
   block ^entry:
     store typed ptr %a, $a
     %t1 = load typed ptr $a
-    %t2 = index i32 [projection=array_element] %t1, 0
+    %t2 = index inbounds i32 [projection=array_element] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -22,7 +22,7 @@ function @pick__ov2(%a : ptr [pass=by_address, object_bytes=12]) -> i32 [binding
   block ^entry:
     store typed ptr %a, $a
     %t1 = load typed ptr $a
-    %t2 = index i32 [projection=array_element] %t1, 0
+    %t2 = index inbounds i32 [projection=array_element] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = cmp eq i32 %t3, 1
     branch %t4, ^cond_then_1, ^cond_else_2

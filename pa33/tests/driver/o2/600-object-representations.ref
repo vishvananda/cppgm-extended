@@ -42,10 +42,10 @@ function @clear(%i : u32) -> i64 [binding=strong, object=_Z5clearj, no_inline=ye
     %t1 = addr $values
     zeroinit 640x1 %t1
     %t2 = binary and u32 %i, 79
-    %t3 = index i64 [projection=array_element] %t1, %t2
+    %t3 = index inbounds i64 [projection=array_element] %t1, %t2
     store typed i64 17, %t3
     %t4 = binary xor u32 %t2, 1
-    %t5 = index i64 [projection=array_element] %t1, %t4
+    %t5 = index inbounds i64 [projection=array_element] %t1, %t4
     %t6 = load typed i64 %t5
     %t7 = binary add i64 %t6, 17
     return i64 %t7
@@ -129,7 +129,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t24 = copy u32 %t23
     %t25 = binary add u32 %t21, %t24
     %t26 = convert trunc u8 u32 %t25
-    %t27 = index u8 [projection=array_element] %t20, %t21
+    %t27 = index inbounds u8 [projection=array_element] %t20, %t21
     store u8 %t26, %t27
     %t28 = binary add u32 %t21, 1
     jump ^for_cond_8
@@ -138,7 +138,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t29 = addr $dest
     %t30 = addr $source
     copyobj 24x1 %t30, %t29
-    %t31 = index i8 %t29, 2
+    %t31 = index inbounds i8 %t29, 2
     %t32 = call ptr @__builtin_memmove(%t31, %t29, 20)
     jump ^for_cond_11
 
@@ -148,10 +148,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t34, ^for_body_12, ^for_end_15
 
   block ^for_body_12:
-    %t35 = index u8 [projection=array_element] %t29, %t33
+    %t35 = index inbounds u8 [projection=array_element] %t29, %t33
     %t36 = load u8 %t35
     %t37 = binary sub u32 %t33, 2
-    %t38 = index u8 [projection=array_element] %t30, %t37
+    %t38 = index inbounds u8 [projection=array_element] %t30, %t37
     %t39 = load u8 %t38
     %t40 = cmp ne u8 %t36, %t39
     branch %t40, ^if_then_13, ^if_end_14

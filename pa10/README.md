@@ -157,7 +157,10 @@ the course fixes in words rather than absorbing, chief among them:
   through a union member or a bit-field's storage unit; the `add`, `sub` and
   `mul` of signed `int` and `long` source arithmetic (and of `++`, `--` and
   the compound assignments) are `nowrap`; and the division of a pointer
-  difference by its element size is `exact`.
+  difference by its element size is `exact`. Source array subscripting and
+  object-pointer arithmetic carry `inbounds`, separately from address projection
+  labels. The promise allows negative offsets and one-past addresses; it does
+  not make a possibly null base non-null.
 - The boundary facts are part of the output (`../pa8/lowir.md`, "Facts The
   C++ Lowering States"): a function whose exception-specification allows no
   exception (`noexcept`, `noexcept(true)`, `throw()`, or `noexcept(e)` with

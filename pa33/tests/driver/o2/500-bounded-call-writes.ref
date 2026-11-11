@@ -107,7 +107,7 @@ function @construct_two(%ret : ptr [pass=indirect_result, alias=exclusive_result
 }
 function @fill_dynamic(%out : ptr, %offset : i64, %value : i64) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
-    %t1 = index i8 %out, %offset
+    %t1 = index inbounds i8 %out, %offset
     store typed i64 %value, %t1
     return void
 }

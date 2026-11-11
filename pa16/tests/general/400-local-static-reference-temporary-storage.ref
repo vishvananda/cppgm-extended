@@ -236,7 +236,7 @@ function @clobber() -> i32 [binding=strong, object=_Z7clobberv] {
     %t4 = convert sext i64 i32 %t3
     %t5 = addr $frame
     %t6 = load typed i32 $i
-    %t7 = index i64 [projection=array_element] %t5, %t6
+    %t7 = index inbounds i64 [projection=array_element] %t5, %t6
     store volatile i64 %t4, %t7
     jump ^for_iter_3
 
@@ -248,7 +248,7 @@ function @clobber() -> i32 [binding=strong, object=_Z7clobberv] {
 
   block ^for_end_4:
     %t10 = addr $frame
-    %t11 = index i64 [projection=array_element] %t10, 5
+    %t11 = index inbounds i64 [projection=array_element] %t10, 5
     %t12 = load volatile i64 %t11
     %t13 = convert trunc i32 i64 %t12
     return i32 %t13

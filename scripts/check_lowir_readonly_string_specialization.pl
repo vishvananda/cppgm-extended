@@ -148,7 +148,7 @@ for my $test (@tests)
 		my $indexed = function_body($test, $lowir, 'indexed_probe');
 		die "$test: $level specialized a variable byte offset as a fixed byte\n"
 			if call_count($lowir, 'indexed_probe') != 2 ||
-			   $indexed !~ /^\s+%element = index i8 \[projection=array_element\] %text, %offset$/m ||
+			   $indexed !~ /^\s+%element = index (?:inbounds )?i8 \[projection=array_element\] %text, %offset$/m ||
 			   $indexed !~ /^\s+%byte = load u8 %element$/m;
 	}
 	compile_and_run($driver, $test, $directory, $o1_path);

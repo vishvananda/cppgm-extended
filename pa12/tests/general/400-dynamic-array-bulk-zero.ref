@@ -33,7 +33,7 @@ function @operatornew__(%size : i64) -> ptr [binding=strong, object=cppgm_builti
   block ^for_body_2:
     %t8 = addr @storage
     %t9 = load typed i64 $i
-    %t10 = index u8 [projection=array_element] %t8, %t9
+    %t10 = index inbounds u8 [projection=array_element] %t8, %t9
     store u8 165, %t10
     jump ^for_iter_3
 
@@ -102,7 +102,7 @@ function @check(%count : u32) -> i32 [binding=strong, object=_Z5checkj] {
   block ^for_body_2:
     %t17 = load typed ptr $values
     %t18 = load typed u32 $i
-    %t19 = index i32 [projection=array_element] %t17, %t18
+    %t19 = index inbounds i32 [projection=array_element] %t17, %t18
     %t20 = load typed i32 %t19
     %t21 = cmp ne i32 %t20, 0
     %t22 = convert trunc i32 i64 %t21
@@ -180,7 +180,7 @@ function @prefix(%count : u32) -> i32 [binding=strong, object=_Z6prefixj] {
 
   block ^lor_rhs_6:
     %t17 = load typed ptr $values
-    %t18 = index i32 [projection=array_element] %t17, 0
+    %t18 = index inbounds i32 [projection=array_element] %t17, 0
     %t19 = load typed i32 %t18
     %t20 = cmp ne i32 %t19, 1
     store typed i64 %t20, $lor__2
@@ -196,7 +196,7 @@ function @prefix(%count : u32) -> i32 [binding=strong, object=_Z6prefixj] {
 
   block ^lor_rhs_9:
     %t22 = load typed ptr $values
-    %t23 = index i32 [projection=array_element] %t22, 1
+    %t23 = index inbounds i32 [projection=array_element] %t22, 1
     %t24 = load typed i32 %t23
     %t25 = cmp ne i32 %t24, 2
     store typed i64 %t25, $lor__3
@@ -222,7 +222,7 @@ function @prefix(%count : u32) -> i32 [binding=strong, object=_Z6prefixj] {
   block ^for_body_13:
     %t31 = load typed ptr $values
     %t32 = load typed u32 $i
-    %t33 = index i32 [projection=array_element] %t31, %t32
+    %t33 = index inbounds i32 [projection=array_element] %t31, %t32
     %t34 = load typed i32 %t33
     %t35 = cmp ne i32 %t34, 0
     %t36 = convert trunc i32 i64 %t35
@@ -277,7 +277,7 @@ function @records(%count : u32) -> i32 [binding=strong, object=_Z7recordsj] {
     %t12 = load typed u32 $i
     %t13 = convert zext i64 u32 %t12
     %t14 = binary mul i64 %t13, 16
-    %t15 = index i8 [projection=array_element] %t11, %t14
+    %t15 = index inbounds i8 [projection=array_element] %t11, %t14
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = load typed i64 %t16
     %t18 = cmp ne i64 %t17, 0
@@ -288,7 +288,7 @@ function @records(%count : u32) -> i32 [binding=strong, object=_Z7recordsj] {
     %t20 = load typed u32 $i
     %t21 = convert zext i64 u32 %t20
     %t22 = binary mul i64 %t21, 16
-    %t23 = index i8 [projection=array_element] %t19, %t22
+    %t23 = index inbounds i8 [projection=array_element] %t19, %t22
     %t24 = index i8 [projection=field] %t23, 8
     %t25 = load typed i64 %t24
     %t26 = cmp ne i64 %t25, 0

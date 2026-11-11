@@ -158,7 +158,7 @@ function @typed(%out : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t12 = vector fromi64 %t11
     %t13 = vector pcmpgtd %t7, %t12
     %t14 = vector punpckldq %t12, %t13
-    %t15 = vector paddq %t14, %t8
+    %t15 = vector paddq %t8, %t14
     %t16 = binary add nowrap i64 %t9, 2
     %t17 = cmp lt i64 %t16, %t5
     branch %t17, ^wide_loop_2, ^loop_exit_3

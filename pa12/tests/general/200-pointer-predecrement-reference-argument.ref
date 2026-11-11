@@ -31,12 +31,12 @@ function @copy_backward_like(%first : ptr, %last : ptr, %result : ptr) -> void [
     %t5 = load typed ptr $result
     %t6 = binary mul i64 1, 8
     %t7 = binary sub i64 0, %t6
-    %t8 = index i8 %t5, %t7
+    %t8 = index inbounds i8 %t5, %t7
     store typed ptr %t8, $result
     %t9 = load typed ptr $last_iter
     %t10 = binary mul i64 1, 8
     %t11 = binary sub i64 0, %t10
-    %t12 = index i8 %t9, %t11
+    %t12 = index inbounds i8 %t9, %t11
     store typed ptr %t12, $last_iter
     %t13 = addr $last_iter
     %t14 = call ptr @current(%t13)
@@ -63,17 +63,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @cell__cell__aggregate(%t4, 5, 5)
     %t5 = addr $data
     %t6 = binary mul i64 1, 8
-    %t7 = index i8 %t5, %t6
+    %t7 = index inbounds i8 %t5, %t6
     %t8 = addr $data
     %t9 = binary mul i64 4, 8
-    %t10 = index i8 %t8, %t9
+    %t10 = index inbounds i8 %t8, %t9
     %t11 = addr $data
     %t12 = binary mul i64 4, 8
-    %t13 = index i8 %t11, %t12
+    %t13 = index inbounds i8 %t11, %t12
     call void @copy_backward_like(%t7, %t10, %t13)
     %t14 = addr $data
     %t15 = binary mul i64 1, 8
-    %t16 = index i8 %t14, %t15
+    %t16 = index inbounds i8 %t14, %t15
     store typed ptr %t16, $p
     %t17 = load typed ptr $p
     %t18 = index i8 [projection=field] %t17, 0

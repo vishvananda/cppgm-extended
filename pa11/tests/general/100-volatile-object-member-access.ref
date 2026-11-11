@@ -26,7 +26,7 @@ function @read_global() -> i32 [binding=strong, object=_Z11read_globalv] {
   block ^entry:
     %t1 = addr @global_device
     %t2 = index i8 [projection=field] %t1, 4
-    %t3 = index i32 [projection=array_element] %t2, 1
+    %t3 = index inbounds i32 [projection=array_element] %t2, 1
     %t4 = load volatile i32 %t3
     return i32 %t4
 }
@@ -58,7 +58,7 @@ function @read_local() -> i32 [binding=strong, object=_Z10read_localv] {
     %t1 = addr $local
     %t2 = addr $local
     %t3 = index i8 [projection=field] %t2, 4
-    %t4 = index i32 [projection=array_element] %t3, 0
+    %t4 = index inbounds i32 [projection=array_element] %t3, 0
     store volatile i32 6, %t4
     %t5 = addr $local
     %t6 = index i8 [projection=field] %t5, 12
@@ -66,7 +66,7 @@ function @read_local() -> i32 [binding=strong, object=_Z10read_localv] {
     store volatile i32 4, %t7
     %t8 = addr $local
     %t9 = index i8 [projection=field] %t8, 4
-    %t10 = index i32 [projection=array_element] %t9, 0
+    %t10 = index inbounds i32 [projection=array_element] %t9, 0
     %t11 = load volatile i32 %t10
     %t12 = addr $local
     %t13 = index i8 [projection=field] %t12, 12
@@ -104,7 +104,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @write_pointer(%t13)
     %t14 = addr @global_device
     %t15 = index i8 [projection=field] %t14, 4
-    %t16 = index i32 [projection=array_element] %t15, 1
+    %t16 = index inbounds i32 [projection=array_element] %t15, 1
     store volatile i32 11, %t16
     %t17 = addr @global_device
     %t18 = index i8 [projection=field] %t17, 12

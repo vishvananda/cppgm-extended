@@ -1,5 +1,6 @@
 #include "lowir/builder.h"
 #include "opt/integer_patterns.h"
+#include "opt/phi_equivalence.h"
 #include "opt/loops.h"
 #include "opt/passes.h"
 #include "opt/scalar_fold.h"
@@ -189,11 +190,7 @@ private:
 	void simplify_branch(Instruction& term);
 	bool phi_value(const Instruction& phi, Value& out);
 	void process_block(BlockId block);
-	uint64_t phi_signature(const Instruction& phi) const;
-	bool same_phi(const Instruction& a, const Instruction& b);
-	std::vector<Value> pred_input_; // same_phi's scratch, by block
-	std::vector<uint32_t> pred_stamp_;
-	uint32_t stamp_ = 0;
+	PhiComparison phi_comparison_;
 	void finish(bool full);
 
 	FunctionContext& c_;
@@ -290,9 +287,9 @@ private:
 
 struct Simplifier::Pool
 {
-	std::vector<Value> pred_input, repl, equal;
-	std::vector<uint32_t> pred_stamp, uses, ordinal, first_opener;
-	uint32_t stamp = 0;
+	std::vector<Value> repl, equal;
+	PhiComparison phi_comparison;
+	std::vector<uint32_t> uses, ordinal, first_opener;
 	FlatMap<ExprKey, Available, ExprHash> table;
 	FlatMap<uint64_t, Chain, SignatureHash> phi_heads;
 	std::vector<std::pair<InstId, uint32_t>> phi_chain;
@@ -302,14 +299,12 @@ struct Simplifier::Pool
 
 void Simplifier::exchange(Pool& pool)
 {
-	pred_input_.swap(pool.pred_input);
+	std::swap(phi_comparison_, pool.phi_comparison);
 	repl_.swap(pool.repl);
 	equal_.swap(pool.equal);
-	pred_stamp_.swap(pool.pred_stamp);
 	uses_.swap(pool.uses);
 	ordinal_.swap(pool.ordinal);
 	first_opener_.swap(pool.first_opener);
-	std::swap(stamp_, pool.stamp);
 	table_.swap(pool.table);
 	phi_heads_.swap(pool.phi_heads);
 	phi_chain_.swap(pool.phi_chain);
@@ -782,6 +777,7 @@ bool Simplifier::readonly_table_address(Instruction& inst)
 	inst.type = Type::scalar(TypeKind::I8);
 	inst.sub = ir_model::IPK_NONE;
 	inst.flags = 0;
+	inst.set_index_bounds(IndexBounds::None);
 	inst.ops[0] = Value::symbol(target);
 	inst.ops[1] = integer_value(body_, Literal{ static_cast<uint64_t>(addend), addend < 0 ? ~0ull : 0 });
 	return true;
@@ -865,6 +861,9 @@ bool Simplifier::merge_index(Instruction& inst)
 		static_cast<int64_t>(storage_bytes(def->type));
 	const int64_t outer = static_cast<int64_t>(body_.literals[inst.ops[1].index].low) *
 		static_cast<int64_t>(storage_bytes(inst.type));
+	inst.set_index_bounds(inst.index_bounds() == IndexBounds::InBounds && def->index_bounds() == IndexBounds::InBounds
+			? IndexBounds::InBounds
+			: IndexBounds::None);
 	inst.type = Type::scalar(TypeKind::I8);
 	inst.ops[0] = def->ops[0];
 	inst.ops[1] = integer_value(body_, Literal{ static_cast<uint64_t>(inner + outer), inner + outer < 0 ? ~0ull : 0 });
@@ -1282,7 +1281,21 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 {
 	const Type type = inst.type;
 	const ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
-	const Value x = inst.ops[0], y = inst.ops[1];
+	Value x = inst.ops[0];
+	const Value y = inst.ops[1];
+	Constant null;
+	if (type.is_pointer() && (pred == ComparePredicate::Eq || pred == ComparePredicate::Ne) &&
+		constant(y, type, null) && is_integer(type, null, 0))
+		for (unsigned depth = 0; depth < 8; ++depth)
+		{
+			const Instruction* step = producer(x);
+			if (step == nullptr || step->op != Opcode::Index || step->index_bounds() != IndexBounds::InBounds ||
+				step->ops[0].is(ValueKind::Slot))
+				break;
+			x = step->ops[0];
+			inst.ops[0] = x;
+			changed_ = true;
+		}
 	// A value proved nonzero: x != 0, x == 0, and x - 1 against x
 	// (unsigned: it cannot wrap below zero).
 	Constant compared_zero;
@@ -2689,58 +2702,6 @@ void Simplifier::simplify_branch(Instruction& term)
 	}
 }
 
-// Phis of one block with the same type and the same input for every
-// predecessor are one value (twin induction variables). O(inputs): b's
-// inputs by predecessor (the first pair of each) in a stamped scratch.
-bool Simplifier::same_phi(const Instruction& a, const Instruction& b)
-{
-	if (a.type != b.type || a.extra_count != b.extra_count)
-		return false;
-	if (pred_input_.size() < body_.blocks.size())
-	{
-		pred_input_.resize(body_.blocks.size(), Value::none());
-		pred_stamp_.resize(body_.blocks.size(), 0);
-	}
-	++stamp_;
-	for (uint32_t k = 0; k < b.extra_count; k += 2)
-	{
-		const BlockId pred = body_.operands[b.extra_first + k].index;
-		if (pred_stamp_[pred] != stamp_)
-		{
-			pred_stamp_[pred] = stamp_;
-			pred_input_[pred] = body_.operands[b.extra_first + k + 1];
-		}
-	}
-	for (uint32_t k = 0; k < a.extra_count; k += 2)
-	{
-		const BlockId pred = body_.operands[a.extra_first + k].index;
-		const Value in = pred_stamp_[pred] == stamp_ ? pred_input_[pred] : Value::none();
-		const Value mine = body_.operands[a.extra_first + k + 1];
-		// A self-reference matches the other's self-reference.
-		const bool self_a = mine.is(ValueKind::Temp) && mine.index == a.result;
-		const bool self_b = in.is(ValueKind::Temp) && in.index == b.result;
-		if (self_a != self_b || (!self_a && !(in == mine)))
-			return false;
-	}
-	return true;
-}
-
-// Equal for phis same_phi may match: the type, the input count and the
-// sum of each (block, input) pair's hash, a self-reference hashed alike.
-uint64_t Simplifier::phi_signature(const Instruction& phi) const
-{
-	uint64_t sum = 0;
-	for (uint32_t k = 0; k < phi.extra_count; k += 2)
-	{
-		const Value in = body_.operands[phi.extra_first + k + 1];
-		const bool self = in.is(ValueKind::Temp) && in.index == phi.result;
-		uint64_t h = (static_cast<uint64_t>(body_.operands[phi.extra_first + k].index) + 1) * 0x9e3779b97f4a7c15ull;
-		h ^= self ? 0x5bd1e995ull : (static_cast<uint64_t>(in.kind) << 32 | in.index) * 0xc2b2ae3d27d4eb4full;
-		sum += h ^ (h >> 31);
-	}
-	return sum ^ (type_bits(phi.type) * 0x165667b19e3779f9ull) ^ phi.extra_count;
-}
-
 ExprKey Simplifier::expression_key(const Instruction& inst)
 {
 	const Type type = scalar_operand_type(inst);
@@ -2902,13 +2863,13 @@ void Simplifier::process_block(BlockId block)
 		Instruction& phi = body_.instructions[i];
 		for (uint32_t k = 1; k < phi.extra_count; k += 2)
 			body_.operands[phi.extra_first + k] = resolve(body_.operands[phi.extra_first + k]);
-		const uint64_t signature = phi_signature(phi);
+		const uint64_t signature = phi_signature(body_, c_.block_of, phi);
 		Chain* chain = phi_heads_.find(signature);
 		bool merged = false;
 		for (uint32_t c = chain != nullptr ? chain->first : kNoId; c != kNoId && !merged; c = phi_chain_[c].second)
 		{
 			const Instruction& earlier = body_.instructions[phi_chain_[c].first];
-			if (repl_[earlier.result].is(ValueKind::None) && same_phi(earlier, phi))
+			if (repl_[earlier.result].is(ValueKind::None) && phi_comparison_.equal(c_, earlier, phi, repl_))
 			{
 				replace(phi.result, Value::temp(earlier.result));
 				++c_.stats.reused;

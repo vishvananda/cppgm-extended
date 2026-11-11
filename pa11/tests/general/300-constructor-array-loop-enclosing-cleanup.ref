@@ -33,7 +33,7 @@ function @build() -> i32 [binding=strong, object=_Z5buildv] {
     %t10 = binary sub nowrap i32 %t8, %t9
     %t11 = addr $elements
     %t12 = binary mul i64 11, 4
-    %t13 = index i8 [projection=array_element] %t11, %t12
+    %t13 = index inbounds i8 [projection=array_element] %t11, %t12
     %t14 = index i8 [projection=field] %t13, 0
     %t15 = load typed i32 %t14
     %t16 = binary add nowrap i32 %t10, %t15

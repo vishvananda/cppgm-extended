@@ -66,7 +66,7 @@ function @sum_after_delete(%big : ptr [pass=by_address, object_bytes=1048592], %
   block ^for_body_2:
     %t5 = index i8 [projection=field] %big, 8
     %t6 = load typed ptr %t5
-    %t7 = index i8 [projection=array_element] %t6, %t1
+    %t7 = index inbounds i8 [projection=array_element] %t6, %t1
     %t8 = load i8 %t7
     %t9 = convert sext i64 i8 %t8
     %t10 = binary add nowrap i64 %t9, %t2
@@ -89,7 +89,7 @@ function @fill_after_delete(%big : ptr [pass=by_address, object_bytes=8388616], 
 
   block ^for_body_2:
     %t4 = load typed i64 %big
-    %t5 = index i64 [projection=array_element] %out, %t1
+    %t5 = index inbounds i64 [projection=array_element] %out, %t1
     store typed i64 %t4, %t5
     %t6 = binary add nowrap i64 %t1, 1
     jump ^for_cond_1
@@ -123,7 +123,7 @@ function @sum_after_branch_delete(%big : ptr [pass=by_address, object_bytes=1677
   block ^for_body_5:
     %t7 = index i8 [projection=field] %big, 8
     %t8 = load typed ptr %t7
-    %t9 = index i8 [projection=array_element] %t8, %t3
+    %t9 = index inbounds i8 [projection=array_element] %t8, %t3
     %t10 = load i8 %t9
     %t11 = convert sext i64 i8 %t10
     %t12 = binary add nowrap i64 %t11, %t4
@@ -147,7 +147,7 @@ function @sum_kept(%big : ptr [pass=by_address, object_bytes=1048592], %n : i32)
     branch %t6, ^for_body_2, ^for_end_3
 
   block ^for_body_2:
-    %t7 = index i8 [projection=array_element] %t2, %t3
+    %t7 = index inbounds i8 [projection=array_element] %t2, %t3
     %t8 = load i8 %t7
     %t9 = convert sext i64 i8 %t8
     %t10 = binary add nowrap i64 %t9, %t4

@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr @__strlit__1
     store typed ptr %t1, $value
     %t2 = load typed ptr $value
-    %t3 = index i8 [projection=array_element] %t2, 0
+    %t3 = index inbounds i8 [projection=array_element] %t2, 0
     %t4 = load i8 %t3
     %t5 = convert sext i32 i8 %t4
     %t6 = cmp eq i32 %t5, 97
@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t7 = load typed ptr $value
-    %t8 = index i8 [projection=array_element] %t7, 3
+    %t8 = index inbounds i8 [projection=array_element] %t7, 3
     %t9 = load i8 %t8
     %t10 = convert sext i32 i8 %t9
     %t11 = cmp eq i32 %t10, 100
@@ -49,7 +49,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_7:
     %t13 = load typed ptr $value
-    %t14 = index i8 [projection=array_element] %t13, 6
+    %t14 = index inbounds i8 [projection=array_element] %t13, 6
     %t15 = load i8 %t14
     %t16 = convert sext i32 i8 %t15
     %t17 = cmp eq i32 %t16, 103
@@ -66,7 +66,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_10:
     %t19 = load typed ptr $value
-    %t20 = index i8 [projection=array_element] %t19, 9
+    %t20 = index inbounds i8 [projection=array_element] %t19, 9
     %t21 = load i8 %t20
     %t22 = convert sext i32 i8 %t21
     %t23 = cmp eq i32 %t22, 106
@@ -83,7 +83,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_13:
     %t25 = load typed ptr $value
-    %t26 = index i8 [projection=array_element] %t25, 10
+    %t26 = index inbounds i8 [projection=array_element] %t25, 10
     %t27 = load i8 %t26
     %t28 = convert sext i32 i8 %t27
     %t29 = cmp eq i32 %t28, 0

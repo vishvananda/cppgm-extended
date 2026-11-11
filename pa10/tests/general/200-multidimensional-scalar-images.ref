@@ -29,8 +29,8 @@ function @image() -> void [binding=strong, object=_Z5imagev] {
     copyobj 24x4 @__constexpr_template__1, %t1
     %t2 = addr $values
     %t3 = binary mul i64 0, 12
-    %t4 = index i8 [projection=array_element] %t2, %t3
-    %t5 = index i32 [projection=array_element] %t4, 0
+    %t4 = index inbounds i8 [projection=array_element] %t2, %t3
+    %t5 = index inbounds i32 [projection=array_element] %t4, 0
     call void @escape(%t5)
     return void
 }
@@ -42,8 +42,8 @@ function @zero() -> void [binding=strong, object=_Z4zerov] {
     zeroinit 24x4 %t1
     %t2 = addr $values
     %t3 = binary mul i64 0, 12
-    %t4 = index i8 [projection=array_element] %t2, %t3
-    %t5 = index i32 [projection=array_element] %t4, 0
+    %t4 = index inbounds i8 [projection=array_element] %t2, %t3
+    %t5 = index inbounds i32 [projection=array_element] %t4, 0
     call void @escape(%t5)
     return void
 }
@@ -82,13 +82,13 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     copyobj 24x4 @__constexpr_template__1, %t2
     %t3 = addr $a
     %t4 = binary mul i64 0, 12
-    %t5 = index i8 [projection=array_element] %t3, %t4
-    %t6 = index i32 [projection=array_element] %t5, 0
+    %t5 = index inbounds i8 [projection=array_element] %t3, %t4
+    %t6 = index inbounds i32 [projection=array_element] %t5, 0
     store typed i32 99, %t6
     %t7 = addr $b
     %t8 = binary mul i64 0, 12
-    %t9 = index i8 [projection=array_element] %t7, %t8
-    %t10 = index i32 [projection=array_element] %t9, 0
+    %t9 = index inbounds i8 [projection=array_element] %t7, %t8
+    %t10 = index inbounds i32 [projection=array_element] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp ne i32 %t11, 1
     branch %t12, ^lor_short_2, ^lor_rhs_1
@@ -132,9 +132,9 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t24 = load typed i32 $i
     %t25 = convert sext i64 i32 %t24
     %t26 = binary mul i64 %t25, 12
-    %t27 = index i8 [projection=array_element] %t23, %t26
+    %t27 = index inbounds i8 [projection=array_element] %t23, %t26
     %t28 = load typed i32 $j
-    %t29 = index i32 [projection=array_element] %t27, %t28
+    %t29 = index inbounds i32 [projection=array_element] %t27, %t28
     %t30 = load typed i32 %t29
     %t31 = cmp ne i32 %t30, 0
     %t32 = convert trunc i32 i64 %t31
@@ -178,8 +178,8 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
   block ^lor_rhs_12:
     %t49 = addr $dynamic
     %t50 = binary mul i64 0, 8
-    %t51 = index i8 [projection=array_element] %t49, %t50
-    %t52 = index i32 [projection=array_element] %t51, 0
+    %t51 = index inbounds i8 [projection=array_element] %t49, %t50
+    %t52 = index inbounds i32 [projection=array_element] %t51, 0
     %t53 = load typed i32 %t52
     %t54 = cmp ne i32 %t53, 1
     store typed i64 %t54, $lor__2
@@ -196,8 +196,8 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
   block ^lor_rhs_15:
     %t56 = addr $dynamic
     %t57 = binary mul i64 1, 8
-    %t58 = index i8 [projection=array_element] %t56, %t57
-    %t59 = index i32 [projection=array_element] %t58, 1
+    %t58 = index inbounds i8 [projection=array_element] %t56, %t57
+    %t59 = index inbounds i32 [projection=array_element] %t58, 1
     %t60 = load typed i32 %t59
     %t61 = cmp ne i32 %t60, 4
     store typed i64 %t61, $lor__3
@@ -223,13 +223,13 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     store volatile i32 4, %t69
     %t70 = addr $v
     %t71 = binary mul i64 0, 8
-    %t72 = index i8 [projection=array_element] %t70, %t71
-    %t73 = index i32 [projection=array_element] %t72, 1
+    %t72 = index inbounds i8 [projection=array_element] %t70, %t71
+    %t73 = index inbounds i32 [projection=array_element] %t72, 1
     %t74 = load volatile i32 %t73
     %t75 = addr $v
     %t76 = binary mul i64 1, 8
-    %t77 = index i8 [projection=array_element] %t75, %t76
-    %t78 = index i32 [projection=array_element] %t77, 0
+    %t77 = index inbounds i8 [projection=array_element] %t75, %t76
+    %t78 = index inbounds i32 [projection=array_element] %t77, 0
     %t79 = load volatile i32 %t78
     %t80 = binary add nowrap i32 %t74, %t79
     %t81 = cmp ne i32 %t80, 5
@@ -241,8 +241,8 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     copyobj 32x8 @__constexpr_template__2, %t85
     %t86 = addr $signs
     %t87 = binary mul i64 0, 16
-    %t88 = index i8 [projection=array_element] %t86, %t87
-    %t89 = index f64 [projection=array_element] %t88, 0
+    %t88 = index inbounds i8 [projection=array_element] %t86, %t87
+    %t89 = index inbounds f64 [projection=array_element] %t88, 0
     %t90 = load typed f64 %t89
     %t91 = binary div f64 1, %t90
     %t92 = cmp lt f64 %t91, 0
@@ -252,8 +252,8 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
   block ^lor_rhs_18:
     %t94 = addr $signs
     %t95 = binary mul i64 1, 16
-    %t96 = index i8 [projection=array_element] %t94, %t95
-    %t97 = index f64 [projection=array_element] %t96, 1
+    %t96 = index inbounds i8 [projection=array_element] %t94, %t95
+    %t97 = index inbounds f64 [projection=array_element] %t96, 1
     %t98 = load typed f64 %t97
     %t99 = binary div f64 1, %t98
     %t100 = cmp lt f64 %t99, 0
@@ -275,8 +275,8 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t107 = addr $pointers
     %t108 = addr $a
     %t109 = binary mul i64 0, 12
-    %t110 = index i8 [projection=array_element] %t108, %t109
-    %t111 = index i32 [projection=array_element] %t110, 0
+    %t110 = index inbounds i8 [projection=array_element] %t108, %t109
+    %t111 = index inbounds i32 [projection=array_element] %t110, 0
     store typed ptr %t111, %t107
     %t112 = index i8 [projection=array_element] %t107, 8
     %t113 = copy ptr 0
@@ -287,13 +287,13 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t116 = index i8 [projection=array_element] %t114, 8
     %t117 = addr $b
     %t118 = binary mul i64 1, 12
-    %t119 = index i8 [projection=array_element] %t117, %t118
-    %t120 = index i32 [projection=array_element] %t119, 2
+    %t119 = index inbounds i8 [projection=array_element] %t117, %t118
+    %t120 = index inbounds i32 [projection=array_element] %t119, 2
     store typed ptr %t120, %t116
     %t121 = addr $pointers
     %t122 = binary mul i64 0, 16
-    %t123 = index i8 [projection=array_element] %t121, %t122
-    %t124 = index ptr [projection=array_element] %t123, 0
+    %t123 = index inbounds i8 [projection=array_element] %t121, %t122
+    %t124 = index inbounds ptr [projection=array_element] %t123, 0
     %t125 = load typed ptr %t124
     %t126 = load typed i32 %t125
     %t127 = cmp ne i32 %t126, 99
@@ -302,8 +302,8 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
   block ^lor_rhs_21:
     %t128 = addr $pointers
     %t129 = binary mul i64 0, 16
-    %t130 = index i8 [projection=array_element] %t128, %t129
-    %t131 = index ptr [projection=array_element] %t130, 1
+    %t130 = index inbounds i8 [projection=array_element] %t128, %t129
+    %t131 = index inbounds ptr [projection=array_element] %t130, 1
     %t132 = load typed ptr %t131
     %t133 = copy ptr 0
     %t134 = cmp ne ptr %t132, %t133
@@ -321,8 +321,8 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
   block ^lor_rhs_24:
     %t136 = addr $pointers
     %t137 = binary mul i64 1, 16
-    %t138 = index i8 [projection=array_element] %t136, %t137
-    %t139 = index ptr [projection=array_element] %t138, 1
+    %t138 = index inbounds i8 [projection=array_element] %t136, %t137
+    %t139 = index inbounds ptr [projection=array_element] %t138, 1
     %t140 = load typed ptr %t139
     %t141 = load typed i32 %t140
     %t142 = cmp ne i32 %t141, 6

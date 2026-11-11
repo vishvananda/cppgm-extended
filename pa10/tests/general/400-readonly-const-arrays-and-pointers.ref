@@ -46,19 +46,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @table
-    %t2 = index i32 [projection=array_element] %t1, 3
+    %t2 = index inbounds i32 [projection=array_element] %t1, 3
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 3, %t3
     %t5 = addr @matrix
     %t6 = binary mul i64 1, 8
-    %t7 = index i8 [projection=array_element] %t5, %t6
-    %t8 = index i32 [projection=array_element] %t7, 1
+    %t7 = index inbounds i8 [projection=array_element] %t5, %t6
+    %t8 = index inbounds i32 [projection=array_element] %t7, 1
     %t9 = load typed i32 %t8
     %t10 = binary add nowrap i32 %t4, %t9
     %t11 = addr @names
-    %t12 = index ptr [projection=array_element] %t11, 1
+    %t12 = index inbounds ptr [projection=array_element] %t11, 1
     %t13 = load typed ptr %t12
-    %t14 = index i8 [projection=array_element] %t13, 1
+    %t14 = index inbounds i8 [projection=array_element] %t13, 1
     %t15 = load i8 %t14
     %t16 = convert sext i32 i8 %t15
     %t17 = binary add nowrap i32 %t10, %t16
@@ -77,18 +77,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = load typed i32 $cond__1
     %t20 = binary add nowrap i32 %t17, %t19
     %t21 = load typed ptr @movable_pointer
-    %t22 = index i8 [projection=array_element] %t21, 0
+    %t22 = index inbounds i8 [projection=array_element] %t21, 0
     %t23 = load i8 %t22
     %t24 = convert sext i32 i8 %t23
     %t25 = binary add nowrap i32 %t20, %t24
     %t26 = load volatile i32 @volatile_scalar
     %t27 = binary add nowrap i32 %t25, %t26
     %t28 = addr @single_table
-    %t29 = index i32 [projection=array_element] %t28, 0
+    %t29 = index inbounds i32 [projection=array_element] %t28, 0
     %t30 = load typed i32 %t29
     %t31 = binary add nowrap i32 %t27, %t30
     %t32 = addr @writable_table
-    %t33 = index i32 [projection=array_element] %t32, 1
+    %t33 = index inbounds i32 [projection=array_element] %t32, 1
     %t34 = load typed i32 %t33
     %t35 = binary add nowrap i32 %t31, %t34
     store typed i32 %t35, $sum

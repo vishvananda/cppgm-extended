@@ -65,12 +65,12 @@ function @encode(%data : ptr, %n : i64) -> i64 [binding=strong, object=_Z6encode
   block ^for_body_2:
     %t7 = copy i64 %t4
     %t8 = binary mul i64 %t7, 5
-    %t9 = index i64 [projection=array_element] %t2, %t4
+    %t9 = index inbounds i64 [projection=array_element] %t2, %t4
     store typed i64 %t8, %t9
     %t10 = binary mod i32 %t5, 7
     %t11 = binary add nowrap i32 %t10, 1
     %t12 = convert trunc u8 i32 %t11
-    %t13 = index u8 [projection=array_element] %t3, %t4
+    %t13 = index inbounds u8 [projection=array_element] %t3, %t4
     store u8 %t12, %t13
     %t14 = binary add nowrap i64 %t4, 1
     jump ^for_cond_1
@@ -91,7 +91,7 @@ function @encode(%data : ptr, %n : i64) -> i64 [binding=strong, object=_Z6encode
 
   block ^for_body_5:
     %t23 = load u8 %t20
-    %t24 = index u8 [projection=array_element] %t15, %t23
+    %t24 = index inbounds u8 [projection=array_element] %t15, %t23
     %t25 = load u8 %t24
     %t26 = convert zext i32 u8 %t25
     %t27 = binary sub nowrap i32 %t26, 1
@@ -116,7 +116,7 @@ function @encode(%data : ptr, %n : i64) -> i64 [binding=strong, object=_Z6encode
     branch %t39, ^if_then_8, ^if_else_10
 
   block ^if_then_8:
-    %t40 = index u8 [projection=array_element] %t1, %t36
+    %t40 = index inbounds u8 [projection=array_element] %t1, %t36
     store u8 %t35, %t40
     %t41 = binary add i64 %t36, 1
     %t42 = cmp eq i64 %n, %t41
@@ -146,7 +146,7 @@ function @encode(%data : ptr, %n : i64) -> i64 [binding=strong, object=_Z6encode
     jump ^for_cond_6
 
   block ^for_end_12:
-    %t56 = index i8 %t20, 1
+    %t56 = index inbounds i8 %t20, 1
     %t57 = binary add i64 %t21, 1
     jump ^for_cond_4
 
@@ -157,7 +157,7 @@ function @encode(%data : ptr, %n : i64) -> i64 [binding=strong, object=_Z6encode
     branch %t60, ^for_body_14, ^for_end_15
 
   block ^for_body_14:
-    %t61 = index u8 [projection=array_element] %t1, %t59
+    %t61 = index inbounds u8 [projection=array_element] %t1, %t59
     %t62 = load u8 %t61
     %t63 = convert zext i64 u8 %t62
     %t64 = binary add i64 %t63, %t58
@@ -193,12 +193,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_2:
     %t8 = copy i64 %t5
     %t9 = binary mul i64 %t8, 5
-    %t10 = index i64 [projection=array_element] %t3, %t5
+    %t10 = index inbounds i64 [projection=array_element] %t3, %t5
     store typed i64 %t9, %t10
     %t11 = binary mod i32 %t6, 7
     %t12 = binary add nowrap i32 %t11, 1
     %t13 = convert trunc u8 i32 %t12
-    %t14 = index u8 [projection=array_element] %t4, %t5
+    %t14 = index inbounds u8 [projection=array_element] %t4, %t5
     store u8 %t13, %t14
     %t15 = binary add nowrap i64 %t5, 1
     jump ^for_cond_1
@@ -219,7 +219,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^for_body_5:
     %t24 = load u8 %t21
-    %t25 = index u8 [projection=array_element] %t16, %t24
+    %t25 = index inbounds u8 [projection=array_element] %t16, %t24
     %t26 = load u8 %t25
     %t27 = convert zext i32 u8 %t26
     %t28 = binary sub nowrap i32 %t27, 1
@@ -244,7 +244,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t40, ^if_then_8, ^if_else_10
 
   block ^if_then_8:
-    %t41 = index u8 [projection=array_element] %t2, %t37
+    %t41 = index inbounds u8 [projection=array_element] %t2, %t37
     store u8 %t36, %t41
     %t42 = binary add i64 %t37, 1
     %t43 = cmp eq i64 %t42, 11
@@ -274,7 +274,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_6
 
   block ^for_end_12:
-    %t57 = index i8 %t21, 1
+    %t57 = index inbounds i8 %t21, 1
     %t58 = binary add i64 %t22, 1
     jump ^for_cond_4
 
@@ -285,7 +285,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t61, ^for_body_14, ^for_end_15
 
   block ^for_body_14:
-    %t62 = index u8 [projection=array_element] %t2, %t60
+    %t62 = index inbounds u8 [projection=array_element] %t2, %t60
     %t63 = load u8 %t62
     %t64 = convert zext i64 u8 %t63
     %t65 = binary add i64 %t59, %t64

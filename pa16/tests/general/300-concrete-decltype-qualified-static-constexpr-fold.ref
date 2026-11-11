@@ -62,7 +62,7 @@ function @read_constant(%input : obj<1x1> [classes=none]) -> u32 [binding=weak, 
     %t1 = addr $values
     copyobj 12x4 @__constexpr_template__1, %t1
     %t2 = addr $values
-    %t3 = index u32 [projection=array_element] %t2, 1
+    %t3 = index inbounds u32 [projection=array_element] %t2, 1
     %t4 = load typed u32 %t3
     return u32 %t4
 }

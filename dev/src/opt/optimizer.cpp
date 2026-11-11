@@ -470,6 +470,9 @@ bool finish_loops(FunctionContext& context, int level)
 	{
 		RUN_PASS(promote_slots);
 		RUN_PASS(forward_memory);
+		// Late memory promotion can expose equal, cyclic phi graphs. Merge
+		// them before register allocation assigns their parallel transfers.
+		RUN_PASS(simplify_values);
 		RUN_PASS(remove_dead_code);
 		RUN_PASS(cleanup_cfg);
 		changed = true;

@@ -12,18 +12,18 @@ function @Holder__operatornew(%bytes : i64, %extra : i64) -> ptr [binding=strong
     %t1 = addr @storage
     %t2 = load typed i64 $extra
     %t3 = copy i64 %t2
-    %t4 = index i8 %t1, %t3
+    %t4 = index inbounds i8 %t1, %t3
     %t5 = load typed i64 $extra
     %t6 = copy i64 %t5
     %t7 = binary sub i64 0, %t6
-    %t8 = index i8 %t4, %t7
+    %t8 = index inbounds i8 %t4, %t7
     %t9 = load typed i64 $bytes
     %t10 = copy i64 %t9
-    %t11 = index i8 %t8, %t10
+    %t11 = index inbounds i8 %t8, %t10
     %t12 = load typed i64 $bytes
     %t13 = copy i64 %t12
     %t14 = binary sub i64 0, %t13
-    %t15 = index i8 %t11, %t14
+    %t15 = index inbounds i8 %t11, %t14
     return ptr %t15
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

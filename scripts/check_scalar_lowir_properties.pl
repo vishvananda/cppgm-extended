@@ -175,7 +175,7 @@ for my $test (@tests)
 		die "$test: array decay did not produce an ordinary pointer address\n"
 			if $array !~ /^\s+%\w+ = addr \@\w+$/m;
 		die "$test: subscript after array decay did not use pointer indexing\n"
-			if $array !~ /^\s+%\w+ = index i32(?: \[projection=array_element\])? %\w+, 2$/m;
+			if $array !~ /^\s+%\w+ = index (?:inbounds )?i32(?: \[projection=array_element\])? %\w+, 2$/m;
 		my $function = function_body($test, $lowir, 'function_decay');
 		die "$test: function decay did not produce an ordinary function address\n"
 			if $function !~ /^\s+%\w+ = addr \@\w+$/m;

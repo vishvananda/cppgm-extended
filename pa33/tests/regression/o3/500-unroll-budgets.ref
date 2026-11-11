@@ -74,9 +74,8 @@ function @nine_passes(%k : i64) -> i64 [no_inline=yes] {
     branch %t9, ^body, ^loop_exit_2
 
   block ^loop_exit_2:
-    %t10 = addr $s
-    store i64 %t2, %t10
-    %r = binary add i64 %t2, %out
+    store i64 %t2, %p
+    %r = binary add i64 %out, %t2
     return i64 %r
 }
 function @five_passes_within_size(%k : i64) -> i64 [no_inline=yes] {

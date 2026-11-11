@@ -8,11 +8,11 @@ global @__constexpr_template__1 [storage=readonly, binding=internal] = {
 function @square_steps(%start : ptr, %steps : i32) -> f64 [binding=strong, object=_Z12square_stepsPKdi] {
   block ^entry:
     %t1 = load typed f64 %start
-    %t2 = index f64 [projection=array_element] %start, 1
+    %t2 = index inbounds f64 [projection=array_element] %start, 1
     %t3 = load typed f64 %t2
-    %t4 = index f64 [projection=array_element] %start, 2
+    %t4 = index inbounds f64 [projection=array_element] %start, 2
     %t5 = load typed f64 %t4
-    %t6 = index f64 [projection=array_element] %start, 3
+    %t6 = index inbounds f64 [projection=array_element] %start, 3
     %t7 = load typed f64 %t6
     %t8 = cmp gt i32 %steps, 0
     branch %t8, ^loop_preheader_1, ^for_end_3

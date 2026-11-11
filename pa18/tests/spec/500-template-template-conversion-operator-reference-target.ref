@@ -79,7 +79,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_7:
     %t30 = addr $s2
     %t31 = call ptr @string_like_char_traits___data(%t30)
-    %t32 = index i8 [projection=array_element] %t31, 0
+    %t32 = index inbounds i8 [projection=array_element] %t31, 0
     %t33 = load i8 %t32
     %t34 = convert sext i32 i8 %t33
     %t35 = cmp eq i32 %t34, 97
@@ -97,7 +97,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_10:
     %t37 = addr $s2
     %t38 = call ptr @string_like_char_traits___data(%t37)
-    %t39 = index i8 [projection=array_element] %t38, 3
+    %t39 = index inbounds i8 [projection=array_element] %t38, 3
     %t40 = load i8 %t39
     %t41 = convert sext i32 i8 %t40
     %t42 = cmp eq i32 %t41, 100
@@ -115,7 +115,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_13:
     %t44 = addr $s3
     %t45 = call ptr @string_like_char_traits___data(%t44)
-    %t46 = index i8 [projection=array_element] %t45, 1
+    %t46 = index inbounds i8 [projection=array_element] %t45, 1
     %t47 = load i8 %t46
     %t48 = convert sext i32 i8 %t47
     %t49 = cmp eq i32 %t48, 98
@@ -133,7 +133,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_16:
     %t51 = addr $s3
     %t52 = call ptr @string_like_char_traits___data(%t51)
-    %t53 = index i8 [projection=array_element] %t52, 2
+    %t53 = index inbounds i8 [projection=array_element] %t52, 2
     %t54 = load i8 %t53
     %t55 = convert sext i32 i8 %t54
     %t56 = cmp eq i32 %t55, 99
@@ -270,12 +270,12 @@ function @string_like_char_traits___string_like__2(%this : ptr [object_bytes=4],
     %t5 = index i8 [projection=field] %v, 0
     %t6 = load typed ptr %t5
     %t7 = load typed i64 $i
-    %t8 = index i8 [projection=array_element] %t6, %t7
+    %t8 = index inbounds i8 [projection=array_element] %t6, %t7
     %t9 = load i8 %t8
     %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = load typed i64 $i
-    %t13 = index i8 [projection=array_element] %t11, %t12
+    %t13 = index inbounds i8 [projection=array_element] %t11, %t12
     store i8 %t9, %t13
     jump ^for_iter_3
 
@@ -309,12 +309,12 @@ function @string_like_char_traits___operator_(%this : ptr [object_bytes=4], %v :
     %t5 = index i8 [projection=field] %v, 0
     %t6 = load typed ptr %t5
     %t7 = load typed i64 $i
-    %t8 = index i8 [projection=array_element] %t6, %t7
+    %t8 = index inbounds i8 [projection=array_element] %t6, %t7
     %t9 = load i8 %t8
     %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = load typed i64 $i
-    %t13 = index i8 [projection=array_element] %t11, %t12
+    %t13 = index inbounds i8 [projection=array_element] %t11, %t12
     store i8 %t9, %t13
     jump ^for_iter_3
 

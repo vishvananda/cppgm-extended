@@ -366,6 +366,30 @@ enum class MemoryOrder : std::uint8_t
 
 const unsigned kMemoryOrderCount = static_cast<unsigned>(MemoryOrder::SeqCst) + 1;
 
+// `index inbounds` stays within its base allocation, including one past
+// its end. A zero offset also permits a null base and preserves that null.
+enum class IndexBounds : std::uint8_t
+{
+	None,
+	InBounds
+};
+
+const unsigned kIndexBoundsCount = static_cast<unsigned>(IndexBounds::InBounds) + 1;
+const char* const kIndexBounds[] = { "", "inbounds" };
+
+inline const char* spelling(IndexBounds bounds)
+{
+	return kIndexBounds[static_cast<unsigned>(bounds)];
+}
+
+inline bool from_spelling(const char* text, std::size_t length, IndexBounds* bounds)
+{
+	if (!detail::same_spelling(spelling(IndexBounds::InBounds), text, length))
+		return false;
+	*bounds = IndexBounds::InBounds;
+	return true;
+}
+
 // The operation of `vector`, named for its SSE instruction (pa8/lowir.md
 // "Vector Operations"). `Vector` instructions and their shapes:
 //   Binary           %r = vector op %a, %b

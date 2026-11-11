@@ -35,7 +35,7 @@ function @Box_int___f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object
   block ^for_body_2:
     %t4 = addr $xs
     %t5 = load typed i32 $__idx1
-    %t6 = index i32 [projection=array_element] %t4, %t5
+    %t6 = index inbounds i32 [projection=array_element] %t4, %t5
     %t7 = load typed i32 %t6
     store typed i32 %t7, $x
     %t8 = load typed i32 $total

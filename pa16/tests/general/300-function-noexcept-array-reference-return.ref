@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = call ptr @digits()
-    %t2 = index i8 [projection=array_element] %t1, 2
+    %t2 = index inbounds i8 [projection=array_element] %t1, 2
     %t3 = load i8 %t2
     %t4 = convert sext i32 i8 %t3
     %t5 = cmp eq i32 %t4, 50

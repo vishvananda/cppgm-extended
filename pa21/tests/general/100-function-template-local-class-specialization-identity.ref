@@ -13,12 +13,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $integers
     %t4 = addr $integers
     %t5 = binary mul i64 2, 4
-    %t6 = index i8 %t4, %t5
+    %t6 = index inbounds i8 %t4, %t5
     call void @visit(%t3, %t6)
     %t7 = addr $longs
     %t8 = addr $longs
     %t9 = binary mul i64 2, 8
-    %t10 = index i8 %t8, %t9
+    %t10 = index inbounds i8 %t8, %t9
     call void @visit__2(%t7, %t10)
     return i32 0
 }
@@ -92,7 +92,7 @@ function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, b
     %t12 = index i8 [projection=field] %t11, 0
     %t13 = load typed ptr %t12
     %t14 = binary mul i64 1, 4
-    %t15 = index i8 %t13, %t14
+    %t15 = index inbounds i8 %t13, %t14
     store typed ptr %t15, %t12
     jump ^while_cond_2
 
@@ -145,7 +145,7 @@ function @cleanup___cleanup__2(%this : ptr [object_bytes=16]) -> void [unwind=no
     %t12 = index i8 [projection=field] %t11, 0
     %t13 = load typed ptr %t12
     %t14 = binary mul i64 1, 8
-    %t15 = index i8 %t13, %t14
+    %t15 = index inbounds i8 %t13, %t14
     store typed ptr %t15, %t12
     jump ^while_cond_2
 

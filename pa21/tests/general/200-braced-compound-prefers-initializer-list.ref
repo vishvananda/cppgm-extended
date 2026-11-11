@@ -100,7 +100,7 @@ function @Sink__operator____ov2(%this : ptr [object_bytes=4], %list : obj<16x8>)
   block ^for_iter_3:
     %t16 = load typed ptr $__begin1
     %t17 = binary mul i64 1, 4
-    %t18 = index i8 %t16, %t17
+    %t18 = index inbounds i8 %t16, %t17
     store typed ptr %t18, $__begin1
     jump ^for_cond_1
 
@@ -131,6 +131,6 @@ function @std__initializer_list_int___end(%this : ptr [object_bytes=16]) -> ptr 
     %t6 = load typed i64 %t5
     %t7 = copy i64 %t6
     %t8 = binary mul i64 %t7, 4
-    %t9 = index i8 %t3, %t8
+    %t9 = index inbounds i8 %t3, %t8
     return ptr %t9
 }

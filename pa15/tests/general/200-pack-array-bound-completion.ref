@@ -42,7 +42,7 @@ function @check() -> i32 [binding=weak, object=_Z5checkITpTniJEEiv] {
   block ^land_rhs_4:
     %t9 = addr $inferred
     %t10 = const i64 0
-    %t11 = index i32 [projection=array_element] %t9, %t10
+    %t11 = index inbounds i32 [projection=array_element] %t9, %t10
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 9
     store typed i64 %t13, $land__2
@@ -58,7 +58,7 @@ function @check() -> i32 [binding=weak, object=_Z5checkITpTniJEEiv] {
 
   block ^land_rhs_7:
     %t15 = addr $fixed
-    %t16 = index i32 [projection=array_element] %t15, 2
+    %t16 = index inbounds i32 [projection=array_element] %t15, 2
     %t17 = load typed i32 %t16
     %t18 = cmp eq i32 %t17, 0
     store typed i64 %t18, $land__3
@@ -107,7 +107,7 @@ function @check__2() -> i32 [binding=weak, object=_Z5checkIJLi1ELi2EEEiv] {
   block ^land_rhs_4:
     %t9 = addr $inferred
     %t10 = const i64 2
-    %t11 = index i32 [projection=array_element] %t9, %t10
+    %t11 = index inbounds i32 [projection=array_element] %t9, %t10
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 9
     store typed i64 %t13, $land__2
@@ -123,7 +123,7 @@ function @check__2() -> i32 [binding=weak, object=_Z5checkIJLi1ELi2EEEiv] {
 
   block ^land_rhs_7:
     %t15 = addr $fixed
-    %t16 = index i32 [projection=array_element] %t15, 2
+    %t16 = index inbounds i32 [projection=array_element] %t15, 2
     %t17 = load typed i32 %t16
     %t18 = cmp eq i32 %t17, 0
     store typed i64 %t18, $land__3

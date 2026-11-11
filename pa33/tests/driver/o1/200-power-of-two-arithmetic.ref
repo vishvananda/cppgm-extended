@@ -244,7 +244,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t8, ^cond_then_3, ^cond_else_4
 
   block ^cond_then_3:
-    %t9 = index u32 [projection=array_element] %t1, %t3
+    %t9 = index inbounds u32 [projection=array_element] %t1, %t3
     %t10 = load typed u32 %t9
     jump ^cond_end_5
 
@@ -282,7 +282,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = phi u32 [^switch_case_8: 2, ^switch_case_9: 8, ^switch_default_10: 16, ^for_body_7: 1]
     %t21 = unary ctz u32 %t20
     %t22 = binary ushr u32 %t12, %t21
-    %t23 = index u32 [projection=array_element] %t2, %t19
+    %t23 = index inbounds u32 [projection=array_element] %t2, %t19
     %t24 = load typed u32 %t23
     %t25 = binary udiv u32 %t12, %t24
     %t26 = cmp ne u32 %t22, %t25

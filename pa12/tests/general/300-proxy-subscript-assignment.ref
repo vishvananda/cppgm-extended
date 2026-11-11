@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $b
     %t2 = addr $b
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = index i32 [projection=array_element] %t3, 0
+    %t4 = index inbounds i32 [projection=array_element] %t3, 0
     store typed i32 0, %t4
     %t5 = addr $tmpobj__1
     %t6 = addr $b
@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = call ptr @Proxy__operator_(%t5, 7)
     %t9 = addr $b
     %t10 = index i8 [projection=field] %t9, 0
-    %t11 = index i32 [projection=array_element] %t10, 0
+    %t11 = index inbounds i32 [projection=array_element] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary sub nowrap i32 %t12, 7
     return i32 %t13
@@ -32,7 +32,7 @@ function @Box__operator__(%this : ptr [object_bytes=4], %i : i32) -> obj<8x8> [b
     %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed i32 $i
-    %t5 = index i32 [projection=array_element] %t3, %t4
+    %t5 = index inbounds i32 [projection=array_element] %t3, %t4
     call void @Proxy__Proxy(%t1, %t5)
     return obj<8x8> $retobj__1
 }

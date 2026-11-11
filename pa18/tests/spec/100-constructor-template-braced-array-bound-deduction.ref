@@ -64,7 +64,7 @@ function @stream_parser__stream_parser(%this : ptr [object_bytes=4], %sp : obj<4
     %t4 = load typed i32 %t3
     %t5 = binary add nowrap i32 17, %t4
     %t6 = load typed ptr $buffer
-    %t7 = index u8 [projection=array_element] %t6, 0
+    %t7 = index inbounds u8 [projection=array_element] %t6, 0
     %t8 = load u8 %t7
     %t9 = convert zext i32 u8 %t8
     %t10 = cmp eq i32 %t9, 0

@@ -19,7 +19,7 @@ function @fill() -> void [binding=strong, object=_Z4fillv] {
   block ^for_body_2:
     %t5 = addr @buffer
     %t6 = load typed u32 $i
-    %t7 = index u8 [projection=array_element] %t5, %t6
+    %t7 = index inbounds u8 [projection=array_element] %t5, %t6
     store u8 85, %t7
     jump ^for_iter_3
 

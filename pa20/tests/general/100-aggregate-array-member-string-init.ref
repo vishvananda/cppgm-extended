@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i8 0, %t13
     %t14 = addr $s
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = index i8 [projection=array_element] %t15, 2
+    %t16 = index inbounds i8 [projection=array_element] %t15, 2
     %t17 = load i8 %t16
     %t18 = convert sext i32 i8 %t17
     %t19 = cmp eq i32 %t18, 99
@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t20 = addr $s
     %t21 = index i8 [projection=field] %t20, 0
-    %t22 = index i8 [projection=array_element] %t21, 3
+    %t22 = index inbounds i8 [projection=array_element] %t21, 3
     %t23 = load i8 %t22
     %t24 = convert sext i32 i8 %t23
     %t25 = cmp eq i32 %t24, 0

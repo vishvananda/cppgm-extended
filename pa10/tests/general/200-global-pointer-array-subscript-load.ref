@@ -10,10 +10,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = load typed ptr @cursor
-    %t2 = index i32 [projection=array_element] %t1, 1
+    %t2 = index inbounds i32 [projection=array_element] %t1, 1
     store typed i32 9, %t2
     %t3 = addr @values
-    %t4 = index i32 [projection=array_element] %t3, 1
+    %t4 = index inbounds i32 [projection=array_element] %t3, 1
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 9
     branch %t6, ^cond_then_1, ^cond_else_2

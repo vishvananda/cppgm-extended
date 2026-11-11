@@ -518,6 +518,9 @@ bool Parser::parse_memory_instruction(FunctionBuilder& builder, Opcode keyword, 
 		return true;
 	case Opcode::Index:
 		inst.op = Opcode::Index;
+		inst.set_index_bounds(accept_word(WordClass::IndexBounds, static_cast<unsigned>(IndexBounds::InBounds))
+				? IndexBounds::InBounds
+				: IndexBounds::None);
 		inst.type = parse_type();
 		result = kPtr;
 		if (at(TokenKind::LBracket))

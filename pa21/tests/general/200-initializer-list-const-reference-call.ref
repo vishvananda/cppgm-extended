@@ -41,7 +41,7 @@ function @count_underscored(%names : ptr [pass=by_address, object_bytes=16]) -> 
     %t8 = index i8 [projection=field] %t7, 0
     %t9 = load typed ptr %t8
     %t10 = load typed i32 $__idx1
-    %t11 = index ptr [projection=array_element] %t9, %t10
+    %t11 = index inbounds ptr [projection=array_element] %t9, %t10
     %t12 = load typed ptr %t11
     store typed ptr %t12, $name
     %t13 = load typed ptr $name
@@ -49,7 +49,7 @@ function @count_underscored(%names : ptr [pass=by_address, object_bytes=16]) -> 
 
   block ^land_rhs_7:
     %t14 = load typed ptr $name
-    %t15 = index i8 [projection=array_element] %t14, 0
+    %t15 = index inbounds i8 [projection=array_element] %t14, 0
     %t16 = load i8 %t15
     %t17 = convert sext i32 i8 %t16
     %t18 = cmp eq i32 %t17, 95

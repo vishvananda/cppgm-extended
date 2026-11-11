@@ -48,7 +48,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_iter_3:
     %t23 = load typed ptr $__begin1
     %t24 = binary mul i64 1, 4
-    %t25 = index i8 %t23, %t24
+    %t25 = index inbounds i8 %t23, %t24
     store typed ptr %t25, $__begin1
     jump ^for_cond_1
 
@@ -86,6 +86,6 @@ function @Range__end(%this : ptr [object_bytes=12]) -> ptr [binding=weak, object
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = binary mul i64 3, 4
-    %t4 = index i8 %t2, %t3
+    %t4 = index inbounds i8 %t2, %t3
     return ptr %t4
 }

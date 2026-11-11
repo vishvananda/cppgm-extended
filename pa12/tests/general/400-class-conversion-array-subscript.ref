@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $tmpobj__2
     zeroinit 1x1 %t3
     %t4 = call i64 @index__operatorlong(%t3)
-    %t5 = index i32 [projection=array_element] %t2, %t4
+    %t5 = index inbounds i32 [projection=array_element] %t2, %t4
     %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t6, 7
     branch %t7, ^cond_then_1, ^cond_else_2

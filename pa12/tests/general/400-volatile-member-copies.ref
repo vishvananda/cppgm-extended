@@ -286,7 +286,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t67 = addr $second
     %t68 = index i8 [projection=field] %t67, 0
     %t69 = load typed i32 $i
-    %t70 = index i32 [projection=array_element] %t68, %t69
+    %t70 = index inbounds i32 [projection=array_element] %t68, %t69
     %t71 = load volatile i32 %t70
     %t72 = load typed i32 $i
     %t73 = binary add nowrap i32 %t72, 1
@@ -342,7 +342,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t105 = addr $m
     %t106 = index i8 [projection=field] %t105, 4
     %t107 = binary mul i64 0, 4
-    %t108 = index i8 [projection=array_element] %t106, %t107
+    %t108 = index inbounds i8 [projection=array_element] %t106, %t107
     %t109 = index i8 [projection=field] %t108, 0
     %t110 = load volatile i32 %t109
     %t111 = cmp ne i32 %t110, 29
@@ -361,7 +361,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t113 = addr $m
     %t114 = index i8 [projection=field] %t113, 4
     %t115 = binary mul i64 1, 4
-    %t116 = index i8 [projection=array_element] %t114, %t115
+    %t116 = index inbounds i8 [projection=array_element] %t114, %t115
     %t117 = index i8 [projection=field] %t116, 0
     %t118 = load volatile i32 %t117
     %t119 = cmp ne i32 %t118, 31

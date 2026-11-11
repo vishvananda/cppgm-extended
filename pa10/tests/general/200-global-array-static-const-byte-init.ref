@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @char_syntax
-    %t2 = index u8 [projection=array_element] %t1, 0
+    %t2 = index inbounds u8 [projection=array_element] %t1, 0
     %t3 = load u8 %t2
     %t4 = convert zext i32 u8 %t3
     %t5 = cmp eq i32 %t4, 0
@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t6 = addr @char_syntax
-    %t7 = index u8 [projection=array_element] %t6, 1
+    %t7 = index inbounds u8 [projection=array_element] %t6, 1
     %t8 = load u8 %t7
     %t9 = convert zext i32 u8 %t8
     %t10 = cmp eq i32 %t9, 26

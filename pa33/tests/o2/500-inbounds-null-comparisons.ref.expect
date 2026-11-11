@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+# Null comparisons need no element address; all negative cases still execute.
+count(index) == 0 in @element_null
+count(index) == 0 in @element_nonnull

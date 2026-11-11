@@ -23,13 +23,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed ptr $buckets
     %t8 = load typed ptr $buckets
     %t9 = binary mul i64 1, 16
-    %t10 = index i8 [projection=array_element] %t8, %t9
+    %t10 = index inbounds i8 [projection=array_element] %t8, %t9
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = index i8 [projection=field] %t11, 0
     store typed ptr %t7, %t12
     %t13 = load typed ptr $buckets
     %t14 = binary mul i64 1, 16
-    %t15 = index i8 [projection=array_element] %t13, %t14
+    %t15 = index inbounds i8 [projection=array_element] %t13, %t14
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = index i8 [projection=field] %t16, 0
     %t18 = load typed ptr %t17

@@ -288,7 +288,7 @@ function @update_word(%data : ptr, %length : i64, %value : u32) -> u32 [linkage=
   block ^for_body_2:
     %t3 = phi u32 [^for_body_2: %t14, ^loop_preheader_1: %value]
     %t4 = phi i64 [^for_body_2: %t15, ^loop_preheader_1: 0]
-    %t5 = index u8 [projection=array_element] %data, %t4
+    %t5 = index inbounds u8 [projection=array_element] %data, %t4
     %t6 = load u8 %t5
     %t7 = convert zext u32 u8 %t6
     %t8 = binary xor u32 %t7, %t3
@@ -353,7 +353,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = binary add u32 %t5, 1013904223
     %t7 = binary ushr u32 %t6, 24
     %t8 = convert trunc u8 u32 %t7
-    %t9 = index u8 [projection=array_element] %t2, %t3
+    %t9 = index inbounds u8 [projection=array_element] %t2, %t3
     store u8 %t8, %t9
     %t10 = binary add u32 %t3, 1
     %t11 = cmp ult u32 %t10, 65
@@ -370,7 +370,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_3:
     %t17 = phi u32 [^for_body_3: %t24, ^for_body_2: 0]
     %t18 = phi u32 [^for_body_3: %t23, ^for_body_2: %t15]
-    %t19 = index u8 [projection=array_element] %t2, %t17
+    %t19 = index inbounds u8 [projection=array_element] %t2, %t17
     %t20 = load u8 %t19
     %t21 = convert zext u32 u8 %t20
     %t22 = binary xor u32 %t21, %t18
@@ -391,7 +391,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_6:
     %t29 = phi u32 [^for_body_6: %t40, ^loop_preheader_5: %t15]
     %t30 = phi i64 [^for_body_6: %t41, ^loop_preheader_5: 0]
-    %t31 = index u8 [projection=array_element] %t2, %t30
+    %t31 = index inbounds u8 [projection=array_element] %t2, %t30
     %t32 = load u8 %t31
     %t33 = convert zext u32 u8 %t32
     %t34 = binary xor u32 %t33, %t29

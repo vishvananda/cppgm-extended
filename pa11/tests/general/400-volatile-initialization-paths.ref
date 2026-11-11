@@ -40,7 +40,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store volatile i32 %t26, %t21
     %t27 = addr $holder
     %t28 = index i8 [projection=field] %t27, 0
-    %t29 = index i32 [projection=array_element] %t28, 0
+    %t29 = index inbounds i32 [projection=array_element] %t28, 0
     %t30 = load volatile i32 %t29
     %t31 = cmp ne i32 %t30, 5
     branch %t31, ^lor_short_2, ^lor_rhs_1
@@ -48,7 +48,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_1:
     %t32 = addr $holder
     %t33 = index i8 [projection=field] %t32, 0
-    %t34 = index i32 [projection=array_element] %t33, 1
+    %t34 = index inbounds i32 [projection=array_element] %t33, 1
     %t35 = load volatile i32 %t34
     %t36 = cmp ne i32 %t35, 6
     store typed i64 %t36, $lor__1

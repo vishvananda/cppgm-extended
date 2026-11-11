@@ -208,11 +208,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t62 = addr $b
     %t63 = call ptr @Buffer__operatorArray_(%t62)
     %t64 = binary mul i64 2, 4
-    %t65 = index i8 %t63, %t64
+    %t65 = index inbounds i8 %t63, %t64
     %t66 = addr $b
     %t67 = index i8 [projection=field] %t66, 4
     %t68 = binary mul i64 2, 4
-    %t69 = index i8 %t67, %t68
+    %t69 = index inbounds i8 %t67, %t68
     %t70 = cmp ne ptr %t65, %t69
     branch %t70, ^if_then_23, ^lor_rhs_26
 
@@ -228,11 +228,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t76 = load typed ptr $c
     %t77 = call ptr @Buffer__operatorconstArray___ov2(%t76)
     %t78 = binary mul i64 3, 4
-    %t79 = index i8 %t77, %t78
+    %t79 = index inbounds i8 %t77, %t78
     %t80 = addr $b
     %t81 = index i8 [projection=field] %t80, 4
     %t82 = binary mul i64 3, 4
-    %t83 = index i8 %t81, %t82
+    %t83 = index inbounds i8 %t81, %t82
     %t84 = cmp ne ptr %t79, %t83
     branch %t84, ^if_then_23, ^if_else_24
 
@@ -247,11 +247,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t86 = call ptr @Buffer__operatorArray_(%t85)
     store typed ptr %t86, $reference
     %t87 = load typed ptr $reference
-    %t88 = index i32 [projection=array_element] %t87, 1
+    %t88 = index inbounds i32 [projection=array_element] %t87, 1
     store typed i32 42, %t88
     %t89 = addr $b
     %t90 = index i8 [projection=field] %t89, 4
-    %t91 = index i32 [projection=array_element] %t90, 1
+    %t91 = index inbounds i32 [projection=array_element] %t90, 1
     %t92 = load typed i32 %t91
     %t93 = cmp ne i32 %t92, 42
     branch %t93, ^if_then_28, ^if_else_29

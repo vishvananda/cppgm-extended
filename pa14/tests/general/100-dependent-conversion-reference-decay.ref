@@ -42,11 +42,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t25 = addr $b
     %t26 = call ptr @Buffer_int___operatorArray_(%t25)
     %t27 = binary mul i64 3, 4
-    %t28 = index i8 %t26, %t27
+    %t28 = index inbounds i8 %t26, %t27
     %t29 = addr $b
     %t30 = index i8 [projection=field] %t29, 0
     %t31 = binary mul i64 3, 4
-    %t32 = index i8 %t30, %t31
+    %t32 = index inbounds i8 %t30, %t31
     %t33 = cmp ne ptr %t28, %t32
     branch %t33, ^if_then_1, ^if_else_2
 
@@ -59,11 +59,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_5:
     %t34 = addr $b
     %t35 = call ptr @pointer(%t34)
-    %t36 = index i32 [projection=array_element] %t35, 2
+    %t36 = index inbounds i32 [projection=array_element] %t35, 2
     store typed i32 42, %t36
     %t37 = addr $b
     %t38 = index i8 [projection=field] %t37, 0
-    %t39 = index i32 [projection=array_element] %t38, 2
+    %t39 = index inbounds i32 [projection=array_element] %t38, 2
     %t40 = load typed i32 %t39
     %t41 = cmp eq i32 %t40, 42
     branch %t41, ^cond_then_6, ^cond_else_7

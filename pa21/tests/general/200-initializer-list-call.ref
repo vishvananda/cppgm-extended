@@ -25,7 +25,7 @@ function @sum(%xs : obj<16x8>) -> i32 [binding=strong, object=_Z3sumSt16initiali
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load typed ptr %t9
     %t11 = load typed i32 $__idx1
-    %t12 = index i32 [projection=array_element] %t10, %t11
+    %t12 = index inbounds i32 [projection=array_element] %t10, %t11
     %t13 = load typed i32 %t12
     store typed i32 %t13, $x
     %t14 = load typed i32 $s

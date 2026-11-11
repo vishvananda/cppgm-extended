@@ -73,7 +73,7 @@ function @make_result() -> obj<16x8> [binding=strong, object=_Z11make_resultv] {
     %t15 = addr $result
     %t16 = addr @__local_static__make_result__decl0__prefixes
     %t17 = binary mul i64 1, 16
-    %t18 = index i8 [projection=array_element] %t16, %t17
+    %t18 = index inbounds i8 [projection=array_element] %t16, %t17
     %t19 = index i8 [projection=field] %t18, 8
     %t20 = load typed i64 %t19
     %t21 = addr $result

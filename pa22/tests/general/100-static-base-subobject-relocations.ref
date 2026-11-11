@@ -42,7 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_1:
     %t13 = addr @objects
     %t14 = binary mul i64 1, 12
-    %t15 = index i8 [projection=array_element] %t13, %t14
+    %t15 = index inbounds i8 [projection=array_element] %t13, %t14
     %t16 = index i8 %t15, 4
     %t17 = index i8 [projection=field] %t16, 0
     %t18 = load typed i32 %t17
@@ -78,7 +78,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_7:
     %t27 = addr @objects
     %t28 = binary mul i64 0, 12
-    %t29 = index i8 [projection=array_element] %t27, %t28
+    %t29 = index inbounds i8 [projection=array_element] %t27, %t28
     %t30 = index i8 %t29, 4
     %t31 = index i8 [projection=field] %t30, 0
     %t32 = load typed i32 %t31
@@ -97,7 +97,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_10:
     %t35 = addr @objects
     %t36 = binary mul i64 2, 12
-    %t37 = index i8 [projection=array_element] %t35, %t36
+    %t37 = index inbounds i8 [projection=array_element] %t35, %t36
     %t38 = index i8 %t37, 4
     %t39 = index i8 [projection=field] %t38, 0
     %t40 = load typed i32 %t39
@@ -134,7 +134,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t49 = load typed ptr @alias
     %t50 = addr @objects
     %t51 = binary mul i64 1, 12
-    %t52 = index i8 [projection=array_element] %t50, %t51
+    %t52 = index inbounds i8 [projection=array_element] %t50, %t51
     %t53 = index i8 %t52, 4
     %t54 = cmp ne ptr %t49, %t53
     store typed i64 %t54, $lor__6

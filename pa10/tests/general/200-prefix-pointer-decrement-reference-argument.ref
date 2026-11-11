@@ -15,18 +15,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $values
     %t2 = binary mul i64 2, 4
-    %t3 = index i8 %t1, %t2
+    %t3 = index inbounds i8 %t1, %t2
     store typed ptr %t3, $p
     %t4 = load typed ptr $p
     %t5 = binary mul i64 1, 4
     %t6 = binary sub i64 0, %t5
-    %t7 = index i8 %t4, %t6
+    %t7 = index inbounds i8 %t4, %t6
     store typed ptr %t7, $p
     %t8 = addr $p
     %t9 = call ptr @touch(%t8)
     %t10 = addr $values
     %t11 = binary mul i64 1, 4
-    %t12 = index i8 %t10, %t11
+    %t12 = index inbounds i8 %t10, %t11
     %t13 = cmp eq ptr %t9, %t12
     branch %t13, ^cond_then_1, ^cond_else_2
 

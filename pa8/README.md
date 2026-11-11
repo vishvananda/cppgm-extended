@@ -103,7 +103,7 @@ The required representation includes the forms exercised by `tests/spec/`:
 - jumps, branches, switches, phi values and terminators;
 - advisory `likely`/`unlikely` branch predictions, preserving both outcomes;
 - `select`, the `ctz`, `clz` and `sqrt` unary operators, and the instruction facts
-  `typed`, `nowrap` and `exact` (`lowir.md`, "Instruction Facts");
+  `typed`, `nowrap`, `exact` and `inbounds` (`lowir.md`, "Instruction Facts");
 - the atomic and exception instruction records used by the fixtures;
 - the symbol, parameter, function, storage, projection and debug metadata used
   by those fixtures, including the required placement and value constraints,

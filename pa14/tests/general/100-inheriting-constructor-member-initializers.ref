@@ -188,7 +188,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t69 = addr $aggregates
     %t70 = index i8 [projection=field] %t69, 16
     %t71 = binary mul i64 0, 8
-    %t72 = index i8 [projection=array_element] %t70, %t71
+    %t72 = index inbounds i8 [projection=array_element] %t70, %t71
     %t73 = index i8 [projection=field] %t72, 0
     %t74 = load typed i32 %t73
     %t75 = cmp ne i32 %t74, 3
@@ -198,7 +198,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t76 = addr $aggregates
     %t77 = index i8 [projection=field] %t76, 16
     %t78 = binary mul i64 1, 8
-    %t79 = index i8 [projection=array_element] %t77, %t78
+    %t79 = index inbounds i8 [projection=array_element] %t77, %t78
     %t80 = index i8 [projection=field] %t79, 0
     %t81 = load typed i32 %t80
     %t82 = cmp ne i32 %t81, 4
@@ -214,7 +214,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_35:
     %t83 = addr $aggregates
     %t84 = index i8 [projection=field] %t83, 32
-    %t85 = index i32 [projection=array_element] %t84, 0
+    %t85 = index inbounds i32 [projection=array_element] %t84, 0
     %t86 = load typed i32 %t85
     %t87 = cmp ne i32 %t86, 7
     branch %t87, ^if_then_36, ^lor_rhs_38
@@ -222,7 +222,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_38:
     %t88 = addr $aggregates
     %t89 = index i8 [projection=field] %t88, 32
-    %t90 = index i32 [projection=array_element] %t89, 2
+    %t90 = index inbounds i32 [projection=array_element] %t89, 2
     %t91 = load typed i32 %t90
     %t92 = cmp ne i32 %t91, 9
     branch %t92, ^if_then_36, ^if_else_37

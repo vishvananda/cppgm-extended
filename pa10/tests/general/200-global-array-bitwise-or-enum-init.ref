@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @masks
-    %t2 = index u32 [projection=array_element] %t1, 1
+    %t2 = index inbounds u32 [projection=array_element] %t1, 1
     %t3 = load typed u32 %t2
     %t4 = binary or i32 96, 1024
     %t5 = copy u32 %t4

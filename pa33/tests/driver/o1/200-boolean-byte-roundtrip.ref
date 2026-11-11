@@ -88,7 +88,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t21, ^for_body_11, ^for_end_14
 
   block ^for_body_11:
-    %t22 = index f64 [projection=array_element] %t19, %t20
+    %t22 = index inbounds f64 [projection=array_element] %t19, %t20
     %t23 = load typed f64 %t22
     %t24 = call i64 @floating_truth(%t23)
     %t25 = cmp ne f64 %t23, 0

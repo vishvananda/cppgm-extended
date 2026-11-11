@@ -61,7 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_10:
     %t19 = addr $pointers
-    %t20 = index ptr [projection=array_element] %t19, 0
+    %t20 = index inbounds ptr [projection=array_element] %t19, 0
     %t21 = load typed ptr %t20
     %t22 = call u8 %t21(7) as (%arg0 : i32) -> u8
     %t23 = cmp ne u8 %t22, 0
@@ -78,7 +78,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_13:
     %t25 = addr $pointers
-    %t26 = index ptr [projection=array_element] %t25, 1
+    %t26 = index inbounds ptr [projection=array_element] %t25, 1
     %t27 = load typed ptr %t26
     %t28 = call u8 %t27(7) as (%arg0 : i32) -> u8
     %t29 = cmp eq u8 %t28, 0

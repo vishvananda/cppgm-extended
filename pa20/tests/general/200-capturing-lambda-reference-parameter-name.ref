@@ -19,7 +19,7 @@ function @run(%items : ptr, %count : i32) -> i32 [binding=strong, object=_Z3runP
     %t7 = call i32 @__lambda_run_t34_38__operator__(%t6)
     %t8 = load typed ptr $parameter
     %t9 = binary mul i64 0, 4
-    %t10 = index i8 [projection=array_element] %t8, %t9
+    %t10 = index inbounds i8 [projection=array_element] %t8, %t9
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t7, %t12
@@ -81,7 +81,7 @@ function @__lambda_run_t34_38____lambda_nested_t45_53__operator__(%this : ptr [o
     %t6 = binary sub nowrap i32 %t5, 1
     %t7 = convert sext i64 i32 %t6
     %t8 = binary mul i64 %t7, 4
-    %t9 = index i8 [projection=array_element] %t1, %t8
+    %t9 = index inbounds i8 [projection=array_element] %t1, %t8
     store typed ptr %t9, $parameter
     %t10 = load typed ptr $parameter
     %t11 = index i8 [projection=field] %t10, 0

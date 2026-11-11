@@ -715,7 +715,8 @@ private:
 	lowir::Type variadic_wide_type(const sema::Type* type);
 	lowir::Value variadic_wide_object(const RValue& value, const sema::Type* type);
 	lowir::Value address_of(const Place& place);
-	RValue index(lowir::Type element, uint8_t projection, lowir::Value base, const RValue& offset);
+	RValue index(lowir::Type element, uint8_t projection, lowir::Value base, const RValue& offset,
+		lowir::IndexBounds bounds = lowir::IndexBounds::None);
 	bool is_integer_literal(const RValue& value, uint64_t& bits);
 
 	// ---------------------------------------------- statements

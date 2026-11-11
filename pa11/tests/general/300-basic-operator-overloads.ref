@@ -50,22 +50,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 5, %t7
     %t8 = addr $a
     %t9 = index i8 [projection=field] %t8, 4
-    %t10 = index i32 [projection=array_element] %t9, 0
+    %t10 = index inbounds i32 [projection=array_element] %t9, 0
     store typed i32 4, %t10
     %t11 = addr $a
     %t12 = index i8 [projection=field] %t11, 4
-    %t13 = index i32 [projection=array_element] %t12, 1
+    %t13 = index inbounds i32 [projection=array_element] %t12, 1
     store typed i32 9, %t13
     %t14 = addr $b
     %t15 = index i8 [projection=field] %t14, 0
     store typed i32 3, %t15
     %t16 = addr $b
     %t17 = index i8 [projection=field] %t16, 4
-    %t18 = index i32 [projection=array_element] %t17, 0
+    %t18 = index inbounds i32 [projection=array_element] %t17, 0
     store typed i32 1, %t18
     %t19 = addr $b
     %t20 = index i8 [projection=field] %t19, 4
-    %t21 = index i32 [projection=array_element] %t20, 1
+    %t21 = index inbounds i32 [projection=array_element] %t20, 1
     store typed i32 2, %t21
     %t22 = addr $stream
     %t23 = addr $a
@@ -305,7 +305,7 @@ function @Number__operator__(%this : ptr [object_bytes=12], %i : i32) -> i32 [bi
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 4
     %t3 = load typed i32 $i
-    %t4 = index i32 [projection=array_element] %t2, %t3
+    %t4 = index inbounds i32 [projection=array_element] %t2, %t3
     %t5 = load typed i32 %t4
     return i32 %t5
 }

@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_2:
     %t4 = addr $a
     %t5 = load typed i32 $__idx1
-    %t6 = index i32 [projection=array_element] %t4, %t5
+    %t6 = index inbounds i32 [projection=array_element] %t4, %t5
     %t7 = load typed i32 %t6
     store typed i32 %t7, $x
     %t8 = load typed i32 $s

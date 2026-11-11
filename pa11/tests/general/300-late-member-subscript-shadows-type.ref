@@ -25,7 +25,7 @@ function @container__operator__(%this : ptr [object_bytes=16], %i : i32) -> ptr 
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed i32 $i
-    %t4 = index i32 [projection=array_element] %t2, %t3
+    %t4 = index inbounds i32 [projection=array_element] %t2, %t3
     return ptr %t4
 }
 function @sets__make_set(%this : ptr [object_bytes=16], %x : i32) -> void [binding=weak, object=_ZN4sets8make_setEi, inline_hint=yes] {

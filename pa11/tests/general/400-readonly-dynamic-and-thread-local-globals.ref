@@ -17,11 +17,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = load typed i32 @dynamic_scalar
     %t2 = binary add nowrap i32 3, %t1
     %t3 = addr @dynamic_table
-    %t4 = index i32 [projection=array_element] %t3, 0
+    %t4 = index inbounds i32 [projection=array_element] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t2, %t5
     %t7 = addr @dynamic_table
-    %t8 = index i32 [projection=array_element] %t7, 1
+    %t8 = index inbounds i32 [projection=array_element] %t7, 1
     %t9 = load typed i32 %t8
     %t10 = binary add nowrap i32 %t6, %t9
     %t11 = binary add nowrap i32 %t10, 11

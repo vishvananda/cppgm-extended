@@ -104,7 +104,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_13:
     %t33 = addr @buffer
     %t34 = load typed u32 $i
-    %t35 = index u8 [projection=array_element] %t33, %t34
+    %t35 = index inbounds u8 [projection=array_element] %t33, %t34
     store u8 85, %t35
     jump ^for_iter_14
 

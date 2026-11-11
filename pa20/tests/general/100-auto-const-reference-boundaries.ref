@@ -308,7 +308,7 @@ function @case_7__check_case() -> i32 [binding=strong, object=_ZN6case_710check_
 
   block ^lor_rhs_1:
     %t5 = load typed ptr $text
-    %t6 = index i8 [projection=array_element] %t5, 1
+    %t6 = index inbounds i8 [projection=array_element] %t5, 1
     %t7 = load i8 %t6
     %t8 = convert sext i32 i8 %t7
     %t9 = cmp ne i32 %t8, 98

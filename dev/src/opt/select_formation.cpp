@@ -328,6 +328,8 @@ InstId SelectFormation::hoist(BlockId a, BlockId e, InstId after)
 		insert_after(body_, e, after, i);
 		// Speculated: its facts may not hold where its arm did not run.
 		body_.instructions[i].flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT | IF_NONNULL));
+		if (body_.instructions[i].op == Opcode::Index)
+			body_.instructions[i].set_index_bounds(IndexBounds::None);
 		after = i;
 	}
 	return after;

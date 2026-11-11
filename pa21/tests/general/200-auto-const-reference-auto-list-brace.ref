@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_1:
     %t9 = load typed ptr $xs
     %t10 = call ptr @std__initializer_list_int___begin(%t9)
-    %t11 = index i32 [projection=array_element] %t10, 0
+    %t11 = index inbounds i32 [projection=array_element] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp ne i32 %t12, 1
     store typed i64 %t13, $lor__3
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_4:
     %t15 = load typed ptr $xs
     %t16 = call ptr @std__initializer_list_int___begin(%t15)
-    %t17 = index i32 [projection=array_element] %t16, 1
+    %t17 = index inbounds i32 [projection=array_element] %t16, 1
     %t18 = load typed i32 %t17
     %t19 = cmp ne i32 %t18, 2
     store typed i64 %t19, $lor__4

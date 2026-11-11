@@ -92,14 +92,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_13:
     %t13 = addr @trail
-    %t14 = index i32 [projection=array_element] %t13, 0
+    %t14 = index inbounds i32 [projection=array_element] %t13, 0
     %t15 = load typed i32 %t14
     %t16 = cmp ne i32 %t15, 1
     branch %t16, ^if_then_10, ^lor_rhs_12
 
   block ^lor_rhs_12:
     %t17 = addr @trail
-    %t18 = index i32 [projection=array_element] %t17, 1
+    %t18 = index inbounds i32 [projection=array_element] %t17, 1
     %t19 = load typed i32 %t18
     %t20 = cmp ne i32 %t19, 9
     branch %t20, ^if_then_10, ^if_else_11
@@ -169,21 +169,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_28:
     %t33 = addr @trail
-    %t34 = index i32 [projection=array_element] %t33, 0
+    %t34 = index inbounds i32 [projection=array_element] %t33, 0
     %t35 = load typed i32 %t34
     %t36 = cmp ne i32 %t35, 5
     branch %t36, ^if_then_24, ^lor_rhs_27
 
   block ^lor_rhs_27:
     %t37 = addr @trail
-    %t38 = index i32 [projection=array_element] %t37, 1
+    %t38 = index inbounds i32 [projection=array_element] %t37, 1
     %t39 = load typed i32 %t38
     %t40 = cmp ne i32 %t39, 4
     branch %t40, ^if_then_24, ^lor_rhs_26
 
   block ^lor_rhs_26:
     %t41 = addr @trail
-    %t42 = index i32 [projection=array_element] %t41, 2
+    %t42 = index inbounds i32 [projection=array_element] %t41, 2
     %t43 = load typed i32 %t42
     %t44 = cmp ne i32 %t43, 9
     branch %t44, ^if_then_24, ^if_else_25
@@ -714,7 +714,7 @@ function @Base___Base(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=
     %t2 = load typed i32 @count
     %t3 = binary add nowrap i32 %t2, 1
     store typed i32 %t3, @count
-    %t4 = index i32 [projection=array_element] %t1, %t2
+    %t4 = index inbounds i32 [projection=array_element] %t1, %t2
     store typed i32 9, %t4
     return void
 }
@@ -730,7 +730,7 @@ function @Tracked___Tracked(%this : ptr [object_bytes=4]) -> void [unwind=no, bi
     %t5 = load typed i32 @count
     %t6 = binary add nowrap i32 %t5, 1
     store typed i32 %t6, @count
-    %t7 = index i32 [projection=array_element] %t4, %t5
+    %t7 = index inbounds i32 [projection=array_element] %t4, %t5
     store typed i32 %t3, %t7
     return void
 }

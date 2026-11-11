@@ -67,7 +67,7 @@ function @Box_int___operator__(%this : ptr [object_bytes=8], %n : i64) -> ptr [b
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = binary mul i64 %t1, 4
-    %t6 = index i8 %t4, %t5
+    %t6 = index inbounds i8 %t4, %t5
     store typed ptr %t6, %t3
     %t7 = load typed ptr $this
     return ptr %t7

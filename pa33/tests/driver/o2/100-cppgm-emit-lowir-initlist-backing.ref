@@ -5,7 +5,7 @@ function @second(%xs : obj<16x8>) -> i32 [binding=strong, object=_Z6secondSt16in
     %t1 = addr $xs
     copyobj 16x8 %xs, %t1
     %t2 = load typed ptr %t1
-    %t3 = index i32 [projection=array_element] %t2, 1
+    %t3 = index inbounds i32 [projection=array_element] %t2, 1
     %t4 = load typed i32 %t3
     return i32 %t4
 }

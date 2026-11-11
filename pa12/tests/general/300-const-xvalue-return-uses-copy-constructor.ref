@@ -13,7 +13,7 @@ function @take(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_
     store typed ptr %values, $values
     %t1 = load typed ptr $values
     %t2 = binary mul i64 0, 4
-    %t3 = index i8 [projection=array_element] %t1, %t2
+    %t3 = index inbounds i8 [projection=array_element] %t1, %t2
     %t4 = call ptr @as_const_xvalue(%t3)
     call void @item__item__ov2(%ret, %t4)
     return void
@@ -39,7 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t8 = addr $values
     %t9 = binary mul i64 0, 4
-    %t10 = index i8 [projection=array_element] %t8, %t9
+    %t10 = index inbounds i8 [projection=array_element] %t8, %t9
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 7

@@ -10,7 +10,7 @@ function @choose__ov3(%p : ptr) -> i32 [binding=strong, object=_Z6choosePKc] {
     store typed ptr %p, $p
     %t1 = load typed ptr $p
     %t2 = load typed ptr $p
-    %t3 = index i8 %t2, 1
+    %t3 = index inbounds i8 %t2, 1
     %t4 = call i32 @choose(%t1, %t3)
     return i32 %t4
 }

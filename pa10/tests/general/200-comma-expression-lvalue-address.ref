@@ -11,7 +11,7 @@ function @pick(%values : ptr, %index : i32) -> ptr [binding=strong, object=_Z4pi
     store typed i32 %t1, @side
     %t2 = load typed ptr $values
     %t3 = load typed i32 $index
-    %t4 = index i32 [projection=array_element] %t2, %t3
+    %t4 = index inbounds i32 [projection=array_element] %t2, %t3
     return ptr %t4
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -22,23 +22,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $values
-    %t2 = index i32 [projection=array_element] %t1, 0
+    %t2 = index inbounds i32 [projection=array_element] %t1, 0
     store typed i32 3, %t2
     %t3 = addr $values
-    %t4 = index i32 [projection=array_element] %t3, 1
+    %t4 = index inbounds i32 [projection=array_element] %t3, 1
     store typed i32 5, %t4
     %t5 = addr $values
     %t6 = call ptr @pick(%t5, 1)
     store typed i32 9, %t6
     %t7 = addr $values
-    %t8 = index i32 [projection=array_element] %t7, 0
+    %t8 = index inbounds i32 [projection=array_element] %t7, 0
     %t9 = load typed i32 %t8
     %t10 = cmp eq i32 %t9, 3
     branch %t10, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t11 = addr $values
-    %t12 = index i32 [projection=array_element] %t11, 1
+    %t12 = index inbounds i32 [projection=array_element] %t11, 1
     %t13 = load typed i32 %t12
     %t14 = cmp eq i32 %t13, 9
     store typed i64 %t14, $land__2

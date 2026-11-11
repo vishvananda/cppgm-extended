@@ -13,9 +13,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @paths
-    %t2 = index ptr [projection=array_element] %t1, 0
+    %t2 = index inbounds ptr [projection=array_element] %t1, 0
     %t3 = load typed ptr %t2
-    %t4 = index i8 [projection=array_element] %t3, 0
+    %t4 = index inbounds i8 [projection=array_element] %t3, 0
     %t5 = load i8 %t4
     %t6 = convert sext i32 i8 %t5
     %t7 = cmp eq i32 %t6, 97
@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t8 = addr @paths
-    %t9 = index ptr [projection=array_element] %t8, 1
+    %t9 = index inbounds ptr [projection=array_element] %t8, 1
     %t10 = load typed ptr %t9
     %t11 = copy ptr 0
     %t12 = cmp eq ptr %t10, %t11

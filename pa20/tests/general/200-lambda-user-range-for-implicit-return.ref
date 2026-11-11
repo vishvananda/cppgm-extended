@@ -7,11 +7,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $range
     %t2 = addr $range
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = index i32 [projection=array_element] %t3, 0
+    %t4 = index inbounds i32 [projection=array_element] %t3, 0
     store typed i32 7, %t4
     %t5 = addr $range
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = index i32 [projection=array_element] %t6, 1
+    %t7 = index inbounds i32 [projection=array_element] %t6, 1
     store typed i32 9, %t7
     %t8 = addr $first
     %t9 = addr $first
@@ -106,7 +106,7 @@ function @Range__end(%this : ptr [object_bytes=8]) -> obj<8x8> [binding=weak, ob
     %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = binary mul i64 2, 4
-    %t5 = index i8 %t3, %t4
+    %t5 = index inbounds i8 %t3, %t4
     %t6 = addr $it
     %t7 = index i8 [projection=field] %t6, 0
     store typed ptr %t5, %t7
@@ -152,7 +152,7 @@ function @Iter__operator____2(%this : ptr [object_bytes=8]) -> ptr [binding=weak
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = binary mul i64 1, 4
-    %t5 = index i8 %t3, %t4
+    %t5 = index inbounds i8 %t3, %t4
     store typed ptr %t5, %t2
     %t6 = load typed ptr $this
     return ptr %t6

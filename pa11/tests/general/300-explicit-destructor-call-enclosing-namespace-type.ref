@@ -30,7 +30,7 @@ function @ns__json__detail__holder___holder(%this : ptr [object_bytes=8]) -> voi
     store typed ptr %t3, $p
     %t4 = load typed ptr $p
     %t5 = binary mul i64 0, 4
-    %t6 = index i8 [projection=array_element] %t4, %t5
+    %t6 = index inbounds i8 [projection=array_element] %t4, %t5
     call void @ns__json__value___value(%t6)
     return void
 }

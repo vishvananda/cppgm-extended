@@ -8,17 +8,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $value
     %t2 = addr $value
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = index i32 [projection=array_element] %t3, 0
+    %t4 = index inbounds i32 [projection=array_element] %t3, 0
     store typed i32 7, %t4
     %t5 = addr $value
     %t6 = call ptr @get_elems(%t5)
     store typed ptr %t6, $ref
     %t7 = load typed ptr $ref
-    %t8 = index i32 [projection=array_element] %t7, 1
+    %t8 = index inbounds i32 [projection=array_element] %t7, 1
     store typed i32 5, %t8
     %t9 = addr $value
     %t10 = index i8 [projection=field] %t9, 0
-    %t11 = index i32 [projection=array_element] %t10, 0
+    %t11 = index inbounds i32 [projection=array_element] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 7
     branch %t13, ^land_rhs_4, ^land_short_5
@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t14 = addr $value
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = index i32 [projection=array_element] %t15, 1
+    %t16 = index inbounds i32 [projection=array_element] %t15, 1
     %t17 = load typed i32 %t16
     %t18 = cmp eq i32 %t17, 5
     store typed i64 %t18, $land__2

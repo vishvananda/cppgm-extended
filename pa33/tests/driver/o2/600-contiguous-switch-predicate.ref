@@ -2198,7 +2198,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_4:
     %t12 = binary sub u32 %t6, 128
-    %t13 = index i64 [projection=array_element] %t4, %t12
+    %t13 = index inbounds i64 [projection=array_element] %t4, %t12
     %t14 = load typed i64 %t13
     jump ^cond_end_5
 
@@ -2216,7 +2216,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t16, ^lor_end_9, ^lor_rhs_8
 
   block ^lor_rhs_8:
-    %t19 = index i64 [projection=array_element] %t1, %t17
+    %t19 = index inbounds i64 [projection=array_element] %t1, %t17
     %t20 = load typed i64 %t19
     %t21 = cmp eq i64 %t15, %t20
     jump ^lor_end_9
@@ -2297,7 +2297,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_22:
     %t54 = binary sub u32 %t48, 128
-    %t55 = index i64 [projection=array_element] %t46, %t54
+    %t55 = index inbounds i64 [projection=array_element] %t46, %t54
     %t56 = load typed i64 %t55
     jump ^cond_end_23
 
@@ -2315,7 +2315,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t58, ^lor_end_27, ^lor_rhs_26
 
   block ^lor_rhs_26:
-    %t61 = index i64 [projection=array_element] %t43, %t59
+    %t61 = index inbounds i64 [projection=array_element] %t43, %t59
     %t62 = load typed i64 %t61
     %t63 = cmp eq i64 %t57, %t62
     jump ^lor_end_27
@@ -2396,7 +2396,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_40:
     %t96 = binary sub u32 %t90, 128
-    %t97 = index i64 [projection=array_element] %t88, %t96
+    %t97 = index inbounds i64 [projection=array_element] %t88, %t96
     %t98 = load typed i64 %t97
     jump ^cond_end_41
 
@@ -2414,7 +2414,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t100, ^lor_end_45, ^lor_rhs_44
 
   block ^lor_rhs_44:
-    %t103 = index i64 [projection=array_element] %t85, %t101
+    %t103 = index inbounds i64 [projection=array_element] %t85, %t101
     %t104 = load typed i64 %t103
     %t105 = cmp eq i64 %t99, %t104
     jump ^lor_end_45
@@ -2495,7 +2495,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_58:
     %t138 = binary sub u32 %t132, 128
-    %t139 = index i64 [projection=array_element] %t130, %t138
+    %t139 = index inbounds i64 [projection=array_element] %t130, %t138
     %t140 = load typed i64 %t139
     jump ^cond_end_59
 
@@ -2513,7 +2513,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t142, ^lor_end_63, ^lor_rhs_62
 
   block ^lor_rhs_62:
-    %t145 = index i64 [projection=array_element] %t127, %t143
+    %t145 = index inbounds i64 [projection=array_element] %t127, %t143
     %t146 = load typed i64 %t145
     %t147 = cmp eq i64 %t141, %t146
     jump ^lor_end_63
@@ -2594,7 +2594,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_76:
     %t180 = binary sub u32 %t174, 128
-    %t181 = index i64 [projection=array_element] %t172, %t180
+    %t181 = index inbounds i64 [projection=array_element] %t172, %t180
     %t182 = load typed i64 %t181
     jump ^cond_end_77
 
@@ -2612,7 +2612,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t184, ^lor_end_81, ^lor_rhs_80
 
   block ^lor_rhs_80:
-    %t187 = index i64 [projection=array_element] %t169, %t185
+    %t187 = index inbounds i64 [projection=array_element] %t169, %t185
     %t188 = load typed i64 %t187
     %t189 = cmp eq i64 %t183, %t188
     jump ^lor_end_81
@@ -2692,7 +2692,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_94:
     %t221 = binary sub u32 %t215, 128
-    %t222 = index i64 [projection=array_element] %t4, %t221
+    %t222 = index inbounds i64 [projection=array_element] %t4, %t221
     %t223 = load typed i64 %t222
     jump ^cond_end_95
 
@@ -2710,7 +2710,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t225, ^lor_end_99, ^lor_rhs_98
 
   block ^lor_rhs_98:
-    %t228 = index i64 [projection=array_element] %t211, %t226
+    %t228 = index inbounds i64 [projection=array_element] %t211, %t226
     %t229 = load typed i64 %t228
     %t230 = cmp eq i64 %t224, %t229
     jump ^lor_end_99
@@ -2790,7 +2790,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_112:
     %t262 = binary sub u32 %t256, 128
-    %t263 = index i64 [projection=array_element] %t46, %t262
+    %t263 = index inbounds i64 [projection=array_element] %t46, %t262
     %t264 = load typed i64 %t263
     jump ^cond_end_113
 
@@ -2808,7 +2808,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t266, ^lor_end_117, ^lor_rhs_116
 
   block ^lor_rhs_116:
-    %t269 = index i64 [projection=array_element] %t252, %t267
+    %t269 = index inbounds i64 [projection=array_element] %t252, %t267
     %t270 = load typed i64 %t269
     %t271 = cmp eq i64 %t265, %t270
     jump ^lor_end_117
@@ -2888,7 +2888,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_130:
     %t303 = binary sub u32 %t297, 128
-    %t304 = index i64 [projection=array_element] %t88, %t303
+    %t304 = index inbounds i64 [projection=array_element] %t88, %t303
     %t305 = load typed i64 %t304
     jump ^cond_end_131
 
@@ -2906,7 +2906,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t307, ^lor_end_135, ^lor_rhs_134
 
   block ^lor_rhs_134:
-    %t310 = index i64 [projection=array_element] %t293, %t308
+    %t310 = index inbounds i64 [projection=array_element] %t293, %t308
     %t311 = load typed i64 %t310
     %t312 = cmp eq i64 %t306, %t311
     jump ^lor_end_135
@@ -2986,7 +2986,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_148:
     %t344 = binary sub u32 %t338, 128
-    %t345 = index i64 [projection=array_element] %t130, %t344
+    %t345 = index inbounds i64 [projection=array_element] %t130, %t344
     %t346 = load typed i64 %t345
     jump ^cond_end_149
 
@@ -3004,7 +3004,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t348, ^lor_end_153, ^lor_rhs_152
 
   block ^lor_rhs_152:
-    %t351 = index i64 [projection=array_element] %t334, %t349
+    %t351 = index inbounds i64 [projection=array_element] %t334, %t349
     %t352 = load typed i64 %t351
     %t353 = cmp eq i64 %t347, %t352
     jump ^lor_end_153
@@ -3084,7 +3084,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_166:
     %t385 = binary sub u32 %t379, 128
-    %t386 = index i64 [projection=array_element] %t172, %t385
+    %t386 = index inbounds i64 [projection=array_element] %t172, %t385
     %t387 = load typed i64 %t386
     jump ^cond_end_167
 
@@ -3102,7 +3102,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t389, ^lor_end_171, ^lor_rhs_170
 
   block ^lor_rhs_170:
-    %t392 = index i64 [projection=array_element] %t375, %t390
+    %t392 = index inbounds i64 [projection=array_element] %t375, %t390
     %t393 = load typed i64 %t392
     %t394 = cmp eq i64 %t388, %t393
     jump ^lor_end_171
@@ -3183,7 +3183,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_184:
     %t427 = binary sub u32 %t421, 128
-    %t428 = index i64 [projection=array_element] %t419, %t427
+    %t428 = index inbounds i64 [projection=array_element] %t419, %t427
     %t429 = load typed i64 %t428
     jump ^cond_end_185
 
@@ -3201,7 +3201,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t431, ^lor_end_189, ^lor_rhs_188
 
   block ^lor_rhs_188:
-    %t434 = index i64 [projection=array_element] %t416, %t432
+    %t434 = index inbounds i64 [projection=array_element] %t416, %t432
     %t435 = load typed i64 %t434
     %t436 = cmp eq i64 %t430, %t435
     jump ^lor_end_189
@@ -3282,7 +3282,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_202:
     %t469 = binary sub u32 %t463, 128
-    %t470 = index i64 [projection=array_element] %t461, %t469
+    %t470 = index inbounds i64 [projection=array_element] %t461, %t469
     %t471 = load typed i64 %t470
     jump ^cond_end_203
 
@@ -3300,7 +3300,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t473, ^lor_end_207, ^lor_rhs_206
 
   block ^lor_rhs_206:
-    %t476 = index i64 [projection=array_element] %t458, %t474
+    %t476 = index inbounds i64 [projection=array_element] %t458, %t474
     %t477 = load typed i64 %t476
     %t478 = cmp eq i64 %t472, %t477
     jump ^lor_end_207
@@ -3381,7 +3381,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_220:
     %t511 = binary sub u32 %t505, 128
-    %t512 = index i64 [projection=array_element] %t503, %t511
+    %t512 = index inbounds i64 [projection=array_element] %t503, %t511
     %t513 = load typed i64 %t512
     jump ^cond_end_221
 
@@ -3399,7 +3399,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t515, ^lor_end_225, ^lor_rhs_224
 
   block ^lor_rhs_224:
-    %t518 = index i64 [projection=array_element] %t500, %t516
+    %t518 = index inbounds i64 [projection=array_element] %t500, %t516
     %t519 = load typed i64 %t518
     %t520 = cmp eq i64 %t514, %t519
     jump ^lor_end_225
@@ -3480,7 +3480,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_238:
     %t553 = binary sub u32 %t546, 128
-    %t554 = index i64 [projection=array_element] %t545, %t553
+    %t554 = index inbounds i64 [projection=array_element] %t545, %t553
     %t555 = load typed i64 %t554
     jump ^cond_end_239
 
@@ -3498,7 +3498,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t557, ^lor_end_243, ^lor_rhs_242
 
   block ^lor_rhs_242:
-    %t560 = index i64 [projection=array_element] %t542, %t558
+    %t560 = index inbounds i64 [projection=array_element] %t542, %t558
     %t561 = load typed i64 %t560
     %t562 = cmp eq i64 %t556, %t561
     jump ^lor_end_243
@@ -3579,7 +3579,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_256:
     %t595 = binary sub u32 %t588, 128
-    %t596 = index i64 [projection=array_element] %t587, %t595
+    %t596 = index inbounds i64 [projection=array_element] %t587, %t595
     %t597 = load typed i64 %t596
     jump ^cond_end_257
 
@@ -3597,7 +3597,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t600, ^lor_end_261, ^lor_rhs_260
 
   block ^lor_rhs_260:
-    %t602 = index i64 [projection=array_element] %t584, %t599
+    %t602 = index inbounds i64 [projection=array_element] %t584, %t599
     %t603 = load typed i64 %t602
     %t604 = cmp eq i64 %t598, %t603
     jump ^lor_end_261
@@ -3677,7 +3677,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_274:
     %t636 = binary sub u32 %t629, 128
-    %t637 = index i64 [projection=array_element] %t419, %t636
+    %t637 = index inbounds i64 [projection=array_element] %t419, %t636
     %t638 = load typed i64 %t637
     jump ^cond_end_275
 
@@ -3695,7 +3695,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t640, ^lor_end_279, ^lor_rhs_278
 
   block ^lor_rhs_278:
-    %t643 = index i64 [projection=array_element] %t626, %t641
+    %t643 = index inbounds i64 [projection=array_element] %t626, %t641
     %t644 = load typed i64 %t643
     %t645 = cmp eq i64 %t639, %t644
     jump ^lor_end_279
@@ -3775,7 +3775,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_292:
     %t677 = binary sub u32 %t671, 128
-    %t678 = index i64 [projection=array_element] %t461, %t677
+    %t678 = index inbounds i64 [projection=array_element] %t461, %t677
     %t679 = load typed i64 %t678
     jump ^cond_end_293
 
@@ -3793,7 +3793,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t681, ^lor_end_297, ^lor_rhs_296
 
   block ^lor_rhs_296:
-    %t684 = index i64 [projection=array_element] %t667, %t682
+    %t684 = index inbounds i64 [projection=array_element] %t667, %t682
     %t685 = load typed i64 %t684
     %t686 = cmp eq i64 %t680, %t685
     jump ^lor_end_297
@@ -3873,7 +3873,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_310:
     %t718 = binary sub u32 %t712, 128
-    %t719 = index i64 [projection=array_element] %t503, %t718
+    %t719 = index inbounds i64 [projection=array_element] %t503, %t718
     %t720 = load typed i64 %t719
     jump ^cond_end_311
 
@@ -3891,7 +3891,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t722, ^lor_end_315, ^lor_rhs_314
 
   block ^lor_rhs_314:
-    %t725 = index i64 [projection=array_element] %t708, %t723
+    %t725 = index inbounds i64 [projection=array_element] %t708, %t723
     %t726 = load typed i64 %t725
     %t727 = cmp eq i64 %t721, %t726
     jump ^lor_end_315
@@ -3971,7 +3971,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_328:
     %t759 = binary sub u32 %t753, 128
-    %t760 = index i64 [projection=array_element] %t545, %t759
+    %t760 = index inbounds i64 [projection=array_element] %t545, %t759
     %t761 = load typed i64 %t760
     jump ^cond_end_329
 
@@ -3989,7 +3989,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t763, ^lor_end_333, ^lor_rhs_332
 
   block ^lor_rhs_332:
-    %t766 = index i64 [projection=array_element] %t749, %t764
+    %t766 = index inbounds i64 [projection=array_element] %t749, %t764
     %t767 = load typed i64 %t766
     %t768 = cmp eq i64 %t762, %t767
     jump ^lor_end_333
@@ -4069,7 +4069,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_346:
     %t800 = binary sub u32 %t794, 128
-    %t801 = index i64 [projection=array_element] %t587, %t800
+    %t801 = index inbounds i64 [projection=array_element] %t587, %t800
     %t802 = load typed i64 %t801
     jump ^cond_end_347
 
@@ -4087,7 +4087,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t804, ^lor_end_351, ^lor_rhs_350
 
   block ^lor_rhs_350:
-    %t807 = index i64 [projection=array_element] %t790, %t805
+    %t807 = index inbounds i64 [projection=array_element] %t790, %t805
     %t808 = load typed i64 %t807
     %t809 = cmp eq i64 %t803, %t808
     jump ^lor_end_351
@@ -4168,7 +4168,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_364:
     %t842 = binary sub u32 %t836, 128
-    %t843 = index i64 [projection=array_element] %t834, %t842
+    %t843 = index inbounds i64 [projection=array_element] %t834, %t842
     %t844 = load typed i64 %t843
     jump ^cond_end_365
 
@@ -4186,7 +4186,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t846, ^lor_end_369, ^lor_rhs_368
 
   block ^lor_rhs_368:
-    %t849 = index i64 [projection=array_element] %t831, %t847
+    %t849 = index inbounds i64 [projection=array_element] %t831, %t847
     %t850 = load typed i64 %t849
     %t851 = cmp eq i64 %t845, %t850
     jump ^lor_end_369
@@ -4267,7 +4267,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_382:
     %t884 = binary sub u32 %t878, 128
-    %t885 = index i64 [projection=array_element] %t876, %t884
+    %t885 = index inbounds i64 [projection=array_element] %t876, %t884
     %t886 = load typed i64 %t885
     jump ^cond_end_383
 
@@ -4285,7 +4285,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t888, ^lor_end_387, ^lor_rhs_386
 
   block ^lor_rhs_386:
-    %t891 = index i64 [projection=array_element] %t873, %t889
+    %t891 = index inbounds i64 [projection=array_element] %t873, %t889
     %t892 = load typed i64 %t891
     %t893 = cmp eq i64 %t887, %t892
     jump ^lor_end_387
@@ -4366,7 +4366,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_400:
     %t926 = binary sub u32 %t920, 128
-    %t927 = index i64 [projection=array_element] %t918, %t926
+    %t927 = index inbounds i64 [projection=array_element] %t918, %t926
     %t928 = load typed i64 %t927
     jump ^cond_end_401
 
@@ -4384,7 +4384,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t930, ^lor_end_405, ^lor_rhs_404
 
   block ^lor_rhs_404:
-    %t933 = index i64 [projection=array_element] %t915, %t931
+    %t933 = index inbounds i64 [projection=array_element] %t915, %t931
     %t934 = load typed i64 %t933
     %t935 = cmp eq i64 %t929, %t934
     jump ^lor_end_405
@@ -4465,7 +4465,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_418:
     %t968 = binary sub u32 %t962, 128
-    %t969 = index i64 [projection=array_element] %t960, %t968
+    %t969 = index inbounds i64 [projection=array_element] %t960, %t968
     %t970 = load typed i64 %t969
     jump ^cond_end_419
 
@@ -4483,7 +4483,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t972, ^lor_end_423, ^lor_rhs_422
 
   block ^lor_rhs_422:
-    %t975 = index i64 [projection=array_element] %t957, %t973
+    %t975 = index inbounds i64 [projection=array_element] %t957, %t973
     %t976 = load typed i64 %t975
     %t977 = cmp eq i64 %t971, %t976
     jump ^lor_end_423
@@ -4564,7 +4564,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_436:
     %t1010 = binary sub u32 %t1004, 128
-    %t1011 = index i64 [projection=array_element] %t1002, %t1010
+    %t1011 = index inbounds i64 [projection=array_element] %t1002, %t1010
     %t1012 = load typed i64 %t1011
     jump ^cond_end_437
 
@@ -4582,7 +4582,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1014, ^lor_end_441, ^lor_rhs_440
 
   block ^lor_rhs_440:
-    %t1017 = index i64 [projection=array_element] %t999, %t1015
+    %t1017 = index inbounds i64 [projection=array_element] %t999, %t1015
     %t1018 = load typed i64 %t1017
     %t1019 = cmp eq i64 %t1013, %t1018
     jump ^lor_end_441
@@ -4662,7 +4662,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_454:
     %t1051 = binary sub u32 %t1045, 128
-    %t1052 = index i64 [projection=array_element] %t834, %t1051
+    %t1052 = index inbounds i64 [projection=array_element] %t834, %t1051
     %t1053 = load typed i64 %t1052
     jump ^cond_end_455
 
@@ -4680,7 +4680,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1055, ^lor_end_459, ^lor_rhs_458
 
   block ^lor_rhs_458:
-    %t1058 = index i64 [projection=array_element] %t1041, %t1056
+    %t1058 = index inbounds i64 [projection=array_element] %t1041, %t1056
     %t1059 = load typed i64 %t1058
     %t1060 = cmp eq i64 %t1054, %t1059
     jump ^lor_end_459
@@ -4760,7 +4760,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_472:
     %t1092 = binary sub u32 %t1086, 128
-    %t1093 = index i64 [projection=array_element] %t876, %t1092
+    %t1093 = index inbounds i64 [projection=array_element] %t876, %t1092
     %t1094 = load typed i64 %t1093
     jump ^cond_end_473
 
@@ -4778,7 +4778,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1096, ^lor_end_477, ^lor_rhs_476
 
   block ^lor_rhs_476:
-    %t1099 = index i64 [projection=array_element] %t1082, %t1097
+    %t1099 = index inbounds i64 [projection=array_element] %t1082, %t1097
     %t1100 = load typed i64 %t1099
     %t1101 = cmp eq i64 %t1095, %t1100
     jump ^lor_end_477
@@ -4858,7 +4858,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_490:
     %t1133 = binary sub u32 %t1127, 128
-    %t1134 = index i64 [projection=array_element] %t918, %t1133
+    %t1134 = index inbounds i64 [projection=array_element] %t918, %t1133
     %t1135 = load typed i64 %t1134
     jump ^cond_end_491
 
@@ -4876,7 +4876,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1137, ^lor_end_495, ^lor_rhs_494
 
   block ^lor_rhs_494:
-    %t1140 = index i64 [projection=array_element] %t1123, %t1138
+    %t1140 = index inbounds i64 [projection=array_element] %t1123, %t1138
     %t1141 = load typed i64 %t1140
     %t1142 = cmp eq i64 %t1136, %t1141
     jump ^lor_end_495
@@ -4956,7 +4956,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_508:
     %t1174 = binary sub u32 %t1168, 128
-    %t1175 = index i64 [projection=array_element] %t960, %t1174
+    %t1175 = index inbounds i64 [projection=array_element] %t960, %t1174
     %t1176 = load typed i64 %t1175
     jump ^cond_end_509
 
@@ -4974,7 +4974,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1178, ^lor_end_513, ^lor_rhs_512
 
   block ^lor_rhs_512:
-    %t1181 = index i64 [projection=array_element] %t1164, %t1179
+    %t1181 = index inbounds i64 [projection=array_element] %t1164, %t1179
     %t1182 = load typed i64 %t1181
     %t1183 = cmp eq i64 %t1177, %t1182
     jump ^lor_end_513
@@ -5054,7 +5054,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_526:
     %t1215 = binary sub u32 %t1208, 128
-    %t1216 = index i64 [projection=array_element] %t1002, %t1215
+    %t1216 = index inbounds i64 [projection=array_element] %t1002, %t1215
     %t1217 = load typed i64 %t1216
     jump ^cond_end_527
 
@@ -5072,7 +5072,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1219, ^lor_end_531, ^lor_rhs_530
 
   block ^lor_rhs_530:
-    %t1222 = index i64 [projection=array_element] %t1205, %t1220
+    %t1222 = index inbounds i64 [projection=array_element] %t1205, %t1220
     %t1223 = load typed i64 %t1222
     %t1224 = cmp eq i64 %t1218, %t1223
     jump ^lor_end_531
@@ -5152,7 +5152,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_544:
     %t1256 = binary sub u32 %t1250, 128
-    %t1257 = index i64 [projection=array_element] %t1249, %t1256
+    %t1257 = index inbounds i64 [projection=array_element] %t1249, %t1256
     %t1258 = load typed i64 %t1257
     jump ^cond_end_545
 
@@ -5170,7 +5170,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1261, ^lor_end_549, ^lor_rhs_548
 
   block ^lor_rhs_548:
-    %t1263 = index i64 [projection=array_element] %t1246, %t1260
+    %t1263 = index inbounds i64 [projection=array_element] %t1246, %t1260
     %t1264 = load typed i64 %t1263
     %t1265 = cmp eq i64 %t1259, %t1264
     jump ^lor_end_549
@@ -5249,7 +5249,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_562:
     %t1296 = binary sub u32 %t1290, 128
-    %t1297 = index i64 [projection=array_element] %t1289, %t1296
+    %t1297 = index inbounds i64 [projection=array_element] %t1289, %t1296
     %t1298 = load typed i64 %t1297
     jump ^cond_end_563
 
@@ -5267,7 +5267,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1300, ^lor_end_567, ^lor_rhs_566
 
   block ^lor_rhs_566:
-    %t1303 = index i64 [projection=array_element] %t1286, %t1301
+    %t1303 = index inbounds i64 [projection=array_element] %t1286, %t1301
     %t1304 = load typed i64 %t1303
     %t1305 = cmp eq i64 %t1299, %t1304
     jump ^lor_end_567
@@ -5346,7 +5346,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_580:
     %t1336 = binary sub u32 %t1331, 128
-    %t1337 = index i64 [projection=array_element] %t1329, %t1336
+    %t1337 = index inbounds i64 [projection=array_element] %t1329, %t1336
     %t1338 = load typed i64 %t1337
     jump ^cond_end_581
 
@@ -5364,7 +5364,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1340, ^lor_end_585, ^lor_rhs_584
 
   block ^lor_rhs_584:
-    %t1343 = index i64 [projection=array_element] %t1326, %t1341
+    %t1343 = index inbounds i64 [projection=array_element] %t1326, %t1341
     %t1344 = load typed i64 %t1343
     %t1345 = cmp eq i64 %t1339, %t1344
     jump ^lor_end_585
@@ -5443,7 +5443,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_598:
     %t1376 = binary sub u32 %t1371, 128
-    %t1377 = index i64 [projection=array_element] %t1369, %t1376
+    %t1377 = index inbounds i64 [projection=array_element] %t1369, %t1376
     %t1378 = load typed i64 %t1377
     jump ^cond_end_599
 
@@ -5461,7 +5461,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1380, ^lor_end_603, ^lor_rhs_602
 
   block ^lor_rhs_602:
-    %t1383 = index i64 [projection=array_element] %t1366, %t1381
+    %t1383 = index inbounds i64 [projection=array_element] %t1366, %t1381
     %t1384 = load typed i64 %t1383
     %t1385 = cmp eq i64 %t1379, %t1384
     jump ^lor_end_603
@@ -5540,7 +5540,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_616:
     %t1416 = binary sub u32 %t1411, 128
-    %t1417 = index i64 [projection=array_element] %t1409, %t1416
+    %t1417 = index inbounds i64 [projection=array_element] %t1409, %t1416
     %t1418 = load typed i64 %t1417
     jump ^cond_end_617
 
@@ -5558,7 +5558,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1420, ^lor_end_621, ^lor_rhs_620
 
   block ^lor_rhs_620:
-    %t1423 = index i64 [projection=array_element] %t1406, %t1421
+    %t1423 = index inbounds i64 [projection=array_element] %t1406, %t1421
     %t1424 = load typed i64 %t1423
     %t1425 = cmp eq i64 %t1419, %t1424
     jump ^lor_end_621
@@ -5636,7 +5636,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_634:
     %t1455 = binary sub u32 %t1450, 128
-    %t1456 = index i64 [projection=array_element] %t1249, %t1455
+    %t1456 = index inbounds i64 [projection=array_element] %t1249, %t1455
     %t1457 = load typed i64 %t1456
     jump ^cond_end_635
 
@@ -5654,7 +5654,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1459, ^lor_end_639, ^lor_rhs_638
 
   block ^lor_rhs_638:
-    %t1462 = index i64 [projection=array_element] %t1446, %t1460
+    %t1462 = index inbounds i64 [projection=array_element] %t1446, %t1460
     %t1463 = load typed i64 %t1462
     %t1464 = cmp eq i64 %t1458, %t1463
     jump ^lor_end_639
@@ -5732,7 +5732,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_652:
     %t1494 = binary sub u32 %t1489, 128
-    %t1495 = index i64 [projection=array_element] %t1289, %t1494
+    %t1495 = index inbounds i64 [projection=array_element] %t1289, %t1494
     %t1496 = load typed i64 %t1495
     jump ^cond_end_653
 
@@ -5750,7 +5750,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1498, ^lor_end_657, ^lor_rhs_656
 
   block ^lor_rhs_656:
-    %t1501 = index i64 [projection=array_element] %t1485, %t1499
+    %t1501 = index inbounds i64 [projection=array_element] %t1485, %t1499
     %t1502 = load typed i64 %t1501
     %t1503 = cmp eq i64 %t1497, %t1502
     jump ^lor_end_657
@@ -5828,7 +5828,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_670:
     %t1533 = binary sub u32 %t1528, 128
-    %t1534 = index i64 [projection=array_element] %t1329, %t1533
+    %t1534 = index inbounds i64 [projection=array_element] %t1329, %t1533
     %t1535 = load typed i64 %t1534
     jump ^cond_end_671
 
@@ -5846,7 +5846,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1537, ^lor_end_675, ^lor_rhs_674
 
   block ^lor_rhs_674:
-    %t1540 = index i64 [projection=array_element] %t1524, %t1538
+    %t1540 = index inbounds i64 [projection=array_element] %t1524, %t1538
     %t1541 = load typed i64 %t1540
     %t1542 = cmp eq i64 %t1536, %t1541
     jump ^lor_end_675
@@ -5924,7 +5924,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_688:
     %t1572 = binary sub u32 %t1567, 128
-    %t1573 = index i64 [projection=array_element] %t1369, %t1572
+    %t1573 = index inbounds i64 [projection=array_element] %t1369, %t1572
     %t1574 = load typed i64 %t1573
     jump ^cond_end_689
 
@@ -5942,7 +5942,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1576, ^lor_end_693, ^lor_rhs_692
 
   block ^lor_rhs_692:
-    %t1579 = index i64 [projection=array_element] %t1563, %t1577
+    %t1579 = index inbounds i64 [projection=array_element] %t1563, %t1577
     %t1580 = load typed i64 %t1579
     %t1581 = cmp eq i64 %t1575, %t1580
     jump ^lor_end_693
@@ -6020,7 +6020,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^cond_else_706:
     %t1611 = binary sub u32 %t1606, 128
-    %t1612 = index i64 [projection=array_element] %t1409, %t1611
+    %t1612 = index inbounds i64 [projection=array_element] %t1409, %t1611
     %t1613 = load typed i64 %t1612
     jump ^cond_end_707
 
@@ -6038,7 +6038,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1615, ^lor_end_711, ^lor_rhs_710
 
   block ^lor_rhs_710:
-    %t1618 = index i64 [projection=array_element] %t1602, %t1616
+    %t1618 = index inbounds i64 [projection=array_element] %t1602, %t1616
     %t1619 = load typed i64 %t1618
     %t1620 = cmp eq i64 %t1614, %t1619
     jump ^lor_end_711
@@ -6111,7 +6111,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1648, ^for_body_724, ^for_iter_751
 
   block ^for_body_724:
-    %t1649 = index i64 [projection=array_element] %t1641, %t1644
+    %t1649 = index inbounds i64 [projection=array_element] %t1641, %t1644
     %t1650 = load typed i64 %t1649
     %t1651 = cmp uge i64 %t1650, 1
     %t1652 = cmp ule i64 %t1650, 3

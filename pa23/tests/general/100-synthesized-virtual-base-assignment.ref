@@ -346,7 +346,7 @@ function @Pad__Pad__base_entry(%this : ptr [object_bytes=28]) -> void [binding=w
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load typed i32 $i
-    %t6 = index i32 [projection=array_element] %t4, %t5
+    %t6 = index inbounds i32 [projection=array_element] %t4, %t5
     store typed i32 0, %t6
     jump ^for_iter_3
 

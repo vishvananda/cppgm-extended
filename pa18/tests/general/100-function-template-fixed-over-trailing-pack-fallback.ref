@@ -50,7 +50,7 @@ function @count_chars(%first : ptr, %last : ptr, %value : ptr [pass=by_address, 
 
   block ^for_iter_3:
     %t15 = load typed ptr $first
-    %t16 = index i8 %t15, 1
+    %t16 = index inbounds i8 %t15, 1
     store typed ptr %t16, $first
     jump ^for_cond_1
 
@@ -68,9 +68,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 3x1 @__constexpr_template__1, %t1
     %t2 = addr $data
     %t3 = addr $data
-    %t4 = index i8 %t3, 3
+    %t4 = index inbounds i8 %t3, 3
     %t5 = addr $data
-    %t6 = index i8 [projection=array_element] %t5, 0
+    %t6 = index inbounds i8 [projection=array_element] %t5, 0
     %t7 = addr $argobj__2
     zeroinit 1x1 %t7
     %t8 = call i64 @count_chars(%t2, %t4, %t6, $argobj__2)

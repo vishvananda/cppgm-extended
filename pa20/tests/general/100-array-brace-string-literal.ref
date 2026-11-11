@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $value
     copyobj 2x1 @__constexpr_template__1, %t1
     %t2 = addr $value
-    %t3 = index i8 [projection=array_element] %t2, 0
+    %t3 = index inbounds i8 [projection=array_element] %t2, 0
     %t4 = load i8 %t3
     %t5 = convert sext i32 i8 %t4
     %t6 = cmp eq i32 %t5, 97

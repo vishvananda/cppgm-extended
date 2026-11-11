@@ -240,7 +240,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_13:
     %t32 = addr @objects
     %t33 = binary mul i64 1, 40
-    %t34 = index i8 [projection=array_element] %t32, %t33
+    %t34 = index inbounds i8 [projection=array_element] %t32, %t33
     %t35 = load typed ptr %t34
     %t36 = index i8 %t35, -24
     %t37 = load typed i64 %t36
@@ -263,7 +263,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_16:
     %t44 = addr @objects
     %t45 = binary mul i64 0, 40
-    %t46 = index i8 [projection=array_element] %t44, %t45
+    %t46 = index inbounds i8 [projection=array_element] %t44, %t45
     %t47 = load typed ptr %t46
     %t48 = index i8 %t47, -24
     %t49 = load typed i64 %t48
@@ -287,7 +287,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t56 = load typed ptr @array_reference
     %t57 = addr @objects
     %t58 = binary mul i64 1, 40
-    %t59 = index i8 [projection=array_element] %t57, %t58
+    %t59 = index inbounds i8 [projection=array_element] %t57, %t58
     %t60 = load typed ptr %t59
     %t61 = index i8 %t60, -24
     %t62 = load typed i64 %t61

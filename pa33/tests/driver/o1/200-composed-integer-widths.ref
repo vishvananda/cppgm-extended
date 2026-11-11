@@ -104,7 +104,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t27, ^for_body_13, ^for_end_16
 
   block ^for_body_13:
-    %t28 = index f64 [projection=array_element] %t25, %t26
+    %t28 = index inbounds f64 [projection=array_element] %t25, %t26
     %t29 = load typed f64 %t28
     %t30 = call f64 @floating_guard(%t29)
     %t31 = convert fptrunc f32 f64 %t29

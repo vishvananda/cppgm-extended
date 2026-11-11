@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $a
     store typed ptr %t2, $p
     %t3 = load typed ptr $p
-    %t4 = index i32 [projection=array_element] %t3, 1
+    %t4 = index inbounds i32 [projection=array_element] %t3, 1
     %t5 = load typed i32 %t4
     %t6 = binary sub nowrap i32 %t5, 4
     return i32 %t6

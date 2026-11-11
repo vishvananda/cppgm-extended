@@ -164,7 +164,7 @@ function @mark(%value : i32) -> void [binding=strong, object=_Z4marki] {
     %t3 = load typed i32 @count
     %t4 = binary add nowrap i32 %t3, 1
     store typed i32 %t4, @count
-    %t5 = index i32 [projection=array_element] %t2, %t3
+    %t5 = index inbounds i32 [projection=array_element] %t2, %t3
     store typed i32 %t1, %t5
     return void
 }
@@ -200,11 +200,11 @@ function @matches(%want : ptr, %length : i32) -> i32 [binding=strong, object=_Z7
   block ^for_body_5:
     %t7 = addr @order
     %t8 = load typed i32 $i
-    %t9 = index i32 [projection=array_element] %t7, %t8
+    %t9 = index inbounds i32 [projection=array_element] %t7, %t8
     %t10 = load typed i32 %t9
     %t11 = load typed ptr $want
     %t12 = load typed i32 $i
-    %t13 = index i32 [projection=array_element] %t11, %t12
+    %t13 = index inbounds i32 [projection=array_element] %t11, %t12
     %t14 = load typed i32 %t13
     %t15 = cmp ne i32 %t10, %t14
     branch %t15, ^if_then_8, ^if_else_9

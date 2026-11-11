@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @table
     %t2 = binary mul i64 1, 8
-    %t3 = index i8 [projection=array_element] %t1, %t2
+    %t3 = index inbounds i8 [projection=array_element] %t1, %t2
     %t4 = index i8 [projection=field] %t3, 4
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 2

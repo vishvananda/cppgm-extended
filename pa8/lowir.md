@@ -1139,11 +1139,15 @@ store [volatile] typed <type> <value>, <storage>
 atomic_store <type> <value>, <ptr-value>, <order>
 %t = atomic_exchange <type> <ptr-value>, <value>, <order>
 %t = atomic_compare_exchange <type> <ptr-value>, <expected-ptr>, <desired>, <success-order>, <failure-order>
-%t = index <type> [projection=<kind>] <base>, <offset>
+%t = index [inbounds] <type> [projection=<kind>] <base>, <offset>
 ```
 
 In the PA8 subset, `index` computes a pointer by advancing a base pointer by `offset`
 elements of `<type>`.
+
+Plain `index` uses wrapping address arithmetic. `inbounds` additionally states
+the allocation promise defined under Instruction Facts below; it is independent
+of the optional projection label.
 
 `[projection=<kind>]` is optional metadata that labels the source of an address. The
 currently supported projection kinds are:
@@ -1741,7 +1745,7 @@ selector only if no clause has.
 
 ## Instruction Facts
 
-Four keywords state facts about an instruction:
+Instruction keywords state facts about an instruction:
 
 ```text
 %v = load typed ptr %field
@@ -1750,8 +1754,17 @@ store typed i32 %n, %count
 %q = binary div exact i64 %bytes, 12
 %n = convert trunc exact i32 i64 %wide
 %p = copy nonnull ptr %source
+%element = index inbounds i32 %array, %offset
 ```
 
+- `inbounds`, on `index`: the base and result belong to the same allocation,
+  including its one-past address, and the address calculation does not wrap.
+  A zero offset also permits any base, including null, and preserves its bits.
+  Thus the result is null exactly when the base is null; this does not assert
+  that either is non-null. Negative offsets and one-past results are permitted
+  within the same allocation. Drop the fact when speculating the instruction
+  onto a path that did not execute it. A plain index or an integer-to-pointer
+  conversion supplies no allocation promise, regardless of its projection label.
 - `nonnull`, on a pointer `copy`: its copied pointer is not null whenever
   the instruction executes. The result has the same pointer bits as the source.
   A consumer may use the result as non-null, but must drop this fact when
@@ -1812,6 +1825,11 @@ comparison checks them as part of the instruction:
 - `exact` on the division of a pointer difference by the element size, the
   `shr` for a power of two and the `div` otherwise: the difference of two
   pointers into one array is a multiple of the element size (5.7p6).
+- `inbounds` on source array subscripting and addition, subtraction, increment
+  or decrement of a pointer to an object type. These operations stay within
+  one array or its one-past address on a defined source execution. Mechanically
+  computed member addresses and GNU arithmetic on `void*` or function pointers
+  do not acquire the promise from this rule.
 
 Every reader accepts the facts and every writer prints those the program
 holds, so a program keeps them through serialization: an object compiled
@@ -2164,8 +2182,8 @@ follows them, and so must yours.
   `copy <type> <value>`; it is not omitted and it is not written as
   `convert`. An optimizer may also write a `copy` between `f32` and a 32-bit
   integer, or `f64` and `i64`: it moves the bits and converts nothing.
-- Instruction facts are part of the instruction. `typed`, `nowrap` and
-  `exact` follow the production rules of Instruction Facts above; an output
+- Instruction facts are part of the instruction. `typed`, `nowrap`, `exact`
+  and `inbounds` follow the production rules of Instruction Facts above; an output
   that misses one, or states one the rules do not, differs from the
   reference.
 - A structured global states its storage type exactly when its alignment is

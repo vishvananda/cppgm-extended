@@ -130,7 +130,7 @@ function @fixed_calls() -> i32 [binding=weak, object=_Z11fixed_callsIiEiv] {
 
   block ^if_end_7:
     %t10 = call ptr @array_reference()
-    %t11 = index i32 [projection=array_element] %t10, 0
+    %t11 = index inbounds i32 [projection=array_element] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp ne i32 %t12, 7
     %t14 = convert trunc i32 i64 %t13
@@ -169,7 +169,7 @@ function @fixed_calls__2() -> i32 [binding=weak, object=_Z11fixed_callsIlEiv] {
 
   block ^if_end_7:
     %t10 = call ptr @array_reference()
-    %t11 = index i32 [projection=array_element] %t10, 0
+    %t11 = index inbounds i32 [projection=array_element] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp ne i32 %t12, 7
     %t14 = convert trunc i32 i64 %t13

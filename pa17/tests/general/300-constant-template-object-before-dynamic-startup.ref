@@ -14,7 +14,7 @@ function @read() -> i32 [binding=strong, object=_Z4readv] {
     %t1 = addr @Storage_int___text
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
-    %t4 = index i8 [projection=array_element] %t3, 0
+    %t4 = index inbounds i8 [projection=array_element] %t3, 0
     %t5 = load i8 %t4
     %t6 = convert sext i32 i8 %t5
     return i32 %t6
@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr @Storage_int___text
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load typed ptr %t4
-    %t6 = index i8 [projection=array_element] %t5, 2
+    %t6 = index inbounds i8 [projection=array_element] %t5, 2
     %t7 = load i8 %t6
     %t8 = convert sext i32 i8 %t7
     %t9 = cmp eq i32 %t8, 101

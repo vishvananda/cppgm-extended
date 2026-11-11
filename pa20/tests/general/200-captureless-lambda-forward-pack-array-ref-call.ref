@@ -11,7 +11,7 @@ function @sink(%text : ptr [pass=by_address, object_bytes=2], %value : i32) -> i
     store typed ptr %text, $text
     store typed i32 %value, $value
     %t1 = load typed ptr $text
-    %t2 = index i8 [projection=array_element] %t1, 0
+    %t2 = index inbounds i8 [projection=array_element] %t1, 0
     %t3 = load i8 %t2
     %t4 = load typed i32 $value
     %t5 = convert sext i32 i8 %t3

@@ -191,7 +191,7 @@ function @Packs_int_char___Member_void_longint____first(%this : ptr [object_byte
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = index i8 [projection=array_element] %t2, 0
+    %t3 = index inbounds i8 [projection=array_element] %t2, 0
     %t4 = load i8 %t3
     return i8 %t4
 }
@@ -202,7 +202,7 @@ function @Packs_longint___Member_void_int_char____first(%this : ptr [object_byte
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = index i8 [projection=array_element] %t2, 0
+    %t3 = index inbounds i8 [projection=array_element] %t2, 0
     %t4 = load i8 %t3
     return i8 %t4
 }

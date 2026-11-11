@@ -13,10 +13,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $part
     call void @derived__derived(%t2)
     %t3 = addr @seen
-    %t4 = index ptr [projection=array_element] %t3, 0
+    %t4 = index inbounds ptr [projection=array_element] %t3, 0
     %t5 = load typed ptr %t4
     %t6 = addr @seen
-    %t7 = index ptr [projection=array_element] %t6, 1
+    %t7 = index inbounds ptr [projection=array_element] %t6, 1
     %t8 = load typed ptr %t7
     %t9 = cmp ne ptr %t5, %t8
     branch %t9, ^if_then_1, ^if_else_2
@@ -66,7 +66,7 @@ function @counter__counter__base_entry(%this : ptr [object_bytes=4], %slot : i32
     %t3 = load typed ptr $pointer
     %t4 = addr @seen
     %t5 = load typed i32 $slot
-    %t6 = index ptr [projection=array_element] %t4, %t5
+    %t6 = index inbounds ptr [projection=array_element] %t4, %t5
     store typed ptr %t3, %t6
     %t7 = addr $step
     %t8 = call i32 @counter____lambda_counter__counter_t35_39__operator__(%t7)
@@ -111,7 +111,7 @@ function @counter__counter(%this : ptr [object_bytes=4], %slot : i32) -> void [b
     %t3 = load typed ptr $pointer
     %t4 = addr @seen
     %t5 = load typed i32 $slot
-    %t6 = index ptr [projection=array_element] %t4, %t5
+    %t6 = index inbounds ptr [projection=array_element] %t4, %t5
     store typed ptr %t3, %t6
     %t7 = addr $step
     %t8 = call i32 @counter____lambda_counter__counter_t35_39__operator__(%t7)

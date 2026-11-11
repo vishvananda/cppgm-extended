@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @table
     %t2 = binary mul i64 0, 4
-    %t3 = index i8 [projection=array_element] %t1, %t2
+    %t3 = index inbounds i8 [projection=array_element] %t1, %t2
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t8 = addr @table
     %t9 = binary mul i64 1, 4
-    %t10 = index i8 [projection=array_element] %t8, %t9
+    %t10 = index inbounds i8 [projection=array_element] %t8, %t9
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = index i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12

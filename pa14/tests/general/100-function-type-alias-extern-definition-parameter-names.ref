@@ -21,7 +21,7 @@ function @boost__atomics__detail__find_address_generic(%addr : ptr, %addrs : ptr
   block ^for_body_2:
     %t5 = load typed ptr $addrs
     %t6 = load typed i64 $i
-    %t7 = index ptr [projection=array_element] %t5, %t6
+    %t7 = index inbounds ptr [projection=array_element] %t5, %t6
     %t8 = load typed ptr %t7
     %t9 = load typed ptr $addr
     %t10 = cmp eq ptr %t8, %t9

@@ -245,14 +245,14 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
 
   block ^lor_rhs_17:
     %t79 = load typed ptr $array
-    %t80 = index i64 [projection=array_element] %t79, 0
+    %t80 = index inbounds i64 [projection=array_element] %t79, 0
     %t81 = load typed i64 %t80
     %t82 = load typed ptr $array
-    %t83 = index i64 [projection=array_element] %t82, 1
+    %t83 = index inbounds i64 [projection=array_element] %t82, 1
     %t84 = load typed i64 %t83
     %t85 = binary add nowrap i64 %t81, %t84
     %t86 = load typed ptr $array
-    %t87 = index i64 [projection=array_element] %t86, 2
+    %t87 = index inbounds i64 [projection=array_element] %t86, 2
     %t88 = load typed i64 %t87
     %t89 = binary add nowrap i64 %t85, %t88
     %t90 = cmp ne i64 %t89, 10

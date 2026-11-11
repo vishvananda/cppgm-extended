@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $second
     copyobj 12x4 @__constexpr_template__1, %t2
     %t3 = addr $first
-    %t4 = index i32 [projection=array_element] %t3, 1
+    %t4 = index inbounds i32 [projection=array_element] %t3, 1
     store typed i32 11, %t4
     %t5 = addr $first
     %t6 = addr $second
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t8 = addr $first
-    %t9 = index i32 [projection=array_element] %t8, 1
+    %t9 = index inbounds i32 [projection=array_element] %t8, 1
     %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 11
     store typed i64 %t11, $land__2
@@ -45,7 +45,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_7:
     %t13 = addr $second
-    %t14 = index i32 [projection=array_element] %t13, 0
+    %t14 = index inbounds i32 [projection=array_element] %t13, 0
     %t15 = load typed i32 %t14
     %t16 = cmp eq i32 %t15, 4
     store typed i64 %t16, $land__3
@@ -61,7 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_10:
     %t18 = addr $second
-    %t19 = index i32 [projection=array_element] %t18, 1
+    %t19 = index inbounds i32 [projection=array_element] %t18, 1
     %t20 = load typed i32 %t19
     %t21 = cmp eq i32 %t20, 9
     store typed i64 %t21, $land__4
@@ -77,7 +77,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_13:
     %t23 = addr $second
-    %t24 = index i32 [projection=array_element] %t23, 2
+    %t24 = index inbounds i32 [projection=array_element] %t23, 2
     %t25 = load typed i32 %t24
     %t26 = cmp eq i32 %t25, 0
     store typed i64 %t26, $land__5

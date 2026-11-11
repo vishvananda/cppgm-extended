@@ -27,7 +27,7 @@ function @f() -> void [binding=strong, object=_Z1fv] {
 
   block ^wide_loop_2:
     %t10 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t12]
-    %t11 = index f64 [projection=array_element] %t9, %t10
+    %t11 = index inbounds f64 [projection=array_element] %t9, %t10
     store v128 %t8, %t11
     %t12 = binary add nowrap i64 %t10, 2
     %t13 = convert trunc exact i32 i64 %t12
@@ -46,7 +46,7 @@ function @f() -> void [binding=strong, object=_Z1fv] {
 
   block ^for_body_5:
     %t19 = phi i64 [^for_body_5: %t21, ^loop_preheader_4: %t17]
-    %t20 = index f64 [projection=array_element] %t18, %t19
+    %t20 = index inbounds f64 [projection=array_element] %t18, %t19
     store typed f64 0, %t20
     %t21 = binary add nowrap i64 %t19, 1
     %t22 = convert trunc exact i32 i64 %t21
@@ -60,7 +60,7 @@ function @f() -> void [binding=strong, object=_Z1fv] {
   block ^for_body_7:
     %t25 = phi i32 [^loop_preheader_6: 0, ^for_end_12: %t61]
     %t26 = phi i64 [^for_end_12: %t59, ^loop_preheader_6: 0]
-    %t27 = index f64 [projection=array_element] %t24, %t26
+    %t27 = index inbounds f64 [projection=array_element] %t24, %t26
     %t28 = copy i32 %t25
     %t29 = load typed f64 %t27
     %t30 = vector fromf64 %t29
@@ -71,9 +71,9 @@ function @f() -> void [binding=strong, object=_Z1fv] {
 
   block ^wide_loop_8:
     %t34 = phi i64 [^for_body_7: 0, ^wide_loop_8: %t41]
-    %t35 = index f64 [projection=array_element] %t32, %t34
+    %t35 = index inbounds f64 [projection=array_element] %t32, %t34
     %t36 = load v128 %t35
-    %t37 = index f64 [projection=array_element] %t33, %t34
+    %t37 = index inbounds f64 [projection=array_element] %t33, %t34
     %t38 = load v128 %t37
     %t39 = vector mulpd %t31, %t38
     %t40 = vector addpd %t39, %t36
@@ -96,9 +96,9 @@ function @f() -> void [binding=strong, object=_Z1fv] {
 
   block ^loop_preheader_11:
     %t49 = phi i64 [^loop_preheader_11: %t56, ^loop_preheader_10: %t46]
-    %t50 = index f64 [projection=array_element] %t47, %t49
+    %t50 = index inbounds f64 [projection=array_element] %t47, %t49
     %t51 = load typed f64 %t50
-    %t52 = index f64 [projection=array_element] %t48, %t49
+    %t52 = index inbounds f64 [projection=array_element] %t48, %t49
     %t53 = load typed f64 %t52
     %t54 = binary mul f64 %t29, %t53
     %t55 = binary add f64 %t54, %t51

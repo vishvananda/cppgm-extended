@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @holder__values
     %t2 = binary mul i64 0, 8
-    %t3 = index i8 [projection=array_element] %t1, %t2
+    %t3 = index inbounds i8 [projection=array_element] %t1, %t2
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t7 = addr @holder__values
     %t8 = binary mul i64 0, 8
-    %t9 = index i8 [projection=array_element] %t7, %t8
+    %t9 = index inbounds i8 [projection=array_element] %t7, %t8
     %t10 = index i8 [projection=field] %t9, 4
     %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 1
@@ -42,7 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_7:
     %t14 = addr @holder__values
     %t15 = binary mul i64 1, 8
-    %t16 = index i8 [projection=array_element] %t14, %t15
+    %t16 = index inbounds i8 [projection=array_element] %t14, %t15
     %t17 = index i8 [projection=field] %t16, 0
     %t18 = load typed i32 %t17
     %t19 = cmp eq i32 %t18, 2
@@ -60,7 +60,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_10:
     %t21 = addr @holder__values
     %t22 = binary mul i64 1, 8
-    %t23 = index i8 [projection=array_element] %t21, %t22
+    %t23 = index inbounds i8 [projection=array_element] %t21, %t22
     %t24 = index i8 [projection=field] %t23, 4
     %t25 = load typed i32 %t24
     %t26 = cmp eq i32 %t25, 3

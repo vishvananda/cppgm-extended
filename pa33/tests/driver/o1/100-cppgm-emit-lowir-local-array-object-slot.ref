@@ -4,7 +4,7 @@ function @f(%i : i32) -> i32 [binding=strong, object=_Z1fi] {
   block ^entry:
     %t1 = addr $ascii
     zeroinit 4x1 %t1
-    %t2 = index i8 [projection=array_element] %t1, %i
+    %t2 = index inbounds i8 [projection=array_element] %t1, %i
     store i8 42, %t2
     return i32 42
 }

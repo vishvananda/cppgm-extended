@@ -48,13 +48,13 @@ function @scan(%holder : ptr, %publish : i32) -> i32 [binding=strong, object=_Z4
     %t9 = load typed ptr %holder
     %t10 = load typed i32 %t9
     %t11 = binary add nowrap i32 %t10, %t6
-    %t12 = index i32 [projection=array_element] %t1, %t5
+    %t12 = index inbounds i32 [projection=array_element] %t1, %t5
     store typed i32 %t7, %t12
     %t13 = binary add nowrap i64 %t5, 1
     jump ^for_cond_7
 
   block ^for_end_9:
-    %t14 = index i8 %t1, 12
+    %t14 = index inbounds i8 %t1, 12
     %t15 = load volatile i32 %t14
     call void @free(%t1)
     %t16 = binary add nowrap i32 %t15, %t6

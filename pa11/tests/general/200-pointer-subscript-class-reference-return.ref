@@ -5,7 +5,7 @@ function @first(%p : ptr) -> ptr [binding=strong, object=_Z5firstPK1S] {
     store typed ptr %p, $p
     %t1 = load typed ptr $p
     %t2 = binary mul i64 0, 4
-    %t3 = index i8 [projection=array_element] %t1, %t2
+    %t3 = index inbounds i8 [projection=array_element] %t1, %t2
     return ptr %t3
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

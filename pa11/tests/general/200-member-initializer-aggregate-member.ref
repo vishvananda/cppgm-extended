@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = addr $x
     %t8 = index i8 [projection=field] %t7, 0
     %t9 = index i8 [projection=field] %t8, 8
-    %t10 = index i8 [projection=array_element] %t9, 0
+    %t10 = index inbounds i8 [projection=array_element] %t9, 0
     %t11 = load i8 %t10
     %t12 = convert sext i32 i8 %t11
     %t13 = cmp eq i32 %t12, 3
@@ -37,7 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = addr $x
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = index i8 [projection=field] %t16, 8
-    %t18 = index i8 [projection=array_element] %t17, 1
+    %t18 = index inbounds i8 [projection=array_element] %t17, 1
     %t19 = load i8 %t18
     %t20 = convert sext i32 i8 %t19
     %t21 = cmp eq i32 %t20, 4

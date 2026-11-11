@@ -48,7 +48,7 @@ function @read() -> i32 [binding=strong, object=_Z4readv] {
 
   block ^local_static_ready_1:
     %t12 = addr @__local_static__read__decl0__values
-    %t13 = index i32 [projection=array_element] %t12, 0
+    %t13 = index inbounds i32 [projection=array_element] %t12, 0
     %t14 = load typed i32 %t13
     return i32 %t14
 }

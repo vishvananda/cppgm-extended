@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @escaped
-    %t2 = index i8 [projection=array_element] %t1, 0
+    %t2 = index inbounds i8 [projection=array_element] %t1, 0
     %t3 = load i8 %t2
     %t4 = convert sext i32 i8 %t3
     %t5 = cmp eq i32 %t4, 40
@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t6 = addr @escaped
-    %t7 = index i8 [projection=array_element] %t6, 1
+    %t7 = index inbounds i8 [projection=array_element] %t6, 1
     %t8 = load i8 %t7
     %t9 = convert sext i32 i8 %t8
     %t10 = cmp eq i32 %t9, 63

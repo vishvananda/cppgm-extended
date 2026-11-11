@@ -201,7 +201,7 @@ function @S__S__base_entry(%this : ptr [object_bytes=8], %n : i32) -> void [bind
     %t13 = load typed i32 @count
     %t14 = binary add nowrap i32 %t13, 1
     store typed i32 %t14, @count
-    %t15 = index i32 [projection=array_element] %t12, %t13
+    %t15 = index inbounds i32 [projection=array_element] %t12, %t13
     store typed i32 %t11, %t15
     return void
 }
@@ -230,7 +230,7 @@ function @S__S(%this : ptr [object_bytes=8], %n : i32) -> void [binding=strong, 
     %t13 = load typed i32 @count
     %t14 = binary add nowrap i32 %t13, 1
     store typed i32 %t14, @count
-    %t15 = index i32 [projection=array_element] %t12, %t13
+    %t15 = index inbounds i32 [projection=array_element] %t12, %t13
     store typed i32 %t11, %t15
     return void
 }
@@ -262,7 +262,7 @@ function @S__S__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=8], %x 
     %t16 = load typed i32 @count
     %t17 = binary add nowrap i32 %t16, 1
     store typed i32 %t17, @count
-    %t18 = index i32 [projection=array_element] %t15, %t16
+    %t18 = index inbounds i32 [projection=array_element] %t15, %t16
     store typed i32 %t14, %t18
     return void
 }
@@ -294,7 +294,7 @@ function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=8], %x : ptr [pass=
     %t16 = load typed i32 @count
     %t17 = binary add nowrap i32 %t16, 1
     store typed i32 %t17, @count
-    %t18 = index i32 [projection=array_element] %t15, %t16
+    %t18 = index inbounds i32 [projection=array_element] %t15, %t16
     store typed i32 %t14, %t18
     return void
 }
@@ -314,7 +314,7 @@ function @S___S__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, bi
     %t8 = load typed i32 @count
     %t9 = binary add nowrap i32 %t8, 1
     store typed i32 %t9, @count
-    %t10 = index i32 [projection=array_element] %t7, %t8
+    %t10 = index inbounds i32 [projection=array_element] %t7, %t8
     store typed i32 %t6, %t10
     return void
 }
@@ -334,7 +334,7 @@ function @S___S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=strong
     %t8 = load typed i32 @count
     %t9 = binary add nowrap i32 %t8, 1
     store typed i32 %t9, @count
-    %t10 = index i32 [projection=array_element] %t7, %t8
+    %t10 = index inbounds i32 [projection=array_element] %t7, %t8
     store typed i32 %t6, %t10
     return void
 }

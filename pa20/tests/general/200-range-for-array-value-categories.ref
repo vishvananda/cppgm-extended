@@ -35,7 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_2:
     %t5 = load typed ptr $__range1
     %t6 = load typed i32 $__idx2
-    %t7 = index i32 [projection=array_element] %t5, %t6
+    %t7 = index inbounds i32 [projection=array_element] %t5, %t6
     %t8 = load typed i32 %t7
     store typed i32 %t8, $value
     %t9 = load typed i32 $prvalue_sum
@@ -67,7 +67,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_6:
     %t18 = load typed ptr $__range3
     %t19 = load typed i32 $__idx4
-    %t20 = index i32 [projection=array_element] %t18, %t19
+    %t20 = index inbounds i32 [projection=array_element] %t18, %t19
     store typed ptr %t20, $value__shadow2
     %t21 = load typed i32 $xvalue_sum
     %t22 = load typed ptr $value__shadow2

@@ -138,7 +138,7 @@ function @adjust(%p : ptr, %x : u32) -> ptr [linkage=c, binding=strong, no_inlin
     branch %t1, ^switch_case_2, ^switch_default_1
 
   block ^switch_default_1:
-    %t2 = index i8 %p, -32
+    %t2 = index inbounds i8 %p, -32
     return ptr %t2
 
   block ^switch_case_2:
@@ -181,19 +181,19 @@ function @different(%p : ptr, %q : ptr, %x : u32) -> ptr [linkage=c, binding=str
     switch %x, ^switch_default_5, 0:^switch_case_1, 1:^switch_case_2, 2:^switch_case_3, 3:^switch_case_4
 
   block ^switch_case_1:
-    %t1 = index i8 %p, -40
+    %t1 = index inbounds i8 %p, -40
     return ptr %t1
 
   block ^switch_case_2:
-    %t2 = index i8 %q, -72
+    %t2 = index inbounds i8 %q, -72
     return ptr %t2
 
   block ^switch_case_3:
-    %t3 = index i8 %p, 16
+    %t3 = index inbounds i8 %p, 16
     return ptr %t3
 
   block ^switch_case_4:
-    %t4 = index i8 %q, -48
+    %t4 = index inbounds i8 %q, -48
     return ptr %t4
 
   block ^switch_default_5:
@@ -300,8 +300,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     switch %t5, ^cond_else_4, -3:^cond_then_3, -2:^cond_then_3, -1:^cond_then_3, 0:^cond_then_3, 1:^cond_then_3, 2:^cond_then_3, 3:^cond_then_3
 
   block ^cond_then_3:
-    %t8 = index i32 [projection=array_element] %t1, %t4
-    %t9 = index i32 [projection=array_element] %t8, 3
+    %t8 = index inbounds i32 [projection=array_element] %t1, %t4
+    %t9 = index inbounds i32 [projection=array_element] %t8, 3
     %t10 = load typed i32 %t9
     %t11 = cmp ne i32 %t7, %t10
     branch %t11, ^if_then_5, ^if_end_6
@@ -319,7 +319,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t14, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
-    %t15 = index u8 [projection=array_element] %t2, %t4
+    %t15 = index inbounds u8 [projection=array_element] %t2, %t4
     %t16 = load u8 %t15
     %t17 = cmp ne u8 %t13, %t16
     branch %t17, ^if_then_9, ^if_end_10
@@ -349,8 +349,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^for_end_13:
     %t26 = addr @__constexpr_template__3
-    %t27 = index i8 %t3, 160
-    %t28 = index i8 %t3, 400
+    %t27 = index inbounds i8 %t3, 160
+    %t28 = index inbounds i8 %t3, 400
     jump ^for_cond_14
 
   block ^for_cond_14:
@@ -364,14 +364,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t32, ^cond_then_16, ^cond_end_17
 
   block ^cond_then_16:
-    %t33 = index i32 [projection=array_element] %t26, %t29
+    %t33 = index inbounds i32 [projection=array_element] %t26, %t29
     %t34 = load typed i32 %t33
     jump ^cond_end_17
 
   block ^cond_end_17:
     %t35 = phi i32 [^cond_then_16: %t34, ^for_body_15: -32]
     %t36 = convert sext i64 i32 %t35
-    %t37 = index i8 %t27, %t36
+    %t37 = index inbounds i8 %t27, %t36
     %t38 = cmp ne ptr %t31, %t37
     branch %t38, ^if_then_18, ^if_end_19
 
@@ -391,7 +391,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t41, ^cond_then_22, ^cond_else_23
 
   block ^cond_then_22:
-    %t42 = index i8 %t3, 120
+    %t42 = index inbounds i8 %t3, 120
     jump ^cond_end_30
 
   block ^cond_else_23:
@@ -399,7 +399,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t43, ^cond_then_24, ^cond_else_25
 
   block ^cond_then_24:
-    %t44 = index i8 %t3, 328
+    %t44 = index inbounds i8 %t3, 328
     jump ^cond_end_29
 
   block ^cond_else_25:
@@ -407,7 +407,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t45, ^cond_then_26, ^cond_else_27
 
   block ^cond_then_26:
-    %t46 = index i8 %t3, 176
+    %t46 = index inbounds i8 %t3, 176
     jump ^cond_end_28
 
   block ^cond_else_27:
@@ -439,7 +439,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t56, ^cond_then_33, ^cond_else_34
 
   block ^cond_then_33:
-    %t57 = index i8 %t3, 120
+    %t57 = index inbounds i8 %t3, 120
     jump ^cond_end_41
 
   block ^cond_else_34:
@@ -447,7 +447,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t58, ^cond_then_35, ^cond_else_36
 
   block ^cond_then_35:
-    %t59 = index i8 %t3, 88
+    %t59 = index inbounds i8 %t3, 88
     jump ^cond_end_40
 
   block ^cond_else_36:
@@ -455,7 +455,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t60, ^cond_then_37, ^cond_else_38
 
   block ^cond_then_37:
-    %t61 = index i8 %t3, 176
+    %t61 = index inbounds i8 %t3, 176
     jump ^cond_end_39
 
   block ^cond_else_38:

@@ -177,7 +177,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_24:
     %t33 = addr @order
-    %t34 = index i32 [projection=array_element] %t33, 0
+    %t34 = index inbounds i32 [projection=array_element] %t33, 0
     %t35 = load typed i32 %t34
     %t36 = cmp ne i32 %t35, 2
     store typed i64 %t36, $lor__7
@@ -193,7 +193,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_27:
     %t38 = addr @order
-    %t39 = index i32 [projection=array_element] %t38, 1
+    %t39 = index inbounds i32 [projection=array_element] %t38, 1
     %t40 = load typed i32 %t39
     %t41 = cmp ne i32 %t40, 1
     store typed i64 %t41, $lor__8
@@ -258,7 +258,7 @@ function @Item___Item(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=
     %t5 = load typed i32 @destroyed
     %t6 = binary add nowrap i32 %t5, 1
     store typed i32 %t6, @destroyed
-    %t7 = index i32 [projection=array_element] %t4, %t5
+    %t7 = index inbounds i32 [projection=array_element] %t4, %t5
     store typed i32 %t3, %t7
     return void
 }

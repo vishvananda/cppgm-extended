@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+# The table lookup and addressed entry read remain; the join need not reload.
+count(load) <= 2 in @normal_join

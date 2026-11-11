@@ -291,7 +291,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_2:
     %t4 = addr $values
     %t5 = load typed u32 $i
-    %t6 = index u32 [projection=array_element] %t4, %t5
+    %t6 = index inbounds u32 [projection=array_element] %t4, %t5
     %t7 = load typed u32 %t6
     store typed u32 %t7, $x
     %t8 = load typed u32 $x

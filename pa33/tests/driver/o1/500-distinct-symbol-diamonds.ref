@@ -243,9 +243,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_3:
     %t7 = addr @padding
-    %t8 = index ptr [projection=array_element] %t7, 23
+    %t8 = index inbounds ptr [projection=array_element] %t7, 23
     %t9 = load typed ptr %t8
-    %t10 = index i8 [projection=array_element] %t9, 1
+    %t10 = index inbounds i8 [projection=array_element] %t9, 1
     %t11 = load i8 %t10
     %t12 = cmp ne i8 %t11, 50
     %t13 = convert trunc i32 i64 %t12

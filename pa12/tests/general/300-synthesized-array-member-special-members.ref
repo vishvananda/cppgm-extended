@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = addr $source
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = binary mul i64 0, 4
-    %t17 = index i8 [projection=array_element] %t15, %t16
+    %t17 = index inbounds i8 [projection=array_element] %t15, %t16
     %t18 = index i8 [projection=field] %t17, 0
     %t19 = load typed i32 %t18
     %t20 = cmp eq i32 %t19, 0
@@ -42,7 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t21 = addr $moved
     %t22 = index i8 [projection=field] %t21, 0
     %t23 = binary mul i64 0, 4
-    %t24 = index i8 [projection=array_element] %t22, %t23
+    %t24 = index inbounds i8 [projection=array_element] %t22, %t23
     %t25 = index i8 [projection=field] %t24, 0
     %t26 = load typed i32 %t25
     %t27 = cmp eq i32 %t26, 3
@@ -61,7 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t29 = addr $copied
     %t30 = index i8 [projection=field] %t29, 0
     %t31 = binary mul i64 0, 4
-    %t32 = index i8 [projection=array_element] %t30, %t31
+    %t32 = index inbounds i8 [projection=array_element] %t30, %t31
     %t33 = index i8 [projection=field] %t32, 0
     %t34 = load typed i32 %t33
     %t35 = cmp eq i32 %t34, 0
@@ -80,7 +80,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t37 = addr $copy_assigned
     %t38 = index i8 [projection=field] %t37, 0
     %t39 = binary mul i64 0, 4
-    %t40 = index i8 [projection=array_element] %t38, %t39
+    %t40 = index inbounds i8 [projection=array_element] %t38, %t39
     %t41 = index i8 [projection=field] %t40, 0
     %t42 = load typed i32 %t41
     %t43 = cmp eq i32 %t42, 5
@@ -99,7 +99,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t45 = addr $move_assigned
     %t46 = index i8 [projection=field] %t45, 0
     %t47 = binary mul i64 0, 4
-    %t48 = index i8 [projection=array_element] %t46, %t47
+    %t48 = index inbounds i8 [projection=array_element] %t46, %t47
     %t49 = index i8 [projection=field] %t48, 0
     %t50 = load typed i32 %t49
     %t51 = cmp eq i32 %t50, 6

@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @b
-    %t2 = index i32 [projection=array_element] %t1, 3
+    %t2 = index inbounds i32 [projection=array_element] %t1, 3
     %t3 = load typed i32 %t2
     %t4 = cmp eq i32 %t3, 4
     branch %t4, ^land_rhs_4, ^land_short_5

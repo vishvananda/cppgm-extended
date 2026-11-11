@@ -1718,7 +1718,11 @@ RValue FunctionLowering::pointer_offset(const RValue& pointer, const RValue& off
 		else
 			count = binary(lowir::BinaryOp::Sub, i64, integer(i64, 0), count);
 	}
-	return index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_NONE, pointer.value, count);
+	const sema::Type* element = pointer_type->unqualified->element->unqualified;
+	const lowir::IndexBounds bounds = sema::IsVoid(element) || element->kind == sema::TypeKind::Function
+		? lowir::IndexBounds::None
+		: lowir::IndexBounds::InBounds;
+	return index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_NONE, pointer.value, count, bounds);
 }
 
 RValue FunctionLowering::pointer_difference(
@@ -2114,13 +2118,15 @@ Place FunctionLowering::subscript(const syntax::SubscriptExpr& expr)
 			offset, index_type, i64, ConversionContext::Additive, IsSigned(index_type), IsLiteralExpression(position));
 		scaled = binary(
 			lowir::BinaryOp::Mul, i64, scaled, integer(i64, lowering_.size_of(expr.facts->type, expr.location)));
-		place.storage =
-			index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_ARRAY_ELEMENT, pointer.value, scaled).value;
+		place.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_ARRAY_ELEMENT, pointer.value,
+			scaled, lowir::IndexBounds::InBounds)
+							.value;
 		qualify(place, expr.facts->type);
 		return place;
 	}
-	place.storage =
-		index(lowering_.storage_type(expr.facts->type), ir_model::IPK_ARRAY_ELEMENT, pointer.value, offset).value;
+	place.storage = index(lowering_.storage_type(expr.facts->type), ir_model::IPK_ARRAY_ELEMENT, pointer.value, offset,
+		lowir::IndexBounds::InBounds)
+						.value;
 	qualify(place, expr.facts->type);
 	return place;
 }

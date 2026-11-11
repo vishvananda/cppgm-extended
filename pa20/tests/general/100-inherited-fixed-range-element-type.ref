@@ -50,7 +50,7 @@ function @Derived__sum(%this : ptr [object_bytes=1]) -> i32 [binding=weak, objec
   block ^for_body_2:
     %t4 = addr $values
     %t5 = load typed i32 $__idx1
-    %t6 = index i32 [projection=array_element] %t4, %t5
+    %t6 = index inbounds i32 [projection=array_element] %t4, %t5
     store typed ptr %t6, $value
     %t7 = load typed ptr $value
     %t8 = load typed i32 %t7

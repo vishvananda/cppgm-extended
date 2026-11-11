@@ -1192,10 +1192,12 @@ lowir::Value FunctionLowering::address_of(const Place& place)
 	return emit_value(inst, lowir::Type::scalar(lowir::TypeKind::Ptr));
 }
 
-RValue FunctionLowering::index(lowir::Type element, uint8_t projection, lowir::Value base, const RValue& offset)
+RValue FunctionLowering::index(
+	lowir::Type element, uint8_t projection, lowir::Value base, const RValue& offset, lowir::IndexBounds bounds)
 {
 	lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::Index, element);
 	inst.sub = projection;
+	inst.set_index_bounds(bounds);
 	inst.ops[0] = base;
 	inst.ops[1] = offset.value;
 	RValue value;

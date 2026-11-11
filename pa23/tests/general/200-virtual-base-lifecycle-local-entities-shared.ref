@@ -142,10 +142,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_10:
     %t15 = addr @seen
-    %t16 = index ptr [projection=array_element] %t15, 0
+    %t16 = index inbounds ptr [projection=array_element] %t15, 0
     %t17 = load typed ptr %t16
     %t18 = addr @seen
-    %t19 = index ptr [projection=array_element] %t18, 1
+    %t19 = index inbounds ptr [projection=array_element] %t18, 1
     %t20 = load typed ptr %t19
     %t21 = cmp ne ptr %t17, %t20
     branch %t21, ^if_then_11, ^if_else_12
@@ -196,7 +196,7 @@ function @counter__counter__base_entry(%this : ptr [object_bytes=16], %__vtt : p
     %t5 = load typed ptr $pointer
     %t6 = addr @seen
     %t7 = load typed i32 $slot
-    %t8 = index ptr [projection=array_element] %t6, %t7
+    %t8 = index inbounds ptr [projection=array_element] %t6, %t7
     store typed ptr %t5, %t8
     %t9 = addr $source
     %t10 = call i32 @counter____lambda_counter__counter_t91_95__operator__(%t9)
@@ -400,7 +400,7 @@ function @counter__counter(%this : ptr [object_bytes=16], %slot : i32) -> void [
     %t8 = load typed ptr $pointer
     %t9 = addr @seen
     %t10 = load typed i32 $slot
-    %t11 = index ptr [projection=array_element] %t9, %t10
+    %t11 = index inbounds ptr [projection=array_element] %t9, %t10
     store typed ptr %t8, %t11
     %t12 = addr $source
     %t13 = call i32 @counter____lambda_counter__counter_t91_95__operator__(%t12)

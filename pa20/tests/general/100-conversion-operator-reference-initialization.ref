@@ -65,7 +65,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = load typed i32 $__idx1
     %t17 = convert sext i64 i32 %t16
     %t18 = binary mul i64 %t17, 8
-    %t19 = index i8 [projection=array_element] %t15, %t18
+    %t19 = index inbounds i8 [projection=array_element] %t15, %t18
     %t20 = call ptr @Wrapper__operatorconstBase_(%t19)
     store typed ptr %t20, $item
     %t21 = load typed ptr $item

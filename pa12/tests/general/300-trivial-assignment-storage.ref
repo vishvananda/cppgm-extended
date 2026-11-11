@@ -531,7 +531,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t238 = addr $x
     %t239 = index i8 [projection=field] %t238, 16
     %t240 = binary mul i64 0, 8
-    %t241 = index i8 [projection=array_element] %t239, %t240
+    %t241 = index inbounds i8 [projection=array_element] %t239, %t240
     %t242 = index i8 [projection=field] %t241, 0
     %t243 = load typed i64 %t242
     %t244 = cmp ne i64 %t243, 47
@@ -541,7 +541,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t245 = addr $x
     %t246 = index i8 [projection=field] %t245, 16
     %t247 = binary mul i64 1, 8
-    %t248 = index i8 [projection=array_element] %t246, %t247
+    %t248 = index inbounds i8 [projection=array_element] %t246, %t247
     %t249 = index i8 [projection=field] %t248, 0
     %t250 = load typed i64 %t249
     %t251 = cmp ne i64 %t250, 48
@@ -551,7 +551,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t252 = addr $x
     %t253 = index i8 [projection=field] %t252, 16
     %t254 = binary mul i64 2, 8
-    %t255 = index i8 [projection=array_element] %t253, %t254
+    %t255 = index inbounds i8 [projection=array_element] %t253, %t254
     %t256 = index i8 [projection=field] %t255, 0
     %t257 = load typed i64 %t256
     %t258 = cmp ne i64 %t257, 49

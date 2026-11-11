@@ -31,7 +31,7 @@ function @boost__container__test__test_emplace_back() -> u8 [binding=weak, objec
     %t2 = addr $c
     %t3 = addr $expected
     %t4 = binary mul i64 0, 4
-    %t5 = index i8 [projection=array_element] %t3, %t4
+    %t5 = index inbounds i8 [projection=array_element] %t3, %t4
     %t6 = call u8 @boost__container__test__test_expected_container(%t2, %t5, 1, 0)
     return u8 %t6
 }

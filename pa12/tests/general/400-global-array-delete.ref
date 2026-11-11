@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call ptr @operatornew__(3)
     store typed ptr %t1, $p
     %t2 = load typed ptr $p
-    %t3 = index i8 [projection=array_element] %t2, 0
+    %t3 = index inbounds i8 [projection=array_element] %t2, 0
     store i8 7, %t3
     %t4 = load typed ptr $p
     call void @operatordelete__(%t4)

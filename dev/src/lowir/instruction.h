@@ -150,6 +150,8 @@ struct Instruction
 	Opcode op;
 	uint8_t sub;
 	uint8_t flags;
+	// Opcode-local property byte: atomics use MemoryOrder, Index uses
+	// IndexBounds through the accessors below. The record stays 64 bytes.
 	MemoryOrder order;
 	TempId result;
 	InstId next;
@@ -159,6 +161,9 @@ struct Instruction
 	uint32_t extra_first;
 	uint32_t extra_count;
 	int64_t immediate;
+
+	IndexBounds index_bounds() const { return static_cast<IndexBounds>(order); }
+	void set_index_bounds(IndexBounds bounds) { order = static_cast<MemoryOrder>(bounds); }
 };
 
 static_assert(sizeof(Instruction) == 64, "one instruction is 64 bytes");

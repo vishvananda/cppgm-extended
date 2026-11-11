@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^condaddr_end_3:
     %t5 = load typed ptr $condaddr__1
-    %t6 = index i32 [projection=array_element] %t5, 0
+    %t6 = index inbounds i32 [projection=array_element] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = binary sub nowrap i32 %t7, 3
     return i32 %t8

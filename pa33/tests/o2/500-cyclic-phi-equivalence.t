@@ -1,0 +1,113 @@
+# The two states agree at entry and after every corresponding back edge.
+# Observable writes keep both branch paths and the loop in the program.
+function @equal_states(%n : i64, %update : i1, %out : ptr) -> i32 [no_inline=yes] {
+  block ^entry:
+    jump ^loop
+  block ^loop:
+    %a = phi i32 [^entry: 11, ^join: %next_a]
+    %b = phi i32 [^entry: 0xb, ^join: %next_b]
+    %i = phi i64 [^entry: 0, ^join: %next_i]
+    store volatile i32 %a, %out
+    %more = cmp ult i64 %i, %n
+    branch %more, ^body, ^exit
+  block ^body:
+    branch %update, ^yes, ^no
+  block ^yes:
+    %step = binary add i32 %a, 7
+    store volatile i32 %step, %out
+    jump ^join
+  block ^no:
+    store volatile i32 %a, %out
+    jump ^join
+  block ^join:
+    %next_a = phi i32 [^yes: %step, ^no: %a]
+    %next_b = phi i32 [^no: %b, ^yes: %step]
+    %next_i = binary add i64 %i, 1
+    jump ^loop
+  block ^exit:
+    %difference = binary sub i32 %a, %b
+    return i32 %difference
+}
+
+# A distinct external seed invalidates equality, including zero trips.
+function @different_seeds(%n : i64, %out : ptr) -> i32 [no_inline=yes] {
+  block ^entry:
+    jump ^loop
+  block ^loop:
+    %a = phi i32 [^entry: 11, ^join: %next_a]
+    %b = phi i32 [^entry: 13, ^join: %next_b]
+    %i = phi i64 [^entry: 0, ^join: %next_i]
+    store volatile i32 %a, %out
+    %more = cmp ult i64 %i, %n
+    branch %more, ^join, ^exit
+  block ^join:
+    %next_a = phi i32 [^loop: %a]
+    %next_b = phi i32 [^loop: %b]
+    %next_i = binary add i64 %i, 1
+    jump ^loop
+  block ^exit:
+    %difference = binary sub i32 %b, %a
+    return i32 %difference
+}
+
+# Matching seeds are insufficient when an update differs after a cycle.
+function @different_updates(%n : i64, %update : i1, %out : ptr) -> i32 [no_inline=yes] {
+  block ^entry:
+    jump ^loop
+  block ^loop:
+    %a = phi i32 [^entry: 11, ^join: %next_a]
+    %b = phi i32 [^entry: 11, ^join: %next_b]
+    %i = phi i64 [^entry: 0, ^join: %next_i]
+    store volatile i32 %a, %out
+    %more = cmp ult i64 %i, %n
+    branch %more, ^body, ^exit
+  block ^body:
+    branch %update, ^yes, ^no
+  block ^yes:
+    %step_a = binary add i32 %a, 7
+    %step_b = binary add i32 %b, 9
+    store volatile i32 %step_a, %out
+    jump ^join
+  block ^no:
+    store volatile i32 %a, %out
+    jump ^join
+  block ^join:
+    %next_a = phi i32 [^no: %a, ^yes: %step_a]
+    %next_b = phi i32 [^no: %b, ^yes: %step_b]
+    %next_i = binary add i64 %i, 1
+    jump ^loop
+  block ^exit:
+    %difference = binary sub i32 %b, %a
+    return i32 %difference
+}
+
+function @main() -> i32 {
+  slot $out : i32
+  block ^entry:
+    %p = addr $out
+    %a = call i32 @equal_states(0, 0, %p)
+    %b = call i32 @equal_states(3, 0, %p)
+    %c = call i32 @equal_states(4, 1, %p)
+    %out = load volatile i32 %p
+    %d = call i32 @different_seeds(0, %p)
+    %e = call i32 @different_seeds(3, %p)
+    %f = call i32 @different_updates(0, 0, %p)
+    %g = call i32 @different_updates(3, 1, %p)
+    %bad_a = cmp ne i32 %a, 0
+    %bad_b = cmp ne i32 %b, 0
+    %bad_c = cmp ne i32 %c, 0
+    %bad_out = cmp ne i32 %out, 39
+    %bad_d = cmp ne i32 %d, 2
+    %bad_e = cmp ne i32 %e, 2
+    %bad_f = cmp ne i32 %f, 0
+    %bad_g = cmp ne i32 %g, 6
+    %ab = binary or i64 %bad_a, %bad_b
+    %co = binary or i64 %bad_c, %bad_out
+    %de = binary or i64 %bad_d, %bad_e
+    %fg = binary or i64 %bad_f, %bad_g
+    %first = binary or i64 %ab, %co
+    %second = binary or i64 %de, %fg
+    %bad = binary or i64 %first, %second
+    %status = convert trunc i32 i64 %bad
+    return i32 %status
+}

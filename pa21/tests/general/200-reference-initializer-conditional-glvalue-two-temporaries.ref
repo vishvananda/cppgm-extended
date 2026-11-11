@@ -278,7 +278,7 @@ function @S__S__base_entry(%this : ptr [object_bytes=8], %n : i32) -> void [bind
     %t13 = load typed i32 @count
     %t14 = binary add nowrap i32 %t13, 1
     store typed i32 %t14, @count
-    %t15 = index i32 [projection=array_element] %t12, %t13
+    %t15 = index inbounds i32 [projection=array_element] %t12, %t13
     store typed i32 %t11, %t15
     return void
 }
@@ -307,7 +307,7 @@ function @S__S(%this : ptr [object_bytes=8], %n : i32) -> void [binding=strong, 
     %t13 = load typed i32 @count
     %t14 = binary add nowrap i32 %t13, 1
     store typed i32 %t14, @count
-    %t15 = index i32 [projection=array_element] %t12, %t13
+    %t15 = index inbounds i32 [projection=array_element] %t12, %t13
     store typed i32 %t11, %t15
     return void
 }
@@ -338,7 +338,7 @@ function @S__S__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=8], %x 
     %t15 = load typed i32 @count
     %t16 = binary add nowrap i32 %t15, 1
     store typed i32 %t16, @count
-    %t17 = index i32 [projection=array_element] %t14, %t15
+    %t17 = index inbounds i32 [projection=array_element] %t14, %t15
     store typed i32 %t13, %t17
     return void
 }
@@ -369,7 +369,7 @@ function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=8], %x : ptr [pass=
     %t15 = load typed i32 @count
     %t16 = binary add nowrap i32 %t15, 1
     store typed i32 %t16, @count
-    %t17 = index i32 [projection=array_element] %t14, %t15
+    %t17 = index inbounds i32 [projection=array_element] %t14, %t15
     store typed i32 %t13, %t17
     return void
 }
@@ -389,7 +389,7 @@ function @S___S__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, bi
     %t8 = load typed i32 @count
     %t9 = binary add nowrap i32 %t8, 1
     store typed i32 %t9, @count
-    %t10 = index i32 [projection=array_element] %t7, %t8
+    %t10 = index inbounds i32 [projection=array_element] %t7, %t8
     store typed i32 %t6, %t10
     return void
 }
@@ -409,7 +409,7 @@ function @S___S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=strong
     %t8 = load typed i32 @count
     %t9 = binary add nowrap i32 %t8, 1
     store typed i32 %t9, @count
-    %t10 = index i32 [projection=array_element] %t7, %t8
+    %t10 = index inbounds i32 [projection=array_element] %t7, %t8
     store typed i32 %t6, %t10
     return void
 }
@@ -478,7 +478,7 @@ function @handled(%n : i32) -> void [binding=strong, object=_Z7handledi] {
     %t5 = load typed i32 @count
     %t6 = binary add nowrap i32 %t5, 1
     store typed i32 %t6, @count
-    %t7 = index i32 [projection=array_element] %t4, %t5
+    %t7 = index inbounds i32 [projection=array_element] %t4, %t5
     store typed i32 %t3, %t7
     return void
 }
@@ -674,7 +674,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t41 = binary mul i64 %t39, %t40
     %t42 = addr @trace
     %t43 = load typed i32 $i
-    %t44 = index i32 [projection=array_element] %t42, %t43
+    %t44 = index inbounds i32 [projection=array_element] %t42, %t43
     %t45 = load typed i32 %t44
     %t46 = binary add nowrap i32 %t45, 100000
     %t47 = convert sext i64 i32 %t46
@@ -703,9 +703,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t59 = load typed i32 @selected
     %t60 = convert sext i64 i32 %t59
     %t61 = binary mul i64 %t60, 40
-    %t62 = index i8 [projection=array_element] %t58, %t61
+    %t62 = index inbounds i8 [projection=array_element] %t58, %t61
     %t63 = load typed i32 @limit
-    %t64 = index i64 [projection=array_element] %t62, %t63
+    %t64 = index inbounds i64 [projection=array_element] %t62, %t63
     %t65 = load typed i64 %t64
     %t66 = cmp ne i64 %t57, %t65
     branch %t66, ^if_then_32, ^lor_rhs_34
@@ -716,9 +716,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t69 = load typed i32 @selected
     %t70 = convert sext i64 i32 %t69
     %t71 = binary mul i64 %t70, 20
-    %t72 = index i8 [projection=array_element] %t68, %t71
+    %t72 = index inbounds i8 [projection=array_element] %t68, %t71
     %t73 = load typed i32 @limit
-    %t74 = index i32 [projection=array_element] %t72, %t73
+    %t74 = index inbounds i32 [projection=array_element] %t72, %t73
     %t75 = load typed i32 %t74
     %t76 = cmp ne i32 %t67, %t75
     branch %t76, ^if_then_32, ^if_else_33

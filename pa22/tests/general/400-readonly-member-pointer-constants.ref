@@ -59,7 +59,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t25 = binary add nowrap i64 %t9, %t24
     %t26 = addr $record
     %t27 = addr @members
-    %t28 = index i64 [projection=array_element] %t27, 0
+    %t28 = index inbounds i64 [projection=array_element] %t27, 0
     %t29 = load typed i64 %t28
     %t30 = index i8 [projection=field] %t26, %t29
     %t31 = load typed i64 %t30

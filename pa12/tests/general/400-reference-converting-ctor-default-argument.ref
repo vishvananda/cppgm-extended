@@ -61,7 +61,7 @@ function @Text__Text__ov2(%this : ptr [object_bytes=4], %p : ptr, %a : ptr [pass
     store typed ptr %p, $p
     store typed ptr %a, $a
     %t1 = load typed ptr $p
-    %t2 = index i8 [projection=array_element] %t1, 0
+    %t2 = index inbounds i8 [projection=array_element] %t1, 0
     %t3 = load i8 %t2
     %t4 = convert sext i32 i8 %t3
     %t5 = cmp eq i32 %t4, 120

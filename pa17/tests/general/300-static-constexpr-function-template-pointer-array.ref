@@ -66,12 +66,12 @@ function @table_void___call(%hash : i64, %index : i64) -> i64 [binding=weak, obj
     %t4 = load typed i64 $hash
     %t5 = addr @table_void___inv_sizes32
     %t6 = load typed i64 $index
-    %t7 = index i64 [projection=array_element] %t5, %t6
+    %t7 = index inbounds i64 [projection=array_element] %t5, %t6
     %t8 = load typed i64 %t7
     %t9 = binary add i64 %t4, %t8
     %t10 = addr @table_void___sizes
     %t11 = load typed i64 $index
-    %t12 = index i64 [projection=array_element] %t10, %t11
+    %t12 = index inbounds i64 [projection=array_element] %t10, %t11
     %t13 = load typed i64 %t12
     %t14 = binary umod i64 %t9, %t13
     return i64 %t14
@@ -85,7 +85,7 @@ function @table_void___call(%hash : i64, %index : i64) -> i64 [binding=weak, obj
     %t17 = load typed i64 $index
     %t18 = load typed i64 $sizes_under_32bit
     %t19 = binary sub i64 %t17, %t18
-    %t20 = index ptr [projection=array_element] %t16, %t19
+    %t20 = index inbounds ptr [projection=array_element] %t16, %t19
     %t21 = load typed ptr %t20
     %t22 = call i64 %t21(%t15) as (%arg0 : i64) -> i64
     return i64 %t22

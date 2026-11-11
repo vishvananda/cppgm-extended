@@ -925,6 +925,11 @@ bool Writer::write_memory_instruction(const Instruction& inst)
 		return true;
 	case Opcode::Index:
 		head(inst.op);
+		if (inst.index_bounds() == IndexBounds::InBounds)
+		{
+			text(spelling(inst.index_bounds()));
+			out_.push_back(' ');
+		}
 		type(inst.type);
 		if (inst.sub != 0)
 		{

@@ -299,7 +299,7 @@ function @qualification() -> i32 [binding=strong, object=_Z13qualificationv] {
     eh_try ^catch_dispatch_1
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(8)
     %t2 = addr @text
-    %t3 = index i8 %t2, 0
+    %t3 = index inbounds i8 %t2, 0
     store typed ptr %t3, %t1
     %t4 = addr @__external_rtti__pointer_to_char
     call void @__external_runtime____cxa_throw(%t1, %t4, 0)

@@ -138,7 +138,7 @@ function @Range__end(%this : ptr [object_bytes=8]) -> obj<8x8> [binding=weak, ob
     %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = binary mul i64 2, 4
-    %t5 = index i8 %t3, %t4
+    %t5 = index inbounds i8 %t3, %t4
     call void @Iterator__Iterator__aggregate(%t1, %t5)
     return obj<8x8> $retobj__1
 }
@@ -178,7 +178,7 @@ function @Iterator__operator____2(%ret : ptr [pass=indirect_result, alias=exclus
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = binary mul i64 1, 4
-    %t5 = index i8 %t3, %t4
+    %t5 = index inbounds i8 %t3, %t4
     store typed ptr %t5, %t2
     call void @Step__Step(%ret)
     return void

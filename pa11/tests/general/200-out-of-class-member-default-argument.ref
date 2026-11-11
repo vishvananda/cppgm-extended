@@ -10,7 +10,7 @@ function @Text__take(%this : ptr [object_bytes=1], %out : ptr, %n : i64, %pos : 
     store typed i64 %n, $n
     store typed i64 %pos, $pos
     %t1 = load typed ptr $out
-    %t2 = index i8 [projection=array_element] %t1, 0
+    %t2 = index inbounds i8 [projection=array_element] %t1, 0
     store i8 120, %t2
     %t3 = load typed i64 $n
     %t4 = load typed i64 $pos

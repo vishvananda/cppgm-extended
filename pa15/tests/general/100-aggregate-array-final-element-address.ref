@@ -8,13 +8,13 @@ function @inspect(%array : ptr [pass=by_address, object_bytes=16]) -> i32 [bindi
     %t1 = load typed ptr $array
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = binary mul i64 0, 8
-    %t4 = index i8 [projection=array_element] %t2, %t3
+    %t4 = index inbounds i8 [projection=array_element] %t2, %t3
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load typed ptr %t5
     %t7 = load typed ptr $array
     %t8 = index i8 [projection=field] %t7, 0
     %t9 = binary mul i64 0, 8
-    %t10 = index i8 [projection=array_element] %t8, %t9
+    %t10 = index inbounds i8 [projection=array_element] %t8, %t9
     %t11 = cmp eq ptr %t6, %t10
     branch %t11, ^land_rhs_4, ^land_short_5
 
@@ -22,13 +22,13 @@ function @inspect(%array : ptr [pass=by_address, object_bytes=16]) -> i32 [bindi
     %t12 = load typed ptr $array
     %t13 = index i8 [projection=field] %t12, 0
     %t14 = binary mul i64 1, 8
-    %t15 = index i8 [projection=array_element] %t13, %t14
+    %t15 = index inbounds i8 [projection=array_element] %t13, %t14
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = load typed ptr %t16
     %t18 = load typed ptr $array
     %t19 = index i8 [projection=field] %t18, 0
     %t20 = binary mul i64 1, 8
-    %t21 = index i8 [projection=array_element] %t19, %t20
+    %t21 = index inbounds i8 [projection=array_element] %t19, %t20
     %t22 = cmp eq ptr %t17, %t21
     store typed i64 %t22, $land__2
     jump ^land_end_6

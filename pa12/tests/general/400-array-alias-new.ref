@@ -72,9 +72,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_11:
     %t18 = load typed ptr $p
     %t19 = binary mul i64 1, 8
-    %t20 = index i8 [projection=array_element] %t18, %t19
+    %t20 = index inbounds i8 [projection=array_element] %t18, %t19
     %t21 = binary mul i64 1, 4
-    %t22 = index i8 [projection=array_element] %t20, %t21
+    %t22 = index inbounds i8 [projection=array_element] %t20, %t21
     %t23 = index i8 [projection=field] %t22, 0
     %t24 = load typed i32 %t23
     %t25 = cmp ne i32 %t24, 4
@@ -137,7 +137,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_22:
     %t39 = addr @order
     %t40 = load typed i32 $i
-    %t41 = index i32 [projection=array_element] %t39, %t40
+    %t41 = index inbounds i32 [projection=array_element] %t39, %t40
     %t42 = load typed i32 %t41
     %t43 = load typed i32 $i
     %t44 = binary sub nowrap i32 4, %t43
@@ -187,7 +187,7 @@ function @Item___Item(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=
     %t5 = load typed i32 @destroyed
     %t6 = binary add nowrap i32 %t5, 1
     store typed i32 %t6, @destroyed
-    %t7 = index i32 [projection=array_element] %t4, %t5
+    %t7 = index inbounds i32 [projection=array_element] %t4, %t5
     store typed i32 %t3, %t7
     return void
 }

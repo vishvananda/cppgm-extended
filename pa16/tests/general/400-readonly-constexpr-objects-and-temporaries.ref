@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = index i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = addr @squares
-    %t6 = index i32 [projection=array_element] %t5, 2
+    %t6 = index inbounds i32 [projection=array_element] %t5, 2
     %t7 = load typed i32 %t6
     %t8 = binary add nowrap i32 %t4, %t7
     %t9 = load typed i32 @__ref_tmp__constant_reference

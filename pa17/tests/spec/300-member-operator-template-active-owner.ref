@@ -125,7 +125,7 @@ function @active_owner_case__iter___cppgm_class_template_identity_2___cppgm_clas
     %t3 = load typed ptr %t2
     %t4 = load typed i64 $n
     %t5 = binary mul i64 %t4, 4
-    %t6 = index i8 %t3, %t5
+    %t6 = index inbounds i8 %t3, %t5
     %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 0
     store typed ptr %t6, %t8

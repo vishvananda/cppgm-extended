@@ -10,7 +10,7 @@ function @read(%elements : ptr, %subscript : ptr [pass=by_address, object_bytes=
     %t3 = load typed i32 %t2
     %t4 = convert sext i64 i32 %t3
     %t5 = binary mul i64 %t4, 4
-    %t6 = index i8 [projection=array_element] %t1, %t5
+    %t6 = index inbounds i8 [projection=array_element] %t1, %t5
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     return i32 %t8
@@ -27,7 +27,7 @@ function @read_unsigned(%elements : ptr, %subscript : ptr [pass=by_address, obje
     %t3 = load typed u32 %t2
     %t4 = convert zext i64 u32 %t3
     %t5 = binary mul i64 %t4, 4
-    %t6 = index i8 [projection=array_element] %t1, %t5
+    %t6 = index inbounds i8 [projection=array_element] %t1, %t5
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     return i32 %t8
@@ -50,7 +50,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed u32 2, $index
     %t5 = addr $values
     %t6 = binary mul i64 1, 4
-    %t7 = index i8 %t5, %t6
+    %t7 = index inbounds i8 %t5, %t6
     %t8 = addr $subscript
     %t9 = call i32 @read(%t7, %t8)
     %t10 = cmp ne i32 %t9, 7

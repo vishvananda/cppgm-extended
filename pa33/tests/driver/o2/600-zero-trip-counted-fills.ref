@@ -21,7 +21,7 @@ function @fill_bytes(%p : ptr, %s : ptr, %n : u32) -> void [binding=strong, obje
   block ^while_body_2:
     %t3 = load i8 %s
     store i8 %t3, %t2
-    %t4 = index i8 %t2, 1
+    %t4 = index inbounds i8 %t2, 1
     %t5 = binary sub u32 %t1, 1
     jump ^while_cond_1
 
@@ -40,7 +40,7 @@ function @fill_words(%p : ptr, %s : ptr, %n : u32) -> void [binding=strong, obje
   block ^while_body_2:
     %t3 = load typed u32 %s
     store typed u32 %t3, %t2
-    %t4 = index i8 %t2, 4
+    %t4 = index inbounds i8 %t2, 4
     %t5 = binary sub u32 %t1, 1
     jump ^while_cond_1
 
@@ -61,7 +61,7 @@ function @fill_wide(%p : ptr, %n : u32) -> void [binding=strong, object=_Z9fill_
 
   block ^while_body_2:
     store typed i128 18446744073709551616, %t4
-    %t6 = index i8 %t4, 16
+    %t6 = index inbounds i8 %t4, 16
     jump ^while_cond_1
 
   block ^while_end_3:
@@ -99,7 +99,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t9, ^if_then_3, ^lor_rhs_2
 
   block ^lor_rhs_2:
-    %t10 = index u32 [projection=array_element] %t2, 1
+    %t10 = index inbounds u32 [projection=array_element] %t2, 1
     %t11 = load typed u32 %t10
     %t12 = cmp ne u32 %t11, 2
     branch %t12, ^if_then_3, ^if_end_4
@@ -121,13 +121,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t18, ^if_then_9, ^lor_rhs_5
 
   block ^lor_rhs_5:
-    %t19 = index i8 [projection=array_element] %t1, 1
+    %t19 = index inbounds i8 [projection=array_element] %t1, 1
     %t20 = load i8 %t19
     %t21 = cmp ne i8 %t20, 122
     branch %t21, ^if_then_9, ^lor_rhs_6
 
   block ^lor_rhs_6:
-    %t22 = index i8 [projection=array_element] %t1, 2
+    %t22 = index inbounds i8 [projection=array_element] %t1, 2
     %t23 = load i8 %t22
     %t24 = cmp ne i8 %t23, 99
     branch %t24, ^if_then_9, ^lor_rhs_7
@@ -158,7 +158,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t32, ^for_body_12, ^for_end_16
 
   block ^for_body_12:
-    %t33 = index i128 [projection=array_element] %t29, %t31
+    %t33 = index inbounds i128 [projection=array_element] %t29, %t31
     %t34 = load i64 %t33
     %t35 = index i8 [projection=field] %t33, 8
     %t36 = load i64 %t35

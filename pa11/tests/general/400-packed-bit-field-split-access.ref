@@ -186,7 +186,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t126 = addr $packed
     store typed ptr %t126, $bytes
     %t127 = load typed ptr $bytes
-    %t128 = index u8 [projection=array_element] %t127, 0
+    %t128 = index inbounds u8 [projection=array_element] %t127, 0
     %t129 = load u8 %t128
     %t130 = convert zext i32 u8 %t129
     %t131 = cmp ne i32 %t130, 251
@@ -194,7 +194,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_19:
     %t132 = load typed ptr $bytes
-    %t133 = index u8 [projection=array_element] %t132, 1
+    %t133 = index inbounds u8 [projection=array_element] %t132, 1
     %t134 = load u8 %t133
     %t135 = convert zext i32 u8 %t134
     %t136 = cmp ne i32 %t135, 255
@@ -202,7 +202,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_18:
     %t137 = load typed ptr $bytes
-    %t138 = index u8 [projection=array_element] %t137, 2
+    %t138 = index inbounds u8 [projection=array_element] %t137, 2
     %t139 = load u8 %t138
     %t140 = convert zext i32 u8 %t139
     %t141 = cmp ne i32 %t140, 255
@@ -210,7 +210,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_17:
     %t142 = load typed ptr $bytes
-    %t143 = index u8 [projection=array_element] %t142, 3
+    %t143 = index inbounds u8 [projection=array_element] %t142, 3
     %t144 = load u8 %t143
     %t145 = convert zext i32 u8 %t144
     %t146 = cmp ne i32 %t145, 255
@@ -218,7 +218,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_16:
     %t147 = load typed ptr $bytes
-    %t148 = index u8 [projection=array_element] %t147, 4
+    %t148 = index inbounds u8 [projection=array_element] %t147, 4
     %t149 = load u8 %t148
     %t150 = convert zext i32 u8 %t149
     %t151 = cmp ne i32 %t150, 0

@@ -220,13 +220,15 @@ for my $name (sort keys %ledger_role)
 my @opcodes = table_strings($vocabulary, 'kOpcodes', 'lowir_model.h');
 my @predictions = grep { $_ ne '' }
 	table_strings($vocabulary, 'kBranchPredictions', 'lowir_model.h');
+my @bounds = grep { $_ ne '' }
+	table_strings($vocabulary, 'kIndexBounds', 'lowir_model.h');
 my @fact_words;
 if ($vocabulary =~ /spelling\(InstructionFlag \w+\)\s*\{(.*?)\n\}/s)
 {
 	@fact_words = $1 =~ /return\s+"([^"]+)"/g;
 }
 push @errors, 'cannot locate the instruction-fact words of lowir_model.h' if !@fact_words;
-my %keyword = map { $_ => 1 } @opcodes, @fact_words, @predictions,
+my %keyword = map { $_ => 1 } @opcodes, @fact_words, @predictions, @bounds,
 	table_strings($vocabulary, 'kKeywords', 'lowir_model.h'),
 	table_strings($vocabulary, 'kUnaryOps', 'lowir_model.h'),
 	grep { $_ ne '' } table_strings($scaffold, 'kStorages', 'ir_symbol_model.h');
@@ -255,6 +257,13 @@ for my $prediction (@predictions)
 		if !$ledger_word{$prediction};
 	push @errors, "branch prediction '$prediction' is absent from pa8/lowir.md"
 		if $documentation !~ /\b\Q$prediction\E\b/;
+}
+for my $fact (@bounds)
+{
+	push @errors, "index bounds fact '$fact' has no retained ledger instruction row"
+		if !$ledger_word{$fact};
+	push @errors, "index bounds fact '$fact' is absent from pa8/lowir.md"
+		if $documentation !~ /\b\Q$fact\E\b/;
 }
 for my $head (@opcodes)
 {

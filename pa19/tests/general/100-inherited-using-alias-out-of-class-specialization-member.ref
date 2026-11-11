@@ -66,11 +66,11 @@ function @lib__traits_char16_t___compare(%lhs : ptr, %rhs : ptr, %n : i64) -> i3
     store typed i64 %t14, $n
     %t15 = load typed ptr $lhs
     %t16 = binary mul i64 1, 2
-    %t17 = index i8 %t15, %t16
+    %t17 = index inbounds i8 %t15, %t16
     store typed ptr %t17, $lhs
     %t18 = load typed ptr $rhs
     %t19 = binary mul i64 1, 2
-    %t20 = index i8 %t18, %t19
+    %t20 = index inbounds i8 %t18, %t19
     store typed ptr %t20, $rhs
     jump ^for_cond_1
 

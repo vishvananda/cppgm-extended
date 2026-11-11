@@ -10,7 +10,7 @@ function @f(%p : ptr) -> i32 [binding=strong, object=_Z1fPKh] {
 
   block ^while_cond_1:
     %t1 = load typed ptr $p
-    %t2 = index i8 %t1, 1
+    %t2 = index inbounds i8 %t1, 1
     store typed ptr %t2, $p
     %t3 = load u8 %t1
     store u8 %t3, $c

@@ -32,9 +32,9 @@ function @counts(%text : ptr, %n : i32) -> i32 [binding=strong, object=_Z6counts
     branch %t4, ^for_body_2, ^for_end_3
 
   block ^for_body_2:
-    %t5 = index u8 [projection=array_element] %text, %t2
+    %t5 = index inbounds u8 [projection=array_element] %text, %t2
     %t6 = load u8 %t5
-    %t7 = index i32 [projection=array_element] %t1, %t6
+    %t7 = index inbounds i32 [projection=array_element] %t1, %t6
     %t8 = load typed i32 %t7
     %t9 = binary add nowrap i32 %t8, 1
     store typed i32 %t9, %t7
@@ -54,7 +54,7 @@ function @counts(%text : ptr, %n : i32) -> i32 [binding=strong, object=_Z6counts
     branch %t15, ^for_body_5, ^for_end_6
 
   block ^for_body_5:
-    %t16 = index i32 [projection=array_element] %t11, %t13
+    %t16 = index inbounds i32 [projection=array_element] %t11, %t13
     %t17 = load typed i32 %t16
     %t18 = cmp ne i32 %t17, 0
     %t19 = convert trunc i32 i64 %t18
@@ -80,7 +80,7 @@ function @fill(%out : ptr) -> void [binding=strong, object=_Z4fillPi] {
 
   block ^for_body_2:
     %t5 = binary mul nowrap i32 %t3, 3
-    %t6 = index i32 [projection=array_element] %t1, %t2
+    %t6 = index inbounds i32 [projection=array_element] %t1, %t2
     store typed i32 %t5, %t6
     %t7 = binary add nowrap i64 %t2, 1
     jump ^for_cond_1
@@ -108,7 +108,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^for_body_2:
     %t5 = binary mul nowrap i32 %t3, 3
-    %t6 = index i32 [projection=array_element] %t1, %t2
+    %t6 = index inbounds i32 [projection=array_element] %t1, %t2
     store typed i32 %t5, %t6
     %t7 = binary add nowrap i64 %t2, 1
     jump ^for_cond_1
@@ -129,9 +129,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t14, ^for_body_5, ^for_end_6
 
   block ^for_body_5:
-    %t15 = index u8 [projection=array_element] %t11, %t12
+    %t15 = index inbounds u8 [projection=array_element] %t11, %t12
     %t16 = load u8 %t15
-    %t17 = index i32 [projection=array_element] %t10, %t16
+    %t17 = index inbounds i32 [projection=array_element] %t10, %t16
     %t18 = load typed i32 %t17
     %t19 = binary add nowrap i32 %t18, 1
     store typed i32 %t19, %t17
@@ -151,7 +151,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t25, ^for_body_8, ^inline_cont_9
 
   block ^for_body_8:
-    %t26 = index i32 [projection=array_element] %t21, %t23
+    %t26 = index inbounds i32 [projection=array_element] %t21, %t23
     %t27 = load typed i32 %t26
     %t28 = cmp ne i32 %t27, 0
     %t29 = convert trunc i32 i64 %t28
@@ -161,7 +161,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^inline_cont_9:
     %t32 = binary sub nowrap i32 %t22, 5
-    %t33 = index i32 [projection=array_element] %t9, 63
+    %t33 = index inbounds i32 [projection=array_element] %t9, 63
     %t34 = load typed i32 %t33
     %t35 = binary add nowrap i32 %t32, %t34
     %t36 = binary sub nowrap i32 %t35, 189

@@ -108,7 +108,7 @@ function @adjusted(%array : ptr, %bytes : ptr [pass=by_address, object_bytes=32]
     store typed ptr %array, $array
     store typed ptr %bytes, $bytes
     %t1 = load typed ptr $array
-    %t2 = index i32 [projection=array_element] %t1, 0
+    %t2 = index inbounds i32 [projection=array_element] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = const i64 32
     %t5 = convert sext i64 i32 %t3

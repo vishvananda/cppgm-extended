@@ -45,6 +45,51 @@ RENAMED = """function @main(%a : i64, %b : i64) -> i64 {
 
 
 class LowIrComparisonTest(unittest.TestCase):
+    ADDRESSED = """function @main() -> i32 {
+  code_label @target = ^destination
+  block ^entry:
+    %target = addr @target
+    indirect_jump %target, ^destination
+  block ^destination:
+    return i32 0
+}
+"""
+
+    def test_code_labels_and_indirect_jumps_are_well_formed(self):
+        result = self.compare(self.ADDRESSED, self.ADDRESSED, direct=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_indirect_destination_requires_a_code_label(self):
+        changed = self.ADDRESSED.replace('  code_label @target = ^destination\n', '')
+        result = self.compare(self.ADDRESSED, changed, direct=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('has no code label', result.stdout + result.stderr)
+
+    def test_code_label_target_must_exist(self):
+        changed = self.ADDRESSED.replace('@target = ^destination', '@target = ^missing')
+        result = self.compare(self.ADDRESSED, changed, direct=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('^missing', result.stdout + result.stderr)
+
+    def test_addressed_entry_cannot_accept_phi_inputs(self):
+        changed = self.ADDRESSED.replace('    return i32 0',
+            '    %v = phi i32 [^entry: 0]\n    return i32 %v')
+        result = self.compare(self.ADDRESSED, changed, direct=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('addressed block cannot have phi inputs', result.stdout + result.stderr)
+
+    def test_inbounds_is_accepted_and_remains_a_comparison_fact(self):
+        program = """function @element(%base : ptr, %offset : i64) -> ptr {
+  block ^entry:
+    %p = index inbounds i32 [projection=array_element] %base, %offset
+    return ptr %p
+}
+"""
+        result = self.compare(program, program, direct=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = self.compare(program, program.replace('index inbounds', 'index'), direct=True)
+        self.assertNotEqual(result.returncode, 0)
+
     def test_parallel_seams_keep_the_reports_failure_marker_isolated(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

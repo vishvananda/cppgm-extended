@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+# Two copies of the same state need not remain live around the loop.
+count(phi) <= 3 in @equal_states

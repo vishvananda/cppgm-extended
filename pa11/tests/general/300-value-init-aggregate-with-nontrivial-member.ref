@@ -14,7 +14,7 @@ function @value_init_dirty_stack() -> void [binding=strong, object=_Z22value_ini
   block ^for_body_2:
     %t3 = addr $data
     %t4 = load typed i32 $i
-    %t5 = index i32 [projection=array_element] %t3, %t4
+    %t5 = index inbounds i32 [projection=array_element] %t3, %t4
     store typed i32 286331153, %t5
     jump ^for_iter_3
 
