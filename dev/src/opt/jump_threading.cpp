@@ -267,6 +267,7 @@ private:
 	bool demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool copy_thread(BlockId s, InstId tail, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, unsigned& bits) const;
+	bool accessed_entering(BlockId p, Value v);
 	Value stripped(Value v, std::vector<Extension>& chain) const;
 	ValueSet related(Value cx, ValueSet f, unsigned bits, Value v, unsigned vbits) const;
 	bool mergeable(BlockId p, BlockId s, Value v) const;
@@ -292,6 +293,10 @@ private:
 	std::vector<Value> inputs_;
 	std::vector<uint32_t> mark_, phi_pos_; // apply_moves' scratch (marks by epoch)
 	std::vector<BlockId> use_dom_;         // find_use_dominators' result (empty until needed)
+	// accessed_entering's pairs (block, pointer its loads and stores go
+	// through), sorted; built at the first query.
+	std::vector<std::pair<BlockId, TempId>> accessed_;
+	bool accessed_built_ = false;
 	uint32_t epoch_ = 0;
 	uint32_t demoted_ = 0; // known_compares' phis demoted to slots this run
 	bool touched_ = false; // the run changed the body so far
@@ -970,7 +975,9 @@ bool JumpThreading::known_compares()
 			const bool alone = first == last && def != last;
 			const bool paired = first == def && body_.instructions[first].next == last && c_.uses[cmp.result] == 1;
 			// A branch alone on a value other than a compare tests `ne x, 0`.
-			const bool bare = alone && cmp.op != Opcode::Compare && body_.temps[term.ops[0].index].type.is_integer();
+			const Type tested_type = body_.temps[term.ops[0].index].type;
+			const bool bare = alone && cmp.op != Opcode::Compare &&
+				(tested_type.is_integer() || tested_type.is_pointer());
 			if (!bare && (cmp.op != Opcode::Compare || !(alone || paired)))
 				continue;
 			ComparePredicate pred = bare ? ComparePredicate::Ne : static_cast<ComparePredicate>(cmp.sub);
@@ -1050,6 +1057,9 @@ bool JumpThreading::known_compares()
 				++depth, d = cfg_.idom[d])
 				if (cfg_.pred_count(d) == 1)
 					outcome = decided_on_edge(cfg_.preds[cfg_.pred_first[d]], d, v);
+			// A pointer the path loaded or stored through is not null.
+			if (outcome == kNoId && qbits == 64 && body_.temps[v.index].type.is_pointer() && accessed_entering(p, v))
+				outcome = decide(admitted(ComparePredicate::Ne, 0, 64));
 			return outcome;
 		};
 		// The outcome on each predecessor's edge; a merge block jumping
@@ -1079,7 +1089,17 @@ bool JumpThreading::known_compares()
 				const BlockId q = cfg_.preds[qi];
 				if (q == p || q == s || (cfg_.flags[q] & BF_HANDLER) != 0)
 					continue;
-				const BlockId o = path_outcome(q, p, phi_incoming(body_, vphi, q));
+				// (A literal the merge block's phi takes decides at once: the
+				// test block's own literal inputs are constant_phis'.)
+				const Value qv = phi_incoming(body_, vphi, q);
+				Constant qc;
+				BlockId o = path_outcome(q, p, qv);
+				if (o == kNoId && literal_constant(body_, qv, qc) && qc.kind == ValueKind::Integer)
+				{
+					ValueSet one;
+					one.add(qc.bits.low & ones(qbits), qc.bits.low & ones(qbits));
+					o = decide(one);
+				}
 				if (o != kNoId)
 				{
 					merges.push_back(std::make_pair(p, q));
@@ -1212,6 +1232,44 @@ bool JumpThreading::edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, u
 	cx = c;
 	f = admitted(taken ? ComparePredicate::Ne : ComparePredicate::Eq, 0, bits);
 	return true;
+}
+
+// Whether control leaving `p` has loaded or stored through pointer v: in p
+// or the blocks before it that are each the next one's only predecessor
+// (at most kFactDepth). The blocks are read as they were at the first query;
+// a block made since has no entry, and none loses an access meanwhile.
+bool JumpThreading::accessed_entering(BlockId p, Value v)
+{
+	if (!accessed_built_)
+	{
+		accessed_built_ = true;
+		for (BlockId b : body_.layout)
+		{
+			if (!cfg_.reachable(b) || (cfg_.flags[b] & BF_HANDLER) != 0)
+				continue;
+			for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			{
+				const Instruction& inst = body_.instructions[i];
+				if (inst.op != Opcode::Load && inst.op != Opcode::Store)
+					continue;
+				const Value pointer = accessed_pointer(body_, inst.ops[inst.op == Opcode::Load ? 0 : 1]);
+				if (pointer.is(ValueKind::Temp))
+					accessed_.push_back(std::make_pair(b, pointer.index));
+			}
+		}
+		std::sort(accessed_.begin(), accessed_.end());
+		accessed_.erase(std::unique(accessed_.begin(), accessed_.end()), accessed_.end());
+	}
+	BlockId cur = p;
+	for (uint32_t depth = 0; depth < kFactDepth; ++depth)
+	{
+		if (std::binary_search(accessed_.begin(), accessed_.end(), std::make_pair(cur, static_cast<TempId>(v.index))))
+			return true;
+		if (cur >= cfg_.block_count || cfg_.pred_count(cur) != 1)
+			break;
+		cur = cfg_.preds[cfg_.pred_first[cur]];
+	}
+	return false;
 }
 
 // v without the integer extensions defining it (the outermost first in

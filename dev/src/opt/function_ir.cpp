@@ -754,6 +754,29 @@ Value phi_incoming(const FunctionBody& body, const Instruction& phi, BlockId pre
 	return Value::none();
 }
 
+namespace {
+
+// Index instructions followed from an access's address to its pointer.
+const unsigned kAccessIndexDepth = 8;
+
+} // namespace
+
+Value accessed_pointer(const FunctionBody& body, Value address)
+{
+	for (unsigned depth = 0; depth < kAccessIndexDepth; ++depth)
+	{
+		if (!address.is(ValueKind::Temp) || address.index < body.parameter_count ||
+			body.temps[address.index].def == kNoId)
+			break;
+		const Instruction& def = body.instructions[body.temps[address.index].def];
+		if (def.op != Opcode::Index ||
+			(def.index_bounds() != IndexBounds::InBounds && !def.ops[1].is(ValueKind::Integer)))
+			break;
+		address = def.ops[0];
+	}
+	return address;
+}
+
 void replace_all_uses(FunctionBody& body, TempId from, Value to)
 {
 	for (BlockId b : body.layout)

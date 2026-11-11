@@ -118,9 +118,6 @@ unsigned lane_bytes(VectorOp read)
 	return read == VectorOp::Tof32 || read == VectorOp::Toi32 ? 4 : 8;
 }
 
-// Index instructions followed from an access's address to its pointer.
-const unsigned kAccessIndexDepth = 8;
-
 class Simplifier final : public IntegerPatternFacts
 {
 public:
@@ -282,20 +279,6 @@ private:
 			return false;
 		const Signature* signature = c_.program.call_boundary(*call);
 		return signature != nullptr && signature->boundary.returns == ir_model::CRM_NONNULL;
-	}
-	// The pointer an access at `address` goes through: the address itself, or
-	// the base it is indexed from in bounds or by a literal offset (a field's).
-	Value accessed_pointer(Value address) const
-	{
-		for (unsigned depth = 0; depth < kAccessIndexDepth; ++depth)
-		{
-			const Instruction* def = producer(address);
-			if (def == nullptr || def->op != Opcode::Index ||
-				(def->index_bounds() != IndexBounds::InBounds && !def->ops[1].is(ValueKind::Integer)))
-				break;
-			address = def->ops[0];
-		}
-		return address;
 	}
 	void float_bound_facts(const Instruction& test, bool taken);
 	void mark_finite(Value v);
@@ -3020,7 +3003,7 @@ void Simplifier::process_block(BlockId block)
 		if ((inst.op == Opcode::Load || inst.op == Opcode::Store) &&
 			(first_opener_[block] == kNoId || ordinal_[id] < first_opener_[block]))
 		{
-			const Value pointer = accessed_pointer(inst.ops[inst.op == Opcode::Load ? 0 : 1]);
+			const Value pointer = accessed_pointer(body_, inst.ops[inst.op == Opcode::Load ? 0 : 1]);
 			if (pointer.is(ValueKind::Temp) && !nonzero_[pointer.index])
 			{
 				nonzero_[pointer.index] = 1;

@@ -397,6 +397,11 @@ void rename_phi_incoming(lowir::FunctionBody& body, lowir::BlockId block, lowir:
 // The incoming value of `pred` in a phi, or a None value.
 lowir::Value phi_incoming(const lowir::FunctionBody& body, const lowir::Instruction& phi, lowir::BlockId pred);
 
+// The pointer an access at `address` goes through: the address itself, or
+// the base it is indexed from in bounds or by a literal offset (a field's).
+// A load or store through the address needs that pointer not null.
+lowir::Value accessed_pointer(const lowir::FunctionBody& body, lowir::Value address);
+
 // Replaces every use of temporary `from` with `to` in linked instructions
 // (a full scan: for occasional rewrites only).
 void replace_all_uses(lowir::FunctionBody& body, lowir::TempId from, lowir::Value to);
