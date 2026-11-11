@@ -1637,7 +1637,8 @@ bool InlineWaveRunner::admit(
 	if (wave_ != InlineWave::Once)
 	{
 		const bool hint = (m.flags & SF_INLINE_HINT) != 0;
-		const uint32_t allowance = hint ? 65 : 45;
+		// (-O3 admits a quarter more, as LLVM's -O3 threshold is to its -O2 one.)
+		const uint32_t allowance = (hint ? 65 : 45) * (options_.level >= 3 ? 5 : 4) / 4;
 		uint32_t hot, unpriced;
 		const FunctionBody& caller_body = *program_.functions[program_.symbols[graph_.functions[caller_]].detail].body;
 		call_cost_after_constants(shape, caller_body, call, hot, unpriced);
