@@ -18,9 +18,9 @@ and direct scalar Wasm encoding with typed locals, frames, function tables,
 structured reducible control flow and an irreducible fallback. Perl fixtures
 validate and execute direct-source and serialized-LowIR paths at O0–O3 using
 pinned independent tools. Selected machine IR is checked internally before
-encoding. The initial rebased strict report passes 10,662/10,662 tests. Subsequent
-scalar checks cover narrow signed/unsigned operations, unordered floating
-comparisons and freestanding dynamic initialization.
+encoding. The rebased strict report passes 10,664/10,664 tests. Scalar checks cover
+narrow signed/unsigned operations, unordered floating comparisons and
+freestanding dynamic initialization.
 
 This is an intermediate implementation, not completion of the assignment.
 Relocatable objects/linking, full aggregate/varargs/wide-value ABI, WASIp1
@@ -28,6 +28,33 @@ startup and runtime, virtual/RTTI/EH interoperability, SIMD and performance
 quality gates remain. Steps 0–4 and 8 below are partially implemented; their
 remaining acceptance checks still apply. Keep those requirements visible
 rather than narrowing the assignment to the current scalar emitter.
+
+## Qualification of the first implementation
+
+- The strict report passes 10,664/10,664; PA37 passes 18/18 at O0–O3 with both
+  host-built and self-built compiler/backend tools.
+- Debug-info checks, the self-host ladder through PA5, byte-identical inception,
+  PA36 correctness smoke, architecture/format/file/placement audits and the
+  complete harness suite pass.
+- A fresh student export regenerates and verifies the reference outputs.
+  Its 269-document inventory, standalone scaffolds and reference-bundle
+  installation through all 43 wrappers pass. No implementation plan is shipped.
+- LLVM 22's wasm32 compiler/linker agrees on 11 export invocations across seven
+  header-free source fixtures. Full object/runtime interoperability is still
+  a later qualification step.
+- Frozen native compilation against the identical LLVM base emits identical
+  object bytes at O0/O3. The first core checkpoint adds 0.20%/0.63% instructions
+  and leaves peak memory essentially unchanged. A/A and ABBA observations are
+  retained outside Git; pinned O0 and ordinary O3 paired wall estimates are
+  +0.86%/+0.84%, with A/A estimates of -0.73%/-0.85%. These small timing changes
+  are not a reliable regression estimate on this host.
+
+Local evidence, frozen binaries/inputs and all observations are under
+`/mnt/vizier/cppgm-wasm32-evidence`. The next ABI step must audit remaining
+native-width vtable/member-pointer geometry, binary128 constant operations,
+symbol aliases/equivalent entries and every implicit ABI classification before
+claiming portable class or wide-value support. PA37's full required behavior
+and quality gates remain the completion bar.
 
 ## Placement and scope
 
@@ -66,7 +93,7 @@ portable language requirements and native-only extensions. Existing native
 coverage stays required. A thread-capable profile can later add Wasm
 atomics/TLS without changing the shared MIR around x86 register names.
 
-## What the current architecture requires
+## What the initial architecture required
 
 | Current representation | Consequence for the split |
 | --- | --- |
