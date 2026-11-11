@@ -114,13 +114,15 @@ bool bounds_of(TypeKind kind, int64_t& lo, int64_t& hi)
 	}
 }
 
-// A block's test of value `x` (of `type`): a branch on its compare with
-// the literal `k`, or a switch on it; `cost` the compares it stands for
-// (a switch's runs of consecutive values per target).
+// A block's test of value `x` (of `type`; a pointer's equality tests as
+// i64, `pointer` set): a branch on its compare with the literal `k`, or a
+// switch on it; `cost` the compares it stands for (a switch's runs of
+// consecutive values per target).
 struct Test
 {
 	TempId x;
 	Type type;
+	bool pointer;
 	InstId term;
 	bool is_switch;
 	ComparePredicate pred;
@@ -147,6 +149,7 @@ private:
 	void sides(const Test& test, const Ranges& entry, int64_t tmin, int64_t tmax,
 		std::vector<std::pair<BlockId, Ranges>>& out) const;
 	bool form(BlockId head);
+	bool form_region(const std::vector<BlockId>& region, const std::vector<Test>& tests);
 
 	FunctionContext& c_;
 	FunctionBody& body_;
@@ -155,8 +158,9 @@ private:
 };
 
 // The block's branch on a single-use compare of a temporary with an
-// integer literal, at a predicate of the type's signedness. A block after
-// the head holds only the compare and the branch.
+// integer literal, at a predicate of the type's signedness (a pointer's:
+// equality alone). A block after the head holds only the compare and the
+// branch.
 bool SwitchFormer::test_of(BlockId block, bool head, Test& test) const
 {
 	const InstId last = body_.blocks[block].last;
@@ -185,8 +189,10 @@ bool SwitchFormer::test_of(BlockId block, bool head, Test& test) const
 	Constant literal;
 	if (!x.is(ValueKind::Temp) || !literal_constant(body_, k, literal) || body_.temps[x.index].type != cmp.type)
 		return false;
+	const bool pointer = cmp.type.is_pointer();
+	const Type type = pointer ? Type::scalar(TypeKind::I64) : cmp.type;
 	int64_t lo = 0, hi = 0;
-	if (!bounds_of(cmp.type.kind(), lo, hi))
+	if (!bounds_of(type.kind(), lo, hi) || (pointer && pred != ComparePredicate::Eq && pred != ComparePredicate::Ne))
 		return false;
 	const bool sign = lo < 0;
 	const bool ordered_signed = pred == ComparePredicate::Lt || pred == ComparePredicate::Le ||
@@ -196,10 +202,11 @@ bool SwitchFormer::test_of(BlockId block, bool head, Test& test) const
 	if ((ordered_signed && !sign) || (ordered_unsigned && sign))
 		return false;
 	Literal bits;
-	if (!integer_of(cmp.type, literal, bits))
+	if (!integer_of(type, literal, bits))
 		return false;
 	test.x = x.index;
-	test.type = cmp.type;
+	test.type = type;
+	test.pointer = pointer;
 	test.term = last;
 	test.is_switch = false;
 	test.pred = pred;
@@ -235,6 +242,7 @@ bool SwitchFormer::switch_of(BlockId block, bool head, Test& test) const
 		[](const std::pair<int64_t, BlockId>& a, const std::pair<int64_t, BlockId>& b) { return a.first < b.first; });
 	test.x = term.ops[0].index;
 	test.type = type;
+	test.pointer = false;
 	test.term = last;
 	test.is_switch = true;
 	test.on_true = test.on_false = term.ops[1].index;
@@ -304,14 +312,13 @@ void SwitchFormer::sides(
 // the region takes the values its edges carry, the largest set the
 // default (the others at most kMaxCases values together, as fewer runs
 // than the region's tests), when every target's phis agree across the
-// region's edges into it.
+// region's edges into it. A region that does not qualify gives up its
+// last block (each was reached only from those before it) and tries again.
 bool SwitchFormer::form(BlockId head)
 {
 	Test first;
 	if (!test_of(head, true, first))
 		return false;
-	int64_t tmin = 0, tmax = 0;
-	bounds_of(first.type.kind(), tmin, tmax);
 	std::vector<BlockId> region(1, head);
 	std::vector<Test> tests(1, first);
 	auto inside = [&](BlockId b) { return std::find(region.begin(), region.end(), b) != region.end(); };
@@ -345,8 +352,19 @@ bool SwitchFormer::form(BlockId head)
 			}
 		}
 	}
-	if (region.size() < 2)
-		return false;
+	for (; region.size() >= 2; region.pop_back(), tests.pop_back())
+		if (form_region(region, tests))
+			return true;
+	return false;
+}
+
+bool SwitchFormer::form_region(const std::vector<BlockId>& region, const std::vector<Test>& tests)
+{
+	const BlockId head = region[0];
+	const Test& first = tests[0];
+	int64_t tmin = 0, tmax = 0;
+	bounds_of(first.type.kind(), tmin, tmax);
+	auto inside = [&](BlockId b) { return std::find(region.begin(), region.end(), b) != region.end(); };
 	// Value sets in reverse postorder (an edge back into the region: none).
 	std::vector<size_t> order(region.size());
 	for (size_t r = 0; r < region.size(); ++r)
@@ -367,7 +385,7 @@ bool SwitchFormer::form(BlockId head)
 		{
 			if (side.first == head)
 				return false;
-			const std::vector<BlockId>::iterator at = std::find(region.begin(), region.end(), side.first);
+			const std::vector<BlockId>::const_iterator at = std::find(region.begin(), region.end(), side.first);
 			if (at != region.end())
 			{
 				const size_t to = static_cast<size_t>(at - region.begin());
@@ -462,11 +480,28 @@ bool SwitchFormer::form(BlockId head)
 					break;
 			}
 	}
+	// A pointer is switched on as the integer it is.
+	Value selector = Value::temp(first.x);
+	if (first.pointer)
+	{
+		InstId prev = kNoId;
+		for (InstId i = body_.blocks[head].first; i != body_.blocks[head].last; i = body_.instructions[i].next)
+			prev = i;
+		Instruction copy = make_instruction(Opcode::Copy, first.type);
+		copy.ops[0] = selector;
+		copy.location = body_.instructions[body_.blocks[head].last].location;
+		const InstId id = append_instruction(body_, copy);
+		body_.instructions[id].result = append_temp(body_, first.type, id);
+		insert_after(body_, head, prev, id);
+		selector = Value::temp(body_.instructions[id].result);
+		c_.uses.resize(body_.temps.size(), 1);
+		c_.block_of.resize(body_.instructions.size(), head);
+	}
 	Instruction& term = body_.instructions[body_.blocks[head].last];
 	term.op = Opcode::Switch;
 	term.sub = 0;
 	term.type = first.type;
-	term.ops[0] = Value::temp(first.x);
+	term.ops[0] = selector;
 	term.ops[1] = Value::block(exits[def].first);
 	term.ops[2] = Value::none();
 	term.extra_first = append_operands(body_, pairs.data(), static_cast<uint32_t>(pairs.size()));

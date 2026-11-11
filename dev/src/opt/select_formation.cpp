@@ -732,7 +732,9 @@ bool SelectFormation::range_switch(BlockId block, InstId id)
 		return Value::temp(t);
 	};
 	Value selector = term.ops[0];
-	if (low != 0)
+	// A run that ends at the type's greatest unsigned value: `x >= low`.
+	const bool top = low != 0 && values.back() == mask;
+	if (low != 0 && !top)
 	{
 		Instruction sub = make_instruction(Opcode::Binary, type);
 		sub.sub = static_cast<uint8_t>(BinaryOp::Sub);
@@ -741,9 +743,12 @@ bool SelectFormation::range_switch(BlockId block, InstId id)
 		selector = emit(sub, type);
 	}
 	Instruction cmp = make_instruction(Opcode::Compare, type);
-	cmp.sub = static_cast<uint8_t>(width < mask ? ComparePredicate::Ult : ComparePredicate::Ule);
+	cmp.sub = static_cast<uint8_t>(top ? ComparePredicate::Uge
+			: width < mask             ? ComparePredicate::Ult
+									   : ComparePredicate::Ule);
 	cmp.ops[0] = selector;
-	cmp.ops[1] = builder.integer(static_cast<int64_t>(width < mask ? width + 1 : width));
+	cmp.ops[1] = top ? integer_value(body_, normalize_integer(type, Literal{ low, 0 }))
+					 : builder.integer(static_cast<int64_t>(width < mask ? width + 1 : width));
 	const Value condition = emit(cmp, Type::scalar(TypeKind::I64));
 	Instruction branch = make_instruction(Opcode::Branch, Type::scalar(TypeKind::Void));
 	branch.location = term.location;
