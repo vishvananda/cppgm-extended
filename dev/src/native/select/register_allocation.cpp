@@ -1129,6 +1129,34 @@ void FunctionSelector::assign_registers()
 			}
 		}
 	});
+	// Each register parameter's incoming register holds it from the entry
+	// to its last read there (one live beyond the entry block: to the end
+	// of its first range). Another value that takes the register in that
+	// time costs a copy at the entry: choose_register looks elsewhere first.
+	ra_held_.clear();
+	for (uint32_t temp = 0; temp < body.parameter_count; ++temp)
+	{
+		const TempInfo& t = temps_[temp];
+		const Reg reg = (t.flags & TF_PARAM) && t.cls == VClass::Gpr && t.uses != 0 ? incoming_reg(temp) : kNoReg;
+		if (reg == kNoReg || reg >= 16)
+			continue;
+		int32_t last = -1;
+		if (cand[temp] >= 0)
+		{
+			const uint32_t c = static_cast<uint32_t>(cand[temp]);
+			int32_t first = INT32_MAX;
+			for (uint32_t r = ra_range_first_[c]; r < ra_range_first_[c + 1]; ++r)
+				if (ra_ranges_[r].first < first)
+				{
+					first = ra_ranges_[r].first;
+					last = ra_ranges_[r].second;
+				}
+		}
+		else if (t.block != kNoId && blocks_[t.block].reachable && !(t.flags & (TF_ALIAS | TF_DEAD)))
+			last = read_slot(ra_base_[t.block], std::max(t.last, 0));
+		if (last >= 0)
+			ra_held_.push_back(HeldParameter{ temp, last, reg });
+	}
 	std::vector<uint32_t> order(m);
 	std::vector<int32_t> span(m, 0);
 	for (size_t c = 0; c < m; ++c)
@@ -1194,6 +1222,7 @@ void FunctionSelector::assign_registers()
 	// Overlapping subsets can take different registers. Bound retries as well
 	// as members considered, so a large spilled web cannot cause quadratic work.
 	std::vector<uint8_t> web_trials(m, 0);
+	std::vector<uint32_t> web_local(m, 0); // assign_web: a member's place among those considered, plus one
 	auto assign_web = [&](uint32_t c, Reg tied) {
 		const uint32_t root = find(c);
 		if (web_first[root + 1] - web_first[root] < 2 || web_trials[root] == kWebTrials)
@@ -1215,25 +1244,97 @@ void FunctionSelector::assign_registers()
 		std::stable_sort(members.begin(), members.end(), [&](uint32_t a, uint32_t b) {
 			return a == c ? b != c : b == c ? false : ra_freq_[a] > ra_freq_[b];
 		});
-		size_t kept = 0;
-		std::vector<std::pair<int32_t, int32_t>> taken;
-		for (size_t k = 0; k < members.size() && k < kWebTrials; ++k)
+		if (members.size() > kWebTrials)
+			members.resize(kWebTrials);
+		// Per pair of members, the executions of the phi edges that carry
+		// one into the other: what sharing a register saves. The members c
+		// transfers with most come first.
+		const size_t n = members.size();
+		std::vector<uint64_t> moves(n * n, 0);
+		for (size_t k = 0; k < n; ++k)
+			web_local[members[k]] = static_cast<uint32_t>(k + 1);
+		for (size_t k = 0; k < n; ++k)
 		{
-			const uint32_t w = members[k];
-			taken.assign(ra_ranges_.begin() + first, ra_ranges_.end());
-			for (uint32_t r = ra_range_first_[w]; r < ra_range_first_[w + 1]; ++r)
+			const uint32_t temp = ra_candidates_[members[k]];
+			if (temp < body.parameter_count || body.instructions[body.temps[temp].def].op != Opcode::Phi)
+				continue;
+			const Instruction& phi = body.instructions[body.temps[temp].def];
+			for (uint32_t o = 0; o + 1 < phi.extra_count; o += 2)
+			{
+				const Value v = resolve(body.operands[phi.extra_first + o + 1]);
+				const uint32_t pred = layout_of_[body.operands[phi.extra_first + o].index];
+				const uint32_t j = v.kind == ValueKind::Temp && cand[v.index] >= 0 ? web_local[cand[v.index]] : 0;
+				if (j == 0 || j - 1 == k || pred == kNoId || !blocks_[pred].reachable)
+					continue;
+				moves[k * n + (j - 1)] += loop_splitter_.weights[pred];
+				moves[(j - 1) * n + k] += loop_splitter_.weights[pred];
+			}
+		}
+		for (size_t k = 0; k < n; ++k)
+			web_local[members[k]] = 0;
+		std::vector<uint32_t> order_in(n);
+		for (size_t k = 0; k < n; ++k)
+			order_in[k] = static_cast<uint32_t>(k);
+		std::stable_sort(order_in.begin() + (n != 0 && members[0] == c ? 1 : 0), order_in.end(),
+			[&](uint32_t a, uint32_t b) { return moves[a] > moves[b]; });
+		auto apart = [&](uint32_t a, uint32_t b) {
+			const uint32_t at = static_cast<uint32_t>(ra_ranges_.size());
+			for (uint32_t x : { a, b })
+				for (uint32_t r = ra_range_first_[x]; r < ra_range_first_[x + 1]; ++r)
+					ra_ranges_.push_back(ra_ranges_[r]);
+			const bool yes = disjoint_ranges(ra_ranges_, at, static_cast<uint32_t>(ra_ranges_.size()));
+			ra_ranges_.resize(at);
+			return yes;
+		};
+		std::vector<uint32_t> kept_in;
+		std::vector<uint8_t> is_kept(n, 0);
+		std::vector<std::pair<int32_t, int32_t>> taken;
+		// Whether x's ranges miss those taken, which they then join (`keep`).
+		auto fits = [&](uint32_t x, bool keep) {
+			for (uint32_t r = ra_range_first_[x]; r < ra_range_first_[x + 1]; ++r)
 				ra_ranges_.push_back(ra_ranges_[r]);
-			if (!disjoint_ranges(ra_ranges_, first, static_cast<uint32_t>(ra_ranges_.size())))
+			const bool yes = disjoint_ranges(ra_ranges_, first, static_cast<uint32_t>(ra_ranges_.size()));
+			if (!yes || !keep)
 			{
 				ra_ranges_.resize(first);
 				ra_ranges_.insert(ra_ranges_.end(), taken.begin(), taken.end());
-				continue;
 			}
-			members[kept++] = w;
+			return yes;
+		};
+		for (size_t k = 0; k < n; ++k)
+		{
+			const uint32_t i = order_in[k];
+			const uint32_t w = members[i];
+			taken.assign(ra_ranges_.begin() + first, ra_ranges_.end());
+			if (!fits(w, false))
+				continue;
+			// A member that transfers more with one the taken ranges exclude
+			// than with those taken stays for that one's register.
+			bool stays = false;
+			if (w != c)
+			{
+				uint64_t with = 0;
+				for (uint32_t j : kept_in)
+					with += moves[i * n + j];
+				for (uint32_t x = 0; x < n && !stays; ++x)
+					stays = moves[i * n + x] > with && !is_kept[x] && x != i && apart(w, members[x]) &&
+						!fits(members[x], false);
+			}
+			if (stays)
+				continue;
+			fits(w, true);
+			kept_in.push_back(i);
+			is_kept[i] = 1;
 			weight += ra_freq_[w];
 			looped |= ra_looped_[w];
 		}
-		members.resize(kept);
+		{
+			std::vector<uint32_t> kept_members;
+			for (uint32_t i : kept_in)
+				kept_members.push_back(members[i]);
+			members.swap(kept_members);
+		}
+		const size_t kept = members.size();
 		const uint32_t past = static_cast<uint32_t>(ra_ranges_.size());
 		ra_range_block_.resize(past, 0);
 		Reg reg = kNoReg;
@@ -1450,6 +1551,15 @@ Reg FunctionSelector::choose_register(uint32_t c, uint32_t first, uint32_t past,
 			return prefs[k];
 	if (!gpr)
 		return static_cast<Reg>(__builtin_ctz(allowed));
+	// A caller-saved register no parameter still arrives in, then any.
+	uint32_t held = 0;
+	for (const HeldParameter& h : ra_held_)
+		for (uint32_t r = first; r < past && h.temp != temp && !(held & (1u << h.reg)); ++r)
+			if (ra_ranges_[r].first <= h.last)
+				held |= 1u << h.reg;
+	for (unsigned k = 0; k < 7; ++k)
+		if ((allowed & ~held) & (1u << kGlobalCallerOrder[k]))
+			return kGlobalCallerOrder[k];
 	for (unsigned k = 0; k < 7; ++k)
 		if (allowed & (1u << kGlobalCallerOrder[k]))
 			return kGlobalCallerOrder[k];

@@ -227,8 +227,16 @@ struct SelectorState
 	std::vector<uint32_t> ra_range_block_;
 	std::vector<std::pair<int32_t, int32_t>> ra_ranges_;
 	std::vector<uint64_t> ra_freq_;
-	std::vector<uint8_t> ra_looped_;     // per candidate: defined or used inside a loop
-	std::vector<Reg> ra_use_hint_;       // per candidate: a return's or call argument's register
+	std::vector<uint8_t> ra_looped_; // per candidate: defined or used inside a loop
+	std::vector<Reg> ra_use_hint_;   // per candidate: a return's or call argument's register
+	// Per register parameter: (temp, the last slot its incoming register holds it, that register).
+	struct HeldParameter
+	{
+		uint32_t temp;
+		int32_t last;
+		Reg reg;
+	};
+	std::vector<HeldParameter> ra_held_;
 	LoopSplitter loop_splitter_;         // the natural loops; spilling around them
 	std::vector<SplitMove> split_moves_; // by (from, to): the split values' edge transfers
 	SplitHomes split_homes_;
