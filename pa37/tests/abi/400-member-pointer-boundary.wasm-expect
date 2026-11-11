@@ -1,0 +1,1 @@
+{"source":true,"resource_headers":true,"llvm_interop":true,"units":["400-member-pointer-boundary.t.1"],"exports":["bounce","field","invoke"],"abi":{"bounce":{"params":["i32","i32"],"results":[]},"field":{"params":["i32"],"results":["i32"]},"invoke":{"params":["i32","i32","i32"],"results":["i32"]}},"calls":[{"export":"observe","result":"17"}]}

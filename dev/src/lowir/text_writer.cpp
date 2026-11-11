@@ -268,6 +268,8 @@ void Writer::metadata(const SymbolMetadata* symbol, const BoundaryMetadata* boun
 			item(open, MetadataKey::Unwind, spelling(boundary->unwind));
 		if (boundary->returns != 0)
 			item(open, MetadataKey::Return, spelling(boundary->returns));
+		if (boundary->this_return)
+			item(open, MetadataKey::ThisReturn, metadata_yes_spelling());
 		if (boundary->repeatable)
 			item(open, MetadataKey::Repeatable, metadata_yes_spelling());
 		if (boundary->noalias_result)

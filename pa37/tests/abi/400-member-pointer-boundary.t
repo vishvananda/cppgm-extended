@@ -1,0 +1,35 @@
+struct Plain { int member; int value(int); };
+using Function = int (Plain::*)(int);
+using Member = int Plain::*;
+struct Box { Function function; unsigned sentinel; Member member; unsigned tail; };
+struct Pad { long long pad; };
+struct Derived : Pad, Plain {};
+extern "C" Function bounce(Function);
+extern "C" Member field(Member);
+extern "C" int invoke(Plain*, Function, int);
+extern "C" Box package();
+extern "C" int variable(int, ...);
+Function volatile saved = &Plain::value;
+Member null_field;
+extern "C" int observe() {
+ Plain object{11};
+ Box box{bounce(saved), 0x12345678, field(&Plain::member), 0x98765432};
+ if (invoke(&object, box.function, 3) != 14 || object.*box.member != 11) return 1;
+ if (box.sentinel != 0x12345678 || box.tail != 0x98765432) return 2;
+ Box received = package();
+ if ((object.*received.function)(5) != 16 || object.*received.member != 11) return 3;
+ if (received.sentinel != 0x12345678 || received.tail != 0x98765432) return 4;
+ Function zero = nullptr;
+ if (zero || zero != nullptr || bounce(zero) != zero || saved == zero) return 5;
+ if (null_field != nullptr || field(nullptr) != nullptr) return 6;
+ Derived derived; derived.member = 19;
+ int (Derived::*adjusted)(int) = saved;
+ if ((derived.*adjusted)(4) != 23 || static_cast<Function>(adjusted) != saved) return 7;
+ int (Derived::*null_derived)(int) = zero;
+ if (null_derived || static_cast<Function>(null_derived) != zero) return 8;
+ Member local{};
+ struct Neighbor { Member pointer; unsigned sentinel; } neighbor{{}, 0x12345678};
+ if (local || neighbor.pointer || neighbor.sentinel != 0x12345678) return 9;
+ if (variable(3, saved, &object, &Plain::member, 7) != 25) return 10;
+ return 17;
+}

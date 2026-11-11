@@ -1,0 +1,1 @@
+{"source":true,"runtime":true,"libraries":["c++abi","c++"],"wasi":true,"target":"wasm32-wasip1","flags":["-fno-exceptions"],"calls":[{"export":"observe","result":"17"}],"link_flags":["-nostartfiles"],"units":["500-virtual-base-runtime.t.1"],"llvm_interop":true,"reference_link_flags":["-Wl,--no-entry"]}

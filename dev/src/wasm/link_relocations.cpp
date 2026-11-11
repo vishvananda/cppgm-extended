@@ -10,7 +10,7 @@ bool Linker::synthetic_data(const std::string& name, uint32_t& value) const
 		value = stack_top_;
 	else if (name == "__wasm_first_page_end")
 		value = 65536;
-	else if (name == "__global_base")
+	else if (name == "__global_base" || name == "__dso_handle")
 		value = 1024;
 	else if (name == "__heap_end")
 		value = (stack_top_ + 65535) & ~uint32_t(65535);
@@ -66,6 +66,25 @@ uint32_t Linker::symbol_value(ObjectRef ref) const
 	return found->second + source.offset;
 }
 
+void Linker::prepare_address_globals()
+{
+	const auto collect = [&](uint32_t object, const ObjectChunk& chunk) {
+		for (const Relocation& relocation : chunk.relocations)
+			if ((relocation.kind == RelocationKind::GlobalIndex || relocation.kind == RelocationKind::GlobalIndexI32) &&
+				objects_[object].symbols[relocation.index].kind <= 1)
+			{
+				const ObjectRef target = selected({ object, relocation.index });
+				if (address_globals_.size() >= UINT32_MAX - 3)
+					throw WasmError("too many Wasm address globals");
+				address_globals_.emplace(target, static_cast<uint32_t>(3 + address_globals_.size()));
+			}
+	};
+	for (ObjectRef function : ordered_functions_)
+		collect(function.first, objects_[function.first].functions[function.second].code);
+	for (ObjectRef data : ordered_data_)
+		collect(data.first, objects_[data.first].data[data.second].contents);
+}
+
 Bytes Linker::relocated(uint32_t object, const ObjectChunk& chunk) const
 {
 	Bytes result = chunk.bytes;
@@ -74,6 +93,10 @@ Bytes Linker::relocated(uint32_t object, const ObjectChunk& chunk) const
 		uint32_t value;
 		if (relocation.kind == RelocationKind::TypeIndex)
 			value = type_indices_[object][relocation.index];
+		else if ((relocation.kind == RelocationKind::GlobalIndex ||
+					 relocation.kind == RelocationKind::GlobalIndexI32) &&
+			objects_[object].symbols[relocation.index].kind <= 1)
+			value = address_globals_.at(selected({ object, relocation.index }));
 		else if (relocation.kind == RelocationKind::FunctionIndex ||
 			relocation.kind == RelocationKind::FunctionIndexI32)
 			value = function_index({ object, relocation.index });

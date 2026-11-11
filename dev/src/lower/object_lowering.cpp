@@ -801,7 +801,8 @@ void FunctionLowering::null_data_member_pointers(
 	{
 		Place place = Place();
 		place.storage = at(offset);
-		store(i64, integer(i64, static_cast<uint64_t>(lowering_.null_data_member())), place);
+		const lowir::Type word = AbiWordType(program_.target);
+		store(word, integer(word, static_cast<uint64_t>(lowering_.null_data_member())), place);
 		return;
 	}
 	const sema::ClassEntity* cls = sema::ClassOf(type);

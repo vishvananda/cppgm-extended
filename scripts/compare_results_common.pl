@@ -1361,6 +1361,7 @@ sub parse_lowir_function_metadata_suffix
 		return => '',
 		repeatable => '',
 		noalias_result => '',
+		this_return => '',
 		role => '',
 		linkage => '',
 		binding => '',
@@ -1399,7 +1400,7 @@ sub parse_lowir_function_metadata_suffix
 					if $value !~ /^(?:readnone|readonly|readwrite)$/;
 				$metadata{effects} = $value;
 			}
-			elsif ($key eq 'repeatable' || $key eq 'noalias_result')
+			elsif ($key eq 'repeatable' || $key eq 'noalias_result' || $key eq 'this_return')
 			{
 				return (0, "$key metadata requires yes") if $value ne 'yes';
 				$metadata{$key} = $value;
@@ -1517,6 +1518,8 @@ sub parse_lowir_function_metadata_suffix
 		if $metadata{return} eq 'nonnull' && defined($result_type) && $result_type ne 'ptr';
 	return (0, "noalias_result metadata requires a pointer result")
 		if $metadata{noalias_result} ne '' && defined($result_type) && $result_type ne 'ptr';
+	return (0, "this_return metadata requires a void logical result")
+		if $metadata{this_return} ne '' && defined($result_type) && $result_type ne 'void';
 	return (1, \%metadata);
 }
 
@@ -2863,7 +2866,7 @@ sub validate_lowir_text
 		my ($ok, $metadata_or_error) = parse_lowir_function_metadata_suffix($suffix);
 		push @errors, "declare function \@$name has invalid metadata: $metadata_or_error" if !$ok;
 		push @errors, "address-only function \@$name cannot carry boundary metadata"
-			if $suffix =~ /\b(?:arity|effects|unwind|return|repeatable|noalias_result|result_classes)\s*=/;
+			if $suffix =~ /\b(?:arity|effects|unwind|return|repeatable|noalias_result|result_classes|this_return)\s*=/;
 	}
 	my %signatures;
 	while ($data =~ /^function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*) \{$/gm)

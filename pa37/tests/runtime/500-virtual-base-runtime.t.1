@@ -1,0 +1,12 @@
+#include "500-virtual-base-runtime.h"
+extern "C" __attribute__((noinline)) int visit_shared(Shared* p) { return p->score(); }
+extern "C" __attribute__((noinline)) Shared* self_shared(Shared* p) { return p->self(); }
+extern "C" __attribute__((noinline)) Right* cross_shared(Left* p) { return dynamic_cast<Right*>(p); }
+extern "C" Shared* make_shared() { return new Whole; }
+extern "C" void delete_shared(Shared* p) { delete p; }
+// Inspect the target ABI's complete-destructor entry and its physical result.
+extern "C" void* finish_shared(Shared* p) {
+ void** table = *reinterpret_cast<void***>(p);
+ typedef void* (*CompleteDestructor)(Shared*);
+ return reinterpret_cast<CompleteDestructor>(table[0])(p);
+}

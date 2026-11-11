@@ -314,14 +314,15 @@ enum class MetadataKey : std::uint8_t
 	Elision,
 	Projection,
 	ArgumentType,
-	ArgumentShape
+	ArgumentShape,
+	ThisReturn
 };
 
-const unsigned kMetadataKeyCount = static_cast<unsigned>(MetadataKey::ArgumentShape) + 1;
+const unsigned kMetadataKeyCount = static_cast<unsigned>(MetadataKey::ThisReturn) + 1;
 
 inline bool is_boundary_key(MetadataKey key)
 {
-	return key <= MetadataKey::ResultShape;
+	return key <= MetadataKey::ResultShape || key == MetadataKey::ThisReturn;
 }
 
 inline bool is_symbol_key(MetadataKey key)
@@ -452,7 +453,7 @@ inline const char* spelling(MetadataKey key)
 		"noalias_result", "result_classes", "result_shape", "storage", "section", "role", "linkage", "binding",
 		"object", "tls_for", "keep_alias", "prefer_local", "object_root", "force_inline", "inline_hint", "no_inline",
 		"replaceable", "cold", "pass", "alias", "object_bytes", "classes", "shape", "elision", "projection",
-		"argument_type", "argument_shape" };
+		"argument_type", "argument_shape", "this_return" };
 	return kKeys[static_cast<unsigned>(key)];
 }
 
@@ -699,6 +700,7 @@ struct FunctionBoundaryMetadata
 	// A non-null result denotes storage disjoint from other live pointers.
 	// This states no memory effects or unwinding promise about the call.
 	bool noalias_result = false;
+	bool this_return = false;
 	std::uint8_t result_classes = 0; // ObjectClassBits of a direct object result
 	AggregateShape result_shape;
 };

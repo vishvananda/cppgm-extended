@@ -578,9 +578,7 @@ RValue FunctionLowering::apply_converted(
 	{
 		// 4.11p1: a null pointer constant (or nullptr) is the null member
 		// pointer value.
-		const lowir::Type storage = lowering_.storage_type(conversion->result);
-		return integer(
-			storage, storage.kind() == lowir::TypeKind::I128 ? 0 : static_cast<uint64_t>(lowering_.null_data_member()));
+		return zero_value(conversion->result);
 	}
 	if (conversion->second == sema::ValueConversion::NullPointer && !IsNullptrType(from))
 	{
@@ -1809,7 +1807,7 @@ RValue FunctionLowering::comparison(const syntax::BinaryExpr& expr, const RValue
 		predicate = is_unsigned ? lowir::ComparePredicate::Uge : lowir::ComparePredicate::Ge;
 		break;
 	}
-	if (lowering_.host_objects() && left.type.kind() == lowir::TypeKind::I128 &&
+	if ((left.type.is_object() || (lowering_.host_objects() && left.type.kind() == lowir::TypeKind::I128)) &&
 		type->unqualified->kind == sema::TypeKind::MemberPointer)
 		return member_pointer_equal(left, right, predicate == lowir::ComparePredicate::Eq);
 	if (left.type.is_object() && SoftFloatOf(type) != SoftFloat::None)

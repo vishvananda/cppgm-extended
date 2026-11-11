@@ -36,7 +36,7 @@ bool Analyzer::itanium_nearly_empty(const ClassEntity* cls)
 	if (known != PointerMap::kMissing)
 		return known == 2;
 	uint64_t size = 0, alignment = 0;
-	const bool nearly = type_size(cls->type, size, alignment, 0) && cls->nvsize == 8;
+	const bool nearly = type_size(cls->type, size, alignment, 0) && cls->nvsize == types_.layout().pointer_bytes;
 	itanium_nearly_empty_.set(cls, nearly ? 2 : 1);
 	return nearly;
 }

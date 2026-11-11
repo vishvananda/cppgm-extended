@@ -174,7 +174,8 @@ lowir::Value FunctionLowering::dynamic_type_information(lowir::Value object, Run
 	const RValue table = load(pointer, vptr);
 	Place slot = Place();
 	slot.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), 0, table.value,
-		integer(lowir::Type::scalar(lowir::TypeKind::I64), static_cast<uint64_t>(-8)))
+		integer(
+			AbiWordType(program_.target), static_cast<uint64_t>(-target_model::cxx_abi(program_.target).word_bytes)))
 					   .value;
 	return load(pointer, slot).value;
 }
@@ -258,8 +259,8 @@ lowir::Value FunctionLowering::runtime_cast(
 	arguments[0] = object;
 	arguments[1] = address_of_symbol(lowering_.class_information(from, true));
 	arguments[2] = address_of_symbol(lowering_.class_information(to, true));
-	arguments[3] = integer(lowir::Type::scalar(lowir::TypeKind::I64),
-		static_cast<uint64_t>(lowering_.dynamic_cast_hint(from, to, location)))
+	arguments[3] = integer(
+		AbiWordType(program_.target), static_cast<uint64_t>(lowering_.dynamic_cast_hint(from, to, location)))
 					   .value;
 	++lowering_.counters().instructions;
 	RValue found;
@@ -297,7 +298,7 @@ lowir::Value FunctionLowering::most_derived_object(lowir::Value object)
 	// table's offset-to-top (Itanium 2.5.2), kept in the cast's slot.
 	// This operation needs no RTTI search or void type-information object.
 	const lowir::Type pointer = program_.pointer_type();
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = AbiWordType(program_.target);
 	Place result = Place();
 	result.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::DynCast, pointer));
 	store(pointer, integer(pointer, 0), result);
@@ -312,7 +313,7 @@ lowir::Value FunctionLowering::most_derived_object(lowir::Value object)
 	vptr.storage = object;
 	Place top = Place();
 	top.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), 0, load(pointer, vptr).value,
-		integer(i64, static_cast<uint64_t>(-16)))
+		integer(i64, static_cast<uint64_t>(-static_cast<int64_t>(AbiTableHeaderBytes(program_.target)))))
 					  .value;
 	store(pointer, index(lowir::Type::scalar(lowir::TypeKind::I8), 0, object, load(i64, top)), result);
 	jump(end);

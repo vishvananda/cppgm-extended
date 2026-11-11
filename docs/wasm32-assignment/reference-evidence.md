@@ -190,3 +190,21 @@ The pinned LLVM default Wasm target rejects source `_Float16` and `__bf16`;
 `half-reference-probe.cpp` records that capability check. Do not infer their
 public C ABI from native half conventions or silently use an x86 helper ABI.
 The target's binary128 and i128 boundaries are independently established.
+
+
+## Class implementation evidence
+
+The earlier class reducers now pass. SDK 34 IR confirms that member-function
+pointers use two i32 fields but cross calls as indirect records, rather than
+an i64 scalar. The LLVM WebAssembly C++ ABI selects adjustment-word method
+pointer tags and four-byte ARM-style guards. Its constructors and non-deleting
+destructors physically return `this`; CGVTables forwards the adjusted target's
+return through destructor thunks. Deleting destructors retain a void result.
+These are typed ABI distinctions, not constructor-name recognition in Wasm.
+
+SDK libc++abi objects also use `GOT.func`/`GOT.mem` address imports. Their
+GLOBAL_INDEX relocations name data/function symbols: a static linker must
+materialize address globals, not substitute a data address as a global index.
+The pinned linking conventions and local LLD implementation establish this
+profile. `__dso_handle` is the static module's memory base. The new behavioral
+fixtures exercise address globals and class runtime objects with both linkers.

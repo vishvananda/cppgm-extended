@@ -25,8 +25,6 @@ const sema::ClassEntity* ElementClass(const sema::Type* type)
 	return sema::ClassOf(type);
 }
 
-const uint64_t kCookieBytes = 8;
-
 bool SignedCount(const sema::Type* type)
 {
 	sema::IntegralKind kind;
@@ -60,7 +58,7 @@ void FunctionLowering::allocation_arguments(const syntax::NewExpr& expr, const s
 {
 	const sema::Type* signature = function->type->canonical;
 	if (expr.implicit_alignment != 0)
-		arguments_.push_back(integer(lowir::Type::scalar(lowir::TypeKind::I64), expr.implicit_alignment).value);
+		arguments_.push_back(integer(AbiWordType(program_.target), expr.implicit_alignment).value);
 	const uint32_t first = expr.implicit_alignment != 0 ? 2 : 1;
 	for (uint32_t i = 0; i < expr.placement.size; ++i)
 		push_argument(*expr.placement[i], i + first < signature->param_count ? signature->params[i + first] : nullptr);
@@ -95,9 +93,9 @@ RValue FunctionLowering::allocation(const syntax::NewExpr& expr)
 	// returns, which is the expression's value.
 	const sema::FunctionEntity* function = static_cast<const sema::FunctionEntity*>(expr.facts->entity);
 	const sema::Type* type = expr.facts->target;
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = AbiWordType(program_.target);
 	const uint64_t bytes = lowering_.size_of(type, expr.location);
-	const RValue size = bytes <= 0x7fffffff
+	const RValue size = bytes <= 0x7fffffff && lowir::integer_bits(i64.kind()) > 32
 		? convert_op(lowir::ConvertOp::SExt, i64, integer(lowir::Type::scalar(lowir::TypeKind::I32), bytes))
 		: integer(i64, bytes);
 	const size_t base = arguments_.size();
@@ -309,7 +307,8 @@ FunctionLowering::ArrayNewShape FunctionLowering::array_new_shape(const syntax::
 	shape.cookie = array_cookie(shape.element, (expr.facts->flags & sema::kSizedArrayDelete) != 0, function);
 	// Itanium 2.7: the cookie is max(sizeof(size_t), alignof(T)) bytes, the
 	// count in the size_t just before the elements.
-	shape.cookie_bytes = shape.cookie ? std::max(kCookieBytes, lowering_.alignment_of(shape.element, expr.location))
+	shape.cookie_bytes = shape.cookie ? std::max(uint64_t(target_model::cxx_abi(program_.target).word_bytes),
+											lowering_.alignment_of(shape.element, expr.location))
 									  : 0;
 	shape.count = WithoutParentheses(expr.count);
 	const sema::ExprFacts* facts = shape.count->facts;
@@ -329,7 +328,9 @@ FunctionLowering::ArrayNewShape FunctionLowering::array_new_shape(const syntax::
 	// The largest count whose size, cookie included, std::ptrdiff_t holds
 	// (5.3.4p7's implementation-defined limit, as g++ and the course take
 	// it).
-	shape.largest = shape.stride != 0 ? (uint64_t(INT64_MAX) - shape.cookie_bytes) / shape.stride : uint64_t(INT64_MAX);
+	const uint64_t maximum = target_model::data_layout(program_.target).pointer_bytes == 4 ? uint64_t(INT32_MAX)
+																						   : uint64_t(INT64_MAX);
+	shape.largest = shape.stride != 0 ? (maximum - shape.cookie_bytes) / shape.stride : maximum;
 	return shape;
 }
 
@@ -408,7 +409,7 @@ RValue FunctionLowering::array_allocation(const syntax::NewExpr& expr)
 	const sema::ClassEntity* entity = ElementClass(type);
 	const bool cookie = shape.cookie;
 	const uint64_t cookie_bytes = shape.cookie_bytes;
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = AbiWordType(program_.target);
 	const bool constant = shape.constant;
 	const syntax::Initializer* init = expr.initializer;
 	const syntax::BracedInitList* list = init != nullptr && init->kind == syntax::InitializerKind::Braced
@@ -464,12 +465,13 @@ RValue FunctionLowering::array_allocation(const syntax::NewExpr& expr)
 		const sema::Type* count_type = shape.count_type;
 		const RValue promoted = operand(*expr.count, ConversionContext::Operand);
 		const unsigned bits = lowir::integer_bits(promoted.type.kind());
-		const RValue count = bits == 64
+		const unsigned size_bits = lowir::integer_bits(i64.kind());
+		const RValue count = bits == size_bits
 			? promoted
 			: convert_integer(promoted, count_type, i64, ConversionContext::Operand, false, false);
 		// A count wider than std::size_t (an __int128's) is compared whole:
 		// its values beyond std::size_t's range (or negative) are invalid.
-		const bool wide = bits > 64;
+		const bool wide = bits > size_bits;
 		const lowir::Type compared = wide ? promoted.type : i64;
 		const RValue& full = wide ? promoted : count;
 		const auto bound = [&](uint64_t value) {
@@ -547,10 +549,10 @@ RValue FunctionLowering::array_allocation(const syntax::NewExpr& expr)
 			count = binary(lowir::BinaryOp::UDiv, i64, element_bytes, integer(i64, element_size));
 		}
 		Place header = Place();
-		header.storage = cookie_bytes == kCookieBytes
+		header.storage = cookie_bytes == uint64_t(target_model::cxx_abi(program_.target).word_bytes)
 			? raw.value
 			: index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_NONE, raw.value,
-				  integer(i64, cookie_bytes - kCookieBytes))
+				  integer(i64, cookie_bytes - uint64_t(target_model::cxx_abi(program_.target).word_bytes)))
 				  .value;
 		store(i64, count, header);
 	}
@@ -719,7 +721,7 @@ void FunctionLowering::null_member_pointer_elements(
 {
 	// Each zeroed element's pointers to data members set to their null
 	// value (-1, Itanium 2.3) in a loop over an index slot.
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = AbiWordType(program_.target);
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 	const uint64_t size = lowering_.size_of(element, location);
 	Place index_slot = Place();
@@ -749,7 +751,7 @@ void FunctionLowering::construct_new_elements(const sema::Type* element, const R
 	// slot; a constructor that may throw runs in a region whose handler
 	// destroys the elements before the index, last first, frees the
 	// storage and unwinds.
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = AbiWordType(program_.target);
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 	const uint64_t size = lowering_.size_of(element, location);
 	Place index_slot = Place();
@@ -855,10 +857,9 @@ void FunctionLowering::free_storage(const sema::FunctionEntity* deallocator, low
 	arguments_.push_back(raw);
 	const uint32_t count = deallocator->type->canonical->param_count;
 	for (uint32_t i = 1; i < count; ++i)
-		arguments_.push_back(placement != 0 ? element_values_[placement - 2 + i]
-				: i == deallocator->alignment_parameter
-				? integer(lowir::Type::scalar(lowir::TypeKind::I64), alignment).value
-				: size.value);
+		arguments_.push_back(placement != 0             ? element_values_[placement - 2 + i]
+				: i == deallocator->alignment_parameter ? integer(AbiWordType(program_.target), alignment).value
+														: size.value);
 	lowering_.demand(deallocator, EntryVariant::Complete);
 	emit_call(lowir::Type::scalar(lowir::TypeKind::Void), lowir::Value::symbol(lowering_.function_symbol(deallocator)),
 		base, lowir::kNoId, false);
@@ -893,8 +894,7 @@ size_t FunctionLowering::deleted_storage(
 		saved = static_cast<uint32_t>(element_values_.size()) + 1;
 		element_values_.push_back(block);
 		if (deallocator->alignment_parameter != 0)
-			element_values_.push_back(
-				integer(lowir::Type::scalar(lowir::TypeKind::I64), lowering_.alignment_of(object, 0)).value);
+			element_values_.push_back(integer(AbiWordType(program_.target), lowering_.alignment_of(object, 0)).value);
 	}
 	const size_t freed = cleanups_.size();
 	cleanups_.push_back(Cleanup{
@@ -922,7 +922,7 @@ RValue FunctionLowering::deletion(const syntax::DeleteExpr& expr)
 	// An incomplete class's object is freed alone (5.3.5p5).
 	const bool incomplete = (expr.facts->flags & sema::kIncompleteDelete) != 0;
 	const sema::ClassEntity* entity = incomplete ? nullptr : sema::ClassOf(object);
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = AbiWordType(program_.target);
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 	const lowir::Type pointer = program_.pointer_type();
 	const RValue value = operand(*expr.operand, ConversionContext::Operand);
@@ -956,12 +956,15 @@ RValue FunctionLowering::deletion(const syntax::DeleteExpr& expr)
 	{
 		// The cookie before the elements (Itanium 2.7, as array_allocation
 		// lays it out), the count in its last size_t.
-		const uint64_t cookie_bytes = std::max(kCookieBytes, lowering_.alignment_of(object, expr.location));
+		const uint64_t cookie_bytes = std::max(
+			uint64_t(target_model::cxx_abi(program_.target).word_bytes), lowering_.alignment_of(object, expr.location));
 		storage = index(i8, ir_model::IPK_NONE, value.value, integer(i64, 0 - cookie_bytes)).value;
 		Place header = Place();
-		header.storage = cookie_bytes == kCookieBytes
+		header.storage = cookie_bytes == uint64_t(target_model::cxx_abi(program_.target).word_bytes)
 			? storage
-			: index(i8, ir_model::IPK_NONE, value.value, integer(i64, 0 - kCookieBytes)).value;
+			: index(i8, ir_model::IPK_NONE, value.value,
+				  integer(i64, 0 - uint64_t(target_model::cxx_abi(program_.target).word_bytes)))
+				  .value;
 		const RValue count = load(i64, header);
 		// 12.5p5: a sized operator delete[] is given the block's size.
 		if (sized)

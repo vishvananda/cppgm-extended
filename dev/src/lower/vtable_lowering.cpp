@@ -271,7 +271,7 @@ void ProgramLowering::define_vtable(const sema::ClassEntity* entity)
 	// A class with virtual bases has their offsets' rows first.
 	const uint32_t first = static_cast<uint32_t>(program_.data_items.size());
 	table_rows(TableContext{ entity, entity, 0, false }, 0);
-	data_item(ScalarItem(lowir::TypeKind::I64, 0));
+	data_item(ScalarItem(AbiWordType(program_.target).kind(), 0));
 	for (size_t i = 0; i < primary_slots; ++i)
 		data_item(i == 0 ? AddressItem(program_, targets[i], 0) : EntryItem(program_, targets[i]));
 	if (one_object)
@@ -741,7 +741,8 @@ const lowir::SymbolId* ProgramLowering::view_items(
 	const uint64_t* offsets = segment_offsets(entity);
 	const sema::VtableSegment& part = group->segments[segment];
 	table_rows(TableContext{ entity, entity, 0, false }, segment);
-	data_item(ScalarItem(lowir::TypeKind::I64, static_cast<uint64_t>(-static_cast<int64_t>(offsets[segment]))));
+	data_item(ScalarItem(
+		AbiWordType(program_.target).kind(), static_cast<uint64_t>(-static_cast<int64_t>(offsets[segment]))));
 	data_item(AddressItem(program_, typeinfo_symbol(entity), 0));
 	for (uint32_t slot = 0; slot < part.cls->virtuals->vtable_size; ++slot)
 		data_item(EntryItem(program_, *targets++));
@@ -828,11 +829,14 @@ ProgramLowering::TableAddress ProgramLowering::table_address(const sema::ClassEn
 	// information.
 	const auto rows = [&](uint32_t i) -> uint64_t { return row_count(group, i); };
 	if (segment == 0)
-		return TableAddress{ table, static_cast<int64_t>(kTableHeaderBytes + 8 * rows(0)) };
+		return TableAddress{ table,
+			static_cast<int64_t>(
+				AbiTableHeaderBytes(program_.target) + target_model::cxx_abi(program_.target).word_bytes * rows(0)) };
 	const uint32_t views = view_tables_.find(entity);
 	if (views != PointerMap::kMissing)
 		return TableAddress{ view_symbols_[views + segment],
-			static_cast<int64_t>(kTableHeaderBytes + 8 * rows(segment)) };
+			static_cast<int64_t>(AbiTableHeaderBytes(program_.target) +
+				target_model::cxx_abi(program_.target).word_bytes * rows(segment)) };
 	// The external group: the primary table, then each segment with a
 	// table pointer of its own, in subobject order (Itanium 2.5.2); each
 	// segment's address point computed once per class (0 for a segment
@@ -841,14 +845,19 @@ ProgramLowering::TableAddress ProgramLowering::table_address(const sema::ClassEn
 	if (known != PointerMap::kMissing)
 		return TableAddress{ table, static_cast<int64_t>(external_points_[known + segment]) };
 	const uint32_t first = static_cast<uint32_t>(external_points_.size());
-	uint64_t position = (2 + rows(0) + static_cast<uint64_t>(entity->virtuals->vtable_size)) * 8;
-	external_points_.push_back(kTableHeaderBytes + 8 * rows(0));
+	uint64_t position = (2 + rows(0) + static_cast<uint64_t>(entity->virtuals->vtable_size)) *
+		target_model::cxx_abi(program_.target).word_bytes;
+	external_points_.push_back(
+		AbiTableHeaderBytes(program_.target) + target_model::cxx_abi(program_.target).word_bytes * rows(0));
 	for (uint32_t i = 1; i < group->segment_count; ++i)
 	{
 		const uint64_t own = group->segments[i].shared ? 0 : rows(i);
-		external_points_.push_back(group->segments[i].shared ? 0 : position + 8 * own + kTableHeaderBytes);
+		external_points_.push_back(group->segments[i].shared ? 0
+															 : position +
+					target_model::cxx_abi(program_.target).word_bytes * own + AbiTableHeaderBytes(program_.target));
 		if (!group->segments[i].shared)
-			position += (2 + own + static_cast<uint64_t>(group->segments[i].cls->virtuals->vtable_size)) * 8;
+			position += (2 + own + static_cast<uint64_t>(group->segments[i].cls->virtuals->vtable_size)) *
+				target_model::cxx_abi(program_.target).word_bytes;
 	}
 	external_groups_.set(entity, first);
 	return TableAddress{ table, static_cast<int64_t>(external_points_[first + segment]) };
@@ -927,6 +936,13 @@ lowir::SymbolId ProgramLowering::thunk_symbol(const sema::FunctionEntity* functi
 	// The target's boundary (a deleting entry's is its destructor's), its
 	// `this` adjusted into the object: no object_bytes there.
 	const lowir::SignatureId signature = argument_signature(function);
+	if (variant == EntryVariant::Deleting)
+		program_.signatures[signature].boundary.this_return = false;
+	else if (program_.signatures[signature].boundary.this_return)
+	{
+		program_.signatures[signature].boundary.this_return = false;
+		program_.signatures[signature].result = program_.pointer_type();
+	}
 	const uint32_t this_index = variant == EntryVariant::Complete && indirect_result(function) ? 1 : 0;
 	program_.parameters[program_.signatures[signature].first_parameter + this_index].object_bytes = 0;
 	// Object mode: a jump thunk (lowir::JumpThunk, no body: the object
@@ -1069,7 +1085,7 @@ void ProgramLowering::define_typeinfo(const sema::ClassEntity* entity, lowir::Sy
 	std::vector<lowir::SymbolId> bases;
 	for (const sema::BaseClass* base = entity->bases; base != nullptr; base = base->next)
 		bases.push_back(typeinfo_symbol(BaseClassOf(base), true));
-	const uint32_t first = data_item(AddressItem(program_, kind, 16));
+	const uint32_t first = data_item(AddressItem(program_, kind, AbiTableHeaderBytes(program_.target)));
 	data_item(AddressItem(program_, name, 0));
 	if (single)
 		data_item(AddressItem(program_, bases[0], 0));
@@ -1087,7 +1103,7 @@ void ProgramLowering::define_typeinfo(const sema::ClassEntity* entity, lowir::Sy
 			const uint64_t offset = base->is_virtual
 				? static_cast<uint64_t>(vbase_row_offset(entity, BaseClassOf(base)))
 				: base->offset;
-			data_item(ScalarItem(lowir::TypeKind::I64, (offset << 8) | flags));
+			data_item(ScalarItem(AbiWordType(program_.target).kind(), (offset << 8) | flags));
 		}
 	}
 	lowir::SymbolMetadata metadata;

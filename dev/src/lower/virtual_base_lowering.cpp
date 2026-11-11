@@ -570,15 +570,18 @@ ProgramLowering::TableAddress ProgramLowering::construction_address(
 		const uint32_t rows = row_count(group, s);
 		const uint32_t size = group->segments[s].cls->virtuals->vtable_size;
 		table_rows(context, s);
-		data_item(ScalarItem(lowir::TypeKind::I64, offset - construction_segment_offset(complete, cls, offset, s)));
+		data_item(ScalarItem(
+			AbiWordType(program_.target).kind(), offset - construction_segment_offset(complete, cls, offset, s)));
 		data_item(AddressItem(program_, information, 0));
 		for (uint32_t slot = 0; slot < size; ++slot)
 			data_item(EntryItem(program_, targets[next++]));
-		construction_points_[slots + s] = position + static_cast<int64_t>(kTableHeaderBytes + 8 * rows);
+		construction_points_[slots + s] = position +
+			static_cast<int64_t>(
+				AbiTableHeaderBytes(program_.target) + target_model::cxx_abi(program_.target).word_bytes * rows);
 		++counters_.vtables;
 		if (object_mode_)
 		{
-			position += 8 * static_cast<int64_t>(rows + 2 + size);
+			position += target_model::cxx_abi(program_.target).word_bytes * static_cast<int64_t>(rows + 2 + size);
 			continue;
 		}
 		// Each table a global of its own, the group's first carrying its
@@ -698,7 +701,7 @@ void ProgramLowering::table_rows(const TableContext& context, uint32_t segment)
 	const uint32_t count = itanium_table_rows(group, segment);
 	const int64_t* values = itanium_row_values(context, segment);
 	for (uint32_t i = count; i-- > 0;)
-		data_item(ScalarItem(lowir::TypeKind::I64, static_cast<uint64_t>(values[i])));
+		data_item(ScalarItem(AbiWordType(program_.target).kind(), static_cast<uint64_t>(values[i])));
 }
 
 // ------------------------------------------------------------------ bodies
@@ -716,7 +719,7 @@ lowir::Value FunctionLowering::virtual_base_address(
 	// object.
 	const lowir::Type pointer = program_.pointer_type();
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = AbiWordType(program_.target);
 	const bool own_this = (tables_pending_ || vtt_param_.kind != lowir::ValueKind::None) &&
 		cls == sema::ClassOf(function_->owner->entity->type) && is_this_value(object);
 	if (own_this && vtt_param_.kind != lowir::ValueKind::None)
@@ -768,10 +771,9 @@ RValue FunctionLowering::construction_row(const sema::ClassEntity* cls, const se
 	}
 	Place row = Place();
 	row.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_NONE, table.value,
-		integer(
-			lowir::Type::scalar(lowir::TypeKind::I64), static_cast<uint64_t>(lowering_.vbase_row_offset(cls, base))))
+		integer(AbiWordType(program_.target), static_cast<uint64_t>(lowering_.vbase_row_offset(cls, base))))
 					  .value;
-	const RValue offset = load(lowir::Type::scalar(lowir::TypeKind::I64), row);
+	const RValue offset = load(AbiWordType(program_.target), row);
 	vtt_rows_.push_back(std::make_pair(base, offset));
 	return offset;
 }
@@ -793,15 +795,17 @@ lowir::Value FunctionLowering::hidden_vtt_value()
 	// The caller's VTT part for the base subobject: its own VTT's in a
 	// base-object entry, else the complete class's.
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = AbiWordType(program_.target);
 	if (base_entry_)
-		return hidden_base_.vtt_index == 0
-			? vtt_param_
-			: index(i8, ir_model::IPK_NONE, vtt_param_, integer(i64, 8 * static_cast<uint64_t>(hidden_base_.vtt_index)))
-				  .value;
+		return hidden_base_.vtt_index == 0 ? vtt_param_
+										   : index(i8, ir_model::IPK_NONE, vtt_param_,
+												 integer(i64,
+													 target_model::cxx_abi(program_.target).word_bytes *
+														 static_cast<uint64_t>(hidden_base_.vtt_index)))
+												 .value;
 	const sema::ClassEntity* current = sema::ClassOf(function_->owner->entity->type);
 	return index(i8, ir_model::IPK_NONE, address_of_symbol(lowering_.vtt_symbol(current)),
-		integer(i64, 8 * static_cast<uint64_t>(hidden_base_.vtt_index)))
+		integer(i64, target_model::cxx_abi(program_.target).word_bytes * static_cast<uint64_t>(hidden_base_.vtt_index)))
 		.value;
 }
 
@@ -822,7 +826,7 @@ lowir::Value FunctionLowering::virtual_base_object(
 	if (object.kind == lowir::ValueKind::None)
 		object = this_pointer(location);
 	return index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_NONE, virtual_base_address(object, cls, base),
-		integer(lowir::Type::scalar(lowir::TypeKind::I64), 0))
+		integer(AbiWordType(program_.target), 0))
 		.value;
 }
 

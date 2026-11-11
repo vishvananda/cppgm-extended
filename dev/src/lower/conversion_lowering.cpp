@@ -247,9 +247,10 @@ RValue FunctionLowering::zero_value(const sema::Type* type)
 		return soft_zero(SoftFloatOf(type));
 	if (type->unqualified->kind == sema::TypeKind::Complex || type->unqualified->kind == sema::TypeKind::Vector)
 		return zero_object_value(storage);
-	if (type->unqualified->kind == sema::TypeKind::MemberPointer && storage.kind() != lowir::TypeKind::I128)
+	if (type->unqualified->kind == sema::TypeKind::MemberPointer &&
+		type->unqualified->element->kind != sema::TypeKind::Function)
 		return integer(storage, static_cast<uint64_t>(lowering_.null_data_member()));
-	return integer(storage, 0);
+	return storage.is_object() ? zero_object_value(storage) : integer(storage, 0);
 }
 
 bool FunctionLowering::conversion_function(const sema::Conversion* conversion)

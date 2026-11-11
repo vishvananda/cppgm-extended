@@ -1,0 +1,19 @@
+#include <stdarg.h>
+struct Plain { int member; int value(int); };
+int Plain::value(int add) { return member + add; }
+using Function = int (Plain::*)(int);
+using Member = int Plain::*;
+struct Box { Function function; unsigned sentinel; Member member; unsigned tail; };
+extern "C" Function bounce(Function value) { return value; }
+extern "C" Member field(Member value) { return value; }
+extern "C" int invoke(Plain* object, Function value, int add) { return (object->*value)(add); }
+extern "C" Box package() { return Box{&Plain::value, 0x12345678, &Plain::member, 0x98765432}; }
+extern "C" int variable(int tag, ...) {
+ va_list list; va_start(list, tag);
+ Function function = va_arg(list, Function);
+ Plain* object = va_arg(list, Plain*);
+ Member member = va_arg(list, Member);
+ int add = va_arg(list, int);
+ va_end(list);
+ return (object->*function)(add) + object->*member - tag - 1;
+}

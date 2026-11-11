@@ -240,10 +240,12 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
             for my $linker ('cppgm', 'llvm') {
                 my $output = "$directory/mixed-$producer-$linker-$level.wasm";
                 my @tool = $linker eq 'cppgm'
-                    ? ($source_compiler, '--target', ($expect->{target} // 'wasm32-unknown-unknown'), @target_flags)
-                    : $expect->{wasi} ? ($clang, '--target=wasm32-wasip1') : ($lld, '--no-entry');
+                    ? ($source_compiler, '--target', ($expect->{target} // 'wasm32-unknown-unknown'), @target_flags, @{$expect->{link_flags} // []})
+                    : $expect->{wasi} ? ($clang, '--target=wasm32-wasip1', @{$expect->{link_flags} // []}, @{$expect->{reference_link_flags} // []}) : ($lld, '--no-entry');
+                my @link_exports = $linker eq 'llvm' && $expect->{wasi}
+                    ? map { ('-Xlinker', $_) } @exports : @exports;
                 ($status, $stdout, $stderr) = command("mixed-link-$producer-$linker-$level",
-                    @tool, @exports, @mixed, @runtime_libraries, '-o', $output);
+                    @tool, @link_exports, @mixed, @runtime_libraries, '-o', $output);
                 die "$test: mixed-object $linker link failed: $stdout$stderr\n" if $status;
                 ($status, $stdout, $stderr) = command("mixed-validate-$producer-$linker-$level",
                     $validator, 'validate', $output);

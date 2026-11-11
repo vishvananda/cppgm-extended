@@ -1989,13 +1989,13 @@ std::string ProgramLowering::function_object(const sema::FunctionEntity* functio
 	switch (function->allocation)
 	{
 	case sema::AllocationRole::New:
-		return "cppgm_builtin_operator_new";
+		return target_model::is_wasm(program_.target) ? "_Znwm" : "cppgm_builtin_operator_new";
 	case sema::AllocationRole::NewArray:
-		return "cppgm_builtin_operator_new_array";
+		return target_model::is_wasm(program_.target) ? "_Znam" : "cppgm_builtin_operator_new_array";
 	case sema::AllocationRole::Delete:
-		return "cppgm_builtin_operator_delete";
+		return target_model::is_wasm(program_.target) ? "_ZdlPv" : "cppgm_builtin_operator_delete";
 	case sema::AllocationRole::DeleteArray:
-		return "cppgm_builtin_operator_delete_array";
+		return target_model::is_wasm(program_.target) ? "_ZdaPv" : "cppgm_builtin_operator_delete_array";
 	case sema::AllocationRole::None:
 		break;
 	}
@@ -3201,6 +3201,8 @@ lowir::SignatureId ProgramLowering::function_signature(
 	}
 	// A declaration returning a still incomplete class (only named, its
 	// address taken) states no result, as the course's declarations do.
+	signature.boundary.this_return = target_model::cxx_abi(program_.target).structor_returns_this &&
+		(function->constructor || (function->destructor && variant != EntryVariant::Deleting));
 	const bool incomplete_result = result->unqualified->kind == sema::TypeKind::Class &&
 		!static_cast<const sema::ClassEntity*>(result->unqualified->entity)->complete && !function->defined;
 	signature.result = incomplete_result || indirect ? lowir::Type::scalar(lowir::TypeKind::Void)

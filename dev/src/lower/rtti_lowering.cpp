@@ -99,11 +99,11 @@ lowir::SymbolId ProgramLowering::runtime_function(RuntimeFunction which)
 	{
 		lowir::Parameter parameter = lowir::Parameter();
 		parameter.name = argument_name(i);
-		parameter.type = lowir::Type::scalar(spec.parameters[i] == 'l' ? lowir::TypeKind::I64 : lowir::TypeKind::Ptr);
+		parameter.type = spec.parameters[i] == 'l' ? AbiWordType(program_.target) : program_.pointer_type();
 		program_.parameters.push_back(parameter);
 	}
 	signature.parameter_count = count;
-	signature.result = lowir::Type::scalar(spec.result == 'p' ? lowir::TypeKind::Ptr : lowir::TypeKind::Void);
+	signature.result = spec.result == 'p' ? program_.pointer_type() : lowir::Type::scalar(lowir::TypeKind::Void);
 	if (spec.noreturn)
 		signature.boundary.returns = ir_model::CRM_NORETURN;
 	program_.declare_function(symbol, lowir::SymbolKind::FunctionDeclaration, program_.add_signature(signature));
@@ -206,7 +206,7 @@ lowir::SymbolId ProgramLowering::type_information(const sema::Type* type)
 		pointee = defined_type_information(type->element->canonical->unqualified);
 	const lowir::SymbolId vtable = rtti_vtable(kind);
 	const lowir::SymbolId name = type_name_object(type, fundamental ? "_" + label : label, internal);
-	const uint32_t first = data_item(AddressItem(program_, vtable, 16));
+	const uint32_t first = data_item(AddressItem(program_, vtable, AbiTableHeaderBytes(program_.target)));
 	data_item(AddressItem(program_, name, 0));
 	if (pointee != lowir::kNoId)
 	{
@@ -328,7 +328,7 @@ lowir::SymbolId ProgramLowering::defined_type_information(const sema::Type* type
 	defined_informations_.set(type, symbol);
 	const lowir::SymbolId vtable = rtti_vtable(pointer ? TypeInfoKind::Pointer : TypeInfoKind::Fundamental);
 	const lowir::SymbolId name = type_name_object(type, pointer ? label : "_" + label, false);
-	const uint32_t first = data_item(AddressItem(program_, vtable, 16));
+	const uint32_t first = data_item(AddressItem(program_, vtable, AbiTableHeaderBytes(program_.target)));
 	data_item(AddressItem(program_, name, 0));
 	if (pointer)
 	{

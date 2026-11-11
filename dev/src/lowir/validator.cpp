@@ -577,6 +577,8 @@ bool Validator::check_links()
 		if (!valid_aggregate_shape(signature.result, boundary.result_shape))
 			return fail("invalid aggregate result shape");
 		const Parameter* parameters = program_.parameters_of(signature);
+		if (!valid_this_return(program_, signature))
+			return fail("this_return requires a void boundary with a first pointer parameter on a supporting target");
 		for (uint32_t i = 0; i < signature.parameter_count; ++i)
 		{
 			if (!valid_aggregate_shape(parameters[i].type, parameters[i].shape))
@@ -1178,6 +1180,13 @@ bool Validator::check_call(const Instruction& inst)
 	{
 		if (inst.type != signature->result)
 			return fail("call signature return mismatch");
+		if (direct)
+		{
+			const SignatureId declared = program_.functions[program_.symbols[callee.index].detail].signature;
+			if (declared != kNoId &&
+				program_.signatures[declared].boundary.this_return != signature->boundary.this_return)
+				return fail("call this_return boundary mismatch");
+		}
 	}
 	else if (!direct)
 		return fail("indirect call requires signature");

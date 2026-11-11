@@ -14,6 +14,14 @@ bool valid_aggregate_shape(Type type, ir_model::AggregateShape shape)
 	return type.is_object() && ((shape.element > AggregateElement::Mixed) == (shape.count != 0));
 }
 
+bool valid_this_return(const Program& program, const Signature& signature)
+{
+	return !signature.boundary.this_return ||
+		(target_model::cxx_abi(program.target).structor_returns_this && signature.result.is_void() &&
+			signature.parameter_count != 0 && program.parameters_of(signature)[0].type == program.pointer_type() &&
+			program.parameters_of(signature)[0].pass != ir_model::PPM_INDIRECT_RESULT);
+}
+
 const char* validate_argument_facts(const Program& program, const FunctionBody& body, InstId& instruction)
 {
 	std::map<std::pair<InstId, uint32_t>, uint8_t> seen;

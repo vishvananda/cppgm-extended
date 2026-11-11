@@ -186,7 +186,7 @@ int64_t ProgramLowering::itanium_vbase_offset_offset(const sema::ClassEntity* cl
 	const uint32_t* index = itanium_vbase_positions_.find(ClassPair{ cls, base });
 	if (index == nullptr)
 		throw LoweringError(0, "a virtual base the class does not have");
-	return -8 * (3 + static_cast<int64_t>(*index));
+	return -target_model::cxx_abi(program_.target).word_bytes * (3 + static_cast<int64_t>(*index));
 }
 
 int64_t ProgramLowering::itanium_vcall_offset(const sema::ClassEntity* vbase, const sema::FunctionEntity* function)
@@ -198,7 +198,7 @@ int64_t ProgramLowering::itanium_vcall_offset(const sema::ClassEntity* vbase, co
 			: VcallKey{ vbase, function->name, function->signature });
 	if (index == nullptr)
 		throw LoweringError(0, "a virtual base without a vcall offset for a function its table overrides");
-	return -8 * (3 + static_cast<int64_t>(*index));
+	return -target_model::cxx_abi(program_.target).word_bytes * (3 + static_cast<int64_t>(*index));
 }
 
 int64_t ProgramLowering::context_at(const TableContext& context, uint32_t segment)

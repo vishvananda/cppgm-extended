@@ -1737,6 +1737,8 @@ private:
 	// sema-recorded pointers to members (lower/member_pointer_lowering.cpp).
 	RValue member_pointer_value(const syntax::UnaryExpr& expr, uint64_t adjustment = 0);
 	RValue member_pointer_constant(const sema::ConstValue& value, uint32_t location);
+	RValue member_function_bits(const RValue& value);
+	RValue member_function_object(const RValue& bits);
 	RValue member_function_word(const sema::FunctionEntity* function, uint64_t adjustment);
 	uint64_t member_adjustment(const sema::Type* from, const sema::Type* to, uint32_t location);
 	RValue member_pointer_converted(const RValue& value, uint64_t adjustment);

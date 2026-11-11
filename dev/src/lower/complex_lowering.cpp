@@ -37,7 +37,9 @@ bool SignedPart(const sema::Type* part)
 
 bool ObjectValueType(const sema::Type* type)
 {
-	return SoftFloatOf(type) != SoftFloat::None || type->unqualified->kind == sema::TypeKind::Complex ||
+	return (type->unqualified->kind == sema::TypeKind::MemberPointer &&
+			   type->unqualified->element->kind == sema::TypeKind::Function) ||
+		SoftFloatOf(type) != SoftFloat::None || type->unqualified->kind == sema::TypeKind::Complex ||
 		type->unqualified->kind == sema::TypeKind::Vector;
 }
 

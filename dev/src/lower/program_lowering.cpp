@@ -1244,6 +1244,8 @@ lowir::SymbolId ProgramLowering::aggregate_helper(const sema::ClassEntity* entit
 		parameter.type = variable->type->kind == sema::TypeKind::Array || variable->type->is_reference()
 			? program_.pointer_type()
 			: storage_type(variable->type);
+		if (target_model::is_wasm(program_.target) && parameter.type.is_object())
+			parameter.shape = aggregate_shape(variable->type);
 		// A reference member's referent is passed by its address, as a
 		// reference parameter's is (with its complete object's size).
 		if (variable->type->is_reference())
@@ -1397,9 +1399,12 @@ lowir::Type ProgramLowering::storage_type(const sema::Type* type)
 	case sema::TypeKind::Function:
 		return program_.pointer_type();
 	case sema::TypeKind::MemberPointer:
-		// The course's Itanium forms: a data member's offset plus one (0 is
-		// null), a member function's address and this-adjustment (i128).
-		return Type::scalar(type->element->kind == sema::TypeKind::Function ? TypeKind::I128 : TypeKind::I64);
+		// Target-sized offset, or the target's function/adjustment pair.
+		if (type->element->kind != sema::TypeKind::Function)
+			return AbiWordType(program_.target);
+		return target_model::cxx_abi(program_.target).indirect_member_function
+			? Type::object(8, 2)
+			: MemberFunctionBitsType(program_.target);
 	case sema::TypeKind::Vector:
 		// One XMM register, or its lanes' bytes (lower/vector_lowering.cpp).
 		if (register_vector(type))

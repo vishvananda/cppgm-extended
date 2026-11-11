@@ -176,7 +176,10 @@ struct StaticBits
 
 // Itanium 2.5.2: a virtual table's offset-to-top and type information
 // precede its slots; an object's table pointer points past them.
-const uint64_t kTableHeaderBytes = 16;
+uint32_t AbiTableHeaderBytes(target_model::Target target);
+lowir::Type AbiWordType(target_model::Target target);
+lowir::Type MemberFunctionBitsType(target_model::Target target);
+lowir::Type MemberFunctionStorageType(target_model::Target target);
 
 // A value constant initialization states (3.6.2p2, 5.19): an integer's
 // bits, a floating value, an address constant or a null pointer.

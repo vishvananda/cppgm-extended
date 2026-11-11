@@ -77,6 +77,7 @@ struct Object
 };
 
 bool relocation_addend(RelocationKind kind);
+void prepare_finalizers(lowir::Program& program);
 void adapt_wasi_entry(Object& object, uint32_t symbol);
 void add_runtime_inputs(std::vector<Object>& objects, const backend::Options& options);
 void make_object(lowir::Program& program, const backend::Options& options, Object& object, std::string& dump);

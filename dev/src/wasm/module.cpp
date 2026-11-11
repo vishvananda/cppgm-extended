@@ -34,6 +34,8 @@ void function_types(const lowir::Program& program, Module& module)
 		signature.result = boundary.result.passing == Passing::Indirect || boundary.result.passing == Passing::Ignore
 			? ValueType::Void
 			: value_type(boundary.result.scalar);
+		if (source.boundary.this_return)
+			signature.result = ValueType::I32;
 		for (ValueType parameter : signature.parameters)
 			key.push_back(static_cast<uint8_t>(parameter));
 		key.push_back(static_cast<uint8_t>(signature.result));
@@ -75,8 +77,6 @@ void prepare_module(const lowir::Program& program, Module& module)
 					throw WasmError("invalid or duplicate Wasm initializer");
 				module.initializer = static_cast<uint32_t>(module.definition_types.size());
 			}
-			if (symbol.metadata.role == ir_model::SR_FINI)
-				throw WasmError("Wasm finalization requires the language runtime");
 			module.function_indices[id] = static_cast<uint32_t>(module.definition_types.size());
 			module.definitions.push_back(id);
 			module.definition_types.push_back(

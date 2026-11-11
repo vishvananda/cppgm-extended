@@ -894,7 +894,7 @@ void Analyzer::place_table_pointer(const ClassEntity* entity, const BaseClass* p
 	// the first base placed.
 	if (entity->dynamic && primary == nullptr)
 	{
-		data_bits = 64;
+		data_bits = 8 * types_.layout().pointer_bytes;
 		size = alignment = types_.layout().pointer_bytes;
 	}
 	else if (primary != nullptr && primary->is_virtual)

@@ -390,11 +390,11 @@ void ProgramLowering::null_fill(
 	type = type->canonical;
 	if (type->unqualified->kind == sema::TypeKind::MemberPointer)
 	{
-		if (lo != base || hi != base + 8)
+		if (lo != base || hi != base + target_model::cxx_abi(program_.target).word_bytes)
 			return append_zero(hi - lo, out);
 		lowir::DataItem null = lowir::DataItem();
 		null.kind = lowir::DataItemKind::Scalar;
-		null.type = lowir::Type::scalar(lowir::TypeKind::I64);
+		null.type = AbiWordType(program_.target);
 		null.constant = IntegerItem(static_cast<uint64_t>(-1));
 		out.items.push_back(null);
 		return;
@@ -553,7 +553,9 @@ uint32_t ProgramLowering::member_pointer_items(const sema::ConstValue& value, lo
 	const bool function = value.type->element->kind == sema::TypeKind::Function;
 	lowir::DataItem scalar = lowir::DataItem();
 	scalar.kind = lowir::DataItemKind::Scalar;
-	scalar.type = lowir::Type::scalar(lowir::TypeKind::I64);
+	scalar.type = AbiWordType(program_.target);
+	const auto abi = target_model::cxx_abi(program_.target);
+	const bool tagged_adjustment = abi.member_function_tag == target_model::MemberFunctionTag::Adjustment;
 	scalar.constant = IntegerItem(0);
 	if (member == nullptr)
 	{
@@ -573,7 +575,8 @@ uint32_t ProgramLowering::member_pointer_items(const sema::ConstValue& value, lo
 	const sema::FunctionEntity* target = static_cast<const sema::FunctionEntity*>(member);
 	items[0] = scalar;
 	if (target->is_virtual)
-		items[0].constant = IntegerItem(1 + static_cast<uint64_t>(target->vtable_slot) * 8);
+		items[0].constant = IntegerItem(
+			(tagged_adjustment ? 0 : 1) + static_cast<uint64_t>(target->vtable_slot) * abi.word_bytes);
 	else
 	{
 		demand(target);
@@ -583,7 +586,9 @@ uint32_t ProgramLowering::member_pointer_items(const sema::ConstValue& value, lo
 		items[0].amount = 0;
 	}
 	items[1] = scalar;
-	items[1].constant = IntegerItem(static_cast<uint64_t>(value.address.offset));
+	items[1].constant = IntegerItem(tagged_adjustment
+			? (static_cast<uint64_t>(value.address.offset) << 1) | (target->is_virtual ? 1u : 0u)
+			: static_cast<uint64_t>(value.address.offset));
 	return 2;
 }
 
@@ -605,7 +610,8 @@ void ProgramLowering::place_tables(const sema::ClassEntity* cls, uint64_t offset
 		table.type = program_.pointer_type();
 		table.address = address.symbol;
 		table.amount = address.addend;
-		out.push_back(StaticPlacement{ offset + (i != 0 ? offsets[i] : 0), 8, table });
+		out.push_back(StaticPlacement{
+			offset + (i != 0 ? offsets[i] : 0), target_model::data_layout(program_.target).pointer_bytes, table });
 	}
 }
 
@@ -664,7 +670,8 @@ bool ProgramLowering::constant_placements(const sema::Type* type, const sema::Co
 		lowir::DataItem items[2];
 		const uint32_t count = member_pointer_items(value, items, location);
 		for (uint32_t i = 0; i < count; ++i)
-			out.push_back(StaticPlacement{ offset + 8 * i, 8, items[i] });
+			out.push_back(StaticPlacement{ offset + target_model::cxx_abi(program_.target).word_bytes * i,
+				target_model::cxx_abi(program_.target).word_bytes, items[i] });
 		return true;
 	}
 	if (cls == nullptr)
@@ -673,7 +680,10 @@ bool ProgramLowering::constant_placements(const sema::Type* type, const sema::Co
 		if (!constant_item(type, value, item, location))
 			return false;
 		if (item.kind != lowir::DataItemKind::Zero)
-			out.push_back(StaticPlacement{ offset, type->is_reference() ? 8 : size_of(type, location), item });
+			out.push_back(StaticPlacement{ offset,
+				type->is_reference() ? target_model::data_layout(program_.target).pointer_bytes
+									 : size_of(type, location),
+				item });
 		return true;
 	}
 	if (value.kind != sema::ValueKind::Class)

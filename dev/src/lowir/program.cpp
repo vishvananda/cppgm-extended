@@ -21,7 +21,8 @@ bool Program::same_entry_abi(SymbolId first, SymbolId second) const
 	const Signature& a = signatures[functions[symbols[first].detail].signature];
 	const Signature& b = signatures[functions[symbols[second].detail].signature];
 	if (a.result != b.result || a.parameter_count != b.parameter_count || a.boundary.arity != b.boundary.arity ||
-		a.boundary.result_classes != b.boundary.result_classes || a.boundary.result_shape != b.boundary.result_shape)
+		a.boundary.this_return != b.boundary.this_return || a.boundary.result_classes != b.boundary.result_classes ||
+		a.boundary.result_shape != b.boundary.result_shape)
 		return false;
 	const Parameter* ap = parameters_of(a);
 	const Parameter* bp = parameters_of(b);

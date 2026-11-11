@@ -73,13 +73,24 @@ void Linker::emit(Bytes& output)
 	memory.unsigned_leb((stack_top_ + 65535) / 65536);
 	output.section(5, memory);
 	Bytes globals;
-	globals.unsigned_leb(3);
+	globals.unsigned_leb(3 + address_globals_.size());
 	for (uint32_t index = 0; index < 3; ++index)
 	{
 		globals.byte(0x7f);
 		globals.byte(1);
 		globals.byte(0x41);
 		globals.signed_leb(index == 0 ? stack_top_ : 0);
+		globals.byte(0x0b);
+	}
+	std::vector<ObjectRef> addresses(address_globals_.size());
+	for (const auto& address : address_globals_)
+		addresses[address.second - 3] = address.first;
+	for (ObjectRef address : addresses)
+	{
+		globals.byte(0x7f);
+		globals.byte(1);
+		globals.byte(0x41);
+		globals.signed_leb(static_cast<int32_t>(symbol_value(address)));
 		globals.byte(0x0b);
 	}
 	output.section(6, globals);

@@ -7,17 +7,17 @@ or a green partial suite does not complete PA37.
 | Requirement | Current evidence | Remaining qualification |
 | --- | --- | --- |
 | Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes; source and text paths in PA37 | Broader C++ target headers and all ABI-sensitive class facts |
-| Scalar and aggregate execution | Qualified binary128 and variadic boundaries; scalar i128 selection and mixed LLVM calls now implemented | Finish i128 checkpoint qualification, remaining float formats and complete type/layout edge cases |
+| Scalar and aggregate execution | Qualified binary128 and variadic boundaries; scalar i128 selection and mixed LLVM calls now implemented | Remaining float formats and complete type/layout edge cases |
 | CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
 | Standard objects and own static linker | Linking-v2 writer/reader/own linker; both LLVM interop directions at O0–O3; GNU/BSD archive probes; 32 normal fixtures | Complete EH-tag/wide/runtime object profile and malformed-feature/relocation cases |
-| C++ runtime | Dynamic initializer execution in a core start function | Allocation, virtual dispatch, RTTI, local statics, finalization and cross-compiler modern EH |
+| C++ runtime | Class ABI, allocation, dispatch, RTTI, guards and finalization implemented; mixed-producer class tests pass | Complete class qualification and cross-compiler modern EH |
 | Modern EH execution dependency | Pinned Wasmtime executes an independent try_table/throw probe | Compiler lowering, tags, cleanup/catch/rethrow and runtime libraries |
-| WASI commands and freestanding reactors | Freestanding module exports and memory | Repeated-export state checks and broader C++ services |
+| WASI commands and freestanding reactors | Qualified WASI startup, argument/I/O/exit behavior and freestanding exports | Same-instance repeated-export checks and broader C++ services |
 | SIMD and shared optimization | Shared LowIR optimizer; native-only aggregate carrier rewrite gated by target ABI | Portable SIMD legalization, target costs, local/stack cleanup and published quality envelopes |
 | Robust diagnostics and determinism | Bad target/version/shape tests; bounded MIR validation | Complete malformed object/feature/signature/relocation coverage and deterministic multi-object linking |
 | Course material and export | PA37 handout/design notes, target/MIR scaffolds, offline source/licence pins, normal Perl runner | Final scope and scaffold review, complete reference-tool prerequisites, clean export qualification |
 | Benchmarks and CI | Required Wasm lane integrated with pinned runtime/validator/reference SDK on both hosts | Standard benchmark entry, separate compile/size/startup/runtime measurements and final Linux/macOS results |
-| Native regressions and efficiency | Previous aggregate snapshot: 10674 strict tests, debug info, PA5 self-host, byte-identical inception; aggregate change +0.002% instructions | Repeat required checks and native performance comparison for the completed implementation on the current LLVM base |
+| Native regressions and efficiency | Scalar i128 snapshot: 10731 strict tests, debug info, PA5 self-host, byte-identical inception; native objects unchanged | Repeat required checks and native performance comparison for the completed implementation on the current LLVM base |
 
 All raw results, probes, pinned binaries and performance observations live outside
 Git under `/mnt/vizier/cppgm-wasm32-evidence`. Earlier qualification applies only
@@ -177,7 +177,8 @@ passes 10731/10731, and PA37 passes 60/60 with both host-built and self-built
 tools. Debug-info checks, PA5 self-host, byte-identical inception and PA36
 smoke (3/3) pass. Architecture/source/format/scaffold/file checks and Clang 21
 syntax checks pass; the eight inherited file-audit warnings remain. The
-complete harness passes. Placement qualification is still running.
+complete harness passes. Placement qualification reports zero placement and
+local-hygiene findings; its 89 EH review leads are advisory.
 
 The student export regenerates consistently, including the current LLVM
 branch's informational MIR references. A fresh bundle client passes its
@@ -197,3 +198,26 @@ Full classes/RTTI/EH, SIMD, remaining target type/layout boundaries, quality,
 benchmarks and final complete qualification remain required. Concrete class
 layout/member-pointer reducers are recorded in the maintainer reference
 evidence; this checkpoint does not complete PA37.
+
+
+## Class ABI stage
+
+The current implementation uses typed target facts for vptr storage, vtable/VTT
+rows, RTTI pointers, member-pointer representation, array cookies and guards.
+Wasm member-function pointers are indirect records with adjustment-word tags.
+LowIR preserves the physical constructor/destructor return convention with
+`this_return=yes`; adjusting destructor adapters return the adjusted pointer.
+The shared boundary metadata remains 12 bytes and `FunctionBody` 248 bytes.
+
+The class tests cover neighboring fields, direct/virtual member pointers,
+variadic record boundaries, multiple/virtual inheritance, construction VTTs,
+covariant returns, RTTI/downcasts, local-static guards, allocation and lifetime.
+Mixed LLVM/cppgm objects use both linkers at O0–O3. Static GOT address imports
+from the supplied C++ libraries resolve to ordinary table/data addresses;
+serialized LowIR finalizers register through the supplied `atexit` interface.
+
+Class tests currently use the pinned no-EH C++ runtime to qualify their ABI
+independently. This is not completion of the required exception profile. Full
+class/native/export qualification is in progress. Modern EH, SIMD, the rest
+of the object profile, quality envelopes, benchmarks and final qualification
+remain required. Raw class results have the prefix `class-`.

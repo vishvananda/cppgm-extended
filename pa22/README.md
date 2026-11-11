@@ -215,6 +215,9 @@ To complete PA22, implement these goals:
    member pointers have no built-in ordering operators.
    Their contextual conversion to `bool` must distinguish a non-null target from a null
    member pointer without treating the adjustment word as an independent truth value.
+   The representation below describes the native ABI. When adding PA37, use its
+   [target contract](../pa37/target-abi.md#c-objects-and-lifetime) for word size,
+   the virtual discriminator and passing member-function pointers across calls.
    A data member pointer uses the Itanium C++ ABI representation (2.3), so its values
    cross object boundaries with host-compiled code: the member's byte offset in its
    class (`&S::m` is 0 for a first member), and -1 for null. Null constants,

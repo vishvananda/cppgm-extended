@@ -326,6 +326,12 @@ A thunk states its target's boundary facts, except that its `this`, which
 points into the object at the thunk's adjustment, states no `object_bytes`;
 a deleting destructor's thunks state `unwind=no` as D0 does.
 
+Vtable pointers, offset rows and VTT entries use the selected target's ABI
+word size. Preserve their signedness and address-point relationships when
+adding PA37's layout and constructor/destructor return convention.
+An adjusting destructor thunk forwards the target's physical return value;
+PA37 expresses this with a pointer result on the adapter.
+
 Every thunk that a class's tables include is defined with its function and
 only referred to elsewhere. A virtual destructor's deleting entry (D0) and its
 thunks are defined with the destructor too, not where the vtable is emitted.

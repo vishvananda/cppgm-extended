@@ -1,0 +1,17 @@
+#include <typeinfo>
+struct Root { int member; Root(int x) : member(x) {} virtual int value() { return member; } };
+struct Other { int other; Other(int x) : other(x) {} virtual int second() { return other; } };
+struct Derived : Root, Other {
+ int extra;
+ Derived() : Root(11), Other(7), extra(3) {}
+ int value() override { return member + extra; }
+ int second() override { return other + extra; }
+};
+extern "C" __attribute__((noinline)) int visit(Root* root) { return root->value(); }
+extern "C" __attribute__((noinline)) int visit_other(Other* other) { return other->second(); }
+extern "C" __attribute__((noinline)) Other* cross(Root* root) { return dynamic_cast<Other*>(root); }
+extern "C" Root* instance() { static Derived object; return &object; }
+extern "C" int inspect(Root* root, Other* other) {
+ return root->value() == 14 && other->second() == 10 &&
+  dynamic_cast<Other*>(root) == other && typeid(*root) == typeid(Derived);
+}

@@ -34,6 +34,7 @@ private:
 	bool synthetic_data(const std::string& name, uint32_t& value) const;
 	Bytes relocated(uint32_t object, const ObjectChunk& chunk) const;
 	void emit(Bytes& output);
+	void prepare_address_globals();
 	const std::vector<Object>& objects_;
 	const backend::Options& options_;
 	std::map<std::string, ObjectRef> definitions_, archive_index_;
@@ -44,6 +45,7 @@ private:
 	std::vector<ObjectRef> roots_;
 	std::set<ObjectRef> discarded_functions_, discarded_data_;
 	std::map<ObjectRef, uint32_t> functions_, data_;
+	std::map<ObjectRef, uint32_t> address_globals_;
 	std::vector<ObjectRef> ordered_functions_, ordered_data_;
 	std::vector<std::pair<uint32_t, ObjectRef>> initializers_;
 	std::vector<Signature> types_;

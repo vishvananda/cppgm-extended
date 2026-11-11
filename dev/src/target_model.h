@@ -36,6 +36,21 @@ enum class CallingConvention : std::uint8_t
 	WasmBasicC
 };
 
+enum class MemberFunctionTag : std::uint8_t
+{
+	Function,
+	Adjustment
+};
+
+struct CxxAbi
+{
+	std::uint8_t word_bytes;
+	MemberFunctionTag member_function_tag;
+	bool indirect_member_function;
+	bool structor_returns_this;
+	std::uint8_t guard_bytes;
+};
+
 enum class ByteOrder : std::uint8_t
 {
 	Little,
@@ -100,6 +115,13 @@ constexpr Description describe(Target target)
 			: target == Target::MacOS ? CallingConvention::DarwinAmd64
 									  : CallingConvention::SysVAmd64,
 		data_layout(target) };
+}
+
+constexpr CxxAbi cxx_abi(Target target)
+{
+	return CxxAbi{ data_layout(target).pointer_bytes,
+		is_wasm(target) ? MemberFunctionTag::Adjustment : MemberFunctionTag::Function, is_wasm(target), is_wasm(target),
+		is_wasm(target) ? std::uint8_t(4) : std::uint8_t(8) };
 }
 
 // An object-to-integer signature rewrite must retain its public call ABI.

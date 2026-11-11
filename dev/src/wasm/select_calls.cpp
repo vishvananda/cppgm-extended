@@ -81,7 +81,9 @@ void Selector::call(const lowir::Instruction& inst)
 		out_.emit(Op::Unreachable);
 		return;
 	}
-	if (boundary.result.passing == Passing::Coerce)
+	if (signature->boundary.this_return)
+		out_.emit(Op::Drop);
+	else if (boundary.result.passing == Passing::Coerce)
 		out_.emit(memory_op(boundary.result.scalar, true), { 0, 0 });
 	else if (!inst.type.is_void() && !memory_value(inst.type))
 	{
@@ -117,6 +119,8 @@ void Selector::return_value(const lowir::Instruction& inst)
 	}
 	else if (boundary_.result.passing == Passing::Direct && !inst.type.is_void())
 		value(inst.ops[0], inst.type);
+	if (signature_.boundary.this_return)
+		value(Value::temp(0), program_.pointer_type());
 	restore_stack();
 	out_.emit(Op::Return);
 }

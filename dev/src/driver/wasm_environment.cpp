@@ -4,6 +4,13 @@ namespace driver {
 
 void add_wasm_headers(PreprocessorOptions& options, const std::string& sysroot, const std::string& resource_directory)
 {
+	if (!sysroot.empty())
+	{
+		options.system_include_paths.push_back(
+			sysroot + "/include/wasm32-wasip1/" + (options.modes.exceptions ? "eh" : "noeh") + "/c++/v1");
+		options.system_include_paths.push_back(sysroot + "/include/wasm32-wasip1/c++/v1");
+		options.system_include_paths.push_back(sysroot + "/include/c++/v1");
+	}
 	if (!resource_directory.empty())
 		options.system_include_paths.push_back(resource_directory + "/include");
 	if (!sysroot.empty())

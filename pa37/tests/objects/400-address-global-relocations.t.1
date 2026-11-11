@@ -1,0 +1,7 @@
+extern "C" { int shared = 19; }
+extern "C" int operation(int value) { return value + shared; }
+extern "C" __attribute__((noinline)) int inspect(int value) {
+ int (*volatile pointer)(int) = operation;
+ int* volatile address = &shared;
+ return pointer(value) + *address;
+}

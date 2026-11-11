@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "lowir/argument_facts.h"
 #include "lowir/literals.h"
 
 namespace lowir {
@@ -793,11 +794,13 @@ void Parser::parse_boundary_value(MetadataKey key, BoundaryMetadata& boundary)
 		break;
 	case MetadataKey::Repeatable:
 	case MetadataKey::NoAliasResult:
+	case MetadataKey::ThisReturn:
 		if (!word || length != 3 || std::memcmp(text, metadata_yes_spelling(), 3) != 0)
-			fail(key == MetadataKey::Repeatable ? "repeatable metadata requires yes"
-												: "noalias_result metadata requires yes");
+			fail(std::string(ir_model::spelling(key)) + " metadata requires yes");
 		if (key == MetadataKey::Repeatable)
 			boundary.repeatable = true;
+		else if (key == MetadataKey::ThisReturn)
+			boundary.this_return = true;
 		else
 			boundary.noalias_result = true;
 		break;
@@ -1001,6 +1004,8 @@ void Parser::parse_parameter_metadata(Parameter& parameter)
 
 void Parser::check_signature(const Signature& signature, Position position)
 {
+	if (!valid_this_return(program_, signature))
+		fail_at(position, "this_return requires a void boundary with a first pointer parameter on a supporting target");
 	const Parameter* parameters = program_.parameters_of(signature);
 	for (uint32_t i = 0; i < signature.parameter_count; ++i)
 	{

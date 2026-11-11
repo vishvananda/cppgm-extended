@@ -54,8 +54,16 @@ Pointers, vtable entries and `ptrdiff_t` fields are four bytes. A pointer to a
 member function has two four-byte fields. Its adjustment field stores twice
 the `this` adjustment, with its low bit distinguishing a virtual entry;
 the first field holds a function-table index or a vtable byte offset.
-Do not reuse the native convention that puts the virtual discriminator in
-the function field.
+Pass this pair as an indirect record with a caller-owned copy; return it
+through a hidden pointer. Keep that record ABI when operating on its packed
+bits. The native function-field discriminator is a different convention.
+
+Constructors and non-deleting destructors physically return their incoming
+`this` pointer. Preserve LowIR's `this_return=yes` boundary fact while their
+logical result remains void. Deleting destructors retain a void result.
+An adjusting destructor thunk returns its target's adjusted `this` value;
+represent that adapter with a pointer result in LowIR.
+Local static guards occupy four bytes and use the supplied guard API.
 
 Preserve virtual bases, thunks, RTTI identities, nontrivial copies, local static
 initialization and destruction. C++ exceptions use the modern Wasm exception

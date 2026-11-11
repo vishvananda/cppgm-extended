@@ -768,7 +768,7 @@ void FunctionLowering::lower_thunk(lowir::SymbolId self, lowir::SymbolId target,
 		if (i == this_index)
 		{
 			const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
-			const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+			const lowir::Type i64 = AbiWordType(program_.target);
 			// (A virtual thunk without a fixed part reads the vcall offset
 			// through `this` as it comes.)
 			if (adjustment != 0 || vcall == 0)
@@ -788,16 +788,20 @@ void FunctionLowering::lower_thunk(lowir::SymbolId self, lowir::SymbolId target,
 		arguments_.push_back(argument);
 	}
 	++lowering_.counters().instructions;
-	const lowir::TempId returned = builder_.call(result_type_, lowir::Value::symbol(target), arguments_.data(),
+	const bool returns_this = target_model::cxx_abi(program_.target).structor_returns_this &&
+		program_.signatures[program_.functions[program_.symbols[target].detail].signature].boundary.this_return;
+	const lowir::Value adjusted_this = returns_this ? arguments_[this_index] : lowir::Value::none();
+	const lowir::Type call_type = returns_this ? lowir::Type::scalar(lowir::TypeKind::Void) : result_type_;
+	const lowir::TempId returned = builder_.call(call_type, lowir::Value::symbol(target), arguments_.data(),
 		static_cast<uint32_t>(arguments_.size()), lowir::kNoId, 0);
 	arguments_.clear();
 	lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::Return, result_type_);
 	if (!result_type_.is_void())
-		inst.ops[0] = lowir::Value::temp(returned);
+		inst.ops[0] = returns_this ? adjusted_this : lowir::Value::temp(returned);
 	if (result != nullptr)
 	{
 		const lowir::Type pointer = program_.pointer_type();
-		const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+		const lowir::Type i64 = AbiWordType(program_.target);
 		const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 		RValue value;
 		value.value = lowir::Value::temp(returned);

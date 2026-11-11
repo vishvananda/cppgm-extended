@@ -40,7 +40,18 @@ void validate_chunk(const ObjectChunk& chunk, const Object& object)
 			: kind == 7 || kind == 13                                  ? 2
 			: kind == 10                                               ? 4
 																	   : 5;
-		if (object.symbols[relocation.index].kind != expected)
+		const ObjectSymbol& symbol = object.symbols[relocation.index];
+		if ((kind == 7 || kind == 13) && symbol.kind <= 1)
+		{
+			bool matched = false;
+			for (const ObjectGlobal& global : object.global_imports)
+				matched = matched ||
+					(global.module == (symbol.kind == 0 ? "GOT.func" : "GOT.mem") && global.name == symbol.name &&
+						global.type == ValueType::I32);
+			if (!matched)
+				throw WasmError("Wasm address-global relocation lacks its typed GOT import");
+		}
+		else if (symbol.kind != expected)
 			throw WasmError("Wasm relocation kind does not match its symbol");
 	}
 	std::sort(ranges.begin(), ranges.end());

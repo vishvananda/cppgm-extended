@@ -488,6 +488,7 @@ The currently defined function metadata keys are:
 - `noalias_result`
 - `result_classes`
 - `result_shape`
+- `this_return`
 
 The currently defined arity values are:
 
@@ -534,11 +535,23 @@ GNU argumentless `malloc` produces this fact; the argument-bearing
 deallocator-association attribute alone does not. It is a declaration fact,
 not part of a C++ function pointer's type.
 
+`this_return=yes` preserves a target ABI's physical `this` return while the
+LowIR result remains logically `void`. It requires a supporting target, a
+first parameter of that target's `ptr` type, and no indirect-result parameter.
+On wasm32, constructors and non-deleting destructors carry it; deleting
+destructors keep their ordinary void ABI. Each normal machine return yields
+the unchanged first parameter, and a call consumes that physical result.
+Keep the fact on function and explicit call signatures and when comparing
+entry ABIs. An explicit direct-call signature must agree with the declared
+function about this convention. It does not introduce a LowIR result value or a source return
+expression. Native x86 boundaries do not support this convention.
+
 The C++ lowering states `effects`, `unwind` and `return` by the rules in Facts The C++
 Lowering States below.
 
 Call signatures only accept call-boundary metadata such as `arity=...`, `effects=...`,
-`unwind=...`, `return=...`, `repeatable=yes`, and `noalias_result=yes`. Top-level symbol metadata such as `role=...`, `linkage=...`,
+`unwind=...`, `return=...`, `repeatable=yes`, `noalias_result=yes`, and
+`this_return=yes`. Top-level symbol metadata such as `role=...`, `linkage=...`,
 `binding=...`, `replaceable=...`, `object=...`, `keep_alias=...`, `prefer_local=...`, `object_root=...`, and
 `force_inline=...`, `inline_hint=...`, `no_inline=...`, and
 `cold=...` are not valid on `as (...) -> ...`

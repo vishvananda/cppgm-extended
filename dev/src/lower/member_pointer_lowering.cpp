@@ -3,29 +3,13 @@
 #include "sema/constant_values.h"
 #include "sema/conversions.h"
 
-// Pointers to members (5.3.1p3, 4.11, 5.5), as Itanium 2.3 lays
-// them out (course LowIR and host objects alike). A pointer to data member
-// is the member's offset in the pointer's class (i64), its null value -1: a
-// zero-initialized one holds -1 (8.5p5, null_data_member_pointers) and its
-// truth is the value plus one. A pointer to member function is two words
-// (i128): the function's address, or one plus the offset of its table slot
-// for a virtual function, and the offset of the function's class subobject
-// in the pointer's class (the this-adjustment, high word). A conversion to
-// a pointer to member of a derived class adds the base's offset to a
-// non-null value (4.11p2; 5.2.9p12's inverse subtracts it), so null values
-// stay null (a member function's null is its zero function word alone,
-// member_pointer_null). `.*` and `->*` reach the pointer's class subobject
-// of the object, then the member at the offset, or call the function with
-// the object adjusted by the high word and, for an odd function word,
-// looked up in the adjusted object's table (whatever the pointer's class: a
-// polymorphic derived class's virtual function at a non-zero offset may
-// become a non-polymorphic base's by 5.2.9p12, perhaps in another
-// translation unit).
+// Itanium member offsets and function/adjustment pairs use target words.
+// The target ABI selects the virtual discriminator and whether a function
+// pair crosses a call as an object. Keep those facts through constants,
+// conversions, null comparisons and dispatch (Itanium C++ ABI 2.3).
 namespace lower {
 
 namespace {
-
-const uint64_t kSlotBytes = 8;
 
 const syntax::Expr* WithoutParentheses(const syntax::Expr* expr)
 {
@@ -55,33 +39,36 @@ RValue FunctionLowering::member_pointer_value(const syntax::UnaryExpr& expr, uin
 	if (entity->kind != sema::EntityKind::Function)
 	{
 		const sema::VariableEntity* member = static_cast<const sema::VariableEntity*>(entity);
-		return constant(lowir::Type::scalar(lowir::TypeKind::I64),
-			lowering_.member_home_offset(member, expr.location) + adjustment);
+		return constant(AbiWordType(program_.target), lowering_.member_home_offset(member, expr.location) + adjustment);
 	}
 	return member_function_word(static_cast<const sema::FunctionEntity*>(entity), adjustment);
 }
 
 RValue FunctionLowering::member_function_word(const sema::FunctionEntity* function, uint64_t adjustment)
 {
-	// A member function's i128: its address (a virtual one's slot offset
-	// plus one), zero-extended, the adjustment shifted into the high word.
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	const lowir::Type i128 = lowir::Type::scalar(lowir::TypeKind::I128);
+	const auto abi = target_model::cxx_abi(program_.target);
+	const bool tagged_adjustment = abi.member_function_tag == target_model::MemberFunctionTag::Adjustment;
+	const lowir::Type word_type = AbiWordType(program_.target);
+	const lowir::Type pair_type = MemberFunctionBitsType(program_.target);
 	RValue word;
 	if (function->is_virtual)
-		word = convert_op(lowir::ConvertOp::ZExt, i128, integer(i64, 1 + function->vtable_slot * kSlotBytes));
+		word = convert_op(lowir::ConvertOp::ZExt, pair_type,
+			integer(word_type, function->vtable_slot * abi.word_bytes + (tagged_adjustment ? 0 : 1)));
 	else
 	{
 		lowering_.demand(function);
 		RValue address;
 		address.value = address_of_symbol(lowering_.function_symbol(function));
 		address.type = program_.pointer_type();
-		word = convert_op(lowir::ConvertOp::ZExt, i128, copy(i64, address));
+		word = convert_op(lowir::ConvertOp::ZExt, pair_type, copy(word_type, address));
 	}
-	if (adjustment == 0)
-		return word;
-	return binary(lowir::BinaryOp::Add, i128, word,
-		binary(lowir::BinaryOp::Shl, i128, integer(i128, adjustment), integer(i128, 64)));
+	if (tagged_adjustment)
+		adjustment = (adjustment << 1) | (function->is_virtual ? 1u : 0u);
+	if (adjustment != 0)
+		word = binary(lowir::BinaryOp::Add, pair_type, word,
+			binary(lowir::BinaryOp::Shl, pair_type, integer(pair_type, adjustment),
+				integer(pair_type, 8 * abi.word_bytes)));
+	return member_function_object(word);
 }
 
 RValue FunctionLowering::member_pointer_constant(const sema::ConstValue& value, uint32_t location)
@@ -89,12 +76,13 @@ RValue FunctionLowering::member_pointer_constant(const sema::ConstValue& value, 
 	// A constant pointer to member (a template argument's, 14.3.2): a data
 	// member's offset as an immediate, a member function's word
 	// as `&C::f` makes it, its adjustment added.
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	const lowir::Type i128 = lowir::Type::scalar(lowir::TypeKind::I128);
+	const lowir::Type i64 = AbiWordType(program_.target);
+	const lowir::Type i128 = MemberFunctionBitsType(program_.target);
 	const sema::Entity* member = static_cast<const sema::Entity*>(value.address.entity);
 	const bool function = value.type->element->kind == sema::TypeKind::Function;
 	if (member == nullptr)
-		return function ? integer(i128, 0) : integer(i64, static_cast<uint64_t>(lowering_.null_data_member()));
+		return function ? member_function_object(integer(i128, 0))
+						: integer(i64, static_cast<uint64_t>(lowering_.null_data_member()));
 	const uint64_t adjustment = static_cast<uint64_t>(value.address.offset);
 	if (!function)
 		return integer(
@@ -112,60 +100,64 @@ uint64_t FunctionLowering::member_adjustment(const sema::Type* from, const sema:
 
 RValue FunctionLowering::member_pointer_converted(const RValue& value, uint64_t adjustment)
 {
-	// 4.11p2: a non-null value gains the adjustment (a negative one for
-	// 5.2.9p12), the null value stays null.
 	if (adjustment == 0)
 		return value;
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	const lowir::Type i128 = lowir::Type::scalar(lowir::TypeKind::I128);
-	if (value.type.kind() != lowir::TypeKind::I128)
+	const lowir::Type word = AbiWordType(program_.target);
+	const lowir::Type pair = MemberFunctionBitsType(program_.target);
+	if (!value.type.is_object() && value.type != pair)
 	{
-		const RValue present = compare(
-			lowir::ComparePredicate::Ne, i64, value, integer(i64, static_cast<uint64_t>(lowering_.null_data_member())));
+		const RValue present = compare(lowir::ComparePredicate::Ne, word, value,
+			integer(word, static_cast<uint64_t>(lowering_.null_data_member())));
 		return binary(
-			lowir::BinaryOp::Add, i64, value, binary(lowir::BinaryOp::Mul, i64, present, integer(i64, adjustment)));
+			lowir::BinaryOp::Add, word, value, binary(lowir::BinaryOp::Mul, word, present, integer(word, adjustment)));
 	}
-	const RValue word = convert_op(lowir::ConvertOp::Trunc, i64, value);
-	const RValue present = compare(lowir::ComparePredicate::Ne, i64, word, integer(i64, 0));
+	const RValue bits = member_function_bits(value);
+	const RValue present = compare(lowir::ComparePredicate::Ne, word, member_pointer_truth(value), integer(word, 0));
+	if (target_model::cxx_abi(program_.target).member_function_tag == target_model::MemberFunctionTag::Adjustment)
+		adjustment <<= 1;
 	const RValue scaled = convert_op(
-		lowir::ConvertOp::SExt, i128, binary(lowir::BinaryOp::Mul, i64, present, integer(i64, adjustment)));
-	return binary(lowir::BinaryOp::Add, i128, value, binary(lowir::BinaryOp::Shl, i128, scaled, integer(i128, 64)));
+		lowir::ConvertOp::SExt, pair, binary(lowir::BinaryOp::Mul, word, present, integer(word, adjustment)));
+	return member_function_object(binary(lowir::BinaryOp::Add, pair, bits,
+		binary(
+			lowir::BinaryOp::Shl, pair, scaled, integer(pair, 8 * target_model::cxx_abi(program_.target).word_bytes))));
 }
 
 RValue FunctionLowering::member_pointer_truth(const RValue& value)
 {
-	// An i64 that is zero exactly when a pointer to member is null (4.12):
-	// a data member's value plus one (null is -1); a member function's
-	// function word (Itanium 2.3: zero whatever the adjustment, which
-	// converted null values carry).
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	if (value.type.kind() != lowir::TypeKind::I128)
-		return binary(lowir::BinaryOp::Add, i64, value, integer(i64, 1));
-	return convert_op(lowir::ConvertOp::Trunc, i64, value);
+	const lowir::Type word = AbiWordType(program_.target);
+	const lowir::Type pair = MemberFunctionBitsType(program_.target);
+	if (!value.type.is_object() && value.type != pair)
+		return binary(lowir::BinaryOp::Add, word, value, integer(word, 1));
+	const RValue bits = member_function_bits(value);
+	const RValue function = convert_op(lowir::ConvertOp::Trunc, word, bits);
+	const auto abi = target_model::cxx_abi(program_.target);
+	if (abi.member_function_tag == target_model::MemberFunctionTag::Function)
+		return function;
+	const RValue high = convert_op(
+		lowir::ConvertOp::Trunc, word, binary(lowir::BinaryOp::UShr, pair, bits, integer(pair, 8 * abi.word_bytes)));
+	return binary(lowir::BinaryOp::Or, word, function, binary(lowir::BinaryOp::And, word, high, integer(word, 1)));
 }
 
 RValue FunctionLowering::member_pointer_null(const RValue& value, bool null)
 {
 	// Whether a pointer to member is (not) null: its truth compared with
 	// zero.
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = AbiWordType(program_.target);
 	return compare(null ? lowir::ComparePredicate::Eq : lowir::ComparePredicate::Ne, i64, member_pointer_truth(value),
 		integer(i64, 0));
 }
 
 RValue FunctionLowering::member_pointer_equal(const RValue& left, const RValue& right, bool equal)
 {
-	// 5.10p2 on host objects' pointers to member functions: equal function
-	// words, and equal adjustments unless both are null (Itanium 2.3):
-	// both values equal, or both function words zero (`left == right ||
-	// (lw | rw) == 0`; its negation `left != right && (lw | rw) != 0`).
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	const lowir::ComparePredicate same = equal ? lowir::ComparePredicate::Eq : lowir::ComparePredicate::Ne;
-	const RValue values = compare(same, left.type, left, right);
-	// (Operands emitted last first: see FunctionLowering::binary.)
-	const RValue right_word = convert_op(lowir::ConvertOp::Trunc, i64, right);
-	const RValue words = binary(lowir::BinaryOp::Or, i64, convert_op(lowir::ConvertOp::Trunc, i64, left), right_word);
-	const RValue null = compare(same, i64, words, integer(i64, 0));
+	const lowir::Type word = AbiWordType(program_.target);
+	const auto same = equal ? lowir::ComparePredicate::Eq : lowir::ComparePredicate::Ne;
+	const RValue left_bits = member_function_bits(left);
+	const RValue right_bits = member_function_bits(right);
+	const RValue values = compare(same, left_bits.type, left_bits, right_bits);
+	const RValue right_word = member_pointer_truth(right);
+	const RValue words = binary(lowir::BinaryOp::Or, word, member_pointer_truth(left), right_word);
+	const RValue null = compare(same, word, words, integer(word, 0));
 	return binary(equal ? lowir::BinaryOp::Or : lowir::BinaryOp::And, i64, values, null);
 }
 
@@ -247,8 +239,10 @@ lowir::Value FunctionLowering::member_pointer_callee(const syntax::BinaryExpr& a
 	// arguments: the object adjusted by the high word, the low word the
 	// function's address, or for a virtual function (odd) one plus its
 	// slot's offset in the adjusted object's table.
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	const lowir::Type i128 = lowir::Type::scalar(lowir::TypeKind::I128);
+	const lowir::Type i64 = AbiWordType(program_.target);
+	const lowir::Type i128 = MemberFunctionBitsType(program_.target);
+	const auto abi = target_model::cxx_abi(program_.target);
+	const bool tagged_adjustment = abi.member_function_tag == target_model::MemberFunctionTag::Adjustment;
 	const lowir::Type pointer = program_.pointer_type();
 	const lowir::Type byte = lowir::Type::scalar(lowir::TypeKind::I8);
 	// `&C::f` written as the operand, not virtual, is called directly (the
@@ -283,12 +277,14 @@ lowir::Value FunctionLowering::member_pointer_callee(const syntax::BinaryExpr& a
 	// another translation unit reaches a base's pointer from a derived
 	// class's virtual function at a non-zero offset), so both words are
 	// always read, whatever the static class's layout.
-	const RValue bits = operand(*access.right, ConversionContext::Operand);
-	const RValue adjustment = convert_op(
-		lowir::ConvertOp::Trunc, i64, binary(lowir::BinaryOp::Shr, i128, bits, integer(i128, 64)));
+	const RValue bits = member_function_bits(operand(*access.right, ConversionContext::Operand));
+	RValue adjustment = convert_op(
+		lowir::ConvertOp::Trunc, i64, binary(lowir::BinaryOp::Shr, i128, bits, integer(i128, 8 * abi.word_bytes)));
 	const RValue word = convert_op(lowir::ConvertOp::Trunc, i64, bits);
-	const RValue is_virtual = compare(
-		lowir::ComparePredicate::Ne, i64, binary(lowir::BinaryOp::And, i64, word, integer(i64, 1)), integer(i64, 0));
+	const RValue is_virtual = compare(lowir::ComparePredicate::Ne, i64,
+		binary(lowir::BinaryOp::And, i64, tagged_adjustment ? adjustment : word, integer(i64, 1)), integer(i64, 0));
+	if (tagged_adjustment)
+		adjustment = binary(lowir::BinaryOp::Shr, i64, adjustment, integer(i64, 1));
 	arguments_[object_argument] = index(byte, ir_model::IPK_NONE, arguments_[object_argument], adjustment).value;
 	Place callee = Place();
 	callee.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::MemberPointerCallee, pointer));
@@ -301,8 +297,9 @@ lowir::Value FunctionLowering::member_pointer_callee(const syntax::BinaryExpr& a
 	vptr.storage = arguments_[object_argument];
 	Place entry = Place();
 	const lowir::Value table = load(pointer, vptr).value;
-	entry.storage =
-		index(byte, ir_model::IPK_NONE, table, binary(lowir::BinaryOp::Sub, i64, word, integer(i64, 1))).value;
+	entry.storage = index(byte, ir_model::IPK_NONE, table,
+		tagged_adjustment ? word : binary(lowir::BinaryOp::Sub, i64, word, integer(i64, 1)))
+						.value;
 	store(pointer, load(pointer, entry), callee);
 	jump(end);
 	place(direct_block);

@@ -282,6 +282,7 @@ void Linker::run(Bytes& output)
 	resolve();
 	collect();
 	validate_symbols();
+	prepare_address_globals();
 	for (uint32_t object_index = 0; object_index < objects_.size(); ++object_index)
 	{
 		const Object& object = objects_[object_index];

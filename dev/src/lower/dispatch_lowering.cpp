@@ -12,12 +12,6 @@
 // entry, which destroys and deallocates it.
 namespace lower {
 
-namespace {
-
-const uint64_t kSlotBytes = 8;
-
-} // namespace
-
 void FunctionLowering::store_vptr(uint32_t location)
 {
 	// Each table pointer of the object: the primary one, then (a class
@@ -36,7 +30,7 @@ void FunctionLowering::store_vptr(uint32_t location)
 	const uint32_t count = group != nullptr ? group->segment_count : 1;
 	const bool from_vtt = base_entry_ && VirtualBaseCount(entity) != 0;
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = AbiWordType(program_.target);
 	const lowir::Type pointer = program_.pointer_type();
 	// A segment's subobject: within a virtual base, at its offset in that
 	// base found through the base's row (in a base-object entry the
@@ -93,7 +87,9 @@ void FunctionLowering::store_vptr(uint32_t location)
 		const Place object = subobject(i);
 		const uint32_t slot = lowering_.vtt_segment_index(entity, i);
 		Place entry = Place();
-		entry.storage = index(i8, ir_model::IPK_NONE, vtt_param_, integer(i64, 8 * static_cast<uint64_t>(slot))).value;
+		entry.storage = index(i8, ir_model::IPK_NONE, vtt_param_,
+			integer(i64, target_model::cxx_abi(program_.target).word_bytes * static_cast<uint64_t>(slot)))
+							.value;
 		store(pointer, load(pointer, entry), object);
 	}
 }
@@ -106,7 +102,7 @@ void FunctionLowering::store_table(const Place& object, const sema::ClassEntity*
 	table.storage = lowir::Value::symbol(table_address.symbol);
 	RValue address;
 	address.value = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_NONE, address_of(table),
-		integer(lowir::Type::scalar(lowir::TypeKind::I64), static_cast<uint64_t>(table_address.addend)))
+		integer(AbiWordType(program_.target), static_cast<uint64_t>(table_address.addend)))
 						.value;
 	address.type = pointer;
 	store(pointer, address, object);
@@ -121,7 +117,8 @@ lowir::Value FunctionLowering::virtual_callee(lowir::Value object, uint32_t slot
 	entry.storage = load(pointer, vptr).value;
 	if (slot != 0)
 		entry.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_NONE, entry.storage,
-			integer(lowir::Type::scalar(lowir::TypeKind::I64), static_cast<uint64_t>(slot) * kSlotBytes))
+			integer(AbiWordType(program_.target),
+				static_cast<uint64_t>(slot) * target_model::cxx_abi(program_.target).word_bytes))
 							.value;
 	return load(pointer, entry).value;
 }
@@ -239,7 +236,7 @@ void FunctionLowering::deallocate_object(uint32_t location)
 	// 12.4p12, 12.5p4: the deallocation function found where the virtual
 	// destructor is defined, a sized one given the object's size.
 	const sema::ClassEntity* entity = sema::ClassOf(function_->owner->entity->type);
-	RValue size = integer(lowir::Type::scalar(lowir::TypeKind::I64), lowering_.size_of(entity->type, location));
+	RValue size = integer(AbiWordType(program_.target), lowering_.size_of(entity->type, location));
 	free_storage(entity->virtuals->deleting_deallocator, this_pointer(location), size, location, 0,
 		lowering_.alignment_of(entity->type, location));
 }
@@ -256,8 +253,14 @@ void FunctionLowering::virtual_deletion(const sema::ClassEntity* entity, const R
 	const size_t base = arguments_.size();
 	arguments_.push_back(pointer.value);
 	const lowir::Value callee = virtual_callee(pointer.value, destructor->vtable_slot + 1);
-	emit_call(
-		lowir::Type::scalar(lowir::TypeKind::Void), callee, base, lowering_.virtual_call_signature(destructor), throws);
+	lowir::SignatureId signature = lowering_.virtual_call_signature(destructor);
+	if (program_.signatures[signature].boundary.this_return)
+	{
+		lowir::Signature deleting = program_.signatures[signature];
+		deleting.boundary.this_return = false;
+		signature = program_.add_signature(deleting);
+	}
+	emit_call(lowir::Type::scalar(lowir::TypeKind::Void), callee, base, signature, throws);
 	end_call(throws);
 }
 

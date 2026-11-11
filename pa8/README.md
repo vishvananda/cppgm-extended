@@ -96,7 +96,10 @@ can state `argument_type=<index>:<scalar-type>` to retain their passed type even
 when their value is a literal. Read, validate and preserve this fact; selecting
 the target's argument-buffer layout belongs to its backend. Unnamed objects
 state `argument_shape=<index>:<shape>` and object-valued `va_arg` uses `shape=`.
-These retain the same layout facts as named parameters.
+These retain the same layout facts as named parameters. A target ABI can
+also state `this_return=yes` on a logically void boundary: its physical return
+is the unchanged first pointer parameter. Validate the target and parameter
+constraints and preserve the fact through text round-trips.
 
 Accept helper-only units, including declarations and globals without an entry
 function. An entry is needed when the supplied backend builds an executable,

@@ -126,7 +126,8 @@ lowir::SymbolId ProgramLowering::local_static(const sema::VariableEntity* variab
 		guard = new_symbol(spelling + "__guard");
 		lowir::Global flag = lowir::Global();
 		flag.typed = true;
-		flag.type = lowir::Type::scalar(lowir::TypeKind::I64);
+		flag.type = lowir::Type::scalar(
+			target_model::cxx_abi(program_.target).guard_bytes == 4 ? lowir::TypeKind::I32 : lowir::TypeKind::I64);
 		flag.init = lowir::GlobalInit::Zero;
 		program_.declare_global(guard, lowir::SymbolKind::GlobalDefinition, flag);
 		program_.symbols[guard].metadata.binding = metadata.binding;

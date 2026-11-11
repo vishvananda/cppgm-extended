@@ -1,0 +1,12 @@
+target wasm32 1
+
+function @initialize(%self : ptr, %value : i32) -> void [this_return=yes] {
+  block ^entry:
+    store i32 %value, %self
+    return void
+}
+function @call(%self : ptr) -> void {
+  block ^entry:
+    call void @initialize(%self, 9)
+    return void
+}

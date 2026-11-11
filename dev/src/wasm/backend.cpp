@@ -52,6 +52,7 @@ bool compile_object(
 		optimization.has_gnu_sincos = false;
 		opt::OptimizerStats stats;
 		opt::optimize_program(program, optimization, &stats);
+		prepare_finalizers(program);
 		legalize_wide_helpers(program);
 		make_object(program, options, object, dump);
 		return options.machine_ir.empty() || write_file(options.machine_ir, dump.data(), dump.size(), error);
