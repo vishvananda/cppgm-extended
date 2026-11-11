@@ -2,11 +2,12 @@
 
 The working target is cppgm-built LLVM compiling the 325 frozen cppgm units
 in at most 1.05 times native-built LLVM's elapsed time, at every level.
-The qualified O1 level moves now measure 12.99% overhead over five ABBA
-blocks (95% interval 9.68%-16.31%). The target remains unmet. The preceding
-measurements were 16.96%, 18.25% and 19.19% at O1, O2 and O3; O2 and O3 have
-not been remeasured after this checkpoint. Those older runs and the current
-one are not a paired proof of the improvement between compiler revisions.
+The latest completed full O1 comparison is the r17 aggregate checkpoint:
+1.06952 times native elapsed (95% interval 0.96356–1.17548) and 1.08778 times
+native cycles (1.06635–1.10921). The target remains unmet. The r18 scratch-register
+correctness repair is qualified separately; subsequent inlining results are
+private partial-build screens. O2/O3 have not been remeasured after these changes.
+Historical comparisons below retain their original baselines and scope.
 
 ## Method adopted from `~/gap.md`
 
@@ -1097,9 +1098,72 @@ simplification. Existing admission caps, safety checks and unit limits remain.
 
 Evidence: gap-C-host-ir-r17/receipt.json;
 gap-C-host-ir-replay-r17/output-equality.json;
-gap-C-scratch-{regression-proof,controls,validation}-r18;
+gap-C-scratch-{regression-proof,controls}-r18; gap-C-scratch-validation-r18.json;
 gap-C-scratch-{batch,cumulative}-r18/summary.json;
 gap-C-scratch-edge-top1-r18/test.json;
 gap-C-scratch-oracle-{top43,output}-r18;
 gap-C-scratch-oracle-ledger-number_literal-r18;
 gap-C-final-charge-compiler-r18; gap-C-original-price-trace-compiler-r18.
+
+
+### Completed native-decision screen and cost-accounting controls
+
+The scratch repair is committed as 30e2ab26e. The native-decision diagnostic's
+four-input panel is complete. Changes below are against the full r17 compiler;
+the candidate itself is a 43-provider relink, so these are screening results.
+
+| Input | Executed bytes | Instructions | Bytes/instruction | Conditional branches | Calls | Modeled L2 code misses |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| number_literal | +0.090% | -0.992% | +0.210% | -0.097% | -5.499% | -4.074% |
+| store_motion | +0.076% | -1.148% | +0.245% | -0.124% | -6.042% | -1.765% |
+| program_lowering | +0.052% | -1.107% | +0.226% | -0.074% | -5.920% | -2.210% |
+| class_templates | +0.045% | -1.124% | +0.216% | -0.224% | -5.817% | -1.886% |
+
+The hardware screen retains all eighty matching outputs and fourteen flagged
+cycle outliers. Group medians are 0.974–0.990 times r17 cycles and 1.070–1.084
+times native cycles. Blocked store forwarding falls 7.53%, hardware L2 code
+misses 1.71%, instruction-TLB second-level hits 2.95%, TLB walk duration 4.05%,
+micro-operations 1.53% and fetch stalls 4.42%. Mispredictions are essentially
+flat (+0.041%). This is enough evidence to pursue general inlining cost
+accounting; it is not a whole-workload confidence or elapsed acceptance claim.
+
+A decision-preserving trace confirms 1,647 ordinary-wave decisions where the
+final body fits the caller's remaining budget but the original body does not.
+Across admitted trace events, original-size charges sum to 2,492,486 versus
+1,351,104 final-size units. These are repeated static decisions across sites,
+providers and waves, not dynamic instructions saved. All traced objects match
+the uninstrumented r18 compiler (42 also match r17; the X86InstrInfo difference
+is reproduced by the scratch fix alone).
+
+The isolated final-size charging probe changes 29 providers and preserves all
+325 outputs. It barely changes executed footprint (+0.012% and +0.018% on
+number_literal/store_motion) or calls (-0.232% and -0.068%). Modeled L2 misses
+fall 1.294% and 0.331%. Number_literal instructions rise 0.220%, but attribution
+finds 2,342,490 extra instructions in DeclContext::lookupImpl alone. Its
+normalized assembly is identical and both runs enter it 77,398 times; the
+extra work is repeated pointer-key hash probes. Retain the raw total and this
+layout-sensitive confounder rather than treating it as worse instruction
+selection or subtracting it from an acceptance score. Store_motion instructions
+fall 0.050%. Stale charges are real, but removing them alone is insufficient.
+
+A further private C4 probe prices executable operations and nested calls during
+the existing shape walk, subtracts the replaced call's argument/control cost,
+and compares net growth with one ordinary/late threshold (40, or 60 with an
+inline hint). It removes the body-shape caps and loop multiplier in those waves,
+preserves safety, required substitution, definition-removing inlining and raw
+unit growth limits, and keeps the once wave restricted to its original role.
+Constant-argument specialization is still missing; this is an initial model,
+not production code. The first draft accidentally also used the comparison
+in the once wave; it was corrected before any LLVM screen (r19b is the tested
+variant). Frozen compile costs and output-checked screens are running.
+
+The updated frame-window encoding bound is only 96,889 bytes, or 1.04% of the
+executed store_motion footprint, in functions with no executed RBP use. Its
+445,398-byte all-function bound ignores new spills and other costs. This does
+not establish a useful standalone frame-base optimization after aggregation.
+
+Evidence: gap-C-scratch-oracle-four-panel-r18.json;
+gap-C-scratch-oracle-hardware-r18/summary.json; gap-C-original-prices-r18.json;
+gap-C-original-price-trace-top43-r18; gap-C-final-charge-panel-r18.json;
+gap-C-final-charge-attribution-r18/lookup-path-counts.json;
+gap-C-net-cost-{compiler,top43}-r19b; gap-B-frame-window-bound-r18.json.
