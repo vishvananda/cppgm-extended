@@ -150,8 +150,6 @@ void FunctionEmitter::address_into(Reg dst, const Operand& op)
 // ---------------------------------------------------------------------------
 // Function
 
-const unsigned kRelaxPasses = 3;
-
 // The most nop bytes before a loop head: to 16 when that takes this many, else
 // to 8.
 const unsigned kLoopPad = 10;
@@ -178,7 +176,7 @@ void FunctionEmitter::find_loop_heads(const Function& function)
 	loop_heads_.clear();
 	loop_last_.clear();
 	loop_near_.clear();
-	loop_padding_.assign(1, 0);
+	loop_padded_.clear();
 	if (!function.align_loops)
 		return;
 	std::vector<std::pair<int32_t, uint32_t>> heads;
@@ -214,7 +212,7 @@ void FunctionEmitter::find_loop_heads(const Function& function)
 		{
 			uint8_t& limit = loop_limit_[static_cast<size_t>(head - loop_heads_.begin())];
 			loop_counted_[static_cast<size_t>(head - loop_heads_.begin())] |= block.counted;
-			if ((function.placement_valid && function.code_labels.empty()) || block.counted)
+			if (block.counted)
 				limit = kWindowLoop;
 		}
 	}
@@ -227,29 +225,15 @@ void FunctionEmitter::find_loop_heads(const Function& function)
 			loop_last_[head] = far;
 			++head;
 		}
-	for (size_t k = 0; k < loop_heads_.size(); ++k)
+	// The heads the second encode pads: those a block not fallen into starts.
+	loop_padded_.assign(loop_heads_.size(), 0);
+	for (size_t b = 0; b < function.blocks.size(); ++b)
 	{
-		const uint32_t last = function.placement_valid ? loop_near_[k] : loop_last_[k];
-		bool short_loop = false;
-		if (last != lowir::kNoId)
-		{
-			const size_t before = static_cast<size_t>(
-				std::lower_bound(branch_offset_.begin(), branch_offset_.end(), loop_heads_[k]) -
-				branch_offset_.begin());
-			// Each earlier branch saves at most four bytes; the closing
-			// branch is at least two. This bound also covers dense branches.
-			const int64_t smallest = branch_offset_[last] - loop_heads_[k] + 2 -
-				4 * (static_cast<int64_t>(last) - static_cast<int64_t>(before));
-			short_loop = smallest <= kWindowLoop;
-			// Unplaced functions retain the earlier conservative allowance.
-			// Tightening it can move addressed dispatch code even though its
-			// alignment policy is unchanged. The lower bound still covers
-			// densely branched cycles that the earlier estimate missed.
-			if (!function.placement_valid)
-				short_loop = short_loop || branch_offset_[last] - loop_heads_[k] <= 2 * kWindowLoop;
-		}
-		const unsigned window = loop_limit_[k] != 0 && !loop_counted_[k] ? kCodeLayoutBytes : kWindowBytes;
-		loop_padding_.push_back(loop_padding_[k] + (short_loop ? window - 1 : kLoopPad));
+		if (function.blocks[b].fallen_into || (chain_end_[b] != b && chain_end_[b] != kNoChainEnd))
+			continue;
+		const auto head = std::lower_bound(loop_heads_.begin(), loop_heads_.end(), block_start_[b]);
+		if (head != loop_heads_.end() && *head == block_start_[b])
+			loop_padded_[static_cast<size_t>(head - loop_heads_.begin())] = 1;
 	}
 }
 
@@ -293,22 +277,72 @@ bool FunctionEmitter::measure_short_loops(const Function& function)
 	return any;
 }
 
-void FunctionEmitter::align_loop_head(size_t head)
+// The padding before loop head `head` when its code would start at `at`.
+unsigned FunctionEmitter::loop_pad(size_t head, uint64_t at) const
 {
-	const uint64_t at = asm_.size();
 	const int32_t bytes = loop_bytes_[head];
+	// End a compact data cycle at a line boundary, keeping its cold
+	// continuation out of that line. Back edges skip the entry padding.
 	if (bytes != 0 && !loop_counted_[head])
-	{
-		// End a compact data cycle at a line boundary, keeping its cold
-		// continuation out of that line. Back edges skip the entry padding.
-		asm_.nops((kCodeLayoutBytes - (at + bytes) % kCodeLayoutBytes) % kCodeLayoutBytes);
-		return;
-	}
+		return static_cast<unsigned>((kCodeLayoutBytes - (at + bytes) % kCodeLayoutBytes) % kCodeLayoutBytes);
 	const unsigned to16 = (16 - at % 16) % 16;
 	const unsigned usual = to16 <= kLoopPad ? to16 : to16 - 8;
 	const unsigned to32 = (kWindowBytes - at % kWindowBytes) % kWindowBytes;
 	const bool fewer = bytes != 0 && windows_touched(at + to32, bytes) < windows_touched(at + usual, bytes);
-	asm_.nops(fewer ? to32 : usual);
+	return fewer ? to32 : usual;
+}
+
+// The branches to encode short. Every branch that can be starts short; a
+// pass lays the function out with the current choice (the first encode's
+// offsets, less what the short branches before a position save, plus the
+// padding its loop heads take there) and makes long each short branch
+// whose target is then out of rel8 reach. A long branch stays long, so the
+// passes end, and the last one found every short branch in reach.
+void FunctionEmitter::relax_branches(const Function& function)
+{
+	const size_t branches = branch_offset_.size();
+	for (size_t i = 0; i < branches; ++i)
+		short_[i] = relax_target_[i] >= 0 ? 1 : 0;
+	std::vector<int64_t>& pads = relax_pads_;
+	// (Branches at or past a position do not move it; padding at or before it does.)
+	const auto saved_before = [&](int32_t position) {
+		return relax_saved_[static_cast<size_t>(
+			std::lower_bound(branch_offset_.begin(), branch_offset_.end(), position) - branch_offset_.begin())];
+	};
+	const auto pads_before = [&](int32_t position) {
+		return pads[static_cast<size_t>(
+			std::upper_bound(loop_heads_.begin(), loop_heads_.end(), position) - loop_heads_.begin())];
+	};
+	for (bool changed = true; changed;)
+	{
+		changed = false;
+		uint64_t base = base_;
+		// (The loop measure also sums what the short branches save.)
+		if (measure_short_loops(function))
+		{
+			const uint64_t alignment = std::max(kWindowBytes, code_window_);
+			base = (base + alignment - 1) / alignment * alignment;
+		}
+		pads.assign(1, 0);
+		for (size_t k = 0; k < loop_heads_.size(); ++k)
+		{
+			const uint64_t at = base +
+				static_cast<uint64_t>(
+					loop_heads_[k] - static_cast<int64_t>(base_) - saved_before(loop_heads_[k]) + pads[k]);
+			pads.push_back(pads[k] + (loop_padded_[k] ? loop_pad(k, at) : 0));
+		}
+		for (size_t i = 0; i < branches; ++i)
+		{
+			if (!short_[i])
+				continue;
+			const int32_t target = relax_target_[i];
+			const int64_t end = branch_offset_[i] - relax_saved_[i] + pads_before(branch_offset_[i]) + 2;
+			if (fits_i8(target - saved_before(target) + pads_before(target) - end))
+				continue;
+			short_[i] = 0;
+			changed = true;
+		}
+	}
 }
 
 void FunctionEmitter::emit(const Function& function)
@@ -333,14 +367,12 @@ void FunctionEmitter::emit(const Function& function)
 	branch_conditional_.clear();
 	relax_pass_ = false;
 	encode(function);
-	// Later passes: every branch that fits rel8 with the branches still
-	// long still fits once more of them shrink, so a short one stays short;
-	// each pass shortens what the previous pass's offsets admit (O1+: up to
-	// kRelaxPasses; -O0 keeps one). Branch length is the only encoding that
-	// depends on position (the tables' padding follows the code), so a
-	// pass's offsets are the first encode's less the bytes the branches
-	// already short before them save: the passes decide from those, and
-	// one encode emits their choice.
+	// The second encode: branch length is the only encoding that depends on
+	// position (the tables' padding follows the code), so a layout's offsets
+	// are the first encode's less the bytes the branches already short
+	// before them save. With the branches laid out (O1+) or a loop head to
+	// pad, relax_branches chooses; else (-O0) what fits with every other
+	// branch long is short.
 	const size_t branches = branch_offset_.size();
 	short_.assign(branches, 0);
 	relax_target_.resize(branches);
@@ -351,42 +383,19 @@ void FunctionEmitter::emit(const Function& function)
 	else
 	{
 		loop_heads_.clear();
-		loop_padding_.assign(1, 0);
+		loop_padded_.clear();
 	}
 	relax_saved_.assign(branches + 1, 0);
-	const unsigned passes = assembly_alignment > 1 ? 0 : function.branches_laid_out ? kRelaxPasses : 1;
 	bool shortened = false;
-	for (unsigned pass = 0; pass < passes; ++pass)
+	if (assembly_alignment <= 1 && (function.branches_laid_out || !loop_heads_.empty()))
 	{
-		for (size_t i = 0; i < branches; ++i)
-			relax_saved_[i + 1] = relax_saved_[i] + (short_[i] ? (branch_conditional_[i] ? 4 : 3) : 0);
-		bool any = false;
-		for (size_t i = 0; i < branches; ++i)
-		{
-			const int32_t target = relax_target_[i];
-			if (short_[i] || target < 0)
-				continue;
-			// (Branches at or past the target do not move it.)
-			const size_t before = static_cast<size_t>(
-				std::lower_bound(branch_offset_.begin(), branch_offset_.end(), target) - branch_offset_.begin());
-			const int64_t offset = branch_offset_[i] - relax_saved_[i];
-			const int64_t distance = static_cast<int64_t>(target) - relax_saved_[before] - (offset + 2);
-			// (Padding may lengthen what the branch jumps over.)
-			const int32_t low = std::min(target, branch_offset_[i]);
-			const int32_t high = std::max(target, branch_offset_[i]);
-			const int64_t padding =
-				loop_padding_[std::upper_bound(loop_heads_.begin(), loop_heads_.end(), high) - loop_heads_.begin()] -
-				loop_padding_[std::upper_bound(loop_heads_.begin(), loop_heads_.end(), low) - loop_heads_.begin()];
-			if (fits_i8(distance - padding) && fits_i8(distance + padding))
-			{
-				short_[i] = 1;
-				any = true;
-			}
-		}
-		if (!any)
-			break;
-		shortened = true;
+		relax_branches(function);
+		shortened = std::find(short_.begin(), short_.end(), 1) != short_.end();
 	}
+	else if (assembly_alignment <= 1)
+		for (size_t i = 0; i < branches; ++i)
+			if (relax_target_[i] >= 0 && fits_i8(static_cast<int64_t>(relax_target_[i]) - (branch_offset_[i] + 2)))
+				short_[i] = shortened = true;
 	if (shortened || !loop_heads_.empty())
 	{
 		text.resize(base_);
@@ -789,7 +798,7 @@ void FunctionEmitter::encode(const Function& function)
 				loop_heads_.begin(), loop_heads_.end(), block_start_[b]);
 			if (head != loop_heads_.end() && *head == block_start_[b] && aligned_head != block_start_[b])
 			{
-				align_loop_head(static_cast<size_t>(head - loop_heads_.begin()));
+				asm_.nops(loop_pad(static_cast<size_t>(head - loop_heads_.begin()), asm_.size()));
 				// Empty fallthrough blocks may share this first-encode address.
 				// Keep their labels after the padding too: relaxation assumes
 				// padding at a backward target moves both target and branch.

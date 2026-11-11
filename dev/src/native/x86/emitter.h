@@ -151,7 +151,8 @@ private:
 	void branch(Cond cond, bool conditional, uint32_t label);
 	void find_loop_heads(const Function& function);
 	bool measure_short_loops(const Function& function);
-	void align_loop_head(size_t head);
+	unsigned loop_pad(size_t head, uint64_t at) const;
+	void relax_branches(const Function& function);
 	RM rm(const Operand& op) const;
 	Reg scratch(const Inst& inst, Reg avoid = kNoReg) const;
 	void move_imm(Reg dst, int64_t value, bool keep_flags);
@@ -236,7 +237,8 @@ private:
 	std::vector<int32_t> loop_heads_;    // sorted: first-encode positions backward branches target
 	std::vector<uint32_t> loop_near_;    // nearest back edge, for a fast subcycle
 	std::vector<uint32_t> loop_last_;    // per loop head: the chosen backward branch
-	std::vector<int32_t> loop_padding_;  // the padding that may precede each loop head, summed
+	std::vector<uint8_t> loop_padded_;   // per loop head: whether the second encode pads it
+	std::vector<int64_t> relax_pads_;    // per loop head: the padding before it in the layout tried, summed
 	std::vector<uint8_t> loop_limit_;    // allowed cycle span from loop and placement facts
 	std::vector<uint8_t> loop_counted_;  // retain the existing counted-loop policy
 	std::vector<int32_t> loop_barriers_; // first-encode call and opaque-assembly positions

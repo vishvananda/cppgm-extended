@@ -40,8 +40,9 @@ void Assembler::reset_labels()
 
 void Assembler::nops(unsigned bytes)
 {
-	// The recommended forms, `0f 1f /0` with a growing operand.
-	static const uint8_t forms[9][9] = {
+	// The recommended forms, `0f 1f /0` with a growing operand; the longest
+	// adds a segment prefix to the nine-byte form.
+	static const uint8_t forms[10][10] = {
 		{ 0x90 },
 		{ 0x66, 0x90 },
 		{ 0x0f, 0x1f, 0x00 },
@@ -51,10 +52,11 @@ void Assembler::nops(unsigned bytes)
 		{ 0x0f, 0x1f, 0x80, 0x00, 0x00, 0x00, 0x00 },
 		{ 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 },
 		{ 0x66, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 },
+		{ 0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 },
 	};
 	while (bytes != 0)
 	{
-		const unsigned length = bytes < 9 ? bytes : 9;
+		const unsigned length = bytes < 10 ? bytes : 10;
 		code_.insert(code_.end(), forms[length - 1], forms[length - 1] + length);
 		bytes -= length;
 	}
