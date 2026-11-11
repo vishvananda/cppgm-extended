@@ -19,10 +19,11 @@ struct FrameObject
 // estimated frequency of their accesses, the hottest nearest the frame
 // register (below RBP, or above RSP's preserve area without a frame
 // pointer) where more accesses take a one-byte displacement. Every frame
-// operand must lie inside one object, or at a shared boundary whose
-// adjacency is preserved. A function with operands carrying frame offsets
-// elsewhere (va_start, course EH records) keeps its layout. Returns
-// whether it moved any.
+// operand must start inside an object; the objects one access spans move
+// as one. A function with operands carrying frame offsets elsewhere
+// (va_start, course EH records), or with an address formed outside its
+// object (the selector's frame_pinned_), keeps its layout. Returns whether
+// it moved any.
 bool order_frame(Function& function, const std::vector<FrameObject>& objects);
 
 // O1+, after the MIR cleanups: stores (and bulk copies or zeroing) into

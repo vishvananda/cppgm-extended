@@ -285,13 +285,16 @@ bool order_frame(Function& f, const std::vector<FrameObject>& objects)
 	if (objects.size() < 2 || f.stack_size == 0 || f.variadic || f.eh_records_pushed)
 		return false;
 	// The objects by offset, each access's object found by binary search.
-	std::vector<uint32_t> by_offset(objects.size());
-	for (uint32_t k = 0; k < objects.size(); ++k)
+	const uint32_t n = static_cast<uint32_t>(objects.size());
+	std::vector<uint32_t> by_offset(n), rank(n);
+	for (uint32_t k = 0; k < n; ++k)
 		by_offset[k] = k;
 	std::sort(by_offset.begin(), by_offset.end(),
 		[&](uint32_t x, uint32_t y) { return objects[x].offset < objects[y].offset; });
+	for (uint32_t r = 0; r < n; ++r)
+		rank[by_offset[r]] = r;
 	auto find = [&](int32_t disp) -> uint32_t {
-		uint32_t lo = 0, hi = static_cast<uint32_t>(by_offset.size());
+		uint32_t lo = 0, hi = n;
 		while (lo < hi)
 		{
 			const uint32_t mid = (lo + hi) / 2;
@@ -305,10 +308,12 @@ bool order_frame(Function& f, const std::vector<FrameObject>& objects)
 		const FrameObject& o = objects[by_offset[lo - 1]];
 		return static_cast<int64_t>(disp) < static_cast<int64_t>(o.offset) + o.bytes ? by_offset[lo - 1] : lowir::kNoId;
 	};
+	auto end_of = [&](uint32_t o) { return static_cast<int64_t>(objects[o].offset) + objects[o].bytes; };
 	std::vector<uint64_t> frequency;
 	block_frequencies(f, frequency);
-	std::vector<uint64_t> weight(objects.size(), 0);
-	std::vector<std::pair<uint32_t, uint32_t>> boundaries;
+	std::vector<uint64_t> weight(n, 0);
+	// Per rank: the object stays directly below the next one.
+	std::vector<uint8_t> glued(n, 0);
 	for (uint32_t b = 0; b < f.blocks.size(); ++b)
 	{
 		const Block& block = f.blocks[b];
@@ -323,52 +328,78 @@ bool order_frame(Function& f, const std::vector<FrameObject>& objects)
 				const Operand& op = inst.ops[k];
 				if (!frame_operand(op))
 					continue;
-				// Accesses stay inside one object (a merged store may not).
+				// An address is its object's: the selector keeps the layout
+				// of a frame it forms an address outside an object in
+				// (lazy_operand), so none here is a neighbor's one-past
+				// pointer.
 				const uint32_t o = find(op.disp);
-				if (o == lowir::kNoId ||
-					(op.index == kNoReg &&
-						static_cast<int64_t>(op.disp) + access_bytes(inst) >
-							static_cast<int64_t>(objects[o].offset) + objects[o].bytes))
+				if (o == lowir::kNoId)
 					return false;
-				if ((inst.op == Op::Lea || op.index != kNoReg) && op.disp > INT32_MIN)
+				// An access running past its object (a merged store) keeps
+				// the objects it covers as they are.
+				for (uint32_t r = rank[o];
+					op.index == kNoReg && static_cast<int64_t>(op.disp) + access_bytes(inst) > end_of(by_offset[r]);
+					++r)
 				{
-					const uint32_t before = find(op.disp - 1);
-					if (before != lowir::kNoId && before != o)
-						boundaries.emplace_back(before, o);
+					if (r + 1 == n || objects[by_offset[r + 1]].offset != end_of(by_offset[r]))
+						return false;
+					glued[r] = 1;
 				}
 				weight[o] += w;
 			}
 		}
 	}
+	// The units that move: each run of objects that stay adjacent, laid
+	// out inside as it is.
+	struct Unit
+	{
+		uint32_t low, high; // ranks
+		uint32_t first;     // its earliest object in the selector's order
+		uint32_t bytes, align;
+		uint64_t weight;
+	};
+	std::vector<Unit> units;
+	for (uint32_t r = 0; r < n; ++r)
+	{
+		if (r == 0 || !glued[r - 1])
+			units.push_back(Unit{ r, r, by_offset[r], 0, 1, 0 });
+		Unit& unit = units.back();
+		unit.high = r;
+		unit.first = std::min(unit.first, by_offset[r]);
+		unit.bytes = static_cast<uint32_t>(end_of(by_offset[r]) - objects[by_offset[unit.low]].offset);
+		unit.align = std::max(unit.align, std::max<uint32_t>(objects[by_offset[r]].align, 1));
+		unit.weight += weight[by_offset[r]];
+	}
 	// Allocation order from the frame's top by accesses per byte (the
 	// one-byte window holds the most accesses): densest first below RBP;
 	// without a frame pointer sparsest first, so the densest end at the
 	// bottom, nearest RSP. Ties keep the selector's order.
-	std::vector<uint32_t> order(objects.size());
-	for (uint32_t k = 0; k < objects.size(); ++k)
-		order[k] = k;
+	std::sort(units.begin(), units.end(), [](const Unit& x, const Unit& y) { return x.first < y.first; });
 	const bool bottom = f.omit_frame_pointer;
-	std::stable_sort(order.begin(), order.end(), [&](uint32_t x, uint32_t y) {
-		const unsigned __int128 dx = static_cast<unsigned __int128>(weight[x]) * objects[y].bytes;
-		const unsigned __int128 dy = static_cast<unsigned __int128>(weight[y]) * objects[x].bytes;
+	std::stable_sort(units.begin(), units.end(), [&](const Unit& x, const Unit& y) {
+		const unsigned __int128 dx = static_cast<unsigned __int128>(x.weight) * y.bytes;
+		const unsigned __int128 dy = static_cast<unsigned __int128>(y.weight) * x.bytes;
 		return bottom ? dx < dy : dx > dy;
 	});
-	std::vector<int32_t> moved(objects.size());
+	std::vector<int32_t> moved(n);
 	uint32_t size = 0;
 	bool changed = false;
-	for (uint32_t k : order)
+	for (const Unit& unit : units)
 	{
-		size = align_up(size + objects[k].bytes, std::max<uint32_t>(objects[k].align, 1));
-		moved[k] = -static_cast<int32_t>(size);
-		changed = changed || moved[k] != objects[k].offset;
+		// (Its lowest byte keeps its alignment phase: so does each object.)
+		const int32_t base = objects[by_offset[unit.low]].offset;
+		const uint32_t phase = static_cast<uint32_t>(-static_cast<int64_t>(base)) & (unit.align - 1);
+		size += unit.bytes;
+		size += (phase - size) & (unit.align - 1);
+		for (uint32_t r = unit.low; r <= unit.high; ++r)
+		{
+			const uint32_t k = by_offset[r];
+			moved[k] = objects[k].offset - base - static_cast<int32_t>(size);
+			changed = changed || moved[k] != objects[k].offset;
+		}
 	}
 	if (!changed)
 		return false;
-	// An ambiguous boundary must remain both the preceding object's end
-	// and the following object's start after relocation.
-	for (const auto& pair : boundaries)
-		if (static_cast<int64_t>(moved[pair.first]) + objects[pair.first].bytes != moved[pair.second])
-			return false;
 	auto relocate = [&](int32_t& disp) {
 		const uint32_t o = find(disp);
 		if (o != lowir::kNoId)
