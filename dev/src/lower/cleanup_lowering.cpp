@@ -1837,14 +1837,28 @@ lowir::Value FunctionLowering::emit_call(
 		: builder_.call(result, callee, arguments_.data() + base, static_cast<uint32_t>(arguments_.size() - base),
 			  signature, 0, elision ? lowir::IF_COPY_ELISION : 0);
 	speculated_target_ = lowir::Value::none();
-	if (!variadic_classes_.empty() && variadic_classes_.back().first >= base)
+	if (!variadic_facts_.empty() && variadic_facts_.back().first >= base)
 	{
 		// The classes of its class objects passed to `...` (object mode).
 		const lowir::InstId call = builder_.last_instruction(builder_.insertion_block());
-		for (; !variadic_classes_.empty() && variadic_classes_.back().first >= base; variadic_classes_.pop_back())
-			if (variadic_classes_.back().first < arguments_.size())
-				builder_.body().argument_classes.push_back(lowir::ArgumentClasses{ call,
-					static_cast<uint32_t>(variadic_classes_.back().first - base), variadic_classes_.back().second });
+		for (; !variadic_facts_.empty() && variadic_facts_.back().first >= base; variadic_facts_.pop_back())
+			if (variadic_facts_.back().first < arguments_.size())
+			{
+				const uint32_t value = variadic_facts_.back().second;
+				const uint8_t kind = static_cast<uint8_t>(value >> 8);
+				const uint32_t argument = static_cast<uint32_t>(variadic_facts_.back().first - base);
+				if ((kind & 0x80) != 0)
+				{
+					ir_model::AggregateShape shape;
+					shape.element = static_cast<ir_model::AggregateElement>(kind & 0x7f);
+					shape.count = static_cast<uint16_t>(value >> 16);
+					builder_.body().argument_facts.push_back(
+						lowir::ArgumentFacts{ call, argument, static_cast<uint8_t>(value), shape });
+				}
+				else
+					builder_.body().argument_facts.push_back(lowir::ArgumentFacts{
+						call, argument, static_cast<uint8_t>(value), static_cast<lowir::TypeKind>(kind) });
+			}
 	}
 	arguments_.resize(base);
 	if (transient)

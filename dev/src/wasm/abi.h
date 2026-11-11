@@ -26,5 +26,6 @@ struct Boundary
 };
 
 AbiValue classify_value(lowir::Type type, ir_model::AggregateShape shape, lowir::Type pointer);
+lowir::Type variadic_storage(lowir::Type type, AbiValue passing);
 
 } // namespace wasm

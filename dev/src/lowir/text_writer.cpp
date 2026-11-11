@@ -1,5 +1,6 @@
 #include "lowir/text_writer.h"
 
+#include <algorithm>
 #include <cstring>
 
 #include "lowir/literals.h"
@@ -105,7 +106,7 @@ private:
 	// A definition's parameters are the body's (`definition`), spelled as
 	// its uses are.
 	void parameters(const Signature& signature, bool definition = false);
-	void argument_classes(const Instruction& inst, bool& open);
+	void argument_facts(const Instruction& inst, bool& open);
 	void constant(const Constant& c, TypeKind context);
 	void address(SymbolId target, int64_t addend);
 	void location(const DebugLocation& location);
@@ -907,7 +908,7 @@ bool Writer::write_value_instruction(const Instruction& inst)
 	if (inst.op == Opcode::VaArg)
 	{
 		bool open = false;
-		argument_classes(inst, open);
+		argument_facts(inst, open);
 		if (open)
 			out_.push_back(']');
 	}
@@ -1001,25 +1002,45 @@ bool Writer::write_memory_instruction(const Instruction& inst)
 	return true;
 }
 
-// Object mode: the classes of the instruction's object arguments to `...`
-// (a call's `classes=<argument>:<classes>` items) or of a va_arg's object
-// (`classes=<classes>`), in a metadata group `open` may have begun.
-void Writer::argument_classes(const Instruction& inst, bool& open)
+// The instruction's scalar types, aggregate shapes and native object classes,
+// in a metadata group `open` may have begun.
+void Writer::argument_facts(const Instruction& inst, bool& open)
 {
-	if (!program_.object_facts || body_->argument_classes.empty())
+	if (body_->argument_facts.empty())
 		return;
 	const InstId id = static_cast<InstId>(&inst - body_->instructions.data());
-	for (const ArgumentClasses& entry : body_->argument_classes)
+	auto entry_at = std::lower_bound(body_->argument_facts.begin(), body_->argument_facts.end(), id,
+		[](const ArgumentFacts& entry, InstId instruction) { return entry.call < instruction; });
+	for (; entry_at != body_->argument_facts.end() && entry_at->call == id; ++entry_at)
 	{
-		if (entry.call != id)
-			continue;
-		key(open, MetadataKey::Classes);
-		if (inst.op == Opcode::Call)
+		const ArgumentFacts& entry = *entry_at;
+		if (entry.type() != TypeKind::Void)
 		{
+			key(open, MetadataKey::ArgumentType);
 			number(entry.argument);
 			out_.push_back(':');
+			type(Type::scalar(entry.type()));
 		}
-		append_object_classes(out_, entry.classes, 0);
+		if (entry.shape().element != AggregateElement::None)
+		{
+			key(open, inst.op == Opcode::Call ? MetadataKey::ArgumentShape : MetadataKey::Shape);
+			if (inst.op == Opcode::Call)
+			{
+				number(entry.argument);
+				out_.push_back(':');
+			}
+			append_aggregate_shape(out_, entry.shape());
+		}
+		if (entry.classes != 0 && program_.object_facts)
+		{
+			key(open, MetadataKey::Classes);
+			if (inst.op == Opcode::Call)
+			{
+				number(entry.argument);
+				out_.push_back(':');
+			}
+			append_object_classes(out_, entry.classes, 0);
+		}
 	}
 }
 
@@ -1037,7 +1058,7 @@ void Writer::write_call(const Instruction& inst)
 	{
 		item(open, MetadataKey::Elision, elision_copy_spelling());
 	}
-	argument_classes(inst, open);
+	argument_facts(inst, open);
 	if (open)
 		out_.push_back(']');
 	if ((inst.flags & IF_SIGNATURE) != 0)

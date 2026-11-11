@@ -7,6 +7,7 @@
 // selected by the registry's operation, never by its spelling.
 
 #include "sema/analyzer.h"
+#include "sema/variadic.h"
 
 #include <cstring>
 
@@ -572,13 +573,7 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 				return nullptr;
 			if (kind == Intrinsic::VaStart && i == 1)
 				continue;
-			const Type* type = operand->type;
-			if (type->kind == TypeKind::Array)
-				type = type->element;
-			else if (type->kind == TypeKind::Pointer)
-				type = type->element;
-			if (ClassOf(type) == nullptr || type->unqualified->entity->name == nullptr ||
-				std::strcmp(type->unqualified->entity->name->spelling, "__va_list_tag") != 0)
+			if (!IsVaList(operand->type))
 				error(expr.arguments[i]->location, "a variadic argument builtin's operand is no __builtin_va_list");
 		}
 		facts = new_facts(expr, void_type, ValueCategory::PRValue);

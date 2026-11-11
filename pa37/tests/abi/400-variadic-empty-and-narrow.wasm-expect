@@ -1,0 +1,1 @@
+{"source":true,"resource_headers":true,"link_flags":["-nostdlib"],"calls":[{"export":"observe","result":"17"}]}

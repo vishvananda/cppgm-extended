@@ -1,0 +1,16 @@
+#include <stdarg.h>
+struct Byte { unsigned char value; };
+struct Nested { struct Inner { int value; } inner; };
+struct Pointer { int *value; };
+struct Real { double value; };
+struct Result { long long first, second, third; };
+extern "C" __attribute__((noinline)) Result create(int seed, ...) {
+ va_list arguments; va_start(arguments, seed);
+ Byte first = va_arg(arguments, Byte); Byte second = va_arg(arguments, Byte);
+ Nested nested = va_arg(arguments, Nested); Pointer pointer = va_arg(arguments, Pointer);
+ Real real = va_arg(arguments, Real);
+ va_end(arguments);
+ Result result = {seed + first.value + second.value, nested.inner.value + *pointer.value,
+                  static_cast<long long>(real.value * 2)};
+ return result;
+}

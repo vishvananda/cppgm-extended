@@ -312,10 +312,12 @@ enum class MetadataKey : std::uint8_t
 	// Instruction metadata (`call ... [elision=copy, classes=1:sse]`,
 	// `va_arg ... [classes=sse]`, `index ... [projection=field]`).
 	Elision,
-	Projection
+	Projection,
+	ArgumentType,
+	ArgumentShape
 };
 
-const unsigned kMetadataKeyCount = static_cast<unsigned>(MetadataKey::Projection) + 1;
+const unsigned kMetadataKeyCount = static_cast<unsigned>(MetadataKey::ArgumentShape) + 1;
 
 inline bool is_boundary_key(MetadataKey key)
 {
@@ -449,7 +451,8 @@ inline const char* spelling(MetadataKey key)
 	static const char* const kKeys[kMetadataKeyCount] = { "arity", "effects", "unwind", "return", "repeatable",
 		"noalias_result", "result_classes", "result_shape", "storage", "section", "role", "linkage", "binding",
 		"object", "tls_for", "keep_alias", "prefer_local", "object_root", "force_inline", "inline_hint", "no_inline",
-		"replaceable", "cold", "pass", "alias", "object_bytes", "classes", "shape", "elision", "projection" };
+		"replaceable", "cold", "pass", "alias", "object_bytes", "classes", "shape", "elision", "projection",
+		"argument_type", "argument_shape" };
 	return kKeys[static_cast<unsigned>(key)];
 }
 

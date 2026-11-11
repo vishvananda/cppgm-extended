@@ -7,9 +7,10 @@ using namespace lowir;
 void Selector::call(const lowir::Instruction& inst)
 {
 	const lowir::Signature* signature = program_.call_boundary(inst);
-	if (signature == nullptr || signature->boundary.arity != ir_model::CAM_FIXED ||
-		signature->parameter_count != inst.extra_count)
-		throw WasmError("Wasm call requires a fixed typed boundary");
+	if (signature == nullptr ||
+		(signature->boundary.arity == ir_model::CAM_FIXED ? signature->parameter_count != inst.extra_count
+														  : signature->parameter_count > inst.extra_count))
+		throw WasmError("Wasm call requires a matching typed boundary");
 	if (builtin_call(inst, *signature))
 		return;
 	const uint32_t signature_id = static_cast<uint32_t>(signature - program_.signatures.data());
@@ -19,7 +20,7 @@ void Selector::call(const lowir::Instruction& inst)
 	// destination is the first ABI argument. Both use the SSA value's storage.
 	if (boundary.result.passing == Passing::Coerce || boundary.result.passing == Passing::Indirect)
 		address(Value::temp(inst.result));
-	for (uint32_t i = 0; i < inst.extra_count; ++i)
+	for (uint32_t i = 0; i < signature->parameter_count; ++i)
 	{
 		const AbiValue argument = boundary.parameters[i];
 		const Value source = body_.operands[inst.extra_first + i];
@@ -49,6 +50,8 @@ void Selector::call(const lowir::Instruction& inst)
 		else
 			value(source, argument.scalar);
 	}
+	if (signature->boundary.arity == ir_model::CAM_VARIADIC)
+		pack_variadic(inst, *signature);
 	if (inst.ops[0].is(ValueKind::Symbol))
 	{
 		const uint32_t function = module_.function_indices[inst.ops[0].index];

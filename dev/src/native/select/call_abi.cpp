@@ -293,25 +293,4 @@ void classify_call(
 		classify_one(params[i], classes != nullptr ? classes[i] : 0, layout);
 }
 
-void call_argument_types(const lowir::FunctionBody& body, const lowir::Instruction& inst, const lowir::Signature& sig,
-	const lowir::Parameter* params, std::vector<lowir::Type>& out)
-{
-	out.clear();
-	for (uint32_t a = 0; a < inst.extra_count; ++a)
-	{
-		const lowir::Value v = body.operands[inst.extra_first + a];
-		lowir::Type t = v.kind == lowir::ValueKind::Temp ? body.temps[v.index].type
-														 : lowir::Type::scalar(lowir::TypeKind::Ptr);
-		if (a < sig.parameter_count)
-			t = params[a].type;
-		else if (v.kind == lowir::ValueKind::Float)
-			t = lowir::Type::scalar(v.float_kind == lowir::TypeKind::F80 ? lowir::TypeKind::F80 : lowir::TypeKind::F64);
-		else if (v.kind == lowir::ValueKind::Integer)
-			t = lowir::Type::scalar(lowir::TypeKind::I64);
-		else if (v.kind == lowir::ValueKind::Slot)
-			t = body.slots[v.index].type;
-		out.push_back(t);
-	}
-}
-
 } // namespace native

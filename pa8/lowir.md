@@ -1666,6 +1666,30 @@ semantic boundary. That call signature may also carry call-boundary metadata
 such as `arity=variadic`, `effects=readonly`, `unwind=no` or `return=noreturn`
 when needed.
 
+A call may state `argument_type=<index>:<scalar-type>` for an unnamed variadic
+argument. Indexes count from zero across the complete argument list. For example:
+
+```text
+call void @log(2, 7, 9) [argument_type=1:i32, argument_type=2:i64]
+```
+
+The fact specifies the type passed across that boundary, including after a
+constant or copy replaces a typed operand. It is mandatory when the target's
+ABI needs a width different from the operand's default: an unannotated integer
+literal is `i64`, an ordinary floating literal is `f64`, an `f80` literal keeps
+that type, and other operands retain their represented storage type. A pointer
+uses the selected target's pointer width. The frontend performs language
+promotions before recording the passed type; backends do not infer it from a
+literal's value or reparse source.
+
+Each argument has at most one such annotation. It is invalid on a named or
+fixed-arity argument, outside the argument list, for `void` or object storage,
+or when its representation is incompatible with its operand. Integer width
+views remain valid; floating and pointer representations must agree. Aggregate
+operands already retain their storage size and alignment. Readers, writers and
+optimizers preserve this semantic boundary fact independently of native
+`classes` metadata. Copy it when cloning a call, and remove it with the call.
+
 `[elision=copy]` is a source-language permission on a direct `void` call with
 at least destination and source arguments.  It says that an optimizing stage
 may omit this copy/move construction and redirect the complete construction
@@ -1676,6 +1700,14 @@ cleanup exactly as written.  The permission is invalid on value-returning or
 indirect calls and does not classify an unmarked call by its symbol spelling.
 The C++ lowering states it by the rule in Facts The C++ Lowering States below;
 consuming it is optional.
+
+An aggregate unnamed argument states `argument_shape=<index>:<shape>` using
+the same layout vocabulary as a named parameter. A `va_arg` reading an object
+states `[shape=<shape>]`. These facts identify the represented source aggregate
+before ABI classification; they do not force a register or memory form. They
+are invalid on scalars, named/fixed arguments or incompatible instruction kinds.
+Each argument or result states at most one shape. Preserve the shape with the
+call or `va_arg` through serialization, cloning and optimization.
 
 ### Terminators
 
@@ -2127,6 +2159,10 @@ composition from completed semantic layout as specified in Aggregate Layout
 Facts. These facts do not choose the target's physical argument/result
 representation. Retain semantic by-address boundaries for classes non-trivial
 for calls; trivial object values may stay by value until backend ABI lowering.
+Record the same source composition in `argument_shape` for unnamed objects and
+in object-valued `va_arg`'s `shape`. Scalar unnamed arguments state
+`argument_type` after their language promotions when targeting wasm32, including
+literals: their passed width must survive constant propagation.
 
 `classes` and `result_classes` on native AMD64 profiles: a direct object parameter of at most 16
 bytes states `classes`, and a direct object result `result_classes`, exactly

@@ -159,7 +159,7 @@ lowir::Value FunctionLowering::va_list_tag(const syntax::Expr& list)
 	// A variadic argument list's __va_list_tag: a __builtin_va_list object
 	// (an array of one) at its address, a parameter of that type (adjusted
 	// to a pointer, 8.3.5p5) at the address it holds.
-	if (list.facts->type->kind == sema::TypeKind::Pointer)
+	if (!target_model::is_wasm(program_.target) && list.facts->type->kind == sema::TypeKind::Pointer)
 		return operand(list, ConversionContext::Operand).value;
 	return address(list);
 }
@@ -226,8 +226,9 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		const lowir::Value destination = list_tag(*expr.arguments[0]);
 		const lowir::Value source = list_tag(*expr.arguments[1]);
 		const sema::Type* list = expr.arguments[0]->facts->type;
-		while (list->kind == sema::TypeKind::Array || list->kind == sema::TypeKind::Pointer)
-			list = list->element;
+		if (!target_model::is_wasm(program_.target))
+			while (list->kind == sema::TypeKind::Array || list->kind == sema::TypeKind::Pointer)
+				list = list->element;
 		copy_object(list, source, destination, expr.location);
 		return RValue();
 	}

@@ -105,7 +105,9 @@ incompatible inputs; do not reinterpret existing x86-layout LowIR as wasm32.
 Source compilation and compilation through serialized LowIR must agree.
 Function pointers use table references, distinct from linear-memory
 addresses. Preserve null values, indirect-call signatures, aggregate copies,
-hidden result parameters and variadic argument layout. Empty objects, singleton
+hidden result parameters and variadic argument layout. Preserve the passed
+scalar types and aggregate shapes on unnamed arguments and `va_arg` so their
+layout survives constant propagation and call cloning. Empty objects, singleton
 records and other aggregates have different ABI forms; consume LowIR’s
 [`shape` facts](../pa8/lowir.md#aggregate-layout-facts) together with their size
 and alignment. An indirect by-value argument needs its own copy, and an object

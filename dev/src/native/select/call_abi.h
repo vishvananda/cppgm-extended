@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "lowir/program.h"
+#include "machine/call_arguments.h"
 #include "native/mir/mir.h"
 
 // The x86-64 System V classification of a LowIR call boundary, shared by
@@ -116,12 +117,7 @@ inline lowir::TypeKind part_type(const ArgPart& part)
 uint32_t value_bytes(lowir::Type type);
 uint32_t value_align(lowir::Type type);
 
-// The types call `inst` passes its arguments at under boundary `sig`: a
-// named parameter's type; past them (`...`) the argument's own, a long
-// double literal f80, another floating literal f64, an integer literal
-// i64, a slot its object, a symbol a pointer.
-void call_argument_types(const lowir::FunctionBody& body, const lowir::Instruction& inst, const lowir::Signature& sig,
-	const lowir::Parameter* params, std::vector<lowir::Type>& out);
+using machine::call_argument_types;
 
 // Classifies a boundary with argument types `params` (count n: the
 // boundary's parameters, then any variadic arguments) and result type;

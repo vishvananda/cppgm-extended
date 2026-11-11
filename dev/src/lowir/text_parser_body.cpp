@@ -472,16 +472,29 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Opcode keyword, I
 		inst.ops[0] = parse_value(builder, TypeKind::Void);
 		if (accept(TokenKind::LBracket))
 		{
-			// Host objects: [classes=<classes>] of the object read.
-			if (!program_.object_facts || !at_word(ir_model::spelling(MetadataKey::Classes)))
-				fail("invalid va_arg metadata");
-			advance();
-			expect(TokenKind::Equals, "=");
 			const InstId id = static_cast<InstId>(builder.body().instructions.size());
-			builder.body().argument_classes.push_back(
-				ArgumentClasses{ id, 0, parse_object_classes(Type::object(16, 3)) });
+			do
+			{
+				const bool shape = at_word(ir_model::spelling(MetadataKey::Shape));
+				if (!shape && (!program_.object_facts || !at_word(ir_model::spelling(MetadataKey::Classes))))
+					fail("invalid va_arg metadata");
+				advance();
+				expect(TokenKind::Equals, "=");
+				if (shape)
+				{
+					ir_model::AggregateShape value;
+					if (!at(TokenKind::Word) || !aggregate_shape_from_spelling(token().text, token().length, &value))
+						fail("invalid va_arg aggregate shape");
+					advance();
+					builder.body().argument_facts.push_back(ArgumentFacts{ id, 0, 0, value });
+				}
+				else
+					builder.body().argument_facts.push_back(
+						ArgumentFacts{ id, 0, parse_object_classes(Type::object(16, 3)) });
+			} while (accept(TokenKind::Comma));
 			expect(TokenKind::RBracket, "]");
 		}
+
 		return true;
 	default:
 		return false;
@@ -796,7 +809,10 @@ void Parser::parse_call(FunctionBuilder& builder, Instruction& inst)
 				inst.flags |= IF_COPY_ELISION;
 				continue;
 			}
-			if (!program_.object_facts || !at_word(ir_model::spelling(MetadataKey::Classes)))
+			const bool argument_type = at_word(ir_model::spelling(MetadataKey::ArgumentType));
+			const bool argument_shape = at_word(ir_model::spelling(MetadataKey::ArgumentShape));
+			if (!argument_type && !argument_shape &&
+				(!program_.object_facts || !at_word(ir_model::spelling(MetadataKey::Classes))))
 				fail("invalid call metadata");
 			advance();
 			expect(TokenKind::Equals, "=");
@@ -807,8 +823,27 @@ void Parser::parse_call(FunctionBuilder& builder, Instruction& inst)
 			expect(TokenKind::Colon, ":");
 			if (argument >= inst.extra_count)
 				fail("classes metadata names no argument");
-			const uint8_t classes = parse_object_classes(Type::object(16, 3));
-			builder.body().argument_classes.push_back(ArgumentClasses{ id, static_cast<uint32_t>(argument), classes });
+			if (argument_shape)
+			{
+				ir_model::AggregateShape shape;
+				if (!at(TokenKind::Word) || !aggregate_shape_from_spelling(token().text, token().length, &shape))
+					fail("invalid argument aggregate shape");
+				advance();
+				builder.body().argument_facts.push_back(ArgumentFacts{ id, static_cast<uint32_t>(argument), 0, shape });
+			}
+			else if (argument_type)
+			{
+				const Type type = parse_type();
+				if (type.is_void() || type.is_object())
+					fail("argument_type requires a scalar value type");
+				builder.body().argument_facts.push_back(
+					ArgumentFacts{ id, static_cast<uint32_t>(argument), 0, type.kind() });
+			}
+			else
+			{
+				const uint8_t classes = parse_object_classes(Type::object(16, 3));
+				builder.body().argument_facts.push_back(ArgumentFacts{ id, static_cast<uint32_t>(argument), classes });
+			}
 		} while (accept(TokenKind::Comma));
 		expect(TokenKind::RBracket, "]");
 	}

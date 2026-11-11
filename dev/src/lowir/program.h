@@ -90,19 +90,36 @@ inline NameId own_name(const Slot& slot)
 	return slot.kind == SlotKind::Plain ? slot.name : 0;
 }
 
-// Object mode (Program::object_facts; the call's or va_arg's
-// `[classes=<argument>:<classes>]`, `[classes=<classes>]` in the text):
-// the classification (ObjectClassBits, below) of an object argument that
-// call `call` passes as argument `argument` beyond its boundary's
-// parameters (to `...`), or of the object the va_arg instruction `call`
-// reads (argument 0), as an object-mode lowering states it. A body's
-// table is ordered by `call` (the selector searches it so); a pass that
-// copies such an instruction gives the copy its own entries.
-struct ArgumentClasses
+// Per-argument ABI facts, ordered by instruction id. Native object classes
+// describe a call's unnamed object argument or a va_arg result. A scalar
+// argument type preserves the passed view when optimizations replace a
+// typed value with an untyped literal. A shape describes an object before
+// target ABI classification. Copy these facts with their instruction.
+struct ArgumentFacts
 {
+	ArgumentFacts(InstId call, uint32_t argument, uint8_t classes, TypeKind type = TypeKind::Void)
+		: call(call), argument(argument), classes(classes), kind(static_cast<uint8_t>(type)), count(0)
+	{}
+	ArgumentFacts(InstId call, uint32_t argument, uint8_t classes, ir_model::AggregateShape shape)
+		: call(call), argument(argument), classes(classes), kind(0x80 | static_cast<uint8_t>(shape.element)),
+		  count(shape.count)
+	{}
+	TypeKind type() const { return (kind & 0x80) != 0 ? TypeKind::Void : static_cast<TypeKind>(kind); }
+	ir_model::AggregateShape shape() const
+	{
+		ir_model::AggregateShape result;
+		if ((kind & 0x80) != 0)
+		{
+			result.element = static_cast<ir_model::AggregateElement>(kind & 0x7f);
+			result.count = count;
+		}
+		return result;
+	}
 	InstId call;
 	uint32_t argument;
 	uint8_t classes;
+	uint8_t kind;
+	uint16_t count;
 };
 
 // The body of a function definition. `layout` is the block order; blocks
@@ -128,7 +145,7 @@ struct FunctionBody
 	std::vector<Value> operands;
 	std::vector<Literal> literals;
 	std::vector<DebugLocation> locations;
-	std::vector<ArgumentClasses> argument_classes;
+	std::vector<ArgumentFacts> argument_facts;
 	// Named code addresses. Their blocks have no phis: every indirect
 	// incoming edge must agree on the same machine state.
 	std::vector<CodeLabel> code_labels;

@@ -2132,10 +2132,12 @@ private:
 	std::vector<lowir::Value> scratch_;
 	// The arguments of the calls being lowered, innermost last (see call).
 	std::vector<lowir::Value> arguments_;
-	// Object mode: the psABI classes of class objects among them passed to
-	// `...` as their bytes (position in arguments_, classes), for the
-	// call's body.argument_classes.
-	std::vector<std::pair<size_t, uint8_t>> variadic_classes_;
+	// Per-argument ABI facts for `...`: native classes and the target's
+	// scalar type or aggregate shape, packed with the argument position.
+	// Published into the call's body.argument_facts.
+	std::vector<std::pair<size_t, uint32_t>> variadic_facts_;
+	void variadic_argument_fact(
+		uint8_t classes, lowir::TypeKind type, ir_model::AggregateShape shape = ir_model::AggregateShape());
 	// The left spines of the operator chains being lowered, and the
 	// targets of condition chains.
 	std::vector<const syntax::BinaryExpr*> spine_;

@@ -84,6 +84,12 @@ void Selector::instruction(const lowir::Instruction& inst)
 	case Opcode::Call:
 		call(inst);
 		return;
+	case Opcode::VaStart:
+		va_start(inst);
+		return;
+	case Opcode::VaArg:
+		va_arg(inst);
+		return;
 	case Opcode::Jump:
 		edge(current_block_, inst.ops[0].index);
 		return;

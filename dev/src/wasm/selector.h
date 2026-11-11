@@ -18,6 +18,9 @@ private:
 	void constant(lowir::Literal bits, lowir::Type type);
 	void instruction(const lowir::Instruction& inst);
 	void call(const lowir::Instruction& inst);
+	void pack_variadic(const lowir::Instruction& inst, const lowir::Signature& signature);
+	void va_start(const lowir::Instruction& inst);
+	void va_arg(const lowir::Instruction& inst);
 	bool builtin_call(const lowir::Instruction& inst, const lowir::Signature& signature);
 	void return_value(const lowir::Instruction& inst);
 	bool object_instruction(const lowir::Instruction& inst);
@@ -57,6 +60,10 @@ private:
 	std::vector<uint32_t> objects_;
 	std::vector<uint32_t> incoming_;
 	std::vector<uint32_t> call_areas_;
+	std::vector<uint32_t> variadic_areas_;
+	std::vector<uint32_t> variadic_copies_;
+	std::vector<lowir::Type> argument_types_;
+	uint32_t variadic_parameter_ = lowir::kNoId;
 	uint32_t hidden_result_ = lowir::kNoId;
 	uint32_t frame_ = lowir::kNoId;
 	uint32_t saved_stack_ = lowir::kNoId;

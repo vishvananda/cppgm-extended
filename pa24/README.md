@@ -373,7 +373,9 @@ PA10-PA23, including:
 - `select`, as a conditional move or branches, the `ctz` and `clz` bit scans and
   `sqrt`
 - supported variadic calls and `va_start` register-save state for GPR and XMM
-  arguments, including the caller-provided vector-register count
+  arguments, including the caller-provided vector-register count. Respect an
+  unnamed argument's `argument_type` passing view when selecting its ABI
+  locations, even when its source value has wider integer storage
 - structured vtable/global table data emitted by source-to-LowIR lowering
 - structured global alignment derived from typed data items; raw `zero` byte
   padding inside mixed data does not independently raise alignment

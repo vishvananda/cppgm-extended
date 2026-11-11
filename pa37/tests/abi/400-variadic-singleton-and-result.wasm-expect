@@ -1,0 +1,1 @@
+{"source":true,"units":["400-variadic-singleton-and-result.t.1"],"resource_headers":true,"link_flags":["-nostdlib"],"llvm_interop":true,"exports":["create"],"abi":{"create":{"params":["i32","i32","i32"],"results":[]}},"calls":[{"export":"observe","result":"17"}]}

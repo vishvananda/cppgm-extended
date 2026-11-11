@@ -1,0 +1,17 @@
+#include <stdarg.h>
+long long peek(va_list list) { return va_arg(list, long long); }
+extern "C" __attribute__((noinline)) long long scalar_sum(int tag, double prefix, ...) {
+ va_list arguments; va_start(arguments, prefix);
+ int first = va_arg(arguments, int);
+ va_list copy; va_copy(copy, arguments);
+ double second = va_arg(arguments, double);
+ double repeated = va_arg(copy, double);
+ long long preview = peek(arguments);
+ long long third = va_arg(arguments, long long);
+ int *pointer = va_arg(arguments, int*);
+ int last = va_arg(arguments, int);
+ va_end(copy); va_end(arguments);
+ if (second != repeated || third != preview) return -1;
+ return first + tag + static_cast<int>(prefix * 2) + static_cast<int>(second * 2) + third + *pointer + last;
+}
+extern "C" __attribute__((noinline)) int empty_arguments(int value, ...) { return value; }

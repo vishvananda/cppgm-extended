@@ -11,8 +11,6 @@ void function_types(const lowir::Program& program, Module& module)
 	std::map<std::vector<uint8_t>, uint32_t> known;
 	for (const lowir::Signature& source : program.signatures)
 	{
-		if (source.boundary.arity != ir_model::CAM_FIXED)
-			throw WasmError("Wasm variadic signatures require ABI legalization");
 		Signature signature;
 		Boundary boundary;
 		std::vector<uint8_t> key;
@@ -31,6 +29,8 @@ void function_types(const lowir::Program& program, Module& module)
 			if (argument.passing == Passing::Expand)
 				signature.parameters.push_back(value_type(argument.scalar));
 		}
+		if (source.boundary.arity == ir_model::CAM_VARIADIC)
+			signature.parameters.push_back(ValueType::I32);
 		signature.result = boundary.result.passing == Passing::Indirect || boundary.result.passing == Passing::Ignore
 			? ValueType::Void
 			: value_type(boundary.result.scalar);

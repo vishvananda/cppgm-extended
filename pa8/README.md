@@ -91,7 +91,12 @@ for another target comes later and is not required to represent its facts.
 Aggregate boundaries can carry the target-neutral `shape=` and
 `result_shape=` layout facts described in [LowIR](lowir.md#aggregate-layout-facts).
 Preserve them independently of native eightbyte classes; PA37 consumes them
-when choosing the wasm32 calling convention.
+when choosing the wasm32 calling convention. Unnamed variadic call arguments
+can state `argument_type=<index>:<scalar-type>` to retain their passed type even
+when their value is a literal. Read, validate and preserve this fact; selecting
+the target's argument-buffer layout belongs to its backend. Unnamed objects
+state `argument_shape=<index>:<shape>` and object-valued `va_arg` uses `shape=`.
+These retain the same layout facts as named parameters.
 
 Accept helper-only units, including declarations and globals without an entry
 function. An entry is needed when the supplied backend builds an executable,

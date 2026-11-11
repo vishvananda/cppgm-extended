@@ -131,3 +131,23 @@ Still unmeasured: cppgm Wasm correctness/performance, runtime archive
 relocation coverage, mixed-compiler C++ ABI/EH execution, WASIp1 startup,
 macOS dependency setup, export behavior for the future PA, and calibrated
 quality/performance limits. They are explicit implementation milestones.
+
+## SDK 34 variadic checks
+
+Both LLVM/cppgm producer directions now exercise scalar varargs, coerced
+singleton records, indirect records, binary128, argument copies and hidden
+result storage through both linkers. SDK 34 uses at least four bytes per
+variadic slot. Its [pinned frontend ABI implementation](https://github.com/llvm/llvm-project/blob/895aa2c896ada719451be2e3673c83da8ddf1141/clang/lib/CodeGen/Targets/WebAssembly.cpp)
+classifies records before packing; a same-sized record and wide scalar need
+not have the same buffer representation.
+
+A reference limitation is isolated outside the student export. SDK 34 omits an
+empty record at the call but advances its argument cursor when reading one.
+An all-LLVM reducer with an empty read before later arguments returns 48 where
+the source calculation requires 89. Raw source, LLVM IR and execution output
+are retained under `cppgm-wasm32-evidence/varargs-empty-reference-only.*` and
+`varargs-aggregate-{caller,provider}.cpp`. The mixed-producer aggregate test
+puts its empty read last to avoid relying on that reference defect. A separate
+cppgm behavior test checks empty records between narrow values without consuming
+a slot. This does not prescribe the reference compiler's erroneous cursor
+advance as a student requirement.

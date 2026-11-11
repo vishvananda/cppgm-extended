@@ -1,0 +1,19 @@
+#include <stdarg.h>
+struct Pair { int a; double b; };
+struct __attribute__((packed)) Packed { unsigned char a; long long b; };
+struct Empty {};
+struct alignas(32) Wide { long long words[3]; };
+extern "C" __attribute__((noinline)) int aggregate_sum(int seed, ...) {
+ va_list arguments; va_start(arguments, seed);
+ Pair pair = va_arg(arguments, Pair);
+ Packed packed = va_arg(arguments, Packed);
+ Wide wide = va_arg(arguments, Wide);
+ long double quad = va_arg(arguments, long double);
+ int tail = va_arg(arguments, int);
+ Empty empty = va_arg(arguments, Empty);
+ unsigned long long bits[2] = {};
+ __builtin_memcpy(bits, &quad, sizeof quad);
+ va_end(arguments);
+ if (bits[0] != 0x1000 || bits[1] != 0x3fff000000000000ULL) return -1;
+ return seed + pair.a + static_cast<int>(pair.b * 2) + packed.a + packed.b + wide.words[0] + wide.words[1] + wide.words[2] + tail + sizeof(empty);
+}

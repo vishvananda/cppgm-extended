@@ -621,18 +621,18 @@ InstId append_instruction(FunctionBody& body, const Instruction& inst)
 	return static_cast<InstId>(body.instructions.size() - 1);
 }
 
-void copy_argument_classes(FunctionBody& body, const FunctionBody& from, InstId source, InstId copy)
+void copy_argument_facts(FunctionBody& body, const FunctionBody& from, InstId source, InstId copy)
 {
 	// (Indexes: `from` may be `body`.)
-	const std::vector<ArgumentClasses>& table = from.argument_classes;
+	const std::vector<ArgumentFacts>& table = from.argument_facts;
 	size_t k = static_cast<size_t>(std::lower_bound(table.begin(), table.end(), source,
-									   [](const ArgumentClasses& entry, InstId call) { return entry.call < call; }) -
+									   [](const ArgumentFacts& entry, InstId call) { return entry.call < call; }) -
 		table.begin());
-	for (; k < from.argument_classes.size() && from.argument_classes[k].call == source; ++k)
+	for (; k < from.argument_facts.size() && from.argument_facts[k].call == source; ++k)
 	{
-		ArgumentClasses entry = from.argument_classes[k];
+		ArgumentFacts entry = from.argument_facts[k];
 		entry.call = copy;
-		body.argument_classes.push_back(entry);
+		body.argument_facts.push_back(entry);
 	}
 }
 
@@ -944,18 +944,18 @@ void compact_body(Program& program, FunctionBody& body)
 	for (CodeLabel& label : body.code_labels)
 		label.block = block_map[label.block];
 	out.locations.swap(body.locations);
-	out.argument_classes.swap(body.argument_classes);
-	for (ArgumentClasses& classes : out.argument_classes)
+	out.argument_facts.swap(body.argument_facts);
+	for (ArgumentFacts& classes : out.argument_facts)
 		classes.call = classes.call < inst_map.size() ? inst_map[classes.call] : kNoId;
-	std::vector<ArgumentClasses> kept;
-	for (const ArgumentClasses& classes : out.argument_classes)
+	std::vector<ArgumentFacts> kept;
+	for (const ArgumentFacts& classes : out.argument_facts)
 		if (classes.call != kNoId)
 			kept.push_back(classes);
 	// Renumbered in layout order (an inlined or cloned call may now come
 	// before older ones): back in instruction order.
 	std::stable_sort(
-		kept.begin(), kept.end(), [](const ArgumentClasses& a, const ArgumentClasses& b) { return a.call < b.call; });
-	out.argument_classes.swap(kept);
+		kept.begin(), kept.end(), [](const ArgumentFacts& a, const ArgumentFacts& b) { return a.call < b.call; });
+	out.argument_facts.swap(kept);
 	// Slots nothing names any more are dropped; their storage was unused.
 	FlatMap<NameId, uint8_t, NameHash> marks;
 	unique_names(out.temps, parameters, marks);
@@ -969,7 +969,7 @@ void compact_body(Program& program, FunctionBody& body)
 	body.operands.swap(out.operands);
 	body.literals.swap(out.literals);
 	body.locations.swap(out.locations);
-	body.argument_classes.swap(out.argument_classes);
+	body.argument_facts.swap(out.argument_facts);
 }
 
 bool constant_contents(const Program& program, SymbolId symbol, const std::vector<uint8_t>* unwritten)

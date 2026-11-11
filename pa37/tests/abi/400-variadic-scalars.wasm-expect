@@ -1,0 +1,1 @@
+{"source":true,"units":["400-variadic-scalars.t.1"],"resource_headers":true,"link_flags":["-nostdlib"],"llvm_interop":true,"exports":["scalar_sum","empty_arguments"],"abi":{"scalar_sum":{"params":["i32","f64","i32"],"results":["i64"]},"empty_arguments":{"params":["i32","i32"],"results":["i32"]}},"calls":[{"export":"observe","result":"17"}]}

@@ -32,11 +32,16 @@ arguments. Indirect by-value arguments belong to the caller and need a copy
 when the callee could modify them. Use LowIR's typed layout and shape facts;
 byte size alone cannot distinguish these cases.
 
-Apply default argument promotions to variadic arguments. Pack those arguments
-in source order into an appropriately aligned, caller-owned buffer and pass
-its address as the final Wasm parameter. The callee may modify that buffer.
-A `va_list` advances through this target layout, independently of native
-register-save areas.
+Apply default argument promotions to variadic arguments, then classify their
+typed values. Ignore empty records; coerce singleton records like their scalar
+member. Copy other records to caller-owned storage and pack a pointer to that
+copy. Wide scalar values retain their direct bits. Pack the resulting arguments
+in source order into a caller-owned buffer, with slots of at least four bytes
+and their required alignment, then pass its address as the final Wasm parameter.
+A `va_list` advances through this layout, independently of native register-save
+areas. Preserve LowIR's `argument_type`, `argument_shape` and object `va_arg`
+`shape` facts so optimization cannot lose a type or infer a calling convention
+from object size alone.
 
 Pointers to data address linear memory. Function pointers identify table
 entries; index zero is null. Table entries, function indices and type indices

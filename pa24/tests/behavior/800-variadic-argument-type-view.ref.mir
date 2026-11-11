@@ -1,0 +1,60 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @sum
+  abi
+    param %tag -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 208
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $list -> [rbp-24] : obj<24x8>
+    temp %va-register-save -> [rbp-208] : obj<176x16>
+
+  block ^entry
+    store.i64 [rbp-208], rdi
+    store.i64 [rbp-200], rsi
+    store.i64 [rbp-192], rdx
+    store.i64 [rbp-184], rcx
+    store.i64 [rbp-176], r8
+    store.i64 [rbp-168], r9
+    fmov.i128 [rbp-160], xmm0
+    fmov.i128 [rbp-144], xmm1
+    fmov.i128 [rbp-128], xmm2
+    fmov.i128 [rbp-112], xmm3
+    fmov.i128 [rbp-96], xmm4
+    fmov.i128 [rbp-80], xmm5
+    fmov.i128 [rbp-64], xmm6
+    fmov.i128 [rbp-48], xmm7
+    va_start [rbp-24], [rbp-208]
+    va_arg.i64 r8, [rbp-24]
+    va_arg.i64 r9, [rbp-24]
+    add r8, r9
+    ret r8
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rdi, 0
+    mov rsi, 3
+    mov rdx, 7
+    mov rax, 0
+    call @sum [args=(rax,rdx,rsi,rdi), variadic]
+    cmp.i64 rax, 10
+    mov r11, 0
+    mov r8, 1
+    cmove r8, r11
+    ret r8

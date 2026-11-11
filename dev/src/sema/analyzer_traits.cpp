@@ -5,6 +5,7 @@
 // (an invalid one is the trait's false, not an error).
 
 #include "sema/analyzer.h"
+#include "sema/variadic.h"
 
 #include <algorithm>
 #include <cstring>
@@ -179,11 +180,7 @@ ExprFacts* Analyzer::builtin_trait(const syntax::BuiltinTraitExpr& expr, Scope* 
 		const Type* type = type_id(*expr.types[0], scope);
 		if (list == nullptr || type == nullptr)
 			return nullptr;
-		const Type* tag = list->type->kind == TypeKind::Array || list->type->kind == TypeKind::Pointer
-			? list->type->element
-			: list->type;
-		if (ClassOf(tag) == nullptr || tag->unqualified->entity->name == nullptr ||
-			std::strcmp(tag->unqualified->entity->name->spelling, "__va_list_tag") != 0)
+		if (!IsVaList(list->type))
 			error(expr.operand->location, "a variadic argument builtin's operand is no __builtin_va_list");
 		uint64_t size = 0, alignment = 0;
 		if (template_depth_ == 0 && !IsScalar(type->unqualified) &&

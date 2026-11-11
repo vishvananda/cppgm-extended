@@ -169,7 +169,7 @@ rvalue-instruction:
 	KW_ATOMIC_EXCHANGE type value OP_COMMA value OP_COMMA integer-literal
 	KW_ATOMIC_COMPARE_EXCHANGE type value OP_COMMA value OP_COMMA value
 	OP_COMMA integer-literal OP_COMMA integer-literal
-	KW_VA_ARG type value
+	KW_VA_ARG type value parameter-metadata?
 	KW_STACK_ALLOC value
 	KW_CALL type callee OP_LPAREN argument-list OP_RPAREN call-metadata? call-signature?
 	KW_EXCEPTION type
@@ -197,7 +197,12 @@ call-void-instruction:
 	KW_CALL KW_VOID callee OP_LPAREN argument-list OP_RPAREN call-metadata? call-signature?
 
 call-metadata:
-	OP_LSQUARE TT_IDENTIFIER OP_ASS TT_IDENTIFIER OP_RSQUARE
+	OP_LSQUARE call-metadata-item (OP_COMMA call-metadata-item)* OP_RSQUARE
+
+call-metadata-item:
+	TT_IDENTIFIER OP_ASS TT_IDENTIFIER
+	TT_IDENTIFIER OP_ASS integer-literal OP_COLON type
+	TT_IDENTIFIER OP_ASS integer-literal OP_COLON TT_IDENTIFIER
 
 call-signature:
 	KW_AS OP_LPAREN parameter-list OP_RPAREN OP_ARROW type function-metadata?

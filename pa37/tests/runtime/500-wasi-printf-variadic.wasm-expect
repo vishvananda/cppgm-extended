@@ -1,0 +1,1 @@
+{"source":true,"wasi":true,"target":"wasm32-wasip1","llvm_interop":true,"commands":[{"exit":7,"stdout":"-7 4294967298 2.50 0.25 wasm\n"}],"libraries":["c-printscan-long-double"]}

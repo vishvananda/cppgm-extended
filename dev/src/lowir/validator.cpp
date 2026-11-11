@@ -1,4 +1,5 @@
 #include "lowir/validator.h"
+#include "lowir/argument_facts.h"
 #include "lowir/assembly_validation.h"
 #include "lowir/assembly.h"
 
@@ -13,16 +14,6 @@ namespace {
 const uint32_t kPlacedBlock = 1;
 const uint32_t kHandlerBlock = 2;
 const uint32_t kCodeAddress = 4;
-
-bool valid_shape(Type type, ir_model::AggregateShape shape)
-{
-	using ir_model::AggregateElement;
-	if (static_cast<unsigned>(shape.element) >= ir_model::kAggregateElementCount || shape.reserved != 0)
-		return false;
-	if (shape.element == AggregateElement::None)
-		return shape.count == 0;
-	return type.is_object() && ((shape.element > AggregateElement::Mixed) == (shape.count != 0));
-}
 
 bool cpu_query_declaration(const Program& program, const Symbol& symbol)
 {
@@ -530,6 +521,8 @@ bool Validator::check_function(SymbolId symbol, const FunctionBody* assembly_bod
 		}
 	}
 	inst_ = kNoId;
+	if (const char* error = validate_argument_facts(program_, *body_, inst_))
+		return fail(error);
 	return true;
 }
 
@@ -581,12 +574,12 @@ bool Validator::check_links()
 			return fail("nonnull return metadata requires a pointer result");
 		if (boundary.noalias_result && !signature.result.is_pointer())
 			return fail("noalias_result metadata requires a pointer result");
-		if (!valid_shape(signature.result, boundary.result_shape))
+		if (!valid_aggregate_shape(signature.result, boundary.result_shape))
 			return fail("invalid aggregate result shape");
 		const Parameter* parameters = program_.parameters_of(signature);
 		for (uint32_t i = 0; i < signature.parameter_count; ++i)
 		{
-			if (!valid_shape(parameters[i].type, parameters[i].shape))
+			if (!valid_aggregate_shape(parameters[i].type, parameters[i].shape))
 				return fail("invalid aggregate parameter shape", parameters[i].name);
 			if (parameters[i].pass >= ir_model::kParamPassingModeCount ||
 				parameters[i].alias >= ir_model::kParamAliasModeCount)
@@ -1033,7 +1026,7 @@ bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId bl
 		// i128 (psABI 3.5.7; the toolchain's own LowIR, see
 		// Program::object_facts).
 		if (!is_va_arg_type(inst.type) &&
-			!(program_.object_facts &&
+			!((program_.object_facts || target_model::is_wasm(program_.target)) &&
 				(inst.type.is_object() || inst.type.kind() == TypeKind::F80 || inst.type.kind() == TypeKind::I128)))
 			return fail("va_arg scalar type is not supported");
 		return true;

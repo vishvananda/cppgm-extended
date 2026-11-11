@@ -75,6 +75,14 @@ sub archive_inputs {
 }
 
 my @runtime_libraries;
+for my $library (@{$expect->{libraries} // []}) {
+    my $clang = $ENV{CPPGM_WASM_CLANG} // 'wasm-ref-clang++';
+    my ($status, $stdout, $stderr) = command('library-path', $clang, '--target=wasm32-wasip1',
+        "-print-file-name=lib$library.a");
+    $stdout =~ s/\s+\z//;
+    die "$test: supplied library lookup failed: $stdout$stderr\n" if $status || !-f $stdout;
+    push @runtime_libraries, $stdout;
+}
 if ($expect->{runtime}) {
     my $clang = $ENV{CPPGM_WASM_CLANG} // 'wasm-ref-clang++';
     for my $query ('--print-libgcc-file-name', '-print-file-name=libc.a') {
@@ -86,20 +94,22 @@ if ($expect->{runtime}) {
 }
 
 my @target_flags;
-if ($expect->{wasi}) {
-    die "$test: WASI SDK checks require the wasm32-wasip1 target\n"
-        unless ($expect->{target} // '') eq 'wasm32-wasip1';
+if ($expect->{wasi} || $expect->{resource_headers}) {
     my $clang = $ENV{CPPGM_WASM_CLANG} // 'wasm-ref-clang++';
-    my ($status, $library, $stderr) = command('wasi-sysroot', $clang,
-        '--target=wasm32-wasip1', '-print-file-name=libc.a');
-    $library =~ s/\s+\z//;
-    die "$test: WASI libc lookup failed: $library$stderr\n" if $status || !-f $library;
-    my $sysroot = dirname(dirname(dirname($library)));
-    my ($resource_status, $resource, $resource_error) = command('wasi-resource', $clang, '-print-resource-dir');
+    if ($expect->{wasi}) {
+        die "$test: WASI SDK checks require the wasm32-wasip1 target\n"
+            unless ($expect->{target} // '') eq 'wasm32-wasip1';
+        my ($status, $library, $stderr) = command('wasi-sysroot', $clang,
+            '--target=wasm32-wasip1', '-print-file-name=libc.a');
+        $library =~ s/\s+\z//;
+        die "$test: WASI libc lookup failed: $library$stderr\n" if $status || !-f $library;
+        my $sysroot = dirname(dirname(dirname($library)));
+        push @target_flags, '--sysroot', $sysroot;
+    }
+    my ($status, $resource, $stderr) = command('target-resource', $clang, '-print-resource-dir');
     $resource =~ s/\s+\z//;
-    die "$test: target resource lookup failed: $resource$resource_error\n"
-        if $resource_status || !-d $resource;
-    @target_flags = ('--sysroot', $sysroot, '-resource-dir', $resource);
+    die "$test: target resource lookup failed: $resource$stderr\n" if $status || !-d $resource;
+    push @target_flags, '-resource-dir', $resource;
 }
 
 for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
@@ -267,7 +277,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                 '--invoke', $call->{export}, $run_module, @{$call->{args} // []});
             $stdout =~ s/\s+\z//;
             die "$test: $call->{export} failed ($status): $stdout$stderr\n" if $status;
-            die "$test: $call->{export} expected $call->{result}, got '$stdout'\n"
+            die "$test: $call->{export} expected $call->{result}, got '$stdout' from $run_module\n"
                 if $stdout ne "$call->{result}";
         }
     }

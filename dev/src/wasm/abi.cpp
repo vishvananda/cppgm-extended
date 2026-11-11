@@ -1,5 +1,7 @@
 #include "wasm/abi.h"
 
+#include <algorithm>
+
 namespace wasm {
 
 namespace {
@@ -61,6 +63,22 @@ AbiValue classify_value(lowir::Type type, ir_model::AggregateShape shape, lowir:
 			return AbiValue{ Passing::Coerce, scalar };
 	}
 	return AbiValue{ Passing::Indirect, pointer };
+}
+
+lowir::Type variadic_storage(lowir::Type type, AbiValue passing)
+{
+	if (passing.passing == Passing::Ignore)
+		return lowir::Type::scalar(lowir::TypeKind::Void);
+	if (passing.passing == Passing::Indirect || passing.passing == Passing::Coerce)
+		type = passing.scalar;
+	const uint64_t bytes = std::max(uint64_t(4), lowir::storage_bytes(type));
+	if (bytes > UINT32_MAX - 3)
+		throw WasmError("Wasm variadic argument exceeds the 32-bit address range");
+	const uint32_t alignment = std::max(4u, lowir::data_alignment(type));
+	uint8_t log = 0;
+	while ((uint32_t(1) << log) < alignment)
+		++log;
+	return lowir::Type::object(static_cast<uint32_t>((bytes + 3) & ~uint64_t(3)), log);
 }
 
 } // namespace wasm

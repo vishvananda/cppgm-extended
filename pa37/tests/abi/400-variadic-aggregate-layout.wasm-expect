@@ -1,0 +1,1 @@
+{"source":true,"units":["400-variadic-aggregate-layout.t.1"],"resource_headers":true,"link_flags":["-nostdlib"],"llvm_interop":true,"calls":[{"export":"observe","result":"17"}]}

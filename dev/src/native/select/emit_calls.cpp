@@ -68,11 +68,11 @@ uint8_t FunctionSelector::argument_classes(uint32_t inst, uint32_t argument, con
 {
 	if (sig != nullptr && argument < sig->parameter_count)
 		return program_.parameters_of(*sig)[argument].classes;
-	const std::vector<lowir::ArgumentClasses>& table = body_->argument_classes;
-	std::vector<lowir::ArgumentClasses>::const_iterator it = std::lower_bound(table.begin(), table.end(), inst,
-		[](const lowir::ArgumentClasses& entry, uint32_t call) { return entry.call < call; });
+	const std::vector<lowir::ArgumentFacts>& table = body_->argument_facts;
+	std::vector<lowir::ArgumentFacts>::const_iterator it = std::lower_bound(table.begin(), table.end(), inst,
+		[](const lowir::ArgumentFacts& entry, uint32_t call) { return entry.call < call; });
 	for (; it != table.end() && it->call == inst; ++it)
-		if (it->argument == argument)
+		if (it->argument == argument && it->classes != 0)
 			return it->classes;
 	return 0;
 }

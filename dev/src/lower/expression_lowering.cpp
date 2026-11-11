@@ -1431,7 +1431,8 @@ RValue FunctionLowering::builtin_trait_value(const syntax::BuiltinTraitExpr& tra
 		throw LoweringError(trait.location, "an unfolded type trait");
 	const lowir::Type type = lowering_.storage_type(facts->type);
 	const sema::ClassEntity* entity = sema::ClassOf(facts->type);
-	if (entity != nullptr && !(lowering_.object_mode() && lowering_.passed_directly(entity)))
+	if (entity != nullptr &&
+		!((lowering_.object_mode() || target_model::is_wasm(program_.target)) && lowering_.passed_directly(entity)))
 	{
 		// A class object a caller passes to `...` through the address of
 		// its copy (the course's form; see arguments): that address, then
@@ -1454,10 +1455,13 @@ RValue FunctionLowering::builtin_trait_value(const syntax::BuiltinTraitExpr& tra
 	// The classes of a parameter of its type (object mode, psABI 3.2.3): a
 	// class object's as its bytes, a member function pointer's, a binary16
 	// or binary128 value's.
-	const uint8_t classes = lowering_.object_classes(facts->type);
-	if (classes != 0)
-		builder_.body().argument_classes.push_back(
-			lowir::ArgumentClasses{ builder_.last_instruction(builder_.insertion_block()), 0, classes });
+	const uint8_t classes = lowering_.object_mode() ? lowering_.object_classes(facts->type) : 0;
+	const lowir::InstId instruction = builder_.last_instruction(builder_.insertion_block());
+	if (target_model::is_wasm(program_.target) && read.is_object())
+		builder_.body().argument_facts.push_back(
+			lowir::ArgumentFacts{ instruction, 0, classes, lowering_.aggregate_shape(facts->type) });
+	else if (classes != 0)
+		builder_.body().argument_facts.push_back(lowir::ArgumentFacts{ instruction, 0, classes });
 	if (!wide)
 		return value;
 	Place bytes = Place();
@@ -2662,6 +2666,19 @@ RValue FunctionLowering::operator_call(const syntax::Expr& expr, lowir::Value de
 	return value;
 }
 
+void FunctionLowering::variadic_argument_fact(uint8_t classes, lowir::TypeKind type, ir_model::AggregateShape shape)
+{
+	if (classes == 0 && type == lowir::TypeKind::Void && shape.element == ir_model::AggregateElement::None)
+		return;
+	while (!variadic_facts_.empty() && variadic_facts_.back().first >= arguments_.size())
+		variadic_facts_.pop_back();
+	const uint8_t kind = shape.element == ir_model::AggregateElement::None
+		? static_cast<uint8_t>(type)
+		: uint8_t(0x80 | static_cast<uint8_t>(shape.element));
+	variadic_facts_.push_back(
+		std::make_pair(arguments_.size(), uint32_t(classes) | (uint32_t(kind) << 8) | (uint32_t(shape.count) << 16)));
+}
+
 void FunctionLowering::arguments(const syntax::Slice<syntax::Expr*>& written, const sema::Type* function,
 	const sema::FunctionEntity* callee, uint32_t location)
 {
@@ -2763,11 +2780,11 @@ void FunctionLowering::push_converted(
 		temporary.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::Arg, lowering_.storage_type(type)));
 		const lowir::Value object = address_of(temporary);
 		initialize_from(argument, conversion, object, argument.location);
-		if (lowering_.object_mode() && lowering_.passed_directly(sema::ClassOf(type)))
+		if ((lowering_.object_mode() || target_model::is_wasm(program_.target)) &&
+			lowering_.passed_directly(sema::ClassOf(type)))
 		{
-			while (!variadic_classes_.empty() && variadic_classes_.back().first >= arguments_.size())
-				variadic_classes_.pop_back();
-			variadic_classes_.push_back(std::make_pair(arguments_.size(), lowering_.object_classes(type)));
+			variadic_argument_fact(lowering_.object_mode() ? lowering_.object_classes(type) : 0, lowir::TypeKind::Void,
+				target_model::is_wasm(program_.target) ? lowering_.aggregate_shape(type) : ir_model::AggregateShape());
 			arguments_.push_back(temporary.storage);
 		}
 		else
@@ -2790,12 +2807,18 @@ void FunctionLowering::push_converted(
 					  ? conversion->target
 					  : WithoutParentheses(&argument)->facts->type)
 			: 0;
-		if (classes != 0)
-		{
-			while (!variadic_classes_.empty() && variadic_classes_.back().first >= arguments_.size())
-				variadic_classes_.pop_back();
-			variadic_classes_.push_back(std::make_pair(arguments_.size(), classes));
-		}
+		const lowir::TypeKind passed_type = parameter == nullptr && target_model::is_wasm(program_.target) &&
+				!value.type.is_object()
+			? value.type.kind()
+			: lowir::TypeKind::Void;
+		ir_model::AggregateShape passed_shape;
+		if (parameter == nullptr && target_model::is_wasm(program_.target) && value.type.is_object())
+			passed_shape = lowering_.aggregate_shape(conversion != nullptr && conversion->target != nullptr
+					? conversion->target
+					: WithoutParentheses(&argument)->facts->type);
+		if (classes != 0 || passed_type != lowir::TypeKind::Void ||
+			passed_shape.element != ir_model::AggregateElement::None)
+			variadic_argument_fact(classes, passed_type, passed_shape);
 		// An i128 (a member function pointer, an __int128) passed to `...`
 		// crosses as an object of its bytes, as such a parameter does (a
 		// literal argument there being an i64; object mode).

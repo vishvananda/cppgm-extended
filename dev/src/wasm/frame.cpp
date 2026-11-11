@@ -1,6 +1,7 @@
 #include "wasm/selector.h"
 
 #include <algorithm>
+#include "machine/call_arguments.h"
 
 namespace wasm {
 
@@ -19,6 +20,8 @@ void Selector::prepare_locals()
 		if (parameter.passing == Passing::Expand)
 			add_local(value_type(parameter.scalar));
 	}
+	if (signature_.boundary.arity == ir_model::CAM_VARIADIC)
+		variadic_parameter_ = add_local(ValueType::I32);
 	out_.parameter_count = static_cast<uint32_t>(out_.locals.size());
 	locals_.resize(body_.temps.size(), kNoId);
 	incoming_.resize(body_.parameter_count, kNoId);
@@ -95,6 +98,44 @@ void Selector::prepare_frame()
 			for (uint32_t p = 0; p < signature->parameter_count; ++p)
 				if (boundary.parameters[p].passing == Passing::Indirect)
 					call_areas_[inst.extra_first + p] = reserve(parameters[p].type);
+			if (signature->boundary.arity == ir_model::CAM_VARIADIC && inst.extra_count > signature->parameter_count)
+			{
+				if (variadic_areas_.empty())
+				{
+					variadic_areas_.resize(body_.instructions.size(), kNoId);
+					variadic_copies_.resize(body_.operands.size(), kNoId);
+				}
+				machine::call_argument_types(body_, inst, *signature, parameters, argument_types_);
+				uint32_t maximum = 4;
+				for (uint32_t p = signature->parameter_count; p < inst.extra_count; ++p)
+				{
+					const Type type = argument_types_[p];
+					const auto passing = classify_value(
+						type, machine::argument_shape(body_, inst, p), program_.pointer_type());
+					if (passing.passing == Passing::Ignore)
+						continue;
+					maximum = std::max(maximum, data_alignment(variadic_storage(type, passing)));
+					if (passing.passing == Passing::Indirect)
+						variadic_copies_[inst.extra_first + p] = reserve(type);
+				}
+				uint32_t log = 0;
+				while ((uint32_t(1) << log) < maximum)
+					++log;
+				for (uint32_t p = signature->parameter_count; p < inst.extra_count; ++p)
+				{
+					const Type type = argument_types_[p];
+					const auto passing = classify_value(
+						type, machine::argument_shape(body_, inst, p), program_.pointer_type());
+					if (passing.passing == Passing::Ignore)
+						continue;
+					const Type storage = variadic_storage(type, passing);
+					const bool first = variadic_areas_[i] == kNoId;
+					const uint32_t offset = reserve(first ? Type::object(storage.bytes, log) : storage);
+					call_areas_[inst.extra_first + p] = offset;
+					if (first)
+						variadic_areas_[i] = offset;
+				}
+			}
 		}
 	out_.frame_bytes = static_cast<uint32_t>((bytes + 15) & ~uint64_t(15));
 	if (out_.frame_bytes == 0 && !dynamic)

@@ -439,6 +439,8 @@ void FunctionSelector::prepass_block(uint32_t b)
 				if (!(sig && a < sig->parameter_count) && (v.kind == ValueKind::Integer || v.kind == ValueKind::Float))
 					emission = false;
 			}
+			if (!body.argument_facts.empty())
+				machine::apply_argument_types(body, inst, arg_types_);
 			if (!emission)
 				classify_arguments(id, sig, call_layouts_.scratch);
 			const CallLayout& layout = emission ? emission_layout(id, sig, true) : call_layouts_.scratch;
