@@ -260,25 +260,81 @@ private:
 	bool select_identity(const Instruction& phi, BlockId block, Value& out) const;
 	bool select_phi(BlockId block, InstId prev, InstId id);
 	void select_equal_arm(Instruction& inst);
+	// After appending temporaries or instructions: the per-temporary and
+	// per-instruction tables cover them.
+	void grow_facts()
+	{
+		repl_.resize(body_.temps.size(), Value::none());
+		uses_.resize(body_.temps.size(), 0);
+		nonzero_.resize(body_.temps.size(), 0);
+		equal_.resize(body_.temps.size(), Value::none());
+		ordinal_.resize(body_.instructions.size(), 0);
+	}
 	bool merge_diamonds();
 	bool known_nonzero(Value v) const
 	{
-		if (v.is(ValueKind::Temp) && v.index < nonzero_.size() && nonzero_[v.index] != 0)
-			return true;
-		if (v.is(ValueKind::Temp) && v.index < body_.parameter_count)
+		// (A step from an object's address stays in the object: nonzero as
+		// its base is.)
+		for (unsigned depth = 0; depth < kObjectSteps; ++depth)
 		{
-			const Signature& entry =
-				c_.program.signatures[c_.program.functions[c_.program.symbols[c_.symbol].detail].signature];
-			if (v.index < entry.parameter_count && c_.program.parameters_of(entry)[v.index].object_bytes != 0)
+			if (v.is(ValueKind::Slot) || (v.is(ValueKind::Temp) && v.index < nonzero_.size() && nonzero_[v.index] != 0))
 				return true;
+			if (v.is(ValueKind::Temp) && v.index < body_.parameter_count)
+			{
+				const Signature& entry =
+					c_.program.signatures[c_.program.functions[c_.program.symbols[c_.symbol].detail].signature];
+				if (v.index < entry.parameter_count && c_.program.parameters_of(entry)[v.index].object_bytes != 0)
+					return true;
+			}
+			const Instruction* call = producer(v);
+			if (call != nullptr && call->op == Opcode::Copy && (call->flags & IF_NONNULL) != 0)
+				return true;
+			// The address of a slot or of a symbol this program defines.
+			if (call != nullptr && call->op == Opcode::Addr)
+				return call->ops[0].is(ValueKind::Slot) ||
+					(call->ops[0].is(ValueKind::Symbol) &&
+						(c_.program.symbols[call->ops[0].index].kind == SymbolKind::GlobalDefinition ||
+							c_.program.symbols[call->ops[0].index].kind == SymbolKind::FunctionDefinition));
+			if (call != nullptr && object_step(*call))
+			{
+				v = call->ops[0];
+				continue;
+			}
+			if (call == nullptr || call->op != Opcode::Call || !call->type.is_pointer())
+				return false;
+			const Signature* signature = c_.program.call_boundary(*call);
+			return signature != nullptr && signature->boundary.returns == ir_model::CRM_NONNULL;
 		}
-		const Instruction* call = producer(v);
-		if (call != nullptr && call->op == Opcode::Copy && (call->flags & IF_NONNULL) != 0)
-			return true;
-		if (call == nullptr || call->op != Opcode::Call || !call->type.is_pointer())
-			return false;
-		const Signature* signature = c_.program.call_boundary(*call);
-		return signature != nullptr && signature->boundary.returns == ir_model::CRM_NONNULL;
+		return false;
+	}
+	// Steps followed between an object's address and a pointer into it.
+	static constexpr unsigned kObjectSteps = 4;
+	// An address a constant or in-bounds step from its base: one is an
+	// object's address exactly when the other is.
+	static bool object_step(const Instruction& inst)
+	{
+		return inst.op == Opcode::Index && inst.ops[0].is(ValueKind::Temp) &&
+			(inst.index_bounds() == IndexBounds::InBounds || inst.ops[1].is(ValueKind::Integer));
+	}
+	// `pointer` is an object's address after this point: it and the pointers
+	// it steps or is copied from are nonzero.
+	void mark_object(Value pointer)
+	{
+		for (unsigned depth = 0; depth < kObjectSteps && pointer.is(ValueKind::Temp); ++depth)
+		{
+			if (!nonzero_[pointer.index])
+			{
+				nonzero_[pointer.index] = 1;
+				nonzero_undo_.push_back(pointer.index);
+			}
+			const Instruction* def = producer(pointer);
+			if (def == nullptr ||
+				!(object_step(*def) ||
+					(def->op == Opcode::Copy && def->type.is_pointer() && def->ops[0].is(ValueKind::Temp) &&
+						body_.temps[def->ops[0].index].type.is_pointer())))
+				return;
+			pointer = def->ops[0];
+		}
 	}
 	void float_bound_facts(const Instruction& test, bool taken);
 	void mark_finite(Value v);
@@ -1053,6 +1109,14 @@ void Simplifier::edge_facts(BlockId block)
 	};
 	if (taken)
 		mark(term.ops[0]);
+	else if (term.ops[0].is(ValueKind::Temp) && equal_[term.ops[0].index].is(ValueKind::None) &&
+		!body_.temps[term.ops[0].index].type.is_float())
+	{
+		// The condition is zero where the branch was not taken.
+		equal_[term.ops[0].index] = integer_value(body_, Literal{ 0, 0 });
+		++equal_count_;
+		equal_undo_.push_back(term.ops[0].index);
+	}
 	Value x, y;
 	if (edge_equality(p, block, x, y) && x.is(ValueKind::Temp) && y.is_literal() && equal_[x.index].is(ValueKind::None))
 	{
@@ -2852,9 +2916,7 @@ void Simplifier::process_block(BlockId block)
 	uint32_t phis = 0;
 	if (retype_copy_phis(c_, block, repl_, uses_))
 	{
-		nonzero_.resize(body_.temps.size(), 0);
-		equal_.resize(body_.temps.size(), Value::none());
-		ordinal_.resize(body_.instructions.size(), 0);
+		grow_facts();
 		changed_ = true;
 	}
 	for (InstId i = body_.blocks[block].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
@@ -3000,25 +3062,15 @@ void Simplifier::process_block(BlockId block)
 		// The refinement also proves its source non-null after this point.
 		// A handler can skip instructions after its opener; do not export
 		// such a fact into that block's dominator descendants.
-		if (inst.op == Opcode::Copy && (inst.flags & IF_NONNULL) != 0 && inst.ops[0].is(ValueKind::Temp) &&
-			!nonzero_[inst.ops[0].index] && (first_opener_[block] == kNoId || ordinal_[id] < first_opener_[block]))
-		{
-			nonzero_[inst.ops[0].index] = 1;
-			nonzero_undo_.push_back(inst.ops[0].index);
-		}
+		if (inst.op == Opcode::Copy && (inst.flags & IF_NONNULL) != 0 &&
+			(first_opener_[block] == kNoId || ordinal_[id] < first_opener_[block]))
+			mark_object(inst.ops[0]);
 		// No object lives at a null pointer or at a field's distance from
 		// one: a load or store through a pointer proves it non-null after
 		// this point, under the same handler rule.
 		if ((inst.op == Opcode::Load || inst.op == Opcode::Store) &&
 			(first_opener_[block] == kNoId || ordinal_[id] < first_opener_[block]))
-		{
-			const Value pointer = accessed_pointer(body_, inst.ops[inst.op == Opcode::Load ? 0 : 1]);
-			if (pointer.is(ValueKind::Temp) && !nonzero_[pointer.index])
-			{
-				nonzero_[pointer.index] = 1;
-				nonzero_undo_.push_back(pointer.index);
-			}
-		}
+			mark_object(accessed_pointer(body_, inst.ops[inst.op == Opcode::Load ? 0 : 1]));
 		// The rewrite appends instructions (`inst` may move): the remainder,
 		// now a subtraction, is taken up again.
 		if (reuse_quotient(block, prev, id))
@@ -3069,109 +3121,12 @@ void Simplifier::process_block(BlockId block)
 
 // Every operand resolved, phis included (back edges name later blocks)
 // and unreachable blocks too.
-// A diamond: `head` branches on c to two arms with it as their one
-// predecessor, which jump to one merge they are the only predecessors of.
-struct Diamond
-{
-	BlockId head = kNoId, on_true = kNoId, on_false = kNoId, merge = kNoId;
-	Value condition;
-};
-
-bool diamond_at(const FunctionBody& body, const Cfg& cfg, BlockId head, Diamond& d)
-{
-	const InstId t = body.blocks[head].last;
-	if (t == kNoId || body.instructions[t].op != Opcode::Branch)
-		return false;
-	const Instruction& term = body.instructions[t];
-	d.head = head;
-	d.condition = term.ops[0];
-	d.on_true = term.ops[1].index;
-	d.on_false = term.ops[2].index;
-	if (d.on_true == d.on_false)
-		return false;
-	BlockId merges[2];
-	const BlockId arms[2] = { d.on_true, d.on_false };
-	for (unsigned k = 0; k < 2; ++k)
-	{
-		const InstId last = body.blocks[arms[k]].last;
-		if (cfg.pred_count(arms[k]) != 1 || last == kNoId || body.instructions[last].op != Opcode::Jump ||
-			(cfg.flags[arms[k]] & BF_HANDLER) != 0)
-			return false;
-		merges[k] = body.instructions[last].ops[0].index;
-	}
-	d.merge = merges[0];
-	return merges[0] == merges[1] && cfg.pred_count(d.merge) == 2;
-}
-
-// No instruction of the block writes memory.
-bool write_free(const Program& program, const FunctionBody& body, BlockId block)
-{
-	for (InstId i = body.blocks[block].first; i != kNoId; i = body.instructions[i].next)
-		if (may_write_memory(program, body.instructions[i]) || body.instructions[i].op == Opcode::Store ||
-			(body.instructions[i].flags & IF_VOLATILE) != 0)
-			return false;
-	return true;
-}
-
-// Whether a and b compute the same value: equal operands, or the same pure
-// operation or nonvolatile load over operands that are (depth-bounded). A
-// load counts only inside the write-free blocks `quiet` (merge_diamonds'
-// arms and first merge), so no write can separate the two; a load before
-// the first diamond may follow a write.
-struct QuietBlocks
-{
-	const std::vector<BlockId>& block_of;
-	BlockId blocks[5];
-	bool holds(InstId inst) const
-	{
-		const BlockId b = inst < block_of.size() ? block_of[inst] : kNoId;
-		for (BlockId q : blocks)
-			if (b != kNoId && b == q)
-				return true;
-		return false;
-	}
-};
-
-bool same_computation(const FunctionBody& body, Value a, Value b, unsigned depth, const QuietBlocks& quiet)
-{
-	if (a == b)
-		return true;
-	Constant x, y;
-	if (literal_constant(body, a, x) && literal_constant(body, b, y))
-		return x.kind == y.kind && x.bits.low == y.bits.low && x.bits.high == y.bits.high;
-	// Equal symbols were handled above. Distinct symbol IDs cannot be
-	// interpreted as temporary IDs when comparing defining instructions.
-	if (!a.is(ValueKind::Temp) || !b.is(ValueKind::Temp) || depth == 0 || a.index < body.parameter_count ||
-		b.index < body.parameter_count || body.temps[a.index].def == kNoId || body.temps[b.index].def == kNoId)
-		return false;
-	const Instruction& p = body.instructions[body.temps[a.index].def];
-	const Instruction& q = body.instructions[body.temps[b.index].def];
-	const bool load = p.op == Opcode::Load && (p.flags & IF_VOLATILE) == 0 && quiet.holds(body.temps[a.index].def) &&
-		quiet.holds(body.temps[b.index].def);
-	if (p.op != q.op || p.sub != q.sub || p.type != q.type || p.immediate != q.immediate || p.flags != q.flags ||
-		!(is_pure(p) || load) || p.op == Opcode::Phi || p.extra_count != 0 || q.extra_count != 0)
-		return false;
-	for (unsigned k = 0; k < 3; ++k)
-		if (!same_computation(body, p.ops[k], q.ops[k], depth - 1, quiet))
-			return false;
-	return true;
-}
-
 // Back-to-back diamonds on one condition (the second's head is the first's
 // merge, nothing in either writes memory): a phi of the second whose arm
 // inputs compute what a phi of the first takes from the same sides is that
 // phi. Each pair of diamonds compares at most kDiamondPairs phi pairs.
 // Returns whether any phi was replaced.
 const uint32_t kDiamondPairs = 1024;
-
-uint32_t phi_count(const FunctionBody& body, BlockId block)
-{
-	uint32_t count = 0;
-	for (InstId i = body.blocks[block].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
-		i = body.instructions[i].next)
-		++count;
-	return count;
-}
 
 bool Simplifier::merge_diamonds()
 {

@@ -238,4 +238,73 @@ bool retype_copy_phis(FunctionContext& c, BlockId block, std::vector<Value>& rep
 	return changed;
 }
 
+bool diamond_at(const FunctionBody& body, const Cfg& cfg, BlockId head, Diamond& d)
+{
+	const InstId t = body.blocks[head].last;
+	if (t == kNoId || body.instructions[t].op != Opcode::Branch)
+		return false;
+	const Instruction& term = body.instructions[t];
+	d.head = head;
+	d.condition = term.ops[0];
+	d.on_true = term.ops[1].index;
+	d.on_false = term.ops[2].index;
+	if (d.on_true == d.on_false)
+		return false;
+	BlockId merges[2];
+	const BlockId arms[2] = { d.on_true, d.on_false };
+	for (unsigned k = 0; k < 2; ++k)
+	{
+		const InstId last = body.blocks[arms[k]].last;
+		if (cfg.pred_count(arms[k]) != 1 || last == kNoId || body.instructions[last].op != Opcode::Jump ||
+			(cfg.flags[arms[k]] & BF_HANDLER) != 0)
+			return false;
+		merges[k] = body.instructions[last].ops[0].index;
+	}
+	d.merge = merges[0];
+	return merges[0] == merges[1] && cfg.pred_count(d.merge) == 2;
+}
+
+// No instruction of the block writes memory.
+bool write_free(const Program& program, const FunctionBody& body, BlockId block)
+{
+	for (InstId i = body.blocks[block].first; i != kNoId; i = body.instructions[i].next)
+		if (may_write_memory(program, body.instructions[i]) || body.instructions[i].op == Opcode::Store ||
+			(body.instructions[i].flags & IF_VOLATILE) != 0)
+			return false;
+	return true;
+}
+
+bool same_computation(const FunctionBody& body, Value a, Value b, unsigned depth, const QuietBlocks& quiet)
+{
+	if (a == b)
+		return true;
+	Constant x, y;
+	if (literal_constant(body, a, x) && literal_constant(body, b, y))
+		return x.kind == y.kind && x.bits.low == y.bits.low && x.bits.high == y.bits.high;
+	// Equal symbols were handled above. Distinct symbol IDs cannot be
+	// interpreted as temporary IDs when comparing defining instructions.
+	if (!a.is(ValueKind::Temp) || !b.is(ValueKind::Temp) || depth == 0 || a.index < body.parameter_count ||
+		b.index < body.parameter_count || body.temps[a.index].def == kNoId || body.temps[b.index].def == kNoId)
+		return false;
+	const Instruction& p = body.instructions[body.temps[a.index].def];
+	const Instruction& q = body.instructions[body.temps[b.index].def];
+	const bool load = p.op == Opcode::Load && (p.flags & IF_VOLATILE) == 0 && quiet.holds(body.temps[a.index].def) &&
+		quiet.holds(body.temps[b.index].def);
+	if (p.op != q.op || p.sub != q.sub || p.type != q.type || p.immediate != q.immediate || p.flags != q.flags ||
+		!(is_pure(p) || load) || p.op == Opcode::Phi || p.extra_count != 0 || q.extra_count != 0)
+		return false;
+	for (unsigned k = 0; k < 3; ++k)
+		if (!same_computation(body, p.ops[k], q.ops[k], depth - 1, quiet))
+			return false;
+	return true;
+}
+
+uint32_t phi_count(const FunctionBody& body, BlockId block)
+{
+	uint32_t count = 0;
+	for (InstId i = body.blocks[block].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
+		i = body.instructions[i].next)
+		++count;
+	return count;
+}
 } // namespace opt

@@ -189,6 +189,11 @@ bool name_returned_slot(FunctionContext& context);
 bool thread_jumps(FunctionContext& context);
 bool fold_nonzero_tests(FunctionContext& context);
 
+// An edge that brings a null pointer to a phi whose block requires its
+// object before anything can end the block is never taken
+// (opt/null_edges.cpp). O(instructions).
+bool drop_null_edges(FunctionContext& context);
+
 // Loop-invariant code motion (opt/loop_motion.cpp), O2+: pure instructions
 // whose operands a loop does not compute move to its preheader, innermost
 // loops first. An integer division that may trap moves only when the

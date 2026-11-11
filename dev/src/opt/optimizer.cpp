@@ -649,6 +649,7 @@ void scalar_rounds(FunctionContext& context)
 		changed = RUN_PASS(forward_memory) || changed;
 		changed = RUN_PASS(remove_dead_code) || changed;
 		changed = RUN_PASS(thread_jumps) || changed;
+		changed = RUN_PASS(drop_null_edges) || changed;
 		changed = RUN_PASS(cleanup_cfg) || changed;
 		if (!changed)
 			break;

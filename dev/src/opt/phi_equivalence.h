@@ -24,4 +24,36 @@ uint64_t phi_signature(
 // new phis; a new phi precedes the block's other phis.
 bool retype_copy_phis(FunctionContext& context, lowir::BlockId block, std::vector<lowir::Value>& replacements,
 	std::vector<uint32_t>& uses);
+// A diamond: `head` branches on c to two arms with it as their one
+// predecessor, which jump to one merge they are the only predecessors of.
+struct Diamond
+{
+	lowir::BlockId head = lowir::kNoId, on_true = lowir::kNoId, on_false = lowir::kNoId, merge = lowir::kNoId;
+	lowir::Value condition;
+};
+bool diamond_at(const lowir::FunctionBody& body, const Cfg& cfg, lowir::BlockId head, Diamond& d);
+// No instruction of the block writes memory.
+bool write_free(const lowir::Program& program, const lowir::FunctionBody& body, lowir::BlockId block);
+// The write-free blocks of two back-to-back diamonds (their arms and the
+// first merge).
+struct QuietBlocks
+{
+	const std::vector<lowir::BlockId>& block_of;
+	lowir::BlockId blocks[5];
+	bool holds(lowir::InstId inst) const
+	{
+		const lowir::BlockId b = inst < block_of.size() ? block_of[inst] : lowir::kNoId;
+		for (lowir::BlockId q : blocks)
+			if (b != lowir::kNoId && b == q)
+				return true;
+		return false;
+	}
+};
+// Whether a and b compute the same value: equal operands, or the same pure
+// operation or nonvolatile load over operands that are (depth-bounded). A
+// load counts only inside `quiet`, so no write can separate the two; a load
+// before the first diamond may follow a write.
+bool same_computation(
+	const lowir::FunctionBody& body, lowir::Value a, lowir::Value b, unsigned depth, const QuietBlocks& quiet);
+uint32_t phi_count(const lowir::FunctionBody& body, lowir::BlockId block);
 } // namespace opt

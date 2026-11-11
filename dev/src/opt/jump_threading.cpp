@@ -652,7 +652,9 @@ bool JumpThreading::constant_phis(bool counted)
 				continue;
 			const Instruction& pred_term = body_.instructions[pt];
 			const bool jumps = pred_term.op == Opcode::Jump;
-			if (!jumps && (pred_term.op != Opcode::Branch || pred_term.ops[1].index == pred_term.ops[2].index))
+			// (O2+: a switch's edges into m move together.)
+			if (!jumps && (pred_term.op != Opcode::Branch || pred_term.ops[1].index == pred_term.ops[2].index) &&
+				(pred_term.op != Opcode::Switch || c_.level < 2))
 				continue;
 			BlockId target = kNoId;
 			if (evaluate(m, inputs_.data() + static_cast<size_t>(k) * phis, target))
@@ -868,6 +870,14 @@ bool JumpThreading::apply_moves(BlockId m, const std::vector<BlockId>& preds, ui
 		Instruction& pred_term = body_.instructions[body_.blocks[p].last];
 		if (pred_term.op == Opcode::Jump)
 			pred_term.ops[0] = Value::block(mv.second);
+		else if (pred_term.op == Opcode::Switch)
+		{
+			if (pred_term.ops[1].index == m)
+				pred_term.ops[1] = Value::block(mv.second);
+			for (uint32_t k = 1; k < pred_term.extra_count; k += 2)
+				if (body_.operands[pred_term.extra_first + k].index == m)
+					body_.operands[pred_term.extra_first + k] = Value::block(mv.second);
+		}
 		else
 			(pred_term.ops[1].index == m ? pred_term.ops[1] : pred_term.ops[2]) = Value::block(mv.second);
 		mark_[p] = epoch;
