@@ -114,10 +114,8 @@ const char* misplaced_fact(const Instruction& inst)
 	if ((inst.op == Opcode::Load || inst.op == Opcode::Store) && (inst.flags & IF_TYPED) != 0)
 	{
 		const TypeKind k = inst.type.kind();
-		if (!(inst.type.is_pointer() ||
-				((inst.type.is_integer() || inst.type.is_float()) && k != TypeKind::I1 && k != TypeKind::I8 &&
-					k != TypeKind::U8)))
-			return "typed requires a pointer, floating or wider-than-byte integer access";
+		if (!(inst.type.is_pointer() || ((inst.type.is_integer() || inst.type.is_float()) && k != TypeKind::I1)))
+			return "typed requires a pointer, floating or byte-or-wider integer access";
 	}
 	return nullptr;
 }

@@ -43,6 +43,10 @@ struct Place
 	// Addresses reached through a union member are tracked by temporary
 	// instead (FunctionLowering::untyped_addresses_).
 	bool untyped = false;
+	// A bool object: its one-byte accesses are `typed` too (bool is no
+	// character type, so they are of no other object's bytes; std::byte is
+	// an enumeration that is one, so enumerations stay as they are).
+	bool byte_object = false;
 };
 
 // Where a conversion's operand stands: the course conventions fold a
@@ -656,7 +660,7 @@ private:
 	// members, not pointers into one (a pointer stored and loaded again is
 	// an ordinary one).
 	void mark_untyped(lowir::Value address);
-	bool typed_access(lowir::Type type) const;
+	bool typed_access(lowir::Type type, const Place& place) const;
 	bool untyped_address(lowir::Value address) const
 	{
 		return address.kind == lowir::ValueKind::Temp && address.index < untyped_addresses_.size() &&

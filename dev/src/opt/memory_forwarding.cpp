@@ -1685,7 +1685,7 @@ bool MemoryForwarding::run()
 // last load or store of that location before the end, searching back
 // through single predecessors (at most kPhiLoadDepth blocks) and stopping
 // at any write that may alias it.
-const unsigned kPhiLoadDepth = 3;
+const unsigned kPhiLoadDepth = 12;
 
 // At most this many instructions are examined per question.
 const unsigned kPhiLoadScan = 128;

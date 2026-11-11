@@ -1045,17 +1045,19 @@ void FunctionLowering::qualify(Place& place, const sema::Type* type)
 {
 	place.is_volatile = (type->cv & sema::kVolatile) != 0;
 	place.is_atomic = (type->cv & sema::kAtomic) != 0;
+	place.byte_object = type->kind == sema::TypeKind::Fundamental && type->fundamental == FundamentalType::Bool;
 }
 
 // An access the optimizer may tell apart by its type (IF_TYPED): a pointer,
 // or an integer or floating type wider than a byte (a byte type may be a
-// character type, which accesses any object).
-bool FunctionLowering::typed_access(lowir::Type type) const
+// character type, which accesses any object), or the byte of a bool
+// object (`place.byte_object`).
+bool FunctionLowering::typed_access(lowir::Type type, const Place& place) const
 {
 	const lowir::TypeKind k = type.kind();
+	const bool byte = k == lowir::TypeKind::I8 || k == lowir::TypeKind::U8;
 	return (type.is_pointer() ||
-			   ((type.is_integer() || type.is_float()) && k != lowir::TypeKind::I1 && k != lowir::TypeKind::I8 &&
-				   k != lowir::TypeKind::U8)) &&
+			   ((type.is_integer() || type.is_float()) && k != lowir::TypeKind::I1 && (!byte || place.byte_object))) &&
 		lowering_.states_type(k);
 }
 
@@ -1083,7 +1085,7 @@ RValue FunctionLowering::load(lowir::Type type, const Place& place)
 		inst.order = lowir::MemoryOrder::SeqCst;
 	if (place.is_volatile)
 		inst.flags |= lowir::IF_VOLATILE;
-	else if (!atomic && !place.untyped && typed_access(type) && !untyped_address(place.storage))
+	else if (!atomic && !place.untyped && typed_access(type, place) && !untyped_address(place.storage))
 		inst.flags |= lowir::IF_TYPED;
 	RValue value;
 	value.value = emit_value(inst, type);
@@ -1117,7 +1119,7 @@ void FunctionLowering::store(lowir::Type type, const RValue& value, const Place&
 		inst.order = lowir::MemoryOrder::SeqCst;
 	if (place.is_volatile)
 		inst.flags |= lowir::IF_VOLATILE;
-	else if (!atomic && !place.untyped && typed_access(type) && !untyped_address(place.storage))
+	else if (!atomic && !place.untyped && typed_access(type, place) && !untyped_address(place.storage))
 		inst.flags |= lowir::IF_TYPED;
 	emit(inst);
 }
