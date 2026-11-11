@@ -2351,6 +2351,7 @@ bool LoopPass::try_unroll_search(uint32_t loop)
 	// Exit phis' new pairs, per outside block (the loop's own pairs go).
 	std::vector<std::vector<Value>> exit_pairs(body_.blocks.size());
 	std::vector<BlockId> exit_blocks;
+	std::vector<InstId> late; // a pass's copied phis
 	for (int64_t pass = 0; pass <= trips; ++pass)
 	{
 		const std::vector<BlockId>& mine = blocks[static_cast<size_t>(pass)];
@@ -2361,6 +2362,7 @@ bool LoopPass::try_unroll_search(uint32_t loop)
 				return mine[t] != kNoId ? mine[t] : dead;
 			return t;
 		};
+		late.clear();
 		for (BlockId b : order)
 		{
 			if (mine[b] == kNoId)
@@ -2370,6 +2372,7 @@ bool LoopPass::try_unroll_search(uint32_t loop)
 				Instruction inst = body_.instructions[i];
 				if (inst.op == Opcode::Phi && b == l.header)
 					continue; // the header's phis read the previous pass (map)
+				const bool phi = inst.op == Opcode::Phi;
 				for (Value& v : inst.ops)
 					v = v.is(ValueKind::Block) ? Value::block(target(v.index)) : mapped(v);
 				std::vector<Value> extra;
@@ -2377,13 +2380,15 @@ bool LoopPass::try_unroll_search(uint32_t loop)
 				{
 					const Value v = body_.operands[inst.extra_first + k];
 					// A phi's predecessors are copies of this pass.
-					extra.push_back(v.is(ValueKind::Block)
-							? Value::block(inst.op == Opcode::Phi ? mine[v.index] : target(v.index))
-							: mapped(v));
+					extra.push_back(v.is(ValueKind::Block) ? Value::block(phi ? mine[v.index] : target(v.index))
+							: phi                          ? v
+														   : mapped(v));
 				}
 				inst.extra_first = inst.extra_count != 0 ? append_operands(body_, extra.data(), inst.extra_count) : 0;
 				const TempId old_result = inst.result;
 				const InstId id = append_copy(body_, body_, i, inst);
+				if (phi)
+					late.push_back(id);
 				if (old_result != kNoId)
 				{
 					const TempId fresh = append_temp(body_, body_.temps[old_result].type, id);
@@ -2413,6 +2418,15 @@ bool LoopPass::try_unroll_search(uint32_t loop)
 					exit_pairs[t].push_back(mapped(phi_incoming(body_, body_.instructions[i], b)));
 				}
 			}
+		}
+		// A phi's inputs are this pass's values, read once every block of
+		// the pass is copied: a cycle the header is not on (two entries, so
+		// no loop of the forest) brings a phi a value of a later block.
+		for (InstId id : late)
+		{
+			const Instruction& phi = body_.instructions[id];
+			for (uint32_t k = 1; k < phi.extra_count; k += 2)
+				body_.operands[phi.extra_first + k] = mapped(body_.operands[phi.extra_first + k]);
 		}
 		// The next pass's header phis read this pass's latch values.
 		std::vector<Value> next;

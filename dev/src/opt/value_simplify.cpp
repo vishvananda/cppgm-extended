@@ -277,7 +277,7 @@ private:
 		// its base is.)
 		for (unsigned depth = 0; depth < kObjectSteps; ++depth)
 		{
-			if (v.is(ValueKind::Slot) || (v.is(ValueKind::Temp) && v.index < nonzero_.size() && nonzero_[v.index] != 0))
+			if (v.is(ValueKind::Temp) && v.index < nonzero_.size() && nonzero_[v.index] != 0)
 				return true;
 			if (v.is(ValueKind::Temp) && v.index < body_.parameter_count)
 			{
@@ -1307,7 +1307,8 @@ bool Simplifier::select_identity(const Instruction& phi, BlockId block, Value& o
 			(u.index == phi.result ||
 				(u.index >= body_.parameter_count && body_.temps[u.index].def != kNoId &&
 					c_.block_of.size() > body_.temps[u.index].def &&
-					(!c_.cfg.dominates(c_.block_of[body_.temps[u.index].def], block) ||
+					(c_.block_of[body_.temps[u.index].def] == kNoId ||
+						!c_.cfg.dominates(c_.block_of[body_.temps[u.index].def], block) ||
 						!available_in(u.index, block)))))
 			continue;
 		bool all = true;
