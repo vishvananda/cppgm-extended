@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
     concurrency:
       group: benchmark-badge-publication
       queue: max
@@ -23,16 +25,13 @@ jobs:
           path: tools
           persist-credentials: false
           sparse-checkout: scripts
-      - uses: actions/checkout@v6
-        with:
-          ref: benchmark-badges
-          path: badge-source
-          fetch-depth: 0
-          # Read the old tree through Git; do not check out its multi-GB logs.
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            /*
-            !/*/
+      - name: Fetch generated history without a working tree
+        run: |
+          # A single bare clone fetches every backup object together, without
+          # a multi-GB checkout or sparse checkout's per-blob lazy fetches.
+          gh auth setup-git --hostname github.com
+          git clone --bare --single-branch --no-tags --branch benchmark-badges \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" badge-source
       - name: Prepare and validate the compact tree
         id: prepare
         run: |
