@@ -201,7 +201,10 @@ struct SourceOutputInvocation
 	bool hosted = false;
 	bool plain_char_unsigned = false;
 	bool popcnt = false;
+	bool popcnt_explicit = false;
 	uint8_t sse_level = 0;
+	unsigned pic_level = 0;
+	unsigned pie_level = 0;
 	bool strict_aliasing = true;
 	bool exceptions = true;
 	vector<string> include_paths;
@@ -214,6 +217,7 @@ struct SourceOutputInvocation
 	bool debug_info = false;
 	bool debug_types = false;
 	bool debug_optimization = false;
+	bool optimize_size = false;
 };
 
 // -O<level> as GCC reads it (see driver/toolchain.cpp); -1 for another
@@ -292,6 +296,17 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 			invocation.hosted = true;
 			continue;
 		}
+		if (args[i] == "-fPIC" || args[i] == "-fpic" || args[i] == "-fPIE" || args[i] == "-fpie")
+		{
+			invocation.pic_level = args[i] == "-fPIC" || args[i] == "-fPIE" ? 2 : 1;
+			invocation.pie_level = args[i] == "-fPIE" || args[i] == "-fpie" ? invocation.pic_level : 0;
+			continue;
+		}
+		if (args[i] == "-fno-PIC" || args[i] == "-fno-pic" || args[i] == "-fno-PIE" || args[i] == "-fno-pie")
+		{
+			invocation.pic_level = invocation.pie_level = 0;
+			continue;
+		}
 		if (args[i] == "-fno-exceptions" || args[i] == "-fexceptions")
 		{
 			invocation.exceptions = args[i] == "-fexceptions";
@@ -305,6 +320,7 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 		if (args[i] == "-mpopcnt" || args[i] == "-mno-popcnt")
 		{
 			invocation.popcnt = args[i] == "-mpopcnt";
+			invocation.popcnt_explicit = true;
 			continue;
 		}
 		if (driver::sse_option(args[i], invocation.sse_level))
@@ -338,7 +354,13 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 		if (allow_lowir_options && is_optimization_flag(args[i]))
 		{
 			invocation.optimizer.level = optimization_level(args[i]);
+			invocation.optimize_size = args[i] == "-Os" || args[i] == "-Oz";
 			invocation.debug_optimization = args[i] == "-Og";
+			continue;
+		}
+		if (args[i] == "-fno-inline" || args[i] == "-finline")
+		{
+			invocation.optimizer.optional_inlining = args[i] == "-finline";
 			continue;
 		}
 		if (allow_lowir_options && args[i] == "--inline-limit")
@@ -381,11 +403,27 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 	{
 		throw InvocationError("invalid usage");
 	}
-	// GCC publishes __OPTIMIZE__ at -O1 and above (driver/toolchain.cpp).
+	if (!invocation.popcnt_explicit)
+		invocation.popcnt = invocation.sse_level >= 4;
+	// Keep source views and object compilation on the same header paths.
 	if (invocation.optimizer.level > 0)
 	{
 		invocation.command_line.insert(0, "#define __OPTIMIZE__ 1\n");
 	}
+	if (invocation.optimizer.level == 0 || !invocation.optimizer.optional_inlining)
+		invocation.command_line.insert(0, "#define __NO_INLINE__ 1\n");
+	if (invocation.optimize_size)
+		invocation.command_line.insert(0, "#define __OPTIMIZE_SIZE__ 1\n");
+	if (invocation.target == native::Target::MacOS && invocation.pic_level == 0)
+		invocation.pic_level = 2;
+	if (invocation.pic_level != 0)
+		invocation.command_line.insert(0,
+			"#define __PIC__ " + to_string(invocation.pic_level) + "\n#define __pic__ " +
+				to_string(invocation.pic_level) + "\n");
+	if (invocation.pie_level != 0)
+		invocation.command_line.insert(0,
+			"#define __PIE__ " + to_string(invocation.pie_level) + "\n#define __pie__ " +
+				to_string(invocation.pie_level) + "\n");
 	if (invocation.debug_optimization && invocation.debug_types)
 		invocation.optimizer.level = 0;
 	return invocation;

@@ -45,6 +45,7 @@ std::string PredefinedText(const PreprocessorOptions& options)
 	text += "\n#define __TIME__ ";
 	AppendQuoted(text, options.time);
 	text += "\n";
+	text += LanguageFeatureMacros(options.cplusplus == "201703L" ? 17 : options.cplusplus == "201402L" ? 14 : 11);
 	if (options.plain_char_unsigned)
 		text += "#define __CHAR_UNSIGNED__ 1\n";
 	if (options.popcnt)
@@ -104,6 +105,7 @@ Preprocessor::Preprocessor(const PreprocessorOptions& options, const std::string
 	  hosted_(options.hosted), modes_(options.modes), directives_(0), skipped_directives_(0), includes_(0),
 	  guarded_skips_(0), finished_(false), pack_(0)
 {
+	modes_.language = options.cplusplus == "201703L" ? 17 : options.cplusplus == "201402L" ? 14 : 11;
 	expander_.set_input(&source_);
 	source_.set_hosted(hosted_);
 	const bool separators = hosted_ || options.literals != NumberDialect::Cxx11;

@@ -1813,7 +1813,8 @@ bool InlineWaveRunner::process(SymbolId caller)
 						v = repl[v.index];
 				});
 			const SymbolId callee = inst.ops[0].index;
-			if (source_required_ && (program_.symbols[callee].metadata.flags & SF_FORCE_INLINE) == 0)
+			if ((source_required_ || !options_.optional_inlining) &&
+				(program_.symbols[callee].metadata.flags & SF_FORCE_INLINE) == 0)
 				continue;
 			if (source_required_)
 				materialize_call_arguments(program_, body, b, before_call, i);

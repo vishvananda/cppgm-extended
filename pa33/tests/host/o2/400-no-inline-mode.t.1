@@ -1,0 +1,12 @@
+// -fno-inline keeps optional calls and still honors always_inline.
+#if !defined(__OPTIMIZE__) || __NO_INLINE__ != 1
+#error Incorrect optimized no-inline mode
+#endif
+inline void* optional_frame() { return __builtin_frame_address(0); }
+__attribute__((always_inline)) inline void* required_frame() {
+  return __builtin_frame_address(0);
+}
+int main() {
+  void* frame = __builtin_frame_address(0);
+  return optional_frame() == frame || required_frame() != frame;
+}

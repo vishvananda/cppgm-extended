@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 // The language modes the hosted feature probes answer by (-fno-exceptions,
 // -fno-rtti).
@@ -8,6 +9,7 @@ struct FeatureModes
 {
 	bool exceptions = true;
 	bool rtti = true;
+	unsigned language = 11;
 };
 
 // Clang's `__has_feature ( identifier )` and `__has_extension`: whether
@@ -20,3 +22,8 @@ struct FeatureModes
 // course reference reports them; features it lacks (modules, blocks) are
 // neither.
 bool IsProvidedFeature(const char* spelling, uint32_t length, const FeatureModes& modes);
+
+// SD-6 feature-test macros for the selected language standard. These describe
+// this implementation, independently of the compiler that built it.
+std::string LanguageFeatureMacros(unsigned language);
+bool IsLanguageFeatureMacro(const char* spelling, uint32_t length);

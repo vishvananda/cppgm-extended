@@ -808,7 +808,7 @@ const GnuC11Operation kGnuC11Operations[] = { { "init", 2, "pv", '-', 1, 0xff },
 	{ "is_lock_free", 25, "s", 'C', 0, 0xff } };
 const unsigned kGnuC11OperationCount = sizeof kGnuC11Operations / sizeof kGnuC11Operations[0];
 
-bool IsProvidedBuiltin(const char* spelling, uint32_t length)
+uint32_t ProvidedBuiltinVersion(const char* spelling, uint32_t length)
 {
 	// Clang's builtin templates, which the hosted builtin declarations
 	// declare (driver/host_environment.cpp).
@@ -820,7 +820,11 @@ bool IsProvidedBuiltin(const char* spelling, uint32_t length)
 	}
 	GnuTrait trait;
 	GnuBuiltinEntry entry;
-	return FindGnuTrait(spelling, length, trait) || FindGnuBuiltin(spelling, length, entry);
+	if (FindGnuTrait(spelling, length, trait))
+		return 1;
+	if (!FindGnuBuiltin(spelling, length, entry))
+		return 0;
+	return entry.builtin == GnuBuiltin::OperatorNew || entry.builtin == GnuBuiltin::OperatorDelete ? 201802 : 1;
 }
 
 bool IsGnuBuiltinCandidate(const char* spelling, uint32_t length)

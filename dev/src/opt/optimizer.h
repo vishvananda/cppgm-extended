@@ -31,6 +31,8 @@ struct OptimizerOptions
 {
 	int level = 0;
 	InlineLimits limits;
+	// -fno-inline suppresses optional copies; always_inline still applies.
+	bool optional_inlining = true;
 	// Audit mode (lowiropt --verify-passes): the whole program is
 	// validated after every pass of every function, and the first pass
 	// leaving it invalid is named on standard error (exit status 3). With

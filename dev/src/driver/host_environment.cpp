@@ -26,8 +26,11 @@ namespace {
 // [cpp.predefined] 16.8), whose host definitions are not read.
 bool OwnMacro(const char* name, size_t length)
 {
+	if (IsLanguageFeatureMacro(name, static_cast<uint32_t>(length)))
+		return true;
 	static const char* const kOwn[] = { "__cplusplus", "__STDC_HOSTED__", "__DATE__", "__TIME__", "__FILE__",
-		"__LINE__", "__CPPGM__", "__CPPGM_AUTHOR__", "__STDC__", "__CHAR_UNSIGNED__", "__POPCNT__",
+		"__LINE__", "__CPPGM__", "__CPPGM_AUTHOR__", "__STDC__", "__CHAR_UNSIGNED__", "__POPCNT__", "__OPTIMIZE__",
+		"__OPTIMIZE_SIZE__", "__NO_INLINE__", "__PIC__", "__pic__", "__PIE__", "__pie__", "__CET__",
 		"__STDCPP_DEFAULT_NEW_ALIGNMENT__", "__cpp_aligned_new", "__cpp_deduction_guides", "__SSE__", "__SSE2__",
 		"__SSE3__", "__SSSE3__", "__SSE4_1__", "__SSE4_2__" };
 	for (const char* own : kOwn)
@@ -90,15 +93,11 @@ bool ReservedMacro(const char* name, size_t length)
 // The host's `-dM -E` output for the dialect (GNU, or the strict ISO
 // one's: __STRICT_ANSI__) without the definitions of unreserved,
 // OwnMacro, UnsupportedTypeMacro and ModeMacro names, plus __STDC__, which
-// GCC predefines without listing it. The host's are C++11's feature-test
-// macros; under -std=c++14 (`cplusplus`) the C++14 features this
-// implementation provides add theirs (SD-6): variable templates, which
-// libstdc++'s C++14 <charconv> uses unconditionally.
-std::string HostMacroText(const FeatureModes& modes, const std::string& cplusplus, bool strict)
+// GCC predefines without listing it. Language feature dates come from
+// the selected cppgm language mode, independently of the host probe.
+std::string HostMacroText(const FeatureModes& modes, bool strict)
 {
 	std::string text = "#define __STDC__ 1\n";
-	if (cplusplus != "201103L")
-		text += "#define __cpp_variable_templates 201304L\n";
 	const char* line = strict ? cppgm_builtin_host_config::kHostStrictPredefinedMacros
 							  : cppgm_builtin_host_config::kHostPredefinedMacros;
 	while (*line != '\0')
@@ -153,7 +152,7 @@ const char kBuiltinDeclarations[] =
 void add_host_environment(PreprocessorOptions& options, bool nostdinc)
 {
 	options.hosted = true;
-	options.host_predefines = HostMacroText(options.modes, options.cplusplus, options.strict);
+	options.host_predefines = HostMacroText(options.modes, options.strict);
 	options.builtin_declarations = kBuiltinDeclarations;
 	if (nostdinc)
 		return;

@@ -248,16 +248,25 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 	std::string forced_includes;
 	bool nostdinc = false;
 	bool pthread = false;
+	bool optimize_size = false, popcnt_explicit = false;
+	unsigned pic_level = 0, pie_level = 0;
 	const size_t base_defines = invocation.preprocessor.command_line.size();
 	for (size_t i = 0; i < args.size(); ++i)
 	{
 		const std::string& arg = args[i];
 		if (arg == "-c")
 			invocation.compile_only = true;
-		else if (arg == "-fPIC" || arg == "-fpic")
+		else if (arg == "-fPIC" || arg == "-fpic" || arg == "-fPIE" || arg == "-fpie")
+		{
 			invocation.position_independent = true;
-		else if (arg == "-fno-PIC" || arg == "-fno-pic")
+			pic_level = arg == "-fPIC" || arg == "-fPIE" ? 2 : 1;
+			pie_level = arg == "-fPIE" || arg == "-fpie" ? pic_level : 0;
+		}
+		else if (arg == "-fno-PIC" || arg == "-fno-pic" || arg == "-fno-PIE" || arg == "-fno-pie")
+		{
 			invocation.position_independent = false;
+			pic_level = pie_level = 0;
+		}
 		else if (arg == "-mred-zone" || arg == "-mno-red-zone")
 			invocation.red_zone = arg == "-mred-zone";
 		else if (arg == "-pthread")
@@ -293,7 +302,10 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 		else if (arg == "-fno-strict-aliasing" || arg == "-fstrict-aliasing")
 			invocation.strict_aliasing = arg == "-fstrict-aliasing";
 		else if (arg == "-mpopcnt" || arg == "-mno-popcnt")
+		{
 			invocation.preprocessor.popcnt = arg == "-mpopcnt";
+			popcnt_explicit = true;
+		}
 		else if (sse_option(arg, invocation.preprocessor.sse_level))
 		{
 		}
@@ -320,8 +332,11 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 		else if (optimization_level(arg) >= 0)
 		{
 			invocation.optimizer.level = optimization_level(arg);
+			optimize_size = arg == "-Os" || arg == "-Oz";
 			invocation.debug_optimization = arg == "-Og";
 		}
+		else if (arg == "-fno-inline" || arg == "-finline")
+			invocation.optimizer.optional_inlining = arg == "-finline";
 		else if (arg == "--inline-limit")
 		{
 			if (i + 1 >= args.size() || !opt::parse_inline_limit(args[++i], invocation.optimizer.limits))
@@ -391,11 +406,24 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 	if (pthread)
 		invocation.preprocessor.command_line.insert(base_defines, "#define _REENTRANT 1\n");
 	invocation.preprocessor.command_line += forced_includes;
-	// GCC publishes __OPTIMIZE__ at -O1 and above, ahead of the command
-	// line's definitions (its __NO_INLINE__ stays the -O0 probe's: an O0
-	// LowIR emission with -D__OPTIMIZE__ preprocesses the same).
-	if (invocation.optimizer.level > 0)
-		invocation.preprocessor.command_line.insert(0, "#define __OPTIMIZE__ 1\n");
+	if (!popcnt_explicit)
+		invocation.preprocessor.popcnt = invocation.preprocessor.sse_level >= 4;
+	// These macros describe this invocation. Explicit -D/-U retain their
+	// precedence over target and optimization defaults.
+	std::string mode_macros = invocation.optimizer.level > 0 ? "#define __OPTIMIZE__ 1\n" : "";
+	if (invocation.optimizer.level == 0 || !invocation.optimizer.optional_inlining)
+		mode_macros += "#define __NO_INLINE__ 1\n";
+	if (optimize_size)
+		mode_macros += "#define __OPTIMIZE_SIZE__ 1\n";
+	if (invocation.target == native::Target::MacOS && pic_level == 0)
+		pic_level = 2;
+	if (pic_level != 0)
+		mode_macros += "#define __PIC__ " + std::to_string(pic_level) + "\n#define __pic__ " +
+			std::to_string(pic_level) + "\n";
+	if (pie_level != 0)
+		mode_macros += "#define __PIE__ " + std::to_string(pie_level) + "\n#define __pie__ " +
+			std::to_string(pie_level) + "\n";
+	invocation.preprocessor.command_line.insert(0, mode_macros);
 	// Preserve named objects and statement boundaries in the debugging level.
 	// Preprocessing still observes GCC's __OPTIMIZE__ for -Og.
 	if (invocation.debug_optimization && invocation.debug_types)

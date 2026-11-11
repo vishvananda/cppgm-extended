@@ -1,0 +1,4 @@
+preproc 1
+sof tests/preproc/600-allocation-builtin-version.t
+identifier replaceable_allocation_overloads
+eof

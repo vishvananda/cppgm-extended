@@ -1,0 +1,4 @@
+#if !defined(__OPTIMIZE__) || !defined(__OPTIMIZE_SIZE__) || defined(__NO_INLINE__)
+#error Size optimization must select the size-sensitive header paths
+#endif
+int main() { return 0; }

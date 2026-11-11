@@ -44,10 +44,10 @@ bool IsReportedAttribute(const char* spelling, uint32_t length, bool gnu)
 		spelling += 2;
 		length -= 4;
 	}
-	static const char* const kStandard[] = { "no_unique_address" };
+	static const char* const kStandard[] = { "no_unique_address", "noreturn" };
 	static const char* const kGnu[] = { "always_inline", "noinline", "noreturn", "deprecated", "pure", "const", "used",
 		"weak", "packed", "aligned", "section", "vector_size", "gnu_inline", "abi_tag", "may_alias", "using_if_exists",
-		"exclude_from_explicit_instantiation", "mode", "returns_nonnull", "malloc" };
+		"exclude_from_explicit_instantiation", "mode", "returns_nonnull", "malloc", "naked", "ext_vector_type" };
 	const char* const* reported = gnu ? kGnu : kStandard;
 	const unsigned count = gnu ? sizeof(kGnu) / sizeof(kGnu[0]) : sizeof(kStandard) / sizeof(kStandard[0]);
 	for (unsigned i = 0; i < count; ++i)
@@ -1008,19 +1008,26 @@ void MacroExpander::replace_has_cpp_attribute(bool gnu)
 	if (token.kind != PPTokenKind::Identifier && !IsIdentifierLikeOperator(token))
 		throw PreprocessError(operator_token.begin, "expected an attribute name");
 	bool reported = IsReportedAttribute(token.spelling, token.length, gnu);
+	const bool gnu_namespace = (token.length == 3 && std::memcmp(token.spelling, "gnu", 3) == 0) ||
+		(token.length == 7 && std::memcmp(token.spelling, "__gnu__", 7) == 0);
+	const bool no_unique = reported && !gnu &&
+		((token.length == 17 && std::memcmp(token.spelling, "no_unique_address", 17) == 0) ||
+			(token.length == 21 && std::memcmp(token.spelling, "__no_unique_address__", 21) == 0));
+	const char* answer = !reported ? "0" : gnu ? "1" : no_unique ? "201803" : "200809";
 	read(token);
 	if (IsPunctuatorToken(token, TokenKind::OP_COLON2))
 	{
 		read(token);
 		if (token.kind != PPTokenKind::Identifier && !IsIdentifierLikeOperator(token))
 			throw PreprocessError(operator_token.begin, "expected an attribute name");
-		reported = false;
+		reported = !gnu && gnu_namespace && IsReportedAttribute(token.spelling, token.length, true);
+		answer = reported ? "1" : "0";
 		read(token);
 	}
 	if (!IsPunctuatorToken(token, TokenKind::OP_RPAREN))
 		throw PreprocessError(operator_token.begin, "expected `)` after the attribute name");
 	current_ = operator_token;
-	set_number(reported ? "1" : "0", 1);
+	set_number(answer, static_cast<uint32_t>(std::strlen(answer)));
 }
 
 void MacroExpander::replace_has_include(bool next)
@@ -1112,10 +1119,11 @@ void MacroExpander::replace_has_builtin()
 	const PPToken operand = read_probe_operand(operator_token);
 	if (operand.kind != PPTokenKind::Identifier && !IsIdentifierLikeOperator(operand))
 		throw PreprocessError(operator_token.begin, "expected an identifier after __has_builtin");
-	const bool provided = operand.kind == PPTokenKind::Identifier &&
-		IsProvidedBuiltin(operand.spelling, operand.length);
+	const uint32_t provided = operand.kind == PPTokenKind::Identifier
+		? ProvidedBuiltinVersion(operand.spelling, operand.length)
+		: 0;
 	current_ = operator_token;
-	set_number(provided ? "1" : "0", 1);
+	set_number(provided == 201802 ? "201802" : provided ? "1" : "0", provided == 201802 ? 6 : 1);
 }
 
 void MacroExpander::replace_identifier_probe(BuiltinMacro probe)

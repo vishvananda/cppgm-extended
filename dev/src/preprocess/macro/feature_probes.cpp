@@ -25,6 +25,28 @@ bool Equals(const char* entry, const char* spelling, uint32_t length)
 	return std::strlen(entry) == length && std::memcmp(entry, spelling, length) == 0;
 }
 
+struct LanguageFeature
+{
+	const char* name;
+	const char* value;
+	unsigned language;
+};
+
+const LanguageFeature kLanguageMacros[] = { { "aggregate_nsdmi", "201304L", 14 }, { "binary_literals", "201304L", 14 },
+	{ "constexpr", "201304L", 14 }, { "decltype_auto", "201304L", 14 }, { "digit_separators", "201309L", 14 },
+	{ "generic_lambdas", "201304L", 14 }, { "init_captures", "201304L", 14 },
+	{ "return_type_deduction", "201304L", 14 }, { "sized_deallocation", "201309L", 14 },
+	{ "variable_templates", "201304L", 14 }, { "aggregate_bases", "201603L", 17 },
+	{ "capture_star_this", "201603L", 17 }, { "constexpr", "201603L", 17 }, { "deduction_guides", "201703L", 17 },
+	{ "enumerator_attributes", "201411L", 17 }, { "namespace_attributes", "201411L", 17 },
+	{ "hex_float", "201603L", 17 }, { "fold_expressions", "201603L", 17 }, { "guaranteed_copy_elision", "201606L", 17 },
+	{ "if_constexpr", "201606L", 17 }, { "inline_variables", "201606L", 17 },
+	{ "nested_namespace_definitions", "201411L", 17 }, { "noexcept_function_type", "201510L", 17 },
+	{ "nontype_template_args", "201411L", 17 }, { "nontype_template_parameter_auto", "201606L", 17 },
+	{ "range_based_for", "201603L", 17 }, { "static_assert", "201411L", 17 }, { "structured_bindings", "201606L", 17 },
+	{ "template_auto", "201606L", 17 }, { "template_template_args", "201611L", 17 },
+	{ "variadic_using", "201611L", 17 } };
+
 } // namespace
 
 bool IsProvidedFeature(const char* spelling, uint32_t length, const FeatureModes& modes)
@@ -38,6 +60,13 @@ bool IsProvidedFeature(const char* spelling, uint32_t length, const FeatureModes
 		return modes.exceptions;
 	if (Equals("cxx_rtti", spelling, length))
 		return modes.rtti;
+	if (Equals("gnu_asm", spelling, length))
+		return true;
+	static const char* const kCxx14[] = { "cxx_aggregate_nsdmi", "cxx_contextual_conversions", "cxx_decltype_auto",
+		"cxx_generic_lambdas", "cxx_init_captures", "cxx_relaxed_constexpr", "cxx_return_type_deduction" };
+	for (const char* feature : kCxx14)
+		if (Equals(feature, spelling, length))
+			return modes.language >= 14;
 	for (const char* feature : kLanguageFeatures)
 	{
 		if (Equals(feature, spelling, length))
@@ -53,5 +82,29 @@ bool IsProvidedFeature(const char* spelling, uint32_t length, const FeatureModes
 		return FindGnuTrait(trait.data(), static_cast<uint32_t>(trait.size()), found) &&
 			(!IsGnuTypeTransform(found) || found == GnuTrait::UnderlyingType);
 	}
+	return false;
+}
+
+std::string LanguageFeatureMacros(unsigned language)
+{
+	std::string text = "#define __cpp_constexpr 200704L\n#define __cpp_range_based_for 200907L\n"
+					   "#define __cpp_static_assert 200410L\n";
+	for (const LanguageFeature& feature : kLanguageMacros)
+	{
+		if (feature.language > language)
+			continue;
+		text += std::string("#undef __cpp_") + feature.name + "\n#define __cpp_" + feature.name + " " + feature.value +
+			"\n";
+	}
+	return text;
+}
+
+bool IsLanguageFeatureMacro(const char* spelling, uint32_t length)
+{
+	if (length < 7 || std::memcmp(spelling, "__cpp_", 6) != 0)
+		return false;
+	for (const LanguageFeature& feature : kLanguageMacros)
+		if (Equals(feature.name, spelling + 6, length - 6))
+			return true;
 	return false;
 }

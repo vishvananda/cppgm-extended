@@ -9,7 +9,7 @@
 // and the type traits and transforms (__is_class ...). Hosted headers ask
 // `__has_builtin` before using an optional one; it answers from these
 // registries, which the parser and analyzer read the names from.
-bool IsProvidedBuiltin(const char* spelling, uint32_t length);
+uint32_t ProvidedBuiltinVersion(const char* spelling, uint32_t length);
 
 // The builtin functions (GCC's and Clang's): the analyzer declares each in
 // the global namespace from its entry when a call first names it.

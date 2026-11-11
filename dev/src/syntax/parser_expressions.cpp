@@ -19,7 +19,7 @@ const Identifier* ReservedBuiltinCallee(const Name& name)
 		return nullptr;
 	const Identifier* identifier = name.components[0].identifier;
 	if (std::strncmp(identifier->spelling, "__builtin_", 10) == 0 &&
-		!IsProvidedBuiltin(identifier->spelling, static_cast<uint32_t>(std::strlen(identifier->spelling))))
+		!ProvidedBuiltinVersion(identifier->spelling, static_cast<uint32_t>(std::strlen(identifier->spelling))))
 		return identifier;
 	return nullptr;
 }

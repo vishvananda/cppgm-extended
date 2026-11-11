@@ -1,0 +1,5 @@
+preproc 1
+sof tests/preproc/300-supported-attribute-versions.t
+identifier standard_attribute_versions
+identifier implemented_gnu_attributes
+eof

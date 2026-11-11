@@ -1,0 +1,1 @@
+-fPIC -U__PIC__ -U__pic__ -D__NO_INLINE__=7

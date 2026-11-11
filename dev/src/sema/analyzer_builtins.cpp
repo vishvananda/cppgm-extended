@@ -1355,7 +1355,32 @@ ExprFacts* Analyzer::allocation_builtin(const syntax::CallExpr& expr, bool alloc
 		graph_.global, operator_key(allocate ? TokenKind::KW_NEW : TokenKind::KW_DELETE));
 	expression_scope_ = scope;
 	adl_functions_.clear();
-	return resolved_call(expr, entry != nullptr ? entry->functions : nullptr, nullptr, false, nullptr, false);
+	ExprFacts* facts = resolved_call(
+		expr, entry != nullptr ? entry->functions : nullptr, nullptr, false, nullptr, false);
+	if (facts == nullptr || facts->entity == nullptr || facts->entity->kind != EntityKind::Function)
+		return facts;
+	const FunctionEntity* selected = static_cast<const FunctionEntity*>(facts->entity);
+	const Type* signature = selected->type->canonical;
+	uint32_t parameter = 1;
+	const bool sized = !allocate && cxx14_ && signature->param_count > parameter &&
+		signature->params[parameter] == types_.fundamental(FundamentalType::UnsignedLongInt);
+	if (sized)
+		++parameter;
+	if (cxx17_ && signature->param_count > parameter && signature->params[parameter]->unqualified == alignment_type())
+		++parameter;
+	if (!sized && signature->param_count > parameter)
+	{
+		const Type* argument = signature->params[parameter];
+		const bool reference = argument->kind == TypeKind::LValueReference ||
+			argument->kind == TypeKind::RValueReference;
+		const ClassEntity* tag = reference ? ClassOf(argument->element) : nullptr;
+		if (tag != nullptr && argument->element->cv == kConst && tag->name == special_key("nothrow_t") && in_std(tag))
+			++parameter;
+	}
+	if (signature->variadic || signature->param_count != parameter || selected->owner != graph_.global ||
+		selected->primary != nullptr || selected->templated)
+		substitution_error(expr.location, "allocation builtin requires a replaceable global allocation function");
+	return facts;
 }
 
 const FunctionEntity* Analyzer::header_builtin(const FunctionEntity* function)
