@@ -1,9 +1,6 @@
-declare function @__cppgm_libgcc_muldc3(%arg0 : f64, %arg1 : f64, %arg2 : f64, %arg3 : f64) -> obj<16x8> [effects=readnone, unwind=no, linkage=c, binding=strong, object=__muldc3]
+declare function @__cppgm_libgcc_muldc3(%arg0 : f64, %arg1 : f64, %arg2 : f64, %arg3 : f64) -> i128 [effects=readnone, unwind=no, result_classes=integer_integer, linkage=c, binding=strong, object=__muldc3]
 
-function @sum_scaled(%v : ptr, %w : obj<16x8>) -> f64 [binding=strong, object=_Z10sum_scaledP3VecCd] {
-  slot $complex__1 : obj<16x8>
-  slot $aggregate__2 : obj<16x8>
-
+function @sum_scaled(%v : ptr, %w : i128 [classes=integer_integer]) -> f64 [binding=strong, object=_Z10sum_scaledP3VecCd] {
   block ^entry:
     %t1 = index i8 [projection=field] %v, 8
     %t2 = load typed i64 %t1
@@ -12,48 +9,47 @@ function @sum_scaled(%v : ptr, %w : obj<16x8>) -> f64 [binding=strong, object=_Z
 
   block ^loop_preheader_1:
     %t4 = load typed ptr %v
+    %t5 = convert trunc i64 i128 %w
+    %t6 = binary ushr i128 %w, 64
+    %t7 = convert trunc i64 i128 %t6
+    %t8 = copy f64 %t5
+    %t9 = copy f64 %t7
     jump ^for_body_2
 
   block ^for_body_2:
-    %t5 = phi i64 [^complex_end_5: %t28, ^loop_preheader_1: 0]
-    %t6 = phi f64 [^complex_end_5: %t27, ^loop_preheader_1: 0]
-    %t7 = index obj<16x8> [projection=array_element] %t4, %t5
-    %t8 = load f64 %t7
-    %t9 = index i8 [projection=field] %t7, 8
-    %t10 = load f64 %t9
-    copyobj 16x8 %w, $complex__1
-    %t11 = addr $complex__1
-    %t12 = load typed f64 %t11
-    %t13 = index i8 [projection=field] %t11, 8
-    %t14 = load typed f64 %t13
-    %t15 = binary mul f64 %t10, %t14
-    %t16 = binary mul f64 %t8, %t12
-    %t17 = binary sub f64 %t16, %t15
-    %t18 = cmp ne f64 %t17, %t17
-    branch %t18, ^complex_nan_3, ^complex_end_5
+    %t10 = phi i64 [^complex_end_5: %t29, ^loop_preheader_1: 0]
+    %t11 = phi f64 [^complex_end_5: %t28, ^loop_preheader_1: 0]
+    %t12 = index obj<16x8> [projection=array_element] %t4, %t10
+    %t13 = load f64 %t12
+    %t14 = index i8 [projection=field] %t12, 8
+    %t15 = load f64 %t14
+    %t16 = binary mul f64 %t9, %t15
+    %t17 = binary mul f64 %t8, %t13
+    %t18 = binary sub f64 %t17, %t16
+    %t19 = cmp ne f64 %t18, %t18
+    branch %t19, ^complex_nan_3, ^complex_end_5
 
   block ^complex_nan_3:
-    %t19 = binary mul f64 %t10, %t12
-    %t20 = binary mul f64 %t8, %t14
-    %t21 = binary add f64 %t19, %t20
-    %t22 = cmp ne f64 %t21, %t21
-    branch %t22, ^complex_recompute_4, ^complex_end_5
+    %t20 = binary mul f64 %t8, %t15
+    %t21 = binary mul f64 %t9, %t13
+    %t22 = binary add f64 %t20, %t21
+    %t23 = cmp ne f64 %t22, %t22
+    branch %t23, ^complex_recompute_4, ^complex_end_5
 
   block ^complex_recompute_4:
-    %t23 = call obj<16x8> @__cppgm_libgcc_muldc3(%t8, %t10, %t12, %t14)
-    %t24 = addr $aggregate__2
-    copyobj 16x8 %t23, %t24
-    %t25 = load f64 %t24
+    %t24 = call i128 @__cppgm_libgcc_muldc3(%t13, %t15, %t8, %t9)
+    %t25 = convert trunc i64 i128 %t24
+    %t26 = copy f64 %t25
     jump ^complex_end_5
 
   block ^complex_end_5:
-    %t26 = phi f64 [^for_body_2: %t17, ^complex_nan_3: %t17, ^complex_recompute_4: %t25]
-    %t27 = binary add f64 %t26, %t6
-    %t28 = binary add nowrap i64 %t5, 1
-    %t29 = cmp lt i64 %t28, %t2
-    branch %t29, ^for_body_2, ^for_end_6
+    %t27 = phi f64 [^for_body_2: %t18, ^complex_nan_3: %t18, ^complex_recompute_4: %t26]
+    %t28 = binary add f64 %t27, %t11
+    %t29 = binary add nowrap i64 %t10, 1
+    %t30 = cmp lt i64 %t29, %t2
+    branch %t30, ^for_body_2, ^for_end_6
 
   block ^for_end_6:
-    %t30 = phi f64 [^entry: 0, ^complex_end_5: %t27]
-    return f64 %t30
+    %t31 = phi f64 [^entry: 0, ^complex_end_5: %t28]
+    return f64 %t31
 }

@@ -368,6 +368,13 @@ void FunctionSelector::prepass_block(uint32_t b)
 						t.forbid &= ~(1u << RAX);
 			}
 		}
+		if (inst.op == Opcode::Call && inst.result < incoming_words_.size())
+		{
+			const WordPair& pair = incoming_words_[inst.result];
+			for (Value v : { pair.lo, pair.hi })
+				if (v.kind == ValueKind::Temp)
+					temps_[v.index].forbid = mask_for(temps_[v.index]);
+		}
 		const uint32_t clobber = clobber_[id];
 		const uint32_t early = early_[id];
 		for (uint32_t m = clobber; m != 0; m &= m - 1)
@@ -458,6 +465,13 @@ void FunctionSelector::prepass_block(uint32_t b)
 	{
 		for (uint32_t p = 0; p < body.parameter_count; ++p)
 			temps_[p].forbid = mask_for(temps_[p]);
+		for (uint32_t p = 0; p < body.parameter_count && p < incoming_words_.size(); ++p)
+		{
+			const WordPair& pair = incoming_words_[p];
+			for (Value v : { pair.lo, pair.hi })
+				if (v.kind == ValueKind::Temp)
+					temps_[v.index].forbid = mask_for(temps_[v.index]);
+		}
 	}
 }
 
@@ -740,6 +754,16 @@ void FunctionSelector::bind(uint32_t temp, Reg reg)
 
 Reg FunctionSelector::incoming_reg(uint32_t param) const
 {
+	if (param >= body_->parameter_count)
+	{
+		if (param >= incoming_origin_.size() || incoming_origin_[param] == kNoId)
+			return kNoReg;
+		const uint32_t origin = incoming_origin_[param], root = origin / 2;
+		if (root >= body_->parameter_count)
+			return kNoReg;
+		const ArgLayout& arg = entry_layout_.args[root];
+		return arg.part_count == 2 ? entry_layout_.parts[arg.first_part + origin % 2].reg : kNoReg;
+	}
 	const ArgLayout& arg = entry_layout_.args[param];
 	return arg.part_count == 1 ? entry_layout_.parts[arg.first_part].reg : kNoReg;
 }

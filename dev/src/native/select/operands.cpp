@@ -540,6 +540,22 @@ void FunctionSelector::emit_move(const Move& move)
 {
 	const Operand& dst = move.dst;
 	const Operand& src = move.src;
+	if (move.extend_register && src.kind == OperandKind::Reg)
+	{
+		const Reg reg = dst.kind == OperandKind::Reg ? dst.reg : kEmitScratch;
+		if (move.src_type == TypeKind::I1)
+		{
+			load_into(reg, src, TypeKind::I64);
+			emit2(Op::And, TypeKind::I64, Operand::make_reg(reg), Operand::make_imm(1));
+		}
+		else
+		{
+			emit2(signed_integer(move.src_type) ? Op::Sext : Op::Zext, move.src_type, Operand::make_reg(reg), src);
+		}
+		if (dst.kind != OperandKind::Reg)
+			emit2(Op::Store, move.type, dst, Operand::make_reg(reg));
+		return;
+	}
 	const bool float_type = move.type == TypeKind::F32 || move.type == TypeKind::F64;
 	if (dst.kind == OperandKind::Reg)
 	{
@@ -611,7 +627,7 @@ void FunctionSelector::parallel_moves(std::vector<Move>& moves)
 {
 	size_t n = 0;
 	for (size_t i = 0; i < moves.size(); ++i)
-		if (moves[i].address || moves[i].dst != moves[i].src)
+		if (moves[i].address || moves[i].extend_register || moves[i].dst != moves[i].src)
 			moves[n++] = moves[i];
 	moves.resize(n);
 	if (n == 0)

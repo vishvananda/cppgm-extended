@@ -515,9 +515,22 @@ and `gap-D-terminal-select-bound-r1/`.
 A separate C4 screen prices a call's setup and control work in the existing
 callee-shape walk. It reduces frozen compile instructions by 4.42%, 5.68% and
 6.00% at O1–O3. Its first 40-provider profile reduces executed bytes 0.717%
-and modeled L2 misses 3.331%, while calls rise 2.536%. The remaining three
-profiles and hardware panel are pending; this experiment is not part of the
-qualified compiler. Evidence: `gap-C-call-price-*`.
+and modeled L2 misses 3.331%, while calls rise 2.536%. The completed four-input
+panel has calls up 2.46–2.69% and instructions up 0.33–0.55%, despite modeled L2
+misses falling 2.71–3.43%. Its full five-block comparison has cycles 1.31%
+worse than its before binary (95% interval -0.064% to +2.683%), with no proven
+gain; all outputs match. This experiment is not part of the qualified compiler.
+Its elapsed estimate is especially noisy and is not an acceptance score.
+Evidence: `gap-C-call-price-*`.
+
+The prototype adds `3 + argument_count` for each call *inside the callee* to
+its admission price, then applies the existing caps. It never credits the
+caller for the call sequence being removed. This is an incomplete cost
+comparison and plausibly explains the extra retained calls; that attribution
+still needs an admission trace joined to the dynamic profile. Do not rerun
+this unchanged penalty as the proposed C4 cost model, or silently raise its
+caps. Revisit it after the aggregate checkpoint with explicit admission
+reasons and the caller/callee cost difference, preserving resource limits.
 
 ## Two-word prototype: investigate the unexpected regression
 
@@ -785,3 +798,192 @@ Evidence: `gap-A-small-carriers-rebased-*`, `gap-A-small-carriers-full-*`,
 `gap-A-full-provider-map-r7/`, `gap-A-children-store-forward-shape-r7/`,
 `gap-A-partial-copy-*`, `gap-A-partial-carrier-byte-controls-r9/`,
 `gap-aggregate-units43-r9.json`, and `gap-A-forward-once-*`.
+
+
+### Full aggregate experiment and qualification repairs (2026-11-11)
+
+The full r9 LLVM build reproduces all 325 native objects and the linked
+executable. Its hardware panel, paired against the compiler rebased on 535ed4f12,
+reduces blocked store forwarding by 60.63%, to 1.323 times native. Instructions
+fall 1.17–1.21%, modeled code misses on number_literal fall 5.17%, and executed
+code bytes fall 4.60%. Hardware cycle group medians improve 1.36–3.55%, but still
+stand at 1.080–1.105 times native. All eighty outputs agree; seventeen outliers
+are retained. The separate five-block whole-workload timing is complete:
+all 325 objects and the linked executable match in all 32 observations. The r9
+cycle ratio is 1.1105 (95% interval 1.0673–1.1536), against 1.1152 for accepted;
+the gain's lower confidence bound is negative. Elapsed is 1.0942 (interval
+0.9795–1.2088), with large load effects retained. The mechanism improves but this
+run proves neither a whole-workload gain nor the 1.05 elapsed target. The later
+correctness repairs also prevent accepting r9 itself.
+
+All four deterministic panels finished. Ratios to native are:
+
+| Input | Executed bytes | Instructions | Bytes/instruction | Conditional branches | Calls | Modeled L2 code misses |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| number_literal | 1.311 | 1.043 | 1.093 | 1.124 | 1.160 | 1.157 |
+| store_motion | 1.313 | 1.055 | 1.086 | 1.107 | 1.146 | 1.156 |
+| program_lowering | 1.307 | 1.063 | 1.083 | 1.121 | 1.145 | 1.169 |
+| class_templates | 1.305 | 1.072 | 1.084 | 1.132 | 1.141 | 1.164 |
+
+The executed-byte breakdown attributes 28% of the residual byte excess to
+long-displacement stack accesses, 17% to long conditional branches, 17% to
+address calculations and 15% to other memory stores. These categories are
+footprint attribution, not independent cycle savings. Large X86 opcode switches
+lead the common-function byte differences; rank and bound this family before
+changing switch lowering. Existing frame-window and epilogue bounds remain
+applicable and must not be rediscovered as new fixes.
+
+The r10 follow-up recognizes an eight-byte partial copy starting at offset four,
+using the already collected copy addresses. The 43-provider relink changes only
+Attributes.cpp against r9; the number_literal instruction difference is six
+instructions. Treat its modeled-cache change as layout-sensitive, not a proven
+runtime gain. Module cleanup in the new aggregate-checkpoint worktree preserves
+all 43 objects and the linked slice byte for byte against r10. It moves aggregate
+ABI normalization to aggregate_boundaries.cpp and wide extraction simplification
+to integer_patterns.cpp, retaining the original algorithms and source-list audits.
+
+Qualification uncovered additional defects and incomplete interactions:
+
+- Public LowIR replay rejected i128 integer_integer class metadata. This metadata
+  preserves an aggregate's eight-byte stack alignment, whereas a bare i128 uses
+  sixteen. The reader now accepts exactly that scalar class combination. PA8
+  fixtures cover accepted boundaries and rejected SSE/memory scalar classes;
+  PA33 host tests put a sixteen-byte aggregate after an odd stack word in both
+  call directions with GCC and Clang.
+- Packing same-width signed and unsigned fields emitted invalid extensions or
+  truncations. Those operations are bit copies. A separate object snapshot must
+  get explicit storage before its bits are read; it is not an address to its
+  original source, which may already have changed. PA33 regressions cover both.
+- Packing floating fields can preserve their bits with typed copies through
+  integer carriers. The new fixture checks both halves, signed zero and a NaN
+  payload, with explicit successful execution of original and optimized LowIR.
+  Larger mixed-copy examples still retain memory and need further investigation;
+  do not claim that the whole floating-field interaction is solved.
+- Self-hosting exposed stale upper bits of a materialized Boolean adjacent to an
+  enum in a returned LanguageMode. The scalar word consumer had become invisible
+  to byte-use analysis when its i128 pack died. The resulting setne al left the
+  high bits of a negative comparison result in rax. Byte-use analysis now follows
+  split words. The reduced PA34 fixture fails with r14 and passes with r15 across
+  negative inputs and all 256 adjacent byte values. Self-host through PA5 passes
+  with r15; it failed in PA1 with r14.
+- Two older control scripts demanded memory slots for safe partial accesses and
+  object-valued argument copies. Replace those representation requirements with
+  execution checks, including every valid byte offset and a previously uncalled
+  object-copy control. Volatile effects remain checked.
+
+The r15 compile-cost gate versus rebased accepted is +0.436%, -0.411%, +0.384%
+and +0.367% at O0–O3, with RSS unchanged within noise. Cumulative budget still
+uses 8f76ebb0d, not a per-prototype reset; that measurement is in progress.
+The r15 strict report passes all 10,614 fixtures and its control checks.
+Self-host through PA5, PA36 smoke, architecture audits and harness checks pass.
+Debug-info checks passed on r14 and will be repeated on the final candidate.
+The r15 full LLVM build remains in progress. Its 43-provider slice reproduces
+all 325 objects and the linked executable. Nothing in this batch is accepted yet.
+
+Continue investigating unintended regressions before judging this approach.
+The mixed-copy reduction revealed a lost address fact: wide-word expansion
+forms an index directly from a slot, whereas aggregate analysis only recognizes
+indices from temporary pointers. It therefore treats the known private slot as
+escaping and retains memory. The next private iteration teaches the existing
+address lookup about direct slot bases; it does not add another analysis pass.
+Run the fast slice and focused controls before another full qualification.
+The r15 full build gets an output check and hardware panel, but repeat the
+expensive four-input ledger only after the next iteration has been screened.
+
+Evidence: gap-A-partial-copy-full-{output,hw-panel,workload-abba}-r9;
+gap-A-partial-copy-full-ledger-*-r9 (panel-six-metric-summary.json and
+execbytes.py.r9.txt/calls2.py.r9.txt/fncompare.py.r9.txt);
+gap-A-offset-copy-*; compiler-gap-A-checkpoint-r{11,14,15};
+gap-A-checkpoint-{focused-r13,onoff-frozen-r14,self-pa5-r15};
+gap-A-selfhost-hex-failure-r14; gap-A-boolean-regression-r15.log;
+and gap-A-checkpoint-fullbase-top43-r15. The qualification checkout is
+/mnt/vizier/cppgm-llvm-aggregate-checkpoint; the accepted source remains in
+/mnt/vizier/cppgm-llvm-baseline-call-frames at a309865490cf8584a6fb02fb1724e1ca6523bec9.
+
+
+### Direct-slot facts and low-only incoming words (r16–r17)
+
+The mixed-floating-copy regression was a lost address fact, not a need for
+more packing rules. Aggregate analysis now recognizes a slot itself as an
+address with zero extent. The existing field analysis and promotion then remove
+all stack traffic in the mixed-copy reduction. The complex loop again evaluates
+its imaginary result only on the NaN path. PA33's new direct-slot fixture checks
+both branch outcomes and preserves a separate escaping-address control.
+The complete PA33 course suite and its six quality kernels pass; the two
+regression references were regenerated after reviewing the removed memory work.
+
+All 43 r16 provider objects, and their linked LLVM, equal the r15 slice byte for
+byte. Its completed 325-object replay also agrees. Reuse r15's deterministic
+ledger for that identical binary; a redundant r16 Callgrind replay was stopped
+and its partial artifacts retained with an equivalence receipt. This repair
+restores a real fixture regression but is not a measured LLVM speedup.
+
+A second incomplete interaction appears when only the low half of an incoming
+or returned i128 survives. The word-parts pass's candidate scan recognized
+i128-producing operations but missed a lone i128-to-i64 extraction. Enabling
+the existing analysis for that extraction removes the otherwise unused return
+frame (16 bytes to zero in the reduced call). The PA34 word-ABI fixture now
+checks this case and its runtime result. The r17 slice changes 38 of 43 objects
+against full r9 (r16 changed 30); all 84 mixed/replay controls and the complete
+PA33 regression suite pass. Its full build and final qualification are running.
+
+The full r15 LLVM build and all 325 outputs match native. Its hardware panel
+measures 1.087–1.109 times native cycles and 1.324 times native blocked store
+forwarding. This particular panel used the earlier post-move comparison binary,
+explicitly identified in its protocol; do not label its before/after ratios as
+comparisons against rebased accepted. r17's queue specifies that baseline.
+Cumulative r15 compile cost against 8f76ebb0d is +0.442%, -0.772%, -1.562% and
+-1.854% for O0–O3, with RSS within 0.3%. No compile-cost budget reset or runtime
+acceptance is implied.
+
+Evidence: compiler-gap-A-{direct-slot-r16,low-word-r17};
+gap-A-{direct-slot-top43-r16,low-word-top43-r17};
+gap-A-low-word-controls-r16 (before/after MIR reduction);
+gap-A-low-word-controls-r17; gap-A-checkpoint-full-output-r15;
+gap-A-checkpoint-full-hw-r15 (including baseline-note.json);
+gap-A-checkpoint-cumulative-frozen-r15; gap-A-low-word-full-qualification-r17.log.
+
+The conservative switch-chain bound finds 7.626 million instructions and 50,467
+executed bytes in runs of at least eight adjacent immediate compare/branch
+pairs: only 0.72% of instructions and 0.58% of executed bytes. These are upper
+bounds on this family's removable work; native dispatch still has a cost.
+The largest individual X86 differences are real but do not by themselves
+justify the broad footprint milestone. Preserve the bound and defer that
+change until a wider mechanism is established. Evidence:
+gap-switch-linear-chain-bound-r1{,-summary}.json.
+
+
+Final r17 normal qualification: self-host through PA5, debug-info, PA36 smoke,
+architecture audits, file audit and placement all pass. The initial complete
+strict report was 10,614/10,615: the new native quality sidecar counted the call's
+`[args=...]` metadata as a memory operand. Its intended requirement is no frame
+access and no allocated frame. After correcting that authored expectation, the
+complete PA34 strict report passes 409/409. Together these cover every fixture
+in the full report with unchanged compiler binaries. The regression proof
+explicitly fails r15's three stores/one load and sixteen-byte call frame, then
+passes r17. The formatting check uses CI's pinned clang-format 21.1.8; the host
+22.1.2 reports one unrelated existing formatting difference.
+
+Paired compile-cost growth against rebased accepted is +0.438%, -0.396%,
++0.395% and +0.376% at O0–O3; cumulative growth against 8f76ebb0d is +0.437%,
+-0.760%, -1.554% and -1.844%. RSS is within the normal gate. The full r17 LLVM
+build completes in 562.03 seconds under load (diagnostic only), and its Clang
+reproduces all 325 objects and the linked executable. The full hardware panel
+compared with rebased accepted reduces blocked loads by 60.86%, to 1.331 times
+native. Cycle medians are 1.088–1.111 times native and 0.970–0.994 times accepted;
+all eighty outputs match, with 24 outliers retained. This remains short of the
+target and is not a whole-workload confidence claim.
+
+The full number_literal ledger now reduces executed bytes 4.63%, instructions
+1.61% and modeled L2 misses 5.26% relative to accepted. The other three ledgers
+and subsequent five-block whole-workload comparison remain in progress.
+The fetched origin/main is still 535ed4f12, already an ancestor of this branch.
+There is no additional rebase to perform at this checkpoint.
+
+Evidence: gap-A-followup-regression-proof-r17/proof.json;
+gap-A-low-word-{strict-r17,strict-pa34-r17b,self-pa5-r17,debuginfo-r17,smoke-r17}.log;
+gap-A-low-word-{format-r17,file-audit-r17,placement-r17}.log;
+gap-A-low-word-{onoff,cumulative}-frozen-r17;
+gap-A-low-word-O1-r17-llvm-build-status.json;
+gap-A-low-word-full-{output,hardware}-r17;
+gap-A-low-word-full-ledger-number_literal-r17.

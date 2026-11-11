@@ -1,0 +1,253 @@
+declare function @__builtin_memcpy(%arg0 : ptr [alias=noalias], %arg1 : ptr [alias=noalias], %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memcpy]
+
+function @edit8(%value : i128 [classes=integer_integer], %source : ptr) -> i128 [result_classes=integer_integer, linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = convert trunc i64 i128 %value
+    %t2 = binary ushr i128 %value, 64
+    %t3 = convert trunc i64 i128 %t2
+    %t4 = load u32 %source
+    %t5 = index i8 [projection=field] %source, 4
+    %t6 = load u32 %t5
+    %t7 = binary and i64 %t1, 4294967295
+    %t8 = convert zext i64 u32 %t4
+    %t9 = binary shl i64 %t8, 32
+    %t10 = binary or i64 %t7, %t9
+    %t11 = binary and i64 %t3, -4294967296
+    %t12 = convert zext i64 u32 %t6
+    %t13 = binary or i64 %t11, %t12
+    %t14 = convert zext i128 i64 %t10
+    %t15 = convert zext i128 i64 %t13
+    %t16 = binary shl i128 %t15, 64
+    %t17 = binary or i128 %t14, %t16
+    return i128 %t17
+}
+function @edit12(%value : i128 [classes=integer_integer], %source : ptr) -> i128 [result_classes=integer_integer, linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary ushr i128 %value, 64
+    %t2 = convert trunc i64 i128 %t1
+    %t3 = load i64 %source
+    %t4 = index i8 [projection=field] %source, 8
+    %t5 = load u32 %t4
+    %t6 = binary and i64 %t2, -4294967296
+    %t7 = convert zext i64 u32 %t5
+    %t8 = binary or i64 %t6, %t7
+    %t9 = convert zext i128 i64 %t3
+    %t10 = convert zext i128 i64 %t8
+    %t11 = binary shl i128 %t10, 64
+    %t12 = binary or i128 %t9, %t11
+    return i128 %t12
+}
+function @count(%node : ptr) -> u32 [binding=strong, object=_Z5countP4Node, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed u32 %node
+    %t2 = binary xor u32 %t1, 2557891634
+    return u32 %t2
+}
+function @children(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %node : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    branch %node, ^cond_then_1, ^cond_end_2
+
+  block ^cond_then_1:
+    %t1 = call u32 @count(%node)
+    jump ^cond_end_2
+
+  block ^cond_end_2:
+    %t2 = phi u32 [^cond_then_1: %t1, ^entry: 0]
+    %t3 = copy i64 %node
+    store i64 %t3, %ret
+    %t4 = index i8 [projection=field] %ret, 8
+    store u32 0, %t4
+    %t5 = index i8 [projection=field] %ret, 16
+    store i64 %t3, %t5
+    %t6 = index i8 [projection=field] %ret, 24
+    store u32 %t2, %t6
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $original : obj<16x1>
+  slot $source : obj<12x1>
+  slot $a : obj<16x8>
+  slot $b : obj<16x8>
+  slot $node : obj<4x4>
+  slot $aggregate__1 : obj<32x8>
+  slot $aggregate__2 : obj<32x8>
+
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi u32 [^entry: 0, ^if_end_22: %t73]
+    %t2 = cmp ne u32 %t1, 257
+    branch %t2, ^for_body_2, ^for_end_23
+
+  block ^for_body_2:
+    %t3 = convert zext i64 u32 %t1
+    %t4 = binary add i64 %t3, -6066930261531658096
+    %t5 = binary sub i64 1311768467463790320, %t3
+    %t6 = addr $original
+    store i64 %t4, %t6
+    %t7 = index i8 [projection=field] %t6, 8
+    store i64 %t5, %t7
+    jump ^for_cond_3
+
+  block ^for_cond_3:
+    %t8 = phi u32 [^for_body_2: 0, ^for_body_4: %t16]
+    %t9 = cmp ne u32 %t8, 12
+    branch %t9, ^for_body_4, ^for_end_5
+
+  block ^for_body_4:
+    %t10 = binary mul u32 %t1, 31
+    %t11 = binary mul u32 %t8, 17
+    %t12 = binary add u32 %t10, %t11
+    %t13 = convert trunc u8 u32 %t12
+    %t14 = addr $source
+    %t15 = index u8 [projection=array_element] %t14, %t8
+    store u8 %t13, %t15
+    %t16 = binary add u32 %t8, 1
+    jump ^for_cond_3
+
+  block ^for_end_5:
+    %t17 = addr $a
+    %t18 = addr $source
+    %t19 = convert zext i128 i64 %t4
+    %t20 = convert zext i128 i64 %t5
+    %t21 = binary shl i128 %t20, 64
+    %t22 = binary or i128 %t19, %t21
+    %t23 = call i128 @edit8(%t22, %t18)
+    %t24 = convert trunc i64 i128 %t23
+    %t25 = binary ushr i128 %t23, 64
+    %t26 = convert trunc i64 i128 %t25
+    store i64 %t24, %t17
+    %t27 = index i8 [projection=field] %t17, 8
+    store i64 %t26, %t27
+    %t28 = addr $b
+    %t29 = call i128 @edit12(%t22, %t18)
+    %t30 = convert trunc i64 i128 %t29
+    %t31 = binary ushr i128 %t29, 64
+    %t32 = convert trunc i64 i128 %t31
+    store i64 %t30, %t28
+    %t33 = index i8 [projection=field] %t28, 8
+    store i64 %t32, %t33
+    jump ^for_cond_6
+
+  block ^for_cond_6:
+    %t34 = phi u32 [^for_end_5: 0, ^if_end_16: %t56]
+    %t35 = cmp ne u32 %t34, 16
+    branch %t35, ^for_body_7, ^for_end_17
+
+  block ^for_body_7:
+    %t36 = index u8 [projection=array_element] %t17, %t34
+    %t37 = load u8 %t36
+    %t38 = cmp uge u32 %t34, 4
+    branch %t38, ^land_rhs_8, ^cond_else_10
+
+  block ^land_rhs_8:
+    %t39 = cmp ult u32 %t34, 12
+    branch %t39, ^cond_then_9, ^cond_else_10
+
+  block ^cond_then_9:
+    %t40 = binary sub u32 %t34, 4
+    %t41 = index u8 [projection=array_element] %t18, %t40
+    %t42 = load u8 %t41
+    %t43 = cmp ne u8 %t37, %t42
+    branch %t43, ^if_then_11, ^if_end_12
+
+  block ^cond_else_10:
+    %t44 = index u8 [projection=array_element] %t6, %t34
+    %t45 = load u8 %t44
+    %t46 = cmp ne u8 %t37, %t45
+    branch %t46, ^if_then_11, ^if_end_12
+
+  block ^if_then_11:
+    return i32 1
+
+  block ^if_end_12:
+    %t47 = index u8 [projection=array_element] %t28, %t34
+    %t48 = load u8 %t47
+    %t49 = cmp ult u32 %t34, 12
+    branch %t49, ^cond_then_13, ^cond_else_14
+
+  block ^cond_then_13:
+    %t50 = index u8 [projection=array_element] %t18, %t34
+    %t51 = load u8 %t50
+    %t52 = cmp ne u8 %t48, %t51
+    branch %t52, ^if_then_15, ^if_end_16
+
+  block ^cond_else_14:
+    %t53 = index u8 [projection=array_element] %t6, %t34
+    %t54 = load u8 %t53
+    %t55 = cmp ne u8 %t48, %t54
+    branch %t55, ^if_then_15, ^if_end_16
+
+  block ^if_then_15:
+    return i32 2
+
+  block ^if_end_16:
+    %t56 = binary add u32 %t34, 1
+    jump ^for_cond_6
+
+  block ^for_end_17:
+    %t57 = addr $node
+    %t58 = binary mul u32 %t1, 1664525
+    store typed u32 %t58, %t57
+    %t59 = addr $aggregate__1
+    call void @children(%t59, %t57)
+    %t60 = load ptr %t59
+    %t61 = index i8 [projection=field] %t59, 8
+    %t62 = load i64 %t61
+    %t63 = index i8 [projection=field] %t59, 16
+    %t64 = load ptr %t63
+    %t65 = index i8 [projection=field] %t59, 24
+    %t66 = load i64 %t65
+    %t67 = cmp ne ptr %t57, %t60
+    branch %t67, ^if_then_21, ^lor_rhs_18
+
+  block ^lor_rhs_18:
+    %t68 = cmp ne ptr %t57, %t64
+    branch %t68, ^if_then_21, ^lor_rhs_19
+
+  block ^lor_rhs_19:
+    %t69 = convert trunc u32 i64 %t62
+    branch %t69, ^if_then_21, ^lor_rhs_20
+
+  block ^lor_rhs_20:
+    %t70 = convert trunc u32 i64 %t66
+    %t71 = call u32 @count(%t57)
+    %t72 = cmp ne u32 %t70, %t71
+    branch %t72, ^if_then_21, ^if_end_22
+
+  block ^if_then_21:
+    return i32 3
+
+  block ^if_end_22:
+    %t73 = binary add u32 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_23:
+    %t74 = addr $aggregate__2
+    call void @children(%t74, 0)
+    %t75 = load ptr %t74
+    %t76 = index i8 [projection=field] %t74, 8
+    %t77 = load i64 %t76
+    %t78 = index i8 [projection=field] %t74, 16
+    %t79 = load ptr %t78
+    %t80 = index i8 [projection=field] %t74, 24
+    %t81 = load i64 %t80
+    branch %t75, ^lor_end_26, ^lor_rhs_24
+
+  block ^lor_rhs_24:
+    %t82 = cmp ne ptr %t79, 0
+    branch %t82, ^lor_end_26, ^lor_rhs_25
+
+  block ^lor_rhs_25:
+    %t83 = convert trunc u32 i64 %t77
+    %t84 = convert trunc u32 i64 %t81
+    %t85 = cmp ne u32 %t84, 0
+    %t86 = select i64 %t83, 1, %t85
+    jump ^lor_end_26
+
+  block ^lor_end_26:
+    %t87 = phi i64 [^for_end_23: 1, ^lor_rhs_24: 1, ^lor_rhs_25: %t86]
+    %t88 = convert trunc i32 i64 %t87
+    return i32 %t88
+}

@@ -1,0 +1,7 @@
+# Partial copies read only the source bytes; the value stays in scalar form.
+count(copyobj) <= 0 in @edit8
+count(store) <= 0 in @edit8
+count(load) <= 2 in @edit8
+count(copyobj) <= 0 in @edit12
+count(store) <= 0 in @edit12
+count(load) <= 2 in @edit12

@@ -1,24 +1,22 @@
-declare function @slow(%a : f64, %b : f64) -> obj<16x8> [unwind=no]
+declare function @slow(%a : f64, %b : f64) -> i128 [unwind=no, result_classes=integer_integer]
 
 function @square_add(%re : f64, %im : f64, %c : f64, %retry : i1) -> f64 [binding=strong] {
-  slot $aggregate__1 : obj<16x8>
-
   block ^entry:
     branch %retry, ^again, ^merge
 
   block ^again:
-    %value = call obj<16x8> @slow(%re, %im)
-    %t2 = addr $aggregate__1
-    copyobj 16x8 %value, %t2
-    %t3 = load f64 %t2
-    %t4 = index i8 [projection=field] %t2, 8
-    %t5 = load f64 %t4
+    %value = call i128 @slow(%re, %im)
+    %t2 = convert trunc i64 i128 %value
+    %t3 = binary ushr i128 %value, 64
+    %t4 = convert trunc i64 i128 %t3
+    %t5 = copy f64 %t2
+    %t6 = copy f64 %t4
     jump ^merge
 
   block ^merge:
-    %t6 = phi f64 [^entry: %im, ^again: %t5]
-    %t7 = phi f64 [^entry: %re, ^again: %t3]
-    %sum = binary add f64 %t7, %t6
+    %t7 = phi f64 [^entry: %im, ^again: %t6]
+    %t8 = phi f64 [^entry: %re, ^again: %t5]
+    %sum = binary add f64 %t7, %t8
     %out = binary add f64 %c, %sum
     %square = binary mul f64 %re, %re
     %total = binary add f64 %square, %out

@@ -1,0 +1,45 @@
+#include "400-small-aggregate-abi.h"
+
+#define COURSE(N) \
+  extern "C" __attribute__((noinline)) Bytes<N> course##N(Bytes<N> value) { \
+    value.data[0] ^= 0x35; value.data[N - 1] ^= 0xa7; return value; \
+  }
+EACH_SIZE(COURSE)
+#undef COURSE
+
+extern "C" __attribute__((noinline)) Bytes<16> course_stack(STACK_ARGS)
+{
+  if (a != 11 || b != 22 || c != 33 || d != 44 || e != 55 || f != 66 || g != 77 || tail != 99)
+    value.data[8] ^= 1;
+  value.data[0] ^= 0x35;
+  value.data[15] ^= 0xa7;
+  return value;
+}
+
+int main()
+{
+  for (unsigned trial = 0; trial != 101; ++trial) {
+#define CHECK(N) { \
+    const Bytes<N>* source = source##N(trial); \
+    if (!source) return 100; \
+    Bytes<N> a = host##N(*source), b = choose##N()(*source); \
+    for (unsigned k = 0; k != N; ++k) { \
+      unsigned char expected = static_cast<unsigned char>(trial * 31 + k * 17); \
+      if (k == 0) expected ^= 0x35; \
+      if (k == N - 1) expected ^= 0xa7; \
+      if (a.data[k] != expected || b.data[k] != expected) return N; \
+    } \
+  }
+    EACH_SIZE(CHECK)
+#undef CHECK
+    const Bytes<16>* source = source16(trial);
+    Bytes<16> stack = host_stack(11, 22, 33, 44, 55, 66, 77, *source, 99);
+    for (unsigned k = 0; k != 16; ++k) {
+      unsigned char expected = source->data[k];
+      if (k == 0) expected ^= 0x35;
+      if (k == 15) expected ^= 0xa7;
+      if (stack.data[k] != expected) return 98;
+    }
+    if (host_check(trial)) return 99;
+  }
+}

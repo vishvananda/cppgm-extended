@@ -13,6 +13,10 @@ lowir::Value materialize_slot_read(lowir::FunctionBody& body, lowir::BlockId blo
 	lowir::Value slot, lowir::Type type, uint32_t location);
 void materialize_slot_values(lowir::FunctionBody& body, lowir::BlockId block, lowir::InstId& prev, lowir::InstId id);
 
+// Keep small integer-class values scalar across calls and returns, while
+// preserving the original ABI and exact object storage bounds.
+void scalarize_aggregate_boundaries(lowir::Program& program);
+
 struct BitTablePool;
 
 // Constant stack requests executed at most once per call can use fixed

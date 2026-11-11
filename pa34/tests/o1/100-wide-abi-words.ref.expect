@@ -1,0 +1,8 @@
+# ABI words require no temporary memory in the register-only helpers.
+mem <= 0 in @pair
+mem <= 0 in @parts
+instructions <= 8 in @pair
+instructions <= 8 in @parts
+mem <= 0 in @low_only
+frame <= 0 in @call_low_only
+stack_size <= 0 in @call_low_only

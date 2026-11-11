@@ -652,12 +652,12 @@ bool Parser::at_word(const char* spelling) const
 uint8_t Parser::parse_object_classes(Type type)
 {
 	// lowir.md "Object ABI Conventions": a direct object of at most 16
-	// bytes, one class for each of its eightbytes (in host objects also
-	// another type's, and their own words).
+	// bytes, or its two-integer scalar carrier with eight-byte stack alignment.
 	const uint64_t bytes = type.is_object()                             ? type.bytes
 		: type.kind() == TypeKind::I128 || type.kind() == TypeKind::F80 ? 16
 																		: (integer_bits(type.kind()) + 7) / 8;
-	if (!program_.object_facts && (!type.is_object() || bytes > 16))
+	const bool wide_carrier = type.kind() == TypeKind::I128;
+	if (!program_.object_facts && ((!type.is_object() && !wide_carrier) || bytes > 16))
 		fail("classes metadata requires a direct object of matching size");
 	uint8_t classes = 0;
 	if (at(TokenKind::Word))
@@ -667,7 +667,8 @@ uint8_t Parser::parse_object_classes(Type type)
 		const uint64_t value = parse_positive(token().text, token().length);
 		classes = value < 256 ? static_cast<uint8_t>(value) : 0;
 	}
-	if (classes == 0)
+	if (classes == 0 ||
+		(!program_.object_facts && wide_carrier && classes != (OC_STATED | EB_INTEGER | (EB_INTEGER << 2))))
 		fail("invalid classes metadata");
 	advance();
 	return classes;

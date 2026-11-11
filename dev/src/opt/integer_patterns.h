@@ -21,4 +21,6 @@ bool simplify_integer_conversion(lowir::FunctionBody& body, const std::vector<ui
 	IntegerPatternFacts& facts, lowir::Instruction& instruction);
 bool simplify_pointer_distance(lowir::FunctionBody& body, IntegerPatternFacts& facts, lowir::BlockId block,
 	lowir::InstId& previous, lowir::InstId instruction);
+// The caller has identified a truncation or right shift of an i128 pack.
+bool simplify_packed_wide_part(lowir::FunctionBody& body, lowir::Instruction& instruction, bool truncation);
 } // namespace opt

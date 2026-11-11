@@ -414,6 +414,90 @@ InstId result_copy(const FunctionBody& cb, BlockId cont, TempId result, Type typ
 	return uses == 1 ? first : kNoId;
 }
 
+// Keep a two-word inline result in scalar SSA across its return edges.
+// Recreating an i128 merge slot after aggregate promotion hides both words
+// from the following simplification and inliner waves.
+bool merge_wide_returns(
+	FunctionBody& body, TempId result, const std::vector<std::pair<BlockId, Value>>& returns, BlockId cont)
+{
+	for (const auto& r : returns)
+		if (!r.second.is(ValueKind::Temp) && !r.second.is(ValueKind::Integer) && !r.second.is(ValueKind::Slot))
+			return false;
+	const Type word = Type::scalar(TypeKind::I64), wide = Type::scalar(TypeKind::I128);
+	std::vector<Value> pairs[2];
+	BlockId block = cont;
+	InstId prev = kNoId;
+	const auto emit = [&](Instruction inst) {
+		const InstId id = append_instruction(body, inst);
+		body.instructions[id].result = append_temp(body, inst.type, id);
+		insert_after(body, block, prev, id);
+		prev = id;
+		return Value::temp(body.instructions[id].result);
+	};
+	const auto convert = [&](ConvertOp op, Type to, Type from, Value v) {
+		Instruction inst = make_instruction(Opcode::Convert, to);
+		inst.sub = static_cast<uint8_t>(op);
+		set_convert_source_type(inst, from);
+		inst.ops[0] = v;
+		return emit(inst);
+	};
+	const auto binary = [&](BinaryOp op, Value a, Value b) {
+		Instruction inst = make_instruction(Opcode::Binary, wide);
+		inst.sub = static_cast<uint8_t>(op);
+		inst.ops[0] = a;
+		inst.ops[1] = b;
+		return emit(inst);
+	};
+	const Value shift = integer_value(body, Literal{ 64, 0 });
+	for (const auto& r : returns)
+	{
+		block = r.first;
+		prev = previous_in_block(body, block, body.blocks[block].last);
+		Value parts[2];
+		Value value = r.second;
+		if (value.is(ValueKind::Integer))
+		{
+			const Literal literal = body.literals[value.index];
+			parts[0] = integer_value(body, integer_literal(static_cast<int64_t>(literal.low)));
+			parts[1] = integer_value(body, integer_literal(static_cast<int64_t>(literal.high)));
+		}
+		else
+		{
+			if (value.is(ValueKind::Slot))
+			{
+				Instruction load = make_instruction(Opcode::Load, wide);
+				load.ops[0] = value;
+				value = emit(load);
+			}
+			parts[0] = convert(ConvertOp::Trunc, word, wide, value);
+			parts[1] = convert(ConvertOp::Trunc, word, wide, binary(BinaryOp::UShr, value, shift));
+		}
+		for (unsigned half = 0; half < 2; ++half)
+		{
+			pairs[half].push_back(Value::block(block));
+			pairs[half].push_back(parts[half]);
+		}
+	}
+	block = cont;
+	prev = kNoId;
+	Value words[2];
+	for (unsigned half = 0; half < 2; ++half)
+	{
+		Instruction phi = make_instruction(Opcode::Phi, word);
+		phi.extra_first = append_operands(body, pairs[half].data(), static_cast<uint32_t>(pairs[half].size()));
+		phi.extra_count = static_cast<uint32_t>(pairs[half].size());
+		words[half] = emit(phi);
+	}
+	const Value lo = convert(ConvertOp::ZExt, wide, word, words[0]);
+	const Value hi = convert(ConvertOp::ZExt, wide, word, words[1]);
+	const Value merged = binary(BinaryOp::Or, lo, binary(BinaryOp::Shl, hi, shift));
+	// Reuse the call's result identity. The temporary made by emit is dead.
+	body.instructions[prev].result = result;
+	body.temps[result].def = prev;
+	body.temps[merged.index].def = kNoId;
+	return true;
+}
+
 void merge_returns(FunctionBody& cb, TempId result, Type type, const std::vector<std::pair<BlockId, Value>>& returns,
 	std::vector<Value>& repl)
 {
@@ -428,6 +512,8 @@ void merge_returns(FunctionBody& cb, TempId result, Type type, const std::vector
 		return;
 	}
 	const BlockId cont = cb.instructions[cb.blocks[returns[0].first].last].ops[0].index;
+	if (type.kind() == TypeKind::I128 && merge_wide_returns(cb, result, returns, cont))
+		return;
 	const InstId into = type.is_object() ? result_copy(cb, cont, result, type) : kNoId;
 	const SlotId merge = static_cast<SlotId>(cb.slots.size());
 	if (into == kNoId)

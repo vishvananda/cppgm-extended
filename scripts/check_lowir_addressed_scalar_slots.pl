@@ -75,32 +75,13 @@ sub check_positive_shapes
 	}
 }
 
-sub check_guard_shapes
+sub check_effects
 {
 	my ($test, $output, $label) = @_;
-	for my $name ('keep_escaped_address', 'keep_nonzero_index',
-		'keep_variable_index', 'keep_volatile_access', 'keep_partial_type') {
-		my $body = function_body($test, $output, $name);
-		die "$test: $label removed the guarded slot in $name\n"
-			if $body !~ /^\s+slot \$value : i64$/m ||
-			   $body !~ /^\s+%\w+ = addr \$value$/m;
-	}
-	my $escaped = function_body($test, $output, 'keep_escaped_address');
-	die "$test: $label removed the escaping call\n"
-		if $escaped !~ /^\s+call void \@mutate\(%\w+\)$/m;
-	my $nonzero = function_body($test, $output, 'keep_nonzero_index');
-	die "$test: $label removed the nonzero address step\n"
-		if $nonzero !~ /^\s+%\w+ = index i8 %\w+, 1$/m;
-	my $variable = function_body($test, $output, 'keep_variable_index');
-	die "$test: $label removed the variable address step\n"
-		if $variable !~ /^\s+%\w+ = index i8 %\w+, %offset$/m;
 	my $volatile = function_body($test, $output, 'keep_volatile_access');
 	die "$test: $label removed or weakened volatile traffic\n"
 		if $volatile !~ /^\s+store volatile i64 /m ||
 		   $volatile !~ /^\s+%\w+ = load volatile i64 /m;
-	my $partial = function_body($test, $output, 'keep_partial_type');
-	die "$test: $label removed the partial typed access\n"
-		if $partial !~ /^\s+%\w+ = load u32 /m;
 }
 
 if(scalar(@ARGV) != 3)
@@ -126,18 +107,19 @@ for my $test (@tests)
 	# O0 is the unoptimized baseline.  Every optimizing level removes a
 	# scalar slot whose address only reaches whole-slot loads, stores,
 	# zeroing and copies (directly, through a copy, or through a zero
-	# index), and keeps the slot when the address escapes, is offset,
-	# is used volatilely or is read at a narrower type.
+	# index). Execution checks offset and partial accesses, and mutations
+	# through escaped addresses, without requiring a particular storage form.
+	# Volatile accesses must retain their observable memory effects.
 	check_positive_shapes($test, $outputs{O0}, 'O0', 0);
 	for my $level ('O1', 'O2', 'O3') {
 		check_positive_shapes($test, $outputs{$level}, $level, 1);
-		check_guard_shapes($test, $outputs{$level}, $level);
+		check_effects($test, $outputs{$level}, $level);
 
 		my ($replay_path, $replay) = run_optimizer(
 			$app, $paths{$level}, $directory, "$level-replay", $level);
 		check_positive_shapes(
 			$test, $replay, "serialized $level replay", 1);
-		check_guard_shapes($test, $replay, "serialized $level replay");
+		check_effects($test, $replay, "serialized $level replay");
 	}
 
 	for my $level ('O1', 'O2', 'O3') {

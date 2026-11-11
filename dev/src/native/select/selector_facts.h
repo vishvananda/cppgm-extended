@@ -83,6 +83,13 @@ struct AddrExpr
 	int64_t disp = 0;
 };
 
+struct WordPair
+{
+	lowir::Value lo = lowir::Value::none(), hi = lowir::Value::none();
+	WordPair() = default;
+	WordPair(lowir::Value l, lowir::Value h) : lo(l), hi(h) {}
+};
+
 struct TempInfo
 {
 	uint32_t block = lowir::kNoId; // layout position of the definition
@@ -221,6 +228,7 @@ struct Move
 	lowir::TypeKind type = lowir::TypeKind::I64;      // memory width; F32/F64
 	lowir::TypeKind src_type = lowir::TypeKind::Void; // Void: `type`
 	bool address = false;
+	bool extend_register = false;
 
 	lowir::TypeKind read_type() const { return src_type == lowir::TypeKind::Void ? type : src_type; }
 };

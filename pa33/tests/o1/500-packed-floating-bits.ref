@@ -1,0 +1,41 @@
+function @floats(%lo : f32, %hi : f32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = copy u32 %lo
+    %t2 = convert zext i64 u32 %t1
+    %t3 = copy u32 %hi
+    %t4 = convert zext i64 u32 %t3
+    %t5 = binary shl i64 %t4, 32
+    %t6 = binary or i64 %t2, %t5
+    return i64 %t6
+}
+function @read_float_words(%bits : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = convert trunc u32 i64 %bits
+    %t2 = binary ushr i64 %bits, 32
+    %a = convert zext i64 u32 %t1
+    %shift = binary shl i64 %t2, 32
+    %result = binary or i64 %a, %shift
+    return i64 %result
+}
+function @double_word(%bits : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    return i64 %bits
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %value = call i64 @floats(-0f, nanf(0x12345))
+    %a = cmp eq i64 %value, 9205677894729203712
+    %roundtrip = call i64 @read_float_words(%value)
+    %b = cmp eq i64 %value, %roundtrip
+    %double = call i64 @double_word(9221365074855185357)
+    %c = cmp eq i64 %double, 9221365074855185357
+    %ab = binary and i64 %a, %b
+    %ok = binary and i64 %c, %ab
+    branch %ok, ^passed, ^failed
+
+  block ^passed:
+    return i32 0
+
+  block ^failed:
+    return i32 1
+}

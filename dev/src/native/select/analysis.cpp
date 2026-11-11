@@ -32,6 +32,9 @@ FunctionSelector::FunctionSelector(const lowir::Program& program, SelectStats& s
 void FunctionSelector::reset(lowir::SymbolId symbol, Function& out)
 {
 	loop_facts_ready_ = false;
+	wide_parts_.clear();
+	incoming_words_.clear();
+	incoming_origin_.clear();
 	assembly_plans_.clear();
 	const lowir::Symbol& sym = program_.symbols[symbol];
 	const lowir::Function& function = program_.functions[sym.detail];
@@ -271,7 +274,7 @@ void FunctionSelector::analyze_slots()
 				escaped[inst.ops[0].index] = 1;
 			return;
 		}
-		for_each_operand(body, inst, [&](Value v, OperandRole) {
+		native::for_each_operand(body, inst, [&](Value v, OperandRole) {
 			if (v.kind == ValueKind::Slot)
 			{
 				slot_state_[v.index] = SS_NORMAL;
@@ -720,7 +723,7 @@ void FunctionSelector::find_low_reads()
 			return;
 		}
 		uint32_t position = 0;
-		for_each_operand(body, inst, [&](Value v, OperandRole) {
+		native::for_each_operand(body, inst, [&](Value v, OperandRole) {
 			const uint32_t k = position++;
 			if (v.kind != ValueKind::Temp || v.index >= low_read_.size() || low_read_[v.index] == 0)
 				return;
@@ -962,7 +965,7 @@ void FunctionSelector::resolve_aliases()
 					for (uint32_t k = 1; k < inst.extra_count; k += 2)
 						count(body.operands[inst.extra_first + k]);
 				else
-					for_each_operand(body, inst, [&](Value v, OperandRole) { count(v); });
+					native::for_each_operand(body, inst, [&](Value v, OperandRole) { count(v); });
 			});
 			for (uint32_t s = 0; s < slot_state_.size(); ++s)
 				if (slot_state_[s] == SS_PROMOTED && slot_value_[s].kind == ValueKind::Temp)
@@ -1201,7 +1204,7 @@ void FunctionSelector::find_scaled_offsets()
 			check(inst.ops[1], 1);
 			return;
 		}
-		for_each_operand(body, inst, [&](Value v, OperandRole) { check(v, 0); });
+		native::for_each_operand(body, inst, [&](Value v, OperandRole) { check(v, 0); });
 	});
 	auto constant = [&](uint32_t m) {
 		const Instruction& def = body.instructions[body.temps[m].def];
@@ -1333,7 +1336,7 @@ void FunctionSelector::eliminate_dead()
 						drop(body.operands[inst.extra_first + k]);
 				}
 				else
-					for_each_operand(body, inst, [&](Value v, OperandRole) { drop(v); });
+					native::for_each_operand(body, inst, [&](Value v, OperandRole) { drop(v); });
 			}
 		}
 	}
@@ -1382,6 +1385,7 @@ void FunctionSelector::place_uses()
 		if (inst.op == Opcode::Phi)
 			t.flags |= TF_GLOBAL;
 	});
+	place_incoming_words();
 	for (size_t i = 0; i < temps_.size(); ++i)
 	{
 		temps_[i].uses = 0;
@@ -1707,12 +1711,25 @@ void FunctionSelector::find_byte_booleans()
 	bool grown = false;
 	// A read of v (by a reader that reads the low byte only when `safe`).
 	auto read = [&](Value v, bool safe) {
-		const Value r = resolve(v);
-		if (r.kind == ValueKind::Temp && !safe && !wide[r.index])
+		if (safe)
+			return;
+		const auto mark = [&](Value value) {
+			const Value r = resolve(value);
+			if (r.kind == ValueKind::Temp && !wide[r.index])
+			{
+				wide[r.index] = 1;
+				grown = true;
+			}
+		};
+		// A split boundary consumes its scalar words even when their i128
+		// pack is dead. A Boolean within either word must be canonical.
+		if (const WordPair* pair = wide_parts(resolve(v)))
 		{
-			wide[r.index] = 1;
-			grown = true;
+			mark(pair->lo);
+			mark(pair->hi);
 		}
+		else
+			mark(v);
 	};
 	auto boolean = [&](Value v) {
 		const Value r = resolve(v);

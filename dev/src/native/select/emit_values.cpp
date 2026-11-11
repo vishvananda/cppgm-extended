@@ -631,6 +631,8 @@ void FunctionSelector::emit_store(const Instruction& inst)
 		emit2(Op::FMov, kind, mem, Operand::make_reg(x));
 		return;
 	}
+	if (kind == TypeKind::I128 && store_wide_parts(inst))
+		return;
 	if (kind == TypeKind::F80 || kind == TypeKind::I128 || type.is_object())
 	{
 		const Operand src = memory_value_operand(value, type);

@@ -1,0 +1,33 @@
+global @source : obj<8x4> = zero
+
+function @snapshot() -> i64 [no_inline=yes] {
+  block ^entry:
+    %p = addr @source
+    store i32 7, %p
+    %t2 = load i64 @source
+    store i32 9, %p
+    return i64 %t2
+}
+function @word(%value : i32) -> u32 [no_inline=yes] {
+  block ^entry:
+    %read = copy u32 %value
+    return u32 %read
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %value = call i64 @snapshot()
+    %saved = convert trunc i32 i64 %value
+    %ok = cmp eq i32 %saved, 7
+    branch %ok, ^word, ^failed
+
+  block ^word:
+    %bits = call u32 @word(-1)
+    %same = cmp eq u32 %bits, 4294967295
+    branch %same, ^passed, ^failed
+
+  block ^passed:
+    return i32 0
+
+  block ^failed:
+    return i32 1
+}

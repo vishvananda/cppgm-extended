@@ -49,6 +49,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 	analyze_slots();
 	resolve_aliases();
 	find_scaled_offsets();
+	find_wide_parts();
 	count_uses();
 	eliminate_dead();
 	place_uses();

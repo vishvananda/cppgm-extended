@@ -40,6 +40,9 @@ struct SelectorState
 	std::vector<uint32_t> wide_phi_first_;                      // wide phis: start of their sorted pairs
 	std::vector<std::pair<uint32_t, uint32_t>> wide_phi_pairs_; // (predecessor id, operand index)
 	std::vector<TempInfo> temps_;
+	std::vector<WordPair> wide_parts_;
+	std::vector<WordPair> incoming_words_;
+	std::vector<uint32_t> incoming_origin_;
 	std::vector<lowir::Value> alias_;
 	std::vector<uint8_t> fits_; // O1+ per temp: low bits its non-negative value fits in (64: unknown)
 	std::vector<AddrExpr> addrs_;

@@ -71,6 +71,13 @@ Type filler_type(uint64_t bytes)
 								   : TypeKind::I64);
 }
 
+// A short zero write has the same byte coverage as a scalar store.
+bool scalar_zero(const Instruction& inst)
+{
+	return inst.op == Opcode::ZeroInit && !(inst.flags & IF_VOLATILE) &&
+		(inst.immediate == 1 || inst.immediate == 2 || inst.immediate == 4 || inst.immediate == 8);
+}
+
 class AggregateSlots
 {
 public:
@@ -81,9 +88,10 @@ public:
 private:
 	bool objects_through_slots();
 	bool address_of(Value v, SlotAddress& out) const;
-	uint64_t address_extent(Value v) const { return extent_.empty() ? 0 : extent_[v.index]; }
+	uint64_t address_extent(Value v) const { return !v.is(ValueKind::Temp) || extent_.empty() ? 0 : extent_[v.index]; }
 	void escape(Value v);
 	void analyze();
+	bool scalarize_partial_copies();
 	void mark_recurrent_fields();
 	void access(Value storage, Type type, bool store);
 	void span(Value storage, uint64_t bytes, bool read = false);
@@ -110,11 +118,17 @@ private:
 	std::vector<uint64_t> extent_;     // maximum additional offset of a bounded address
 	std::vector<SlotFacts> facts_;     // per slot
 	std::vector<SlotCopy> copies_;
+	bool partial_copy_ = false;
 	std::vector<uint32_t> first_field_; // per slot: first new slot of its fields (kNoId: kept)
 };
 
 bool AggregateSlots::address_of(Value v, SlotAddress& out) const
 {
+	if (v.is(ValueKind::Slot))
+	{
+		out = SlotAddress{ v.index, 0 };
+		return true;
+	}
 	if (v.is(ValueKind::Temp) && v.index < address_.size() && address_[v.index].slot != kNoId)
 	{
 		out = address_[v.index];
@@ -194,6 +208,7 @@ void AggregateSlots::analyze()
 	extent_.clear();
 	facts_.assign(body_.slots.size(), SlotFacts());
 	copies_.clear();
+	partial_copy_ = false;
 	for (BlockId b : body_.layout)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
@@ -290,12 +305,25 @@ void AggregateSlots::analyze()
 						copy.to = SlotAddress{ inst.ops[1].index, 0 };
 					else
 						address_of(inst.ops[1], copy.to);
+					// Reuse the addresses already found for copy compatibility.
+					// The length can be a whole word while either endpoint cuts
+					// a carrier (for example eight bytes copied at offset four).
+					const auto partial = [&](const SlotAddress& at) {
+						return at.slot != kNoId && at.offset >= 0 &&
+							((static_cast<uint64_t>(at.offset) | copy.bytes) % 8 != 0);
+					};
+					partial_copy_ = partial_copy_ ||
+						(!(inst.flags & IF_VOLATILE) && inst.immediate > 0 && copy.bytes <= 16 &&
+							(partial(copy.from) || partial(copy.to)));
 					if (copy.from.slot != kNoId && copy.to.slot != kNoId && copy.from.slot != copy.to.slot)
 						copies_.push_back(copy);
 				}
 				continue;
 			case Opcode::ZeroInit:
-				span(inst.ops[0], static_cast<uint64_t>(inst.immediate));
+				if (scalar_zero(inst))
+					access(inst.ops[0], filler_type(static_cast<uint64_t>(inst.immediate)), true);
+				else
+					span(inst.ops[0], static_cast<uint64_t>(inst.immediate));
 				continue;
 			case Opcode::Phi:
 				continue; // after every address is known (an operand may be defined later in layout)
@@ -416,6 +444,55 @@ Type AggregateSlots::hinted_filler(SlotId slot, uint64_t gap, uint64_t end) cons
 	return Type::scalar(TypeKind::Void);
 }
 
+// Overlapping integer accesses share one carrier per eightbyte. This is
+// representation traffic, so the original loads and stores become extracts
+// and inserts before ordinary scalar promotion. Copies crossing a carrier's
+// edge, noninteger fields and indexed storage retain their memory.
+bool widen_integer_fields(SlotFacts& facts, uint64_t size)
+{
+	uint64_t needed = 0;
+	for (const Field& f : facts.fields)
+		for (const Field& g : facts.fields)
+			if (f.offset < g.offset + storage_bytes(g.type) && g.offset < f.offset + storage_bytes(f.type) &&
+				!(f.offset == g.offset && (f.type == g.type || float_twins(f.type, g.type))))
+			{
+				if (f.offset / 8 >= 64)
+					return false;
+				needed |= uint64_t(1) << (f.offset / 8);
+			}
+	if (needed == 0)
+		return true;
+	for (uint32_t chunk = 0; chunk < 64; ++chunk)
+	{
+		if (((needed >> chunk) & 1) == 0)
+			continue;
+		const uint64_t start = uint64_t(chunk) * 8, end = std::min(start + 8, size), width = end - start;
+		if (start >= size || (width != 2 && width != 4 && width != 8))
+			return false;
+		for (const Field& f : facts.fields)
+			if (f.offset < end && f.offset + storage_bytes(f.type) > start &&
+				(!(f.type.is_integer() || f.type.is_pointer()) || f.offset < start ||
+					f.offset + storage_bytes(f.type) > end))
+				return false;
+		for (const auto& span : facts.spans)
+			if (span.first < end && span.second > start && !(span.first <= start && span.second >= end))
+				return false;
+	}
+	std::vector<Field> fields;
+	for (const Field& f : facts.fields)
+		if (f.offset / 8 >= 64 || ((needed >> (f.offset / 8)) & 1) == 0)
+			fields.push_back(f);
+	for (uint32_t chunk = 0; chunk < 64; ++chunk)
+		if (((needed >> chunk) & 1) != 0)
+		{
+			const uint64_t start = uint64_t(chunk) * 8;
+			fields.push_back(Field{ start, filler_type(std::min(uint64_t(8), size - start)), true });
+		}
+	facts.fields.swap(fields);
+	facts.forced |= needed;
+	return true;
+}
+
 bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 {
 	std::vector<Field>& fields = facts.fields;
@@ -504,6 +581,8 @@ bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 					facts.reads.push_back(std::make_pair(w.first, w.first + 8));
 			}
 	}
+	if (!widen_integer_fields(facts, size))
+		return false;
 	std::sort(fields.begin(), fields.end(), [](const Field& x, const Field& y) { return x.offset < y.offset; });
 	std::vector<Field> unique;
 	for (const Field& f : fields)
@@ -623,7 +702,9 @@ uint64_t AggregateSlots::packable(const SlotFacts& facts, uint64_t size) const
 			if (f_end <= start || f.offset >= end)
 				continue;
 			const TypeKind k = f.type.kind();
-			ok = ok && f.offset >= start && f_end <= end && k >= TypeKind::I1 && k <= TypeKind::I64;
+			ok = ok && f.offset >= start && f_end <= end &&
+				((k >= TypeKind::I1 && k <= TypeKind::I64) || f.type.is_pointer() || k == TypeKind::F32 ||
+					k == TypeKind::F64);
 			++inside;
 		}
 		bool stored = false, read = false;
@@ -755,10 +836,28 @@ void AggregateSlots::load_packed(BlockId block, InstId& prev, InstId id, SlotId 
 		prev = emit(block, prev, shift, wide);
 		bits = Value::temp(body_.instructions[prev].result);
 	}
+	const bool floating = original.type.kind() == TypeKind::F32 || original.type.kind() == TypeKind::F64;
+	if (floating && storage_bytes(original.type) < storage_bytes(wide))
+	{
+		const Type word = filler_type(storage_bytes(original.type));
+		Instruction trunc = make_instruction(Opcode::Convert, word);
+		trunc.sub = static_cast<uint8_t>(ConvertOp::Trunc);
+		trunc.ops[0] = bits;
+		set_convert_source_type(trunc, wide);
+		trunc.location = original.location;
+		prev = emit(block, prev, trunc, word);
+		bits = Value::temp(body_.instructions[prev].result);
+	}
 	Instruction narrow = make_instruction(Opcode::Convert, original.type);
 	narrow.sub = static_cast<uint8_t>(ConvertOp::Trunc);
 	narrow.ops[0] = bits;
 	set_convert_source_type(narrow, wide);
+	if (floating || storage_bytes(original.type) == storage_bytes(wide))
+	{
+		narrow.op = Opcode::Copy;
+		narrow.sub = 0;
+		narrow.immediate = 0;
+	}
 	narrow.result = original.result;
 	narrow.next = original.next;
 	narrow.location = original.location;
@@ -817,10 +916,27 @@ void AggregateSlots::store_packed(BlockId block, InstId& prev, InstId id, SlotId
 	}
 	else
 	{
+		Value bits_value = v;
+		Type bits_type = original.type;
+		if (original.type.kind() == TypeKind::F32 || original.type.kind() == TypeKind::F64)
+		{
+			bits_type = filler_type(storage_bytes(original.type));
+			Instruction bits_copy = make_instruction(Opcode::Copy, bits_type);
+			bits_copy.ops[0] = v;
+			bits_copy.location = original.location;
+			prev = emit(block, prev, bits_copy, bits_type);
+			bits_value = Value::temp(body_.instructions[prev].result);
+		}
 		Instruction widen = make_instruction(Opcode::Convert, wide);
 		widen.sub = static_cast<uint8_t>(ConvertOp::ZExt);
-		widen.ops[0] = v;
-		set_convert_source_type(widen, original.type);
+		widen.ops[0] = bits_value;
+		set_convert_source_type(widen, bits_type);
+		if (storage_bytes(original.type) == storage_bytes(wide))
+		{
+			widen.op = Opcode::Copy;
+			widen.sub = 0;
+			widen.immediate = 0;
+		}
 		widen.location = original.location;
 		prev = emit(block, prev, widen, wide);
 		Value placed = Value::temp(body_.instructions[prev].result);
@@ -975,8 +1091,18 @@ void AggregateSlots::rewrite()
 		InstId prev = kNoId;
 		for (InstId i = body_.blocks[b].first; i != kNoId;)
 		{
-			const Instruction inst = body_.instructions[i];
+			Instruction inst = body_.instructions[i];
 			const InstId next = inst.next;
+			const bool clear = scalar_zero(inst);
+			if (clear)
+			{
+				inst.type = filler_type(static_cast<uint64_t>(inst.immediate));
+				inst.op = Opcode::Store;
+				inst.ops[1] = inst.ops[0];
+				inst.ops[0] = Value::none();
+				inst.immediate = 0;
+				inst.sub = 0;
+			}
 			SlotAddress a;
 			const bool load = inst.op == Opcode::Load, store = inst.op == Opcode::Store;
 			if (load || store)
@@ -989,6 +1115,11 @@ void AggregateSlots::rewrite()
 				if (a.slot != kNoId && first_field_[a.slot] != kNoId &&
 					(!storage.is(ValueKind::Temp) || address_extent(storage) == 0))
 				{
+					if (clear)
+					{
+						inst.ops[0] = integer_value(body_, Literal{ 0, 0 });
+						body_.instructions[i] = inst;
+					}
 					const uint64_t offset = static_cast<uint64_t>(a.offset);
 					bool packed = false;
 					for (const Field& f : facts_[a.slot].fields)
@@ -1214,6 +1345,105 @@ bool AggregateSlots::objects_through_slots()
 	return rewritten;
 }
 
+// A short copy may end within a word that another access transfers whole.
+// Describe its exact bytes as scalar accesses so packed-field rewriting can
+// preserve the untouched bytes instead of rejecting the entire carrier.
+bool AggregateSlots::scalarize_partial_copies()
+{
+	if (!partial_copy_)
+		return false;
+	std::vector<uint64_t> words(facts_.size(), 0);
+	bool any = false;
+	for (SlotId s = 0; s < facts_.size(); ++s)
+	{
+		if (!facts_[s].candidate)
+			continue;
+		for (const auto& w : facts_[s].wholes)
+			if (w.first / 8 < 64)
+			{
+				words[s] |= uint64_t(1) << (w.first / 8);
+				any = true;
+			}
+	}
+	if (!any)
+		return false;
+	const auto address = [&](Value v, SlotAddress& a) {
+		if (v.is(ValueKind::Slot))
+		{
+			a = SlotAddress{ v.index, 0 };
+			return true;
+		}
+		return address_of(v, a) && address_extent(v) == 0;
+	};
+	const auto straddles = [&](Value v, uint64_t bytes) {
+		SlotAddress a;
+		if (!address(v, a) || a.offset < 0 || words[a.slot] == 0)
+			return false;
+		const uint64_t first = static_cast<uint64_t>(a.offset), end = first + bytes;
+		return (first % 8 != 0 && first / 8 < 64 && ((words[a.slot] >> (first / 8)) & 1)) ||
+			(end % 8 != 0 && end / 8 < 64 && ((words[a.slot] >> (end / 8)) & 1));
+	};
+	bool changed = false;
+	for (BlockId b : body_.layout)
+	{
+		InstId prev = kNoId;
+		for (InstId i = body_.blocks[b].first; i != kNoId;)
+		{
+			const Instruction inst = body_.instructions[i];
+			const InstId next = inst.next;
+			const uint64_t bytes = static_cast<uint64_t>(inst.immediate);
+			const bool object = inst.ops[0].is(ValueKind::Temp) && body_.temps[inst.ops[0].index].type.is_object();
+			if (inst.op != Opcode::CopyObject || (inst.flags & IF_VOLATILE) || inst.immediate <= 0 || bytes > 16 ||
+				object || (!straddles(inst.ops[0], bytes) && !straddles(inst.ops[1], bytes)))
+			{
+				prev = i;
+				i = next;
+				continue;
+			}
+			struct Chunk
+			{
+				uint64_t offset;
+				Type type;
+				Value value;
+			};
+			std::vector<Chunk> chunks;
+			for (uint64_t offset = 0; offset < bytes;)
+			{
+				uint64_t width = 8;
+				while (width > bytes - offset)
+					width /= 2;
+				for (unsigned side = 0; side < 2; ++side)
+				{
+					SlotAddress a;
+					if (address(inst.ops[side], a) && a.offset >= 0)
+						while (width > 1 && ((static_cast<uint64_t>(a.offset) + offset) % 8) + width > 8)
+							width /= 2;
+				}
+				Instruction load = make_instruction(Opcode::Load, filler_type(width));
+				load.ops[0] = pointer_at(b, prev, inst.ops[0], static_cast<int64_t>(offset), inst.location);
+				load.location = inst.location;
+				prev = emit(b, prev, load, load.type);
+				chunks.push_back(Chunk{ offset, load.type, Value::temp(body_.instructions[prev].result) });
+				offset += width;
+			}
+			// Read every part before writing: overlapping copies retain the
+			// source bytes, including when the two operands name one slot.
+			for (const Chunk& chunk : chunks)
+			{
+				Instruction store = make_instruction(Opcode::Store, chunk.type);
+				store.ops[0] = chunk.value;
+				store.ops[1] = pointer_at(b, prev, inst.ops[1], static_cast<int64_t>(chunk.offset), inst.location);
+				store.location = inst.location;
+				prev = emit(b, prev, store, Type::scalar(TypeKind::Void));
+			}
+			unlink_after(body_, b, prev, i);
+			changed = true;
+			i = next;
+		}
+	}
+	return changed;
+}
+
 bool AggregateSlots::run()
 {
 	const bool object_values = std::any_of(
@@ -1229,6 +1459,11 @@ bool AggregateSlots::run()
 		rewritten = objects_through_slots() || rewritten;
 	}
 	analyze();
+	if (scalarize_partial_copies())
+	{
+		rewritten = true;
+		analyze();
+	}
 	mark_recurrent_fields();
 	first_field_.assign(body_.slots.size(), kNoId);
 	bool any = false;
@@ -1245,7 +1480,7 @@ bool AggregateSlots::run()
 		if (!facts.candidate || !settle(facts, storage_bytes(type), s))
 			continue;
 		settled[s] = 1;
-		if (type.is_object() && !facts.partial)
+		if ((type.is_object() || facts.forced != 0) && !facts.partial)
 			facts.packed = packable(facts, storage_bytes(type));
 	}
 	agree_packing(settled);

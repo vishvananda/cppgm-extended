@@ -12,6 +12,7 @@
 #include "native/select/selector.h"
 #include "native/select/selector_facts.h"
 #include "native/select/selector_state.h"
+#include "native/select/operand_roles.h"
 
 // The per-function selector (its data in selector_state.h). One
 // FunctionSelector is reused for every function of a program. The work is
@@ -89,6 +90,69 @@ public:
 	mutable std::map<uint32_t, std::shared_ptr<const AssemblyPlan>> assembly_plans_;
 	AssemblyEnvironment& assembly_environment() const;
 	mutable std::unique_ptr<AssemblyEnvironment> assembly_environment_;
+
+	void find_wide_parts();
+	void find_incoming_words();
+	void place_incoming_words();
+	void bind_incoming_words();
+	void stage_incoming_words(uint32_t root, uint32_t incoming);
+	bool receive_incoming_words(const lowir::Instruction& inst, const CallLayout& layout);
+	const WordPair* wide_parts(lowir::Value value) const;
+	Move wide_word_move(lowir::Value value, Operand destination);
+	bool stage_wide_parts(lowir::Value value, const CallLayout& layout, const ArgLayout& arg, uint32_t& mask,
+		std::vector<std::pair<Reg, uint32_t>>& late, uint32_t& late_mask);
+	bool return_wide_parts(lowir::Value value);
+	bool store_wide_parts(const lowir::Instruction& inst);
+	template<typename F>
+	void for_each_operand(const lowir::FunctionBody& body, const lowir::Instruction& inst, F f) const
+	{
+		using lowir::Opcode;
+		using lowir::TypeKind;
+		using lowir::ValueKind;
+		if (wide_parts_.empty())
+		{
+			native::for_each_operand(body, inst, f);
+			return;
+		}
+		auto consume = [&](lowir::Value v, bool split) {
+			const WordPair* pair = split ? wide_parts(v) : nullptr;
+			if (pair != nullptr)
+			{
+				f(pair->lo, OperandRole::Value);
+				f(pair->hi, OperandRole::Value);
+			}
+			else
+				f(v, OperandRole::Value);
+		};
+		if (inst.op == Opcode::Return && inst.type.kind() == TypeKind::I128)
+		{
+			consume(inst.ops[0], true);
+		}
+		else if (inst.op == Opcode::Store && inst.type.kind() == TypeKind::I128 &&
+			(inst.flags & lowir::IF_VOLATILE) == 0)
+		{
+			consume(inst.ops[0], true);
+			f(inst.ops[1], OperandRole::Storage);
+		}
+		else if (inst.op == Opcode::Call)
+		{
+			if (inst.ops[0].kind != ValueKind::Symbol)
+				f(inst.ops[0], OperandRole::Value);
+			const lowir::Signature* sig = program_.call_boundary(inst);
+			const lowir::Parameter* params = sig != nullptr ? program_.parameters_of(*sig) : nullptr;
+			for (uint32_t k = 0; k < inst.extra_count; ++k)
+			{
+				const lowir::Value v = body.operands[inst.extra_first + k];
+				const bool split = sig != nullptr &&
+					(k < sig->parameter_count
+							? params[k].pass == ir_model::PPM_DIRECT && params[k].type.kind() == TypeKind::I128
+							: v.kind == ValueKind::Temp && body.temps[v.index].type.kind() == TypeKind::I128);
+				consume(v, split);
+			}
+		}
+		else
+			native::for_each_operand(body, inst, f);
+	}
 
 	// ---- allocation.cpp
 	void inst_clobbers(uint32_t inst, uint32_t& clobber, uint32_t& early);

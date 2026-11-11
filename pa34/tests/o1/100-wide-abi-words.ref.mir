@@ -1,0 +1,158 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @pair
+  abi
+    param %low -> rdi : i64
+    param %high -> rsi : i64
+    return i128 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rdi
+    mov rdx, rsi
+    ret
+
+function @parts
+  abi
+    param %value -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rdi
+    xor rax, rsi
+    ret rax
+
+function @stack_parts
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    param %c -> rdx : i64
+    param %d -> rcx : i64
+    param %e -> r8 : i64
+    param %f -> r9 : i64
+    param %value -> [rbp+16] : i128
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 rax, [rbp+16]
+    load.i64 rcx, [rbp+24]
+    xor rax, rcx
+    add rax, r9
+    ret rax
+
+function @low_only
+  abi
+    param %value -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    ret rdi
+
+function @call_low_only
+  abi
+    param %low -> rdi : i64
+    param %high -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    call @pair [args=(rsi,rdi)]
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    temp %low -> [rbp-8] : i64
+
+  block ^entry
+    mov rdi, 305419896
+    mov rsi, 4275878552
+    call @pair [args=(rsi,rdi)]
+    mov rbx, rax
+    mov r12, rdx
+    cmp.i64 rbx, 305419896
+    setne r13
+    movzx r13, r13
+    cmp.i64 r12, 4275878552
+    setne r14
+    movzx r14, r14
+    mov rdi, rbx
+    mov rsi, r12
+    call @parts [args=(rsi,rdi)]
+    mov r15, rbx
+    xor r15, r12
+    store.i64 [rbp-8], rbx
+    cmp.i64 rax, r15
+    setne rbx
+    movzx rbx, rbx
+    sub rsp, 16
+    load.i64 r11, [rbp-8]
+    store.i64 [rsp], r11
+    store.i64 [rsp+8], r12
+    mov rdi, 1
+    mov rsi, 2
+    mov rdx, 3
+    mov rcx, 4
+    mov r8, 5
+    mov r9, 6
+    call @stack_parts [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
+    add rsp, 16
+    add r15, 6
+    cmp.i64 rax, r15
+    setne rax
+    movzx rax, rax
+    or r13, r14
+    or rbx, rax
+    or r13, rbx
+    load.i64 rdi, [rbp-8]
+    mov rsi, r12
+    call @low_only [args=(rsi,rdi)]
+    cmp.i64 rax, 305419896
+    setne rbx
+    movzx rbx, rbx
+    mov rdi, 305419896
+    mov rsi, 4275878552
+    call @call_low_only [args=(rsi,rdi)]
+    cmp.i64 rax, 305419896
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rax, r13
+    or rax, rbx
+    ret rax

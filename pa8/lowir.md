@@ -969,11 +969,20 @@ function @scale(%p : obj<16x8> [classes=sse_integer], %k : f64) -> obj<16x8> [re
 
 The value names one class for each eightbyte, the first eightbyte first, joined by `_`:
 `integer`, `sse`, or `none` for an eightbyte that holds no member (padding, an empty class).
-Classes describe only a direct `obj<NxA>` parameter or result of at most 16 bytes, and name
+For a direct `obj<NxA>` parameter or result of at most 16 bytes, classes name
 exactly its eightbytes. Without them every eightbyte is INTEGER, so the C++ lowering states
 them exactly when some eightbyte is SSE or `none`, or the object is `memory`; a larger direct
 object is always passed in memory. Arguments past a variadic function's fixed parameters
 state no classes.
+
+An optimizer may represent an INTEGER-class object of 9–16 bytes and alignment at most
+8 as an `i128` value. Such a parameter states `classes=integer_integer`, and such a
+result may state `result_classes=integer_integer`. This preserves the object's
+eight-byte stack alignment; an ordinary `i128` parameter without classes has
+sixteen-byte stack alignment. Both forms use two INTEGER registers when available.
+No other class combination is valid on a scalar type. The scalar carrier does not
+enlarge the original object's storage: accesses through its address must stay within
+the original extent.
 
 `memory`, valid only on a parameter, instead says the object is passed in memory: an object
 with a misaligned member, or with an x87 (`long double`) or 16-byte vector member. A result

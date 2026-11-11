@@ -931,7 +931,7 @@ void FunctionSelector::live_ranges()
 	{
 		const uint32_t temp = ra_candidates_[c];
 		const TempInfo& t = temps_[temp];
-		const bool param = temp < body.parameter_count;
+		const bool param = (t.flags & TF_PARAM) != 0;
 		const bool phi = !param && body.instructions[body.temps[temp].def].op == Opcode::Phi;
 		const uint32_t def_block = param ? kNoId : t.block;
 		const uint32_t epoch = static_cast<uint32_t>(c + 1);
@@ -1426,8 +1426,7 @@ Reg FunctionSelector::choose_register(uint32_t c, uint32_t first, uint32_t past,
 	if (temp >= body.parameter_count && body.temps[temp].def != kNoId &&
 		body.instructions[body.temps[temp].def].op == Opcode::Call)
 		returned = gpr ? RAX : XMM0;
-	const Reg prefs[5] = { web, tied, temp < body.parameter_count ? incoming_reg(temp) : kNoReg, returned,
-		ra_use_hint_[c] };
+	const Reg prefs[5] = { web, tied, (t.flags & TF_PARAM) ? incoming_reg(temp) : kNoReg, returned, ra_use_hint_[c] };
 	for (unsigned k = 0; k < 5; ++k)
 		if (prefs[k] != kNoReg && (allowed & (1u << prefs[k])))
 			return prefs[k];

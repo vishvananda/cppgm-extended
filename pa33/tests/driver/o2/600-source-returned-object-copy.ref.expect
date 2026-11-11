@@ -1,2 +1,3 @@
-count(copyobj) >= 1 in @adjacent
+count(copyobj) <= 1 in @adjacent
+count(store) <= 0 in @adjacent
 count(load volatile) >= 2 in @volatile_pair

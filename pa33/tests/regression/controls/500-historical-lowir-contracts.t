@@ -132,6 +132,7 @@ function @retain_escaped_scalar_slot() -> i64
 
 function @main() -> i64 [role=entry, unwind=no] {
   slot $overwritten_storage : obj<64x8>
+  slot $copied_value : obj<8x8>
 
   block ^entry:
     %readonly = call i64 @fold_readonly()
@@ -142,6 +143,9 @@ function @main() -> i64 [role=entry, unwind=no] {
     %multi = call i64 @retain_multi_use_scale(1)
     %unfactorable = call i64 @retain_unfactorable_scale(1)
     %object = call i64 @promote_complete_object()
+    store i64 1234, $copied_value
+    %copied = call i64 @retain_object_value_copy($copied_value)
+    %bad_copy = cmp ne i64 %copied, 1234
 	%scalar = call i64 @promote_scalar_slot(13)
 	%escaped = call i64 @retain_escaped_scalar_slot()
     %bad0 = cmp ne i64 %readonly, 7
@@ -160,6 +164,7 @@ function @main() -> i64 [role=entry, unwind=no] {
 	%bad057 = binary or i64 %bad04, %bad56
 	%bad047 = binary or i64 %bad057, %bad4
 	%bad_old = binary or i64 %bad047, %bad7
-	%bad = binary or i64 %bad_old, %bad8
+	%bad_previous = binary or i64 %bad_old, %bad8
+    %bad = binary or i64 %bad_previous, %bad_copy
     return i64 %bad
 }

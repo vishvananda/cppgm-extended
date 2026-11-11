@@ -568,4 +568,59 @@ bool simplify_integer_arithmetic(FunctionBody& body, const std::vector<uint32_t>
 		? patterns.round_power_alignment(block, previous, instruction)
 		: patterns.variable_power_division(block, previous, instruction);
 }
+// A scalar extraction from an ABI two-word pack needs only its half.
+bool simplify_packed_wide_part(FunctionBody& body, Instruction& inst, bool truncation)
+{
+	const Type type = truncation ? convert_source_type(inst) : inst.type;
+	const auto producer = [&](Value v) -> const Instruction* {
+		return v.is(ValueKind::Temp) && v.index >= body.parameter_count && body.temps[v.index].def != kNoId
+			? &body.instructions[body.temps[v.index].def]
+			: nullptr;
+	};
+	if (truncation && storage_bytes(inst.type) > 8)
+		return false;
+	auto count64 = [&](Value v) {
+		Constant value;
+		return literal_constant(body, v, value) && value.bits.low == 64 && value.bits.high == 0;
+	};
+	if (!truncation && !count64(inst.ops[1]))
+		return false;
+	auto zero_half = [&](Value v, bool high) {
+		Constant value;
+		if (literal_constant(body, v, value))
+			return (high ? value.bits.high : value.bits.low) == 0;
+		const Instruction* d = producer(v);
+		if (d == nullptr || d->type != type)
+			return false;
+		if (high && d->op == Opcode::Convert && static_cast<ConvertOp>(d->sub) == ConvertOp::ZExt &&
+			convert_source_type(*d).is_integer() && storage_bytes(convert_source_type(*d)) <= 8)
+			return true;
+		return d->op == Opcode::Binary && count64(d->ops[1]) &&
+			static_cast<BinaryOp>(d->sub) == (high ? BinaryOp::UShr : BinaryOp::Shl);
+	};
+	const Instruction* d = producer(inst.ops[0]);
+	if (d == nullptr || d->type != type || d->op != Opcode::Binary)
+		return false;
+	if (!truncation && static_cast<BinaryOp>(d->sub) == BinaryOp::Shl && count64(d->ops[1]) &&
+		zero_half(d->ops[0], true))
+	{
+		inst.op = Opcode::Copy;
+		inst.ops[0] = d->ops[0];
+		inst.ops[1] = Value::none();
+		inst.sub = 0;
+		inst.flags = 0;
+		inst.immediate = 0;
+		return true;
+	}
+	if (static_cast<BinaryOp>(d->sub) != BinaryOp::Or)
+		return false;
+	for (unsigned k = 0; k < 2; ++k)
+		if (zero_half(d->ops[k], !truncation))
+		{
+			inst.ops[0] = d->ops[1 - k];
+			return true;
+		}
+	return false;
+}
+
 } // namespace opt

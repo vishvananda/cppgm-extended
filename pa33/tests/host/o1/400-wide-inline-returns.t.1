@@ -1,0 +1,8 @@
+#include <stdio.h>
+using W=unsigned __int128;
+struct Pair{unsigned long lo,hi;};
+inline W wide(W a,W b,unsigned p){if(p&1)return a+b;if(p&2)return (a<<65)^b;if(p&4)return ~W(0);return b;}
+inline Pair pair(unsigned long a,unsigned long b,unsigned p){if(p&1)return {a+b,b};if(p&2)return {a,b+1};return {b,a};}
+inline Pair nested(unsigned long a,unsigned long b,unsigned p){if(p&8)return pair(a,b,p);return pair(b,a,p^3);}
+__attribute__((noinline)) unsigned long run(unsigned long a,unsigned long b,unsigned count){W v=(W(a)<<64)|b;unsigned long sum=0;for(unsigned i=0;i<count;++i){v=wide(v,(W(b+i)<<64)|(a+i),i);Pair p=nested(static_cast<unsigned long>(v),static_cast<unsigned long>(v>>64),i);sum=sum*17+p.lo*3+p.hi;v^=W(p.lo)<<64;}return sum;}
+int main(){unsigned long h=0;for(unsigned i=0;i<129;++i)h=h*31+run(0xfedcba9876543210UL+i,0x123456789abcdefUL-i,i);printf("%lu\n",h);}

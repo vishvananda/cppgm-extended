@@ -1838,8 +1838,10 @@ bool Simplifier::packed_part(Instruction& inst)
 	if (!truncation && !(inst.op == Opcode::Binary && static_cast<BinaryOp>(inst.sub) == BinaryOp::UShr))
 		return false;
 	const Type type = truncation ? convert_source_type(inst) : inst.type;
-	if (!type.is_integer() || type.kind() == TypeKind::I128 || !inst.type.is_integer())
+	if (!type.is_integer() || !inst.type.is_integer())
 		return false;
+	if (type.kind() == TypeKind::I128)
+		return simplify_packed_wide_part(body_, inst, truncation);
 	const Instruction* def = producer(inst.ops[0]);
 	if (def == nullptr || def->op != Opcode::Binary || static_cast<BinaryOp>(def->sub) != BinaryOp::Or ||
 		def->type != type)

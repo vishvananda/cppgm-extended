@@ -1,4 +1,5 @@
-count(copyobj) >= 1 in @returned_value
+count(copyobj) <= 1 in @returned_value
+count(store) <= 0 in @returned_value
 count(copyobj) <= 0 in @captured_value
 count(copyobj) <= 0 in @returned_address
 count(copyobj) <= 0 in @volatile_value

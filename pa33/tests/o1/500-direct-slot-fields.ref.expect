@@ -1,0 +1,4 @@
+# explicit-outcomes
+
+count(load) <= 0 in @mixed
+count(store) <= 0 in @mixed

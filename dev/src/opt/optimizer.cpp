@@ -778,6 +778,7 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 				++stats.functions;
 			}
 		}
+		scalarize_aggregate_boundaries(program);
 		materialize_storage_arguments(program);
 		const int level = options.level;
 		std::vector<uint8_t> nounwind(program.symbols.size(), 0);

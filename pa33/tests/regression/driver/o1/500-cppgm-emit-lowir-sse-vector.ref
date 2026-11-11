@@ -249,31 +249,21 @@ function @shuffle_words(%a : v128) -> v128 [binding=strong, object=_Z13shuffle_w
     %t1 = vector pshufd %a, 27
     return v128 %t1
 }
-function @small_add(%a : obj<8x8>, %b : obj<8x8>) -> obj<8x8> [binding=strong, object=_Z9small_addDv2_iS_] {
-  slot $vector__1 : obj<8x8>
-  slot $vector__2 : obj<8x8>
-  slot $vector__3 : obj<8x8>
-
+function @small_add(%a : i64, %b : i64) -> i64 [binding=strong, object=_Z9small_addDv2_iS_] {
   block ^entry:
-    copyobj 8x8 %a, $vector__1
-    %t1 = addr $vector__1
-    copyobj 8x8 %b, $vector__2
-    %t2 = addr $vector__2
-    zeroinit 8x8 $vector__3
-    %t3 = addr $vector__3
-    %t4 = load typed i32 %t1
-    %t5 = load typed i32 %t2
-    %t6 = binary add nowrap i32 %t4, %t5
-    store typed i32 %t6, %t3
-    %t7 = index i8 [projection=field] %t1, 4
-    %t8 = load typed i32 %t7
-    %t9 = index i8 [projection=field] %t2, 4
-    %t10 = load typed i32 %t9
-    %t11 = binary add nowrap i32 %t8, %t10
-    %t12 = index i8 [projection=field] %t3, 4
-    store typed i32 %t11, %t12
-    %t13 = load obj<8x8> $vector__3
-    return obj<8x8> %t13
+    %t1 = convert trunc i32 i64 %a
+    %t2 = convert trunc i32 i64 %b
+    %t3 = binary add nowrap i32 %t1, %t2
+    %t4 = convert zext i64 i32 %t3
+    %t5 = binary ushr i64 %a, 32
+    %t6 = convert trunc i32 i64 %t5
+    %t7 = binary ushr i64 %b, 32
+    %t8 = convert trunc i32 i64 %t7
+    %t9 = binary add nowrap i32 %t6, %t8
+    %t10 = convert zext i64 i32 %t9
+    %t11 = binary shl i64 %t10, 32
+    %t12 = binary or i64 %t4, %t11
+    return i64 %t12
 }
 function @store_load(%p : ptr, %q : ptr) -> v128 [binding=strong, object=_Z10store_loadPKDv2_dPS_] {
   block ^entry:

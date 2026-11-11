@@ -151,7 +151,20 @@ function @main() -> i32 {
 
     %first_eight = binary and i64 %first_group, %second_group
     %all_ok = binary and i64 %first_eight, %last_pair
-    branch %all_ok, ^pass, ^fail
+    branch %all_ok, ^offset_loop, ^fail
+
+  block ^offset_loop:
+    %offset = phi i64 [^entry: 0, ^offset_next: %next]
+    %byte = call i64 @keep_variable_index(%offset)
+    %shift = binary mul i64 %offset, 8
+    %expected = binary shl i64 7, %shift
+    %byte_ok = cmp eq i64 %byte, %expected
+    branch %byte_ok, ^offset_next, ^fail
+
+  block ^offset_next:
+    %next = binary add i64 %offset, 1
+    %more = cmp lt i64 %next, 8
+    branch %more, ^offset_loop, ^pass
 
   block ^pass:
     return i32 0

@@ -1,0 +1,7 @@
+# explicit-outcomes
+
+count(store) <= 0 in @floats
+count(load) <= 0 in @read_float_words
+count(store) <= 0 in @read_float_words
+count(load) <= 0 in @double_word
+count(store) <= 0 in @double_word

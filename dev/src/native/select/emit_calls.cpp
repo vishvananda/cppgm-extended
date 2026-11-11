@@ -407,6 +407,16 @@ void FunctionSelector::emit_entry()
 				normalize(layout.parts[arg.first_part].reg, params[p].type.kind());
 		}
 	}
+	for (uint32_t p = 0; p < body.parameter_count && p < incoming_words_.size(); ++p)
+	{
+		const WordPair& pair = incoming_words_[p];
+		if (pair.lo.kind == ValueKind::None && pair.hi.kind == ValueKind::None)
+			continue;
+		const ArgLayout& arg = layout.args[p];
+		for (uint32_t k = 0; k < arg.part_count; ++k)
+			if (layout.parts[arg.first_part + k].reg != kNoReg)
+				incoming |= 1u << layout.parts[arg.first_part + k].reg;
+	}
 	// Block-local parameters that keep their incoming register are bound
 	// first, so relocation targets avoid them; every transfer out of an
 	// incoming register is then one parallel move.
@@ -421,11 +431,13 @@ void FunctionSelector::emit_entry()
 		if (reg != kNoReg && !(t.forbid & (1u << reg)) && !((pinned_ | occupied_) & (1u << reg)) && t.last >= 0)
 			bind(p, reg);
 	}
+	bind_incoming_words();
 	moves_.clear();
 	for (uint32_t p = 0; p < body.parameter_count; ++p)
 	{
 		TempInfo& t = temps_[p];
 		const ArgLayout& arg = layout.args[p];
+		stage_incoming_words(p, incoming);
 		if (t.uses == 0)
 			continue;
 		const Type type = params[p].type;
@@ -587,6 +599,8 @@ void FunctionSelector::stage_call_arguments(const Instruction& inst, const lowir
 		const ArgLayout& arg = layout.args[a];
 		const Type type = arg_types_[a];
 		const Value v = resolve(body.operands[inst.extra_first + a]);
+		if (type.kind() == TypeKind::I128 && stage_wide_parts(v, layout, arg, arg_mask, late, late_mask))
+			continue;
 		const bool memory_value = type.is_object() || type.kind() == TypeKind::F80 || type.kind() == TypeKind::I128;
 		Operand src;
 		bool address = false;
@@ -917,6 +931,8 @@ void FunctionSelector::emit_call(uint32_t id)
 		emit2(Op::Load, TypeKind::I64, rsp, saved_rsp);
 	else if (stack_bytes != 0)
 		emit2(Op::Add, TypeKind::I64, rsp, Operand::make_imm(stack_bytes));
+	if (receive_incoming_words(inst, layout))
+		return;
 	if (inst.result == kNoId || (temps_[inst.result].flags & TF_DEAD) || temps_[inst.result].uses == 0)
 	{
 		// An unused f80 (or long double object) result still occupies st0
@@ -1083,6 +1099,8 @@ void FunctionSelector::emit_return(const Instruction& inst)
 		emit1(Op::FRet, kind, rm_operand(v, type, kSelectScratch));
 		return;
 	}
+	if (kind == TypeKind::I128 && return_wide_parts(v))
+		return;
 	if (type.is_object() || kind == TypeKind::I128)
 	{
 		const Operand src = memory_value_operand(v, type);
@@ -1238,6 +1256,404 @@ void FunctionSelector::emit_va_arg_object(const Instruction& inst, uint8_t class
 	mir.sub = classes;
 	mir.aux = bytes;
 	mir.aux2 = align < 8 ? 8 : align;
+}
+
+// Derived two-word values. The original LowIR stays serializable; all
+// consumers, including liveness, read the same scalar parts.
+const WordPair* FunctionSelector::wide_parts(Value v) const
+{
+	if (wide_parts_.empty())
+		return nullptr;
+	v = resolve(v);
+	if (v.kind != ValueKind::Temp || v.index >= wide_parts_.size() || wide_parts_[v.index].lo.kind == ValueKind::None)
+		return nullptr;
+	return &wide_parts_[v.index];
+}
+
+void FunctionSelector::find_wide_parts()
+{
+	if (level_ < 1)
+		return;
+	bool any = false;
+	for_each_inst([&](uint32_t id, uint32_t) {
+		const Instruction& inst = body_->instructions[id];
+		any = any ||
+			(inst.result != kNoId &&
+				((inst.type.kind() == TypeKind::I128 &&
+					 (inst.op == Opcode::Convert || inst.op == Opcode::Binary || inst.op == Opcode::Copy)) ||
+					(inst.op == Opcode::Convert && inst.type.kind() == TypeKind::I64 &&
+						lowir::convert_source_type(inst).kind() == TypeKind::I128)));
+	});
+	if (!any)
+		return;
+	wide_parts_.assign(body_->temps.size(), WordPair());
+	find_incoming_words();
+	auto word = [&](uint64_t n) { return add_literal(lowir::Literal{ n, (n >> 63) ? ~uint64_t(0) : 0 }); };
+	const Value zero = word(0);
+	auto get = [&](Value v) {
+		v = resolve(v);
+		if (v.kind == ValueKind::Integer)
+		{
+			const lowir::Literal bits = literal(v);
+			return WordPair{ word(bits.low), word(bits.high) };
+		}
+		return v.kind == ValueKind::Temp ? wide_parts_[v.index] : WordPair();
+	};
+	auto is_zero = [&](Value v) { return v.kind == ValueKind::Integer && literal(v).low == 0; };
+	auto combine = [&](Value a, Value b) {
+		if (a == b || is_zero(b))
+			return a;
+		if (is_zero(a))
+			return b;
+		if (a.kind == ValueKind::Integer && b.kind == ValueKind::Integer)
+			return word(literal(a).low | literal(b).low);
+		return Value::none();
+	};
+	for_each_inst([&](uint32_t id, uint32_t) {
+		const Instruction& inst = body_->instructions[id];
+		if (inst.result == kNoId || inst.type.kind() != TypeKind::I128 || (marks_[id] & IM_DEAD))
+			return;
+		WordPair out;
+		if (inst.op == Opcode::Copy)
+			out = get(inst.ops[0]);
+		else if (inst.op == Opcode::Convert && static_cast<lowir::ConvertOp>(inst.sub) == lowir::ConvertOp::ZExt &&
+			lowir::convert_source_type(inst).kind() == TypeKind::I64)
+			out = WordPair{ resolve(inst.ops[0]), zero };
+		else if (inst.op == Opcode::Binary)
+		{
+			const WordPair a = get(inst.ops[0]);
+			const auto op = static_cast<lowir::BinaryOp>(inst.sub);
+			const Value shift = resolve(inst.ops[1]);
+			if (a.lo.kind != ValueKind::None && shift.kind == ValueKind::Integer && literal(shift).low == 64 &&
+				literal(shift).high == 0)
+			{
+				if (op == lowir::BinaryOp::Shl)
+					out = WordPair{ zero, a.lo };
+				else if (op == lowir::BinaryOp::UShr)
+					out = WordPair{ a.hi, zero };
+			}
+			if (op == lowir::BinaryOp::Or)
+			{
+				const WordPair b = get(inst.ops[1]);
+				if (a.lo.kind != ValueKind::None && b.lo.kind != ValueKind::None)
+				{
+					out = WordPair{ combine(a.lo, b.lo), combine(a.hi, b.hi) };
+					if (out.lo.kind == ValueKind::None || out.hi.kind == ValueKind::None)
+						out = WordPair();
+				}
+			}
+		}
+		if (incoming_words_.empty() ||
+			(incoming_words_[inst.result].lo.kind == ValueKind::None &&
+				incoming_words_[inst.result].hi.kind == ValueKind::None))
+			wide_parts_[inst.result] = out;
+	});
+}
+
+Move FunctionSelector::wide_word_move(Value value, Operand dst)
+{
+	value = resolve(value);
+	Move move;
+	move.dst = dst;
+	move.type = TypeKind::I64;
+	if (value.kind == ValueKind::Temp)
+	{
+		const TempInfo& t = temps_[value.index];
+		if ((t.flags & TF_LAZY) && t.addr != kNoId)
+		{
+			move.src = lazy_operand(addrs_[t.addr], dst.kind == OperandKind::Mem ? kEmitScratch : kNoReg);
+			move.address = true;
+		}
+		else
+		{
+			move.src = temp_location(value.index);
+			if (move.src.kind == OperandKind::Mem)
+				move.src_type = type_of(value).kind();
+			if (move.src.kind == OperandKind::Reg && type_of(value).is_integer() && value_bytes(type_of(value)) < 8)
+			{
+				move.src_type = type_of(value).kind();
+				move.extend_register = true;
+			}
+		}
+	}
+	else
+		move.src = rm_operand(value, Type::scalar(TypeKind::I64), kNoReg);
+	return move;
+}
+
+bool FunctionSelector::stage_wide_parts(Value value, const CallLayout& layout, const ArgLayout& arg, uint32_t& mask,
+	std::vector<std::pair<Reg, uint32_t>>& late, uint32_t& late_mask)
+{
+	const WordPair* parts = wide_parts(value);
+	if (parts == nullptr)
+		return false;
+	const Value values[2] = { parts->lo, parts->hi };
+	if (arg.cls == ArgClass::Memory)
+	{
+		const ArgPart& part = layout.parts[arg.first_part];
+		for (uint32_t k = 0; k < 2; ++k)
+		{
+			Move move = wide_word_move(values[k], Operand::make_mem(RSP, part.stack + 8 * k));
+			if (!move.address && (move.src.kind == OperandKind::Imm || move.src.kind == OperandKind::Symbol))
+				stack_constants_.push_back(move);
+			else
+				emit_move(move);
+		}
+	}
+	else
+	{
+		for (uint32_t k = 0; k < arg.part_count; ++k)
+		{
+			const ArgPart& part = layout.parts[arg.first_part + k];
+			const Value word = resolve(values[part.offset / 8]);
+			bool deferred = false;
+			if (word.kind == ValueKind::Temp && (temps_[word.index].flags & TF_LAZY) &&
+				temps_[word.index].addr != kNoId)
+			{
+				const AddrExpr& expr = addrs_[temps_[word.index].addr];
+				if (expr.kind == AddrExpr::Temp && temp_location(expr.base).kind != OperandKind::Reg)
+				{
+					late.push_back(std::make_pair(part.reg, temps_[word.index].addr));
+					late_mask |= 1u << part.reg;
+					deferred = true;
+				}
+			}
+			if (!deferred)
+				moves_.push_back(wide_word_move(word, Operand::make_reg(part.reg)));
+			mask |= 1u << part.reg;
+		}
+	}
+	return true;
+}
+
+bool FunctionSelector::return_wide_parts(Value value)
+{
+	const WordPair* parts = wide_parts(value);
+	if (parts == nullptr)
+		return false;
+	moves_.clear();
+	std::vector<std::pair<Reg, uint32_t>> late;
+	const Value words[2] = { parts->lo, parts->hi };
+	const Reg regs[2] = { RAX, RDX };
+	for (unsigned k = 0; k < 2; ++k)
+	{
+		const Value word = resolve(words[k]);
+		if (word.kind == ValueKind::Temp && (temps_[word.index].flags & TF_LAZY) && temps_[word.index].addr != kNoId)
+		{
+			const AddrExpr& expr = addrs_[temps_[word.index].addr];
+			if (expr.kind == AddrExpr::Temp && temp_location(expr.base).kind != OperandKind::Reg)
+			{
+				late.push_back(std::make_pair(regs[k], temps_[word.index].addr));
+				continue;
+			}
+		}
+		moves_.push_back(wide_word_move(word, Operand::make_reg(regs[k])));
+	}
+	parallel_moves(moves_);
+	for (const auto& move : late)
+		materialize_address(move.first, addrs_[move.second], true);
+	emit(Op::Ret);
+	return true;
+}
+
+bool FunctionSelector::store_wide_parts(const Instruction& inst)
+{
+	if (inst.flags & lowir::IF_VOLATILE)
+		return false;
+	const WordPair* parts = wide_parts(inst.ops[0]);
+	if (parts == nullptr)
+		return false;
+	const Operand dst = address_operand(inst.ops[1], kSelectScratch);
+	emit_move(wide_word_move(parts->lo, dst));
+	emit_move(wide_word_move(parts->hi, dst.displaced(8)));
+	return true;
+}
+
+// Existing scalar extraction values receive the ABI words directly.
+// Their original LowIR definitions remain serializable; native definitions
+// are the parameter entry or call, shared by liveness and emission.
+void FunctionSelector::find_incoming_words()
+{
+	const auto& body = *body_;
+	for_each_inst([&](uint32_t id, uint32_t) {
+		const Instruction& inst = body.instructions[id];
+		if ((marks_[id] & IM_DEAD) || inst.result == kNoId || (temps_[inst.result].flags & TF_ALIAS) ||
+			inst.op != Opcode::Convert || inst.type.kind() != TypeKind::I64 ||
+			lowir::convert_source_type(inst).kind() != TypeKind::I128 ||
+			static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::Trunc)
+			return;
+		Value root = resolve(inst.ops[0]);
+		unsigned half = 0;
+		if (root.kind == ValueKind::Temp && root.index >= body.parameter_count)
+		{
+			const Instruction& def = body.instructions[body.temps[root.index].def];
+			if (def.op == Opcode::Binary && static_cast<lowir::BinaryOp>(def.sub) == lowir::BinaryOp::UShr &&
+				def.type.kind() == TypeKind::I128)
+			{
+				const Value shift = resolve(def.ops[1]);
+				if (shift.kind != ValueKind::Integer || literal(shift).low != 64 || literal(shift).high != 0)
+					return;
+				root = resolve(def.ops[0]);
+				half = 1;
+			}
+		}
+		if (root.kind != ValueKind::Temp || body.temps[root.index].type.kind() != TypeKind::I128)
+			return;
+		if (root.index >= body.parameter_count)
+		{
+			const auto def = body.temps[root.index].def;
+			if (def == kNoId || body.instructions[def].op != Opcode::Call || (marks_[def] & IM_DEAD))
+				return;
+		}
+		if (incoming_words_.empty())
+		{
+			incoming_words_.assign(body.temps.size(), WordPair());
+			incoming_origin_.assign(body.temps.size(), kNoId);
+		}
+		WordPair& pair = incoming_words_[root.index];
+		Value& part = half == 0 ? pair.lo : pair.hi;
+		if (part.kind != ValueKind::None)
+			return;
+		part = Value::temp(inst.result);
+		incoming_origin_[inst.result] = root.index * 2 + half;
+		marks_[id] |= IM_DEAD;
+	});
+	for (uint32_t root = 0; root < incoming_words_.size(); ++root)
+	{
+		const WordPair& pair = incoming_words_[root];
+		if (pair.lo.kind != ValueKind::None && pair.hi.kind != ValueKind::None)
+			wide_parts_[root] = pair;
+	}
+}
+
+void FunctionSelector::place_incoming_words()
+{
+	const auto& body = *body_;
+	const bool loop = !blocks_.empty() && blocks_[0].preds != 0;
+	for (uint32_t root = 0; root < incoming_words_.size(); ++root)
+	{
+		const WordPair& pair = incoming_words_[root];
+		for (Value v : { pair.lo, pair.hi })
+		{
+			if (v.kind != ValueKind::Temp)
+				continue;
+			TempInfo& t = temps_[v.index];
+			const bool param = root < body.parameter_count;
+			const uint32_t def = param ? kNoId : body.temps[root].def;
+			t.block = param ? 0 : inst_block_[def];
+			t.def = param ? -1 : pos_[def];
+			t.flags |= TF_DEFINED;
+			if (param)
+				t.flags |= TF_PARAM;
+			if (param && loop)
+				t.flags |= TF_GLOBAL;
+		}
+	}
+}
+
+void FunctionSelector::bind_incoming_words()
+{
+	for (uint32_t p = 0; p < body_->parameter_count && p < incoming_words_.size(); ++p)
+	{
+		const WordPair& pair = incoming_words_[p];
+		for (Value v : { pair.lo, pair.hi })
+		{
+			if (v.kind != ValueKind::Temp)
+				continue;
+			TempInfo& t = temps_[v.index];
+			const Reg reg = incoming_reg(v.index);
+			if (t.uses != 0 && t.greg == kNoReg && t.last >= 0 && reg != kNoReg && !(t.forbid & (1u << reg)) &&
+				!((pinned_ | occupied_) & (1u << reg)))
+				bind(v.index, reg);
+		}
+	}
+}
+
+void FunctionSelector::stage_incoming_words(uint32_t root, uint32_t incoming)
+{
+	if (root >= incoming_words_.size())
+		return;
+	const WordPair& pair = incoming_words_[root];
+	const Value parts[2] = { pair.lo, pair.hi };
+	const ArgLayout& arg = entry_layout_.args[root];
+	for (unsigned half = 0; half < 2; ++half)
+	{
+		const Value v = parts[half];
+		if (v.kind != ValueKind::Temp || temps_[v.index].uses == 0)
+			continue;
+		TempInfo& t = temps_[v.index];
+		Move move;
+		const Reg reg = incoming_reg(v.index);
+		move.src = reg == kNoReg ? Operand::make_frame(16 + entry_layout_.parts[arg.first_part].stack + half * 8)
+								 : Operand::make_reg(reg);
+		if (t.greg != kNoReg)
+			move.dst = Operand::make_reg(t.greg);
+		else if (t.flags & TF_GLOBAL)
+			move.dst = Operand::make_frame(home_of(v.index));
+		else if (reg != kNoReg && t.reg == reg)
+			continue;
+		else
+		{
+			const Reg target = allocate(v.index, incoming);
+			if (target != kNoReg)
+			{
+				bind(v.index, target);
+				move.dst = Operand::make_reg(target);
+			}
+			else
+			{
+				move.dst = Operand::make_frame(home_of(v.index));
+				t.flags |= TF_HOMED;
+			}
+		}
+		moves_.push_back(move);
+	}
+}
+
+bool FunctionSelector::receive_incoming_words(const Instruction& inst, const CallLayout& layout)
+{
+	if (inst.result >= incoming_words_.size())
+		return false;
+	const WordPair& pair = incoming_words_[inst.result];
+	if (pair.lo.kind == ValueKind::None && pair.hi.kind == ValueKind::None)
+		return false;
+	if (temps_[inst.result].uses != 0)
+	{
+		const Operand home = memory_result(inst);
+		emit2(Op::Store, TypeKind::I64, home, Operand::make_reg(RAX));
+		emit2(Op::Store, TypeKind::I64, home.displaced(8), Operand::make_reg(RDX));
+	}
+	moves_.clear();
+	const Value parts[2] = { pair.lo, pair.hi };
+	const Reg regs[2] = { RAX, RDX };
+	uint32_t assigned = 0;
+	for (Value v : { pair.lo, pair.hi })
+		if (v.kind == ValueKind::Temp && temps_[v.index].greg != kNoReg)
+			assigned |= 1u << temps_[v.index].greg;
+	std::vector<std::pair<uint32_t, Reg>> finish;
+	for (unsigned half = 0; half < 2; ++half)
+	{
+		const Value v = parts[half];
+		if (v.kind != ValueKind::Temp || temps_[v.index].uses == 0)
+			continue;
+		const Instruction& def = body_->instructions[body_->temps[v.index].def];
+		const Reg dst = result_reg(def, regs[half], kNoReg, assigned | (1u << regs[1 - half]));
+		Move move;
+		move.src = Operand::make_reg(regs[half]);
+		if (temps_[v.index].flags & TF_HOMED)
+			move.dst = Operand::make_frame(home_of(v.index));
+		else
+		{
+			move.dst = Operand::make_reg(dst);
+			assigned |= 1u << dst;
+			finish.push_back(std::make_pair(v.index, dst));
+		}
+		moves_.push_back(move);
+	}
+	parallel_moves(moves_);
+	for (const auto& item : finish)
+		finish_result(body_->instructions[body_->temps[item.first].def], item.second);
+	return true;
 }
 
 } // namespace native
