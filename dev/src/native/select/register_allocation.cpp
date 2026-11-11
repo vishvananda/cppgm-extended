@@ -1072,6 +1072,9 @@ void FunctionSelector::assign_registers()
 		return c;
 	};
 	std::vector<int32_t> tie(m, -1);
+	// Per phi: the incoming register of a parameter it takes that is no
+	// candidate itself (read only in its block, from where it arrives).
+	std::vector<Reg> arriving(m, kNoReg);
 	for (size_t c = 0; c < m; ++c)
 	{
 		const uint32_t temp = ra_candidates_[c];
@@ -1085,6 +1088,8 @@ void FunctionSelector::assign_registers()
 				const Value v = resolve(body.operands[def.extra_first + k]);
 				if (v.kind == ValueKind::Temp && cand[v.index] >= 0)
 					group[find(static_cast<uint32_t>(cand[v.index]))] = find(static_cast<uint32_t>(c));
+				else if (v.kind == ValueKind::Temp && arriving[c] == kNoReg && (temps_[v.index].flags & TF_PARAM))
+					arriving[c] = incoming_reg(v.index);
 			}
 		}
 		else if (ties_first_operand(def))
@@ -1238,7 +1243,18 @@ void FunctionSelector::assign_registers()
 			const uint8_t own_looped = ra_looped_[c];
 			ra_freq_[c] = weight;
 			ra_looped_[c] = looped;
-			reg = choose_register(c, first, past, kNoReg, tied);
+			// Another member's register serves the whole web: a parameter's
+			// incoming one (no copy at entry), else one a use asks for.
+			Reg mate = kNoReg;
+			for (size_t k = 0; k < members.size() && mate == kNoReg; ++k)
+				if (members[k] != c && (temps_[ra_candidates_[members[k]]].flags & TF_PARAM))
+					mate = incoming_reg(ra_candidates_[members[k]]);
+			for (size_t k = 0; k < members.size() && mate == kNoReg; ++k)
+				mate = arriving[members[k]];
+			for (size_t k = 0; k < members.size() && mate == kNoReg; ++k)
+				if (members[k] != c)
+					mate = ra_use_hint_[members[k]];
+			reg = choose_register(c, first, past, kNoReg, tied, mate);
 			ra_freq_[c] = own;
 			ra_looped_[c] = own_looped;
 		}
@@ -1265,7 +1281,7 @@ void FunctionSelector::assign_registers()
 	};
 	auto assign_alone = [&](uint32_t c, Reg tied) {
 		uint32_t first = ra_range_first_[c], past = ra_range_first_[c + 1];
-		Reg reg = choose_register(c, first, past, group_reg[find(c)], tied);
+		Reg reg = choose_register(c, first, past, group_reg[find(c)], tied, arriving[c]);
 		// Else one outside the loops it skips, or the blocks clobbering it (a phi: not in its block or predecessors).
 		const uint32_t temp = ra_candidates_[c];
 		const int32_t capacity = temps_[temp].cls != VClass::Gpr
@@ -1380,9 +1396,10 @@ void FunctionSelector::install_splits(
 // Candidate c's register for its ranges [first, past): one no instruction
 // inside them clobbers, no assigned range overlaps, with room in the
 // pressure tree; the web's register, the tied operand's, a parameter's
-// incoming register, then caller-saved before callee-saved (already saved
+// incoming register, its uses' (then `mate`, what another member of its
+// web would take), then caller-saved before callee-saved (already saved
 // ones first). kNoReg: a frame home.
-Reg FunctionSelector::choose_register(uint32_t c, uint32_t first, uint32_t past, Reg web, Reg tied)
+Reg FunctionSelector::choose_register(uint32_t c, uint32_t first, uint32_t past, Reg web, Reg tied, Reg mate)
 {
 	const lowir::FunctionBody& body = *body_;
 	const uint32_t temp = ra_candidates_[c];
@@ -1426,8 +1443,9 @@ Reg FunctionSelector::choose_register(uint32_t c, uint32_t first, uint32_t past,
 	if (temp >= body.parameter_count && body.temps[temp].def != kNoId &&
 		body.instructions[body.temps[temp].def].op == Opcode::Call)
 		returned = gpr ? RAX : XMM0;
-	const Reg prefs[5] = { web, tied, (t.flags & TF_PARAM) ? incoming_reg(temp) : kNoReg, returned, ra_use_hint_[c] };
-	for (unsigned k = 0; k < 5; ++k)
+	const Reg prefs[6] = { web, tied, (t.flags & TF_PARAM) ? incoming_reg(temp) : kNoReg, returned, ra_use_hint_[c],
+		mate };
+	for (unsigned k = 0; k < 6; ++k)
 		if (prefs[k] != kNoReg && (allowed & (1u << prefs[k])))
 			return prefs[k];
 	if (!gpr)
