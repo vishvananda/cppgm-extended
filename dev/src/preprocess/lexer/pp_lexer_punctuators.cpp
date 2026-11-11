@@ -206,6 +206,69 @@ bool SpellingIn(const char* spelling, uint32_t length, const Spelling (&list)[N]
 	return false;
 }
 
+// The bytes of `source` from `at` that a punctuator's later characters are
+// compared with while each is its own character: ASCII other than `\\` and
+// `?`, which may begin a splice or a trigraph.
+class PlainBytes
+{
+public:
+	PlainBytes(const SourceBuffer& source, uint32_t at)
+		: bytes_(reinterpret_cast<const unsigned char*>(source.data()) + at), size_(source.size() - at)
+	{}
+
+	bool plain(uint32_t index) const
+	{
+		return index < size_ && bytes_[index] < 0x80 && bytes_[index] != '\\' && bytes_[index] != '?';
+	}
+	unsigned char operator[](uint32_t index) const { return bytes_[index]; }
+
+private:
+	const unsigned char* bytes_;
+	uint32_t size_;
+};
+
+// The length of the first candidate that `bytes` spells after the first
+// character, which every candidate shares. Zero where the decision needs a
+// byte that is not plain: the caller then compares decoded characters.
+unsigned PlainPunctuator(const PlainBytes& bytes, const PunctuatorSpelling*& candidates)
+{
+	// [lex.pptoken] 2.5p3: `<::` not followed by `:` or `>` is `<` alone.
+	if (candidates->text[0] == '<')
+	{
+		if (!bytes.plain(1))
+			return 0;
+		if (bytes[1] == ':')
+		{
+			if (!bytes.plain(2))
+				return 0;
+			if (bytes[2] == ':')
+			{
+				if (!bytes.plain(3))
+					return 0;
+				if (bytes[3] != ':' && bytes[3] != '>')
+				{
+					while (candidates[1].text != nullptr)
+						++candidates;
+					return 1;
+				}
+			}
+		}
+	}
+	for (;; ++candidates)
+	{
+		unsigned i = 1;
+		for (; candidates->text[i] != '\0'; ++i)
+		{
+			if (!bytes.plain(i))
+				return 0;
+			if (bytes[i] != static_cast<unsigned char>(candidates->text[i]))
+				break;
+		}
+		if (candidates->text[i] == '\0')
+			return i;
+	}
+}
+
 } // namespace
 
 uint8_t PPLexer::try_lex_punctuator()
@@ -213,6 +276,28 @@ uint8_t PPLexer::try_lex_punctuator()
 	const PunctuatorSpelling* candidates = PunctuatorCandidates(cur_.code_point);
 	if (candidates == nullptr)
 		return kNoPunctuator;
+
+	// A character that begins no longer punctuator is one.
+	if (candidates[1].text == nullptr)
+	{
+		take(cur_);
+		return candidates->punctuator;
+	}
+
+	// A punctuator of plain bytes is read from the source: its spelling is
+	// those bytes. (Each list ends with its first character alone, so the
+	// search ends; the token has just begun, so its spelling is clean.)
+	if (cur_.end - cur_.begin == 1)
+	{
+		const PunctuatorSpelling* found = candidates;
+		if (const unsigned length = PlainPunctuator(PlainBytes(source_, cur_.begin), found))
+		{
+			clean_end_ = cur_.begin + length;
+			token_end_ = clean_end_;
+			cur_ = reader_.logical(clean_end_);
+			return found->punctuator;
+		}
+	}
 
 	PunctuatorLookahead ahead(reader_, cur_);
 
@@ -272,6 +357,9 @@ uint8_t PPLexer::identifier_like_operator() const
 	const char* spelling;
 	uint32_t length;
 	current_spelling(spelling, length);
+	// (Each has from two to six letters.)
+	if (length < 2 || length > 6)
+		return kNoPunctuator;
 	for (const IdentifierLikeOperator& candidate : kIdentifierLikeOperators)
 	{
 		if (candidate.spelling.length == length && std::memcmp(candidate.spelling.text, spelling, length) == 0)
