@@ -6,7 +6,7 @@ or a green partial suite does not complete PA37.
 
 | Requirement | Current evidence | Remaining qualification |
 | --- | --- | --- |
-| Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes; source and text paths in PA37 | Complete binary128 evaluation, target headers and all ABI-sensitive class facts |
+| Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes; source and text paths in PA37 | Broader target headers and all ABI-sensitive class facts |
 | Scalar and aggregate execution | 23 fixtures at O0–O3; LLVM caller into cppgm aggregate provider | Wide integers/floats, varargs, complete type/layout edge cases |
 | CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
 | Standard objects and own static linker | Linking-v2 writer/reader/own linker; both LLVM interop directions at O0–O3; GNU/BSD archive probes; 32 normal fixtures | Complete EH-tag/wide/runtime object profile and malformed-feature/relocation cases |
@@ -61,7 +61,7 @@ runtime globals, relative relocations and explicit runtime archive inputs for
 without changing NaN payloads. Mixed-producer tests exercise arithmetic and
 precision beyond x87 through the supplied compiler-rt and libc archives.
 
-This checkpoint passes the strict report (10687/10687), PA29 (177/177), PA37
+This checkpoint passes the strict report (10687/10687), the integrated-assembly suite (PA29, 177/177), PA37
 with both host-built and self-built tools (35/35), debug-info checks, PA5
 self-host, byte-identical inception, PA36 smoke, source/placement/format/file
 audits and Clang 21 syntax checks. The export regenerates consistently. Full
@@ -73,12 +73,40 @@ from 3,055,513,686 to 3,055,676,669 instructions at O0 (+0.0053%), and from
 Every instruction-count observation is retained in `perf-runtime/`; no wall-time
 inference is made from these runs.
 
-A separate, still failing reducer is `quad-constexpr-significant.cpp` in the
-evidence directory. Reference LLVM accepts its binary128-precision assertion;
-cppgm rejects it because the constant interpreter still uses host precision.
-`quad-constexpr-probe.cpp` additionally exposes the missing target argument in
-static floating-literal scanning and the need for encoded binary128 constant
-arithmetic. This is required remaining work. WASI startup still needs core
-object exports, constructor/destructor wrappers, entry-point adapters and
-sysroot/runtime selection. The full ABI, C++ runtime, SIMD, quality and benchmark
-rows above remain open.
+## Target-precision constant evaluation checkpoint
+
+`d7b8cd4c8` evaluates binary128 arithmetic, comparisons, casts, builtin special
+values and object bytes without rounding through host `long double`. The cached
+representation bit fits existing type flags; `Type` remains 72 bytes and
+`ConstValue` 48 bytes on the qualification host. PA30 now states the target
+precision requirement and checks exact/inexact wide integer list initialization.
+
+After rebasing onto local LLVM tip `3b78b4521`, the strict report passes
+10696/10696, PA37 passes 40/40 with both host-built and self-built tools,
+debug info and PA5 self-host pass, inception is byte-identical, PA36 smoke is
+3/3, the complete harness passes, and architecture/format/file/placement checks
+pass (the same eight inherited file warnings). PA30 passes 73 preprocessing,
+498 compile and 211 run checks. GCC and Clang accept the positive native
+precision reducer. Independent numerical probes check 300,000 arithmetic and
+integer cases, including cancellation, and 279,800 conversion cases against GCC.
+
+Frozen native compilers on the same LLVM base compare `6b170dd28` to
+`d7b8cd4c8`: O0 instructions change from 3,055,770,328 to 3,055,879,270
+(+0.0036%); O3 from 9,896,408,719 to 9,896,312,452 (-0.0010%). Native objects
+are identical. All observations and hashes remain in `perf-constant/` outside
+Git. These counts make no wall-time claim.
+
+The rebase changes native block placement. The first fresh export therefore
+reported 28 informational PA34 MIR/compact-MIR differences; `2ccb2dff5`
+regenerates just those 14 affected fixtures through the normal reference target.
+Export qualification will be repeated with the next runtime checkpoint.
+
+## WASI runtime work in progress
+
+Local command probes now run both main signatures through the pinned SDK CRT,
+libc and compiler-rt with cppgm's own linker. Target header selection, core
+object exports, constructor wrappers, argument setup, heap growth, stream I/O
+and finalization have focused tests. The PA37 suite is 46/46, including mixed
+LLVM/cppgm objects with both linkers. These changes still need their broader
+qualification. Full portable C++ classes/RTTI/EH, wide scalar legalization,
+varargs, SIMD, quality and benchmarks remain required work.

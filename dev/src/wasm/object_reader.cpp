@@ -101,6 +101,18 @@ void functions(Cursor& input, Object& object)
 	}
 }
 
+void exports(Cursor& input, Object& object)
+{
+	const uint32_t count = input.u32();
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		const std::string name = input.string();
+		if (input.byte() != 0)
+			throw WasmError("unsupported non-function Wasm object export");
+		object.exports.push_back(ObjectExport{ name, input.u32() });
+	}
+}
+
 void code(Cursor& input, Object& object)
 {
 	const uint32_t count = input.u32();
@@ -209,6 +221,8 @@ static void parse_object_bytes(const Bytes& bytes, Object& object)
 			imports(section, object);
 		else if (kind == 3)
 			functions(section, object);
+		else if (kind == 7)
+			exports(section, object);
 		else if (kind == 9)
 			section.bytes();
 		else if (kind == 10)

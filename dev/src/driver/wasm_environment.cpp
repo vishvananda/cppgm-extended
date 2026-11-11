@@ -2,11 +2,23 @@
 
 namespace driver {
 
+void add_wasm_headers(PreprocessorOptions& options, const std::string& sysroot, const std::string& resource_directory)
+{
+	if (!resource_directory.empty())
+		options.system_include_paths.push_back(resource_directory + "/include");
+	if (!sysroot.empty())
+	{
+		options.system_include_paths.push_back(sysroot + "/include/wasm32-wasip1");
+		options.system_include_paths.push_back(sysroot + "/include");
+	}
+}
+
 void configure_wasm_environment(PreprocessorOptions& options)
 {
 	// Host predefined macros, include directories and va_list declarations
 	// cannot describe a cross target. Target headers are supplied explicitly.
 	options.host_predefines.clear();
+	options.hosted = true;
 	options.builtin_declarations = "typedef char* __builtin_va_list;\n";
 	options.popcnt = false;
 	options.sse_level = 0;

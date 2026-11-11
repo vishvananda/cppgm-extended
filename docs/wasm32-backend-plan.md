@@ -2,7 +2,7 @@
 
 Status: implementation in progress, 2026-11-11. The working branch is
 `feature/wasm32-backend`, rebased onto the latest committed local `opt/llvm-gap-claude` at
-`f66180b12`. Compiler changes are isolated in
+`3b78b4521`. Compiler changes are isolated in
 `/mnt/vizier/cppgm-wasm32-backend`; the main checkout is unchanged.
 
 The active student documents are [PA37](../pa37/README.md) and its

@@ -173,6 +173,18 @@ void write_object(const Object& object, Bytes& output)
 		if (!function.imported)
 			functions.unsigned_leb(function.type);
 	output.section(3, functions);
+	if (!object.exports.empty())
+	{
+		Bytes exports;
+		exports.unsigned_leb(object.exports.size());
+		for (const ObjectExport& entry : object.exports)
+		{
+			exports.string(entry.name);
+			exports.byte(0);
+			exports.unsigned_leb(entry.function);
+		}
+		output.section(7, exports);
+	}
 	Bytes elements;
 	elements.unsigned_leb(1);
 	elements.byte(0);
@@ -207,8 +219,8 @@ void write_object(const Object& object, Bytes& output)
 	}
 	output.section(11, data);
 	linking_section(object, output);
-	relocation_section(output, "reloc.CODE", 4, code_relocations);
-	relocation_section(output, "reloc.DATA", 5, data_relocations);
+	relocation_section(output, "reloc.CODE", 4 + !object.exports.empty(), code_relocations);
+	relocation_section(output, "reloc.DATA", 5 + !object.exports.empty(), data_relocations);
 	Bytes features;
 	features.unsigned_leb(object.features.size());
 	for (const auto& feature : object.features)

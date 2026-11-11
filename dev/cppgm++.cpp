@@ -1,6 +1,7 @@
 // Student-facing scaffold for the PA5+ `cppgm++` binary.
 
 #include "driver/host_environment.h"
+#include "driver/wasm_environment.h"
 #include "driver/toolchain.h"
 #include "lower/program_lowering.h"
 #include "lowir/text_writer.h"
@@ -192,6 +193,8 @@ struct SourceOutputInvocation
 	native::Target target = native::host_target();
 	string outfile;
 	string standard;
+	string sysroot;
+	string resource_directory;
 	vector<string> inputs;
 	// `--hosted`: the host environment -c uses (include paths, predefined
 	// macros, builtin declarations, hosted analysis), so a hosted source's
@@ -295,6 +298,24 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 		if (args[i] == "--hosted")
 		{
 			invocation.hosted = true;
+			continue;
+		}
+		if (args[i] == "--sysroot" || starts_with(args[i], "--sysroot=") || args[i] == "-resource-dir" ||
+			starts_with(args[i], "-resource-dir="))
+		{
+			const bool root = starts_with(args[i], "--sysroot");
+			const size_t equal = args[i].find('=');
+			string directory;
+			if (equal == string::npos)
+			{
+				consume_required_option_argument(args, i, args[i], "directory");
+				directory = args[i];
+			}
+			else
+				directory = args[i].substr(equal + 1);
+			if (directory.empty())
+				throw InvocationError("empty target directory");
+			(root ? invocation.sysroot : invocation.resource_directory) = directory;
 			continue;
 		}
 		if (args[i] == "-fPIC" || args[i] == "-fpic" || args[i] == "-fPIE" || args[i] == "-fpie")
@@ -506,6 +527,14 @@ bool consume_dependency_option(const vector<string>& args, size_t& i)
 
 bool consume_toolchain_option(const vector<string>& args, size_t& i)
 {
+	if (args[i] == "--sysroot" || args[i] == "-resource-dir")
+	{
+		consume_required_option_argument(args, i, args[i], "directory");
+		return true;
+	}
+	if (starts_with(args[i], "--sysroot=") || starts_with(args[i], "-resource-dir=") || args[i] == "-nostdlib" ||
+		args[i] == "-nodefaultlibs" || args[i] == "-nostartfiles")
+		return true;
 	if (args[i] == "--export")
 	{
 		consume_required_option_argument(args, i, "--export", "export name");
@@ -672,6 +701,10 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 	if (invocation.hosted)
 		driver::add_host_environment(options, invocation.target != native::host_target());
 	driver::configure_target_environment(options, invocation.target);
+	if (target_model::is_wasm(invocation.target))
+		driver::add_wasm_headers(options, invocation.sysroot, invocation.resource_directory);
+	else if (!invocation.sysroot.empty() || !invocation.resource_directory.empty())
+		throw InvocationError("target header directories currently require a Wasm target");
 	return options;
 }
 

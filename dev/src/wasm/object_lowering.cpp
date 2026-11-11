@@ -138,6 +138,10 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 	}
 	for (ObjectData& data : object.data)
 		relocate_symbols(data.contents.relocations, symbols);
+	if (options.target == target_model::Target::Wasi)
+		for (lowir::SymbolId id : program.order)
+			if (program.symbols[id].metadata.role == ir_model::SR_ENTRY)
+				adapt_wasi_entry(object, symbols[id]);
 	object.features = { { '+', "mutable-globals" }, { '+', "sign-ext" }, { '+', "bulk-memory" },
 		{ '+', "nontrapping-fptoint" }, { '+', "reference-types" } };
 }

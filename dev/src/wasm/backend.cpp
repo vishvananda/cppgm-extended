@@ -62,11 +62,12 @@ bool compile_object(
 	}
 }
 
-bool output_objects(
-	const std::vector<Object>& objects, const backend::Options& options, bool relocatable, std::string& error)
+bool output_objects(std::vector<Object>& objects, const backend::Options& options, bool relocatable, std::string& error)
 {
 	try
 	{
+		if (!relocatable)
+			add_runtime_inputs(objects, options);
 		for (const Object& object : objects)
 			validate_object(object);
 		Bytes bytes;

@@ -95,6 +95,14 @@ needed by the pinned runtime, including its compatibility `main` signature.
 Source programs still spell both forms `main`; freestanding exports do not
 acquire WASI startup behavior.
 
+Select target headers/libraries with `--sysroot` and builtin headers/compiler-rt
+with `-resource-dir`. Never use native host headers to describe wasm32. Respect
+core export names in input objects, including names different from their
+linking symbols. Resolve archive members before discarding unreachable code:
+a reference from a discarded function can select a member whose strong
+definition replaces a live weak fallback. Unresolved references that remain
+unreachable need not prevent a final link.
+
 The test dependencies pin WASI SDK 34.0, Wasmtime and `wasm-tools` in
 [`wasm_tools.json`](../scripts/wasm_tools.json). The SDK supplies reference
 Clang/LLD and runtime libraries. Its

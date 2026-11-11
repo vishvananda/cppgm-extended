@@ -19,6 +19,7 @@ public:
 private:
 	void resolve();
 	void activate(uint32_t object);
+	void resolve_archive_references();
 	void validate_symbols() const;
 	ObjectRef lookup(const std::string& name);
 	void collect();
@@ -28,7 +29,9 @@ private:
 	bool host_import(ObjectRef ref) const;
 	const ObjectSymbol& symbol(ObjectRef ref) const { return objects_[ref.first].symbols[ref.second]; }
 	uint32_t function_index(ObjectRef ref) const;
+	ObjectRef function_symbol(uint32_t object, uint32_t function) const;
 	uint32_t symbol_value(ObjectRef ref) const;
+	bool synthetic_data(const std::string& name, uint32_t& value) const;
 	Bytes relocated(uint32_t object, const ObjectChunk& chunk) const;
 	void emit(Bytes& output);
 	const std::vector<Object>& objects_;
@@ -36,6 +39,8 @@ private:
 	std::map<std::string, ObjectRef> definitions_, archive_index_;
 	std::set<std::string> groups_;
 	std::vector<bool> active_;
+	std::vector<uint32_t> pending_objects_;
+	size_t next_pending_ = 0;
 	std::vector<ObjectRef> roots_;
 	std::set<ObjectRef> discarded_functions_, discarded_data_;
 	std::map<ObjectRef, uint32_t> functions_, data_;
@@ -44,6 +49,8 @@ private:
 	std::vector<Signature> types_;
 	std::vector<std::vector<uint32_t>> type_indices_;
 	uint32_t imported_ = 0;
+	uint32_t ctor_index_ = kAbsent;
+	bool needs_ctors_ = false;
 	uint32_t stack_floor_ = 0, stack_top_ = 0;
 };
 

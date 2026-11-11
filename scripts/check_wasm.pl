@@ -85,6 +85,23 @@ if ($expect->{runtime}) {
     }
 }
 
+my @target_flags;
+if ($expect->{wasi}) {
+    die "$test: WASI SDK checks require the wasm32-wasip1 target\n"
+        unless ($expect->{target} // '') eq 'wasm32-wasip1';
+    my $clang = $ENV{CPPGM_WASM_CLANG} // 'wasm-ref-clang++';
+    my ($status, $library, $stderr) = command('wasi-sysroot', $clang,
+        '--target=wasm32-wasip1', '-print-file-name=libc.a');
+    $library =~ s/\s+\z//;
+    die "$test: WASI libc lookup failed: $library$stderr\n" if $status || !-f $library;
+    my $sysroot = dirname(dirname(dirname($library)));
+    my ($resource_status, $resource, $resource_error) = command('wasi-resource', $clang, '-print-resource-dir');
+    $resource =~ s/\s+\z//;
+    die "$test: target resource lookup failed: $resource$resource_error\n"
+        if $resource_status || !-d $resource;
+    @target_flags = ('--sysroot', $sysroot, '-resource-dir', $resource);
+}
+
 for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     my ($status, $stdout, $stderr);
     my @modules;
@@ -95,7 +112,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     my $tool = $expect->{source} ? $source_compiler : $compiler;
     ($status, $stdout, $stderr) = command("compile-$level", $tool, "-O$level",
         '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-        @{$expect->{flags} // []}, @exports, '-o', $module, $test, @units, @runtime_libraries);
+        @target_flags, @{$expect->{flags} // []}, @{$expect->{link_flags} // []}, @exports, '-o', $module, $test, @units, @runtime_libraries);
     if ($expect->{reject}) {
         die "$test: invalid input accepted at O$level\n" if $status == 0;
         die "$test: rejection was not a compiler diagnostic: $stdout$stderr\n"
@@ -110,11 +127,11 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         my $lowir = "$directory/source.lowir";
         ($status, $stdout, $stderr) = command("lowir-$level", $source_compiler,
             '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-            @{$expect->{flags} // []}, '--emit-lowir', '-O0', '-o', $lowir, $test, @units);
+            @target_flags, @{$expect->{flags} // []}, '--emit-lowir', '-O0', '-o', $lowir, $test, @units);
         die "$test: LowIR lowering failed: $stdout$stderr\n" if $status;
         my $roundtrip = "$directory/roundtrip-$level.wasm";
         ($status, $stdout, $stderr) = command("roundtrip-$level", $compiler,
-            "-O$level", @exports, '-o', $roundtrip, $lowir, @runtime_libraries);
+            "-O$level", @target_flags, @{$expect->{link_flags} // []}, @exports, '-o', $roundtrip, $lowir, @runtime_libraries);
         die "$test: LowIR backend failed: $stdout$stderr\n" if $status;
         ($status, $stdout, $stderr) = command("roundtrip-validate-$level", $validator, 'validate', $roundtrip);
         die "$test: invalid round-trip module: $stdout$stderr\n" if $status;
@@ -133,7 +150,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         my $object = "$directory/input-$index-$level.o";
         ($status, $stdout, $stderr) = command("object-$index-$level", $source_compiler,
             '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-            @{$expect->{flags} // []}, "-O$level", '-c', $inputs[$index], '-o', $object);
+            @target_flags, @{$expect->{flags} // []}, "-O$level", '-c', $inputs[$index], '-o', $object);
         die "$test: object compile failed: $stdout$stderr\n" if $status;
         ($status, $stdout, $stderr) = command("object-validate-$index-$level", $validator, 'validate', $object);
         die "$test: invalid relocatable object: $stdout$stderr\n" if $status;
@@ -142,7 +159,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
             my $lowir = "$directory/unit-$index.lowir";
             ($status, $stdout, $stderr) = command("unit-lowir-$index-$level", $source_compiler,
                 '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-                @{$expect->{flags} // []}, '--emit-lowir', '-O0', $inputs[$index], '-o', $lowir);
+                @target_flags, @{$expect->{flags} // []}, '--emit-lowir', '-O0', $inputs[$index], '-o', $lowir);
             die "$test: unit LowIR lowering failed: $stdout$stderr\n" if $status;
             my $roundtrip = "$directory/unit-$index-$level.o";
             ($status, $stdout, $stderr) = command("unit-roundtrip-$index-$level", $source_compiler,
@@ -176,7 +193,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         my $output = "$linked.$pass";
         ($status, $stdout, $stderr) = command("link-$level-$pass", $source_compiler,
             '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-            @exports, @objects, @runtime_libraries, '-o', $output);
+            @target_flags, @{$expect->{link_flags} // []}, @exports, @objects, @runtime_libraries, '-o', $output);
         die "$test: object link failed: $stdout$stderr\n" if $status;
     }
     die "$test: identical object inputs produced different module bytes\n"
@@ -188,7 +205,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         my $output = "$directory/roundtrip-linked-$level.wasm";
         ($status, $stdout, $stderr) = command("roundtrip-link-$level", $source_compiler,
             '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-            @exports, @roundtrip_objects, @runtime_libraries, '-o', $output);
+            @target_flags, @{$expect->{link_flags} // []}, @exports, @roundtrip_objects, @runtime_libraries, '-o', $output);
         die "$test: round-trip object link failed: $stdout$stderr\n" if $status;
         ($status, $stdout, $stderr) = command("roundtrip-link-validate-$level", $validator, 'validate', $output);
         die "$test: invalid round-trip linked module: $stdout$stderr\n" if $status;
@@ -202,7 +219,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         for my $index (0 .. $#inputs) {
             my $object = "$directory/llvm-$index-$level.o";
             ($status, $stdout, $stderr) = command("llvm-object-$index-$level", $clang,
-                '--target=wasm32-unknown-unknown', '-std=c++11', '-fno-exceptions',
+                '--target=' . ($expect->{target} // 'wasm32-unknown-unknown'), '-std=c++11', '-fno-exceptions',
                 @{$expect->{reference_flags} // []}, "-O$level", '-x', 'c++', '-c', $inputs[$index], '-o', $object);
             die "$test: pinned LLVM compile failed: $stdout$stderr\n" if $status;
             push @reference_objects, $object;
@@ -213,8 +230,8 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
             for my $linker ('cppgm', 'llvm') {
                 my $output = "$directory/mixed-$producer-$linker-$level.wasm";
                 my @tool = $linker eq 'cppgm'
-                    ? ($source_compiler, '--target', ($expect->{target} // 'wasm32-unknown-unknown'))
-                    : ($lld, '--no-entry');
+                    ? ($source_compiler, '--target', ($expect->{target} // 'wasm32-unknown-unknown'), @target_flags)
+                    : $expect->{wasi} ? ($clang, '--target=wasm32-wasip1') : ($lld, '--no-entry');
                 ($status, $stdout, $stderr) = command("mixed-link-$producer-$linker-$level",
                     @tool, @exports, @mixed, @runtime_libraries, '-o', $output);
                 die "$test: mixed-object $linker link failed: $stdout$stderr\n" if $status;
@@ -236,6 +253,14 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                     die "$test: $name ABI $part expected [$want], got [$got]\n" if $want ne $got;
                 }
             }
+        }
+        for my $run (@{$expect->{commands} // []}) {
+            ($status, $stdout, $stderr) = command("command-$level", $runtime, 'run',
+                $run_module, @{$run->{args} // []});
+            die "$test: WASI command exit expected $run->{exit}, got $status: $stdout$stderr\n"
+                if $status != $run->{exit};
+            die "$test: WASI command output expected '$run->{stdout}', got '$stdout'\n"
+                if $stdout ne $run->{stdout};
         }
         for my $call (@{$expect->{calls} // []}) {
             ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run',

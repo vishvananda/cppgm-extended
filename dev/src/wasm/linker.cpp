@@ -5,6 +5,14 @@
 
 namespace wasm {
 
+ObjectRef Linker::function_symbol(uint32_t object, uint32_t function) const
+{
+	for (uint32_t index = 0; index < objects_[object].symbols.size(); ++index)
+		if (objects_[object].symbols[index].kind == 0 && objects_[object].symbols[index].index == function)
+			return ObjectRef{ object, index };
+	throw WasmError("Wasm function has no linking symbol");
+}
+
 ObjectRef Linker::selected(ObjectRef ref) const
 {
 	const ObjectSymbol& source = symbol(ref);
@@ -56,6 +64,7 @@ void Linker::activate(uint32_t i)
 	if (active_[i])
 		return;
 	active_[i] = true;
+	pending_objects_.push_back(i);
 	if (objects_[i].archive_member)
 		validate_object_code(objects_[i]);
 	const Object& object = objects_[i];
@@ -107,6 +116,8 @@ void Linker::activate(uint32_t i)
 			initializers_.push_back({ init.first, ref });
 		}
 	}
+	for (const ObjectExport& entry : object.exports)
+		roots_.push_back(function_symbol(i, entry.function));
 }
 
 void Linker::validate_symbols() const
@@ -127,6 +138,20 @@ void Linker::validate_symbols() const
 			}
 }
 
+void Linker::resolve_archive_references()
+{
+	// Archive extraction precedes section collection. An otherwise dead
+	// reference can bring in a member whose strong definition replaces a
+	// weak fallback (the supplied libc uses this for stream finalization).
+	while (next_pending_ < pending_objects_.size())
+	{
+		const uint32_t index = pending_objects_[next_pending_++];
+		for (const ObjectSymbol& source : objects_[index].symbols)
+			if (source.undefined() && !source.weak() && source.kind != 3)
+				lookup(source.name);
+	}
+}
+
 void Linker::dependencies(uint32_t object, const ObjectChunk& chunk)
 {
 	for (const Relocation& relocation : chunk.relocations)
@@ -144,9 +169,16 @@ void Linker::visit(ObjectRef ref)
 		return;
 	if (source.undefined() && !host_import(ref))
 	{
-		if (source.kind == 1 &&
-			(source.name == "__stack_low" || source.name == "__stack_high" || source.name == "__heap_base" ||
-				source.name == "__data_end"))
+		if (source.kind == 0 && source.name == "__wasm_call_ctors")
+		{
+			const Signature& type = objects_[ref.first].types[objects_[ref.first].functions[source.index].type];
+			if (!type.parameters.empty() || type.result != ValueType::Void)
+				throw WasmError("Wasm constructor wrapper signature is not void()");
+			needs_ctors_ = true;
+			return;
+		}
+		uint32_t value = 0;
+		if (source.kind == 1 && synthetic_data(source.name, value))
 			return;
 		if (source.weak())
 			return;
@@ -173,11 +205,23 @@ void Linker::collect()
 {
 	for (;;)
 	{
+		resolve_archive_references();
 		const auto before = std::count(active_.begin(), active_.end(), true);
 		functions_.clear();
 		data_.clear();
 		ordered_functions_.clear();
 		ordered_data_.clear();
+		if (options_.target == target_model::Target::Wasi && !options_.no_startfiles)
+		{
+			const ObjectRef entry = lookup("_start");
+			if (entry.first == kAbsent || symbol(entry).kind != 0)
+				throw WasmError("WASI command has no _start function");
+			const Object& object = objects_[entry.first];
+			const Signature& type = object.types[object.functions[symbol(entry).index].type];
+			if (!type.parameters.empty() || type.result != ValueType::Void)
+				throw WasmError("WASI _start signature is not void()");
+			visit(entry);
+		}
 		for (const std::string& name : options_.exports)
 		{
 			const ObjectRef ref = lookup(name);
@@ -229,6 +273,8 @@ void Linker::collect()
 	}
 	stack_floor_ = static_cast<uint32_t>((end + 15) & ~uint64_t(15));
 	stack_top_ = stack_floor_ + 1024 * 1024;
+	if (needs_ctors_ || !initializers_.empty())
+		ctor_index_ = static_cast<uint32_t>(ordered_functions_.size());
 }
 
 void Linker::run(Bytes& output)

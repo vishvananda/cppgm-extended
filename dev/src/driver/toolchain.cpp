@@ -13,6 +13,7 @@
 
 #include "abi/itanium/abi_encoding_error.h"
 #include "driver/host_environment.h"
+#include "driver/wasm_environment.h"
 #include "lex/post_token_writer.h"
 #include "lex/language_mode.h"
 #include "lex/post_tokenizer.h"
@@ -99,6 +100,10 @@ struct Invocation
 	// generation; omitted, -O0.
 	opt::OptimizerOptions optimizer;
 	std::string output;
+	std::string sysroot;
+	std::string resource_directory;
+	bool no_standard_libraries = false;
+	bool no_startfiles = false;
 	std::vector<Input> inputs;
 	std::vector<std::string> library_paths;
 	std::vector<std::string> exports;
@@ -281,6 +286,25 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 			invocation.preprocess_only = true;
 		else if (arg == "-nostdinc")
 			nostdinc = true;
+		else if (arg == "--sysroot" || starts_with(arg, "--sysroot=") || arg == "-resource-dir" ||
+			starts_with(arg, "-resource-dir="))
+		{
+			const bool root = starts_with(arg, "--sysroot");
+			const size_t equal = arg.find('=');
+			if (equal == std::string::npos && i + 1 >= args.size())
+				throw InvocationError("missing directory after " + arg);
+			const std::string directory = equal == std::string::npos ? args[++i] : arg.substr(equal + 1);
+			if (directory.empty())
+				throw InvocationError("empty target directory");
+			(root ? invocation.sysroot : invocation.resource_directory) = directory;
+		}
+		else if (arg == "-nostdlib" || arg == "-nodefaultlibs")
+		{
+			invocation.no_standard_libraries = true;
+			invocation.no_startfiles = invocation.no_startfiles || arg == "-nostdlib";
+		}
+		else if (arg == "-nostartfiles")
+			invocation.no_startfiles = true;
 		else if (arg == "-include")
 		{
 			if (i + 1 >= args.size())
@@ -442,6 +466,16 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 		invocation.optimizer.level = 0;
 	add_host_environment(invocation.preprocessor, nostdinc || invocation.target != native::host_target());
 	configure_target_environment(invocation.preprocessor, invocation.target);
+	if (target_model::is_wasm(invocation.target))
+	{
+		if (!nostdinc)
+			add_wasm_headers(invocation.preprocessor, invocation.sysroot, invocation.resource_directory);
+		if (!invocation.sysroot.empty())
+			invocation.library_paths.push_back(invocation.sysroot + "/lib/wasm32-wasip1");
+	}
+	else if (!invocation.sysroot.empty() || !invocation.resource_directory.empty() ||
+		invocation.no_standard_libraries || invocation.no_startfiles)
+		throw InvocationError("target runtime directory/options currently require a Wasm target");
 	invocation.optimizer.has_gnu_sincos = invocation.target == native::Target::Linux;
 	// Darwin objects are position independent even without an explicit -fPIC.
 	if (invocation.target == native::Target::MacOS)
@@ -876,6 +910,10 @@ int wasm_mode(const Invocation& invocation)
 	options.output = invocation.output.empty() ? "a.wasm" : invocation.output;
 	options.optimization_level = invocation.optimizer.level;
 	options.exports = invocation.exports;
+	options.sysroot = invocation.sysroot;
+	options.resource_directory = invocation.resource_directory;
+	options.no_standard_libraries = invocation.no_standard_libraries;
+	options.no_startfiles = invocation.no_startfiles;
 	options.optimizer = &invocation.optimizer;
 	std::string error;
 	std::vector<wasm::Object> objects;

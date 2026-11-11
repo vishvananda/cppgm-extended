@@ -46,6 +46,16 @@ the submitted compiler must not invoke them to implement code generation.
 Supplied runtime libraries may provide arithmetic and language-runtime
 services, as native libraries do in the earlier assignments.
 
+Use `--sysroot <directory>` to select the supplied target headers and libraries,
+and `-resource-dir <directory>` for its builtin headers and arithmetic runtime.
+For example, after installing the pinned SDK, pass its `share/wasi-sysroot` and
+`lib/clang/23` directories respectively. Apply the same target configuration to
+source compilation and `lowir2native` links. A WASIp1 link with a sysroot uses
+command startup by default; without a sysroot, supply an explicit `_start` or
+disable startup. Support `-nostartfiles`, `-nodefaultlibs` and
+`-nostdlib` to select startup and libraries explicitly; these flags do not
+remove header search paths.
+
 Implement the following at `-O0`, `-O1`, `-O2` and `-O3`:
 
 - Scalar arithmetic and conversions, narrow integer behavior, pointers,

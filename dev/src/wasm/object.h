@@ -55,6 +55,12 @@ struct ObjectGlobal
 	bool mutable_value;
 };
 
+struct ObjectExport
+{
+	std::string name;
+	uint32_t function;
+};
+
 struct Object
 {
 	std::string path;
@@ -67,9 +73,12 @@ struct Object
 	std::vector<ObjectGroup> groups;
 	std::vector<std::pair<char, std::string>> features;
 	std::vector<ObjectGlobal> global_imports;
+	std::vector<ObjectExport> exports;
 };
 
 bool relocation_addend(RelocationKind kind);
+void adapt_wasi_entry(Object& object, uint32_t symbol);
+void add_runtime_inputs(std::vector<Object>& objects, const backend::Options& options);
 void make_object(lowir::Program& program, const backend::Options& options, Object& object, std::string& dump);
 void write_object(const Object& object, Bytes& output);
 void read_object(const std::string& path, Object& object);

@@ -1,0 +1,1 @@
+{"source":true,"wasi":true,"target":"wasm32-wasip1","commands":[{"args":["hello"],"exit":7,"stdout":"hello\n"},{"exit":2,"stdout":""}],"llvm_interop":true,"abi":{"_start":{"params":[],"results":[]}}}

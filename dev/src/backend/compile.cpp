@@ -14,6 +14,12 @@ bool compile_program(lowir::Program& program, const Options& options, std::strin
 	}
 	if (target_model::is_wasm(options.target))
 		return wasm::compile_program(program, options, error);
+	if (!options.sysroot.empty() || !options.resource_directory.empty() || options.no_standard_libraries ||
+		options.no_startfiles)
+	{
+		error = "target runtime directory/options currently require a Wasm target";
+		return false;
+	}
 	if (!options.link_inputs.empty())
 	{
 		error = "additional object inputs require a Wasm target";

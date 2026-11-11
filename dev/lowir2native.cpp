@@ -34,6 +34,10 @@ struct LowIR2NativeInvocation
 	vector<string> srcfiles;
 	vector<string> link_inputs;
 	vector<string> exports;
+	string sysroot;
+	string resource_directory;
+	bool no_standard_libraries = false;
+	bool no_startfiles = false;
 };
 
 vector<string> collect_args(int argc, char** argv)
@@ -113,6 +117,25 @@ LowIR2NativeInvocation parse_lowir2native_invocation(const vector<string>& args)
 			if (!telemetry::kEnabled)
 				throw InvocationError(telemetry::kUnavailable);
 			invocation.stats = true;
+			continue;
+		}
+		if (args[i] == "--sysroot" || args[i].compare(0, 10, "--sysroot=") == 0 || args[i] == "-resource-dir" ||
+			args[i].compare(0, 14, "-resource-dir=") == 0)
+		{
+			const bool root = args[i].compare(0, 9, "--sysroot") == 0;
+			const size_t equal = args[i].find('=');
+			if (equal == string::npos && i + 1 >= args.size())
+				throw InvocationError("missing target directory");
+			const string directory = equal == string::npos ? args[++i] : args[i].substr(equal + 1);
+			if (directory.empty())
+				throw InvocationError("empty target directory");
+			(root ? invocation.sysroot : invocation.resource_directory) = directory;
+			continue;
+		}
+		if (args[i] == "-nostdlib" || args[i] == "-nodefaultlibs" || args[i] == "-nostartfiles")
+		{
+			invocation.no_standard_libraries = args[i] != "-nostartfiles" || invocation.no_standard_libraries;
+			invocation.no_startfiles = args[i] != "-nodefaultlibs" || invocation.no_startfiles;
 			continue;
 		}
 		if (args[i] == "--export" || args[i].compare(0, 9, "--export=") == 0)
@@ -240,6 +263,10 @@ int run_lowir2native_mode(const vector<string>& args)
 		options.target = program.target;
 	options.exports = invocation.exports;
 	options.link_inputs = invocation.link_inputs;
+	options.sysroot = invocation.sysroot;
+	options.resource_directory = invocation.resource_directory;
+	options.no_standard_libraries = invocation.no_standard_libraries;
+	options.no_startfiles = invocation.no_startfiles;
 	options.output = invocation.outfile;
 	options.machine_ir = invocation.machine_ir_file;
 	options.optimization_level = invocation.optimization_level;

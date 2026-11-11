@@ -71,6 +71,17 @@ void validate_object(const Object& object)
 	for (const auto& data : object.data)
 		validate_chunk(data.contents, object);
 	std::set<std::string> names;
+	for (const ObjectExport& entry : object.exports)
+	{
+		if (!names.insert(entry.name).second || entry.function >= object.functions.size())
+			throw WasmError("duplicate or invalid Wasm object export");
+		bool found = false;
+		for (const ObjectSymbol& symbol : object.symbols)
+			found = found || (symbol.kind == 0 && symbol.index == entry.function);
+		if (!found)
+			throw WasmError("Wasm exported function has no linking symbol");
+	}
+	names.clear();
 	for (const ObjectSymbol& symbol : object.symbols)
 	{
 		if (!symbol.local() && symbol.kind != 3 && !names.insert(symbol.name).second)

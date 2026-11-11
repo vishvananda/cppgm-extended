@@ -2,9 +2,28 @@
 
 namespace wasm {
 
+bool Linker::synthetic_data(const std::string& name, uint32_t& value) const
+{
+	if (name == "__stack_low" || name == "__data_end")
+		value = stack_floor_;
+	else if (name == "__stack_high" || name == "__heap_base")
+		value = stack_top_;
+	else if (name == "__wasm_first_page_end")
+		value = 65536;
+	else if (name == "__global_base")
+		value = 1024;
+	else if (name == "__heap_end")
+		value = (stack_top_ + 65535) & ~uint32_t(65535);
+	else
+		return false;
+	return true;
+}
+
 uint32_t Linker::function_index(ObjectRef ref) const
 {
 	ref = selected(ref);
+	if (symbol(ref).undefined() && symbol(ref).name == "__wasm_call_ctors" && ctor_index_ != kAbsent)
+		return ctor_index_;
 	const auto found = functions_.find({ ref.first, symbol(ref).index });
 	if (symbol(ref).kind != 0 || found == functions_.end())
 		throw WasmError("unresolved Wasm function relocation: " + symbol(ref).name);
@@ -33,10 +52,9 @@ uint32_t Linker::symbol_value(ObjectRef ref) const
 	}
 	if (source.undefined() && !host_import(ref))
 	{
-		if (source.name == "__stack_low" || source.name == "__data_end")
-			return stack_floor_;
-		if (source.name == "__stack_high" || source.name == "__heap_base")
-			return stack_top_;
+		uint32_t value = 0;
+		if (source.kind == 1 && synthetic_data(source.name, value))
+			return value;
 		if (source.weak())
 			return 0;
 	}

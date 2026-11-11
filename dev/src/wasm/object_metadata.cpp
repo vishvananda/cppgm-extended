@@ -146,8 +146,10 @@ void read_relocations(Cursor& input, Object& object, uint8_t section)
 		if (chunk == nullptr)
 			throw WasmError("Wasm relocation does not lie within a code or data body");
 		const uint32_t relative = offset - chunk->section_offset;
-		const uint32_t width = kind == RelocationKind::TableIndexI32 || kind == RelocationKind::MemoryAddressI32 ? 4
-																												 : 5;
+		const uint32_t width = kind == RelocationKind::TableIndexI32 || kind == RelocationKind::MemoryAddressI32 ||
+				kind == RelocationKind::GlobalIndexI32 || kind == RelocationKind::FunctionIndexI32
+			? 4
+			: 5;
 		if (relative > chunk->bytes.data.size() || width > chunk->bytes.data.size() - relative)
 			throw WasmError("Wasm relocation crosses a body boundary");
 		chunk->relocations.push_back(Relocation{ kind, relative, index, addend });

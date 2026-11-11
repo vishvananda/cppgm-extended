@@ -1,0 +1,1 @@
+{"source": true, "wasi": true, "target": "wasm32-wasip1", "link_flags": ["-nostdlib"], "calls": [{"export": "observe", "result": "17"}]}

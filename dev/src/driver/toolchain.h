@@ -18,7 +18,9 @@
 //
 // Options: -c, -E, -o <file>, -I <dir>, -isystem <dir>, -D <name>[=<value>],
 // -U <name>, -L <dir>, -l <name> (each also joined), -include <file>,
-// -nostdinc, -x c++, --target <target> (or =; the Linux x86-64 names only),
+// -nostdinc, -x c++, --target <target> (or =),
+// --sysroot <dir>, -resource-dir <dir>, -nostartfiles, -nodefaultlibs and
+// -nostdlib (Wasm target headers and supplied runtime selection),
 // -std=<c++11, c++14 or c++17, and their gnu and draft names> (__cplusplus;
 // c++NN the strict ISO dialect's host macros, __STRICT_ANSI__),
 // -stdlib=<the build's selection>, -f(no-)exceptions and -f(no-)rtti (the
