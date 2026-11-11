@@ -71,6 +71,7 @@ public:
 	bool successor_compare(Instruction& inst);
 	bool advanced_compare(Instruction& inst);
 	bool top_range_compare(Instruction& inst);
+	bool offset_equality(Instruction& inst);
 
 private:
 	bool power_of_two(Value value, Type type, unsigned& budget, unsigned width = 64);
@@ -634,6 +635,43 @@ bool IntegerPatterns::top_range_compare(Instruction& inst)
 	return true;
 }
 
+// `x + a == k` (and `x - a`, and `!=`) is `x == k - a`; an equality of a
+// value retyped at its width (an `int` read as `unsigned`) compares the
+// value as it was. An opcode less its first enumerator, compared with a
+// literal, is then the stored byte compared in memory (narrow_compare).
+bool IntegerPatterns::offset_equality(Instruction& inst)
+{
+	const ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
+	if (inst.op != Opcode::Compare || !inst.type.is_integer() || inst.type.kind() == TypeKind::I128 ||
+		inst.type.kind() == TypeKind::I1 || (pred != ComparePredicate::Eq && pred != ComparePredicate::Ne))
+		return false;
+	Constant c;
+	Literal k, a;
+	const Instruction* moved = producer(inst.ops[0]);
+	if (moved == nullptr || !moved->ops[0].is(ValueKind::Temp) || !constant(inst.ops[1], inst.type, c) ||
+		!integer_bits(inst.type, c, k))
+		return false;
+	if (moved->op == Opcode::Copy)
+	{
+		const Type from = body_.temps[moved->ops[0].index].type;
+		if (!from.is_integer() || from == inst.type || from.kind() == TypeKind::I1 ||
+			lowir::integer_bits(from.kind()) != lowir::integer_bits(inst.type.kind()))
+			return false;
+		inst.ops[0] = moved->ops[0];
+		inst.ops[1] = integer_value(body_, normalize_integer(from, k));
+		inst.type = from;
+		return true;
+	}
+	const BinaryOp op = static_cast<BinaryOp>(moved->sub);
+	if (moved->op != Opcode::Binary || moved->type != inst.type || (op != BinaryOp::Add && op != BinaryOp::Sub) ||
+		!constant(moved->ops[1], inst.type, c) || !integer_bits(inst.type, c, a))
+		return false;
+	inst.ops[0] = moved->ops[0];
+	inst.ops[1] = integer_value(
+		body_, normalize_integer(inst.type, Literal{ op == BinaryOp::Sub ? k.low + a.low : k.low - a.low, 0 }));
+	return true;
+}
+
 } // namespace
 
 bool simplify_integer_compare(
@@ -641,7 +679,7 @@ bool simplify_integer_compare(
 {
 	IntegerPatterns patterns(body, uses, facts);
 	return patterns.successor_compare(instruction) || patterns.advanced_compare(instruction) ||
-		patterns.top_range_compare(instruction);
+		patterns.top_range_compare(instruction) || patterns.offset_equality(instruction);
 }
 
 bool simplify_integer_conversion(

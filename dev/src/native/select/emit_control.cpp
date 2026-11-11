@@ -662,7 +662,7 @@ void FunctionSelector::emit_branch(const Instruction& inst)
 
 // A tested `x & y` (find_folds): test x, y, or bt x, k for `x & (1 << k)`;
 // the condition taking ZF or CF for `set` (nonzero) or its inverse.
-Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set, bool branch)
+Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set)
 {
 	const Type type = conj.type;
 	const TypeKind kind = type.is_pointer() ? TypeKind::Ptr : type.kind();
@@ -743,13 +743,9 @@ Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set, bool bra
 				}
 			}
 		}
-		// A register predicate lets the processor fuse its following branch.
-		// Memory-immediate forms with a displacement cannot fuse on all x86 CPUs.
-		if (branch && level_ >= 2 && a.kind == OperandKind::Mem && b.kind == OperandKind::Imm)
-		{
-			load_into(kSelectScratch, a, test_type.kind());
-			a = Operand::make_reg(kSelectScratch);
-		}
+		// (A memory operand tested against an immediate stays in memory: the
+		// test and its branch are two operations either way, and the load into
+		// a register a third instruction.)
 		emit2(Op::Test, test_type.kind(), a, b);
 	}
 	return cond;
@@ -759,7 +755,7 @@ void FunctionSelector::emit_compare_jump(const Instruction& compare, uint32_t on
 {
 	// A compare with zero of a tested `x & y`: the branch takes its test.
 	auto emit_test_jump = [&](const Instruction& conj, bool set) {
-		const Cond cond = emit_and_test(conj, set, true);
+		const Cond cond = emit_and_test(conj, set);
 		Inst& j = emit1(Op::Jcc, TypeKind::Void, Operand::make_label(on_true));
 		j.sub = cond;
 		emit1(Op::Jmp, TypeKind::Void, Operand::make_label(on_false));
