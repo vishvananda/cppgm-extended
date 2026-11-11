@@ -326,7 +326,7 @@ ExprFacts* Analyzer::constant_p_call(const syntax::CallExpr& expr, Scope* scope)
 		ConstantInterpreter interpreter(*this);
 		ConstValue result;
 		constant = interpreter.evaluate(operand, false, result) &&
-			(result.kind == ValueKind::Floating ||
+			(result.kind == ValueKind::Floating || result.kind == ValueKind::Binary128 ||
 				(result.kind == ValueKind::Pointer &&
 					(result.root == RootKind::Null || result.root == RootKind::Literal)));
 	}

@@ -289,6 +289,13 @@ in both normal compilation and the typed `cppgm++ -E` stream. Emit binary128
 bytes for these literals; `l`/`L` still denote `long double`. This PA30
 extension does not change the strict C++11 literal grammar of PA2–PA4.
 
+Constant evaluation of binary128 values must use their target precision and
+range, including arithmetic, comparisons, casts and static initialization.
+Preserve signed zero, subnormals and the bits of supported NaN builtins;
+diagnose constant arithmetic overflow and out-of-range integer conversions.
+List-initialization applies the same representability rules as other arithmetic
+types, including integer constants wider than 64 bits.
+
 Runtime checks that require libgcc's binary128 or bfloat16 helpers run on
 Linux; the Darwin runtime does not supply those interfaces. Binary16 checks
 run on both hosts. Calls to conversion helpers must follow the target runtime's

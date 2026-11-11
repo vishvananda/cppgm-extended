@@ -124,6 +124,8 @@ struct Type
 	// unsigned representation. Fixed when the type table is constructed.
 	uint8_t plain_char_unsigned : 1;
 	target_model::Target target : 3;
+	// Derived once for fundamental types; shares the existing flag byte.
+	uint8_t binary128 : 1;
 	// Dependence proven from immutable type structure or template facts
 	// (0 unknown, 1 no, 2 yes; see Analyzer::dependent_type). Nominal types
 	// can acquire template facts after creation, so their cache is seeded

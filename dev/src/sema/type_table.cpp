@@ -38,6 +38,10 @@ TypeTable::TypeTable(Arena& arena, bool plain_char_unsigned, target_model::Targe
 		// Fundamental types never depend on template parameters.
 		key.dependence = 1;
 		key.plain_char_unsigned = plain_char_unsigned && key.fundamental == FundamentalType::Char;
+		key.binary128 = key.fundamental == FundamentalType::Float128 ||
+			key.fundamental == FundamentalType::GnuFloat128 ||
+			((key.fundamental == FundamentalType::LongDouble || key.fundamental == FundamentalType::Float64x) &&
+				target_model::data_layout(target_).long_double_format == target_model::ExtendedFloat::Binary128);
 		fundamentals_[i] = intern(key);
 	}
 }

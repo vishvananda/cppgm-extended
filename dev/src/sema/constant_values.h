@@ -28,6 +28,8 @@ enum class ValueKind : uint8_t
 	Integer,
 	// A floating value in its type's precision.
 	Floating,
+	// An IEEE binary128 encoding in bits/high, independent of the host.
+	Binary128,
 	// A pointer, or the object or function a reference is bound to.
 	Pointer,
 	// A pointer to member (5.3.1p3, 4.11): `address.entity` the member (a
@@ -248,12 +250,31 @@ inline ConstValue WideValue(const Type* type, WideBits bits)
 	return value;
 }
 
+inline bool Binary128Type(const Type* type)
+{
+	return type->unqualified->binary128 != 0;
+}
+
+ConstValue Binary128FromHost(const Type* type, long double value);
+
 inline ConstValue FloatingValue(const Type* type, long double floating)
 {
+	if (Binary128Type(type))
+		return Binary128FromHost(type, floating);
 	ConstValue value = ConstValue();
 	value.kind = ValueKind::Floating;
 	value.type = type;
 	value.floating = floating;
+	return value;
+}
+
+inline ConstValue Binary128Value(const Type* type, uint64_t low, uint64_t high)
+{
+	ConstValue value = ConstValue();
+	value.kind = ValueKind::Binary128;
+	value.type = type;
+	value.bits = low;
+	value.high = high;
 	return value;
 }
 

@@ -1,0 +1,11 @@
+constexpr __float128 precise = 0x1.0000000000000000000000001p0Q;
+constexpr __float128 delta = precise - 1.0Q;
+static_assert(delta * 0x1p100Q == 1.0Q, "binary128 constant arithmetic");
+static_assert(static_cast<double>(1.0Q + 0x1p-53Q + 0x1p-100Q) > 1.0, "single target rounding");
+constexpr __int128 integer = static_cast<__int128>(1) << 100;
+constexpr __float128 exact{integer};
+static_assert(exact == 0x1p100Q, "wide list initialization");
+constexpr __float128 small = 0x1p-16494Q;
+static_assert(small > 0 && small / 2 == 0, "subnormal constant");
+constexpr __float128 quotient = 7.0Q / 2.0Q;
+static_assert(quotient == 3.5Q && static_cast<int>(-quotient) == -3, "conversion");

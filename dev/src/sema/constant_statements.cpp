@@ -1,4 +1,6 @@
 #include "sema/constant_interpreter.h"
+#include "sema/constant_floating.h"
+#include "sema/floating/binary128.h"
 
 #include <cmath>
 #include <cstring>
@@ -328,10 +330,22 @@ bool ConstantInterpreter::user_literal(const syntax::LiteralExpr& expr, Result& 
 			unsigned char bytes[16];
 			std::string scratch;
 			long double value = 0;
-			if (!ScanFloatingValue(expr.spelling.text, length, FundamentalType::LongDouble, scratch, bytes))
+			const Type* parameter = parameters[0]->unqualified;
+			if (!ScanFloatingValue(
+					expr.spelling.text, length, FundamentalType::LongDouble, scratch, bytes, parameter->target))
 				return fail(expr.location, "a floating literal outside constant evaluation");
-			std::memcpy(&value, bytes, sizeof value);
-			argument.value = FloatingValue(parameters[0]->unqualified, value);
+			if (Binary128Type(parameter))
+			{
+				uint64_t low = 0, high = 0;
+				std::memcpy(&low, bytes, 8);
+				std::memcpy(&high, bytes + 8, 8);
+				argument.value = Binary128Value(parameter, low, high);
+			}
+			else
+			{
+				std::memcpy(&value, bytes, sizeof value);
+				argument.value = FloatingValue(parameter, value);
+			}
 		}
 		arguments.push_back(argument);
 	}
@@ -600,6 +614,13 @@ bool ConstantInterpreter::builtin(
 		if ((!integer && !floating) || count != 1 || !converted(*arguments[0].expr, arguments[0].conversion, value))
 			return fail(location, "a builtin function that is not a constant expression");
 		const Type* result_type = type->element->unqualified;
+		if (floating && value.kind == ValueKind::Binary128)
+		{
+			result.value = value;
+			result.value.type = result_type;
+			result.value.high &= ~(uint64_t(1) << 63);
+			return true;
+		}
 		if (floating && value.kind == ValueKind::Floating)
 		{
 			result.value = FloatingValue(result_type, std::fabs(value.floating));
@@ -682,6 +703,27 @@ bool ConstantInterpreter::library_floating(
 	if (count != 2 || !converted(*arguments[0].expr, arguments[0].conversion, x) ||
 		!converted(*arguments[1].expr, arguments[1].conversion, y))
 		return true;
+	if (x.kind == ValueKind::Binary128 || y.kind == ValueKind::Binary128)
+	{
+		const Type* target = function->type->canonical->element->unqualified;
+		if (!convert_scalar(x, target, location) || !convert_scalar(y, target, location))
+			return true;
+		if (x.kind != ValueKind::Binary128 || y.kind != ValueKind::Binary128)
+			return fail(location, "a floating builtin with incompatible representations"), true;
+		const binary128::Bits a{ x.bits, x.high }, b{ y.bits, y.high };
+		if (copysign)
+		{
+			result.value = x;
+			result.value.high = (x.high & ~(uint64_t(1) << 63)) | (y.high & (uint64_t(1) << 63));
+		}
+		else if (binary128::nan(a))
+			result.value = y;
+		else if (binary128::nan(b))
+			result.value = x;
+		else
+			result.value = Binary128Comparison(maximum ? TokenKind::OP_GT : TokenKind::OP_LT, x, y) ? x : y;
+		return true;
+	}
 	if (x.kind != ValueKind::Floating || y.kind != ValueKind::Floating)
 		return fail(location, "a floating builtin of no floating constants"), true;
 	const long double value = copysign ? std::copysign(x.floating, y.floating)

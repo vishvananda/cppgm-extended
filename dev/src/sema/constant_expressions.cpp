@@ -1,4 +1,6 @@
 #include "sema/constant_interpreter.h"
+#include "sema/constant_floating.h"
+#include "sema/floating/binary128.h"
 
 #include <cmath>
 #include <limits>
@@ -473,6 +475,16 @@ bool ConstantInterpreter::literal(const syntax::LiteralExpr& expr, ConstValue& o
 	}
 	unsigned char bytes[16];
 	std::string scratch;
+	if (Binary128Type(type))
+	{
+		if (!ScanFloatingValue(expr.spelling.text, facts->value, type->fundamental, scratch, bytes, type->target))
+			return fail(expr.location, "a binary128 literal outside constant evaluation");
+		uint64_t low = 0, high = 0;
+		std::memcpy(&low, bytes, 8);
+		std::memcpy(&high, bytes + 8, 8);
+		out = Binary128Value(type, low, high);
+		return true;
+	}
 	if (!ExactlyHeld(type))
 		return fail(expr.location, "a binary16 or binary128 constant is not supported");
 	const FundamentalType representation = FloatingRepresentation(type->fundamental);
@@ -605,6 +617,8 @@ bool ConstantInterpreter::convert_scalar(ConstValue& value, const Type* to, uint
 		value = IntegerValue(to, result ? 1 : 0);
 		return true;
 	}
+	if (value.kind == ValueKind::Binary128 || Binary128Type(to))
+		return ConvertBinary128(value, to) || fail(location, "a binary128 conversion outside the target range");
 	if (IsFloating(to))
 	{
 		if (!ExactlyHeld(to))
@@ -709,6 +723,9 @@ bool ConstantInterpreter::truth_of(const ConstValue& value, bool& out, uint32_t 
 	{
 	case ValueKind::Integer:
 		out = (value.bits | value.high) != 0;
+		return true;
+	case ValueKind::Binary128:
+		out = !Binary128Zero(value);
 		return true;
 	case ValueKind::Floating:
 		out = value.floating != 0;
@@ -1210,6 +1227,9 @@ bool ConstantInterpreter::arithmetic(const syntax::BinaryExpr& expr, const Const
 	{
 		if (!convert_scalar(left, type, expr.location) || !convert_scalar(right, type, expr.location))
 			return false;
+		if (left.kind == ValueKind::Binary128)
+			return Binary128Operation(expr.op, type, left, right, out) ||
+				fail(expr.location, "a binary128 operation with an undefined result");
 		long double result = 0;
 		if (!floating_operation(expr.op, type, left.floating, right.floating, result, expr.location))
 			return false;
@@ -1366,6 +1386,14 @@ bool ConstantInterpreter::comparison(const syntax::BinaryExpr& expr, const Const
 				: 0);
 		return true;
 	}
+	if (left.kind == ValueKind::Binary128 || right.kind == ValueKind::Binary128)
+	{
+		const Type* common = left.kind == ValueKind::Binary128 ? left.type : right.type;
+		if (!convert_scalar(left, common, expr.location) || !convert_scalar(right, common, expr.location))
+			return false;
+		out = IntegerValue(boolean, Binary128Comparison(expr.op, left, right));
+		return true;
+	}
 	if (left.kind == ValueKind::Floating || right.kind == ValueKind::Floating)
 	{
 		const Type* common = left.kind == ValueKind::Floating ? left.type : right.type;
@@ -1516,6 +1544,11 @@ bool ConstantInterpreter::compound_assignment(const syntax::BinaryExpr& expr, Co
 		if (!complex_operation(op, operation, old, right, result, expr.location))
 			return false;
 	}
+	else if (old.kind == ValueKind::Binary128)
+	{
+		if (!ConvertBinary128(right, operation) || !Binary128Operation(op, operation, old, right, result))
+			return fail(expr.location, "a binary128 assignment outside its range");
+	}
 	else if (IsFloating(operation))
 	{
 		long double value = 0;
@@ -1598,6 +1631,13 @@ bool ConstantInterpreter::unary(const syntax::UnaryExpr& expr, ConstValue& out)
 		const Type* type = expr.facts->type->unqualified;
 		if (IsComplex(type))
 			return complex_unary(expr.op, type, value, out, expr.location);
+		if (value.kind == ValueKind::Binary128 && expr.op == TokenKind::OP_MINUS)
+		{
+			out = value;
+			out.type = type;
+			out.high ^= uint64_t(1) << 63;
+			return true;
+		}
 		if (value.kind == ValueKind::Floating && expr.op == TokenKind::OP_MINUS)
 		{
 			out = FloatingValue(type, -value.floating);
@@ -1660,6 +1700,13 @@ bool ConstantInterpreter::increment(const syntax::UnaryExpr& expr, bool postfix,
 		if (!advance(stepped, decrement ? -1 : 1, expr.location))
 			return false;
 	}
+	else if (old.kind == ValueKind::Binary128)
+	{
+		ConstValue one = IntegerValue(analyzer_.types_.fundamental(FundamentalType::Int), 1);
+		if (!ConvertBinary128(one, type) ||
+			!Binary128Operation(decrement ? TokenKind::OP_MINUS : TokenKind::OP_PLUS, type, old, one, stepped))
+			return fail(expr.location, "a binary128 increment outside its range");
+	}
 	else if (old.kind == ValueKind::Floating)
 	{
 		// In the operand's precision, rounded once (x += 1, 5.2.6p1).
@@ -1718,6 +1765,16 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 	const ExprFacts* facts = call_expr.facts;
 	const TypeTable& types = analyzer_.types_;
 	const Intrinsic which = static_cast<Intrinsic>(facts->value & 0xff);
+	if (Binary128Type(facts->type) &&
+		(which == Intrinsic::Nan || which == Intrinsic::NanSignaling || which == Intrinsic::Inf))
+	{
+		const uint64_t payload = which == Intrinsic::Inf ? 0 : BuiltinNanPayload(*call_expr.arguments[0]);
+		const binary128::Bits value = which == Intrinsic::Inf ? binary128::infinity()
+			: which == Intrinsic::Nan                         ? binary128::quiet_nan(payload)
+															  : binary128::signaling_nan(payload);
+		out = Binary128Value(facts->type, value.low, value.high);
+		return true;
+	}
 	// A signaling NaN of float, double or long double (binary16's and
 	// binary128's are no constants here): its bits as the lowering states
 	// them (std::numeric_limits<T>::signaling_NaN() is constexpr).
@@ -1774,8 +1831,24 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 	{
 		// The quiet comparisons of constant operands.
 		ConstValue x, y;
-		if (!operand(*arguments[0], x) || !operand(*arguments[1], y) || x.kind != ValueKind::Floating ||
-			y.kind != ValueKind::Floating)
+		if (!operand(*arguments[0], x) || !operand(*arguments[1], y))
+			return false;
+		if (x.kind == ValueKind::Binary128 || y.kind == ValueKind::Binary128)
+		{
+			const Type* common = x.kind == ValueKind::Binary128 ? x.type : y.type;
+			if (!convert_scalar(x, common, call_expr.location) || !convert_scalar(y, common, call_expr.location))
+				return false;
+			const int order = binary128::compare(binary128::Bits{ x.bits, x.high }, binary128::Bits{ y.bits, y.high });
+			const bool result = which == Intrinsic::IsGreater ? order == 1
+				: which == Intrinsic::IsGreaterEqual          ? order == 0 || order == 1
+				: which == Intrinsic::IsLess                  ? order == -1
+				: which == Intrinsic::IsLessEqual             ? order == -1 || order == 0
+				: which == Intrinsic::IsLessGreater           ? order == -1 || order == 1
+															  : order == 2;
+			out = IntegerValue(types.fundamental(FundamentalType::Int), result);
+			return true;
+		}
+		if (x.kind != ValueKind::Floating || y.kind != ValueKind::Floating)
 			return false;
 		const long double a = x.floating, b = y.floating;
 		const bool unordered = std::isnan(a) || std::isnan(b);
@@ -1811,9 +1884,11 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 		return fail(call_expr.location, "an intrinsic without constant-evaluation semantics");
 	ConstValue x;
 	if (which == Intrinsic::NanSignaling || !operand(*arguments[arguments.size - 1], x) ||
-		x.kind != ValueKind::Floating)
+		(x.kind != ValueKind::Floating && x.kind != ValueKind::Binary128))
 		return false;
-	const long double v = x.floating;
+	const bool encoded = x.kind == ValueKind::Binary128;
+	const binary128::Bits quad{ encoded ? x.bits : 0, encoded ? x.high : 0 };
+	const long double v = encoded ? 0 : x.floating;
 	const FundamentalType representation = FloatingRepresentation(x.type->fundamental);
 	// The least normal value of the operand's format, exactly: 2^(1 -
 	// bias) (a decimal approximation in long double is not the double's).
@@ -1822,13 +1897,16 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 			: representation == FundamentalType::Double                                         ? -1022
 			: representation == FundamentalType::Float16                                        ? -14
 																								: -16382);
-	const bool nan = std::isnan(v), infinite = std::isinf(v);
-	const bool normal = !nan && !infinite && (v >= least || v <= -least);
+	const bool nan = encoded ? binary128::nan(quad) : std::isnan(v);
+	const bool infinite = encoded ? !binary128::finite(quad) && !nan : std::isinf(v);
+	const bool normal = encoded ? binary128::normal(quad) : !nan && !infinite && (v >= least || v <= -least);
+	const bool sign = encoded ? binary128::negative(quad) : std::signbit(v);
+	const bool is_zero = encoded ? binary128::zero(quad) : v == 0;
 	uint64_t result = 0;
 	switch (which)
 	{
 	case Intrinsic::SignBit:
-		result = std::signbit(v) ? 1 : 0;
+		result = sign ? 1 : 0;
 		break;
 	case Intrinsic::IsNan:
 		result = nan;
@@ -1844,13 +1922,13 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 		std::memcpy(bytes, &v, sizeof v);
 		uint64_t significand = 0;
 		std::memcpy(&significand, bytes, 8);
-		result = nan && ((significand >> 62) & 1) == 0;
+		result = nan && (encoded ? ((quad.high >> 47) & 1) == 0 : ((significand >> 62) & 1) == 0);
 		break;
 	}
 	case Intrinsic::IsInfSign:
-		result = !infinite    ? 0
-			: std::signbit(v) ? ConvertIntegral(~uint64_t(0), KindOf(types.fundamental(FundamentalType::Int)))
-							  : 1;
+		result = !infinite ? 0
+			: sign         ? ConvertIntegral(~uint64_t(0), KindOf(types.fundamental(FundamentalType::Int)))
+						   : 1;
 		break;
 	case Intrinsic::IsFinite:
 		result = !nan && !infinite;
@@ -1860,7 +1938,7 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 		break;
 	case Intrinsic::FpClassify:
 	{
-		const uint32_t category = nan ? 0 : infinite ? 1 : normal ? 2 : v != 0 ? 3 : 4;
+		const uint32_t category = nan ? 0 : infinite ? 1 : normal ? 2 : !is_zero ? 3 : 4;
 		ConstValue code;
 		if (!operand(*arguments[category], code) || code.kind != ValueKind::Integer)
 			return false;

@@ -1,4 +1,5 @@
 #include "sema/constant_interpreter.h"
+#include "sema/constant_floating.h"
 
 #include <cmath>
 #include <cstring>
@@ -150,7 +151,7 @@ bool ScalarBytes(const ConstValue& value, const Type* type, uint64_t size, uint8
 	uint64_t low = 0, high = 0;
 	if (value.kind == ValueKind::Floating && SignalingNan(value.floating))
 		return false;
-	if (value.kind == ValueKind::Integer)
+	if (value.kind == ValueKind::Integer || value.kind == ValueKind::Binary128)
 	{
 		low = value.bits;
 		high = value.high;
@@ -186,6 +187,11 @@ bool BytesScalar(const uint8_t* bytes, const Type* type, uint64_t size, ConstVal
 			low |= static_cast<uint64_t>(bytes[b]) << (8 * b);
 		else
 			high |= static_cast<uint64_t>(bytes[b]) << (8 * (b - 8));
+	}
+	if (Binary128Type(type) && size == 16)
+	{
+		out = Binary128Value(type, low, high);
+		return true;
 	}
 	IntegralKind kind;
 	if (IntegralKindOf(type, kind))
@@ -462,6 +468,9 @@ bool ConstantInterpreter::part_operation(
 		return false;
 	if (IsFloating(part))
 	{
+		if (a.kind == ValueKind::Binary128)
+			return Binary128Operation(op, part->unqualified, a, b, out) ||
+				fail(location, "a binary128 complex component outside its range");
 		long double result = 0;
 		if (!floating_operation(op, part, a.floating, b.floating, result, location))
 			return false;
@@ -481,6 +490,12 @@ bool ConstantInterpreter::part_negation(const Type* part, ConstValue value, Cons
 {
 	if (!convert_scalar(value, part, location))
 		return false;
+	if (value.kind == ValueKind::Binary128)
+	{
+		out = value;
+		out.high ^= uint64_t(1) << 63;
+		return true;
+	}
 	if (value.kind == ValueKind::Floating)
 	{
 		out = FloatingValue(part->unqualified, -value.floating);
@@ -586,7 +601,9 @@ bool ConstantInterpreter::complex_equal(
 	{
 		const ConstValue& a = left.elements[i];
 		const ConstValue& b = right.elements[i];
-		if (a.kind == ValueKind::Floating && b.kind == ValueKind::Floating)
+		if (a.kind == ValueKind::Binary128 && b.kind == ValueKind::Binary128)
+			same = same && Binary128Comparison(TokenKind::OP_EQ, a, b);
+		else if (a.kind == ValueKind::Floating && b.kind == ValueKind::Floating)
 			same = same && a.floating == b.floating;
 		else if (a.kind == ValueKind::Integer && b.kind == ValueKind::Integer)
 			same = same && a.bits == b.bits && a.high == b.high;

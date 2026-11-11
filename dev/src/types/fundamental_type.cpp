@@ -127,10 +127,11 @@ unsigned FundamentalTypeSize(FundamentalType type, target_model::Target target)
 
 FundamentalType FloatingRepresentation(FundamentalType type, target_model::Target target)
 {
-	if (type == FundamentalType::LongDouble &&
+	const FundamentalType representation = FloatingRepresentation(type);
+	if (representation == FundamentalType::LongDouble &&
 		target_model::data_layout(target).long_double_format == target_model::ExtendedFloat::Binary128)
 		return FundamentalType::Float128;
-	return FloatingRepresentation(type);
+	return representation;
 }
 
 bool IsFloatingFundamental(FundamentalType type)

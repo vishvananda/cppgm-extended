@@ -12,6 +12,7 @@
 #include "sema/integral_arithmetic.h"
 #include "sema/pretty_function.h"
 #include "sema/string_literals.h"
+#include "sema/floating/binary128.h"
 
 namespace lower {
 
@@ -22,6 +23,17 @@ RValue FunctionLowering::intrinsic(const syntax::CallExpr& expr)
 	// normal value and finite, each truth an i32; fpclassify sums the
 	// given codes weighted by the five exclusive truths.
 	const sema::Intrinsic kind = static_cast<sema::Intrinsic>(expr.facts->value & 0xff);
+	if (SoftFloatOf(expr.facts->type) == SoftFloat::Quad &&
+		(kind == sema::Intrinsic::Nan || kind == sema::Intrinsic::NanSignaling || kind == sema::Intrinsic::Inf))
+	{
+		if (kind != sema::Intrinsic::Inf)
+			discard(*expr.arguments[0]);
+		const uint64_t payload = kind == sema::Intrinsic::Inf ? 0 : sema::BuiltinNanPayload(*expr.arguments[0]);
+		const sema::binary128::Bits bits = kind == sema::Intrinsic::Inf ? sema::binary128::infinity()
+			: kind == sema::Intrinsic::Nan                              ? sema::binary128::quiet_nan(payload)
+																		: sema::binary128::signaling_nan(payload);
+		return soft_constant(SoftFloat::Quad, bits.low, bits.high);
+	}
 	if (kind == sema::Intrinsic::Nan || kind == sema::Intrinsic::Inf)
 	{
 		const lowir::Type type = lowering_.storage_type(expr.facts->type);

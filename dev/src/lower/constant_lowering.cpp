@@ -188,6 +188,12 @@ bool ProgramLowering::constant_item(
 		if (sema::IsWideIntegral(type))
 			item.constant.bits.high = value.high;
 		return item.type.is_integer();
+	case sema::ValueKind::Binary128:
+		item.kind = lowir::DataItemKind::Scalar;
+		item.type = lowir::Type::scalar(lowir::TypeKind::I128);
+		item.constant = IntegerItem(value.bits);
+		item.constant.bits.high = value.high;
+		return true;
 	case sema::ValueKind::Floating:
 		item.kind = lowir::DataItemKind::Scalar;
 		if (SoftFloatOf(type) == SoftFloat::BFloat)
@@ -214,7 +220,7 @@ bool ProgramLowering::constant_item(
 		{
 		case sema::RootKind::Null:
 			item.kind = lowir::DataItemKind::Zero;
-			item.amount = 8;
+			item.amount = target_model::data_layout(program_.target).pointer_bytes;
 			return true;
 		case sema::RootKind::Variable:
 		{

@@ -1,4 +1,5 @@
 #include "lower/program_lowering.h"
+#include "sema/floating/binary128.h"
 
 #include <algorithm>
 #include <cstring>
@@ -2250,7 +2251,7 @@ bool ProgramLowering::static_value(const syntax::Expr& expr, StaticValue& out, b
 		unsigned char bytes[16] = {};
 		std::string scratch;
 		if (!ScanFloatingValue(literal->spelling.text, static_cast<uint32_t>(facts->value),
-				type->unqualified->fundamental, scratch, bytes))
+				type->unqualified->fundamental, scratch, bytes, type->target))
 			return false;
 		lowir::Literal bits = {};
 		std::memcpy(&bits.low, bytes, 8);
@@ -2400,6 +2401,16 @@ bool ProgramLowering::static_value(const syntax::Expr& expr, StaticValue& out, b
 			if ((which != sema::Intrinsic::Nan && which != sema::Intrinsic::Inf) || !sema::IsFloating(type))
 				return false;
 			out = StaticValue();
+			if (SoftFloatOf(type) == SoftFloat::Quad)
+			{
+				const auto value = which == sema::Intrinsic::Inf
+					? sema::binary128::infinity()
+					: sema::binary128::quiet_nan(sema::BuiltinNanPayload(*call->arguments[0]));
+				out.kind = StaticValue::Kind::Soft;
+				out.bits = value.low;
+				out.high = value.high;
+				return true;
+			}
 			out.kind = StaticValue::Kind::Floating;
 			out.floating = which == sema::Intrinsic::Nan
 				? sema::BuiltinNan(type->unqualified->fundamental, *call->arguments[0])

@@ -7,6 +7,7 @@
 #include "lex/identifier_table.h"
 #include "sema/aggregates.h"
 #include "sema/constant_interpreter.h"
+#include "sema/constant_floating.h"
 #include "sema/instantiation_context.h"
 #include "sema/string_literals.h"
 
@@ -831,9 +832,23 @@ bool Analyzer::check_narrowing(
 	{
 		// From a floating type always; from an integer unless a constant
 		// converts to the floating type and back unchanged.
-		Constant value;
-		narrowing = IsFloating(source) || !narrowing_constant(element, before, scope, &value, nullptr) ||
-			!ExactlyFloating(value, target);
+		if (!IsFloating(source) && Binary128Type(target))
+		{
+			ConstantInterpreter interpreter(*this);
+			ConstValue original;
+			const bool known = before == nullptr ? interpreter.evaluate(element, false, original)
+												 : interpreter.evaluate_after(element, before, original);
+			ConstValue converted = original;
+			narrowing = !known || original.kind != ValueKind::Integer || !ConvertBinary128(converted, target) ||
+				!ConvertBinary128(converted, source) || converted.bits != original.bits ||
+				converted.high != original.high;
+		}
+		else
+		{
+			Constant value;
+			narrowing = IsFloating(source) || !narrowing_constant(element, before, scope, &value, nullptr) ||
+				!ExactlyFloating(value, target);
+		}
 	}
 	else if (second == ValueConversion::FloatingConversion &&
 		!(FloatingRank(target->fundamental) > FloatingRank(source->fundamental) ||
@@ -843,13 +858,24 @@ bool Analyzer::check_narrowing(
 		// converts to one within the target's range, even if inexactly
 		// (binary16's: below 65520, which rounds to infinity; bfloat16's
 		// below 2^128 - 2^119).
-		long double value = 0;
-		const FundamentalType representation = FloatingRepresentation(target->fundamental);
-		narrowing = !narrowing_constant(element, before, scope, nullptr, &value) ||
-			(representation == FundamentalType::Float             ? std::isinf(static_cast<float>(value))
-					: representation == FundamentalType::Float16  ? std::fabs(value) >= 65520.0L
-					: representation == FundamentalType::BFloat16 ? std::fabs(value) >= std::ldexp(511.0L, 119)
-																  : std::isinf(static_cast<double>(value)));
+		if (Binary128Type(source))
+		{
+			ConstantInterpreter interpreter(*this);
+			ConstValue value;
+			const bool known = before == nullptr ? interpreter.evaluate(element, false, value)
+												 : interpreter.evaluate_after(element, before, value);
+			narrowing = !known || !Binary128Fits(value, target);
+		}
+		else
+		{
+			long double value = 0;
+			const FundamentalType representation = FloatingRepresentation(target->fundamental);
+			narrowing = !narrowing_constant(element, before, scope, nullptr, &value) ||
+				(representation == FundamentalType::Float             ? std::isinf(static_cast<float>(value))
+						: representation == FundamentalType::Float16  ? std::fabs(value) >= 65520.0L
+						: representation == FundamentalType::BFloat16 ? std::fabs(value) >= std::ldexp(511.0L, 119)
+																	  : std::isinf(static_cast<double>(value)));
+		}
 	}
 	else if (second == ValueConversion::Boolean && IsFloating(source))
 	{
