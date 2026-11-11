@@ -285,7 +285,7 @@ public:
 
 private:
 	bool known_edges();
-	bool known_compares(bool literals = false);
+	bool known_compares();
 	bool demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool copy_thread(BlockId s, InstId tail, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, unsigned& bits) const;
@@ -931,7 +931,7 @@ const uint32_t kThreadCopy = 6;
 // Phis one run follows from the branches testing them.
 const size_t kNonzeroPhis = 1024;
 
-bool JumpThreading::known_compares(bool literals)
+bool JumpThreading::known_compares()
 {
 	c_.entry_uses(thread_jumps, !touched_);
 	bool changed = false;
@@ -1060,7 +1060,7 @@ bool JumpThreading::known_compares(bool literals)
 				else
 					redefined = true;
 			}
-		if (redefined || (literals && x_phi == kNoId))
+		if (redefined)
 			continue;
 		// The target `cur`'s branch or switch decides for value v on its edge
 		// to `to` (kNoId: unknown).
@@ -1076,14 +1076,7 @@ bool JumpThreading::known_compares(bool literals)
 		// path back through unique predecessors, or a dominator of p
 		// entered from a branch alone (v holds what that branch tested).
 		auto path_outcome = [&](BlockId p, BlockId into, Value v) -> BlockId {
-			Constant c;
-			if (literals && literal_constant(body_, v, c) && c.kind == ValueKind::Integer)
-			{
-				ValueSet one;
-				one.add(c.bits.low & ones(qbits), c.bits.low & ones(qbits));
-				return decide(one);
-			}
-			if (literals || !v.is(ValueKind::Temp))
+			if (!v.is(ValueKind::Temp))
 				return kNoId;
 			BlockId outcome = kNoId;
 			BlockId cur = p, to = into;
@@ -1126,10 +1119,10 @@ bool JumpThreading::known_compares(bool literals)
 				continue;
 			}
 			// A switch's cases for a block that only tests x part ways.
-			if (!literals && !switching && phis == 0 && copied == 0 && c_.level >= 2 &&
+			if (!switching && phis == 0 && copied == 0 && c_.level >= 2 &&
 				split_switch_cases(p, s, x, qbits, query, on_true, on_false, cresult))
 				cases = true;
-			if (x_phi == kNoId || literals || !mergeable(p, s, v))
+			if (x_phi == kNoId || !mergeable(p, s, v))
 				continue;
 			const Instruction& vphi = body_.instructions[body_.temps[v.index].def];
 			for (uint32_t qi = cfg_.pred_first[p]; qi < cfg_.pred_first[p + 1]; ++qi)
@@ -2415,22 +2408,7 @@ bool JumpThreading::run()
 			counted = true;
 	}
 	touched_ = changed;
-	const bool moved = constant_phis(counted);
-	changed = moved || changed;
-	// O2+: the literal a phi of a test block takes on an edge decides that
-	// test too when the block's values are read past it, or other
-	// computations stand before the test: constant_phis leaves those, and
-	// known_compares gives the edge its copy (copy_thread, demote_phis).
-	if (c_.level >= 2)
-	{
-		if (moved)
-		{
-			c_.invalidate_cfg();
-			c_.ensure_cfg();
-		}
-		touched_ = changed;
-		changed = known_compares(true) || changed;
-	}
+	changed = constant_phis(counted) || changed;
 	return changed;
 }
 
