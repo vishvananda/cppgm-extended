@@ -753,8 +753,9 @@ void FunctionSelector::find_low_reads()
 				break;
 			}
 			case Opcode::Call:
-				// (A word argument: the callee extends what it reads above it.)
-				low = k > 0 && eh_model_ == EhModel::Host && width_bits(kind) == 32;
+				// (A word argument: the callee extends what it reads above it.
+				// An indirect callee, the first operand, is no word.)
+				low = eh_model_ == EhModel::Host && width_bits(kind) == 32;
 				break;
 			case Opcode::Binary:
 			{
