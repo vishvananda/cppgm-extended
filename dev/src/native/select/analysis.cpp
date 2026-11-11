@@ -793,9 +793,11 @@ void FunctionSelector::find_low_reads()
 				// (An extension of a narrow source extends its low bits again,
 				// where the source would otherwise extend its own.)
 				const lowir::ConvertOp op = static_cast<lowir::ConvertOp>(inst.sub);
+				// (An unsigned word's wrapping operations extend it for nothing:
+				// its extension then stands for it, with no move of its own.)
 				const bool extends = (op == lowir::ConvertOp::SExt || op == lowir::ConvertOp::ZExt) &&
 					inst.type.is_integer() && inst.type.kind() != TypeKind::I128 &&
-					lowir::convert_source_type(inst).kind() == kind && extended(v.index);
+					lowir::convert_source_type(inst).kind() == kind && kind != TypeKind::U32 && extended(v.index);
 				low = k == 0 && ((truncates_integer(inst) && width_bits(inst.type.kind()) <= bits) || extends);
 				break;
 			}
