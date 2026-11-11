@@ -59,10 +59,6 @@ function @probe
     mov rax, 0
     ret rax
 
-  block ^store_fallback
-    store.i64 [rbp-8], 3
-    jmp ^merge
-
   block ^old_value
     mov rdi, 91
     call @make_value [args=(rdi)]
@@ -73,9 +69,11 @@ function @probe
 
   block ^store_old
     store.i64 [rbp-8], rbx
-    load.i64 rbx, [rbp-8]
-    cmp.i64 rbx, 0
-    je ^return_zero
+    jmp ^merge
+
+  block ^store_fallback
+    store.i64 [rbp-8], 3
+    jmp ^merge
 
   block ^use_current
     call @clobber [args=()]

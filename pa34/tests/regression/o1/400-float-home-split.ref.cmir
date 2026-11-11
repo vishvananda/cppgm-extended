@@ -64,7 +64,10 @@ function @scaled_sum
     add <gpr0>, 1
     cmp.i64 <gpr0>, <gpr2>
     jl ^loop
-    jmp ^next~done
+
+  block ^next~done
+    fmov.f64 xmm0, xmm1
+    jmp ^done
 
   block ^loop~cold
     fmov.f64 [rbp-<off0>], xmm1
@@ -78,10 +81,6 @@ function @scaled_sum
     fmov.f64 <xmm0>, [rbp-<off1>]
     fmov.f64 <xmm1>, [rbp-<off2>]
     jmp ^next
-
-  block ^next~done
-    fmov.f64 xmm0, xmm1
-    jmp ^done
 
   block ^entry~done
     fmov.f64 xmm0, 0.0

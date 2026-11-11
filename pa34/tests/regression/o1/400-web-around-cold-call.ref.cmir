@@ -45,20 +45,6 @@ function @sum
   block ^entry~loop
     mov <gpr0>, 0
     fmov.f64 xmm1, 0.0
-    jmp ^loop
-
-  block ^empty
-    fmov.f64 xmm0, 0.0
-    ret xmm0
-
-  block ^use~add
-    fmov.f64 <xmm1>, xmm0
-    jmp ^add
-
-  block ^next
-    add <gpr0>, 1
-    cmp.i64 <gpr0>, <gpr2>
-    jge ^end
 
   block ^loop
     fmov.f64 xmm0, [<gpr1>+<gpr0>*8]
@@ -81,16 +67,26 @@ function @sum
     fmov.f64 xmm0, [rbp-<off0>]
     fmov.f64 xmm1, [rbp-<off1>]
     fmov.f64 <xmm0>, [rbp-<off2>]
+    jmp ^add
+
+  block ^use~add
+    fmov.f64 <xmm1>, xmm0
 
   block ^add
     fmul.f64 <xmm1>, <xmm1>, xmm0
     fadd.f64 xmm1, xmm1, <xmm1>
+
+  block ^next
     add <gpr0>, 1
     cmp.i64 <gpr0>, <gpr2>
     jl ^loop
 
   block ^end
     ret xmm1
+
+  block ^empty
+    fmov.f64 xmm0, 0.0
+    ret xmm0
 
 function @main
   abi

@@ -28,10 +28,10 @@ function @walk
   block ^head
     load.i64 rdx, [r8+rax*8]
     cmp.i64 rdx, rdi
-    jl ^step
+    jge ^back
 
-  block ^back
-    mov rax, rsi
+  block ^step
+    add rax, 1
 
   block ^tail
     add rdx, 1
@@ -43,10 +43,10 @@ function @walk
   block ^tail~head
     load.i64 rdx, [r8+rax*8]
     cmp.i64 rdx, rdi
-    jge ^back
+    jl ^step
 
-  block ^step
-    add rax, 1
+  block ^back
+    mov rax, rsi
     add rdx, 1
     add rcx, rdx
     cmp.i64 rcx, rdi

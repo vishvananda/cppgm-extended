@@ -27,12 +27,12 @@ function @three_way
     mov rax, 2
     ret rax
 
-  block ^above
-    mov rax, 1
-    ret rax
-
   block ^same
     mov rax, 3
+    ret rax
+
+  block ^above
+    mov rax, 1
     ret rax
 
 function @not_every_edge
@@ -55,15 +55,15 @@ function @not_every_edge
     mov rax, 1
     ret rax
 
-  block ^above
-    ret rax
-
   block ^mid
     cmp.i32 rdx, 0
     je ^rest
 
   block ^mid~above
     mov rax, 4
+    ret rax
+
+  block ^above
     ret rax
 
   block ^rest

@@ -45,16 +45,16 @@ function @copy_and_store_address
 
   block ^copy
     store.ptr [rbp-16], rbx
+    jmp ^done
+
+  block ^direct
+    store.ptr [rbp-16], rbx
 
   block ^done
     cmp.ptr rbx, 0
     sete rax
     movzx rax, rax
     ret rax
-
-  block ^direct
-    store.ptr [rbp-16], rbx
-    jmp ^done
 
 function @return_slot_address
   abi

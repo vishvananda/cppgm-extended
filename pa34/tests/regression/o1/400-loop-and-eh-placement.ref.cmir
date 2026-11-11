@@ -96,11 +96,11 @@ function @walk_guarded
   block ^loop~exit
     ret rax
 
-  block ^exit
-    ret rax
-
   block ^entry~exit
     mov rax, 0
+    ret rax
+
+  block ^exit
     ret rax
 
 function @call_free_eh_load
@@ -127,14 +127,14 @@ function @call_free_eh_load
   block ^left
     lea rax, [rdi+<off0>]
     store.i64 [rbp-<off1>], rax
-
-  block ^done
-    ret rax
+    jmp ^done
 
   block ^right
     lea rax, [rdi-<off0>]
     store.i64 [rbp-<off1>], rax
-    jmp ^done
+
+  block ^done
+    ret rax
 
   block ^handler
     mov rax, 99

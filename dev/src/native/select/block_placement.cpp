@@ -6,20 +6,19 @@
 // Block placement (O1+, before branch layout): the selector emits blocks
 // in LowIR layout order, so a likely path often jumps over an unlikely arm
 // laid out on its way (an if's then-block before the else, a slow path
-// inside a loop). The blocks are chained along their edges, heaviest
-// first: an edge links a block to a successor when the block ends its
-// chain and the successor starts its own. A two-way branch's static
-// taken-probability comes from its target only leading to a noreturn end
-// (cold), from loop back edges and loop exits, from a NaN being rare, and
-// from an equality test being the unlikely outcome; an edge weighs that times its source's
+// inside a loop). The blocks are ordered by a walk along the likeliest
+// edges (Placement::walk). A two-way branch's static taken-probability
+// comes from its target only leading to a noreturn end (cold), from loop
+// back edges and loop exits, from a NaN being rare, and from an equality
+// test being the unlikely outcome; an edge weighs that times its source's
 // frequency (the entry's spread along forward edges by those
-// probabilities, 8 times a loop header's inflow). The entry's chain comes first,
-// then the other chains in their first block's order, cold chains last.
-// Branch layout (branch_layout.cpp) then drops the jumps to the next
-// block. Every block must end in a jump, return or other terminator (none
-// falls through yet); a function where one does not keeps its order.
-// Blocks keep their instructions: only their order and the branch labels
-// change. O(edges log edges) plus the loops' bodies.
+// probabilities, 8 times a loop header's inflow). Branch layout
+// (branch_layout.cpp) then drops the jumps to the next block. Every block
+// must end in a jump, return or other terminator (none falls through
+// yet); a function where one does not keeps its order. Blocks keep their
+// instructions (a jump to a short test may take a copy of it): only their
+// order and the branch labels change. O(blocks + edges) plus the loops'
+// bodies.
 namespace native {
 
 namespace {
@@ -72,18 +71,11 @@ bool cold_inst(const Inst& inst)
 		(inst.op == Op::Call && (inst.flags & MF_NORETURN) != 0);
 }
 
-struct Edge
-{
-	uint64_t weight;
-	uint32_t from, to;
-	bool next; // to the block after `from` in the current order
-};
-
 class Placement
 {
 public:
 	explicit Placement(Function& f) : f_(f), n_(static_cast<uint32_t>(f.blocks.size())) {}
-	uint32_t run();
+	uint32_t walk();
 	uint32_t cold_blocks();
 	bool frequencies(std::vector<uint64_t>& frequency);
 
@@ -92,7 +84,6 @@ private:
 	void find_cold();
 	void find_loops();
 	uint32_t taken(uint32_t b) const;
-	uint32_t root(uint32_t b);
 	bool copyable_test(uint32_t b) const;
 
 	Function& f_;
@@ -107,7 +98,6 @@ private:
 	std::vector<std::vector<uint32_t>> loops_; // members, ascending
 	std::vector<uint32_t> finished_;           // reachable blocks in postorder
 	std::vector<uint8_t> header_;              // a loop's header
-	std::vector<uint32_t> parent_;             // chains: union-find over blocks
 };
 
 bool Placement::successors()
@@ -413,13 +403,6 @@ bool Placement::copyable_test(uint32_t b) const
 	return true;
 }
 
-uint32_t Placement::root(uint32_t b)
-{
-	while (parent_[b] != b)
-		b = parent_[b] = parent_[parent_[b]];
-	return b;
-}
-
 } // namespace
 
 void reorder_blocks(Function& f, const std::vector<uint32_t>& order)
@@ -563,131 +546,178 @@ uint32_t Placement::cold_blocks()
 	return moved;
 }
 
-uint32_t Placement::run()
+// The order by a walk from the entry (as LLVM's MachineBlockPlacement
+// without a profile): a block is followed by its likeliest successor still
+// to place, unless another block still to place enters that successor at
+// least 1/kConflictRatio as often; then the successor waits for it, so an
+// if's arm stays between the test and the join and the branches around it
+// are short. A jump to a short test placed already takes a copy of it and
+// goes on with one of its successors. With no successor to follow, the
+// block that most recently had all its forward predecessors placed comes
+// next (the code nearest the path just left), else the first block left.
+// Cold blocks come after the others, placed the same way; unreachable ones
+// last. O(blocks + edges); a successor's predecessors are read up to
+// kConflictScan.
+const uint32_t kConflictScan = 64;
+const uint64_t kConflictRatio = 2;
+
+uint32_t Placement::walk()
 {
 	f_.placement_valid = false;
 	std::vector<uint64_t> frequency;
 	if (n_ < 3 || !frequencies(frequency))
 		return 0;
-	std::vector<Edge> edges;
-	for (uint32_t b = 0; b < n_; ++b)
+	const uint32_t slots = static_cast<uint32_t>(succs_.size());
+	std::vector<uint64_t> weight(slots, 0);
+	std::vector<uint32_t> from(slots, 0), pred_slot(slots, 0), waiting(n_, 0);
+	std::vector<uint8_t> reached(n_, 0);
+	for (uint32_t b : finished_)
+		reached[b] = 1;
 	{
-		const uint32_t count = succ_first_[b + 1] - succ_first_[b];
-		const uint32_t p = two_way_[b] ? taken(b) : 0;
+		std::vector<uint32_t> fill(pred_first_.begin(), pred_first_.end() - 1);
+		for (uint32_t b = 0; b < n_; ++b)
+		{
+			const uint32_t count = succ_first_[b + 1] - succ_first_[b];
+			const uint32_t p = two_way_[b] ? taken(b) : 0;
+			for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
+			{
+				const uint64_t share = two_way_[b] ? (k == succ_first_[b] ? p : 1000 - p) : 1000 / count;
+				weight[k] = frequency[b] * share / 1000;
+				from[k] = b;
+				pred_slot[fill[succs_[k]]++] = k;
+				if (reached[b] && !back_[k] && succs_[k] != b)
+					++waiting[succs_[k]];
+			}
+		}
+	}
+	// 0: reached, 1: reached and cold, 2: not reached.
+	auto rank = [&](uint32_t b) { return !reached[b] ? 2u : cold_[b] ? 1u : 0u; };
+	std::vector<uint32_t> ready[2]; // per rank: blocks whose forward predecessors are placed, the latest last
+	std::vector<uint8_t> placed(n_, 0);
+	std::vector<uint32_t> order, starts; // starts: where a block follows no predecessor
+	order.reserve(n_);
+	uint32_t scan[3] = { 1, 1, 1 };
+	auto conflict = [&](uint32_t b, uint32_t s, uint64_t w) {
+		const uint32_t end = std::min(pred_first_[s + 1], pred_first_[s] + kConflictScan);
+		for (uint32_t i = pred_first_[s]; i < end; ++i)
+		{
+			const uint32_t k = pred_slot[i], q = from[k];
+			if (q != b && q != s && !placed[q] && !back_[k] && rank(q) == rank(b) && weight[k] * kConflictRatio >= w)
+				return true;
+		}
+		return false;
+	};
+	// The successor to follow `b`: the heaviest edge's target that is free.
+	auto follow = [&](uint32_t b) {
+		uint32_t best = kNone;
+		uint64_t best_weight = 0;
 		for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
 		{
-			const uint32_t to = succs_[k];
-			if (to == b || to == 0)
+			const uint32_t s = succs_[k];
+			if (s == 0 || placed[s] || rank(s) != rank(b))
 				continue;
-			const uint64_t share = two_way_[b] ? (k == succ_first_[b] ? p : 1000 - p) : 1000 / count;
-			edges.push_back(Edge{ frequency[b] * share / 1000, b, to, to == b + 1 });
+			if (best != kNone && (weight[k] < best_weight || (weight[k] == best_weight && s != b + 1)))
+				continue;
+			if (conflict(b, s, weight[k]))
+				continue;
+			best = s;
+			best_weight = weight[k];
 		}
-	}
-	std::sort(edges.begin(), edges.end(), [](const Edge& x, const Edge& y) {
-		if (x.weight != y.weight)
-			return x.weight > y.weight;
-		if (x.next != y.next)
-			return x.next;
-		return x.from != y.from ? x.from < y.from : x.to < y.to;
-	});
-	parent_.resize(n_);
-	std::vector<uint32_t> head(n_), tail(n_), next(n_, kNone);
-	for (uint32_t b = 0; b < n_; ++b)
-		parent_[b] = head[b] = tail[b] = b;
-	for (const Edge& e : edges)
+		return best;
+	};
+	uint32_t b = 0;
+	starts.push_back(0);
+	for (;;)
 	{
-		const uint32_t a = root(e.from), c = root(e.to);
-		if (a == c || tail[a] != e.from || head[c] != e.to)
-			continue;
-		next[e.from] = e.to;
-		tail[a] = tail[c];
-		parent_[c] = a;
-	}
-	// A chain ending in a jump to a short test block placed elsewhere
-	// takes a copy of the test and continues into the test's likelier
-	// successor that still starts a chain: the path runs the same
-	// instructions without the taken jump (bb-reorder's duplication).
-	for (uint32_t b = 0; b < n_; ++b)
-	{
-		if (next[b] != kNone || cold_[b] || succ_first_[b + 1] - succ_first_[b] != 1)
-			continue;
-		const Block block = f_.blocks[b];
-		if (f_.insts[block.first + block.count - 1].op != Op::Jmp)
-			continue;
-		const uint32_t t = succs_[succ_first_[b]];
-		if (t == b || t == 0 || !copyable_test(t) || head[root(t)] == t)
-			continue;
-		const uint32_t p = taken(t);
-		const uint32_t first = succs_[succ_first_[t]], second = succs_[succ_first_[t] + 1];
-		const uint32_t order2[2] = { p >= 500 ? first : second, p >= 500 ? second : first };
-		uint32_t s = kNone;
-		for (uint32_t k = 0; k < 2 && s == kNone; ++k)
+		placed[b] = 1;
+		order.push_back(b);
+		for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
 		{
-			const uint32_t c = order2[k];
-			if (c != 0 && c != b && head[root(c)] == c && root(c) != root(b) && !cold_[c])
-				s = c;
+			const uint32_t s = succs_[k];
+			if (reached[b] && !back_[k] && s != b && --waiting[s] == 0 && !placed[s])
+				ready[rank(s)].push_back(s);
 		}
-		if (s == kNone)
-			continue;
-		const Block test = f_.blocks[t];
-		const uint32_t at = static_cast<uint32_t>(f_.insts.size());
-		for (uint32_t i = block.first; i + 1 < block.first + block.count; ++i)
-			f_.insts.push_back(f_.insts[i]);
-		for (uint32_t i = test.first; i < test.first + test.count; ++i)
-			f_.insts.push_back(f_.insts[i]);
-		f_.blocks[b].first = at;
-		f_.blocks[b].count = static_cast<uint32_t>(f_.insts.size()) - at;
-		const uint32_t a = root(b), c = root(s);
-		next[b] = s;
-		tail[a] = tail[c];
-		parent_[c] = a;
-	}
-	// The entry's chain, then the others by their first block, cold last.
-	std::vector<uint32_t> chains;
-	for (uint32_t b = 0; b < n_; ++b)
-		if (root(b) == b && head[b] != 0)
-			chains.push_back(b);
-	std::stable_sort(chains.begin(), chains.end(), [&](uint32_t x, uint32_t y) {
-		if (cold_[head[x]] != cold_[head[y]])
-			return cold_[head[y]] != 0;
-		return head[x] < head[y];
-	});
-	// A chain ending in a return goes last when the last block ended in
-	// one: the shared epilogue follows the last block (any other return
-	// has its own copy).
-	const Block& last = f_.blocks[n_ - 1];
-	if (f_.insts[last.first + last.count - 1].op == Op::Ret && !chains.empty() &&
-		f_.insts[f_.blocks[tail[chains.back()]].first + f_.blocks[tail[chains.back()]].count - 1].op != Op::Ret)
-	{
-		for (size_t k = chains.size(); k-- > 0;)
+		uint32_t next = follow(b);
+		// A block ending in a jump to a short test placed already takes a
+		// copy of the test and continues into the test's likelier successor
+		// that is free: the path runs the same instructions without the
+		// taken jump (bb-reorder's duplication).
+		if (next == kNone && rank(b) == 0 && succ_first_[b + 1] - succ_first_[b] == 1)
 		{
-			const Block& end = f_.blocks[tail[chains[k]]];
-			if (f_.insts[end.first + end.count - 1].op == Op::Ret)
+			const Block block = f_.blocks[b];
+			const uint32_t t = succs_[succ_first_[b]];
+			if (f_.insts[block.first + block.count - 1].op == Op::Jmp && t != b && t != 0 && placed[t] &&
+				copyable_test(t))
 			{
-				const uint32_t c = chains[k];
-				chains.erase(chains.begin() + static_cast<std::ptrdiff_t>(k));
-				chains.push_back(c);
+				const uint32_t p = taken(t);
+				const uint32_t first = succs_[succ_first_[t]], second = succs_[succ_first_[t] + 1];
+				const uint32_t order2[2] = { p >= 500 ? first : second, p >= 500 ? second : first };
+				for (uint32_t k = 0; k < 2 && next == kNone; ++k)
+					if (order2[k] != 0 && !placed[order2[k]] && rank(order2[k]) == 0)
+						next = order2[k];
+				if (next != kNone)
+				{
+					const Block test = f_.blocks[t];
+					const uint32_t at = static_cast<uint32_t>(f_.insts.size());
+					for (uint32_t i = block.first; i + 1 < block.first + block.count; ++i)
+						f_.insts.push_back(f_.insts[i]);
+					for (uint32_t i = test.first; i < test.first + test.count; ++i)
+						f_.insts.push_back(f_.insts[i]);
+					f_.blocks[b].first = at;
+					f_.blocks[b].count = static_cast<uint32_t>(f_.insts.size()) - at;
+				}
+			}
+		}
+		if (next == kNone)
+		{
+			// Ready blocks of the walk's rank, else the first one left of it,
+			// then the next rank's.
+			for (uint32_t r = 0; r < 3 && next == kNone; ++r)
+			{
+				while (r < 2 && !ready[r].empty() && placed[ready[r].back()])
+					ready[r].pop_back();
+				if (r < 2 && !ready[r].empty())
+				{
+					next = ready[r].back();
+					ready[r].pop_back();
+					break;
+				}
+				for (uint32_t& c = scan[r]; c < n_ && next == kNone; ++c)
+					if (!placed[c] && rank(c) == r)
+						next = c;
+			}
+			if (next == kNone)
+				break;
+			starts.push_back(static_cast<uint32_t>(order.size()));
+		}
+		b = next;
+	}
+	// A run ending in a return goes last when the last block ended in one:
+	// the shared epilogue follows the last block (any other return has its
+	// own copy).
+	auto returns = [&](uint32_t x) {
+		const Block& block = f_.blocks[x];
+		return f_.insts[block.first + block.count - 1].op == Op::Ret;
+	};
+	if (returns(n_ - 1) && !returns(order.back()))
+	{
+		for (size_t k = starts.size(); k-- > 1;)
+		{
+			const uint32_t end = k + 1 < starts.size() ? starts[k + 1] : n_;
+			if (returns(order[end - 1]))
+			{
+				std::rotate(order.begin() + starts[k], order.begin() + end, order.end());
 				break;
 			}
 		}
 	}
-	std::vector<uint32_t> order;
-	order.reserve(n_);
-	for (uint32_t b = 0; b != kNone; b = next[b])
-		order.push_back(b);
-	for (uint32_t c : chains)
-		for (uint32_t b = head[c]; b != kNone; b = next[b])
-			order.push_back(b);
 	for (uint32_t k = 1; k < n_; ++k)
 	{
-		const uint32_t from = order[k - 1];
-		const uint32_t p = two_way_[from] ? taken(from) : 0;
-		const uint32_t count = succ_first_[from + 1] - succ_first_[from];
+		const uint32_t src = order[k - 1];
 		uint64_t flow = 0;
-		for (uint32_t e = succ_first_[from]; e < succ_first_[from + 1]; ++e)
+		for (uint32_t e = succ_first_[src]; e < succ_first_[src + 1]; ++e)
 			if (succs_[e] == order[k])
-				flow += frequency[from] * (two_way_[from] ? (e == succ_first_[from] ? p : 1000 - p) : 1000 / count) /
-					1000;
+				flow += weight[e];
 		// (A fifth of the block's entries: padding before it would run that
 		// often for the entries from elsewhere it helps.)
 		f_.blocks[order[k]].fallen_into = flow >= frequency[order[k]] / 5;
@@ -710,14 +740,12 @@ uint32_t place_cold_blocks(Function& function)
 
 uint32_t place_blocks(Function& function)
 {
-	Placement placement(function);
-	return placement.run();
+	return Placement(function).walk();
 }
 
 void block_frequencies(Function& function, std::vector<uint64_t>& frequency)
 {
-	Placement placement(function);
-	if (!placement.frequencies(frequency))
+	if (!Placement(function).frequencies(frequency))
 		frequency.clear();
 }
 

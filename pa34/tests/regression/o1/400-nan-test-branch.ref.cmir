@@ -38,10 +38,7 @@ function @clean
 
   block ^skip
     fadd.f64 xmm1, xmm1, 1e+03
-    add rax, 1
-    cmp.i64 rax, rsi
-    jl ^head
-    ret xmm1
+    jmp ^next
 
   block ^out
     ret xmm1
