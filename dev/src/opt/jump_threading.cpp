@@ -263,7 +263,7 @@ public:
 
 private:
 	bool known_edges();
-	bool known_compares();
+	bool known_compares(bool literals = false);
 	bool demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool copy_thread(BlockId s, InstId tail, std::vector<std::pair<BlockId, BlockId>>& redirects);
 	bool edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, unsigned& bits) const;
@@ -895,7 +895,7 @@ const uint32_t kThreadCopy = 6;
 // Phis one run follows from the branches testing them.
 const size_t kNonzeroPhis = 1024;
 
-bool JumpThreading::known_compares()
+bool JumpThreading::known_compares(bool literals)
 {
 	c_.entry_uses(thread_jumps, !touched_);
 	bool changed = false;
@@ -1024,7 +1024,7 @@ bool JumpThreading::known_compares()
 				else
 					redefined = true;
 			}
-		if (redefined)
+		if (redefined || (literals && x_phi == kNoId))
 			continue;
 		// The target `cur`'s branch or switch decides for value v on its edge
 		// to `to` (kNoId: unknown).
@@ -1040,7 +1040,14 @@ bool JumpThreading::known_compares()
 		// path back through unique predecessors, or a dominator of p
 		// entered from a branch alone (v holds what that branch tested).
 		auto path_outcome = [&](BlockId p, BlockId into, Value v) -> BlockId {
-			if (!v.is(ValueKind::Temp))
+			Constant c;
+			if (literals && literal_constant(body_, v, c) && c.kind == ValueKind::Integer)
+			{
+				ValueSet one;
+				one.add(c.bits.low & ones(qbits), c.bits.low & ones(qbits));
+				return decide(one);
+			}
+			if (literals || !v.is(ValueKind::Temp))
 				return kNoId;
 			BlockId outcome = kNoId;
 			BlockId cur = p, to = into;
@@ -1081,7 +1088,7 @@ bool JumpThreading::known_compares()
 				redirects.push_back(std::make_pair(p, outcome));
 				continue;
 			}
-			if (x_phi == kNoId || !mergeable(p, s, v))
+			if (x_phi == kNoId || literals || !mergeable(p, s, v))
 				continue;
 			const Instruction& vphi = body_.instructions[body_.temps[v.index].def];
 			for (uint32_t qi = cfg_.pred_first[p]; qi < cfg_.pred_first[p + 1]; ++qi)
@@ -2291,7 +2298,22 @@ bool JumpThreading::run()
 			counted = true;
 	}
 	touched_ = changed;
-	changed = constant_phis(counted) || changed;
+	const bool moved = constant_phis(counted);
+	changed = moved || changed;
+	// O2+: the literal a phi of a test block takes on an edge decides that
+	// test too when the block's values are read past it, or other
+	// computations stand before the test: constant_phis leaves those, and
+	// known_compares gives the edge its copy (copy_thread, demote_phis).
+	if (c_.level >= 2)
+	{
+		if (moved)
+		{
+			c_.invalidate_cfg();
+			c_.ensure_cfg();
+		}
+		touched_ = changed;
+		changed = known_compares(true) || changed;
+	}
 	return changed;
 }
 
