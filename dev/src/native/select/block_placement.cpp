@@ -688,7 +688,9 @@ uint32_t Placement::run()
 			if (succs_[e] == order[k])
 				flow += frequency[from] * (two_way_[from] ? (e == succ_first_[from] ? p : 1000 - p) : 1000 / count) /
 					1000;
-		f_.blocks[order[k]].fallen_into = flow >= frequency[order[k]] / 2;
+		// (A fifth of the block's entries: padding before it would run that
+		// often for the entries from elsewhere it helps.)
+		f_.blocks[order[k]].fallen_into = flow >= frequency[order[k]] / 5;
 	}
 	f_.placement_valid = true;
 	uint32_t moved = 0;
