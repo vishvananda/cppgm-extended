@@ -1,5 +1,5 @@
-<svg data-original-label="self compile speed vs clang" data-original-message="3.9×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="self compile speed vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; measured 8287f480c7b5bdb2074c8941689aa36f9c233bd7; 87 commits behind main: 3.9×*">
-  <title>self compile speed vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; measured 8287f480c7b5bdb2074c8941689aa36f9c233bd7; 87 commits behind main: 3.9×*</title>
+<svg data-original-label="self compile speed vs clang" data-original-message="3.9×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="self compile speed vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; measured 8287f480c7b5bdb2074c8941689aa36f9c233bd7; 92 commits behind main: 3.9×*">
+  <title>self compile speed vs clang; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; measured 8287f480c7b5bdb2074c8941689aa36f9c233bd7; 92 commits behind main: 3.9×*</title>
   <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
   <g clip-path="url(#badge)">
     <rect width="64" height="24" fill="#555"/>
