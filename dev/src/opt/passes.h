@@ -259,6 +259,10 @@ bool sink_counter_steps(FunctionContext& context);
 // O2+: pure instructions move down to the block nearest their readers that
 // lies in no deeper loop (opt/code_sinking.cpp).
 bool sink_values(FunctionContext& context);
+// O2+, last: an address its own block only reads memory through is formed
+// again where other blocks read it, so that its block's accesses hold it as
+// their address expressions (opt/address_sinking.cpp).
+bool sink_addresses(FunctionContext& context);
 // O1+, after the last memory forwarding: a field of a loaded or stored
 // word that has whole bytes (a bit-field in its storage unit, a byte of a
 // flags word) is written (narrow_field_stores, first: the word's load
