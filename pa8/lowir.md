@@ -1773,14 +1773,19 @@ store typed i32 %n, %count
   Inlining may use this copy to preserve that formal parameter promise only
   at the original call site; it does not refine the caller's other paths.
 - `typed`, on a `load` or `store` of a pointer, a floating type or an integer
-  wider than one byte: the access reads or writes an object of the access's
-  type through a glvalue of that type, in the sense of C++ [basic.lval]/10,
-  not through a union member, a bit-field's storage unit or a byte copy.
+  of one byte or wider (every integer but `i1`): the access reads or writes
+  an object of the access's type through a glvalue of that type, in the
+  sense of C++ [basic.lval]/10, not through a union member, a bit-field's
+  storage unit or a byte copy.
   Two typed accesses whose types are incompatible therefore never access the
   same bytes of one object: a consumer may assume that a typed store does not
   change what a typed load of an incompatible type reads. Two pointers are
   compatible, as are two values of one floating type and two integers of one
   width (a signed and an unsigned integer of one width are compatible).
+  A one-byte access is typed only when its glvalue's type accesses objects
+  of that type alone, as C++ `bool` does. A character type accesses the
+  bytes of any object, so an access through one never states the fact, and
+  a consumer assumes nothing about an untyped access.
 - `nowrap`, on an integer `add`, `sub`, `mul` or `shl`: the exact result
   (for `shl`, the operand times two to the count) is representable in the
   operation's type at the type's signedness. `i8`, `i16`, `i32`, `i64` and
@@ -1804,16 +1809,20 @@ The C++ lowering (PA10 onward) states facts by these rules, and the
 comparison checks them as part of the instruction:
 
 - `typed` on every `load` and `store` whose type is `ptr`, a floating type or
-  an integer wider than one byte, unless the access is volatile, reads or
-  writes a bit-field's storage unit, or goes through an address computed from
-  a union member: a member of a union (an anonymous union's included) and
+  an integer wider than one byte, and on the one-byte `load` and `store` of
+  a `bool` object, unless the access is volatile, reads or writes a
+  bit-field's storage unit, or goes through an address computed from a
+  union member: a member of a union (an anonymous union's included) and
   every `index` or `copy` of such an address. A pointer to a union member
   that is stored and loaded again is an ordinary pointer, and accesses
   through it are typed: GCC and clang allow punning through a union, not
   through pointers into one. A member of a class with GNU `may_alias` is
   treated as a union member. A `may_alias` typedef of a scalar names no new
   type, so no access of that scalar's LowIR type in the unit is typed. With
-  `-fno-strict-aliasing` no access is typed.
+  `-fno-strict-aliasing` no access is typed. No other one-byte access is
+  typed: the character types access any object's bytes (GCC and clang
+  count `signed char` among them), and so does `std::byte`, an enumeration
+  over one, so a one-byte enumeration's accesses stay untyped too.
 - `nowrap` on the `add`, `sub` and `mul` that compute the source's `+`, `-`
   and `*`, the compound assignments `+=`, `-=` and `*=`, and the steps of
   `++` and `--`, when the operation's type after the usual arithmetic

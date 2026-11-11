@@ -2,11 +2,14 @@ global @g : i64 = 0
 
 function @facts(%p : ptr, %n : i32, %a : i64, %b : i64) -> i64 {
   slot $x : f64
+  slot $flag : u8
 
   block ^entry:
     %v = load typed i32 %p
     %w = load volatile typed i64 @g
     %c = load i8 %p
+    store typed u8 1, $flag
+    %k = load typed u8 $flag
     store typed f64 1.5, $x
     store volatile typed i64 %a, @g
     %s = binary add nowrap i32 %v, %n

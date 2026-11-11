@@ -153,8 +153,9 @@ the course fixes in words rather than absorbing, chief among them:
   each needs).
 - Instruction facts are part of the instruction (`../pa8/lowir.md`,
   "Instruction Facts"): every non-volatile load and store of a pointer, a
-  floating type or an integer wider than a byte is `typed` unless it goes
-  through a union member or a bit-field's storage unit; the `add`, `sub` and
+  floating type or an integer wider than a byte, and every one-byte load
+  and store of a `bool` object, is `typed` unless it goes through a union
+  member or a bit-field's storage unit; the `add`, `sub` and
   `mul` of signed `int` and `long` source arithmetic (and of `++`, `--` and
   the compound assignments) are `nowrap`; and the division of a pointer
   difference by its element size is `exact`. Source array subscripting and
