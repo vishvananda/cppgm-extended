@@ -254,6 +254,13 @@ bool sink_counter_steps(FunctionContext& context);
 // O2+: pure instructions move down to the block nearest their readers that
 // lies in no deeper loop (opt/code_sinking.cpp).
 bool sink_values(FunctionContext& context);
+// O1+, after the last memory forwarding: a field of a loaded or stored
+// word that has whole bytes (a bit-field in its storage unit, a byte of a
+// flags word) is written (narrow_field_stores, first: the word's load
+// then has no use) and read (narrow_field_loads) through those bytes
+// alone, and a tested `(x >> c) & m` tests x's own bits.
+bool narrow_field_stores(FunctionContext& context);
+bool narrow_field_loads(FunctionContext& context);
 
 // Consume dying scalar integer operands derived from loads as soon as their
 // definitions allow, within one block and without crossing memory effects or

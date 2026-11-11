@@ -41,6 +41,7 @@ void count_program(const Program& program, uint64_t& instructions, uint64_t& blo
 }
 
 void scalar_rounds(FunctionContext& context);
+bool narrow_fields(FunctionContext& context);
 
 // A scalar temporary passed to a by_address (or indirect_result) parameter
 // stands for storage holding its value (lowir.md: such an argument denotes
@@ -591,6 +592,7 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 			RUN_PASS(hoist_loop_invariants);
 		changed = true;
 	}
+	changed = narrow_fields(context) || changed;
 	changed = RUN_PASS(sink_values) || changed;
 	changed = RUN_PASS(schedule_integer_values) || changed;
 	changed = RUN_PASS(hold_loop_literals) || changed;
@@ -599,6 +601,25 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		return;
 	RUN_PASS(split_branch_compares);
 	compact_body(program, context.body);
+}
+
+// Fields through their own bytes, and what the narrower values simplify to.
+bool narrow_fields(FunctionContext& context)
+{
+	bool changed = false;
+	if (RUN_PASS(narrow_field_stores))
+	{
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
+	if (RUN_PASS(narrow_field_loads))
+		changed = true;
+	if (changed)
+	{
+		RUN_PASS(simplify_values);
+		RUN_PASS(remove_dead_code);
+	}
+	return changed;
 }
 
 void scalar_rounds(FunctionContext& context)
@@ -854,6 +875,7 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 				if (changed)
 					scalar_rounds(context);
 				changed = (has_loop(context) && RUN_PASS(sink_counter_steps)) || changed;
+				changed = narrow_fields(context) || changed;
 				if (changed)
 					compact_body(program, context.body);
 			}
