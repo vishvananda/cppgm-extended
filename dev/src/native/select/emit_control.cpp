@@ -1075,6 +1075,14 @@ bool FunctionSelector::emit_clustered_switch(
 		return false;
 	const lowir::FunctionBody& body = *body_;
 	Operand selector = input;
+	// A narrow parameter the entry left as the caller passed it.
+	auto unextended = [&]() {
+		const Value source = resolve(inst.ops[0]);
+		return eh_model_ == EhModel::Host && source.kind == ValueKind::Temp && source.index < body.parameter_count &&
+			source.index < narrow_observed_.size() && !narrow_observed_[source.index] &&
+			narrow_integer(body.temps[source.index].type.kind()) &&
+			body.temps[source.index].type.kind() != TypeKind::I1;
+	};
 	auto canonicalize = [&](bool word) {
 		if (selector.kind != OperandKind::Reg)
 		{
@@ -1082,13 +1090,9 @@ bool FunctionSelector::emit_clustered_switch(
 			selector = Operand::make_reg(kSelectScratch);
 			return;
 		}
-		const Value source = resolve(inst.ops[0]);
-		if (!word && eh_model_ == EhModel::Host && source.kind == ValueKind::Temp &&
-			source.index < body.parameter_count && source.index < narrow_observed_.size() &&
-			!narrow_observed_[source.index] && narrow_integer(body.temps[source.index].type.kind()) &&
-			body.temps[source.index].type.kind() != TypeKind::I1)
+		if (!word && unextended())
 		{
-			const TypeKind from = body.temps[source.index].type.kind();
+			const TypeKind from = body.temps[resolve(inst.ops[0]).index].type.kind();
 			emit2(signed_integer(from) ? Op::Sext : Op::Zext, from, Operand::make_reg(kSelectScratch), selector);
 			selector = Operand::make_reg(kSelectScratch);
 		}
@@ -1134,7 +1138,7 @@ bool FunctionSelector::emit_clustered_switch(
 	}
 	// A dense switch of more targets: a bounds check and a jump through a
 	// table of its targets (holes take the default). The index is the
-	// selector minus the lowest case in r10, compared unsigned against the
+	// selector minus the lowest case, compared unsigned against the
 	// entry count. Registers hold an integer's canonical 64-bit form
 	// (sign- or zero-extended by its type), and so do the cases (imm_for),
 	// so the 64-bit difference is the entry for every integer type.
@@ -1151,11 +1155,23 @@ bool FunctionSelector::emit_clustered_switch(
 			out_->jump_targets[first +
 				static_cast<uint32_t>(static_cast<uint64_t>(cases[k].first) - static_cast<uint64_t>(low))] =
 				cases[k].second;
-		const Operand table_index = Operand::make_reg(kSelectScratch);
-		if (selector.reg != kSelectScratch)
-			emit2(Op::Mov, TypeKind::I64, table_index, selector);
+		// The table reads its index where the selector is (the emitter forms
+		// the target in a scratch register); a lowest case other than zero
+		// takes the difference into r10.
+		Operand table_index = selector;
 		if (low != 0)
-			emit2(Op::Sub, TypeKind::I64, table_index, Operand::make_imm(low, low < 0 ? -1 : 0));
+		{
+			table_index = Operand::make_reg(kSelectScratch);
+			if (selector.reg == kSelectScratch)
+				emit2(Op::Sub, TypeKind::I64, table_index, Operand::make_imm(low, low < 0 ? -1 : 0));
+			else if (low != INT32_MIN)
+				emit2(Op::Lea, TypeKind::I64, table_index, Operand::make_mem(selector.reg, static_cast<int32_t>(-low)));
+			else
+			{
+				emit2(Op::Mov, TypeKind::I64, table_index, selector);
+				emit2(Op::Sub, TypeKind::I64, table_index, Operand::make_imm(low, -1));
+			}
+		}
 		// With an impossible default, every defined selector indexes the
 		// table; holes and values outside its range need no chosen behavior.
 		if (!undefined_default)
@@ -1185,7 +1201,14 @@ bool FunctionSelector::emit_clustered_switch(
 	// A contiguous nonnegative prefix needs comparisons only. Its narrow
 	// selector can stay in the caller's register, with no 64-bit index.
 	const bool word = prefix && (kind == TypeKind::I32 || kind == TypeKind::U32);
-	canonicalize(word);
+	// An unextended 32-bit parameter compares at its own width, and an offset
+	// from it forms at that width (clearing the index's upper half). It stays
+	// in its register, where a search tree's deferred blocks still read it.
+	const bool narrow = !word && selector.kind == OperandKind::Reg &&
+		(kind == TypeKind::I32 || kind == TypeKind::U32) && unextended() &&
+		body.temps[resolve(inst.ops[0]).index].type.kind() == kind;
+	if (!narrow)
+		canonicalize(word);
 	const TypeKind test_kind = word ? TypeKind::U32 : kind;
 	int64_t tmin = 0, tmax = 0;
 	type_bounds(test_kind, tmin, tmax);
@@ -1232,6 +1255,7 @@ bool FunctionSelector::emit_clustered_switch(
 	tree.selector = selector.reg;
 	tree.kind = test_kind;
 	tree.sign = signed_kind(test_kind);
+	tree.narrow = narrow;
 	tree.fallback = fallback;
 	tree.location = location_;
 	for (size_t i = 0; i < clusters.size(); ++i)
@@ -1260,7 +1284,7 @@ bool FunctionSelector::emit_clustered_switch(
 	uint32_t gaps = 0;
 	for (size_t i = 1; i < tree.tests.size(); ++i)
 		gaps += tree.tests[i].lo > tree.tests[i - 1].hi + 1 ? 1 : 0;
-	tree.tree = level_ >= 2 && tree.tests.size() >= 4 && gaps >= 2 && selector.kind == OperandKind::Reg &&
+	tree.tree = level_ >= 1 && tree.tests.size() >= 4 && gaps >= 2 && selector.kind == OperandKind::Reg &&
 		selector.reg < 16 && selector.reg != kSelectScratch && selector.reg != kEmitScratch;
 	// A window covering more values than the runs outside it goes first
 	// (taken as the likelier, with no profile), the runs in a deferred
@@ -1285,7 +1309,7 @@ bool FunctionSelector::emit_clustered_switch(
 // subtract and an unsigned compare otherwise), the window last (a bounds
 // check unless known, then a bit test per target), then the fallback.
 void FunctionSelector::emit_switch_tests(
-	uint32_t index, uint32_t first, uint32_t past, int64_t lo, int64_t hi, bool outside_window)
+	uint32_t index, uint32_t first, uint32_t past, int64_t lo, int64_t hi, bool outside_window, bool compared)
 {
 	const SwitchTree& t = switches_.trees[index];
 	const Operand selector = Operand::make_reg(t.selector);
@@ -1296,13 +1320,14 @@ void FunctionSelector::emit_switch_tests(
 	};
 	// selector - v in a scratch register the selector is not in (or in
 	// place: a linear switch's selector in the scratch, for its last use).
+	const TypeKind index_kind = t.narrow ? TypeKind::U32 : TypeKind::I64;
 	auto offset = [&](int64_t v, bool last) {
 		if (v == 0)
 			return t.selector;
 		const Reg r = t.selector != kSelectScratch || last ? kSelectScratch : kEmitScratch;
 		if (t.selector != r)
-			emit2(Op::Mov, TypeKind::I64, Operand::make_reg(r), selector);
-		emit2(Op::Sub, TypeKind::I64, Operand::make_reg(r), imm(v));
+			emit2(Op::Mov, index_kind, Operand::make_reg(r), selector);
+		emit2(Op::Sub, index_kind, Operand::make_reg(r), imm(v));
 		return r;
 	};
 	if (t.tree && past - first >= 4)
@@ -1313,13 +1338,12 @@ void FunctionSelector::emit_switch_tests(
 		switches_.nodes.push_back(node);
 		emit2(Op::Cmp, t.kind, selector, imm(pivot));
 		jump(t.sign ? CC_L : CC_B, node.mir);
-		emit_switch_tests(index, middle, past, pivot, hi);
+		emit_switch_tests(index, middle, past, pivot, hi, false, true);
 		return;
 	}
 	// (The upper half's first test of a value the middle compare just
 	// compared reads its flags.)
-	bool flags = t.tree && first != 0 && past == static_cast<uint32_t>(t.tests.size()) && lo == t.tests[first].lo &&
-		out_->insts.size() >= 2 && out_->insts.back().op == Op::Jcc;
+	bool flags = compared && lo == t.tests[first].lo;
 	const SwitchTest* window = nullptr;
 	if (t.window_first && !outside_window)
 	{
@@ -1331,7 +1355,7 @@ void FunctionSelector::emit_switch_tests(
 		const Reg r = offset(w->lo, false);
 		const SwitchNode node = { index, first, past, lo, hi, switches_.extra_mir++, true };
 		switches_.nodes.push_back(node);
-		emit2(Op::Cmp, TypeKind::I64, Operand::make_reg(r), imm(w->hi - w->lo));
+		emit2(Op::Cmp, index_kind, Operand::make_reg(r), imm(w->hi - w->lo));
 		jump(CC_A, node.mir);
 		for (const std::pair<uint64_t, uint32_t>& m : t.masks)
 		{
@@ -1384,7 +1408,7 @@ void FunctionSelector::emit_switch_tests(
 		else
 		{
 			const Reg r = offset(c.lo, false);
-			emit2(Op::Cmp, TypeKind::I64, Operand::make_reg(r), imm(c.hi - c.lo));
+			emit2(Op::Cmp, index_kind, Operand::make_reg(r), imm(c.hi - c.lo));
 			jump(CC_BE, c.target);
 		}
 		if (c.lo >= 0 && static_cast<uint64_t>(c.lo) == excluded_prefix)
@@ -1395,7 +1419,7 @@ void FunctionSelector::emit_switch_tests(
 		const Reg r = offset(window->lo, true);
 		if (!(window->lo <= lo && window->hi >= hi))
 		{
-			emit2(Op::Cmp, TypeKind::I64, Operand::make_reg(r), imm(window->hi - window->lo));
+			emit2(Op::Cmp, index_kind, Operand::make_reg(r), imm(window->hi - window->lo));
 			jump(CC_A, t.fallback);
 		}
 		for (const std::pair<uint64_t, uint32_t>& m : t.masks)

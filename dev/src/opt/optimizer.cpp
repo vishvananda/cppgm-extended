@@ -344,7 +344,7 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 	again = RUN_PASS(remove_loops);
 	if (level >= 3 && RUN_PASS(unroll_loops))
 		again = true;
-	if (level >= 2 && RUN_PASS(form_switches))
+	if (RUN_PASS(form_switches))
 		again = true;
 	if (again)
 		scalar_rounds(context);
@@ -353,7 +353,7 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 	nounwind[symbol] = proves_nounwind(context) ? 1 : 0;
 	if (level >= 2 && RUN_PASS(name_returned_slot))
 		scalar_rounds(context);
-	if (level >= 2)
+	if (level >= 1)
 	{
 		RUN_PASS(split_or_branches);
 		RUN_PASS(specialize_phi_compares);
@@ -361,7 +361,7 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 	}
 	if (RUN_PASS(form_phi_result_tables))
 		scalar_rounds(context);
-	if (level >= 2 && RUN_PASS(form_return_tables))
+	if (RUN_PASS(form_return_tables))
 		scalar_rounds(context);
 	compact_body(program, context.body);
 }

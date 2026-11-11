@@ -304,8 +304,8 @@ public:
 	void emit_switch(const lowir::Instruction& inst);
 	bool emit_clustered_switch(
 		const lowir::Instruction& inst, const Operand& selector, lowir::TypeKind kind, uint32_t fallback);
-	void emit_switch_tests(
-		uint32_t tree, uint32_t first, uint32_t past, int64_t lo, int64_t hi, bool outside_window = false);
+	void emit_switch_tests(uint32_t tree, uint32_t first, uint32_t past, int64_t lo, int64_t hi,
+		bool outside_window = false, bool compared = false);
 	void emit_compare_jump(const lowir::Instruction& compare, uint32_t on_true, uint32_t on_false);
 	Cond emit_and_test(const lowir::Instruction& conj, bool set, bool branch = false);
 	Cond compare_flags(const lowir::Instruction& compare);

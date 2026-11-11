@@ -892,10 +892,14 @@ void FunctionEmitter::jump_table(const Inst& inst)
 	RM at;
 	at.is_reg = false;
 	at.label = pending.label;
+	// The target forms in the index's own register when that is a scratch
+	// register, in the other scratch register otherwise (the index's
+	// register keeps its value).
+	const Reg target = idx == R10 || idx == R11 ? idx : scratch(inst, table);
 	asm_.lea(table, at);
-	asm_.mov_load(idx, RM::m(table, 0, idx, 4), 4, true);
-	asm_.alu_rr(0, idx, RM::r(table), 8);
-	asm_.jmp_rm(RM::r(idx));
+	asm_.mov_load(target, RM::m(table, 0, idx, 4), 4, true);
+	asm_.alu_rr(0, target, RM::r(table), 8);
+	asm_.jmp_rm(RM::r(target));
 }
 
 void FunctionEmitter::emit_tables(const Function& function)

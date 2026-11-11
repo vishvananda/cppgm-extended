@@ -963,7 +963,7 @@ bool JumpThreading::known_compares()
 					inst.op != Opcode::AtomicAddFetch && inst.op != Opcode::AtomicExchange &&
 					inst.op != Opcode::AtomicCompareExchange && (inst.flags & IF_VOLATILE) == 0 && i != def;
 			}
-			if (!copyable || (copied != 0 && c_.level < 2))
+			if (!copyable)
 				continue;
 			if (copied != 0)
 				first = tail;
@@ -2087,8 +2087,8 @@ bool JumpThreading::nonzero_phis()
 bool JumpThreading::run()
 {
 	c_.ensure_cfg();
-	bool changed = c_.level >= 2 && dominating_facts();
-	changed = (c_.level >= 2 && nonzero_phis()) || changed;
+	bool changed = dominating_facts();
+	changed = nonzero_phis() || changed;
 	changed = known_edges() || changed;
 	if (changed)
 	{
@@ -2099,7 +2099,7 @@ bool JumpThreading::run()
 	// (known_compares counts uses first: still current when it changes
 	// nothing.)
 	bool counted = false;
-	if (c_.level >= 2)
+	if (c_.level >= 1)
 	{
 		if (known_compares())
 		{

@@ -141,6 +141,7 @@ struct SwitchTree
 	lowir::TypeKind kind;
 	bool sign;
 	bool tree;
+	bool narrow;       // a 32-bit selector left unextended: offsets and their compares at 32 bits
 	bool window_first; // the window before the runs, which a deferred block tests
 	uint32_t fallback;
 	uint32_t location;
