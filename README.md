@@ -164,6 +164,17 @@ make test-report
 make inception
 ```
 
+For a compiler-only checkout, omit the course data and build just `cppgm++`:
+
+```sh
+git clone --depth 1 --filter=blob:none --sparse https://github.com/vishvananda/cppgm-extended.git
+git -C cppgm-extended sparse-checkout set dev
+make -C cppgm-extended/dev cppgm++ CXX=g++ CPPGM_HOST_CXX=g++
+```
+
+Select Clang with `CXX=clang++ CPPGM_HOST_CXX=clang++`. `CC` does not select
+the C++ host compiler. Use the same host toolchain throughout a build.
+
 Intel macOS support and its optional checks are described in
 [the macOS guide](docs/intel-macos.md).
 

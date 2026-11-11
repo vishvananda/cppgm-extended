@@ -113,7 +113,8 @@ class IndexCppCITests(unittest.TestCase):
         for path in ['index-cpp/epyc', 'index-cpp/history/' + self.revision + '/epyc']:
             published = target / path
             self.assertEqual((published / 'results.json').read_bytes(), (self.artifact / 'results.json').read_bytes())
-            self.assertEqual((published / 'runtime-observations.jsonl').read_bytes(), (self.artifact / 'runtime/observations.jsonl').read_bytes())
+            self.assertFalse((published / 'runtime-observations.jsonl').exists())
+            self.assertFalse((published / 'compile-observations.jsonl').exists())
             self.assertIn('https://example.test/run', (published / 'report.md').read_text())
 
     def test_failed_incomplete_or_wrong_revision_does_not_replace_results(self):

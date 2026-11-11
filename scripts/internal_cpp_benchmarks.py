@@ -2,7 +2,6 @@
 """Measure the fixed qualified course-source object cohort on all three compilers."""
 import argparse
 from concurrent.futures import ProcessPoolExecutor
-import gzip
 import hashlib
 import json
 import math
@@ -243,15 +242,12 @@ def publish(args):
         destination.mkdir(parents=True, exist_ok=True)
         for name in ('results.json', 'metadata.json'):
             shutil.copyfile(args.artifact / name, destination / name)
-        for role in ROLES:
-            source = args.artifact / role / 'observations.jsonl'
-            (destination / (role + '-observations.jsonl.gz')).write_bytes(gzip.compress(source.read_bytes(), mtime=0))
         from internal_cpp_results import write
         url = 'https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/' + str(destination.relative_to(args.target))
         write(document, destination, benchmark_hosts.environment(host), args.run_url, url)
-        links = ' · '.join(f'[{role} per-unit records]({role}-observations.jsonl.gz)' for role in ROLES)
         (destination / 'report.md').write_text(report(document) + f'\n[CI run]({args.run_url}) · '
-            '[Shared comparison records](records.json)\n\n' + links + '\n')
+            '[Shared comparison records](records.json)\n\n'
+            f'[Raw per-unit observations in CI artifacts]({args.run_url})\n')
     badges(root)
 
 

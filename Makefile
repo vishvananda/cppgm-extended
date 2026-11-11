@@ -297,6 +297,7 @@ test-cells:
 HARNESS_TESTS = \
 	scripts/tests/test_benchmark_report.py \
 	scripts/tests/test_benchmark_freshness.py \
+	scripts/tests/test_benchmark_publication.py \
 	scripts/tests/test_internal_cpp_benchmarks.py \
 	scripts/tests/test_intel_benchmarks.py \
 	scripts/tests/test_simdjson_ci.py \

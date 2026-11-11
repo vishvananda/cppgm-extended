@@ -140,7 +140,7 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual(other.read_text(), 'previous Intel measurement')
             self.assertIn('1.00×', (target / 'boost/epyc-compile-gcc.svg').read_text())
             history = target / 'boost/history' / args.revision / 'epyc'
-            self.assertEqual(json.loads((history / 'results.json').read_text()), document)
+            self.assertEqual(json.loads((history / 'results.json').read_text())['schema'], 1)
             self.assertTrue((history / 'standard/records.json').is_file())
             self.assertTrue((target / 'boost/epyc/report.md').is_file())
 
@@ -215,18 +215,27 @@ class BenchmarkTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'per-process runtime evidence'):
                 boost_benchmarks.publish(args)
 
-    def test_artifacts_exclude_sources_objects_and_build_outputs(self):
+    def test_publication_keeps_reports_and_metadata_without_raw_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
-            for name in ['results.json', 'cppgm/libs-example-test/invocations.jsonl',
-                         'cppgm/config/user.hpp', 'source/boost/large.hpp',
-                         'cppgm/build/objects/manifest.json', 'cppgm/test.o']:
-                path = directory / name
+            artifact, target = directory / 'artifact', directory / 'published'
+            artifact.mkdir()
+            document = self.document()
+            (artifact / 'results.json').write_text(json.dumps(document))
+            (artifact / 'metadata.json').write_text(json.dumps(document['metadata']))
+            for name in ['cppgm/libs-example-test/b2.log', 'cppgm/libs-example-test/b2.xml',
+                         'cppgm/libs-example-test/invocations.jsonl', 'cppgm/config/user.hpp']:
+                path = artifact / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text('data')
-            selected = {str(p.relative_to(directory)) for p in boost_benchmarks.retained_files(directory)}
-        self.assertEqual(selected, {'results.json', 'cppgm/libs-example-test/invocations.jsonl',
-                                    'cppgm/config/user.hpp'})
+            boost_benchmarks.publish(argparse.Namespace(artifact=artifact, target=target,
+                revision='a' * 40, run_url='https://example.test/run'))
+            published = target / 'boost/epyc'
+            self.assertFalse((published / 'cppgm').exists())
+            self.assertTrue((published / 'metadata.json').is_file())
+            self.assertIn('https://example.test/run', (published / 'suites/libs-example-test.md').read_text())
+            self.assertNotIn('invocations.jsonl)', (published / 'suites/libs-example-test.md').read_text())
+            self.assertTrue((artifact / 'cppgm/libs-example-test/b2.log').is_file())
 
 
 @unittest.skipUnless(hasattr(os, 'pidfd_open'), 'Boost native replays run on Linux')

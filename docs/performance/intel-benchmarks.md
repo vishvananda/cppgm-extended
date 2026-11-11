@@ -22,6 +22,10 @@ compiler sources use separate checkouts, so the infrastructure branch can measur
 the current `main` compiler without moving `main`. Use `--ref main --revision main` for the current compiler.
 
 Successful runs update the live dedicated **Intel** badges and linked detail
-tables on `benchmark-badges`, retaining raw observations and measured commits.
+tables on `benchmark-badges`, retaining compact reports and measured commits.
 EPYC and hosted Intel keep their own measurements. Failed runs retain diagnostics
 in Actions artifacts and do not replace the last successful measurements.
+
+Raw observations, command manifests and build logs stay in the linked Actions
+run's artifacts, subject to that workflow's retention period. They are not
+committed to Git. See [publication storage](publication-storage.md).

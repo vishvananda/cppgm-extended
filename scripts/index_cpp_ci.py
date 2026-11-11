@@ -234,9 +234,7 @@ def publish(artifact, target, revision, run_url, platform='github'):
     validate(document)
     if document['metadata']['revision'] != revision or document['metadata']['dirty']:
         raise ValueError('results do not describe the clean measured revision')
-    files = {'results.json': artifact / 'results.json', 'metadata.json': artifact / 'metadata.json',
-             'compile-observations.jsonl': artifact / 'compile-observations.jsonl',
-             'runtime-observations.jsonl': artifact / 'runtime/observations.jsonl'}
+    files = {'results.json': artifact / 'results.json', 'metadata.json': artifact / 'metadata.json'}
     # Read and validate everything before replacing the previous successful run.
     payloads = {name: path.read_bytes() for name, path in files.items()}
     if json.loads(payloads['metadata.json']) != document['metadata']:

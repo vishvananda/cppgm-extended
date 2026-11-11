@@ -24,8 +24,9 @@ def normalize(artifact, environment, run_url, details_url, raw_url):
               for label, report in document['compilers'].items()}
     flags = {label: dict(b2=metadata['flags'], invocations=label + '/libs-*/invocations.jsonl')
              for label in producer.LABELS}
-    provenance = dict(archive_sha256=document['archive_sha256'], metadata=metadata,
-                      raw_per_test_timings='results.json compilers/label/suites/tests',
+    provenance = dict(archive_sha256=document['archive_sha256'], metadata_sha256=digest(metadata),
+                      metadata_url=details_url.rsplit('/', 1)[0] + '/metadata.json',
+                      raw_per_test_timings='CI artifact results.json compilers/label/suites/tests',
                       source='fresh extraction of the verified upstream archive')
     base = dict(workload='boost', configuration='o3' if producer.optimized(document) else 'debug', host=host,
                 revision=metadata['revision'], status='passed', provenance=provenance,

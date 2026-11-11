@@ -275,9 +275,8 @@ def publish(args):
     metadata = document['metadata']
     if not re.fullmatch('[0-9a-f]{40}', args.revision) or metadata['revision'] != args.revision or metadata['dirty']:
         raise ValueError('results do not describe the clean measured revision')
-    files = ('results.json', 'metadata.json', 'compile-observations.jsonl', 'runtime-observations.jsonl')
+    files = ('results.json', 'metadata.json')
     payloads = {name: (args.artifact / name).read_bytes() for name in files}
-    payloads.update({p.name: p.read_bytes() for p in args.artifact.glob('commands-*.json')})
     if json.loads(payloads['metadata.json']) != metadata:
         raise ValueError('provenance differs from the measured results')
     platform = benchmark_hosts.publication_platform(metadata['cpu'], getattr(args, 'platform', 'github'))

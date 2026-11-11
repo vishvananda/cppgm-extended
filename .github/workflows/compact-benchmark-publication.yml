@@ -1,0 +1,67 @@
+name: Compact benchmark publication
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compact:
+    if: github.ref == 'refs/heads/main' && github.actor == github.repository_owner
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      queue: max
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+          sparse-checkout: scripts
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-source
+          fetch-depth: 0
+          # Read the old tree through Git; do not check out its multi-GB logs.
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/*/
+      - name: Prepare and validate the compact tree
+        id: prepare
+        run: |
+          old=$(git -C badge-source rev-parse HEAD)
+          echo "old=$old" >> "$GITHUB_OUTPUT"
+          git -C badge-source -c pack.threads=2 bundle create \
+            "$GITHUB_WORKSPACE/benchmark-badges-before.bundle" HEAD
+          python3 tools/scripts/benchmark_publication.py compact-git \
+            badge-source "$old" compact | tee compact-size.json
+          git -C compact init -q --initial-branch=benchmark-badges
+          git -C compact add .
+          git -C compact -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Keep compact benchmark reports; raw evidence is in CI artifacts"
+      - name: Retain a rollback bundle outside Git
+        uses: actions/upload-artifact@v6
+        with:
+          name: benchmark-badges-before-compaction
+          path: benchmark-badges-before.bundle
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
+      - name: Replace only the generated branch
+        env:
+          EXPECTED_OLD: ${{ steps.prepare.outputs.old }}
+        run: |
+          git -C badge-source fetch --no-tags "$GITHUB_WORKSPACE/compact" benchmark-badges
+          git -C badge-source push \
+            --force-with-lease="refs/heads/benchmark-badges:$EXPECTED_OLD" \
+            origin FETCH_HEAD:refs/heads/benchmark-badges
+          echo 'Replaced generated badge history; compiler history and tags are unchanged.' >> "$GITHUB_STEP_SUMMARY"
+          cat compact-size.json >> "$GITHUB_STEP_SUMMARY"

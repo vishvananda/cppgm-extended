@@ -23,7 +23,7 @@ def normalize(document, environment, run_url, details_url, raw_url):
                                     for role in ('cppgm', 'gcc', 'clang')}),
                 details_url=details_url, raw_url=raw_url, run_url=run_url,
                 provenance=dict(metadata=metadata, input_snapshot=metadata['input_revision'],
-                                raw_observations='role-observations.jsonl.gz, one record per fixture group'))
+                                raw_observations='CI artifact role/observations.jsonl, one record per fixture group'))
     candidate = document['compilation']['cppgm']['cpu_seconds']
     records = []
     for reference in ('gcc', 'clang'):

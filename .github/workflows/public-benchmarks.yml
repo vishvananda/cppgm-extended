@@ -147,6 +147,7 @@ jobs:
           python3 tools/scripts/internal_cpp_benchmarks.py seed badge-branch
           python3 tools/scripts/benchmark_freshness.py badge-branch \
             --repo "$GITHUB_REPOSITORY" --revision "$freshness_revision"
+          python3 tools/scripts/benchmark_publication.py prepare badge-branch
           cd badge-branch
           git add .
           if git diff --cached --quiet; then exit 0; fi
@@ -259,6 +260,7 @@ jobs:
           python3 tools/scripts/internal_cpp_benchmarks.py seed badge-branch
           python3 tools/scripts/benchmark_freshness.py badge-branch \
             --repo "$GITHUB_REPOSITORY" --revision "$freshness_revision"
+          python3 tools/scripts/benchmark_publication.py prepare badge-branch
           cd badge-branch
           git add .
           if git diff --cached --quiet; then exit 0; fi

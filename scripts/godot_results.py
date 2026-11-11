@@ -24,7 +24,8 @@ def normalize(artifact, environment, run_url, details_url, raw_url):
     host = dict(cpu=metadata['cpu'], architecture='x86_64', environment=environment)
     host['id'] = 'godot-' + digest(host)[:16]
     observations = [json.loads(line) for line in (artifact / 'runtime-observations.jsonl').read_text().splitlines()]
-    provenance = dict(source_commit=document['source_commit'], metadata=metadata,
+    provenance = dict(source_commit=document['source_commit'], metadata_sha256=digest(metadata),
+                      metadata_url=details_url.rsplit('/', 1)[0] + '/metadata.json',
                       independent_checksums=document['correctness'],
                       binary_hashes=document.get('binary_hashes', 'not recorded'),
                       runtime_observations_sha256=hashlib.sha256(

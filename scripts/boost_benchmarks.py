@@ -139,7 +139,7 @@ def validate(document):
         boost_runtime.validate(document['runtime'], list(cases(document['compilers']['cppgm']).values()))
 
 
-def report(document, suite_links=True):
+def report(document, suite_links=True, raw_url=None):
     text = '# Boost compilation and test execution\n\n'
     if document['status'] != 'complete':
         return text + '**Incomplete:** ' + document.get('error', document['status']) + '\n'
@@ -170,11 +170,11 @@ def report(document, suite_links=True):
                  ' | '.join(compile_ratios) + f' | {test_cpu:.3f}s | ' + ' | '.join(test_ratios) + ' |\n')
     if optimized(document):
         text += '\nPerformance uses O3 with assertions enabled; the GDB test remains Og and is correctness-only.\n'
-    text += runtime_report(document, links=suite_links)
+    text += runtime_report(document, links=suite_links, raw_url=raw_url)
     return text + '\nExact commands, per-test times, native outcomes and toolchain/host identities are retained with the results.\n'
 
 
-def runtime_report(document, project=None, links=True):
+def runtime_report(document, project=None, links=True, raw_url=None):
     runtime = document.get('runtime')
     if runtime is None:
         return '\nNative runtime replay was not measured in this campaign.\n'
@@ -210,10 +210,17 @@ def runtime_report(document, project=None, links=True):
                 values = ' | '.join(f"{row['seconds'][label]:.6f}s" for label in LABELS)
                 text += (f"| {row['target'].split('//')[1]} | {row['repeats']} | {values} | "
                          f"{row['output_check']} |\n")
+    if raw_url:
+        text = text.replace('[Manifest](runtime/manifest.json), [paired observations](runtime/batches.jsonl) '
+                            'and [per-test summaries](runtime/summary.json)',
+                            f'[Raw replay evidence in CI artifacts]({raw_url})')
+        text = text.replace('[Manifest](../runtime/manifest.json), [paired observations](../runtime/batches.jsonl) '
+                            'and [per-test summaries](../runtime/summary.json)',
+                            f'[Raw replay evidence in CI artifacts]({raw_url})')
     return text
 
 
-def suite_reports(document, directory):
+def suite_reports(document, directory, raw_url=None):
     destination = directory / 'suites'
     destination.mkdir(exist_ok=True)
     for project in boost_ci.SUITES:
@@ -230,10 +237,11 @@ def suite_reports(document, directory):
             times += [f"{rows[label][target]['test_cpu']:.6f}" if row['kind'] in ('RUN', 'RUN_FAIL')
                       else '—' for label in LABELS]
             text += '| ' + target.split('//', 1)[1].replace('|', '\\|') + ' | ' + row['kind'] + ' | ' + ' | '.join(times) + ' |\n'
-        text += runtime_report(document, project)
-        text += '\nCompiler command and timing observations: ' + ' · '.join(
-            f'[{label}](../{label}/{name}/invocations.jsonl)' for label in LABELS) + '.\n\n'
-        text += '[Reviewed outcomes and per-test records](../results.json) · [Host and toolchains](../metadata.json)\n'
+        text += runtime_report(document, project, raw_url=raw_url)
+        text += ('\n[Raw outcomes, commands and timing observations in CI artifacts](' + raw_url + ').\n\n'
+                 if raw_url else '\nCompiler command and timing observations: ' + ' · '.join(
+                     f'[{label}](../{label}/{name}/invocations.jsonl)' for label in LABELS) + '.\n\n')
+        text += '[Comparison records](../results.json) · [Host and toolchains](../metadata.json)\n'
         (destination / (name + '.md')).write_text(text)
 
 
@@ -323,17 +331,19 @@ def publish(args):
     with tempfile.TemporaryDirectory() as temp:
         standard = Path(temp) / 'standard'
         boost_results.generate(args.artifact, standard, benchmark_hosts.environment(host),
-                               args.run_url, base + '/report.md', base + '/results.json')
+                               args.run_url, base + '/report.md', args.run_url)
         for dest in (directory / host, directory / history):
+            if dest.exists():
+                shutil.rmtree(dest)
             dest.mkdir(parents=True, exist_ok=True)
-            for path in retained_files(args.artifact):
-                relative = path.relative_to(args.artifact)
-                target = dest / relative
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(path, target)
+            shutil.copyfile(args.artifact / 'metadata.json', dest / 'metadata.json')
+            # The large source document and B2/replay receipts belong to the
+            # uploaded artifact. Git retains the shared comparison schema and
+            # rendered per-test tables, not another copy of the build logs.
+            shutil.copyfile(standard / 'records.json', dest / 'results.json')
             shutil.copytree(standard, dest / 'standard', dirs_exist_ok=True)
-            suite_reports(document, dest)
-            (dest / 'report.md').write_text(report(document) + '\n[Shared comparison](standard/summary.md) · '
+            suite_reports(document, dest, raw_url=args.run_url)
+            (dest / 'report.md').write_text(report(document, raw_url=args.run_url) + '\n[Shared comparison](standard/summary.md) · '
                                           '[Version-1 records](standard/records.json) · [CI run](' + args.run_url + ')\n')
     benchmark_hosts.library_index(directory, 'Boost O3 benchmark hosts' if optimized(document) else 'Boost benchmark hosts')
     (directory / 'tests.svg').write_text(badge_svg(dict(
@@ -359,15 +369,6 @@ def publish(args):
                             message=f'{value:.2f}×' if value is not None else 'n/m',
                             color=public_benchmarks.badge_color(value) if value is not None else '475569')
                 path.write_text(badge_svg(data))
-
-
-def retained_files(directory):
-    for path in directory.rglob('*'):
-        relative = path.relative_to(directory)
-        if (not {'build', 'source'}.intersection(relative.parts) and path.is_file()
-                and (path.suffix in ('.json', '.jsonl', '.xml', '.log', '.jam', '.hpp', '.md')
-                     or ('runtime' in relative.parts and path.name in ('stdout', 'stderr')))):
-            yield path
 
 
 def collect(args):
