@@ -1167,3 +1167,118 @@ gap-C-scratch-oracle-hardware-r18/summary.json; gap-C-original-prices-r18.json;
 gap-C-original-price-trace-top43-r18; gap-C-final-charge-panel-r18.json;
 gap-C-final-charge-attribution-r18/lookup-path-counts.json;
 gap-C-net-cost-{compiler,top43}-r19b; gap-B-frame-window-bound-r18.json.
+
+### Inlining cost-model iterations and the next fact-consumption check
+
+The broad r19b comparison preserves all 325 workload objects and the linked
+compiler. On number_literal/store_motion it removes 7.96%/8.66% of calls, but
+increases executed bytes 0.260%/0.259%; modeled L2 code misses change
+-0.802%/+0.211%. Its frozen compile instruction increases against the qualified
+scratch repair are 14.22%, 17.14% and 17.49% at O1–O3. Cumulative increases
+against 8f76ebb0d are 13.35%, 15.32% and 15.33%. This is unsuitable for
+production. The score-only control costs 0.16–0.18% with identical outputs;
+the decision changes copy 22–25% more LowIR and leave larger bodies for later
+passes. Computing the score is not the main expense.
+
+Subsequent private experiments separate conservative admission from cloning
+overhead. All percentages below are frozen compile instructions against r18,
+before the rebase described below. Every observation and output hash remains
+in the evidence directory; these experiments do not reset the cumulative gate.
+
+| Probe | O1 | O2 | O3 |
+| --- | ---: | ---: | ---: |
+| r20b: only estimated non-growing call-free copies bypass budgets | +2.395% | +3.592% | +3.595% |
+| r21: conservative scalar/control/address costs; unknown operations unpriced | +0.200% | +0.199% | +0.196% |
+| r22b: existing straight-copy path for ordinary inlining, original decisions | -0.639% | -0.577% | -0.553% |
+| r22: r21 plus straight-copy cloning | -0.452% | -0.390% | -0.363% |
+| r23: r22 plus final-size growth charging | +4.515% | +6.068% | +6.257% |
+
+r20b, r21 and r22 each preserve all 325 objects and the linked compiler in
+their LLVM slice checks. r22b is a compile-cost control; r23 was not advanced
+to an LLVM screen after its compile-cost result. No inliner policy from this
+table is committed. The scalar estimate deliberately excludes bulk, wide,
+vector and unknown operations instead of treating each as one instruction;
+it also prices addresses, control flow and multiple-return merges. A trace
+that preserves the frozen output shows r20b copying 135,999 instructions and
+leaving 108,302, versus r21 copying 132,829 and leaving 106,158. The original
+counts are 132,669 and 106,157. Many changed admissions are vector size/empty
+accessors, string construction and multi-return min/max helpers, so the cost
+reduction cannot be attributed to bulk operations alone.
+
+r21's number_literal/store_motion screen changes calls -0.675%/-0.198%,
+executed bytes -0.00005%/+0.0186%, instructions +0.422%/-0.0738%, and modeled
+L2 code misses -0.696%/-0.992%. r22 changes calls -0.703%/-0.257%, bytes
+-0.00475%/+0.0107%, instructions +0.464%/-0.110%, and modeled L2 misses
+-0.188%/-0.756%. These small effects are not whole-workload runtime wins.
+
+The r21 number_literal instruction increase includes 4,403,304 extra
+instructions in the IdentifierInfo/MacroState DenseMap lookup alone. Its
+normalized assembly is identical and both versions enter it 34,646 times;
+the difference is 259,017 additional collision-probe iterations. Another
+462,559 instructions come from DeclContext::lookupImpl, also with identical
+assembly and 77,398 entries. Preserve these raw totals as layout-sensitive
+confounders, not evidence of worse instruction selection and not quantities
+to subtract from acceptance results. QualType::operator-> self instructions
+fall from 219,944 to 1,288; other flag accessors still stay out of line.
+
+Ordinary inlining currently splits even a single-block scalar callee into
+entry/continuation blocks and subsequently merges them. Required substitution
+already has a direct-copy path. r22/r22b reuse that path for ordinary copies
+while keeping recursive expansions on their existing path. This is a compiler
+efficiency opportunity to qualify with the eventual policy change.
+
+The next related experiment must preserve and consume existing typed range
+facts. The actual optimized Decl::isInvalidDecl body loads a field, shifts and
+masks it with one, retypes it, and truncates it to u8. The backend can see that
+the truncation needs no instruction, but the inliner still charges it. Test
+recording a proved exact truncation in LowIR and consuming that fact in the
+cost model. Prove representability at both source and destination signedness;
+do not treat arbitrary narrowing casts as free or perform a fresh whole-body
+analysis at each call. Add positive and signed/out-of-range negative controls
+if this proceeds to production. Constant-argument specialization and the
+complete replacement cost policy remain unfinished.
+
+At the user's request, the clean worktree was rebased onto origin/main
+04d285786. All three local commits replayed unchanged: the scratch repair is
+now d799d5b13 (formerly 30e2ab26e), and the branch tip is 4fb2946bb. Main adds
+pointer-bound facts, phi equivalence, conditional-store work and packed-field
+load fixes. The pre-rebase branch is retained as
+backup/llvm-aggregate-pre-main-04d285786; the private binaries above are
+immutable. Rebuild and check the combined tree before the next experiment;
+remeasure its local comparison without resetting the cumulative 8f76ebb0d
+baseline. The full O1 runtime result at the top of this document is still the
+last qualified full-build comparison.
+
+Evidence: gap-C-net-cost-{batch,cumulative}-r19b/summary.json;
+gap-C-cost-only-frozen-r19/summary.json; gap-C-optimizer-stats-r19/receipt.json;
+gap-C-non-growing-{batch,panel}-r20b; gap-C-priced-leaf-{batch,panel}-r21;
+gap-C-flat-{leaf-batch,only-batch}-r22{,b}; gap-C-flat-leaf-panel-r22.json;
+gap-C-combined-cost-batch-r23/summary.json; gap-C-leaf-price-trace-r21;
+gap-C-priced-leaf-attribution-r21; gap-C-priced-helpers-r21/helpers.lowir.
+
+Rebase validation is complete: strict 10,627/10,627, debug information,
+self-host through PA5 in a new object root, PA36 smoke, architecture/format/
+file audits and placement all pass. Placement scans 9,958 tests and requires
+no fixture moves. The immutable rebased compiler is
+compiler-gap-C-main-04d-r24/cppgm++, SHA ac9793804d2df9807b06fe2137f42f73040c3696565333c721b544cd6b405b8f.
+Against r18, its O0–O3 frozen instructions change +0.0008%, +0.0702%,
++0.0975% and +0.1638%. Its 43-provider LLVM slice reproduces all 325 native
+objects and the linked compiler. A full O1 LLVM rebuild is running to measure
+the combined main changes beyond that slice.
+
+The private r25 experiment implements the range-fact check with the existing
+possible-bits query, and lets the scalar cost estimate consume exact
+truncations. The source and destination signedness checks reject a signed
+negative input and the signed destination's high-bit boundary. Forty-four
+typed IR checks and twelve GCC/Clang/candidate runtime controls pass. An initial
+runtime harness invocation used the course linker for printf; the corrected
+control compiles objects and links all three with the same host linker, and
+retains the earlier harness failure. Frozen compile instructions against the
+rebased compiler change +0.0002%, -0.3625%, -0.2979% and -0.2674% at O0–O3.
+Its LLVM output check and ledger are running. This experiment is still private;
+these checks do not establish a runtime benefit or production qualification.
+
+Evidence: gap-C-main-04d-validation-r24.json;
+gap-C-main-04d-{batch,output}-r24; gap-C-main-04d-O1-r24-llvm-build-status.json;
+gap-C-exact-leaf-compiler-r25; gap-C-exact-leaf-controls-r25{,b};
+gap-C-exact-leaf-batch-r25/summary.json.
