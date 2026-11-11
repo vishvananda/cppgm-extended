@@ -1,5 +1,6 @@
 declare function @observe(%value : i64) -> void [unwind=no]
 declare function @risky() -> void
+declare function @more() -> i64 [unwind=no]
 
 global @bang_type : i8 = 0
 
@@ -105,4 +106,27 @@ function @keep_entry_back_edge(%p : i64) -> i64 {
 
   block ^exit:
     return i64 7
+}
+
+function @keep_entry_branch_from_latch(%p : i64) -> i64 {
+  block ^entry:
+    branch %p, ^left, ^right
+
+  block ^left:
+    call void @observe(1)
+    jump ^latch
+
+  block ^right:
+    call void @observe(2)
+    jump ^latch
+
+  block ^latch:
+    %again = call i64 @more()
+    branch %again, ^check, ^out
+
+  block ^check:
+    branch %p, ^entry, ^out
+
+  block ^out:
+    return i64 3
 }

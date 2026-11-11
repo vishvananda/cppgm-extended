@@ -334,7 +334,9 @@ bool JumpThreading::known_edges()
 	bool changed = false;
 	for (BlockId b : body_.layout)
 	{
-		if (!cfg_.reachable(b) || cfg_.pred_count(b) != 1 || (cfg_.flags[b] & BF_HANDLER) != 0)
+		// (The entry block is entered from outside too: a back edge is not
+		// its only way in.)
+		if (!cfg_.reachable(b) || cfg_.pred_count(b) != 1 || (cfg_.flags[b] & BF_HANDLER) != 0 || b == cfg_.rpo[0])
 			continue;
 		const BlockId p = cfg_.preds[cfg_.pred_first[b]];
 		const InstId pt = body_.blocks[p].last, bt = body_.blocks[b].last;
