@@ -181,7 +181,17 @@ private:
 	bool phi_load(BlockId block, InstId prev, InstId id, InstId phi_id);
 	bool pre_load(BlockId block, InstId prev, InstId id);
 	bool chain_load(BlockId block, InstId prev, InstId id);
-	Value append_before_jump(BlockId block, Instruction copy);
+	Value append_before_jump(BlockId block, Instruction copy, BlockId join = kNoId);
+	// pre_load's instructions for the edge from a predecessor that branches
+	// two ways to a join, in order: place_edge_loads gives each edge its own
+	// block once phi_loads is over (the CFG stays as built until then).
+	struct EdgeLoad
+	{
+		BlockId pred, join;
+		InstId inst;
+	};
+	std::vector<EdgeLoad> edge_loads_;
+	void place_edge_loads();
 	void replace_with_phi(BlockId block, InstId prev, InstId id, const std::vector<Value>& pairs);
 	void place_phi(BlockId block, TempId result, Type type, const std::vector<Value>& pairs);
 	// phi_loads' per-block instruction lists, built on first use.
@@ -1812,7 +1822,7 @@ void MemoryForwarding::phi_loads()
 				const InstId def = address.is(ValueKind::Temp) ? body_.temps[address.index].def : kNoId;
 				const bool phi_address = def != kNoId && body_.instructions[def].op == Opcode::Phi &&
 					c_.block_of.size() > def && c_.block_of[def] == b;
-				rewritten = phi_address       ? phi_load(b, prev, i, def)
+				rewritten = phi_address       ? phi_load(b, prev, i, def) || pre_load(b, prev, i)
 					: cfg_.pred_count(b) == 1 ? chain_header(b) != kNoId && chain_load(b, prev, i)
 											  : pre_load(b, prev, i);
 			}
@@ -1833,6 +1843,41 @@ void MemoryForwarding::phi_loads()
 			i = next;
 		}
 	}
+	place_edge_loads();
+}
+
+// Each edge's instructions on a new block between the two, before the join
+// in layout; the join's phis name it in the predecessor's place.
+void MemoryForwarding::place_edge_loads()
+{
+	if (edge_loads_.empty())
+		return;
+	std::stable_sort(edge_loads_.begin(), edge_loads_.end(),
+		[](const EdgeLoad& a, const EdgeLoad& b) { return a.join != b.join ? a.join < b.join : a.pred < b.pred; });
+	for (size_t k = 0; k < edge_loads_.size();)
+	{
+		const BlockId pred = edge_loads_[k].pred, join = edge_loads_[k].join;
+		const BlockId at = append_block(body_, BlockKind::Split);
+		InstId tail = kNoId;
+		for (; k < edge_loads_.size() && edge_loads_[k].pred == pred && edge_loads_[k].join == join; ++k)
+		{
+			insert_after(body_, at, tail, edge_loads_[k].inst);
+			tail = edge_loads_[k].inst;
+		}
+		Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+		jump.ops[0] = Value::block(join);
+		jump.location = body_.instructions[tail].location;
+		insert_after(body_, at, tail, append_instruction(body_, jump));
+		body_.layout.insert(std::find(body_.layout.begin(), body_.layout.end(), join), at);
+		for_each_successor(body_, body_.instructions[body_.blocks[pred].last], [&](BlockId& t) {
+			if (t == join)
+				t = at;
+		});
+		rename_phi_incoming(body_, join, pred, at);
+	}
+	edge_loads_.clear();
+	c_.invalidate_cfg();
+	c_.invalidate_block_of();
 }
 
 std::pair<uint32_t, uint32_t> MemoryForwarding::block_list(BlockId block)
@@ -1876,6 +1921,7 @@ bool MemoryForwarding::phi_load(BlockId block, InstId prev, InstId id, InstId ph
 // latch's store; a reload after a slow-path call stays on that path only.
 // A join has at most this many predecessors.
 const uint32_t kPreLoadPreds = 8;
+const unsigned kPreLoadEdges = 1;
 
 // A load in a block with one predecessor (chain_load), before anything in
 // its block writes memory: when the chain of single predecessors above it
@@ -2063,10 +2109,26 @@ bool MemoryForwarding::pre_load(BlockId block, InstId prev, InstId id)
 				cfg_.dominates(c_.block_of[def], block));
 	};
 	InstId step = kNoId;
-	// Or a constant step from one of the join's phis: each predecessor
-	// answers for (and recomputes) the location at that step from its own
-	// input.
+	// Or one of the join's phis of pointers (through copies), or a constant
+	// step from one: each predecessor answers for (and recomputes) the
+	// location at that step from its own input.
 	InstId base_phi = kNoId;
+	auto join_phi = [&](Value v) {
+		for (unsigned copies = 0; copies < 4 && v.is(ValueKind::Temp) && v.index >= body_.parameter_count &&
+			body_.temps[v.index].type.is_pointer();
+			++copies)
+		{
+			const InstId d = body_.temps[v.index].def;
+			if (d == kNoId || d >= c_.block_of.size() || c_.block_of[d] != block)
+				break;
+			if (body_.instructions[d].op == Opcode::Phi)
+				return d;
+			if (body_.instructions[d].op != Opcode::Copy)
+				break;
+			v = body_.instructions[d].ops[0];
+		}
+		return kNoId;
+	};
 	// A fixed location needs no address instruction when every predecessor
 	// already knows its value. Keep unknown values here unless the ordinary
 	// one-step path below can reproduce their load's address.
@@ -2075,20 +2137,16 @@ bool MemoryForwarding::pre_load(BlockId block, InstId prev, InstId id)
 	{
 		if (!address.is(ValueKind::Temp))
 			return false;
-		step = body_.temps[address.index].def;
-		const Instruction& def = body_.instructions[step];
-		if (!((def.op == Opcode::Index && def.ops[1].is(ValueKind::Integer)) || def.op == Opcode::Addr))
+		base_phi = join_phi(address);
+		step = base_phi == kNoId ? body_.temps[address.index].def : kNoId;
+		const Instruction& def = body_.instructions[base_phi == kNoId ? step : base_phi];
+		if (base_phi == kNoId &&
+			!((def.op == Opcode::Index && def.ops[1].is(ValueKind::Integer)) || def.op == Opcode::Addr))
 			return false;
-		if (!available(def.ops[0]))
+		if (base_phi == kNoId && !available(def.ops[0]))
 		{
-			const InstId bd = def.op == Opcode::Index && def.ops[0].is(ValueKind::Temp) &&
-					def.ops[0].index >= body_.parameter_count
-				? body_.temps[def.ops[0].index].def
-				: kNoId;
-			if (bd != kNoId && body_.instructions[bd].op == Opcode::Phi && bd < c_.block_of.size() &&
-				c_.block_of[bd] == block)
-				base_phi = bd;
-			else
+			base_phi = def.op == Opcode::Index ? join_phi(def.ops[0]) : kNoId;
+			if (base_phi == kNoId)
 			{
 				const AddressFacts at = facts_of(address);
 				if (at.base != ValueKind::Slot && at.base != ValueKind::Symbol)
@@ -2103,6 +2161,7 @@ bool MemoryForwarding::pre_load(BlockId block, InstId prev, InstId id)
 		return false;
 	std::vector<Value> pairs;
 	std::vector<BlockId> missing;
+	unsigned edges = 0;
 	for (uint32_t k = cfg_.pred_first[block]; k < cfg_.pred_first[block + 1]; ++k)
 	{
 		const BlockId pred = cfg_.preds[k];
@@ -2128,8 +2187,14 @@ bool MemoryForwarding::pre_load(BlockId block, InstId prev, InstId id)
 			if (fixed && step == kNoId)
 				return false;
 			const InstId last = body_.blocks[pred].last;
-			if (cfg_.succ_count(pred) != 1 || (cfg_.flags[pred] & BF_HANDLER) != 0 || last == kNoId ||
-				body_.instructions[last].op != Opcode::Jump)
+			if ((cfg_.flags[pred] & BF_HANDLER) != 0 || last == kNoId)
+				return false;
+			// It only jumps here; or branches here and elsewhere, not around a
+			// loop (the load then goes on that edge, at most kPreLoadEdges).
+			const Instruction& term = body_.instructions[last];
+			const bool edge = term.op == Opcode::Branch && !(term.ops[1] == term.ops[2]) &&
+				!cfg_.dominates(block, pred) && ++edges <= kPreLoadEdges;
+			if (!(cfg_.succ_count(pred) == 1 && term.op == Opcode::Jump) && !edge)
 				return false;
 			missing.push_back(pred);
 		}
@@ -2149,27 +2214,31 @@ bool MemoryForwarding::pre_load(BlockId block, InstId prev, InstId id)
 		if (!pairs[k].is(ValueKind::None))
 			continue;
 		const BlockId pred = pairs[k - 1].index;
+		const BlockId edge = cfg_.succ_count(pred) == 1 ? kNoId : block;
 		Value at_address = address;
 		if (step != kNoId)
 		{
 			Instruction recompute = body_.instructions[step];
 			if (base_phi != kNoId)
 				recompute.ops[0] = phi_incoming(body_, body_.instructions[base_phi], pred);
-			at_address = append_before_jump(pred, recompute);
+			at_address = append_before_jump(pred, recompute, edge);
 		}
+		else if (base_phi != kNoId)
+			at_address = phi_incoming(body_, body_.instructions[base_phi], pred);
 		Instruction copy = load;
 		copy.ops[0] = at_address;
 		if (speculates)
 			copy.flags &= static_cast<uint8_t>(~IF_TYPED);
-		pairs[k] = append_before_jump(pred, copy);
+		pairs[k] = append_before_jump(pred, copy, edge);
 	}
 	replace_with_phi(block, prev, id, pairs);
 	return true;
 }
 
 // A copy of `inst` (taken by value: appending moves the instructions)
-// with a fresh result, before `block`'s final jump.
-Value MemoryForwarding::append_before_jump(BlockId block, Instruction copy)
+// with a fresh result, before `block`'s final jump; or, with a `join` the
+// block branches to, kept for that edge's own block (place_edge_loads).
+Value MemoryForwarding::append_before_jump(BlockId block, Instruction copy, BlockId join)
 {
 	const TempId original = copy.result;
 	copy.next = kNoId;
@@ -2181,6 +2250,11 @@ Value MemoryForwarding::append_before_jump(BlockId block, Instruction copy)
 	{
 		address_.resize(result + 1, AddressFacts());
 		address_[result] = address_[original];
+	}
+	if (join != kNoId)
+	{
+		edge_loads_.push_back(EdgeLoad{ block, join, at });
+		return Value::temp(result);
 	}
 	insert_after(body_, block, previous_in_block(body_, block, body_.blocks[block].last), at);
 	if (c_.block_of.size() <= at)
