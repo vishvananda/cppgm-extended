@@ -548,7 +548,12 @@ void FunctionSelector::emit_index(const Instruction& inst)
 	if (t.addr != kNoId)
 	{
 		const AddrExpr expr = addrs_[t.addr];
-		const Reg d = result_reg(inst, dying_reg(inst.ops[0]), dying_reg(inst.ops[1]));
+		// (An address forms in any register at one cost: where it is wanted
+		// -- a phi's register, a call's -- before a dying part's.)
+		const Reg wanted = level_ >= 1 ? t.hint : kNoReg;
+		const Reg base = dying_reg(inst.ops[0]);
+		const Reg d = wanted != kNoReg ? result_reg(inst, wanted, base)
+									   : result_reg(inst, base, dying_reg(inst.ops[1]));
 		materialize_address(d, expr, true);
 		finish_result(inst, d);
 		return;

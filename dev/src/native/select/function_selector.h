@@ -176,6 +176,7 @@ public:
 	void emission_facts();
 	void hint_chain(lowir::Value v, uint32_t block, Reg reg);
 	bool computed_from(uint32_t g, uint32_t from) const;
+	bool forms_address(const lowir::Instruction& inst) const;
 
 	// ---- global_allocation.cpp
 	void allocate_globals();

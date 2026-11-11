@@ -884,6 +884,13 @@ void FunctionSelector::collect_uses(const std::vector<int32_t>& index)
 				record(inst.ops[k], b, early, late, false);
 			return;
 		}
+		// One `lea` reads its base and its index before it writes.
+		if (forms_address(inst))
+		{
+			record(inst.ops[0], b, early, late, true);
+			record(inst.ops[1], b, early, late, true);
+			return;
+		}
 		// A cmov keeps either arm in place: an arm dying there may be the
 		// result's register.
 		if (inst.op == Opcode::Select && !inst.type.is_float() && !inst.type.is_vector() &&
@@ -1092,7 +1099,7 @@ void FunctionSelector::assign_registers()
 					arriving[c] = incoming_reg(v.index);
 			}
 		}
-		else if (ties_first_operand(def))
+		else if (ties_first_operand(def) || forms_address(def))
 		{
 			const Value v = resolve(def.ops[0]);
 			if (v.kind == ValueKind::Temp && cand[v.index] >= 0)
@@ -1701,13 +1708,31 @@ void FunctionSelector::emission_facts()
 	}
 }
 
+// Whether `inst` is an index that one `lea` forms from a base register and
+// at most an index register: it reads both before it writes the result,
+// which may be in either's register (a pointer stepped in place).
+bool FunctionSelector::forms_address(const Instruction& inst) const
+{
+	if (inst.op != Opcode::Index || inst.result == kNoId)
+		return false;
+	const TempInfo& t = temps_[inst.result];
+	return t.addr != kNoId && !(t.flags & (TF_LAZY | TF_ALIAS | TF_DEAD)) && addrs_[t.addr].kind == AddrExpr::Temp;
+}
+
 // Whether g can overwrite a dying `from` that its definition reads before
 // writing the result: a Select arm, a Binary/Unary (not integer division),
-// an integer extension/truncation, or part of a scalar load's address.
+// an integer extension/truncation, part of a scalar load's address, or a
+// part of an address one `lea` forms.
 bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 {
 	const lowir::FunctionBody& body = *body_;
 	const Instruction& inst = body.instructions[body.temps[g].def];
+	if (forms_address(inst))
+	{
+		const Value base = resolve(inst.ops[0]), index = resolve(inst.ops[1]);
+		return (base.kind == ValueKind::Temp && base.index == from) ||
+			(index.kind == ValueKind::Temp && index.index == from);
+	}
 	// (A select keeps either arm in place and moves the other in.)
 	if (inst.op == Opcode::Select)
 	{
