@@ -303,6 +303,10 @@ void emit_entry(CoreBuilder& core)
 	const uint32_t init_loop = a.new_label();
 	const uint32_t init_done = a.new_label();
 	a.mov_rr(R12, RSP);
+	// Darwin's process-entry stack need not have call-site alignment.
+	// Keep argc/argv at the original address while aligning every call.
+	if (image.target == Target::MacOS)
+		a.alu_ri(4, RM::r(RSP), -16, 8);
 	a.lea(RBX, RM::rip(core.named(kInitArrayStart), 0));
 	a.lea(R13, RM::rip(core.named(kInitArrayEnd), 0));
 	a.bind(init_loop);

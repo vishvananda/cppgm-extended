@@ -396,12 +396,20 @@ uint32_t emit_runtime(
 	}
 	// Process entry.
 	const uint32_t start = begin_routine(image);
+	const Reg arguments = image.target == Target::MacOS ? R12 : RSP;
+	if (image.target == Target::MacOS)
+	{
+		// Preserve the process arguments before rounding Darwin's incoming
+		// stack down to the alignment required by initializers and main.
+		a.mov_rr(arguments, RSP);
+		a.alu_ri(4, RM::r(RSP), -16, 8);
+	}
 	if (startup.init != lowir::kNoId)
 		a.call_symbol(startup.init);
 	if (startup.entry_params >= 1)
 	{
-		a.mov_load(RDI, RM::m(RSP, 0), 8, false);
-		a.lea(RSI, RM::m(RSP, 8));
+		a.mov_load(RDI, RM::m(arguments, 0), 8, false);
+		a.lea(RSI, RM::m(arguments, 8));
 	}
 	a.call_symbol(startup.entry);
 	if (startup.fini != lowir::kNoId || startup.atexit != lowir::kNoId)
