@@ -1,0 +1,10 @@
+extern "C" int calculate(int input) {
+ long double value = input;
+ long double result = (value + 0.25L) * 4.0L;
+ if (result > 100.0L || result < -100.0L || result == 0.0L) return 99;
+ return static_cast<int>(result);
+}
+extern "C" int precise(long double input) {
+ long double delta = (input + 0x1p-100L) - input;
+ return static_cast<int>(delta * 0x1p100L);
+}

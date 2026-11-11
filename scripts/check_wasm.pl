@@ -74,6 +74,17 @@ sub archive_inputs {
     return ($main, $path);
 }
 
+my @runtime_libraries;
+if ($expect->{runtime}) {
+    my $clang = $ENV{CPPGM_WASM_CLANG} // 'wasm-ref-clang++';
+    for my $query ('--print-libgcc-file-name', '-print-file-name=libc.a') {
+        my ($status, $stdout, $stderr) = command('runtime-path', $clang, '--target=wasm32-wasip1', $query);
+        $stdout =~ s/\s+\z//;
+        die "$test: pinned runtime library lookup failed: $stdout$stderr\n" if $status || !-f $stdout;
+        push @runtime_libraries, $stdout;
+    }
+}
+
 for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     my ($status, $stdout, $stderr);
     my @modules;
@@ -84,7 +95,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     my $tool = $expect->{source} ? $source_compiler : $compiler;
     ($status, $stdout, $stderr) = command("compile-$level", $tool, "-O$level",
         '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-        @{$expect->{flags} // []}, @exports, '-o', $module, $test, @units);
+        @{$expect->{flags} // []}, @exports, '-o', $module, $test, @units, @runtime_libraries);
     if ($expect->{reject}) {
         die "$test: invalid input accepted at O$level\n" if $status == 0;
         die "$test: rejection was not a compiler diagnostic: $stdout$stderr\n"
@@ -103,7 +114,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         die "$test: LowIR lowering failed: $stdout$stderr\n" if $status;
         my $roundtrip = "$directory/roundtrip-$level.wasm";
         ($status, $stdout, $stderr) = command("roundtrip-$level", $compiler,
-            "-O$level", @exports, '-o', $roundtrip, $lowir);
+            "-O$level", @exports, '-o', $roundtrip, $lowir, @runtime_libraries);
         die "$test: LowIR backend failed: $stdout$stderr\n" if $status;
         ($status, $stdout, $stderr) = command("roundtrip-validate-$level", $validator, 'validate', $roundtrip);
         die "$test: invalid round-trip module: $stdout$stderr\n" if $status;
@@ -165,7 +176,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         my $output = "$linked.$pass";
         ($status, $stdout, $stderr) = command("link-$level-$pass", $source_compiler,
             '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-            @exports, @objects, '-o', $output);
+            @exports, @objects, @runtime_libraries, '-o', $output);
         die "$test: object link failed: $stdout$stderr\n" if $status;
     }
     die "$test: identical object inputs produced different module bytes\n"
@@ -177,7 +188,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         my $output = "$directory/roundtrip-linked-$level.wasm";
         ($status, $stdout, $stderr) = command("roundtrip-link-$level", $source_compiler,
             '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-            @exports, @roundtrip_objects, '-o', $output);
+            @exports, @roundtrip_objects, @runtime_libraries, '-o', $output);
         die "$test: round-trip object link failed: $stdout$stderr\n" if $status;
         ($status, $stdout, $stderr) = command("roundtrip-link-validate-$level", $validator, 'validate', $output);
         die "$test: invalid round-trip linked module: $stdout$stderr\n" if $status;
@@ -205,7 +216,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                     ? ($source_compiler, '--target', ($expect->{target} // 'wasm32-unknown-unknown'))
                     : ($lld, '--no-entry');
                 ($status, $stdout, $stderr) = command("mixed-link-$producer-$linker-$level",
-                    @tool, @exports, @mixed, '-o', $output);
+                    @tool, @exports, @mixed, @runtime_libraries, '-o', $output);
                 die "$test: mixed-object $linker link failed: $stdout$stderr\n" if $status;
                 ($status, $stdout, $stderr) = command("mixed-validate-$producer-$linker-$level",
                     $validator, 'validate', $output);

@@ -15,8 +15,22 @@ uint32_t Linker::symbol_value(ObjectRef ref) const
 {
 	ref = selected(ref);
 	const auto& source = symbol(ref);
-	if (source.kind == 2 || source.kind == 5)
+	if (source.kind == 5)
 		return 0;
+	if (source.kind == 2)
+	{
+		const ObjectGlobal& global = objects_[ref.first].global_imports[source.index];
+		if (global.module == "env" && global.type == ValueType::I32)
+		{
+			if (global.name == "__stack_pointer")
+				return 0;
+			if (global.name == "__memory_base")
+				return 1;
+			if (global.name == "__table_base")
+				return 2;
+		}
+		throw WasmError("unresolved Wasm imported global: " + global.module + "." + global.name);
+	}
 	if (source.undefined() && !host_import(ref))
 	{
 		if (source.name == "__stack_low" || source.name == "__data_end")
@@ -42,7 +56,8 @@ Bytes Linker::relocated(uint32_t object, const ObjectChunk& chunk) const
 		uint32_t value;
 		if (relocation.kind == RelocationKind::TypeIndex)
 			value = type_indices_[object][relocation.index];
-		else if (relocation.kind == RelocationKind::FunctionIndex)
+		else if (relocation.kind == RelocationKind::FunctionIndex ||
+			relocation.kind == RelocationKind::FunctionIndexI32)
 			value = function_index({ object, relocation.index });
 		else
 			value = symbol_value({ object, relocation.index });
@@ -50,7 +65,8 @@ Bytes Linker::relocated(uint32_t object, const ObjectChunk& chunk) const
 		if (sum < INT32_MIN || sum > UINT32_MAX)
 			throw WasmError("Wasm relocation value overflows 32 bits");
 		value = static_cast<uint32_t>(sum);
-		if (relocation.kind == RelocationKind::TableIndexI32 || relocation.kind == RelocationKind::MemoryAddressI32)
+		if (relocation.kind == RelocationKind::TableIndexI32 || relocation.kind == RelocationKind::MemoryAddressI32 ||
+			relocation.kind == RelocationKind::GlobalIndexI32 || relocation.kind == RelocationKind::FunctionIndexI32)
 		{
 			for (unsigned i = 0; i < 4; ++i)
 				result.data[relocation.offset + i] = static_cast<uint8_t>(value >> (i * 8));
@@ -58,7 +74,9 @@ Bytes Linker::relocated(uint32_t object, const ObjectChunk& chunk) const
 		else
 		{
 			const bool signed_value = relocation.kind == RelocationKind::TableIndex ||
-				relocation.kind == RelocationKind::MemoryAddressSigned;
+				relocation.kind == RelocationKind::MemoryAddressSigned ||
+				relocation.kind == RelocationKind::MemoryAddressRelative ||
+				relocation.kind == RelocationKind::TableIndexRelative;
 			const uint64_t extended = signed_value ? uint64_t(int64_t(int32_t(value))) : uint64_t(value);
 			for (unsigned i = 0; i < 5; ++i)
 				result.data[relocation.offset + i] = ((extended >> (7 * i)) & 0x7f) | (i == 4 ? 0 : 0x80);

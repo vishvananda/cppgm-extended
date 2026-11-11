@@ -19,6 +19,8 @@ struct Signature
 struct Module
 {
 	std::vector<Signature> signatures;
+	std::vector<ValueType> global_types{ ValueType::I32 };
+	std::vector<bool> mutable_globals{ true };
 	std::vector<Boundary> boundaries;
 	std::vector<uint32_t> signature_types;
 	std::vector<uint32_t> function_indices;

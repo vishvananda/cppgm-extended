@@ -251,13 +251,20 @@ void Validator::instruction(const Instruction& inst)
 	}
 	case Op::GlobalGet:
 	case Op::GlobalSet:
-		if (operand(inst) != 0)
-			throw WasmError("invalid Wasm stack global index");
+	{
+		const uint64_t index = operand(inst);
+		if (index >= module_.global_types.size() || index >= module_.mutable_globals.size())
+			throw WasmError("invalid Wasm global index");
 		if (inst.op == Op::GlobalGet)
-			push(ValueType::I32);
+			push(module_.global_types[index]);
 		else
-			pop(ValueType::I32);
+		{
+			if (!module_.mutable_globals[index])
+				throw WasmError("Wasm store to an immutable global");
+			pop(module_.global_types[index]);
+		}
 		return;
+	}
 	case Op::Block:
 	case Op::Loop:
 	case Op::If:

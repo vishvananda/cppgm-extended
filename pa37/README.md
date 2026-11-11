@@ -29,6 +29,9 @@ lowir2native --target=wasm32-wasip1 -O2 \
   --dump-machine-ir program.mir -o program.wasm source.lowir
 ```
 
+Wasm invocations of `lowir2native` may also take relocatable object and
+archive inputs, including the supplied arithmetic/runtime libraries.
+
 Freestanding modules use declared imports and exports rather than a WASI
 `main`. Follow the supplied target contract for entry points, exported names,
 runtime linkage and initialization. Run freestanding dynamic initializers once
@@ -65,7 +68,8 @@ Implement the following at `-O0`, `-O1`, `-O2` and `-O3`:
 The first target profile is single-threaded and little-endian, with one
 32-bit linear memory and one indirect-function table. Its allowed features
 are mutable globals, sign extension, nontrapping float-to-int conversion,
-bulk memory, multi-value, reference types, SIMD128 and modern exception
+bulk memory, extended constant expressions, multi-value, reference types,
+SIMD128 and modern exception
 handling. Match the supplied profile and feature metadata. The public C ABI
 retains its specified return/argument convention even when multi-value is
 available internally. Optimization levels must not change public function

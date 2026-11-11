@@ -85,6 +85,7 @@ inline const char* lowir2native_help_text()
 		   "driver flags:\n"
 		   "  -O0 / -O1 / -O2 / -O3\n"
 		   "  -o <outfile>\n"
+		   "  Wasm inputs may also include relocatable objects and archives.\n"
 		   "  --target <target>   native target or wasm32 profile\n"
 		   "  --export <name>    export a Wasm function\n"
 		   "  --stats\n"

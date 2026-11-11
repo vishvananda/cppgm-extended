@@ -79,9 +79,11 @@ void imports(Cursor& input, Object& object)
 		}
 		else if (kind == 3)
 		{
-			if (module != "env" || name != "__stack_pointer" || read_type(input) != ValueType::I32 || input.byte() != 1)
-				throw WasmError("unsupported Wasm global import");
-			object.global_imports.push_back(name);
+			const ValueType type = read_type(input);
+			const uint8_t mutable_value = input.byte();
+			if (mutable_value > 1)
+				throw WasmError("invalid Wasm imported-global mutability");
+			object.global_imports.push_back(ObjectGlobal{ module, name, type, mutable_value != 0 });
 		}
 		else
 			throw WasmError("unsupported Wasm import kind");
@@ -152,7 +154,7 @@ void read_object(const std::string& path, Object& object)
 	read_object_bytes(bytes, object);
 }
 
-void read_object_bytes(const Bytes& bytes, Object& object)
+static void parse_object_bytes(const Bytes& bytes, Object& object)
 {
 	const std::string& path = object.path;
 	Cursor input(bytes);
@@ -184,7 +186,10 @@ void read_object_bytes(const Bytes& bytes, Object& object)
 				const uint32_t target = section.u32();
 				if (target >= sections.size())
 					throw WasmError("invalid Wasm relocation target section");
-				read_relocations(section, object, sections[target]);
+				if (sections[target] == 0)
+					section.bytes(); // Custom/debug payloads are not retained in the linked module.
+				else
+					read_relocations(section, object, sections[target]);
 			}
 			else if (name == "target_features")
 			{
@@ -222,6 +227,18 @@ void read_object_bytes(const Bytes& bytes, Object& object)
 	validate_object(object);
 	if (!object.archive_member)
 		validate_object_code(object);
+}
+
+void read_object_bytes(const Bytes& bytes, Object& object)
+{
+	try
+	{
+		parse_object_bytes(bytes, object);
+	}
+	catch (const WasmError& failure)
+	{
+		throw WasmError(object.path + ": " + failure.what());
+	}
 }
 
 } // namespace wasm

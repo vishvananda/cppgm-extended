@@ -34,7 +34,7 @@ void symbols(Cursor& input, Object& object)
 			else if (symbol.kind == 0 && symbol.index < object.functions.size())
 				symbol.name = object.functions[symbol.index].name;
 			else if (symbol.kind == 2 && symbol.index < object.global_imports.size())
-				symbol.name = object.global_imports[symbol.index];
+				symbol.name = object.global_imports[symbol.index].name;
 			else if (symbol.kind == 5 && symbol.index == 0)
 				symbol.name = "__indirect_function_table";
 			else
@@ -140,8 +140,8 @@ void read_relocations(Cursor& input, Object& object, uint8_t section)
 		const uint32_t index = input.u32();
 		const int64_t addend = relocation_addend(kind) ? input.signed_leb() : 0;
 		const unsigned value = static_cast<unsigned>(kind);
-		if (value > 7 && value != 10 && value != 20)
-			throw WasmError("unsupported Wasm relocation kind");
+		if (value > 7 && value != 10 && value != 11 && value != 12 && value != 13 && value != 20 && value != 26)
+			throw WasmError("unsupported Wasm relocation kind: " + std::to_string(value));
 		ObjectChunk* chunk = find_chunk(object, section, offset);
 		if (chunk == nullptr)
 			throw WasmError("Wasm relocation does not lie within a code or data body");

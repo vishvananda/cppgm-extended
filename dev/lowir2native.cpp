@@ -32,6 +32,7 @@ struct LowIR2NativeInvocation
 	string machine_ir_file;
 	bool stats = false;
 	vector<string> srcfiles;
+	vector<string> link_inputs;
 	vector<string> exports;
 };
 
@@ -175,7 +176,13 @@ LowIR2NativeInvocation parse_lowir2native_invocation(const vector<string>& args)
 		{
 			throw InvocationError("unknown option: " + args[i]);
 		}
-		invocation.srcfiles.push_back(args[i]);
+		const string& path = args[i];
+		const size_t dot = path.rfind('.');
+		const string extension = dot == string::npos ? "" : path.substr(dot);
+		if (extension == ".o" || extension == ".obj" || extension == ".a")
+			invocation.link_inputs.push_back(path);
+		else
+			invocation.srcfiles.push_back(path);
 	}
 
 	if ((invocation.outfile.empty() && invocation.machine_ir_file.empty()) || invocation.srcfiles.empty())
@@ -232,6 +239,7 @@ int run_lowir2native_mode(const vector<string>& args)
 	if (invocation.output_target.empty() && program.explicit_target)
 		options.target = program.target;
 	options.exports = invocation.exports;
+	options.link_inputs = invocation.link_inputs;
 	options.output = invocation.outfile;
 	options.machine_ir = invocation.machine_ir_file;
 	options.optimization_level = invocation.optimization_level;

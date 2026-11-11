@@ -91,7 +91,21 @@ bool compile_program(lowir::Program& program, const backend::Options& options, s
 {
 	Object object;
 	std::string dump = "machine_ir wasm32 1\n";
-	return compile_object(program, options, object, dump, error) && output_objects({ object }, options, false, error);
+	if (!compile_object(program, options, object, dump, error))
+		return false;
+	std::vector<Object> objects;
+	objects.push_back(std::move(object));
+	try
+	{
+		for (const std::string& path : options.link_inputs)
+			read_link_inputs(path, objects);
+	}
+	catch (const WasmError& failure)
+	{
+		error = failure.what();
+		return false;
+	}
+	return output_objects(objects, options, false, error);
 }
 
 } // namespace wasm

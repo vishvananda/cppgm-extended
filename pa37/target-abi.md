@@ -77,6 +77,10 @@ import. Declared imports specify their module, field name and exact signature.
 Exports use their requested object names. Reject unresolved live references,
 incompatible target/features and malformed objects with a diagnostic.
 
+For freestanding arithmetic that needs supplied helpers, pass the pinned
+compiler-rt and C runtime archives as link inputs. Both tools accept those
+archives alongside their source or LowIR inputs.
+
 ## Initialization and execution
 
 For a freestanding module, initialize static storage before any exported call.

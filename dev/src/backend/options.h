@@ -20,6 +20,7 @@ struct Options
 	bool stats = false;
 	bool* undefined_symbol = nullptr;
 	std::vector<std::string> exports;
+	std::vector<std::string> link_inputs;
 	const opt::OptimizerOptions* optimizer = nullptr;
 };
 

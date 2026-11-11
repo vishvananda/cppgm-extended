@@ -5,7 +5,7 @@ namespace wasm {
 bool relocation_addend(RelocationKind kind)
 {
 	return kind == RelocationKind::MemoryAddress || kind == RelocationKind::MemoryAddressSigned ||
-		kind == RelocationKind::MemoryAddressI32;
+		kind == RelocationKind::MemoryAddressI32 || kind == RelocationKind::MemoryAddressRelative;
 }
 
 namespace {
@@ -152,13 +152,13 @@ void write_object(const Object& object, Bytes& output)
 			imports.byte(0);
 			imports.unsigned_leb(function.type);
 		}
-	for (const std::string& name : object.global_imports)
+	for (const ObjectGlobal& global : object.global_imports)
 	{
-		imports.string("env");
-		imports.string(name);
+		imports.string(global.module);
+		imports.string(global.name);
 		imports.byte(3);
-		imports.byte(static_cast<uint8_t>(ValueType::I32));
-		imports.byte(1);
+		imports.byte(static_cast<uint8_t>(global.type));
+		imports.byte(global.mutable_value ? 1 : 0);
 	}
 	imports.string("env");
 	imports.string("__indirect_function_table");

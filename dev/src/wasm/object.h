@@ -47,6 +47,14 @@ struct ObjectGroup
 	std::vector<std::pair<uint8_t, uint32_t>> members;
 };
 
+struct ObjectGlobal
+{
+	std::string module;
+	std::string name;
+	ValueType type;
+	bool mutable_value;
+};
+
 struct Object
 {
 	std::string path;
@@ -58,7 +66,7 @@ struct Object
 	std::vector<std::pair<uint32_t, uint32_t>> initializers;
 	std::vector<ObjectGroup> groups;
 	std::vector<std::pair<char, std::string>> features;
-	std::vector<std::string> global_imports;
+	std::vector<ObjectGlobal> global_imports;
 };
 
 bool relocation_addend(RelocationKind kind);

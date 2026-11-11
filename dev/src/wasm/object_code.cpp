@@ -10,7 +10,8 @@ namespace {
 bool compatible(RelocationKind actual, RelocationKind expected)
 {
 	if (expected == RelocationKind::MemoryAddressSigned)
-		return actual == expected || actual == RelocationKind::TableIndex;
+		return actual == expected || actual == RelocationKind::TableIndex ||
+			actual == RelocationKind::MemoryAddressRelative || actual == RelocationKind::TableIndexRelative;
 	return actual == expected;
 }
 
@@ -96,6 +97,13 @@ void validate_object_code(const Object& object)
 {
 	Module module;
 	module.signatures = object.types;
+	module.global_types.clear();
+	module.mutable_globals.clear();
+	for (const auto& global : object.global_imports)
+	{
+		module.global_types.push_back(global.type);
+		module.mutable_globals.push_back(global.mutable_value);
+	}
 	for (const auto& function : object.functions)
 		module.definition_types.push_back(function.type);
 	for (const auto& source : object.functions)

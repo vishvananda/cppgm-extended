@@ -13,14 +13,14 @@ void validate_chunk(const ObjectChunk& chunk, const Object& object)
 	for (const Relocation& relocation : chunk.relocations)
 	{
 		const unsigned kind = static_cast<unsigned>(relocation.kind);
-		const bool fixed = kind == 2 || kind == 5;
+		const bool fixed = kind == 2 || kind == 5 || kind == 13 || kind == 26;
 		const uint32_t width = fixed ? 4 : 5;
 		if (relocation.offset > chunk.bytes.data.size() || width > chunk.bytes.data.size() - relocation.offset)
 			throw WasmError("Wasm relocation exceeds its code/data body");
 		if (!fixed)
 		{
 			Cursor value(chunk.bytes.data.data() + relocation.offset, width);
-			if (kind == 1 || kind == 4)
+			if (kind == 1 || kind == 4 || kind == 11 || kind == 12)
 				value.signed_leb();
 			else
 				value.u32();
@@ -35,7 +35,11 @@ void validate_chunk(const ObjectChunk& chunk, const Object& object)
 		}
 		if (relocation.index >= object.symbols.size())
 			throw WasmError("invalid Wasm symbol relocation index");
-		const uint8_t expected = kind <= 2 ? 0 : kind <= 5 ? 1 : kind == 7 ? 2 : kind == 10 ? 4 : 5;
+		const uint8_t expected = kind <= 2 || kind == 12 || kind == 26 ? 0
+			: kind <= 5 || kind == 11                                  ? 1
+			: kind == 7 || kind == 13                                  ? 2
+			: kind == 10                                               ? 4
+																	   : 5;
 		if (object.symbols[relocation.index].kind != expected)
 			throw WasmError("Wasm relocation kind does not match its symbol");
 	}
@@ -50,7 +54,8 @@ void validate_chunk(const ObjectChunk& chunk, const Object& object)
 void validate_object(const Object& object)
 {
 	const std::set<std::string> supported{ "mutable-globals", "sign-ext", "nontrapping-fptoint", "bulk-memory",
-		"bulk-memory-opt", "multivalue", "reference-types", "call-indirect-overlong", "simd128", "exception-handling" };
+		"bulk-memory-opt", "extended-const", "multivalue", "reference-types", "call-indirect-overlong", "simd128",
+		"exception-handling" };
 	for (const auto& feature : object.features)
 		if ((feature.first != '+' && feature.first != '-' && feature.first != '=') ||
 			(feature.first != '-' && supported.count(feature.second) == 0))

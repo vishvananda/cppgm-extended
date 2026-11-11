@@ -41,7 +41,11 @@ enum class RelocationKind : std::uint8_t
 	TypeIndex = 6,
 	GlobalIndex = 7,
 	TagIndex = 10,
-	TableNumber = 20
+	MemoryAddressRelative = 11,
+	TableIndexRelative = 12,
+	GlobalIndexI32 = 13,
+	TableNumber = 20,
+	FunctionIndexI32 = 26
 };
 
 // name, binary opcode, immediate form, diagnostic spelling

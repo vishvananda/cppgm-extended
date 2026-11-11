@@ -977,7 +977,21 @@ RValue FunctionLowering::soft_arithmetic(lowir::BinaryOp op, SoftFloat kind, con
 RValue FunctionLowering::soft_negate(SoftFloat kind, const RValue& value)
 {
 	if (kind == SoftFloat::Quad)
-		return soft_call(SoftFloatHelper::NegTF, value);
+	{
+		// Negation changes only the sign bit, including for zero and NaNs.
+		// Preserve all payload bits without requiring a runtime negation entry.
+		const lowir::Type type = SpecType('q', lowering_.program_.target);
+		const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+		Place storage = Place();
+		storage.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::SoftFloat, type));
+		store(type, value, storage);
+		Place high = Place();
+		high.storage = index(
+			lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, address_of(storage), integer(i64, 8))
+						   .value;
+		store(i64, binary(lowir::BinaryOp::Xor, i64, load(i64, high), integer(i64, uint64_t(1) << 63)), high);
+		return load(type, storage);
+	}
 	if (kind == SoftFloat::BFloat)
 		return soft_call(SoftFloatHelper::TruncSFBF, unary(lowir::UnaryOp::Neg, bfloat_widened(value)));
 	return soft_call(
@@ -1021,8 +1035,8 @@ RValue FunctionLowering::soft_compare(
 	const uint8_t index = static_cast<uint8_t>(predicate);
 	if (index >= sizeof(kHelpers) / sizeof(kHelpers[0]))
 		throw LoweringError(0, "an unsigned comparison of binary128 values");
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	return compare(predicate, i64, soft_call(kHelpers[index], left, &right), integer(i64, 0));
+	const RValue result = soft_call(kHelpers[index], left, &right);
+	return compare(predicate, result.type, result, integer(result.type, 0));
 }
 
 } // namespace lower

@@ -73,12 +73,15 @@ void Linker::emit(Bytes& output)
 	memory.unsigned_leb((stack_top_ + 65535) / 65536);
 	output.section(5, memory);
 	Bytes globals;
-	globals.unsigned_leb(1);
-	globals.byte(0x7f);
-	globals.byte(1);
-	globals.byte(0x41);
-	globals.signed_leb(stack_top_);
-	globals.byte(0x0b);
+	globals.unsigned_leb(3);
+	for (uint32_t index = 0; index < 3; ++index)
+	{
+		globals.byte(0x7f);
+		globals.byte(1);
+		globals.byte(0x41);
+		globals.signed_leb(index == 0 ? stack_top_ : 0);
+		globals.byte(0x0b);
+	}
 	output.section(6, globals);
 	std::set<std::string> exported(options_.exports.begin(), options_.exports.end());
 	for (const auto& entry : definitions_)

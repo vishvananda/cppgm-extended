@@ -113,7 +113,7 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 	}
 	symbols[module.stack_symbol] = static_cast<uint32_t>(object.symbols.size());
 	object.symbols.push_back(imported_symbol(2, 0, "__stack_pointer"));
-	object.global_imports.push_back("__stack_pointer");
+	object.global_imports.push_back(ObjectGlobal{ "env", "__stack_pointer", ValueType::I32, true });
 	symbols[module.stack_low_symbol] = static_cast<uint32_t>(object.symbols.size());
 	object.symbols.push_back(imported_symbol(1, 0, "__stack_low"));
 	symbols[module.table_symbol] = static_cast<uint32_t>(object.symbols.size());
