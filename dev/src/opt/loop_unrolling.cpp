@@ -276,7 +276,7 @@ bool ShortLoopUnrolling::tested(uint32_t loop, Shape& s) const
 // preheader's value and the latch's.
 bool ShortLoopUnrolling::sized(Shape& s) const
 {
-	unsigned size = 0;
+	unsigned size = 0, floating_stores = 0;
 	for (BlockId b : s.chain)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
@@ -310,8 +310,11 @@ bool ShortLoopUnrolling::sized(Shape& s) const
 			case Opcode::Convert:
 				size += static_cast<ConvertOp>(inst.sub) == ConvertOp::Trunc ? 0 : 1;
 				break;
-			case Opcode::Load:
 			case Opcode::Store:
+				floating_stores += inst.type.is_float() ? 1 : 0;
+				++size;
+				break;
+			case Opcode::Load:
 			case Opcode::Binary:
 			case Opcode::Unary:
 			case Opcode::Compare:
@@ -322,7 +325,9 @@ bool ShortLoopUnrolling::sized(Shape& s) const
 				return false;
 			}
 		}
-	if (size == 0)
+	// (A pass's floating stores may pack into lanes, opt/block_lanes.cpp:
+	// its copies would store each location again.)
+	if (size == 0 || floating_stores > 1)
 		return false;
 	s.passes = kGroupPasses;
 	while (s.passes > 1 && size * s.passes + 2 > kGroupSize)

@@ -58,6 +58,8 @@ private:
 	};
 
 	bool block(BlockId b);
+	bool reload(BlockId b, const std::vector<Stored>& stores, const std::vector<size_t>& runs);
+	bool quiet(const Instruction& inst) const;
 	int plan(BlockId b, const std::vector<Stored>& stores, size_t first, InstId& last);
 	bool group(BlockId b, const std::vector<Stored>& stores, const std::vector<size_t>& runs, size_t run);
 	void pack(BlockId b, const std::vector<Stored>& stores, size_t first, InstId last, int root);
@@ -636,6 +638,118 @@ bool BlockLanes::group(BlockId b, const std::vector<Stored>& stores, const std::
 	return false;
 }
 
+// An instruction that writes no memory and leaves its block only as its
+// terminator.
+bool BlockLanes::quiet(const Instruction& inst) const
+{
+	return pure(inst) || inst.op == Opcode::Load || inst.op == Opcode::Phi || inst.op == Opcode::Jump ||
+		inst.op == Opcode::Branch;
+}
+
+// A one-block loop's phi that stands for a location a group stores: a load
+// of the location before the loop gives its first value, and the loop's last
+// store there its next. The loop reads the location instead, so that the
+// group's lanes are loads of adjacent memory. Nothing between that load and
+// the loop writes memory, and nothing after that store may write the
+// location.
+bool BlockLanes::reload(BlockId b, const std::vector<Stored>& stores, const std::vector<size_t>& runs)
+{
+	const Instruction& last = body_.instructions[body_.blocks[b].last];
+	const InstId first = body_.blocks[b].first;
+	if (last.op != Opcode::Branch || (last.ops[1].index != b && last.ops[2].index != b) ||
+		body_.instructions[first].op != Opcode::Phi)
+		return false;
+	Cfg& cfg = c_.ensure_cfg_light();
+	BlockId pre = kNoId;
+	for (uint32_t k = cfg.pred_first[b]; k < cfg.pred_first[b + 1]; ++k)
+		if (cfg.preds[k] != b)
+		{
+			if (pre != kNoId && pre != cfg.preds[k])
+				return false;
+			pre = cfg.preds[k];
+		}
+	if (pre == kNoId)
+		return false;
+	for (InstId prev = kNoId, i = first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
+		prev = i, i = body_.instructions[i].next)
+	{
+		const Instruction phi = body_.instructions[i];
+		if (!phi.type.is_float() || phi.extra_count != 4)
+			continue;
+		const Value before = phi_incoming(body_, phi, pre), next = phi_incoming(body_, phi, b);
+		// The last store of the next value, one of a group's.
+		InstId store = kNoId;
+		for (const size_t run : runs)
+			for (unsigned lane = 0; lane < (body_.instructions[stores[run].id].type.kind() == TypeKind::F64 ? 2u : 4u);
+				++lane)
+			{
+				const Instruction& s = body_.instructions[stores[run + lane].id];
+				if (s.ops[0] == next && s.type == phi.type &&
+					(store == kNoId || position_[stores[run + lane].id] > position_[store]))
+					store = stores[run + lane].id;
+			}
+		if (store == kNoId || !before.is(ValueKind::Temp) || before.index < body_.parameter_count)
+			continue;
+		const Instruction written = body_.instructions[store];
+		const Located at = locate_steps(body_, written.ops[1]);
+		const bool typed = (written.flags & IF_TYPED) != 0;
+		bool ok = !same_block(b, written.ops[1]);
+		for (InstId j = written.next; j != kNoId && ok; j = body_.instructions[j].next)
+		{
+			const Instruction& inst = body_.instructions[j];
+			ok = quiet(inst) ||
+				(inst.op == Opcode::Store && (inst.flags & IF_VOLATILE) == 0 &&
+					apart(inst, written.ops[1], at, storage_bytes(written.type), written.type, typed));
+		}
+		// The load before the loop, and the way from it to the loop.
+		const InstId load = body_.temps[before.index].def;
+		if (!ok || load == kNoId)
+			continue;
+		const Instruction read = body_.instructions[load];
+		const Located from = locate_steps(body_, read.ops[0]);
+		if (read.op != Opcode::Load || (read.flags & IF_VOLATILE) != 0 || read.type != phi.type ||
+			typed != ((read.flags & IF_TYPED) != 0) || !at.known || !from.known || !(from.root == at.root) ||
+			from.offset != at.offset)
+			continue;
+		BlockId p = pre;
+		for (unsigned steps = 0; ok && p != c_.block_of[load]; ++steps)
+		{
+			for (InstId j = body_.blocks[p].first; j != kNoId && ok; j = body_.instructions[j].next)
+				ok = quiet(body_.instructions[j]);
+			ok = ok && steps < kMaxDepth && cfg.pred_count(p) == 1;
+			if (ok)
+				p = cfg.preds[cfg.pred_first[p]];
+		}
+		for (InstId j = read.next; j != kNoId && ok; j = body_.instructions[j].next)
+			ok = quiet(body_.instructions[j]);
+		if (!ok)
+			continue;
+		// The phi goes; its readers read the location at the block's start.
+		InstId after = prev;
+		for (InstId j = i; j != kNoId && body_.instructions[j].op == Opcode::Phi; j = body_.instructions[j].next)
+			after = j;
+		unlink_after(body_, b, prev, i);
+		if (after == i)
+			after = prev;
+		Instruction again = read;
+		again.next = kNoId;
+		again.ops[0] = written.ops[1];
+		const InstId id = append_instruction(body_, again);
+		const TempId result = append_temp(body_, phi.type, id);
+		body_.instructions[id].result = result;
+		insert_after(body_, b, after, id);
+		for (Instruction& inst : body_.instructions)
+			for_each_operand(body_, inst, [&](Value& v) {
+				if (v == Value::temp(phi.result))
+					v = Value::temp(result);
+			});
+		map_instruction_blocks(body_, c_.block_of);
+		count_uses(body_, uses_);
+		return true;
+	}
+	return false;
+}
+
 bool BlockLanes::block(BlockId b)
 {
 	std::vector<Stored> stores;
@@ -676,6 +790,8 @@ bool BlockLanes::block(BlockId b)
 		if (run)
 			runs.push_back(i);
 	}
+	if (!runs.empty() && reload(b, stores, runs))
+		return true;
 	for (size_t r = 0; r < runs.size(); ++r)
 	{
 		const Type type = body_.instructions[stores[runs[r]].id].type;
