@@ -193,6 +193,40 @@ enum ParamAliasMode : std::uint8_t
 
 const unsigned kParamAliasModeCount = PALM_EXCLUSIVE_RESULT + 1;
 
+// Target-neutral summary of an aggregate's nonempty scalar subobjects.
+// Shape is a layout fact, not a register or parameter-passing decision.
+enum class AggregateElement : std::uint8_t
+{
+	None,
+	Empty,
+	Mixed,
+	I1,
+	I8,
+	U8,
+	I16,
+	U16,
+	I32,
+	U32,
+	I64,
+	I128,
+	F32,
+	F64,
+	F128,
+	Pointer,
+	Vector128
+};
+
+const unsigned kAggregateElementCount = static_cast<unsigned>(AggregateElement::Vector128) + 1;
+
+struct AggregateShape
+{
+	std::uint16_t count = 0;
+	AggregateElement element = AggregateElement::None;
+	std::uint8_t reserved = 0;
+	bool operator==(const AggregateShape& other) const { return count == other.count && element == other.element; }
+	bool operator!=(const AggregateShape& other) const { return !(*this == other); }
+};
+
 // `index ... [projection=...]`.
 enum IndexProjectionKind : std::uint8_t
 {
@@ -252,6 +286,7 @@ enum class MetadataKey : std::uint8_t
 	Repeatable,
 	NoAliasResult,
 	ResultClasses,
+	ResultShape,
 	// Symbol metadata.
 	Storage,
 	Section,
@@ -273,6 +308,7 @@ enum class MetadataKey : std::uint8_t
 	Alias,
 	ObjectBytes,
 	Classes,
+	Shape,
 	// Instruction metadata (`call ... [elision=copy, classes=1:sse]`,
 	// `va_arg ... [classes=sse]`, `index ... [projection=field]`).
 	Elision,
@@ -283,7 +319,7 @@ const unsigned kMetadataKeyCount = static_cast<unsigned>(MetadataKey::Projection
 
 inline bool is_boundary_key(MetadataKey key)
 {
-	return key <= MetadataKey::ResultClasses;
+	return key <= MetadataKey::ResultShape;
 }
 
 inline bool is_symbol_key(MetadataKey key)
@@ -293,7 +329,7 @@ inline bool is_symbol_key(MetadataKey key)
 
 inline bool is_parameter_key(MetadataKey key)
 {
-	return key >= MetadataKey::Pass && key <= MetadataKey::Classes;
+	return key >= MetadataKey::Pass && key <= MetadataKey::Shape;
 }
 
 // The key of a yes-valued symbol flag, and the flag of such a key (0 for
@@ -411,9 +447,9 @@ inline const char* spelling(EightbyteClass value)
 inline const char* spelling(MetadataKey key)
 {
 	static const char* const kKeys[kMetadataKeyCount] = { "arity", "effects", "unwind", "return", "repeatable",
-		"noalias_result", "result_classes", "storage", "section", "role", "linkage", "binding", "object", "tls_for",
-		"keep_alias", "prefer_local", "object_root", "force_inline", "inline_hint", "no_inline", "replaceable", "cold",
-		"pass", "alias", "object_bytes", "classes", "elision", "projection" };
+		"noalias_result", "result_classes", "result_shape", "storage", "section", "role", "linkage", "binding",
+		"object", "tls_for", "keep_alias", "prefer_local", "object_root", "force_inline", "inline_hint", "no_inline",
+		"replaceable", "cold", "pass", "alias", "object_bytes", "classes", "shape", "elision", "projection" };
 	return kKeys[static_cast<unsigned>(key)];
 }
 
@@ -458,6 +494,61 @@ inline bool from_spelling(const char* text, std::size_t length, CallUnwindMode* 
 inline bool from_spelling(const char* text, std::size_t length, CallReturnMode* value)
 {
 	return detail::find_spelling(text, length, 1, kCallReturnModeCount, value);
+}
+
+inline const char* spelling(AggregateElement element)
+{
+	static const char* const names[] = { "", "empty", "mixed", "i1", "i8", "u8", "i16", "u16", "i32", "u32", "i64",
+		"i128", "f32", "f64", "f128", "ptr", "v128" };
+	return names[static_cast<unsigned>(element)];
+}
+
+inline bool from_spelling(const char* text, std::size_t length, AggregateElement* value)
+{
+	return detail::find_spelling(text, length, 1, kAggregateElementCount, value);
+}
+
+inline void append_aggregate_shape(std::string& out, AggregateShape shape)
+{
+	out += spelling(shape.element);
+	if (shape.count != 0)
+	{
+		out += 'x';
+		char digits[5];
+		unsigned count = shape.count, size = 0;
+		do
+		{
+			digits[size++] = static_cast<char>('0' + count % 10);
+			count /= 10;
+		} while (count != 0);
+		while (size != 0)
+			out += digits[--size];
+	}
+}
+
+inline bool aggregate_shape_from_spelling(const char* text, std::size_t length, AggregateShape* shape)
+{
+	std::size_t split = length;
+	while (split > 0 && text[split - 1] >= '0' && text[split - 1] <= '9')
+		--split;
+	const bool counted = split > 0 && split < length && text[split - 1] == 'x';
+	AggregateElement element = AggregateElement::None;
+	if (!from_spelling(text, counted ? split - 1 : length, &element))
+		return false;
+	unsigned count = 0;
+	if (counted)
+		for (std::size_t i = split; i < length; ++i)
+		{
+			count = count * 10 + text[i] - '0';
+			if (count > 65535)
+				return false;
+		}
+	const bool scalar = element > AggregateElement::Mixed;
+	if (scalar != (count != 0) || counted != scalar)
+		return false;
+	shape->element = element;
+	shape->count = static_cast<std::uint16_t>(count);
+	return true;
 }
 
 inline bool from_spelling(const char* text, std::size_t length, ParamPassingMode* value)
@@ -606,13 +697,15 @@ struct FunctionBoundaryMetadata
 	// This states no memory effects or unwinding promise about the call.
 	bool noalias_result = false;
 	std::uint8_t result_classes = 0; // ObjectClassBits of a direct object result
+	AggregateShape result_shape;
 };
 
 struct ParameterMetadata
 {
 	ParamPassingMode pass = PPM_DIRECT;
 	ParamAliasMode alias = PALM_DEFAULT;
-	std::uint8_t classes = 0;       // ObjectClassBits of a direct object parameter
+	std::uint8_t classes = 0; // ObjectClassBits of a direct object parameter
+	AggregateShape shape;
 	std::uint64_t object_bytes = 0; // `object_bytes=`; 0 when absent
 };
 

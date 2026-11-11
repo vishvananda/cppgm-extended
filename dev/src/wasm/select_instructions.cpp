@@ -6,13 +6,16 @@ using namespace lowir;
 
 void Selector::instruction(const lowir::Instruction& inst)
 {
+	if (object_instruction(inst))
+		return;
 	switch (inst.op)
 	{
 	case Opcode::Const:
 	case Opcode::Copy:
 	{
 		value(inst.ops[0], inst.type);
-		const ValueType source = value_type(operand_type(inst.ops[0], inst.type));
+		const Type actual = operand_type(inst.ops[0], inst.type);
+		const ValueType source = value_type(actual.is_object() ? inst.type : actual);
 		const ValueType result = value_type(inst.type);
 		if (inst.ops[0].is(ValueKind::Temp) && source != result)
 		{
@@ -79,36 +82,8 @@ void Selector::instruction(const lowir::Instruction& inst)
 		out_.emit(Op::Select);
 		break;
 	case Opcode::Call:
-	{
-		const lowir::Signature* signature = program_.call_boundary(inst);
-		if (signature == nullptr || signature->boundary.arity != ir_model::CAM_FIXED)
-			throw WasmError("Wasm variadic call requires ABI legalization");
-		const Parameter* parameters = program_.parameters_of(*signature);
-		for (uint32_t i = 0; i < inst.extra_count; ++i)
-			value(body_.operands[inst.extra_first + i], parameters[i].type);
-		if (inst.ops[0].is(ValueKind::Symbol))
-		{
-			const uint32_t function = module_.function_indices[inst.ops[0].index];
-			if (function == kNoId)
-				throw WasmError("undefined Wasm function: " +
-					std::string(program_.spelling(program_.symbols[inst.ops[0].index].name)));
-			out_.emit(Op::Call, { function });
-		}
-		else
-		{
-			value(inst.ops[0], program_.pointer_type());
-			const uint32_t signature_id = static_cast<uint32_t>(signature - program_.signatures.data());
-			out_.emit(Op::CallIndirect, { module_.signature_types[signature_id], 0 });
-		}
-		if (signature->boundary.returns == ir_model::CRM_NORETURN)
-		{
-			out_.emit(Op::Unreachable);
-			return;
-		}
-		if (inst.type.is_void())
-			return;
-		break;
-	}
+		call(inst);
+		return;
 	case Opcode::Jump:
 		edge(current_block_, inst.ops[0].index);
 		return;
@@ -139,10 +114,7 @@ void Selector::instruction(const lowir::Instruction& inst)
 		return;
 	}
 	case Opcode::Return:
-		if (!inst.type.is_void())
-			value(inst.ops[0], inst.type);
-		restore_stack();
-		out_.emit(Op::Return);
+		return_value(inst);
 		return;
 	case Opcode::Unreachable:
 		out_.emit(Op::Unreachable);
@@ -185,7 +157,7 @@ void Selector::instruction(const lowir::Instruction& inst)
 	}
 	const Type result = body_.temps[inst.result].type;
 	normalize(result);
-	out_.emit(Op::LocalSet, { inst.result });
+	out_.emit(Op::LocalSet, { locals_[inst.result] });
 }
 
 } // namespace wasm

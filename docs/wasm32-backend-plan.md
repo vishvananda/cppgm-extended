@@ -1,8 +1,8 @@
 # A second backend: wasm32 and a reusable machine layer
 
 Status: implementation in progress, 2026-11-11. The working branch is
-`feature/wasm32-backend`, rebased onto `origin/opt/llvm-gap-claude` at
-`e15c480b9`. Compiler changes are isolated in
+`feature/wasm32-backend`, rebased onto the latest committed local `opt/llvm-gap-claude` at
+`190c9a162`. Compiler changes are isolated in
 `/mnt/vizier/cppgm-wasm32-backend`; the main checkout is unchanged.
 
 The active student documents are [PA37](../pa37/README.md) and its
@@ -55,6 +55,35 @@ native-width vtable/member-pointer geometry, binary128 constant operations,
 symbol aliases/equivalent entries and every implicit ABI classification before
 claiming portable class or wide-value support. PA37's full required behavior
 and quality gates remain the completion bar.
+
+## Aggregate ABI implementation
+
+Aggregate parameters/results now carry typed `shape` / `result_shape` facts:
+empty, mixed, or a counted scalar composition, independent of size, alignment
+and AMD64 eightbyte classes. The Wasm ABI selects ignored values, scalar
+coercions or indirect copies. Large trivial source results remain object
+values in LowIR and acquire their hidden destination in the backend. The
+selected function maps LowIR values to ABI locals explicitly, keeps object SSA
+snapshots in frame storage, copies indirect by-value arguments, and aligns
+frames beyond 16 bytes when required.
+
+New cases cover nested/empty/union/bit-field/over-aligned/large records, indirect
+calls and snapshot preservation. A Perl binary-section reader checks exported
+public function types without observing instruction selection. LLVM 22-built
+callers agree with cppgm callees at O0–O3 using separate stack regions in a
+shared imported memory; the interop probe is retained outside Git under
+`aggregate-interop` in the evidence directory.
+
+That interop exposed a native-only optimizer assumption: replacing any small
+integer-class aggregate boundary with i64/i128 preserves AMD64 registers, but
+changes Wasm's typed public ABI. The transformation now requires a typed ABI
+capability; it leaves Wasm boundaries intact. Native scalar rewrites clear the
+object-only shape facts. Other LowIR optimizations remain shared.
+
+This still leaves object linking, the reverse mixed-producer call direction,
+varargs, wide values, full portable runtime/EH and SIMD qualification. The
+summary shape intentionally does not claim to encode arbitrary member offsets;
+a future ABI that needs those must carry the additional typed projections.
 
 ## Placement and scope
 

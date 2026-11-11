@@ -29,6 +29,13 @@ enum class ObjectFormat : std::uint8_t
 	WebAssembly
 };
 
+enum class CallingConvention : std::uint8_t
+{
+	SysVAmd64,
+	DarwinAmd64,
+	WasmBasicC
+};
+
 enum class ByteOrder : std::uint8_t
 {
 	Little,
@@ -64,6 +71,7 @@ struct Description
 	Architecture architecture;
 	Environment environment;
 	ObjectFormat object_format;
+	CallingConvention calling_convention;
 	DataLayout layout;
 };
 
@@ -88,7 +96,19 @@ constexpr Description describe(Target target)
 		is_wasm(target)               ? ObjectFormat::WebAssembly
 			: target == Target::MacOS ? ObjectFormat::MachO
 									  : ObjectFormat::Elf,
+		is_wasm(target)               ? CallingConvention::WasmBasicC
+			: target == Target::MacOS ? CallingConvention::DarwinAmd64
+									  : CallingConvention::SysVAmd64,
 		data_layout(target) };
+}
+
+// An object-to-integer signature rewrite must retain its public call ABI.
+// Register-sized integers carry these aggregate bits on the AMD64 ABIs;
+// Wasm's typed function signatures distinguish those representations.
+constexpr bool aggregate_integer_carriers(Target target)
+{
+	return describe(target).calling_convention == CallingConvention::SysVAmd64 ||
+		describe(target).calling_convention == CallingConvention::DarwinAmd64;
 }
 
 inline const char* spelling(Target target)

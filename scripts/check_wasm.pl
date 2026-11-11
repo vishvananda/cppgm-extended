@@ -9,6 +9,7 @@ use FindBin;
 use JSON::PP qw(decode_json);
 use lib $FindBin::Bin;
 use CppgmBatchWorker qw(collect_tests run_command_capture);
+use CppgmWasmModule qw(export_signatures);
 
 sub read_file {
     my ($path) = @_;
@@ -52,7 +53,8 @@ sub command {
 
 for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     my $module = "$directory/program-$level.wasm";
-    my @exports = map { ('--export', $_->{export}) } @{$expect->{calls} // []};
+    my @exports = map { ('--export', $_) }
+        ((map { $_->{export} } @{$expect->{calls} // []}), @{$expect->{exports} // []});
     my $tool = $expect->{source} ? $source_compiler : $compiler;
     my ($status, $stdout, $stderr) = command("compile-$level", $tool, "-O$level",
         '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
@@ -82,6 +84,17 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         push @modules, $roundtrip;
     }
     for my $run_module (@modules) {
+        if ($expect->{abi}) {
+            my $actual = export_signatures($run_module);
+            for my $name (sort keys %{$expect->{abi}}) {
+                die "$test: missing ABI export $name\n" unless $actual->{$name};
+                for my $part ('params', 'results') {
+                    my $want = join(',', @{$expect->{abi}{$name}{$part}});
+                    my $got = join(',', @{$actual->{$name}{$part}});
+                    die "$test: $name ABI $part expected [$want], got [$got]\n" if $want ne $got;
+                }
+            }
+        }
         for my $call (@{$expect->{calls} // []}) {
             ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run',
                 '--invoke', $call->{export}, $run_module, @{$call->{args} // []});

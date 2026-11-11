@@ -2813,6 +2813,8 @@ void ProgramLowering::classify_eightbytes(const sema::Type* type, uint64_t offse
 
 uint8_t ProgramLowering::object_classes(const sema::Type* type)
 {
+	if (target_model::is_wasm(program_.target))
+		return 0;
 	static_assert(static_cast<unsigned>(AC_NO_CLASS) == lowir::EB_NONE &&
 			static_cast<unsigned>(AC_INTEGER) == lowir::EB_INTEGER && static_cast<unsigned>(AC_SSE) == lowir::EB_SSE,
 		"merged classes below MEMORY's are eightbyte classes");
@@ -2859,6 +2861,8 @@ uint8_t ProgramLowering::object_classes(const sema::Type* type)
 
 uint8_t ProgramLowering::result_classes(const sema::Type* type)
 {
+	if (target_model::is_wasm(program_.target))
+		return 0;
 	return object_mode_ ? object_classes(type) : course_classes(type, true);
 }
 
@@ -3028,6 +3032,8 @@ uint8_t ProgramLowering::course_classes(const sema::Type* type, bool result)
 
 bool ProgramLowering::returned_directly(const sema::ClassEntity* entity)
 {
+	if (target_model::is_wasm(program_.target))
+		return passed_directly(entity);
 	// A class result passed directly and at most sixteen bytes is returned
 	// as its bytes; any other (a class non-trivial for the purposes of
 	// calls, empty or of sixteen bytes included) through the caller's
@@ -3074,6 +3080,8 @@ lowir::Parameter ProgramLowering::parameter_for(const sema::Type* type, lowir::N
 	}
 	parameter.type = storage_type(type);
 	parameter.classes = object_classes(type);
+	if (target_model::is_wasm(program_.target) && parameter.type.is_object())
+		parameter.shape = aggregate_shape(type);
 	// An X87 or COMPLEX_X87 parameter is passed in memory (psABI 3.2.3):
 	// lowir.md's `memory`.
 	if (parameter.classes == (lowir::OC_STATED | lowir::OC_X87) ||
@@ -3199,6 +3207,8 @@ lowir::SignatureId ProgramLowering::function_signature(
 		: result->is_reference()                     ? program_.pointer_type()
 													 : storage_type(result);
 	signature.boundary.result_classes = incomplete_result || indirect ? 0 : result_classes(result);
+	if (target_model::is_wasm(program_.target) && signature.result.is_object())
+		signature.boundary.result_shape = aggregate_shape(result);
 	if (type->variadic)
 		signature.boundary.arity = ir_model::CAM_VARIADIC;
 	if (function_nothrow(function))
@@ -3270,6 +3280,8 @@ lowir::SignatureId ProgramLowering::member_call_signature(const sema::Type* memb
 		: result->is_reference() ? program_.pointer_type()
 								 : storage_type(result);
 	signature.boundary.result_classes = indirect ? 0 : result_classes(result);
+	if (target_model::is_wasm(program_.target) && signature.result.is_object())
+		signature.boundary.result_shape = aggregate_shape(result);
 	if (type->variadic)
 		signature.boundary.arity = ir_model::CAM_VARIADIC;
 	if (nothrow)
@@ -3315,6 +3327,8 @@ lowir::SignatureId ProgramLowering::call_signature(const sema::Type* function, b
 		: result->is_reference() ? program_.pointer_type()
 								 : storage_type(result);
 	signature.boundary.result_classes = indirect ? 0 : result_classes(result);
+	if (target_model::is_wasm(program_.target) && signature.result.is_object())
+		signature.boundary.result_shape = aggregate_shape(result);
 	if (type->variadic)
 		signature.boundary.arity = ir_model::CAM_VARIADIC;
 	if (nothrow)

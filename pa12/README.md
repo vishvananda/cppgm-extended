@@ -116,8 +116,11 @@ constructor that is not deleted, a non-trivial destructor, or only deleted copy
 and move constructors. Base classes, size and template spelling do not change
 that choice. The callee's parameter, or the caller's result object, is then the
 object the selected constructor initialized (5.2.2p4, 8.5p15). Other class
-values may cross the boundary directly as `obj<NxA>`; a result larger than 16
-bytes still uses caller storage. The caller owns a by-value class argument
+values may cross the boundary directly as `obj<NxA>`; in this native profile,
+a result larger than 16 bytes still uses caller storage. Keep semantic
+triviality separate from this target ABI choice: PA37 can preserve trivial
+object values and their typed layout shape until its backend selects the
+physical argument and result convention. The caller owns a by-value class argument
 whose destructor is non-trivial: it is a temporary of the full-expression
 containing the call, destroyed there after the callee returns, and the callee
 never destroys its parameter.

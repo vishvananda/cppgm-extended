@@ -88,6 +88,11 @@ Pointer sizes follow that profile; fixed-width integers retain their widths.
 An omitted profile keeps the existing native layout. Backend implementation
 for another target comes later and is not required to represent its facts.
 
+Aggregate boundaries can carry the target-neutral `shape=` and
+`result_shape=` layout facts described in [LowIR](lowir.md#aggregate-layout-facts).
+Preserve them independently of native eightbyte classes; PA37 consumes them
+when choosing the wasm32 calling convention.
+
 Accept helper-only units, including declarations and globals without an entry
 function. An entry is needed when the supplied backend builds an executable,
 not when a reader writes a LowIR unit. Preserve address-only function declarations

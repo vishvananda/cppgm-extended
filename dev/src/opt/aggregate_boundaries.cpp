@@ -26,6 +26,8 @@ Type word_type(Type t)
 
 void scalarize_aggregate_boundaries(Program& program)
 {
+	if (!target_model::aggregate_integer_carriers(program.target))
+		return;
 	const std::vector<Signature> old_signatures = program.signatures;
 	const std::vector<Parameter> old_parameters = program.parameters;
 	bool changed = false;
@@ -34,6 +36,7 @@ void scalarize_aggregate_boundaries(Program& program)
 		if (word_boundary(sig.result, sig.boundary.result_classes))
 		{
 			sig.result = word_type(sig.result);
+			sig.boundary.result_shape = ir_model::AggregateShape();
 			sig.boundary.result_classes = sig.result.kind() == TypeKind::I128
 				? (OC_STATED | EB_INTEGER | (EB_INTEGER << 2))
 				: 0;
@@ -45,6 +48,7 @@ void scalarize_aggregate_boundaries(Program& program)
 			if (param.pass == ir_model::PPM_DIRECT && word_boundary(param.type, param.classes))
 			{
 				param.type = word_type(param.type);
+				param.shape = ir_model::AggregateShape();
 				param.classes = param.type.kind() == TypeKind::I128 ? (OC_STATED | EB_INTEGER | (EB_INTEGER << 2)) : 0;
 				changed = true;
 			}

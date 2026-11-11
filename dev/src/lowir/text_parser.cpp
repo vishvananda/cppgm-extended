@@ -754,6 +754,16 @@ void Parser::parse_metadata_item(
 				fail("a memory-class result is returned through an indirect_result parameter");
 			return;
 		}
+		if (key == MetadataKey::ResultShape)
+		{
+			if (result_type_ == nullptr || !result_type_->is_object())
+				fail("aggregate result shape requires an object type");
+			if (!at(TokenKind::Word) ||
+				!aggregate_shape_from_spelling(token().text, token().length, &boundary->result_shape))
+				fail("invalid aggregate result shape");
+			advance();
+			return;
+		}
 		parse_boundary_value(key, *boundary);
 		return;
 	}
@@ -964,6 +974,13 @@ void Parser::parse_parameter_metadata(Parameter& parameter)
 			parameter.object_bytes = parse_positive(token().text, token().length);
 			if (!parameter.type.is_pointer())
 				fail("object_bytes metadata requires ptr");
+		}
+		else if (index == MetadataKey::Shape)
+		{
+			if (!parameter.type.is_object())
+				fail("aggregate parameter shape requires an object type");
+			if (!at(TokenKind::Word) || !aggregate_shape_from_spelling(token().text, token().length, &parameter.shape))
+				fail("invalid aggregate parameter shape");
 		}
 		const uint32_t bit = 1u << static_cast<unsigned>(index);
 		if (index == MetadataKey::Classes)

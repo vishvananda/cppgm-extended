@@ -484,6 +484,10 @@ The currently defined function metadata keys are:
 - `effects`
 - `unwind`
 - `return`
+- `repeatable`
+- `noalias_result`
+- `result_classes`
+- `result_shape`
 
 The currently defined arity values are:
 
@@ -752,8 +756,8 @@ function @helper(%ret : ptr [pass=indirect_result, object_bytes=24],
 }
 ```
 
-The currently defined parameter metadata keys are `pass`, `alias`, and
-`object_bytes`.
+The currently defined parameter metadata keys are `pass`, `alias`,
+`object_bytes`, `classes` and `shape`.
 
 The currently defined pass values are:
 
@@ -937,6 +941,36 @@ of malformed programs include:
 - a `return` followed by another instruction in the same block
 - a `jump ^missing` where `^missing` is never defined
 - both `declare function @main(...)` and `function @main(...)` in the same LowIR unit
+
+## Aggregate layout facts
+
+`shape=` on an object parameter and `result_shape=` on an object result carry
+layout facts that `obj<NxA>` alone cannot express. Omission states no shape.
+These keys require an object type; a pointer passed by address already has an
+explicit boundary and does not carry an object shape.
+
+- `empty`: no nonempty scalar subobject.
+- `mixed`: a nonuniform or otherwise unrepresented scalar composition.
+- `<element>x<count>`: recursively contains the stated number of scalar
+  subobjects of one kind. Count is 1–65535. Elements are `i1`, `i8`, `u8`,
+  `i16`, `u16`, `i32`, `u32`, `i64`, `i128`, `f32`, `f64`, `f128`, `ptr`
+  and `v128`. Array elements and nonempty bases participate; union alternatives
+  are counted individually. Ignore empty subobjects and unnamed bit-fields.
+  A composition beyond this count range may conservatively state `mixed`.
+
+These are semantic shape facts, not physical ABI classifications or a list of
+field offsets. Size and alignment remain in the object type. A target combines
+them with shape to select its call ABI; it must carry additional typed layout
+facts if it needs field positions. Shape participates in ABI-entry equivalence
+and survives text round trips and rewrites that retain the object boundary.
+A rewrite to scalar parameters/results must preserve the target ABI and remove
+shape from the resulting scalar boundary. It does not replace native
+`classes=`/`result_classes=` facts.
+
+For example, on wasm32 `obj<8x8>` with `f64x1` can cross as one `f64`, whereas
+`obj<8x4>` with `i32x2` crosses indirectly. `obj<16x16>` with `i32x1` has extra
+alignment/padding and also crosses indirectly. PA37 requires explicit shape
+for object boundaries; do not guess from their size or generated symbol name.
 
 ## Object ABI Conventions
 
@@ -2088,7 +2122,13 @@ entry of the constructor and every call signature that copies its boundary.
 A constructor template, a converting constructor, an assignment operator,
 `__builtin_memmove` and `__restrict` state none.
 
-`classes` and `result_classes`: a direct object parameter of at most 16
+`shape` and `result_shape` on wasm32 object boundaries: derive the scalar
+composition from completed semantic layout as specified in Aggregate Layout
+Facts. These facts do not choose the target's physical argument/result
+representation. Retain semantic by-address boundaries for classes non-trivial
+for calls; trivial object values may stay by value until backend ABI lowering.
+
+`classes` and `result_classes` on native AMD64 profiles: a direct object parameter of at most 16
 bytes states `classes`, and a direct object result `result_classes`, exactly
 when some eightbyte is SSE or `none` or (a parameter only) the object is
 `memory`, by the rules of Object ABI Conventions above.
@@ -2242,7 +2282,8 @@ follows them, and so must yours.
   greater than that of its items (Structured Global Data Initializers above).
 - The facts the C++ lowering states are part of its output. `unwind`,
   `return`, `effects`, `storage=readonly`, `inline_hint`, `no_inline`, `cold`,
-  `object_bytes`, `alias`, `classes`, `result_classes` and `elision=copy`
+  `object_bytes`, `alias`, `classes`, `result_classes`, `shape`, `result_shape`
+  and `elision=copy`
   follow the rules of Facts The C++ Lowering States above, on declarations,
   definitions, parameters and call signatures alike; an output that misses
   one, or states one the rules do not, differs from the reference. PA33's

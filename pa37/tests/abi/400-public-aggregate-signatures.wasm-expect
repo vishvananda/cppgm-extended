@@ -1,0 +1,1 @@
+{"exports":["pair","empty"],"calls":[{"export":"single","args":["41"],"result":"41"},{"export":"floating","args":["1.5"],"result":"1.5"}],"abi":{"single":{"params":["i32"],"results":["i32"]},"floating":{"params":["f64"],"results":["f64"]},"pair":{"params":["i32","i32"],"results":[]},"empty":{"params":[],"results":[]}}}

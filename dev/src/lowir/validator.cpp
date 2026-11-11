@@ -14,6 +14,16 @@ const uint32_t kPlacedBlock = 1;
 const uint32_t kHandlerBlock = 2;
 const uint32_t kCodeAddress = 4;
 
+bool valid_shape(Type type, ir_model::AggregateShape shape)
+{
+	using ir_model::AggregateElement;
+	if (static_cast<unsigned>(shape.element) >= ir_model::kAggregateElementCount || shape.reserved != 0)
+		return false;
+	if (shape.element == AggregateElement::None)
+		return shape.count == 0;
+	return type.is_object() && ((shape.element > AggregateElement::Mixed) == (shape.count != 0));
+}
+
 bool cpu_query_declaration(const Program& program, const Symbol& symbol)
 {
 	if (symbol.kind != SymbolKind::FunctionDeclaration || symbol.metadata.tls_for != kNoId ||
@@ -571,9 +581,13 @@ bool Validator::check_links()
 			return fail("nonnull return metadata requires a pointer result");
 		if (boundary.noalias_result && !signature.result.is_pointer())
 			return fail("noalias_result metadata requires a pointer result");
+		if (!valid_shape(signature.result, boundary.result_shape))
+			return fail("invalid aggregate result shape");
 		const Parameter* parameters = program_.parameters_of(signature);
 		for (uint32_t i = 0; i < signature.parameter_count; ++i)
 		{
+			if (!valid_shape(parameters[i].type, parameters[i].shape))
+				return fail("invalid aggregate parameter shape", parameters[i].name);
 			if (parameters[i].pass >= ir_model::kParamPassingModeCount ||
 				parameters[i].alias >= ir_model::kParamAliasModeCount)
 				return fail("invalid parameter metadata", parameters[i].name);

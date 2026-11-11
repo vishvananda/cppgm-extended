@@ -808,6 +808,7 @@ public:
 	// (the classes host objects' boundaries follow, once per class), else
 	// the course's (course_classes).
 	uint8_t object_classes(const sema::Type* type);
+	ir_model::AggregateShape aggregate_shape(const sema::Type* type);
 	// The same for a direct result (`result_classes=`).
 	uint8_t result_classes(const sema::Type* type);
 	// lowir.md "Object ABI Conventions": the classes a course boundary
@@ -1635,6 +1636,7 @@ private:
 	// Object mode: their psABI classification (class -> object_classes);
 	// otherwise the course's (class -> course_class_quarters).
 	PointerMap object_classes_;
+	PointerMap aggregate_shapes_;
 	// runs_no_constructor and empty_list_constructs (class -> 1 yes, 2 no).
 	PointerMap constructor_free_;
 	PointerMap empty_list_constructs_;

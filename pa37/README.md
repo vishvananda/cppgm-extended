@@ -67,7 +67,9 @@ are mutable globals, sign extension, nontrapping float-to-int conversion,
 bulk memory, multi-value, reference types, SIMD128 and modern exception
 handling. Match the supplied profile and feature metadata. The public C ABI
 retains its specified return/argument convention even when multi-value is
-available internally.
+available internally. Optimization levels must not change public function
+parameter/result types, even when a native register convention permits a
+representation change.
 
 Threads/shared memory, atomics, TLS, Emscripten glue, components, dynamic
 linking and wasm64 are outside this profile. Diagnose these and unsupported
@@ -88,7 +90,11 @@ incompatible inputs; do not reinterpret existing x86-layout LowIR as wasm32.
 Source compilation and compilation through serialized LowIR must agree.
 Function pointers use table references, distinct from linear-memory
 addresses. Preserve null values, indirect-call signatures, aggregate copies,
-hidden result parameters and variadic argument layout.
+hidden result parameters and variadic argument layout. Empty objects, singleton
+records and other aggregates have different ABI forms; consume LowIR’s
+[`shape` facts](../pa8/lowir.md#aggregate-layout-facts) together with their size
+and alignment. An indirect by-value argument needs its own copy, and an object
+SSA value must retain its snapshot when the original storage changes.
 
 Interoperate with the pinned LLVM wasm32 toolchain in both directions. A
 cppgm-generated object must link with its objects/runtime through LLD, and

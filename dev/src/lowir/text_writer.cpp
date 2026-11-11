@@ -273,6 +273,11 @@ void Writer::metadata(const SymbolMetadata* symbol, const BoundaryMetadata* boun
 			item(open, MetadataKey::NoAliasResult, metadata_yes_spelling());
 		if (signature != nullptr && signature->boundary.result_classes != 0)
 			classes_item(open, MetadataKey::ResultClasses, signature->boundary.result_classes, signature->result);
+		if (boundary->result_shape.element != AggregateElement::None)
+		{
+			key(open, MetadataKey::ResultShape);
+			append_aggregate_shape(out_, boundary->result_shape);
+		}
 	}
 	if (symbol != nullptr)
 	{
@@ -335,6 +340,11 @@ void Writer::parameters(const Signature& signature, bool definition)
 		{
 			key(open, MetadataKey::Classes);
 			append_object_classes(out_, parameter[i].classes, classes_bytes(parameter[i].type));
+		}
+		if (parameter[i].shape.element != AggregateElement::None)
+		{
+			key(open, MetadataKey::Shape);
+			append_aggregate_shape(out_, parameter[i].shape);
 		}
 		if (open)
 			out_.push_back(']');

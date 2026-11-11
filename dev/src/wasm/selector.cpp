@@ -7,7 +7,9 @@ namespace wasm {
 using namespace lowir;
 
 Selector::Selector(const Program& program, const Module& module, SymbolId symbol, Function& output)
-	: program_(program), module_(module), body_(*program.functions[program.symbols[symbol].detail].body), out_(output)
+	: program_(program), module_(module), body_(*program.functions[program.symbols[symbol].detail].body),
+	  signature_(program.signatures[program.functions[program.symbols[symbol].detail].signature]),
+	  boundary_(module.boundaries[program.functions[program.symbols[symbol].detail].signature]), out_(output)
 {}
 
 uint32_t Selector::add_local(ValueType type)
@@ -47,12 +49,23 @@ void Selector::constant(Literal bits, Type type)
 
 void Selector::value(Value operand, Type type)
 {
+	if (type.is_object())
+	{
+		address(operand);
+		return;
+	}
 	switch (operand.kind)
 	{
 	case ValueKind::Temp:
 	{
-		out_.emit(Op::LocalGet, { operand.index });
+		out_.emit(Op::LocalGet, { locals_[operand.index] });
 		const Type actual = body_.temps[operand.index].type;
+		if (actual.is_object())
+		{
+			if (!type.is_pointer())
+				out_.emit(memory_op(type, false), { 0, 0 });
+			break;
+		}
 		const ValueType from = value_type(actual), to = value_type(type);
 		if (from == ValueType::I32 && to == ValueType::I64)
 			out_.emit(actual.is_pointer() || is_unsigned(actual.kind()) ? Op::I64ExtendI32U : Op::I64ExtendI32S);
@@ -173,45 +186,8 @@ void Selector::restore_stack()
 
 void Selector::run()
 {
-	out_.parameter_count = body_.parameter_count;
-	for (const Temp& temp : body_.temps)
-		add_local(value_type(temp.type));
-	slots_.resize(body_.slots.size());
-	uint64_t frame_bytes = 0;
-	for (uint32_t i = 0; i < body_.slots.size(); ++i)
-	{
-		const machine_model::FrameObject object{ storage_bytes(body_.slots[i].type),
-			data_alignment(body_.slots[i].type), i };
-		if (object.alignment > 16)
-			throw WasmError("Wasm over-aligned frame requires dynamic alignment");
-		frame_bytes = (frame_bytes + object.alignment - 1) & ~uint64_t(object.alignment - 1);
-		slots_[i] = static_cast<uint32_t>(frame_bytes);
-		frame_bytes += object.bytes;
-	}
-	if (frame_bytes > 1024 * 1024)
-		throw WasmError("Wasm static frame exceeds the configured stack reserve");
-	out_.frame_bytes = static_cast<uint32_t>((frame_bytes + 15) & ~uint64_t(15));
-	bool dynamic = false;
-	for (BlockId b : body_.layout)
-		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
-			dynamic = dynamic || body_.instructions[i].op == Opcode::StackAlloc;
-	if (out_.frame_bytes != 0 || dynamic)
-	{
-		saved_stack_ = add_local(ValueType::I32);
-		frame_ = add_local(ValueType::I32);
-		out_.emit(Op::GlobalGet, { 0 });
-		out_.emit(Op::LocalTee, { saved_stack_ });
-		out_.emit(Op::I32Const, { out_.frame_bytes });
-		out_.emit(Op::I32Sub);
-		out_.emit(Op::LocalTee, { frame_ });
-		out_.emit(Op::GlobalSet, { 0 });
-		out_.emit(Op::LocalGet, { frame_ });
-		out_.emit(Op::I32Const, { module_.stack_floor });
-		out_.emit(Op::I32LtU);
-		out_.emit(Op::If, { static_cast<uint8_t>(ValueType::Void) });
-		out_.emit(Op::Unreachable);
-		out_.emit(Op::End);
-	}
+	prepare_locals();
+	prepare_frame();
 	const auto last = body_.instructions[body_.blocks[body_.layout[0]].last].op;
 	if (body_.layout.size() == 1 && (last == Opcode::Return || last == Opcode::Unreachable))
 		simple();
@@ -272,7 +248,7 @@ void Selector::phi_copies(BlockId from, BlockId to)
 	}
 	// All readers precede every write, including cycles and overlapping moves.
 	for (auto i = destinations.rbegin(); i != destinations.rend(); ++i)
-		out_.emit(Op::LocalSet, { *i });
+		out_.emit(Op::LocalSet, { locals_[*i] });
 }
 
 void Selector::edge(BlockId from, BlockId to)

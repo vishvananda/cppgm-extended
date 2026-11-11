@@ -128,6 +128,7 @@ void ProgramLowering::lower_unit(
 	contained_destructors_.clear();
 	direct_classes_.clear();
 	object_classes_.clear();
+	aggregate_shapes_.clear();
 	constructor_free_.clear();
 	empty_list_constructs_.clear();
 	rooted_destructors_.clear();

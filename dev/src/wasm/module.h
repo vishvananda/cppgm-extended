@@ -5,6 +5,7 @@
 #include "backend/options.h"
 #include "lowir/program.h"
 #include "wasm/encoder.h"
+#include "wasm/abi.h"
 
 namespace wasm {
 
@@ -18,6 +19,7 @@ struct Signature
 struct Module
 {
 	std::vector<Signature> signatures;
+	std::vector<Boundary> boundaries;
 	std::vector<uint32_t> signature_types;
 	std::vector<uint32_t> function_indices;
 	std::vector<uint32_t> definition_types;

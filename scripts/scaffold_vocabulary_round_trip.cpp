@@ -66,6 +66,15 @@ void check_metadata()
 	round_trip<CallReturnMode>("CallReturnMode", kCallReturnModeCount, 1);
 	round_trip<ParamPassingMode>("ParamPassingMode", kParamPassingModeCount, 1);
 	round_trip<ParamAliasMode>("ParamAliasMode", kParamAliasModeCount, 1);
+	round_trip<AggregateElement>("AggregateElement", kAggregateElementCount, 1);
+	for (const char* word : { "empty", "mixed", "i8x1", "f32x4", "ptrx1", "i64x65535" })
+	{
+		AggregateShape shape;
+		std::string written;
+		expect(aggregate_shape_from_spelling(word, std::strlen(word), &shape), "AggregateShape parse", 0);
+		append_aggregate_shape(written, shape);
+		expect(written == word, "AggregateShape spelling", 0);
+	}
 	round_trip<IndexProjectionKind>("IndexProjectionKind", kIndexProjectionKindCount, 1);
 	round_trip<MetadataKey>("MetadataKey", kMetadataKeyCount);
 	// Every stated classification of an 8- or 16-byte object writes a word
