@@ -342,7 +342,7 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 	if (level >= 2 && RUN_PASS(eliminate_tail_recursion))
 		scalar_rounds(context);
 	again = RUN_PASS(remove_loops);
-	if (level >= 3 && RUN_PASS(unroll_loops))
+	if (RUN_PASS(unroll_loops))
 		again = true;
 	if (RUN_PASS(form_switches))
 		again = true;

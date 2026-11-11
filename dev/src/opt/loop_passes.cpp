@@ -2475,7 +2475,7 @@ bool LoopPass::unroll()
 	{
 		bool one = false;
 		for (uint32_t k = static_cast<uint32_t>(forest_.loops.size()); k-- > 0 && !one;)
-			one = try_unroll(k) || (c_.level >= 3 && try_unroll_search(k));
+			one = try_unroll(k) || try_unroll_search(k);
 		if (!one)
 			break;
 		any = true;

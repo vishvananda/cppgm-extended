@@ -1,5 +1,6 @@
 #include "opt/inliner.h"
 #include "opt/interprocedural.h"
+#include "opt/scalar_fold.h"
 
 #include "lowir/builder.h"
 #include "opt/loops.h"
@@ -114,8 +115,23 @@ const uint32_t kSettledFewCalls = 2;
 const uint32_t kSettledFewCap = 128;
 const uint32_t kSettledCallShare = 8;
 const uint32_t kSettledSmallCaller = 128;
+struct EntryCost
+{
+	uint32_t parameter = kNoId;
+	Type type;
+	ComparePredicate predicate = ComparePredicate::Ne;
+	Constant literal = {};
+	bool parameter_left = true;
+	uint32_t hot[2] = {}, unpriced[2] = {};
+};
+
 struct Shape
 {
+	EntryCost entry_cost;
+
+	bool constant_body = false;
+	uint64_t constant_parameters = 0;
+	uint32_t cost = 0, hot_cost = 0, unpriced = 0, hot_unpriced = 0;
 	uint32_t size = 0;
 	uint32_t hot = 0;      // instructions outside cold blocks (every path from them
 						   // ends in noreturn)
@@ -142,6 +158,181 @@ struct Shape
 	bool allocates = false;       // hot code calls an allocation function (a growth path)
 	bool constant_result = false; // every normal return is the same integer literal
 };
+
+uint32_t call_site_cost(const Instruction& call)
+{
+	return 6 + call.extra_count;
+}
+
+// Conservative scalar estimate. Unknown/bulk operations are unpriced rather
+// than silently treated as one scalar instruction.
+uint32_t inline_instruction_cost(const Instruction& inst)
+{
+	switch (inst.op)
+	{
+	case Opcode::Return:
+	case Opcode::Unreachable:
+	case Opcode::Copy:
+		return 0;
+	case Opcode::Jump:
+	case Opcode::Branch:
+	case Opcode::Phi:
+		return 1;
+	case Opcode::Call:
+		return call_site_cost(inst);
+	case Opcode::Index:
+	{
+		const uint64_t n = storage_bytes(inst.type);
+		return inst.ops[1].is(ValueKind::Integer) || n == 1 || n == 2 || n == 4 || n == 8 ? 1 : 3;
+	}
+	case Opcode::Switch:
+		return 2 + inst.extra_count;
+	case Opcode::Vector:
+		switch (lowir::shape_of(static_cast<VectorOp>(inst.sub)))
+		{
+		case VectorShape::Binary:
+		case VectorShape::BinaryImmediate:
+		case VectorShape::UnaryImmediate:
+			return 2;
+		case VectorShape::Blend:
+		case VectorShape::Test:
+			return 3;
+		case VectorShape::FromScalar:
+			return static_cast<VectorOp>(inst.sub) == VectorOp::Fromf32 ? 3 : 1;
+		case VectorShape::ToScalar:
+		case VectorShape::Zero:
+		case VectorShape::Unary:
+		case VectorShape::Mask:
+			return 1;
+		}
+		return UINT32_MAX;
+
+	case Opcode::CopyObject:
+	case Opcode::ZeroInit:
+		if (inst.immediate < 0 || inst.immediate > 64)
+			return UINT32_MAX;
+		return uint32_t((inst.immediate + 7) / 8) * (inst.op == Opcode::CopyObject ? 2 : 1) +
+			(inst.immediate != 0 ? 1 : 0);
+
+	default:
+		break;
+	}
+
+	if (inst.type.kind() == TypeKind::V128)
+		return inst.op == Opcode::Load || inst.op == Opcode::Store ? 1 : UINT32_MAX;
+	if (inst.type.kind() == TypeKind::F32 || inst.type.kind() == TypeKind::F64)
+	{
+		switch (inst.op)
+		{
+		case Opcode::Const:
+		case Opcode::Load:
+		case Opcode::Store:
+			return 1;
+		case Opcode::Compare:
+			return 2;
+		case Opcode::Unary:
+			return 2;
+		case Opcode::Binary:
+			switch (static_cast<BinaryOp>(inst.sub))
+			{
+			case BinaryOp::Add:
+			case BinaryOp::Sub:
+			case BinaryOp::Mul:
+				return 1;
+			case BinaryOp::Div:
+				return 8;
+			default:
+				return UINT32_MAX;
+			}
+		case Opcode::Convert:
+		{
+			const Type from = convert_source_type(inst);
+			return from.kind() == TypeKind::F32 || from.kind() == TypeKind::F64 ? 1
+				: from.is_integer()                                             ? 6
+																				: UINT32_MAX;
+		}
+		case Opcode::Select:
+			return 3;
+		default:
+			return UINT32_MAX;
+		}
+	}
+	if (inst.type.kind() == TypeKind::I128)
+	{
+		switch (inst.op)
+		{
+		case Opcode::Const:
+			return 2;
+		case Opcode::Load:
+		case Opcode::Store:
+			return 2;
+		case Opcode::Compare:
+			return 4;
+		case Opcode::Convert:
+			return convert_source_type(inst).is_integer() &&
+					(static_cast<ConvertOp>(inst.sub) == ConvertOp::ZExt ||
+						static_cast<ConvertOp>(inst.sub) == ConvertOp::SExt)
+				? 2
+				: UINT32_MAX;
+		case Opcode::Unary:
+			return 3;
+		case Opcode::Binary:
+			switch (static_cast<BinaryOp>(inst.sub))
+			{
+			case BinaryOp::And:
+			case BinaryOp::Or:
+			case BinaryOp::Xor:
+				return 2;
+			case BinaryOp::Add:
+			case BinaryOp::Sub:
+				return 3;
+			case BinaryOp::Shl:
+			case BinaryOp::Shr:
+			case BinaryOp::UShr:
+				return 4;
+			case BinaryOp::Mul:
+				return 8;
+			default:
+				return 24;
+			}
+		default:
+			return UINT32_MAX;
+		}
+	}
+	if (!(inst.type.is_pointer() || (inst.type.is_integer() && inst.type.kind() != TypeKind::I128)))
+		return UINT32_MAX;
+	switch (inst.op)
+	{
+	case Opcode::Const:
+	case Opcode::Addr:
+	case Opcode::Load:
+	case Opcode::Store:
+	case Opcode::Compare:
+		return 1;
+	case Opcode::Unary:
+		return inst.sub <= static_cast<uint8_t>(UnaryOp::BitNot) ? 1 : 3;
+	case Opcode::Binary:
+		return inst.sub == static_cast<uint8_t>(BinaryOp::Div) || inst.sub == static_cast<uint8_t>(BinaryOp::Mod) ||
+				inst.sub == static_cast<uint8_t>(BinaryOp::UDiv) || inst.sub == static_cast<uint8_t>(BinaryOp::UMod)
+			? 8
+			: 1;
+	case Opcode::Convert:
+	{
+		const Type from = convert_source_type(inst);
+		if (static_cast<ConvertOp>(inst.sub) == ConvertOp::Trunc && (inst.flags & IF_EXACT) != 0)
+			return 0;
+		if (from.is_pointer() && (inst.type.is_pointer() || inst.type.kind() == TypeKind::I64))
+			return 0;
+		if (inst.type.is_pointer() && (from.kind() == TypeKind::I64))
+			return 0;
+		return from.is_integer() ? 1 : from.kind() == TypeKind::F32 || from.kind() == TypeKind::F64 ? 4 : UINT32_MAX;
+	}
+	case Opcode::Select:
+		return 3;
+	default:
+		return UINT32_MAX;
+	}
+}
 
 bool cheap_shape_instruction(const Instruction& inst)
 {
@@ -186,6 +377,124 @@ bool guard_landing(const Program& program, const FunctionBody& body, BlockId b)
 		!may_unwind(program, *inst[2]);
 }
 
+// One summary for an entry predicate directly comparing a parameter with a
+// literal. Call sites only evaluate that predicate; no callee walk or clone.
+template<class Price>
+void summarize_entry_cost(const FunctionBody& body, const Cfg& cfg, const std::vector<uint8_t>& cold,
+	const std::vector<uint8_t>& rare, const Price& price, EntryCost& result)
+{
+	const BlockId entry = body.layout[0];
+	if (cfg.pred_count(entry) != 0 || body.blocks[entry].last == kNoId)
+		return;
+	const Instruction& branch = body.instructions[body.blocks[entry].last];
+	if (branch.op != Opcode::Branch || !branch.ops[0].is(ValueKind::Temp) || branch.ops[1] == branch.ops[2])
+		return;
+	const TempId condition = branch.ops[0].index;
+	EntryCost candidate;
+	if (condition < body.parameter_count && body.temps[condition].type.is_integer())
+	{
+		candidate.parameter = condition;
+		candidate.type = body.temps[condition].type;
+		candidate.literal = integer_constant(candidate.type, Literal{ 0, 0 });
+	}
+	else
+	{
+		const InstId def = body.temps[condition].def;
+		if (def == kNoId)
+			return;
+		const Instruction& compare = body.instructions[def];
+		if (compare.op != Opcode::Compare || !compare.type.is_integer())
+			return;
+		for (unsigned side = 0; side != 2; ++side)
+			if (compare.ops[side].is(ValueKind::Temp) && compare.ops[side].index < body.parameter_count &&
+				literal_constant(body, compare.ops[1 - side], candidate.literal))
+			{
+				candidate.parameter = compare.ops[side].index;
+				candidate.type = compare.type;
+				candidate.predicate = static_cast<ComparePredicate>(compare.sub);
+				candidate.parameter_left = side == 0;
+				break;
+			}
+		if (candidate.parameter == kNoId)
+			return;
+	}
+	// Two reachability bits traverse each edge at most twice, reusing the
+	// CFG already constructed for the callee's shape. Backedges to entry
+	// were rejected above, so they cannot change the chosen entry edge.
+	std::vector<uint8_t> reachable(cfg.block_count, 0);
+	std::vector<BlockId> work;
+	reachable[entry] = 3;
+	for (unsigned side = 0; side != 2; ++side)
+	{
+		const BlockId target = branch.ops[side == 0 ? 2 : 1].index;
+		reachable[target] |= uint8_t(1u << side);
+		work.push_back(target);
+	}
+	while (!work.empty())
+	{
+		const BlockId block = work.back();
+		work.pop_back();
+		for (uint32_t k = cfg.succ_first[block]; k != cfg.succ_first[block + 1]; ++k)
+		{
+			const BlockId next = cfg.succs[k];
+			const uint8_t bits = reachable[next] | reachable[block];
+			if (bits != reachable[next])
+			{
+				reachable[next] = bits;
+				work.push_back(next);
+			}
+		}
+	}
+	uint32_t returns[2] = {};
+	for (BlockId block : cfg.rpo)
+	{
+		if (reachable[block] == 0 || cold[block])
+			continue;
+		uint32_t cost = 0, unknown = 0, exits = 0;
+		for (InstId i = body.blocks[block].first; i != kNoId; i = body.instructions[i].next)
+		{
+			const uint32_t part = price(body.instructions[i]);
+			if (part == UINT32_MAX)
+				++unknown;
+			else
+				cost += part;
+			exits += body.instructions[i].op == Opcode::Return ? 1 : 0;
+		}
+		if (!rare.empty() && rare[block])
+			cost = cost / 4 + (cost % 4 != 0);
+		for (unsigned side = 0; side != 2; ++side)
+			if ((reachable[block] & (1u << side)) != 0)
+			{
+				candidate.hot[side] += cost;
+				candidate.unpriced[side] += unknown;
+				returns[side] += exits;
+			}
+	}
+	for (unsigned side = 0; side != 2; ++side)
+		if (returns[side] > 1)
+			candidate.hot[side] += 2 * (returns[side] - 1);
+	result = candidate;
+}
+
+void call_cost_after_constants(
+	const Shape& shape, const FunctionBody& caller, const Instruction& call, uint32_t& hot, uint32_t& unpriced)
+{
+	hot = shape.hot_cost;
+	unpriced = shape.hot_unpriced;
+	const EntryCost& entry = shape.entry_cost;
+	if (entry.parameter == kNoId || entry.parameter >= call.extra_count)
+		return;
+	Constant argument, condition;
+	if (!literal_constant(caller, caller.operands[call.extra_first + entry.parameter], argument))
+		return;
+	if (!fold_compare(entry.predicate, entry.type, entry.parameter_left ? argument : entry.literal,
+			entry.parameter_left ? entry.literal : argument, condition))
+		return;
+	const unsigned side = condition.bits.low != 0 ? 1 : 0;
+	hot = entry.hot[side];
+	unpriced = entry.unpriced[side];
+}
+
 template<bool source_required = false>
 Shape shape_of(
 	const Program& program, SymbolId symbol, const std::vector<uint8_t>& nounwind, const CallGraph* graph = nullptr)
@@ -198,10 +507,13 @@ Shape shape_of(
 	// An ellipsis alone needs no callee frame. Only operations that observe
 	// its argument area prevent substitution (checked below).
 	shape.unsafe = body.layout.empty() || !body.code_labels.empty();
+	shape.constant_body = !source_required && body.layout.size() == 1 && body.parameter_count <= 64;
 	bool unwinding = false, unguarded = false;
+	bool has_predictions = false;
 	bool same_result = !source_required && sig.result.is_integer();
 	uint32_t result_literal = kNoId;
 	uint32_t cheap = 0;
+	std::vector<TempId> address_candidates;
 	for (BlockId b : body.layout)
 	{
 		++shape.blocks;
@@ -210,6 +522,57 @@ Shape shape_of(
 		{
 			const Instruction& inst = body.instructions[i];
 			++shape.size;
+			if (!source_required && inst.result != kNoId)
+			{
+				bool candidate = inst.op == Opcode::Addr && inst.ops[0].is(ValueKind::Slot);
+				if (inst.op == Opcode::Index && inst.ops[1].is(ValueKind::Integer) &&
+					(inst.ops[0].is(ValueKind::Slot) ||
+						(inst.ops[0].is(ValueKind::Temp) && body.temps[inst.ops[0].index].type.is_pointer())))
+				{
+					const int64_t k = static_cast<int64_t>(body.literals[inst.ops[1].index].low);
+					const uint64_t n = storage_bytes(inst.type);
+					candidate = n <= 1024 && k >= -(int64_t(1) << 20) && k <= (int64_t(1) << 20);
+				}
+				if (candidate)
+					address_candidates.push_back(inst.result);
+			}
+
+			has_predictions = has_predictions ||
+				(inst.op == Opcode::Branch && inst.sub != static_cast<uint8_t>(BranchPrediction::None));
+			if (shape.constant_body)
+			{
+				switch (inst.op)
+				{
+				case Opcode::Const:
+				case Opcode::Copy:
+				case Opcode::Unary:
+				case Opcode::Binary:
+				case Opcode::Compare:
+				case Opcode::Convert:
+				case Opcode::Select:
+				case Opcode::Return:
+					break;
+				default:
+					shape.constant_body = false;
+					break;
+				}
+				if (shape.constant_body)
+					for_each_operand(body, inst, [&](const Value& v) {
+						if (v.is(ValueKind::Slot))
+							shape.constant_body = false;
+						if (v.is(ValueKind::Temp) && v.index < body.parameter_count)
+							shape.constant_parameters |= uint64_t(1) << v.index;
+					});
+			}
+
+			if (!source_required)
+			{
+				const uint32_t cost = inline_instruction_cost(inst);
+				if (cost == UINT32_MAX)
+					++shape.unpriced;
+				else
+					shape.cost += cost;
+			}
 			shape.eh = shape.eh || is_eh_instruction(inst.op);
 			const bool catching = inst.op == Opcode::EhCatch || inst.op == Opcode::EhFilter ||
 				inst.op == Opcode::EhCatchAll || inst.op == Opcode::ExceptionSelector || inst.op == Opcode::Exception ||
@@ -253,10 +616,44 @@ Shape shape_of(
 				shape.unsafe = true;
 		}
 	}
+
+	std::vector<uint8_t> folded_addresses;
+	if (!address_candidates.empty())
+	{
+		folded_addresses.assign(body.temps.size(), 0);
+		for (TempId t : address_candidates)
+			folded_addresses[t] = 1;
+		for (BlockId b : body.layout)
+			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+			{
+				const Instruction& inst = body.instructions[i];
+				for_each_operand(body, inst, [&](const Value& v) {
+					if (!v.is(ValueKind::Temp) || folded_addresses[v.index] == 0)
+						return;
+					const bool address = (inst.op == Opcode::Load && v == inst.ops[0]) ||
+						(inst.op == Opcode::Store && v == inst.ops[1] && !(v == inst.ops[0]));
+					folded_addresses[v.index] = address && folded_addresses[v.index] == 1 ? 2 : 3;
+				});
+			}
+		for (TempId t : address_candidates)
+		{
+			folded_addresses[t] = folded_addresses[t] == 2 ? 1 : 0;
+			shape.cost -= folded_addresses[t];
+		}
+	}
+	auto priced_instruction = [&](const Instruction& inst) {
+		return inst.result != kNoId && !folded_addresses.empty() && folded_addresses[inst.result] != 0
+			? uint32_t(0)
+			: inline_instruction_cost(inst);
+	};
+	if (shape.returns > 1)
+		shape.cost += 2 * (shape.returns - 1);
 	shape.constant_result = same_result && shape.returns != 0;
 	shape.unwinds = unwinding && sig.boundary.unwind != ir_model::CUM_NO && !nounwind[symbol];
 	shape.guarded = shape.catches && !unguarded;
 	shape.hot = shape.size;
+	shape.hot_cost = shape.cost;
+	shape.hot_unpriced = shape.unpriced;
 	shape.hot_call = shape.call;
 	// Required substitution has no profitability policy: loops, cold paths
 	// and dominators cannot change its admission. Keep only cloning safety.
@@ -288,8 +685,63 @@ Shape shape_of(
 			cold[b] = (ends || all) && b != body.layout[0];
 			if (cold[b])
 				for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+				{
 					--shape.hot;
+					const uint32_t cost = priced_instruction(body.instructions[i]);
+					if (cost == UINT32_MAX)
+						--shape.hot_unpriced;
+					else
+						shape.hot_cost -= cost;
+				}
 		}
+
+		// Reuse the callee CFG. A unique predicted edge starts a rare
+		// region; forward joins inherit rarity only from all predecessors.
+		// Keep one quarter of its known static cost for copied code size.
+		// Terminal cold blocks were already removed from hot_cost above.
+		std::vector<uint8_t> rare;
+		if (has_predictions)
+		{
+			rare = cold;
+			for (BlockId b : cfg.rpo)
+			{
+				if (b == body.layout[0])
+					continue;
+				bool inherited = cfg.pred_count(b) != 0;
+				for (uint32_t k = cfg.pred_first[b]; k < cfg.pred_first[b + 1] && inherited; ++k)
+					inherited = rare[cfg.preds[k]] && cfg.rpo_index[cfg.preds[k]] < cfg.rpo_index[b];
+				if (inherited)
+					rare[b] = 1;
+				if (cfg.pred_count(b) == 1)
+				{
+					const BlockId from = cfg.preds[cfg.pred_first[b]];
+					const InstId last = body.blocks[from].last;
+					if (last != kNoId)
+					{
+						const Instruction& branch = body.instructions[last];
+						if (branch.op == Opcode::Branch && branch.ops[1].index != branch.ops[2].index)
+						{
+							const BranchPrediction prediction = static_cast<BranchPrediction>(branch.sub);
+							if ((prediction == BranchPrediction::Unlikely && branch.ops[1].index == b) ||
+								(prediction == BranchPrediction::Likely && branch.ops[2].index == b))
+								rare[b] = 1;
+						}
+					}
+				}
+				if (rare[b] && !cold[b])
+				{
+					uint32_t cost = 0;
+					for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+					{
+						const uint32_t part = priced_instruction(body.instructions[i]);
+						if (part != UINT32_MAX)
+							cost += part;
+					}
+					shape.hot_cost -= cost - (cost / 4 + (cost % 4 != 0));
+				}
+			}
+		}
+		summarize_entry_cost(body, cfg, cold, rare, priced_instruction, shape.entry_cost);
 		shape.hot_call = false;
 		for (BlockId b : cfg.rpo)
 			for (InstId i = body.blocks[b].first; i != kNoId && !cold[b]; i = body.instructions[i].next)
@@ -366,19 +818,6 @@ Shape shape_of(
 			}
 			if (returns[body.layout[0]])
 				shape.fast = longest[body.layout[0]];
-		}
-		// Loops find_loops does not report (holding handler blocks, deep
-		// nests) count as dispatch-free.
-		if (shape.loop && shape.hot_call)
-		{
-			LoopForest forest;
-			complete_cfg(cfg);
-			find_loops(body, cfg, forest);
-			for (BlockId b : cfg.rpo)
-				for (InstId i = body.blocks[b].first; i != kNoId && !cold[b] && forest.innermost[b] != kNoId;
-					i = body.instructions[i].next)
-					shape.loop_dispatch = shape.loop_dispatch ||
-						(body.instructions[i].op == Opcode::Call && !body.instructions[i].ops[0].is(ValueKind::Symbol));
 		}
 	}
 	if (shape.blocks == 1)
@@ -1115,12 +1554,13 @@ public:
 
 private:
 	bool compatible(const Instruction& call, SymbolId callee) const;
+	bool non_growing(const Shape& shape, const Instruction& call) const;
 	// The charge of inlining `callee` here, or false when the policy keeps
 	// the call.
 	bool cleanup_welcome(const Shape& shape, bool handler_code, bool loop_site) const;
-	bool admit(uint32_t callee, bool handler_code, bool loop_site, uint32_t& charge, bool& once, bool dispatch = false);
+	bool admit(
+		uint32_t callee, const Instruction& call, bool handler_code, bool loop_site, uint32_t& charge, bool& once);
 	bool leaf_return_path(const FunctionBody& body, const Cfg& cfg) const;
-	bool known_target(const Instruction& call) const;
 	bool admit_partial(uint32_t g, const Instruction& call, bool handler_code, bool loop_site, PartialCut& partial,
 		uint32_t& charge, const FunctionBody* source);
 	bool process(SymbolId caller);
@@ -1170,6 +1610,20 @@ private:
 	uint32_t recursive_budget_ = 0;
 	uint32_t recursive_depth_ = 0;
 };
+
+bool InlineWaveRunner::non_growing(const Shape& shape, const Instruction& call) const
+{
+	if (shape.unpriced == 0 && shape.cost <= call_site_cost(call))
+		return true;
+	if (!shape.constant_body)
+		return false;
+	const FunctionBody& body = *program_.functions[program_.symbols[graph_.functions[caller_]].detail].body;
+	uint64_t mask = shape.constant_parameters;
+	for (uint32_t p = 0; mask != 0; ++p, mask >>= 1)
+		if ((mask & 1) != 0 && (p >= call.extra_count || !body.operands[call.extra_first + p].is_literal()))
+			return false;
+	return true;
+}
 
 bool InlineWaveRunner::compatible(const Instruction& call, SymbolId callee) const
 {
@@ -1223,56 +1677,6 @@ bool InlineWaveRunner::compatible(const Instruction& call, SymbolId callee) cons
 	return true;
 }
 
-// Whether call passes a known function: its symbol, or the address of a
-// slot of the caller whose one write stores one (a comparator object).
-bool InlineWaveRunner::known_target(const Instruction& call) const
-{
-	const FunctionBody& body = *program_.functions[program_.symbols[graph_.functions[caller_]].detail].body;
-	const Function& target = program_.functions[program_.symbols[call.ops[0].index].detail];
-	auto function_symbol = [&](Value v) {
-		if (v.is(ValueKind::Temp) && body.temps[v.index].def != kNoId &&
-			body.instructions[body.temps[v.index].def].op == Opcode::Addr)
-			v = body.instructions[body.temps[v.index].def].ops[0];
-		return v.is(ValueKind::Symbol) && is_function_kind(program_.symbols[v.index].kind);
-	};
-	for (uint32_t k = 0; k < program_.signatures[target.signature].parameter_count; ++k)
-	{
-		const Value v = body.operands[call.extra_first + k];
-		if (function_symbol(v))
-			return true;
-		if (!v.is(ValueKind::Temp) || body.temps[v.index].def == kNoId)
-			continue;
-		const Instruction& def = body.instructions[body.temps[v.index].def];
-		if (def.op != Opcode::Addr || !def.ops[0].is(ValueKind::Slot))
-			continue;
-		const SlotId slot = def.ops[0].index;
-		uint32_t writes = 0;
-		bool stores_function = false;
-		for (BlockId b : body.layout)
-			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
-			{
-				const Instruction& inst = body.instructions[i];
-				const bool writer = inst.op == Opcode::Store || inst.op == Opcode::CopyObject ||
-					inst.op == Opcode::ZeroInit;
-				const Value target = inst.op == Opcode::Store || inst.op == Opcode::CopyObject ? inst.ops[1]
-																							   : inst.ops[0];
-				if (!writer)
-					continue;
-				const bool names = target == Value::slot(slot) ||
-					(target.is(ValueKind::Temp) && body.temps[target.index].def != kNoId &&
-						body.instructions[body.temps[target.index].def].op == Opcode::Addr &&
-						body.instructions[body.temps[target.index].def].ops[0] == Value::slot(slot));
-				if (!names)
-					continue;
-				++writes;
-				stores_function = inst.op == Opcode::Store && function_symbol(inst.ops[0]);
-			}
-		if (writes == 1 && stores_function)
-			return true;
-	}
-	return false;
-}
-
 // A callee whose only catches are terminate guards (a noexcept function
 // that calls what may throw) may go inline at -O2 and above outside handler
 // code when it cannot unwind: its guard catches all that its copy raises,
@@ -1294,7 +1698,8 @@ bool InlineWaveRunner::cleanup_welcome(const Shape& shape, bool handler_code, bo
 	return sig.boundary.unwind != ir_model::CUM_NO;
 }
 
-bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint32_t& charge, bool& once, bool dispatch)
+bool InlineWaveRunner::admit(
+	uint32_t g, const Instruction& call, bool handler_code, bool loop_site, uint32_t& charge, bool& once)
 {
 	const SymbolId callee = graph_.functions[g];
 	const SymbolMetadata& m = program_.symbols[callee].metadata;
@@ -1320,110 +1725,36 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 		charge = 0;
 		return true;
 	}
-	const bool hint = (m.flags & (SF_INLINE_HINT | SF_FORCE_INLINE)) != 0;
-	// Cold code is copied but priced as free: it runs at most once, on the
-	// way to a noreturn call.
-	const uint32_t size = shape.hot;
-	const uint32_t original = callee < original_size_.size() ? original_size_[callee] : size;
-	const bool single = discardable(program_, callee) && graph_.calls_in[g] == 1 && !graph_.observed[g];
-	if (shape.loop && !loop_welcome(shape))
-		return false;
-	// A loop calling through a pointer the site passes as a known function
-	// (std::push_heap's comparator) goes inline: the call turns direct.
-	if (dispatch && shape.loop_dispatch && options_.level >= 2 && size <= kDispatchCap && size <= budget_)
+	const uint32_t removed = call_site_cost(call);
+	if (non_growing(shape, call))
 	{
-		charge = size;
+		charge = 0;
 		return true;
 	}
-	// An early return around a loop does not make that loop's calls slow
-	// paths. Keep their ordinary loop-site admission and growth budget.
-	if ((options_.level < 2 || !loop_site) &&
-		((caller_wrapper_ && size > kSlowSiteCap) || (caller_leaf_wrapper_ && size > kWrapperCap)))
-		return false;
-	// O2+: a tiny loop around one call (a skip loop: take tokens until one
-	// is not whitespace) goes inline: the loop stays, a call level goes.
-	if (options_.level >= 2 && shape.loop && shape.calls == 1 && size <= kTinyLoopCap && size <= budget_)
+	if (wave_ != InlineWave::Once)
 	{
-		charge = size;
-		return true;
-	}
-	const uint32_t scale = loop_site && size <= kOrdinaryCap ? kLoopSiteScale : 1;
-	const bool fast_path = fast_path_of(shape, hint, scale);
-	const bool settled = caller_settled_ && graph_.calls_in[g] <= kSettledCalls;
-	const uint32_t settled_num = settled ? kSettledScaleNum : 1, settled_den = settled ? kSettledScaleDen : 1;
-	if (wave_ == InlineWave::Late)
-	{
-		const bool leaf = shape.blocks == 1 && shape.returns == 1 && !shape.call;
-		const bool call_free = options_.level >= 2 && !shape.hot_call;
-		const uint32_t hint_cap = options_.limits.hint_late_cap != 0 ? options_.limits.hint_late_cap : kLateHintCap;
-		const uint32_t cap = (leaf && !call_free         ? kLateLeafCap
-									 : hint || call_free ? (hint ? hint_cap : kCallFreeCap) * settled_num / settled_den
-														 : kLateCap) *
-			(loop_site && size <= kOrdinaryCap ? kLoopSiteScale : 1);
-		charge = size;
-		return (size <= cap || fast_path) && charge <= budget_;
-	}
-	if (wave_ == InlineWave::Ordinary)
-	{
-		// The ordinary policy on a shape: 1 a trivial leaf (free), 2 under
-		// its cap or a fast path, 0 neither.
-		auto fits = [&](const Shape& s) -> int {
-			if (s.hot <= kTrivialLeaf && !s.call)
-				return 1;
-			const bool call_free = options_.level >= 2 && !s.hot_call;
-			const bool shared_loop = shape.loop && graph_.calls_in[g] > 1 && !hint &&
-				(!call_free || size > kCallFreeCap);
-			const bool straight = s.blocks == 1 && s.returns == 1 && !s.hot_call;
-			const uint32_t cap = (hint || call_free   ? (hint ? kHintCap : kCallFreeCap) * settled_num / settled_den
-										 : straight   ? kOrdinaryLeafCap
-										 : s.hot_call ? kOrdinaryCallCap
-													  : kOrdinaryCap) *
-				(loop_site && s.hot <= kOrdinaryCap ? kLoopSiteScale : 1);
-			return !shared_loop && (s.hot <= cap || fast_path_of(s, hint, scale)) ? 2 : 0;
-		};
-		int fit = fits(shape);
-		// Price the final callee shape, including its own inline copies.
-		if (fit == 1)
-		{
-			charge = 0;
+		const bool hint = (m.flags & SF_INLINE_HINT) != 0;
+		const uint32_t allowance = hint ? 65 : 45;
+		uint32_t hot, unpriced;
+		const FunctionBody& caller_body = *program_.functions[program_.symbols[graph_.functions[caller_]].detail].body;
+		call_cost_after_constants(shape, caller_body, call, hot, unpriced);
+		charge = hot > removed ? hot - removed : 0;
+		if (unpriced == 0 && charge <= allowance + (loop_site ? removed : 0) && charge <= budget_)
 			return true;
-		}
-		if (fit == 2)
-		{
-			charge = original > size ? original : size;
-			if (charge <= budget_)
-				return true;
-		}
+		if (wave_ == InlineWave::Late)
+			return false;
 	}
-	// The single-call policy (both the ordinary and the once wave): one
-	// call site; from O2 also one calling function holding every site of
-	// an internal callee (a lambda's operator() called from the loops of
-	// the for_each it is passed to) when the copies together fit the cap.
-	// The definition goes either way.
+	const uint32_t size = shape.hot;
+	const bool single = discardable(program_, callee) && graph_.calls_in[g] == 1 && !graph_.observed[g];
 	const uint32_t requested_once_cap = options_.limits.once_cap != 0
 		? options_.limits.once_cap
 		: kOnceCap * (options_.level >= 2 ? kOnceO2Scale : 1);
-	// A weak definition may be shared by many translation units even when
-	// this unit has one call site. Its removed local definition does not
-	// justify an equally large copy at every link-time caller.
 	const uint32_t once_cap = m.binding == ir_model::SBM_WEAK ? std::min(requested_once_cap, uint32_t(128))
 															  : requested_once_cap;
 	const bool sole = options_.level >= 2 && m.binding == ir_model::SBM_INTERNAL && graph_.callers_in[g] == 1 &&
 		!graph_.observed[g] && discardable(program_, callee) && size * graph_.calls_in[g] <= once_cap;
 	if (!(single || sole) || size > once_cap || size > once_budget_ || size > budgets_.once_unit)
-	{
-		// A settled caller copies a callee with at most kSettledFewCalls
-		// call sites up to kSettledFewCap (the callee stays: at most that
-		// many copies), unless calls make much of it (pa33 pins those).
-		if (caller_settled_ && wave_ != InlineWave::Once && graph_.calls_in[g] <= kSettledFewCalls &&
-			size <= (shapes_[caller_].size <= kSettledSmallCaller ? 2 * kSettledFewCap : kSettledFewCap) &&
-			size <= budget_ && shape.calls * kSettledCallShare <= shape.size)
-		{
-			charge = size;
-			return true;
-		}
 		return false;
-	}
 	charge = size;
 	once = true;
 	return true;
@@ -1826,12 +2157,12 @@ bool InlineWaveRunner::process(SymbolId caller)
 			SymbolId copy = kNoId;
 			PartialCut partial;
 			bool partly = false, fully = false;
-			const bool dispatch = shapes_[g].loop_dispatch && known_target(body.instructions[i]);
 			const bool cold_site = !source_required_ && cold[b] != 0 && shapes_[g].size > kTrivialLeaf &&
+				!non_growing(shapes_[g], body.instructions[i]) &&
 				(program_.symbols[callee].metadata.flags & SF_FORCE_INLINE) == 0;
 			if (cold_site ||
-				!admit(g, !source_required_ && handler[b] != 0, !source_required_ && in_loop[b] != 0, charge, once,
-					dispatch))
+				!admit(g, body.instructions[i], !source_required_ && handler[b] != 0,
+					!source_required_ && in_loop[b] != 0, charge, once))
 			{
 				if (source_required_)
 					continue;
@@ -1889,7 +2220,7 @@ bool InlineWaveRunner::process(SymbolId caller)
 			const bool forced = copy == kNoId && (program_.symbols[callee].metadata.flags & SF_FORCE_INLINE) != 0;
 			uint64_t& unit = forced ? budgets_.force_unit : budgets_.growth_unit;
 			// (A trivial leaf takes no more room than its call.)
-			const bool free_leaf = !partly && copy == kNoId && shapes_[g].size <= kTrivialLeaf && !shapes_[g].call;
+			const bool free_leaf = !partly && copy == kNoId && non_growing(shapes_[g], body.instructions[i]);
 			// Preserve loop/handler sites, small and call-free helpers,
 			// mandatory/constant copies and definition-removing inlining.
 			// Inlining a small original wrapper with a constant result can
@@ -1917,7 +2248,7 @@ bool InlineWaveRunner::process(SymbolId caller)
 			InstId tail = kNoId;
 			if (!source_required_ || !inline_return(body, b, before_call, i, kb, tail))
 				tail = clone_call(program_, caller, source, body, b, before_call, i, kb, layout_next, repl,
-					partly ? &partial : nullptr, source_required_);
+					partly ? &partial : nullptr, source_required_ || !fully);
 			if (copy != kNoId)
 				release(copy);
 			if (!source_required_)
