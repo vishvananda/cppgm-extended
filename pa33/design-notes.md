@@ -167,6 +167,13 @@ Describe a loop's entries, latches and exits before changing it. A preheader
 provides a place for invariant work. Rotation may make an existing test run at
 the bottom; preserve the initial guard and values read after the loop.
 
+An interval proposed from loop-entry values is only a hypothesis. Prove that
+every continuing update preserves all coupled intervals before using any of
+them. Guard facts apply after the corresponding edge, not to work evaluated
+before its test. Check arithmetic at its original width; nonnegative operands
+can still wrap to a negative sum. Unknown seeds and exhausted proof budgets
+retain the general arithmetic. Reuse loop facts and bound query work.
+
 Hoisting a load requires both disjointness and safe execution at the new
 position. Sinking a store requires that every original exit observes the right
 value and that the store does not run on a path that previously wrote nothing.

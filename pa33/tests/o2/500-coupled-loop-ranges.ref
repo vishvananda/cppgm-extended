@@ -1,0 +1,383 @@
+function @header_search(%cut : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %lo = phi i32 [^entry: 0, ^body: %t9]
+    %hi = phi i32 [^entry: 64, ^body: %t11]
+    %enter = cmp lt i32 %lo, %hi
+    branch %enter, ^body, ^done
+
+  block ^body:
+    %sum = binary add i32 %lo, %hi
+    %mid = binary ushr i32 %sum, 1
+    %less = cmp lt i32 %mid, %cut
+    %plus = binary add i32 %mid, 1
+    %t8 = cmp lt i32 %mid, %cut
+    %t9 = select i32 %t8, %plus, %lo
+    %t10 = cmp lt i32 %mid, %cut
+    %t11 = select i32 %t10, %hi, %mid
+    jump ^loop
+
+  block ^done:
+    return i32 %hi
+}
+function @latch_search(%cut : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %lo = phi i32 [^entry: 0, ^loop: %t8]
+    %hi = phi i32 [^entry: 64, ^loop: %t10]
+    %sum = binary add i32 %lo, %hi
+    %mid = binary ushr i32 %sum, 1
+    %less = cmp lt i32 %mid, %cut
+    %plus = binary add i32 %mid, 1
+    %t7 = cmp lt i32 %mid, %cut
+    %t8 = select i32 %t7, %plus, %lo
+    %t9 = cmp lt i32 %mid, %cut
+    %t10 = select i32 %t9, %hi, %mid
+    %stop = cmp le i32 %t10, %t8
+    branch %stop, ^done, ^loop
+
+  block ^done:
+    return i32 %t10
+}
+function @search8(%cut : i8) -> i8 [no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %lo = phi i8 [^entry: 0, ^loop: %t8]
+    %hi = phi i8 [^entry: 24, ^loop: %t10]
+    %sum = binary add i8 %lo, %hi
+    %mid = binary ushr i8 %sum, 1
+    %less = cmp lt i8 %mid, %cut
+    %plus = binary add i8 %mid, 1
+    %t7 = cmp lt i8 %mid, %cut
+    %t8 = select i8 %t7, %plus, %lo
+    %t9 = cmp lt i8 %mid, %cut
+    %t10 = select i8 %t9, %hi, %mid
+    %more = cmp lt i8 %t8, %t10
+    branch %more, ^loop, ^done
+
+  block ^done:
+    return i8 %t10
+}
+function @search16(%cut : i16) -> i16 [no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %lo = phi i16 [^entry: 0, ^body: %t9]
+    %hi = phi i16 [^entry: 96, ^body: %t11]
+    %enter = cmp lt i16 %lo, %hi
+    branch %enter, ^body, ^done
+
+  block ^body:
+    %sum = binary add i16 %lo, %hi
+    %mid = binary ushr i16 %sum, 1
+    %less = cmp lt i16 %mid, %cut
+    %plus = binary add i16 %mid, 1
+    %t8 = cmp lt i16 %mid, %cut
+    %t9 = select i16 %t8, %plus, %lo
+    %t10 = cmp lt i16 %mid, %cut
+    %t11 = select i16 %t10, %hi, %mid
+    jump ^loop
+
+  block ^done:
+    return i16 %hi
+}
+function @search64(%cut : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %lo = phi i64 [^entry: 0, ^loop: %t8]
+    %hi = phi i64 [^entry: 4096, ^loop: %t10]
+    %sum = binary add i64 %lo, %hi
+    %mid = binary ushr i64 %sum, 1
+    %less = cmp lt i64 %mid, %cut
+    %plus = binary add i64 %mid, 1
+    %t7 = cmp lt i64 %mid, %cut
+    %t8 = select i64 %t7, %plus, %lo
+    %t9 = cmp lt i64 %mid, %cut
+    %t10 = select i64 %t9, %hi, %mid
+    %more = cmp lt i64 %t8, %t10
+    branch %more, ^loop, ^done
+
+  block ^done:
+    return i64 %t10
+}
+function @coupled_quotient(%count : i64) -> i32 [no_inline=yes] {
+  block ^entry:
+    %enter = cmp gt i64 %count, 0
+    branch %enter, ^body, ^empty
+
+  block ^body:
+    %a = phi i32 [^entry: 8, ^body: %mid]
+    %b = phi i32 [^entry: 40, ^body: %a]
+    %i = phi i64 [^entry: 0, ^body: %inext]
+    %sum = binary add i32 %a, %b
+    %mid = binary ushr i32 %sum, 1
+    %inext = binary add nowrap i64 %i, 1
+    %more = cmp lt i64 %inext, %count
+    branch %more, ^body, ^done
+
+  block ^done:
+    %rem = binary and i32 %sum, 7
+    %answer = binary add i32 %mid, %rem
+    return i32 %answer
+
+  block ^empty:
+    return i32 8
+}
+function @negative_mean(%count : i64) -> i32 [no_inline=yes] {
+  block ^entry:
+    %enter = cmp gt i64 %count, 0
+    branch %enter, ^body, ^empty
+
+  block ^body:
+    %a = phi i32 [^entry: -31, ^body: %mid]
+    %b = phi i32 [^entry: 9, ^body: %a]
+    %i = phi i64 [^entry: 0, ^body: %inext]
+    %sum = binary add i32 %a, %b
+    %mid = binary div i32 %sum, 2
+    %inext = binary add nowrap i64 %i, 1
+    %more = cmp lt i64 %inext, %count
+    branch %more, ^body, ^done
+
+  block ^done:
+    return i32 %mid
+
+  block ^empty:
+    return i32 -31
+}
+function @wrapping_mean(%count : i64) -> i8 [no_inline=yes] {
+  block ^entry:
+    %enter = cmp gt i64 %count, 0
+    branch %enter, ^body, ^empty
+
+  block ^body:
+    %a = phi i8 [^entry: 100, ^body: %mid]
+    %b = phi i8 [^entry: 120, ^body: %a]
+    %i = phi i64 [^entry: 0, ^body: %inext]
+    %sum = binary add i8 %a, %b
+    %mid = binary div i8 %sum, 2
+    %inext = binary add nowrap i64 %i, 1
+    %more = cmp lt i64 %inext, %count
+    branch %more, ^body, ^done
+
+  block ^done:
+    return i8 %mid
+
+  block ^empty:
+    return i8 100
+}
+function @unknown_seed(%seed : i32, %count : i64) -> i32 [no_inline=yes] {
+  block ^entry:
+    %enter = cmp gt i64 %count, 0
+    branch %enter, ^body, ^empty
+
+  block ^body:
+    %a = phi i32 [^entry: %seed, ^body: %mid]
+    %b = phi i32 [^entry: 40, ^body: %a]
+    %i = phi i64 [^entry: 0, ^body: %inext]
+    %sum = binary add i32 %a, %b
+    %mid = binary div i32 %sum, 2
+    %inext = binary add nowrap i64 %i, 1
+    %more = cmp lt i64 %inext, %count
+    branch %more, ^body, ^done
+
+  block ^done:
+    return i32 %mid
+
+  block ^empty:
+    return i32 0
+}
+function @decreasing(%count : i64) -> i32 [no_inline=yes] {
+  block ^entry:
+    %enter = cmp gt i64 %count, 0
+    branch %enter, ^body, ^empty
+
+  block ^body:
+    %a = phi i32 [^entry: 0, ^body: %nexta]
+    %b = phi i32 [^entry: 16, ^body: %mid]
+    %i = phi i64 [^entry: 0, ^body: %inext]
+    %sum = binary add i32 %a, %b
+    %mid = binary div i32 %sum, 2
+    %nexta = binary sub i32 %a, 1
+    %inext = binary add nowrap i64 %i, 1
+    %more = cmp lt i64 %inext, %count
+    branch %more, ^body, ^done
+
+  block ^done:
+    return i32 %mid
+
+  block ^empty:
+    return i32 0
+}
+function @guard_late(%alternate : i1, %count : i64) -> i32 [no_inline=yes] {
+  block ^entry:
+    %enter = cmp gt i64 %count, 0
+    branch %enter, ^loop_preheader_1, ^empty
+
+  block ^loop_preheader_1:
+    %decrement = select i32 %alternate, 3, 1
+    jump ^loop
+
+  block ^loop:
+    %a = phi i32 [^loop_preheader_1: 0, ^guard: %nexta]
+    %i = phi i64 [^loop_preheader_1: 0, ^guard: %inext]
+    %nexta = binary sub i32 %a, %decrement
+    %inext = binary add i64 %i, 1
+    %more = cmp lt i64 %inext, %count
+    branch %more, ^guard, ^done
+
+  block ^guard:
+    %nonnegative = cmp ge i32 %nexta, 0
+    branch %nonnegative, ^loop, ^done
+
+  block ^done:
+    %observed = binary div i32 %nexta, 2
+    return i32 %observed
+
+  block ^empty:
+    return i32 37
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    jump ^check
+
+  block ^check:
+    %i = phi i32 [^entry: -3, ^next: %inext]
+    %negative = cmp lt i32 %i, 0
+    %low = select i32 %negative, 0, %i
+    %above = cmp gt i32 %low, 64
+    %expected = select i32 %above, 64, %low
+    %a = call i32 @header_search(%i)
+    %b = call i32 @latch_search(%i)
+    %narrow = convert trunc i8 i32 %i
+    %signed = convert sext i32 i8 %narrow
+    %neg8 = cmp lt i8 %narrow, 0
+    %low8 = select i32 %neg8, 0, %signed
+    %above8 = cmp gt i32 %low8, 24
+    %expected8 = select i32 %above8, 24, %low8
+    %c8 = call i8 @search8(%narrow)
+    %c = convert sext i32 i8 %c8
+    %word = convert trunc i16 i32 %i
+    %d16 = call i16 @search16(%word)
+    %d = convert sext i32 i16 %d16
+    %above16 = cmp gt i32 %low, 96
+    %expected16 = select i32 %above16, 96, %low
+    %wide = convert sext i64 i32 %i
+    %e64 = call i64 @search64(%wide)
+    %e = convert trunc i32 i64 %e64
+    %aok = cmp eq i32 %expected, %a
+    %bok = cmp eq i32 %expected, %b
+    %cok = cmp eq i32 %expected8, %c
+    %dok = cmp eq i32 %d, %expected16
+    %eok = cmp eq i32 %low, %e
+    %ab = binary and i1 %aok, %bok
+    %cd = binary and i1 %cok, %dok
+    %abcd = binary and i1 %ab, %cd
+    %all = binary and i1 %eok, %abcd
+    branch %all, ^next, ^fail
+
+  block ^next:
+    %inext = binary add i32 %i, 1
+    %more = cmp le i32 %inext, 130
+    branch %more, ^check, ^constants
+
+  block ^constants:
+    %v0 = call i64 @search64(5000)
+    %ok0 = cmp eq i64 %v0, 4096
+    %v1 = call i64 @search64(-73)
+    %ok1 = cmp eq i64 %v1, 0
+    %all1 = binary and i1 %ok0, %ok1
+    %v2 = call i32 @coupled_quotient(0)
+    %ok2 = cmp eq i32 %v2, 8
+    %all2 = binary and i1 %all1, %ok2
+    %v3 = call i32 @coupled_quotient(1)
+    %ok3 = cmp eq i32 %v3, 24
+    %all3 = binary and i1 %all2, %ok3
+    %v4 = call i32 @coupled_quotient(2)
+    %ok4 = cmp eq i32 %v4, 16
+    %all4 = binary and i1 %all3, %ok4
+    %v5 = call i32 @coupled_quotient(3)
+    %ok5 = cmp eq i32 %v5, 20
+    %all5 = binary and i1 %all4, %ok5
+    %v6 = call i32 @coupled_quotient(4)
+    %ok6 = cmp eq i32 %v6, 22
+    %all6 = binary and i1 %all5, %ok6
+    %v7 = call i32 @coupled_quotient(20)
+    %ok7 = cmp eq i32 %v7, 22
+    %all7 = binary and i1 %all6, %ok7
+    %v8 = call i32 @negative_mean(0)
+    %ok8 = cmp eq i32 %v8, -31
+    %all8 = binary and i1 %all7, %ok8
+    %v9 = call i32 @negative_mean(1)
+    %ok9 = cmp eq i32 %v9, -11
+    %all9 = binary and i1 %all8, %ok9
+    %v10 = call i32 @negative_mean(2)
+    %ok10 = cmp eq i32 %v10, -21
+    %all10 = binary and i1 %all9, %ok10
+    %v11 = call i32 @negative_mean(3)
+    %ok11 = cmp eq i32 %v11, -16
+    %all11 = binary and i1 %all10, %ok11
+    %v12 = call i32 @negative_mean(34)
+    %ok12 = cmp eq i32 %v12, -17
+    %all12 = binary and i1 %all11, %ok12
+    %v13 = call i8 @wrapping_mean(0)
+    %ok13 = cmp eq i8 %v13, 100
+    %all13 = binary and i1 %all12, %ok13
+    %v14 = call i8 @wrapping_mean(1)
+    %ok14 = cmp eq i8 %v14, -18
+    %all14 = binary and i1 %all13, %ok14
+    %v15 = call i8 @wrapping_mean(2)
+    %ok15 = cmp eq i8 %v15, 41
+    %all15 = binary and i1 %all14, %ok15
+    %v16 = call i8 @wrapping_mean(3)
+    %ok16 = cmp eq i8 %v16, 11
+    %all16 = binary and i1 %all15, %ok16
+    %v17 = call i8 @wrapping_mean(34)
+    %ok17 = cmp eq i8 %v17, 20
+    %all17 = binary and i1 %all16, %ok17
+    %v18 = call i32 @decreasing(0)
+    %ok18 = cmp eq i32 %v18, 0
+    %all18 = binary and i1 %all17, %ok18
+    %v19 = call i32 @decreasing(1)
+    %ok19 = cmp eq i32 %v19, 8
+    %all19 = binary and i1 %all18, %ok19
+    %v20 = call i32 @decreasing(2)
+    %ok20 = cmp eq i32 %v20, 3
+    %all20 = binary and i1 %all19, %ok20
+    %v21 = call i32 @decreasing(3)
+    %ok21 = cmp eq i32 %v21, 0
+    %all21 = binary and i1 %all20, %ok21
+    %v22 = call i32 @decreasing(34)
+    %ok22 = cmp eq i32 %v22, -31
+    %all22 = binary and i1 %all21, %ok22
+    %v23 = call i32 @unknown_seed(-73, 1)
+    %ok23 = cmp eq i32 %v23, -16
+    %all23 = binary and i1 %all22, %ok23
+    %v24 = call i32 @unknown_seed(-73, 2)
+    %ok24 = cmp eq i32 %v24, -44
+    %all24 = binary and i1 %all23, %ok24
+    %v25 = call i32 @guard_late(1, 4)
+    %ok25 = cmp eq i32 %v25, -1
+    %all25 = binary and i1 %all24, %ok25
+    %v26 = call i32 @guard_late(0, 4)
+    %ok26 = cmp eq i32 %v26, 0
+    %all26 = binary and i1 %all25, %ok26
+    %v27 = call i32 @guard_late(1, 0)
+    %ok27 = cmp eq i32 %v27, 37
+    %all27 = binary and i1 %all26, %ok27
+    branch %all27, ^pass, ^fail
+
+  block ^pass:
+    return i32 0
+
+  block ^fail:
+    return i32 1
+}

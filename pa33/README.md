@@ -329,6 +329,10 @@ arbitrary byte writes, escaped storage and volatile accesses. Counter fixtures
 include nonnegative loops, negative starts and wrapping counters; any arithmetic
 simplification must preserve all of them.
 
+Coupled loop values can also bound each other. Meet the bounded-search and
+averaging fixtures' arithmetic bounds while preserving signed rounding,
+overflow, every entry seed and computations observed before a guard.
+
 Boolean conditions may pass through selected zero/one values and integer
 retypes. Meet their quality bounds while preserving actual narrowing of
 arbitrary integers; a nonzero value can become zero when narrowed.

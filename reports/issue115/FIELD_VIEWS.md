@@ -155,3 +155,5 @@ Two checkpoint A/A observations precede one checkpoint/candidate/candidate/check
 | cycles, billion | 427.8393 | 428.8206 | 0.9977× |
 
 The full suite saves 0.0586% of instructions. Its measured 2.02% wall gain is smaller than the 4.02% A/A wall spread; its 0.23% cycle increase is smaller than the 0.28% A/A cycle spread. These controls establish reduced work, not an aggregate runtime speedup. All observations and case times are retained.
+
+The [coupled-loop-bound follow-up](LOOP_BOUNDS.md) implements the midpoint proof, records its qualification and compares the remaining arithmetic gap with GCC and Clang.

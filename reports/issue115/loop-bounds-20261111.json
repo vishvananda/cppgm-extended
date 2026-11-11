@@ -1,0 +1,2040 @@
+{
+  "baseline_commit": "8fcc6407e767",
+  "candidate_compiler_sha256": "e83e90c4484042c88f624160952a7782dfbad9c7abeccddc849bea9f08d7f966",
+  "candidate_binary_sha256": "0e8ad4cc7bf248b36e611f29883b217c815f50df3c4f062b2226cc7b8b137879",
+  "lowir_sha256": "9390c91b369825692de847860c7c79e0436aebd7d2a735453da23ee24d199919",
+  "final_identity": {
+    "qualified_compiler_sha256": "e83e90c4484042c88f624160952a7782dfbad9c7abeccddc849bea9f08d7f966",
+    "measured_compiler_sha256": "e83e90c4484042c88f624160952a7782dfbad9c7abeccddc849bea9f08d7f966",
+    "measured_object_sha256": "0e69838325bb2e590798b98761587fb2ba007bc176e8a7fb5b2ac7e356d080db",
+    "qualified_object_sha256": "0e69838325bb2e590798b98761587fb2ba007bc176e8a7fb5b2ac7e356d080db",
+    "source_patch_sha256": "b2671b2c4fbf4ddf73689bedb48f42604343c395f0a853ee600d3a5177d29d0d",
+    "objects_identical": true
+  },
+  "focused": {
+    "focused-v2": {
+      "Compress::ArithDecode": {
+        "seconds": {
+          "baseline": 2.7807500000000003,
+          "candidate": 3.34625,
+          "efficiency": 0.8310048561822937,
+          "saved_percent": -20.33624022296141,
+          "aa_spread_percent": 43.37505394907206
+        },
+        "instructions": {
+          "baseline": 8928917435.5,
+          "candidate": 7752858521.25,
+          "efficiency": 1.1516935864399578,
+          "saved_percent": 13.171349413246569,
+          "aa_spread_percent": 8.623665781470891e-07
+        },
+        "cycles": {
+          "baseline": 7779146444.5,
+          "candidate": 7415888312.25,
+          "efficiency": 1.0489837652557346,
+          "saved_percent": 4.669639977106099,
+          "aa_spread_percent": 0.3911206303166326
+        }
+      },
+      "Compress::HuffEncode": {
+        "seconds": {
+          "baseline": 1.53025,
+          "candidate": 1.7105000000000001,
+          "efficiency": 0.8946214557147033,
+          "saved_percent": -11.779121058650555,
+          "aa_spread_percent": 22.954091816367274
+        },
+        "instructions": {
+          "baseline": 15136696658.25,
+          "candidate": 15136696644.75,
+          "efficiency": 1.0000000008918724,
+          "saved_percent": 8.918722427253556e-08,
+          "aa_spread_percent": 1.1891629903004741e-07
+        },
+        "cycles": {
+          "baseline": 4890281274.75,
+          "candidate": 4879046893.25,
+          "efficiency": 1.0023025770700302,
+          "saved_percent": 0.22972873887656675,
+          "aa_spread_percent": 0.4236443802836165
+        }
+      },
+      "Compress::HuffDecode": {
+        "seconds": {
+          "baseline": 1.329,
+          "candidate": 1.2315,
+          "efficiency": 1.079171741778319,
+          "saved_percent": 7.336343115124144,
+          "aa_spread_percent": 62.336719883889714
+        },
+        "instructions": {
+          "baseline": 14730379297.25,
+          "candidate": 14730379308.0,
+          "efficiency": 0.9999999992702157,
+          "saved_percent": -7.297842330444837e-08,
+          "aa_spread_percent": 4.276875520403678e-07
+        },
+        "cycles": {
+          "baseline": 3710828665.0,
+          "candidate": 3704334742.5,
+          "efficiency": 1.0017530603877385,
+          "saved_percent": 0.17499925451287535,
+          "aa_spread_percent": 1.1248883167056078
+        }
+      },
+      "Brainfuck::Array": {
+        "seconds": {
+          "baseline": 1.9889999999999999,
+          "candidate": 1.97575,
+          "efficiency": 1.0067063140579526,
+          "saved_percent": 0.6661639014580167,
+          "aa_spread_percent": 0.4079551249362545
+        },
+        "instructions": {
+          "baseline": 16301178675.5,
+          "candidate": 16301178687.75,
+          "efficiency": 0.9999999992485206,
+          "saved_percent": -7.514793232132888e-08,
+          "aa_spread_percent": 2.4538104881344225e-08
+        },
+        "cycles": {
+          "baseline": 5748540826.5,
+          "candidate": 5744905780.0,
+          "efficiency": 1.0006327425791133,
+          "saved_percent": 0.06323424691084822,
+          "aa_spread_percent": 0.1289981183522526
+        }
+      },
+      "Etc::LogParser": {
+        "seconds": {
+          "baseline": 1.4025,
+          "candidate": 1.3925,
+          "efficiency": 1.007181328545781,
+          "saved_percent": 0.7130124777183555,
+          "aa_spread_percent": 4.57227138643066
+        },
+        "instructions": {
+          "baseline": 14152404968.0,
+          "candidate": 14152404957.0,
+          "efficiency": 1.0000000007772532,
+          "saved_percent": 7.772530397076594e-08,
+          "aa_spread_percent": 4.5221997257982594e-07
+        },
+        "cycles": {
+          "baseline": 4630981592.0,
+          "candidate": 4623988375.75,
+          "efficiency": 1.001512377558446,
+          "saved_percent": 0.15100937265828396,
+          "aa_spread_percent": 0.07137552703333494
+        }
+      },
+      "Etc::NeuralNet": {
+        "seconds": {
+          "baseline": 2.17575,
+          "candidate": 2.13925,
+          "efficiency": 1.0170620544583382,
+          "saved_percent": 1.67758244283579,
+          "aa_spread_percent": 2.387387387387374
+        },
+        "instructions": {
+          "baseline": 18168866535.0,
+          "candidate": 18168866517.25,
+          "efficiency": 1.0000000009769459,
+          "saved_percent": 9.769459685671222e-08,
+          "aa_spread_percent": 5.779116740711743e-07
+        },
+        "cycles": {
+          "baseline": 7670963774.0,
+          "candidate": 7705457359.75,
+          "efficiency": 0.9955234862592091,
+          "saved_percent": -0.4496643025080127,
+          "aa_spread_percent": 0.1329114510247198
+        }
+      },
+      "Json::ParseMapping": {
+        "seconds": {
+          "baseline": 3.447,
+          "candidate": 2.95925,
+          "efficiency": 1.164822167778998,
+          "saved_percent": 14.149985494633022,
+          "aa_spread_percent": 1.7552657973921804
+        },
+        "instructions": {
+          "baseline": 16668446182.75,
+          "candidate": 16668446190.75,
+          "efficiency": 0.9999999995200513,
+          "saved_percent": -4.799487474116404e-08,
+          "aa_spread_percent": 1.7998078583048027e-07
+        },
+        "cycles": {
+          "baseline": 8521153749.25,
+          "candidate": 8661069666.5,
+          "efficiency": 0.9838454229514885,
+          "saved_percent": -1.641983249771961,
+          "aa_spread_percent": 0.19173935127336783
+        }
+      }
+    },
+    "focused-repeat-v2": {
+      "Compress::ArithDecode": {
+        "seconds": {
+          "baseline": 2.3188333333333335,
+          "candidate": 2.2108333333333334,
+          "efficiency": 1.0488503580851867,
+          "saved_percent": 4.657514554732989,
+          "aa_spread_percent": 0.2157962883038378
+        },
+        "instructions": {
+          "baseline": 8928917407.333334,
+          "candidate": 7752858469.5,
+          "efficiency": 1.1516935904943948,
+          "saved_percent": 13.171349718919279,
+          "aa_spread_percent": 3.3598701598691605e-08
+        },
+        "cycles": {
+          "baseline": 7770906102.666667,
+          "candidate": 7396867039.5,
+          "efficiency": 1.0505672281479796,
+          "saved_percent": 4.813326248251948,
+          "aa_spread_percent": 0.12073811954012026
+        }
+      },
+      "Etc::NeuralNet": {
+        "seconds": {
+          "baseline": 2.3018333333333336,
+          "candidate": 2.2981666666666665,
+          "efficiency": 1.0015954746537097,
+          "saved_percent": 0.1592933169213162,
+          "aa_spread_percent": 0.21853146853147987
+        },
+        "instructions": {
+          "baseline": 18168866688.166668,
+          "candidate": 18168866700.666668,
+          "efficiency": 0.9999999993120099,
+          "saved_percent": -6.879901093270746e-08,
+          "aa_spread_percent": 8.255880423746476e-08
+        },
+        "cycles": {
+          "baseline": 7692764574.0,
+          "candidate": 7663741297.333333,
+          "efficiency": 1.0037870898221428,
+          "saved_percent": 0.3772801882532595,
+          "aa_spread_percent": 0.2192037391594459
+        }
+      },
+      "Json::ParseMapping": {
+        "seconds": {
+          "baseline": 2.4455,
+          "candidate": 2.417,
+          "efficiency": 1.0117914770376502,
+          "saved_percent": 1.1654058474749651,
+          "aa_spread_percent": 0.8491710473109704
+        },
+        "instructions": {
+          "baseline": 16668445536.333334,
+          "candidate": 16668445504.833334,
+          "efficiency": 1.0000000018897983,
+          "saved_percent": 1.8897983178334243e-07,
+          "aa_spread_percent": 6.599296664688836e-08
+        },
+        "cycles": {
+          "baseline": 6513924123.666667,
+          "candidate": 6422943123.333333,
+          "efficiency": 1.0141650017112587,
+          "saved_percent": 1.3967156909730938,
+          "aa_spread_percent": 0.29619240218647924
+        }
+      }
+    },
+    "arith-vs-clang": {
+      "Compress::ArithDecode": {
+        "seconds": {
+          "baseline": 1.861,
+          "candidate": 2.0871666666666666,
+          "efficiency": 0.891639383534297,
+          "saved_percent": -12.152964356080954,
+          "aa_spread_percent": 6.568047337278116
+        },
+        "instructions": {
+          "baseline": 7047967831.666667,
+          "candidate": 7752858413.0,
+          "efficiency": 0.90907991043002,
+          "saved_percent": -10.001330854068957,
+          "aa_spread_percent": 2.809320553964767e-06
+        },
+        "cycles": {
+          "baseline": 6809150708.333333,
+          "candidate": 7426139858.833333,
+          "efficiency": 0.9169165727782387,
+          "saved_percent": -9.061176304188745,
+          "aa_spread_percent": 0.18128851664429568
+        }
+      }
+    },
+    "arith-vs-gcc": {
+      "Compress::ArithDecode": {
+        "seconds": {
+          "baseline": 1.83,
+          "candidate": 1.9703333333333333,
+          "efficiency": 0.9287768567078329,
+          "saved_percent": -7.668488160291442,
+          "aa_spread_percent": 8.97849462365592
+        },
+        "instructions": {
+          "baseline": 7629031937.333333,
+          "candidate": 7752858058.5,
+          "efficiency": 0.984028326040239,
+          "saved_percent": -1.6230908742262962,
+          "aa_spread_percent": 2.5298098060844154e-06
+        },
+        "cycles": {
+          "baseline": 6949250904.333333,
+          "candidate": 7413977235.5,
+          "efficiency": 0.9373175400456533,
+          "saved_percent": -6.687430595963639,
+          "aa_spread_percent": 0.11599623247577906
+        }
+      }
+    }
+  },
+  "compile": {
+    "O0": {
+      "baseline_instructions": 3291599289.25,
+      "candidate_instructions": 3291564027.25,
+      "candidate_over_baseline": 0.9999892872743912
+    },
+    "O3": {
+      "baseline_instructions": 9263854101.75,
+      "candidate_instructions": 9264246153.75,
+      "candidate_over_baseline": 1.0000423206146916
+    }
+  },
+  "full_summary": {
+    "seconds": {
+      "baseline": 93.12265,
+      "candidate": 89.46934999999999,
+      "efficiency": 1.040832977997493,
+      "saved_percent": 3.9231057105870604,
+      "aa_spread_percent": 5.408222794904716
+    },
+    "instructions": {
+      "baseline": 788375055310.5,
+      "candidate": 787198999260.5,
+      "efficiency": 1.0014939755399903,
+      "saved_percent": 0.14917469065999223,
+      "aa_spread_percent": 1.1807831601373664e-06
+    },
+    "cycles": {
+      "baseline": 430357650934.5,
+      "candidate": 426745306101.5,
+      "efficiency": 1.0084648730316457,
+      "saved_percent": 0.8393820407644581,
+      "aa_spread_percent": 0.013889867936689448
+    }
+  },
+  "full_observations": [
+    {
+      "label": "AA-1",
+      "binary": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy",
+      "sha256": "4d9900ba5be55b340ce9ee1782d6758d37e5c14518695570971d6d14062b55a5",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111/full-control/AA-1.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy"
+      ],
+      "started_at": "2026-11-11T05:46:54.801265+00:00",
+      "load_before": [
+        14.119140625,
+        15.5458984375,
+        24.802734375
+      ],
+      "load_after": [
+        67.24267578125,
+        45.884765625,
+        35.41845703125
+      ],
+      "wall_seconds": 124.52496142697055,
+      "total_seconds": 101.7241,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.948
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.575
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 2.062
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 2.064
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.674
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.681
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.78
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.728
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 2.133
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.182
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.823
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 2.336
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 2.272
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.681
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.471
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.965
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 2.294
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.679
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.36
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 2.166
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.448
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 2.111
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 2.592
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.549
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 1.091
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.437
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 2.514
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.465
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.628
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.939
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.34
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.572
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 3.128
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 2.06
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 2.1
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.718
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.526
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.969
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.551
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.869
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 2.126
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.507
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.474
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 1.099
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.776
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 2.304
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 2.247
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 2.089
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.316
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.303
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:46:54 2026\n\n432224469474;;cycles:u;157592491140;100.00;;\n788375070124;;instructions:u;157592491140;100.00;;\n122639296068;;branches:u;157592491140;100.00;;\n1626181326;;branch-misses:u;157592491140;100.00;;\n"
+    },
+    {
+      "label": "AA-2",
+      "binary": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy",
+      "sha256": "4d9900ba5be55b340ce9ee1782d6758d37e5c14518695570971d6d14062b55a5",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111/full-control/AA-2.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy"
+      ],
+      "started_at": "2026-11-11T05:48:59.354257+00:00",
+      "load_before": [
+        67.24267578125,
+        45.884765625,
+        35.41845703125
+      ],
+      "load_after": [
+        92.708984375,
+        62.3046875,
+        42.62841796875
+      ],
+      "wall_seconds": 118.45942445390392,
+      "total_seconds": 96.5049,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.696
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.179
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 1.821
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 1.79
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.476
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.869
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.309
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.662
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 2.101
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.219
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.703
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 1.97
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 1.901
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.4
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.177
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.691
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 2.025
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.659
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.345
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 2.213
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.468
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 2.12
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 2.877
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.638
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 1.14
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.436
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 1.189
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.44
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.576
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.916
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.339
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.503
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 2.666
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 1.981
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 2.031
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.708
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.505
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.975
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.553
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.859
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 2.145
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.472
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.441
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 1.068
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.707
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 2.177
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 2.123
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 2.193
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.485
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.564
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:48:59 2026\n\n432284504882;;cycles:u;152437701670;100.00;;\n788375060815;;instructions:u;152437701670;100.00;;\n122639286869;;branches:u;152437701670;100.00;;\n1628659532;;branch-misses:u;152437701670;100.00;;\n"
+    },
+    {
+      "label": "A1",
+      "binary": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy",
+      "sha256": "4d9900ba5be55b340ce9ee1782d6758d37e5c14518695570971d6d14062b55a5",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111/full-control/A1.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy"
+      ],
+      "started_at": "2026-11-11T05:50:57.842353+00:00",
+      "load_before": [
+        92.708984375,
+        62.3046875,
+        42.62841796875
+      ],
+      "load_after": [
+        46.064453125,
+        56.78271484375,
+        43.15283203125
+      ],
+      "wall_seconds": 116.08884458197281,
+      "total_seconds": 94.8903,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.873
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.52
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 2.043
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 1.983
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.608
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.725
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.257
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.477
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 1.971
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.127
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.613
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 2.333
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 2.271
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.68
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.515
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.84
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 2.223
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.661
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.595
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 2.248
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.454
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 1.858
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 2.104
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.392
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 1.011
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.326
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 1.141
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.422
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.485
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.863
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.349
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.617
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 2.834
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 1.939
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 1.717
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.498
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.357
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.716
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.421
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.726
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 2.062
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.38
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.286
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 0.949
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.584
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 2.146
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 1.943
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 1.988
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.387
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.371
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:50:57 2026\n\n432289351015;;cycles:u;150948529614;100.00;;\n788375060913;;instructions:u;150948529614;100.00;;\n122639287030;;branches:u;150948529614;100.00;;\n1626908712;;branch-misses:u;150948529614;100.00;;\n"
+    },
+    {
+      "label": "B1",
+      "binary": "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111/candidate-v2",
+      "sha256": "0e8ad4cc7bf248b36e611f29883b217c815f50df3c4f062b2226cc7b8b137879",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111/full-control/B1.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111/candidate-v2"
+      ],
+      "started_at": "2026-11-11T05:52:53.960137+00:00",
+      "load_before": [
+        46.064453125,
+        56.78271484375,
+        43.15283203125
+      ],
+      "load_after": [
+        15.72900390625,
+        42.60693359375,
+        39.55029296875
+      ],
+      "wall_seconds": 109.75686833902728,
+      "total_seconds": 89.5801,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.742
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.467
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 1.852
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 1.85
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.429
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.562
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.055
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.055
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 1.922
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.206
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.624
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 2.059
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 1.862
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.502
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.37
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.937
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 2.229
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.64
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.225
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 2.089
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.349
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 1.798
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 1.912
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.477
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 1.061
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.224
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 1.093
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.375
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.566
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.862
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.333
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.29
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 2.605
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 1.924
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 1.517
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 1.865
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.296
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.687
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.315
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.605
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 1.923
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.252
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.239
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 0.973
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.583
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 1.92
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 2.066
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 2.006
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.31
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.475
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:52:53 2026\n\n425779191311;;cycles:u;141981628618;100.00;;\n787198996813;;instructions:u;141981628618;100.00;;\n122639281633;;branches:u;141981628618;100.00;;\n1624993777;;branch-misses:u;141981628618;100.00;;\n"
+    },
+    {
+      "label": "B2",
+      "binary": "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111/candidate-v2",
+      "sha256": "0e8ad4cc7bf248b36e611f29883b217c815f50df3c4f062b2226cc7b8b137879",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111/full-control/B2.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111/candidate-v2"
+      ],
+      "started_at": "2026-11-11T05:54:43.746223+00:00",
+      "load_before": [
+        15.72900390625,
+        42.60693359375,
+        39.55029296875
+      ],
+      "load_after": [
+        9.62353515625,
+        32.5791015625,
+        36.2646484375
+      ],
+      "wall_seconds": 109.38178097095806,
+      "total_seconds": 89.3586,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.926
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.434
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 1.828
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 1.743
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.44
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.559
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 3.374
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 5.192
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 1.96
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.175
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.722
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 2.12
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 2.055
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.579
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.455
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.768
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 1.974
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.434
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.149
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 2.015
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.276
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 1.623
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 1.844
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.388
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 0.962
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 1.311
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 1.109
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.395
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.503
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.741
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.293
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.337
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 2.841
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 1.857
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 1.258
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.348
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.289
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.628
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.273
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.586
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 1.877
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.263
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.263
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 1.004
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.552
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 1.909
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 1.902
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 1.962
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.419
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.443
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:54:43 2026\n\n427711420892;;cycles:u;142273801506;100.00;;\n787199001708;;instructions:u;142273801506;100.00;;\n122639285597;;branches:u;142273801506;100.00;;\n1625320423;;branch-misses:u;142273801506;100.00;;\n"
+    },
+    {
+      "label": "A2",
+      "binary": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy",
+      "sha256": "4d9900ba5be55b340ce9ee1782d6758d37e5c14518695570971d6d14062b55a5",
+      "command": [
+        "perf",
+        "stat",
+        "-x",
+        ";",
+        "-o",
+        "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111/full-control/A2.perf",
+        "-e",
+        "cycles:u,instructions:u,branches:u,branch-misses:u",
+        "--",
+        "numactl",
+        "--membind=1",
+        "taskset",
+        "-c",
+        "30-33",
+        "setarch",
+        "x86_64",
+        "-R",
+        "/mnt/vizier/cppgm-issue115-data/corrected-main-20261111/bin/execute-fixed",
+        "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111/next/field-twins-copy"
+      ],
+      "started_at": "2026-11-11T05:56:33.159557+00:00",
+      "load_before": [
+        9.62353515625,
+        32.5791015625,
+        36.2646484375
+      ],
+      "load_after": [
+        8.8671875,
+        25.04833984375,
+        33.0908203125
+      ],
+      "wall_seconds": 112.97498595004436,
+      "total_seconds": 91.355,
+      "cases": [
+        {
+          "name": "Binarytrees::Obj",
+          "seconds": 1.767
+        },
+        {
+          "name": "Binarytrees::Arena",
+          "seconds": 2.187
+        },
+        {
+          "name": "Brainfuck::Array",
+          "seconds": 1.776
+        },
+        {
+          "name": "Brainfuck::Recursion",
+          "seconds": 1.651
+        },
+        {
+          "name": "Matmul::Single",
+          "seconds": 1.362
+        },
+        {
+          "name": "Matmul::T4",
+          "seconds": 1.497
+        },
+        {
+          "name": "Matmul::T8",
+          "seconds": 2.981
+        },
+        {
+          "name": "Matmul::T16",
+          "seconds": 4.994
+        },
+        {
+          "name": "Base64::Encode",
+          "seconds": 1.813
+        },
+        {
+          "name": "Base64::Decode",
+          "seconds": 1.065
+        },
+        {
+          "name": "Json::Generate",
+          "seconds": 1.574
+        },
+        {
+          "name": "Json::ParseDom",
+          "seconds": 1.94
+        },
+        {
+          "name": "Json::ParseMapping",
+          "seconds": 1.86
+        },
+        {
+          "name": "CSV::Parse",
+          "seconds": 1.484
+        },
+        {
+          "name": "Etc::Sieve",
+          "seconds": 3.383
+        },
+        {
+          "name": "Etc::TextRaytracer",
+          "seconds": 1.812
+        },
+        {
+          "name": "Etc::NeuralNet",
+          "seconds": 1.954
+        },
+        {
+          "name": "Etc::CacheSimulation",
+          "seconds": 1.47
+        },
+        {
+          "name": "Etc::GameOfLife",
+          "seconds": 1.125
+        },
+        {
+          "name": "Etc::Words",
+          "seconds": 1.864
+        },
+        {
+          "name": "Etc::LogParser",
+          "seconds": 1.199
+        },
+        {
+          "name": "Template::Regex",
+          "seconds": 1.813
+        },
+        {
+          "name": "Template::Parse",
+          "seconds": 3.459
+        },
+        {
+          "name": "Sort::Quick",
+          "seconds": 1.986
+        },
+        {
+          "name": "Sort::Merge",
+          "seconds": 1.087
+        },
+        {
+          "name": "Sort::Self",
+          "seconds": 2.039
+        },
+        {
+          "name": "Graph::BFS",
+          "seconds": 2.032
+        },
+        {
+          "name": "Graph::DFS",
+          "seconds": 1.706
+        },
+        {
+          "name": "Graph::AStar",
+          "seconds": 1.685
+        },
+        {
+          "name": "Hash::SHA256",
+          "seconds": 1.871
+        },
+        {
+          "name": "Hash::CRC32",
+          "seconds": 0.341
+        },
+        {
+          "name": "Calculator::Ast",
+          "seconds": 2.208
+        },
+        {
+          "name": "Calculator::Interpreter",
+          "seconds": 2.302
+        },
+        {
+          "name": "Maze::Generator",
+          "seconds": 1.86
+        },
+        {
+          "name": "Maze::BFS",
+          "seconds": 1.339
+        },
+        {
+          "name": "Maze::AStar",
+          "seconds": 2.228
+        },
+        {
+          "name": "CLBG::Fannkuchredux",
+          "seconds": 1.288
+        },
+        {
+          "name": "CLBG::Mandelbrot",
+          "seconds": 1.709
+        },
+        {
+          "name": "CLBG::Nbody",
+          "seconds": 1.318
+        },
+        {
+          "name": "CLBG::Spectralnorm",
+          "seconds": 1.576
+        },
+        {
+          "name": "Compress::BWTEncode",
+          "seconds": 1.929
+        },
+        {
+          "name": "Compress::BWTDecode",
+          "seconds": 1.365
+        },
+        {
+          "name": "Compress::HuffEncode",
+          "seconds": 1.294
+        },
+        {
+          "name": "Compress::HuffDecode",
+          "seconds": 0.958
+        },
+        {
+          "name": "Compress::ArithEncode",
+          "seconds": 1.495
+        },
+        {
+          "name": "Compress::ArithDecode",
+          "seconds": 1.977
+        },
+        {
+          "name": "Compress::LZWEncode",
+          "seconds": 2.018
+        },
+        {
+          "name": "Compress::LZWDecode",
+          "seconds": 2.013
+        },
+        {
+          "name": "Distance::Jaro",
+          "seconds": 1.417
+        },
+        {
+          "name": "Distance::NGram",
+          "seconds": 2.28
+        }
+      ],
+      "perf": "# started on Wed Nov 11 05:56:33 2026\n\n428425950854;;cycles:u;139825052151;100.00;;\n788375049708;;instructions:u;139825052151;100.00;;\n122639276127;;branches:u;139825052151;100.00;;\n1629912058;;branch-misses:u;139825052151;100.00;;\n"
+    }
+  ],
+  "code_identity": {
+    "functions": 425,
+    "identical_code_and_addresses": 424,
+    "allocated_sections": {
+      "sections": [
+        {
+          "section": ".note.gnu.build-id",
+          "same_address": true,
+          "same_size": true,
+          "equal": false,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".interp",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".gnu.hash",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".dynsym",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".dynstr",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".gnu.version",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".gnu.version_r",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".rela.dyn",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".rela.plt",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".init",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".plt",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".plt.got",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".text",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": true
+        },
+        {
+          "section": ".fini",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".rodata",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".eh_frame_hdr",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".eh_frame",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".note.gnu.property",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".note.ABI-tag",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".init_array",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".fini_array",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".dynamic",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".got",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".data",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        },
+        {
+          "section": ".bss",
+          "same_address": true,
+          "same_size": true,
+          "equal": true,
+          "masked_arithmetic_function": false
+        }
+      ],
+      "all_except_arithmetic_and_build_id_identical": true
+    }
+  },
+  "public_identity": [
+    {
+      "program": "CoyoteBench_huffbench",
+      "-O0": true,
+      "-O3": true
+    },
+    {
+      "program": "Stanford_Bubblesort",
+      "-O0": true,
+      "-O3": true
+    },
+    {
+      "program": "Stanford_FloatMM",
+      "-O0": true,
+      "-O3": true
+    },
+    {
+      "program": "bg_binarytrees_2",
+      "-O0": true,
+      "-O3": true
+    },
+    {
+      "program": "bg_fasta_1",
+      "-O0": true,
+      "-O3": true
+    },
+    {
+      "program": "bg_nbody_1",
+      "-O0": true,
+      "-O3": true
+    }
+  ],
+  "fuzz": {
+    "seed": 1151113,
+    "graphs": 256,
+    "checks_per_level": 512,
+    "levels": [
+      "O0",
+      "O2",
+      "O3"
+    ],
+    "source_sha256": "f44094cdf38e820b997646541590aa16651969614555c244caf34ab4fbe53fad"
+  },
+  "predication_diagnostic": {
+    "seconds": {
+      "baseline": 2.23175,
+      "candidate": 2.7265,
+      "efficiency": 0.8185402530717035,
+      "saved_percent": -22.168701691497716,
+      "aa_spread_percent": 0.2266545784224805
+    },
+    "instructions": {
+      "baseline": 7752853565.0,
+      "candidate": 7783402482.5,
+      "efficiency": 0.9960751204156941,
+      "saved_percent": -0.3940344963809572,
+      "aa_spread_percent": 2.5925937841009272e-06
+    },
+    "cycles": {
+      "baseline": 7460148293.75,
+      "candidate": 9158045484.5,
+      "efficiency": 0.8146004850463243,
+      "saved_percent": -22.759563535385375,
+      "aa_spread_percent": 6.035543746362415
+    }
+  },
+  "raw_data": "/mnt/vizier/cppgm-issue115-data/loop-bounds-20261111"
+}

@@ -1,0 +1,12 @@
+# explicit-outcomes
+
+# Proven bounded recurrences need no signed division/remainder adjustment.
+# Alternative arithmetic, tables or control flow meeting these bounds are valid.
+none(binary div) in @header_search
+none(binary div) in @latch_search
+none(binary div) in @search8
+none(binary div) in @search16
+none(binary div) in @search64
+none(binary div) in @coupled_quotient
+none(binary mod) in @coupled_quotient
+count(binary div) <= 1 in @guard_late
