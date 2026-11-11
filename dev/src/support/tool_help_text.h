@@ -53,7 +53,8 @@ inline const char* cppgm_help_text()
 		   "  -mpopcnt / -mno-popcnt  enable/disable the population-count ISA\n"
 		   "  -g0 / -gline-tables-only\n"
 		   "  -stdlib <name> / -stdlib=<name>\n"
-		   "  --target <target>\n";
+		   "  --target <target>   linux, macos, wasm32-unknown-unknown, wasm32-wasip1\n"
+		   "  --export <name>    export a Wasm function\n";
 }
 
 inline const char* lowir_help_text()
@@ -84,7 +85,8 @@ inline const char* lowir2native_help_text()
 		   "driver flags:\n"
 		   "  -O0 / -O1 / -O2 / -O3\n"
 		   "  -o <outfile>\n"
-		   "  --target <target>\n"
+		   "  --target <target>   native target or wasm32 profile\n"
+		   "  --export <name>    export a Wasm function\n"
 		   "  --stats\n"
 		   "  --dump-machine-ir <mirfile>\n";
 }

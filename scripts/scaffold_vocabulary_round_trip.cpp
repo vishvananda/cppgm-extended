@@ -17,6 +17,9 @@
 #include "preprocess/tokens/IPPTokenStream.h"
 #include "support/not_implemented.h"
 #include "support/tool_help_text.h"
+#include "target_model.h"
+#include "machine_model.h"
+#include "wasm_model.h"
 #include "x86_asm_model.h"
 
 #include <cstdint>
@@ -209,6 +212,27 @@ void check_abi()
 	}
 }
 
+void check_targets()
+{
+	for (unsigned i = 0; i < target_model::kTargetCount; ++i)
+	{
+		const auto target = static_cast<target_model::Target>(i);
+		const auto description = target_model::describe(target);
+		expect(*target_model::spelling(target) != '\0' && *target_model::lowir_spelling(target) != '\0',
+			"target spelling", i);
+		expect(description.layout.pointer_bytes == (target_model::is_wasm(target) ? 4 : 8), "target pointer width", i);
+		const lowir_model::Type pointer = lowir_model::Type::pointer(description.layout.pointer_bytes);
+		expect(lowir_model::storage_bytes(pointer) == description.layout.pointer_bytes, "pointer storage", i);
+	}
+	const machine_model::FrameObject frame{ 32, 16, 0 };
+	expect(frame.bytes % frame.alignment == 0, "machine frame alignment", 0);
+	expect(static_cast<unsigned>(wasm_model::Op::I32Add) == 0x6a &&
+			wasm_model::immediate_form(wasm_model::Op::Call) == wasm_model::Immediate::Index,
+		"Wasm instruction vocabulary", 0);
+	expect(std::strcmp(wasm_model::spelling(wasm_model::Op::CallIndirect), "call_indirect") == 0,
+		"Wasm instruction spelling", 0);
+}
+
 } // namespace
 
 int main()
@@ -218,6 +242,7 @@ int main()
 	check_mir();
 	check_assembly();
 	check_abi();
+	check_targets();
 	expect(CPPGM_EXIT_NOT_IMPLEMENTED == 86, "CPPGM_EXIT_NOT_IMPLEMENTED", 0);
 	return failures == 0 ? 0 : 1;
 }

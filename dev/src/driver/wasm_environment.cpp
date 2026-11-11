@@ -7,7 +7,6 @@ void configure_wasm_environment(PreprocessorOptions& options)
 	// Host predefined macros, include directories and va_list declarations
 	// cannot describe a cross target. Target headers are supplied explicitly.
 	options.host_predefines.clear();
-	options.system_include_paths.clear();
 	options.builtin_declarations = "typedef char* __builtin_va_list;\n";
 	options.popcnt = false;
 	options.sse_level = 0;

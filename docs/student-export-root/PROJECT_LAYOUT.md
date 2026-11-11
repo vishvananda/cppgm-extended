@@ -42,6 +42,7 @@ path without `.cpp`; for example, `dev/src/syntax/foo.cpp` is listed as
 - PA33-PA34: LowIR and machine-backend optimization
 - PA35: inception, rebuilding `cppgm++` with `cppgm++`
 - PA36: optimizing the compiler, its generated code and its own speed
+- PA37: wasm32 backend, target layout and object/runtime interoperability
 - Required assembly before hosted compatibility: shared operands, constraints and native emission
 
 ## Assignment Map
@@ -84,6 +85,7 @@ path without `.cpp`; for example, `dev/src/syntax/foo.cpp` is listed as
 | PA34 | `lowir2native -O1/-O2/-O3` | machine/backend optimization |
 | PA35 | inception targets | rebuild `cppgm++` with `cppgm++` |
 | PA36 | `make -C pa36 test` | generated code against the seed and GCC, compile speed against the host |
+| PA37 | `cppgm++`, `lowir2native` with `--target` | portable LowIR optimization and direct wasm32 generation |
 
 ## PA35
 

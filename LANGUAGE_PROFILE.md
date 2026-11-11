@@ -38,3 +38,11 @@ The [offline references](doc/REFERENCES.md) retain edition-specific wording and
 adopted-defect provenance. Selected later header extensions, including
 conditional `explicit`, alias initializers and `no_unique_address`, remain
 separately documented compatibility concessions, not full C++20/23 support.
+
+PA37 adds `wasm32-unknown-unknown` and `wasm32-wasip1` alongside the native
+x86-64 targets. The source-language profile stays the same, but target facts
+change before preprocessing and semantic analysis: wasm32 has 32-bit pointers
+and `long`, and binary128 `long double`. Its single-threaded profile excludes
+TLS, atomics and architecture-specific assembly/intrinsics. See
+[PA37](pa37/README.md) for the portable runtime, ABI and target requirements,
+and the [WebAssembly references](doc/wasm/README.md) for the supplied contracts.

@@ -1,0 +1,59 @@
+{
+  "retrieved": "2026-11-11",
+  "files": [
+    {
+      "file": "BasicCABI.md",
+      "source": "https://raw.githubusercontent.com/WebAssembly/tool-conventions/25aceba5adba8f3f7cdbadd8e8705784aebcad6a/BasicCABI.md",
+      "revision": "25aceba5adba8f3f7cdbadd8e8705784aebcad6a",
+      "sha256": "5e3d13579580f79c6a5a5c3d57f196b7a800217d9cf7910ba3594b26e05f5656"
+    },
+    {
+      "file": "Linking.md",
+      "source": "https://raw.githubusercontent.com/WebAssembly/tool-conventions/25aceba5adba8f3f7cdbadd8e8705784aebcad6a/Linking.md",
+      "revision": "25aceba5adba8f3f7cdbadd8e8705784aebcad6a",
+      "sha256": "232e6fb814aa4da1d6af7dec8f7f71100e8aa7116e9dc70427dc3e74d2fe504b"
+    },
+    {
+      "file": "conventions-LICENSE",
+      "source": "https://raw.githubusercontent.com/WebAssembly/tool-conventions/25aceba5adba8f3f7cdbadd8e8705784aebcad6a/LICENSE",
+      "revision": "25aceba5adba8f3f7cdbadd8e8705784aebcad6a",
+      "sha256": "c0d264eb1655f9e4ede6ce9b9aca879e035fdf1ed9fb60fa342cfc2ea0c4f424"
+    },
+    {
+      "file": "spec-LICENSE",
+      "source": "https://raw.githubusercontent.com/WebAssembly/spec/943c5df07e84f11d2b83078964df5812530afbd2/LICENSE",
+      "revision": "943c5df07e84f11d2b83078964df5812530afbd2",
+      "sha256": "c06a930f71554662be662d09287c7588b2d9e1aff7a84da503d10ea09a7117c3"
+    },
+    {
+      "file": "binary-values.rst",
+      "source": "https://raw.githubusercontent.com/WebAssembly/spec/943c5df07e84f11d2b83078964df5812530afbd2/document/core/binary/values.rst",
+      "revision": "943c5df07e84f11d2b83078964df5812530afbd2",
+      "sha256": "fbc218e4ef45bd959d4f39baf7843d37bb93f497d9bdd966675284655b8f52a0"
+    },
+    {
+      "file": "binary-types.rst",
+      "source": "https://raw.githubusercontent.com/WebAssembly/spec/943c5df07e84f11d2b83078964df5812530afbd2/document/core/binary/types.rst",
+      "revision": "943c5df07e84f11d2b83078964df5812530afbd2",
+      "sha256": "663b471c9a44e7c90b4f15385a514ca13ef00f0467d52e25789f3cb2b5cdb022"
+    },
+    {
+      "file": "binary-instructions.rst",
+      "source": "https://raw.githubusercontent.com/WebAssembly/spec/943c5df07e84f11d2b83078964df5812530afbd2/document/core/binary/instructions.rst",
+      "revision": "943c5df07e84f11d2b83078964df5812530afbd2",
+      "sha256": "95bc335c71a94bbb407de4abb31d073c8b8b9b838b308c35fbc1f19e8ae053d6"
+    },
+    {
+      "file": "binary-modules.rst",
+      "source": "https://raw.githubusercontent.com/WebAssembly/spec/943c5df07e84f11d2b83078964df5812530afbd2/document/core/binary/modules.rst",
+      "revision": "943c5df07e84f11d2b83078964df5812530afbd2",
+      "sha256": "d0f17c145d460cc69ebba265204c8e1d0103fe9fb1108b6a18c66882ebe8c047"
+    },
+    {
+      "file": "document-LICENSE",
+      "source": "https://raw.githubusercontent.com/WebAssembly/spec/943c5df07e84f11d2b83078964df5812530afbd2/document/LICENSE",
+      "revision": "943c5df07e84f11d2b83078964df5812530afbd2",
+      "sha256": "0fc6687d64adc265adc788b39dfd8f24e1e2946fc726591faf59b0bfccff093c"
+    }
+  ]
+}

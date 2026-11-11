@@ -7,6 +7,7 @@
 | [N4659 text](n4659.txt), [PDF](n4659.pdf) | C++17 working draft, 2017-03-21; use the PDF for formatting/page numbers |
 | [CWG and paper index](cwg/INDEX.txt) | Individually retained defect reports and proposal wording |
 | [Itanium ABI](itanium-mangling.txt) | ABI names and runtime conventions |
+| [WebAssembly bundle](wasm/README.md) | PA37 core encoding, wasm32 data model and object ABI |
 
 These are references, not a requirement to implement their full language or
 library chapters. The [required profile](../LANGUAGE_PROFILE.md) and handouts

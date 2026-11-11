@@ -50,12 +50,21 @@ void Selector::value(Value operand, Type type)
 	switch (operand.kind)
 	{
 	case ValueKind::Temp:
+	{
 		out_.emit(Op::LocalGet, { operand.index });
+		const Type actual = body_.temps[operand.index].type;
+		const ValueType from = value_type(actual), to = value_type(type);
+		if (from == ValueType::I32 && to == ValueType::I64)
+			out_.emit(actual.is_pointer() || is_unsigned(actual.kind()) ? Op::I64ExtendI32U : Op::I64ExtendI32S);
+		else if (from == ValueType::I64 && to == ValueType::I32)
+			out_.emit(Op::I32WrapI64);
 		break;
+	}
 	case ValueKind::Integer:
 		constant(type.is_float() ? integer_as_float(type.kind(), body_.literals[operand.index])
 								 : body_.literals[operand.index],
 			type);
+		normalize(type);
 		break;
 	case ValueKind::Float:
 		constant(body_.literals[operand.index], type);

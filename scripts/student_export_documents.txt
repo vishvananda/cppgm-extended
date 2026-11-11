@@ -199,6 +199,17 @@ doc/n4140.html
 doc/n4140.txt
 doc/n4659.pdf
 doc/n4659.txt
+doc/wasm/BasicCABI.md
+doc/wasm/Linking.md
+doc/wasm/README.md
+doc/wasm/binary-instructions.rst
+doc/wasm/binary-modules.rst
+doc/wasm/binary-types.rst
+doc/wasm/binary-values.rst
+doc/wasm/conventions-LICENSE
+doc/wasm/document-LICENSE
+doc/wasm/manifest.json
+doc/wasm/spec-LICENSE
 pa1/README.md
 pa10/README.md
 pa11/README.md
@@ -237,6 +248,8 @@ pa34/tests/o1/README.md
 pa34/tests/o2/README.md
 pa35/README.md
 pa36/README.md
+pa37/README.md
+pa37/design-notes.md
 pa4/README.md
 pa4/directives.md
 pa4/macros.md
@@ -250,5 +263,3 @@ pa8/lowir.md
 pa9/README.md
 shared/README.md
 student.tests/README.md
-pa37/README.md
-pa37/design-notes.md

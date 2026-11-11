@@ -5,15 +5,17 @@ Run commands from the repository root, replacing N with the assignment number:
 ```sh
 make build
 make test-paN                 # Iterate on PA N
-make test-report-through-paN  # Final validation for PA1–PA34
-make test-report              # Full PA1–PA34 report
+make test-report-through-paN  # Final cumulative report
+make test-report              # Full assignment report
 make inception                # PA35 completion
 ```
 
-The through report includes PA N; no separate PA N check is needed.
+The report covers PA1–PA34 and PA37. The through report includes PA N;
+no separate PA N check is needed.
 PA36 ends with `make -C pa36 test`, which is not part of the report: its gates compare your compiler with the host and
 its own seed.
 Assembly is required before hosted compatibility and runs in normal reports.
+PA37 needs the pinned Wasm runtime and validator; follow its installation steps.
 Suites select platform-specific checks automatically and list skips separately
 from passes. A fixture's `.platforms` sidecar limits the whole test;
 `.inspect.platforms` limits only inspection, keeping compilation and execution.

@@ -5,6 +5,7 @@
 
 #include "machine/global_data.h"
 #include "wasm/selector.h"
+#include "wasm/validation.h"
 
 namespace wasm {
 
@@ -23,6 +24,8 @@ void function_types(const lowir::Program& program, Module& module)
 	std::map<std::vector<uint8_t>, uint32_t> known;
 	for (const lowir::Signature& source : program.signatures)
 	{
+		if (source.boundary.arity != ir_model::CAM_FIXED)
+			throw WasmError("Wasm variadic signatures require ABI legalization");
 		Signature signature;
 		std::vector<uint8_t> key;
 		const lowir::Parameter* parameters = program.parameters_of(source);
@@ -55,6 +58,8 @@ void exports(const lowir::Program& program, const Module& module, const backend:
 		const bool requested = std::find(options.exports.begin(), options.exports.end(), name) != options.exports.end();
 		if (!requested && symbol.metadata.role != ir_model::SR_ENTRY)
 			continue;
+		if (std::string(name) == "memory")
+			throw WasmError("function export conflicts with the Wasm memory export");
 		entries.string(name);
 		entries.byte(0);
 		entries.unsigned_leb(module.function_indices[id]);
@@ -89,8 +94,20 @@ void prepare_module(const lowir::Program& program, Module& module)
 	{
 		if (program.symbols[id].kind == lowir::SymbolKind::FunctionDefinition)
 		{
+			const auto& symbol = program.symbols[id];
+			if (symbol.metadata.role == ir_model::SR_INIT)
+			{
+				const auto& signature = program.signatures[program.functions[symbol.detail].signature];
+				if (module.initializer != lowir::kNoId || signature.parameter_count != 0 || !signature.result.is_void())
+					throw WasmError("invalid or duplicate Wasm initializer");
+				module.initializer = static_cast<uint32_t>(module.definitions.size());
+			}
+			if (symbol.metadata.role == ir_model::SR_FINI)
+				throw WasmError("Wasm finalization requires the language runtime");
 			module.function_indices[id] = static_cast<uint32_t>(module.definitions.size());
 			module.definitions.push_back(id);
+			module.definition_types.push_back(
+				module.signature_types[program.functions[program.symbols[id].detail].signature]);
 		}
 	}
 	uint32_t end = 1024;
@@ -180,6 +197,12 @@ void encode_module(lowir::Program& program, const backend::Options& options, Byt
 	globals.byte(static_cast<uint8_t>(Op::End));
 	output.section(6, globals);
 	exports(program, module, options, output);
+	if (module.initializer != lowir::kNoId)
+	{
+		Bytes start;
+		start.unsigned_leb(module.initializer);
+		output.section(8, start);
+	}
 	Bytes elements;
 	elements.unsigned_leb(1);
 	elements.byte(0);
@@ -196,6 +219,8 @@ void encode_module(lowir::Program& program, const backend::Options& options, Byt
 	{
 		Function function;
 		Selector(program, module, id, function).run();
+		validate_function(function,
+			module.signatures[module.signature_types[program.functions[program.symbols[id].detail].signature]], module);
 		if (!options.machine_ir.empty())
 			dump_function(function, program.spelling(program.symbols[id].name), dump);
 		encode_function(function, code);

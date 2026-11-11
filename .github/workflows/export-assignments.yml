@@ -44,7 +44,13 @@ jobs:
             gzip \
             perl \
             rsync \
-            tar
+            tar \
+            xz-utils
+
+      - name: Install pinned Wasm validation tools
+        run: |
+          perl scripts/install_wasm_tools.pl --prefix "$RUNNER_TEMP/wasm-tools"
+          echo "$RUNNER_TEMP/wasm-tools/bin" >> "$GITHUB_PATH"
 
       # The export regenerates every reference with the built tools and holds
       # the tracked ones to what the tree carries.  A failed-case diagnostic
@@ -88,7 +94,13 @@ jobs:
             gzip \
             perl \
             rsync \
-            tar
+            tar \
+            xz-utils
+
+      - name: Install pinned Wasm validation tools
+        run: |
+          perl scripts/install_wasm_tools.pl --prefix "$RUNNER_TEMP/wasm-tools"
+          echo "$RUNNER_TEMP/wasm-tools/bin" >> "$GITHUB_PATH"
 
       - name: Check assignment push token
         env:

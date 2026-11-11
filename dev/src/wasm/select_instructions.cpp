@@ -16,11 +16,21 @@ void Selector::instruction(const lowir::Instruction& inst)
 		const ValueType result = value_type(inst.type);
 		if (inst.ops[0].is(ValueKind::Temp) && source != result)
 		{
-			if (source == ValueType::I32 && result == ValueType::F32) out_.emit(Op::F32ReinterpretI32);
-			else if (source == ValueType::F32 && result == ValueType::I32) out_.emit(Op::I32ReinterpretF32);
-			else if (source == ValueType::I64 && result == ValueType::F64) out_.emit(Op::F64ReinterpretI64);
-			else if (source == ValueType::F64 && result == ValueType::I64) out_.emit(Op::I64ReinterpretF64);
-			else throw WasmError("invalid Wasm bit-copy representation");
+			if ((source == ValueType::I32 && result == ValueType::I64) ||
+				(source == ValueType::I64 && result == ValueType::I32))
+			{
+				// Integer/pointer register-width views are normalized by value().
+			}
+			else if (source == ValueType::I32 && result == ValueType::F32)
+				out_.emit(Op::F32ReinterpretI32);
+			else if (source == ValueType::F32 && result == ValueType::I32)
+				out_.emit(Op::I32ReinterpretF32);
+			else if (source == ValueType::I64 && result == ValueType::F64)
+				out_.emit(Op::F64ReinterpretI64);
+			else if (source == ValueType::F64 && result == ValueType::I64)
+				out_.emit(Op::I64ReinterpretF64);
+			else
+				throw WasmError("invalid Wasm bit-copy representation");
 		}
 		break;
 	}

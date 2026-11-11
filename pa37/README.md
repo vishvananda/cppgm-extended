@@ -30,7 +30,9 @@ lowir2native --target=wasm32-wasip1 -O2 \
 
 Freestanding modules use declared imports and exports rather than a WASI
 `main`. Follow the supplied target contract for entry points, exported names,
-runtime linkage and initialization. An unresolved symbol is an error unless
+runtime linkage and initialization. Run freestanding dynamic initializers once
+at module instantiation; the core start function must not also call `main`.
+An unresolved symbol is an error unless
 explicitly declared as an import with its module, name and signature.
 
 Produce valid deterministic module bytes and LLVM-compatible relocatable
@@ -161,7 +163,7 @@ and runtime settings and are not substitutes for correctness.
 
 ### References
 
-Use the versioned offline material in the supplied reference bundle. Online
+Use the [versioned offline reference bundle](../doc/wasm/README.md). Online
 sources are the [Wasm core specification](https://webassembly.github.io/spec/core/),
 [Basic C ABI](https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md),
 [object linking conventions](https://github.com/WebAssembly/tool-conventions/blob/main/Linking.md)

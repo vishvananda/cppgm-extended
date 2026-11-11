@@ -8,8 +8,14 @@ void Selector::binary(const lowir::Instruction& inst)
 {
 	const auto operation = static_cast<BinaryOp>(inst.sub);
 	const ValueType type = value_type(inst.type);
+	const bool unsigned_view = operation == BinaryOp::UDiv || operation == BinaryOp::UMod ||
+		operation == BinaryOp::UShr;
 	value(inst.ops[0], inst.type);
+	if (!inst.type.is_float())
+		integer_view(inst.type, !unsigned_view);
 	value(inst.ops[1], inst.type);
+	if (!inst.type.is_float())
+		integer_view(inst.type, !unsigned_view);
 	if (type == ValueType::F32 || type == ValueType::F64)
 	{
 		unsigned offset;
@@ -46,13 +52,13 @@ void Selector::binary(const lowir::Instruction& inst)
 		offset = 2;
 		break;
 	case BinaryOp::Div:
-		offset = is_unsigned(inst.type.kind()) ? 4 : 3;
+		offset = 3;
 		break;
 	case BinaryOp::UDiv:
 		offset = 4;
 		break;
 	case BinaryOp::Mod:
-		offset = is_unsigned(inst.type.kind()) ? 6 : 5;
+		offset = 5;
 		break;
 	case BinaryOp::UMod:
 		offset = 6;
@@ -70,7 +76,7 @@ void Selector::binary(const lowir::Instruction& inst)
 		offset = 10;
 		break;
 	case BinaryOp::Shr:
-		offset = is_unsigned(inst.type.kind()) ? 12 : 11;
+		offset = 11;
 		break;
 	case BinaryOp::UShr:
 		offset = 12;
@@ -141,9 +147,15 @@ void Selector::compare(const lowir::Instruction& inst)
 {
 	const auto predicate = static_cast<ComparePredicate>(inst.sub);
 	const ValueType type = value_type(inst.type);
-	value(inst.ops[0], inst.type);
-	value(inst.ops[1], inst.type);
 	const bool floating = type == ValueType::F32 || type == ValueType::F64;
+	const bool unordered = predicate == ComparePredicate::Ult || predicate == ComparePredicate::Ule ||
+		predicate == ComparePredicate::Ugt || predicate == ComparePredicate::Uge;
+	value(inst.ops[0], inst.type);
+	if (!floating)
+		integer_view(inst.type, !unordered && inst.type.kind() != TypeKind::I1);
+	value(inst.ops[1], inst.type);
+	if (!floating)
+		integer_view(inst.type, !unordered && inst.type.kind() != TypeKind::I1);
 	unsigned offset;
 	switch (predicate)
 	{
@@ -157,25 +169,25 @@ void Selector::compare(const lowir::Instruction& inst)
 		offset = 2;
 		break;
 	case ComparePredicate::Ult:
-		offset = floating ? 2 : 3;
+		offset = floating ? 5 : 3;
 		break;
 	case ComparePredicate::Gt:
 		offset = floating ? 3 : 4;
 		break;
 	case ComparePredicate::Ugt:
-		offset = floating ? 3 : 5;
+		offset = floating ? 4 : 5;
 		break;
 	case ComparePredicate::Le:
 		offset = floating ? 4 : 6;
 		break;
 	case ComparePredicate::Ule:
-		offset = floating ? 4 : 7;
+		offset = floating ? 3 : 7;
 		break;
 	case ComparePredicate::Ge:
 		offset = floating ? 5 : 8;
 		break;
 	case ComparePredicate::Uge:
-		offset = floating ? 5 : 9;
+		offset = floating ? 2 : 9;
 		break;
 	default:
 		throw WasmError("invalid Wasm comparison");
@@ -185,8 +197,31 @@ void Selector::compare(const lowir::Instruction& inst)
 		: type == ValueType::I64                  ? 0x51
 												  : 0x46;
 	out_.emit(static_cast<Op>(first + offset));
+	if (floating && unordered)
+		out_.emit(Op::I32Eqz);
 	// LowIR comparisons produce i64 truth values on every target.
 	out_.emit(Op::I64ExtendI32U);
+}
+
+void Selector::integer_view(Type type, bool signed_view)
+{
+	const unsigned bits = integer_bits(type.kind());
+	if (bits == 0 || bits >= 32)
+		return;
+	if (!signed_view)
+	{
+		out_.emit(Op::I32Const, { (uint64_t(1) << bits) - 1 });
+		out_.emit(Op::I32And);
+	}
+	else if (bits == 8 || bits == 16)
+		out_.emit(bits == 8 ? Op::I32Extend8S : Op::I32Extend16S);
+	else
+	{
+		out_.emit(Op::I32Const, { 32 - bits });
+		out_.emit(Op::I32Shl);
+		out_.emit(Op::I32Const, { 32 - bits });
+		out_.emit(Op::I32ShrS);
+	}
 }
 
 void Selector::convert(const lowir::Instruction& inst)
@@ -202,17 +237,7 @@ void Selector::convert(const lowir::Instruction& inst)
 	case ConvertOp::SExt:
 	case ConvertOp::ZExt:
 	{
-		const unsigned bits = integer_bits(from.kind());
-		if (bits < 32)
-		{
-			if (operation == ConvertOp::SExt && bits != 1)
-				out_.emit(bits == 8 ? Op::I32Extend8S : Op::I32Extend16S);
-			else
-			{
-				out_.emit(Op::I32Const, { (uint64_t(1) << bits) - 1 });
-				out_.emit(Op::I32And);
-			}
-		}
+		integer_view(from, operation == ConvertOp::SExt);
 		if (destination == ValueType::I64 && source == ValueType::I32)
 			out_.emit(operation == ConvertOp::SExt ? Op::I64ExtendI32S : Op::I64ExtendI32U);
 		break;
@@ -224,6 +249,7 @@ void Selector::convert(const lowir::Instruction& inst)
 	case ConvertOp::SIToFP:
 	case ConvertOp::UIToFP:
 	{
+		integer_view(from, operation == ConvertOp::SIToFP);
 		const unsigned first = destination == ValueType::F32 ? 0xb2 : 0xb7;
 		const unsigned offset = (source == ValueType::I64 ? 2 : 0) + (operation == ConvertOp::UIToFP ? 1 : 0);
 		out_.emit(static_cast<Op>(first + offset));

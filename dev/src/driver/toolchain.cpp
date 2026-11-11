@@ -955,6 +955,8 @@ int debug_type_request(const std::string& arg)
 int run_toolchain(const std::vector<std::string>& args, const PreprocessorOptions& base)
 {
 	const Invocation invocation = parse(args, base);
+	if (!target_model::is_wasm(invocation.target) && !invocation.exports.empty())
+		throw InvocationError("explicit function exports require a Wasm target");
 	if (invocation.preprocess_only)
 		return preprocess_mode(invocation);
 	if (invocation.syntax_only)

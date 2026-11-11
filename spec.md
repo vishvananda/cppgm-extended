@@ -3,7 +3,8 @@
 ## Purpose
 
 This specification defines the production architecture for a self-contained
-x86-64 C++ compiler implementing the required C++11/14/17 profile on Linux and Intel macOS. It is normative and intended for implementation
+C++ compiler implementing the required C++11/14/17 profile on x86-64 Linux,
+Intel macOS and PA37's wasm32 targets. It is normative and intended for implementation
 reviews and architecture audits.
 
 Compile-time performance is a property of semantic design, not a mode that may
@@ -27,8 +28,8 @@ source buffers
     -> semantic analysis recording typed facts for that tree
     -> typed LowIR, lowered on demand
     -> LowIR optimization (at -O1 and above)
-    -> per-function machine IR
-    -> direct target object writer (ELF or Mach-O)
+    -> target-specific per-function machine IR
+    -> direct target writer (ELF, Mach-O or WebAssembly)
 ```
 
 A later phase MAY ask an earlier one for work the language defers until it is
@@ -83,6 +84,10 @@ object compiler to build a representation that only a tool reads.
 
 ## 2. Canonical semantic identity
 
+- The target data layout MUST be selected before preprocessing, literal
+  typing, semantic analysis and ABI lowering. Canonical identities and caches
+  MUST belong to that target context or include it in their keys. Host sizes
+  and register names MUST NOT supply implicit target facts.
 - Identifiers, canonical types, declarations, scopes, specializations,
   layouts, constants, and ABI entities MUST have stable interned pointer or
   compact integer identity. A template argument list is a sequence of such
@@ -245,12 +250,18 @@ object compiler to build a representation that only a tool reads.
 ## 7. Backend and object generation
 
 - The default object path MUST use a compact per-function machine IR and direct
-  ELF or Mach-O emission. It MUST NOT render compiler-generated instructions to
+  target emission. It MUST NOT render compiler-generated instructions to
   assembly and parse them back, or invoke an external assembler. User-supplied
   assembly is source input: parse each bound template instance once into typed
   assembly operands, then encode it directly through cppgm's own encoder.
   Frontend placeholder expansion is part of that source language; it MUST NOT
   become a transport for ordinary compiler-generated instructions.
+- Backend dispatch MUST consume the typed target/layout contract before
+  instruction selection. Common CFG, effects, frame and ABI facts MUST NOT
+  require x86 registers, eightbyte classes or a fixed physical frame register.
+  Target instruction forms MAY remain separate. Wasm placement uses typed
+  locals and its value stack rather than requiring a physical-register allocator.
+  Machine dumps MUST describe the selected representation that emission uses.
 - Instruction selection, register allocation, local relaxation, and encoding
   SHOULD complete for one function before the next begins, and that
   function's transient state SHOULD then be released or reset for reuse

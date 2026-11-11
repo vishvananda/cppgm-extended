@@ -20,11 +20,13 @@ struct Module
 	std::vector<Signature> signatures;
 	std::vector<uint32_t> signature_types;
 	std::vector<uint32_t> function_indices;
+	std::vector<uint32_t> definition_types;
 	std::vector<uint32_t> addresses;
 	std::vector<lowir::SymbolId> definitions;
 	Bytes data;
 	uint32_t stack_floor = 0;
 	uint32_t stack_top = 0;
+	uint32_t initializer = lowir::kNoId;
 };
 
 void prepare_module(const lowir::Program& program, Module& module);

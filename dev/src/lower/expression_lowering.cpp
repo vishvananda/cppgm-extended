@@ -1731,7 +1731,8 @@ RValue FunctionLowering::pointer_difference(
 	// power of two divides by an arithmetic shift, other sizes by a
 	// signed division (README: pointer differences) marked exact for the
 	// backend (IF_EXACT).
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i64 = lowir::Type::scalar(
+		program_.pointer_type().pointer_bytes() == 4 ? lowir::TypeKind::I32 : lowir::TypeKind::I64);
 	RValue bytes = binary(lowir::BinaryOp::Sub, program_.pointer_type(), left, right);
 	bytes.type = i64;
 	const uint64_t size = lowering_.size_of(pointer_type->unqualified->element, location);

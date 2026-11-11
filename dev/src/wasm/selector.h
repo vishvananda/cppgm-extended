@@ -22,6 +22,7 @@ private:
 	void compare(const lowir::Instruction& inst);
 	void convert(const lowir::Instruction& inst);
 	void normalize(lowir::Type type);
+	void integer_view(lowir::Type type, bool signed_view);
 	void condition(lowir::Value operand);
 	void edge(lowir::BlockId from, lowir::BlockId to);
 	void phi_copies(lowir::BlockId from, lowir::BlockId to);

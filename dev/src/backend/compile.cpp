@@ -14,6 +14,11 @@ bool compile_program(lowir::Program& program, const Options& options, std::strin
 	}
 	if (target_model::is_wasm(options.target))
 		return wasm::compile_program(program, options, error);
+	if (!options.exports.empty())
+	{
+		error = "explicit function exports require a Wasm target";
+		return false;
+	}
 	return native::compile_program(program, options, error, stats_line);
 }
 

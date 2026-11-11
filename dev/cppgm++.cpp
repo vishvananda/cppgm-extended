@@ -208,6 +208,7 @@ struct SourceOutputInvocation
 	bool strict_aliasing = true;
 	bool exceptions = true;
 	vector<string> include_paths;
+	vector<string> system_include_paths;
 	string command_line;
 	// --emit-lowir -O<n>: the optimizer's level and limits.
 	opt::OptimizerOptions optimizer;
@@ -335,6 +336,11 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 		if (consume_joined_or_separate_option(args, i, "-I", "path"))
 		{
 			invocation.include_paths.push_back(i == option ? args[i].substr(2) : args[i]);
+			continue;
+		}
+		if (consume_joined_or_separate_option(args, i, "-isystem", "path"))
+		{
+			invocation.system_include_paths.push_back(i == option ? args[i].substr(8) : args[i]);
 			continue;
 		}
 		if (consume_joined_or_separate_option(args, i, "-D", "macro definition"))
@@ -655,6 +661,7 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 {
 	PreprocessorOptions options = source_preprocessor_options();
 	options.include_paths = invocation.include_paths;
+	options.system_include_paths = invocation.system_include_paths;
 	options.command_line = invocation.command_line;
 	if (!invocation.standard.empty())
 		driver::language_standard(invocation.standard, options);

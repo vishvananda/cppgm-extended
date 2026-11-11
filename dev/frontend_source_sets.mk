@@ -77,6 +77,6 @@ FRONTEND_OBJ_BASENAMES_cppgm++ += lowir/text_lexer lowir/text_parser lowir/text_
 FRONTEND_OBJ_BASENAMES_cppgm++ += asm/registers
 
 # Shared target dispatch and the wasm32 backend (PA37).
-FRONTEND_PHASE_BASENAMES_wasm := wasm/bytes wasm/encoder wasm/module wasm/selector wasm/control wasm/select_instructions wasm/select_arithmetic wasm/backend
+FRONTEND_PHASE_BASENAMES_wasm := wasm/bytes wasm/encoder wasm/validation wasm/module wasm/selector wasm/control wasm/select_instructions wasm/select_arithmetic wasm/backend
 FRONTEND_OBJ_BASENAMES_lowir2native += lowir/text_writer lowir/assembly_writer lowir/local_names backend/compile $(FRONTEND_PHASE_BASENAMES_wasm) $(FRONTEND_PHASE_BASENAMES_opt)
 FRONTEND_OBJ_BASENAMES_cppgm++ += $(FRONTEND_PHASE_BASENAMES_wasm)

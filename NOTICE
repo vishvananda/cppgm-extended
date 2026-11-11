@@ -8,12 +8,18 @@ with inherited material.
 
 cppgm-extended is an independently maintained adaptation. Its authors have
 substantially edited, consolidated, renumbered and extended the original
-course into 36 assignments. The compiler implementation, reference tools,
+course into 37 assignments. The compiler implementation, reference tools,
 regenerated outputs and current teaching sequence are maintained by this
 project. Current PA numbers do not correspond to original CPPGM numbering.
 
 Questions about inherited material should be directed to the repository
 maintainers.
+
+The WebAssembly reference material under doc/wasm/ retains its upstream
+authorship and license notices. The tool conventions use the Artistic
+License 2.0; the core specification documents use the W3C Software and
+Document Notice and License. Source revisions and hashes are recorded in
+doc/wasm/manifest.json.
 
 The plain-text CWG issue references and WG21 papers under doc/cwg/ retain
 their source, contributor, revision and adoption information. They are

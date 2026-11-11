@@ -56,7 +56,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     my $tool = $expect->{source} ? $source_compiler : $compiler;
     my ($status, $stdout, $stderr) = command("compile-$level", $tool, "-O$level",
         '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-        @exports, '-o', $module, $test);
+        @{$expect->{flags} // []}, @exports, '-o', $module, $test);
     if ($expect->{reject}) {
         die "$test: invalid input accepted at O$level\n" if $status == 0;
         die "$test: rejection was not a compiler diagnostic: $stdout$stderr\n"
@@ -71,7 +71,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         my $lowir = "$directory/source.lowir";
         ($status, $stdout, $stderr) = command("lowir-$level", $source_compiler,
             '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-            '--emit-lowir', '-O0', '-o', $lowir, $test);
+            @{$expect->{flags} // []}, '--emit-lowir', '-O0', '-o', $lowir, $test);
         die "$test: LowIR lowering failed: $stdout$stderr\n" if $status;
         my $roundtrip = "$directory/roundtrip-$level.wasm";
         ($status, $stdout, $stderr) = command("roundtrip-$level", $compiler,
@@ -82,14 +82,14 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         push @modules, $roundtrip;
     }
     for my $run_module (@modules) {
-    for my $call (@{$expect->{calls}}) {
-        ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run',
-            '--invoke', $call->{export}, $run_module, @{$call->{args} // []});
-        $stdout =~ s/\s+\z//;
-        die "$test: $call->{export} failed ($status): $stdout$stderr\n" if $status;
-        die "$test: $call->{export} expected $call->{result}, got '$stdout'\n"
-            if $stdout ne "$call->{result}";
-    }
+        for my $call (@{$expect->{calls} // []}) {
+            ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run',
+                '--invoke', $call->{export}, $run_module, @{$call->{args} // []});
+            $stdout =~ s/\s+\z//;
+            die "$test: $call->{export} failed ($status): $stdout$stderr\n" if $status;
+            die "$test: $call->{export} expected $call->{result}, got '$stdout'\n"
+                if $stdout ne "$call->{result}";
+        }
     }
 }
 print "Wasm behavior: PASS\n";

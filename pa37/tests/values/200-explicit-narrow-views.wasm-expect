@@ -1,0 +1,1 @@
+{"calls":[{"export":"signed_bit","result":"-1"},{"export":"unsigned_byte_float","result":"255"},{"export":"unsigned_narrow_division","args":["255"],"result":"127"},{"export":"unsigned_narrow_shift","args":["128"],"result":"64"},{"export":"signed_unsigned_storage","args":["254"],"result":"-1"},{"export":"unsigned_narrow_compare","args":["128"],"result":"1"}]}

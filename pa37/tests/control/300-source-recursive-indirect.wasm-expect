@@ -1,0 +1,1 @@
+{"source":true,"calls":[{"export":"recursive_indirect","args":["0","5"],"result":"128"},{"export":"recursive_indirect","args":["1","4"],"result":"32"}]}

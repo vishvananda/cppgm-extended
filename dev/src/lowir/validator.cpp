@@ -291,6 +291,7 @@ public:
 private:
 	bool fail(const char* message, NameId detail = 0);
 	bool check_links();
+	bool check_target_types();
 	// Named entries print as their names and unnamed ones as their index
 	// (the writer's fallback); fails with `message` if two of the `count`
 	// entries named by name_of(i) would print alike.
@@ -553,6 +554,8 @@ bool Validator::check_layout()
 
 bool Validator::check_links()
 {
+	if (!check_target_types())
+		return false;
 	// Ids stored outside function bodies.
 	const uint64_t symbols = program_.symbols.size();
 	for (const Signature& signature : program_.signatures)
@@ -625,6 +628,44 @@ bool Validator::check_links()
 	for (const EquivalentEntry& entry : program_.equivalent_entries)
 		if (entry.symbol >= symbols || entry.target >= symbols)
 			return fail("invalid equivalent entry");
+	return true;
+}
+
+bool Validator::check_target_types()
+{
+	if (static_cast<unsigned>(program_.target) >= target_model::kTargetCount)
+		return fail("invalid target profile");
+	const unsigned width = target_model::data_layout(program_.target).pointer_bytes;
+	auto valid = [&](Type type) { return !type.is_pointer() || type.pointer_bytes() == width; };
+	for (const Signature& signature : program_.signatures)
+		if (!valid(signature.result))
+			return fail("pointer result and target layout differ");
+	for (const Parameter& parameter : program_.parameters)
+		if (!valid(parameter.type))
+			return fail("pointer parameter and target layout differ");
+	for (const Global& global : program_.globals)
+		if (global.typed && !valid(global.type))
+			return fail("pointer global and target layout differ");
+	for (const DataItem& item : program_.data_items)
+		if ((item.kind == DataItemKind::Scalar || item.kind == DataItemKind::Address) && !valid(item.type))
+			return fail("pointer data and target layout differ");
+	for (const Function& function : program_.functions)
+	{
+		if (!function.body)
+			continue;
+		const FunctionBody& body = *function.body;
+		if (body.pointer_bytes != width)
+			return fail("function body and target layout differ");
+		for (const Temp& temp : body.temps)
+			if (!valid(temp.type))
+				return fail("pointer temporary and target layout differ");
+		for (const Slot& slot : body.slots)
+			if (!valid(slot.type))
+				return fail("pointer slot and target layout differ");
+		for (const Instruction& inst : body.instructions)
+			if (!valid(inst.type) || (inst.op == Opcode::Convert && !valid(convert_source_type(inst))))
+				return fail("pointer instruction and target layout differ");
+	}
 	return true;
 }
 

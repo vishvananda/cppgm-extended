@@ -146,7 +146,7 @@ RValue FunctionLowering::convert(
 	if (from_pointer)
 	{
 		// 5.2.10p4: a pointer to an integer (retyped, or narrowed).
-		if (lowir::integer_bits(target.kind()) == 64)
+		if (lowir::integer_bits(target.kind()) >= 8 * lowir::storage_bytes(value.type))
 			return copy(target, value);
 		return convert_op(lowir::ConvertOp::Trunc, target, value);
 	}

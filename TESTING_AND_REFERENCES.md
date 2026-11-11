@@ -19,8 +19,9 @@ make test-harness
 make inception
 ```
 
-The report covers PA1–PA34; PA35's final check is inception, and PA36's gates
-are a release check ([below](#pa36-smoke-and-release-check)). Narrow the report
+The report covers PA1–PA34 and PA37; PA35's final check is inception, and PA36's gates
+are a release check ([below](#pa36-smoke-and-release-check)). PA37 requires
+the pinned runtime and validator installed as shown in its handout. Narrow the report
 with `ACTIVE_TEST_REPORT_PAS='pa8 pa10'`. Control parallelism with
 `TEST_REPORT_ASSIGNMENT_JOBS` and `TEST_REPORT_SUBTEST_JOBS`; `ORDERED=false`
 streams completed jobs. Use `CPPGM_TEST_RUNNER=0` to diagnose ordinary versus

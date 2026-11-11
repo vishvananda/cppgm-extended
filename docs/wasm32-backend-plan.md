@@ -1,22 +1,33 @@
 # A second backend: wasm32 and a reusable machine layer
 
-Status: implementation plan, 2026-11-11. No compiler behavior or active course
-requirements change in this branch.
+Status: implementation in progress, 2026-11-11. The working branch is
+`feature/wasm32-backend`, rebased onto `origin/opt/llvm-gap-claude` at
+`e15c480b9`. Compiler changes are isolated in
+`/mnt/vizier/cppgm-wasm32-backend`; the main checkout is unchanged.
 
-Base: `opt/llvm-gap-claude` at
-`fbe6140a4531ab9a660e499e67191dde9b8e7928`. The plan worktree is
-`/mnt/vizier/cppgm-wasm32-assignment-plan`, branch
-`plan/wasm32-backend-assignment`. This includes the LLVM workload optimizations
-committed during the review; it does not copy another worktree's unfinished
-edits. Rebase onto newer committed LLVM work before implementation.
+The active student documents are [PA37](../pa37/README.md) and its
+[design notes](../pa37/design-notes.md). Earlier handouts now introduce target
+layout and the shared machine boundary, and PA37 is included in the normal
+course/export discovery. This plan and the
+[reference investigation](wasm32-assignment/reference-evidence.md) are
+maintainer material and stay out of the student export.
 
-The proposed deliverables are a complete wasm32 backend, the machine-layer
-refactor it needs, and one cumulative assignment. Draft student documents are
-[the handout](wasm32-assignment/README.md) and
-[design notes](wasm32-assignment/design-notes.md). They are drafts under `docs/`,
-not an active `paN/` or an exported assignment. The
-[reference investigation](wasm32-assignment/reference-evidence.md) records
-what was actually tested and what still needs qualification.
+The first implementation covers typed target profiles, ILP32 frontend layout,
+target-aware LowIR/optimizer pointer operations, common global-data emission,
+and direct scalar Wasm encoding with typed locals, frames, function tables,
+structured reducible control flow and an irreducible fallback. Perl fixtures
+validate and execute direct-source and serialized-LowIR paths at O0–O3 using
+pinned independent tools. Selected machine IR is checked internally before
+encoding. The initial rebased strict report passes 10,662/10,662 tests. Subsequent
+scalar checks cover narrow signed/unsigned operations, unordered floating
+comparisons and freestanding dynamic initialization.
+
+This is an intermediate implementation, not completion of the assignment.
+Relocatable objects/linking, full aggregate/varargs/wide-value ABI, WASIp1
+startup and runtime, virtual/RTTI/EH interoperability, SIMD and performance
+quality gates remain. Steps 0–4 and 8 below are partially implemented; their
+remaining acceptance checks still apply. Keep those requirements visible
+rather than narrowing the assignment to the current scalar emitter.
 
 ## Placement and scope
 

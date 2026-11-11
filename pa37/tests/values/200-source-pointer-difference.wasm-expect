@@ -1,0 +1,1 @@
+{"source":true,"calls":[{"export":"pointer_difference","args":["3"],"result":"7"},{"export":"pointer_difference","args":["0"],"result":"10"}]}
