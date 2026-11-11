@@ -119,6 +119,18 @@ bool ShortLoopUnrolling::chain(uint32_t loop, Shape& s) const
 	// (Not a loop this pass or the fill widening made, nor what one left.)
 	if (body_.blocks[s.header].kind == BlockKind::Unrolled || body_.blocks[s.pre].kind == BlockKind::WideTail)
 		return false;
+	// (Nor the passes a lane loop left, fewer than its lanes: entered from
+	// the lane loop, or from its exit block.)
+	for (uint32_t k = cfg_.pred_first[s.pre]; k < cfg_.pred_first[s.pre + 1]; ++k)
+	{
+		const BlockId p = cfg_.preds[k];
+		if (body_.blocks[p].kind == BlockKind::WideLoop)
+			return false;
+		for (uint32_t j = cfg_.pred_first[p]; body_.blocks[p].kind == BlockKind::LoopExit && j < cfg_.pred_first[p + 1];
+			++j)
+			if (body_.blocks[cfg_.preds[j]].kind == BlockKind::WideLoop)
+				return false;
+	}
 	auto last = [&](BlockId b) -> const Instruction& { return body_.instructions[body_.blocks[b].last]; };
 	s.bottom = s.header == s.latch || last(s.header).op != Opcode::Branch;
 	const BlockId exiting = s.bottom ? s.latch : s.header;
