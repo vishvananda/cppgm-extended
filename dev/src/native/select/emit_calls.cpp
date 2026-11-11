@@ -1195,10 +1195,12 @@ void FunctionSelector::emit_return(const Instruction& inst)
 		emit1(Op::Ret, kind, Operand::make_reg(XMM0));
 		return;
 	}
-	// A narrow result from a value of another width returns extended at its
-	// own (the upper bits of one of its width are its callers').
+	// A narrow result from a narrower value returns extended at its own
+	// width (the bits above a result's width are its callers', so one of
+	// its width or wider returns as it is: psABI 3.2.3).
+	const unsigned from = v.kind == ValueKind::Temp ? register_bytes(body_->temps[v.index].type.kind()) : 0;
 	if (level_ >= 1 && src.kind == OperandKind::Reg && v.kind == ValueKind::Temp && narrow_integer(kind) &&
-		register_bytes(body_->temps[v.index].type.kind()) != register_bytes(kind) &&
+		(from < register_bytes(kind) || (kind == TypeKind::I1 && from != register_bytes(kind))) &&
 		(v.index >= fits_.size() || fits_[v.index] > canonical_bits(kind)))
 	{
 		load_into(RAX, src, TypeKind::I64);
