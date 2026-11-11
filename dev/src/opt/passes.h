@@ -256,6 +256,10 @@ bool reduce_strength(FunctionContext& context);
 // In a one-block loop, the step of a phi after the phi's last reader, so that
 // the back edge copies nothing.
 bool sink_counter_steps(FunctionContext& context);
+// O2+: a short straight loop that leaves when an induction meets a bound
+// runs its passes in groups of up to eight with one test, in a loop before
+// it; the loop itself runs the passes left (opt/loop_unrolling.cpp).
+bool unroll_short_loops(FunctionContext& context);
 // O2+: pure instructions move down to the block nearest their readers that
 // lies in no deeper loop (opt/code_sinking.cpp).
 bool sink_values(FunctionContext& context);

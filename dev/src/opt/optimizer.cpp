@@ -506,6 +506,14 @@ bool finish_loops(FunctionContext& context, int level)
 		RUN_PASS(remove_dead_code);
 		changed = true;
 	}
+	// O2: a short loop's passes in groups, after everything that reads a
+	// loop's shape (its counters then widen with the loop's own).
+	if (RUN_PASS(unroll_short_loops))
+	{
+		RUN_PASS(simplify_values);
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
 	if (RUN_PASS(widen_counters))
 	{
 		RUN_PASS(remove_dead_code);
