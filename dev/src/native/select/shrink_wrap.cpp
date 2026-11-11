@@ -79,6 +79,9 @@ bool frameless_inst(const Inst& inst)
 	case Op::Bsr:
 	case Op::Popcnt:
 	case Op::Bswap:
+	// (A table jump reads its index and forms its target in the scratch
+	// registers, which no rename takes.)
+	case Op::JumpTable:
 		break;
 	// Direct bulk forms (xmm15 and r10/r11 chunks; bulk_policy.h), save a
 	// copy whose addresses name both scratch registers (it borrows another
@@ -220,13 +223,16 @@ bool shrink_wrap(Function& f)
 				return k;
 		return sunk.size();
 	};
-	std::vector<uint8_t> needs(n, 0);
+	// (A block that ends in a table jump is never copied: a copy would
+	// share the table's entries, which the region's are redirected through.)
+	std::vector<uint8_t> needs(n, 0), tabled(n, 0);
 	std::vector<std::vector<uint32_t>> succs(n);
 	for (uint32_t b = 0; b < n; ++b)
 	{
 		const Block& block = f.blocks[b];
 		if (!terminated(f, block))
 			return false;
+		tabled[b] = f.insts[block.first + block.count - 1].op == Op::JumpTable;
 		for (uint32_t i = block.first; i < block.first + block.count && !needs[b]; ++i)
 			needs[b] = !frameless_inst(f.insts[i]) && std::find(sunk.begin(), sunk.end(), i) == sunk.end() &&
 				reload_of(i) == sunk.size();
@@ -277,7 +283,9 @@ bool shrink_wrap(Function& f)
 			const Block& block = f.blocks[b];
 			return !needs[b] && block.count <= kReturnCopyCap && f.insts[block.first + block.count - 1].op == Op::Ret;
 		};
-		auto copyable = [&](uint32_t b) { return wide ? !needs[b] && f.blocks[b].count <= budget : short_return(b); };
+		auto copyable = [&](uint32_t b) {
+			return wide ? !needs[b] && !tabled[b] && f.blocks[b].count <= budget : short_return(b);
+		};
 		// The region: what the entry reaches through blocks not framed.
 		region.assign(n, 0);
 		copied.assign(n, 0);
@@ -312,7 +320,7 @@ bool shrink_wrap(Function& f)
 					// block within kMinimalCopyBudget; anything else is an exit.
 					if (copied[s])
 						continue;
-					if (short_return(s) || (!needs[s] && f.blocks[s].count <= minimal_budget))
+					if (short_return(s) || (!needs[s] && !tabled[s] && f.blocks[s].count <= minimal_budget))
 					{
 						if (!short_return(s))
 							minimal_budget -= f.blocks[s].count;
@@ -383,7 +391,7 @@ bool shrink_wrap(Function& f)
 						leaf_names |= named(inst.ops[k]);
 				if (inst.nops > 0 && inst.ops[0].kind == OperandKind::Reg && inst.ops[0].reg < 16 &&
 					inst.op != Op::Store && inst.op != Op::Cmp && inst.op != Op::Test && inst.op != Op::Bt &&
-					inst.op != Op::Jcc && inst.op != Op::Jmp && inst.op != Op::Ret)
+					inst.op != Op::Jcc && inst.op != Op::Jmp && inst.op != Op::Ret && inst.op != Op::JumpTable)
 				{
 					if (to_exit[b])
 					{
