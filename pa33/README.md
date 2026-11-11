@@ -262,6 +262,10 @@ pass:
   Prove equality by matching their incoming edges and external values.
   Equal literal values may use different spellings. Preserve distinct seeds,
   updates and predecessor choices. Bound the proof work.
+  When a packed integer load supplies only one byte-aligned floating field,
+  reading that field directly can avoid unpacking work. Preserve snapshot
+  boundaries, volatile and atomic access widths, and the exact bits of floating
+  fields. A reinterpreted field does not inherit the wider load's alias type.
 - When an optimization makes the output slower because the backend lowers
   the result badly, fix the backend. Withholding the optimization leaves both
   problems in place, and the rule that withholds it has to be found and

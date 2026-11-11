@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+# A small scalar scan stays compact after by-value field access is inlined.
+instructions <= 20 in @count_samples
+count(load) <= 1 in @count_samples

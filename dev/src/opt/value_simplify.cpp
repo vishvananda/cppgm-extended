@@ -1,5 +1,6 @@
 #include "lowir/builder.h"
 #include "opt/integer_patterns.h"
+#include "opt/packed_loads.h"
 #include "opt/phi_equivalence.h"
 #include "opt/loops.h"
 #include "opt/passes.h"
@@ -2905,6 +2906,14 @@ void Simplifier::process_block(BlockId block)
 			continue;
 		}
 		substitute(inst);
+		if (inst.op == Opcode::Copy && inst.type.is_float() &&
+			simplify_packed_load(body_, uses_, c_.block_of, block, prev, id))
+		{
+			repl_.resize(body_.temps.size(), Value::none());
+			uses_.resize(body_.temps.size(), 0);
+			changed_ = true;
+			continue;
+		}
 		const Instruction* choice = inst.op == Opcode::Select ? producer(inst.ops[0]) : nullptr;
 		if (choice != nullptr && choice->op == Opcode::Phi && select_phi(block, prev, id))
 		{

@@ -1,0 +1,11 @@
+# explicit-outcomes
+
+# Bound the work while allowing different scalar representations.
+instructions <= 4 in @float_high
+instructions <= 3 in @float_low
+instructions <= 5 in @signed_middle
+instructions <= 4 in @double_high
+count(load) <= 1 in @shared_word
+# A volatile access retains its original width.
+count(/load volatile i64/) == 1 in @volatile_word
+count(atomic_load i64) == 1 in @atomic_word

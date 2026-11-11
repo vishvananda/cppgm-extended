@@ -1,0 +1,129 @@
+declare function @__builtin_memcpy(%arg0 : ptr [alias=noalias], %arg1 : ptr [alias=noalias], %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memcpy]
+
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  u32 0
+  u32 2147483648
+  u32 1065353216
+  u32 2143363909
+  u32 1
+  u32 4290917462
+}
+
+function @count_samples(%bound : f32, %samples : ptr, %size : u32) -> u32 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi u32 [^entry: 0, ^for_body_2: %t12]
+    %t2 = phi u32 [^entry: 0, ^for_body_2: %t13]
+    %t3 = cmp ult u32 %t2, %size
+    branch %t3, ^for_body_2, ^for_end_3
+
+  block ^for_body_2:
+    %t4 = convert zext i64 u32 %t2
+    %t5 = binary mul i64 %t4, 8
+    %t6 = index inbounds i8 [projection=array_element] %samples, %t5
+    %t7 = index i8 %t6, 4
+    %t8 = load f32 %t7
+    %t9 = cmp ge f32 %bound, %t8
+    %t10 = convert trunc u8 i64 %t9
+    %t11 = convert zext u32 u8 %t10
+    %t12 = binary add u32 %t11, %t1
+    %t13 = binary add u32 %t2, 1
+    jump ^for_cond_1
+
+  block ^for_end_3:
+    return u32 %t1
+}
+function @float_field(%sample : ptr) -> u32 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = load i64 %sample
+    %t2 = binary ushr i64 %t1, 32
+    %t3 = convert trunc u32 i64 %t2
+    return u32 %t3
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $samples : obj<56x4>
+  slot $patterns : obj<24x4>
+  slot $sample : obj<8x4>
+
+  block ^entry:
+    %t1 = addr $samples
+    store u8 1, %t1
+    %t2 = index i8 [projection=field] %t1, 4
+    store typed f32 -3f, %t2
+    %t3 = index i8 %t1, 8
+    %t4 = copy nonnull ptr %t3
+    store u8 2, %t4
+    %t5 = index i8 [projection=field] %t4, 4
+    store typed f32 0f, %t5
+    %t6 = index i8 %t1, 16
+    %t7 = copy nonnull ptr %t6
+    store u8 3, %t7
+    %t8 = index i8 [projection=field] %t7, 4
+    store typed f32 -0f, %t8
+    %t9 = index i8 %t1, 24
+    %t10 = copy nonnull ptr %t9
+    store u8 4, %t10
+    %t11 = index i8 [projection=field] %t10, 4
+    store typed f32 1f, %t11
+    %t12 = index i8 %t1, 32
+    %t13 = copy nonnull ptr %t12
+    store u8 5, %t13
+    %t14 = index i8 [projection=field] %t13, 4
+    store typed f32 3f, %t14
+    %t15 = index i8 %t1, 40
+    %t16 = copy nonnull ptr %t15
+    store u8 6, %t16
+    %t17 = index i8 [projection=field] %t16, 4
+    store typed f32 5f, %t17
+    %t18 = index i8 %t1, 48
+    %t19 = copy nonnull ptr %t18
+    store u8 7, %t19
+    %t20 = index i8 [projection=field] %t19, 4
+    store typed f32 7f, %t20
+    %t21 = call u32 @count_samples(3f, %t1, 7)
+    %t22 = cmp ne u32 %t21, 5
+    branch %t22, ^if_then_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t23 = call u32 @count_samples(-1f, %t1, 7)
+    %t24 = cmp ne u32 %t23, 1
+    branch %t24, ^if_then_2, ^if_end_3
+
+  block ^if_then_2:
+    return i32 1
+
+  block ^if_end_3:
+    %t25 = addr $patterns
+    copyobj 24x4 @__constexpr_template__1, %t25
+    jump ^for_cond_4
+
+  block ^for_cond_4:
+    %t26 = phi u32 [^if_end_3: 0, ^if_end_7: %t35]
+    %t27 = cmp ult u32 %t26, 6
+    branch %t27, ^for_body_5, ^for_end_8
+
+  block ^for_body_5:
+    %t28 = addr $sample
+    %t29 = convert trunc u8 u32 %t26
+    store u8 %t29, %t28
+    %t30 = index i8 [projection=field] %t28, 4
+    store typed f32 0f, %t30
+    %t31 = index inbounds u32 [projection=array_element] %t25, %t26
+    copyobj 4x1 %t31, %t30
+    %t32 = call u32 @float_field(%t28)
+    %t33 = load typed u32 %t31
+    %t34 = cmp ne u32 %t32, %t33
+    branch %t34, ^if_then_6, ^if_end_7
+
+  block ^if_then_6:
+    return i32 2
+
+  block ^if_end_7:
+    %t35 = binary add u32 %t26, 1
+    jump ^for_cond_4
+
+  block ^for_end_8:
+    return i32 0
+}
