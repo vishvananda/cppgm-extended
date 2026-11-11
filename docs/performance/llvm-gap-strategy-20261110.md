@@ -653,3 +653,135 @@ Evidence: `gap-A-{combined,incoming,partial}-rebased-*`,
 `gap-A-incoming-rebased-hw-panel-r2/`, `gap-A-partial-code-shape-r3/`,
 `gap-A-scalar-zero-code-shape-r4/`, `gap-A-scalar-zero-rebased-*`,
 `gap-A-scalar-zero-guard-controls-r4/` and `gap-A-optional-zero-controls-r4/`.
+
+### Repair inline return merges and separate layout effects
+
+The next trace identifies another representation regression. Inlining a
+multiple-return I128 helper recreates a memory merge after the early wide-value
+expansion has finished. The resulting stack store/load and pack/unpack chain
+raises `SmallDenseMap::insert` from the accepted compiler's cost of 88 to 99,
+above the unchanged hinted limit of 96. Merging the two words with I64 phis
+instead removes the new merge slot, reduces the cost to 92 and restores the
+inline decision. This does not raise any inline limit or run another whole-body
+wide expansion for every call.
+
+The combined r5 private screen reduces the preceding instruction regression
+from 0.669% to 0.008%. Executed bytes fall 0.258% and bytes per instruction fall
+0.580% against the rebased accepted compiler. Calls remain 0.856% higher and
+modeled L2 code misses 0.167% higher. Dynamic stack loads and stores fall by
+2.35 million and 3.14 million, respectively. These counts alone are not runtime
+acceptance. The hardware panel has 80 matching outputs and fourteen retained
+cycle outliers: instructions fall about 0.25–0.31%, blocked store forwarding
+falls 1.32%, but resteers rise 4.01%, L2 code misses 0.77% and fetch stalls 1.89%.
+Cycle group medians range from -1.08% to +0.75%.
+
+The 32 mixed ABI cases, 52 optimized-IR replay/casting checks, sixteen spilled
+pointer/roundtrip controls, sixteen guard-page cases, sixteen optional-value
+cases and twelve new wide-arithmetic/nested-return cases pass. All 325 workload
+objects and the linked executable match native. The initial new arithmetic
+test used the freestanding link path with `printf`; that harness invocation
+failed to link. Its successful replacement compiles objects and links through
+the host toolchain, as the other hosted controls do.
+
+The r6 follow-up removes five unnecessary uses of the new native operand
+visitor: four analyses run before word facts exist, and dead pure operations
+cannot be the call/store/return consumers it changes. All forty LLVM objects
+and the linked slice are byte-identical to r5. The paired frozen compile-cost
+changes are +0.442%, -0.282%, +0.485% and +0.472% at O0–O3; all meet the ordinary
+0.5% batch limit, with RSS within 0.04%. O0 output is unchanged. The historical
+cumulative budget still uses the post-level-move baseline.
+
+The remaining attribution also exposes a measurement confounder. In
+`DeclContext::lookupImpl`, the lookup count and hit/miss outcomes are identical,
+but collision-loop iterations increase from 175,007 to 381,089. Twelve
+instructions per additional probe account for 2.473 million instructions,
+almost the entire measured 2.454 million increase in that function. These
+pointer-key hashes depend on allocation addresses; deterministic instruction
+counts are not automatically independent of binary layout or argument layout.
+
+A diagnostic relink places an otherwise unused writable byte at the same final
+load address in both binaries. It preserves their code sequences and workload
+outputs but changes allocation layout: the lookup difference reverses to
+-722,095 instructions, and whole-binary instruction growth changes from +0.008%
+to -0.268%. This supports a layout explanation; it is not an acceptance score
+or a proposal to pad the production executable. The first anchor attempt placed
+the section before ordinary sections and did not fix the image end; it is
+retained as a separate failed experimental control. Use instruction attribution
+to distinguish changed work per probe from changed probe counts, and retain
+layout sensitivity alongside the usual paired hardware and elapsed results.
+
+Another traced difference remains: the diagnostic-attribute helper grows from
+380 to 665 instructions after its own inline decisions and crosses the existing
+single-use cap. Its extra caller/callee work is much smaller than the misleading
+lookup total. Investigate that interaction without raising the cap blindly.
+
+The full O1 LLVM build with the combined r6 compiler completes in 303.17 seconds
+and reproduces all 325 objects and the executable. Its deterministic screen
+reduces executed bytes by 1.830% and modeled L2 code misses by 3.303%. However,
+the full-build hardware panel increases blocked store forwarding by 8.46%,
+where the partial rebuild reduced it slightly. The aggregate workstream remains
+private and unaccepted; the complete panel, paired workload timing and normal
+repository qualification are pending.
+
+Evidence: `gap-A-inline-merge-rebased-*`, `gap-A-inline-merge-controls-r5/`,
+`gap-A-inline-merge-reductions-r5/`, `gap-A-inline-wide-return-controls-r5a/`,
+`gap-A-inline-{guard,optional}-controls-r5/`, `gap-A-inline-merge-admission-r5/`,
+`gap-A-operand-scan-rebased-*`, `gap-A-lookup-shape-r6/`,
+`gap-A-diagnose-shape-r6/`, `gap-A-heap-anchor-rebased-r{6,7}/` and
+`gap-A-inline-merge-O1-r6-llvm-build-status.json`.
+
+### Complete the small-size and partial-copy cases
+
+The scalar ABI prototype originally excluded values smaller than eight bytes.
+Extending the same exact-width loading to sizes one through seven covers
+`SourceLocation` and other small values without reading past their storage.
+The r7 candidate passes the 84 ABI/replay controls, sixteen guard-page cases
+covering every size from one through fifteen, and all 325 workload outputs.
+Its full LLVM build also passes those 325 object comparisons and the executable
+comparison. Paired frozen compile costs are +0.441%, -0.416%, +0.363% and +0.350%
+at O0–O3.
+
+The full r7 hardware panel finally moves the intended mechanism substantially:
+blocked store forwarding falls 29.51% against the rebased accepted compiler.
+Instructions fall about 0.4–0.5%. Resteers and instruction-TLB hits still rise
+6.14% and 5.13%, and fetch stalls rise 3.08%; cycle group medians range from
+-1.68% to +0.84%. All eighty outputs match and fourteen outliers are retained.
+This is mechanism evidence, not a demonstrated whole-workload elapsed win.
+
+Sampling the r6 store-forwarding regression identifies `children<BasicBlock*>`
+as roughly half its additional samples (536 of 1,068). Sampling is non-precise
+and may skid; the assembly independently confirms the mechanism. This helper
+copies a twelve-byte iterator payload between sixteen-byte homes, then reads
+eight bytes after storing four. Its temporary memory transfers also
+prevent the baseline's shrink-wrapped frame. The linker map identifies the
+selected weak definition in `LoopInfo.cpp.o`, outside the forty-file screen.
+The expanded quick set adds LoopInfo.cpp, Local.cpp and BasicBlock.cpp, which
+provide several of the newly identified symbols.
+
+The r9 experiment breaks short partial copies that straddle existing scalar
+carriers into exact-width loads and stores, then uses the ordinary packed-field
+logic. It reads all pieces before writing, preserves untouched bytes and leaves
+volatile copies alone. Candidate discovery shares the existing address and
+whole-word facts; a changed function is reanalyzed once, not once per copy.
+The reduced padded-iterator test loses every temporary slot, and the actual
+LLVM `children()` body has no stack memory operands after rebuilding its
+provider. Sixteen mixed-toolchain padded-iterator cases and the 84 ABI/replay
+controls pass. Compile costs remain within the ordinary gate: +0.444%, -0.449%,
++0.366% and +0.358% at O0–O3. Wider workload screens are in progress.
+
+The separate r8 inliner experiment addresses the diagnostic helper's growth:
+smaller child helpers now qualify for inlining, so their parent grows beyond
+the single-use cap. It lets a small caller forwarding its sole internal callee's
+result absorb that definition within the existing once budgets. Explicit limits
+remain effective, and a caller with values live after the call does not qualify.
+Eight mixed runtime controls check both cases. The forty-provider screen removes
+28,810 calls relative to r7 but slightly increases instructions and modeled code
+misses. Preserve this as a separate experiment; r9 starts from r7 and does not
+include the unproven inliner policy.
+
+Evidence: `gap-A-small-carriers-rebased-*`, `gap-A-small-carriers-full-*`,
+`gap-A-small-carrier-{controls,guard-controls}-r7/`,
+`gap-A-full-store-forward-samples-r6/symbol-summary.json`,
+`gap-A-full-provider-map-r7/`, `gap-A-children-store-forward-shape-r7/`,
+`gap-A-partial-copy-*`, `gap-A-partial-carrier-byte-controls-r9/`,
+`gap-aggregate-units43-r9.json`, and `gap-A-forward-once-*`.
