@@ -2296,7 +2296,7 @@ bool LoopPass::try_unroll_search(uint32_t loop)
 	if (trips < 1 || trips > kSearchTrips)
 		return false;
 	std::vector<uint8_t> member, owned;
-	BlockId through;
+	BlockId through = kNoId;
 	if (!unroll_search_shape(loop, trips, iv_temp, member, owned, through))
 		return false;
 	// A loop entered from a branching block gets its preheader first (the
