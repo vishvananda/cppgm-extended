@@ -1665,6 +1665,20 @@ bool Simplifier::convert_identity(Instruction& inst, Value& out)
 			return true;
 		}
 	}
+	// An extension of an integer's bits copied to its other signedness reads
+	// the integer itself when it extends as that one does (the zero
+	// extension of an unsigned's signed twin).
+	const Instruction* twin = op == ConvertOp::SExt || op == ConvertOp::ZExt ? producer(inst.ops[0]) : nullptr;
+	if (twin != nullptr && twin->op == Opcode::Copy && twin->type == from && twin->ops[0].is(ValueKind::Temp))
+	{
+		const Type original = body_.temps[twin->ops[0].index].type;
+		if (integer_twins(original, from) && lowir::is_unsigned(original.kind()) == (op == ConvertOp::ZExt))
+		{
+			inst.ops[0] = twin->ops[0];
+			set_convert_source_type(inst, original);
+			changed_ = true;
+		}
+	}
 	// A truncation after widening keeps the original low bits. If the final
 	// type is still wider, retain the original extension's sign behavior.
 	const Instruction* def = op == ConvertOp::Trunc ? producer(inst.ops[0]) : nullptr;
