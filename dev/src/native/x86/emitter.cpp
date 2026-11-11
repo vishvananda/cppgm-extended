@@ -38,7 +38,7 @@ int64_t narrowed(int64_t value, unsigned bytes)
 	return value;
 }
 
-bool calls_out(const Function& function);
+bool calls_out(const Function& function, Target target);
 
 } // namespace
 
@@ -314,7 +314,7 @@ void FunctionEmitter::align_loop_head(size_t head)
 void FunctionEmitter::emit(const Function& function)
 {
 	function_ = &function;
-	calls_out_ = function.omit_frame_pointer && calls_out(function);
+	calls_out_ = function.omit_frame_pointer && calls_out(function, image_.target);
 	std::vector<uint8_t>& text = image_.text();
 	uint32_t assembly_alignment = 1;
 	if (function.assembly)
@@ -519,19 +519,29 @@ Reg written_gpr(const Inst& inst)
 
 // Whether the encoding calls out: a call, a runtime routine (i128
 // division, course catch clauses) or the host resume terminal.
-bool calls_out(const Function& function)
+bool calls_out(const Function& function, Target target)
 {
 	if (function.assembly)
 		for (const Inst& inst : function.insts)
 			if (inst.op == Op::Asm && (inst.sub & 4) != 0)
 				return true;
 	for (const Inst& inst : function.insts)
+	{
 		if (inst.op == Op::Call || inst.op == Op::EhCatch || inst.op == Op::Resume || inst.op == Op::Throw ||
 			(inst.op == Op::Wide &&
 				(static_cast<WideOp>(inst.sub) == WideOp::Div || static_cast<WideOp>(inst.sub) == WideOp::UDiv ||
 					static_cast<WideOp>(inst.sub) == WideOp::Mod || static_cast<WideOp>(inst.sub) == WideOp::UMod)) ||
 			(inst.op == Op::Convert && (inst.type == lowir::TypeKind::I128 || inst.type2 == lowir::TypeKind::I128)))
 			return true;
+		// Darwin TLS address materialization calls the preserving TLV helper.
+		// Its stack use still makes this a non-leaf: local storage cannot live
+		// in the red zone across the lookup, and the call needs alignment.
+		if (target == Target::MacOS)
+			for (unsigned k = 0; k < inst.nops; ++k)
+				if (inst.ops[k].kind == OperandKind::Symbol &&
+					(inst.ops[k].access == SymbolAccess::TlsLocal || inst.ops[k].access == SymbolAccess::TlsInitial))
+					return true;
+	}
 	return false;
 }
 
