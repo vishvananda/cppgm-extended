@@ -22,7 +22,7 @@ The export's references are generated from this compiler.
 <tbody>
 <tr>
 <td>Internal assignment tests</td>
-<td width="152"><a href="https://github.com/vishvananda/cppgm-extended/actions/runs/42476441247"><img alt="Internal assignment tests: 9,832 / 9,832" width="120" height="24" src="docs/performance/preview/badges/tests-internal.svg"></a></td>
+<td width="152"><a href="https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/internal-tests/report.md"><img alt="Latest validated internal assignment test count" width="120" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/internal-tests/tests.svg"></a></td>
 </tr>
 <tr>
 <td>GCC C++11 profile</td>

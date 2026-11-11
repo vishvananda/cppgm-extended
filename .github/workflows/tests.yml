@@ -329,7 +329,19 @@ jobs:
           python3 scripts/tests/test_function_order_reuse.py
 
       - name: Run ${{ matrix.suite.name }}
-        run: ${{ matrix.suite.command }}
+        run: ${{ matrix.suite.command }} 2>&1 | tee "$RUNNER_TEMP/suite.log"
+
+      - name: Record the strict assignment count
+        if: matrix.suite.id == 'test-report' && matrix.flavor.id == 'ubuntu-26.04-gcc'
+        run: python3 scripts/internal_test_badges.py record "$RUNNER_TEMP/suite.log" "$RUNNER_TEMP/internal-tests.json"
+
+      - name: Retain the strict assignment count
+        if: matrix.suite.id == 'test-report' && matrix.flavor.id == 'ubuntu-26.04-gcc'
+        uses: actions/upload-artifact@v6
+        with:
+          name: internal-assignment-results
+          path: ${{ runner.temp }}/internal-tests.json
+          retention-days: 14
 
       - name: Package cppgm++ self compiler
         if: matrix.suite.id == 'selfhost-through-pa5'
@@ -381,3 +393,46 @@ jobs:
           path: ${{ runner.temp }}/cppgm-self-upload/
           if-no-files-found: error
           retention-days: 14
+
+  assignment-badge:
+    name: publish assignment test count
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      queue: max
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-branch
+      - uses: actions/download-artifact@v7
+        with:
+          name: internal-assignment-results
+          path: artifact
+      - name: Publish the validated count and provenance
+        env:
+          REVISION: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/scripts/internal_test_badges.py publish \
+            artifact/internal-tests.json badge-branch --revision "$REVISION"
+          freshness_revision=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          python3 tools/scripts/benchmark_freshness.py badge-branch \
+            --repo "$GITHUB_REPOSITORY" --revision "$freshness_revision"
+          cd badge-branch
+          git add .
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Publish assignment tests of $REVISION"
+          git push origin HEAD:benchmark-badges
