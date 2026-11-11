@@ -1075,8 +1075,12 @@ void FunctionSelector::resolve_aliases()
 					(op == lowir::ConvertOp::SExt && signed_narrow(from) &&
 						alias_compatible(inst.type, lowir::convert_source_type(inst)));
 				// (A source no reader reads above its width keeps no extension,
-				// and its fit describes the extended form.)
-				const bool canonical = !low_read(src.index);
+				// and its fit describes the extended form. An operand read no
+				// wider than its width may stand for a source of its other
+				// sign, which keeps that sign's extension, not the operand's.)
+				const bool other_form = inst.ops[0].kind == ValueKind::Temp && low_read(inst.ops[0].index) &&
+					!alias_compatible(lowir::convert_source_type(inst), body.temps[src.index].type);
+				const bool canonical = !low_read(src.index) && !other_form;
 				// A non-negative value the conversion keeps (O1+): within the
 				// bits a zero-extension keeps, below the sign bit a sign
 				// extension copies, and a canonical value of the result type.
