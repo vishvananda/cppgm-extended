@@ -181,6 +181,12 @@ tradeoff, and measure scalar and vector spill costs separately.
 
 When combining scaled arithmetic with an address calculation, preserve the
 operation width, wrapped bits, live intermediate values and any observed flags.
+Include both the base and index when considering reuse at a scalar load;
+values still needed after that load must remain available.
+
+Ordinary integer memory updates can use different signed views of the same
+width. Preserve the stored low bits, separately used old values, Boolean
+normalization and every volatile or intervening memory observation.
 
 A scalar field may already be contained in an incoming object register.
 Compare extracting its bytes with materializing and reloading the object.

@@ -1,0 +1,6 @@
+# Preserve the loaded value and both incoming values within this budget.
+# The control keeps the index live after the load.
+instructions <= 7 in @masked_index
+mem <= 1 in @masked_index
+stack_size <= 0 in @masked_index
+instructions <= 7 in @live_index

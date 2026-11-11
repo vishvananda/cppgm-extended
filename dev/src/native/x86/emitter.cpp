@@ -392,12 +392,14 @@ void FunctionEmitter::emit(const Function& function)
 		text.resize(base_);
 		if (measure_short_loops(function))
 		{
-			// Windows count from the function's start.
-			while (text.size() % kWindowBytes != 0)
+			// Retain a stable starting phase in the widest window this layout
+			// uses, so preceding code cannot change its internal loop padding.
+			const uint32_t alignment = std::max(kWindowBytes, code_window_);
+			while (text.size() % alignment != 0)
 				text.push_back(0xcc);
 			base_ = text.size();
 			image_.define(function.symbol, Section::Text, base_);
-			image_.align_code(function.symbol, kWindowBytes, code_window_);
+			image_.align_code(function.symbol, alignment, code_window_);
 		}
 		asm_.fixups().clear();
 		relax_pass_ = true;

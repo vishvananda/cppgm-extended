@@ -1,0 +1,14 @@
+# Ordinary same-width updates need no separate old-value register.
+instructions <= 2 in @byte_update
+instructions <= 2 in @word_update
+instructions <= 2 in @dword_update
+instructions <= 2 in @wide_update
+mem <= 1 in @byte_update
+mem <= 1 in @word_update
+mem <= 1 in @dword_update
+mem <= 1 in @wide_update
+# The volatile load and store remain distinct observations.
+count(load) >= 1 in @volatile_update
+count(store) >= 1 in @volatile_update
+count(load) >= 2 in @intervening_observation
+count(store) >= 1 in @intervening_observation

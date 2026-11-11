@@ -1,0 +1,879 @@
+{
+  "baseline": {
+    "cppgm_main_commit": "04d2857867b5818d7af63b659039c796ca842ddc",
+    "compiler_sha256": "bd743d829d121d644a782962bfdae36fc2fe91f3b53bfc9e3b10ebe40c318a8e",
+    "myc_commit": "efb80cc0acd17fea86ef92ddb01b01ffc819c7b8",
+    "index_c_commit": "7c487b2fecfe52e0c028987f3f3e1fdae5379320",
+    "source_sha256": "b4d437a7c0ae2956f11899797fd4ce31e7ad7560bd17ae5f783c04232fb4b8e0",
+    "mycc_sha256": "e6ffce5d31eb42b6f2ed46234a2eb4283347605e825b3cb69749657f51cf4a74",
+    "lowir_sha256": "9390c91b369825692de847860c7c79e0436aebd7d2a735453da23ee24d199919",
+    "binaries": {
+      "gm": "1dc6c76d3ec572741cb0d35fa98c6acfaa515a864000b213f338a7585e6728ef",
+      "clang": "48a2063e0052206293452a733040ec63b3f3ae9072f1f8d51a6ee5fe45e3b21f",
+      "gcc": "0a67bbe88efd0e8a5755c1e2d299ece9ce05382eb6ba5dbe79f26bd876652bdd"
+    },
+    "toolchain": {
+      "clang": "clang-22: warning: future releases of the clang compiler will prefer GCC installations containing libstdc++ include directories; '/usr/lib/gcc/x86_64-linux-gnu/15' would be chosen over '/usr/lib/gcc/x86_64-linux-gnu/16' [-Wgcc-install-dir-libstdcxx]\nUbuntu clang version 22.1.2 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/lib/llvm-22/bin",
+      "gcc": "gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0\nCopyright (C) 2025 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
+    },
+    "lscpu": {
+      "lscpu": [
+        {
+          "field": "Architecture:",
+          "data": "x86_64"
+        },
+        {
+          "field": "CPU op-mode(s):",
+          "data": "32-bit, 64-bit"
+        },
+        {
+          "field": "Address sizes:",
+          "data": "46 bits physical, 48 bits virtual"
+        },
+        {
+          "field": "Byte Order:",
+          "data": "Little Endian"
+        },
+        {
+          "field": "CPU(s):",
+          "data": "88"
+        },
+        {
+          "field": "On-line CPU(s) list:",
+          "data": "0-87"
+        },
+        {
+          "field": "Vendor ID:",
+          "data": "GenuineIntel"
+        },
+        {
+          "field": "Model name:",
+          "data": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz"
+        },
+        {
+          "field": "CPU family:",
+          "data": "6"
+        },
+        {
+          "field": "Model:",
+          "data": "79"
+        },
+        {
+          "field": "Thread(s) per core:",
+          "data": "2"
+        },
+        {
+          "field": "Core(s) per socket:",
+          "data": "22"
+        },
+        {
+          "field": "Socket(s):",
+          "data": "2"
+        },
+        {
+          "field": "Stepping:",
+          "data": "1"
+        },
+        {
+          "field": "CPU(s) scaling MHz:",
+          "data": "53%"
+        },
+        {
+          "field": "CPU max MHz:",
+          "data": "3700.0000"
+        },
+        {
+          "field": "CPU min MHz:",
+          "data": "1200.0000"
+        },
+        {
+          "field": "BogoMIPS:",
+          "data": "4400.09"
+        },
+        {
+          "field": "Flags:",
+          "data": "fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cdp_l3 pti intel_ppin ssbd ibrs ibpb stibp tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm cqm rdt_a rdseed adx smap intel_pt xsaveopt cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts vnmi md_clear flush_l1d"
+        },
+        {
+          "field": "Virtualization:",
+          "data": "VT-x"
+        },
+        {
+          "field": "L1d cache:",
+          "data": "1.4 MiB (44 instances)"
+        },
+        {
+          "field": "L1i cache:",
+          "data": "1.4 MiB (44 instances)"
+        },
+        {
+          "field": "L2 cache:",
+          "data": "11 MiB (44 instances)"
+        },
+        {
+          "field": "L3 cache:",
+          "data": "110 MiB (2 instances)"
+        },
+        {
+          "field": "NUMA node(s):",
+          "data": "2"
+        },
+        {
+          "field": "NUMA node0 CPU(s):",
+          "data": "0-21,44-65"
+        },
+        {
+          "field": "NUMA node1 CPU(s):",
+          "data": "22-43,66-87"
+        },
+        {
+          "field": "Vulnerability Gather data sampling:",
+          "data": "Not affected"
+        },
+        {
+          "field": "Vulnerability Ghostwrite:",
+          "data": "Not affected"
+        },
+        {
+          "field": "Vulnerability Indirect target selection:",
+          "data": "Not affected"
+        },
+        {
+          "field": "Vulnerability Itlb multihit:",
+          "data": "KVM: Mitigation: Split huge pages"
+        },
+        {
+          "field": "Vulnerability L1tf:",
+          "data": "Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable"
+        },
+        {
+          "field": "Vulnerability Mds:",
+          "data": "Mitigation; Clear CPU buffers; SMT vulnerable"
+        },
+        {
+          "field": "Vulnerability Meltdown:",
+          "data": "Mitigation; PTI"
+        },
+        {
+          "field": "Vulnerability Mmio stale data:",
+          "data": "Mitigation; Clear CPU buffers; SMT vulnerable"
+        },
+        {
+          "field": "Vulnerability Old microcode:",
+          "data": "Not affected"
+        },
+        {
+          "field": "Vulnerability Reg file data sampling:",
+          "data": "Not affected"
+        },
+        {
+          "field": "Vulnerability Retbleed:",
+          "data": "Not affected"
+        },
+        {
+          "field": "Vulnerability Spec rstack overflow:",
+          "data": "Not affected"
+        },
+        {
+          "field": "Vulnerability Spec store bypass:",
+          "data": "Mitigation; Speculative Store Bypass disabled via prctl"
+        },
+        {
+          "field": "Vulnerability Spectre v1:",
+          "data": "Mitigation; usercopy/swapgs barriers and __user pointer sanitization"
+        },
+        {
+          "field": "Vulnerability Spectre v2:",
+          "data": "Mitigation; Retpolines; IBPB conditional; IBRS_FW; STIBP conditional; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected"
+        },
+        {
+          "field": "Vulnerability Srbds:",
+          "data": "Not affected"
+        },
+        {
+          "field": "Vulnerability Tsa:",
+          "data": "Not affected"
+        },
+        {
+          "field": "Vulnerability Tsx async abort:",
+          "data": "Mitigation; Clear CPU buffers; SMT vulnerable"
+        },
+        {
+          "field": "Vulnerability Vmscape:",
+          "data": "Mitigation; IBPB before exit to userspace"
+        }
+      ]
+    },
+    "cpus": "6-15",
+    "numa_node": 0,
+    "myc_tree": "7ce5c38473f6a5ca1bcbae1dd8a1df8d4bde01bd",
+    "cppgm_source_commit": "3253385a23eeb155c546cf7bec18c40f2f5e780e",
+    "method": "Two Clang AA runs, two Clang/GM/GM/Clang blocks, one GCC context run; generic x86-64, -O3, NUMA0, physical cores6-15, ASLR disabled, fixed argv0=index-c; per-case checksums validated on every run.",
+    "correctness": "Index-width reproducer and all 50 corrected source checks pass for GM, Clang and GCC.",
+    "clang_build": [
+      "clang-22",
+      "-O3",
+      "-std=gnu11",
+      "-c",
+      "index-c/index.c",
+      "-o",
+      "bin/clang.o"
+    ],
+    "gcc_build": [
+      "gcc",
+      "-O3",
+      "-std=gnu11",
+      "-c",
+      "index-c/index.c",
+      "-o",
+      "bin/gcc.o"
+    ],
+    "gm_build": [
+      "bin/cppgm-main",
+      "-O3",
+      "-c",
+      "corrected.lowir",
+      "-o",
+      "bin/gm.o"
+    ],
+    "link": "g++ bin/LABEL.o -o bin/LABEL -lm -pthread"
+  },
+  "candidate_compiler_sha256": "8ea83fc1c39d3a857d507653760f11bf8ae512a3bff4385e8df4f02c8b5553ea",
+  "candidate_binary_sha256": "65679c4e14204832b0c007669d4bdc910cd5312ff51ceeee15df5bb1c3c79f1d",
+  "final_object_identity": {
+    "compiler_sha256": "8ea83fc1c39d3a857d507653760f11bf8ae512a3bff4385e8df4f02c8b5553ea",
+    "object_sha256": "bf0361acf5de7e65ae83497d27e31bd97b862694f9552b9fcc6c2771e6782eb6",
+    "identical_to": "signedness-rmw.o"
+  },
+  "focused": [
+    {
+      "case": "Brainfuck::Array",
+      "seconds": {
+        "main": 2.118,
+        "candidate": 2.041,
+        "speed_or_efficiency": 1.0377266046055855,
+        "candidate_reduction_percent": 3.6355051935788474
+      },
+      "cycles:u": {
+        "main": 6138244483.5,
+        "candidate": 5844583012.0,
+        "speed_or_efficiency": 1.0502450681078632,
+        "candidate_reduction_percent": 4.784127974853092
+      },
+      "instructions:u": {
+        "main": 17457302198.5,
+        "candidate": 16301178844.75,
+        "speed_or_efficiency": 1.0709226838599064,
+        "candidate_reduction_percent": 6.62257742120852
+      },
+      "aa_timed_range_percent": 3.2258064516129004
+    },
+    {
+      "case": "Compress::HuffDecode",
+      "seconds": {
+        "main": 1.11125,
+        "candidate": 1.05275,
+        "speed_or_efficiency": 1.055568748515792,
+        "candidate_reduction_percent": 5.264341957255347
+      },
+      "cycles:u": {
+        "main": 4060458109.75,
+        "candidate": 3862626289.75,
+        "speed_or_efficiency": 1.0512169195671281,
+        "candidate_reduction_percent": 4.872155176899007
+      },
+      "instructions:u": {
+        "main": 15608564430.25,
+        "candidate": 14730379398.75,
+        "speed_or_efficiency": 1.059617271743491,
+        "candidate_reduction_percent": 5.626302376649339
+      },
+      "aa_timed_range_percent": 5.580558055805596
+    },
+    {
+      "case": "Compress::ArithDecode",
+      "seconds": {
+        "main": 2.56575,
+        "candidate": 2.3922499999999998,
+        "speed_or_efficiency": 1.0725258647716587,
+        "candidate_reduction_percent": 6.762155315209983
+      },
+      "cycles:u": {
+        "main": 7936281035.5,
+        "candidate": 7907762460.0,
+        "speed_or_efficiency": 1.0036064026510982,
+        "candidate_reduction_percent": 0.35934432478427203
+      },
+      "instructions:u": {
+        "main": 9402037423.0,
+        "candidate": 9402037352.5,
+        "speed_or_efficiency": 1.0000000074983748,
+        "candidate_reduction_percent": 7.498374698933219e-07
+      },
+      "aa_timed_range_percent": 0.9246417013407227
+    },
+    {
+      "case": "Compress::HuffEncode",
+      "seconds": {
+        "main": 1.80175,
+        "candidate": 1.5282499999999999,
+        "speed_or_efficiency": 1.1789628660232292,
+        "candidate_reduction_percent": 15.179686415984461
+      },
+      "cycles:u": {
+        "main": 4935250129.25,
+        "candidate": 4860241847.5,
+        "speed_or_efficiency": 1.0154330348372649,
+        "candidate_reduction_percent": 1.51984762242231
+      },
+      "instructions:u": {
+        "main": 15136694605.75,
+        "candidate": 15136696751.75,
+        "speed_or_efficiency": 0.9999998582253423,
+        "candidate_reduction_percent": -1.4177467777543029e-05
+      },
+      "aa_timed_range_percent": 29.636447307869318
+    },
+    {
+      "case": "Etc::LogParser",
+      "seconds": {
+        "main": 1.8832499999999999,
+        "candidate": 1.67225,
+        "speed_or_efficiency": 1.1261773060248168,
+        "candidate_reduction_percent": 11.204035576795423
+      },
+      "cycles:u": {
+        "main": 4277055815.5,
+        "candidate": 4283055467.75,
+        "speed_or_efficiency": 0.9985992121056626,
+        "candidate_reduction_percent": -0.14027528535534017
+      },
+      "instructions:u": {
+        "main": 14047790093.5,
+        "candidate": 14047789242.0,
+        "speed_or_efficiency": 1.0000000606145198,
+        "candidate_reduction_percent": 6.0614516184109846e-06
+      },
+      "aa_timed_range_percent": 1.4853647881170717
+    },
+    {
+      "case": "Etc::NeuralNet",
+      "seconds": {
+        "main": 3.9375,
+        "candidate": 3.47775,
+        "speed_or_efficiency": 1.1321975415139098,
+        "candidate_reduction_percent": 11.676190476190474
+      },
+      "cycles:u": {
+        "main": 7686594202.75,
+        "candidate": 7684801960.25,
+        "speed_or_efficiency": 1.0002332190873975,
+        "candidate_reduction_percent": 0.02331647089368616
+      },
+      "instructions:u": {
+        "main": 18168867351.25,
+        "candidate": 18168866797.5,
+        "speed_or_efficiency": 1.0000000304779602,
+        "candidate_reduction_percent": 3.047795926747199e-06
+      },
+      "aa_timed_range_percent": 26.191913095956565
+    }
+  ],
+  "full_comparison": {
+    "timed_seconds": {
+      "main": 99.8733,
+      "candidate": 103.0035,
+      "speed_or_efficiency": 0.9696107413825743,
+      "saved_percent": -3.1341709946502316
+    },
+    "user_instructions": {
+      "main": 791790783215.0,
+      "candidate": 788734639608.0,
+      "speed_or_efficiency": 1.0038747424717125,
+      "saved_percent": 0.38597867918982454
+    },
+    "user_cycles": {
+      "main": 432957930424.0,
+      "candidate": 433510735728.0,
+      "speed_or_efficiency": 0.9987248174994521,
+      "saved_percent": -0.12768106671672275
+    }
+  },
+  "full_aa_comparison": {
+    "timed_seconds": {
+      "main": 110.9534,
+      "candidate": 100.3352,
+      "speed_or_efficiency": 1.1058272670010125,
+      "saved_percent": 9.569963606342846
+    },
+    "user_instructions": {
+      "main": 791790792249.0,
+      "candidate": 791790781913.0,
+      "speed_or_efficiency": 1.0000000130539535,
+      "saved_percent": 1.3053953251684902e-06
+    },
+    "user_cycles": {
+      "main": 436053312433.0,
+      "candidate": 433496673158.0,
+      "speed_or_efficiency": 1.0058977137157132,
+      "saved_percent": 0.5863134626211131
+    }
+  },
+  "full_cases": [
+    {
+      "name": "Binarytrees::Obj",
+      "main_seconds": 1.843,
+      "candidate_seconds": 2.6095,
+      "speed_vs_main": 0.7062655681164973
+    },
+    {
+      "name": "Binarytrees::Arena",
+      "main_seconds": 2.447,
+      "candidate_seconds": 2.5490000000000004,
+      "speed_vs_main": 0.9599843075715966
+    },
+    {
+      "name": "Brainfuck::Array",
+      "main_seconds": 2.144,
+      "candidate_seconds": 2.0919999999999996,
+      "speed_vs_main": 1.0248565965583176
+    },
+    {
+      "name": "Brainfuck::Recursion",
+      "main_seconds": 2.1745,
+      "candidate_seconds": 2.058,
+      "speed_vs_main": 1.056608357628766
+    },
+    {
+      "name": "Matmul::Single",
+      "main_seconds": 1.6635,
+      "candidate_seconds": 1.596,
+      "speed_vs_main": 1.0422932330827066
+    },
+    {
+      "name": "Matmul::T4",
+      "main_seconds": 2.1654999999999998,
+      "candidate_seconds": 2.088,
+      "speed_vs_main": 1.0371168582375478
+    },
+    {
+      "name": "Matmul::T8",
+      "main_seconds": 3.33,
+      "candidate_seconds": 3.524,
+      "speed_vs_main": 0.9449489216799092
+    },
+    {
+      "name": "Matmul::T16",
+      "main_seconds": 5.5435,
+      "candidate_seconds": 5.617,
+      "speed_vs_main": 0.9869147231618302
+    },
+    {
+      "name": "Base64::Encode",
+      "main_seconds": 2.034,
+      "candidate_seconds": 2.1390000000000002,
+      "speed_vs_main": 0.9509116409537165
+    },
+    {
+      "name": "Base64::Decode",
+      "main_seconds": 1.182,
+      "candidate_seconds": 1.2385,
+      "speed_vs_main": 0.9543802987484861
+    },
+    {
+      "name": "Json::Generate",
+      "main_seconds": 1.702,
+      "candidate_seconds": 1.7715,
+      "speed_vs_main": 0.960767710979396
+    },
+    {
+      "name": "Json::ParseDom",
+      "main_seconds": 2.157,
+      "candidate_seconds": 2.2,
+      "speed_vs_main": 0.9804545454545454
+    },
+    {
+      "name": "Json::ParseMapping",
+      "main_seconds": 2.1390000000000002,
+      "candidate_seconds": 2.2125,
+      "speed_vs_main": 0.9667796610169493
+    },
+    {
+      "name": "CSV::Parse",
+      "main_seconds": 1.6360000000000001,
+      "candidate_seconds": 1.7320000000000002,
+      "speed_vs_main": 0.9445727482678984
+    },
+    {
+      "name": "Etc::Sieve",
+      "main_seconds": 3.457,
+      "candidate_seconds": 3.5300000000000002,
+      "speed_vs_main": 0.9793201133144475
+    },
+    {
+      "name": "Etc::TextRaytracer",
+      "main_seconds": 1.9460000000000002,
+      "candidate_seconds": 1.9965000000000002,
+      "speed_vs_main": 0.9747057350363135
+    },
+    {
+      "name": "Etc::NeuralNet",
+      "main_seconds": 2.307,
+      "candidate_seconds": 2.2935,
+      "speed_vs_main": 1.0058862001308044
+    },
+    {
+      "name": "Etc::CacheSimulation",
+      "main_seconds": 1.7985000000000002,
+      "candidate_seconds": 1.749,
+      "speed_vs_main": 1.028301886792453
+    },
+    {
+      "name": "Etc::GameOfLife",
+      "main_seconds": 1.4435,
+      "candidate_seconds": 1.4425,
+      "speed_vs_main": 1.0006932409012133
+    },
+    {
+      "name": "Etc::Words",
+      "main_seconds": 2.253,
+      "candidate_seconds": 2.2355,
+      "speed_vs_main": 1.0078282263475733
+    },
+    {
+      "name": "Etc::LogParser",
+      "main_seconds": 1.3584999999999998,
+      "candidate_seconds": 1.3695,
+      "speed_vs_main": 0.9919678714859437
+    },
+    {
+      "name": "Template::Regex",
+      "main_seconds": 2.2335000000000003,
+      "candidate_seconds": 2.188,
+      "speed_vs_main": 1.0207952468007313
+    },
+    {
+      "name": "Template::Parse",
+      "main_seconds": 2.583,
+      "candidate_seconds": 2.763,
+      "speed_vs_main": 0.9348534201954398
+    },
+    {
+      "name": "Sort::Quick",
+      "main_seconds": 1.5745,
+      "candidate_seconds": 1.585,
+      "speed_vs_main": 0.9933753943217666
+    },
+    {
+      "name": "Sort::Merge",
+      "main_seconds": 1.0870000000000002,
+      "candidate_seconds": 1.0955,
+      "speed_vs_main": 0.9922409858512098
+    },
+    {
+      "name": "Sort::Self",
+      "main_seconds": 1.3875,
+      "candidate_seconds": 1.43,
+      "speed_vs_main": 0.9702797202797203
+    },
+    {
+      "name": "Graph::BFS",
+      "main_seconds": 1.1989999999999998,
+      "candidate_seconds": 1.173,
+      "speed_vs_main": 1.022165387894288
+    },
+    {
+      "name": "Graph::DFS",
+      "main_seconds": 1.4180000000000001,
+      "candidate_seconds": 1.4385,
+      "speed_vs_main": 0.9857490441432049
+    },
+    {
+      "name": "Graph::AStar",
+      "main_seconds": 1.544,
+      "candidate_seconds": 1.5965,
+      "speed_vs_main": 0.9671155652990918
+    },
+    {
+      "name": "Hash::SHA256",
+      "main_seconds": 1.9085,
+      "candidate_seconds": 1.9195,
+      "speed_vs_main": 0.994269340974212
+    },
+    {
+      "name": "Hash::CRC32",
+      "main_seconds": 0.3365,
+      "candidate_seconds": 0.339,
+      "speed_vs_main": 0.9926253687315634
+    },
+    {
+      "name": "Calculator::Ast",
+      "main_seconds": 2.471,
+      "candidate_seconds": 2.5475000000000003,
+      "speed_vs_main": 0.9699705593719332
+    },
+    {
+      "name": "Calculator::Interpreter",
+      "main_seconds": 3.1905,
+      "candidate_seconds": 3.004,
+      "speed_vs_main": 1.0620838881491346
+    },
+    {
+      "name": "Maze::Generator",
+      "main_seconds": 2.065,
+      "candidate_seconds": 1.9795,
+      "speed_vs_main": 1.043192725435716
+    },
+    {
+      "name": "Maze::BFS",
+      "main_seconds": 2.1165000000000003,
+      "candidate_seconds": 2.1525,
+      "speed_vs_main": 0.983275261324042
+    },
+    {
+      "name": "Maze::AStar",
+      "main_seconds": 2.668,
+      "candidate_seconds": 2.7119999999999997,
+      "speed_vs_main": 0.9837758112094397
+    },
+    {
+      "name": "CLBG::Fannkuchredux",
+      "main_seconds": 1.4785,
+      "candidate_seconds": 1.4929999999999999,
+      "speed_vs_main": 0.9902880107166778
+    },
+    {
+      "name": "CLBG::Mandelbrot",
+      "main_seconds": 1.934,
+      "candidate_seconds": 1.9365,
+      "speed_vs_main": 0.9987090111025044
+    },
+    {
+      "name": "CLBG::Nbody",
+      "main_seconds": 1.5505,
+      "candidate_seconds": 1.4649999999999999,
+      "speed_vs_main": 1.0583617747440275
+    },
+    {
+      "name": "CLBG::Spectralnorm",
+      "main_seconds": 1.9205,
+      "candidate_seconds": 1.8094999999999999,
+      "speed_vs_main": 1.0613429124067424
+    },
+    {
+      "name": "Compress::BWTEncode",
+      "main_seconds": 2.1195000000000004,
+      "candidate_seconds": 2.1375,
+      "speed_vs_main": 0.9915789473684211
+    },
+    {
+      "name": "Compress::BWTDecode",
+      "main_seconds": 1.4649999999999999,
+      "candidate_seconds": 1.492,
+      "speed_vs_main": 0.9819034852546916
+    },
+    {
+      "name": "Compress::HuffEncode",
+      "main_seconds": 1.4525,
+      "candidate_seconds": 1.474,
+      "speed_vs_main": 0.9854138398914518
+    },
+    {
+      "name": "Compress::HuffDecode",
+      "main_seconds": 1.185,
+      "candidate_seconds": 1.1280000000000001,
+      "speed_vs_main": 1.050531914893617
+    },
+    {
+      "name": "Compress::ArithEncode",
+      "main_seconds": 1.7349999999999999,
+      "candidate_seconds": 1.779,
+      "speed_vs_main": 0.9752670039347948
+    },
+    {
+      "name": "Compress::ArithDecode",
+      "main_seconds": 2.3,
+      "candidate_seconds": 2.3514999999999997,
+      "speed_vs_main": 0.9780990856899852
+    },
+    {
+      "name": "Compress::LZWEncode",
+      "main_seconds": 2.044,
+      "candidate_seconds": 2.1784999999999997,
+      "speed_vs_main": 0.9382602708285519
+    },
+    {
+      "name": "Compress::LZWDecode",
+      "main_seconds": 2.1435,
+      "candidate_seconds": 2.569,
+      "speed_vs_main": 0.8343713507201246
+    },
+    {
+      "name": "Distance::Jaro",
+      "main_seconds": 1.552,
+      "candidate_seconds": 1.9655,
+      "speed_vs_main": 0.7896209615873824
+    },
+    {
+      "name": "Distance::NGram",
+      "main_seconds": 2.487,
+      "candidate_seconds": 3.2584999999999997,
+      "speed_vs_main": 0.7632346171551329
+    }
+  ],
+  "compile": {
+    "O0": {
+      "instructions:u": {
+        "main": 3291575573.25,
+        "candidate": 3291650068.75,
+        "candidate_over_main": 1.0000226321706254
+      },
+      "cycles:u": {
+        "main": 2913475957.75,
+        "candidate": 2904877977.5,
+        "candidate_over_main": 0.9970488926716115
+      }
+    },
+    "O3": {
+      "instructions:u": {
+        "main": 9264477425.25,
+        "candidate": 9263790284.75,
+        "candidate_over_main": 0.9999258306250359
+      },
+      "cycles:u": {
+        "main": 8303159414.0,
+        "candidate": 7787927536.0,
+        "candidate_over_main": 0.9379474905502518
+      }
+    }
+  },
+  "public": [
+    {
+      "name": "CoyoteBench/huffbench",
+      "output_equal": true,
+      "main_size_O3": 16840,
+      "candidate_size_O3": 16840
+    },
+    {
+      "name": "Stanford/Bubblesort",
+      "output_equal": true,
+      "main_size_O3": 17096,
+      "candidate_size_O3": 17096,
+      "main_instructions": 126463052,
+      "candidate_instructions": 126463038,
+      "candidate_instructions_over_main": 0.9999998892957288
+    },
+    {
+      "name": "Stanford/FloatMM",
+      "output_equal": true,
+      "main_size_O3": 17120,
+      "candidate_size_O3": 17120,
+      "main_instructions": 1118759677,
+      "candidate_instructions": 1118759691,
+      "candidate_instructions_over_main": 1.0000000125138582
+    },
+    {
+      "name": "bg/binarytrees/2",
+      "output_equal": true,
+      "main_size_O3": 21752,
+      "candidate_size_O3": 21752,
+      "main_instructions": 5778842687,
+      "candidate_instructions": 5778842687,
+      "candidate_instructions_over_main": 1.0
+    },
+    {
+      "name": "bg/fasta/1",
+      "output_equal": true,
+      "main_size_O3": 17680,
+      "candidate_size_O3": 17680,
+      "main_instructions": 1692730787,
+      "candidate_instructions": 1692730787,
+      "candidate_instructions_over_main": 1.0
+    },
+    {
+      "name": "bg/nbody/1",
+      "output_equal": true,
+      "main_size_O3": 26112,
+      "candidate_size_O3": 26112,
+      "main_instructions": 1208137440,
+      "candidate_instructions": 1208137440,
+      "candidate_instructions_over_main": 1.0
+    }
+  ],
+  "raw_data": "/mnt/vizier/cppgm-issue115-data/corrected-outliers-20261111",
+  "method": "AA calibration and two ABBA blocks per focused case; AA and one ABBA block for full suite; immutable A/B binaries, same corrected Myc input, fixed argv0, ASLR disabled, NUMA binding and physical-core affinity",
+  "full_outlier_controls": [
+    {
+      "name": "Binarytrees::Obj",
+      "seconds": {
+        "main": 1.8199999999999998,
+        "candidate": 1.82975,
+        "speed_or_efficiency": 0.994671403197158
+      },
+      "cycles:u": {
+        "main": 4254998602.75,
+        "candidate": 4238792383.25,
+        "speed_or_efficiency": 1.0038233105174106
+      },
+      "instructions:u": {
+        "main": 13058575893.0,
+        "candidate": 13058576073.75,
+        "speed_or_efficiency": 0.9999999861585215
+      }
+    },
+    {
+      "name": "Distance::NGram",
+      "seconds": {
+        "main": 2.5780000000000003,
+        "candidate": 2.6155,
+        "speed_or_efficiency": 0.9856623972471804
+      },
+      "cycles:u": {
+        "main": 7840148260.5,
+        "candidate": 7823932297.25,
+        "speed_or_efficiency": 1.0020726103746704
+      },
+      "instructions:u": {
+        "main": 9557711362.75,
+        "candidate": 9557711388.25,
+        "speed_or_efficiency": 0.9999999973319973
+      }
+    },
+    {
+      "name": "Distance::Jaro",
+      "seconds": {
+        "main": 1.49875,
+        "candidate": 1.48675,
+        "speed_or_efficiency": 1.0080712964519927
+      },
+      "cycles:u": {
+        "main": 5271378082.75,
+        "candidate": 5228426420.5,
+        "speed_or_efficiency": 1.008215026624759
+      },
+      "instructions:u": {
+        "main": 5466071397.25,
+        "candidate": 5466071384.0,
+        "speed_or_efficiency": 1.0000000024240445
+      }
+    },
+    {
+      "name": "Compress::LZWDecode",
+      "seconds": {
+        "main": 1.75875,
+        "candidate": 1.69575,
+        "speed_or_efficiency": 1.0371517027863777
+      },
+      "cycles:u": {
+        "main": 6948877869.75,
+        "candidate": 6827414323.5,
+        "speed_or_efficiency": 1.0177905632344475
+      },
+      "instructions:u": {
+        "main": 15590423847.5,
+        "candidate": 15593792019.75,
+        "speed_or_efficiency": 0.9997840055680021
+      }
+    }
+  ]
+}

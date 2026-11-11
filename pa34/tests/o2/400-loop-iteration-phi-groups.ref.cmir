@@ -31,7 +31,7 @@ function @walk
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    preserve <gpr0> <gpr1> <gpr2> <gpr3>
     param-slot %length -> [rbp-<off0>] : i64
 
   block ^entry
@@ -84,8 +84,8 @@ function @walk
     mov rax, rdx
     shr rax, 7
     and rax, 1
-    lea <gpr4>, [rax*8]
-    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    imul rax, 8
+    load.ptr rax, [<gpr1>+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -123,8 +123,8 @@ function @walk
     mov rax, rdx
     shr rax, 6
     and rax, 1
-    lea <gpr4>, [rax*8]
-    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    imul rax, 8
+    load.ptr rax, [<gpr1>+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -153,8 +153,8 @@ function @walk
     mov rax, rdx
     shr rax, 5
     and rax, 1
-    lea <gpr4>, [rax*8]
-    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    imul rax, 8
+    load.ptr rax, [<gpr1>+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -183,8 +183,8 @@ function @walk
     mov rax, rdx
     shr rax, 4
     and rax, 1
-    lea <gpr4>, [rax*8]
-    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    imul rax, 8
+    load.ptr rax, [<gpr1>+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -213,8 +213,8 @@ function @walk
     mov rax, rdx
     shr rax, 3
     and rax, 1
-    lea <gpr4>, [rax*8]
-    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    imul rax, 8
+    load.ptr rax, [<gpr1>+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -243,8 +243,8 @@ function @walk
     mov rax, rdx
     shr rax, 2
     and rax, 1
-    lea <gpr4>, [rax*8]
-    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    imul rax, 8
+    load.ptr rax, [<gpr1>+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -273,8 +273,8 @@ function @walk
     mov rax, rdx
     shr rax, 1
     and rax, 1
-    lea <gpr4>, [rax*8]
-    load.ptr rax, [<gpr1>+<gpr4>+<off0>]
+    imul rax, 8
+    load.ptr rax, [<gpr1>+rax+<off0>]
     cmp.ptr rax, 0
     je ^step6~tail
 
@@ -308,10 +308,11 @@ function @walk
 
   block ^step7
     add.i32 rcx, 8
-    shr rdx, 0
-    and rdx, 1
-    imul rdx, 8
-    load.ptr rax, [<gpr1>+rdx+<off0>]
+    mov rax, rdx
+    shr rax, 0
+    and rax, 1
+    imul rax, 8
+    load.ptr rax, [<gpr1>+rax+<off0>]
     cmp.ptr rax, 0
     je ^tail
 

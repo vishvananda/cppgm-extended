@@ -1573,9 +1573,9 @@ void FunctionSelector::emission_facts()
 	}
 }
 
-// Whether value g's definition computes it in its own register from its
-// first operand `from`, which it reads nowhere else: a Select's arm, a Binary/Unary (not an
-// integer division), an integer extension or truncation, or a load through it.
+// Whether g can overwrite a dying `from` that its definition reads before
+// writing the result: a Select arm, a Binary/Unary (not integer division),
+// an integer extension/truncation, or part of a scalar load's address.
 bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 {
 	const lowir::FunctionBody& body = *body_;
@@ -1587,6 +1587,21 @@ bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 		return (t.kind == ValueKind::Temp && t.index == from) || (f.kind == ValueKind::Temp && f.index == from);
 	}
 	const Value first = resolve(inst.ops[0]);
+	// A scalar load consumes every part of its folded address before it
+	// writes the result. A dying base or index may therefore hold it too.
+	if (inst.op == Opcode::Load && (inst.type.is_integer() || inst.type.is_pointer()) &&
+		inst.type.kind() != TypeKind::I128 && first.kind == ValueKind::Temp)
+	{
+		if (first.index == from)
+			return true;
+		const TempInfo& address = temps_[first.index];
+		if ((address.flags & TF_LAZY) && address.addr != kNoId)
+		{
+			const AddrExpr& expr = addrs_[address.addr];
+			return (expr.kind == AddrExpr::Temp && expr.base == from) || expr.index == from;
+		}
+		return false;
+	}
 	if (first.kind != ValueKind::Temp || first.index != from)
 		return false;
 	if (inst.op == Opcode::Convert)
@@ -1596,10 +1611,6 @@ bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 			inst.type.is_integer() && inst.type.kind() != TypeKind::I128 &&
 			lowir::convert_source_type(inst).kind() != TypeKind::I128;
 	}
-	// (A plain load reads its address before it writes its result.)
-	if (inst.op == Opcode::Load && (inst.type.is_integer() || inst.type.is_pointer()) &&
-		inst.type.kind() != TypeKind::I128)
-		return true;
 	if (!ties_first_operand(inst))
 		return false;
 	if (inst.op == Opcode::Vector)

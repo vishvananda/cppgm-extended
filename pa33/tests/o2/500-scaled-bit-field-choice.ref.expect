@@ -1,0 +1,9 @@
+# explicit-outcomes
+
+# A selected field fits within this budget without redundant address work.
+instructions <= 6 in @scaled
+instructions <= 6 in @negative
+instructions <= 7 in @odd_bias
+count(load) <= 1 in @scaled
+count(load) <= 1 in @negative
+count(load) <= 1 in @odd_bias

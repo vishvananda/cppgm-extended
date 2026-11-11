@@ -2287,13 +2287,20 @@ void FunctionSelector::find_rmw()
 		if (!(store.type.is_integer() || store.type.is_pointer()) || kind == TypeKind::I128 || kind == TypeKind::I1)
 			return;
 		const uint32_t bytes = value_bytes(store.type);
+		// These updates consume and store the same low bits under either
+		// signedness. Boolean arithmetic has only one value bit, so exclude it.
+		auto same_width = [&](Type type) {
+			return type.kind() == kind ||
+				(type.is_integer() && store.type.is_integer() && type.kind() != TypeKind::I1 &&
+					value_bytes(type) == bytes);
+		};
 		const Value v = resolve(store.ops[0]);
 		lowir::InstId op_id = single(v, b, TF_FOLDED);
 		if (op_id == kNoId)
 			return;
 		lowir::InstId trunc_id = kNoId;
 		if (convert(body.instructions[op_id], lowir::ConvertOp::Trunc, lowir::ConvertOp::Trunc) && bytes < 8 &&
-			body.instructions[op_id].type.kind() == kind)
+			same_width(body.instructions[op_id].type))
 		{
 			trunc_id = op_id;
 			op_id = single(resolve(body.instructions[trunc_id].ops[0]), b, TF_FOLDED);
@@ -2305,7 +2312,7 @@ void FunctionSelector::find_rmw()
 		// or not).
 		const bool narrow = store.type.is_integer() && op.op == Opcode::Binary && op.type.is_integer() &&
 			value_bytes(op.type) > bytes;
-		if (!narrow && (trunc_id != kNoId || body.temps[op.result].type.kind() != kind))
+		if (!narrow && (trunc_id != kNoId || !same_width(body.temps[op.result].type)))
 			return;
 		// The load of m, through an extension from the store's width when
 		// the store is narrower.
@@ -2323,7 +2330,7 @@ void FunctionSelector::find_rmw()
 			if (d == kNoId)
 				return kNoId;
 			const Instruction& load = body.instructions[d];
-			if (load.op != Opcode::Load || (load.flags & lowir::IF_VOLATILE) || load.type.kind() != kind ||
+			if (load.op != Opcode::Load || (load.flags & lowir::IF_VOLATILE) || !same_width(load.type) ||
 				!(resolve(load.ops[0]) == resolve(store.ops[1])))
 				return kNoId;
 			return d;
@@ -2382,7 +2389,10 @@ void FunctionSelector::find_rmw()
 			case Opcode::Addr:
 			case Opcode::Copy:
 			case Opcode::Const:
+				break;
 			case Opcode::Load:
+				if (body.instructions[i].flags & lowir::IF_VOLATILE)
+					return;
 				break;
 			default:
 				return;

@@ -1,0 +1,235 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @byte_update
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add.i8 [rdi], 1
+    ret
+
+function @word_update
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    xor.u16 [rdi], 32768
+    ret
+
+function @dword_update
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    sub.i32 [rdi], 1
+    ret
+
+function @wide_update
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add.i16 [rdi], 1
+    ret
+
+function @truth_update
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u8 rax, [rdi]
+    and rax, 1
+    add rax, 1
+    store.i8 [rdi], rax
+    ret
+
+function @volatile_update
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u8 rax, [rdi]
+    add rax, 1
+    zext.i8 rax
+    store.i8 [rdi], rax
+    ret
+
+function @snapshot_update
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u8 rax, [rdi]
+    store.i8 [rdi], 123
+    add rax, 1
+    store.i8 [rdi], rax
+    ret
+
+function @live_old_value
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u8 rax, [rdi]
+    lea rcx, [rax+<off0>]
+    store.i8 [rdi], rcx
+    ret rax
+
+function @intervening_observation
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u8 rax, [rdi]
+    load.u8 rcx, [rdi]
+    add rax, 1
+    store.i8 [rdi], rax
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $cell -> [rbp-<off0>] : i64
+    temp %bad_vol -> [rbp-<off1>] : i64
+    temp %bad_snapshot -> [rbp-<off2>] : i64
+    temp %bad_old -> [rbp-<off3>] : i64
+    temp %bad_new -> [rbp-<off4>] : i64
+
+  block ^entry
+    store.i64 [rbp-<off0>], 511
+    lea rdi, [rbp-<off0>]
+    call @byte_update [args=(rdi)]
+    cmp.i64 [rbp-<off0>], 256
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    store.i64 [rbp-<off0>], 65535
+    lea rdi, [rbp-<off0>]
+    call @word_update [args=(rdi)]
+    cmp.i64 [rbp-<off0>], 32767
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    store.i64 [rbp-<off0>], 4294967296
+    lea rdi, [rbp-<off0>]
+    call @dword_update [args=(rdi)]
+    cmp.i64 [rbp-<off0>], 8589934591
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    store.i64 [rbp-<off0>], 131071
+    lea rdi, [rbp-<off0>]
+    call @wide_update [args=(rdi)]
+    cmp.i64 [rbp-<off0>], 65536
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    store.i64 [rbp-<off0>], 254
+    lea rdi, [rbp-<off0>]
+    call @truth_update [args=(rdi)]
+    cmp.i64 [rbp-<off0>], 1
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    store.i64 [rbp-<off0>], 255
+    lea rdi, [rbp-<off0>]
+    call @volatile_update [args=(rdi)]
+    cmp.i64 [rbp-<off0>], 0
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off1>], <gpr5>
+    store.i64 [rbp-<off0>], 254
+    lea rdi, [rbp-<off0>]
+    call @snapshot_update [args=(rdi)]
+    cmp.i64 [rbp-<off0>], 255
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off2>], <gpr5>
+    store.i64 [rbp-<off0>], 255
+    lea rdi, [rbp-<off0>]
+    call @live_old_value [args=(rdi)]
+    cmp.i64 rax, 255
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off3>], <gpr5>
+    cmp.i64 [rbp-<off0>], 0
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off4>], <gpr5>
+    store.i64 [rbp-<off0>], 255
+    lea rdi, [rbp-<off0>]
+    call @intervening_observation [args=(rdi)]
+    cmp.i64 [rbp-<off0>], 0
+    setne rax
+    movzx rax, rax
+    or <gpr0>, <gpr1>
+    or <gpr2>, <gpr3>
+    or <gpr4>, [rbp-<off1>]
+    load.i64 rcx, [rbp-<off2>]
+    or rcx, [rbp-<off3>]
+    or <gpr0>, <gpr2>
+    or <gpr4>, rcx
+    or <gpr0>, <gpr4>
+    or <gpr0>, [rbp-<off4>]
+    or rax, <gpr0>
+    ret rax

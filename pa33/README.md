@@ -296,6 +296,8 @@ pass:
 - A conditional choice between fields can sometimes use one indexed address
   and one read. Prove the bit test and byte offsets, preserve which address
   is accessed, and keep volatile reads and memory dependencies observable.
+  Account for element scale, negative offsets and unaligned fields without
+  adding redundant address work.
 - Cases sharing one destination may describe an interval. Preserve widths,
   signed boundaries, holes, default behavior and guarded effects when exposing
   that choice to simplification or predication.

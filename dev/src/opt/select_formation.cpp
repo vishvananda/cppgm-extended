@@ -253,10 +253,19 @@ Value SelectFormation::emit_indexed(BlockId e, InstId& at, const IndexedChoice& 
 {
 	const Value base = choice.base;
 	const BitChoice bit = choice.bit;
-	const int64_t bias = choice.bias;
-	const uint64_t delta = choice.delta;
+	int64_t bias = choice.bias;
+	uint64_t delta = choice.delta;
 	const bool invert = choice.invert;
-	const unsigned output_bit = static_cast<unsigned>(__builtin_ctzll(delta));
+	unsigned output_bit = static_cast<unsigned>(__builtin_ctzll(delta));
+	// Let the address's element scale perform a left shift when both field
+	// offsets allow it. The selected bit then stays closer to its source.
+	unsigned scale = output_bit > bit.bit ? std::min(3u, output_bit - bit.bit) : 0;
+	while (scale != 0 && bias % (int64_t(1) << scale) != 0)
+		--scale;
+	delta >>= scale;
+	bias /= int64_t(1) << scale;
+	output_bit -= scale;
+	const TypeKind elements[] = { TypeKind::I8, TypeKind::I16, TypeKind::I32, TypeKind::I64 };
 	const Type word = Type::scalar(TypeKind::I64);
 	auto emit = [&](Instruction inst, Type result) {
 		inst.location = location;
@@ -292,7 +301,7 @@ Value SelectFormation::emit_indexed(BlockId e, InstId& at, const IndexedChoice& 
 		source = binary(BinaryOp::Xor, source, delta);
 	if (bias != 0)
 		source = binary(BinaryOp::Add, source, bias);
-	Instruction index = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
+	Instruction index = make_instruction(Opcode::Index, Type::scalar(elements[scale]));
 	index.ops[0] = base;
 	index.ops[1] = source;
 	return emit(index, Type::scalar(TypeKind::Ptr));

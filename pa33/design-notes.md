@@ -289,6 +289,10 @@ original base and drop field-specific facts that no longer describe the
 computed address. Only the selected address may be read; computing addresses
 does not authorize reading both fields.
 
+Include the index's element scale in the cost comparison. Moving a bit to a
+larger offset and then multiplying it again can add work. Check negative and
+unaligned byte offsets before changing the element scale.
+
 Factoring a read through a merge requires compatible load types, no intervening
 effects, valid operands on the new path and preserved exceptional behavior.
 Volatile accesses need their own proof. A branch can hide load latency on a
