@@ -620,11 +620,13 @@ void MemoryForwarding::escapes()
 			if (inst.op == Opcode::Phi)
 				continue;
 			uint32_t position = 0;
+			// (Storage given back to `free` goes nowhere a pointer reads it.)
+			const bool release = inst.op == Opcode::Call && !allocation_.empty() && releasing_call(c_.program, inst);
 			for_each_operand(body_, inst, [&](const Value& v) {
 				const uint32_t at = position++;
 				const bool address_use = (inst.op == Opcode::Load && at == 0) ||
 					(inst.op == Opcode::Store && at == 1) || inst.op == Opcode::CopyObject ||
-					inst.op == Opcode::ZeroInit;
+					inst.op == Opcode::ZeroInit || (release && at == 3);
 				if (address_use)
 					return;
 				// Only a known local address or tracked allocation can escape

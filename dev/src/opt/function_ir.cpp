@@ -184,6 +184,19 @@ bool allocated(const Program& program, const FunctionBody& body, Value v)
 	return def != kNoId && fresh_result_call(program, body.instructions[def]);
 }
 
+bool releasing_call(const Program& program, const Instruction& inst)
+{
+	if (inst.op != Opcode::Call || !inst.type.is_void() || !inst.ops[0].is(ValueKind::Symbol) ||
+		inst.extra_count != 1 || (inst.flags & IF_SIGNATURE) != 0)
+		return false;
+	const Symbol& symbol = program.symbols[inst.ops[0].index];
+	const Signature* signature = program.call_boundary(inst);
+	return symbol.kind == SymbolKind::FunctionDeclaration && signature != nullptr &&
+		signature->boundary.arity == ir_model::CAM_FIXED && signature->parameter_count == 1 &&
+		program.parameters_of(*signature)[0].type.is_pointer() &&
+		std::strcmp(program.spelling(symbol.metadata.object != 0 ? symbol.metadata.object : symbol.name), "free") == 0;
+}
+
 bool fresh_result_call(const Program& program, const Instruction& inst)
 {
 	if (inst.op != Opcode::Call || inst.result == kNoId || !inst.type.is_pointer())

@@ -1,6 +1,5 @@
 #include "opt/allocation_origins.h"
 
-#include <cstring>
 #include <algorithm>
 
 #include "opt/function_ir.h"
@@ -14,19 +13,6 @@ namespace {
 bool pointer_step(const Instruction& inst)
 {
 	return inst.op == Opcode::Index || (inst.op == Opcode::Copy && inst.type.is_pointer());
-}
-
-bool releasing(const Program& program, const Instruction& inst)
-{
-	if (inst.op != Opcode::Call || !inst.type.is_void() || !inst.ops[0].is(ValueKind::Symbol) ||
-		inst.extra_count != 1 || (inst.flags & IF_SIGNATURE) != 0)
-		return false;
-	const Symbol& symbol = program.symbols[inst.ops[0].index];
-	const Signature* signature = program.call_boundary(inst);
-	return symbol.kind == SymbolKind::FunctionDeclaration && signature != nullptr &&
-		signature->boundary.arity == ir_model::CAM_FIXED && signature->parameter_count == 1 &&
-		program.parameters_of(*signature)[0].type.is_pointer() &&
-		std::strcmp(program.spelling(symbol.metadata.object != 0 ? symbol.metadata.object : symbol.name), "free") == 0;
 }
 
 } // namespace
@@ -83,7 +69,7 @@ AllocationOrigins::AllocationOrigins(const Program& program, const FunctionBody&
 				std::fill(captured_.begin(), captured_.end(), 1);
 				return;
 			}
-			const bool release = releasing(program, inst);
+			const bool release = releasing_call(program, inst);
 			unsigned operand = 0;
 			for_each_operand(body, inst, [&](Value value) {
 				const unsigned at = operand++;

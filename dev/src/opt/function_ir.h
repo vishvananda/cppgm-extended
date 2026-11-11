@@ -126,6 +126,9 @@ bool allocation_call(const lowir::Program& program, const lowir::Instruction& in
 // A fresh result, including a GNU malloc return promise. Unlike a builtin
 // allocation_call, this alone permits arbitrary writes to existing memory.
 bool fresh_result_call(const lowir::Program& program, const lowir::Instruction& inst);
+// A call of the C library's `free`, declared and not defined here: its
+// argument (the call's operand 3) is released, and reaches nothing through it.
+bool releasing_call(const lowir::Program& program, const lowir::Instruction& inst);
 // Whether v is the result of an allocation call: storage no earlier
 // pointer reaches.
 bool allocated(const lowir::Program& program, const lowir::FunctionBody& body, lowir::Value v);
