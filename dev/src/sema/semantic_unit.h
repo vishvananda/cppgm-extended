@@ -17,7 +17,7 @@ namespace sema {
 // `names`. Everything is released with the graph.
 struct SemanticGraph
 {
-	explicit SemanticGraph(bool plain_char_unsigned = false);
+	explicit SemanticGraph(bool plain_char_unsigned = false, target_model::Target target = target_model::Target::Linux);
 
 	Arena arena;
 	TypeTable types;

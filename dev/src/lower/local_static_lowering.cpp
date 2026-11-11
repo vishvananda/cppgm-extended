@@ -167,7 +167,7 @@ lowir::SymbolId ProgramLowering::atexit_function()
 	signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
 	lowir::Parameter function = lowir::Parameter();
 	function.name = intern("arg0", 4);
-	function.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	function.type = program_.pointer_type();
 	program_.parameters.push_back(function);
 	signature.parameter_count = 1;
 	signature.result = lowir::Type::scalar(lowir::TypeKind::I32);
@@ -192,7 +192,7 @@ lowir::SymbolId ProgramLowering::guard_function(GuardCall call)
 	signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
 	lowir::Parameter guard = lowir::Parameter();
 	guard.name = argument_name(0);
-	guard.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	guard.type = program_.pointer_type();
 	program_.parameters.push_back(guard);
 	signature.parameter_count = 1;
 	signature.result = lowir::Type::scalar(call == GuardCall::Acquire ? lowir::TypeKind::I32 : lowir::TypeKind::Void);
@@ -219,7 +219,7 @@ lowir::SymbolId ProgramLowering::thread_atexit_function()
 	{
 		lowir::Parameter parameter = lowir::Parameter();
 		parameter.name = argument_name(i);
-		parameter.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		parameter.type = program_.pointer_type();
 		program_.parameters.push_back(parameter);
 	}
 	signature.parameter_count = arity;
@@ -409,7 +409,7 @@ void FunctionLowering::local_static_variable(const sema::VariableEntity* variabl
 			RValue address;
 			address.value = bind_reference(*single, type, ConversionContext::Initialization, true);
 			persistent_path_.clear();
-			address.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+			address.type = program_.pointer_type();
 			store(address.type, address, object);
 		}
 		else
@@ -542,7 +542,7 @@ void FunctionLowering::register_destruction(
 		// The object (the destructor finds it) and the module's handle:
 		// glibc keeps the module loaded while a thread's destructors are
 		// pending and needs a real one (a null handle crashes it).
-		const lowir::Type ptr = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		const lowir::Type ptr = program_.pointer_type();
 		arguments_.push_back(integer(ptr, 0).value);
 		if (!lowering_.darwin_host_objects())
 			arguments_.push_back(lowir::Value::symbol(lowering_.dso_handle()));

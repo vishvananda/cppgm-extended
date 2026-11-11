@@ -27,8 +27,8 @@ public:
 	// With `identifiers`, the identifier split off `operator ""identifier`
 	// is interned there like the input's identifiers. `literals`: the
 	// literal forms read (see ClassifyNumber).
-	explicit PostTokenizer(
-		PPTokenCursor& input, IdentifierTable* identifiers = nullptr, NumberDialect literals = NumberDialect::Cxx11);
+	explicit PostTokenizer(PPTokenCursor& input, IdentifierTable* identifiers = nullptr,
+		NumberDialect literals = NumberDialect::Cxx11, target_model::Target target = target_model::Target::Linux);
 
 	// The next token; EndOfFile repeats at the end. Propagates the input's
 	// exceptions (SourceError from the lexer).
@@ -52,6 +52,7 @@ private:
 	PPTokenCursor& input_;
 	IdentifierTable* identifiers_;
 	NumberDialect literals_;
+	target_model::Target target_;
 	// A pp-token pulled past the end of a string literal sequence.
 	const PPToken* lookahead_;
 	PostToken token_;

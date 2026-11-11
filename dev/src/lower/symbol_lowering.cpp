@@ -3050,7 +3050,7 @@ lowir::Parameter ProgramLowering::parameter_for(const sema::Type* type, lowir::N
 	uint64_t size = 0, alignment = 0;
 	if (type->is_reference())
 	{
-		parameter.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		parameter.type = program_.pointer_type();
 		parameter.pass = ir_model::PPM_BY_ADDRESS;
 		const sema::Type* element = type->element;
 		while (element->kind == sema::TypeKind::Array)
@@ -3067,7 +3067,7 @@ lowir::Parameter ProgramLowering::parameter_for(const sema::Type* type, lowir::N
 	if (type->unqualified->kind == sema::TypeKind::Class &&
 		!passed_directly(static_cast<const sema::ClassEntity*>(type->unqualified->entity)))
 	{
-		parameter.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		parameter.type = program_.pointer_type();
 		parameter.pass = ir_model::PPM_BY_ADDRESS;
 		parameter.object_bytes = size_of(type, 0);
 		return parameter;
@@ -3108,7 +3108,7 @@ void ProgramLowering::push_result_parameter(const sema::Type* result, bool named
 	// The caller's destination of an indirect class result, first.
 	lowir::Parameter destination = lowir::Parameter();
 	destination.name = named ? ret_name_ : 0;
-	destination.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	destination.type = program_.pointer_type();
 	destination.pass = ir_model::PPM_INDIRECT_RESULT;
 	destination.alias = ir_model::PALM_EXCLUSIVE_RESULT;
 	destination.object_bytes = size_of(result, 0);
@@ -3147,7 +3147,7 @@ lowir::SignatureId ProgramLowering::function_signature(
 	{
 		lowir::Parameter self = lowir::Parameter();
 		self.name = named ? this_name_ : 0;
-		self.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		self.type = program_.pointer_type();
 		self.object_bytes = size_of(function->owner->entity->type, 0);
 		program_.parameters.push_back(self);
 		++signature.parameter_count;
@@ -3165,7 +3165,7 @@ lowir::SignatureId ProgramLowering::function_signature(
 	{
 		lowir::Parameter vtt = lowir::Parameter();
 		vtt.name = named ? vtt_name() : 0;
-		vtt.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		vtt.type = program_.pointer_type();
 		program_.parameters.push_back(vtt);
 		++signature.parameter_count;
 	}
@@ -3196,7 +3196,7 @@ lowir::SignatureId ProgramLowering::function_signature(
 	const bool incomplete_result = result->unqualified->kind == sema::TypeKind::Class &&
 		!static_cast<const sema::ClassEntity*>(result->unqualified->entity)->complete && !function->defined;
 	signature.result = incomplete_result || indirect ? lowir::Type::scalar(lowir::TypeKind::Void)
-		: result->is_reference()                     ? lowir::Type::scalar(lowir::TypeKind::Ptr)
+		: result->is_reference()                     ? program_.pointer_type()
 													 : storage_type(result);
 	signature.boundary.result_classes = incomplete_result || indirect ? 0 : result_classes(result);
 	if (type->variadic)
@@ -3257,7 +3257,7 @@ lowir::SignatureId ProgramLowering::member_call_signature(const sema::Type* memb
 	// states none.
 	lowir::Parameter self = lowir::Parameter();
 	self.name = argument_name(signature.parameter_count - type->param_count);
-	self.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	self.type = program_.pointer_type();
 	const sema::ClassEntity* owner = sema::ClassOf(member_pointer->owner);
 	if (owner != nullptr && owner->complete && owner->bases == nullptr)
 		self.object_bytes = size_of(member_pointer->owner, 0);
@@ -3267,7 +3267,7 @@ lowir::SignatureId ProgramLowering::member_call_signature(const sema::Type* memb
 		program_.parameters.push_back(
 			parameter_for(type->params[i], argument_name(signature.parameter_count - type->param_count + i)));
 	signature.result = indirect  ? lowir::Type::scalar(lowir::TypeKind::Void)
-		: result->is_reference() ? lowir::Type::scalar(lowir::TypeKind::Ptr)
+		: result->is_reference() ? program_.pointer_type()
 								 : storage_type(result);
 	signature.boundary.result_classes = indirect ? 0 : result_classes(result);
 	if (type->variadic)
@@ -3312,7 +3312,7 @@ lowir::SignatureId ProgramLowering::call_signature(const sema::Type* function, b
 		program_.parameters.push_back(parameter);
 	}
 	signature.result = indirect  ? lowir::Type::scalar(lowir::TypeKind::Void)
-		: result->is_reference() ? lowir::Type::scalar(lowir::TypeKind::Ptr)
+		: result->is_reference() ? program_.pointer_type()
 								 : storage_type(result);
 	signature.boundary.result_classes = indirect ? 0 : result_classes(result);
 	if (type->variadic)

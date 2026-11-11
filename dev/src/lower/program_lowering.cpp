@@ -78,6 +78,8 @@ void ProgramLowering::lower_unit(
 	char marker;
 	stack_base_ = reinterpret_cast<std::uintptr_t>(&marker);
 	graph_ = &graph;
+	program_.target = graph.types.target();
+	program_.explicit_target = target_model::is_wasm(program_.target);
 	analyzer_ = &analyzer;
 	may_alias_kinds_ = 0;
 	for (const sema::Type* type : graph.may_alias_types)
@@ -1104,7 +1106,7 @@ lowir::SymbolId ProgramLowering::terminate_helper()
 {
 	if (terminate_helper_ != lowir::kNoId)
 		return terminate_helper_;
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	// The runtime's __cxa_begin_catch (C linkage) and std::terminate.
 	runtime_function(RuntimeFunction::BeginCatch);
 	terminate_function();
@@ -1223,7 +1225,7 @@ lowir::SymbolId ProgramLowering::aggregate_helper(const sema::ClassEntity* entit
 	signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
 	lowir::Parameter self = lowir::Parameter();
 	self.name = this_name_;
-	self.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	self.type = program_.pointer_type();
 	self.object_bytes = size_of(entity->type, 0);
 	program_.parameters.push_back(self);
 	signature.parameter_count = 1;
@@ -1239,7 +1241,7 @@ lowir::SymbolId ProgramLowering::aggregate_helper(const sema::ClassEntity* entit
 		lowir::Parameter parameter = lowir::Parameter();
 		parameter.name = name;
 		parameter.type = variable->type->kind == sema::TypeKind::Array || variable->type->is_reference()
-			? lowir::Type::scalar(lowir::TypeKind::Ptr)
+			? program_.pointer_type()
 			: storage_type(variable->type);
 		// A reference member's referent is passed by its address, as a
 		// reference parameter's is (with its complete object's size).
@@ -1340,8 +1342,12 @@ lowir::Type ProgramLowering::storage_type(const sema::Type* type)
 		case FundamentalType::Char32T:
 			return Type::scalar(TypeKind::U32);
 		case FundamentalType::LongInt:
-		case FundamentalType::LongLongInt:
+			return Type::scalar(
+				target_model::data_layout(type->target).long_bytes == 4 ? TypeKind::I32 : TypeKind::I64);
 		case FundamentalType::UnsignedLongInt:
+			return Type::scalar(
+				target_model::data_layout(type->target).long_bytes == 4 ? TypeKind::U32 : TypeKind::I64);
+		case FundamentalType::LongLongInt:
 		case FundamentalType::UnsignedLongLongInt:
 			return Type::scalar(TypeKind::I64);
 		case FundamentalType::Float:
@@ -1352,6 +1358,7 @@ lowir::Type ProgramLowering::storage_type(const sema::Type* type)
 		case FundamentalType::Float32x:
 			return Type::scalar(TypeKind::F64);
 		case FundamentalType::LongDouble:
+			return target_model::is_wasm(type->target) ? Type::object(16, 4) : Type::scalar(TypeKind::F80);
 		case FundamentalType::Float64x:
 			return Type::scalar(TypeKind::F80);
 		case FundamentalType::Float16:
@@ -1368,8 +1375,9 @@ lowir::Type ProgramLowering::storage_type(const sema::Type* type)
 		case FundamentalType::UnsignedInt128:
 			return Type::scalar(TypeKind::I128);
 		case FundamentalType::NullptrT:
-			// The course holds std::nullptr_t as a 64-bit integer.
-			return Type::scalar(TypeKind::I64);
+			// nullptr_t has the target pointer storage width.
+			return Type::scalar(
+				target_model::data_layout(type->target).pointer_bytes == 4 ? TypeKind::U32 : TypeKind::I64);
 		case FundamentalType::Void:
 			return Type::scalar(TypeKind::Void);
 		}
@@ -1386,7 +1394,7 @@ lowir::Type ProgramLowering::storage_type(const sema::Type* type)
 	case sema::TypeKind::LValueReference:
 	case sema::TypeKind::RValueReference:
 	case sema::TypeKind::Function:
-		return Type::scalar(TypeKind::Ptr);
+		return program_.pointer_type();
 	case sema::TypeKind::MemberPointer:
 		// The course's Itanium forms: a data member's offset plus one (0 is
 		// null), a member function's address and this-adjustment (i128).

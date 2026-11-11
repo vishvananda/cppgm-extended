@@ -66,6 +66,7 @@ my %explicit_throw_type = (
 	'FactError' => 'dev/src/abi/facts/',
 	'EncodingError' => 'dev/src/abi/itanium/',
 	'BackendError' => 'dev/src/native/',
+	'WasmError' => 'dev/src/wasm/',
 	'std::bad_alloc' => 'dev/src/support/memory/',
 );
 

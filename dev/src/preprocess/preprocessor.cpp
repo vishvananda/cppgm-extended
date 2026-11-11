@@ -35,7 +35,8 @@ std::string PredefinedText(const PreprocessorOptions& options)
 					   "#define __cplusplus " +
 		options.cplusplus +
 		"\n"
-		"#define __STDC_HOSTED__ 1\n"
+		"#define __STDC_HOSTED__ " +
+		(options.target == target_model::Target::Wasm32 ? "0\n" : "1\n") +
 		"#define __x86_64__ 1\n"
 		"#define __linux__ 1\n";
 	text += "#define __CPPGM_AUTHOR__ ";

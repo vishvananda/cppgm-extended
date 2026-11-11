@@ -162,7 +162,7 @@ bool ProgramLowering::constant_item(
 	// type's zero, like any other evaluated element (the course's form),
 	// another zero as zero bytes, an address constant as symbol plus offset.
 	item = lowir::DataItem();
-	item.type = type->is_reference() ? lowir::Type::scalar(lowir::TypeKind::Ptr) : storage_type(type);
+	item.type = type->is_reference() ? program_.pointer_type() : storage_type(type);
 	if ((value.flags & sema::kValueZeroed) != 0 && value.kind == sema::ValueKind::Floating && item.type.is_float())
 	{
 		item.kind = lowir::DataItemKind::Scalar;
@@ -259,7 +259,7 @@ bool ProgramLowering::constant_item(
 			return false;
 		}
 		item.kind = lowir::DataItemKind::Address;
-		item.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		item.type = program_.pointer_type();
 		item.amount = value.address.offset;
 		return true;
 	default:
@@ -572,7 +572,7 @@ uint32_t ProgramLowering::member_pointer_items(const sema::ConstValue& value, lo
 	{
 		demand(target);
 		items[0].kind = lowir::DataItemKind::Address;
-		items[0].type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		items[0].type = program_.pointer_type();
 		items[0].address = function_symbol(target);
 		items[0].amount = 0;
 	}
@@ -596,7 +596,7 @@ void ProgramLowering::place_tables(const sema::ClassEntity* cls, uint64_t offset
 		const TableAddress address = table_address(cls, i);
 		lowir::DataItem table = lowir::DataItem();
 		table.kind = lowir::DataItemKind::Address;
-		table.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		table.type = program_.pointer_type();
 		table.address = address.symbol;
 		table.amount = address.addend;
 		out.push_back(StaticPlacement{ offset + (i != 0 ? offsets[i] : 0), 8, table });

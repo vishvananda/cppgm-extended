@@ -85,7 +85,7 @@ RValue FunctionLowering::binary_immediate_vector(const syntax::CallExpr& expr)
 	const RValue first = operand(*expr.arguments[0], ConversionContext::Argument);
 	const RValue second = operand(*expr.arguments[1], ConversionContext::Argument);
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	const lowir::Type ptr = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type ptr = program_.pointer_type();
 	const bool deferred = (expr.facts->value >> 16 & 1) != 0;
 	const uint32_t immediate = static_cast<uint32_t>(expr.facts->value >> 8 & 255);
 	RValue count = integer(i64, immediate);

@@ -206,17 +206,17 @@ lowir::SymbolId ProgramLowering::type_information(const sema::Type* type)
 		pointee = defined_type_information(type->element->canonical->unqualified);
 	const lowir::SymbolId vtable = rtti_vtable(kind);
 	const lowir::SymbolId name = type_name_object(type, fundamental ? "_" + label : label, internal);
-	const uint32_t first = data_item(AddressItem(vtable, 16));
-	data_item(AddressItem(name, 0));
+	const uint32_t first = data_item(AddressItem(program_, vtable, 16));
+	data_item(AddressItem(program_, name, 0));
 	if (pointee != lowir::kNoId)
 	{
 		const sema::ClassEntity* holder = owner != lowir::kNoId ? sema::ClassOf(type->owner) : nullptr;
 		data_item(ScalarItem(
 			lowir::TypeKind::I32, PointeeFlags(type->element) | (holder != nullptr && !holder->complete ? 0x10 : 0)));
-		data_item(AddressItem(pointee, 0));
+		data_item(AddressItem(program_, pointee, 0));
 	}
 	if (owner != lowir::kNoId)
-		data_item(AddressItem(owner, 0));
+		data_item(AddressItem(program_, owner, 0));
 	lowir::SymbolMetadata metadata;
 	metadata.binding = internal || local_type_information(type) ? ir_model::SBM_INTERNAL : ir_model::SBM_WEAK;
 	define_data(symbol, first, metadata);
@@ -328,12 +328,12 @@ lowir::SymbolId ProgramLowering::defined_type_information(const sema::Type* type
 	defined_informations_.set(type, symbol);
 	const lowir::SymbolId vtable = rtti_vtable(pointer ? TypeInfoKind::Pointer : TypeInfoKind::Fundamental);
 	const lowir::SymbolId name = type_name_object(type, pointer ? label : "_" + label, false);
-	const uint32_t first = data_item(AddressItem(vtable, 16));
-	data_item(AddressItem(name, 0));
+	const uint32_t first = data_item(AddressItem(program_, vtable, 16));
+	data_item(AddressItem(program_, name, 0));
 	if (pointer)
 	{
 		data_item(ScalarItem(lowir::TypeKind::I32, PointeeFlags(type->element)));
-		data_item(AddressItem(pointee, 0));
+		data_item(AddressItem(program_, pointee, 0));
 	}
 	lowir::SymbolMetadata metadata;
 	metadata.binding = ir_model::SBM_INTERNAL;

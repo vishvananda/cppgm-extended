@@ -78,7 +78,7 @@ struct ZeroRange
 // The other scalar type of an integer or pointer type's width with the
 // same bits (signed and unsigned integers, a pointer and i64); the type
 // itself when none.
-Type same_width_twin(Type t)
+Type same_width_twin(Type t, Type pointer)
 {
 	switch (t.kind())
 	{
@@ -95,9 +95,9 @@ Type same_width_twin(Type t)
 	case TypeKind::U32:
 		return Type::scalar(TypeKind::I32);
 	case TypeKind::I64:
-		return Type::scalar(TypeKind::Ptr);
+		return pointer.pointer_bytes() == 8 ? pointer : t;
 	case TypeKind::Ptr:
-		return Type::scalar(TypeKind::I64);
+		return Type::scalar(pointer.pointer_bytes() == 4 ? TypeKind::I32 : TypeKind::I64);
 	default:
 		return t;
 	}
@@ -872,7 +872,7 @@ void MemoryForwarding::process(BlockId block)
 				// A same-width access of the other integer (or pointer)
 				// type read or wrote the same bits: the load becomes a copy
 				// retyping that value.
-				const Known* other = find(key_of(inst.ops[0], same_width_twin(inst.type)));
+				const Known* other = find(key_of(inst.ops[0], same_width_twin(inst.type, body_.pointer_type())));
 				if (other != nullptr && other->generation == generation_ && !other->value.is(ValueKind::None) &&
 					!(other->value.is_literal() && (inst.type.is_pointer() || other->type.is_pointer())))
 				{
@@ -1101,7 +1101,7 @@ InstId MemoryForwarding::known_copy(BlockId block, InstId prev, InstId id)
 			index.ops[1] = integer_value(body_, integer_literal(static_cast<int64_t>(part.first)));
 			index.location = copy.location;
 			const InstId at = append_instruction(body_, index);
-			const TempId t = append_temp(body_, Type::scalar(TypeKind::Ptr), at);
+			const TempId t = append_temp(body_, body_.pointer_type(), at);
 			body_.instructions[at].result = t;
 			insert_after(body_, block, after, at);
 			after = at;
@@ -1197,7 +1197,7 @@ InstId MemoryForwarding::field_copy(BlockId block, InstId prev, InstId id)
 			index.ops[1] = integer_value(body_, integer_literal(static_cast<int64_t>(part.offset)));
 			index.location = copy.location;
 			const InstId at = append_instruction(body_, index);
-			const TempId t = append_temp(body_, Type::scalar(TypeKind::Ptr), at);
+			const TempId t = append_temp(body_, body_.pointer_type(), at);
 			body_.instructions[at].result = t;
 			insert_after(body_, block, after, at);
 			after = at;

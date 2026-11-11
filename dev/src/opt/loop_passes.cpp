@@ -479,7 +479,7 @@ bool LoopPass::final_values(uint32_t loop, ExitTest& test, const std::vector<Ind
 		trips = literal(test.trips);
 	else if (tested->pointer)
 	{
-		const Value bytes = binary(BinaryOp::Sub, Type::scalar(TypeKind::Ptr), test.bound, tested->init);
+		const Value bytes = binary(BinaryOp::Sub, body_.pointer_type(), test.bound, tested->init);
 		Instruction count = make_instruction(Opcode::Binary, i64);
 		count.sub = static_cast<uint8_t>(BinaryOp::Div);
 		count.flags = IF_EXACT;
@@ -663,7 +663,7 @@ bool LoopPass::bypass(uint32_t loop, const ExitTest& test)
 
 SymbolId LoopPass::fill_symbol()
 {
-	const Type types[3] = { Type::scalar(TypeKind::Ptr), Type::scalar(TypeKind::I32), Type::scalar(TypeKind::I64) };
+	const Type types[3] = { body_.pointer_type(), Type::scalar(TypeKind::I32), Type::scalar(TypeKind::I64) };
 	return builtin_symbol("__cppgm_builtin_memset", "cppgm_builtin_memset", types, 3);
 }
 
@@ -682,7 +682,7 @@ SymbolId LoopPass::builtin_symbol(const char* name, const char* object, const Ty
 	Signature sig;
 	sig.first_parameter = static_cast<uint32_t>(program.parameters.size());
 	sig.parameter_count = count;
-	sig.result = Type::scalar(TypeKind::Ptr);
+	sig.result = body_.pointer_type();
 	sig.boundary.unwind = ir_model::CUM_NO;
 	for (uint32_t k = 0; k < count; ++k)
 	{
@@ -799,7 +799,7 @@ void LoopPass::emit_copy(uint32_t loop, const Induction& src, const Induction& d
 		after = id;
 		return result.is_void() ? Value::none() : Value::temp(body_.instructions[id].result);
 	};
-	const Type i64 = Type::scalar(TypeKind::I64), ptr = Type::scalar(TypeKind::Ptr), i8 = Type::scalar(TypeKind::I8);
+	const Type i64 = Type::scalar(TypeKind::I64), ptr = body_.pointer_type(), i8 = Type::scalar(TypeKind::I8);
 	auto as_i64 = [&](Value v) {
 		Instruction copy = make_instruction(Opcode::Copy, i64);
 		copy.ops[0] = v;
@@ -960,7 +960,7 @@ void LoopPass::emit_fill(uint32_t loop, const Induction& iv, const ExitTest& tes
 		at = id;
 		return Value::temp(body_.instructions[id].result);
 	};
-	const Type i64 = Type::scalar(TypeKind::I64), ptr = Type::scalar(TypeKind::Ptr);
+	const Type i64 = Type::scalar(TypeKind::I64), ptr = body_.pointer_type();
 	// The byte count: the bound's own `index i8 init, n`, or bound - init.
 	Value bytes = Value::none();
 	if (test.bound.is(ValueKind::Temp) && body_.temps[test.bound.index].def != kNoId)
@@ -1096,7 +1096,7 @@ bool LoopPass::widen_fill(uint32_t loop, const ExitTest& test, const std::vector
 		return false;
 	const Instruction st = body_.instructions[store];
 	const uint64_t size = static_cast<uint64_t>(iv->step_bytes);
-	const Type i64 = Type::scalar(TypeKind::I64), ptr = Type::scalar(TypeKind::Ptr);
+	const Type i64 = Type::scalar(TypeKind::I64), ptr = body_.pointer_type();
 	const BlockId pre = l.preheader, header = l.header;
 	const BlockId wide = append_block(body_, BlockKind::WideLoop), tail = append_block(body_, BlockKind::WideTail);
 	auto emit = [&](BlockId b, InstId& after, Instruction inst, Type result) {
@@ -1319,7 +1319,7 @@ bool LoopPass::version_fills()
 			return changed;
 		// (Captured: appending instructions moves them.)
 		const Value chunk_bytes = start.ops[1], q2 = Value::temp(seq[4]->result);
-		const Type i64 = Type::scalar(TypeKind::I64), ptr = Type::scalar(TypeKind::Ptr);
+		const Type i64 = Type::scalar(TypeKind::I64), ptr = body_.pointer_type();
 		const Type none = Type::scalar(TypeKind::Void);
 		const BlockId sized = append_block(body_, BlockKind::FillSized),
 					  same = append_block(body_, BlockKind::FillSame), fill = append_block(body_, BlockKind::FillFast);
@@ -1655,7 +1655,7 @@ bool LoopPass::indexed_stores(uint32_t loop, const ExitTest& test, const std::ve
 		at = id;
 		return result.is_void() ? Value::none() : Value::temp(body_.instructions[id].result);
 	};
-	const Type ptr = Type::scalar(TypeKind::Ptr), i8 = Type::scalar(TypeKind::I8);
+	const Type ptr = body_.pointer_type(), i8 = Type::scalar(TypeKind::I8);
 	// `index T base, first` for an element of `bytes` (an address the loop
 	// takes taken again here).
 	auto start = [&](Value base, uint64_t bytes) {
@@ -2599,7 +2599,7 @@ bool LoopPass::count_to_pointer(uint32_t loop)
 		after = id;
 		return Value::temp(body_.instructions[id].result);
 	};
-	const Type i64 = Type::scalar(TypeKind::I64), ptr = Type::scalar(TypeKind::Ptr);
+	const Type i64 = Type::scalar(TypeKind::I64), ptr = body_.pointer_type();
 	Value count = counter.init;
 	if (count_type.kind() != TypeKind::I64)
 	{

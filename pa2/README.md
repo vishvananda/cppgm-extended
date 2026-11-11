@@ -46,6 +46,11 @@ If a `preprocessing-token` contains a pre-defined macro names or the pragma oper
 
 Extend your existing compiler code under `dev/` and `dev/src/`.
 
+Keep literal type selection and floating representation separate from host
+library types. These exercises retain the native data model; PA37 selects a
+different target model while reusing the same scanner. A suffix names a C++
+type, whose size and representation come from the selected target.
+
 ### Output Format
 
 `posttoken` shall write to standard output the following in UTF-8 format:

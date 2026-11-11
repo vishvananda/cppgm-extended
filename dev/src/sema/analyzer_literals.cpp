@@ -88,7 +88,7 @@ ExprFacts* Analyzer::literal(const syntax::LiteralExpr& expr)
 			return user_string_literal(expr, types_.array(element, string.units), string);
 		return new_facts(expr, types_.array(element, string.units), ValueCategory::LValue);
 	}
-	const NumberLiteral number = ClassifyNumber(spelling.text, spelling.length);
+	const NumberLiteral number = ClassifyNumber(spelling.text, spelling.length, NumberDialect::Gnu, types_.target());
 	if (number.kind == NumberLiteralKind::Integer)
 	{
 		ExprFacts* facts = new_facts(expr, types_.fundamental(number.type), ValueCategory::PRValue);

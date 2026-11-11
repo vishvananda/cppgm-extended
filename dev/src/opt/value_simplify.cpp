@@ -2526,16 +2526,16 @@ bool Simplifier::equality_memcmp(BlockId block, InstId& prev, InstId id)
 		Value p = base;
 		if (offset != 0 && base.is(ValueKind::Symbol))
 		{
-			Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+			Instruction addr = make_instruction(Opcode::Addr, body_.pointer_type());
 			addr.ops[0] = base;
-			base = emit(addr, Type::scalar(TypeKind::Ptr));
+			base = emit(addr, body_.pointer_type());
 		}
 		if (offset != 0)
 		{
 			Instruction index = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
 			index.ops[0] = base;
 			index.ops[1] = integer_value(body_, integer_literal(offset));
-			p = emit(index, Type::scalar(TypeKind::Ptr));
+			p = emit(index, body_.pointer_type());
 		}
 		Instruction load = make_instruction(Opcode::Load, type);
 		load.ops[0] = p;

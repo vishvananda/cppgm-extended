@@ -56,7 +56,7 @@ SymbolId SinCos::sincos_symbol(TypeKind kind)
 	sig.parameter_count = 3;
 	sig.result = Type::scalar(TypeKind::Void);
 	sig.boundary.unwind = ir_model::CUM_NO;
-	const Type types[3] = { Type::scalar(kind), Type::scalar(TypeKind::Ptr), Type::scalar(TypeKind::Ptr) };
+	const Type types[3] = { Type::scalar(kind), body_.pointer_type(), body_.pointer_type() };
 	for (const Type& type : types)
 	{
 		Parameter p = Parameter();
@@ -128,7 +128,7 @@ bool SinCos::run()
 		const SymbolId symbol = sincos_symbol(type.kind());
 		if (symbol == kNoId)
 			return changed;
-		const Type pointer = Type::scalar(TypeKind::Ptr);
+		const Type pointer = body_.pointer_type();
 		const uint32_t slot = static_cast<uint32_t>(body_.slots.size());
 		body_.slots.push_back(Slot{ 0, SlotKind::Aggregate, 0, 0, type });
 		body_.slots.push_back(Slot{ 0, SlotKind::Aggregate, 0, 0, type });

@@ -1,11 +1,10 @@
-#include "native/image/global_data.h"
+#include "machine/global_data.h"
 
 #include <cstring>
 
 #include "lowir/literals.h"
-#include "native/select/call_abi.h"
 
-namespace native {
+namespace machine {
 
 using lowir::Type;
 using lowir::TypeKind;
@@ -14,7 +13,7 @@ namespace {
 
 uint32_t item_align(Type type)
 {
-	const uint32_t align = value_align(type);
+	const uint32_t align = (type.is_vector() ? 16 : lowir::data_alignment(type));
 	return align > 16 ? 16 : align;
 }
 
@@ -41,16 +40,16 @@ void write_constant(uint8_t* out, Type type, const lowir::Constant& c)
 		}
 		return;
 	}
-	const uint32_t bytes = value_bytes(type);
+	const uint32_t bytes = lowir::storage_bytes(type);
 	for (uint32_t k = 0; k < bytes && k < 8; ++k)
 		out[k] = static_cast<uint8_t>(bits.low >> (8 * k));
 	for (uint32_t k = 8; k < bytes; ++k)
 		out[k] = static_cast<uint8_t>(bits.high >> (8 * (k - 8)));
 }
 
-Type item_type(const lowir::DataItem& item)
+Type item_type(const lowir::Program& program, const lowir::DataItem& item)
 {
-	return item.kind == lowir::DataItemKind::Address ? Type::scalar(TypeKind::Ptr) : item.type;
+	return item.kind == lowir::DataItemKind::Address ? program.pointer_type() : item.type;
 }
 
 // Whether a constant stored as `type` has only zero bytes.
@@ -75,9 +74,9 @@ uint64_t global_size(const lowir::Program& program, const lowir::Global& g, uint
 {
 	if (g.init != lowir::GlobalInit::Data)
 	{
-		const Type type = g.typed ? g.type : Type::scalar(TypeKind::Ptr);
+		const Type type = g.typed ? g.type : program.pointer_type();
 		align = item_align(type);
-		return value_bytes(type) == 0 ? 8 : value_bytes(type);
+		return lowir::storage_bytes(type) == 0 ? 8 : lowir::storage_bytes(type);
 	}
 	uint64_t size = 0;
 	align = 1;
@@ -90,11 +89,11 @@ uint64_t global_size(const lowir::Program& program, const lowir::Global& g, uint
 			size += static_cast<uint64_t>(item.amount);
 			continue;
 		}
-		const uint32_t a = item_align(item_type(item));
+		const uint32_t a = item_align(item_type(program, item));
 		typed = true;
 		if (a > align)
 			align = a;
-		size = ((size + a - 1) & ~static_cast<uint64_t>(a - 1)) + value_bytes(item_type(item));
+		size = ((size + a - 1) & ~static_cast<uint64_t>(a - 1)) + lowir::storage_bytes(item_type(program, item));
 	}
 	if (g.typed)
 	{
@@ -114,7 +113,7 @@ void write_global(const lowir::Program& program, const lowir::Global& g, std::ve
 {
 	if (g.init != lowir::GlobalInit::Data)
 	{
-		const Type type = g.typed ? g.type : Type::scalar(TypeKind::Ptr);
+		const Type type = g.typed ? g.type : program.pointer_type();
 		if (g.init == lowir::GlobalInit::Constant)
 			write_constant(out.data() + base, type, g.constant);
 		else if (g.init == lowir::GlobalInit::Address)
@@ -130,14 +129,14 @@ void write_global(const lowir::Program& program, const lowir::Global& g, std::ve
 			at += static_cast<uint64_t>(item.amount);
 			continue;
 		}
-		const Type type = item_type(item);
+		const Type type = item_type(program, item);
 		const uint32_t a = item_align(type);
 		at = (at + a - 1) & ~static_cast<uint64_t>(a - 1);
 		if (item.kind == lowir::DataItemKind::Address)
 			addresses.push_back(GlobalAddress{ at, item.address, item.amount });
 		else
 			write_constant(out.data() + base + at, type, item.constant);
-		at += value_bytes(type);
+		at += lowir::storage_bytes(type);
 	}
 }
 
@@ -148,7 +147,7 @@ bool global_is_zero(const lowir::Program& program, const lowir::Global& g)
 	case lowir::GlobalInit::Zero:
 		return true;
 	case lowir::GlobalInit::Constant:
-		return constant_is_zero(g.typed ? g.type : Type::scalar(TypeKind::Ptr), g.constant);
+		return constant_is_zero(g.typed ? g.type : program.pointer_type(), g.constant);
 	case lowir::GlobalInit::Data:
 		for (uint32_t i = 0; i < g.item_count; ++i)
 		{
@@ -175,4 +174,4 @@ bool global_has_addresses(const lowir::Program& program, const lowir::Global& g)
 	return false;
 }
 
-} // namespace native
+} // namespace machine

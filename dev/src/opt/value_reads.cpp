@@ -54,7 +54,7 @@ Type read_type(const FunctionBody& body, const Instruction& inst, unsigned opera
 	if (inst.op == Opcode::WriteMxcsr)
 		return Type::scalar(TypeKind::U32);
 	if (inst.op == Opcode::StackRestore)
-		return Type::scalar(TypeKind::Ptr);
+		return body.pointer_type();
 	if (inst.op == Opcode::Index || inst.op == Opcode::StackAlloc || inst.op == Opcode::Switch)
 		return Type::scalar(TypeKind::I64);
 	return inst.type;

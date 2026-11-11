@@ -204,9 +204,40 @@ void Parser::parse(const char* begin, const char* end, const std::string& source
 	sources_.push_back(source);
 	Lexer lexer(program_.names, begin, end);
 	lexer_ = &lexer;
+	parse_target();
 	while (!at(TokenKind::End))
 		parse_top_level_item();
 	lexer_ = nullptr;
+}
+
+void Parser::parse_target()
+{
+	target_model::Target incoming = target_model::Target::Linux;
+	const bool explicit_target = accept_keyword(Keyword::Target);
+	if (explicit_target)
+	{
+		bool found = false;
+		for (unsigned i = 0; i < target_model::kTargetCount; ++i)
+		{
+			const auto candidate = static_cast<target_model::Target>(i);
+			if (at(TokenKind::Word) && spelling(token()) == target_model::lowir_spelling(candidate))
+			{
+				incoming = candidate;
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			fail("unknown target profile");
+		advance();
+		if (parse_small_integer("target profile version") != 1)
+			fail("unsupported target profile version");
+	}
+	if ((unit_seen_ || program_.explicit_target) && program_.target != incoming)
+		fail("incompatible LowIR target profiles");
+	program_.target = incoming;
+	program_.explicit_target = program_.explicit_target || explicit_target;
+	unit_seen_ = true;
 }
 
 void Parser::parse_top_level_item()
@@ -451,7 +482,8 @@ Type Parser::parse_type()
 	if (info.word_class == WordClass::Type)
 	{
 		advance();
-		return Type::scalar(static_cast<TypeKind>(info.value));
+		const TypeKind kind = static_cast<TypeKind>(info.value);
+		return kind == TypeKind::Ptr ? program_.pointer_type() : Type::scalar(kind);
 	}
 	if (at(TokenKind::Word) && token().length > 4 && std::memcmp(token().text, "obj<", 4) == 0)
 	{

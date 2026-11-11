@@ -121,7 +121,7 @@ void FunctionLowering::lower_definition()
 		result_destination_ = lowir::Value::temp(builder_.parameter(index++));
 	if (function_->member && !function_->is_static)
 	{
-		const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		const lowir::Type pointer = program_.pointer_type();
 		this_slot_ = new_slot(lowering_.this_name(), pointer);
 		RValue incoming;
 		incoming.value = lowir::Value::temp(builder_.parameter(index));
@@ -151,7 +151,7 @@ void FunctionLowering::lower_definition()
 		Local local;
 		local.reference = type->is_reference();
 		const lowir::Type slot_type = local.reference
-			? lowir::Type::scalar(lowir::TypeKind::Ptr)
+			? program_.pointer_type()
 			: lowering_.storage_type(type->kind == sema::TypeKind::Array || type->kind == sema::TypeKind::Function
 					  ? lowering_.graph().types.adjusted_parameter(type)
 					  : type);
@@ -197,7 +197,7 @@ void FunctionLowering::lower_definition()
 		for (uint32_t i = 0; i < type->param_count; ++i)
 		{
 			const sema::Type* parameter = type->params[i];
-			const lowir::Type slot_type = parameter->is_reference() ? lowir::Type::scalar(lowir::TypeKind::Ptr)
+			const lowir::Type slot_type = parameter->is_reference() ? program_.pointer_type()
 																	: lowering_.storage_type(parameter);
 			const lowir::SlotId slot = implicit_copy ? new_slot(lowering_.other_name(), slot_type)
 													 : parameter_slot(index, slot_type);
@@ -538,7 +538,7 @@ void FunctionLowering::lower_dynamic_initializer(lowir::SymbolId global, const s
 		address.value = bind_reference(*single, type, ConversionContext::Initialization, persistent);
 		static_temporaries_ = saved_temporaries;
 		persistent_path_.clear();
-		address.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		address.type = program_.pointer_type();
 		store(address.type, address, place);
 	}
 	else
@@ -692,7 +692,7 @@ void FunctionLowering::lower_thread_local_wrapper(lowir::SymbolId init, lowir::S
 		lowir::BlockId done = lowir::kNoId;
 		if (weak)
 		{
-			const lowir::Type ptr = lowir::Type::scalar(lowir::TypeKind::Ptr);
+			const lowir::Type ptr = program_.pointer_type();
 			const lowir::BlockId run = new_block(lowir::BlockKind::LocalStaticCtorRun);
 			done = new_block(lowir::BlockKind::LocalStaticCtorDone);
 			branch(
@@ -724,8 +724,7 @@ void FunctionLowering::lower_terminate_helper(lowir::SymbolId begin_catch, lowir
 	// std::terminate is called.
 	lowir::Value exception = lowir::Value::temp(builder_.parameter(0));
 	++lowering_.counters().instructions;
-	builder_.call(
-		lowir::Type::scalar(lowir::TypeKind::Ptr), lowir::Value::symbol(begin_catch), &exception, 1, lowir::kNoId, 0);
+	builder_.call(program_.pointer_type(), lowir::Value::symbol(begin_catch), &exception, 1, lowir::kNoId, 0);
 	++lowering_.counters().instructions;
 	builder_.call(lowir::Type::scalar(lowir::TypeKind::Void), lowir::Value::symbol(terminate_function), nullptr, 0,
 		lowir::kNoId, 0);
@@ -780,8 +779,7 @@ void FunctionLowering::lower_thunk(lowir::SymbolId self, lowir::SymbolId target,
 				Place vptr = Place();
 				vptr.storage = argument;
 				Place offset = Place();
-				offset.storage = index(i8, ir_model::IPK_NONE,
-					load(lowir::Type::scalar(lowir::TypeKind::Ptr), vptr).value,
+				offset.storage = index(i8, ir_model::IPK_NONE, load(program_.pointer_type(), vptr).value,
 					integer(i64, static_cast<uint64_t>(vcall)))
 									 .value;
 				argument = index(i8, ir_model::IPK_NONE, argument, load(i64, offset)).value;
@@ -798,7 +796,7 @@ void FunctionLowering::lower_thunk(lowir::SymbolId self, lowir::SymbolId target,
 		inst.ops[0] = lowir::Value::temp(returned);
 	if (result != nullptr)
 	{
-		const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		const lowir::Type pointer = program_.pointer_type();
 		const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 		const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 		RValue value;
@@ -1189,9 +1187,9 @@ lowir::Value FunctionLowering::address_of(const Place& place)
 {
 	if (place.storage.kind != lowir::ValueKind::Slot && place.storage.kind != lowir::ValueKind::Symbol)
 		return place.storage;
-	lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::Addr, lowir::Type::scalar(lowir::TypeKind::Ptr));
+	lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::Addr, program_.pointer_type());
 	inst.ops[0] = place.storage;
-	return emit_value(inst, lowir::Type::scalar(lowir::TypeKind::Ptr));
+	return emit_value(inst, program_.pointer_type());
 }
 
 RValue FunctionLowering::index(
@@ -1203,7 +1201,7 @@ RValue FunctionLowering::index(
 	inst.ops[0] = base;
 	inst.ops[1] = offset.value;
 	RValue value;
-	value.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	value.type = program_.pointer_type();
 	value.value = emit_value(inst, value.type);
 	return value;
 }

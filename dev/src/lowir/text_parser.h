@@ -120,6 +120,8 @@ private:
 
 	// Top level (text_parser.cpp).
 	void parse_top_level_item();
+	void parse_target();
+	bool unit_seen_ = false;
 	void parse_assembly();
 	void parse_assembly_function();
 	void parse_assembly_global();

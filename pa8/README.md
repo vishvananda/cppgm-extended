@@ -46,6 +46,7 @@ The starter kit provides:
   the format as an enum with its spellings and readers, and the 8-byte
   `Type`);
 - `dev/src/ir_symbol_model.h`, the metadata vocabulary;
+- `dev/src/target_model.h`, target identity and data-layout vocabulary;
 - [the format reference](lowir.md), [the grammar](pa8.gram), and its HTML
   explorer under `grammar/`;
 - the tests, reference outcomes and harnesses under `pa8/`;
@@ -81,6 +82,11 @@ The input files form one LowIR unit in command-line order. Names are shared
 across those files; they are not separate C++ translation units. A symbol may
 be defined in a later input file. Do not introduce a duplicate declaration for
 an already defined symbol merely because a file boundary occurs between uses.
+
+Read, validate and preserve the [target profile](lowir.md#target-profiles).
+Pointer sizes follow that profile; fixed-width integers retain their widths.
+An omitted profile keeps the existing native layout. Backend implementation
+for another target comes later and is not required to represent its facts.
 
 Accept helper-only units, including declarations and globals without an entry
 function. An entry is needed when the supplied backend builds an executable,

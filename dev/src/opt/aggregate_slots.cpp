@@ -1031,10 +1031,10 @@ Value AggregateSlots::pointer_at(BlockId block, InstId& after, Value base, int64
 {
 	if (base.is(ValueKind::Slot))
 	{
-		Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+		Instruction addr = make_instruction(Opcode::Addr, body_.pointer_type());
 		addr.ops[0] = base;
 		addr.location = location;
-		after = emit(block, after, addr, Type::scalar(TypeKind::Ptr));
+		after = emit(block, after, addr, body_.pointer_type());
 		base = Value::temp(body_.instructions[after].result);
 	}
 	if (offset == 0)
@@ -1044,7 +1044,7 @@ Value AggregateSlots::pointer_at(BlockId block, InstId& after, Value base, int64
 	index.ops[0] = base;
 	index.ops[1] = integer_value(body_, integer_literal(offset));
 	index.location = location;
-	after = emit(block, after, index, Type::scalar(TypeKind::Ptr));
+	after = emit(block, after, index, body_.pointer_type());
 	return Value::temp(body_.instructions[after].result);
 }
 
@@ -1070,10 +1070,10 @@ void AggregateSlots::expand_copy(BlockId block, InstId prev, const Instruction& 
 		// An object value: into a temporary of its own, read field by field.
 		const SlotId temporary = static_cast<SlotId>(body_.slots.size());
 		body_.slots.push_back(Slot{ 0, SlotKind::Aggregate, 0, 0, body_.temps[source.index].type });
-		Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+		Instruction addr = make_instruction(Opcode::Addr, body_.pointer_type());
 		addr.ops[0] = Value::slot(temporary);
 		addr.location = inst.location;
-		at = emit(block, at, addr, Type::scalar(TypeKind::Ptr));
+		at = emit(block, at, addr, body_.pointer_type());
 		Instruction copy = inst;
 		copy.next = kNoId;
 		copy.ops[1] = Value::temp(body_.instructions[at].result);
@@ -1212,10 +1212,10 @@ void AggregateSlots::rewrite()
 					const Type type = body_.slots[r.slot].type;
 					const SlotId temporary = static_cast<SlotId>(body_.slots.size());
 					body_.slots.push_back(Slot{ 0, SlotKind::Aggregate, 0, 0, type });
-					Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+					Instruction addr = make_instruction(Opcode::Addr, body_.pointer_type());
 					addr.ops[0] = Value::slot(temporary);
 					addr.location = inst.location;
-					const InstId a_id = emit(b, prev, addr, Type::scalar(TypeKind::Ptr));
+					const InstId a_id = emit(b, prev, addr, body_.pointer_type());
 					prev = a_id;
 					body_.operands[body_.instructions[i].extra_first + k] = Value::temp(
 						body_.instructions[a_id].result);

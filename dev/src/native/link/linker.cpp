@@ -805,6 +805,11 @@ bool Linker::link(const std::string& output)
 bool link_executable(std::vector<object::ObjectFile>& objects, const std::string& output, std::string& error,
 	LinkStats* stats, Target target)
 {
+	if (target_model::is_wasm(target))
+	{
+		error = "native executable linking requires a native target";
+		return false;
+	}
 	LinkStats local;
 	Linker linker(objects, stats != nullptr ? *stats : local, error, target);
 	return linker.link(output);

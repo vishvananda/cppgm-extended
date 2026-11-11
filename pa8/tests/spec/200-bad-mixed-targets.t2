@@ -1,0 +1,4 @@
+function @other() -> i32 {
+  block ^entry:
+    return i32 0
+}

@@ -16,6 +16,13 @@ The intent of this milestone is:
 - learn instruction encoding, address fixups, and executable layout here
 - leave room for later optimization and additional native backends
 
+Keep shared machine facts, such as block identities, operand ranges, call
+effects and frame-object sizes, independent of x86 register names and operand
+forms. Instruction selection, physical-register assignment, ABI locations and
+encoding remain target-specific. PA37 reuses this boundary for Wasm; this
+assignment's required code generation remains x86-64. Reject a target/layout
+your backend does not support rather than treating it as native input.
+
 ### How PA24 Is Specified
 
 This README separates three kinds of statement, and the course suite is

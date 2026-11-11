@@ -500,6 +500,17 @@ bool consume_dependency_option(const vector<string>& args, size_t& i)
 
 bool consume_toolchain_option(const vector<string>& args, size_t& i)
 {
+	if (args[i] == "--export")
+	{
+		consume_required_option_argument(args, i, "--export", "export name");
+		return true;
+	}
+	if (starts_with(args[i], "--export="))
+	{
+		if (args[i].size() == 9)
+			throw InvocationError("missing export name");
+		return true;
+	}
 	if (is_debug_info_flag(args[i]))
 	{
 		return true;
@@ -797,7 +808,7 @@ int run_emit_types_mode(vector<string> args)
 			}
 			const double parse_ms = milliseconds_since(parse_start);
 			const chrono::steady_clock::time_point analyze_start = chrono::steady_clock::now();
-			sema::SemanticGraph graph(options.plain_char_unsigned);
+			sema::SemanticGraph graph(options.plain_char_unsigned, options.target);
 			// The parser's name bindings estimate the unit's (scope, name) pairs.
 			graph.names.reserve(unit.counters().bindings);
 			try
@@ -881,7 +892,7 @@ int run_emit_semantics_mode(vector<string> args)
 			}
 			const double parse_ms = milliseconds_since(parse_start);
 			const chrono::steady_clock::time_point analyze_start = chrono::steady_clock::now();
-			sema::SemanticGraph graph(options.plain_char_unsigned);
+			sema::SemanticGraph graph(options.plain_char_unsigned, options.target);
 			graph.names.reserve(unit.counters().bindings);
 			try
 			{
@@ -1032,7 +1043,7 @@ int run_emit_lowir_mode(vector<string> args)
 				cerr << "ERROR: " << unit.error() << endl;
 				return EXIT_FAILURE;
 			}
-			sema::SemanticGraph graph(options.plain_char_unsigned);
+			sema::SemanticGraph graph(options.plain_char_unsigned, options.target);
 			graph.names.reserve(unit.counters().bindings);
 			sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
 			analyzer.set_hosted(options.hosted);

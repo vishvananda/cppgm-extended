@@ -1170,7 +1170,7 @@ bool read_readonly_address(const Program& program, SymbolId symbol, int64_t offs
 			at += static_cast<uint64_t>(item.amount);
 			continue;
 		}
-		const Type t = item.kind == DataItemKind::Address ? Type::scalar(TypeKind::Ptr) : item.type;
+		const Type t = item.kind == DataItemKind::Address ? program.pointer_type() : item.type;
 		const uint64_t bytes = storage_bytes(t);
 		const uint64_t align = bytes >= 16 ? 16 : bytes == 0 ? 1 : bytes;
 		at = (at + align - 1) & ~(align - 1);
@@ -1241,7 +1241,7 @@ bool read_readonly_scalar(const Program& program, SymbolId symbol, int64_t offse
 			at = end;
 			continue;
 		}
-		const Type t = item.kind == DataItemKind::Address ? Type::scalar(TypeKind::Ptr) : item.type;
+		const Type t = item.kind == DataItemKind::Address ? program.pointer_type() : item.type;
 		const uint64_t bytes = storage_bytes(t);
 		const uint64_t align = bytes >= 16 ? 16 : bytes == 0 ? 1 : bytes;
 		at = (at + align - 1) & ~(align - 1);

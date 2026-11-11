@@ -563,8 +563,7 @@ RValue FunctionLowering::permute_vector(const syntax::CallExpr& expr)
 		lowir::Value source = first;
 		if (paired)
 		{
-			lowir::Instruction choice = lowir::make_instruction(
-				lowir::Opcode::Select, lowir::Type::scalar(lowir::TypeKind::Ptr));
+			lowir::Instruction choice = lowir::make_instruction(lowir::Opcode::Select, program_.pointer_type());
 			choice.ops[0] = compare(lowir::ComparePredicate::Ult, i64, selected, integer(i64, vector->bound)).value;
 			choice.ops[1] = first;
 			choice.ops[2] = second;

@@ -594,7 +594,7 @@ void FunctionLowering::local_object_variable(const sema::VariableEntity* variabl
 	local.reference = type->is_reference();
 	local.address = lowir::Value();
 	local.depth = 0;
-	lowir::Type slot_type = local.reference ? lowir::Type::scalar(lowir::TypeKind::Ptr) : lowering_.storage_type(type);
+	lowir::Type slot_type = local.reference ? program_.pointer_type() : lowering_.storage_type(type);
 	// 7.6.2: a stricter requested alignment makes the slot storage of that
 	// alignment, its size rounded up to a multiple of it (as obj<> needs).
 	const uint64_t requested = variable->alignment_request;
@@ -716,8 +716,7 @@ void FunctionLowering::local_initializer(const sema::Type* type, const Local& lo
 	const syntax::Initializer& written, uint32_t location, const sema::Entity* variable)
 {
 	// A scalar, reference or aggregate local from its initializer.
-	const lowir::Type slot_type = local.reference ? lowir::Type::scalar(lowir::TypeKind::Ptr)
-												  : lowering_.storage_type(type);
+	const lowir::Type slot_type = local.reference ? program_.pointer_type() : lowering_.storage_type(type);
 	if (local.reference)
 	{
 		const syntax::Initializer* initializer = &written;
@@ -1465,7 +1464,7 @@ RValue FunctionLowering::condition_variable(const syntax::ConditionDeclaration& 
 		// 4.2p1: an array (a reference's referent) converted to a pointer to
 		// its first element.
 		value.value = address_of(place);
-		value.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		value.type = program_.pointer_type();
 	}
 	else
 		value = load(lowering_.storage_type(type), place);

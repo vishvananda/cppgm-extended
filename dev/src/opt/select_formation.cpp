@@ -304,7 +304,7 @@ Value SelectFormation::emit_indexed(BlockId e, InstId& at, const IndexedChoice& 
 	Instruction index = make_instruction(Opcode::Index, Type::scalar(elements[scale]));
 	index.ops[0] = base;
 	index.ops[1] = source;
-	return emit(index, Type::scalar(TypeKind::Ptr));
+	return emit(index, body_.pointer_type());
 }
 
 // A block reached only from `from` that computes at most kArmCap

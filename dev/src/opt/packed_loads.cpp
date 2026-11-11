@@ -68,7 +68,7 @@ bool simplify_packed_load(FunctionBody& body, const std::vector<uint32_t>& uses,
 	const auto emit_address = [&](Instruction inst) {
 		inst.location = load.location;
 		const InstId added = append_instruction(body, inst);
-		const TempId temp = append_temp(body, Type::scalar(TypeKind::Ptr), added);
+		const TempId temp = append_temp(body, body.pointer_type(), added);
 		body.instructions[added].result = temp;
 		insert_after(body, block, previous, added);
 		previous = added;
@@ -78,7 +78,7 @@ bool simplify_packed_load(FunctionBody& body, const std::vector<uint32_t>& uses,
 	{
 		if (address.is(ValueKind::Slot))
 		{
-			Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+			Instruction addr = make_instruction(Opcode::Addr, body.pointer_type());
 			addr.ops[0] = address;
 			address = emit_address(addr);
 		}

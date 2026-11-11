@@ -465,7 +465,7 @@ Place FunctionLowering::conditional_place(const syntax::ConditionalExpr& expr)
 	// result may designate (a subobject of) a branch's temporary, which
 	// lives to the full-expression's end, guarded (5.16p1: only one operand
 	// is evaluated; 12.2p3).
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	Place result = Place();
 	result.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::Condaddr, pointer));
 	const lowir::BlockId then_block = new_block(lowir::BlockKind::CondaddrThen);

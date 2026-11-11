@@ -288,7 +288,7 @@ RValue FunctionLowering::call_conversion(const syntax::Expr& expr, const sema::E
 			conversion_object(expr, facts, function);
 		e->facts = saved;
 		RValue address;
-		address.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		address.type = program_.pointer_type();
 		address.value = function_address(closure->invoker, expr.location);
 		return address;
 	}

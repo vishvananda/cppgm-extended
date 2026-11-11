@@ -12,7 +12,6 @@ const uint32_t kPlaced = 0xffffffffu;
 
 const Type kVoid = Type::scalar(TypeKind::Void);
 const Type kI64 = Type::scalar(TypeKind::I64);
-const Type kPtr = Type::scalar(TypeKind::Ptr);
 
 } // namespace
 
@@ -460,11 +459,11 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Opcode keyword, I
 	case Opcode::StackSave:
 	case Opcode::FrameAddress:
 		inst.op = keyword;
-		inst.type = result = kPtr;
+		inst.type = result = program_.pointer_type();
 		return true;
 	case Opcode::StackAlloc:
 		inst.op = Opcode::StackAlloc;
-		inst.type = result = kPtr;
+		inst.type = result = program_.pointer_type();
 		inst.ops[0] = parse_value(builder, TypeKind::Void);
 		return true;
 	case Opcode::VaArg:
@@ -495,7 +494,7 @@ bool Parser::parse_memory_instruction(FunctionBuilder& builder, Opcode keyword, 
 	{
 	case Opcode::Addr:
 		inst.op = Opcode::Addr;
-		inst.type = result = kPtr;
+		inst.type = result = program_.pointer_type();
 		if (!at(TokenKind::Slot) && !at(TokenKind::Global))
 			fail(at(TokenKind::Block) ? "block label used as value" : "expected a slot, global or function to address");
 		inst.ops[0] = parse_value(builder, TypeKind::Void);
@@ -522,7 +521,7 @@ bool Parser::parse_memory_instruction(FunctionBuilder& builder, Opcode keyword, 
 				? IndexBounds::InBounds
 				: IndexBounds::None);
 		inst.type = parse_type();
-		result = kPtr;
+		result = program_.pointer_type();
 		if (at(TokenKind::LBracket))
 			parse_index_metadata(inst);
 		inst.ops[0] = parse_value(builder, TypeKind::Ptr);

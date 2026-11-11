@@ -241,7 +241,7 @@ void ReturnTables::rewrite(BlockId block, const Instruction& term, Type selector
 	address.ops[0] = Value::symbol(data);
 	address.ops[1] = index;
 	address.location = term.location;
-	const Value at = emit(lookup, after, address, Type::scalar(TypeKind::Ptr));
+	const Value at = emit(lookup, after, address, b_.pointer_type());
 	Instruction load = make_instruction(Opcode::Load, element);
 	load.ops[0] = at;
 	load.location = term.location;
@@ -465,7 +465,7 @@ void ReturnTables::rewrite_phi_table(const Instruction& term, const PhiTable& fa
 	Instruction address = make_instruction(Opcode::Index, element);
 	address.ops[0] = Value::symbol(data);
 	address.ops[1] = index;
-	const Value at = emit(lookup, after, address, Type::scalar(TypeKind::Ptr));
+	const Value at = emit(lookup, after, address, b_.pointer_type());
 	Instruction load = make_instruction(Opcode::Load, element);
 	load.ops[0] = at;
 	Value value = emit(lookup, after, load, element);

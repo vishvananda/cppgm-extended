@@ -51,8 +51,7 @@ RValue FunctionLowering::capture_asm_case(
 	target.bit_field = field != nullptr;
 	Place pointer = Place();
 	pointer.storage = capture.pointer_slot;
-	store(lowir::Type::scalar(lowir::TypeKind::Ptr),
-		RValue{ address_of(place), lowir::Type::scalar(lowir::TypeKind::Ptr) }, pointer);
+	store(program_.pointer_type(), RValue{ address_of(place), program_.pointer_type() }, pointer);
 	Place selector = Place();
 	selector.storage = capture.selector_slot;
 	store(lowir::Type::scalar(lowir::TypeKind::I32),
@@ -81,7 +80,7 @@ void FunctionLowering::finish_asm_output(const AsmOutputCapture& capture)
 	const RValue value = load(capture.empty.type, result);
 	Place pointer = Place();
 	pointer.storage = capture.pointer_slot;
-	const lowir::Value address = load(lowir::Type::scalar(lowir::TypeKind::Ptr), pointer).value;
+	const lowir::Value address = load(program_.pointer_type(), pointer).value;
 	if (capture.cases.size() == 1)
 	{
 		write_asm_case(capture.cases[0], address, value);

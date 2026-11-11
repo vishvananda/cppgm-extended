@@ -1,0 +1,1 @@
+{"source":true,"calls":[{"export":"nested_loops","args":["4"],"result":"21"},{"export":"nested_loops","args":["0"],"result":"0"}]}

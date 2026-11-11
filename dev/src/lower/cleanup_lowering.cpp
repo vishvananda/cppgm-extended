@@ -1758,7 +1758,7 @@ void FunctionLowering::place_terminates()
 {
 	std::vector<TerminateBlock> blocks;
 	blocks.swap(pending_terminates_);
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	for (const TerminateBlock& made : blocks)
 	{
 		builder_.place_block(made.block);
@@ -2129,7 +2129,7 @@ void FunctionLowering::emit_resume(bool outside_tries)
 void FunctionLowering::emit_terminate()
 {
 	// The exception caught, kept and handed to the terminate helper.
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	lowir::Instruction catch_all = lowir::make_instruction(
 		lowir::Opcode::EhCatchAll, lowir::Type::scalar(lowir::TypeKind::Void));
 	catch_all.immediate = 1;
@@ -2170,7 +2170,7 @@ void FunctionLowering::place_unexpected_landing()
 	// specification (Itanium's first list: -1), so the host tables pass it
 	// through untranslated; __cxa_call_unexpected does not return, so its
 	// call ends the block (no unreachable continuation).
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const lowir::Type i32 = lowir::Type::scalar(lowir::TypeKind::I32);
 	place(terminate_landing_);
 	lowir::Instruction filter = lowir::make_instruction(
@@ -2215,7 +2215,7 @@ void FunctionLowering::place_terminate_landing()
 	flush_deferred();
 	if (unexpected_specification_ != nullptr)
 		return place_unexpected_landing();
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const lowir::BlockId action = new_block(lowir::BlockKind::FunctionExceptionAction);
 	place(terminate_landing_);
 	lowir::Instruction catch_all = lowir::make_instruction(

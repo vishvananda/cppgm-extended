@@ -17,11 +17,13 @@
 #include "preprocess/tokens/pp_token_cursor.h"
 #include "support/memory/arena.h"
 #include "support/telemetry.h"
+#include "target_model.h"
 
 // Values of the predefined macros that come from outside the translation
 // unit ([cpp.predefined] 16.8, directives.md).
 struct PreprocessorOptions
 {
+	target_model::Target target = target_model::Target::Linux;
 	// __CPPGM_AUTHOR__'s string contents.
 	std::string author;
 	// __DATE__ ("Mmm dd yyyy") and __TIME__ ("hh:mm:ss") contents, taken

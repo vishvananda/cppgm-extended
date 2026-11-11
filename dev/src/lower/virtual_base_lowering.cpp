@@ -447,7 +447,7 @@ lowir::SymbolId ProgramLowering::vtt_symbol(const sema::ClassEntity* entity)
 	vtt_entries(entity, entity, 0, true, entries);
 	const uint32_t first = static_cast<uint32_t>(program_.data_items.size());
 	for (const TableAddress& entry : entries)
-		data_item(AddressItem(entry.symbol, entry.addend));
+		data_item(AddressItem(program_, entry.symbol, entry.addend));
 	lowir::SymbolMetadata metadata;
 	metadata.binding = internal ? ir_model::SBM_INTERNAL : ir_model::SBM_WEAK;
 	metadata.flags |= lowir::SF_OBJECT_ROOT;
@@ -571,9 +571,9 @@ ProgramLowering::TableAddress ProgramLowering::construction_address(
 		const uint32_t size = group->segments[s].cls->virtuals->vtable_size;
 		table_rows(context, s);
 		data_item(ScalarItem(lowir::TypeKind::I64, offset - construction_segment_offset(complete, cls, offset, s)));
-		data_item(AddressItem(information, 0));
+		data_item(AddressItem(program_, information, 0));
 		for (uint32_t slot = 0; slot < size; ++slot)
-			data_item(EntryItem(targets[next++]));
+			data_item(EntryItem(program_, targets[next++]));
 		construction_points_[slots + s] = position + static_cast<int64_t>(kTableHeaderBytes + 8 * rows);
 		++counters_.vtables;
 		if (object_mode_)
@@ -714,7 +714,7 @@ lowir::Value FunctionLowering::virtual_base_address(
 	// complete-object constructor's `this` before its tables are stored (a
 	// mem-initializer's operand, 12.7p3) has the offset in the complete
 	// object.
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	const bool own_this = (tables_pending_ || vtt_param_.kind != lowir::ValueKind::None) &&
@@ -751,7 +751,7 @@ RValue FunctionLowering::construction_table()
 	{
 		Place entry = Place();
 		entry.storage = vtt_param_;
-		vtt_table_ = load(lowir::Type::scalar(lowir::TypeKind::Ptr), entry);
+		vtt_table_ = load(program_.pointer_type(), entry);
 		vtt_table_block_ = builder_.insertion_block();
 		vtt_rows_.clear();
 	}
@@ -838,7 +838,7 @@ RValue FunctionLowering::virtual_base_pointer(
 		adjusted.value = to_base(value.value, from, to, location);
 		return adjusted;
 	}
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	Place result = Place();
 	result.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::Basecast, pointer));
 	const lowir::BlockId null_block = new_block(lowir::BlockKind::BasecastNull);

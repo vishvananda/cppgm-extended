@@ -203,23 +203,23 @@ bool Analyzer::type_size(const Type* type, uint64_t& size, uint64_t& alignment, 
 	case TypeKind::Fundamental:
 		if (type->fundamental == FundamentalType::Void)
 			error(location, "size of void");
-		size = FundamentalTypeSize(type->fundamental);
+		size = FundamentalTypeSize(type->fundamental, type->target);
 		alignment = size;
 		return true;
 	case TypeKind::Pointer:
 	case TypeKind::BlockPointer:
-		size = alignment = 8;
+		size = alignment = types_.layout().pointer_bytes;
 		return true;
 	case TypeKind::MemberPointer:
 		// Itanium: a data member pointer is an offset, a member function
 		// pointer a (pointer, adjustment) pair.
-		size = type->element->kind == TypeKind::Function ? 16 : 8;
-		alignment = 8;
+		alignment = types_.layout().pointer_bytes;
+		size = type->element->kind == TypeKind::Function ? 2 * alignment : alignment;
 		return true;
 	case TypeKind::LValueReference:
 	case TypeKind::RValueReference:
 		// As a member: the address it binds.
-		size = alignment = 8;
+		size = alignment = types_.layout().pointer_bytes;
 		return true;
 	case TypeKind::Array:
 	{
@@ -251,7 +251,7 @@ bool Analyzer::type_size(const Type* type, uint64_t& size, uint64_t& alignment, 
 			return false;
 		size = type->element->fundamental == FundamentalType::Bool
 			? (type->bound + 7) / 8
-			: FundamentalTypeSize(type->element->fundamental) * type->bound;
+			: FundamentalTypeSize(type->element->fundamental, type->target) * type->bound;
 		uint64_t rounded = 1;
 		while (rounded < size)
 			rounded <<= 1;
@@ -895,7 +895,7 @@ void Analyzer::place_table_pointer(const ClassEntity* entity, const BaseClass* p
 	if (entity->dynamic && primary == nullptr)
 	{
 		data_bits = 64;
-		size = alignment = 8;
+		size = alignment = types_.layout().pointer_bytes;
 	}
 	else if (primary != nullptr && primary->is_virtual)
 	{

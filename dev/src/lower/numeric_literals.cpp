@@ -15,7 +15,7 @@ RValue FunctionLowering::source_floating_literal(
 	// independent literal grammar or rounding via another floating type.
 	unsigned char bytes[16] = {};
 	std::string scratch;
-	if (!ScanFloatingValue(text, length, type->unqualified->fundamental, scratch, bytes))
+	if (!ScanFloatingValue(text, length, type->unqualified->fundamental, scratch, bytes, type->target))
 		throw LoweringError(location, "a floating literal outside its type's range");
 	lowir::Literal bits = {};
 	std::memcpy(&bits.low, bytes, 8);

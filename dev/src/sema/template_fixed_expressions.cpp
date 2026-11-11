@@ -127,7 +127,7 @@ FixedFacts FixedLiteral(const TokenSpelling& spelling, TypeTable& types)
 		out.null_constant = character.code_point == 0;
 		return out;
 	}
-	const NumberLiteral number = ClassifyNumber(spelling.text, spelling.length);
+	const NumberLiteral number = ClassifyNumber(spelling.text, spelling.length, NumberDialect::Gnu, types.target());
 	FixedFacts out = Unknown();
 	if (number.kind == NumberLiteralKind::Integer)
 	{

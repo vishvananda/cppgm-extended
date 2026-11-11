@@ -66,7 +66,10 @@ void Program::declare_function(SymbolId id, SymbolKind kind, SignatureId signatu
 	function.signature = signature;
 	function.location = DebugLocation{ 0, 0, 0 };
 	if (kind == SymbolKind::FunctionDefinition)
+	{
 		function.body.reset(new FunctionBody());
+		function.body->pointer_bytes = target_model::data_layout(target).pointer_bytes;
+	}
 	functions.push_back(std::move(function));
 	order.push_back(id);
 }

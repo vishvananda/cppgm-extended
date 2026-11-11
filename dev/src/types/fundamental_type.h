@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "target_model.h"
 
 // The fundamental types of [basic.fundamental] 3.9.1.
 enum class FundamentalType : uint8_t
@@ -77,6 +78,7 @@ const char* FundamentalTypeName(FundamentalType type);
 
 // sizeof(type) under the System V AMD64 ABI (Table 3.1); 0 for void.
 unsigned FundamentalTypeSize(FundamentalType type);
+unsigned FundamentalTypeSize(FundamentalType type, target_model::Target target);
 
 // A standard or extended floating type.
 bool IsFloatingFundamental(FundamentalType type);
@@ -84,6 +86,7 @@ bool IsFloatingFundamental(FundamentalType type);
 // double or long double), or _Float16, _Float128 and __bf16 for binary16,
 // binary128 and bfloat16, which no standard type has.
 FundamentalType FloatingRepresentation(FundamentalType type);
+FundamentalType FloatingRepresentation(FundamentalType type, target_model::Target target);
 // The floating-point conversion rank as GCC and Clang order it (1
 // bfloat16, 2 binary16, 3 float, 4 double, 5 long double, 6 binary128; 0
 // for a non-floating type); an extended type has the greater subrank of an

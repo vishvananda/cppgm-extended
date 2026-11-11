@@ -3,16 +3,14 @@
 #include <cstdint>
 #include <string>
 
+#include "target/target.h"
+
 namespace native {
 
 // Preserve the encoder's code phase when functions move into object sections.
 const uint32_t kCodeLayoutBytes = 64;
 
-enum class Target : uint8_t
-{
-	Linux,
-	MacOS
-};
+using target_model::Target;
 
 inline Target host_target()
 {
@@ -25,11 +23,10 @@ inline Target host_target()
 
 inline const char* target_name(Target target)
 {
-	return target == Target::MacOS ? "macos" : "linux";
+	return target_model::spelling(target);
 }
 
-// Only x86-64 targets. A Darwin version suffix is the deployment target,
-// not another architecture; a Linux vendor/environment may be omitted.
+// A Darwin suffix is the deployment target; native CLI aliases are retained.
 bool parse_target(const std::string& text, Target& target);
 
 } // namespace native

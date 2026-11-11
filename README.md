@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml/badge.svg)](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml)
 
-A C++ compiler course designed for agents, with 36 cumulative assignments from
+A C++ compiler course designed for agents, with 37 cumulative assignments from
 preprocessing to native code, optimization and self-hosting. This repository
 contains a high-performance reference implementation in `dev/`; `pa1/` through
 `pa36/` hold the handouts, tests and wrappers.

@@ -118,7 +118,7 @@ void FunctionLowering::initializer_list_object(const syntax::BracedInitList& lis
 	const bool empty = list.elements.empty();
 	const lowir::Value elements = empty ? lowir::Value()
 										: backing_array(list, array, persistent, persistent ? nullptr : owner);
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 	RValue values[2];

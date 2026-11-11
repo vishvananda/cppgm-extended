@@ -282,6 +282,9 @@ jobs:
           if [ "${{ matrix.suite.id }}" = "test-debuginfo" ]; then
             packages="$packages gdb"
           fi
+          if [ "${{ matrix.suite.id }}" = "test-report" ]; then
+            packages="$packages curl xz-utils"
+          fi
           apt-get update
           apt-get install -y --no-install-recommends \
             bash \
@@ -320,6 +323,12 @@ jobs:
           printf 'CPPGM_HOST_CXX=%s\n' "$CPPGM_HOST_CXX"
           printf 'CPPGM_STDLIB_FLAGS=%s\n' "$CPPGM_STDLIB_FLAGS"
           cat /etc/os-release
+
+      - name: Install pinned Wasm validation tools
+        if: matrix.suite.id == 'test-report'
+        run: |
+          perl scripts/install_wasm_tools.pl --prefix "$RUNNER_TEMP/wasm-tools"
+          echo "$RUNNER_TEMP/wasm-tools/bin" >> "$GITHUB_PATH"
 
       - name: Check semantic work reuse
         if: matrix.suite.id == 'test-report'

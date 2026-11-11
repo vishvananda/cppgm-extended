@@ -236,15 +236,15 @@ Value WideIntegers::address_plus(Value base, int64_t offset)
 {
 	if (base.is(ValueKind::Slot))
 	{
-		Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+		Instruction addr = make_instruction(Opcode::Addr, body_.pointer_type());
 		addr.ops[0] = base;
-		base = emit(addr, Type::scalar(TypeKind::Ptr));
+		base = emit(addr, body_.pointer_type());
 	}
 	Instruction index = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
 	index.sub = ir_model::IPK_FIELD;
 	index.ops[0] = base;
 	index.ops[1] = literal(static_cast<uint64_t>(offset));
-	return emit(index, Type::scalar(TypeKind::Ptr));
+	return emit(index, body_.pointer_type());
 }
 
 // A shift of a pair by a constant or by the low half of a count below 128.

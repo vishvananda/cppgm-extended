@@ -961,10 +961,10 @@ void merge_returns(FunctionBody& cb, TempId result, Type type, const std::vector
 		}
 		else if (type.is_object())
 		{
-			Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+			Instruction addr = make_instruction(Opcode::Addr, cb.pointer_type());
 			addr.ops[0] = Value::slot(merge);
 			const InstId a = append_instruction(cb, addr);
-			cb.instructions[a].result = append_temp(cb, Type::scalar(TypeKind::Ptr), a);
+			cb.instructions[a].result = append_temp(cb, cb.pointer_type(), a);
 			insert_after(cb, r.first, at, a);
 			Instruction copy = make_instruction(Opcode::CopyObject, Type::scalar(TypeKind::Void));
 			copy.ops[0] = r.second;
@@ -1480,7 +1480,7 @@ InstId clone_call(Program& program, SymbolId caller, SymbolId source, FunctionBo
 			{
 				const bool slot = r.second.is(ValueKind::Slot);
 				Instruction take = make_instruction(
-					slot ? Opcode::Load : Opcode::Addr, slot ? type : Type::scalar(TypeKind::Ptr));
+					slot ? Opcode::Load : Opcode::Addr, slot ? type : cb.pointer_type());
 				take.ops[0] = r.second;
 				const InstId t = append_instruction(cb, take);
 				cb.instructions[t].result = append_temp(cb, take.type, t);

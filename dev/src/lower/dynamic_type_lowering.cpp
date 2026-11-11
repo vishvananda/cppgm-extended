@@ -156,7 +156,7 @@ lowir::Value FunctionLowering::dynamic_type_information(lowir::Value object, Run
 {
 	// A null address fails (when the operand can be null); otherwise the
 	// table's type information pointer.
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	if (test_null)
 	{
 		RValue address;
@@ -226,7 +226,7 @@ Place FunctionLowering::typeid_place(const syntax::TypeTraitExpr& expr)
 RValue FunctionLowering::type_identity(const syntax::BinaryExpr& expr)
 {
 	// The course's std::type_info equality: the same object.
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	RValue left;
 	left.value = address(*expr.left);
 	left.type = pointer;
@@ -243,7 +243,7 @@ lowir::Value FunctionLowering::runtime_cast(
 	// 5.2.7p8 through the runtime: null stays null (a pointer's), else the
 	// search's result, kept in the cast's slot; a reference's failed search
 	// calls the runtime's bad_cast (p9).
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	Place result = Place();
 	result.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::DynCast, pointer));
 	store(pointer, integer(pointer, 0), result);
@@ -296,7 +296,7 @@ lowir::Value FunctionLowering::most_derived_object(lowir::Value object)
 	// 5.2.7p7: null stays null, else the object's address moved by its
 	// table's offset-to-top (Itanium 2.5.2), kept in the cast's slot.
 	// This operation needs no RTTI search or void type-information object.
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	Place result = Place();
 	result.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::DynCast, pointer));
@@ -323,7 +323,7 @@ lowir::Value FunctionLowering::most_derived_object(lowir::Value object)
 RValue FunctionLowering::dynamic_cast_pointer(const syntax::CastExpr& expr)
 {
 	RValue value;
-	value.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	value.type = program_.pointer_type();
 	if (sema::IsVoid(expr.facts->type->element))
 	{
 		value.value = most_derived_object(operand(*expr.operand, ConversionContext::Cast).value);

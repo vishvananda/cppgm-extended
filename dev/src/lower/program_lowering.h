@@ -353,9 +353,9 @@ enum class TypeInfoKind : uint8_t
 };
 
 // Items of read-only run-time data (lower/vtable_lowering.cpp).
-lowir::DataItem AddressItem(lowir::SymbolId symbol, int64_t addend);
+lowir::DataItem AddressItem(const lowir::Program& program, lowir::SymbolId symbol, int64_t addend);
 // A table's entry: its target's address, null for none (an unused entry).
-lowir::DataItem EntryItem(lowir::SymbolId target);
+lowir::DataItem EntryItem(const lowir::Program& program, lowir::SymbolId target);
 lowir::DataItem ScalarItem(lowir::TypeKind kind, uint64_t value);
 // A table group's segment whose table pointer is the complete class's
 // (segment 0, or sharing it through primary bases).

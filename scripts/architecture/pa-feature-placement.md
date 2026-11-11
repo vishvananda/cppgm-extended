@@ -1,9 +1,9 @@
 # Assignment feature owners
 
 This is the live feature table read by `scripts/audit_pa_feature_placement.py`.
-Owners and clusters use the current 36-assignment sequence. PA35 (self-hosting)
-and PA36 (optimizing the compiler) add no language feature, so no row names
-either as its owner; the auditor rejects a table that does. PA29 owns the required shared assembly boundary before hosted compatibility. N3485 references
+Owners and clusters use the current 37-assignment sequence. PA35 (self-hosting),
+PA36 (optimizing the compiler), and PA37 (the second backend) add no language feature, so no row names
+these as its owner; the auditor rejects a table that does. PA29 owns the required shared assembly boundary before hosted compatibility. N3485 references
 refer to `../../doc/n3485.txt`.
 
 | Feature Family | Canonical Owner PA | Owner Cluster | Versioned Reference | Auditor Status | Required Detections |

@@ -122,7 +122,8 @@ struct Type
 	FundamentalType fundamental;
 	// Plain char keeps its own identity when -funsigned-char selects its
 	// unsigned representation. Fixed when the type table is constructed.
-	bool plain_char_unsigned;
+	uint8_t plain_char_unsigned : 1;
+	target_model::Target target : 3;
 	// Dependence proven from immutable type structure or template facts
 	// (0 unknown, 1 no, 2 yes; see Analyzer::dependent_type). Nominal types
 	// can acquire template facts after creation, so their cache is seeded

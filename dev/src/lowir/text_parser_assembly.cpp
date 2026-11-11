@@ -227,9 +227,9 @@ void Parser::parse_assembly_call(FunctionBuilder& builder, Instruction& inst)
 			(operand.output != kNoId && operand.output >= types.size()))
 			fail("assembly argument index is out of range");
 		if (operand.input != kNoId)
-			types[operand.input] = operand.input_storage ? Type::scalar(TypeKind::Ptr) : operand.type;
+			types[operand.input] = operand.input_storage ? program_.pointer_type() : operand.type;
 		if (operand.output != kNoId)
-			types[operand.output] = Type::scalar(TypeKind::Ptr);
+			types[operand.output] = program_.pointer_type();
 	}
 	expect(TokenKind::LParen, "(");
 	std::vector<Value> values;

@@ -392,6 +392,12 @@ void Writer::location(const DebugLocation& location)
 
 void Writer::write()
 {
+	if (program_.explicit_target)
+	{
+		word(spelling(Keyword::Target));
+		word(target_model::lowir_spelling(program_.target));
+		text("1\n\n");
+	}
 	append_assembly_definitions(out_, program_);
 	const SymbolKind phases[] = { SymbolKind::GlobalDeclaration, SymbolKind::FunctionDeclaration,
 		SymbolKind::GlobalDefinition, SymbolKind::FunctionDefinition };

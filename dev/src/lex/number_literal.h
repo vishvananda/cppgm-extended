@@ -48,7 +48,8 @@ enum class NumberDialect : uint8_t
 // and its type from [lex.icon] 2.14.2 Table 6; one that no type in its list
 // can represent is Invalid. A floating literal's value is scanned separately
 // by ScanFloatingValue.
-NumberLiteral ClassifyNumber(const char* spelling, uint32_t length, NumberDialect dialect = NumberDialect::Gnu);
+NumberLiteral ClassifyNumber(const char* spelling, uint32_t length, NumberDialect dialect = NumberDialect::Gnu,
+	target_model::Target target = target_model::Target::Linux);
 
 // The value of a user-defined-integer-literal's digits (its spelling
 // before the ud-suffix at `suffix_begin`) as `n ULL` has it (2.14.8p3):
@@ -62,5 +63,5 @@ bool UserIntegerValue(const char* spelling, uint32_t suffix_begin, uint64_t& val
 // representation, with the padding of long double zeroed. Returns false if the value is
 // outside the range of the type ([lex.fcon] 2.14.4p1). `scratch` receives
 // the NUL-terminated copy of `text` that the C library scanner needs.
-bool ScanFloatingValue(
-	const char* text, uint32_t length, FundamentalType type, std::string& scratch, unsigned char* bytes);
+bool ScanFloatingValue(const char* text, uint32_t length, FundamentalType type, std::string& scratch,
+	unsigned char* bytes, target_model::Target target = target_model::Target::Linux);

@@ -43,8 +43,9 @@ unsigned width_of(Type type)
 	case TypeKind::U32:
 		return 32;
 	case TypeKind::I64:
-	case TypeKind::Ptr:
 		return 64;
+	case TypeKind::Ptr:
+		return 8 * type.pointer_bytes();
 	case TypeKind::I128:
 		return 128;
 	default:

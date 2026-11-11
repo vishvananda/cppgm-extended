@@ -11,6 +11,7 @@
 #include "lowir/name_table.h"
 #include "lowir/types.h"
 #include "support/memory/arena.h"
+#include "target_model.h"
 
 // The typed LowIR program model (lowir.md). Producers construct it directly
 // (FunctionBuilder, lowir/builder.h); the text reader and writer are adapters
@@ -117,6 +118,8 @@ struct CodeLabel
 struct FunctionBody
 {
 	uint32_t parameter_count = 0;
+	uint8_t pointer_bytes = 8;
+	Type pointer_type() const { return Type::pointer(pointer_bytes); }
 	std::vector<Temp> temps;
 	std::vector<Slot> slots;
 	std::vector<Block> blocks;
@@ -287,6 +290,9 @@ struct Program
 {
 	Program();
 	~Program();
+	target_model::Target target = target_model::Target::Linux;
+	bool explicit_target = false;
+	Type pointer_type() const { return Type::pointer(target_model::data_layout(target).pointer_bytes); }
 
 	Program(const Program&) = delete;
 	Program& operator=(const Program&) = delete;

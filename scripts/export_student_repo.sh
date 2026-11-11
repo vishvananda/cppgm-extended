@@ -383,6 +383,9 @@ shared_scripts=(
   scripts/check_macho.py
   scripts/check_optimization_quality.py
   scripts/check_object_expectations.pl
+  scripts/check_wasm.pl
+  scripts/install_wasm_tools.pl
+  scripts/wasm_tools.json
   scripts/canonicalize_lowir_native_refs.pl
   scripts/compare_results_common.pl
   scripts/cppgm-cmake-wrapper.sh
@@ -428,6 +431,9 @@ dev_support_files=(
   dev/src/abi/itanium/abi_mangle.h
   dev/src/ir_symbol_model.h
   dev/src/lowir_model.h
+  dev/src/target_model.h
+  dev/src/machine_model.h
+  dev/src/wasm_model.h
   dev/src/asm_model.h
   dev/src/x86_asm_model.h
   dev/src/mir_model.h

@@ -152,7 +152,7 @@ void VirtualCalls::speculate(BlockId block, InstId before, InstId id, SymbolId t
 		emit(b, after, append_instruction(body_, back), back.type);
 	};
 	InstId at = before;
-	Instruction same = make_instruction(Opcode::Compare, Type::scalar(TypeKind::Ptr));
+	Instruction same = make_instruction(Opcode::Compare, body_.pointer_type());
 	same.sub = static_cast<uint8_t>(ComparePredicate::Eq);
 	same.ops[0] = call.ops[0];
 	same.ops[1] = Value::symbol(target);

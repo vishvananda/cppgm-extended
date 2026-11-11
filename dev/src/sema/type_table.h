@@ -20,7 +20,11 @@ namespace sema {
 class TypeTable
 {
 public:
-	explicit TypeTable(Arena& arena, bool plain_char_unsigned = false);
+	explicit TypeTable(
+		Arena& arena, bool plain_char_unsigned = false, target_model::Target target = target_model::Target::Linux);
+	target_model::Target target() const { return target_; }
+	target_model::DataLayout layout() const { return target_model::data_layout(target_); }
+	unsigned fundamental_size(FundamentalType type) const { return FundamentalTypeSize(type, target_); }
 
 	const Type* fundamental(FundamentalType type) const { return fundamentals_[static_cast<unsigned>(type)]; }
 	// (Adding no qualifier it lacks is the type itself, without a call.)
@@ -84,6 +88,7 @@ private:
 	};
 
 	Arena& arena_;
+	const target_model::Target target_;
 	std::vector<Slot, ZeroedAllocator<Slot>> slots_;
 	// slots_.size() - 1, the probes' index mask.
 	uint32_t mask_ = 255;

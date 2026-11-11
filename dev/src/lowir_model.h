@@ -45,13 +45,13 @@ enum class TypeKind : std::uint8_t
 	F64,
 	F80,
 	Ptr,
-	V128, // sixteen bytes of SSE lanes
+	V128, // sixteen bytes of vector lanes
 	Obj   // obj<bytes x align>
 };
 
 const unsigned kTypeKindCount = static_cast<unsigned>(TypeKind::Obj) + 1;
 
-// A LowIR type as one 8-byte value: the scalar kinds carry no payload;
+// A LowIR type as one 8-byte value: ordinary scalar kinds carry no payload;
 // `obj<bytes x align>` carries its size and the base-2 logarithm of its
 // alignment.  Types compare field by field, so equality needs no interning.
 struct Type
@@ -70,6 +70,18 @@ struct Type
 		type.bytes = 0;
 		return type;
 	}
+
+	// Legacy ptr has no payload and is eight bytes. An explicit 32-bit
+	// target stores its pointer width here, keeping Type eight bytes and
+	// making size queries independent of a mutable ambient target.
+	static Type pointer(unsigned bytes)
+	{
+		Type type = scalar(TypeKind::Ptr);
+		type.bytes = bytes == 8 ? 0 : bytes;
+		return type;
+	}
+
+	unsigned pointer_bytes() const { return bytes == 0 ? 8 : static_cast<unsigned>(bytes); }
 
 	static Type object(std::uint64_t bytes, unsigned align_log2)
 	{
@@ -165,6 +177,8 @@ inline unsigned data_alignment(Type type)
 	case TypeKind::U32:
 	case TypeKind::F32:
 		return 4;
+	case TypeKind::Ptr:
+		return type.pointer_bytes();
 	case TypeKind::I128:
 	case TypeKind::F80:
 		return 16;
@@ -173,6 +187,19 @@ inline unsigned data_alignment(Type type)
 	default:
 		return 8;
 	}
+}
+
+// Storage and index scaling follow the represented type, including the
+// pointer width selected by the program's target profile.
+inline std::uint64_t storage_bytes(Type type)
+{
+	if (type.is_object())
+		return type.bytes;
+	if (type.kind() == TypeKind::Void)
+		return 0;
+	if (type.kind() == TypeKind::V128)
+		return 16;
+	return data_alignment(type);
 }
 
 // ---------------------------------------------------------------------------
@@ -1029,16 +1056,17 @@ enum class Keyword : std::uint8_t
 	EquivalentEntry,  // equivalent_entry @entry = @target
 	AssemblyFunction, // optional opaque assembly-defined function
 	AssemblyGlobal,   // ordered module assembly invocation
-	CodeLabel         // a named address of a block, inside its function
+	CodeLabel,        // a named address of a block, inside its function
+	Target            // target <profile> <version>, before definitions
 };
 
-const unsigned kKeywordCount = static_cast<unsigned>(Keyword::CodeLabel) + 1;
+const unsigned kKeywordCount = static_cast<unsigned>(Keyword::Target) + 1;
 
 inline const char* spelling(Keyword keyword)
 {
 	static const char* const kKeywords[kKeywordCount] = { "declare", "global", "function", "alias", "object", "slot",
 		"block", "zero", "as", "debug_type", "debug_scope", "debug_local", "assembly", "equivalent_entry",
-		"assembly_function", "assembly_global", "code_label" };
+		"assembly_function", "assembly_global", "code_label", "target" };
 	return kKeywords[static_cast<unsigned>(keyword)];
 }
 

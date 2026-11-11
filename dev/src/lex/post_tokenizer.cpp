@@ -4,9 +4,10 @@
 #include "lex/number_literal.h"
 #include "lex/text_literal.h"
 
-PostTokenizer::PostTokenizer(PPTokenCursor& input, IdentifierTable* identifiers, NumberDialect literals)
-	: input_(input), identifiers_(identifiers), literals_(literals), lookahead_(nullptr), token_(), split_suffix_(),
-	  split_suffix_begin_(0), split_suffix_end_(0), after_operator_(false), scalar_()
+PostTokenizer::PostTokenizer(
+	PPTokenCursor& input, IdentifierTable* identifiers, NumberDialect literals, target_model::Target target)
+	: input_(input), identifiers_(identifiers), literals_(literals), target_(target), lookahead_(nullptr), token_(),
+	  split_suffix_(), split_suffix_begin_(0), split_suffix_end_(0), after_operator_(false), scalar_()
 {
 	strings_.set_reserved_suffixes(literals == NumberDialect::Gnu);
 }
@@ -130,20 +131,20 @@ void PostTokenizer::convert_operator(uint8_t punctuator)
 
 void PostTokenizer::convert_number(const PPToken& pp)
 {
-	const NumberLiteral number = ClassifyNumber(pp.spelling, pp.length, literals_);
+	const NumberLiteral number = ClassifyNumber(pp.spelling, pp.length, literals_, target_);
 	switch (number.kind)
 	{
 	case NumberLiteralKind::Integer:
 		set_scalar(LiteralForm::Integer, number.type, number.integer);
 		return;
 	case NumberLiteralKind::Floating:
-		if (!ScanFloatingValue(pp.spelling, number.suffix_begin, number.type, floating_text_, scalar_))
+		if (!ScanFloatingValue(pp.spelling, number.suffix_begin, number.type, floating_text_, scalar_, target_))
 			return;
 		token_.kind = PostTokenKind::Literal;
 		token_.form = LiteralForm::Floating;
 		token_.type = number.type;
 		token_.data = scalar_;
-		token_.size = FundamentalTypeSize(number.type);
+		token_.size = FundamentalTypeSize(number.type, target_);
 		return;
 	case NumberLiteralKind::UserDefinedInteger:
 		token_.kind = PostTokenKind::UserDefinedLiteral;
@@ -243,7 +244,7 @@ void PostTokenizer::finish_string_sequence(uint32_t begin, uint32_t end)
 void PostTokenizer::set_scalar(LiteralForm form, FundamentalType type, uint64_t value)
 {
 	// Little-endian, as x86-64 stores it.
-	const unsigned size = FundamentalTypeSize(type);
+	const unsigned size = FundamentalTypeSize(type, target_);
 	for (unsigned i = 0; i < size; ++i)
 		scalar_[i] = static_cast<unsigned char>(value >> (8 * i));
 	token_.kind = PostTokenKind::Literal;

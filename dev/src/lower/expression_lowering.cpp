@@ -374,7 +374,7 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 		{
 			RValue pointer;
 			pointer.value = address(*e);
-			pointer.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+			pointer.type = program_.pointer_type();
 			return pointer;
 		}
 		// A glvalue conditional read as a value selects the operands'
@@ -404,7 +404,7 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 			(evaluated->root == sema::RootKind::Null || storage.is_pointer()))
 		{
 			RValue pointer;
-			pointer.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+			pointer.type = program_.pointer_type();
 			if (evaluated->root == sema::RootKind::Null || constant_address(*evaluated, pointer.value, e->location))
 			{
 				if (e->kind == syntax::ExprKind::Member)
@@ -445,7 +445,7 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 		return literal(static_cast<const syntax::LiteralExpr&>(*e));
 	case syntax::ExprKind::LabelAddress:
 		return RValue{ lowir::Value::symbol(lowering_.code_label(static_cast<const syntax::LabelAddressExpr&>(*e))),
-			lowir::Type::scalar(lowir::TypeKind::Ptr) };
+			program_.pointer_type() };
 	case syntax::ExprKind::KeywordLiteral:
 		return keyword_literal(static_cast<const syntax::KeywordLiteralExpr&>(*e));
 	case syntax::ExprKind::Binary:
@@ -481,7 +481,7 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 			// element, the temporary array's.
 			RValue pointer;
 			pointer.value = array_temporary(functional);
-			pointer.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+			pointer.type = program_.pointer_type();
 			return pointer;
 		}
 		if (functional.braced != nullptr)
@@ -526,7 +526,7 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 			constant->argument->element->kind == sema::TypeKind::MemberPointer)
 			return member_pointer_constant(sema::ArgumentPointer(constant->argument), e->location);
 		RValue pointer;
-		pointer.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		pointer.type = program_.pointer_type();
 		if (constant == nullptr || constant->argument == nullptr ||
 			!constant_address(sema::ArgumentPointer(constant->argument), pointer.value, e->location))
 			throw LoweringError(e->location, "a name without an address constant");
@@ -587,7 +587,7 @@ RValue FunctionLowering::apply_converted(
 		// 4.10p1: a null pointer constant becomes the null pointer value.
 		uint64_t bits = 0;
 		if (is_integer_literal(value, bits))
-			return integer(lowir::Type::scalar(lowir::TypeKind::Ptr), 0);
+			return integer(program_.pointer_type(), 0);
 	}
 	if (conversion->second == sema::ValueConversion::MemberToDerived)
 		return member_pointer_converted(value, member_adjustment(from, conversion->result, expr.location));
@@ -983,8 +983,8 @@ Place FunctionLowering::variable_place(const sema::Entity* entity, const sema::T
 			else if (wrapper == PointerMap::kMissing && !variable->defined && !lowering_.unit_local(variable))
 				wrapper = lowering_.external_thread_local_wrapper(place.storage.index, variable);
 			if (wrapper != PointerMap::kMissing)
-				place.storage = emit_call(lowir::Type::scalar(lowir::TypeKind::Ptr), lowir::Value::symbol(wrapper),
-					arguments_.size(), lowir::kNoId, false);
+				place.storage = emit_call(
+					program_.pointer_type(), lowir::Value::symbol(wrapper), arguments_.size(), lowir::kNoId, false);
 			else
 				place.storage = address_of(place);
 		}
@@ -994,7 +994,7 @@ Place FunctionLowering::variable_place(const sema::Entity* entity, const sema::T
 		// The slot or global holds the address the reference is bound to.
 		Place holder = Place();
 		holder.storage = place.storage;
-		place.storage = load(lowir::Type::scalar(lowir::TypeKind::Ptr), holder).value;
+		place.storage = load(program_.pointer_type(), holder).value;
 	}
 	return place;
 }
@@ -1127,7 +1127,7 @@ lowir::Value FunctionLowering::this_pointer(uint32_t location)
 		throw LoweringError(location, "`this` outside a non-static member function");
 	Place holder = Place();
 	holder.storage = lowir::Value::slot(this_slot_);
-	const lowir::Value value = load(lowir::Type::scalar(lowir::TypeKind::Ptr), holder).value;
+	const lowir::Value value = load(program_.pointer_type(), holder).value;
 	if (tables_pending_ || vtt_param_.kind != lowir::ValueKind::None)
 		this_values_.push_back(value);
 	return value;
@@ -1143,7 +1143,7 @@ lowir::Value FunctionLowering::object_pointer(uint32_t location)
 	captured.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, this_pointer(location),
 		integer(lowir::Type::scalar(lowir::TypeKind::I64), closure_this_offset_))
 						   .value;
-	return closure_this_copied_ ? captured.storage : load(lowir::Type::scalar(lowir::TypeKind::Ptr), captured).value;
+	return closure_this_copied_ ? captured.storage : load(program_.pointer_type(), captured).value;
 }
 
 const sema::ClassEntity* FunctionLowering::object_class() const
@@ -1172,7 +1172,7 @@ lowir::Value FunctionLowering::to_base(lowir::Value object, const sema::ClassEnt
 	{
 		RValue pointer;
 		pointer.value = object;
-		pointer.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		pointer.type = program_.pointer_type();
 		return virtual_base_pointer(pointer, from, to, false, location).value;
 	}
 	if (route.via != nullptr && access == BaseAccess::Complete)
@@ -1235,7 +1235,7 @@ RValue FunctionLowering::pointer_to_base(const RValue& value, const sema::ClassE
 		// holds the result in a slot of its own, the reserved one unused
 		// (a conditional operand's result slot is that reservation).
 		if (!nonnull && reserve)
-			generated_slot(lowir::SlotKind::Basecast, lowir::Type::scalar(lowir::TypeKind::Ptr));
+			generated_slot(lowir::SlotKind::Basecast, program_.pointer_type());
 		return virtual_base_pointer(value, from, to, nonnull, location);
 	}
 	return adjusted_pointer(value, route.offset, route.offset != 0 && !nonnull);
@@ -1265,7 +1265,7 @@ RValue FunctionLowering::adjusted_pointer(const RValue& value, uint64_t delta, b
 		adjusted.value = index(i8, ir_model::IPK_NONE, value.value, integer(i64, delta)).value;
 		return adjusted;
 	}
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	Place result = Place();
 	result.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::Basecast, pointer));
 	const lowir::BlockId null_block = new_block(lowir::BlockKind::BasecastNull);
@@ -1304,7 +1304,7 @@ Place FunctionLowering::member_place(lowir::Value object, const sema::ClassEntit
 	if (member->type->is_reference())
 	{
 		// 9.2: a reference member holds the address it is bound to.
-		place.storage = load(lowir::Type::scalar(lowir::TypeKind::Ptr), place).value;
+		place.storage = load(program_.pointer_type(), place).value;
 	}
 	qualify(place, type);
 	return place;
@@ -1436,11 +1436,10 @@ RValue FunctionLowering::builtin_trait_value(const syntax::BuiltinTraitExpr& tra
 		// A class object a caller passes to `...` through the address of
 		// its copy (the course's form; see arguments): that address, then
 		// the object's bytes there.
-		lowir::Instruction inst = lowir::make_instruction(
-			lowir::Opcode::VaArg, lowir::Type::scalar(lowir::TypeKind::Ptr));
+		lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::VaArg, program_.pointer_type());
 		inst.ops[0] = va_list_tag(*trait.operand);
 		Place copy = Place();
-		copy.storage = emit_value(inst, lowir::Type::scalar(lowir::TypeKind::Ptr));
+		copy.storage = emit_value(inst, program_.pointer_type());
 		return load(type, copy);
 	}
 	// An i128 is read as the object of its bytes its caller passes (see
@@ -1499,7 +1498,7 @@ RValue FunctionLowering::keyword_literal(const syntax::KeywordLiteralExpr& expr)
 	case TokenKind::KW_FALSE:
 		return integer(lowir::Type::scalar(lowir::TypeKind::U8), 0);
 	case TokenKind::KW_NULLPTR:
-		return integer(lowir::Type::scalar(lowir::TypeKind::Ptr), 0);
+		return integer(program_.pointer_type(), 0);
 	default:
 	{
 		// 9.3.2p1: `this` is a prvalue, the member function's object (in
@@ -1510,7 +1509,7 @@ RValue FunctionLowering::keyword_literal(const syntax::KeywordLiteralExpr& expr)
 		pointer.value = type != nullptr && type->kind == sema::TypeKind::Pointer
 			? object_pointer_as(sema::ClassOf(type->element), expr.location)
 			: object_pointer(expr.location);
-		pointer.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		pointer.type = program_.pointer_type();
 		return pointer;
 	}
 	}
@@ -1733,7 +1732,7 @@ RValue FunctionLowering::pointer_difference(
 	// signed division (README: pointer differences) marked exact for the
 	// backend (IF_EXACT).
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	RValue bytes = binary(lowir::BinaryOp::Sub, lowir::Type::scalar(lowir::TypeKind::Ptr), left, right);
+	RValue bytes = binary(lowir::BinaryOp::Sub, program_.pointer_type(), left, right);
 	bytes.type = i64;
 	const uint64_t size = lowering_.size_of(pointer_type->unqualified->element, location);
 	if (size == 1)
@@ -1970,7 +1969,7 @@ RValue FunctionLowering::unary_expression(const syntax::UnaryExpr& expr)
 		// 5.3.1p3: the address of the lvalue (or function).
 		RValue pointer;
 		pointer.value = address(*expr.operand);
-		pointer.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		pointer.type = program_.pointer_type();
 		return pointer;
 	}
 	case TokenKind::OP_LNOT:
@@ -2333,7 +2332,7 @@ RValue FunctionLowering::call(const syntax::CallExpr& expr, lowir::Value destina
 				}
 			}
 			RValue address;
-			address.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+			address.type = program_.pointer_type();
 			address.value = function_address(converting->invoker, expr.location);
 			return address;
 		}
@@ -2444,7 +2443,7 @@ RValue FunctionLowering::call(const syntax::CallExpr& expr, lowir::Value destina
 			// A constant pointer callee (a null template argument on a path
 			// that cannot execute) is called through a temporary: LowIR
 			// callees are functions, globals or temporaries.
-			callee = constant(lowir::Type::scalar(lowir::TypeKind::Ptr), null_bits).value;
+			callee = constant(program_.pointer_type(), null_bits).value;
 		}
 		result = result_type(returned, function);
 		signature = lowering_.call_signature(function, lowering_.callee_nothrow(*expr.callee));
@@ -2482,7 +2481,7 @@ lowir::Value FunctionLowering::block_call(const syntax::CallExpr& expr, lowir::V
 	slot.storage = element_address(literal.value, 2, 8);
 	result = result_type(function->element, invoke);
 	signature = lowering_.call_signature(invoke);
-	return load(lowir::Type::scalar(lowir::TypeKind::Ptr), slot).value;
+	return load(program_.pointer_type(), slot).value;
 }
 
 lowir::Type FunctionLowering::result_type(const sema::FunctionEntity* function)
@@ -2499,7 +2498,7 @@ lowir::Type FunctionLowering::result_type(const sema::Type* returned, const sema
 	// A call's LowIR result: a reference's address, a class returned as its
 	// bytes (none for an indirect result), a scalar's value.
 	if (returned->is_reference())
-		return lowir::Type::scalar(lowir::TypeKind::Ptr);
+		return program_.pointer_type();
 	if (lowering_.indirect_result(returned, function))
 		return lowir::Type::scalar(lowir::TypeKind::Void);
 	return lowering_.storage_type(returned);

@@ -5,6 +5,14 @@ the behavior, quality envelopes and kernel limits. These notes explain design
 questions and failure cases, without prescribing an allocator, instruction
 sequence or tuning policy.
 
+Keep reusable liveness, control-flow and frame-object reasoning independent of
+the target's register numbers, set width and frame base. Describe implicit
+uses, clobbers and operand constraints explicitly. A later register target may
+have more register banks and different argument/result pieces; Wasm uses
+typed locals and a value stack instead of physical registers. Sharing facts
+and analyses does not require sharing every instruction or running every pass
+on every target.
+
 An unsigned division with wide operands can sometimes use a narrower hardware
 operation after a range check, retaining a full-width fallback. Keep both
 original operands available, respect fixed registers and address-register

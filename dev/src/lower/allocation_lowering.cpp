@@ -81,8 +81,8 @@ lowir::Value FunctionLowering::allocation_result(const sema::FunctionEntity* fun
 		return result;
 	}
 	lowering_.demand(function, EntryVariant::Complete);
-	return emit_call(lowir::Type::scalar(lowir::TypeKind::Ptr),
-		lowir::Value::symbol(lowering_.function_symbol(function)), base, lowir::kNoId, call_may_throw(function));
+	return emit_call(program_.pointer_type(), lowir::Value::symbol(lowering_.function_symbol(function)), base,
+		lowir::kNoId, call_may_throw(function));
 }
 
 RValue FunctionLowering::allocation(const syntax::NewExpr& expr)
@@ -116,7 +116,7 @@ RValue FunctionLowering::allocation(const syntax::NewExpr& expr)
 		placement_values = static_cast<uint32_t>(element_values_.size()) + 1;
 		element_values_.insert(element_values_.end(), arguments_.begin() + base + 1, arguments_.end());
 	}
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	RValue object;
 	object.value = allocation_result(function, base);
 	object.type = pointer;
@@ -424,7 +424,7 @@ RValue FunctionLowering::array_allocation(const syntax::NewExpr& expr)
 	// g++ and clang give `new (std::nothrow) S[-1]`).
 	uint64_t limit = 0;
 	const bool checked = count_may_be_invalid(shape, limit);
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const bool nothrow = lowering_.function_nothrow(function) && !ReservedPlacement(function);
 	lowir::BlockId end = lowir::kNoId;
 	Place value_slot = Place();
@@ -711,8 +711,7 @@ void FunctionLowering::zero_bytes(const RValue& storage, const RValue& size)
 	arguments_.push_back(storage.value);
 	arguments_.push_back(integer(lowir::Type::scalar(lowir::TypeKind::I32), 0).value);
 	arguments_.push_back(size.value);
-	emit_call(lowir::Type::scalar(lowir::TypeKind::Ptr), lowir::Value::symbol(lowering_.memset_function()), base,
-		lowir::kNoId, false);
+	emit_call(program_.pointer_type(), lowir::Value::symbol(lowering_.memset_function()), base, lowir::kNoId, false);
 }
 
 void FunctionLowering::null_member_pointer_elements(
@@ -925,7 +924,7 @@ RValue FunctionLowering::deletion(const syntax::DeleteExpr& expr)
 	const sema::ClassEntity* entity = incomplete ? nullptr : sema::ClassOf(object);
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const RValue value = operand(*expr.operand, ConversionContext::Operand);
 	RValue none;
 	none.type = lowir::Type::scalar(lowir::TypeKind::Void);

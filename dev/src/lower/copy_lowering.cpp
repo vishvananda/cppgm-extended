@@ -67,7 +67,7 @@ lowir::Value FunctionLowering::source_object()
 	// The source object's address: the parameter's slot read again.
 	Place slot = Place();
 	slot.storage = lowir::Value::slot(parameter_slots_[0]);
-	return load(lowir::Type::scalar(lowir::TypeKind::Ptr), slot).value;
+	return load(program_.pointer_type(), slot).value;
 }
 
 lowir::Value FunctionLowering::subobject_of(lowir::Value object, const sema::SubobjectInit& init, uint32_t location)
@@ -100,8 +100,7 @@ void FunctionLowering::copy_members(uint32_t location)
 			lowering_.size_of(entity->type, location), 1);
 		if (assignment)
 		{
-			lowir::Instruction ret = lowir::make_instruction(
-				lowir::Opcode::Return, lowir::Type::scalar(lowir::TypeKind::Ptr));
+			lowir::Instruction ret = lowir::make_instruction(lowir::Opcode::Return, program_.pointer_type());
 			ret.ops[0] = this_pointer(location);
 			terminate(ret);
 		}
@@ -117,7 +116,7 @@ void FunctionLowering::copy_members(uint32_t location)
 	bool field_wise = entity->bases != nullptr || entity->dynamic;
 	for (const sema::DataMember* member = entity->members; member != nullptr && !field_wise; member = member->next)
 		field_wise = member->bit_field && member->variable->name != nullptr;
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	bit_limit_ = subobject_bit_limit();
 	// An assignment never stores the table pointer (the object keeps its
 	// dynamic type).
@@ -299,7 +298,7 @@ void FunctionLowering::copy_subobject(const sema::SubobjectInit& init, bool assi
 	// (a scalar array as storage), a scalar or reference by its value.
 	const sema::Type* type = init.base != nullptr ? init.base->base->type : init.member->variable->type;
 	const sema::ClassEntity* cls = MemberClass(type);
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const OverlapScope overlap(overlapping_empty_, init.base != nullptr ? nullptr : init.member);
 	if (cls == nullptr && type->kind != sema::TypeKind::Array)
 	{

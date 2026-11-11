@@ -350,7 +350,7 @@ void BitRecurrences::rewrite(InstId root, Value input, const BitTableKey& key, S
 		convert.ops[0] = index;
 		index = emit(block, after, convert, location);
 	}
-	Instruction base = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+	Instruction base = make_instruction(Opcode::Addr, body_.pointer_type());
 	base.ops[0] = Value::symbol(table);
 	const Value pointer = emit(block, after, base, location);
 	Instruction address = make_instruction(Opcode::Index, type);
@@ -359,7 +359,7 @@ void BitRecurrences::rewrite(InstId root, Value input, const BitTableKey& key, S
 	// index's type is its element type; its result is a pointer.
 	const InstId a = append_instruction(body_, address);
 	body_.instructions[a].location = location;
-	body_.instructions[a].result = append_temp(body_, Type::scalar(TypeKind::Ptr), a);
+	body_.instructions[a].result = append_temp(body_, body_.pointer_type(), a);
 	insert_after(body_, block, after, a);
 	after = a;
 	Instruction load = make_instruction(Opcode::Load, type);

@@ -288,7 +288,8 @@ bool ConstantEvaluator::literal(const syntax::LiteralExpr& expr, Constant& value
 		value = Constant{ ConvertIntegral(character.code_point, KindOf(type)), type };
 		return true;
 	}
-	const NumberLiteral number = ClassifyNumber(spelling.text, spelling.length);
+	const NumberLiteral number = ClassifyNumber(
+		spelling.text, spelling.length, NumberDialect::Gnu, analyzer_.types_.target());
 	if (number.kind == NumberLiteralKind::Floating)
 		return fail(expr.location, "floating-point constant evaluation is not supported here");
 	if (number.kind != NumberLiteralKind::Integer)

@@ -115,6 +115,24 @@ unsigned FundamentalTypeSize(FundamentalType type)
 	return 0;
 }
 
+unsigned FundamentalTypeSize(FundamentalType type, target_model::Target target)
+{
+	const auto layout = target_model::data_layout(target);
+	if (type == FundamentalType::LongInt || type == FundamentalType::UnsignedLongInt)
+		return layout.long_bytes;
+	if (type == FundamentalType::NullptrT)
+		return layout.pointer_bytes;
+	return FundamentalTypeSize(type);
+}
+
+FundamentalType FloatingRepresentation(FundamentalType type, target_model::Target target)
+{
+	if (type == FundamentalType::LongDouble &&
+		target_model::data_layout(target).long_double_format == target_model::ExtendedFloat::Binary128)
+		return FundamentalType::Float128;
+	return FloatingRepresentation(type);
+}
+
 bool IsFloatingFundamental(FundamentalType type)
 {
 	return FloatingRank(type) != 0;

@@ -61,7 +61,7 @@ private:
 bool LoopLoadCache::eligible(const Loop& loop) const
 {
 	bool store = false;
-	const Type ptr = Type::scalar(TypeKind::Ptr);
+	const Type ptr = body_.pointer_type();
 	for (BlockId b : loop.blocks)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
@@ -178,7 +178,7 @@ bool LoopLoadCache::plan(uint32_t loop, InstId index)
 Value LoopLoadCache::emit(BlockId block, Instruction inst)
 {
 	const InstId id = append_instruction(body_, inst);
-	body_.instructions[id].result = append_temp(body_, Type::scalar(TypeKind::Ptr), id);
+	body_.instructions[id].result = append_temp(body_, body_.pointer_type(), id);
 	const InstId before = previous_in_block(body_, block, body_.blocks[block].last);
 	insert_after(body_, block, before, id);
 	return Value::temp(body_.instructions[id].result);
@@ -206,7 +206,7 @@ bool LoopLoadCache::apply(uint32_t loop)
 	}
 	for (CacheNode& n : nodes_)
 	{
-		Instruction phi = make_instruction(Opcode::Phi, Type::scalar(TypeKind::Ptr));
+		Instruction phi = make_instruction(Opcode::Phi, body_.pointer_type());
 		phi.location = body_.instructions[n.phi].location;
 		const InstId id = append_instruction(body_, phi);
 		body_.instructions[id].result = append_temp(body_, phi.type, id);

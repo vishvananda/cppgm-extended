@@ -105,6 +105,8 @@ bool IntegralKindOf(const Type* type, IntegralKind& kind)
 	}
 	if (type->kind != TypeKind::Fundamental || !FundamentalKind(type->fundamental, kind))
 		return false;
+	if (type->fundamental == FundamentalType::LongInt || type->fundamental == FundamentalType::UnsignedLongInt)
+		kind.bits = target_model::data_layout(type->target).long_bytes * 8;
 	kind.is_signed = kind.is_signed && !type->plain_char_unsigned;
 	return true;
 }
@@ -432,8 +434,8 @@ const Type* CommonType(TypeTable& types, const Type* a, const Type* b)
 		return a;
 	IntegralKind ka = IntegralKind{ 32, true };
 	IntegralKind kb = ka;
-	FundamentalKind(a->fundamental, ka);
-	FundamentalKind(b->fundamental, kb);
+	IntegralKindOf(a, ka);
+	IntegralKindOf(b, kb);
 	if (ka.is_signed == kb.is_signed)
 		return Rank(a->fundamental) >= Rank(b->fundamental) ? a : b;
 	const Type* unsigned_type = ka.is_signed ? b : a;
@@ -458,7 +460,7 @@ const Type* SmallestTypeFor(TypeTable& types, uint64_t bits, bool is_signed)
 	for (FundamentalType candidate : kCandidates)
 	{
 		IntegralKind kind;
-		FundamentalKind(candidate, kind);
+		IntegralKindOf(types.fundamental(candidate), kind);
 		if (Representable(value, kind))
 			return types.fundamental(candidate);
 	}

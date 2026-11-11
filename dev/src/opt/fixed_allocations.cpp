@@ -52,7 +52,7 @@ bool materialize_fixed_allocations(const Program& program, FunctionBody& body)
 			const TempId result = inst.result;
 			const InstId successor = inst.next;
 			const uint32_t location = inst.location;
-			inst = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+			inst = make_instruction(Opcode::Addr, body.pointer_type());
 			inst.result = result;
 			inst.next = successor;
 			inst.location = location;
@@ -81,7 +81,7 @@ void scope_dynamic_allocations(FunctionBody& body)
 			dynamic = dynamic || body.instructions[i].op == Opcode::StackAlloc;
 	if (!dynamic)
 		return;
-	Instruction save = make_instruction(Opcode::StackSave, Type::scalar(TypeKind::Ptr));
+	Instruction save = make_instruction(Opcode::StackSave, body.pointer_type());
 	const InstId saved = append_instruction(body, save);
 	const TempId mark = append_temp(body, save.type, saved);
 	body.instructions[saved].result = mark;

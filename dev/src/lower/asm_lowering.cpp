@@ -48,8 +48,7 @@ void FunctionLowering::asm_statement(const syntax::AsmStmt& stmt)
 		{
 			AsmOutputCapture& capture = captures[i];
 			capture.result_slot = lowir::Value::slot(generated_slot(lowir::SlotKind::Asm, type));
-			capture.pointer_slot = lowir::Value::slot(
-				generated_slot(lowir::SlotKind::Asm, lowir::Type::scalar(lowir::TypeKind::Ptr)));
+			capture.pointer_slot = lowir::Value::slot(generated_slot(lowir::SlotKind::Asm, program_.pointer_type()));
 			capture.selector_slot = lowir::Value::slot(
 				generated_slot(lowir::SlotKind::Asm, lowir::Type::scalar(lowir::TypeKind::I32)));
 			capture.empty = integer(type, 0);
@@ -77,7 +76,7 @@ void FunctionLowering::asm_statement(const syntax::AsmStmt& stmt)
 		{
 			if (!constant_address(stmt.program->addresses[i], values[argument.input], expr.location))
 				throw LoweringError(expr.location, "assembly symbol requires a link-time address");
-			types.back() = lowir::Type::scalar(lowir::TypeKind::Ptr);
+			types.back() = program_.pointer_type();
 		}
 		else if (packet.constants.size != 0 && packet.constants.data[i].present)
 		{

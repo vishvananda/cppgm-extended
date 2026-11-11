@@ -307,7 +307,7 @@ Value CounterWidening::rebased(const Loop& l, Value base, Type type, Value term)
 	Instruction index = make_instruction(Opcode::Index, type);
 	index.ops[0] = base;
 	index.ops[1] = term;
-	const Value result = emit_after(l.preheader, preheader_end_, index, Type::scalar(TypeKind::Ptr));
+	const Value result = emit_after(l.preheader, preheader_end_, index, body_.pointer_type());
 	rebased_.push_back(Rebased{ base, term, result, type });
 	return result;
 }
@@ -440,7 +440,7 @@ void CounterWidening::rewrite(const Loop& l, uint32_t loop, Read& read)
 	Instruction scaled = inst;
 	scaled.ops[0] = base;
 	scaled.ops[1] = offset;
-	const Value advanced = emit_after(block, at, scaled, Type::scalar(TypeKind::Ptr));
+	const Value advanced = emit_after(block, at, scaled, body_.pointer_type());
 	Instruction& index = body_.instructions[read.id];
 	index.ops[0] = advanced;
 	index.ops[1] = integer_value(body_, integer_literal(read.sum.offset));

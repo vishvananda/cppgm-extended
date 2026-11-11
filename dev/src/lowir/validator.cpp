@@ -260,7 +260,7 @@ static_assert(sizeof kOperandRules / sizeof kOperandRules[0] == static_cast<unsi
 
 // The type of an instruction's result temporary: a comparison's truth
 // value is i64, an address is ptr, otherwise the instruction's type.
-Type result_type(const Instruction& inst)
+Type result_type(const Instruction& inst, Type pointer_type)
 {
 	switch (inst.op)
 	{
@@ -272,7 +272,7 @@ Type result_type(const Instruction& inst)
 	case Opcode::Index:
 	case Opcode::StackAlloc:
 	case Opcode::StackSave:
-		return Type::scalar(TypeKind::Ptr);
+		return pointer_type;
 	default:
 		return inst.type;
 	}
@@ -750,7 +750,7 @@ bool Validator::check_operands(InstId id, const Instruction& inst)
 		return inst.result == kNoId || fail("a void instruction has no result");
 	if (inst.result >= body_->temps.size() || body_->temps[inst.result].def != id)
 		return fail("value instruction without its result temporary");
-	const Type type = result_type(inst);
+	const Type type = result_type(inst, program_.pointer_type());
 	if (type.is_void())
 		return fail("a void instruction has no result");
 	if (body_->temps[inst.result].type != type)
@@ -850,7 +850,7 @@ bool Validator::value_type(Value value, Type& type) const
 		type = body_->slots[value.index].type;
 		return true;
 	case ValueKind::Symbol:
-		type = Type::scalar(TypeKind::Ptr);
+		type = program_.pointer_type();
 		return true;
 	default:
 		return false;
@@ -902,8 +902,8 @@ bool Validator::check_assembly(const Instruction& inst)
 						body_->literals[value.index].high == 0);
 			return value.kind == ValueKind::Float && value.float_kind == expected.kind();
 		};
-		if (!argument(operand.input, operand.input_storage ? Type::scalar(TypeKind::Ptr) : operand.type) ||
-			!argument(operand.output, Type::scalar(TypeKind::Ptr)))
+		if (!argument(operand.input, operand.input_storage ? program_.pointer_type() : operand.type) ||
+			!argument(operand.output, program_.pointer_type()))
 			return fail("assembly invocation argument type mismatch");
 		if (operand.alternative_count != 0 &&
 			module.alternatives[operand.first_alternative].locations == asm_model::AL_LABEL)

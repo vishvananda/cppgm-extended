@@ -733,11 +733,11 @@ void materialize_call_arguments(Program& program, FunctionBody& body, BlockId b,
 		const uint32_t location = body.instructions[call_id].location;
 		const SlotId slot = static_cast<SlotId>(body.slots.size());
 		body.slots.push_back(Slot{ 0, SlotKind::Refarg, 0, 0, type });
-		Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+		Instruction addr = make_instruction(Opcode::Addr, body.pointer_type());
 		addr.ops[0] = Value::slot(slot);
 		addr.location = location;
 		const InstId a = append_instruction(body, addr);
-		body.instructions[a].result = append_temp(body, Type::scalar(TypeKind::Ptr), a);
+		body.instructions[a].result = append_temp(body, body.pointer_type(), a);
 		insert_after(body, b, prev, a);
 		Instruction store = make_instruction(Opcode::Store, type);
 		store.ops[0] = v;

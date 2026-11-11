@@ -106,7 +106,7 @@ TypeList CandidateTypes(const IntegerSuffix& suffix, bool decimal)
 	}
 }
 
-uint64_t MaxIntegerValue(FundamentalType type)
+uint64_t MaxIntegerValue(FundamentalType type, target_model::Target target)
 {
 	switch (type)
 	{
@@ -115,6 +115,9 @@ uint64_t MaxIntegerValue(FundamentalType type)
 	case FundamentalType::UnsignedInt:
 		return 0xFFFFFFFFu;
 	case FundamentalType::LongInt:
+		return target_model::data_layout(target).long_bytes == 4 ? 0x7FFFFFFFu : 0x7FFFFFFFFFFFFFFFull;
+	case FundamentalType::UnsignedLongInt:
+		return target_model::data_layout(target).long_bytes == 4 ? 0xFFFFFFFFu : 0xFFFFFFFFFFFFFFFFull;
 	case FundamentalType::LongLongInt:
 		return 0x7FFFFFFFFFFFFFFFull;
 	default:
@@ -159,7 +162,7 @@ uint32_t DigitsEnd(const char* text, uint32_t length, uint32_t begin, unsigned r
 // An integer literal whose digits are [digits_begin, digits_end); anything
 // after them must be an integer-suffix or a ud-suffix.
 NumberLiteral ClassifyInteger(const char* text, uint32_t length, uint32_t digits_begin, uint32_t digits_end,
-	unsigned radix, NumberDialect dialect)
+	unsigned radix, NumberDialect dialect, target_model::Target target)
 {
 	NumberLiteral result = { NumberLiteralKind::Invalid, FundamentalType::Int, length, 0 };
 	IntegerSuffix suffix;
@@ -182,7 +185,7 @@ NumberLiteral ClassifyInteger(const char* text, uint32_t length, uint32_t digits
 	const TypeList candidates = CandidateTypes(suffix, radix == 10);
 	for (unsigned i = 0; i < candidates.count; ++i)
 	{
-		if (value <= MaxIntegerValue(candidates.types[i]))
+		if (value <= MaxIntegerValue(candidates.types[i], target))
 		{
 			result.kind = NumberLiteralKind::Integer;
 			result.type = candidates.types[i];
@@ -197,17 +200,17 @@ NumberLiteral ClassifyInteger(const char* text, uint32_t length, uint32_t digits
 
 // A binary literal (C++14's 2.14.2, a GNU extension in C++11): `0b` or `0B`
 // and binary digits, typed as octal and hexadecimal literals are.
-NumberLiteral ClassifyBinary(const char* text, uint32_t length, NumberDialect dialect)
+NumberLiteral ClassifyBinary(const char* text, uint32_t length, NumberDialect dialect, target_model::Target target)
 {
 	const uint32_t end = DigitsEnd(text, length, 2, 2, dialect);
 	if (end == 2)
 		return NumberLiteral{ NumberLiteralKind::Invalid, FundamentalType::Int, length, 0 };
-	return ClassifyInteger(text, length, 2, end, 2, dialect);
+	return ClassifyInteger(text, length, 2, end, 2, dialect, target);
 }
 
 NumberLiteral ClassifyFloating(const char* text, uint32_t length, uint32_t value_end, NumberDialect dialect);
 
-NumberLiteral ClassifyHexadecimal(const char* text, uint32_t length, NumberDialect dialect)
+NumberLiteral ClassifyHexadecimal(const char* text, uint32_t length, NumberDialect dialect, target_model::Target target)
 {
 	uint32_t end = DigitsEnd(text, length, 2, 16, dialect);
 	const uint32_t integer_digits = end - 2;
@@ -235,7 +238,7 @@ NumberLiteral ClassifyHexadecimal(const char* text, uint32_t length, NumberDiale
 	}
 	if (point || integer_digits == 0)
 		return NumberLiteral{ NumberLiteralKind::Invalid, FundamentalType::Int, length, 0 };
-	return ClassifyInteger(text, length, 2, end, 16, dialect);
+	return ClassifyInteger(text, length, 2, end, 16, dialect, target);
 }
 
 // The end of an exponent-part starting at `pos`, or `pos` if there is none.
@@ -317,12 +320,12 @@ NumberLiteral ClassifyFloating(const char* text, uint32_t length, uint32_t value
 
 } // namespace
 
-NumberLiteral ClassifyNumber(const char* text, uint32_t length, NumberDialect dialect)
+NumberLiteral ClassifyNumber(const char* text, uint32_t length, NumberDialect dialect, target_model::Target target)
 {
 	if (length >= 2 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X'))
-		return ClassifyHexadecimal(text, length, dialect);
+		return ClassifyHexadecimal(text, length, dialect, target);
 	if (dialect != NumberDialect::Cxx11 && length >= 2 && text[0] == '0' && (text[1] == 'b' || text[1] == 'B'))
-		return ClassifyBinary(text, length, dialect);
+		return ClassifyBinary(text, length, dialect, target);
 
 	uint32_t pos = DigitsEnd(text, length, 0, 10, dialect);
 	const uint32_t integer_digits = pos;
@@ -344,13 +347,13 @@ NumberLiteral ClassifyNumber(const char* text, uint32_t length, NumberDialect di
 
 	// An integer: a leading 0 makes it octal, and `0` itself is octal.
 	if (text[0] != '0')
-		return ClassifyInteger(text, length, 0, integer_digits, 10, dialect);
+		return ClassifyInteger(text, length, 0, integer_digits, 10, dialect, target);
 	for (uint32_t i = 1; i < integer_digits; ++i)
 	{
 		if (text[i] != '\'' && !IsOctalDigit(text[i]))
 			return NumberLiteral{ NumberLiteralKind::Invalid, FundamentalType::Int, length, 0 };
 	}
-	return ClassifyInteger(text, length, 0, integer_digits, 8, dialect);
+	return ClassifyInteger(text, length, 0, integer_digits, 8, dialect, target);
 }
 
 bool UserIntegerValue(const char* spelling, uint32_t suffix_begin, uint64_t& value)
@@ -362,8 +365,8 @@ bool UserIntegerValue(const char* spelling, uint32_t suffix_begin, uint64_t& val
 	return AccumulateDigits(spelling, 0, suffix_begin, spelling[0] == '0' ? 8 : 10, value);
 }
 
-bool ScanFloatingValue(
-	const char* text, uint32_t length, FundamentalType type, std::string& scratch, unsigned char* bytes)
+bool ScanFloatingValue(const char* text, uint32_t length, FundamentalType type, std::string& scratch,
+	unsigned char* bytes, target_model::Target target)
 {
 	// The literal matches the floating-literal grammar, which strtof,
 	// strtod and strtold accept in the "C" locale and round correctly. An
@@ -377,7 +380,7 @@ bool ScanFloatingValue(
 				scratch[out++] = text[i];
 		scratch.resize(out);
 	}
-	switch (FloatingRepresentation(type))
+	switch (FloatingRepresentation(type, target))
 	{
 	case FundamentalType::Float16:
 	case FundamentalType::BFloat16:
@@ -385,7 +388,7 @@ bool ScanFloatingValue(
 	case FundamentalType::GnuFloat128:
 	{
 		// Formats no host type has, rounded exactly.
-		const FundamentalType representation = FloatingRepresentation(type);
+		const FundamentalType representation = FloatingRepresentation(type, target);
 		const bool half = representation == FundamentalType::Float16 || representation == FundamentalType::BFloat16;
 		uint64_t low = 0, high = 0;
 		if (!ScanInterchangeValue(scratch.data(), scratch.size(),

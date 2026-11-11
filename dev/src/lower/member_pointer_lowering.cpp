@@ -75,7 +75,7 @@ RValue FunctionLowering::member_function_word(const sema::FunctionEntity* functi
 		lowering_.demand(function);
 		RValue address;
 		address.value = address_of_symbol(lowering_.function_symbol(function));
-		address.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		address.type = program_.pointer_type();
 		word = convert_op(lowir::ConvertOp::ZExt, i128, copy(i64, address));
 	}
 	if (adjustment == 0)
@@ -249,7 +249,7 @@ lowir::Value FunctionLowering::member_pointer_callee(const syntax::BinaryExpr& a
 	// slot's offset in the adjusted object's table.
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	const lowir::Type i128 = lowir::Type::scalar(lowir::TypeKind::I128);
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const lowir::Type byte = lowir::Type::scalar(lowir::TypeKind::I8);
 	// `&C::f` written as the operand, not virtual, is called directly (the
 	// symbol itself); a template parameter's member function (no

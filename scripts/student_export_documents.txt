@@ -250,3 +250,5 @@ pa8/lowir.md
 pa9/README.md
 shared/README.md
 student.tests/README.md
+pa37/README.md
+pa37/design-notes.md

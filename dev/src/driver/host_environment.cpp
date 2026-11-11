@@ -4,11 +4,18 @@
 #include <string>
 
 #include "cppgm_builtin_host_config.h"
+#include "driver/wasm_environment.h"
 
 namespace driver {
 
 void configure_target_environment(PreprocessorOptions& options, native::Target target)
 {
+	options.target = target;
+	if (target_model::is_wasm(target))
+	{
+		configure_wasm_environment(options);
+		return;
+	}
 	// The course preprocessor starts with Linux target macros even when
 	// this compiler is running on Darwin.
 	if (target == native::Target::Linux && target == native::host_target())

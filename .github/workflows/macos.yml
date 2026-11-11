@@ -94,6 +94,10 @@ jobs:
             done
             exit 1
           fi
+      - name: Install pinned Wasm validation tools
+        run: |
+          perl scripts/install_wasm_tools.pl --prefix "$RUNNER_TEMP/wasm-tools"
+          echo "$RUNNER_TEMP/wasm-tools/bin" >> "$GITHUB_PATH"
       - name: Run the default Intel macOS test report
         run: |
           make --no-print-directory -f Makefile -f - ci-report-config <<'MAKE'

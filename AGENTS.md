@@ -1,7 +1,7 @@
 # Repository guide
 
 This is the complete cppgm-extended compiler solution and the source of its
-student export. The course has 36 cumulative assignments; see [ROADMAP.md](ROADMAP.md).
+student export. The course has 37 cumulative assignments; see [ROADMAP.md](ROADMAP.md).
 Follow [spec.md](spec.md) for the compiler architecture, including parsing
 source once, consuming typed facts and avoiding speculative work on hot paths.
 The original CPPGM material has been substantially adapted; preserve inherited
@@ -11,7 +11,7 @@ attribution and consult [NOTICE](NOTICE), not historical PA numbers, for origins
 
 - Put compiler changes in `dev/` and `dev/src/`. Keep tool source lists in
   `dev/frontend_source_sets.mk` current.
-- Treat `pa1/` through `pa36/` as handouts, tests, references and wrappers.
+- Treat `pa1/` through `pa37/` as handouts, tests, references and wrappers.
   Read the owning handout before changing a milestone's behavior.
 - Required fixtures live in the earliest owning `paN/tests/`, in the cluster
   of the latest feature they exercise, inside a lane that assignment's

@@ -1,0 +1,1 @@
+{"calls":[{"export":"arithmetic","result":"41"},{"export":"signed_narrow","result":"-3"},{"export":"wide","result":"1234567000089"},{"export":"floating","result":"5.5"}]}

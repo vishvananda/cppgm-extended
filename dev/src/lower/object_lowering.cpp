@@ -468,7 +468,7 @@ void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::V
 	const sema::ClosureFacts* facts = lowering_.graph().closure_facts(sema::ClassOf(lambda.facts->type));
 	if (facts == nullptr)
 		return;
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	const uint32_t first = facts->this_member != nullptr ? 1 : 0;
@@ -793,7 +793,7 @@ void FunctionLowering::null_data_member_pointers(
 		}
 		RValue elements;
 		elements.value = at(offset);
-		elements.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		elements.type = program_.pointer_type();
 		null_member_pointer_elements(elements, type->element, constant_value(i64, type->bound), 0);
 		return;
 	}
@@ -2187,7 +2187,7 @@ void FunctionLowering::forward_parameters(
 			arguments_.push_back(place.storage);
 			continue;
 		}
-		const lowir::Type slot_type = parameter->is_reference() ? lowir::Type::scalar(lowir::TypeKind::Ptr)
+		const lowir::Type slot_type = parameter->is_reference() ? program_.pointer_type()
 																: lowering_.storage_type(parameter);
 		arguments_.push_back(load(slot_type, place).value);
 	}
@@ -2430,8 +2430,7 @@ void FunctionLowering::initialize_scalar_member(const sema::VariableEntity* vari
 		}
 		throw LoweringError(location, "an array member initialized from an expression");
 	}
-	const lowir::Type storage = type->is_reference() ? lowir::Type::scalar(lowir::TypeKind::Ptr)
-													 : lowering_.storage_type(type);
+	const lowir::Type storage = type->is_reference() ? program_.pointer_type() : lowering_.storage_type(type);
 	RValue value;
 	const syntax::Expr* single = nullptr;
 	// A reference's list binds its one element, or is the temporary the

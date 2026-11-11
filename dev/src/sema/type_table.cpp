@@ -28,7 +28,8 @@ Type Key(TypeKind kind)
 
 } // namespace
 
-TypeTable::TypeTable(Arena& arena, bool plain_char_unsigned) : arena_(arena), slots_(256), count_(0)
+TypeTable::TypeTable(Arena& arena, bool plain_char_unsigned, target_model::Target target)
+	: arena_(arena), target_(target), slots_(256), count_(0)
 {
 	for (unsigned i = 0; i < kFundamentalTypeCount; ++i)
 	{
@@ -118,6 +119,7 @@ const Type* TypeTable::insert(const Type& key, uint32_t hash, uint32_t index)
 	// a found type's path saves no registers for this one's work).
 	Type* type = static_cast<Type*>(arena_.allocate(sizeof(Type), alignof(Type)));
 	*type = key;
+	type->target = target_;
 	type->hash = hash;
 	if (key.param_count != 0)
 		type->params = arena_.copy_array(key.params, key.param_count);

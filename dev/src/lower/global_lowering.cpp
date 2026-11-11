@@ -166,7 +166,7 @@ ProgramLowering::StaticOutcome ProgramLowering::static_global(lowir::SymbolId sy
 	if (type->is_reference())
 	{
 		global.typed = true;
-		global.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		global.type = program_.pointer_type();
 		// Bound by the initialization function unless constant-initialized.
 		global.init = lowir::GlobalInit::Zero;
 		dynamic = !define_reference(global, variable, initializer, location);
@@ -492,8 +492,7 @@ void ProgramLowering::state_storage_type(lowir::Global& global, uint64_t size, u
 		const lowir::DataItem& item = program_.data_items[global.first_item + i];
 		if (item.kind == lowir::DataItemKind::Scalar || item.kind == lowir::DataItemKind::Address)
 			implied = std::max<uint64_t>(implied,
-				lowir::data_alignment(
-					item.kind == lowir::DataItemKind::Address ? lowir::Type::scalar(lowir::TypeKind::Ptr) : item.type));
+				lowir::data_alignment(item.kind == lowir::DataItemKind::Address ? program_.pointer_type() : item.type));
 	}
 	if (alignment <= (implied != 0 ? implied : object_mode_ ? 16 : 1))
 		return;
@@ -911,7 +910,7 @@ lowir::SymbolId ProgramLowering::thread_local_wrapper_symbol(
 	{
 		lowir::Signature returning = lowir::Signature();
 		returning.first_parameter = static_cast<uint32_t>(program_.parameters.size());
-		returning.result = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		returning.result = program_.pointer_type();
 		program_.declare_function(wrapper,
 			imported ? lowir::SymbolKind::FunctionDeclaration : lowir::SymbolKind::FunctionDefinition,
 			program_.add_signature(returning));
@@ -1601,7 +1600,7 @@ bool ProgramLowering::static_element(const sema::Type* type, const syntax::Expr&
 		// holds its address (3.6.2p2).
 		lowir::DataItem item = lowir::DataItem();
 		item.kind = lowir::DataItemKind::Address;
-		item.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		item.type = program_.pointer_type();
 		const sema::Conversion* conversion = element.facts != nullptr ? element.facts->conversion : nullptr;
 		StaticValue target = StaticValue();
 		if ((conversion != nullptr && conversion->temporary) || !static_binding(element, type, target))

@@ -29,6 +29,7 @@
 #include "support/telemetry.h"
 #include "support/tool_errors.h"
 #include "syntax/syntax_unit.h"
+#include "wasm/backend.h"
 
 namespace driver {
 
@@ -100,6 +101,7 @@ struct Invocation
 	std::string output;
 	std::vector<Input> inputs;
 	std::vector<std::string> library_paths;
+	std::vector<std::string> exports;
 	PreprocessorOptions preprocessor;
 };
 
@@ -361,6 +363,12 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 				throw InvocationError("missing output file after -o");
 			invocation.output = args[++i];
 		}
+		else if (arg == "--export" || starts_with(arg, "--export="))
+		{
+			if (arg == "--export" && i + 1 >= args.size())
+				throw InvocationError("missing export name");
+			invocation.exports.push_back(arg == "--export" ? args[++i] : arg.substr(9));
+		}
 		else if (arg == "--target" || starts_with(arg, "--target="))
 		{
 			if (arg == "--target" && i + 1 >= args.size())
@@ -514,6 +522,58 @@ void optimize_unit(lowir::Program& program, const Invocation& invocation, native
 	native::recover_jump_thunks(program, eh_model);
 }
 
+bool lower_source(const std::string& path, const Invocation& invocation, lower::ProgramLowering& lowering,
+	UnitWork& work, double& front_ms, std::chrono::steady_clock::time_point start)
+{
+	{
+		syntax::SyntaxUnit unit(invocation.preprocessor, path);
+		if (!unit.parse())
+		{
+			std::cerr << "ERROR: " << unit.error() << std::endl;
+			return false;
+		}
+		sema::SemanticGraph graph(invocation.preprocessor.plain_char_unsigned, invocation.target);
+		graph.names.reserve(unit.counters().bindings);
+		sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
+		analyzer.set_hosted(invocation.preprocessor.hosted);
+		analyzer.set_cxx14(invocation.preprocessor.cplusplus != "201103L");
+		analyzer.set_cxx17(invocation.preprocessor.cplusplus == "201703L");
+		analyzer.set_exceptions(invocation.preprocessor.modes.exceptions);
+		analyzer.set_ignore_narrowing(invocation.ignore_narrowing);
+		analyzer.set_source_positions(&unit.positions());
+		try
+		{
+			analyzer.analyze(unit.tree());
+			front_ms = milliseconds_since(start);
+			if (invocation.syntax_only)
+				return true;
+			lowering.lower_unit(unit.tree(), graph, analyzer);
+			work.specializations = graph.specializations;
+			work.instantiated_classes = graph.instantiated_classes;
+			work.instantiated_functions = graph.instantiated_functions;
+			work.instantiated_variables = graph.instantiated_variables;
+			work.constant_evaluations = graph.constant_evaluations;
+			work.resolutions = graph.resolutions;
+			work.candidates = graph.candidates;
+		}
+		catch (const sema::SemanticError& e)
+		{
+			std::cerr << "ERROR: " << unit.describe(e.location(), e.what()) << std::endl;
+			return false;
+		}
+		catch (const lower::LoweringError& e)
+		{
+			std::cerr << "ERROR: " << unit.describe(e.location(), e.what()) << std::endl;
+			return false;
+		}
+		catch (const InternalError& e)
+		{
+			throw unit.locate(e);
+		}
+	}
+	return true;
+}
+
 bool compile_unit(
 	const std::string& path, const Invocation& invocation, native::EhModel eh_model, native::object::ObjectFile& object)
 {
@@ -542,52 +602,10 @@ bool compile_unit(
 	UnitWork work;
 	try
 	{
-		{
-			syntax::SyntaxUnit unit(invocation.preprocessor, path);
-			if (!unit.parse())
-			{
-				std::cerr << "ERROR: " << unit.error() << std::endl;
-				return false;
-			}
-			sema::SemanticGraph graph(invocation.preprocessor.plain_char_unsigned);
-			graph.names.reserve(unit.counters().bindings);
-			sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
-			analyzer.set_hosted(invocation.preprocessor.hosted);
-			analyzer.set_cxx14(invocation.preprocessor.cplusplus != "201103L");
-			analyzer.set_cxx17(invocation.preprocessor.cplusplus == "201703L");
-			analyzer.set_exceptions(invocation.preprocessor.modes.exceptions);
-			analyzer.set_ignore_narrowing(invocation.ignore_narrowing);
-			analyzer.set_source_positions(&unit.positions());
-			try
-			{
-				analyzer.analyze(unit.tree());
-				front_ms = milliseconds_since(start);
-				if (invocation.syntax_only)
-					return true;
-				lowering.lower_unit(unit.tree(), graph, analyzer);
-				work.specializations = graph.specializations;
-				work.instantiated_classes = graph.instantiated_classes;
-				work.instantiated_functions = graph.instantiated_functions;
-				work.instantiated_variables = graph.instantiated_variables;
-				work.constant_evaluations = graph.constant_evaluations;
-				work.resolutions = graph.resolutions;
-				work.candidates = graph.candidates;
-			}
-			catch (const sema::SemanticError& e)
-			{
-				std::cerr << "ERROR: " << unit.describe(e.location(), e.what()) << std::endl;
-				return false;
-			}
-			catch (const lower::LoweringError& e)
-			{
-				std::cerr << "ERROR: " << unit.describe(e.location(), e.what()) << std::endl;
-				return false;
-			}
-			catch (const InternalError& e)
-			{
-				throw unit.locate(e);
-			}
-		}
+		if (!lower_source(path, invocation, lowering, work, front_ms, start))
+			return false;
+		if (invocation.syntax_only)
+			return true;
 		lowering.finish();
 		optimize_unit(program, invocation, eh_model);
 		object.path = path;
@@ -800,6 +818,44 @@ int link_mode(const Invocation& invocation)
 
 // One translation unit's posttoken records (`sof`, the PA2 tokens, `eof`);
 // false after an error.
+int wasm_mode(const Invocation& invocation)
+{
+	if (invocation.compile_only)
+		throw InvocationError("relocatable Wasm object emission is not yet implemented");
+	lowir::Program program;
+	program.target = invocation.target;
+	program.explicit_target = true;
+	lower::ProgramLowering lowering(program);
+	lowering.set_optimizing(invocation.optimizer.level >= 2);
+	lowering.set_exceptions(invocation.preprocessor.modes.exceptions);
+	lowering.set_strict_aliasing(invocation.strict_aliasing);
+	UnitWork work;
+	double front_ms = 0;
+	const auto start = std::chrono::steady_clock::now();
+	for (const Input& input : invocation.inputs)
+	{
+		if (input.kind != Input::Kind::Source)
+			throw InvocationError("this Wasm path currently requires C++ source inputs");
+		if (!lower_source(input.name, invocation, lowering, work, front_ms, start))
+			return EXIT_FAILURE;
+	}
+	lowering.finish();
+	backend::Options options;
+	options.target = invocation.target;
+	options.output = invocation.output.empty() ? "a.wasm" : invocation.output;
+	options.optimization_level = invocation.optimizer.level;
+	options.exports = invocation.exports;
+	options.optimizer = &invocation.optimizer;
+	check_output(invocation, options.output);
+	std::string error;
+	if (!wasm::compile_program(program, options, error))
+	{
+		std::cerr << "ERROR: " << error << std::endl;
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 bool preprocess_unit(const std::string& path, const Invocation& invocation, PostTokenWriter& output)
 {
 	output.write_line("sof " + path);
@@ -912,6 +968,8 @@ int run_toolchain(const std::vector<std::string>& args, const PreprocessorOption
 		}
 		return EXIT_SUCCESS;
 	}
+	if (target_model::is_wasm(invocation.target))
+		return wasm_mode(invocation);
 	return invocation.compile_only ? compile_mode(invocation) : link_mode(invocation);
 }
 

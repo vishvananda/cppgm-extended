@@ -98,19 +98,22 @@ uint32_t ProgramLowering::inheritance_flags(const sema::ClassEntity* entity)
 	return flags;
 }
 
-lowir::DataItem AddressItem(lowir::SymbolId symbol, int64_t addend)
+lowir::DataItem AddressItem(const lowir::Program& program, lowir::SymbolId symbol, int64_t addend)
 {
 	lowir::DataItem item = lowir::DataItem();
 	item.kind = lowir::DataItemKind::Address;
-	item.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	item.type = program.pointer_type();
 	item.address = symbol;
 	item.amount = addend;
 	return item;
 }
 
-lowir::DataItem EntryItem(lowir::SymbolId target)
+lowir::DataItem EntryItem(const lowir::Program& program, lowir::SymbolId target)
 {
-	return target != lowir::kNoId ? AddressItem(target, 0) : ScalarItem(lowir::TypeKind::Ptr, 0);
+	lowir::DataItem item = target != lowir::kNoId ? AddressItem(program, target, 0)
+												  : ScalarItem(lowir::TypeKind::Ptr, 0);
+	item.type = program.pointer_type();
+	return item;
 }
 
 lowir::DataItem ScalarItem(lowir::TypeKind kind, uint64_t value)
@@ -270,7 +273,7 @@ void ProgramLowering::define_vtable(const sema::ClassEntity* entity)
 	table_rows(TableContext{ entity, entity, 0, false }, 0);
 	data_item(ScalarItem(lowir::TypeKind::I64, 0));
 	for (size_t i = 0; i < primary_slots; ++i)
-		data_item(i == 0 ? AddressItem(targets[i], 0) : EntryItem(targets[i]));
+		data_item(i == 0 ? AddressItem(program_, targets[i], 0) : EntryItem(program_, targets[i]));
 	if (one_object)
 	{
 		group_items(entity, targets.data() + primary_slots);
@@ -739,9 +742,9 @@ const lowir::SymbolId* ProgramLowering::view_items(
 	const sema::VtableSegment& part = group->segments[segment];
 	table_rows(TableContext{ entity, entity, 0, false }, segment);
 	data_item(ScalarItem(lowir::TypeKind::I64, static_cast<uint64_t>(-static_cast<int64_t>(offsets[segment]))));
-	data_item(AddressItem(typeinfo_symbol(entity), 0));
+	data_item(AddressItem(program_, typeinfo_symbol(entity), 0));
 	for (uint32_t slot = 0; slot < part.cls->virtuals->vtable_size; ++slot)
-		data_item(EntryItem(*targets++));
+		data_item(EntryItem(program_, *targets++));
 	return targets;
 }
 
@@ -1066,10 +1069,10 @@ void ProgramLowering::define_typeinfo(const sema::ClassEntity* entity, lowir::Sy
 	std::vector<lowir::SymbolId> bases;
 	for (const sema::BaseClass* base = entity->bases; base != nullptr; base = base->next)
 		bases.push_back(typeinfo_symbol(BaseClassOf(base), true));
-	const uint32_t first = data_item(AddressItem(kind, 16));
-	data_item(AddressItem(name, 0));
+	const uint32_t first = data_item(AddressItem(program_, kind, 16));
+	data_item(AddressItem(program_, name, 0));
 	if (single)
-		data_item(AddressItem(bases[0], 0));
+		data_item(AddressItem(program_, bases[0], 0));
 	else if (entity->bases != nullptr)
 	{
 		data_item(ScalarItem(lowir::TypeKind::I32, inheritance_flags(entity)));
@@ -1077,7 +1080,7 @@ void ProgramLowering::define_typeinfo(const sema::ClassEntity* entity, lowir::Sy
 		size_t index = 0;
 		for (const sema::BaseClass* base = entity->bases; base != nullptr; base = base->next, ++index)
 		{
-			data_item(AddressItem(bases[index], 0));
+			data_item(AddressItem(program_, bases[index], 0));
 			// A virtual base's offset is its row's position in the table
 			// (Itanium 2.9.5p6c).
 			const uint64_t flags = (base->access == sema::Access::Public ? 2 : 0) | (base->is_virtual ? 1 : 0);

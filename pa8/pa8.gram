@@ -14,7 +14,13 @@
 # requires the reader/writer subset documented in its handout.
 
 program:
-	top-level-item* ST_EOF
+	target-profile? top-level-item* ST_EOF
+
+target-profile:
+	KW_TARGET target-name integer-literal
+
+target-name:
+	TT_IDENTIFIER
 
 top-level-item:
 	global-declaration

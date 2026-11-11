@@ -49,8 +49,8 @@ const Identifier* TemplateParameterName(const syntax::TemplateParameter& paramet
 
 } // namespace
 
-SemanticGraph::SemanticGraph(bool plain_char_unsigned)
-	: types(arena, plain_char_unsigned), names(arena), global(nullptr), root_demands(nullptr),
+SemanticGraph::SemanticGraph(bool plain_char_unsigned, target_model::Target target)
+	: types(arena, plain_char_unsigned, target), names(arena), global(nullptr), root_demands(nullptr),
 	  last_root_demand(nullptr), local_types(0), scopes(0), bindings(0), entities(0), constant_evaluations(0),
 	  constant_steps(0), expressions(0), conversions(0), resolutions(0), candidates(0), specializations(0), demands(0),
 	  override_steps(0), virtual_slots(0), instantiated_classes(0), instantiated_functions(0),

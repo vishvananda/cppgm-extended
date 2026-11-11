@@ -3,6 +3,7 @@
 
 #include "lowir/program.h"
 #include "lowir/text_reader.h"
+#include "backend/compile.h"
 #include "native/backend.h"
 #include "native/link/linker.h"
 #include "native/object/object_compiler.h"
@@ -31,6 +32,7 @@ struct LowIR2NativeInvocation
 	string machine_ir_file;
 	bool stats = false;
 	vector<string> srcfiles;
+	vector<string> exports;
 };
 
 vector<string> collect_args(int argc, char** argv)
@@ -112,9 +114,23 @@ LowIR2NativeInvocation parse_lowir2native_invocation(const vector<string>& args)
 			invocation.stats = true;
 			continue;
 		}
-		if (args[i] == "--target")
+		if (args[i] == "--export" || args[i].compare(0, 9, "--export=") == 0)
 		{
-			if (i + 1 >= args.size())
+			if (args[i] == "--export")
+			{
+				if (i + 1 >= args.size())
+					throw InvocationError("missing name after --export");
+				invocation.exports.push_back(args[++i]);
+			}
+			else
+				invocation.exports.push_back(args[i].substr(9));
+			if (invocation.exports.back().empty())
+				throw InvocationError("empty export name");
+			continue;
+		}
+		if (args[i] == "--target" || args[i].compare(0, 9, "--target=") == 0)
+		{
+			if (args[i] == "--target" && i + 1 >= args.size())
 			{
 				throw InvocationError("missing target after --target");
 			}
@@ -122,7 +138,7 @@ LowIR2NativeInvocation parse_lowir2native_invocation(const vector<string>& args)
 			{
 				throw InvocationError("multiple --target options provided");
 			}
-			invocation.output_target = args[++i];
+			invocation.output_target = args[i] == "--target" ? args[++i] : args[i].substr(9);
 			if (!native::parse_target(invocation.output_target, invocation.target))
 			{
 				throw InvocationError("unsupported target: " + invocation.output_target);
@@ -213,6 +229,9 @@ int run_lowir2native_mode(const vector<string>& args)
 	}
 	native::BackendOptions options;
 	options.target = invocation.target;
+	if (invocation.output_target.empty() && program.explicit_target)
+		options.target = program.target;
+	options.exports = invocation.exports;
 	options.output = invocation.outfile;
 	options.machine_ir = invocation.machine_ir_file;
 	options.optimization_level = invocation.optimization_level;
@@ -220,7 +239,7 @@ int run_lowir2native_mode(const vector<string>& args)
 	bool undefined = false;
 	options.undefined_symbol = &undefined;
 	string stats_line;
-	if (!native::compile_program(program, options, error, invocation.stats ? &stats_line : nullptr))
+	if (!backend::compile_program(program, options, error, invocation.stats ? &stats_line : nullptr))
 	{
 		if (!undefined || !link_with_runtime(program, invocation, error))
 		{

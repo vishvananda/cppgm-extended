@@ -55,6 +55,33 @@ These are LowIR symbol names, not necessarily raw source-level identifiers. Late
 lowering assignments may encode qualified or overloaded source names into deterministic
 LowIR symbol spellings as long as they remain valid `@name` tokens.
 
+## Target profiles
+
+A source file may begin with a versioned target profile:
+
+```text
+target wasm32 1
+```
+
+Version 1 names `linux` (x86-64 Linux), `macos` (x86-64 Darwin), `wasm32`
+(freestanding wasm32), or `wasi` (wasm32 WASI Preview 1). Omission retains the
+existing x86-64 Linux layout. Each input file must agree on its profile;
+an untagged file cannot be merged into a wasm32 program. Reject unknown names,
+unsupported versions, repeated profiles and profiles after a definition.
+Preserve an explicit profile when serializing, even in a helper-only unit.
+
+The selected profile determines pointer storage, alignment and index scaling:
+eight bytes on x86-64 and four on wasm32. Integer and floating LowIR types
+retain their stated widths. In particular, `f80` means x87 format; source
+`long double` on wasm32 is binary128 and requires appropriate lowering rather
+than reinterpreting `f80`. `v128` describes sixteen bytes of vector lanes.
+
+Keep target/layout facts in the typed program and carry pointer width with
+typed values or their explicit context. Do not derive target semantics from
+the compiler's host or an ambient mutable variable. Earlier native lowering
+assignments retain their x86-64 contract; PA37 adds Wasm code generation.
+Reading and preserving target facts here does not require a second backend.
+
 ## Types
 
 The base LowIR type family begins with the scalar and pointer types:

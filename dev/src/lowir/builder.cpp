@@ -33,6 +33,7 @@ FunctionBuilder::FunctionBuilder(Program& program, SymbolId function)
 	  current_(DebugLocation{ 0, 0, 0 }), current_index_(0)
 {
 	const Function& definition = program.functions[program.symbols[function].detail];
+	body_.pointer_bytes = target_model::data_layout(program.target).pointer_bytes;
 	const Signature& signature = program.signatures[definition.signature];
 	if (body_.temps.empty())
 	{

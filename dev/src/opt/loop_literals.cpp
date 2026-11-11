@@ -161,7 +161,7 @@ bool LoopLiterals::hold_addresses(uint32_t loop)
 				{
 					if (held_.size() == kHeldAddresses)
 						continue;
-					const Type type = Type::scalar(TypeKind::Ptr);
+					const Type type = body_.pointer_type();
 					Instruction addr = make_instruction(Opcode::Addr, type);
 					addr.ops[0] = v;
 					const InstId id = append_instruction(body_, addr);

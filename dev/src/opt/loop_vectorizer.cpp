@@ -1662,7 +1662,7 @@ Value LoopVectorizer::lane_address(Value address, Type type)
 	Instruction low = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
 	low.ops[0] = address;
 	low.ops[1] = literal(-static_cast<int64_t>((lanes_ - 1) * lane_bytes(type)));
-	return emit(low, Type::scalar(TypeKind::Ptr));
+	return emit(low, body_.pointer_type());
 }
 
 // A sum in memory's address at the current point.
@@ -1744,7 +1744,7 @@ Value LoopVectorizer::overlap_guard(Value distance)
 	for (const Induction& iv : inductions_)
 		scalars_[iv.phi] = iv.start;
 	clone_scalars(false);
-	const Type pointer = Type::scalar(TypeKind::Ptr), i64 = Type::scalar(TypeKind::I64);
+	const Type pointer = body_.pointer_type(), i64 = Type::scalar(TypeKind::I64);
 	const Induction& counter = inductions_[counter_];
 	const int64_t unit = counter.step < 0 ? -counter.step : counter.step;
 	Value passes = distance;

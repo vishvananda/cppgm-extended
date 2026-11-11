@@ -1,6 +1,6 @@
 # cppgm assignments
 
-Build a C++ compiler in 36 cumulative assignments, from preprocessing to
+Build a C++ compiler in 37 cumulative assignments, from preprocessing to
 native code, optimization and self-hosting. Later handouts identify the
 required language and hosted-library profile; see
 [LANGUAGE_PROFILE.md](LANGUAGE_PROFILE.md). Start with

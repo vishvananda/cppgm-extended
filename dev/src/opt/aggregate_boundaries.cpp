@@ -144,7 +144,7 @@ void scalarize_aggregate_boundaries(Program& program)
 			Value address = storage;
 			if (address.is(ValueKind::Slot))
 			{
-				Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+				Instruction addr = make_instruction(Opcode::Addr, body.pointer_type());
 				addr.ops[0] = storage;
 				address = value(addr, addr.type);
 			}
@@ -164,7 +164,7 @@ void scalarize_aggregate_boundaries(Program& program)
 					index.sub = ir_model::IPK_FIELD;
 					index.ops[0] = address;
 					index.ops[1] = literal(offset);
-					at = value(index, Type::scalar(TypeKind::Ptr));
+					at = value(index, body.pointer_type());
 				}
 				Instruction ld = make_instruction(Opcode::Load, field);
 				ld.ops[0] = at;

@@ -199,7 +199,7 @@ void FunctionLowering::end_try(size_t enclosing)
 	place(context.entry);
 	for (uint32_t i = 0; i < stmt.handlers.size; ++i)
 	{
-		const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		const lowir::Type pointer = program_.pointer_type();
 		const lowir::Type i32 = lowir::Type::scalar(lowir::TypeKind::I32);
 		RValue exception;
 		exception.value = emit_value(lowir::make_instruction(lowir::Opcode::Exception, pointer), pointer);
@@ -233,7 +233,7 @@ void FunctionLowering::handler(const syntax::TryStmt& stmt, const syntax::Handle
 	// handler's normal exit ends the catch (15.1p4), which destroys the
 	// exception object when no other handler holds it: with a caught class
 	// type whose destructor may throw, in a region (throwing_end_catch).
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const size_t base = arguments_.size();
 	arguments_.push_back(exception.value);
 	++lowering_.counters().instructions;
@@ -364,7 +364,7 @@ void FunctionLowering::catch_variable(
 	local.reference = reference;
 	local.address = lowir::Value();
 	local.depth = 0;
-	const lowir::Type storage = reference ? lowir::Type::scalar(lowir::TypeKind::Ptr) : lowering_.storage_type(type);
+	const lowir::Type storage = reference ? program_.pointer_type() : lowering_.storage_type(type);
 	const char* spelling = variable->name != nullptr ? variable->name->spelling : nullptr;
 	local.slot = new_slot(
 		spelling != nullptr ? lowering_.intern(spelling, static_cast<uint32_t>(std::strlen(spelling))) : 0, storage);
@@ -382,7 +382,7 @@ void FunctionLowering::catch_variable(
 		// the exception object, which 15.3p17 would for an exact match),
 		// the handler's record of the yielded value written again (the
 		// course's form).
-		const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		const lowir::Type pointer = program_.pointer_type();
 		store(pointer, caught, record);
 		RValue address;
 		address.value = address_of(record);
@@ -913,7 +913,7 @@ void FunctionLowering::throw_object(const syntax::Expr* operand, uint32_t locati
 	// `throw;` rethrows the handled exception (15.1p8). As a statement the
 	// operand is a full-expression of its own, between the allocation's and
 	// the throw's regions (opened before their operands).
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const lowir::Type void_type = lowir::Type::scalar(lowir::TypeKind::Void);
 	const bool nested = !statement && full_expression_;
 	const bool expression = !statement;
@@ -1038,7 +1038,7 @@ lowir::Value FunctionLowering::throw_allocation(size_t base, bool statement)
 {
 	// __cxa_allocate_exception; a statement's, when objects are alive, in a
 	// region of its own, its result kept in a slot (the course's form).
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const lowir::Value callee = lowir::Value::symbol(lowering_.runtime_function(RuntimeFunction::AllocateException));
 	const bool region = statement && !full_expression_ && !region_open_ && !chain_empty();
 	if (!region)

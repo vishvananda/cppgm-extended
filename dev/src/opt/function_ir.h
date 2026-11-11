@@ -237,38 +237,7 @@ inline bool may_write_memory(const lowir::Program& program, const lowir::Instruc
 	}
 }
 
-// The byte size a value of `type` occupies in memory (index's element
-// size).
-inline uint64_t storage_bytes(lowir::Type type)
-{
-	switch (type.kind())
-	{
-	case lowir::TypeKind::Void:
-		return 0;
-	case lowir::TypeKind::I1:
-	case lowir::TypeKind::I8:
-	case lowir::TypeKind::U8:
-		return 1;
-	case lowir::TypeKind::I16:
-	case lowir::TypeKind::U16:
-		return 2;
-	case lowir::TypeKind::I32:
-	case lowir::TypeKind::U32:
-	case lowir::TypeKind::F32:
-		return 4;
-	case lowir::TypeKind::I64:
-	case lowir::TypeKind::F64:
-	case lowir::TypeKind::Ptr:
-		return 8;
-	case lowir::TypeKind::I128:
-	case lowir::TypeKind::F80:
-	case lowir::TypeKind::V128:
-		return 16;
-	case lowir::TypeKind::Obj:
-		return type.bytes;
-	}
-	return 0;
-}
+using lowir_model::storage_bytes;
 
 enum BlockFlag : uint8_t
 {

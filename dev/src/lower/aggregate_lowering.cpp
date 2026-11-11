@@ -416,8 +416,7 @@ void FunctionLowering::aggregate_item(const sema::Type* type, const AddressPath&
 		const syntax::BracedInitList* inner = static_cast<const syntax::BracedInitList*>(element);
 		element = inner->elements.empty() ? nullptr : inner->elements[0];
 	}
-	const lowir::Type storage = type->is_reference() ? lowir::Type::scalar(lowir::TypeKind::Ptr)
-													 : lowering_.storage_type(type);
+	const lowir::Type storage = type->is_reference() ? program_.pointer_type() : lowering_.storage_type(type);
 	Place place = Place();
 	qualify(place, type);
 	// Once a tracked aggregate's member is made, a later scalar member's
@@ -1615,8 +1614,7 @@ void FunctionLowering::structured_item(const sema::Type* type, lowir::Value addr
 		const syntax::BracedInitList* inner = static_cast<const syntax::BracedInitList*>(element);
 		element = inner->elements.empty() ? nullptr : inner->elements[0];
 	}
-	const lowir::Type storage = type->is_reference() ? lowir::Type::scalar(lowir::TypeKind::Ptr)
-													 : lowering_.storage_type(type);
+	const lowir::Type storage = type->is_reference() ? program_.pointer_type() : lowering_.storage_type(type);
 	Place place = Place();
 	place.storage = address;
 	qualify(place, type);
@@ -1835,7 +1833,7 @@ void FunctionLowering::lower_aggregate_helper(const sema::ClassEntity* entity, u
 	// in declaration order (an array's elements copied by their bytes), the
 	// others zeroed. It takes no class member (helper_shape,
 	// helper_eligible): nothing it does calls a function.
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	this_slot_ = new_slot(lowering_.this_name(), pointer);
 	uint32_t index = 0;
 	{

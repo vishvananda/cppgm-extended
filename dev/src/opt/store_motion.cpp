@@ -346,7 +346,7 @@ Value StoreMotion::address_of(const Location& location, BlockId block, InstId& t
 		tail = id;
 		return Value::temp(result);
 	};
-	const Type pointer = Type::scalar(TypeKind::Ptr);
+	const Type pointer = body_.pointer_type();
 	Value base = location.at.root;
 	if (base.is(ValueKind::Slot))
 	{

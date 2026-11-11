@@ -28,6 +28,12 @@ The representation you create here is extended by PA7's expression analysis
 and later lowering. Initialization bytes, full constant evaluation, and
 cross-translation-unit linking remain at their existing later stages.
 
+Scope canonical types and layout caches to the translation unit's selected
+target. Type identity and conversion rank are distinct from storage width:
+`int` and `long` remain different types when both occupy four bytes. The
+current exercises use the native layout; PA37 reuses these semantic facts
+with wasm32 layout. Do not derive source object sizes from host `sizeof`.
+
 ### Starter Kit
 
 The PA6 starter kit contains:

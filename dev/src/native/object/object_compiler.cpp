@@ -1526,6 +1526,11 @@ bool compile_object(lowir::Program& program, object::ObjectFile& out, std::strin
 	EhModel eh_model, int optimization_level, bool position_independent, Target target, bool red_zone,
 	bool function_sections)
 {
+	if (target_model::is_wasm(target) || target_model::is_wasm(program.target))
+	{
+		error = "x86 object emission requires an x86 target and layout";
+		return false;
+	}
 	ObjectStats local;
 	try
 	{

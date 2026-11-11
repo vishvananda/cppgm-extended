@@ -160,7 +160,7 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 	// straight-line arithmetic (LowIR has no such operation).
 	if (kind >= sema::Intrinsic::AtomicLoadN && kind <= sema::Intrinsic::SyncValCompareSwap)
 		return atomic_intrinsic(expr, kind);
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const auto list_tag = [this](const syntax::Expr& list) { return va_list_tag(list); };
 	switch (kind)
 	{
@@ -438,7 +438,7 @@ RValue FunctionLowering::source_location(sema::Intrinsic kind, uint32_t location
 			? lowering_.predefined_name(lowering_.source_file(location).c_str())
 			: lowering_.predefined_name(function != nullptr ? sema::PredefinedFunctionName(function).c_str() : ""));
 	RValue value;
-	value.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	value.type = program_.pointer_type();
 	value.value = address_of(text);
 	return value;
 }
@@ -1103,7 +1103,7 @@ lowir::SymbolId ProgramLowering::memset_function()
 	memset_ = new_symbol("__cppgm_builtin_memset");
 	lowir::Signature signature = lowir::Signature();
 	signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
-	const lowir::Type types[3] = { lowir::Type::scalar(lowir::TypeKind::Ptr), lowir::Type::scalar(lowir::TypeKind::I32),
+	const lowir::Type types[3] = { program_.pointer_type(), lowir::Type::scalar(lowir::TypeKind::I32),
 		lowir::Type::scalar(lowir::TypeKind::I64) };
 	for (uint32_t i = 0; i < 3; ++i)
 	{

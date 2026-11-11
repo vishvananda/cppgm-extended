@@ -5,22 +5,12 @@
 
 #include "lowir/program.h"
 #include "native/target.h"
+#include "backend/options.h"
 
 // LowIR program -> MIR -> native executable (the lowir2native pipeline).
 namespace native {
 
-struct BackendOptions
-{
-	Target target = Target::Linux;
-	std::string output;     // executable path, or empty
-	std::string machine_ir; // MIR dump path, or empty
-	int optimization_level = 0;
-	bool stats = false;
-	// Set (when given) if the executable failed for a symbol the standalone
-	// runtime does not define (link mode's runtime library may: catch
-	// clauses, the C++ ABI runtime, RTTI, i128 helpers).
-	bool* undefined_symbol = nullptr;
-};
+using BackendOptions = backend::Options;
 
 // Lowers a read and validated program. Returns false with `error` set
 // for LowIR outside the supported native subset or an I/O failure; an

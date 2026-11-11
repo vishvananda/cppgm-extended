@@ -37,7 +37,7 @@ void FunctionLowering::store_vptr(uint32_t location)
 	const bool from_vtt = base_entry_ && VirtualBaseCount(entity) != 0;
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	// A segment's subobject: within a virtual base, at its offset in that
 	// base found through the base's row (in a base-object entry the
 	// construction table's, the base itself at its own offset), else at its
@@ -100,7 +100,7 @@ void FunctionLowering::store_vptr(uint32_t location)
 
 void FunctionLowering::store_table(const Place& object, const sema::ClassEntity* entity, uint32_t segment)
 {
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const ProgramLowering::TableAddress table_address = lowering_.table_address(entity, segment);
 	Place table = Place();
 	table.storage = lowir::Value::symbol(table_address.symbol);
@@ -114,7 +114,7 @@ void FunctionLowering::store_table(const Place& object, const sema::ClassEntity*
 
 lowir::Value FunctionLowering::virtual_callee(lowir::Value object, uint32_t slot)
 {
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	Place vptr = Place();
 	vptr.storage = object;
 	Place entry = Place();
@@ -158,7 +158,7 @@ lowir::Value FunctionLowering::member_callee(
 lowir::TempId FunctionLowering::speculative_call(
 	lowir::Type result, lowir::Value callee, lowir::Value target, size_t base, lowir::SignatureId signature)
 {
-	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const lowir::Type pointer = program_.pointer_type();
 	const bool value = result.kind() != lowir::TypeKind::Void;
 	Place merged = Place();
 	if (value)
