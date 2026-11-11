@@ -1,0 +1,91 @@
+function @across_bool(%n : ptr, %flag : ptr) -> i32 [binding=strong, object=_Z11across_boolPiPb, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed i32 %n
+    store typed u8 1, %flag
+    %t2 = binary add nowrap i32 %t1, %t1
+    return i32 %t2
+}
+function @bool_across_int(%flag : ptr, %n : ptr) -> i32 [binding=strong, object=_Z15bool_across_intPbPi, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed u8 %flag
+    store typed i32 16843009, %n
+    %t2 = convert zext i32 u8 %t1
+    %t3 = binary add nowrap i32 %t2, %t2
+    return i32 %t3
+}
+function @across_char(%n : ptr, %c : ptr) -> i32 [binding=strong, object=_Z11across_charPiPh, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed i32 %n
+    store u8 2, %c
+    %t2 = load typed i32 %n
+    %t3 = binary add nowrap i32 %t1, %t2
+    return i32 %t3
+}
+function @bool_across_char(%flag : ptr, %c : ptr) -> i32 [binding=strong, object=_Z16bool_across_charPbPc, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed u8 %flag
+    store i8 1, %c
+    %t2 = convert zext i32 u8 %t1
+    %t3 = load typed u8 %flag
+    %t4 = convert zext i32 u8 %t3
+    %t5 = binary add nowrap i32 %t2, %t4
+    return i32 %t5
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $seed : i32
+  slot $n : i32
+  slot $flag : u8
+
+  block ^entry:
+    store volatile i32 5, $seed
+    %t1 = load volatile i32 $seed
+    store typed i32 %t1, $n
+    store typed u8 0, $flag
+    %t2 = addr $n
+    %t3 = addr $flag
+    %t4 = call i32 @across_bool(%t2, %t3)
+    %t5 = cmp ne i32 %t4, 10
+    branch %t5, ^if_then_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t6 = load typed u8 $flag
+    %t7 = cmp eq u8 %t6, 0
+    branch %t7, ^if_then_2, ^if_end_3
+
+  block ^if_then_2:
+    return i32 1
+
+  block ^if_end_3:
+    %t8 = call i32 @bool_across_int(%t3, %t2)
+    %t9 = cmp ne i32 %t8, 2
+    branch %t9, ^if_then_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t10 = load typed i32 $n
+    %t11 = cmp ne i32 %t10, 16843009
+    branch %t11, ^if_then_5, ^if_end_6
+
+  block ^if_then_5:
+    return i32 2
+
+  block ^if_end_6:
+    store typed i32 256, $n
+    %t12 = call i32 @across_char(%t2, %t2)
+    %t13 = cmp ne i32 %t12, 514
+    branch %t13, ^if_then_7, ^if_else_8
+
+  block ^if_then_7:
+    return i32 3
+
+  block ^if_else_8:
+    store typed u8 0, $flag
+    %t14 = call i32 @bool_across_char(%t3, %t3)
+    %t15 = cmp ne i32 %t14, 1
+    branch %t15, ^if_then_9, ^if_end_10
+
+  block ^if_then_9:
+    return i32 4
+
+  block ^if_end_10:
+    return i32 0
+}
