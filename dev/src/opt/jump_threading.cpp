@@ -1876,14 +1876,23 @@ bool JumpThreading::demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockI
 	return true;
 }
 
-// O2+: a branch on a compare, or on any value, decides facts in each block
+// Facts of one value (through its extensions) a compare is tried against.
+const uint32_t kRangeFacts = 4;
+
+// A branch on a compare, or on any value, decides facts in each block
 // entered only along one of its edges and in the blocks that block
 // dominates: the compare's result, and for `cmp eq|ne x, k` (integers and
 // pointers, k a literal) x itself on the equal side (k) and x != k on the
 // other; a value branched on is 0 on its false side and nonzero on its
-// true side. Uses there take the decided values (phis keep theirs: their
-// inputs flow from predecessors), and `cmp eq|ne x, k'` folds against a
-// known x != k'. One dominator-tree walk with an undo log.
+// true side; a select of the predecessor on the branch's value is the arm
+// that side chooses. Uses there take the decided values (phis keep theirs:
+// their inputs flow from predecessors), and `cmp eq|ne x, k'` folds against
+// a known x != k'. The values a branch or switch admits on the edge (those
+// of x, for a compare of x with a literal) decide the later compares of x
+// with a literal, or of a value x extends or one extending x, that hold for
+// all of them or for none. One dominator-tree walk with an undo log. A phi
+// input on a branch's own edge takes what that edge decides first: the
+// branch's value, a select on it, or x where the edge proves x equal k.
 bool JumpThreading::dominating_facts()
 {
 	const DomChildren& tree = c_.ensure_dom();
@@ -1891,6 +1900,71 @@ bool JumpThreading::dominating_facts()
 	std::vector<std::pair<TempId, Value>> unequal; // (x, k): x != k
 	std::vector<TempId> undo;
 	bool changed = false;
+	// The values of `cx` on an edge, by the value its extensions start from
+	// (`prev`: that value's fact before this one).
+	struct RangeFact
+	{
+		TempId root;
+		Value cx;
+		ValueSet f;
+		unsigned bits;
+		int32_t prev;
+	};
+	std::vector<RangeFact> ranges;
+	std::vector<int32_t> range_head(body_.temps.size(), -1);
+	std::vector<Extension> chain;
+	// What p's branch on c decides for v on its edge (taken or not):
+	// c itself, a select on c, or the x of `cmp eq|ne x, k` where equal.
+	auto on_edge = [&](const Instruction& br, bool taken, Value v) -> Value {
+		if (!v.is(ValueKind::Temp) || v.index < body_.parameter_count)
+			return Value::none();
+		const Value c = br.ops[0];
+		const Type ctype = body_.temps[c.index].type;
+		const InstId cdef = body_.temps[c.index].def;
+		const bool compared = cdef != kNoId && body_.instructions[cdef].op == Opcode::Compare;
+		if (v == c)
+			return compared || !taken ? integer_value(body_, Literal{ taken ? 1u : 0u, 0 }) : Value::none();
+		const InstId vdef = body_.temps[v.index].def;
+		if (vdef != kNoId && body_.instructions[vdef].op == Opcode::Select && body_.instructions[vdef].ops[0] == c &&
+			(ctype.is_integer() || ctype.is_pointer()))
+			return body_.instructions[vdef].ops[taken ? 1 : 2];
+		if (!compared)
+			return Value::none();
+		const Instruction& cmp = body_.instructions[cdef];
+		const ComparePredicate pred = static_cast<ComparePredicate>(cmp.sub);
+		Constant kc;
+		if ((pred != ComparePredicate::Eq && pred != ComparePredicate::Ne) || cmp.type.is_float() ||
+			cmp.type.kind() == TypeKind::I128 || (pred == ComparePredicate::Eq) != taken || !(cmp.ops[0] == v) ||
+			!literal_constant(body_, cmp.ops[1], kc) || kc.kind != ValueKind::Integer ||
+			body_.temps[v.index].type != cmp.type)
+			return Value::none();
+		return cmp.ops[1];
+	};
+	for (BlockId p : body_.layout)
+	{
+		const InstId t = body_.blocks[p].last;
+		if (!cfg_.reachable(p) || t == kNoId || body_.instructions[t].op != Opcode::Branch)
+			continue;
+		const Instruction& br = body_.instructions[t];
+		if (br.ops[1].index == br.ops[2].index || !br.ops[0].is(ValueKind::Temp))
+			continue;
+		for (unsigned side = 1; side <= 2; ++side)
+			for (InstId i = body_.blocks[br.ops[side].index].first;
+				i != kNoId && body_.instructions[i].op == Opcode::Phi; i = body_.instructions[i].next)
+			{
+				const Instruction& phi = body_.instructions[i];
+				for (uint32_t k = 0; k + 1 < phi.extra_count; k += 2)
+				{
+					if (body_.operands[phi.extra_first + k].index != p)
+						continue;
+					const Value decided = on_edge(br, side == 1, body_.operands[phi.extra_first + k + 1]);
+					if (decided.is(ValueKind::None) || decided == body_.operands[phi.extra_first + k + 1])
+						continue;
+					body_.operands[phi.extra_first + k + 1] = phi_input(body_, phi.type, decided);
+					changed = true;
+				}
+			}
+	}
 	auto literal_of = [&](Value v, Literal& out) {
 		Constant c;
 		if (!literal_constant(body_, v, c) || c.kind != ValueKind::Integer)
@@ -1910,6 +1984,18 @@ bool JumpThreading::dominating_facts()
 			return;
 		const BlockId p = cfg_.preds[cfg_.pred_first[b]];
 		const InstId t = body_.blocks[p].last;
+		Value cx;
+		ValueSet admits;
+		unsigned fact_bits = 0;
+		if (edge_fact(p, b, cx, admits, fact_bits) && !admits.lost && admits.n != 0)
+		{
+			const Value root = stripped(cx, chain);
+			if (root.is(ValueKind::Temp) && root.index < range_head.size())
+			{
+				ranges.push_back(RangeFact{ root.index, cx, admits, fact_bits, range_head[root.index] });
+				range_head[root.index] = static_cast<int32_t>(ranges.size() - 1);
+			}
+		}
 		if (t == kNoId || body_.instructions[t].op != Opcode::Branch)
 			return;
 		const Instruction& br = body_.instructions[t];
@@ -1917,6 +2003,17 @@ bool JumpThreading::dominating_facts()
 			return;
 		const bool taken = br.ops[1].index == b;
 		const TempId c = br.ops[0].index;
+		// (The predecessor's selects on the branch's value.)
+		for (InstId i = body_.blocks[p].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& sel = body_.instructions[i];
+			if (sel.op == Opcode::Select && sel.result != kNoId && sel.ops[0] == br.ops[0])
+			{
+				const Value arm = on_edge(br, taken, Value::temp(sel.result));
+				if (!arm.is(ValueKind::None))
+					set(sel.result, arm);
+			}
+		}
 		const InstId def = body_.temps[c].def;
 		const Type type = body_.temps[c].type;
 		if (!(type.is_integer() || type.is_pointer()) || type.kind() == TypeKind::I128)
@@ -1960,16 +2057,39 @@ bool JumpThreading::dominating_facts()
 					changed = true;
 				}
 			});
-			if (inst.op != Opcode::Compare || inst.result == kNoId || inst.result >= known.size() || unequal.empty())
+			if (inst.op != Opcode::Compare || inst.result == kNoId || inst.result >= known.size() ||
+				inst.type.is_float() || inst.type.kind() == TypeKind::I128)
 				continue;
-			const ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
-			if (pred != ComparePredicate::Eq && pred != ComparePredicate::Ne)
-				continue;
+			ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
 			Value x = inst.ops[0], k = inst.ops[1];
 			if (!x.is(ValueKind::Temp))
+			{
 				std::swap(x, k);
+				pred = swapped(pred);
+			}
 			Literal bits;
 			if (!x.is(ValueKind::Temp) || !literal_of(k, bits))
+				continue;
+			// The values an edge above admits all pass the compare, or none.
+			const unsigned qbits = value_bits(inst.type);
+			if (!ranges.empty() && qbits != 0 && known[inst.result].is(ValueKind::None))
+			{
+				const Value root = stripped(x, chain);
+				const ValueSet query = admitted(pred, bits.low, qbits);
+				uint32_t tried = 0;
+				for (int32_t r = root.is(ValueKind::Temp) && root.index < range_head.size() ? range_head[root.index]
+																							: -1;
+					r >= 0 && tried < kRangeFacts; r = ranges[static_cast<size_t>(r)].prev, ++tried)
+				{
+					const RangeFact& fact = ranges[static_cast<size_t>(r)];
+					const int holds = decided_by(related(fact.cx, fact.f, fact.bits, x, qbits), query);
+					if (holds < 0)
+						continue;
+					set(inst.result, integer_value(body_, Literal{ holds ? 1u : 0u, 0 }));
+					break;
+				}
+			}
+			if (unequal.empty() || (pred != ComparePredicate::Eq && pred != ComparePredicate::Ne))
 				continue;
 			for (const std::pair<TempId, Value>& f : unequal)
 			{
@@ -1988,14 +2108,14 @@ bool JumpThreading::dominating_facts()
 	{
 		BlockId block;
 		uint32_t child;
-		size_t undo, unequal;
+		size_t undo, unequal, ranges;
 	};
 	std::vector<Frame> stack;
 	auto visit = [&](BlockId b) {
-		stack.push_back(Frame{ b, 0, undo.size(), unequal.size() });
+		stack.push_back(Frame{ b, 0, undo.size(), unequal.size(), ranges.size() });
 		enter(b);
 		// (No fact in force: nothing to rewrite.)
-		if (!undo.empty() || !unequal.empty())
+		if (!undo.empty() || !unequal.empty() || !ranges.empty())
 			rewrite(b);
 	};
 	visit(cfg_.rpo[0]);
@@ -2012,6 +2132,8 @@ bool JumpThreading::dominating_facts()
 			known[undo[u - 1]] = Value::none();
 		undo.resize(top.undo);
 		unequal.resize(top.unequal);
+		for (; ranges.size() > top.ranges; ranges.pop_back())
+			range_head[ranges.back().root] = ranges.back().prev;
 		stack.pop_back();
 	}
 	return changed;
