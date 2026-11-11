@@ -1,0 +1,13 @@
+preproc 1
+sof tests/directives/500-skipped-group-lines.t
+identifier first
+identifier second
+identifier third
+identifier fourth
+identifier fifth
+identifier sixth
+identifier seventh
+identifier eighth
+identifier ninth
+identifier tenth
+eof
