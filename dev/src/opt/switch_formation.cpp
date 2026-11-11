@@ -259,6 +259,7 @@ private:
 		std::vector<std::pair<BlockId, Ranges>>& out) const;
 	bool form(BlockId head);
 	bool form_region(const std::vector<BlockId>& region, const std::vector<Test>& tests);
+	bool reroot(const Test& test);
 
 	FunctionContext& c_;
 	FunctionBody& body_;
@@ -522,7 +523,27 @@ bool SwitchFormer::form(BlockId head)
 	for (; region.size() >= 2; region.pop_back(), tests.pop_back())
 		if (form_region(region, tests))
 			return true;
-	return false;
+	return first.is_switch && reroot(first);
+}
+
+// A switch by itself on a value derived from its root (an opcode less its
+// first enumerator) becomes the switch on the root, each case at the root's
+// value of it: the table's index is one difference from what was loaded.
+bool SwitchFormer::reroot(const Test& test)
+{
+	Instruction& term = body_.instructions[test.term];
+	const Type type = body_.temps[test.x].type;
+	if (!term.ops[0].is(ValueKind::Temp) || term.ops[0].index == test.x || !type.is_integer() ||
+		test.cases.size() * 2 != term.extra_count)
+		return false;
+	// (Every case has its root value: they stand in the cases' order.)
+	for (size_t k = 0; k < test.cases.size(); ++k)
+		body_.operands[term.extra_first + 2 * k] = integer_value(body_, integer_literal(test.cases[k].first));
+	--c_.uses[term.ops[0].index];
+	++c_.uses[test.x];
+	term.ops[0] = Value::temp(test.x);
+	term.type = type;
+	return true;
 }
 
 bool SwitchFormer::form_region(const std::vector<BlockId>& region, const std::vector<Test>& tests)
