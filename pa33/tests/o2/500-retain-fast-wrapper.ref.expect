@@ -1,8 +1,11 @@
 # outcomes from 500-retain-fast-wrapper.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
-none(call @shared_work) in @hot_loop
+none(call @shared_work)
 
-# Bound retained work while leaving outlining and specialization choices open.
-instructions <= 45 in @wrapper
+# The short return path stays a branch and a return. The other path may take
+# the hinted shared work inline or keep its call: the wrapper's bound leaves
+# room for one copy, with outlining and specialization choices open.
+instructions <= 1 in @wrapper ^quick
+instructions <= 95 in @wrapper
 blocks <= 6 in @wrapper
 
 # Repeated pure work in a loop does not need a calling boundary.

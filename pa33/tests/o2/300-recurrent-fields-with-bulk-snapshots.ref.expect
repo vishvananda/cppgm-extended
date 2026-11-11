@@ -1,5 +1,10 @@
 # explicit-outcomes
 
 # Bound repeated scalar work while preserving the opaque indexed payload.
-instructions <= 55 in @scan
+# One pass of the loop neither loads nor stores the recurrent field; the
+# function's bound leaves room for a loop that also runs its passes in groups
+# of four.
+count(load) <= 0 in @scan ^body
+count(store) <= 1 in @scan ^body
+instructions <= 70 in @scan
 count(load) <= 3 in @scan
