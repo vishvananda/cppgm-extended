@@ -160,6 +160,46 @@ void PPLexer::update_directive_context(PPTokenKind kind)
 
 // ---- whitespace and comments ------------------------------------------------
 
+namespace {
+
+// Classes of a source byte that is its own character wherever it stands:
+// ASCII other than `\\` and `?`, which may begin a splice or a trigraph.
+enum ByteClass : uint8_t
+{
+	// A letter, a digit or an underscore.
+	kIdentifierByte = 1,
+	// Horizontal white space.
+	kSpaceByte = 2,
+	// Inside a `//` comment: any such byte but a new-line.
+	kLineCommentByte = 4,
+	// Inside a block comment: any such byte but `*`.
+	kBlockCommentByte = 8,
+	// In a line whose tokens are discarded: any such byte but the new-line,
+	// the quotes, `/` and the null byte that ends the image.
+	kPlainLineByte = 16
+};
+
+// (o: such a byte of no other class; i: an identifier byte; w: white space;
+// q: a quote, `/` or the null byte; n: the new-line; s: `*`; x: `\\`, `?` and
+// the bytes that are not ASCII.)
+const uint8_t q = kLineCommentByte | kBlockCommentByte, o = q | kPlainLineByte;
+const uint8_t i = o | kIdentifierByte, w = o | kSpaceByte;
+const uint8_t n = kBlockCommentByte, s = kLineCommentByte | kPlainLineByte, x = 0;
+
+const uint8_t kByteClasses[256] = { q, o, o, o, o, o, o, o, o, w, n, w, w, w, o, o, //
+	o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o,                                 //
+	w, o, q, o, o, o, o, q, o, o, s, o, o, o, o, q,                                 //
+	i, i, i, i, i, i, i, i, i, i, o, o, o, o, o, x,                                 //
+	o, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,                                 //
+	i, i, i, i, i, i, i, i, i, i, i, o, x, o, o, i,                                 //
+	o, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,                                 //
+	i, i, i, i, i, i, i, i, i, i, i, o, o, o, o, o,                                 //
+	x };
+
+const uint32_t kNoOffset = ~0u;
+
+} // namespace
+
 bool PPLexer::skip_whitespace_sequence()
 {
 	// A maximal run of non-new-line whitespace and comments.
@@ -167,7 +207,13 @@ bool PPLexer::skip_whitespace_sequence()
 	{
 		if (IsHorizontalWhitespace(cur_.code_point))
 		{
-			skip(cur_);
+			const unsigned char* const text = bytes();
+			const uint32_t size = source_.size();
+			uint32_t end = cur_.end;
+			while (end < size && (kByteClasses[text[end]] & kSpaceByte) != 0)
+				++end;
+			token_end_ = end;
+			cur_ = reader_.logical(end);
 			continue;
 		}
 		if (cur_.code_point != '/')
@@ -177,7 +223,7 @@ bool PPLexer::skip_whitespace_sequence()
 		{
 			skip_comment(second);
 			while (cur_.code_point != '\n' && cur_.code_point != kEndOfSource)
-				skip_comment(cur_);
+				skip_comment_bytes(false);
 		}
 		else if (second.code_point == '*')
 		{
@@ -191,15 +237,156 @@ bool PPLexer::skip_whitespace_sequence()
 	}
 }
 
+// Whether a splice may delete the new-line byte at `new_line`: a backslash
+// or `??/` stands before it in the bytes from `from` (a carriage return
+// between them may be the splice's).
+bool PPLexer::spliced_new_line(uint32_t from, uint32_t new_line) const
+{
+	const unsigned char* const text = bytes();
+	uint32_t last = new_line;
+	if (last > from && text[last - 1] == '\r')
+		--last;
+	return (last > from && text[last - 1] == '\\') ||
+		(last >= from + 3 && text[last - 3] == '?' && text[last - 2] == '?' && text[last - 1] == '/');
+}
+
+// The new-line byte that ends the line from `at` where the line's tokens
+// need no lexing to be discarded: they end on the line and none can be
+// ill-formed. The line holds bytes that are their own characters, no quote
+// and no block comment; a `//` comment runs to the new-line (in a hosted
+// comment any byte may, short of a splice). kNoOffset for any other line.
+uint32_t PPLexer::plain_line_end(uint32_t at) const
+{
+	const unsigned char* const text = bytes();
+	for (;;)
+	{
+		while ((kByteClasses[text[at]] & kPlainLineByte) != 0)
+			++at;
+		if (text[at] == '\n')
+			return at;
+		if (text[at] != '/' || text[at + 1] == '*')
+			return kNoOffset;
+		if (text[at + 1] != '/')
+		{
+			++at;
+			continue;
+		}
+		const unsigned char* const found = static_cast<const unsigned char*>(
+			std::memchr(text + at, '\n', source_.size() - at));
+		if (found == nullptr)
+			return kNoOffset;
+		const uint32_t last = static_cast<uint32_t>(found - text);
+		if (legacy_comment_bytes_)
+			return spliced_new_line(at + 2, last) ? kNoOffset : last;
+		for (at += 2; at < last; ++at)
+		{
+			if (kByteClasses[text[at]] == 0)
+				return kNoOffset;
+		}
+		return last;
+	}
+}
+
+void PPLexer::skip_plain_lines()
+{
+	const unsigned char* const text = bytes();
+	uint32_t at = cur_.begin;
+	for (;;)
+	{
+		uint32_t first = at;
+		while ((kByteClasses[text[first]] & kSpaceByte) != 0)
+			++first;
+		// (`#` or `%:` may begin a directive.)
+		if (text[first] == '#' || text[first] == '%')
+			break;
+		const uint32_t end = plain_line_end(first);
+		if (end == kNoOffset)
+			break;
+		at = end + 1;
+	}
+	if (at == cur_.begin)
+		return;
+	cur_ = reader_.logical(at);
+	update_directive_context(PPTokenKind::NewLine);
+}
+
+bool PPLexer::skip_plain_line_rest()
+{
+	const uint32_t end = plain_line_end(cur_.begin);
+	if (end == kNoOffset)
+		return false;
+	cur_ = reader_.logical(end);
+	return true;
+}
+
+uint8_t PPLexer::skip_space()
+{
+	uint8_t flags = 0;
+	for (;;)
+	{
+		const int32_t c = cur_.code_point;
+		if (c == '\n')
+		{
+			cur_ = reader_.logical(cur_.end);
+			flags |= kLeadingSpace | kStartOfLine;
+			continue;
+		}
+		if (!IsHorizontalWhitespace(c) && c != '/')
+			break;
+		start_token();
+		if (!skip_whitespace_sequence())
+			break;
+		flags |= kLeadingSpace;
+	}
+	if ((flags & kStartOfLine) != 0)
+		update_directive_context(PPTokenKind::NewLine);
+	return flags;
+}
+
+// Skips the comment character cur_ and the bytes after it that are their own
+// characters and do not end the comment (a new-line ends a `//` comment, and
+// a block comment's `*` is looked at by its caller).
+void PPLexer::skip_comment_bytes(bool block)
+{
+	const unsigned char* const text = bytes();
+	const uint32_t size = source_.size();
+	uint32_t end = cur_.end;
+	if (legacy_comment_bytes_)
+	{
+		// A hosted comment's bytes are opaque characters, so its end is
+		// searched for as a byte. No trigraph or splice holds or makes a
+		// `*`. A new-line ends the comment unless a splice deletes it, and
+		// then the characters are read one by one.
+		const unsigned char* const found = static_cast<const unsigned char*>(
+			std::memchr(text + end, block ? '*' : '\n', size - end));
+		const uint32_t last = found != nullptr ? static_cast<uint32_t>(found - text) : size;
+		if (block || (found != nullptr && !spliced_new_line(end, last)))
+		{
+			token_end_ = last;
+			cur_ = reader_.logical(last, true);
+			return;
+		}
+	}
+	const uint8_t wanted = block ? kBlockCommentByte : kLineCommentByte;
+	while (end < size && ((kByteClasses[text[end]] & wanted) != 0 || (legacy_comment_bytes_ && text[end] >= 0x80)))
+		++end;
+	token_end_ = end;
+	cur_ = reader_.logical(end, legacy_comment_bytes_);
+}
+
 void PPLexer::skip_block_comment()
 {
 	for (;;)
 	{
 		if (cur_.code_point == kEndOfSource)
 			throw SourceError(token_begin_, "unterminated block comment");
-		const bool star = cur_.code_point == '*';
+		if (cur_.code_point != '*')
+		{
+			skip_comment_bytes(true);
+			continue;
+		}
 		skip_comment(cur_);
-		if (star && cur_.code_point == '/')
+		if (cur_.code_point == '/')
 		{
 			skip(cur_);
 			return;
@@ -285,11 +472,35 @@ bool PPLexer::take_identifier_continue()
 	return true;
 }
 
+// Extends a spelling that is still a view of the source over the letters,
+// digits and underscores that directly follow it (the image ends with a
+// byte that is none of them). Whether the identifier is then complete: it
+// is where the next byte is its own character.
+bool PPLexer::take_identifier_bytes()
+{
+	if (dirty_ || cur_.begin != clean_end_)
+		return false;
+	const unsigned char* const text = bytes();
+	uint32_t end = clean_end_;
+	while ((kByteClasses[text[end]] & kIdentifierByte) != 0)
+		++end;
+	if (end != clean_end_)
+	{
+		clean_end_ = end;
+		token_end_ = end;
+		cur_ = reader_.logical(end);
+	}
+	return kByteClasses[text[end]] != 0;
+}
+
 const PPToken& PPLexer::lex_identifier_or_prefixed_literal()
 {
 	take(cur_);
-	while (take_identifier_continue())
+	if (!take_identifier_bytes())
 	{
+		while (take_identifier_continue())
+		{
+		}
 	}
 
 	// An identifier that spells an encoding prefix, directly followed by a
@@ -332,6 +543,23 @@ const PPToken& PPLexer::lex_backslash()
 
 // ---- pp-numbers -----------------------------------------------------------------
 
+// Extends a spelling that is still a view of the source over the decimal
+// digits that directly follow it.
+void PPLexer::take_digit_bytes()
+{
+	if (dirty_ || cur_.begin != clean_end_)
+		return;
+	const unsigned char* const text = bytes();
+	uint32_t end = clean_end_;
+	while (text[end] >= '0' && text[end] <= '9')
+		++end;
+	if (end == clean_end_)
+		return;
+	clean_end_ = end;
+	token_end_ = end;
+	cur_ = reader_.logical(end);
+}
+
 const PPToken& PPLexer::lex_pp_number()
 {
 	// digit | `.` digit
@@ -341,6 +569,7 @@ const PPToken& PPLexer::lex_pp_number()
 
 	for (;;)
 	{
+		take_digit_bytes();
 		const int32_t c = cur_.code_point;
 		if (c == 'e' || c == 'E' || (binary_exponents_ && (c == 'p' || c == 'P')))
 		{

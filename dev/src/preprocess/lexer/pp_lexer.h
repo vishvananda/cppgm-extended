@@ -54,6 +54,20 @@ public:
 	// (header_names_on_request mode).
 	void request_header_name() { context_ = DirectiveContext::AfterInclude; }
 
+	// Passes over the white-space sequences and new-lines before the next
+	// other token, as next() would return them one by one. Returns the
+	// PPTokenFlag bits they give that token: kLeadingSpace for any of them,
+	// kStartOfLine too for a new-line.
+	uint8_t skip_space();
+
+	// For a reader that discards tokens. From the start of a line, passes
+	// over the lines that begin with neither `#` nor `%` and hold only bytes
+	// whose tokens end on the line and cannot be ill-formed, new-lines
+	// included.
+	void skip_plain_lines();
+	// Passes over the rest of such a line up to its new-line; whether it did.
+	bool skip_plain_line_rest();
+
 private:
 	// Where header-name tokens may appear: after `#include` or
 	// `#include_next` at the start of a line ([lex.header] 2.9,
@@ -109,6 +123,15 @@ private:
 		cur_ = reader_.logical(c.end, legacy_comment_bytes_);
 	}
 	SourceChar peek_after(const SourceChar& c) const { return reader_.logical(c.end); }
+	// Source bytes: a run of bytes that are each their own character is
+	// passed over as bytes, with the same result as taking or skipping its
+	// characters one by one.
+	const unsigned char* bytes() const { return reinterpret_cast<const unsigned char*>(source_.data()); }
+	bool take_identifier_bytes();
+	bool spliced_new_line(uint32_t from, uint32_t new_line) const;
+	uint32_t plain_line_end(uint32_t at) const;
+	void take_digit_bytes();
+	void skip_comment_bytes(bool block);
 	bool spelling_is(const char* text) const;
 	const PPToken& finish(PPTokenKind kind, uint8_t punctuator = kNoPunctuator);
 	const PPToken& finish_empty(PPTokenKind kind);

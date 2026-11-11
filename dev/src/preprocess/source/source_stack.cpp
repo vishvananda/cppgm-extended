@@ -93,6 +93,11 @@ void SourceStack::lex_text(PPToken& token)
 	uint8_t flags = frame->at_line_start ? static_cast<uint8_t>(kStartOfLine | kLeadingSpace) : 0;
 	for (;;)
 	{
+		// (The white space before the token, passed over at once.)
+		const uint8_t space = frame->lexer->skip_space();
+		flags |= space;
+		if ((space & kStartOfLine) != 0)
+			frame->at_line_start = true;
 		const PPToken& lexed = frame->lexer->next();
 		switch (lexed.kind)
 		{
@@ -179,6 +184,7 @@ void SourceStack::skip_line()
 		return;
 	has_peeked_ = false;
 	SourceFrame* frame = frames_.back().get();
+	frame->lexer->skip_plain_line_rest();
 	for (;;)
 	{
 		const PPTokenKind kind = frame->lexer->next().kind;
@@ -232,6 +238,8 @@ bool SourceStack::skip_to_directive()
 	bool line_start = frame->at_line_start;
 	for (;;)
 	{
+		if (line_start)
+			frame->lexer->skip_plain_lines();
 		const PPToken& lexed = frame->lexer->next();
 		switch (lexed.kind)
 		{
