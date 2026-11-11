@@ -116,7 +116,8 @@ info, PA5 self-host, byte-identical inception, PA36 smoke, the full harness,
 architecture/source/format/file audits and Clang 21 syntax checks pass. The
 student export regenerates consistently, including all 47 Wasm controls. A
 fresh reference-bundle client passes its 270-document inventory and 43 wrappers.
-Placement verification is recorded separately in `wasi-placement.log`.
+Placement verification reports zero placement and local-hygiene findings; the
+full report is retained in `wasi-placement.log`.
 
 Frozen native instruction counts versus `d7b8cd4c8` are 3,055,879,786 versus
 3,055,728,337 at O0 (-0.0050%) and 9,896,313,186 versus 9,896,110,222 at O3
