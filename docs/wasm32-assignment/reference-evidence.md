@@ -208,3 +208,42 @@ materialize address globals, not substitute a data address as a global index.
 The pinned linking conventions and local LLD implementation establish this
 profile. `__dso_handle` is the static module's memory base. The new behavioral
 fixtures exercise address globals and class runtime objects with both linkers.
+
+## Modern EH implementation boundary
+
+`modern-eh-class-probe.cpp` independently exercises a cleanup, typed catch,
+rethrow and outer catch-all. SDK 34 with `-fwasm-exceptions -mllvm
+-wasm-use-legacy-eh=false` builds a valid module returning 17 for argument 4.
+Its assembly uses `try_table`, `catch_ref`, `catch_all_ref` and `throw_ref`,
+with `exnref` locals and multi-result `(i32, exnref)` blocks. Its object has
+`R_WASM_TAG_INDEX_LEB` relocations to the standard `__cpp_exception` tag.
+The supplied EH `libunwind.a` defines that tag and `__wasm_lpad_context`.
+All commands, assembly, objects, symbol output and execution logs are retained
+with the `modern-eh-class-` prefix in the external evidence directory.
+
+The pinned `libunwind/src/Unwind-wasm.c` establishes the landing-pad interface:
+write a landing index and LSDA address to the 12-byte context, invoke
+`_Unwind_CallPersonality` with the unwind pointer, and read its selector.
+The C++ personality performs matching/conversion; cleanup paths retain the
+exception reference for `throw_ref`. A VM trap must not become a C++ catch.
+
+Implementation order:
+
+1. Generalize typed Wasm signatures/control validation to result vectors,
+   block parameters, signed type indices and exception-reference values.
+   Preserve the existing public C ABI and validate relocated type fields.
+2. Carry tag imports/definitions, symbol binding and tag relocations through
+   object reading, validation and linking. Consume the actual runtime's tag.
+3. Extract reusable handler/action facts from the native EH analysis where
+   possible; keep target frame registers and unwind encodings separate.
+4. Select modern EH in the consumed MIR, including landing stack restoration,
+   cleanup, matching, resume/rethrow, nested handlers and the explicit LowIR
+   payload forms. Encode target LSDA/personality inputs from typed facts.
+5. Integrate the supplied EH runtime profile and test both compiler/linker
+   directions, including converted catches, destructor exceptions, noexcept,
+   persistent state and portable C++14/17 cases. Keep all student checks in
+   the standard Perl runner and retain native/export qualification.
+
+This probe demonstrates the required reference ABI; it is not evidence that
+cppgm implements modern EH yet. SIMD, quality and benchmarks remain part of
+the full assignment after these dependencies.

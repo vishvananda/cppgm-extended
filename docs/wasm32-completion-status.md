@@ -6,18 +6,18 @@ or a green partial suite does not complete PA37.
 
 | Requirement | Current evidence | Remaining qualification |
 | --- | --- | --- |
-| Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes; source and text paths in PA37 | Broader C++ target headers and all ABI-sensitive class facts |
+| Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes, target-sized class ABI and physical structor returns | Modern EH boundary and broader portable C++ target cases |
 | Scalar and aggregate execution | Qualified binary128 and variadic boundaries; scalar i128 selection and mixed LLVM calls now implemented | Remaining float formats and complete type/layout edge cases |
 | CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
-| Standard objects and own static linker | Linking-v2 writer/reader/own linker; both LLVM interop directions at O0–O3; GNU/BSD archive probes; 32 normal fixtures | Complete EH-tag/wide/runtime object profile and malformed-feature/relocation cases |
-| C++ runtime | Class ABI, allocation, dispatch, RTTI, guards and finalization implemented; mixed-producer class tests pass | Complete class qualification and cross-compiler modern EH |
+| Standard objects and own static linker | Linking-v2 writer/reader/own linker; both LLVM interop directions at O0–O3; GNU/BSD archives; static GOT address globals | Complete tags, multi-results, defined globals, EH/SIMD object profile and malformed-feature/relocation cases |
+| C++ runtime | Class ABI, allocation, dispatch, RTTI, guards and finalization qualified with supplied no-EH libraries | Cross-compiler modern EH, automatic C++ runtime selection and broader portable C++ cases |
 | Modern EH execution dependency | Pinned Wasmtime executes an independent try_table/throw probe | Compiler lowering, tags, cleanup/catch/rethrow and runtime libraries |
 | WASI commands and freestanding reactors | Qualified WASI startup, argument/I/O/exit behavior and freestanding exports | Same-instance repeated-export checks and broader C++ services |
 | SIMD and shared optimization | Shared LowIR optimizer; native-only aggregate carrier rewrite gated by target ABI | Portable SIMD legalization, target costs, local/stack cleanup and published quality envelopes |
 | Robust diagnostics and determinism | Bad target/version/shape tests; bounded MIR validation | Complete malformed object/feature/signature/relocation coverage and deterministic multi-object linking |
 | Course material and export | PA37 handout/design notes, target/MIR scaffolds, offline source/licence pins, normal Perl runner | Final scope and scaffold review, complete reference-tool prerequisites, clean export qualification |
 | Benchmarks and CI | Required Wasm lane integrated with pinned runtime/validator/reference SDK on both hosts | Standard benchmark entry, separate compile/size/startup/runtime measurements and final Linux/macOS results |
-| Native regressions and efficiency | Scalar i128 snapshot: 10731 strict tests, debug info, PA5 self-host, byte-identical inception; native objects unchanged | Repeat required checks and native performance comparison for the completed implementation on the current LLVM base |
+| Native regressions and efficiency | Class snapshot: 10750 strict tests, debug info, PA5 self-host, byte-identical inception; native objects unchanged | Repeat required checks and native performance comparison for the completed implementation on the current LLVM base |
 
 All raw results, probes, pinned binaries and performance observations live outside
 Git under `/mnt/vizier/cppgm-wasm32-evidence`. Earlier qualification applies only
@@ -216,8 +216,25 @@ Mixed LLVM/cppgm objects use both linkers at O0–O3. Static GOT address imports
 from the supplied C++ libraries resolve to ordinary table/data addresses;
 serialized LowIR finalizers register through the supplied `atexit` interface.
 
-Class tests currently use the pinned no-EH C++ runtime to qualify their ABI
-independently. This is not completion of the required exception profile. Full
-class/native/export qualification is in progress. Modern EH, SIMD, the rest
-of the object profile, quality envelopes, benchmarks and final qualification
-remain required. Raw class results have the prefix `class-`.
+`fac42ea38` is rebased onto LLVM tip `0df33eb68`. The strict report passes
+10750/10750; PA37 passes 67/67 with host-built and self-built tools. Debug-info,
+PA5 self-host, byte-identical inception, PA36 smoke (3/3), the complete harness,
+Clang 21 changed-source syntax and all architecture/format/file audits pass.
+Placement scans 10090 tests with zero placement or local-hygiene findings;
+the 89 EH review leads and eight inherited file warnings remain advisory.
+The student export regenerates consistently. Its fresh reference-bundle client
+passes the 270-document inventory and all 43 wrappers, and includes the new
+runtime fixture header while excluding this journal.
+
+The isolated native comparison uses immutable `091293697` and `72efa1681`
+binaries on the same preceding LLVM base, `ac254985a`. O0 changes from
+3,058,630,066 to 3,058,796,283 instructions (+0.0054%); O3 from
+9,950,886,800 to 9,951,175,498 (+0.0029%). Native objects are byte-identical.
+`perf-class/` retains the commands, input paths, hashes, source patch and every
+observation. These counts do not measure wall time or the subsequent LLVM
+rebase's combined cost.
+
+Class tests use the pinned no-EH C++ runtime to qualify their ABI independently.
+This is not completion of the required exception profile. Modern EH, SIMD,
+the rest of the object profile, quality envelopes, benchmarks and final
+qualification remain required. Raw class results have the prefix `class-`.
