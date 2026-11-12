@@ -49,6 +49,8 @@ struct SlotFacts
 	std::vector<std::pair<uint64_t, uint64_t>> writes;  // stored, copied into, zeroed or a call's result [offset, end)
 	std::vector<std::pair<uint64_t, bool>> wholes;      // i64 accesses at eightbyte starts (true: loads)
 	uint64_t packed = 0;                                // eightbytes that move only whole (bit per eightbyte)
+	uint64_t whole = 0;                                 // eightbytes that are one integer of their width
+	uint64_t loose = 0;                                 // eightbytes that pack when a copy partner's is whole
 	uint64_t forced = 0;                                // eightbytes an i64 access reads or writes whole
 };
 
@@ -96,7 +98,7 @@ private:
 	void access(Value storage, Type type, bool store);
 	void span(Value storage, uint64_t bytes, bool read = false);
 	bool settle(SlotFacts& facts, uint64_t size, SlotId slot);
-	uint64_t packable(const SlotFacts& facts, uint64_t size) const;
+	uint64_t packable(SlotFacts& facts, uint64_t size) const;
 	void agree_packing(const std::vector<uint8_t>& settled);
 	void pack(SlotFacts& facts) const;
 	uint32_t packed_field(SlotId slot, uint64_t offset) const;
@@ -706,8 +708,10 @@ bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 // one never meet a wider read of them (a store-forwarding stall). Two
 // fields stored apart and copied in halves (SourceChar's code point and
 // offset) stay apart: their copies cost what the inserts would. Fields
-// of up to 64 eightbytes; at least two in the eightbyte.
-uint64_t AggregateSlots::packable(const SlotFacts& facts, uint64_t size) const
+// of up to 64 eightbytes; at least two in the eightbyte. Also notes the
+// eightbytes that are whole, and the loose ones: integers and pointers
+// that stay apart by these rules alone (agree_packing).
+uint64_t AggregateSlots::packable(SlotFacts& facts, uint64_t size) const
 {
 	uint64_t mask = 0;
 	for (uint64_t start = 0; start < size && start / 8 < 64; start += 8)
@@ -716,7 +720,7 @@ uint64_t AggregateSlots::packable(const SlotFacts& facts, uint64_t size) const
 		if (width != 2 && width != 4 && width != 8)
 			continue;
 		uint32_t inside = 0;
-		bool ok = true;
+		bool ok = true, integers = true;
 		for (const Field& f : facts.fields)
 		{
 			const uint64_t f_end = f.offset + storage_bytes(f.type);
@@ -726,8 +730,10 @@ uint64_t AggregateSlots::packable(const SlotFacts& facts, uint64_t size) const
 			ok = ok && f.offset >= start && f_end <= end &&
 				((k >= TypeKind::I1 && k <= TypeKind::I64) || f.type.is_pointer() || k == TypeKind::F32 ||
 					k == TypeKind::F64);
+			integers = integers && k != TypeKind::F32 && k != TypeKind::F64;
 			++inside;
 		}
+		bool loose = ok && integers && inside >= 1;
 		bool stored = false, read = false;
 		for (const std::pair<uint64_t, uint64_t>& w : facts.stores)
 			stored = stored || (w.second > start && w.first < end);
@@ -736,24 +742,39 @@ uint64_t AggregateSlots::packable(const SlotFacts& facts, uint64_t size) const
 		const bool forced = ((facts.forced >> (start / 8)) & 1) != 0;
 		ok = ok && (forced || !stored || (read && inside >= 3));
 		for (const std::pair<uint64_t, uint64_t>& w : facts.spans)
-			ok = ok && (w.second <= start || w.first >= end || (w.first <= start && w.second >= end));
+		{
+			const bool apart = w.second <= start || w.first >= end || (w.first <= start && w.second >= end);
+			ok = ok && apart;
+			loose = loose && apart;
+		}
 		// (One field of the eightbyte's own integer type already is its
 		// packed form, however it is written: a copy partner packing it
 		// agrees.)
 		bool whole = false;
 		for (const Field& f : facts.fields)
 			whole = whole || (f.offset == start && f.type.kind() == filler_type(width).kind());
+		const uint64_t bit = static_cast<uint64_t>(1) << (start / 8);
 		if (inside == 1 && whole)
-			mask |= static_cast<uint64_t>(1) << (start / 8);
+		{
+			mask |= bit;
+			facts.whole |= bit;
+		}
 		else if (ok && (inside >= 2 || (forced && inside >= 1)))
-			mask |= static_cast<uint64_t>(1) << (start / 8);
+			mask |= bit;
+		else if (loose)
+			facts.loose |= bit;
 	}
 	return mask;
 }
 
 // A copy between two split slots moves field to field, so the two pack
 // alike: an eightbyte one side packs where the other does not, or across
-// the other's eightbyte boundary, unpacks on both. Repeats until stable.
+// the other's eightbyte boundary, unpacks on both. An eightbyte one side
+// holds whole has no fields to unpack into, so the other's loose
+// eightbyte packs with it (a by-value argument stored a field at a time,
+// then read as one integer through the callee's copy), and is whole to
+// its own copy partners from then. Repeats until stable: an eightbyte
+// packs this way once, and unpacks for good.
 void AggregateSlots::agree_packing(const std::vector<uint8_t>& settled)
 {
 	auto bit = [](uint64_t offset) { return offset / 8 < 64 ? static_cast<uint64_t>(1) << (offset / 8) : 0; };
@@ -782,12 +803,25 @@ void AggregateSlots::agree_packing(const std::vector<uint8_t>& settled)
 			{
 				const uint64_t a = copy.from.offset + rel, b = copy.to.offset + rel;
 				const bool px = (x.packed & bit(a)) != 0, py = (y.packed & bit(b)) != 0;
-				if ((px || py) && (px != py || a % 8 != b % 8))
+				if (!(px || py) || (px == py && a % 8 == b % 8))
+					continue;
+				SlotFacts& open = px ? y : x;
+				const uint64_t held = px ? x.whole & bit(a) : y.whole & bit(b);
+				const uint64_t at = bit(px ? b : a);
+				if (px != py && a % 8 == b % 8 && held != 0 && (open.loose & at) != 0)
+				{
+					open.packed |= at;
+					open.whole |= at;
+					open.loose &= ~at;
+				}
+				else
 				{
 					x.packed &= ~bit(a);
 					y.packed &= ~bit(b);
-					changed = true;
+					x.loose &= ~bit(a);
+					y.loose &= ~bit(b);
 				}
+				changed = true;
 			}
 		}
 	}

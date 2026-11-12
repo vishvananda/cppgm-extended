@@ -1,0 +1,64 @@
+global @seen : i64 = 0
+
+function @argument(%a : u32, %p : ptr) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = convert zext i64 u32 %a
+    %there = load i64 %p
+    %r = binary add i64 %there, %t1
+    return i64 %r
+}
+function @both_halves(%a : u32, %b : u32) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = convert zext i64 u32 %a
+    %t2 = convert zext i64 u32 %b
+    %t3 = binary shl i64 %t2, 32
+    %t4 = binary or i64 %t1, %t3
+    %r = binary add i64 %t4, 7
+    return i64 %r
+}
+function @chain(%a : u32, %b : u32) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = convert zext i64 u32 %a
+    %t2 = convert zext i64 u32 %b
+    %t3 = binary shl i64 %t2, 32
+    %t4 = binary or i64 %t1, %t3
+    %r = binary add i64 %t1, %t4
+    return i64 %r
+}
+function @floating(%a : f32, %b : u32) -> i64 [binding=strong, no_inline=yes] {
+  slot $arg : obj<24x8>
+  slot $x : obj<24x8>
+
+  block ^entry:
+    %base = addr $arg
+    %high = index i8 [projection=field] %base, 4
+    %next = index i8 [projection=field] %base, 8
+    %third = index i8 [projection=field] %base, 16
+    store typed f32 %a, %base
+    store typed u32 %b, %high
+    store typed i64 9, %next
+    store typed u32 %b, %third
+    %copy = addr $x
+    copyobj 24x8 $arg, %copy
+    %word = load i64 %copy
+    return i64 %word
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    store i64 40, @seen
+    %a = call i64 @argument(5, @seen)
+    %b = call i64 @both_halves(3, 1)
+    %c = call i64 @chain(2, 1)
+    %d = call i64 @floating(1.0, 1)
+    %b1 = binary ushr i64 %b, 32
+    %c1 = binary ushr i64 %c, 30
+    %d1 = binary ushr i64 %d, 28
+    %s1 = binary add i64 %a, %b
+    %s2 = binary add i64 %b1, %s1
+    %s3 = binary add i64 %c, %s2
+    %s4 = binary add i64 %c1, %s3
+    %s5 = binary add i64 %d1, %s4
+    %r = convert trunc i32 i64 %s5
+    %u = binary and i32 %r, 255
+    return i32 %u
+}
