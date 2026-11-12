@@ -94,18 +94,21 @@ function @route(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z5rou
     return i32 %t8
 
   block ^inline_entry_3:
-    branch %depth, ^cond_then_4, ^inline_cont_5
+    branch %depth, ^cond_then_4, ^cond_end_5
 
   block ^cond_then_4:
-    %t9 = call i32 @descend(%node, %depth)
-    jump ^inline_cont_5
+    %t9 = index i8 [projection=field] %node, 8
+    %t10 = load typed ptr %t9
+    %t11 = binary sub u32 %depth, 1
+    %t12 = call i32 @walk(%t10, %t11)
+    jump ^cond_end_5
 
-  block ^inline_cont_5:
-    %t10 = phi i32 [^cond_then_4: %t9, ^inline_entry_3: 0]
-    %t11 = index i8 [projection=field] %node, 4
-    %t12 = load typed i32 %t11
-    %t13 = binary add nowrap i32 %t10, %t12
-    return i32 %t13
+  block ^cond_end_5:
+    %t13 = phi i32 [^cond_then_4: %t12, ^inline_entry_3: 0]
+    %t14 = index i8 [projection=field] %node, 4
+    %t15 = load typed i32 %t14
+    %t16 = binary add nowrap i32 %t15, %t13
+    return i32 %t16
 
   block ^switch_default_6:
     call void @fail(%t3)
@@ -131,12 +134,51 @@ function @relay(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z5rel
     unreachable
 
   block ^inline_cont_3:
-    %t7 = call i32 @route(%node, %depth)
-    return i32 %t7
+    %t7 = load typed u32 @observations
+    %t8 = binary add u32 %t7, 1
+    store typed u32 %t8, @observations
+    %t9 = load typed i32 %node
+    switch %t9, ^switch_default_9, 0:^switch_case_4, 1:^switch_case_5, 2:^inline_entry_6
+
+  block ^switch_case_4:
+    %t10 = index i8 [projection=field] %node, 4
+    %t11 = load typed i32 %t10
+    jump ^inline_cont_10
+
+  block ^switch_case_5:
+    %t12 = index i8 [projection=field] %node, 4
+    %t13 = load typed i32 %t12
+    %t14 = unary neg i32 %t13
+    jump ^inline_cont_10
+
+  block ^inline_entry_6:
+    branch %depth, ^cond_then_7, ^cond_end_8
+
+  block ^cond_then_7:
+    %t15 = index i8 [projection=field] %node, 8
+    %t16 = load typed ptr %t15
+    %t17 = binary sub u32 %depth, 1
+    %t18 = call i32 @walk(%t16, %t17)
+    jump ^cond_end_8
+
+  block ^cond_end_8:
+    %t19 = phi i32 [^cond_then_7: %t18, ^inline_entry_6: 0]
+    %t20 = index i8 [projection=field] %node, 4
+    %t21 = load typed i32 %t20
+    %t22 = binary add nowrap i32 %t19, %t21
+    jump ^inline_cont_10
+
+  block ^switch_default_9:
+    call void @fail(%t9)
+    unreachable
+
+  block ^inline_cont_10:
+    %t23 = phi i32 [^switch_case_4: %t11, ^switch_case_5: %t14, ^cond_end_8: %t22]
+    return i32 %t23
 }
 function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walkPK4Nodej] {
   block ^entry:
-    branch %node, ^loop_preheader_1, ^while_end_13
+    branch %node, ^loop_preheader_1, ^while_end_79
 
   block ^loop_preheader_1:
     %t1 = load typed u32 @depth_sum
@@ -145,18 +187,18 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     jump ^inline_entry_2
 
   block ^inline_entry_2:
-    %t4 = phi u32 [^inline_cont_12: %t31, ^loop_preheader_1: %t3]
-    %t5 = phi u32 [^inline_cont_12: %t32, ^loop_preheader_1: %t2]
-    %t6 = phi u32 [^inline_cont_12: %t33, ^loop_preheader_1: %t1]
-    %t7 = phi ptr [^inline_cont_12: %t37, ^loop_preheader_1: %node]
-    %t8 = phi i32 [^inline_cont_12: %t35, ^loop_preheader_1: 0]
+    %t4 = phi u32 [^inline_cont_78: %t250, ^loop_preheader_1: %t3]
+    %t5 = phi u32 [^inline_cont_78: %t251, ^loop_preheader_1: %t2]
+    %t6 = phi u32 [^inline_cont_78: %t252, ^loop_preheader_1: %t1]
+    %t7 = phi ptr [^inline_cont_78: %t256, ^loop_preheader_1: %node]
+    %t8 = phi i32 [^inline_cont_78: %t254, ^loop_preheader_1: 0]
     %t9 = binary add u32 %depth, %t6
     store typed u32 %t9, @depth_sum
-    branch %t5, ^land_rhs_3, ^inline_entry_5
+    branch %t5, ^land_rhs_3, ^inline_cont_5
 
   block ^land_rhs_3:
     %t10 = cmp eq u32 %depth, 1
-    branch %t10, ^if_then_4, ^inline_entry_5
+    branch %t10, ^if_then_4, ^inline_cont_5
 
   block ^if_then_4:
     %t11 = call ptr @__external_runtime____cxa_allocate_exception(4)
@@ -165,60 +207,507 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     call void @__external_runtime____cxa_throw(%t11, %t12, 0)
     unreachable
 
-  block ^inline_entry_5:
+  block ^inline_cont_5:
     %t13 = binary add u32 %t4, 1
     store typed u32 %t13, @observations
     %t14 = load typed i32 %t7
-    switch %t14, ^switch_default_11, 0:^switch_case_6, 1:^switch_case_7, 2:^inline_entry_8
+    switch %t14, ^switch_default_77, 0:^switch_case_6, 1:^switch_case_7, 2:^inline_entry_8
 
   block ^switch_case_6:
     %t15 = index i8 [projection=field] %t7, 4
     %t16 = load typed i32 %t15
-    jump ^inline_cont_12
+    jump ^inline_cont_78
 
   block ^switch_case_7:
     %t17 = index i8 [projection=field] %t7, 4
     %t18 = load typed i32 %t17
     %t19 = unary neg i32 %t18
-    jump ^inline_cont_12
+    jump ^inline_cont_78
 
   block ^inline_entry_8:
-    branch %depth, ^cond_then_9, ^inline_cont_10
+    branch %depth, ^cond_then_9, ^cond_end_76
 
   block ^cond_then_9:
-    %t20 = call i32 @descend(%t7, %depth)
-    %t21 = load typed u32 @observations
-    %t22 = load typed u32 @argument_throw
-    %t23 = load typed u32 @depth_sum
-    jump ^inline_cont_10
+    %t20 = index i8 [projection=field] %t7, 8
+    %t21 = load typed ptr %t20
+    %t22 = binary sub u32 %depth, 1
+    branch %t21, ^inline_entry_10, ^cond_end_76
 
-  block ^inline_cont_10:
-    %t24 = phi u32 [^inline_entry_8: %t13, ^cond_then_9: %t21]
-    %t25 = phi u32 [^inline_entry_8: %t5, ^cond_then_9: %t22]
-    %t26 = phi u32 [^inline_entry_8: %t9, ^cond_then_9: %t23]
-    %t27 = phi i32 [^cond_then_9: %t20, ^inline_entry_8: 0]
-    %t28 = index i8 [projection=field] %t7, 4
-    %t29 = load typed i32 %t28
-    %t30 = binary add nowrap i32 %t27, %t29
-    jump ^inline_cont_12
+  block ^inline_entry_10:
+    %t23 = phi u32 [^inline_cont_75: %t236, ^cond_then_9: %t5]
+    %t24 = phi u32 [^inline_cont_75: %t235, ^cond_then_9: %t13]
+    %t25 = phi u32 [^inline_cont_75: %t238, ^cond_then_9: %t5]
+    %t26 = phi u32 [^inline_cont_75: %t237, ^cond_then_9: %t9]
+    %t27 = phi ptr [^inline_cont_75: %t242, ^cond_then_9: %t21]
+    %t28 = phi i32 [^inline_cont_75: %t240, ^cond_then_9: 0]
+    %t29 = binary add u32 %t22, %t26
+    store typed u32 %t29, @depth_sum
+    branch %t25, ^land_rhs_11, ^inline_cont_13
 
-  block ^switch_default_11:
+  block ^land_rhs_11:
+    %t30 = cmp eq u32 %depth, 2
+    branch %t30, ^if_then_12, ^inline_cont_13
+
+  block ^if_then_12:
+    %t31 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 77, %t31
+    %t32 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t31, %t32, 0)
+    unreachable
+
+  block ^inline_cont_13:
+    %t33 = binary add u32 %t24, 1
+    store typed u32 %t33, @observations
+    %t34 = load typed i32 %t27
+    switch %t34, ^switch_default_74, 0:^switch_case_14, 1:^switch_case_15, 2:^inline_entry_16
+
+  block ^switch_case_14:
+    %t35 = index i8 [projection=field] %t27, 4
+    %t36 = load typed i32 %t35
+    jump ^inline_cont_75
+
+  block ^switch_case_15:
+    %t37 = index i8 [projection=field] %t27, 4
+    %t38 = load typed i32 %t37
+    %t39 = unary neg i32 %t38
+    jump ^inline_cont_75
+
+  block ^inline_entry_16:
+    branch %t22, ^cond_then_17, ^cond_end_73
+
+  block ^cond_then_17:
+    %t40 = index i8 [projection=field] %t27, 8
+    %t41 = load typed ptr %t40
+    %t42 = binary add u32 %depth, 4294967294
+    branch %t41, ^inline_entry_18, ^cond_end_73
+
+  block ^inline_entry_18:
+    %t43 = phi u32 [^inline_cont_72: %t220, ^cond_then_17: %t23]
+    %t44 = phi u32 [^inline_cont_72: %t222, ^cond_then_17: %t25]
+    %t45 = phi u32 [^inline_cont_72: %t219, ^cond_then_17: %t33]
+    %t46 = phi u32 [^inline_cont_72: %t221, ^cond_then_17: %t29]
+    %t47 = phi ptr [^inline_cont_72: %t226, ^cond_then_17: %t41]
+    %t48 = phi i32 [^inline_cont_72: %t224, ^cond_then_17: 0]
+    %t49 = binary add u32 %t42, %t46
+    store typed u32 %t49, @depth_sum
+    branch %t44, ^land_rhs_19, ^inline_cont_21
+
+  block ^land_rhs_19:
+    %t50 = cmp eq u32 %depth, 3
+    branch %t50, ^if_then_20, ^inline_cont_21
+
+  block ^if_then_20:
+    %t51 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 77, %t51
+    %t52 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t51, %t52, 0)
+    unreachable
+
+  block ^inline_cont_21:
+    %t53 = binary add u32 %t45, 1
+    store typed u32 %t53, @observations
+    %t54 = load typed i32 %t47
+    switch %t54, ^switch_default_71, 0:^switch_case_22, 1:^switch_case_23, 2:^inline_entry_24
+
+  block ^switch_case_22:
+    %t55 = index i8 [projection=field] %t47, 4
+    %t56 = load typed i32 %t55
+    jump ^inline_cont_72
+
+  block ^switch_case_23:
+    %t57 = index i8 [projection=field] %t47, 4
+    %t58 = load typed i32 %t57
+    %t59 = unary neg i32 %t58
+    jump ^inline_cont_72
+
+  block ^inline_entry_24:
+    branch %t42, ^cond_then_25, ^cond_end_70
+
+  block ^cond_then_25:
+    %t60 = index i8 [projection=field] %t47, 8
+    %t61 = load typed ptr %t60
+    %t62 = binary add u32 %depth, 4294967293
+    branch %t61, ^inline_entry_26, ^cond_end_70
+
+  block ^inline_entry_26:
+    %t63 = phi u32 [^inline_cont_69: %t204, ^cond_then_25: %t43]
+    %t64 = phi u32 [^inline_cont_69: %t206, ^cond_then_25: %t44]
+    %t65 = phi u32 [^inline_cont_69: %t203, ^cond_then_25: %t53]
+    %t66 = phi u32 [^inline_cont_69: %t205, ^cond_then_25: %t49]
+    %t67 = phi ptr [^inline_cont_69: %t210, ^cond_then_25: %t61]
+    %t68 = phi i32 [^inline_cont_69: %t208, ^cond_then_25: 0]
+    %t69 = binary add u32 %t62, %t66
+    store typed u32 %t69, @depth_sum
+    branch %t64, ^land_rhs_27, ^inline_cont_29
+
+  block ^land_rhs_27:
+    %t70 = cmp eq u32 %depth, 4
+    branch %t70, ^if_then_28, ^inline_cont_29
+
+  block ^if_then_28:
+    %t71 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 77, %t71
+    %t72 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t71, %t72, 0)
+    unreachable
+
+  block ^inline_cont_29:
+    %t73 = binary add u32 %t65, 1
+    store typed u32 %t73, @observations
+    %t74 = load typed i32 %t67
+    switch %t74, ^switch_default_68, 0:^switch_case_30, 1:^switch_case_31, 2:^inline_entry_32
+
+  block ^switch_case_30:
+    %t75 = index i8 [projection=field] %t67, 4
+    %t76 = load typed i32 %t75
+    jump ^inline_cont_69
+
+  block ^switch_case_31:
+    %t77 = index i8 [projection=field] %t67, 4
+    %t78 = load typed i32 %t77
+    %t79 = unary neg i32 %t78
+    jump ^inline_cont_69
+
+  block ^inline_entry_32:
+    branch %t62, ^cond_then_33, ^cond_end_67
+
+  block ^cond_then_33:
+    %t80 = index i8 [projection=field] %t67, 8
+    %t81 = load typed ptr %t80
+    %t82 = binary add u32 %depth, 4294967292
+    branch %t81, ^inline_entry_34, ^cond_end_67
+
+  block ^inline_entry_34:
+    %t83 = phi u32 [^inline_cont_66: %t188, ^cond_then_33: %t63]
+    %t84 = phi u32 [^inline_cont_66: %t190, ^cond_then_33: %t64]
+    %t85 = phi u32 [^inline_cont_66: %t187, ^cond_then_33: %t73]
+    %t86 = phi u32 [^inline_cont_66: %t189, ^cond_then_33: %t69]
+    %t87 = phi ptr [^inline_cont_66: %t194, ^cond_then_33: %t81]
+    %t88 = phi i32 [^inline_cont_66: %t192, ^cond_then_33: 0]
+    %t89 = binary add u32 %t82, %t86
+    store typed u32 %t89, @depth_sum
+    branch %t84, ^land_rhs_35, ^inline_cont_37
+
+  block ^land_rhs_35:
+    %t90 = cmp eq u32 %depth, 5
+    branch %t90, ^if_then_36, ^inline_cont_37
+
+  block ^if_then_36:
+    %t91 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 77, %t91
+    %t92 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t91, %t92, 0)
+    unreachable
+
+  block ^inline_cont_37:
+    %t93 = binary add u32 %t85, 1
+    store typed u32 %t93, @observations
+    %t94 = load typed i32 %t87
+    switch %t94, ^switch_default_65, 0:^switch_case_38, 1:^switch_case_39, 2:^inline_entry_40
+
+  block ^switch_case_38:
+    %t95 = index i8 [projection=field] %t87, 4
+    %t96 = load typed i32 %t95
+    jump ^inline_cont_66
+
+  block ^switch_case_39:
+    %t97 = index i8 [projection=field] %t87, 4
+    %t98 = load typed i32 %t97
+    %t99 = unary neg i32 %t98
+    jump ^inline_cont_66
+
+  block ^inline_entry_40:
+    branch %t82, ^cond_then_41, ^cond_end_64
+
+  block ^cond_then_41:
+    %t100 = index i8 [projection=field] %t87, 8
+    %t101 = load typed ptr %t100
+    %t102 = binary add u32 %depth, 4294967291
+    branch %t101, ^inline_entry_42, ^cond_end_64
+
+  block ^inline_entry_42:
+    %t103 = phi u32 [^inline_cont_63: %t172, ^cond_then_41: %t83]
+    %t104 = phi u32 [^inline_cont_63: %t174, ^cond_then_41: %t84]
+    %t105 = phi u32 [^inline_cont_63: %t171, ^cond_then_41: %t93]
+    %t106 = phi u32 [^inline_cont_63: %t173, ^cond_then_41: %t89]
+    %t107 = phi ptr [^inline_cont_63: %t178, ^cond_then_41: %t101]
+    %t108 = phi i32 [^inline_cont_63: %t176, ^cond_then_41: 0]
+    %t109 = binary add u32 %t102, %t106
+    store typed u32 %t109, @depth_sum
+    branch %t104, ^land_rhs_43, ^inline_cont_45
+
+  block ^land_rhs_43:
+    %t110 = cmp eq u32 %depth, 6
+    branch %t110, ^if_then_44, ^inline_cont_45
+
+  block ^if_then_44:
+    %t111 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 77, %t111
+    %t112 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t111, %t112, 0)
+    unreachable
+
+  block ^inline_cont_45:
+    %t113 = binary add u32 %t105, 1
+    store typed u32 %t113, @observations
+    %t114 = load typed i32 %t107
+    switch %t114, ^switch_default_62, 0:^switch_case_46, 1:^switch_case_47, 2:^inline_entry_48
+
+  block ^switch_case_46:
+    %t115 = index i8 [projection=field] %t107, 4
+    %t116 = load typed i32 %t115
+    jump ^inline_cont_63
+
+  block ^switch_case_47:
+    %t117 = index i8 [projection=field] %t107, 4
+    %t118 = load typed i32 %t117
+    %t119 = unary neg i32 %t118
+    jump ^inline_cont_63
+
+  block ^inline_entry_48:
+    branch %t102, ^cond_then_49, ^cond_end_61
+
+  block ^cond_then_49:
+    %t120 = index i8 [projection=field] %t107, 8
+    %t121 = load typed ptr %t120
+    %t122 = binary add u32 %depth, 4294967290
+    branch %t121, ^inline_entry_50, ^cond_end_61
+
+  block ^inline_entry_50:
+    %t123 = phi u32 [^inline_cont_60: %t156, ^cond_then_49: %t103]
+    %t124 = phi u32 [^inline_cont_60: %t158, ^cond_then_49: %t104]
+    %t125 = phi u32 [^inline_cont_60: %t155, ^cond_then_49: %t113]
+    %t126 = phi u32 [^inline_cont_60: %t157, ^cond_then_49: %t109]
+    %t127 = phi ptr [^inline_cont_60: %t162, ^cond_then_49: %t121]
+    %t128 = phi i32 [^inline_cont_60: %t160, ^cond_then_49: 0]
+    %t129 = binary add u32 %t122, %t126
+    store typed u32 %t129, @depth_sum
+    branch %t124, ^land_rhs_51, ^inline_cont_53
+
+  block ^land_rhs_51:
+    %t130 = cmp eq u32 %depth, 7
+    branch %t130, ^if_then_52, ^inline_cont_53
+
+  block ^if_then_52:
+    %t131 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 77, %t131
+    %t132 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t131, %t132, 0)
+    unreachable
+
+  block ^inline_cont_53:
+    %t133 = binary add u32 %t125, 1
+    store typed u32 %t133, @observations
+    %t134 = load typed i32 %t127
+    switch %t134, ^switch_default_59, 0:^switch_case_54, 1:^switch_case_55, 2:^inline_entry_56
+
+  block ^switch_case_54:
+    %t135 = index i8 [projection=field] %t127, 4
+    %t136 = load typed i32 %t135
+    jump ^inline_cont_60
+
+  block ^switch_case_55:
+    %t137 = index i8 [projection=field] %t127, 4
+    %t138 = load typed i32 %t137
+    %t139 = unary neg i32 %t138
+    jump ^inline_cont_60
+
+  block ^inline_entry_56:
+    branch %t122, ^cond_then_57, ^cond_end_58
+
+  block ^cond_then_57:
+    %t140 = index i8 [projection=field] %t127, 8
+    %t141 = load typed ptr %t140
+    %t142 = binary add u32 %depth, 4294967289
+    %t143 = call i32 @walk(%t141, %t142)
+    %t144 = load typed u32 @observations
+    %t145 = load typed u32 @argument_throw
+    %t146 = load typed u32 @depth_sum
+    jump ^cond_end_58
+
+  block ^cond_end_58:
+    %t147 = phi u32 [^inline_entry_56: %t133, ^cond_then_57: %t144]
+    %t148 = phi u32 [^inline_entry_56: %t123, ^cond_then_57: %t145]
+    %t149 = phi u32 [^inline_entry_56: %t129, ^cond_then_57: %t146]
+    %t150 = phi u32 [^inline_entry_56: %t124, ^cond_then_57: %t145]
+    %t151 = phi i32 [^cond_then_57: %t143, ^inline_entry_56: 0]
+    %t152 = index i8 [projection=field] %t127, 4
+    %t153 = load typed i32 %t152
+    %t154 = binary add nowrap i32 %t151, %t153
+    jump ^inline_cont_60
+
+  block ^switch_default_59:
+    call void @fail(%t134)
+    unreachable
+
+  block ^inline_cont_60:
+    %t155 = phi u32 [^switch_case_54: %t133, ^switch_case_55: %t133, ^cond_end_58: %t147]
+    %t156 = phi u32 [^switch_case_54: %t123, ^switch_case_55: %t123, ^cond_end_58: %t148]
+    %t157 = phi u32 [^switch_case_54: %t129, ^switch_case_55: %t129, ^cond_end_58: %t149]
+    %t158 = phi u32 [^switch_case_54: %t124, ^switch_case_55: %t124, ^cond_end_58: %t150]
+    %t159 = phi i32 [^switch_case_54: %t136, ^switch_case_55: %t139, ^cond_end_58: %t154]
+    %t160 = binary add nowrap i32 %t159, %t128
+    %t161 = index i8 [projection=field] %t127, 16
+    %t162 = load typed ptr %t161
+    branch %t162, ^inline_entry_50, ^cond_end_61
+
+  block ^cond_end_61:
+    %t163 = phi u32 [^inline_entry_48: %t113, ^cond_then_49: %t113, ^inline_cont_60: %t155]
+    %t164 = phi u32 [^inline_entry_48: %t103, ^cond_then_49: %t103, ^inline_cont_60: %t156]
+    %t165 = phi u32 [^inline_entry_48: %t109, ^cond_then_49: %t109, ^inline_cont_60: %t157]
+    %t166 = phi u32 [^inline_entry_48: %t104, ^cond_then_49: %t104, ^inline_cont_60: %t158]
+    %t167 = phi i32 [^inline_entry_48: 0, ^cond_then_49: 0, ^inline_cont_60: %t160]
+    %t168 = index i8 [projection=field] %t107, 4
+    %t169 = load typed i32 %t168
+    %t170 = binary add nowrap i32 %t167, %t169
+    jump ^inline_cont_63
+
+  block ^switch_default_62:
+    call void @fail(%t114)
+    unreachable
+
+  block ^inline_cont_63:
+    %t171 = phi u32 [^switch_case_46: %t113, ^switch_case_47: %t113, ^cond_end_61: %t163]
+    %t172 = phi u32 [^switch_case_46: %t103, ^switch_case_47: %t103, ^cond_end_61: %t164]
+    %t173 = phi u32 [^switch_case_46: %t109, ^switch_case_47: %t109, ^cond_end_61: %t165]
+    %t174 = phi u32 [^switch_case_46: %t104, ^switch_case_47: %t104, ^cond_end_61: %t166]
+    %t175 = phi i32 [^switch_case_46: %t116, ^switch_case_47: %t119, ^cond_end_61: %t170]
+    %t176 = binary add nowrap i32 %t175, %t108
+    %t177 = index i8 [projection=field] %t107, 16
+    %t178 = load typed ptr %t177
+    branch %t178, ^inline_entry_42, ^cond_end_64
+
+  block ^cond_end_64:
+    %t179 = phi u32 [^inline_entry_40: %t93, ^cond_then_41: %t93, ^inline_cont_63: %t171]
+    %t180 = phi u32 [^inline_entry_40: %t83, ^cond_then_41: %t83, ^inline_cont_63: %t172]
+    %t181 = phi u32 [^inline_entry_40: %t89, ^cond_then_41: %t89, ^inline_cont_63: %t173]
+    %t182 = phi u32 [^inline_entry_40: %t84, ^cond_then_41: %t84, ^inline_cont_63: %t174]
+    %t183 = phi i32 [^inline_entry_40: 0, ^cond_then_41: 0, ^inline_cont_63: %t176]
+    %t184 = index i8 [projection=field] %t87, 4
+    %t185 = load typed i32 %t184
+    %t186 = binary add nowrap i32 %t183, %t185
+    jump ^inline_cont_66
+
+  block ^switch_default_65:
+    call void @fail(%t94)
+    unreachable
+
+  block ^inline_cont_66:
+    %t187 = phi u32 [^switch_case_38: %t93, ^switch_case_39: %t93, ^cond_end_64: %t179]
+    %t188 = phi u32 [^switch_case_38: %t83, ^switch_case_39: %t83, ^cond_end_64: %t180]
+    %t189 = phi u32 [^switch_case_38: %t89, ^switch_case_39: %t89, ^cond_end_64: %t181]
+    %t190 = phi u32 [^switch_case_38: %t84, ^switch_case_39: %t84, ^cond_end_64: %t182]
+    %t191 = phi i32 [^switch_case_38: %t96, ^switch_case_39: %t99, ^cond_end_64: %t186]
+    %t192 = binary add nowrap i32 %t191, %t88
+    %t193 = index i8 [projection=field] %t87, 16
+    %t194 = load typed ptr %t193
+    branch %t194, ^inline_entry_34, ^cond_end_67
+
+  block ^cond_end_67:
+    %t195 = phi u32 [^inline_entry_32: %t73, ^cond_then_33: %t73, ^inline_cont_66: %t187]
+    %t196 = phi u32 [^inline_entry_32: %t63, ^cond_then_33: %t63, ^inline_cont_66: %t188]
+    %t197 = phi u32 [^inline_entry_32: %t69, ^cond_then_33: %t69, ^inline_cont_66: %t189]
+    %t198 = phi u32 [^inline_entry_32: %t64, ^cond_then_33: %t64, ^inline_cont_66: %t190]
+    %t199 = phi i32 [^inline_entry_32: 0, ^cond_then_33: 0, ^inline_cont_66: %t192]
+    %t200 = index i8 [projection=field] %t67, 4
+    %t201 = load typed i32 %t200
+    %t202 = binary add nowrap i32 %t199, %t201
+    jump ^inline_cont_69
+
+  block ^switch_default_68:
+    call void @fail(%t74)
+    unreachable
+
+  block ^inline_cont_69:
+    %t203 = phi u32 [^switch_case_30: %t73, ^switch_case_31: %t73, ^cond_end_67: %t195]
+    %t204 = phi u32 [^switch_case_30: %t63, ^switch_case_31: %t63, ^cond_end_67: %t196]
+    %t205 = phi u32 [^switch_case_30: %t69, ^switch_case_31: %t69, ^cond_end_67: %t197]
+    %t206 = phi u32 [^switch_case_30: %t64, ^switch_case_31: %t64, ^cond_end_67: %t198]
+    %t207 = phi i32 [^switch_case_30: %t76, ^switch_case_31: %t79, ^cond_end_67: %t202]
+    %t208 = binary add nowrap i32 %t207, %t68
+    %t209 = index i8 [projection=field] %t67, 16
+    %t210 = load typed ptr %t209
+    branch %t210, ^inline_entry_26, ^cond_end_70
+
+  block ^cond_end_70:
+    %t211 = phi u32 [^inline_entry_24: %t53, ^cond_then_25: %t53, ^inline_cont_69: %t203]
+    %t212 = phi u32 [^inline_entry_24: %t43, ^cond_then_25: %t43, ^inline_cont_69: %t204]
+    %t213 = phi u32 [^inline_entry_24: %t49, ^cond_then_25: %t49, ^inline_cont_69: %t205]
+    %t214 = phi u32 [^inline_entry_24: %t44, ^cond_then_25: %t44, ^inline_cont_69: %t206]
+    %t215 = phi i32 [^inline_entry_24: 0, ^cond_then_25: 0, ^inline_cont_69: %t208]
+    %t216 = index i8 [projection=field] %t47, 4
+    %t217 = load typed i32 %t216
+    %t218 = binary add nowrap i32 %t215, %t217
+    jump ^inline_cont_72
+
+  block ^switch_default_71:
+    call void @fail(%t54)
+    unreachable
+
+  block ^inline_cont_72:
+    %t219 = phi u32 [^switch_case_22: %t53, ^switch_case_23: %t53, ^cond_end_70: %t211]
+    %t220 = phi u32 [^switch_case_22: %t43, ^switch_case_23: %t43, ^cond_end_70: %t212]
+    %t221 = phi u32 [^switch_case_22: %t49, ^switch_case_23: %t49, ^cond_end_70: %t213]
+    %t222 = phi u32 [^switch_case_22: %t44, ^switch_case_23: %t44, ^cond_end_70: %t214]
+    %t223 = phi i32 [^switch_case_22: %t56, ^switch_case_23: %t59, ^cond_end_70: %t218]
+    %t224 = binary add nowrap i32 %t223, %t48
+    %t225 = index i8 [projection=field] %t47, 16
+    %t226 = load typed ptr %t225
+    branch %t226, ^inline_entry_18, ^cond_end_73
+
+  block ^cond_end_73:
+    %t227 = phi u32 [^inline_entry_16: %t33, ^cond_then_17: %t33, ^inline_cont_72: %t219]
+    %t228 = phi u32 [^inline_entry_16: %t23, ^cond_then_17: %t23, ^inline_cont_72: %t220]
+    %t229 = phi u32 [^inline_entry_16: %t29, ^cond_then_17: %t29, ^inline_cont_72: %t221]
+    %t230 = phi u32 [^inline_entry_16: %t25, ^cond_then_17: %t25, ^inline_cont_72: %t222]
+    %t231 = phi i32 [^inline_entry_16: 0, ^cond_then_17: 0, ^inline_cont_72: %t224]
+    %t232 = index i8 [projection=field] %t27, 4
+    %t233 = load typed i32 %t232
+    %t234 = binary add nowrap i32 %t231, %t233
+    jump ^inline_cont_75
+
+  block ^switch_default_74:
+    call void @fail(%t34)
+    unreachable
+
+  block ^inline_cont_75:
+    %t235 = phi u32 [^switch_case_14: %t33, ^switch_case_15: %t33, ^cond_end_73: %t227]
+    %t236 = phi u32 [^switch_case_14: %t23, ^switch_case_15: %t23, ^cond_end_73: %t228]
+    %t237 = phi u32 [^switch_case_14: %t29, ^switch_case_15: %t29, ^cond_end_73: %t229]
+    %t238 = phi u32 [^switch_case_14: %t25, ^switch_case_15: %t25, ^cond_end_73: %t230]
+    %t239 = phi i32 [^switch_case_14: %t36, ^switch_case_15: %t39, ^cond_end_73: %t234]
+    %t240 = binary add nowrap i32 %t239, %t28
+    %t241 = index i8 [projection=field] %t27, 16
+    %t242 = load typed ptr %t241
+    branch %t242, ^inline_entry_10, ^cond_end_76
+
+  block ^cond_end_76:
+    %t243 = phi u32 [^inline_entry_8: %t13, ^cond_then_9: %t13, ^inline_cont_75: %t235]
+    %t244 = phi u32 [^inline_entry_8: %t5, ^cond_then_9: %t5, ^inline_cont_75: %t236]
+    %t245 = phi u32 [^inline_entry_8: %t9, ^cond_then_9: %t9, ^inline_cont_75: %t237]
+    %t246 = phi i32 [^inline_entry_8: 0, ^cond_then_9: 0, ^inline_cont_75: %t240]
+    %t247 = index i8 [projection=field] %t7, 4
+    %t248 = load typed i32 %t247
+    %t249 = binary add nowrap i32 %t246, %t248
+    jump ^inline_cont_78
+
+  block ^switch_default_77:
     call void @fail(%t14)
     unreachable
 
-  block ^inline_cont_12:
-    %t31 = phi u32 [^switch_case_6: %t13, ^switch_case_7: %t13, ^inline_cont_10: %t24]
-    %t32 = phi u32 [^switch_case_6: %t5, ^switch_case_7: %t5, ^inline_cont_10: %t25]
-    %t33 = phi u32 [^switch_case_6: %t9, ^switch_case_7: %t9, ^inline_cont_10: %t26]
-    %t34 = phi i32 [^switch_case_6: %t16, ^switch_case_7: %t19, ^inline_cont_10: %t30]
-    %t35 = binary add nowrap i32 %t34, %t8
-    %t36 = index i8 [projection=field] %t7, 16
-    %t37 = load typed ptr %t36
-    branch %t37, ^inline_entry_2, ^while_end_13
+  block ^inline_cont_78:
+    %t250 = phi u32 [^switch_case_6: %t13, ^switch_case_7: %t13, ^cond_end_76: %t243]
+    %t251 = phi u32 [^switch_case_6: %t5, ^switch_case_7: %t5, ^cond_end_76: %t244]
+    %t252 = phi u32 [^switch_case_6: %t9, ^switch_case_7: %t9, ^cond_end_76: %t245]
+    %t253 = phi i32 [^switch_case_6: %t16, ^switch_case_7: %t19, ^cond_end_76: %t249]
+    %t254 = binary add nowrap i32 %t253, %t8
+    %t255 = index i8 [projection=field] %t7, 16
+    %t256 = load typed ptr %t255
+    branch %t256, ^inline_entry_2, ^while_end_79
 
-  block ^while_end_13:
-    %t38 = phi i32 [^entry: 0, ^inline_cont_12: %t35]
-    return i32 %t38
+  block ^while_end_79:
+    %t257 = phi i32 [^entry: 0, ^inline_cont_78: %t254]
+    return i32 %t257
 }
 function @cycle_a(%n : u32) -> u32 [binding=strong, object=_Z7cycle_aj] {
   block ^entry:
@@ -230,21 +719,46 @@ function @cycle_a(%n : u32) -> u32 [binding=strong, object=_Z7cycle_aj] {
 
   block ^if_end_2:
     %t2 = cmp eq u32 %n, 1
-    branch %t2, ^inline_cont_4, ^if_end_3
+    branch %t2, ^inline_cont_8, ^if_else_3
 
-  block ^if_end_3:
-    %t3 = binary sub u32 %n, 1
-    %t4 = call u32 @cycle_b(%t3)
-    jump ^inline_cont_4
+  block ^if_else_3:
+    %t3 = cmp eq u32 %n, 2
+    branch %t3, ^inline_cont_7, ^if_end_4
 
-  block ^inline_cont_4:
-    %t5 = phi u32 [^if_end_3: %t4, ^if_end_2: 1]
-    %t6 = load volatile u32 @trace
-    %t7 = binary mul u32 %t6, 33
-    %t8 = binary add u32 %n, %t7
-    store volatile u32 %t8, @trace
-    %t9 = binary add u32 %t5, 1
-    return u32 %t9
+  block ^if_end_4:
+    %t4 = cmp eq u32 %n, 3
+    %t5 = binary add u32 %n, 4294967294
+    branch %t4, ^inline_cont_6, ^if_else_5
+
+  block ^if_else_5:
+    %t6 = call u32 @cycle_a(%t5)
+    jump ^inline_cont_7
+
+  block ^inline_cont_6:
+    %t7 = load volatile u32 @trace
+    %t8 = binary mul u32 %t7, 33
+    %t9 = binary add u32 %t5, %t8
+    store volatile u32 %t9, @trace
+    jump ^inline_cont_7
+
+  block ^inline_cont_7:
+    %t10 = phi u32 [^if_else_5: %t6, ^inline_cont_6: 2, ^if_else_3: 1]
+    %t11 = load volatile u32 @trace
+    %t12 = binary mul u32 %t11, 33
+    %t13 = binary sub u32 %n, 1
+    %t14 = binary add u32 %t13, %t12
+    store volatile u32 %t14, @trace
+    %t15 = binary add u32 %t10, 1
+    jump ^inline_cont_8
+
+  block ^inline_cont_8:
+    %t16 = phi u32 [^inline_cont_7: %t15, ^if_end_2: 1]
+    %t17 = load volatile u32 @trace
+    %t18 = binary mul u32 %t17, 33
+    %t19 = binary add u32 %n, %t18
+    store volatile u32 %t19, @trace
+    %t20 = binary add u32 %t16, 1
+    return u32 %t20
 }
 function @cycle_b(%n : u32) -> u32 [binding=strong, object=_Z7cycle_bj] {
   block ^entry:
@@ -269,18 +783,118 @@ function @fan_a(%n : u32) -> u32 [binding=strong, object=_Z5fan_aj] {
     %t1 = load typed u32 @fan_calls
     %t2 = binary add u32 %t1, 1
     store typed u32 %t2, @fan_calls
-    branch %n, ^cond_then_1, ^cond_end_2
+    branch %n, ^cond_then_1, ^cond_end_11
 
   block ^cond_then_1:
     %t3 = binary sub u32 %n, 1
-    %t4 = call u32 @fan_b(%t3)
-    %t5 = call u32 @fan_b(%t3)
-    %t6 = binary add u32 %t4, %t5
-    jump ^cond_end_2
+    %t4 = binary add u32 %t1, 2
+    store typed u32 %t4, @fan_calls
+    branch %t3, ^cond_then_3, ^split_2
 
-  block ^cond_end_2:
-    %t7 = phi u32 [^cond_then_1: %t6, ^entry: 1]
-    return u32 %t7
+  block ^split_2:
+    %t5 = binary add u32 %t1, 3
+    store typed u32 %t5, @fan_calls
+    jump ^cond_end_10
+
+  block ^cond_then_3:
+    %t6 = binary add u32 %n, 4294967294
+    %t7 = binary add u32 %t1, 3
+    store typed u32 %t7, @fan_calls
+    branch %t6, ^cond_then_5, ^split_4
+
+  block ^split_4:
+    %t8 = binary add u32 %t1, 7
+    store typed u32 %t8, @fan_calls
+    jump ^cond_end_9
+
+  block ^cond_then_5:
+    %t9 = binary add u32 %n, 4294967293
+    %t10 = binary add u32 %t1, 4
+    store typed u32 %t10, @fan_calls
+    branch %t9, ^cond_then_7, ^split_6
+
+  block ^split_6:
+    %t11 = binary add u32 %t1, 15
+    store typed u32 %t11, @fan_calls
+    jump ^cond_end_8
+
+  block ^cond_then_7:
+    %t12 = binary add u32 %n, 4294967292
+    %t13 = call u32 @fan_a(%t12)
+    %t14 = call u32 @fan_a(%t12)
+    %t15 = binary add u32 %t13, %t14
+    %t16 = load typed u32 @fan_calls
+    %t17 = binary add u32 %t16, 1
+    store typed u32 %t17, @fan_calls
+    %t18 = call u32 @fan_a(%t12)
+    %t19 = call u32 @fan_a(%t12)
+    %t20 = binary add u32 %t18, %t19
+    %t21 = load typed u32 @fan_calls
+    %t22 = binary add u32 %t21, 2
+    %t23 = binary add u32 %t15, %t20
+    store typed u32 %t22, @fan_calls
+    %t24 = call u32 @fan_a(%t12)
+    %t25 = call u32 @fan_a(%t12)
+    %t26 = binary add u32 %t24, %t25
+    %t27 = load typed u32 @fan_calls
+    %t28 = binary add u32 %t27, 1
+    store typed u32 %t28, @fan_calls
+    %t29 = call u32 @fan_a(%t12)
+    %t30 = call u32 @fan_a(%t12)
+    %t31 = binary add u32 %t29, %t30
+    %t32 = load typed u32 @fan_calls
+    %t33 = binary add u32 %t32, 3
+    %t34 = binary add u32 %t26, %t31
+    %t35 = binary add u32 %t23, %t34
+    store typed u32 %t33, @fan_calls
+    %t36 = call u32 @fan_a(%t12)
+    %t37 = call u32 @fan_a(%t12)
+    %t38 = binary add u32 %t36, %t37
+    %t39 = load typed u32 @fan_calls
+    %t40 = binary add u32 %t39, 1
+    store typed u32 %t40, @fan_calls
+    %t41 = call u32 @fan_a(%t12)
+    %t42 = call u32 @fan_a(%t12)
+    %t43 = binary add u32 %t41, %t42
+    %t44 = load typed u32 @fan_calls
+    %t45 = binary add u32 %t44, 2
+    %t46 = binary add u32 %t38, %t43
+    store typed u32 %t45, @fan_calls
+    %t47 = call u32 @fan_a(%t12)
+    %t48 = call u32 @fan_a(%t12)
+    %t49 = binary add u32 %t47, %t48
+    %t50 = load typed u32 @fan_calls
+    %t51 = binary add u32 %t50, 1
+    store typed u32 %t51, @fan_calls
+    %t52 = call u32 @fan_a(%t12)
+    %t53 = call u32 @fan_a(%t12)
+    %t54 = binary add u32 %t52, %t53
+    jump ^cond_end_8
+
+  block ^cond_end_8:
+    %t55 = phi u32 [^split_6: 2, ^cond_then_7: %t46]
+    %t56 = phi u32 [^split_6: 4, ^cond_then_7: %t35]
+    %t57 = phi u32 [^cond_then_7: %t49, ^split_6: 1]
+    %t58 = phi u32 [^cond_then_7: %t54, ^split_6: 1]
+    %t59 = binary add u32 %t57, %t58
+    jump ^cond_end_9
+
+  block ^cond_end_9:
+    %t60 = phi u32 [^cond_end_8: %t55, ^split_4: 1]
+    %t61 = phi u32 [^cond_end_8: %t56, ^split_4: 2]
+    %t62 = phi u32 [^cond_end_8: %t59, ^split_4: 1]
+    %t63 = binary add u32 %t62, %t60
+    jump ^cond_end_10
+
+  block ^cond_end_10:
+    %t64 = phi u32 [^cond_end_9: %t61, ^split_2: 1]
+    %t65 = phi u32 [^cond_end_9: %t63, ^split_2: 1]
+    %t66 = binary add u32 %t64, %t65
+    jump ^cond_end_11
+
+  block ^cond_end_11:
+    %t67 = phi u32 [^cond_end_10: %t66, ^entry: 1]
+    return u32 %t67
 }
 function @fan_b(%n : u32) -> u32 [binding=strong, object=_Z5fan_bj] {
   block ^entry:
@@ -320,20 +934,22 @@ function @kept(%n : u32) -> u32 [binding=strong, object=_Z4keptj, no_inline=yes]
 
   block ^cond_then_1:
     %t1 = binary sub u32 %n, 1
-    branch %t1, ^cond_then_2, ^inline_cont_3
+    branch %t1, ^cond_then_2, ^cond_end_3
 
   block ^cond_then_2:
-    %t2 = call u32 @kept_peer(%t1)
-    jump ^inline_cont_3
-
-  block ^inline_cont_3:
-    %t3 = phi u32 [^cond_then_2: %t2, ^cond_then_1: 1]
+    %t2 = binary add u32 %n, 4294967294
+    %t3 = call u32 @kept(%t2)
     %t4 = binary add u32 %t3, 1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = phi u32 [^cond_then_2: %t4, ^cond_then_1: 1]
+    %t6 = binary add u32 %t5, 1
     jump ^cond_end_4
 
   block ^cond_end_4:
-    %t5 = phi u32 [^inline_cont_3: %t4, ^entry: 1]
-    return u32 %t5
+    %t7 = phi u32 [^cond_end_3: %t6, ^entry: 1]
+    return u32 %t7
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $leaf : obj<24x8>
@@ -345,352 +961,375 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t2 = phi u32 [^entry: %t1, ^cond_then_30: %t6, ^inline_entry_29: %t6]
-    %t3 = phi u32 [^entry: 0, ^cond_then_30: %t50, ^inline_entry_29: 1]
-    %t4 = cmp ult u32 %t3, 32
-    branch %t4, ^for_body_2, ^for_end_32
+    %t2 = phi u32 [^entry: 0, ^cond_then_33: %t52]
+    %t3 = phi u32 [^entry: %t1, ^cond_then_33: %t8]
+    %t4 = cmp ult u32 %t2, 32
+    branch %t4, ^loop_preheader_2, ^for_end_35
 
-  block ^for_body_2:
-    %t5 = binary mul u32 %t2, 1664525
-    %t6 = binary add u32 %t5, 1013904223
-    %t7 = binary and u32 %t6, 31
-    %t8 = copy i32 %t7
-    %t9 = addr $leaf
-    %t10 = binary and u32 %t3, 1
-    %t11 = copy i32 %t10
-    store typed i32 %t11, %t9
-    %t12 = binary add i32 %t8, -18
-    %t13 = index i8 [projection=field] %t9, 4
-    store typed i32 %t12, %t13
-    %t14 = index i8 [projection=field] %t9, 8
-    store typed ptr 0, %t14
-    %t15 = index i8 [projection=field] %t9, 16
-    store typed ptr 0, %t15
-    %t16 = addr $root
-    store typed i32 2, %t16
-    %t17 = binary add i32 %t8, -13
-    %t18 = index i8 [projection=field] %t16, 4
-    store typed i32 %t17, %t18
-    %t19 = index i8 [projection=field] %t16, 8
-    %t20 = index i8 [projection=field] %t16, 16
-    store typed ptr %t9, %t20
-    store typed ptr %t16, %t19
-    jump ^for_cond_3
+  block ^loop_preheader_2:
+    jump ^for_body_3
 
-  block ^for_cond_3:
-    %t21 = phi u32 [^for_body_2: 0, ^lor_rhs_10: %t31]
-    %t22 = cmp ult u32 %t21, 17
-    branch %t22, ^for_body_4, ^for_end_12
+  block ^for_body_3:
+    %t5 = phi u32 [^loop_preheader_2: %t2, ^lor_rhs_32: %t52]
+    %t6 = phi u32 [^loop_preheader_2: %t3, ^lor_rhs_32: %t8]
+    %t7 = binary mul u32 %t6, 1664525
+    %t8 = binary add u32 %t7, 1013904223
+    %t9 = binary and u32 %t8, 31
+    %t10 = copy i32 %t9
+    %t11 = addr $leaf
+    %t12 = binary and u32 %t5, 1
+    %t13 = copy i32 %t12
+    store typed i32 %t13, %t11
+    %t14 = binary add i32 %t10, -18
+    %t15 = index i8 [projection=field] %t11, 4
+    store typed i32 %t14, %t15
+    %t16 = index i8 [projection=field] %t11, 8
+    store typed ptr 0, %t16
+    %t17 = index i8 [projection=field] %t11, 16
+    store typed ptr 0, %t17
+    %t18 = addr $root
+    store typed i32 2, %t18
+    %t19 = binary add i32 %t10, -13
+    %t20 = index i8 [projection=field] %t18, 4
+    store typed i32 %t19, %t20
+    %t21 = index i8 [projection=field] %t18, 8
+    %t22 = index i8 [projection=field] %t18, 16
+    store typed ptr %t11, %t22
+    store typed ptr %t18, %t21
+    jump ^for_cond_4
 
-  block ^for_body_4:
+  block ^for_cond_4:
+    %t23 = phi u32 [^for_body_3: 0, ^lor_rhs_11: %t33]
+    %t24 = cmp ult u32 %t23, 17
+    branch %t24, ^for_body_5, ^for_end_13
+
+  block ^for_body_5:
     store typed u32 0, @depth_sum
     store typed u32 0, @observations
-    %t23 = load typed i32 %t18
-    %t24 = load typed i32 %t9
-    branch %t24, ^cond_then_5, ^cond_else_6
+    %t25 = load typed i32 %t20
+    %t26 = load typed i32 %t11
+    branch %t26, ^cond_then_6, ^cond_else_7
 
-  block ^cond_then_5:
-    %t25 = load typed i32 %t13
-    %t26 = unary neg i32 %t25
-    jump ^cond_end_7
+  block ^cond_then_6:
+    %t27 = load typed i32 %t15
+    %t28 = unary neg i32 %t27
+    jump ^cond_end_8
 
-  block ^cond_else_6:
-    %t27 = load typed i32 %t13
-    jump ^cond_end_7
+  block ^cond_else_7:
+    %t29 = load typed i32 %t15
+    jump ^cond_end_8
 
-  block ^cond_end_7:
-    %t28 = phi i32 [^cond_then_5: %t26, ^cond_else_6: %t27]
-    %t29 = binary add nowrap i32 %t23, %t28
-    %t30 = call i32 @walk(%t16, %t21)
-    %t31 = binary add u32 %t21, 1
-    %t32 = copy i32 %t31
-    %t33 = binary mul nowrap i32 %t29, %t32
-    %t34 = cmp ne i32 %t30, %t33
-    branch %t34, ^if_then_8, ^if_end_9
+  block ^cond_end_8:
+    %t30 = phi i32 [^cond_then_6: %t28, ^cond_else_7: %t29]
+    %t31 = binary add nowrap i32 %t25, %t30
+    %t32 = call i32 @walk(%t18, %t23)
+    %t33 = binary add u32 %t23, 1
+    %t34 = copy i32 %t33
+    %t35 = binary mul nowrap i32 %t31, %t34
+    %t36 = cmp ne i32 %t32, %t35
+    branch %t36, ^if_then_9, ^if_end_10
 
-  block ^if_then_8:
+  block ^if_then_9:
     return i32 1
 
-  block ^if_end_9:
-    %t35 = load typed u32 @observations
-    %t36 = binary mul u32 %t31, 2
-    %t37 = cmp ne u32 %t35, %t36
-    branch %t37, ^if_then_11, ^lor_rhs_10
+  block ^if_end_10:
+    %t37 = load typed u32 @observations
+    %t38 = binary mul u32 %t33, 2
+    %t39 = cmp ne u32 %t37, %t38
+    branch %t39, ^if_then_12, ^lor_rhs_11
 
-  block ^lor_rhs_10:
-    %t38 = load typed u32 @depth_sum
-    %t39 = binary mul u32 %t21, %t31
-    %t40 = cmp ne u32 %t38, %t39
-    branch %t40, ^if_then_11, ^for_cond_3
+  block ^lor_rhs_11:
+    %t40 = load typed u32 @depth_sum
+    %t41 = binary mul u32 %t23, %t33
+    %t42 = cmp ne u32 %t40, %t41
+    branch %t42, ^if_then_12, ^for_cond_4
 
-  block ^if_then_11:
+  block ^if_then_12:
     return i32 2
 
-  block ^for_end_12:
+  block ^for_end_13:
     store volatile u32 0, @trace
-    %t41 = cmp uge u32 %t3, 1
-    branch %t41, ^loop_preheader_13, ^for_end_15
+    %t43 = cmp uge u32 %t5, 1
+    branch %t43, ^loop_preheader_14, ^for_end_16
 
-  block ^loop_preheader_13:
-    jump ^for_body_14
+  block ^loop_preheader_14:
+    jump ^for_body_15
 
-  block ^for_body_14:
-    %t42 = phi u32 [^for_body_14: %t46, ^loop_preheader_13: 1]
-    %t43 = phi u32 [^for_body_14: %t45, ^loop_preheader_13: 0]
-    %t44 = binary mul u32 %t43, 33
-    %t45 = binary add u32 %t44, %t42
-    %t46 = binary add u32 %t42, 1
-    %t47 = cmp ule u32 %t46, %t3
-    branch %t47, ^for_body_14, ^for_end_15
+  block ^for_body_15:
+    %t44 = phi u32 [^for_body_15: %t48, ^loop_preheader_14: 1]
+    %t45 = phi u32 [^for_body_15: %t47, ^loop_preheader_14: 0]
+    %t46 = binary mul u32 %t45, 33
+    %t47 = binary add u32 %t46, %t44
+    %t48 = binary add u32 %t44, 1
+    %t49 = cmp ule u32 %t48, %t5
+    branch %t49, ^for_body_15, ^for_end_16
 
-  block ^for_end_15:
-    %t48 = phi u32 [^for_end_12: 0, ^for_body_14: %t45]
-    %t49 = call u32 @cycle_a(%t3)
-    %t50 = binary add u32 %t3, 1
-    %t51 = cmp ne u32 %t49, %t50
-    branch %t51, ^if_then_17, ^lor_rhs_16
+  block ^for_end_16:
+    %t50 = phi u32 [^for_end_13: 0, ^for_body_15: %t47]
+    %t51 = call u32 @cycle_a(%t5)
+    %t52 = binary add u32 %t5, 1
+    %t53 = cmp ne u32 %t51, %t52
+    branch %t53, ^if_then_18, ^lor_rhs_17
 
-  block ^lor_rhs_16:
-    %t52 = load volatile u32 @trace
-    %t53 = cmp ne u32 %t52, %t48
-    branch %t53, ^if_then_17, ^if_end_18
+  block ^lor_rhs_17:
+    %t54 = load volatile u32 @trace
+    %t55 = cmp ne u32 %t54, %t50
+    branch %t55, ^if_then_18, ^if_end_19
 
-  block ^if_then_17:
+  block ^if_then_18:
     return i32 3
 
-  block ^if_end_18:
-    store volatile u32 0, @trace
-    %t54 = cmp eq u32 %t3, 0
-    branch %t54, ^lor_rhs_20, ^if_end_19
-
   block ^if_end_19:
-    %t55 = call u32 @cycle_b(%t3)
-    %t56 = cmp ne u32 %t50, %t55
-    branch %t56, ^if_then_21, ^lor_rhs_20
+    store volatile u32 0, @trace
+    %t56 = cmp eq u32 %t5, 0
+    branch %t56, ^lor_rhs_21, ^if_end_20
 
-  block ^lor_rhs_20:
-    %t57 = load volatile u32 @trace
-    %t58 = cmp ne u32 %t57, %t48
-    branch %t58, ^if_then_21, ^if_end_22
+  block ^if_end_20:
+    %t57 = binary sub u32 %t5, 1
+    %t58 = call u32 @cycle_a(%t57)
+    %t59 = load volatile u32 @trace
+    %t60 = binary mul u32 %t59, 33
+    %t61 = binary add u32 %t5, %t60
+    store volatile u32 %t61, @trace
+    %t62 = binary add u32 %t58, 1
+    %t63 = cmp ne u32 %t52, %t62
+    branch %t63, ^if_then_22, ^lor_rhs_21
 
-  block ^if_then_21:
+  block ^lor_rhs_21:
+    %t64 = load volatile u32 @trace
+    %t65 = cmp ne u32 %t64, %t50
+    branch %t65, ^if_then_22, ^if_end_23
+
+  block ^if_then_22:
     return i32 4
 
-  block ^if_end_22:
-    %t59 = binary umod u32 %t3, 9
+  block ^if_end_23:
+    %t66 = binary umod u32 %t5, 9
     store typed u32 0, @fan_calls
-    %t60 = call u32 @fan_a(%t59)
-    %t61 = binary shl u32 1, %t59
-    %t62 = cmp ne u32 %t60, %t61
-    branch %t62, ^if_then_24, ^lor_rhs_23
+    %t67 = call u32 @fan_a(%t66)
+    %t68 = binary shl u32 1, %t66
+    %t69 = cmp ne u32 %t67, %t68
+    branch %t69, ^if_then_25, ^lor_rhs_24
 
-  block ^lor_rhs_23:
-    %t63 = load typed u32 @fan_calls
-    %t64 = binary shl u32 2, %t59
-    %t65 = binary sub u32 %t64, 1
-    %t66 = cmp ne u32 %t63, %t65
-    branch %t66, ^if_then_24, ^if_end_25
+  block ^lor_rhs_24:
+    %t70 = load typed u32 @fan_calls
+    %t71 = binary shl u32 2, %t66
+    %t72 = binary sub u32 %t71, 1
+    %t73 = cmp ne u32 %t70, %t72
+    branch %t73, ^if_then_25, ^if_end_26
 
-  block ^if_then_24:
+  block ^if_then_25:
     return i32 5
 
-  block ^if_end_25:
-    store typed u32 0, @fan_calls
-    %t67 = call u32 @fan_b(%t59)
-    %t68 = cmp ne u32 %t61, %t67
-    branch %t68, ^if_then_27, ^lor_rhs_26
+  block ^if_end_26:
+    store typed u32 1, @fan_calls
+    branch %t66, ^cond_then_27, ^lor_rhs_29
 
-  block ^lor_rhs_26:
-    %t69 = load typed u32 @fan_calls
-    %t70 = cmp ne u32 %t65, %t69
-    branch %t70, ^if_then_27, ^if_end_28
+  block ^cond_then_27:
+    %t74 = binary sub u32 %t66, 1
+    %t75 = call u32 @fan_a(%t74)
+    %t76 = call u32 @fan_a(%t74)
+    %t77 = binary add u32 %t75, %t76
+    %t78 = cmp ne u32 %t68, %t77
+    branch %t78, ^if_then_30, ^split_28
 
-  block ^if_then_27:
+  block ^split_28:
+    %t79 = load typed u32 @fan_calls
+    %t80 = cmp ne u32 %t72, %t79
+    branch %t80, ^if_then_30, ^if_end_31
+
+  block ^lor_rhs_29:
+    %t81 = cmp ne u32 %t71, 2
+    branch %t81, ^if_then_30, ^if_end_31
+
+  block ^if_then_30:
     return i32 6
 
-  block ^if_end_28:
-    %t71 = call u32 @kept(%t3)
-    %t72 = cmp ne u32 %t50, %t71
-    branch %t72, ^if_then_31, ^inline_entry_29
+  block ^if_end_31:
+    %t82 = call u32 @kept(%t5)
+    %t83 = cmp ne u32 %t52, %t82
+    branch %t83, ^if_then_34, ^lor_rhs_32
 
-  block ^inline_entry_29:
-    branch %t3, ^cond_then_30, ^for_cond_1
+  block ^lor_rhs_32:
+    branch %t5, ^cond_then_33, ^for_body_3
 
-  block ^cond_then_30:
-    %t73 = call u32 @kept_peer(%t3)
-    %t74 = cmp ne u32 %t50, %t73
-    branch %t74, ^if_then_31, ^for_cond_1
+  block ^cond_then_33:
+    %t84 = binary sub u32 %t5, 1
+    %t85 = call u32 @kept(%t84)
+    %t86 = binary add u32 %t85, 1
+    %t87 = cmp ne u32 %t52, %t86
+    branch %t87, ^if_then_34, ^for_cond_1
 
-  block ^if_then_31:
+  block ^if_then_34:
     return i32 7
 
-  block ^for_end_32:
-    %t75 = addr $bad
-    store typed i32 4, %t75
-    %t76 = index i8 [projection=field] %t75, 4
-    store typed i32 0, %t76
-    %t77 = index i8 [projection=field] %t75, 8
-    store typed ptr 0, %t77
-    %t78 = index i8 [projection=field] %t75, 16
-    store typed ptr 0, %t78
+  block ^for_end_35:
+    %t88 = addr $bad
+    store typed i32 4, %t88
+    %t89 = index i8 [projection=field] %t88, 4
+    store typed i32 0, %t89
+    %t90 = index i8 [projection=field] %t88, 8
+    store typed ptr 0, %t90
+    %t91 = index i8 [projection=field] %t88, 16
+    store typed ptr 0, %t91
     store typed u32 0, @depth_sum
     store typed u32 0, @cleanups
     store typed u32 0, @fail_calls
     store typed u32 0, @observations
-    eh_try ^catch_dispatch_34
-    eh_try ^call_unwind_dispatch_33
-    %t79 = call i32 @walk(%t75, 1)
+    eh_try ^catch_dispatch_37
+    eh_try ^call_unwind_dispatch_36
+    %t92 = call i32 @walk(%t88, 1)
     eh_end
-    %t80 = load typed u32 @cleanups
-    %t81 = binary add u32 %t80, 1
-    store typed u32 %t81, @cleanups
+    %t93 = load typed u32 @cleanups
+    %t94 = binary add u32 %t93, 1
+    store typed u32 %t94, @cleanups
     eh_end
     return i32 8
 
-  block ^call_unwind_dispatch_33:
+  block ^call_unwind_dispatch_36:
     eh_catch @__external_rtti__int, 1
     eh_cleanup
-    %t82 = load typed u32 @cleanups
-    %t83 = binary add u32 %t82, 1
-    store typed u32 %t83, @cleanups
+    %t95 = load typed u32 @cleanups
+    %t96 = binary add u32 %t95, 1
+    store typed u32 %t96, @cleanups
     eh_end
     eh_end
-    jump ^catch_entry_35
+    jump ^catch_entry_38
 
-  block ^catch_dispatch_34:
+  block ^catch_dispatch_37:
     eh_catch @__external_rtti__int, 1
-    jump ^catch_entry_35
+    jump ^catch_entry_38
 
-  block ^catch_entry_35:
-    %t84 = exception ptr
-    %t85 = exception_selector i32
-    %t86 = cmp eq i32 %t85, 1
-    branch %t86, ^catch_body_36, ^catch_next_40
+  block ^catch_entry_38:
+    %t97 = exception ptr
+    %t98 = exception_selector i32
+    %t99 = cmp eq i32 %t98, 1
+    branch %t99, ^catch_body_39, ^catch_next_43
 
-  block ^catch_body_36:
-    %t87 = call ptr @__external_runtime____cxa_begin_catch(%t84)
-    eh_cleanup ^catch_cleanup_39
-    %t88 = load typed i32 %t87
-    %t89 = cmp ne i32 %t88, 4
-    branch %t89, ^if_then_37, ^if_end_38
+  block ^catch_body_39:
+    %t100 = call ptr @__external_runtime____cxa_begin_catch(%t97)
+    eh_cleanup ^catch_cleanup_42
+    %t101 = load typed i32 %t100
+    %t102 = cmp ne i32 %t101, 4
+    branch %t102, ^if_then_40, ^if_end_41
 
-  block ^if_then_37:
+  block ^if_then_40:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 9
 
-  block ^if_end_38:
+  block ^if_end_41:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    %t90 = load typed u32 @observations
-    %t91 = cmp ne u32 %t90, 1
-    branch %t91, ^if_then_44, ^lor_rhs_41
+    %t103 = load typed u32 @observations
+    %t104 = cmp ne u32 %t103, 1
+    branch %t104, ^if_then_47, ^lor_rhs_44
 
-  block ^catch_cleanup_39:
+  block ^catch_cleanup_42:
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
-  block ^catch_next_40:
+  block ^catch_next_43:
     resume
 
-  block ^lor_rhs_41:
-    %t92 = load typed u32 @fail_calls
-    %t93 = cmp ne u32 %t92, 1
-    branch %t93, ^if_then_44, ^lor_rhs_42
+  block ^lor_rhs_44:
+    %t105 = load typed u32 @fail_calls
+    %t106 = cmp ne u32 %t105, 1
+    branch %t106, ^if_then_47, ^lor_rhs_45
 
-  block ^lor_rhs_42:
-    %t94 = load typed u32 @cleanups
-    %t95 = cmp ne u32 %t94, 1
-    branch %t95, ^if_then_44, ^lor_rhs_43
+  block ^lor_rhs_45:
+    %t107 = load typed u32 @cleanups
+    %t108 = cmp ne u32 %t107, 1
+    branch %t108, ^if_then_47, ^lor_rhs_46
 
-  block ^lor_rhs_43:
-    %t96 = load typed u32 @depth_sum
-    %t97 = cmp ne u32 %t96, 1
-    branch %t97, ^if_then_44, ^if_end_45
+  block ^lor_rhs_46:
+    %t109 = load typed u32 @depth_sum
+    %t110 = cmp ne u32 %t109, 1
+    branch %t110, ^if_then_47, ^if_end_48
 
-  block ^if_then_44:
+  block ^if_then_47:
     return i32 10
 
-  block ^if_end_45:
+  block ^if_end_48:
     store typed u32 0, @depth_sum
     store typed u32 0, @cleanups
     store typed u32 0, @fail_calls
     store typed u32 0, @observations
     store typed u32 1, @argument_throw
-    eh_try ^catch_dispatch_47
-    eh_try ^call_unwind_dispatch_46
-    %t98 = call i32 @walk(%t75, 1)
+    eh_try ^catch_dispatch_50
+    eh_try ^call_unwind_dispatch_49
+    %t111 = call i32 @walk(%t88, 1)
     eh_end
-    %t99 = load typed u32 @cleanups
-    %t100 = binary add u32 %t99, 1
-    store typed u32 %t100, @cleanups
+    %t112 = load typed u32 @cleanups
+    %t113 = binary add u32 %t112, 1
+    store typed u32 %t113, @cleanups
     eh_end
     return i32 11
 
-  block ^call_unwind_dispatch_46:
+  block ^call_unwind_dispatch_49:
     eh_catch @__external_rtti__int, 2
     eh_cleanup
-    %t101 = load typed u32 @cleanups
-    %t102 = binary add u32 %t101, 1
-    store typed u32 %t102, @cleanups
+    %t114 = load typed u32 @cleanups
+    %t115 = binary add u32 %t114, 1
+    store typed u32 %t115, @cleanups
     eh_end
     eh_end
-    jump ^catch_entry_48
+    jump ^catch_entry_51
 
-  block ^catch_dispatch_47:
+  block ^catch_dispatch_50:
     eh_catch @__external_rtti__int, 2
-    jump ^catch_entry_48
+    jump ^catch_entry_51
 
-  block ^catch_entry_48:
-    %t103 = exception ptr
-    %t104 = exception_selector i32
-    %t105 = cmp eq i32 %t104, 2
-    branch %t105, ^catch_body_49, ^catch_next_53
+  block ^catch_entry_51:
+    %t116 = exception ptr
+    %t117 = exception_selector i32
+    %t118 = cmp eq i32 %t117, 2
+    branch %t118, ^catch_body_52, ^catch_next_56
 
-  block ^catch_body_49:
-    %t106 = call ptr @__external_runtime____cxa_begin_catch(%t103)
-    eh_cleanup ^catch_cleanup_52
-    %t107 = load typed i32 %t106
-    %t108 = cmp ne i32 %t107, 77
-    branch %t108, ^if_then_50, ^if_end_51
+  block ^catch_body_52:
+    %t119 = call ptr @__external_runtime____cxa_begin_catch(%t116)
+    eh_cleanup ^catch_cleanup_55
+    %t120 = load typed i32 %t119
+    %t121 = cmp ne i32 %t120, 77
+    branch %t121, ^if_then_53, ^if_end_54
 
-  block ^if_then_50:
+  block ^if_then_53:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 12
 
-  block ^if_end_51:
+  block ^if_end_54:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    %t109 = load typed u32 @observations
-    branch %t109, ^if_then_57, ^lor_rhs_54
+    %t122 = load typed u32 @observations
+    branch %t122, ^if_then_60, ^lor_rhs_57
 
-  block ^catch_cleanup_52:
+  block ^catch_cleanup_55:
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
-  block ^catch_next_53:
+  block ^catch_next_56:
     resume
 
-  block ^lor_rhs_54:
-    %t110 = load typed u32 @fail_calls
-    branch %t110, ^if_then_57, ^lor_rhs_55
+  block ^lor_rhs_57:
+    %t123 = load typed u32 @fail_calls
+    branch %t123, ^if_then_60, ^lor_rhs_58
 
-  block ^lor_rhs_55:
-    %t111 = load typed u32 @cleanups
-    %t112 = cmp ne u32 %t111, 1
-    branch %t112, ^if_then_57, ^lor_rhs_56
+  block ^lor_rhs_58:
+    %t124 = load typed u32 @cleanups
+    %t125 = cmp ne u32 %t124, 1
+    branch %t125, ^if_then_60, ^lor_rhs_59
 
-  block ^lor_rhs_56:
-    %t113 = load typed u32 @depth_sum
-    %t114 = cmp ne u32 %t113, 1
-    branch %t114, ^if_then_57, ^if_end_58
+  block ^lor_rhs_59:
+    %t126 = load typed u32 @depth_sum
+    %t127 = cmp ne u32 %t126, 1
+    branch %t127, ^if_then_60, ^if_end_61
 
-  block ^if_then_57:
+  block ^if_then_60:
     return i32 13
 
-  block ^if_end_58:
+  block ^if_end_61:
     return i32 0
 }

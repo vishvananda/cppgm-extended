@@ -55,9 +55,9 @@ function @walk
     call @touch [args=(rdi)]
     mov r9, rax
     mov rdi, 0
-    mov rdx, r13
+    mov rcx, r13
     mov r8, 0
-    mov rcx, 0
+    mov rdx, 0
 
   block ^head
     cmp.i64 rdi, [rbp-8]
@@ -67,12 +67,12 @@ function @walk
     load.u8 rsi, [r14+rdi]
 
   block ^step0
-    lea.i32 r12, [rcx+1]
+    lea.i32 r12, [rdx+1]
     mov rax, rsi
     shr rax, 7
     and rax, 1
     imul rax, 8
-    load.ptr rax, [rdx+rax+8]
+    load.ptr rax, [rcx+rax+8]
     cmp.ptr rax, 0
     je ^step0~tail
 
@@ -85,17 +85,17 @@ function @walk
     jge ^step0~tail
 
   block ^step1
-    lea.i32 r12, [rcx+2]
-    mov rdx, rsi
-    shr rdx, 6
-    and rdx, 1
-    imul rdx, 8
-    load.ptr rdx, [rax+rdx+8]
-    cmp.ptr rdx, 0
+    lea.i32 r12, [rdx+2]
+    mov rcx, rsi
+    shr rcx, 6
+    and rcx, 1
+    imul rcx, 8
+    load.ptr rcx, [rax+rcx+8]
+    cmp.ptr rcx, 0
     je ^tail
 
   block ^check1
-    cmp.u8 [rdx+5], 0
+    cmp.u8 [rcx+5], 0
     jne ^leaf1
 
   block ^merge1
@@ -103,12 +103,12 @@ function @walk
     jge ^tail
 
   block ^step2
-    lea.i32 r12, [rcx+3]
+    lea.i32 r12, [rdx+3]
     mov rax, rsi
     shr rax, 5
     and rax, 1
     imul rax, 8
-    load.ptr rax, [rdx+rax+8]
+    load.ptr rax, [rcx+rax+8]
     cmp.ptr rax, 0
     je ^step0~tail
 
@@ -117,19 +117,19 @@ function @walk
     jne ^leaf2
 
   block ^check2~merge2
-    mov rdx, rax
+    mov rcx, rax
 
   block ^merge2
     cmp.i32 r12, rbx
     jge ^tail
 
   block ^step3
-    lea.i32 r12, [rcx+4]
+    lea.i32 r12, [rdx+4]
     mov rax, rsi
     shr rax, 4
     and rax, 1
     imul rax, 8
-    load.ptr rax, [rdx+rax+8]
+    load.ptr rax, [rcx+rax+8]
     cmp.ptr rax, 0
     je ^step0~tail
 
@@ -138,19 +138,19 @@ function @walk
     jne ^leaf3
 
   block ^check3~merge3
-    mov rdx, rax
+    mov rcx, rax
 
   block ^merge3
     cmp.i32 r12, rbx
     jge ^tail
 
   block ^step4
-    lea.i32 r12, [rcx+5]
+    lea.i32 r12, [rdx+5]
     mov rax, rsi
     shr rax, 3
     and rax, 1
     imul rax, 8
-    load.ptr rax, [rdx+rax+8]
+    load.ptr rax, [rcx+rax+8]
     cmp.ptr rax, 0
     je ^step0~tail
 
@@ -159,19 +159,19 @@ function @walk
     jne ^leaf4
 
   block ^check4~merge4
-    mov rdx, rax
+    mov rcx, rax
 
   block ^merge4
     cmp.i32 r12, rbx
     jge ^tail
 
   block ^step5
-    lea.i32 r12, [rcx+6]
+    lea.i32 r12, [rdx+6]
     mov rax, rsi
     shr rax, 2
     and rax, 1
     imul rax, 8
-    load.ptr rax, [rdx+rax+8]
+    load.ptr rax, [rcx+rax+8]
     cmp.ptr rax, 0
     je ^step0~tail
 
@@ -180,19 +180,19 @@ function @walk
     jne ^leaf5
 
   block ^check5~merge5
-    mov rdx, rax
+    mov rcx, rax
 
   block ^merge5
     cmp.i32 r12, rbx
     jge ^tail
 
   block ^step6
-    lea.i32 r12, [rcx+7]
+    lea.i32 r12, [rdx+7]
     mov rax, rsi
     shr rax, 1
     and rax, 1
     imul rax, 8
-    load.ptr rax, [rdx+rax+8]
+    load.ptr rax, [rcx+rax+8]
     cmp.ptr rax, 0
     je ^step0~tail
 
@@ -201,19 +201,19 @@ function @walk
     jne ^leaf6
 
   block ^check6~merge6
-    mov rdx, rax
+    mov rcx, rax
 
   block ^merge6
     cmp.i32 r12, rbx
     jge ^tail
 
   block ^step7
-    add.i32 rcx, 8
+    add.i32 rdx, 8
     zext.i32 rax, rsi
     shr rax, 0
     and rax, 1
     imul rax, 8
-    load.ptr rax, [rdx+rax+8]
+    load.ptr rax, [rcx+rax+8]
     cmp.ptr rax, 0
     je ^step7~tail
 
@@ -228,50 +228,50 @@ function @walk
     mov rax, r13
 
   block ^step7~tail
-    zext.i32 r12, rcx
-    mov rdx, rax
+    zext.i32 r12, rdx
+    mov rcx, rax
     jmp ^tail
 
   block ^leaf6
     load.u8 rax, [rax+4]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rdx, r13
+    mov rcx, r13
     jmp ^merge6
 
   block ^leaf5
     load.u8 rax, [rax+4]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rdx, r13
+    mov rcx, r13
     jmp ^merge5
 
   block ^leaf4
     load.u8 rax, [rax+4]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rdx, r13
+    mov rcx, r13
     jmp ^merge4
 
   block ^leaf3
     load.u8 rax, [rax+4]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rdx, r13
+    mov rcx, r13
     jmp ^merge3
 
   block ^leaf2
     load.u8 rax, [rax+4]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rdx, r13
+    mov rcx, r13
     jmp ^merge2
 
   block ^leaf1
-    load.u8 rdx, [rdx+4]
-    store.u8 [r9+r8], rdx
+    load.u8 rcx, [rcx+4]
+    store.u8 [r9+r8], rcx
     add r8, 1
-    mov rdx, r13
+    mov rcx, r13
     jmp ^merge1
 
   block ^leaf0
@@ -282,7 +282,7 @@ function @walk
     jmp ^merge0
 
   block ^step0~tail
-    mov rdx, rax
+    mov rcx, rax
 
   block ^tail
     add rdi, 1
@@ -290,7 +290,7 @@ function @walk
     jge ^finish_tail
 
   block ^tail~head
-    zext.i32 rcx, r12
+    zext.i32 rdx, r12
     cmp.i64 rdi, [rbp-8]
     jb ^byte
 

@@ -14,6 +14,11 @@ namespace {
 // Ordinary wave: the per-caller growth budget and the trivial leaf every
 // budget admits (a callee's own charge is priced in admit).
 const uint32_t kCallerBudget = 1536;
+// What a callee may add to a caller whose budget is spent, from O2 (pa33's O1
+// fixtures pin the O1 budgets), and the largest such caller: a larger one
+// costs more to compile with each instruction it gains.
+const uint32_t kSpentBudgetCharge = 8;
+const uint32_t kSpentBudgetCaller = 2048;
 // Additional call-containing copies in an already large caller, outside
 // its loops. Small helpers retain ordinary admission: losing a setter or
 // accessor there can cost every activation of a hot wrapper.
@@ -1689,7 +1694,15 @@ bool InlineWaveRunner::admit(
 	const bool collapse = graph_.recursive[g] && !source_required_ && options_.level >= 2 && loop_site &&
 		graph_.component[g] == graph_.component[caller_] && !shape.loop && !shape.eh && shape.self_calls == 0 &&
 		shape.component_calls == 1;
-	if ((graph_.recursive[g] && !collapse) || g == caller_ || (m.flags & SF_NO_INLINE) != 0 || shape.unsafe ||
+	// At O3, any callee on a call cycle that neither loops nor calls itself
+	// goes inline as a callee off the cycle does: a dispatcher, a forwarder
+	// or an accessor between recursive workers. A caller is visited once in a
+	// wave and the calls of its copies are not visited again, so a cycle
+	// unrolls one step at most. (A unit that is one large cycle grows by
+	// some 3%: the growth is O3's to spend.)
+	const bool link = graph_.recursive[g] && !source_required_ && options_.level >= 3 && !shape.loop && !shape.eh &&
+		shape.self_calls == 0;
+	if ((graph_.recursive[g] && !collapse && !link) || g == caller_ || (m.flags & SF_NO_INLINE) != 0 || shape.unsafe ||
 		(!source_required_ &&
 			((m.flags & SF_REPLACEABLE) != 0 ||
 				(shape.eh && !cleanup_welcome(shape, handler_code, loop_site) &&
@@ -1720,7 +1733,12 @@ bool InlineWaveRunner::admit(
 		const FunctionBody& caller_body = *program_.functions[program_.symbols[graph_.functions[caller_]].detail].body;
 		call_cost_after_constants(shape, caller_body, call, hot, unpriced);
 		charge = hot > removed ? hot - removed : 0;
-		if (unpriced == 0 && charge <= allowance + (loop_site ? removed : 0) && charge <= budget_)
+		// (From O2, a callee that adds no more than kSpentBudgetCharge goes
+		// inline past the budget of a caller within kSpentBudgetCaller: its
+		// call costs about as much.)
+		const bool past_budget = options_.level >= 2 && charge <= kSpentBudgetCharge &&
+			shapes_[caller_].size <= kSpentBudgetCaller;
+		if (unpriced == 0 && charge <= allowance + (loop_site ? removed : 0) && (charge <= budget_ || past_budget))
 			return true;
 		if (wave_ == InlineWave::Late)
 			return false;

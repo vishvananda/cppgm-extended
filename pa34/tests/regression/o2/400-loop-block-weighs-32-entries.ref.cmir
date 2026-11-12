@@ -1,0 +1,105 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @seen
+  storage scalar i64
+  init i64 0
+
+function @step
+  abi
+    param %v -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rdi
+    add rax, @seen
+    store.i64 @seen, rax
+    ret rax
+
+function @walk
+  abi
+    param %n -> rdi : i64
+    param %s -> rsi : i64
+    param %l -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3>
+
+  block ^entry
+    mov <gpr1>, rdi
+    mov <gpr3>, rsi
+    mov <gpr2>, rdx
+    mov <gpr0>, 0
+
+  block ^head
+    cmp.i64 <gpr0>, <gpr1>
+    jl ^body
+
+  block ^done
+    mov rax, <gpr3>
+    add rax, @seen
+    xor rax, <gpr3>
+    add rax, <gpr3>
+    xor rax, <gpr3>
+    add rax, <gpr3>
+    xor rax, <gpr3>
+    add rax, <gpr3>
+    xor rax, <gpr3>
+    add rax, <gpr3>
+    xor rax, <gpr3>
+    add rax, <gpr3>
+    xor rax, <gpr3>
+    add rax, <gpr3>
+    xor rax, <gpr3>
+    add rax, <gpr3>
+    xor rax, <gpr3>
+    ret rax
+
+  block ^body
+    lea rdi, [<gpr0>+<gpr2>]
+    call @step [args=(rdi)]
+    add <gpr0>, 1
+    cmp.i64 <gpr0>, <gpr1>
+    jl ^body
+    jmp ^done
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, 5
+    mov rsi, 3
+    mov rdx, 7
+    call @walk [args=(rdx,rsi,rdi)]
+    mov rcx, rax
+    mov <gpr4>, 367465021388636487
+    mul <gpr4>
+    mov rax, rcx
+    sub rax, rdx
+    shr rax, 1
+    add rax, rdx
+    shr rax, 7
+    imul rax, 251
+    zext.i32 rdx, rcx
+    sub.u32 rdx, rax
+    zext.i32 rax, rdx
+    ret rax

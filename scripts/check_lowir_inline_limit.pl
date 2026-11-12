@@ -22,11 +22,12 @@ sub read_file
 sub run_optimizer
 {
 	my ($app, $test, $directory, $label, @options) = @_;
+	my $level = @options && $options[0] =~ /^-O\d$/ ? shift @options : '-O1';
 	my $stdout = "$directory/$label.stdout";
 	my $stderr = "$directory/$label.stderr";
 	my $output = "$directory/$label.lowir";
 	my $status = run_command_capture(
-		cmd => [$app, '-O1', @options, '-o', $output, $test],
+		cmd => [$app, $level, @options, '-o', $output, $test],
 		stdout => $stdout,
 		stderr => $stderr,
 		timeout => 30,
@@ -50,9 +51,10 @@ if (scalar(@ARGV) != 3)
 
 my ($app, $driver, $root) = @ARGV;
 my @tests = collect_tests($root, qr/inline-limit-once-cap.*\.t$/);
+my @budget_tests = collect_tests($root, qr/inline-limit-caller-budget.*\.t$/);
 my @driver_tests = collect_tests($root, qr/driver-inline-limit.*\.t$/);
 die "No inline-limit tests found under $root\n"
-	if !@tests && !@driver_tests;
+	if !@tests && !@budget_tests && !@driver_tests;
 
 for my $test (@tests)
 {
@@ -82,6 +84,31 @@ for my $test (@tests)
 		die "$test: invalid inline limit '$invalid_spec' was accepted\n"
 			if $invalid == 0;
 	}
+}
+
+# From O2, a spent caller budget keeps the ordinary callees out and still
+# admits a callee that adds no more than its call costs.
+for my $test (@budget_tests)
+{
+	my $directory = tempdir('cppgm-inline-limit-XXXXXX', TMPDIR => 1,
+		CLEANUP => 1);
+	my $normal_caller = caller_body($test,
+		run_optimizer($app, $test, $directory, 'normal', '-O2'));
+	my $limited_caller = caller_body($test,
+		run_optimizer($app, $test, $directory, 'limited', '-O2',
+			'--inline-limit', 'caller-budget=1'));
+	for my $callee ('work', 'medium', 'small')
+	{
+		die "$test: default O2 did not inline \@$callee\n"
+			if $normal_caller =~ /\bcall\s+i64\s+\@$callee\b/;
+	}
+	for my $callee ('work', 'medium')
+	{
+		die "$test: caller-budget=1 did not retain the call to \@$callee\n"
+			if $limited_caller !~ /\bcall\s+i64\s+\@$callee\b/;
+	}
+	die "$test: caller-budget=1 kept the small callee out of line\n"
+		if $limited_caller =~ /\bcall\s+i64\s+\@small\b/;
 }
 
 for my $test (@driver_tests)
@@ -117,6 +144,7 @@ for my $test (@driver_tests)
 	}
 }
 
-print "inline-limit controls: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . " LowIR, " . scalar(@driver_tests) . "/" .
-	scalar(@driver_tests) . " driver)\n" unless $ENV{CPPGM_REPORT_QUIET};
+my $lowir_tests = scalar(@tests) + scalar(@budget_tests);
+print "inline-limit controls: PASS ($lowir_tests/$lowir_tests LowIR, " .
+	scalar(@driver_tests) . "/" . scalar(@driver_tests) . " driver)\n"
+	unless $ENV{CPPGM_REPORT_QUIET};

@@ -1,0 +1,105 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @seen
+  storage scalar i64
+  init i64 0
+
+function @step
+  abi
+    param %v -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rdi
+    add rax, @seen
+    store.i64 @seen, rax
+    ret rax
+
+function @walk
+  abi
+    param %n -> rdi : i64
+    param %s -> rsi : i64
+    param %l -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14
+
+  block ^entry
+    mov r12, rdi
+    mov r14, rsi
+    mov r13, rdx
+    mov rbx, 0
+
+  block ^head
+    cmp.i64 rbx, r12
+    jl ^body
+
+  block ^done
+    mov rax, r14
+    add rax, @seen
+    xor rax, r14
+    add rax, r14
+    xor rax, r14
+    add rax, r14
+    xor rax, r14
+    add rax, r14
+    xor rax, r14
+    add rax, r14
+    xor rax, r14
+    add rax, r14
+    xor rax, r14
+    add rax, r14
+    xor rax, r14
+    add rax, r14
+    xor rax, r14
+    ret rax
+
+  block ^body
+    lea rdi, [rbx+r13]
+    call @step [args=(rdi)]
+    add rbx, 1
+    cmp.i64 rbx, r12
+    jl ^body
+    jmp ^done
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, 5
+    mov rsi, 3
+    mov rdx, 7
+    call @walk [args=(rdx,rsi,rdi)]
+    mov rcx, rax
+    mov r11, 367465021388636487
+    mul r11
+    mov rax, rcx
+    sub rax, rdx
+    shr rax, 1
+    add rax, rdx
+    shr rax, 7
+    imul rax, 251
+    zext.i32 rdx, rcx
+    sub.u32 rdx, rax
+    zext.i32 rax, rdx
+    ret rax

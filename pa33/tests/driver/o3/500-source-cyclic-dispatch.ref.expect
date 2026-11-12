@@ -1,7 +1,9 @@
 # Remove repeated forwarding layers; any equivalent dispatch is acceptable.
 none(call @relay) in @walk
 none(call @route) in @walk
-instructions <= 120 in @walk
+# With every layer gone the walk calls itself and may hold copies of itself:
+# their total is bounded.
+instructions <= 400 in @walk
 # Mutually recursive and branching recursions must keep bounded code growth.
 instructions <= 120 in @cycle_a
 instructions <= 120 in @cycle_b

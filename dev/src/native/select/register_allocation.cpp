@@ -634,15 +634,17 @@ bool FunctionSelector::iteration_guard(uint32_t loop, uint32_t header, const std
 
 // Each block's estimated executions per call (Wu and Larus, in fixed
 // point): a block's flow splits evenly among its successors that are not
-// cold, except that edges leaving its innermost loop share 1/10 of it;
-// each loop, innermost first, finds the flow back to its header for one
-// entering (at most 0.9), and a header's flow is what enters it over the
-// rest (one exit test: ten passes). A block that is not cold weighs at
-// least 1. Work: O(blocks + edges) per loop level.
+// cold, except that edges leaving its innermost loop share 1/32 of it
+// (LLVM's estimate of a loop's exits); each loop, innermost first, finds
+// the flow back to its header for one entering (at most 31/32), and a
+// header's flow is what enters it over the rest (one exit test: 32
+// passes). A block that is not cold weighs at least 1. Work: O(blocks +
+// edges) per loop level.
 void FunctionSelector::block_weights()
 {
 	const uint64_t kOne = static_cast<uint64_t>(1) << 20; // probability and frequency unit
-	const uint64_t kMaxBack = kOne * 9 / 10;
+	const uint64_t kExitShare = 32;                       // a loop's exits take one part in so many
+	const uint64_t kMaxBack = kOne * (kExitShare - 1) / kExitShare;
 	const uint64_t kMaxFrequency = kOne << 20;
 	const uint32_t n = static_cast<uint32_t>(blocks_.size());
 	loop_splitter_.weights.assign(n, 0);
@@ -770,7 +772,7 @@ void FunctionSelector::block_weights()
 			else if (exits == 0 || exits == warm)
 				prob[k] = kOne / warm;
 			else
-				prob[k] = exit ? kOne / 10 / exits : (kOne - kOne / 10) / (warm - exits);
+				prob[k] = exit ? kOne / kExitShare / exits : (kOne - kOne / kExitShare) / (warm - exits);
 		}
 	}
 	// The same by predecessor entry (preds_), with each edge's back mark.
