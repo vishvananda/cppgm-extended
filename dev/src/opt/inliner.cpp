@@ -915,11 +915,15 @@ bool merge_wide_returns(
 	}
 	const Value lo = convert(ConvertOp::ZExt, wide, word, words[0]);
 	const Value hi = convert(ConvertOp::ZExt, wide, word, words[1]);
-	const Value merged = binary(BinaryOp::Or, lo, binary(BinaryOp::Shl, hi, shift));
-	// Reuse the call's result identity. The temporary made by emit is dead.
-	body.instructions[prev].result = result;
-	body.temps[result].def = prev;
-	body.temps[merged.index].def = kNoId;
+	// The merged words are the call's result (its temporary, defined here).
+	Instruction merged = make_instruction(Opcode::Binary, wide);
+	merged.sub = static_cast<uint8_t>(BinaryOp::Or);
+	merged.ops[0] = lo;
+	merged.ops[1] = binary(BinaryOp::Shl, hi, shift);
+	merged.result = result;
+	const InstId id = append_instruction(body, merged);
+	body.temps[result].def = id;
+	insert_after(body, block, prev, id);
 	return true;
 }
 
