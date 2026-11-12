@@ -28,6 +28,8 @@ const uint32_t kTrivialLeaf = 4;
 const uint32_t kOnceCap = 512;
 const uint32_t kOnceCallerBudget = 1024;
 const uint32_t kOnceO2Scale = 2;
+// At O1, the cap of a weak callee: its other units keep their copies.
+const uint32_t kWeakOnceO1Cap = 128;
 // Folded copies of EH-bearing callees given constant arguments: the
 // callee's largest size, the copy's caps (hinted larger), the per-caller
 // budget of copied instructions and the failures one callee may cost a wave.
@@ -121,8 +123,13 @@ uint32_t call_site_cost(const Instruction& call)
 	return 6 + call.extra_count;
 }
 
-// Conservative scalar estimate. Unknown/bulk operations are unpriced rather
-// than silently treated as one scalar instruction.
+// The charge of an object operation done as a bulk copy or fill: its setup.
+const uint32_t kBulkCost = 6;
+// The charge of a handler region a copy would bring into its caller.
+const uint32_t kEhRegionCost = 6;
+
+// Conservative scalar estimate. Unknown operations are unpriced rather than
+// silently treated as one scalar instruction.
 uint32_t inline_instruction_cost(const Instruction& inst)
 {
 	switch (inst.op)
@@ -166,17 +173,79 @@ uint32_t inline_instruction_cost(const Instruction& inst)
 
 	case Opcode::CopyObject:
 	case Opcode::ZeroInit:
-		if (inst.immediate < 0 || inst.immediate > 64)
+		if (inst.immediate < 0)
 			return UINT32_MAX;
+		if (inst.immediate > 64)
+			return kBulkCost;
 		return uint32_t((inst.immediate + 7) / 8) * (inst.op == Opcode::CopyObject ? 2 : 1) +
 			(inst.immediate != 0 ? 1 : 0);
+
+	// A handler region costs its record (kEhRegionCost). The other markers
+	// and the exception's values take little code on the path; the rules
+	// for exception handling decide such a callee.
+	case Opcode::EhTry:
+		return kEhRegionCost;
+	case Opcode::EhCleanup:
+	case Opcode::EhCatch:
+	case Opcode::EhFilter:
+	case Opcode::EhCatchAll:
+	case Opcode::EhEnd:
+	case Opcode::Exception:
+	case Opcode::ExceptionSelector:
+	case Opcode::Resume:
+		return 1;
+	case Opcode::Throw:
+		return 3;
+	// An atomic load, store or fence is a move's worth. The read-modify-write
+	// operations stay unpriced: their callees (a shared count's steps) would
+	// go inline at every copy of a shared pointer, at a compile cost their
+	// calls do not repay.
+	case Opcode::AtomicLoad:
+	case Opcode::AtomicThreadFence:
+	case Opcode::AtomicSignalFence:
+		return 1;
+	case Opcode::AtomicStore:
+		return 2;
 
 	default:
 		break;
 	}
 
+	// An object value moves a word at a time.
+	if (inst.type.is_object() && (inst.op == Opcode::Load || inst.op == Opcode::Store))
+	{
+		const uint64_t bytes = storage_bytes(inst.type);
+		return bytes > 64 ? kBulkCost : uint32_t((bytes + 7) / 8) * 2;
+	}
 	if (inst.type.kind() == TypeKind::V128)
-		return inst.op == Opcode::Load || inst.op == Opcode::Store ? 1 : UINT32_MAX;
+	{
+		if (inst.op == Opcode::Load || inst.op == Opcode::Store || inst.op == Opcode::Const)
+			return 1;
+		return inst.op == Opcode::Select ? 3 : UINT32_MAX;
+	}
+	if (inst.type.kind() == TypeKind::F80)
+	{
+		switch (inst.op)
+		{
+		case Opcode::Const:
+		case Opcode::Load:
+		case Opcode::Store:
+			return 1;
+		case Opcode::Unary:
+			return 2;
+		case Opcode::Compare:
+		case Opcode::Convert:
+			return 3;
+		case Opcode::Select:
+			return 4;
+		case Opcode::Binary:
+			if (static_cast<BinaryOp>(inst.sub) == BinaryOp::Div)
+				return 8;
+			return static_cast<BinaryOp>(inst.sub) <= BinaryOp::Mul ? 2 : UINT32_MAX;
+		default:
+			return UINT32_MAX;
+		}
+	}
 	if (inst.type.kind() == TypeKind::F32 || inst.type.kind() == TypeKind::F64)
 	{
 		switch (inst.op)
@@ -1661,8 +1730,13 @@ bool InlineWaveRunner::admit(
 	const uint32_t requested_once_cap = options_.limits.once_cap != 0
 		? options_.limits.once_cap
 		: kOnceCap * (options_.level >= 2 ? kOnceO2Scale : 1);
-	const uint32_t once_cap = m.binding == ir_model::SBM_WEAK ? std::min(requested_once_cap, uint32_t(128))
-															  : requested_once_cap;
+	// A weak definition may be shared by many translation units even when
+	// this unit has one call site. At -O1 its removed local definition does
+	// not justify an equally large copy at every link-time caller; from -O2
+	// the copy is worth its size, as an internal callee's is.
+	const uint32_t once_cap = m.binding == ir_model::SBM_WEAK && options_.level < 2
+		? std::min(requested_once_cap, kWeakOnceO1Cap)
+		: requested_once_cap;
 	const bool sole = options_.level >= 2 && m.binding == ir_model::SBM_INTERNAL && graph_.callers_in[g] == 1 &&
 		!graph_.observed[g] && discardable(program_, callee) && size * graph_.calls_in[g] <= once_cap;
 	if (!(single || sole) || size > once_cap || size > once_budget_ || size > budgets_.once_unit)

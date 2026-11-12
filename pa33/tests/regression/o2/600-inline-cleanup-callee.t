@@ -1,8 +1,9 @@
 # At -O2 a callee whose handler only cleans up and resumes goes inline into
 # a caller that catches nothing: @guarded goes into @middle's loop (the
 # ordinary wave takes such a callee at loop sites alone), and its record
-# nests in @middle's frame. A resume continues to @main's handler. @main
-# reads the exception, so @middle, which now holds the record, stays a call.
+# nests in @middle's frame. The late wave takes @middle, which now holds the
+# record, into @main in turn: each copy's record nests under @main's own, and
+# a resume in a copy continues to @main's handler in the same frame.
 global @cleanups : i64 = 0
 
 function @raise(%n : i64) -> i64 [binding=strong, no_inline=yes] {

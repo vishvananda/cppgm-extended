@@ -12,37 +12,48 @@ function @raise(%n : i64) -> i64 [binding=strong, no_inline=yes] {
     %r = binary add i64 %n, 10
     return i64 %r
 }
-function @middle(%n : i64) -> i64 [binding=internal] {
+function @main() -> i64 [role=entry] {
   block ^entry:
-    jump ^loop
+    eh_try ^handler
+    jump ^loop_1
 
-  block ^loop:
-    %i = phi i64 [^entry: 0, ^loop: %next]
-    %sum = phi i64 [^entry: 0, ^loop: %total]
-    eh_try ^cleanup_2
-    %r_3 = call i64 @raise(%i)
+  block ^loop_1:
+    %i_1 = phi i64 [^loop_1: %next_5, ^entry: 0]
+    %sum_2 = phi i64 [^loop_1: %total_4, ^entry: 0]
+    eh_try ^inline_copy_2
+    %r_3 = call i64 @raise(%i_1)
     eh_end
-    %total = binary add i64 %sum, %r_3
-    %next = binary add i64 %i, 1
-    %more = cmp ult i64 %next, %n
-    branch %more, ^loop, ^done
+    %total_4 = binary add i64 %sum_2, %r_3
+    %next_5 = binary add i64 %i_1, 1
+    %more_6 = cmp ult i64 %next_5, 3
+    branch %more_6, ^loop_1, ^loop_3
 
-  block ^cleanup_2:
+  block ^inline_copy_2:
     %c_7 = load i64 @cleanups
     %d_8 = binary add i64 %c_7, 1
     store i64 %d_8, @cleanups
     resume
 
-  block ^done:
-    return i64 %total
-}
-function @main() -> i64 [role=entry] {
-  block ^entry:
-    eh_try ^handler
-    %x = call i64 @middle(3)
-    %y = call i64 @middle(5)
+  block ^loop_3:
+    %i_9 = phi i64 [^loop_3: %next_13, ^loop_1: 0]
+    %sum_10 = phi i64 [^loop_3: %total_12, ^loop_1: 0]
+    eh_try ^inline_copy_4
+    %r_11 = call i64 @raise(%i_9)
     eh_end
-    %z = binary add i64 %x, %y
+    %total_12 = binary add i64 %sum_10, %r_11
+    %next_13 = binary add i64 %i_9, 1
+    %more_14 = cmp ult i64 %next_13, 5
+    branch %more_14, ^loop_3, ^done_5
+
+  block ^inline_copy_4:
+    %c_15 = load i64 @cleanups
+    %d_16 = binary add i64 %c_15, 1
+    store i64 %d_16, @cleanups
+    resume
+
+  block ^done_5:
+    eh_end
+    %z = binary add i64 %total_4, %total_12
     return i64 %z
 
   block ^handler:
