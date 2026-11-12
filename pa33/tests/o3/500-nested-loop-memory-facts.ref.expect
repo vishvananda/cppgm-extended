@@ -1,0 +1,5 @@
+# explicit-outcomes
+
+# Preserve nested-loop updates and zero iterations without excessive growth.
+instructions <= 200
+blocks <= 64

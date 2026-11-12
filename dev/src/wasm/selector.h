@@ -33,8 +33,8 @@ private:
 	bool exception_instruction(const lowir::Instruction& inst);
 	void exception_address(uint32_t symbol, int64_t offset = 0);
 	void pack_variadic(const lowir::Instruction& inst, const lowir::Signature& signature);
-	void va_start(const lowir::Instruction& inst);
-	void va_arg(const lowir::Instruction& inst);
+	void variadic_start(const lowir::Instruction& inst);
+	void variadic_argument(const lowir::Instruction& inst);
 	bool builtin_call(const lowir::Instruction& inst, const lowir::Signature& signature);
 	void return_value(const lowir::Instruction& inst);
 	bool object_instruction(const lowir::Instruction& inst);

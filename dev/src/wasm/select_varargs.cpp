@@ -64,7 +64,7 @@ void Selector::pack_variadic(const lowir::Instruction& inst, const lowir::Signat
 		frame_address(area);
 }
 
-void Selector::va_start(const lowir::Instruction& inst)
+void Selector::variadic_start(const lowir::Instruction& inst)
 {
 	if (variadic_parameter_ == kNoId)
 		throw WasmError("Wasm va_start requires a variadic function");
@@ -73,7 +73,7 @@ void Selector::va_start(const lowir::Instruction& inst)
 	out_.emit(Op::I32Store, { 0, 0 });
 }
 
-void Selector::va_arg(const lowir::Instruction& inst)
+void Selector::variadic_argument(const lowir::Instruction& inst)
 {
 	const auto passing = classify_value(inst.type,
 		inst.type.is_object() ? machine::argument_shape(body_, inst, 0) : ir_model::AggregateShape(),

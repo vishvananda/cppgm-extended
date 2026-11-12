@@ -185,6 +185,11 @@ earlier motion step. Revisit changed loops when that exposes useful work;
 reuse existing loop facts and avoid repeating analysis for unaffected code.
 The same zero-trip, memory and exception proofs still apply.
 
+Rewriting an inner loop can invalidate instruction locations and graph facts
+for an enclosing loop. Check whether those facts remain valid before examining
+the enclosing loop, even if a later rewrite check would defer it. Rebuild the
+affected facts before revisiting that region.
+
 A product of an induction variable and an invariant can sometimes become an
 induction of its own. Account for every latch, the initial value, overflow and
 all users of the original counter. Widening a narrow counter may avoid repeated

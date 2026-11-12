@@ -1,0 +1,111 @@
+function @nested(%rounds : i64, %repeats : i64) -> i64 {
+  slot $state : obj<24x16>
+
+  block ^entry:
+    %base = addr $state
+    zeroinit 24x8 %base
+    jump ^round_header
+
+  block ^round_header:
+    %round = phi i64 [^entry: %rounds, ^element_latch: %next_round]
+    branch %round, ^loop_preheader_2, ^exit
+
+  block ^loop_preheader_2:
+    %next_round = binary sub i64 %round, 1
+    jump ^element_header
+
+  block ^element_header:
+    %element = phi i64 [^element_latch: %next_element, ^loop_preheader_2: 0]
+    %narrow_element = convert trunc exact i32 i64 %element
+    %address = index i64 [projection=array_element] %base, %element
+    %selector = binary and i32 %narrow_element, 3
+    jump ^repeat_header
+
+  block ^repeat_header:
+    %iteration = phi i64 [^repeat_latch: %next_iteration, ^element_header: 0]
+    switch %selector, ^inner_guard, 0:^inner_guard, 1:^inner_guard, 2:^other_guard
+
+  block ^other_guard:
+    branch %repeats, ^loop_preheader_6, ^repeat_latch
+
+  block ^loop_preheader_6:
+    %t9 = binary and i64 %repeats, -8
+    branch %t9, ^loop_preheader_7, ^wide_tail_10
+
+  block ^loop_preheader_7:
+    jump ^unrolled_8
+
+  block ^unrolled_8:
+    %t10 = phi i64 [^loop_preheader_7: 0, ^unrolled_8: %t11]
+    %t11 = binary add i64 %t10, 8
+    %t12 = cmp ne i64 %t9, %t11
+    branch %t12, ^unrolled_8, ^loop_exit_9
+
+  block ^loop_exit_9:
+    %t13 = cmp ult i64 %t11, %repeats
+    branch %t13, ^wide_tail_10, ^repeat_latch
+
+  block ^wide_tail_10:
+    %t14 = phi i64 [^loop_preheader_6: 0, ^loop_exit_9: %t11]
+    jump ^other_loop
+
+  block ^other_loop:
+    %alt = phi i64 [^wide_tail_10: %t14, ^other_loop: %alt_next]
+    %alt_next = binary add i64 %alt, 1
+    %alt_more = cmp ult i64 %alt_next, %repeats
+    branch %alt_more, ^other_loop, ^repeat_latch
+
+  block ^inner_guard:
+    branch %repeats, ^inner_entry, ^repeat_latch
+
+  block ^inner_entry:
+    %saved = load typed i64 %address
+    %t19 = binary and i64 %repeats, -8
+    branch %t19, ^loop_preheader_14, ^wide_tail_17
+
+  block ^loop_preheader_14:
+    jump ^unrolled_15
+
+  block ^unrolled_15:
+    %t20 = phi i64 [^loop_preheader_14: 0, ^unrolled_15: %t21]
+    %t21 = binary add i64 %t20, 8
+    %t22 = cmp ne i64 %t19, %t21
+    branch %t22, ^unrolled_15, ^loop_exit_16
+
+  block ^loop_exit_16:
+    %t23 = cmp ult i64 %t21, %repeats
+    branch %t23, ^wide_tail_17, ^loop_exit_19
+
+  block ^wide_tail_17:
+    %t24 = phi i64 [^inner_entry: 0, ^loop_exit_16: %t21]
+    jump ^inner_loop
+
+  block ^inner_loop:
+    %k = phi i64 [^wide_tail_17: %t24, ^inner_loop: %next_k]
+    %next_k = binary add i64 %k, 1
+    %more_inner = cmp ult i64 %next_k, %repeats
+    branch %more_inner, ^inner_loop, ^loop_exit_19
+
+  block ^loop_exit_19:
+    %update = binary add i64 %saved, 1
+    store typed i64 %update, %address
+    jump ^repeat_latch
+
+  block ^repeat_latch:
+    %next_iteration = binary add i64 %iteration, 1
+    %more_iterations = cmp ult i64 %next_iteration, 4
+    branch %more_iterations, ^repeat_header, ^element_latch
+
+  block ^element_latch:
+    %next_element = binary add nowrap i64 %element, 1
+    %narrow_next = convert trunc exact i32 i64 %next_element
+    %more_elements = cmp lt i32 %narrow_next, 2
+    branch %more_elements, ^element_header, ^round_header
+
+  block ^exit:
+    %state0 = load i64 %base
+    %p1 = index i64 %base, 1
+    %state1 = load i64 %p1
+    %result = binary add i64 %state0, %state1
+    return i64 %result
+}

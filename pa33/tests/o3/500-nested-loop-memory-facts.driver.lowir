@@ -1,0 +1,27 @@
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    jump ^outer
+  block ^outer:
+    %rounds = phi i64 [^entry: 0, ^outer_latch: %next_rounds]
+    jump ^inner
+  block ^inner:
+    %repeats = phi i64 [^outer: 0, ^advance: %next_repeats]
+    %actual = call i64 @nested(%rounds, %repeats)
+    %nonzero = cmp ne i64 %repeats, 0
+    %total = binary mul i64 %rounds, 8
+    %expected = select i64 %nonzero, %total, 0
+    %bad = cmp ne i64 %actual, %expected
+    branch %bad, ^fail, ^advance
+  block ^advance:
+    %next_repeats = binary add i64 %repeats, 1
+    %more_repeats = cmp ult i64 %next_repeats, 18
+    branch %more_repeats, ^inner, ^outer_latch
+  block ^outer_latch:
+    %next_rounds = binary add i64 %rounds, 1
+    %more_rounds = cmp ult i64 %next_rounds, 6
+    branch %more_rounds, ^outer, ^exit
+  block ^exit:
+    return i64 0
+  block ^fail:
+    return i64 1
+}
