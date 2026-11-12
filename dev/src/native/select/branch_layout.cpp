@@ -397,6 +397,28 @@ void coalesce_return(Function& f, Block& block, bool object_in_rax)
 
 } // namespace
 
+namespace {
+
+// Whether a block ending `jcc A; jmp B` jumps back to a block at or before
+// itself while A lies outside the blocks from B to it: the jump closes a
+// loop the conditional branch leaves, so the two change places (the branch
+// then repeats the loop and the jump runs once, on the way out). `index` is
+// the block's place among the `kept` blocks, whose numbers the labels hold.
+bool closes_range(const Function& f, const Block& block, uint32_t index, uint32_t kept, bool addressed)
+{
+	if (addressed || block.count < 2)
+		return false;
+	const Inst& jcc = f.insts[block.first + block.count - 2];
+	const Inst& jump = f.insts[block.first + block.count - 1];
+	if (jcc.op != Op::Jcc || jump.op != Op::Jmp || jcc.ops[0].kind != OperandKind::Label ||
+		jump.ops[0].kind != OperandKind::Label)
+		return false;
+	const uint32_t a = jcc.ops[0].symbol, b = jump.ops[0].symbol;
+	return a < kept && b <= index && (a < b || a > index);
+}
+
+} // namespace
+
 uint32_t FunctionSelector::layout_branches()
 {
 	const bool addressed = !out_->code_labels.empty();
@@ -587,7 +609,9 @@ uint32_t FunctionSelector::layout_branches()
 	// the new indexes, then their fall-through branches are dropped. A
 	// block ending `jcc A; jmp B` with neither next jumps unconditionally
 	// to the less frequent of the two (placement's estimate), so the
-	// likelier path takes only the conditional branch.
+	// likelier path takes only the conditional branch; a jump that closes
+	// a loop the branch leaves (closes_range) is the likelier whatever the
+	// estimate of the two targets.
 	uint32_t index = 0;
 	uint32_t laid_out = 0;
 	for (uint32_t b = 0; b < blocks; ++b)
@@ -629,7 +653,8 @@ uint32_t FunctionSelector::layout_branches()
 		}
 		const uint32_t next = index + 1 < kept ? index + 1 : kNoId;
 		uint32_t count = block.count;
-		if (next != kNoId && count != 0)
+		// The function's last block has no next one: only the exchange applies.
+		if (count != 0)
 		{
 			Inst& last = f.insts[block.first + count - 1];
 			if (branch_to(last, Op::Jmp, next))
@@ -643,7 +668,8 @@ uint32_t FunctionSelector::layout_branches()
 				jcc.ops[0] = last.ops[0];
 				--count;
 			}
-			else if (colder_jcc && last.op == Op::Jmp && count >= 2 && f.insts[block.first + count - 2].op == Op::Jcc)
+			else if ((colder_jcc || closes_range(f, block, index, kept, addressed)) && last.op == Op::Jmp &&
+				count >= 2 && f.insts[block.first + count - 2].op == Op::Jcc)
 			{
 				Inst& jcc = f.insts[block.first + count - 2];
 				jcc.sub = invert(static_cast<Cond>(jcc.sub));
