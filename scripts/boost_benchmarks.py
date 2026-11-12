@@ -371,6 +371,16 @@ def publish(args):
                 path.write_text(badge_svg(data))
 
 
+def retained_files(directory):
+    """The evidence a run uploads: records, logs and configuration, without the build and source trees."""
+    for path in directory.rglob('*'):
+        relative = path.relative_to(directory)
+        if (not {'build', 'source'}.intersection(relative.parts) and path.is_file()
+                and (path.suffix in ('.json', '.jsonl', '.xml', '.log', '.jam', '.hpp', '.md')
+                     or ('runtime' in relative.parts and path.name in ('stdout', 'stderr')))):
+            yield path
+
+
 def collect(args):
     args.target.mkdir(parents=True, exist_ok=True)
     for path in retained_files(args.artifact):

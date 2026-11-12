@@ -237,6 +237,22 @@ class BenchmarkTests(unittest.TestCase):
             self.assertNotIn('invocations.jsonl)', (published / 'suites/libs-example-test.md').read_text())
             self.assertTrue((artifact / 'cppgm/libs-example-test/b2.log').is_file())
 
+    def test_collection_keeps_evidence_and_leaves_build_and_source_trees(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact, target = Path(tmp) / 'boost', Path(tmp) / 'evidence'
+            kept = ['results.json', 'summary.md', 'cppgm/libs-example-test/b2.log', 'cppgm/libs-example-test/b2.xml',
+                    'cppgm/libs-example-test/invocations.jsonl', 'cppgm/config/user.hpp', 'cppgm/project-config.jam',
+                    'runtime/000-example/stdout', 'runtime/000-example/stderr']
+            left = ['cppgm/build/example.json', 'source/boost/config.hpp', 'cppgm/libs-example-test/example.o',
+                    'cppgm/libs-example-test/stdout']
+            for name in kept + left:
+                path = artifact / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('data')
+            boost_benchmarks.collect(argparse.Namespace(artifact=artifact, target=target))
+            self.assertEqual(sorted(str(path.relative_to(target)) for path in target.rglob('*') if path.is_file()),
+                             sorted(kept))
+
 
 @unittest.skipUnless(hasattr(os, 'pidfd_open'), 'Boost native replays run on Linux')
 class RuntimeTests(unittest.TestCase):
