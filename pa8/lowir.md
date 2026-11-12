@@ -386,7 +386,8 @@ host/object name such as `puts`, `_ZTIi`, or a local mangled helper name.
 Use a quoted string when the name contains non-ASCII bytes, spaces or other
 characters outside an ordinary LowIR word. Quoted object names preserve their
 bytes and use the same `\\`, `\"`, `\n`, `\r` and `\t` escapes as debug names.
-An empty object name is invalid. The writer keeps ordinary names unquoted.
+Empty object names and embedded null bytes are invalid. The writer keeps
+ordinary names unquoted; a leading `$` needs quotes because it starts a slot.
 
 The `keep_alias=yes` metadata flag requests that later object emission keep the LowIR-internal
 symbol spelling available as an alias even when `object=...` spells a different

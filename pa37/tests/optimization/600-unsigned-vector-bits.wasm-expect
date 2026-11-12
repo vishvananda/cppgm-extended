@@ -1,0 +1,19 @@
+{
+  "source": true,
+  "llvm_interop": true,
+  "reference_flags": ["-msimd128"],
+  "exports": ["vector_step", "vector_sum"],
+  "calls": [
+    {"export": "observe", "args": ["0", "0"], "result": "17"},
+    {"export": "observe", "args": ["17", "1"], "result": "17"},
+    {"export": "observe", "args": ["-2147483648", "7"], "result": "17"},
+    {"export": "observe", "args": ["-1", "67"], "result": "17"}
+  ],
+  "quality": {
+    "levels": [1, 2, 3],
+    "functions": {
+      "vector_step": {"locals": 20, "code_bytes": 512, "instructions": 128, "memory_ops": 0},
+      "vector_sum": {"locals": 16, "code_bytes": 256, "instructions": 96, "memory_ops": 0}
+    }
+  }
+}

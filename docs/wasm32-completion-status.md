@@ -9,15 +9,15 @@ or a green partial suite does not complete PA37.
 | Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes, target-sized class ABI and physical structor returns | Broader portable C++ target cases and final integrated qualification |
 | Scalar and aggregate execution | Qualified binary128 and variadic boundaries; scalar i128 selection and mixed LLVM calls now implemented | Remaining float formats and complete type/layout edge cases |
 | CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
-| Standard objects and own static linker | Linking-v2 objects, typed numeric/vector/reference globals, weak/COMDAT resolution, dependency ordering, multi-result control, modern EH, both LLVM interop directions and static GOT address globals | Imported memory/table limits, explicit host globals and remaining malformed-profile boundaries |
+| Standard objects and own static linker | Linking-v2 objects, typed numeric/vector/reference globals, weak/COMDAT resolution, dependency ordering, multi-result control, modern EH, both LLVM interop directions and static GOT address globals | Qualification of synthesized memory/table limits, explicit host globals, source/LowIR host-import bindings and remaining malformed-profile boundaries |
 | C++ runtime | Class ABI, allocation, dispatch, RTTI, guards, finalization and modern source EH; automatic EH/no-EH runtime selection | Broader portable C++ cases and final integrated qualification |
 | Modern EH execution dependency | Source/serialized EH, typed catches, nested cleanup contexts, stack recovery, opaque LowIR payloads and mixed LLVM producers/linkers pass | Additional merged-context/foreign-language cases and final integrated qualification |
 | WASI commands and freestanding reactors | Qualified WASI startup, argument/I/O/exit behavior, freestanding initialization and same-instance state/EH sequences | Broader C++ services and final integrated qualification |
-| SIMD and shared optimization | All 214 LowIR vector operations legalized; complete standard SIMD128 object vocabulary; consumed typed MIR/local cleanup; target-aware address, loop and inlining policies; published static/fuel envelopes and standard benchmark comparisons | Source-vector lowering improvements, broader independent kernels and final integrated qualification |
+| SIMD and shared optimization | All 214 LowIR vector operations legalized; complete standard SIMD128 object vocabulary; consumed typed MIR/local cleanup; target-aware address, loop and inlining policies; published static/fuel envelopes and standard benchmark comparisons | Remaining independent kernel/quality review and final integrated qualification |
 | Robust diagnostics and determinism | Bad target/version/shape tests; bounded MIR validation | Complete malformed object/feature/signature/relocation coverage and deterministic multi-object linking |
 | Course material and export | PA37 handout/design notes, target/MIR scaffolds, offline source/licence pins, normal Perl runner | Final scope and scaffold review, complete reference-tool prerequisites, clean export qualification |
 | Benchmarks and CI | Required correctness lane on both hosts; catalog/report/README integration; Perl O0/O3 scalar/SIMD campaign with separate compile/link/size/startup/setup/steady metrics; hosted and dedicated Intel publication paths | Final Linux/macOS results, live CI publication and measured codegen follow-ups |
-| Native regressions and efficiency | Target-cost snapshot: 10785 strict tests, 96 Wasm controls with host/self tools, debug info, PA5 self-host, byte-identical inception and frozen native output/performance checks on e2831a513 | Repeat final required qualification after the remaining implementation changes |
+| Native regressions and efficiency | Latest local snapshot: 10798 strict tests, 106 Wasm controls with host/self tools, debug info, PA5 self-host, byte-identical inception and frozen native output/performance checks on e2831a513 | Repeat final required qualification after the remaining implementation changes |
 
 All raw results, probes, pinned binaries and performance observations live outside
 Git under `/mnt/vizier/cppgm-wasm32-evidence`. Earlier qualification applies only
@@ -785,3 +785,98 @@ are `profile-closure/quoted-edge*`. Correct that lexical classification and revi
 NUL object-name handling before final qualification. Remaining profile/import
 hardening, source-vector lowering and full Linux/macOS CI qualification remain;
 this checkpoint does not complete PA37.
+
+
+## Unsigned vectors and quoted-name closure
+
+This checkpoint follows `c8dcd6450` on unchanged `origin/main` at `e2831a513`.
+Unsigned 32-bit construction, broadcasts, shifts and extraction retain the
+canonical signed LowIR operands through bit-preserving copies. Constant-index
+reads from vector variables now use the existing extraction path; ordinary
+array reads are screened by their typed category first. Volatile accesses and
+operand evaluation remain observable. Packed 32-bit multiplication uses a
+target capability instead of imposing the native SSE2 restriction on Wasm.
+The shared PA30 reducer checks scalar-oracle equality, high bits, side effects,
+volatile storage and variable shifts; PA37 adds memory/local/code envelopes
+without prescribing instructions. GCC, Clang and cppgm pass its native O0/O3
+builds and runs.
+
+LowIR quotes object names beginning with `$`, keeps their complete spelling
+through another reader/writer pass, and rejects embedded null bytes instead of
+silently truncating them. Constructed metadata and aliases receive the same
+name validation. The required PA8 reference sidecars are included. The affected
+PA33 exact-text regression reference was regenerated: unsigned shifts and
+constant-index extraction no longer use temporary memory.
+
+The final compiler passes the strict report (10798/10798), PA37 with host-built
+and self-built tools (106/106), debug-info checks, PA5 self-hosting, byte-identical
+native inception, PA36 smoke and architecture/format/file audits. Placement
+checks scan 10136 fixtures with no placement or hygiene findings; 89 existing EH
+review leads remain advisory. The complete harness passes. Changed sources
+also pass Clang 21 syntax checks with warnings as errors. File audits retain
+seven inherited header-division warnings.
+
+Frozen native compilers compare the parent and this compiler change on the
+same semantic-overload input:
+
+| Compile level | Parent instructions | Candidate instructions | Change |
+| --- | ---: | ---: | ---: |
+| O0 | 3,058,519,385 | 3,058,346,752 | -0.0056% |
+| O3 | 10,349,345,779 | 10,349,213,999 | -0.0013% |
+
+Both generated objects are byte-identical. The immutable compilers, patches,
+commands and counters are in `vector-lowering/perf-dispatch/` outside Git.
+
+The standard O3 Wasm campaign passes all 32 independent oracle cases per
+compiler/configuration. SIMD transform speed reaches 0.734x Clang (higher is
+better). Final-compiler objects and modules are byte-identical to the measured
+ones in both scalar and SIMD configurations; the proof, compiler hashes and
+all observations are retained in `vector-lowering/`. This does not claim that
+the other Wasm runtime gaps have closed.
+
+A concurrent export/debug build exposed shared tool-output paths and failed
+while replacing link temporaries. Those attempts are not qualification evidence.
+The affected build, strict, debug, smoke and audit steps were rerun serially;
+export runs after them. Their individual statuses and original failed logs are
+retained. Subsequent qualification uses immutable compiler binaries.
+
+Remaining required work includes explicit host-import binding facts through
+source/LowIR, the final object-profile boundary checks and Linux/macOS CI.
+Optional compiler/browser inception remains the separate portability project.
+
+
+The next binding gap has a reduced probe in
+`vector-lowering/import-binding-probe/`. The pinned LLVM compiler's
+[`import_module`, `import_name` and `export_name` attributes](https://clang.llvm.org/docs/AttributeReference.html#import-module)
+produce an object that our own linker accepts; Wasmtime supplies a separate
+host module and the call returns 51 as expected. Compiling the same source
+with cppgm currently drops those attributes: emitted LowIR has an ordinary
+external declaration and the final link reports `undefined Wasm symbol: added`.
+This isolates required work to typed source/LowIR binding transport and its
+validation, rather than general host-function object linking. Keep the module,
+field name and complete signature distinct from the linking-symbol spelling.
+
+
+The final regenerated export verifies 24,416 portable reference outputs and
+passes its 275-document inventory, 65-prose audit and all 43 reference wrappers
+in a fresh client. The exported Perl harness runs the new vector control with
+the final reference bundle; all 17 changed shipped files match. Superseded and
+incomplete exports were removed after the final checks; raw logs are retained.
+
+Frozen native wall-time qualification retains 96 observations: four A/A and
+eight paired ABBA blocks at each level, with CPU affinity and output equality.
+Paired candidate/parent wall medians are +0.009% at O0 and -1.195% at O3;
+A/A medians are -0.586% and +0.392%. Both candidate block-bootstrap intervals
+include zero, and the O3 A/A campaign has a large timing outlier. These
+measurements do not establish a small native timing change. Paired peak RSS
+changes are below 0.05% in magnitude. All observations and the summary remain
+in `vector-lowering/perf-dispatch/`.
+
+A separate frozen-module comparison checks 32 independent oracle cases per
+compiler in each mode. Scalar module bytes are identical. SIMD module size
+falls from 3274 to 3079 bytes. Four baseline A/A blocks and eight ABBA blocks
+with 32,768 transform repetitions per observation measure a median 30.47x
+parent/candidate speedup, with identical checksums throughout; A/A is 1.026x.
+The raw engine responses, requests, commands, module hashes and all paired
+ratios are in `vector-lowering/runtime-abba/`. This is the transform improvement,
+not an aggregate speedup for the other kernels or compiler build throughput.

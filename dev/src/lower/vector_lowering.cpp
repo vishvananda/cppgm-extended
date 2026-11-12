@@ -1071,10 +1071,12 @@ bool FunctionLowering::direct_vector_operation(TokenKind op, const sema::Type* v
 		form = floating ? offset(VectorOp::Subps, double_lane) : offset(VectorOp::Psubb, width);
 		break;
 	case TokenKind::OP_STAR:
-		// pmulld is SSE4.1, past the x86-64 baseline.
-		if (!floating && bytes != 2)
+		// Packed 32-bit multiplication is native to SIMD128, but is past
+		// the course's SSE2 baseline on x86-64.
+		if (!floating && bytes != 2 &&
+			!(bytes == 4 && target_model::optimization_model(lowering_.program().target).packed_i32_multiply))
 			return false;
-		form = floating ? offset(VectorOp::Mulps, double_lane) : VectorOp::Pmullw;
+		form = floating ? offset(VectorOp::Mulps, double_lane) : bytes == 4 ? VectorOp::Pmulld : VectorOp::Pmullw;
 		break;
 	case TokenKind::OP_DIV:
 		if (!floating)
@@ -1157,6 +1159,7 @@ bool FunctionLowering::vector_scalar_form(const sema::Type* vector, lowir::Vecto
 		from = VectorOp::Fromf64;
 		return true;
 	case lowir::TypeKind::I32:
+	case lowir::TypeKind::U32:
 		from = VectorOp::Fromi32;
 		return true;
 	case lowir::TypeKind::I64:
@@ -1171,7 +1174,9 @@ bool FunctionLowering::vector_scalar_form(const sema::Type* vector, lowir::Vecto
 RValue FunctionLowering::spread_vector(const sema::Type* vector, lowir::VectorOp from, const RValue& scalar)
 {
 	using lowir::VectorOp;
-	const RValue value = fit(scalar, vector->unqualified->element);
+	RValue value = fit(scalar, vector->unqualified->element);
+	if (value.type.kind() == lowir::TypeKind::U32)
+		value = copy(lowir::Type::scalar(lowir::TypeKind::I32), value);
 	const RValue low = vector_instruction(from, &value);
 	switch (from)
 	{
@@ -1235,6 +1240,9 @@ bool FunctionLowering::direct_vector_shift(
 	{
 	case lowir::TypeKind::I32:
 		break;
+	case lowir::TypeKind::U32:
+		amount = copy(i32, count);
+		break;
 	case lowir::TypeKind::I16:
 	case lowir::TypeKind::U16:
 		amount = convert_op(lowir::ConvertOp::ZExt, i32, count);
@@ -1263,7 +1271,9 @@ bool FunctionLowering::direct_vector_list(const sema::Type* vector, const syntax
 	RValue lanes[4];
 	for (uint32_t i = 0; i < list.elements.size; ++i)
 	{
-		const RValue value = fit(operand(*list.elements[i], ConversionContext::Initialization), lane);
+		RValue value = fit(operand(*list.elements[i], ConversionContext::Initialization), lane);
+		if (value.type.kind() == lowir::TypeKind::U32)
+			value = copy(lowir::Type::scalar(lowir::TypeKind::I32), value);
 		lanes[i] = vector_instruction(from, &value);
 	}
 	if (list.elements.size == 2)
@@ -1283,7 +1293,8 @@ bool FunctionLowering::direct_vector_lane(const syntax::SubscriptExpr& expr, RVa
 	using lowir::VectorOp;
 	const syntax::Expr& base = *WithoutParentheses(expr.base);
 	const sema::Type* vector = base.facts->type;
-	if (!lowering_.register_vector(vector) || (vector->cv & sema::kVolatile) != 0)
+	if (vector->unqualified->kind != sema::TypeKind::Vector || !lowering_.register_vector(vector) ||
+		((vector->cv | expr.facts->type->cv) & sema::kVolatile) != 0)
 		return false;
 	const syntax::Expr& position = *WithoutParentheses(expr.index);
 	if (position.kind != syntax::ExprKind::Literal)
@@ -1292,7 +1303,7 @@ bool FunctionLowering::direct_vector_lane(const syntax::SubscriptExpr& expr, RVa
 	const lowir::TypeKind kind = lane.kind();
 	const uint64_t bound = vector->unqualified->bound;
 	const uint64_t bytes = lowering_.size_of(expr.facts->type, 0);
-	if (bytes < 4 || kind == lowir::TypeKind::U32)
+	if (bytes < 4)
 		return false;
 	uint64_t index = 0;
 	if (!is_integer_literal(rvalue(position), index) || index >= bound)
@@ -1311,7 +1322,10 @@ bool FunctionLowering::direct_vector_lane(const syntax::SubscriptExpr& expr, RVa
 		: kind == lowir::TypeKind::F64               ? VectorOp::Tof64
 		: bytes == 4                                 ? VectorOp::Toi32
 													 : VectorOp::Toi64;
-	result = vector_instruction(to, &value, nullptr, nullptr, -1, lane);
+	const lowir::Type extracted = kind == lowir::TypeKind::U32 ? lowir::Type::scalar(lowir::TypeKind::I32) : lane;
+	result = vector_instruction(to, &value, nullptr, nullptr, -1, extracted);
+	if (kind == lowir::TypeKind::U32)
+		result = copy(lane, result);
 	return true;
 }
 

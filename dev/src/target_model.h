@@ -95,6 +95,7 @@ struct OptimizationModel
 	bool scaled_memory_operands;
 	bool locals_survive_calls;
 	bool floating_literal_loads;
+	bool packed_i32_multiply;
 };
 
 constexpr bool is_wasm(Target target)
@@ -126,7 +127,8 @@ constexpr Description describe(Target target)
 
 constexpr OptimizationModel optimization_model(Target target)
 {
-	return is_wasm(target) ? OptimizationModel{ false, true, false } : OptimizationModel{ true, false, true };
+	return is_wasm(target) ? OptimizationModel{ false, true, false, true }
+						   : OptimizationModel{ true, false, true, false };
 }
 
 // The course's Linux runtime provides GNU's combined sin/cos call ABI.

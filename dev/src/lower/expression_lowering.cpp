@@ -360,8 +360,17 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 	if ((facts->flags & sema::kBitField) != 0 && facts->category != sema::ValueCategory::PRValue &&
 		e->kind != syntax::ExprKind::Conditional)
 		return bit_field_value(*e);
-	if (e->kind == syntax::ExprKind::Subscript && facts->category == sema::ValueCategory::PRValue)
-		return vector_lane_value(static_cast<const syntax::SubscriptExpr&>(*e));
+	if (e->kind == syntax::ExprKind::Subscript)
+	{
+		const syntax::SubscriptExpr& subscript = static_cast<const syntax::SubscriptExpr&>(*e);
+		if (facts->category == sema::ValueCategory::PRValue)
+			return vector_lane_value(subscript);
+		RValue direct;
+		if ((facts->flags & sema::kOperatorCall) == 0 &&
+			WithoutParentheses(subscript.base)->facts->type->unqualified->kind == sema::TypeKind::Vector &&
+			direct_vector_lane(subscript, direct))
+			return direct;
+	}
 	// A list of a vector's lanes or a complex value's parts (which stands
 	// for its object in the analysis) is that value.
 	if (e->kind == syntax::ExprKind::BracedInit &&

@@ -5,6 +5,11 @@ excluded from the student export. The user selected optional qualification:
 running cppgm inside Wasm or a browser is not a required PA37 correctness gate.
 The full compiler and its self-build have not run in either environment yet.
 
+Follow-up at `1087b2daf`: target builtin templates and unresolved weak runtime
+calls are fixed. Ordinary WASI file streams now pass without the extra runtime
+object described in the original probe below. The remaining compiler-host
+portability and complete browser round-trip work is still optional.
+
 ## Finding
 
 The practical route is one `wasm32-wasip1` compiler executable, used unchanged
@@ -45,8 +50,9 @@ The WASI command probe needed one explicit runtime object, `chdir.c.obj`,
 extracted from the pinned SDK's libc archive. Without that workaround the
 ordinary link fails with an unresolved weak function relocation for
 `__wasilibc_find_relpath_alloc`. This is a core linker gap, not a browser shim
-failure. The probe therefore establishes the browser host services, not a
-successful unmodified file-I/O compilation path.
+failure. The original probe therefore establishes the browser host services.
+The later target-library checkpoint separately qualifies the ordinary
+file-I/O path.
 
 The shim was `@bjorn3/browser_wasi_shim` 0.4.2, with registry SHA-512 integrity
 checked and both upstream licences retained. Its archive is 31,373 bytes;
@@ -79,6 +85,11 @@ representations/conversions and test round trips and rounding boundaries.
 The scan is not an exhaustive portability qualification. Compile every source
 to an object with pinned Clang first, then with cppgm, to separate compiler-host
 portability from target frontend/backend failures.
+The later cppgm probe reaches another distinction: the SDK's `errno.h` uses
+the C11 spelling `_Thread_local`, which Clang accepts in C++ but cppgm does not
+currently parse. Qualify the single-thread libc declaration and its storage ABI
+before choosing a compatibility fix; removing the qualifier without checking
+the linked runtime would not establish correctness.
 Keep required PA37 fixes, such as weak linking and target builtin declarations,
 covered independently of the optional self-host qualification.
 

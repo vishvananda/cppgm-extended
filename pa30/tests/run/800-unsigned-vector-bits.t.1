@@ -1,0 +1,9 @@
+#include "800-unsigned-vector-bits.h"
+int main()
+{
+    const unsigned seeds[4] = {0, 17, 0x80000000u, ~0u};
+    for (unsigned k = 0; k < 4; ++k)
+        for (unsigned count = 0; count < 67; ++count)
+            if (observe(seeds[k], count) != 17) return 1;
+    return 0;
+}

@@ -283,6 +283,12 @@ void Lexer::scan_string(Token& token)
 	while (position_ < end_ && *position_ != '"' && *position_ != '\n')
 	{
 		char c = *position_++;
+		if (c == 0)
+		{
+			token.kind = TokenKind::Invalid;
+			token.problem = "null byte in quoted name";
+			return;
+		}
 		if (c == '\\')
 		{
 			if (position_ == end_)

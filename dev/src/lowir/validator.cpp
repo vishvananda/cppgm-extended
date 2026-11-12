@@ -597,6 +597,10 @@ bool Validator::check_links()
 		const SymbolMetadata& metadata = symbol.metadata;
 		if (symbol.name == 0 || symbol.name >= program_.names.size())
 			return fail("invalid symbol name");
+		if (metadata.object >= program_.names.size() ||
+			(metadata.object != 0 &&
+				std::memchr(program_.spelling(metadata.object), 0, program_.names.length(metadata.object)) != nullptr))
+			return fail("invalid object name", symbol.name);
 		// (Each of the eight flag bits is a flag, keep_alias to cold.)
 		if (metadata.role >= ir_model::kSymbolRoleCount || metadata.linkage >= ir_model::kLanguageLinkageModeCount ||
 			metadata.binding >= ir_model::kSymbolBindingModeCount ||
@@ -633,6 +637,8 @@ bool Validator::check_links()
 	{
 		if (alias.object == 0 || alias.object >= program_.names.size() || alias.target >= symbols)
 			return fail("invalid object alias");
+		if (std::memchr(program_.spelling(alias.object), 0, program_.names.length(alias.object)) != nullptr)
+			return fail("invalid object alias name");
 	}
 	for (const EquivalentEntry& entry : program_.equivalent_entries)
 		if (entry.symbol >= symbols || entry.target >= symbols)

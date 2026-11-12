@@ -695,6 +695,14 @@ validator and `lowir2native` to match. Each operation encodes as its legacy SSE
 form. A vector of another size, a vector of `bool` lanes and an operation with no
 `vector` form stay lane by lane.
 
+Unsigned 32-bit lanes have the same packed bit representation as signed lanes.
+Preserve those bits during construction, scalar broadcasts and constant-index
+extraction, including values above `INT_MAX`. Keep scalar evaluation order and
+volatile reads. On later targets, choose direct packed operations using the
+selected target's capabilities: the native SSE2 baseline does not limit a
+target that provides packed 32-bit multiplication. Equivalent lane lowering
+remains valid when the target has no suitable operation.
+
 ### Design Notes (Non-Normative)
 
 Hosted compatibility is easiest to approach as a sequence of small compatibility

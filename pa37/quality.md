@@ -39,6 +39,12 @@ Bounds allow different local allocation, stackification, loop unrolling and
 vectorization choices. Larger runtime counts also check that control lowering
 and repeated work remain bounded. Benchmark timings are reported separately.
 
+The unsigned-vector controls require packed arithmetic and constant-index
+extraction to avoid temporary linear-memory storage. They also check high-bit
+values, variable shifts, operand evaluation and volatile accesses against a
+scalar calculation. The bounds allow different instruction sequences and
+local allocation.
+
 Use the selected target when deciding whether a transformation pays for its
 extra work. Wasm address arithmetic and expanded operations need their own
 costs, and local values survive calls. Keep invariant arithmetic out of repeated

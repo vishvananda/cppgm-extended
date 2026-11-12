@@ -58,7 +58,7 @@ bool bare_object_name(const char* name)
 {
 	if (*name == '@')
 		++name;
-	else if ((*name >= '0' && *name <= '9') || (*name == '.' && name[1] >= '0' && name[1] <= '9'))
+	else if (*name == '$' || (*name >= '0' && *name <= '9') || (*name == '.' && name[1] >= '0' && name[1] <= '9'))
 		return false;
 	if (*name == 0)
 		return false;

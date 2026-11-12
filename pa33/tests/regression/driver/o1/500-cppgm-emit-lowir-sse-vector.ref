@@ -81,35 +81,10 @@ function @shift_right_literal(%a : v128) -> v128 [binding=strong, object=_Z19shi
     return v128 %t1
 }
 function @shift_unsigned(%a : v128, %count : i32) -> v128 [binding=strong, object=_Z14shift_unsignedDv4_ji] {
-  slot $vector__1 : v128
-  slot $vector__2 : v128
-
   block ^entry:
-    %t1 = copy u32 %count
-    store v128 %a, $vector__1
-    %t2 = addr $vector__1
-    zeroinit 16x16 $vector__2
-    %t3 = addr $vector__2
-    %t4 = load typed u32 %t2
-    %t5 = binary ushr u32 %t4, %t1
-    store typed u32 %t5, %t3
-    %t6 = index i8 [projection=field] %t2, 4
-    %t7 = load typed u32 %t6
-    %t8 = binary ushr u32 %t7, %t1
-    %t9 = index i8 [projection=field] %t3, 4
-    store typed u32 %t8, %t9
-    %t10 = index i8 [projection=field] %t2, 8
-    %t11 = load typed u32 %t10
-    %t12 = binary ushr u32 %t11, %t1
-    %t13 = index i8 [projection=field] %t3, 8
-    store typed u32 %t12, %t13
-    %t14 = index i8 [projection=field] %t2, 12
-    %t15 = load typed u32 %t14
-    %t16 = binary ushr u32 %t15, %t1
-    %t17 = index i8 [projection=field] %t3, 12
-    store typed u32 %t16, %t17
-    %t18 = load v128 $vector__2
-    return v128 %t18
+    %t1 = vector fromi32 %count
+    %t2 = vector psrld %a, %t1
+    return v128 %t2
 }
 function @shift_short(%a : v128, %count : i32) -> v128 [binding=strong, object=_Z11shift_shortDv8_si] {
   block ^entry:
@@ -201,33 +176,21 @@ function @words(%a : i32, %b : i32, %c : i32, %d : i32) -> v128 [binding=strong,
     return v128 %t7
 }
 function @second_lane(%a : v128) -> f64 [binding=strong, object=_Z11second_laneDv2_d] {
-  slot $a : v128
-
   block ^entry:
-    store v128 %a, $a
-    %t1 = addr $a
-    %t2 = index i8 [projection=array_element] %t1, 8
-    %t3 = load typed f64 %t2
-    return f64 %t3
+    %t1 = vector unpckhpd %a, %a
+    %t2 = vector tof64 %t1
+    return f64 %t2
 }
 function @third_lane(%a : v128) -> f32 [binding=strong, object=_Z10third_laneDv4_f] {
-  slot $a : v128
-
   block ^entry:
-    store v128 %a, $a
-    %t1 = addr $a
-    %t2 = index i8 [projection=array_element] %t1, 8
-    %t3 = load typed f32 %t2
-    return f32 %t3
+    %t1 = vector pshufd %a, 2
+    %t2 = vector tof32 %t1
+    return f32 %t2
 }
 function @first_word(%a : v128) -> i32 [binding=strong, object=_Z10first_wordDv4_i] {
-  slot $a : v128
-
   block ^entry:
-    store v128 %a, $a
-    %t1 = addr $a
-    %t2 = load typed i32 %t1
-    return i32 %t2
+    %t1 = vector toi32 %a
+    return i32 %t1
 }
 function @sign_mask(%a : v128) -> i32 [binding=strong, object=_Z9sign_maskDv4_f] {
   block ^entry:
