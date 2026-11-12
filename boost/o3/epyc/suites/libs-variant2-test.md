@@ -4,90 +4,90 @@ All original oracles passed for all three compilers. Seconds are child CPU, one 
 
 | Test | Kind | Compile cppgm | GCC | Clang | Test cppgm | GCC | Clang |
 |---|---|---:|---:|---:|---:|---:|---:|
-| quick.test | RUN | 0.123850 | 0.220297 | 0.282137 | 0.001820 | 0.000847 | 0.001789 |
-| variant_size.test | RUN | 0.199564 | 0.537077 | 0.542946 | 0.001970 | 0.001987 | 0.001810 |
-| variant_alternative.test | RUN | 0.257905 | 1.726972 | 0.922789 | 0.001966 | 0.001861 | 0.001548 |
-| variant_holds_alternative.test | RUN | 0.197316 | 0.424672 | 0.515740 | 0.001688 | 0.002067 | 0.001860 |
-| variant_holds_alternative_cx.test | COMPILE | 0.133117 | 0.263344 | 0.289518 | — | — | — |
-| variant_get_by_index.test | RUN | 0.282930 | 1.867181 | 1.128046 | 0.002150 | 0.002095 | 0.001980 |
-| variant_get_by_index_cx.test | COMPILE | 0.136775 | 0.247354 | 0.339275 | — | — | — |
-| variant_get_by_type.test | RUN | 0.305882 | 2.026481 | 1.231437 | 0.001678 | 0.002106 | 0.001572 |
-| variant_get_by_type_cx.test | COMPILE | 0.128734 | 0.216855 | 0.276828 | — | — | — |
-| variant_default_construct.test | RUN | 0.282745 | 1.525243 | 0.985416 | 0.001780 | 0.002104 | 0.001731 |
-| variant_default_construct_cx.test | COMPILE | 0.124949 | 0.228839 | 0.316282 | — | — | — |
-| variant_copy_construct.test | RUN | 0.418328 | 2.560084 | 1.898386 | 0.001878 | 0.001996 | 0.001868 |
-| variant_copy_construct_cx.test | COMPILE | 0.140079 | 0.262351 | 0.401192 | — | — | — |
-| variant_move_construct.test | RUN | 0.399936 | 2.116129 | 1.705922 | 0.001760 | 0.001779 | 0.001935 |
-| variant_move_construct_cx.test | COMPILE | 0.114605 | 0.209700 | 0.282046 | — | — | — |
-| variant_value_construct.test | RUN | 0.221639 | 0.554531 | 0.704532 | 0.001731 | 0.001898 | 0.001874 |
-| variant_value_construct_cx.test | COMPILE | 0.129331 | 0.253789 | 0.313124 | — | — | — |
-| variant_in_place_index_construct.test | RUN | 0.228303 | 0.541991 | 0.710904 | 0.001874 | 0.001726 | 0.001922 |
-| variant_in_place_index_construct_cx.test | COMPILE | 0.128648 | 0.262206 | 0.340361 | — | — | — |
-| variant_in_place_type_construct.test | RUN | 0.230565 | 0.561791 | 0.700715 | 0.001880 | 0.001994 | 0.001682 |
-| variant_in_place_type_construct_cx.test | COMPILE | 0.132868 | 0.266546 | 0.329224 | — | — | — |
-| variant_copy_assign.test | RUN | 0.288237 | 1.657464 | 1.090565 | 0.001519 | 0.001918 | 0.001510 |
-| variant_copy_assign_cx.test | COMPILE | 0.118125 | 0.207635 | 0.250975 | — | — | — |
-| variant_move_assign.test | RUN | 0.291028 | 1.646720 | 1.074907 | 0.001758 | 0.002364 | 0.001763 |
-| variant_move_assign_cx.test | COMPILE | 0.112818 | 0.219560 | 0.249930 | — | — | — |
-| variant_value_assign.test | RUN | 0.235882 | 0.599576 | 0.704165 | 0.001870 | 0.001807 | 0.001663 |
-| variant_value_assign_cx.test | COMPILE | 0.115338 | 0.197969 | 0.255096 | — | — | — |
-| variant_emplace_index.test | RUN | 0.255283 | 0.701964 | 0.780453 | 0.001626 | 0.001720 | 0.001781 |
-| variant_emplace_index_cx.test | COMPILE | 0.120337 | 0.211927 | 0.243113 | — | — | — |
-| variant_emplace_type.test | RUN | 0.243354 | 0.600436 | 0.691730 | 0.001428 | 0.001888 | 0.001861 |
-| variant_emplace_type_cx.test | COMPILE | 0.115259 | 0.223430 | 0.244695 | — | — | — |
-| variant_swap.test | RUN | 0.248548 | 0.749761 | 0.760770 | 0.001758 | 0.001903 | 0.001784 |
-| variant_eq_ne.test | RUN | 0.210331 | 0.448318 | 0.538023 | 0.001768 | 0.001820 | 0.001811 |
-| variant_eq_ne_cx.test | COMPILE | 0.117953 | 0.222359 | 0.259695 | — | — | — |
-| variant_lt_gt.test | RUN | 0.232053 | 0.509864 | 0.564645 | 0.001845 | 0.001834 | 0.001746 |
-| variant_lt_gt_cx.test | COMPILE | 0.116880 | 0.201937 | 0.228368 | — | — | — |
-| variant_destroy.test | RUN | 0.235482 | 0.492811 | 0.558988 | 0.001772 | 0.001919 | 0.001784 |
-| variant_visit.test | RUN | 1.146906 | 3.990987 | 9.937475 | 0.001657 | 0.001825 | 0.001818 |
-| variant_convert_construct.test | RUN | 0.282763 | 0.667833 | 0.804585 | 0.002122 | 0.001974 | 0.001734 |
-| variant_subset.test | RUN | 0.268022 | 0.746319 | 0.845717 | 0.001879 | 0.001935 | 0.001394 |
-| variant_valueless.test | RUN | 0.199106 | 0.520848 | 0.585566 | 0.002008 | 0.002080 | 0.001539 |
-| variant_copy_construct_throw.test | RUN | 0.165381 | 0.336781 | 0.390087 | 0.002112 | 0.002068 | 0.001776 |
-| variant_move_construct_throw.test | RUN | 0.164470 | 0.342421 | 0.406414 | 0.001891 | 0.002023 | 0.001608 |
-| variant_convert_construct_throw.test | RUN | 0.172181 | 0.383933 | 0.437564 | 0.001972 | 0.001760 | 0.001232 |
-| variant_copy_assign_throw.test | RUN | 0.163964 | 0.330369 | 0.412472 | 0.002230 | 0.001839 | 0.001836 |
-| variant_move_assign_throw.test | RUN | 0.159364 | 0.339463 | 0.444381 | 0.002100 | 0.002302 | 0.001922 |
-| variant_get_by_index_nx.test | RUN | 0.320572 | 1.600870 | 1.107842 | 0.002020 | 0.001888 | 0.001862 |
-| variant_get_by_index_cx_nx.test | COMPILE | 0.128494 | 0.255924 | 0.291433 | — | — | — |
-| variant_get_by_type_nx.test | RUN | 0.320808 | 1.788031 | 1.118117 | 0.001978 | 0.001622 | 0.001770 |
-| variant_get_by_type_cx_nx.test | COMPILE | 0.113168 | 0.203640 | 0.246148 | — | — | — |
-| variant_subset_nx.test | RUN | 0.284638 | 0.713190 | 0.877881 | 0.001876 | 0.002038 | 0.001982 |
-| variant_hash.test | RUN | 0.282693 | 0.805932 | 0.797815 | 0.002280 | 0.001737 | 0.002036 |
-| variant_trivial.test | RUN | 1.507927 | 4.536444 | 6.165014 | 0.002280 | 0.002136 | 0.001800 |
-| variant_special.test | RUN | 1.467659 | 4.670811 | 6.485706 | 0.001914 | 0.002136 | 0.002014 |
-| variant_visit_derived.test | RUN | 0.188330 | 0.413347 | 0.582274 | 0.001956 | 0.001800 | 0.001738 |
-| variant_many_types.test | RUN | 1.482189 | 6.415283 | 8.576118 | 0.001840 | 0.002018 | 0.002150 |
-| variant_visit_r.test | RUN | 0.575298 | 1.956707 | 3.271661 | 0.002157 | 0.001780 | 0.001792 |
-| variant_derived_construct.test | COMPILE | 0.119722 | 0.202756 | 0.283944 | — | — | — |
-| variant_visit_by_index.test | RUN | 0.252476 | 0.533639 | 0.776131 | 0.001762 | 0.001945 | 0.001827 |
-| variant_ostream_insert.test | RUN | 0.186255 | 0.435499 | 0.518110 | 0.002054 | 0.001859 | 0.001724 |
-| is_output_streamable.test | RUN | 0.219496 | 0.902487 | 0.709422 | 0.001501 | 0.001794 | 0.001968 |
-| variant_json_value_from.test | RUN | 0.357693 | 0.758992 | 0.893350 | 0.002025 | 0.001948 | 0.001991 |
-| variant_json_value_to.test | RUN | 0.433766 | 1.006155 | 1.172927 | 0.001820 | 0.001977 | 0.001836 |
-| variant_uses_double_storage.test | COMPILE | 0.124946 | 0.215697 | 0.298386 | — | — | — |
-| variant_derived_construct2.test | RUN | 0.170919 | 0.358986 | 0.454812 | 0.002170 | 0.002044 | 0.001747 |
-| variant_visit_cx.test | COMPILE | 0.117893 | 0.223006 | 0.245726 | — | — | — |
-| variant_visit_cx_2.test | COMPILE | 0.114459 | 0.230168 | 0.235282 | — | — | — |
-| variant_visit_r_cx.test | COMPILE | 0.116213 | 0.222490 | 0.251923 | — | — | — |
-| variant_index_type_126.test | RUN | 0.978222 | 2.106846 | 3.811827 | 0.001820 | 0.001917 | 0.001985 |
-| variant_index_type_127.test | RUN | 1.041535 | 2.081932 | 3.840094 | 0.002026 | 0.001759 | 0.001766 |
-| variant_index_type_128.test | RUN | 1.056538 | 2.140177 | 3.869705 | 0.001650 | 0.001726 | 0.001825 |
-| variant_index_type_129.test | RUN | 0.991235 | 2.110447 | 3.869694 | 0.001888 | 0.001842 | 0.001749 |
-| variant_index_type_254.test | RUN | 3.417454 | 7.776814 | 12.086963 | 0.002134 | 0.001770 | 0.001762 |
-| variant_index_type_255.test | RUN | 3.578946 | 7.768832 | 12.095049 | 0.001765 | 0.001485 | 0.001739 |
-| variant_index_type_256.test | RUN | 3.449233 | 7.963170 | 12.284118 | 0.002058 | 0.001801 | 0.001582 |
-| variant_index_type_257.test | RUN | 3.602399 | 8.025642 | 12.421938 | 0.001602 | 0.001969 | 0.001766 |
-| variant_default_construct_cx_2.test | COMPILE | 0.136663 | 0.201607 | 0.237872 | — | — | — |
-| variant_default_construct_cx_3.test | COMPILE | 0.114258 | 0.200079 | 0.241948 | — | — | — |
-| variant_default_construct_cx_4.test | COMPILE | 0.115291 | 0.205141 | 0.312162 | — | — | — |
-| variant_default_construct_cx_5.test | COMPILE | 0.112625 | 0.193793 | 0.310678 | — | — | — |
-| variant_value_construct_cx_2.test | COMPILE | 0.110135 | 0.206932 | 0.331965 | — | — | — |
-| variant_value_construct_cx_3.test | COMPILE | 0.109710 | 0.214170 | 0.282158 | — | — | — |
-| variant_value_construct_cx_4.test | COMPILE | 0.095132 | 0.215266 | 0.230833 | — | — | — |
-| variant_issue_55.test | RUN | 0.153942 | 0.364138 | 0.403324 | 0.001487 | 0.001513 | 0.001495 |
+| quick.test | RUN | 0.174433 | 0.384000 | 0.583617 | 0.002046 | 0.000949 | 0.002116 |
+| variant_size.test | RUN | 0.271683 | 0.847014 | 1.078139 | 0.002320 | 0.002387 | 0.002315 |
+| variant_alternative.test | RUN | 0.373916 | 2.649859 | 1.775031 | 0.001996 | 0.002080 | 0.001774 |
+| variant_holds_alternative.test | RUN | 0.263026 | 0.645119 | 1.091058 | 0.002180 | 0.002032 | 0.001919 |
+| variant_holds_alternative_cx.test | COMPILE | 0.167299 | 0.375279 | 0.647041 | — | — | — |
+| variant_get_by_index.test | RUN | 0.425122 | 2.858371 | 2.207212 | 0.002058 | 0.002367 | 0.002628 |
+| variant_get_by_index_cx.test | COMPILE | 0.170694 | 0.409066 | 0.661489 | — | — | — |
+| variant_get_by_type.test | RUN | 0.426276 | 3.043696 | 2.341968 | 0.002784 | 0.002396 | 0.002518 |
+| variant_get_by_type_cx.test | COMPILE | 0.167731 | 0.351915 | 0.572959 | — | — | — |
+| variant_default_construct.test | RUN | 0.426244 | 2.244153 | 1.891953 | 0.002052 | 0.001933 | 0.002366 |
+| variant_default_construct_cx.test | COMPILE | 0.197237 | 0.386175 | 0.647463 | — | — | — |
+| variant_copy_construct.test | RUN | 0.618567 | 3.766685 | 3.392046 | 0.002179 | 0.002080 | 0.002127 |
+| variant_copy_construct_cx.test | COMPILE | 0.191236 | 0.413507 | 0.741048 | — | — | — |
+| variant_move_construct.test | RUN | 0.584244 | 3.271884 | 3.112050 | 0.002192 | 0.002808 | 0.002206 |
+| variant_move_construct_cx.test | COMPILE | 0.164146 | 0.354652 | 0.573157 | — | — | — |
+| variant_value_construct.test | RUN | 0.321485 | 0.874849 | 1.398440 | 0.001905 | 0.002162 | 0.002335 |
+| variant_value_construct_cx.test | COMPILE | 0.176774 | 0.389628 | 0.644215 | — | — | — |
+| variant_in_place_index_construct.test | RUN | 0.321868 | 0.838518 | 1.324069 | 0.002458 | 0.001856 | 0.002226 |
+| variant_in_place_index_construct_cx.test | COMPILE | 0.177210 | 0.406169 | 0.648813 | — | — | — |
+| variant_in_place_type_construct.test | RUN | 0.329981 | 0.851501 | 1.397614 | 0.002138 | 0.002129 | 0.002834 |
+| variant_in_place_type_construct_cx.test | COMPILE | 0.178138 | 0.408109 | 0.689279 | — | — | — |
+| variant_copy_assign.test | RUN | 0.442520 | 2.624343 | 2.092513 | 0.002206 | 0.002040 | 0.001934 |
+| variant_copy_assign_cx.test | COMPILE | 0.162495 | 0.343010 | 0.559264 | — | — | — |
+| variant_move_assign.test | RUN | 0.418828 | 2.628508 | 2.067714 | 0.001989 | 0.002146 | 0.002436 |
+| variant_move_assign_cx.test | COMPILE | 0.151364 | 0.347762 | 0.582458 | — | — | — |
+| variant_value_assign.test | RUN | 0.327619 | 0.964340 | 1.530882 | 0.002026 | 0.002060 | 0.002368 |
+| variant_value_assign_cx.test | COMPILE | 0.163750 | 0.335264 | 0.519332 | — | — | — |
+| variant_emplace_index.test | RUN | 0.379324 | 1.115964 | 1.679993 | 0.001911 | 0.002008 | 0.002231 |
+| variant_emplace_index_cx.test | COMPILE | 0.159361 | 0.360494 | 0.583411 | — | — | — |
+| variant_emplace_type.test | RUN | 0.346760 | 0.937819 | 1.491239 | 0.002059 | 0.002173 | 0.002128 |
+| variant_emplace_type_cx.test | COMPILE | 0.163869 | 0.356614 | 0.589529 | — | — | — |
+| variant_swap.test | RUN | 0.338957 | 1.150694 | 1.589839 | 0.002325 | 0.002206 | 0.001873 |
+| variant_eq_ne.test | RUN | 0.275795 | 0.712259 | 1.130013 | 0.002153 | 0.002158 | 0.002157 |
+| variant_eq_ne_cx.test | COMPILE | 0.158314 | 0.352675 | 0.569870 | — | — | — |
+| variant_lt_gt.test | RUN | 0.296470 | 0.817956 | 1.218550 | 0.002192 | 0.002421 | 0.002322 |
+| variant_lt_gt_cx.test | COMPILE | 0.157432 | 0.359742 | 0.515689 | — | — | — |
+| variant_destroy.test | RUN | 0.295038 | 0.809824 | 1.223861 | 0.002052 | 0.002208 | 0.002406 |
+| variant_visit.test | RUN | 1.701162 | 6.218495 | 18.625360 | 0.002650 | 0.001902 | 0.002206 |
+| variant_convert_construct.test | RUN | 0.363462 | 1.071448 | 1.734011 | 0.003205 | 0.002278 | 0.002320 |
+| variant_subset.test | RUN | 0.385479 | 1.138975 | 1.756022 | 0.002171 | 0.002517 | 0.002278 |
+| variant_valueless.test | RUN | 0.307959 | 0.777207 | 1.277973 | 0.002265 | 0.002212 | 0.002352 |
+| variant_copy_construct_throw.test | RUN | 0.233801 | 0.538086 | 0.835402 | 0.002238 | 0.002279 | 0.002248 |
+| variant_move_construct_throw.test | RUN | 0.223342 | 0.558715 | 0.883631 | 0.002206 | 0.002188 | 0.002124 |
+| variant_convert_construct_throw.test | RUN | 0.223648 | 0.550871 | 0.895501 | 0.002178 | 0.002176 | 0.001812 |
+| variant_copy_assign_throw.test | RUN | 0.217246 | 0.520319 | 0.871931 | 0.002074 | 0.002259 | 0.002396 |
+| variant_move_assign_throw.test | RUN | 0.210724 | 0.555212 | 0.903372 | 0.002120 | 0.002073 | 0.002572 |
+| variant_get_by_index_nx.test | RUN | 0.519871 | 2.474347 | 2.164000 | 0.002194 | 0.002178 | 0.001850 |
+| variant_get_by_index_cx_nx.test | COMPILE | 0.187145 | 0.418758 | 0.666263 | — | — | — |
+| variant_get_by_type_nx.test | RUN | 0.492550 | 2.756841 | 2.252519 | 0.002109 | 0.002137 | 0.002199 |
+| variant_get_by_type_cx_nx.test | COMPILE | 0.155191 | 0.365804 | 0.582191 | — | — | — |
+| variant_subset_nx.test | RUN | 0.400524 | 1.096002 | 1.891615 | 0.002082 | 0.002182 | 0.003168 |
+| variant_hash.test | RUN | 0.389466 | 1.268484 | 1.646234 | 0.002295 | 0.002232 | 0.002496 |
+| variant_trivial.test | RUN | 2.216017 | 6.674707 | 12.697451 | 0.002272 | 0.002284 | 0.002259 |
+| variant_special.test | RUN | 2.169619 | 7.345435 | 13.208291 | 0.002053 | 0.002165 | 0.002393 |
+| variant_visit_derived.test | RUN | 0.259700 | 0.647461 | 1.156223 | 0.002207 | 0.002222 | 0.002358 |
+| variant_many_types.test | RUN | 2.212027 | 10.150530 | 16.642951 | 0.002092 | 0.002306 | 0.002294 |
+| variant_visit_r.test | RUN | 0.891721 | 3.129578 | 6.209245 | 0.002558 | 0.002384 | 0.002480 |
+| variant_derived_construct.test | COMPILE | 0.169133 | 0.318484 | 0.547499 | — | — | — |
+| variant_visit_by_index.test | RUN | 0.372939 | 0.837315 | 1.594907 | 0.001895 | 0.001932 | 0.002176 |
+| variant_ostream_insert.test | RUN | 0.261973 | 0.718779 | 0.953620 | 0.002104 | 0.002260 | 0.002374 |
+| is_output_streamable.test | RUN | 0.317771 | 1.413448 | 1.472465 | 0.001760 | 0.002221 | 0.002194 |
+| variant_json_value_from.test | RUN | 0.490858 | 1.282890 | 1.890499 | 0.001627 | 0.002071 | 0.002294 |
+| variant_json_value_to.test | RUN | 0.601053 | 1.594988 | 2.553777 | 0.002711 | 0.002282 | 0.002286 |
+| variant_uses_double_storage.test | COMPILE | 0.175219 | 0.402671 | 0.634140 | — | — | — |
+| variant_derived_construct2.test | RUN | 0.222018 | 0.603680 | 0.947541 | 0.002006 | 0.002132 | 0.002177 |
+| variant_visit_cx.test | COMPILE | 0.164519 | 0.342367 | 0.497188 | — | — | — |
+| variant_visit_cx_2.test | COMPILE | 0.155981 | 0.355245 | 0.553071 | — | — | — |
+| variant_visit_r_cx.test | COMPILE | 0.157773 | 0.354187 | 0.543415 | — | — | — |
+| variant_index_type_126.test | RUN | 1.410559 | 3.461755 | 7.909597 | 0.002126 | 0.002190 | 0.002204 |
+| variant_index_type_127.test | RUN | 1.418831 | 3.366942 | 7.962240 | 0.002172 | 0.001691 | 0.001936 |
+| variant_index_type_128.test | RUN | 1.489633 | 3.447415 | 7.968498 | 0.002158 | 0.002262 | 0.001996 |
+| variant_index_type_129.test | RUN | 1.475191 | 3.477638 | 8.068540 | 0.002025 | 0.002275 | 0.002186 |
+| variant_index_type_254.test | RUN | 4.966951 | 12.194775 | 23.021026 | 0.002068 | 0.002092 | 0.002166 |
+| variant_index_type_255.test | RUN | 5.156051 | 12.084423 | 23.146732 | 0.001889 | 0.002082 | 0.002130 |
+| variant_index_type_256.test | RUN | 5.153149 | 12.288066 | 23.308438 | 0.001884 | 0.001872 | 0.002322 |
+| variant_index_type_257.test | RUN | 5.111198 | 12.481993 | 23.641080 | 0.001651 | 0.001475 | 0.002200 |
+| variant_default_construct_cx_2.test | COMPILE | 0.149728 | 0.349463 | 0.529477 | — | — | — |
+| variant_default_construct_cx_3.test | COMPILE | 0.135977 | 0.390981 | 0.478334 | — | — | — |
+| variant_default_construct_cx_4.test | COMPILE | 0.159475 | 0.341087 | 0.595403 | — | — | — |
+| variant_default_construct_cx_5.test | COMPILE | 0.158002 | 0.375576 | 0.566439 | — | — | — |
+| variant_value_construct_cx_2.test | COMPILE | 0.156513 | 0.349919 | 0.572349 | — | — | — |
+| variant_value_construct_cx_3.test | COMPILE | 0.152080 | 0.339223 | 0.512268 | — | — | — |
+| variant_value_construct_cx_4.test | COMPILE | 0.153758 | 0.280037 | 0.403707 | — | — | — |
+| variant_issue_55.test | RUN | 0.216571 | 0.643389 | 0.758208 | 0.001658 | 0.001460 | 0.001698 |
 
 ## Native runtime replay
 
@@ -95,68 +95,68 @@ Child CPU of successful native tests, with process startup included; GDB and exp
 
 | Reference | CPU speedup ↑ | Paired blocks | A/A speedup |
 |---|---:|---|---:|
-| gcc | 0.976× | 0.986×, 0.967× | 0.985× |
-| clang | 0.960× | 0.961×, 0.958× | 0.994× |
+| gcc | 0.985× | 0.987×, 0.983× | 0.992× |
+| clang | 1.002× | 0.996×, 1.007× | 0.998× |
 
-† A/A drift or paired-block spread exceeds 5%; small differences are unresolved. 1375 native tests in the full cohort; 1361 have byte-identical output throughout. [Manifest](https://github.com/vishvananda/cppgm-extended/actions/runs/42951039903), [paired observations](https://github.com/vishvananda/cppgm-extended/actions/runs/42951039903) and [per-test summaries](https://github.com/vishvananda/cppgm-extended/actions/runs/42951039903).
+† A/A drift or paired-block spread exceeds 5%; small differences are unresolved. 1375 native tests in the full cohort; 1360 have byte-identical output throughout. [Raw replay evidence in CI artifacts](https://github.com/vishvananda/cppgm-extended/actions/runs/43133898266).
 
 | Test | Repeats | CPU cppgm | GCC | Clang | Output check |
 |---|---:|---:|---:|---:|---|
-| is_output_streamable.test | 10 | 0.001083s | 0.001082s | 0.001084s | byte equality observed |
-| quick.test | 10 | 0.001070s | 0.000488s | 0.001030s | byte equality observed |
-| variant_alternative.test | 10 | 0.001087s | 0.001065s | 0.001090s | byte equality observed |
-| variant_convert_construct.test | 10 | 0.001080s | 0.001074s | 0.001066s | byte equality observed |
-| variant_convert_construct_throw.test | 10 | 0.001115s | 0.001077s | 0.001148s | byte equality observed |
-| variant_copy_assign.test | 10 | 0.001089s | 0.001061s | 0.001130s | byte equality observed |
-| variant_copy_assign_throw.test | 10 | 0.001116s | 0.001079s | 0.001118s | byte equality observed |
-| variant_copy_construct.test | 10 | 0.001109s | 0.001051s | 0.001086s | byte equality observed |
-| variant_copy_construct_throw.test | 10 | 0.001108s | 0.001093s | 0.001105s | byte equality observed |
-| variant_default_construct.test | 10 | 0.001083s | 0.001078s | 0.001100s | byte equality observed |
-| variant_derived_construct2.test | 10 | 0.001086s | 0.001048s | 0.001104s | byte equality observed |
-| variant_destroy.test | 10 | 0.001103s | 0.001068s | 0.001077s | byte equality observed |
-| variant_emplace_index.test | 10 | 0.001097s | 0.001083s | 0.001096s | byte equality observed |
-| variant_emplace_type.test | 10 | 0.001110s | 0.001061s | 0.001095s | byte equality observed |
-| variant_eq_ne.test | 10 | 0.001084s | 0.001050s | 0.001074s | byte equality observed |
-| variant_get_by_index.test | 10 | 0.001138s | 0.001159s | 0.001167s | byte equality observed |
-| variant_get_by_index_nx.test | 10 | 0.001112s | 0.001074s | 0.001078s | byte equality observed |
-| variant_get_by_type.test | 10 | 0.001149s | 0.001117s | 0.001149s | byte equality observed |
-| variant_get_by_type_nx.test | 10 | 0.001157s | 0.001059s | 0.001123s | byte equality observed |
-| variant_hash.test | 10 | 0.001087s | 0.001063s | 0.001114s | byte equality observed |
-| variant_holds_alternative.test | 10 | 0.001064s | 0.001066s | 0.001095s | byte equality observed |
-| variant_in_place_index_construct.test | 10 | 0.001128s | 0.001048s | 0.001093s | byte equality observed |
-| variant_in_place_type_construct.test | 10 | 0.001107s | 0.001059s | 0.001093s | byte equality observed |
-| variant_index_type_126.test | 10 | 0.001085s | 0.001080s | 0.001091s | byte equality observed |
-| variant_index_type_127.test | 10 | 0.001094s | 0.001032s | 0.001091s | byte equality observed |
-| variant_index_type_128.test | 10 | 0.001110s | 0.001062s | 0.001081s | byte equality observed |
-| variant_index_type_129.test | 10 | 0.001073s | 0.001056s | 0.001086s | byte equality observed |
-| variant_index_type_254.test | 10 | 0.001087s | 0.001062s | 0.001100s | byte equality observed |
-| variant_index_type_255.test | 10 | 0.001095s | 0.001040s | 0.001119s | byte equality observed |
-| variant_index_type_256.test | 10 | 0.001083s | 0.001043s | 0.001070s | byte equality observed |
-| variant_index_type_257.test | 10 | 0.001079s | 0.001065s | 0.001097s | byte equality observed |
-| variant_issue_55.test | 10 | 0.001100s | 0.001066s | 0.001101s | byte equality observed |
-| variant_json_value_from.test | 10 | 0.001134s | 0.001112s | 0.001173s | byte equality observed |
-| variant_json_value_to.test | 10 | 0.001123s | 0.001084s | 0.001131s | byte equality observed |
-| variant_lt_gt.test | 10 | 0.001097s | 0.001064s | 0.001101s | byte equality observed |
-| variant_many_types.test | 10 | 0.001161s | 0.001108s | 0.001108s | byte equality observed |
-| variant_move_assign.test | 10 | 0.001099s | 0.001073s | 0.001073s | byte equality observed |
-| variant_move_assign_throw.test | 10 | 0.001128s | 0.001116s | 0.001114s | byte equality observed |
-| variant_move_construct.test | 10 | 0.001126s | 0.001087s | 0.001080s | byte equality observed |
-| variant_move_construct_throw.test | 10 | 0.001127s | 0.001090s | 0.001101s | byte equality observed |
-| variant_ostream_insert.test | 10 | 0.001123s | 0.001076s | 0.001117s | byte equality observed |
-| variant_size.test | 10 | 0.001079s | 0.001070s | 0.001069s | byte equality observed |
-| variant_special.test | 10 | 0.001194s | 0.001140s | 0.001137s | byte equality observed |
-| variant_subset.test | 10 | 0.001125s | 0.001113s | 0.001107s | byte equality observed |
-| variant_subset_nx.test | 10 | 0.001091s | 0.001069s | 0.001090s | byte equality observed |
-| variant_swap.test | 10 | 0.001086s | 0.001059s | 0.001099s | byte equality observed |
-| variant_trivial.test | 10 | 0.001163s | 0.001133s | 0.001116s | byte equality observed |
-| variant_value_assign.test | 10 | 0.001086s | 0.001095s | 0.001075s | byte equality observed |
-| variant_value_construct.test | 10 | 0.001084s | 0.001097s | 0.001095s | byte equality observed |
-| variant_valueless.test | 10 | 0.001137s | 0.001103s | 0.001123s | byte equality observed |
-| variant_visit.test | 10 | 0.001115s | 0.001057s | 0.001104s | byte equality observed |
-| variant_visit_by_index.test | 10 | 0.001088s | 0.001054s | 0.001096s | byte equality observed |
-| variant_visit_derived.test | 10 | 0.001081s | 0.001066s | 0.001117s | byte equality observed |
-| variant_visit_r.test | 10 | 0.001122s | 0.001075s | 0.001131s | byte equality observed |
+| is_output_streamable.test | 9 | 0.001511s | 0.001534s | 0.001529s | byte equality observed |
+| quick.test | 10 | 0.001491s | 0.000687s | 0.001507s | byte equality observed |
+| variant_alternative.test | 10 | 0.001526s | 0.001570s | 0.001523s | byte equality observed |
+| variant_convert_construct.test | 9 | 0.001542s | 0.001556s | 0.001540s | byte equality observed |
+| variant_convert_construct_throw.test | 10 | 0.001588s | 0.001591s | 0.001559s | byte equality observed |
+| variant_copy_assign.test | 9 | 0.001536s | 0.001535s | 0.001510s | byte equality observed |
+| variant_copy_assign_throw.test | 10 | 0.001586s | 0.001588s | 0.001541s | byte equality observed |
+| variant_copy_construct.test | 10 | 0.001570s | 0.001564s | 0.001529s | byte equality observed |
+| variant_copy_construct_throw.test | 10 | 0.001568s | 0.001552s | 0.001594s | byte equality observed |
+| variant_default_construct.test | 10 | 0.001535s | 0.001539s | 0.001538s | byte equality observed |
+| variant_derived_construct2.test | 8 | 0.001542s | 0.001549s | 0.001542s | byte equality observed |
+| variant_destroy.test | 10 | 0.001516s | 0.001517s | 0.001537s | byte equality observed |
+| variant_emplace_index.test | 10 | 0.001555s | 0.001555s | 0.001549s | byte equality observed |
+| variant_emplace_type.test | 10 | 0.001536s | 0.001530s | 0.001528s | byte equality observed |
+| variant_eq_ne.test | 10 | 0.001537s | 0.001558s | 0.001508s | byte equality observed |
+| variant_get_by_index.test | 10 | 0.001642s | 0.001668s | 0.001671s | byte equality observed |
+| variant_get_by_index_nx.test | 10 | 0.001529s | 0.001528s | 0.001499s | byte equality observed |
+| variant_get_by_type.test | 10 | 0.001605s | 0.001659s | 0.001590s | byte equality observed |
+| variant_get_by_type_nx.test | 10 | 0.001568s | 0.001575s | 0.001507s | byte equality observed |
+| variant_hash.test | 10 | 0.001533s | 0.001566s | 0.001531s | byte equality observed |
+| variant_holds_alternative.test | 10 | 0.001527s | 0.001530s | 0.001508s | byte equality observed |
+| variant_in_place_index_construct.test | 10 | 0.001558s | 0.001543s | 0.001558s | byte equality observed |
+| variant_in_place_type_construct.test | 10 | 0.001554s | 0.001570s | 0.001545s | byte equality observed |
+| variant_index_type_126.test | 8 | 0.001558s | 0.001541s | 0.001545s | byte equality observed |
+| variant_index_type_127.test | 10 | 0.001547s | 0.001532s | 0.001523s | byte equality observed |
+| variant_index_type_128.test | 10 | 0.001544s | 0.001487s | 0.001544s | byte equality observed |
+| variant_index_type_129.test | 10 | 0.001537s | 0.001502s | 0.001567s | byte equality observed |
+| variant_index_type_254.test | 10 | 0.001550s | 0.001550s | 0.001552s | byte equality observed |
+| variant_index_type_255.test | 10 | 0.001534s | 0.001552s | 0.001535s | byte equality observed |
+| variant_index_type_256.test | 10 | 0.001502s | 0.001530s | 0.001506s | byte equality observed |
+| variant_index_type_257.test | 10 | 0.001538s | 0.001533s | 0.001525s | byte equality observed |
+| variant_issue_55.test | 10 | 0.001583s | 0.001569s | 0.001521s | byte equality observed |
+| variant_json_value_from.test | 10 | 0.001609s | 0.001579s | 0.001586s | byte equality observed |
+| variant_json_value_to.test | 10 | 0.001597s | 0.001603s | 0.001577s | byte equality observed |
+| variant_lt_gt.test | 10 | 0.001534s | 0.001545s | 0.001545s | byte equality observed |
+| variant_many_types.test | 10 | 0.001560s | 0.001551s | 0.001553s | byte equality observed |
+| variant_move_assign.test | 10 | 0.001556s | 0.001574s | 0.001528s | byte equality observed |
+| variant_move_assign_throw.test | 10 | 0.001575s | 0.001622s | 0.001569s | byte equality observed |
+| variant_move_construct.test | 10 | 0.001551s | 0.001585s | 0.001561s | byte equality observed |
+| variant_move_construct_throw.test | 10 | 0.001568s | 0.001584s | 0.001592s | byte equality observed |
+| variant_ostream_insert.test | 10 | 0.001573s | 0.001564s | 0.001558s | byte equality observed |
+| variant_size.test | 10 | 0.001547s | 0.001558s | 0.001550s | byte equality observed |
+| variant_special.test | 9 | 0.001632s | 0.001621s | 0.001595s | byte equality observed |
+| variant_subset.test | 10 | 0.001581s | 0.001569s | 0.001604s | byte equality observed |
+| variant_subset_nx.test | 10 | 0.001533s | 0.001547s | 0.001549s | byte equality observed |
+| variant_swap.test | 10 | 0.001585s | 0.001526s | 0.001535s | byte equality observed |
+| variant_trivial.test | 10 | 0.001566s | 0.001602s | 0.001576s | byte equality observed |
+| variant_value_assign.test | 10 | 0.001571s | 0.001589s | 0.001549s | byte equality observed |
+| variant_value_construct.test | 10 | 0.001550s | 0.001559s | 0.001523s | byte equality observed |
+| variant_valueless.test | 10 | 0.001599s | 0.001557s | 0.001593s | byte equality observed |
+| variant_visit.test | 10 | 0.001567s | 0.001552s | 0.001564s | byte equality observed |
+| variant_visit_by_index.test | 10 | 0.001540s | 0.001523s | 0.001516s | byte equality observed |
+| variant_visit_derived.test | 10 | 0.001552s | 0.001480s | 0.001504s | byte equality observed |
+| variant_visit_r.test | 10 | 0.001562s | 0.001514s | 0.001548s | byte equality observed |
 
-Compiler command and timing observations: [cppgm](https://github.com/vishvananda/cppgm-extended/actions/runs/42951039903) · [gcc](https://github.com/vishvananda/cppgm-extended/actions/runs/42951039903) · [clang](https://github.com/vishvananda/cppgm-extended/actions/runs/42951039903).
+[Raw outcomes, commands and timing observations in CI artifacts](https://github.com/vishvananda/cppgm-extended/actions/runs/43133898266).
 
-[Reviewed outcomes and per-test records](../results.json) · [Host and toolchains](../metadata.json)
+[Comparison records](../results.json) · [Host and toolchains](../metadata.json)
