@@ -616,7 +616,9 @@ uint32_t Placement::walk()
 			const uint32_t s = succs_[k];
 			if (s == 0 || placed[s] || rank(s) != rank(b))
 				continue;
-			if (best != kNone && (weight[k] < best_weight || (weight[k] == best_weight && s != b + 1)))
+			// (Of equal edges the branch's own target: the block after `b` is
+			// often an edge's own, whatever it leads to.)
+			if (best != kNone && weight[k] <= best_weight)
 				continue;
 			if (conflict(b, s, weight[k]))
 				continue;
@@ -641,21 +643,26 @@ uint32_t Placement::walk()
 		// A block ending in a jump to a short test placed already takes a
 		// copy of the test and continues into the test's likelier successor
 		// that is free: the path runs the same instructions without the
-		// taken jump (bb-reorder's duplication).
+		// taken jump (bb-reorder's duplication). So does one whose test
+		// waits for another block and branches back to placed code (a loop's
+		// bottom test that two arms reach): the test follows that block, and
+		// this one's path would enter it by a taken jump on every pass. The
+		// walk then goes on from the ready blocks.
 		if (next == kNone && rank(b) == 0 && succ_first_[b + 1] - succ_first_[b] == 1)
 		{
 			const Block block = f_.blocks[b];
 			const uint32_t t = succs_[succ_first_[b]];
-			if (f_.insts[block.first + block.count - 1].op == Op::Jmp && t != b && t != 0 && placed[t] &&
-				copyable_test(t))
+			if (f_.insts[block.first + block.count - 1].op == Op::Jmp && t != b && t != 0 &&
+				(placed[t] || rank(t) == 0) && copyable_test(t))
 			{
 				const uint32_t p = taken(t);
 				const uint32_t first = succs_[succ_first_[t]], second = succs_[succ_first_[t] + 1];
 				const uint32_t order2[2] = { p >= 500 ? first : second, p >= 500 ? second : first };
-				for (uint32_t k = 0; k < 2 && next == kNone; ++k)
+				for (uint32_t k = 0; k < 2 && next == kNone && placed[t]; ++k)
 					if (order2[k] != 0 && !placed[order2[k]] && rank(order2[k]) == 0)
 						next = order2[k];
-				if (next != kNone)
+				const bool waiting_latch = !placed[t] && (placed[first] || placed[second]);
+				if (next != kNone || waiting_latch)
 				{
 					const Block test = f_.blocks[t];
 					const uint32_t at = static_cast<uint32_t>(f_.insts.size());

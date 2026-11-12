@@ -63,7 +63,11 @@ function @worker
     mov <gpr0>, rsi
     cmp.i64 rdi, 7
     ja ^fallback
-    jump_table rdi, [^entry~c1, ^entry~c1, ^entry~c1, ^entry~c1, ^entry~c1, ^entry~c1, ^entry~c6, ^entry~c7]
+    jump_table rdi, [^entry~c0, ^entry~c0, ^entry~c0, ^entry~c0, ^entry~c0, ^entry~c0, ^entry~c6, ^entry~c7]
+
+  block ^fallback
+    mov rax, 999
+    ret rax
 
   block ^entry~c7
     store.i64 [rbp-<off0>], rdx
@@ -109,10 +113,10 @@ function @worker
     xor rax, 255
     ret rax
 
-  block ^entry~c1
+  block ^entry~c0
     store.i64 [rbp-<off0>], rdx
 
-  block ^c1
+  block ^c0
     mov rdi, <gpr0>
     call @effect [args=(rdi)]
     xor rax, 33
@@ -129,10 +133,6 @@ function @worker
     or rax, 7
     add rax, <gpr0>
     xor rax, 255
-    ret rax
-
-  block ^fallback
-    mov rax, 999
     ret rax
 
 function @main

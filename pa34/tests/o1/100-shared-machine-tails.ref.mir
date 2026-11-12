@@ -23,11 +23,10 @@ function @shared_cases
   block ^entry
     cmp.i64 rsi, 11
     ja ^fallback
-    jump_table rsi, [^case3, ^case1, ^case2, ^case3, ^case1, ^case2, ^case3, ^case1, ^case2, ^case3, ^case1, ^case2]
+    jump_table rsi, [^case0, ^case1, ^case2, ^case0, ^case1, ^case2, ^case0, ^case1, ^case2, ^case0, ^case1, ^case2]
 
-  block ^case3
-    lea rax, [rdi-40]
-    ret rax
+  block ^fallback
+    ret rdi
 
   block ^case2
     lea rax, [rdi-56]
@@ -37,8 +36,9 @@ function @shared_cases
     lea rax, [rdi-48]
     ret rax
 
-  block ^fallback
-    ret rdi
+  block ^case0
+    lea rax, [rdi-40]
+    ret rax
 
 function @distinct_cases
   abi
@@ -56,9 +56,8 @@ function @distinct_cases
     ja ^fallback
     jump_table rsi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5, ^case6, ^case7, ^case8, ^case9, ^case10, ^case11]
 
-  block ^case0
-    lea rax, [rdi-40]
-    ret rax
+  block ^fallback
+    ret rdi
 
   block ^case11
     lea rax, [rdi-128]
@@ -104,8 +103,9 @@ function @distinct_cases
     lea rax, [rdi-48]
     ret rax
 
-  block ^fallback
-    ret rdi
+  block ^case0
+    lea rax, [rdi-40]
+    ret rax
 
 function @shared_store_paths
   abi
@@ -121,10 +121,10 @@ function @shared_store_paths
   block ^entry
     cmp.i64 rsi, 11
     ja ^fallback
-    jump_table rsi, [^case3, ^case1, ^case2, ^case3, ^case1, ^case2, ^case3, ^case1, ^case2, ^case3, ^case1, ^case2]
+    jump_table rsi, [^case0, ^case1, ^case2, ^case0, ^case1, ^case2, ^case0, ^case1, ^case2, ^case0, ^case1, ^case2]
 
-  block ^case3
-    store.i64 [rdi], 1
+  block ^fallback
+    store.i64 [rdi], 0
     jmp ^done
 
   block ^case2
@@ -135,8 +135,8 @@ function @shared_store_paths
     store.i64 [rdi], 2
     jmp ^done
 
-  block ^fallback
-    store.i64 [rdi], 0
+  block ^case0
+    store.i64 [rdi], 1
 
   block ^done
     mov rax, 0

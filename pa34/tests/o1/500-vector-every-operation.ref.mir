@@ -4944,11 +4944,7 @@ function @check
     lea rsi, [rbx+176]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok11
-
-  block ^bad11
-    mov rax, 12
-    ret rax
+    je ^bad11
 
   block ^ok11
     mov rdi, r12
@@ -4957,11 +4953,7 @@ function @check
     lea rsi, [rbx+192]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok12
-
-  block ^bad12
-    mov rax, 13
-    ret rax
+    je ^bad12
 
   block ^ok12
     mov rdi, r12
@@ -4970,11 +4962,7 @@ function @check
     lea rsi, [rbx+208]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok13
-
-  block ^bad13
-    mov rax, 14
-    ret rax
+    je ^bad13
 
   block ^ok13
     mov rdi, r12
@@ -4983,11 +4971,7 @@ function @check
     lea rsi, [rbx+224]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok14
-
-  block ^bad14
-    mov rax, 15
-    ret rax
+    je ^bad14
 
   block ^ok14
     mov rdi, r12
@@ -4996,11 +4980,7 @@ function @check
     lea rsi, [rbx+240]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok15
-
-  block ^bad15
-    mov rax, 16
-    ret rax
+    je ^bad15
 
   block ^ok15
     mov rdi, r12
@@ -5009,11 +4989,7 @@ function @check
     lea rsi, [rbx+256]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok16
-
-  block ^bad16
-    mov rax, 17
-    ret rax
+    je ^bad16
 
   block ^ok16
     mov rdi, r12
@@ -5022,11 +4998,7 @@ function @check
     lea rsi, [rbx+272]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok17
-
-  block ^bad17
-    mov rax, 18
-    ret rax
+    je ^bad17
 
   block ^ok17
     mov rdi, r12
@@ -5035,11 +5007,7 @@ function @check
     lea rsi, [rbx+288]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok18
-
-  block ^bad18
-    mov rax, 19
-    ret rax
+    je ^bad18
 
   block ^ok18
     mov rdi, r12
@@ -5048,11 +5016,7 @@ function @check
     lea rsi, [rbx+304]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok19
-
-  block ^bad19
-    mov rax, 20
-    ret rax
+    je ^bad19
 
   block ^ok19
     mov rdi, r12
@@ -5061,11 +5025,7 @@ function @check
     lea rsi, [rbx+320]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok20
-
-  block ^bad20
-    mov rax, 21
-    ret rax
+    je ^bad20
 
   block ^ok20
     mov rdi, r12
@@ -5074,11 +5034,7 @@ function @check
     lea rsi, [rbx+336]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok21
-
-  block ^bad21
-    mov rax, 22
-    ret rax
+    je ^bad21
 
   block ^ok21
     mov rdi, r12
@@ -5087,11 +5043,7 @@ function @check
     lea rsi, [rbx+352]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok22
-
-  block ^bad22
-    mov rax, 23
-    ret rax
+    je ^bad22
 
   block ^ok22
     mov rdi, r12
@@ -5100,11 +5052,7 @@ function @check
     lea rsi, [rbx+368]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok23
-
-  block ^bad23
-    mov rax, 24
-    ret rax
+    je ^bad23
 
   block ^ok23
     mov rdi, r12
@@ -5113,11 +5061,7 @@ function @check
     lea rsi, [rbx+384]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok24
-
-  block ^bad24
-    mov rax, 25
-    ret rax
+    je ^bad24
 
   block ^ok24
     mov rdi, r12
@@ -5126,11 +5070,7 @@ function @check
     lea rsi, [rbx+400]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok25
-
-  block ^bad25
-    mov rax, 26
-    ret rax
+    je ^bad25
 
   block ^ok25
     mov rdi, r12
@@ -5139,11 +5079,7 @@ function @check
     lea rsi, [rbx+416]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok26
-
-  block ^bad26
-    mov rax, 27
-    ret rax
+    je ^bad26
 
   block ^ok26
     mov rdi, r12
@@ -5152,11 +5088,7 @@ function @check
     lea rsi, [rbx+432]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok27
-
-  block ^bad27
-    mov rax, 28
-    ret rax
+    je ^bad27
 
   block ^ok27
     mov rdi, r12
@@ -5165,11 +5097,7 @@ function @check
     lea rsi, [rbx+448]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok28
-
-  block ^bad28
-    mov rax, 29
-    ret rax
+    je ^bad28
 
   block ^ok28
     mov rdi, r12
@@ -5178,11 +5106,7 @@ function @check
     lea rsi, [rbx+464]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok29
-
-  block ^bad29
-    mov rax, 30
-    ret rax
+    je ^bad29
 
   block ^ok29
     mov rdi, r12
@@ -5191,11 +5115,7 @@ function @check
     lea rsi, [rbx+480]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok30
-
-  block ^bad30
-    mov rax, 31
-    ret rax
+    je ^bad30
 
   block ^ok30
     mov rdi, r12
@@ -5204,11 +5124,7 @@ function @check
     lea rsi, [rbx+496]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok31
-
-  block ^bad31
-    mov rax, 32
-    ret rax
+    je ^bad31
 
   block ^ok31
     mov rdi, r12
@@ -5217,11 +5133,7 @@ function @check
     lea rsi, [rbx+512]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok32
-
-  block ^bad32
-    mov rax, 33
-    ret rax
+    je ^bad32
 
   block ^ok32
     mov rdi, r12
@@ -5230,11 +5142,7 @@ function @check
     lea rsi, [rbx+528]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok33
-
-  block ^bad33
-    mov rax, 34
-    ret rax
+    je ^bad33
 
   block ^ok33
     mov rdi, r12
@@ -5243,11 +5151,7 @@ function @check
     lea rsi, [rbx+544]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok34
-
-  block ^bad34
-    mov rax, 35
-    ret rax
+    je ^bad34
 
   block ^ok34
     mov rdi, r12
@@ -5256,11 +5160,7 @@ function @check
     lea rsi, [rbx+560]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok35
-
-  block ^bad35
-    mov rax, 36
-    ret rax
+    je ^bad35
 
   block ^ok35
     mov rdi, r12
@@ -5269,11 +5169,7 @@ function @check
     lea rsi, [rbx+576]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok36
-
-  block ^bad36
-    mov rax, 37
-    ret rax
+    je ^bad36
 
   block ^ok36
     mov rdi, r12
@@ -5282,11 +5178,7 @@ function @check
     lea rsi, [rbx+592]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok37
-
-  block ^bad37
-    mov rax, 38
-    ret rax
+    je ^bad37
 
   block ^ok37
     mov rdi, r12
@@ -5295,11 +5187,7 @@ function @check
     lea rsi, [rbx+608]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok38
-
-  block ^bad38
-    mov rax, 39
-    ret rax
+    je ^bad38
 
   block ^ok38
     mov rdi, r12
@@ -5308,11 +5196,7 @@ function @check
     lea rsi, [rbx+624]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok39
-
-  block ^bad39
-    mov rax, 40
-    ret rax
+    je ^bad39
 
   block ^ok39
     mov rdi, r12
@@ -5321,11 +5205,7 @@ function @check
     lea rsi, [rbx+640]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok40
-
-  block ^bad40
-    mov rax, 41
-    ret rax
+    je ^bad40
 
   block ^ok40
     mov rdi, r12
@@ -5334,11 +5214,7 @@ function @check
     lea rsi, [rbx+656]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok41
-
-  block ^bad41
-    mov rax, 42
-    ret rax
+    je ^bad41
 
   block ^ok41
     mov rdi, r12
@@ -5347,11 +5223,7 @@ function @check
     lea rsi, [rbx+672]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok42
-
-  block ^bad42
-    mov rax, 43
-    ret rax
+    je ^bad42
 
   block ^ok42
     mov rdi, r12
@@ -5360,11 +5232,7 @@ function @check
     lea rsi, [rbx+688]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok43
-
-  block ^bad43
-    mov rax, 44
-    ret rax
+    je ^bad43
 
   block ^ok43
     mov rdi, r12
@@ -5373,11 +5241,7 @@ function @check
     lea rsi, [rbx+704]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok44
-
-  block ^bad44
-    mov rax, 45
-    ret rax
+    je ^bad44
 
   block ^ok44
     mov rdi, r12
@@ -5386,11 +5250,7 @@ function @check
     lea rsi, [rbx+720]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok45
-
-  block ^bad45
-    mov rax, 46
-    ret rax
+    je ^bad45
 
   block ^ok45
     mov rdi, r12
@@ -5399,11 +5259,7 @@ function @check
     lea rsi, [rbx+736]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok46
-
-  block ^bad46
-    mov rax, 47
-    ret rax
+    je ^bad46
 
   block ^ok46
     mov rdi, r12
@@ -5412,11 +5268,7 @@ function @check
     lea rsi, [rbx+752]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok47
-
-  block ^bad47
-    mov rax, 48
-    ret rax
+    je ^bad47
 
   block ^ok47
     mov rdi, r12
@@ -5425,11 +5277,7 @@ function @check
     lea rsi, [rbx+768]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok48
-
-  block ^bad48
-    mov rax, 49
-    ret rax
+    je ^bad48
 
   block ^ok48
     mov rdi, r12
@@ -5438,11 +5286,7 @@ function @check
     lea rsi, [rbx+784]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok49
-
-  block ^bad49
-    mov rax, 50
-    ret rax
+    je ^bad49
 
   block ^ok49
     mov rdi, r12
@@ -5451,11 +5295,7 @@ function @check
     lea rsi, [rbx+800]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok50
-
-  block ^bad50
-    mov rax, 51
-    ret rax
+    je ^bad50
 
   block ^ok50
     mov rdi, r12
@@ -5464,11 +5304,7 @@ function @check
     lea rsi, [rbx+816]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok51
-
-  block ^bad51
-    mov rax, 52
-    ret rax
+    je ^bad51
 
   block ^ok51
     mov rdi, r12
@@ -5477,11 +5313,7 @@ function @check
     lea rsi, [rbx+832]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok52
-
-  block ^bad52
-    mov rax, 53
-    ret rax
+    je ^bad52
 
   block ^ok52
     mov rdi, r12
@@ -5490,11 +5322,7 @@ function @check
     lea rsi, [rbx+848]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok53
-
-  block ^bad53
-    mov rax, 54
-    ret rax
+    je ^bad53
 
   block ^ok53
     mov rdi, r12
@@ -5503,11 +5331,7 @@ function @check
     lea rsi, [rbx+864]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok54
-
-  block ^bad54
-    mov rax, 55
-    ret rax
+    je ^bad54
 
   block ^ok54
     mov rdi, r12
@@ -5516,11 +5340,7 @@ function @check
     lea rsi, [rbx+880]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok55
-
-  block ^bad55
-    mov rax, 56
-    ret rax
+    je ^bad55
 
   block ^ok55
     mov rdi, r12
@@ -5529,11 +5349,7 @@ function @check
     lea rsi, [rbx+896]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok56
-
-  block ^bad56
-    mov rax, 57
-    ret rax
+    je ^bad56
 
   block ^ok56
     mov rdi, r12
@@ -5542,11 +5358,7 @@ function @check
     lea rsi, [rbx+912]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok57
-
-  block ^bad57
-    mov rax, 58
-    ret rax
+    je ^bad57
 
   block ^ok57
     mov rdi, r12
@@ -5555,11 +5367,7 @@ function @check
     lea rsi, [rbx+928]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok58
-
-  block ^bad58
-    mov rax, 59
-    ret rax
+    je ^bad58
 
   block ^ok58
     mov rdi, r12
@@ -5568,11 +5376,7 @@ function @check
     lea rsi, [rbx+944]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok59
-
-  block ^bad59
-    mov rax, 60
-    ret rax
+    je ^bad59
 
   block ^ok59
     mov rdi, r12
@@ -5581,11 +5385,7 @@ function @check
     lea rsi, [rbx+960]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok60
-
-  block ^bad60
-    mov rax, 61
-    ret rax
+    je ^bad60
 
   block ^ok60
     mov rdi, r12
@@ -5594,11 +5394,7 @@ function @check
     lea rsi, [rbx+976]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok61
-
-  block ^bad61
-    mov rax, 62
-    ret rax
+    je ^bad61
 
   block ^ok61
     mov rdi, r12
@@ -5607,11 +5403,7 @@ function @check
     lea rsi, [rbx+992]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok62
-
-  block ^bad62
-    mov rax, 63
-    ret rax
+    je ^bad62
 
   block ^ok62
     mov rdi, r12
@@ -5620,11 +5412,7 @@ function @check
     lea rsi, [rbx+1008]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok63
-
-  block ^bad63
-    mov rax, 64
-    ret rax
+    je ^bad63
 
   block ^ok63
     mov rdi, r12
@@ -5633,11 +5421,7 @@ function @check
     lea rsi, [rbx+1024]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok64
-
-  block ^bad64
-    mov rax, 65
-    ret rax
+    je ^bad64
 
   block ^ok64
     mov rdi, r12
@@ -5646,11 +5430,7 @@ function @check
     lea rsi, [rbx+1040]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok65
-
-  block ^bad65
-    mov rax, 66
-    ret rax
+    je ^bad65
 
   block ^ok65
     mov rdi, r12
@@ -5659,11 +5439,7 @@ function @check
     lea rsi, [rbx+1056]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok66
-
-  block ^bad66
-    mov rax, 67
-    ret rax
+    je ^bad66
 
   block ^ok66
     mov rdi, r12
@@ -5672,11 +5448,7 @@ function @check
     lea rsi, [rbx+1072]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok67
-
-  block ^bad67
-    mov rax, 68
-    ret rax
+    je ^bad67
 
   block ^ok67
     mov rdi, r12
@@ -5685,11 +5457,7 @@ function @check
     lea rsi, [rbx+1088]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok68
-
-  block ^bad68
-    mov rax, 69
-    ret rax
+    je ^bad68
 
   block ^ok68
     mov rdi, r12
@@ -5698,11 +5466,7 @@ function @check
     lea rsi, [rbx+1104]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok69
-
-  block ^bad69
-    mov rax, 70
-    ret rax
+    je ^bad69
 
   block ^ok69
     mov rdi, r12
@@ -5711,11 +5475,7 @@ function @check
     lea rsi, [rbx+1120]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok70
-
-  block ^bad70
-    mov rax, 71
-    ret rax
+    je ^bad70
 
   block ^ok70
     mov rdi, r12
@@ -5724,11 +5484,7 @@ function @check
     lea rsi, [rbx+1136]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok71
-
-  block ^bad71
-    mov rax, 72
-    ret rax
+    je ^bad71
 
   block ^ok71
     mov rdi, r12
@@ -5737,11 +5493,7 @@ function @check
     lea rsi, [rbx+1152]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok72
-
-  block ^bad72
-    mov rax, 73
-    ret rax
+    je ^bad72
 
   block ^ok72
     mov rdi, r12
@@ -5750,11 +5502,7 @@ function @check
     lea rsi, [rbx+1168]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok73
-
-  block ^bad73
-    mov rax, 74
-    ret rax
+    je ^bad73
 
   block ^ok73
     mov rdi, r12
@@ -5763,11 +5511,7 @@ function @check
     lea rsi, [rbx+1184]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok74
-
-  block ^bad74
-    mov rax, 75
-    ret rax
+    je ^bad74
 
   block ^ok74
     mov rdi, r12
@@ -5776,11 +5520,7 @@ function @check
     lea rsi, [rbx+1200]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok75
-
-  block ^bad75
-    mov rax, 76
-    ret rax
+    je ^bad75
 
   block ^ok75
     mov rdi, r12
@@ -5789,11 +5529,7 @@ function @check
     lea rsi, [rbx+1216]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok76
-
-  block ^bad76
-    mov rax, 77
-    ret rax
+    je ^bad76
 
   block ^ok76
     mov rdi, r12
@@ -5802,11 +5538,7 @@ function @check
     lea rsi, [rbx+1232]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok77
-
-  block ^bad77
-    mov rax, 78
-    ret rax
+    je ^bad77
 
   block ^ok77
     mov rdi, r12
@@ -5815,11 +5547,7 @@ function @check
     lea rsi, [rbx+1248]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok78
-
-  block ^bad78
-    mov rax, 79
-    ret rax
+    je ^bad78
 
   block ^ok78
     mov rdi, r12
@@ -5828,11 +5556,7 @@ function @check
     lea rsi, [rbx+1264]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok79
-
-  block ^bad79
-    mov rax, 80
-    ret rax
+    je ^bad79
 
   block ^ok79
     mov rdi, r12
@@ -5841,11 +5565,7 @@ function @check
     lea rsi, [rbx+1280]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok80
-
-  block ^bad80
-    mov rax, 81
-    ret rax
+    je ^bad80
 
   block ^ok80
     mov rdi, r12
@@ -5854,11 +5574,7 @@ function @check
     lea rsi, [rbx+1296]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok81
-
-  block ^bad81
-    mov rax, 82
-    ret rax
+    je ^bad81
 
   block ^ok81
     mov rdi, r12
@@ -5867,11 +5583,7 @@ function @check
     lea rsi, [rbx+1312]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok82
-
-  block ^bad82
-    mov rax, 83
-    ret rax
+    je ^bad82
 
   block ^ok82
     mov rdi, r12
@@ -5880,11 +5592,7 @@ function @check
     lea rsi, [rbx+1328]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok83
-
-  block ^bad83
-    mov rax, 84
-    ret rax
+    je ^bad83
 
   block ^ok83
     mov rdi, r12
@@ -5893,11 +5601,7 @@ function @check
     lea rsi, [rbx+1344]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok84
-
-  block ^bad84
-    mov rax, 85
-    ret rax
+    je ^bad84
 
   block ^ok84
     mov rdi, r12
@@ -5906,11 +5610,7 @@ function @check
     lea rsi, [rbx+1360]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok85
-
-  block ^bad85
-    mov rax, 86
-    ret rax
+    je ^bad85
 
   block ^ok85
     mov rdi, r12
@@ -5919,11 +5619,7 @@ function @check
     lea rsi, [rbx+1376]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok86
-
-  block ^bad86
-    mov rax, 87
-    ret rax
+    je ^bad86
 
   block ^ok86
     mov rdi, r12
@@ -5932,11 +5628,7 @@ function @check
     lea rsi, [rbx+1392]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok87
-
-  block ^bad87
-    mov rax, 88
-    ret rax
+    je ^bad87
 
   block ^ok87
     mov rdi, r12
@@ -5945,11 +5637,7 @@ function @check
     lea rsi, [rbx+1408]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok88
-
-  block ^bad88
-    mov rax, 89
-    ret rax
+    je ^bad88
 
   block ^ok88
     mov rdi, r12
@@ -5958,11 +5646,7 @@ function @check
     lea rsi, [rbx+1424]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok89
-
-  block ^bad89
-    mov rax, 90
-    ret rax
+    je ^bad89
 
   block ^ok89
     mov rdi, r12
@@ -5971,11 +5655,7 @@ function @check
     lea rsi, [rbx+1440]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok90
-
-  block ^bad90
-    mov rax, 91
-    ret rax
+    je ^bad90
 
   block ^ok90
     mov rdi, r12
@@ -5984,11 +5664,7 @@ function @check
     lea rsi, [rbx+1456]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok91
-
-  block ^bad91
-    mov rax, 92
-    ret rax
+    je ^bad91
 
   block ^ok91
     mov rdi, r12
@@ -5997,11 +5673,7 @@ function @check
     lea rsi, [rbx+1472]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok92
-
-  block ^bad92
-    mov rax, 93
-    ret rax
+    je ^bad92
 
   block ^ok92
     mov rdi, r12
@@ -6010,11 +5682,7 @@ function @check
     lea rsi, [rbx+1488]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok93
-
-  block ^bad93
-    mov rax, 94
-    ret rax
+    je ^bad93
 
   block ^ok93
     mov rdi, r12
@@ -6023,11 +5691,7 @@ function @check
     lea rsi, [rbx+1504]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok94
-
-  block ^bad94
-    mov rax, 95
-    ret rax
+    je ^bad94
 
   block ^ok94
     mov rdi, r12
@@ -6036,11 +5700,7 @@ function @check
     lea rsi, [rbx+1520]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok95
-
-  block ^bad95
-    mov rax, 96
-    ret rax
+    je ^bad95
 
   block ^ok95
     mov rdi, r12
@@ -6049,11 +5709,7 @@ function @check
     lea rsi, [rbx+1536]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok96
-
-  block ^bad96
-    mov rax, 97
-    ret rax
+    je ^bad96
 
   block ^ok96
     mov rdi, r12
@@ -6062,11 +5718,7 @@ function @check
     lea rsi, [rbx+1552]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok97
-
-  block ^bad97
-    mov rax, 98
-    ret rax
+    je ^bad97
 
   block ^ok97
     mov rdi, r12
@@ -6075,11 +5727,7 @@ function @check
     lea rsi, [rbx+1568]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok98
-
-  block ^bad98
-    mov rax, 99
-    ret rax
+    je ^bad98
 
   block ^ok98
     mov rdi, r12
@@ -6088,11 +5736,7 @@ function @check
     lea rsi, [rbx+1584]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok99
-
-  block ^bad99
-    mov rax, 100
-    ret rax
+    je ^bad99
 
   block ^ok99
     mov rdi, r12
@@ -6101,11 +5745,7 @@ function @check
     lea rsi, [rbx+1600]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok100
-
-  block ^bad100
-    mov rax, 101
-    ret rax
+    je ^bad100
 
   block ^ok100
     mov rdi, r12
@@ -6114,11 +5754,7 @@ function @check
     lea rsi, [rbx+1616]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok101
-
-  block ^bad101
-    mov rax, 102
-    ret rax
+    je ^bad101
 
   block ^ok101
     mov rdi, r12
@@ -6127,11 +5763,7 @@ function @check
     lea rsi, [rbx+1632]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok102
-
-  block ^bad102
-    mov rax, 103
-    ret rax
+    je ^bad102
 
   block ^ok102
     mov rdi, r12
@@ -6140,11 +5772,7 @@ function @check
     lea rsi, [rbx+1648]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok103
-
-  block ^bad103
-    mov rax, 104
-    ret rax
+    je ^bad103
 
   block ^ok103
     mov rdi, r12
@@ -6153,11 +5781,7 @@ function @check
     lea rsi, [rbx+1664]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok104
-
-  block ^bad104
-    mov rax, 105
-    ret rax
+    je ^bad104
 
   block ^ok104
     mov rdi, r12
@@ -6166,11 +5790,7 @@ function @check
     lea rsi, [rbx+1680]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok105
-
-  block ^bad105
-    mov rax, 106
-    ret rax
+    je ^bad105
 
   block ^ok105
     mov rdi, r12
@@ -6179,11 +5799,7 @@ function @check
     lea rsi, [rbx+1696]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok106
-
-  block ^bad106
-    mov rax, 107
-    ret rax
+    je ^bad106
 
   block ^ok106
     mov rdi, r12
@@ -6192,11 +5808,7 @@ function @check
     lea rsi, [rbx+1712]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok107
-
-  block ^bad107
-    mov rax, 108
-    ret rax
+    je ^bad107
 
   block ^ok107
     mov rdi, r12
@@ -6205,11 +5817,7 @@ function @check
     lea rsi, [rbx+1728]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok108
-
-  block ^bad108
-    mov rax, 109
-    ret rax
+    je ^bad108
 
   block ^ok108
     mov rdi, r12
@@ -6218,11 +5826,7 @@ function @check
     lea rsi, [rbx+1744]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok109
-
-  block ^bad109
-    mov rax, 110
-    ret rax
+    je ^bad109
 
   block ^ok109
     mov rdi, r12
@@ -6231,11 +5835,7 @@ function @check
     lea rsi, [rbx+1760]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok110
-
-  block ^bad110
-    mov rax, 111
-    ret rax
+    je ^bad110
 
   block ^ok110
     mov rdi, r12
@@ -6244,11 +5844,7 @@ function @check
     lea rsi, [rbx+1776]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok111
-
-  block ^bad111
-    mov rax, 112
-    ret rax
+    je ^bad111
 
   block ^ok111
     mov rdi, r12
@@ -6257,11 +5853,7 @@ function @check
     lea rsi, [rbx+1792]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok112
-
-  block ^bad112
-    mov rax, 113
-    ret rax
+    je ^bad112
 
   block ^ok112
     mov rdi, r12
@@ -6270,11 +5862,7 @@ function @check
     lea rsi, [rbx+1808]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok113
-
-  block ^bad113
-    mov rax, 114
-    ret rax
+    je ^bad113
 
   block ^ok113
     mov rdi, r12
@@ -6283,11 +5871,7 @@ function @check
     lea rsi, [rbx+1824]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok114
-
-  block ^bad114
-    mov rax, 115
-    ret rax
+    je ^bad114
 
   block ^ok114
     mov rdi, r12
@@ -6296,11 +5880,7 @@ function @check
     lea rsi, [rbx+1840]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok115
-
-  block ^bad115
-    mov rax, 116
-    ret rax
+    je ^bad115
 
   block ^ok115
     mov rdi, r12
@@ -6309,11 +5889,7 @@ function @check
     lea rsi, [rbx+1856]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok116
-
-  block ^bad116
-    mov rax, 117
-    ret rax
+    je ^bad116
 
   block ^ok116
     mov rdi, r12
@@ -6322,11 +5898,7 @@ function @check
     lea rsi, [rbx+1872]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok117
-
-  block ^bad117
-    mov rax, 118
-    ret rax
+    je ^bad117
 
   block ^ok117
     mov rdi, r12
@@ -6335,11 +5907,7 @@ function @check
     lea rsi, [rbx+1888]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok118
-
-  block ^bad118
-    mov rax, 119
-    ret rax
+    je ^bad118
 
   block ^ok118
     mov rdi, r12
@@ -6348,11 +5916,7 @@ function @check
     lea rsi, [rbx+1904]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok119
-
-  block ^bad119
-    mov rax, 120
-    ret rax
+    je ^bad119
 
   block ^ok119
     mov rdi, r12
@@ -6361,11 +5925,7 @@ function @check
     lea rsi, [rbx+1920]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok120
-
-  block ^bad120
-    mov rax, 121
-    ret rax
+    je ^bad120
 
   block ^ok120
     mov rdi, r12
@@ -6374,11 +5934,7 @@ function @check
     lea rsi, [rbx+1936]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok121
-
-  block ^bad121
-    mov rax, 122
-    ret rax
+    je ^bad121
 
   block ^ok121
     mov rdi, r12
@@ -6387,11 +5943,7 @@ function @check
     lea rsi, [rbx+1952]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok122
-
-  block ^bad122
-    mov rax, 123
-    ret rax
+    je ^bad122
 
   block ^ok122
     mov rdi, r12
@@ -6400,11 +5952,7 @@ function @check
     lea rsi, [rbx+1968]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok123
-
-  block ^bad123
-    mov rax, 124
-    ret rax
+    je ^bad123
 
   block ^ok123
     mov rdi, r12
@@ -6413,11 +5961,7 @@ function @check
     lea rsi, [rbx+1984]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok124
-
-  block ^bad124
-    mov rax, 125
-    ret rax
+    je ^bad124
 
   block ^ok124
     mov rdi, r12
@@ -6426,11 +5970,7 @@ function @check
     lea rsi, [rbx+2000]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok125
-
-  block ^bad125
-    mov rax, 126
-    ret rax
+    je ^bad125
 
   block ^ok125
     mov rdi, r12
@@ -6439,11 +5979,7 @@ function @check
     lea rsi, [rbx+2016]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok126
-
-  block ^bad126
-    mov rax, 127
-    ret rax
+    je ^bad126
 
   block ^ok126
     mov rdi, r12
@@ -6452,11 +5988,7 @@ function @check
     lea rsi, [rbx+2032]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok127
-
-  block ^bad127
-    mov rax, 128
-    ret rax
+    je ^bad127
 
   block ^ok127
     mov rdi, r12
@@ -6465,11 +5997,7 @@ function @check
     lea rsi, [rbx+2048]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok128
-
-  block ^bad128
-    mov rax, 129
-    ret rax
+    je ^bad128
 
   block ^ok128
     mov rdi, r12
@@ -6478,11 +6006,7 @@ function @check
     lea rsi, [rbx+2064]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok129
-
-  block ^bad129
-    mov rax, 130
-    ret rax
+    je ^bad129
 
   block ^ok129
     mov rdi, r12
@@ -6491,11 +6015,7 @@ function @check
     lea rsi, [rbx+2080]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok130
-
-  block ^bad130
-    mov rax, 131
-    ret rax
+    je ^bad130
 
   block ^ok130
     mov rdi, r12
@@ -6504,11 +6024,7 @@ function @check
     lea rsi, [rbx+2096]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok131
-
-  block ^bad131
-    mov rax, 132
-    ret rax
+    je ^bad131
 
   block ^ok131
     mov rdi, r12
@@ -6517,11 +6033,7 @@ function @check
     lea rsi, [rbx+2112]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok132
-
-  block ^bad132
-    mov rax, 133
-    ret rax
+    je ^bad132
 
   block ^ok132
     mov rdi, r12
@@ -6530,11 +6042,7 @@ function @check
     lea rsi, [rbx+2128]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok133
-
-  block ^bad133
-    mov rax, 134
-    ret rax
+    je ^bad133
 
   block ^ok133
     mov rdi, r12
@@ -6543,11 +6051,7 @@ function @check
     lea rsi, [rbx+2144]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok134
-
-  block ^bad134
-    mov rax, 135
-    ret rax
+    je ^bad134
 
   block ^ok134
     mov rdi, r12
@@ -6556,11 +6060,7 @@ function @check
     lea rsi, [rbx+2160]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok135
-
-  block ^bad135
-    mov rax, 136
-    ret rax
+    je ^bad135
 
   block ^ok135
     mov rdi, r12
@@ -6569,11 +6069,7 @@ function @check
     lea rsi, [rbx+2176]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok136
-
-  block ^bad136
-    mov rax, 137
-    ret rax
+    je ^bad136
 
   block ^ok136
     mov rdi, r12
@@ -6582,11 +6078,7 @@ function @check
     lea rsi, [rbx+2192]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok137
-
-  block ^bad137
-    mov rax, 138
-    ret rax
+    je ^bad137
 
   block ^ok137
     mov rdi, r12
@@ -6595,11 +6087,7 @@ function @check
     lea rsi, [rbx+2208]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok138
-
-  block ^bad138
-    mov rax, 139
-    ret rax
+    je ^bad138
 
   block ^ok138
     mov rdi, r12
@@ -6608,11 +6096,7 @@ function @check
     lea rsi, [rbx+2224]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok139
-
-  block ^bad139
-    mov rax, 140
-    ret rax
+    je ^bad139
 
   block ^ok139
     mov rdi, r12
@@ -6621,11 +6105,7 @@ function @check
     lea rsi, [rbx+2240]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok140
-
-  block ^bad140
-    mov rax, 141
-    ret rax
+    je ^bad140
 
   block ^ok140
     mov rdi, r12
@@ -6634,11 +6114,7 @@ function @check
     lea rsi, [rbx+2256]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok141
-
-  block ^bad141
-    mov rax, 142
-    ret rax
+    je ^bad141
 
   block ^ok141
     mov rdi, r12
@@ -6647,11 +6123,7 @@ function @check
     lea rsi, [rbx+2272]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok142
-
-  block ^bad142
-    mov rax, 143
-    ret rax
+    je ^bad142
 
   block ^ok142
     mov rdi, r12
@@ -6660,11 +6132,7 @@ function @check
     lea rsi, [rbx+2288]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok143
-
-  block ^bad143
-    mov rax, 144
-    ret rax
+    je ^bad143
 
   block ^ok143
     mov rdi, r12
@@ -6673,11 +6141,7 @@ function @check
     lea rsi, [rbx+2304]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok144
-
-  block ^bad144
-    mov rax, 145
-    ret rax
+    je ^bad144
 
   block ^ok144
     mov rdi, r12
@@ -6686,11 +6150,7 @@ function @check
     lea rsi, [rbx+2320]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok145
-
-  block ^bad145
-    mov rax, 146
-    ret rax
+    je ^bad145
 
   block ^ok145
     mov rdi, r12
@@ -6699,11 +6159,7 @@ function @check
     lea rsi, [rbx+2336]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok146
-
-  block ^bad146
-    mov rax, 147
-    ret rax
+    je ^bad146
 
   block ^ok146
     mov rdi, r12
@@ -6712,11 +6168,7 @@ function @check
     lea rsi, [rbx+2352]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok147
-
-  block ^bad147
-    mov rax, 148
-    ret rax
+    je ^bad147
 
   block ^ok147
     mov rdi, r12
@@ -6725,11 +6177,7 @@ function @check
     lea rsi, [rbx+2368]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok148
-
-  block ^bad148
-    mov rax, 149
-    ret rax
+    je ^bad148
 
   block ^ok148
     mov rdi, r12
@@ -6738,11 +6186,7 @@ function @check
     lea rsi, [rbx+2384]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok149
-
-  block ^bad149
-    mov rax, 150
-    ret rax
+    je ^bad149
 
   block ^ok149
     mov rdi, r12
@@ -6751,11 +6195,7 @@ function @check
     lea rsi, [rbx+2400]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok150
-
-  block ^bad150
-    mov rax, 151
-    ret rax
+    je ^bad150
 
   block ^ok150
     mov rdi, r12
@@ -6764,11 +6204,7 @@ function @check
     lea rsi, [rbx+2416]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok151
-
-  block ^bad151
-    mov rax, 152
-    ret rax
+    je ^bad151
 
   block ^ok151
     mov rdi, r12
@@ -6777,11 +6213,7 @@ function @check
     lea rsi, [rbx+2432]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok152
-
-  block ^bad152
-    mov rax, 153
-    ret rax
+    je ^bad152
 
   block ^ok152
     mov rdi, r12
@@ -6790,11 +6222,7 @@ function @check
     lea rsi, [rbx+2448]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok153
-
-  block ^bad153
-    mov rax, 154
-    ret rax
+    je ^bad153
 
   block ^ok153
     mov rdi, r12
@@ -6803,11 +6231,7 @@ function @check
     lea rsi, [rbx+2464]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok154
-
-  block ^bad154
-    mov rax, 155
-    ret rax
+    je ^bad154
 
   block ^ok154
     mov rdi, r12
@@ -6816,11 +6240,7 @@ function @check
     lea rsi, [rbx+2480]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok155
-
-  block ^bad155
-    mov rax, 156
-    ret rax
+    je ^bad155
 
   block ^ok155
     mov rdi, r12
@@ -6829,11 +6249,7 @@ function @check
     lea rsi, [rbx+2496]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok156
-
-  block ^bad156
-    mov rax, 157
-    ret rax
+    je ^bad156
 
   block ^ok156
     mov rdi, r12
@@ -6842,11 +6258,7 @@ function @check
     lea rsi, [rbx+2512]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok157
-
-  block ^bad157
-    mov rax, 158
-    ret rax
+    je ^bad157
 
   block ^ok157
     mov rdi, r12
@@ -6855,11 +6267,7 @@ function @check
     lea rsi, [rbx+2528]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok158
-
-  block ^bad158
-    mov rax, 159
-    ret rax
+    je ^bad158
 
   block ^ok158
     mov rdi, r12
@@ -6868,11 +6276,7 @@ function @check
     lea rsi, [rbx+2544]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok159
-
-  block ^bad159
-    mov rax, 160
-    ret rax
+    je ^bad159
 
   block ^ok159
     mov rdi, r12
@@ -6881,11 +6285,7 @@ function @check
     lea rsi, [rbx+2560]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok160
-
-  block ^bad160
-    mov rax, 161
-    ret rax
+    je ^bad160
 
   block ^ok160
     mov rdi, r12
@@ -6894,11 +6294,7 @@ function @check
     lea rsi, [rbx+2576]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok161
-
-  block ^bad161
-    mov rax, 162
-    ret rax
+    je ^bad161
 
   block ^ok161
     mov rdi, r12
@@ -6907,11 +6303,7 @@ function @check
     lea rsi, [rbx+2592]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok162
-
-  block ^bad162
-    mov rax, 163
-    ret rax
+    je ^bad162
 
   block ^ok162
     mov rdi, r12
@@ -6920,11 +6312,7 @@ function @check
     lea rsi, [rbx+2608]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok163
-
-  block ^bad163
-    mov rax, 164
-    ret rax
+    je ^bad163
 
   block ^ok163
     mov rdi, r12
@@ -6933,11 +6321,7 @@ function @check
     lea rsi, [rbx+2624]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok164
-
-  block ^bad164
-    mov rax, 165
-    ret rax
+    je ^bad164
 
   block ^ok164
     mov rdi, r12
@@ -6946,11 +6330,7 @@ function @check
     lea rsi, [rbx+2640]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok165
-
-  block ^bad165
-    mov rax, 166
-    ret rax
+    je ^bad165
 
   block ^ok165
     mov rdi, r12
@@ -6959,11 +6339,7 @@ function @check
     lea rsi, [rbx+2656]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok166
-
-  block ^bad166
-    mov rax, 167
-    ret rax
+    je ^bad166
 
   block ^ok166
     mov rdi, r12
@@ -6972,11 +6348,7 @@ function @check
     lea rsi, [rbx+2672]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok167
-
-  block ^bad167
-    mov rax, 168
-    ret rax
+    je ^bad167
 
   block ^ok167
     mov rdi, r12
@@ -6985,11 +6357,7 @@ function @check
     lea rsi, [rbx+2688]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok168
-
-  block ^bad168
-    mov rax, 169
-    ret rax
+    je ^bad168
 
   block ^ok168
     mov rdi, r12
@@ -6998,11 +6366,7 @@ function @check
     lea rsi, [rbx+2704]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok169
-
-  block ^bad169
-    mov rax, 170
-    ret rax
+    je ^bad169
 
   block ^ok169
     mov rdi, r12
@@ -7011,11 +6375,7 @@ function @check
     lea rsi, [rbx+2720]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok170
-
-  block ^bad170
-    mov rax, 171
-    ret rax
+    je ^bad170
 
   block ^ok170
     mov rdi, r12
@@ -7024,11 +6384,7 @@ function @check
     lea rsi, [rbx+2736]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok171
-
-  block ^bad171
-    mov rax, 172
-    ret rax
+    je ^bad171
 
   block ^ok171
     mov rdi, r12
@@ -7037,11 +6393,7 @@ function @check
     lea rsi, [rbx+2752]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok172
-
-  block ^bad172
-    mov rax, 173
-    ret rax
+    je ^bad172
 
   block ^ok172
     mov rdi, r12
@@ -7050,11 +6402,7 @@ function @check
     lea rsi, [rbx+2768]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok173
-
-  block ^bad173
-    mov rax, 174
-    ret rax
+    je ^bad173
 
   block ^ok173
     mov rdi, r12
@@ -7063,11 +6411,7 @@ function @check
     lea rsi, [rbx+2784]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok174
-
-  block ^bad174
-    mov rax, 175
-    ret rax
+    je ^bad174
 
   block ^ok174
     mov rdi, r12
@@ -7076,11 +6420,7 @@ function @check
     lea rsi, [rbx+2800]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok175
-
-  block ^bad175
-    mov rax, 176
-    ret rax
+    je ^bad175
 
   block ^ok175
     mov rdi, r12
@@ -7089,11 +6429,7 @@ function @check
     lea rsi, [rbx+2816]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok176
-
-  block ^bad176
-    mov rax, 177
-    ret rax
+    je ^bad176
 
   block ^ok176
     mov rdi, r12
@@ -7102,11 +6438,7 @@ function @check
     lea rsi, [rbx+2832]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok177
-
-  block ^bad177
-    mov rax, 178
-    ret rax
+    je ^bad177
 
   block ^ok177
     mov rdi, r12
@@ -7115,11 +6447,7 @@ function @check
     lea rsi, [rbx+2848]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok178
-
-  block ^bad178
-    mov rax, 179
-    ret rax
+    je ^bad178
 
   block ^ok178
     mov rdi, r12
@@ -7128,11 +6456,7 @@ function @check
     lea rsi, [rbx+2864]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok179
-
-  block ^bad179
-    mov rax, 180
-    ret rax
+    je ^bad179
 
   block ^ok179
     mov rdi, r12
@@ -7141,11 +6465,7 @@ function @check
     lea rsi, [rbx+2880]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok180
-
-  block ^bad180
-    mov rax, 181
-    ret rax
+    je ^bad180
 
   block ^ok180
     mov rdi, r12
@@ -7154,11 +6474,7 @@ function @check
     lea rsi, [rbx+2896]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok181
-
-  block ^bad181
-    mov rax, 182
-    ret rax
+    je ^bad181
 
   block ^ok181
     mov rdi, r12
@@ -7167,11 +6483,7 @@ function @check
     lea rsi, [rbx+2912]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok182
-
-  block ^bad182
-    mov rax, 183
-    ret rax
+    je ^bad182
 
   block ^ok182
     mov rdi, r12
@@ -7180,11 +6492,7 @@ function @check
     lea rsi, [rbx+2928]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok183
-
-  block ^bad183
-    mov rax, 184
-    ret rax
+    je ^bad183
 
   block ^ok183
     mov rdi, r12
@@ -7193,11 +6501,7 @@ function @check
     lea rsi, [rbx+2944]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok184
-
-  block ^bad184
-    mov rax, 185
-    ret rax
+    je ^bad184
 
   block ^ok184
     mov rdi, r12
@@ -7206,11 +6510,7 @@ function @check
     lea rsi, [rbx+2960]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok185
-
-  block ^bad185
-    mov rax, 186
-    ret rax
+    je ^bad185
 
   block ^ok185
     mov rdi, r12
@@ -7219,11 +6519,7 @@ function @check
     lea rsi, [rbx+2976]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok186
-
-  block ^bad186
-    mov rax, 187
-    ret rax
+    je ^bad186
 
   block ^ok186
     mov rdi, r12
@@ -7232,11 +6528,7 @@ function @check
     lea rsi, [rbx+2992]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok187
-
-  block ^bad187
-    mov rax, 188
-    ret rax
+    je ^bad187
 
   block ^ok187
     mov rdi, r12
@@ -7245,11 +6537,7 @@ function @check
     lea rsi, [rbx+3008]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok188
-
-  block ^bad188
-    mov rax, 189
-    ret rax
+    je ^bad188
 
   block ^ok188
     mov rdi, r12
@@ -7258,11 +6546,7 @@ function @check
     lea rsi, [rbx+3024]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok189
-
-  block ^bad189
-    mov rax, 190
-    ret rax
+    je ^bad189
 
   block ^ok189
     mov rdi, r12
@@ -7271,11 +6555,7 @@ function @check
     lea rsi, [rbx+3040]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok190
-
-  block ^bad190
-    mov rax, 191
-    ret rax
+    je ^bad190
 
   block ^ok190
     mov rdi, r12
@@ -7284,11 +6564,7 @@ function @check
     lea rsi, [rbx+3056]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok191
-
-  block ^bad191
-    mov rax, 192
-    ret rax
+    je ^bad191
 
   block ^ok191
     mov rdi, r12
@@ -7297,11 +6573,7 @@ function @check
     lea rsi, [rbx+3072]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok192
-
-  block ^bad192
-    mov rax, 193
-    ret rax
+    je ^bad192
 
   block ^ok192
     mov rdi, r12
@@ -7310,11 +6582,7 @@ function @check
     lea rsi, [rbx+3088]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok193
-
-  block ^bad193
-    mov rax, 194
-    ret rax
+    je ^bad193
 
   block ^ok193
     mov rdi, r12
@@ -7323,11 +6591,7 @@ function @check
     lea rsi, [rbx+3104]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok194
-
-  block ^bad194
-    mov rax, 195
-    ret rax
+    je ^bad194
 
   block ^ok194
     mov rdi, r12
@@ -7336,11 +6600,7 @@ function @check
     lea rsi, [rbx+3120]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok195
-
-  block ^bad195
-    mov rax, 196
-    ret rax
+    je ^bad195
 
   block ^ok195
     mov rdi, r12
@@ -7349,11 +6609,7 @@ function @check
     lea rsi, [rbx+3136]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok196
-
-  block ^bad196
-    mov rax, 197
-    ret rax
+    je ^bad196
 
   block ^ok196
     mov rdi, r12
@@ -7362,11 +6618,7 @@ function @check
     lea rsi, [rbx+3152]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok197
-
-  block ^bad197
-    mov rax, 198
-    ret rax
+    je ^bad197
 
   block ^ok197
     mov rdi, r12
@@ -7375,11 +6627,7 @@ function @check
     lea rsi, [rbx+3168]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok198
-
-  block ^bad198
-    mov rax, 199
-    ret rax
+    je ^bad198
 
   block ^ok198
     mov rdi, r12
@@ -7388,11 +6636,7 @@ function @check
     lea rsi, [rbx+3184]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok199
-
-  block ^bad199
-    mov rax, 200
-    ret rax
+    je ^bad199
 
   block ^ok199
     mov rdi, r12
@@ -7401,11 +6645,7 @@ function @check
     lea rsi, [rbx+3200]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok200
-
-  block ^bad200
-    mov rax, 1
-    ret rax
+    je ^bad200
 
   block ^ok200
     mov rdi, r12
@@ -7414,11 +6654,7 @@ function @check
     lea rsi, [rbx+3216]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok201
-
-  block ^bad201
-    mov rax, 2
-    ret rax
+    je ^bad201
 
   block ^ok201
     mov rdi, r12
@@ -7427,11 +6663,7 @@ function @check
     lea rsi, [rbx+3232]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok202
-
-  block ^bad202
-    mov rax, 3
-    ret rax
+    je ^bad202
 
   block ^ok202
     mov rdi, r12
@@ -7440,11 +6672,7 @@ function @check
     lea rsi, [rbx+3248]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok203
-
-  block ^bad203
-    mov rax, 4
-    ret rax
+    je ^bad203
 
   block ^ok203
     mov rdi, r12
@@ -7453,14 +6681,786 @@ function @check
     lea rsi, [rbx+3264]
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    jne ^ok204
+    je ^bad204
+
+  block ^ok204
+    mov rax, 0
+    ret rax
 
   block ^bad204
     mov rax, 5
     ret rax
 
-  block ^ok204
-    mov rax, 0
+  block ^bad203
+    mov rax, 4
+    ret rax
+
+  block ^bad202
+    mov rax, 3
+    ret rax
+
+  block ^bad201
+    mov rax, 2
+    ret rax
+
+  block ^bad200
+    mov rax, 1
+    ret rax
+
+  block ^bad199
+    mov rax, 200
+    ret rax
+
+  block ^bad198
+    mov rax, 199
+    ret rax
+
+  block ^bad197
+    mov rax, 198
+    ret rax
+
+  block ^bad196
+    mov rax, 197
+    ret rax
+
+  block ^bad195
+    mov rax, 196
+    ret rax
+
+  block ^bad194
+    mov rax, 195
+    ret rax
+
+  block ^bad193
+    mov rax, 194
+    ret rax
+
+  block ^bad192
+    mov rax, 193
+    ret rax
+
+  block ^bad191
+    mov rax, 192
+    ret rax
+
+  block ^bad190
+    mov rax, 191
+    ret rax
+
+  block ^bad189
+    mov rax, 190
+    ret rax
+
+  block ^bad188
+    mov rax, 189
+    ret rax
+
+  block ^bad187
+    mov rax, 188
+    ret rax
+
+  block ^bad186
+    mov rax, 187
+    ret rax
+
+  block ^bad185
+    mov rax, 186
+    ret rax
+
+  block ^bad184
+    mov rax, 185
+    ret rax
+
+  block ^bad183
+    mov rax, 184
+    ret rax
+
+  block ^bad182
+    mov rax, 183
+    ret rax
+
+  block ^bad181
+    mov rax, 182
+    ret rax
+
+  block ^bad180
+    mov rax, 181
+    ret rax
+
+  block ^bad179
+    mov rax, 180
+    ret rax
+
+  block ^bad178
+    mov rax, 179
+    ret rax
+
+  block ^bad177
+    mov rax, 178
+    ret rax
+
+  block ^bad176
+    mov rax, 177
+    ret rax
+
+  block ^bad175
+    mov rax, 176
+    ret rax
+
+  block ^bad174
+    mov rax, 175
+    ret rax
+
+  block ^bad173
+    mov rax, 174
+    ret rax
+
+  block ^bad172
+    mov rax, 173
+    ret rax
+
+  block ^bad171
+    mov rax, 172
+    ret rax
+
+  block ^bad170
+    mov rax, 171
+    ret rax
+
+  block ^bad169
+    mov rax, 170
+    ret rax
+
+  block ^bad168
+    mov rax, 169
+    ret rax
+
+  block ^bad167
+    mov rax, 168
+    ret rax
+
+  block ^bad166
+    mov rax, 167
+    ret rax
+
+  block ^bad165
+    mov rax, 166
+    ret rax
+
+  block ^bad164
+    mov rax, 165
+    ret rax
+
+  block ^bad163
+    mov rax, 164
+    ret rax
+
+  block ^bad162
+    mov rax, 163
+    ret rax
+
+  block ^bad161
+    mov rax, 162
+    ret rax
+
+  block ^bad160
+    mov rax, 161
+    ret rax
+
+  block ^bad159
+    mov rax, 160
+    ret rax
+
+  block ^bad158
+    mov rax, 159
+    ret rax
+
+  block ^bad157
+    mov rax, 158
+    ret rax
+
+  block ^bad156
+    mov rax, 157
+    ret rax
+
+  block ^bad155
+    mov rax, 156
+    ret rax
+
+  block ^bad154
+    mov rax, 155
+    ret rax
+
+  block ^bad153
+    mov rax, 154
+    ret rax
+
+  block ^bad152
+    mov rax, 153
+    ret rax
+
+  block ^bad151
+    mov rax, 152
+    ret rax
+
+  block ^bad150
+    mov rax, 151
+    ret rax
+
+  block ^bad149
+    mov rax, 150
+    ret rax
+
+  block ^bad148
+    mov rax, 149
+    ret rax
+
+  block ^bad147
+    mov rax, 148
+    ret rax
+
+  block ^bad146
+    mov rax, 147
+    ret rax
+
+  block ^bad145
+    mov rax, 146
+    ret rax
+
+  block ^bad144
+    mov rax, 145
+    ret rax
+
+  block ^bad143
+    mov rax, 144
+    ret rax
+
+  block ^bad142
+    mov rax, 143
+    ret rax
+
+  block ^bad141
+    mov rax, 142
+    ret rax
+
+  block ^bad140
+    mov rax, 141
+    ret rax
+
+  block ^bad139
+    mov rax, 140
+    ret rax
+
+  block ^bad138
+    mov rax, 139
+    ret rax
+
+  block ^bad137
+    mov rax, 138
+    ret rax
+
+  block ^bad136
+    mov rax, 137
+    ret rax
+
+  block ^bad135
+    mov rax, 136
+    ret rax
+
+  block ^bad134
+    mov rax, 135
+    ret rax
+
+  block ^bad133
+    mov rax, 134
+    ret rax
+
+  block ^bad132
+    mov rax, 133
+    ret rax
+
+  block ^bad131
+    mov rax, 132
+    ret rax
+
+  block ^bad130
+    mov rax, 131
+    ret rax
+
+  block ^bad129
+    mov rax, 130
+    ret rax
+
+  block ^bad128
+    mov rax, 129
+    ret rax
+
+  block ^bad127
+    mov rax, 128
+    ret rax
+
+  block ^bad126
+    mov rax, 127
+    ret rax
+
+  block ^bad125
+    mov rax, 126
+    ret rax
+
+  block ^bad124
+    mov rax, 125
+    ret rax
+
+  block ^bad123
+    mov rax, 124
+    ret rax
+
+  block ^bad122
+    mov rax, 123
+    ret rax
+
+  block ^bad121
+    mov rax, 122
+    ret rax
+
+  block ^bad120
+    mov rax, 121
+    ret rax
+
+  block ^bad119
+    mov rax, 120
+    ret rax
+
+  block ^bad118
+    mov rax, 119
+    ret rax
+
+  block ^bad117
+    mov rax, 118
+    ret rax
+
+  block ^bad116
+    mov rax, 117
+    ret rax
+
+  block ^bad115
+    mov rax, 116
+    ret rax
+
+  block ^bad114
+    mov rax, 115
+    ret rax
+
+  block ^bad113
+    mov rax, 114
+    ret rax
+
+  block ^bad112
+    mov rax, 113
+    ret rax
+
+  block ^bad111
+    mov rax, 112
+    ret rax
+
+  block ^bad110
+    mov rax, 111
+    ret rax
+
+  block ^bad109
+    mov rax, 110
+    ret rax
+
+  block ^bad108
+    mov rax, 109
+    ret rax
+
+  block ^bad107
+    mov rax, 108
+    ret rax
+
+  block ^bad106
+    mov rax, 107
+    ret rax
+
+  block ^bad105
+    mov rax, 106
+    ret rax
+
+  block ^bad104
+    mov rax, 105
+    ret rax
+
+  block ^bad103
+    mov rax, 104
+    ret rax
+
+  block ^bad102
+    mov rax, 103
+    ret rax
+
+  block ^bad101
+    mov rax, 102
+    ret rax
+
+  block ^bad100
+    mov rax, 101
+    ret rax
+
+  block ^bad99
+    mov rax, 100
+    ret rax
+
+  block ^bad98
+    mov rax, 99
+    ret rax
+
+  block ^bad97
+    mov rax, 98
+    ret rax
+
+  block ^bad96
+    mov rax, 97
+    ret rax
+
+  block ^bad95
+    mov rax, 96
+    ret rax
+
+  block ^bad94
+    mov rax, 95
+    ret rax
+
+  block ^bad93
+    mov rax, 94
+    ret rax
+
+  block ^bad92
+    mov rax, 93
+    ret rax
+
+  block ^bad91
+    mov rax, 92
+    ret rax
+
+  block ^bad90
+    mov rax, 91
+    ret rax
+
+  block ^bad89
+    mov rax, 90
+    ret rax
+
+  block ^bad88
+    mov rax, 89
+    ret rax
+
+  block ^bad87
+    mov rax, 88
+    ret rax
+
+  block ^bad86
+    mov rax, 87
+    ret rax
+
+  block ^bad85
+    mov rax, 86
+    ret rax
+
+  block ^bad84
+    mov rax, 85
+    ret rax
+
+  block ^bad83
+    mov rax, 84
+    ret rax
+
+  block ^bad82
+    mov rax, 83
+    ret rax
+
+  block ^bad81
+    mov rax, 82
+    ret rax
+
+  block ^bad80
+    mov rax, 81
+    ret rax
+
+  block ^bad79
+    mov rax, 80
+    ret rax
+
+  block ^bad78
+    mov rax, 79
+    ret rax
+
+  block ^bad77
+    mov rax, 78
+    ret rax
+
+  block ^bad76
+    mov rax, 77
+    ret rax
+
+  block ^bad75
+    mov rax, 76
+    ret rax
+
+  block ^bad74
+    mov rax, 75
+    ret rax
+
+  block ^bad73
+    mov rax, 74
+    ret rax
+
+  block ^bad72
+    mov rax, 73
+    ret rax
+
+  block ^bad71
+    mov rax, 72
+    ret rax
+
+  block ^bad70
+    mov rax, 71
+    ret rax
+
+  block ^bad69
+    mov rax, 70
+    ret rax
+
+  block ^bad68
+    mov rax, 69
+    ret rax
+
+  block ^bad67
+    mov rax, 68
+    ret rax
+
+  block ^bad66
+    mov rax, 67
+    ret rax
+
+  block ^bad65
+    mov rax, 66
+    ret rax
+
+  block ^bad64
+    mov rax, 65
+    ret rax
+
+  block ^bad63
+    mov rax, 64
+    ret rax
+
+  block ^bad62
+    mov rax, 63
+    ret rax
+
+  block ^bad61
+    mov rax, 62
+    ret rax
+
+  block ^bad60
+    mov rax, 61
+    ret rax
+
+  block ^bad59
+    mov rax, 60
+    ret rax
+
+  block ^bad58
+    mov rax, 59
+    ret rax
+
+  block ^bad57
+    mov rax, 58
+    ret rax
+
+  block ^bad56
+    mov rax, 57
+    ret rax
+
+  block ^bad55
+    mov rax, 56
+    ret rax
+
+  block ^bad54
+    mov rax, 55
+    ret rax
+
+  block ^bad53
+    mov rax, 54
+    ret rax
+
+  block ^bad52
+    mov rax, 53
+    ret rax
+
+  block ^bad51
+    mov rax, 52
+    ret rax
+
+  block ^bad50
+    mov rax, 51
+    ret rax
+
+  block ^bad49
+    mov rax, 50
+    ret rax
+
+  block ^bad48
+    mov rax, 49
+    ret rax
+
+  block ^bad47
+    mov rax, 48
+    ret rax
+
+  block ^bad46
+    mov rax, 47
+    ret rax
+
+  block ^bad45
+    mov rax, 46
+    ret rax
+
+  block ^bad44
+    mov rax, 45
+    ret rax
+
+  block ^bad43
+    mov rax, 44
+    ret rax
+
+  block ^bad42
+    mov rax, 43
+    ret rax
+
+  block ^bad41
+    mov rax, 42
+    ret rax
+
+  block ^bad40
+    mov rax, 41
+    ret rax
+
+  block ^bad39
+    mov rax, 40
+    ret rax
+
+  block ^bad38
+    mov rax, 39
+    ret rax
+
+  block ^bad37
+    mov rax, 38
+    ret rax
+
+  block ^bad36
+    mov rax, 37
+    ret rax
+
+  block ^bad35
+    mov rax, 36
+    ret rax
+
+  block ^bad34
+    mov rax, 35
+    ret rax
+
+  block ^bad33
+    mov rax, 34
+    ret rax
+
+  block ^bad32
+    mov rax, 33
+    ret rax
+
+  block ^bad31
+    mov rax, 32
+    ret rax
+
+  block ^bad30
+    mov rax, 31
+    ret rax
+
+  block ^bad29
+    mov rax, 30
+    ret rax
+
+  block ^bad28
+    mov rax, 29
+    ret rax
+
+  block ^bad27
+    mov rax, 28
+    ret rax
+
+  block ^bad26
+    mov rax, 27
+    ret rax
+
+  block ^bad25
+    mov rax, 26
+    ret rax
+
+  block ^bad24
+    mov rax, 25
+    ret rax
+
+  block ^bad23
+    mov rax, 24
+    ret rax
+
+  block ^bad22
+    mov rax, 23
+    ret rax
+
+  block ^bad21
+    mov rax, 22
+    ret rax
+
+  block ^bad20
+    mov rax, 21
+    ret rax
+
+  block ^bad19
+    mov rax, 20
+    ret rax
+
+  block ^bad18
+    mov rax, 19
+    ret rax
+
+  block ^bad17
+    mov rax, 18
+    ret rax
+
+  block ^bad16
+    mov rax, 17
+    ret rax
+
+  block ^bad15
+    mov rax, 16
+    ret rax
+
+  block ^bad14
+    mov rax, 15
+    ret rax
+
+  block ^bad13
+    mov rax, 14
+    ret rax
+
+  block ^bad12
+    mov rax, 13
+    ret rax
+
+  block ^bad11
+    mov rax, 12
     ret rax
 
 function @main

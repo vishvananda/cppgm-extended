@@ -34,6 +34,10 @@ namespace {
 const uint32_t kUnresolved = 0xffffffffu;
 const uint32_t kWalking = 0xfffffffeu;
 const uint32_t kNoChainEnd = 0xfffffffdu;
+// A tail of at most kShortTail instructions that the block before it runs
+// into stays a copy of its own where it runs at least as often as the
+// function's entry (share_small_tails).
+const uint32_t kShortTail = 5;
 
 bool branch_to(const Inst& inst, Op op, uint32_t block)
 {
@@ -185,7 +189,8 @@ bool same_tail(const Function& f, const Block& a, const Block& b, const std::vec
 	}
 }
 
-void share_small_tails(Function& f, std::vector<uint32_t>& end, const std::vector<uint8_t>& live)
+void share_small_tails(
+	Function& f, std::vector<uint32_t>& end, const std::vector<uint8_t>& live, const std::vector<uint64_t>& frequency)
 {
 	if (f.blocks.size() < 8 || !f.eh.landings.empty() || f.eh_records_pushed || !f.code_labels.empty() || f.assembly)
 		return;
@@ -196,6 +201,37 @@ void share_small_tails(Function& f, std::vector<uint32_t>& end, const std::vecto
 	FlatMap<uint64_t, uint32_t, WordKeyHash> tails;
 	tails.clear(n);
 	bool changed = false;
+	// Whether `b` is short, runs at least as often as the entry (placement's
+	// estimate), and the block laid out before it runs into it: as a jump to
+	// its twin, that path would take a branch to save a few bytes. (A block
+	// only jumps reach is retargeted at no cost.)
+	auto short_and_entered = [&](uint32_t b) {
+		const Block& block = f.blocks[b];
+		if (frequency.empty() || frequency[b] < frequency[0])
+			return false;
+		uint32_t count = 0;
+		for (uint32_t i = block.first; i < block.first + block.count; ++i)
+			count += f.insts[i].op != Op::Nop ? 1 : 0;
+		if (count > kShortTail)
+			return false;
+		uint32_t p = b;
+		while (p-- > 0 && (!live[p] || target[p] != p))
+		{
+		}
+		if (p >= b || f.blocks[p].count == 0)
+			return false;
+		const Block& before = f.blocks[p];
+		for (uint32_t i = before.first + before.count; i-- > before.first && i + 2 >= before.first + before.count;)
+		{
+			const Inst& inst = f.insts[i];
+			if ((inst.op == Op::Jmp || inst.op == Op::Jcc) && inst.ops[0].kind == OperandKind::Label &&
+				target[inst.ops[0].symbol] == b)
+				return true;
+			if (inst.op != Op::Jmp)
+				break;
+		}
+		return false;
+	};
 	// Forward tails are visited first. A collision is fully compared; a
 	// different tail with that hash simply stays separate.
 	for (uint32_t b = n; b-- > 1;)
@@ -206,6 +242,8 @@ void share_small_tails(Function& f, std::vector<uint32_t>& end, const std::vecto
 		const uint32_t* previous = tails.find(hash);
 		if (previous != nullptr && same_tail(f, f.blocks[b], f.blocks[*previous], target))
 		{
+			if (short_and_entered(b))
+				continue;
 			target[b] = *previous;
 			changed = true;
 		}
@@ -516,7 +554,12 @@ uint32_t FunctionSelector::layout_branches()
 		for (uint32_t c : layout_chain_)
 			end[c] = e;
 	}
-	share_small_tails(f, end, live);
+	// (Placement's estimate, read by the old indexes.)
+	std::vector<uint64_t>& frequency = layout_frequency_;
+	frequency.clear();
+	if (!addressed)
+		block_frequencies(f, frequency);
+	share_small_tails(f, end, live, frequency);
 	// The kept blocks' new indexes; a removed block's references take its
 	// chain end's.
 	uint32_t kept = 0;
@@ -545,10 +588,6 @@ uint32_t FunctionSelector::layout_branches()
 	// block ending `jcc A; jmp B` with neither next jumps unconditionally
 	// to the less frequent of the two (placement's estimate), so the
 	// likelier path takes only the conditional branch.
-	std::vector<uint64_t>& frequency = layout_frequency_;
-	frequency.clear();
-	if (!addressed)
-		block_frequencies(f, frequency);
 	uint32_t index = 0;
 	uint32_t laid_out = 0;
 	for (uint32_t b = 0; b < blocks; ++b)

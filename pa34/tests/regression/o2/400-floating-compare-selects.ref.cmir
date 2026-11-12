@@ -627,11 +627,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @gt_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b12
-
-  block ^bad11
-    mov rax, 13
-    ret rax
+    jne ^bad11
 
   block ^b12
     mov rdi, 11
@@ -640,11 +636,7 @@ function @main
     fmov.f64 xmm1, 2.0
     call @ge_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b13
-
-  block ^bad12
-    mov rax, 14
-    ret rax
+    jne ^bad12
 
   block ^b13
     mov rdi, 11
@@ -653,11 +645,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ge_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b14
-
-  block ^bad13
-    mov rax, 15
-    ret rax
+    jne ^bad13
 
   block ^b14
     mov rdi, 11
@@ -666,11 +654,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ge_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b15
-
-  block ^bad14
-    mov rax, 16
-    ret rax
+    jne ^bad14
 
   block ^b15
     mov rdi, 11
@@ -679,11 +663,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ge_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b16
-
-  block ^bad15
-    mov rax, 17
-    ret rax
+    jne ^bad15
 
   block ^b16
     mov rdi, 11
@@ -692,11 +672,7 @@ function @main
     fmov.f64 xmm1, 2.0
     call @ult_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b17
-
-  block ^bad16
-    mov rax, 18
-    ret rax
+    jne ^bad16
 
   block ^b17
     mov rdi, 11
@@ -705,11 +681,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ult_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b18
-
-  block ^bad17
-    mov rax, 19
-    ret rax
+    jne ^bad17
 
   block ^b18
     mov rdi, 11
@@ -718,11 +690,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ult_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b19
-
-  block ^bad18
-    mov rax, 20
-    ret rax
+    jne ^bad18
 
   block ^b19
     mov rdi, 11
@@ -731,11 +699,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ult_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b20
-
-  block ^bad19
-    mov rax, 21
-    ret rax
+    jne ^bad19
 
   block ^b20
     mov rdi, 11
@@ -744,11 +708,7 @@ function @main
     fmov.f64 xmm1, 2.0
     call @ule_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b21
-
-  block ^bad20
-    mov rax, 22
-    ret rax
+    jne ^bad20
 
   block ^b21
     mov rdi, 11
@@ -757,11 +717,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ule_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b22
-
-  block ^bad21
-    mov rax, 23
-    ret rax
+    jne ^bad21
 
   block ^b22
     mov rdi, 11
@@ -770,11 +726,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ule_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b23
-
-  block ^bad22
-    mov rax, 24
-    ret rax
+    jne ^bad22
 
   block ^b23
     mov rdi, 11
@@ -783,11 +735,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ule_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b24
-
-  block ^bad23
-    mov rax, 25
-    ret rax
+    jne ^bad23
 
   block ^b24
     mov rdi, 11
@@ -796,11 +744,7 @@ function @main
     fmov.f64 xmm1, 2.0
     call @ugt_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b25
-
-  block ^bad24
-    mov rax, 26
-    ret rax
+    jne ^bad24
 
   block ^b25
     mov rdi, 11
@@ -809,11 +753,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ugt_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b26
-
-  block ^bad25
-    mov rax, 27
-    ret rax
+    jne ^bad25
 
   block ^b26
     mov rdi, 11
@@ -822,11 +762,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ugt_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b27
-
-  block ^bad26
-    mov rax, 28
-    ret rax
+    jne ^bad26
 
   block ^b27
     mov rdi, 11
@@ -835,11 +771,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ugt_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b28
-
-  block ^bad27
-    mov rax, 29
-    ret rax
+    jne ^bad27
 
   block ^b28
     mov rdi, 11
@@ -848,11 +780,7 @@ function @main
     fmov.f64 xmm1, 2.0
     call @uge_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b29
-
-  block ^bad28
-    mov rax, 30
-    ret rax
+    jne ^bad28
 
   block ^b29
     mov rdi, 11
@@ -861,11 +789,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @uge_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b30
-
-  block ^bad29
-    mov rax, 31
-    ret rax
+    jne ^bad29
 
   block ^b30
     mov rdi, 11
@@ -874,11 +798,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @uge_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b31
-
-  block ^bad30
-    mov rax, 32
-    ret rax
+    jne ^bad30
 
   block ^b31
     mov rdi, 11
@@ -887,11 +807,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @uge_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b32
-
-  block ^bad31
-    mov rax, 33
-    ret rax
+    jne ^bad31
 
   block ^b32
     mov rdi, 11
@@ -900,11 +816,7 @@ function @main
     fmov.f64 xmm1, 2.0
     call @eq_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b33
-
-  block ^bad32
-    mov rax, 34
-    ret rax
+    jne ^bad32
 
   block ^b33
     mov rdi, 11
@@ -913,11 +825,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @eq_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b34
-
-  block ^bad33
-    mov rax, 35
-    ret rax
+    jne ^bad33
 
   block ^b34
     mov rdi, 11
@@ -926,11 +834,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @eq_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b35
-
-  block ^bad34
-    mov rax, 36
-    ret rax
+    jne ^bad34
 
   block ^b35
     mov rdi, 11
@@ -939,11 +843,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @eq_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b36
-
-  block ^bad35
-    mov rax, 37
-    ret rax
+    jne ^bad35
 
   block ^b36
     mov rdi, 11
@@ -952,11 +852,7 @@ function @main
     fmov.f64 xmm1, 2.0
     call @ne_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b37
-
-  block ^bad36
-    mov rax, 38
-    ret rax
+    jne ^bad36
 
   block ^b37
     mov rdi, 11
@@ -965,11 +861,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ne_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b38
-
-  block ^bad37
-    mov rax, 39
-    ret rax
+    jne ^bad37
 
   block ^b38
     mov rdi, 11
@@ -978,11 +870,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ne_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b39
-
-  block ^bad38
-    mov rax, 40
-    ret rax
+    jne ^bad38
 
   block ^b39
     mov rdi, 11
@@ -991,11 +879,7 @@ function @main
     fmov.f64 xmm1, 1.0
     call @ne_f64 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b40
-
-  block ^bad39
-    mov rax, 41
-    ret rax
+    jne ^bad39
 
   block ^b40
     mov rdi, 11
@@ -1004,11 +888,7 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @lt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b41
-
-  block ^bad40
-    mov rax, 42
-    ret rax
+    jne ^bad40
 
   block ^b41
     mov rdi, 11
@@ -1017,11 +897,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @lt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b42
-
-  block ^bad41
-    mov rax, 43
-    ret rax
+    jne ^bad41
 
   block ^b42
     mov rdi, 11
@@ -1030,11 +906,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @lt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b43
-
-  block ^bad42
-    mov rax, 44
-    ret rax
+    jne ^bad42
 
   block ^b43
     mov rdi, 11
@@ -1043,11 +915,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @lt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b44
-
-  block ^bad43
-    mov rax, 45
-    ret rax
+    jne ^bad43
 
   block ^b44
     mov rdi, 11
@@ -1056,11 +924,7 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @le_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b45
-
-  block ^bad44
-    mov rax, 46
-    ret rax
+    jne ^bad44
 
   block ^b45
     mov rdi, 11
@@ -1069,11 +933,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @le_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b46
-
-  block ^bad45
-    mov rax, 47
-    ret rax
+    jne ^bad45
 
   block ^b46
     mov rdi, 11
@@ -1082,11 +942,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @le_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b47
-
-  block ^bad46
-    mov rax, 48
-    ret rax
+    jne ^bad46
 
   block ^b47
     mov rdi, 11
@@ -1095,11 +951,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @le_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b48
-
-  block ^bad47
-    mov rax, 49
-    ret rax
+    jne ^bad47
 
   block ^b48
     mov rdi, 11
@@ -1108,11 +960,7 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @gt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b49
-
-  block ^bad48
-    mov rax, 50
-    ret rax
+    jne ^bad48
 
   block ^b49
     mov rdi, 11
@@ -1121,11 +969,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @gt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b50
-
-  block ^bad49
-    mov rax, 51
-    ret rax
+    jne ^bad49
 
   block ^b50
     mov rdi, 11
@@ -1134,11 +978,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @gt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b51
-
-  block ^bad50
-    mov rax, 52
-    ret rax
+    jne ^bad50
 
   block ^b51
     mov rdi, 11
@@ -1147,11 +987,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @gt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b52
-
-  block ^bad51
-    mov rax, 53
-    ret rax
+    jne ^bad51
 
   block ^b52
     mov rdi, 11
@@ -1160,11 +996,7 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @ge_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b53
-
-  block ^bad52
-    mov rax, 54
-    ret rax
+    jne ^bad52
 
   block ^b53
     mov rdi, 11
@@ -1173,11 +1005,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ge_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b54
-
-  block ^bad53
-    mov rax, 55
-    ret rax
+    jne ^bad53
 
   block ^b54
     mov rdi, 11
@@ -1186,11 +1014,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ge_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b55
-
-  block ^bad54
-    mov rax, 56
-    ret rax
+    jne ^bad54
 
   block ^b55
     mov rdi, 11
@@ -1199,11 +1023,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ge_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b56
-
-  block ^bad55
-    mov rax, 57
-    ret rax
+    jne ^bad55
 
   block ^b56
     mov rdi, 11
@@ -1212,11 +1032,7 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @ult_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b57
-
-  block ^bad56
-    mov rax, 58
-    ret rax
+    jne ^bad56
 
   block ^b57
     mov rdi, 11
@@ -1225,11 +1041,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ult_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b58
-
-  block ^bad57
-    mov rax, 59
-    ret rax
+    jne ^bad57
 
   block ^b58
     mov rdi, 11
@@ -1238,11 +1050,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ult_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b59
-
-  block ^bad58
-    mov rax, 60
-    ret rax
+    jne ^bad58
 
   block ^b59
     mov rdi, 11
@@ -1251,11 +1059,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ult_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b60
-
-  block ^bad59
-    mov rax, 61
-    ret rax
+    jne ^bad59
 
   block ^b60
     mov rdi, 11
@@ -1264,11 +1068,7 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @ule_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b61
-
-  block ^bad60
-    mov rax, 62
-    ret rax
+    jne ^bad60
 
   block ^b61
     mov rdi, 11
@@ -1277,11 +1077,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ule_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b62
-
-  block ^bad61
-    mov rax, 63
-    ret rax
+    jne ^bad61
 
   block ^b62
     mov rdi, 11
@@ -1290,11 +1086,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ule_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b63
-
-  block ^bad62
-    mov rax, 64
-    ret rax
+    jne ^bad62
 
   block ^b63
     mov rdi, 11
@@ -1303,11 +1095,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ule_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b64
-
-  block ^bad63
-    mov rax, 65
-    ret rax
+    jne ^bad63
 
   block ^b64
     mov rdi, 11
@@ -1316,11 +1104,7 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @ugt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b65
-
-  block ^bad64
-    mov rax, 66
-    ret rax
+    jne ^bad64
 
   block ^b65
     mov rdi, 11
@@ -1329,11 +1113,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ugt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b66
-
-  block ^bad65
-    mov rax, 67
-    ret rax
+    jne ^bad65
 
   block ^b66
     mov rdi, 11
@@ -1342,11 +1122,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ugt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b67
-
-  block ^bad66
-    mov rax, 68
-    ret rax
+    jne ^bad66
 
   block ^b67
     mov rdi, 11
@@ -1355,11 +1131,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ugt_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b68
-
-  block ^bad67
-    mov rax, 69
-    ret rax
+    jne ^bad67
 
   block ^b68
     mov rdi, 11
@@ -1368,11 +1140,7 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @uge_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b69
-
-  block ^bad68
-    mov rax, 70
-    ret rax
+    jne ^bad68
 
   block ^b69
     mov rdi, 11
@@ -1381,11 +1149,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @uge_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b70
-
-  block ^bad69
-    mov rax, 71
-    ret rax
+    jne ^bad69
 
   block ^b70
     mov rdi, 11
@@ -1394,11 +1158,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @uge_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b71
-
-  block ^bad70
-    mov rax, 72
-    ret rax
+    jne ^bad70
 
   block ^b71
     mov rdi, 11
@@ -1407,11 +1167,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @uge_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b72
-
-  block ^bad71
-    mov rax, 73
-    ret rax
+    jne ^bad71
 
   block ^b72
     mov rdi, 11
@@ -1420,11 +1176,7 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @eq_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b73
-
-  block ^bad72
-    mov rax, 74
-    ret rax
+    jne ^bad72
 
   block ^b73
     mov rdi, 11
@@ -1433,11 +1185,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @eq_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b74
-
-  block ^bad73
-    mov rax, 75
-    ret rax
+    jne ^bad73
 
   block ^b74
     mov rdi, 11
@@ -1446,11 +1194,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @eq_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b75
-
-  block ^bad74
-    mov rax, 76
-    ret rax
+    jne ^bad74
 
   block ^b75
     mov rdi, 11
@@ -1459,11 +1203,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @eq_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b76
-
-  block ^bad75
-    mov rax, 77
-    ret rax
+    jne ^bad75
 
   block ^b76
     mov rdi, 11
@@ -1472,11 +1212,7 @@ function @main
     fmov.f32 xmm1, 2.0f
     call @ne_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b77
-
-  block ^bad76
-    mov rax, 78
-    ret rax
+    jne ^bad76
 
   block ^b77
     mov rdi, 11
@@ -1485,11 +1221,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ne_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b78
-
-  block ^bad77
-    mov rax, 79
-    ret rax
+    jne ^bad77
 
   block ^b78
     mov rdi, 11
@@ -1498,11 +1230,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ne_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 22
-    je ^b79
-
-  block ^bad78
-    mov rax, 80
-    ret rax
+    jne ^bad78
 
   block ^b79
     mov rdi, 11
@@ -1511,11 +1239,7 @@ function @main
     fmov.f32 xmm1, 1.0f
     call @ne_f32 [args=(rsi,rdi,xmm0,xmm1)]
     cmp.i64 rax, 11
-    je ^b80
-
-  block ^bad79
-    mov rax, 81
-    ret rax
+    jne ^bad79
 
   block ^b80
     mov rdi, 40
@@ -1535,11 +1259,7 @@ function @main
     add <gpr0>, <gpr1>
     add <gpr0>, rax
     cmp.i64 <gpr0>, 54
-    je ^pass
-
-  block ^fail
-    mov rax, 121
-    ret rax
+    jne ^fail
 
   block ^pass
     mov rdi, 11
@@ -1569,12 +1289,292 @@ function @main
     add <gpr2>, rax
     add <gpr0>, <gpr2>
     cmp.i64 <gpr0>, 66
-    je ^done
+    jne ^fail80
+
+  block ^done
+    mov rax, 0
+    ret rax
 
   block ^fail80
     mov rax, 122
     ret rax
 
-  block ^done
-    mov rax, 0
+  block ^fail
+    mov rax, 121
+    ret rax
+
+  block ^bad79
+    mov rax, 81
+    ret rax
+
+  block ^bad78
+    mov rax, 80
+    ret rax
+
+  block ^bad77
+    mov rax, 79
+    ret rax
+
+  block ^bad76
+    mov rax, 78
+    ret rax
+
+  block ^bad75
+    mov rax, 77
+    ret rax
+
+  block ^bad74
+    mov rax, 76
+    ret rax
+
+  block ^bad73
+    mov rax, 75
+    ret rax
+
+  block ^bad72
+    mov rax, 74
+    ret rax
+
+  block ^bad71
+    mov rax, 73
+    ret rax
+
+  block ^bad70
+    mov rax, 72
+    ret rax
+
+  block ^bad69
+    mov rax, 71
+    ret rax
+
+  block ^bad68
+    mov rax, 70
+    ret rax
+
+  block ^bad67
+    mov rax, 69
+    ret rax
+
+  block ^bad66
+    mov rax, 68
+    ret rax
+
+  block ^bad65
+    mov rax, 67
+    ret rax
+
+  block ^bad64
+    mov rax, 66
+    ret rax
+
+  block ^bad63
+    mov rax, 65
+    ret rax
+
+  block ^bad62
+    mov rax, 64
+    ret rax
+
+  block ^bad61
+    mov rax, 63
+    ret rax
+
+  block ^bad60
+    mov rax, 62
+    ret rax
+
+  block ^bad59
+    mov rax, 61
+    ret rax
+
+  block ^bad58
+    mov rax, 60
+    ret rax
+
+  block ^bad57
+    mov rax, 59
+    ret rax
+
+  block ^bad56
+    mov rax, 58
+    ret rax
+
+  block ^bad55
+    mov rax, 57
+    ret rax
+
+  block ^bad54
+    mov rax, 56
+    ret rax
+
+  block ^bad53
+    mov rax, 55
+    ret rax
+
+  block ^bad52
+    mov rax, 54
+    ret rax
+
+  block ^bad51
+    mov rax, 53
+    ret rax
+
+  block ^bad50
+    mov rax, 52
+    ret rax
+
+  block ^bad49
+    mov rax, 51
+    ret rax
+
+  block ^bad48
+    mov rax, 50
+    ret rax
+
+  block ^bad47
+    mov rax, 49
+    ret rax
+
+  block ^bad46
+    mov rax, 48
+    ret rax
+
+  block ^bad45
+    mov rax, 47
+    ret rax
+
+  block ^bad44
+    mov rax, 46
+    ret rax
+
+  block ^bad43
+    mov rax, 45
+    ret rax
+
+  block ^bad42
+    mov rax, 44
+    ret rax
+
+  block ^bad41
+    mov rax, 43
+    ret rax
+
+  block ^bad40
+    mov rax, 42
+    ret rax
+
+  block ^bad39
+    mov rax, 41
+    ret rax
+
+  block ^bad38
+    mov rax, 40
+    ret rax
+
+  block ^bad37
+    mov rax, 39
+    ret rax
+
+  block ^bad36
+    mov rax, 38
+    ret rax
+
+  block ^bad35
+    mov rax, 37
+    ret rax
+
+  block ^bad34
+    mov rax, 36
+    ret rax
+
+  block ^bad33
+    mov rax, 35
+    ret rax
+
+  block ^bad32
+    mov rax, 34
+    ret rax
+
+  block ^bad31
+    mov rax, 33
+    ret rax
+
+  block ^bad30
+    mov rax, 32
+    ret rax
+
+  block ^bad29
+    mov rax, 31
+    ret rax
+
+  block ^bad28
+    mov rax, 30
+    ret rax
+
+  block ^bad27
+    mov rax, 29
+    ret rax
+
+  block ^bad26
+    mov rax, 28
+    ret rax
+
+  block ^bad25
+    mov rax, 27
+    ret rax
+
+  block ^bad24
+    mov rax, 26
+    ret rax
+
+  block ^bad23
+    mov rax, 25
+    ret rax
+
+  block ^bad22
+    mov rax, 24
+    ret rax
+
+  block ^bad21
+    mov rax, 23
+    ret rax
+
+  block ^bad20
+    mov rax, 22
+    ret rax
+
+  block ^bad19
+    mov rax, 21
+    ret rax
+
+  block ^bad18
+    mov rax, 20
+    ret rax
+
+  block ^bad17
+    mov rax, 19
+    ret rax
+
+  block ^bad16
+    mov rax, 18
+    ret rax
+
+  block ^bad15
+    mov rax, 17
+    ret rax
+
+  block ^bad14
+    mov rax, 16
+    ret rax
+
+  block ^bad13
+    mov rax, 15
+    ret rax
+
+  block ^bad12
+    mov rax, 14
+    ret rax
+
+  block ^bad11
+    mov rax, 13
     ret rax

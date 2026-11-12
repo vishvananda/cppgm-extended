@@ -154,8 +154,9 @@ function @defined_default
     ja ^record
     jump_table rdi, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
 
-  block ^case0
-    lea rax, [rsi+rsi*2]
+  block ^record
+    mov rdi, rsi
+    call @record_default [args=(rdi)]
     ret rax
 
   block ^case5
@@ -181,9 +182,8 @@ function @defined_default
   block ^dead
     trap
 
-  block ^record
-    mov rdi, rsi
-    call @record_default [args=(rdi)]
+  block ^case0
+    lea rax, [rsi+rsi*2]
     ret rax
 
 function @throwing_default
