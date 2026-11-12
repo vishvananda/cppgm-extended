@@ -1,0 +1,338 @@
+declare function @f(%arg0 : i32) -> i32 [binding=strong, object=_Z1fi]
+declare function @Guard__operatorbool(%arg0 : ptr [object_bytes=1]) -> u8 [binding=strong, object=_ZNK5GuardcvbEv]
+declare function @Guard___Guard(%arg0 : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5GuardD1Ev]
+
+function @if_condition(%x : i32) -> i32 [binding=strong, object=_Z12if_conditioni] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = cmp gt i32 %t1, 0
+    branch likely %t2, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t3 = call i32 @f(1)
+    return i32 %t3
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t4 = call i32 @f(2)
+    return i32 %t4
+}
+function @loops(%n : i32) -> i32 [binding=strong, object=_Z5loopsi] {
+  slot $n : i32
+  slot $sum : i32
+  slot $i : i32
+
+  block ^entry:
+    store typed i32 %n, $n
+    store typed i32 0, $sum
+    jump ^while_cond_1
+
+  block ^while_cond_1:
+    %t1 = load typed i32 $n
+    %t2 = cmp ne i32 %t1, 0
+    branch likely %t2, ^while_body_2, ^while_end_3
+
+  block ^while_body_2:
+    %t3 = load typed i32 $n
+    %t4 = binary sub nowrap i32 %t3, 1
+    store typed i32 %t4, $n
+    %t5 = call i32 @f(%t3)
+    %t6 = load typed i32 $sum
+    %t7 = binary add nowrap i32 %t6, %t5
+    store typed i32 %t7, $sum
+    jump ^while_cond_1
+
+  block ^while_end_3:
+    store typed i32 0, $i
+    jump ^for_cond_4
+
+  block ^for_cond_4:
+    %t8 = load typed i32 $i
+    %t9 = load typed i32 $sum
+    %t10 = cmp lt i32 %t8, %t9
+    branch likely %t10, ^for_body_5, ^for_end_7
+
+  block ^for_body_5:
+    %t11 = load typed i32 $i
+    %t12 = call i32 @f(%t11)
+    %t13 = load typed i32 $sum
+    %t14 = binary sub nowrap i32 %t13, %t12
+    store typed i32 %t14, $sum
+    jump ^for_iter_6
+
+  block ^for_iter_6:
+    %t15 = load typed i32 $i
+    %t16 = binary add nowrap i32 %t15, 1
+    store typed i32 %t16, $i
+    jump ^for_cond_4
+
+  block ^for_end_7:
+    jump ^do_body_8
+
+  block ^do_body_8:
+    %t17 = load typed i32 $sum
+    %t18 = call i32 @f(%t17)
+    %t19 = load typed i32 $sum
+    %t20 = binary add nowrap i32 %t19, %t18
+    store typed i32 %t20, $sum
+    jump ^do_cond_9
+
+  block ^do_cond_9:
+    %t21 = load typed i32 $sum
+    %t22 = cmp lt i32 %t21, 0
+    branch unlikely %t22, ^do_body_8, ^do_end_10
+
+  block ^do_end_10:
+    %t23 = load typed i32 $sum
+    return i32 %t23
+}
+function @chain_operand(%x : i32, %y : i32) -> i32 [binding=strong, object=_Z13chain_operandii] {
+  slot $x : i32
+  slot $y : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    store typed i32 %y, $y
+    %t1 = load typed i32 $x
+    %t2 = cmp ne i32 %t1, 0
+    branch %t2, ^land_rhs_3, ^if_else_2
+
+  block ^land_rhs_3:
+    %t3 = load typed i32 $y
+    %t4 = cmp ne i32 %t3, 0
+    branch unlikely %t4, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t5 = call i32 @f(3)
+    return i32 %t5
+
+  block ^if_else_2:
+    jump ^if_end_4
+
+  block ^if_end_4:
+    %t6 = call i32 @f(4)
+    return i32 %t6
+}
+function @value_operands(%x : i32, %y : i32) -> i64 [binding=strong, object=_Z14value_operandsii] {
+  slot $x : i32
+  slot $y : i32
+  slot $land__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    store typed i32 %x, $x
+    store typed i32 %y, $y
+    %t1 = load typed i32 $x
+    %t2 = convert sext i64 i32 %t1
+    branch likely %t2, ^land_rhs_1, ^land_short_2
+
+  block ^land_rhs_1:
+    %t3 = load typed i32 $y
+    %t4 = cmp ne i32 %t3, 0
+    store typed i64 %t4, $land__1
+    jump ^land_end_3
+
+  block ^land_short_2:
+    store typed i64 0, $land__1
+    jump ^land_end_3
+
+  block ^land_end_3:
+    %t5 = load typed i64 $land__1
+    %t6 = load typed i32 $y
+    %t7 = convert sext i64 i32 %t6
+    branch unlikely %t7, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t8 = load typed i32 $x
+    %t9 = cmp ne i32 %t8, 0
+    store typed i64 %t9, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t10 = load typed i64 $lor__2
+    %t11 = convert trunc i32 i64 %t5
+    %t12 = convert trunc i32 i64 %t10
+    %t13 = binary add nowrap i32 %t11, %t12
+    %t14 = convert sext i64 i32 %t13
+    return i64 %t14
+}
+function @choice(%x : i32) -> i32 [binding=strong, object=_Z6choicei] {
+  slot $x : i32
+  slot $cond__1 : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = convert sext i64 i32 %t1
+    branch unlikely %t2, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    %t3 = call i32 @f(5)
+    store typed i32 %t3, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    %t4 = call i32 @f(6)
+    store typed i32 %t4, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = load typed i32 $cond__1
+    return i32 %t5
+}
+function @temporary() -> i32 [binding=strong, object=_Z9temporaryv] {
+  slot $tmpobj__1 : obj<1x1>
+  slot $call__2 : u8
+
+  block ^entry:
+    eh_try ^cleanup_resume_3
+    %t1 = addr $tmpobj__1
+    zeroinit 1x1 %t1
+    eh_end
+    jump ^call_unwind_end_4
+
+  block ^cleanup_resume_3:
+    resume
+
+  block ^call_unwind_end_4:
+    eh_try ^cleanup_action_5
+    %t2 = call u8 @Guard__operatorbool(%t1)
+    store u8 %t2, $call__2
+    %t3 = load u8 $call__2
+    %t4 = convert zext i64 u8 %t3
+    eh_end
+    jump ^call_unwind_end_8
+
+  block ^cleanup_action_5:
+    call void @Guard___Guard(%t1)
+    jump ^cleanup_resume_3
+
+  block ^call_unwind_end_8:
+    branch unlikely %t4, ^cond_true_cleanup_6, ^cond_false_cleanup_7
+
+  block ^cond_true_cleanup_6:
+    call void @Guard___Guard(%t1)
+    jump ^if_then_1
+
+  block ^cond_false_cleanup_7:
+    call void @Guard___Guard(%t1)
+    jump ^if_else_2
+
+  block ^if_then_1:
+    %t5 = call i32 @f(7)
+    return i32 %t5
+
+  block ^if_else_2:
+    jump ^if_end_9
+
+  block ^if_end_9:
+    %t6 = call i32 @f(8)
+    return i32 %t6
+}
+function @whole_chain(%x : i32, %y : i32) -> i32 [binding=strong, object=_Z11whole_chainii] {
+  slot $x : i32
+  slot $y : i32
+  slot $land__1 : i64
+
+  block ^entry:
+    store typed i32 %x, $x
+    store typed i32 %y, $y
+    %t1 = load typed i32 $x
+    %t2 = cmp ne i32 %t1, 0
+    branch %t2, ^land_rhs_3, ^land_short_4
+
+  block ^land_rhs_3:
+    %t3 = load typed i32 $y
+    %t4 = cmp ne i32 %t3, 0
+    store typed i64 %t4, $land__1
+    jump ^land_end_5
+
+  block ^land_short_4:
+    store typed i64 0, $land__1
+    jump ^land_end_5
+
+  block ^land_end_5:
+    %t5 = load typed i64 $land__1
+    branch likely %t5, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t6 = call i32 @f(9)
+    return i32 %t6
+
+  block ^if_else_2:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t7 = call i32 @f(10)
+    return i32 %t7
+}
+function @not_tested(%x : i32, %c : i64) -> i32 [binding=strong, object=_Z10not_testedil] {
+  slot $x : i32
+  slot $c : i64
+  slot $v : i64
+
+  block ^entry:
+    store typed i32 %x, $x
+    store typed i64 %c, $c
+    %t1 = load typed i32 $x
+    %t2 = convert sext i64 i32 %t1
+    %t3 = cmp eq i64 %t2, 0
+    branch %t3, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t4 = call i32 @f(11)
+    return i32 %t4
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t5 = load typed i32 $x
+    %t6 = convert sext i64 i32 %t5
+    store typed i64 %t6, $v
+    %t7 = load typed i64 $v
+    branch %t7, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    %t8 = load typed i64 $v
+    %t9 = convert trunc i32 i64 %t8
+    %t10 = call i32 @f(%t9)
+    return i32 %t10
+
+  block ^if_else_5:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t11 = load typed i32 $x
+    %t12 = convert sext i64 i32 %t11
+    branch %t12, ^if_then_7, ^if_else_8
+
+  block ^if_then_7:
+    %t13 = call i32 @f(12)
+    return i32 %t13
+
+  block ^if_else_8:
+    jump ^if_end_9
+
+  block ^if_end_9:
+    %t14 = call i32 @f(13)
+    return i32 %t14
+}
+function @value(%x : i32) -> i64 [binding=strong, object=_Z5valuei] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = convert sext i64 i32 %t1
+    return i64 %t2
+}

@@ -1638,6 +1638,8 @@ the prediction is wrong. Readers and writers preserve them; optimizers may
 discard them. Swapping a branch's true and false outcomes reverses its
 prediction. A new, unrelated condition needs a new prediction or none.
 No particular probability or native instruction sequence is required.
+The C++ lowering predicts only a branch that tests GNU `__builtin_expect`
+with a literal expectation, by PA30's rule.
 
 `unreachable` states that execution cannot validly continue from that point.
 It takes no operands and emits no call or symbol declaration. A release backend
@@ -2115,9 +2117,10 @@ declarations and required model data. Its construction exercises compare
 only generated-program outcomes using `lowir2native-ref`. Neither mode
 uses the C++-lowering presentation rules below.
 
-The source-to-LowIR assignments (PA10 through PA23), PA33's `-O0` driver
-lane and its regression lane judge an output by comparing it with the course
-solution's LowIR after a presentation canonicalization: the relaxed LowIR
+The source-to-LowIR assignments (PA10 through PA23), PA30's LowIR lane,
+PA33's `-O0` driver lane and its regression lane judge an output by
+comparing it with the course solution's LowIR after a presentation
+canonicalization: the relaxed LowIR
 comparison of `scripts/compare_results_common.pl`. PA8's debug-information
 lanes for `cppgm++ --emit-lowir` (`tests/debuginfo/source` and `source-g0`)
 use it as well, and also require the reference's `!dbg` locations (Debug
@@ -2250,7 +2253,9 @@ follows them, and so must yours.
   per bit-field allocation unit), PA16 (constant arrays from readonly
   data), PA21 (the terminate guard and when a definition may throw; shared
   unwind suffixes), PA23 (virtual bases found through one VTT load per
-  block, or a static offset for a complete object).
+  block, or a static offset for a complete object), PA30 (a branch that
+  tests `__builtin_expect` with a literal expectation is predicted, and no
+  other branch is).
 - Metadata of earlier forms is rejected by the validator rather than
   absorbed: the parameter keys `capture=` and `access=`, the `index`
   projections `base_subobject` and `reference_field`, the symbol key

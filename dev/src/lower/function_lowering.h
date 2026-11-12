@@ -1873,6 +1873,8 @@ private:
 	bool literal_truth(const syntax::Expr& expr, bool& value) const;
 	void branch_condition(
 		const syntax::Expr& expr, lowir::BlockId if_true, lowir::BlockId if_false, bool fold_literals);
+	// A branch on GNU __builtin_expect with a literal expectation.
+	lowir::BranchPrediction expected_branch(const syntax::Expr& condition) const;
 	RValue truth(const syntax::Expr& expr);
 	RValue truth_operand(const syntax::Expr& expr);
 	RValue normalized_truth(const syntax::Expr& expr);

@@ -1,0 +1,121 @@
+declare function @f(%arg0 : i32) -> i32 [binding=strong, object=_Z1fi]
+
+function @flag(%mask : u32, %bit : u32) -> u8 [binding=strong, object=_Z4flagjj, no_inline=yes] {
+  block ^entry:
+    %t1 = binary shl u32 1, %bit
+    %t2 = binary and u32 %mask, %t1
+    %t3 = cmp ne u32 %t2, 0
+    %t4 = convert trunc u8 i64 %t3
+    return u8 %t4
+}
+function @likely_and(%mask : u32) -> i32 [binding=strong, object=_Z10likely_andj] {
+  block ^entry:
+    %t1 = call u8 @flag(%mask, 0)
+    branch likely %t1, ^land_rhs_1, ^if_end_4
+
+  block ^land_rhs_1:
+    %t2 = call u8 @flag(%mask, 1)
+    branch likely %t2, ^land_rhs_2, ^if_end_4
+
+  block ^land_rhs_2:
+    %t3 = call u8 @flag(%mask, 2)
+    branch likely %t3, ^if_then_3, ^if_end_4
+
+  block ^if_then_3:
+    %t4 = call i32 @f(1)
+    return i32 %t4
+
+  block ^if_end_4:
+    %t5 = call i32 @f(2)
+    return i32 %t5
+}
+function @unlikely_or(%mask : u32) -> i32 [binding=strong, object=_Z11unlikely_orj] {
+  block ^entry:
+    %t1 = call u8 @flag(%mask, 0)
+    branch unlikely %t1, ^if_then_3, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t2 = call u8 @flag(%mask, 1)
+    branch unlikely %t2, ^if_then_3, ^lor_rhs_2
+
+  block ^lor_rhs_2:
+    %t3 = call u8 @flag(%mask, 2)
+    branch unlikely %t3, ^if_then_3, ^if_end_4
+
+  block ^if_then_3:
+    %t4 = call i32 @f(3)
+    return i32 %t4
+
+  block ^if_end_4:
+    %t5 = call i32 @f(4)
+    return i32 %t5
+}
+function @negated_and(%mask : u32) -> i32 [binding=strong, object=_Z11negated_andj] {
+  block ^entry:
+    %t1 = call u8 @flag(%mask, 0)
+    branch likely %t1, ^land_rhs_1, ^if_then_2
+
+  block ^land_rhs_1:
+    %t2 = call u8 @flag(%mask, 1)
+    %t3 = cmp eq u8 %t2, 0
+    branch unlikely %t3, ^if_then_2, ^if_else_3
+
+  block ^if_then_2:
+    %t4 = call i32 @f(5)
+    return i32 %t4
+
+  block ^if_else_3:
+    %t5 = call i32 @f(6)
+    return i32 %t5
+}
+function @cast_and(%mask : u32) -> i32 [binding=strong, object=_Z8cast_andj] {
+  block ^entry:
+    %t1 = call u8 @flag(%mask, 0)
+    branch likely %t1, ^land_rhs_1, ^if_else_3
+
+  block ^land_rhs_1:
+    %t2 = call u8 @flag(%mask, 1)
+    branch likely %t2, ^if_then_2, ^if_else_3
+
+  block ^if_then_2:
+    %t3 = call i32 @f(7)
+    return i32 %t3
+
+  block ^if_else_3:
+    %t4 = call i32 @f(8)
+    return i32 %t4
+}
+function @fallback_and(%mask : u32) -> i32 [binding=strong, object=_Z12fallback_andj] {
+  block ^entry:
+    %t1 = call u8 @flag(%mask, 0)
+    branch %t1, ^land_rhs_1, ^if_else_3
+
+  block ^land_rhs_1:
+    %t2 = call u8 @flag(%mask, 1)
+    branch unlikely %t2, ^if_then_2, ^if_else_3
+
+  block ^if_then_2:
+    %t3 = call i32 @f(9)
+    return i32 %t3
+
+  block ^if_else_3:
+    %t4 = call i32 @f(10)
+    return i32 %t4
+}
+function @fallback_or(%mask : u32) -> i32 [binding=strong, object=_Z11fallback_orj] {
+  block ^entry:
+    %t1 = call u8 @flag(%mask, 0)
+    branch %t1, ^if_then_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t2 = call u8 @flag(%mask, 1)
+    branch likely %t2, ^if_then_2, ^if_else_3
+
+  block ^if_then_2:
+    %t3 = call i32 @f(11)
+    return i32 %t3
+
+  block ^if_else_3:
+    %t4 = call i32 @f(12)
+    return i32 %t4
+}

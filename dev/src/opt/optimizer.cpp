@@ -671,6 +671,8 @@ void scalar_rounds(FunctionContext& context)
 		if (context.body.layout.size() == 1)
 			return;
 	}
+	// Before jump threading takes promoted phis of constants apart.
+	RUN_PASS(predict_constant_edges);
 	for (unsigned round = 0; round < kScalarRounds; ++round)
 	{
 		bool changed = RUN_PASS(propagate_constants);

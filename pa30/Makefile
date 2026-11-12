@@ -46,6 +46,9 @@ PREPROC_TEST_ROOT ?= tests/preproc
 COMPILE_TEST_ROOT ?= tests/compile
 RUN_TEST_ROOT ?= tests/run
 TARGET_FEATURE_TEST_ROOT ?= tests/target-features
+# tests/lowir compares the C++ lowering's LowIR, as PA10-PA23 do.
+LOWIR_TEST_ROOT ?= tests/lowir
+LOWIR_TEST_ARGS = --emit-lowir -O0
 ifneq ($(CPPGM_BATCH_TESTS),)
 export WRAPPED_BATCH_STDIN ?= 1
 endif
@@ -193,6 +196,8 @@ else
 	perl scripts/run_compile_tests.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
 endif
 	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
+	@CPPGM_APP_ARGS='$(LOWIR_TEST_ARGS)' scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(LOWIR_TEST_ROOT)
+	@perl ../scripts/compare_results_common.pl lowir_t ref my $(LOWIR_TEST_ROOT)
 	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(RUN_TEST_ROOT)
 	@scripts/compare_results_link.pl ref my $(RUN_TEST_ROOT)
 
@@ -207,6 +212,8 @@ test-batch: $(TEST_DEPS)
 	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
+	@CPPGM_APP_ARGS='$(LOWIR_TEST_ARGS)' scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(LOWIR_TEST_ROOT)
+	@perl ../scripts/compare_results_common.pl lowir_t ref my $(LOWIR_TEST_ROOT)
 	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(RUN_TEST_ROOT)
 	@scripts/compare_results_link.pl ref my $(RUN_TEST_ROOT)
 
@@ -216,27 +223,32 @@ ifneq ($(strip $(TEST)),)
 else
 	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)
 	@perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
+	@CPPGM_APP_ARGS='$(LOWIR_TEST_ARGS)' scripts/run_all_tests.pl $(REF_TEST_APP) ref $(LOWIR_TEST_ROOT)
 		perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(RUN_TEST_ROOT)
 endif
 
 ref-test-batch:
 	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
+	@CPPGM_APP_ARGS='$(LOWIR_TEST_ARGS)' scripts/run_all_tests.pl $(REF_TEST_APP) ref $(LOWIR_TEST_ROOT)
 		perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(RUN_TEST_ROOT)
 
 REF_TEST_RUN = case "$(TEST)" in \
 	$(PREPROC_TEST_ROOT)/*) perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
 	$(COMPILE_TEST_ROOT)/*) perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
+	$(LOWIR_TEST_ROOT)/*) CPPGM_APP_ARGS='$(LOWIR_TEST_ARGS)' scripts/run_all_tests.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
 	$(RUN_TEST_ROOT)/*) perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
-	*) echo "Usage: make ref-test TEST=$(PREPROC_TEST_ROOT)/<file>.t, $(COMPILE_TEST_ROOT)/<file>.t, or $(RUN_TEST_ROOT)/<file>.t"; exit 1 ;; \
+	*) echo "Usage: make ref-test TEST=$(PREPROC_TEST_ROOT)/<file>.t, $(COMPILE_TEST_ROOT)/<file>.t, $(LOWIR_TEST_ROOT)/<file>.t, or $(RUN_TEST_ROOT)/<file>.t"; exit 1 ;; \
 esac
 
 CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 	'$(PREPROC_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) check {tests}' \
 	'$(COMPILE_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check {tests}' \
+	'$(LOWIR_TEST_ROOT)/*::CPPGM_APP_ARGS="$(LOWIR_TEST_ARGS)" scripts/run_all_tests.pl $(CPPGM_TEST_APP) check {tests}' \
 	'$(RUN_TEST_ROOT)/*::perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) check {tests}'
 CHECK_COMPARE = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 	'$(PREPROC_TEST_ROOT)/*|$(COMPILE_TEST_ROOT)/*::scripts/compare_results.pl ref check {tests}' \
+	'$(LOWIR_TEST_ROOT)/*::perl ../scripts/compare_results_common.pl lowir_t ref check {tests}' \
 	'$(RUN_TEST_ROOT)/*::scripts/compare_results_link.pl ref check {tests}'
 include ../scripts/pa_run_check_targets.mk
 

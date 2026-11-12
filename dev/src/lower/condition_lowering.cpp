@@ -8,7 +8,8 @@
 // sense (a comparison is one `cmp` with the source's predicate, `!x` is
 // `cmp eq x, 0`, a bare scalar is branched on directly) and `&&`/`||`
 // there become direct short-circuit control flow; as values, `&&`, `||`
-// and `?:` select through a frame slot written on each path.
+// and `?:` select through a frame slot written on each path. A branch that
+// tests a literal expectation (__builtin_expect) is predicted.
 namespace lower {
 
 namespace {
@@ -129,18 +130,7 @@ void FunctionLowering::branch_condition(
 		jump(value ? on_true : on_false);
 	}
 	else
-	{
-		const RValue value = truth(*e);
-		lowir::BranchPrediction prediction = lowir::BranchPrediction::None;
-		const syntax::CallExpr* call = e->kind == syntax::ExprKind::Call ? static_cast<const syntax::CallExpr*>(e)
-																		 : nullptr;
-		bool expected = false;
-		if (call != nullptr && e->facts != nullptr && (e->facts->flags & sema::kDirectCall) != 0 &&
-			static_cast<const sema::FunctionEntity*>(e->facts->entity)->builtin == sema::BuiltinFunction::Expect &&
-			call->arguments.size == 2 && literal_truth(*call->arguments[1], expected))
-			prediction = expected ? lowir::BranchPrediction::Likely : lowir::BranchPrediction::Unlikely;
-		branch(value, on_true, on_false, prediction);
-	}
+		branch(truth(*e), on_true, on_false, expected_branch(*e));
 	for (size_t i = spine_.size(); i-- > base;)
 	{
 		const ChainTargets targets = targets_[target_base + (i - base)];
@@ -153,6 +143,25 @@ void FunctionLowering::branch_condition(
 	targets_.resize(target_base);
 	if (chain)
 		--guard_scopes_;
+}
+
+lowir::BranchPrediction FunctionLowering::expected_branch(const syntax::Expr& condition) const
+{
+	// A branch that tests GNU __builtin_expect(e, c), c an integer,
+	// character or boolean literal, expects the value nonzero when c is.
+	// What the expectation implies for other branches is the optimizer's to
+	// derive.
+	const syntax::Expr* e = WithoutParentheses(&condition);
+	if (e->kind != syntax::ExprKind::Call || e->facts == nullptr || (e->facts->flags & sema::kDirectCall) == 0 ||
+		static_cast<const sema::FunctionEntity*>(e->facts->entity)->builtin != sema::BuiltinFunction::Expect)
+		return lowir::BranchPrediction::None;
+	const syntax::CallExpr* call = static_cast<const syntax::CallExpr*>(e);
+	const syntax::Expr* c = call->arguments.size == 2 ? WithoutParentheses(call->arguments[1]) : nullptr;
+	bool expected = false;
+	if (c == nullptr || (c->kind != syntax::ExprKind::Literal && c->kind != syntax::ExprKind::KeywordLiteral) ||
+		!literal_truth(*c, expected))
+		return lowir::BranchPrediction::None;
+	return expected ? lowir::BranchPrediction::Likely : lowir::BranchPrediction::Unlikely;
 }
 
 RValue FunctionLowering::truth(const syntax::Expr& expr)
@@ -275,10 +284,12 @@ RValue FunctionLowering::logical_step(const syntax::BinaryExpr& expr, const RVal
 	const lowir::BlockId shortcut = new_block(conjunction ? lowir::BlockKind::LandShort : lowir::BlockKind::LorShort);
 	const lowir::BlockId end = new_block(conjunction ? lowir::BlockKind::LandEnd : lowir::BlockKind::LorEnd);
 	const RValue left = left_truth != nullptr ? *left_truth : truth(*expr.left);
+	const lowir::BranchPrediction prediction = left_truth != nullptr ? lowir::BranchPrediction::None
+																	 : expected_branch(*expr.left);
 	if (conjunction)
-		branch(left, right, shortcut);
+		branch(left, right, shortcut, prediction);
 	else
-		branch(left, shortcut, right);
+		branch(left, shortcut, right, prediction);
 	place(right);
 	const size_t first = cleanups_.size();
 	if (!local)
@@ -355,7 +366,7 @@ RValue FunctionLowering::conditional_value(const syntax::ConditionalExpr& expr)
 		const RValue condition = truth(*current->condition);
 		if (nested)
 			--guarded_branches_;
-		branch(condition, then_block, level.else_block);
+		branch(condition, then_block, level.else_block, expected_branch(*current->condition));
 		place(then_block);
 		if (continues_choice(*current->then_expr))
 		{
@@ -461,7 +472,7 @@ Place FunctionLowering::conditional_place(const syntax::ConditionalExpr& expr)
 	const lowir::BlockId else_block = new_block(lowir::BlockKind::CondaddrElse);
 	const lowir::BlockId end = new_block(lowir::BlockKind::CondaddrEnd);
 	begin_guard_scope();
-	branch(truth(*expr.condition), then_block, else_block);
+	branch(truth(*expr.condition), then_block, else_block, expected_branch(*expr.condition));
 	place(then_block);
 	// An operand of a derived class is converted to the base class the
 	// result has (5.16p3).
@@ -507,7 +518,7 @@ void FunctionLowering::conditional_discard(const syntax::ConditionalExpr& expr)
 	const bool local = branch_local(expr);
 	if (!local)
 		begin_guard_scope();
-	branch(truth(*expr.condition), then_block, else_block);
+	branch(truth(*expr.condition), then_block, else_block, expected_branch(*expr.condition));
 	const syntax::Expr* operands[2] = { expr.then_expr, expr.else_expr };
 	const lowir::BlockId blocks[2] = { then_block, else_block };
 	for (int i = 0; i < 2; ++i)

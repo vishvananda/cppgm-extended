@@ -1002,6 +1002,7 @@ void FunctionLowering::condition_branch(
 	const bool region = begin_full_expression(&expr);
 	const syntax::Expr* saved = full_root(&expr);
 	const syntax::Expr* top = WithoutParentheses(&expr);
+	const lowir::BranchPrediction prediction = expected_branch(expr);
 	const bool logical_top = top->kind == syntax::ExprKind::Binary &&
 		(static_cast<const syntax::BinaryExpr*>(top)->op == TokenKind::OP_LAND ||
 			static_cast<const syntax::BinaryExpr*>(top)->op == TokenKind::OP_LOR) &&
@@ -1014,7 +1015,7 @@ void FunctionLowering::condition_branch(
 		const RValue value = truth(expr);
 		choice_root_ = saved;
 		end_full_expression(region);
-		branch(value, if_true, if_false);
+		branch(value, if_true, if_false, prediction);
 		return;
 	}
 	if (!creates_temporaries(&expr, nullptr, true))
@@ -1040,12 +1041,12 @@ void FunctionLowering::condition_branch(
 	{
 		destroy_temporaries(first);
 		end_full_expression(region);
-		branch(value, if_true, if_false);
+		branch(value, if_true, if_false, prediction);
 		return;
 	}
 	const lowir::BlockId true_cleanup = new_block(lowir::BlockKind::CondTrueCleanup);
 	const lowir::BlockId false_cleanup = new_block(lowir::BlockKind::CondFalseCleanup);
-	branch(value, true_cleanup, false_cleanup);
+	branch(value, true_cleanup, false_cleanup, prediction);
 	end_full_expression(region);
 	place(true_cleanup);
 	destroy_temporaries(first, false);

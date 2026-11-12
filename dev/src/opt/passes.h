@@ -193,6 +193,10 @@ bool fold_nonzero_tests(FunctionContext& context);
 // object before anything can end the block is never taken
 // (opt/null_edges.cpp). O(instructions).
 bool drop_null_edges(FunctionContext& context);
+// An edge that brings a phi a constant a predicted branch on it does not
+// expect is rarely taken: the branch choosing the edge is predicted away
+// from it (opt/null_edges.cpp). O(blocks) plus bounded tracing per branch.
+bool predict_constant_edges(FunctionContext& context);
 
 // Loop-invariant code motion (opt/loop_motion.cpp), O2+: pure instructions
 // whose operands a loop does not compute move to its preheader, innermost

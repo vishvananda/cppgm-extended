@@ -127,6 +127,8 @@ The starter kit provides:
 - `pa30/scripts/`, the hosted preprocessor/compile test harness
 - `pa30/tests/preproc/`, hosted preprocessor tests and references
 - `pa30/tests/compile/`, hosted compile-only tests and references
+- `pa30/tests/lowir/`, LowIR tests of hosted builtins, such as the branch
+  predictions of `__builtin_expect`
 - `pa30/tests/run/`, small host-link/run smokes for hosted C-wrapper headers
   and builtin/runtime interop
 
@@ -241,16 +243,21 @@ To run one test through the shared check target:
 ```sh
 make check TEST=tests/preproc/300-has-include.t
 make check TEST=tests/compile/600-builtin-transforms-and-traits.t
+make check TEST=tests/lowir/500-builtin-expect-predictions.t
 make check TEST=tests/run/800-hosted-cmath-ceil-run.t
 ```
 
-PA30 has three test directories:
+PA30 has four test directories:
 
 - `tests/preproc/`: hosted preprocessor compatibility. The oracle is the
   PA4-style structured preprocessor stream plus exit status.
 - `tests/compile/`: hosted compile-only compatibility. The oracle is successful
   object emission, compile exit status, and any stdout/reference sidecars used
   by the harness.
+- `tests/lowir/`: the LowIR that `cppgm++ --emit-lowir -O0` writes for
+  hosted builtins, such as the branch predictions of `__builtin_expect`. The
+  oracle is the relaxed LowIR comparison of the source-to-LowIR assignments
+  (`../pa8/lowir.md`, What The Comparison Absorbs And What It Enforces).
 - `tests/run/`: narrow host-link/run compatibility smokes. These tests cover
   hosted builtins, C library entry points, and lightweight hosted C-wrapper
   headers such as `<cassert>`, `<cmath>`, `<cstdarg>`, `<cstddef>`, `<cstdio>`,
@@ -443,9 +450,20 @@ To complete PA30, implement hosted compatibility for:
   `__builtin_va_start` and `__builtin_va_arg`, which lower to the `va_start`
   and `va_arg` of `../pa8/lowir.md`, `__builtin_va_copy` copies the
   argument-list object and `__builtin_va_end` does nothing.
-  `__builtin_expect(e, c)` is the value of `e` converted to `long`. A known
-  expectation may guide a condition through LowIR's advisory `branch likely`
-  or `branch unlikely`; an incorrect prediction must not change behavior.
+  `__builtin_expect(e, c)` is the value of `e` converted to `long`. A
+  conditional branch that tests the call, `c` an integer, character or
+  boolean literal, is predicted: `branch likely` when `c` is nonzero,
+  `branch unlikely` when it is zero. That is a branch on the call as an
+  `if`, `while`, `for` or `do` condition, as an operand of `&&` or `||` (in
+  a condition or as a value) or as the condition of `?:`, also when the
+  condition's temporaries are destroyed on each edge. No other branch is
+  predicted: not a branch inside `e` (`__builtin_expect(a && b, 1)`
+  predicts only the branch on the call), not one on
+  `!__builtin_expect(e, c)` or on a variable a condition declares, and not
+  one whose `c` is no literal. What an expectation implies for other
+  branches is the optimizer's to derive. A prediction is advisory
+  (`../pa8/lowir.md`, Terminators): an incorrect one must not change
+  behavior. `tests/lowir/` checks the rule.
   `__builtin_unreachable()` lowers to `unreachable`, as in PA11.
   `__builtin_assume` is not required; without it
   `__has_builtin(__builtin_assume)` answers 0 and a header takes its fallback
