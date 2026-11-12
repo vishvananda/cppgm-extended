@@ -931,3 +931,47 @@ The full PA36 release check is running. Final paired timing, a fresh student
 export and Linux/macOS CI remain pending. This checkpoint does not complete
 PA37. Compiler/browser inception remains the separately documented optional
 portability project.
+
+
+## CI warning and external binding validation corrections
+
+The first PR run exposed a GCC 13 vectorizer warning in the lane-duplication
+selector and an untrusted container checkout in the new benchmark workflow.
+The selector now fills the sixteen output bytes with an explicitly bounded
+loop; the workflow trusts only its mounted workspace. The warning reproduces
+with isolated GCC 13.4 and disappears with the rewrite. All 181 changed C++
+files compile at O3 with warnings as errors under GCC 13 and 14. The original
+loop also compiles under GCC 14; the earlier GCC-version attribution was wrong.
+
+Review also found that function-binding validation had been reachable only
+through constructed-program checks. External text now runs the same checks.
+The six semantic negative PA8 references were regenerated as failures. Earlier
+10814-test reports did not prove those rejections: their incorrect success
+references depended on generated outputs present in that checkout.
+
+A required bitwise lane-duplication control covers signed high bits and NaN
+payload bits, at O0–O3 and through both linkers. The original and rewritten
+selectors produce byte-identical objects/modules for that control at all four
+levels. Scalar and SIMD standard benchmark objects/modules remain byte-identical
+to the measured campaign. Control expectations live in `.wasm-expect`; redundant
+control result files were removed from the source tree. The placement auditor
+now recognizes named shared WAT host modules and still rejects orphan helpers.
+
+The corrected source passes 10815/10815 strict tests, 115/115 PA37 controls with
+self-built tools, debug info, PA5 self-host, byte-identical native inception,
+PA36 smoke and architecture/format/file checks. The corrected harness passes.
+Native compiler instructions versus the previous binding checkpoint differ by
+nine instructions at either level; output objects are identical. A separate
+immutable build of current main (`e2831a513`) measures the whole Wasm branch:
+O0 is 3,051,970,129 versus 3,058,929,091 (+0.228%); O3 is 10,281,332,042 versus
+10,349,556,795 (+0.664%). Both native outputs are byte-identical. Raw commands,
+compiler/source hashes and observations are in `native-final-main/` and
+`function-bindings/ci-fixes/` outside Git.
+
+The earlier PA36 release attempt was stopped when the compiler source needed
+correction; its partial results do not qualify this source. Fresh export,
+full release and Linux/macOS CI remain pending. The final scope review must
+also close the planned per-child memory/output bounds: the existing Wasm
+checker has timeouts, but its direct subprocess captures do not set those
+resource limits. This remains required harness work, separately from optional
+compiler/browser inception.

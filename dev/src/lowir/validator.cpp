@@ -374,7 +374,7 @@ bool Validator::run()
 		for (const AssemblyFunction& function : program_.assembly->functions)
 			if (!check_function(function.symbol, function.body.get()))
 				return false;
-	if (!check_symbols())
+	if (!check_symbols() || !check_function_bindings())
 		return false;
 	std::vector<bool> code_names(program_.symbols.size(), false);
 	for (SymbolId symbol = 0; symbol < program_.symbols.size(); ++symbol)
@@ -644,7 +644,7 @@ bool Validator::check_links()
 	for (const EquivalentEntry& entry : program_.equivalent_entries)
 		if (entry.symbol >= symbols || entry.target >= symbols)
 			return fail("invalid equivalent entry");
-	return check_function_bindings();
+	return true;
 }
 
 bool Validator::check_function_bindings()

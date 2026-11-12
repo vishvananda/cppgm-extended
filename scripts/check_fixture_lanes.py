@@ -96,6 +96,7 @@ EXTERNAL_LANES = (
 HELPERS = (
     ("*.h", True),         # headers fixtures include
     ("*.inc", True),       # sources fixtures include
+    ("*.wat", True),       # separately supplied Wasm host modules
     ("README.md", False),  # notes on a lane's directory
     (".gitkeep", False),   # keeps an empty lane root in Git
 )

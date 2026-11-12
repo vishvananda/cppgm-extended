@@ -1,0 +1,8 @@
+{
+  "llvm_link": true,
+  "calls": [
+    {"export": "observe", "args": ["0"], "result": "1"},
+    {"export": "observe", "args": ["-1"], "result": "1"},
+    {"export": "observe", "args": ["2147483647"], "result": "1"}
+  ]
+}

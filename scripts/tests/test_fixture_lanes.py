@@ -223,6 +223,10 @@ class StandInTests(unittest.TestCase):
         self.write("pa25/tests/detail.h")
         self.write("pa25/tests/unused.h", '#include "orphan.h"\n')
         self.write("pa25/tests/orphan.h")
+        self.write("pa25/tests/general/100-multi.wasm-expect",
+                   '{"hosts":{"env":"shared-host.wat"}}\n')
+        self.write("pa25/tests/general/shared-host.wat", "(module)\n")
+        self.write("pa25/tests/general/unused-host.wat", "(module)\n")
         self.write("pa25/tests/general/README.md", "notes\n")
         self.write("pa25/tests/general/110-renumbered")
         self.write("pa25/tests/general/120-removed.expect", "exit 0\n")
@@ -230,6 +234,7 @@ class StandInTests(unittest.TestCase):
         self.assertEqual(sorted(problems), [
             "pa25/tests/general/110-renumbered",
             "pa25/tests/general/120-removed.expect",
+            "pa25/tests/general/unused-host.wat",
             "pa25/tests/orphan.h",
             "pa25/tests/unused.h",
         ], output)

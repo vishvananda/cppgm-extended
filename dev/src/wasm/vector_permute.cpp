@@ -112,11 +112,9 @@ void Selector::vector_permute(const lowir::Instruction& inst)
 	}
 	else if (op == VectorOp::Movshdup || op == VectorOp::Movsldup || op == VectorOp::Movddup)
 	{
-		width = op == VectorOp::Movddup ? 8 : 4;
-		for (unsigned i = 0; i < 16 / width; ++i)
-			for (unsigned byte = 0; byte < width; ++byte)
-				lanes[i * width + byte] = static_cast<uint8_t>(
-					(width == 8 ? 0 : (i & ~1u) + (op == VectorOp::Movshdup ? 1 : 0)) * width + byte);
+		for (unsigned i = 0; i < 16; ++i)
+			lanes[i] = static_cast<uint8_t>(
+				op == VectorOp::Movddup ? i & 7u : (i & ~7u) + (op == VectorOp::Movshdup ? 4u : 0u) + (i & 3u));
 	}
 	else
 		throw WasmError("unknown Wasm vector permutation");
