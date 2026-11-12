@@ -6,6 +6,11 @@ using namespace lowir;
 
 void Selector::wide_part(Value operand, unsigned part)
 {
+	if (operand.is(ValueKind::Temp) && wide_locals_[operand.index] != kNoId)
+	{
+		out_.emit(Op::LocalGet, { wide_locals_[operand.index] + part });
+		return;
+	}
 	if (operand.is(ValueKind::Integer))
 	{
 		const auto bits = body_.literals[operand.index];
@@ -18,6 +23,12 @@ void Selector::wide_part(Value operand, unsigned part)
 
 void Selector::store_wide(Value destination)
 {
+	if (destination.is(ValueKind::Temp) && wide_locals_[destination.index] != kNoId)
+	{
+		out_.emit(Op::LocalSet, { wide_locals_[destination.index] + 1 });
+		out_.emit(Op::LocalSet, { wide_locals_[destination.index] });
+		return;
+	}
 	if (wide_low_ == kNoId)
 	{
 		wide_low_ = add_local(ValueType::I64);
@@ -38,6 +49,13 @@ void Selector::wide_convert(const lowir::Instruction& inst)
 	const Type from = convert_source_type(inst);
 	if (from.kind() == TypeKind::I128)
 	{
+		if (inst.type.kind() == TypeKind::I128)
+		{
+			wide_part(inst.ops[0], 0);
+			wide_part(inst.ops[0], 1);
+			store_wide(Value::temp(inst.result));
+			return;
+		}
 		wide_part(inst.ops[0], 0);
 		if (value_type(inst.type) == ValueType::I32)
 			out_.emit(Op::I32WrapI64);

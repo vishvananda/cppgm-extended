@@ -50,8 +50,7 @@ void FunctionSelector::reset(lowir::SymbolId symbol, Function& out)
 	succ_first_.assign(body.layout.size() + 1, 0);
 	succs_.clear();
 	edges_.clear();
-	wide_phi_first_.assign(body.instructions.size(), kNoId);
-	wide_phi_pairs_.clear();
+	phi_inputs_.reset(body.instructions.size());
 	temps_.assign(body.temps.size(), TempInfo());
 	alias_.assign(body.temps.size(), Value::none());
 	addrs_.clear();

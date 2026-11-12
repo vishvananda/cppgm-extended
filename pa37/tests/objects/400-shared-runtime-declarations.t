@@ -1,4 +1,4 @@
-target wasm 1
+target wasm32 1
 
 declare function @source_move(%dst : ptr, %src : ptr, %count : u32) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memmove]
 declare function @loop_move(%dst : ptr, %src : ptr, %count : i32) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memmove]

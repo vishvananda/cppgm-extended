@@ -4,7 +4,7 @@ This is an experimental maintainer workflow. It does not add a student assignmen
 change the PA37 report, or ship in the student export. Run from the solution
 checkout on the `experiment/wasi-browser-inception` branch.
 
-The native compiler builds W1. W1 then compiles all 408 frozen compiler sources
+The native compiler builds W1. W1 then compiles all 413 frozen compiler sources
 and links W2; W2 repeats that work to produce W3. Every corresponding object and
 final module must match **actual bytes**, without stripping or normalization.
 The same W1 runs unchanged under Wasmtime and in a dedicated browser worker.
@@ -121,25 +121,25 @@ regression fixtures. The optional browser workflow remains a maintainer choice.
 ## Qualification and performance
 
 The 2026-11-12 experiment used a shared Linux machine with two Xeon E5-2696 v4
-processors. All 408 corresponding objects and the final module matched through
+processors. All 413 corresponding objects and the final module matched through
 W1/W2/W3, both locally and in Chromium 153.0.8010.12. The final module was
-15,616,764 bytes, SHA-256
-`b56ece94db402d4f5a15f38ef07100121b97b839f33496cb5fad24fd23dd47bd`.
-Native/WASI x86 output matched for all 1,227 comparisons at O0/O2/O3, including
+15,508,798 bytes, SHA-256
+`fd03a82e3d5b401dbc53cc8be349689b59338eed7f6f17b5d34936de40a5142c`.
+Native/WASI x86 output matched for all 1,242 comparisons at O0/O2/O3, including
 the floating-point corpus. Browser cancellation, restart, final-module download,
 x86 floating-point checks and accepted/rejected program checks passed.
 
 | Build | Observed elapsed time |
 | --- | ---: |
-| Native x86 compiler produces W1, six jobs | 44.3 s |
-| Wasmtime W1 produces W2, six jobs | 91.5 s |
-| Wasmtime W2 produces W3, six jobs | 56.5 s |
-| Chromium W1 produces W2, serial worker | 367.1 s |
-| Chromium W2 produces W3, serial worker | 358.0 s |
+| Native x86 compiler produces W1, six jobs | 25.3 s |
+| Wasmtime W1 produces W2, six jobs | 51.0 s |
+| Wasmtime W2 produces W3, six jobs | 49.8 s |
+| Chromium W1 produces W2, serial worker | 507.0 s |
+| Chromium W2 produces W3, serial worker | 375.3 s |
 
 Local stage times exclude Wasmtime AOT preparation. The full browser run took
-728.6 s, including setup and final checks; peak guest linear memory was
-144,244,736 bytes. The host was shared, so these are approximate timings, not
+894.4 s, including setup and final checks; peak guest linear memory was
+144,048,128 bytes. The host was shared, so these are approximate timings, not
 isolated throughput guarantees. Full Firefox inception remains unqualified;
 the earlier optional run was canceled. Safari was not tested.
 
@@ -147,16 +147,23 @@ A separate comparison compiled the same frozen compiler sources with SDK Clang
 and cppgm, both at O3. **Both resulting WASI programs run cppgm's internal linker**
 on the same frozen inputs; this does not compare cppgm's linker against LLD.
 Locally prepared Wasmtime AOT modules, one pinned CPU, A/A calibration and four
-ABBA blocks gave median link times of 3.59 s for the cppgm-built compiler and
-1.70 s for the Clang-built compiler. Every output matched actual bytes. Three
-source-compilation workloads had paired Clang/cppgm time ratios of about
-0.72–0.78. Observations, commands, hashes and calibration noise remain in the
-external experiment package.
+ABBA blocks gave median link times of 2.71 s for the cppgm-built compiler and
+1.78 s for the Clang-built compiler, a paired Clang/cppgm time ratio of 0.658.
+Every output matched actual bytes. One A/A link block varied by 18%; the four
+paired link ratios were 0.612–0.659. Source-compilation timings were too noisy
+for a general throughput claim. Observations, commands, hashes and calibration
+noise remain in the external experiment package.
 
 Bulk input reads, typed opcode validation and flat relocation-field storage
 reduced cppgm-built WASI linking from 6.79 s to 3.66 s on identical frozen
 inputs, a median paired time ratio of 0.537. Native linking also improved,
 from 1.35 s to 0.94 s. These comparisons retain all warmups and paired blocks.
+
+The shared backend planning below further reduced WASI linking on the previous
+frozen inputs from 3.66 s to 2.67 s, a median paired time ratio of 0.732 (about
+27% less elapsed time). Native linking was 0.854 s versus 0.865 s, with a paired
+ratio of 1.012 inside the A/A variation. Three native compilation probes had
+paired ratios of 0.999, 0.970 and 0.984. Their object bytes were unchanged.
 
 ## Dispatcher regression
 
@@ -176,9 +183,40 @@ The control fixture `300-irreducible-dispatch-work` checks results and a generou
 dynamic fuel bound, without prescribing an instruction sequence. The x86 backend
 uses direct block branches and did not have this dispatcher pathology.
 
-Further candidates remain: ordinary Wasm switches still use linear comparisons,
-and a failed region-structuring attempt falls back for the whole function.
-Sharing switch-case planning and more control-region analysis with the native
-backend could improve these paths while preserving target-specific emission.
-Their individual contribution to the remaining Clang/cppgm gap has not yet been
-measured.
+## Shared backend planning
+
+The `machine` layer now supplies stable switch-case clustering and a bounded
+density predicate to both backends. Wasm emits dense tables or balanced range
+tests; native keeps its existing table, bit-test and tree policies. Signedness,
+64-bit bounds before index narrowing and PHI edge transfers remain explicit in
+the emitters. Target discovery uses a hash index for large switches, avoiding a
+quadratic scan over distinct destinations.
+
+Both backends also share the call-plan cache lifecycle, indexed PHI predecessor
+lookup, conservative object-copy lifetime facts and semantic builtin boundary
+checks. Wasm computes variadic classification/storage once for frame planning
+and emission. Target ABI classification, physical PHI move scheduling, costs and
+instruction selection stay in their existing backends.
+
+Object storage sharing requires a complete copy and one typed by-value call in
+one block with disjoint intervals. Escapes, partial writes, exceptions, dynamic
+stack allocation and inline assembly pin the storage. Wasm additionally reuses
+outgoing aggregate call storage for functions without exception handling. The
+reduced 8/32 sequential 64-byte call probes now use constant 192-byte Wasm frames
+and 144-byte native frames, versus 1,088/4,160 and 592/2,128 bytes respectively.
+
+Eligible Wasm i128 temporaries use two i64 locals. Address users, loads, call
+results and unsupported operations retain memory storage; the public ABI stays
+unchanged. The reduced `(x+y)^(x-y)` probe has no frame and two return stores,
+versus a 128-byte frame and 40 static loads/stores previously.
+
+PA37 fixtures check dense-switch fuel, sparse and high-bit selectors, PHI
+transfers, simultaneous aggregate arguments, recursion and wide arithmetic.
+Validation also fixed worker cleanup overwriting a checker's failing exit status.
+WASI values reserved by Wasmtime are checked with a host asserting the exact
+`proc_exit` argument, preserving guest code and ordinary host exit checks.
+
+Shared CFG region/SCC analysis and region-local Wasm fallback remain future
+work. A failed structuring attempt still falls back for the whole function;
+general local live-range allocation is also unchanged. Individual contributions
+of these refactors to the measured link improvement have not been isolated.

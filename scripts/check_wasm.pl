@@ -10,7 +10,7 @@ use FindBin;
 use JSON::PP qw(decode_json);
 use lib $FindBin::Bin;
 use CppgmBatchWorker qw(collect_tests run_command_capture);
-use CppgmWasmModule qw(export_signatures export_tag_signatures sequence_module);
+use CppgmWasmModule qw(export_signatures export_tag_signatures sequence_module redirect_wasi_exit);
 use CppgmWasmFixture qw(mutate_object);
 use CppgmWasmQuality qw(check_quality);
 use CppgmWasmGlobals qw(initialize_globals metadata_first group_object);
@@ -482,6 +482,28 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
             }
         }
         for my $run (@{$expect->{commands} // []}) {
+            my $command_module = $run_module;
+            my @exit_host;
+            my @exit_entry;
+            if (exists $run->{proc_exit}) {
+                my $code = $run->{proc_exit};
+                die "$test: invalid proc_exit assertion\n"
+                    unless "$code" =~ /\A[0-9]+\z/ && $code <= 0xffffffff && $run->{exit} == 0;
+                my $prefix = "$directory/exit-" . ++$command_sequence;
+                $command_module = "$prefix.wasm";
+                redirect_wasi_exit($run_module, $command_module);
+                # Returning from _start must fail too: only the assertion host
+                # may terminate successfully with the expected empty output.
+                @exit_entry = ('--invoke', sequence_module($command_module, $command_module, [], '_start'));
+                write_file("$prefix.wat", '(module (import "wasi_snapshot_preview1" "proc_exit"'
+                    . ' (func $exit (param i32))) (memory (export "memory") 1)'
+                    . ' (func (export "proc_exit") (param i32)'
+                    . " local.get 0 i32.const $code i32.ne call \$exit unreachable))");
+                ($status, $stdout, $stderr) = command('exit-host', $validator, 'parse',
+                    "$prefix.wat", '-o', "$prefix-host.wasm");
+                die "$test: exit assertion host failed: $stdout$stderr\n" if $status;
+                @exit_host = ('--preload', "cppgm_test_exit=$prefix-host.wasm");
+            }
             my @preopen;
             my $files;
             if ($run->{files} || $run->{outputs}) {
@@ -494,7 +516,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                 @preopen = ('--dir', "${files}::.");
             }
             ($status, $stdout, $stderr) = command("command-$level", $runtime, 'run', '-W', 'max-memory-size=268435456',
-                @preloads, @preopen, $run_module, @{$run->{args} // []});
+                @preloads, @exit_host, @exit_entry, @preopen, $command_module, @{$run->{args} // []});
             die "$test: WASI command exit expected $run->{exit}, got $status: $stdout$stderr\n"
                 if $status != $run->{exit};
             die "$test: WASI command output expected '$run->{stdout}', got '$stdout'\n"

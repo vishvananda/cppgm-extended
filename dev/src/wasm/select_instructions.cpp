@@ -105,6 +105,8 @@ void Selector::instruction(const lowir::Instruction& inst)
 		return;
 	case Opcode::Switch:
 	{
+		if (select_switch(inst))
+			return;
 		const Type type = operand_type(inst.ops[0], Type::scalar(TypeKind::I64));
 		for (uint32_t i = 0; i < inst.extra_count; i += 2)
 		{

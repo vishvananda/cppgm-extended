@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include "machine/call_arguments.h"
+#include "machine/frame_lifetimes.h"
+#include "wasm/exceptions.h"
 
 namespace wasm {
 
@@ -9,6 +11,7 @@ using namespace lowir;
 
 void Selector::prepare_locals()
 {
+	plan_wide_locals();
 	if (boundary_.result.passing == Passing::Indirect)
 	{
 		hidden_result_ = add_local(ValueType::I32);
@@ -36,6 +39,12 @@ void Selector::prepare_locals()
 				locals_[i] = next++;
 				continue;
 			}
+			if (wide_locals_[i] != kNoId)
+			{
+				wide_locals_[i] = next;
+				next += 2;
+				continue;
+			}
 			if (passing == Passing::Coerce)
 				incoming_[i] = next++;
 			else if (passing == Passing::Expand)
@@ -43,6 +52,12 @@ void Selector::prepare_locals()
 				incoming_[i] = next;
 				next += 2;
 			}
+		}
+		if (wide_locals_[i] != kNoId)
+		{
+			wide_locals_[i] = add_local(ValueType::I64);
+			add_local(ValueType::I64);
+			continue;
 		}
 		locals_[i] = add_local(memory_value(body_.temps[i].type) ? ValueType::I32 : value_type(body_.temps[i].type));
 	}
@@ -62,6 +77,7 @@ void Selector::prepare_frame()
 {
 	uint64_t bytes = 0;
 	uint32_t alignment = 16;
+	bool outgoing = false;
 	auto reserve = [&](Type type) {
 		const machine_model::FrameObject object{ storage_bytes(type), data_alignment(type),
 			static_cast<uint32_t>(out_.frame_objects.size()) };
@@ -72,17 +88,23 @@ void Selector::prepare_frame()
 		bytes += object.bytes;
 		if (bytes + alignment > 1024 * 1024)
 			throw WasmError("Wasm frame exceeds the configured stack reserve");
-		out_.frame_objects.push_back(FrameObject{ object, static_cast<uint32_t>(offset) });
-		return out_.frame_objects.back().offset;
+		if (!outgoing)
+			out_.frame_objects.push_back(FrameObject{ object, static_cast<uint32_t>(offset) });
+		return static_cast<uint32_t>(offset);
 	};
 	slots_.resize(body_.slots.size());
+	const auto owners = machine::sequential_copy_slots(program_, body_);
 	for (uint32_t i = 0; i < body_.slots.size(); ++i)
-		slots_[i] = reserve(body_.slots[i].type);
+		slots_[i] = !owners.empty() && owners[i] != kNoId && owners[i] != i ? slots_[owners[i]]
+																			: reserve(body_.slots[i].type);
 	objects_.resize(body_.temps.size(), kNoId);
 	for (uint32_t i = 0; i < body_.temps.size(); ++i)
-		if (memory_value(body_.temps[i].type) &&
+		if (memory_value(body_.temps[i].type) && wide_locals_[i] == kNoId &&
 			!(i < body_.parameter_count && boundary_.parameters[i].passing == Passing::Indirect))
 			objects_[i] = reserve(body_.temps[i].type);
+	const uint64_t outgoing_base = bytes;
+	uint64_t outgoing_peak = bytes;
+	const bool reuse_calls = exceptions_ == nullptr || !exceptions_->active;
 	call_areas_.resize(body_.operands.size(), kNoId);
 	bool dynamic = false;
 	for (BlockId block : body_.layout)
@@ -92,6 +114,12 @@ void Selector::prepare_frame()
 			dynamic = dynamic || inst.op == Opcode::StackAlloc;
 			if (inst.op != Opcode::Call)
 				continue;
+			if (reuse_calls)
+			{
+				outgoing_peak = std::max(outgoing_peak, bytes);
+				bytes = outgoing_base;
+				outgoing = true;
+			}
 			const auto* signature = program_.call_boundary(inst);
 			if (signature == nullptr)
 				throw WasmError("Wasm call requires a typed boundary");
@@ -107,38 +135,35 @@ void Selector::prepare_frame()
 					variadic_areas_.resize(body_.instructions.size(), kNoId);
 					variadic_copies_.resize(body_.operands.size(), kNoId);
 				}
-				machine::call_argument_types(body_, inst, *signature, parameters, argument_types_);
-				uint32_t maximum = 4;
+				const auto& plan = variadic_plan(inst, *signature);
 				for (uint32_t p = signature->parameter_count; p < inst.extra_count; ++p)
 				{
-					const Type type = argument_types_[p];
-					const auto passing = classify_value(
-						type, machine::argument_shape(body_, inst, p), program_.pointer_type());
-					if (passing.passing == Passing::Ignore)
-						continue;
-					maximum = std::max(maximum, data_alignment(variadic_storage(type, passing)));
-					if (passing.passing == Passing::Indirect)
-						variadic_copies_[inst.extra_first + p] = reserve(type);
+					const auto& argument = plan.arguments[p - signature->parameter_count];
+					if (argument.passing.passing == Passing::Indirect)
+						variadic_copies_[inst.extra_first + p] = reserve(argument.type);
 				}
-				uint32_t log = 0;
-				while ((uint32_t(1) << log) < maximum)
-					++log;
 				for (uint32_t p = signature->parameter_count; p < inst.extra_count; ++p)
 				{
-					const Type type = argument_types_[p];
-					const auto passing = classify_value(
-						type, machine::argument_shape(body_, inst, p), program_.pointer_type());
-					if (passing.passing == Passing::Ignore)
+					const auto& argument = plan.arguments[p - signature->parameter_count];
+					if (argument.passing.passing == Passing::Ignore)
 						continue;
-					const Type storage = variadic_storage(type, passing);
+					const Type storage = argument.storage;
 					const bool first = variadic_areas_[i] == kNoId;
-					const uint32_t offset = reserve(first ? Type::object(storage.bytes, log) : storage);
+					const uint32_t offset = reserve(first ? Type::object(storage.bytes, plan.alignment_log) : storage);
 					call_areas_[inst.extra_first + p] = offset;
 					if (first)
 						variadic_areas_[i] = offset;
 				}
 			}
 		}
+	if (reuse_calls && outgoing)
+	{
+		bytes = std::max(outgoing_peak, bytes);
+		if (bytes > outgoing_base)
+			out_.frame_objects.push_back(FrameObject{ machine_model::FrameObject{ bytes - outgoing_base, 1,
+														  static_cast<uint32_t>(out_.frame_objects.size()) },
+				static_cast<uint32_t>(outgoing_base) });
+	}
 	out_.frame_bytes = static_cast<uint32_t>((bytes + 15) & ~uint64_t(15));
 	if (out_.frame_bytes == 0 && !dynamic)
 		return;

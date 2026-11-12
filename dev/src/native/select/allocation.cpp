@@ -9,6 +9,7 @@
 #include "native/select/operand_roles.h"
 #include "support/internal_error.h"
 #include "support/telemetry.h"
+#include "machine/frame_lifetimes.h"
 
 // Register allocation facts. Values that live only inside their defining
 // block get registers chosen at their definition against a precomputed
@@ -583,6 +584,29 @@ void FunctionSelector::layout_slots()
 	std::vector<uint32_t> owner;
 	if (level_ >= 1 && !has_eh_)
 		share_object_slots(*this, owner);
+	if (level_ >= 1 && !has_eh_)
+	{
+		const auto copies = machine::sequential_copy_slots(program_, body);
+		if (!copies.empty())
+		{
+			if (owner.empty())
+			{
+				owner.resize(body.slots.size());
+				for (uint32_t s = 0; s < owner.size(); ++s)
+					owner[s] = s;
+			}
+			std::vector<uint32_t> members(body.slots.size(), 0);
+			for (uint32_t s = 0; s < owner.size(); ++s)
+				if (owner[s] != kNoId)
+					++members[owner[s]];
+			for (uint32_t s = 0; s < copies.size(); ++s)
+				if (copies[s] != kNoId && copies[s] != s && slot_state_[s] == SS_NORMAL &&
+					slot_state_[copies[s]] == SS_NORMAL && members[s] == 1 && members[copies[s]] == 1 &&
+					owner[s] == s && owner[copies[s]] == copies[s])
+					owner[s] = copies[s];
+		}
+	}
+
 	auto shares = [&](uint32_t s) { return !owner.empty() && owner[s] != lowir::kNoId && owner[s] != s; };
 	auto over_aligned = [&](uint32_t s) { return out_->aligned_base != 0 && value_align(body.slots[s].type) > 16; };
 	// Objects aligned beyond 16 (Function::aligned_base): offsets from an

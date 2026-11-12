@@ -1,0 +1,156 @@
+{
+  "calls": [
+    {
+      "export": "dense",
+      "args": [
+        "0"
+      ],
+      "result": "11"
+    },
+    {
+      "export": "dense",
+      "args": [
+        "32"
+      ],
+      "result": "43"
+    },
+    {
+      "export": "dense",
+      "args": [
+        "63"
+      ],
+      "result": "74"
+    },
+    {
+      "export": "dense",
+      "args": [
+        "64"
+      ],
+      "result": "-1",
+      "fuel": {
+        "1": 100,
+        "2": 100,
+        "3": 100
+      }
+    },
+    {
+      "export": "dense",
+      "args": [
+        "4294967296"
+      ],
+      "result": "-1"
+    },
+    {
+      "export": "sparse",
+      "args": [
+        "0"
+      ],
+      "result": "11"
+    },
+    {
+      "export": "sparse",
+      "args": [
+        "9000000000000000000"
+      ],
+      "result": "15"
+    },
+    {
+      "export": "sparse",
+      "args": [
+        "-1"
+      ],
+      "result": "18"
+    },
+    {
+      "export": "sparse",
+      "args": [
+        "12345"
+      ],
+      "result": "-1"
+    },
+    {
+      "export": "unsigned32",
+      "args": [
+        "-6"
+      ],
+      "result": "11"
+    },
+    {
+      "export": "unsigned32",
+      "args": [
+        "-3"
+      ],
+      "result": "14"
+    },
+    {
+      "export": "unsigned32",
+      "args": [
+        "-1"
+      ],
+      "result": "16"
+    },
+    {
+      "export": "unsigned32",
+      "args": [
+        "12345"
+      ],
+      "result": "-1"
+    },
+    {
+      "export": "signed32",
+      "args": [
+        "-4"
+      ],
+      "result": "11"
+    },
+    {
+      "export": "signed32",
+      "args": [
+        "-1"
+      ],
+      "result": "14"
+    },
+    {
+      "export": "signed32",
+      "args": [
+        "1"
+      ],
+      "result": "16"
+    },
+    {
+      "export": "signed32",
+      "args": [
+        "12345"
+      ],
+      "result": "-1"
+    },
+    {
+      "export": "pointer_selector",
+      "args": [
+        "2"
+      ],
+      "result": "12"
+    },
+    {
+      "export": "pointer_selector",
+      "args": [
+        "99"
+      ],
+      "result": "-1"
+    },
+    {
+      "export": "truth_selector",
+      "args": [
+        "0"
+      ],
+      "result": "10"
+    },
+    {
+      "export": "truth_selector",
+      "args": [
+        "1"
+      ],
+      "result": "11"
+    }
+  ]
+}

@@ -168,6 +168,10 @@ selection or optimization strategy.
 An export call with `trap: true` must trap at runtime. WASI command sidecars may
 provide named input `files` and expected `outputs`; each command gets a fresh
 preopened directory for them.
+For exit values reserved by the runtime, a command's `proc_exit` assertion
+substitutes a test host that checks the exact WASI argument and exits zero on
+success. The guest instructions and function indices are preserved. Ordinary
+`exit` assertions use the runtime's WASI host directly.
 
 [Quality checks](quality.md) explain the metrics; fixture sidecars publish
 the actual limits and invariants. Tests do not

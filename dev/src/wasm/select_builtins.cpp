@@ -1,4 +1,5 @@
 #include "wasm/selector.h"
+#include "machine/builtin_contract.h"
 
 namespace wasm {
 
@@ -10,8 +11,9 @@ bool Selector::builtin_call(const lowir::Instruction& inst, const lowir::Signatu
 	const SymbolId symbol = inst.ops[0].index;
 	if (program_.strlen_function(symbol))
 	{
-		if (inst.extra_count != 1 || value_type(signature.result) != ValueType::I32 ||
-			!program_.parameters_of(signature)[0].type.is_pointer())
+		if (!machine::valid_builtin_boundary(signature, program_.parameters_of(signature), inst.extra_count,
+				static_cast<uint32_t>(lowir::storage_bytes(program_.pointer_type())),
+				machine::BuiltinContract::StringLength))
 			throw WasmError("invalid Wasm strlen builtin boundary");
 		const uint32_t begin = add_local(ValueType::I32), cursor = add_local(ValueType::I32);
 		value(body_.operands[inst.extra_first], program_.pointer_type());
@@ -41,7 +43,8 @@ bool Selector::builtin_call(const lowir::Instruction& inst, const lowir::Signatu
 	}
 	if (program_.trap_function(symbol))
 	{
-		if (inst.extra_count != 0 || !signature.result.is_void())
+		if (!machine::valid_builtin_boundary(signature, program_.parameters_of(signature), inst.extra_count,
+				static_cast<uint32_t>(lowir::storage_bytes(program_.pointer_type())), machine::BuiltinContract::Trap))
 			throw WasmError("invalid Wasm trap builtin boundary");
 		out_.emit(Op::Unreachable);
 		return true;
@@ -51,9 +54,9 @@ bool Selector::builtin_call(const lowir::Instruction& inst, const lowir::Signatu
 	if (!copy && !fill)
 		return false;
 	const Parameter* parameters = program_.parameters_of(signature);
-	if (inst.extra_count != 3 || !signature.result.is_pointer() || !parameters[0].type.is_pointer() ||
-		(copy ? !parameters[1].type.is_pointer() : value_type(parameters[1].type) != ValueType::I32) ||
-		value_type(parameters[2].type) != ValueType::I32)
+	if (!machine::valid_builtin_boundary(signature, parameters, inst.extra_count,
+			static_cast<uint32_t>(lowir::storage_bytes(program_.pointer_type())),
+			fill ? machine::BuiltinContract::Fill : machine::BuiltinContract::Copy))
 		throw WasmError("invalid Wasm memory builtin boundary");
 	const Value* arguments = body_.operands.data() + inst.extra_first;
 	value(arguments[0], program_.pointer_type());

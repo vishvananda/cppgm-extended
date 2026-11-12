@@ -6,6 +6,7 @@
 
 #include "native/select/operand_roles.h"
 #include "support/internal_error.h"
+#include "machine/builtin_contract.h"
 
 // The call boundary: incoming parameters at function entry, outgoing
 // argument setup (stack area, then one parallel move into the argument
@@ -944,7 +945,10 @@ void FunctionSelector::emit_call(uint32_t id)
 	if (level_ >= 1 && eh_model_ == EhModel::Course && cell == kNoId && callee.kind == ValueKind::Symbol && !variadic &&
 		inst.extra_count == 1 && sig->parameter_count == 1 && params[0].type.is_pointer() &&
 		params[0].pass == ir_model::PPM_DIRECT && sig->result.kind() == TypeKind::I64 && !(call.flags & MF_NORETURN) &&
-		layout.stack_bytes == 0 && program_.strlen_function(callee.index))
+		layout.stack_bytes == 0 && program_.strlen_function(callee.index) &&
+		machine::valid_builtin_boundary(*sig, params, inst.extra_count,
+			static_cast<uint32_t>(lowir::storage_bytes(program_.pointer_type())),
+			machine::BuiltinContract::StringLength))
 	{
 		call.flags |= MF_STRLEN_PREFIX;
 		++stats_.strlen_prefixes;

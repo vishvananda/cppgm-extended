@@ -65,6 +65,13 @@ void Selector::value(Value operand, Type type)
 	{
 	case ValueKind::Temp:
 	{
+		if (wide_locals_[operand.index] != kNoId)
+		{
+			out_.emit(Op::LocalGet, { wide_locals_[operand.index] });
+			if (value_type(type) == ValueType::I32)
+				out_.emit(Op::I32WrapI64);
+			break;
+		}
 		out_.emit(Op::LocalGet, { locals_[operand.index] });
 		const Type actual = body_.temps[operand.index].type;
 		if (memory_value(actual))
@@ -115,6 +122,8 @@ void Selector::value(Value operand, Type type)
 
 void Selector::address(Value operand)
 {
+	if (operand.is(ValueKind::Temp) && wide_locals_[operand.index] != kNoId)
+		throw WasmError("Wasm wide local requires explicit memory materialization");
 	if (operand.is(ValueKind::Temp) && memory_value(body_.temps[operand.index].type))
 	{
 		out_.emit(Op::LocalGet, { locals_[operand.index] });
@@ -213,6 +222,7 @@ void Selector::restore_stack()
 
 void Selector::run()
 {
+	phi_inputs_.reset(body_.instructions.size());
 	prepare_locals();
 	if (exceptions_ != nullptr && exceptions_->active)
 	{
@@ -309,7 +319,7 @@ void Selector::phi_copies(BlockId from, BlockId to)
 		const auto& phi = body_.instructions[i];
 		if (phi.op != Opcode::Phi)
 			break;
-		const Value incoming = opt::phi_incoming(body_, phi, from);
+		const Value incoming = phi_inputs_.incoming(body_, i, from);
 		if (phi.type.kind() == TypeKind::I128)
 		{
 			wide_part(incoming, 0);

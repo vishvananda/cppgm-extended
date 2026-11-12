@@ -1,4 +1,5 @@
 #include "native/select/function_selector.h"
+#include "machine/builtin_contract.h"
 
 #include "native/backend_error.h"
 #include "support/internal_error.h"
@@ -243,6 +244,9 @@ uint32_t FunctionSelector::fixed_memcpy_bytes(const Instruction& inst, Value cal
 		!program_.memcpy_function(callee.index))
 		return kNoId;
 	const lowir::Parameter* params = program_.parameters_of(sig);
+	if (!machine::valid_builtin_boundary(sig, params, inst.extra_count,
+			static_cast<uint32_t>(lowir::storage_bytes(program_.pointer_type())), machine::BuiltinContract::Copy))
+		return kNoId;
 	if (!params[0].type.is_pointer() || !params[1].type.is_pointer() || params[2].type.kind() != TypeKind::I64 ||
 		params[0].pass != ir_model::PPM_DIRECT || params[1].pass != ir_model::PPM_DIRECT ||
 		params[2].pass != ir_model::PPM_DIRECT)

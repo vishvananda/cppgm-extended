@@ -3,6 +3,9 @@
 #include "opt/loops.h"
 #include "wasm/module.h"
 #include "wasm/control.h"
+#include "machine/switch_plan.h"
+#include "machine/call_arguments.h"
+#include "machine/phi_inputs.h"
 
 namespace wasm {
 
@@ -32,6 +35,7 @@ private:
 	void exception_resume(uint32_t site);
 	bool exception_instruction(const lowir::Instruction& inst);
 	void exception_address(uint32_t symbol, int64_t offset = 0);
+	const VariadicPlan& variadic_plan(const lowir::Instruction& inst, const lowir::Signature& signature);
 	void pack_variadic(const lowir::Instruction& inst, const lowir::Signature& signature);
 	void variadic_start(const lowir::Instruction& inst);
 	void variadic_argument(const lowir::Instruction& inst);
@@ -46,6 +50,7 @@ private:
 	void wide_shift(const lowir::Instruction& inst);
 	void wide_convert(const lowir::Instruction& inst);
 	void prepare_locals();
+	void plan_wide_locals();
 	void prepare_frame();
 	void frame_address(uint32_t offset);
 	void copy_object(lowir::Value source, lowir::Value destination, uint64_t bytes);
@@ -78,6 +83,11 @@ private:
 	void phi_copies(lowir::BlockId from, lowir::BlockId to);
 	void block(lowir::BlockId block);
 	void restore_stack();
+	bool select_switch(const lowir::Instruction& inst);
+	void switch_tree(const std::vector<machine::CaseCluster>& clusters, uint32_t first, uint32_t past,
+		uint32_t selector, lowir::BlockId fallback);
+	void switch_table(const std::vector<std::pair<int64_t, uint32_t>>& cases, const std::vector<uint32_t>& targets,
+		uint32_t selector, lowir::BlockId fallback);
 	void dispatch();
 	void simple();
 	bool structured();
@@ -105,12 +115,14 @@ private:
 	lowir::InstId current_inst_ = lowir::kNoId;
 	std::vector<uint32_t> slots_;
 	std::vector<uint32_t> locals_;
+	std::vector<uint32_t> wide_locals_;
 	std::vector<uint32_t> objects_;
 	std::vector<uint32_t> incoming_;
 	std::vector<uint32_t> call_areas_;
 	std::vector<uint32_t> variadic_areas_;
 	std::vector<uint32_t> variadic_copies_;
 	std::vector<lowir::Type> argument_types_;
+	machine::CallPlanCache<VariadicPlan> variadic_plans_;
 	uint32_t wide_low_ = lowir::kNoId;
 	uint32_t wide_high_ = lowir::kNoId;
 	uint32_t variadic_parameter_ = lowir::kNoId;
@@ -122,6 +134,7 @@ private:
 	uint32_t dispatch_depth_ = 0;
 	uint32_t current_block_ = 0;
 	ControlPlan control_;
+	machine::PhiInputs phi_inputs_;
 	struct Label
 	{
 		lowir::BlockId target;

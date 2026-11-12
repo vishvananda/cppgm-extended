@@ -65,31 +65,7 @@ struct CallLayout
 // share a call's layout for its emission-time argument types); the layouts
 // keep their capacity from one function to the next. `scratch` holds a
 // layout for other argument types.
-struct CallLayoutCache
-{
-	std::vector<uint32_t> entry; // per instruction: its layout this function, or kNoId
-	std::vector<std::unique_ptr<CallLayout>> layouts;
-	uint32_t used = 0;
-	CallLayout scratch;
-
-	void reset(size_t instructions)
-	{
-		entry.assign(instructions, lowir::kNoId);
-		used = 0;
-	}
-	const CallLayout* known(uint32_t inst) const
-	{
-		return entry[inst] != lowir::kNoId ? layouts[entry[inst]].get() : nullptr;
-	}
-	// A new layout for `inst` (not yet known), to be filled.
-	CallLayout& add(uint32_t inst)
-	{
-		if (used == layouts.size())
-			layouts.emplace_back(new CallLayout());
-		entry[inst] = used;
-		return *layouts[used++];
-	}
-};
+using CallLayoutCache = machine::CallPlanCache<CallLayout>;
 
 // The position of an integer argument register in kArgGprs.
 inline unsigned arg_gpr_slot(Reg reg)

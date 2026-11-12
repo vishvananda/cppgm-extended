@@ -9,6 +9,7 @@
 #include "native/select/mir_cleanup.h"
 #include "native/select/operand_roles.h"
 #include "support/internal_error.h"
+#include "machine/switch_plan.h"
 
 // Control flow: the block driver, terminators (with compare/branch
 // fusion), phi values as parallel transfers on their incoming edges (a
@@ -390,33 +391,7 @@ void FunctionSelector::emit_edge_transfers(uint32_t from, uint32_t to)
 			break;
 		if (!live(i) || (temps_[phi.result].flags & TF_DEAD))
 			continue;
-		Value value = Value::none();
-		if (phi.extra_count <= 16)
-		{
-			for (uint32_t k = 0; k + 1 < phi.extra_count; k += 2)
-				if (body.operands[phi.extra_first + k].index == from_id)
-					value = resolve(body.operands[phi.extra_first + k + 1]);
-		}
-		else
-		{
-			// A wide join: the phi's (predecessor, operand) pairs are sorted
-			// once into a range of wide_phi_pairs_; the last pair naming the
-			// predecessor counts, as in the scan above.
-			const uint32_t pairs = phi.extra_count / 2;
-			if (wide_phi_first_[i] == kNoId)
-			{
-				wide_phi_first_[i] = static_cast<uint32_t>(wide_phi_pairs_.size());
-				for (uint32_t k = 0; k + 1 < phi.extra_count; k += 2)
-					wide_phi_pairs_.push_back(std::make_pair(body.operands[phi.extra_first + k].index, k + 1));
-				std::sort(wide_phi_pairs_.begin() + wide_phi_first_[i], wide_phi_pairs_.end());
-			}
-			const std::vector<std::pair<uint32_t, uint32_t>>::const_iterator first = wide_phi_pairs_.begin() +
-				wide_phi_first_[i];
-			const std::vector<std::pair<uint32_t, uint32_t>>::const_iterator past = std::upper_bound(
-				first, first + pairs, std::make_pair(from_id, 0xffffffffu));
-			if (past != first && (past - 1)->first == from_id)
-				value = resolve(body.operands[phi.extra_first + (past - 1)->second]);
-		}
+		const Value value = resolve(phi_inputs_.incoming(body, i, from_id));
 		if (value.kind == ValueKind::None)
 			continue;
 		Move move;
@@ -1027,12 +1002,7 @@ const uint32_t kBitTestMinClusters = 3;
 const uint32_t kJumpTableClusters = 6;
 
 // A run of consecutive case values with one target.
-struct CaseCluster
-{
-	int64_t lo;
-	int64_t hi;
-	uint32_t target;
-};
+using machine::CaseCluster;
 
 bool fits_i32(int64_t v)
 {
@@ -1144,21 +1114,9 @@ bool FunctionSelector::emit_clustered_switch(
 		emit1(Op::Jmp, TypeKind::Void, Operand::make_label(fallback));
 		return true;
 	}
-	std::stable_sort(cases.begin(), cases.end(),
-		[](const std::pair<int64_t, uint32_t>& a, const std::pair<int64_t, uint32_t>& b) { return a.first < b.first; });
 	std::vector<CaseCluster> clusters;
 	std::vector<uint32_t> targets;
-	for (const std::pair<int64_t, uint32_t>& c : cases)
-	{
-		if (!clusters.empty() && clusters.back().hi == c.first)
-			continue; // a repeated value: its first case decides
-		if (!clusters.empty() && clusters.back().target == c.second && clusters.back().hi + 1 == c.first)
-			clusters.back().hi = c.first;
-		else
-			clusters.push_back(CaseCluster{ c.first, c.first, c.second });
-		if (targets.size() <= kBitTestTargets && std::find(targets.begin(), targets.end(), c.second) == targets.end())
-			targets.push_back(c.second);
-	}
+	machine::cluster_switch_cases(cases, clusters, targets, kBitTestTargets);
 	// A dense switch of more targets: a bounds check and a jump through a
 	// table of its targets (holes take the default). The index is the
 	// selector minus the lowest case, compared unsigned against the
@@ -1169,8 +1127,8 @@ bool FunctionSelector::emit_clustered_switch(
 	const uint64_t span = static_cast<uint64_t>(high) - static_cast<uint64_t>(low);
 	const bool many = targets.size() > kBitTestTargets ||
 		(clusters.size() >= kJumpTableClusters && !(span < 64 && targets.size() == 1));
-	if (many && cases.size() >= kJumpTableMinCases && span < kJumpTableMaxEntries &&
-		span + 1 <= kJumpTableSpread * cases.size() && fits_i32(low))
+	if (many && machine::dense_switch(cases, kJumpTableMaxEntries, kJumpTableSpread, kJumpTableMinCases) &&
+		fits_i32(low))
 	{
 		canonicalize(false);
 		const uint32_t entries = static_cast<uint32_t>(span + 1);

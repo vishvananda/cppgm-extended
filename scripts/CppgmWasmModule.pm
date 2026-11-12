@@ -3,7 +3,7 @@ package CppgmWasmModule;
 use strict;
 use warnings;
 use Exporter 'import';
-our @EXPORT_OK = qw(export_signatures export_tag_signatures sequence_module);
+our @EXPORT_OK = qw(export_signatures export_tag_signatures sequence_module redirect_wasi_exit);
 
 # Read only the public core-module type/index/export sections. Instruction
 # choices, local allocation and control structure are deliberately unobserved.
@@ -54,7 +54,7 @@ sub export_interfaces {
     local $/;
     my $reader = {data => scalar(<$file>), offset => 0};
     bytes($reader, 8) eq "\0asm\1\0\0\0" or die "Expected core Wasm module\n";
-    my (@types, @functions, @tags, %exports, %tag_exports, @sections, @function_imports);
+    my (@types, @functions, @tags, %exports, %tag_exports, @sections, @function_imports, @exit_imports);
     while ($reader->{offset} < length($reader->{data})) {
         my $id = byte($reader);
         my $section = {data => bytes($reader, number($reader)), offset => 0};
@@ -66,11 +66,16 @@ sub export_interfaces {
             }
         } elsif ($id == 2) {
             for (1 .. number($section)) {
-                my ($module, $name) = map { bytes($section, number($section)) } 1 .. 2;
+                my $start = $section->{offset};
+                my $module = bytes($section, number($section));
+                my $end = $section->{offset};
+                my $name = bytes($section, number($section));
                 my $kind = byte($section);
                 if ($kind == 0) {
                     push @functions, number($section);
                     push @function_imports, [$module, $name];
+                    push @exit_imports, [$start, $end]
+                        if $module eq 'wasi_snapshot_preview1' && $name eq 'proc_exit';
                 }
                 elsif ($kind == 1) { byte($section); limits($section); }
                 elsif ($kind == 2) { limits($section); }
@@ -111,7 +116,28 @@ sub export_interfaces {
         $tag_result{$name} = $types[$tags[$index]];
     }
     return (\%result, \%tag_result, {sections => \@sections, exports => \%exports,
-        functions => \@functions, types => \@types, function_imports => \@function_imports});
+        functions => \@functions, types => \@types, function_imports => \@function_imports,
+        exit_imports => \@exit_imports});
+}
+
+# Substitute only the proc_exit host namespace. Function indices, signatures and
+# all executable code stay intact, so a preload can assert the raw WASI value
+# even when the runtime reserves the corresponding native process exit status.
+sub redirect_wasi_exit {
+    my ($input, $output) = @_;
+    my (undef, undef, $module) = export_interfaces($input, 1);
+    die "Expected exactly one WASI proc_exit import\n" unless @{$module->{exit_imports}} == 1;
+    my ($start, $end) = @{$module->{exit_imports}[0]};
+    my $namespace = 'cppgm_test_exit';
+    my $bytes = "\0asm\1\0\0\0";
+    for my $section (@{$module->{sections}}) {
+        my ($id, $payload) = @$section;
+        substr($payload, $start, $end - $start, unsigned_leb(length($namespace)) . $namespace) if $id == 2;
+        $bytes .= chr($id) . unsigned_leb(length($payload)) . $payload;
+    }
+    open(my $file, '>:raw', $output) or die "Cannot write $output: $!\n";
+    print {$file} $bytes;
+    close($file) or die "Cannot close $output: $!\n";
 }
 
 sub module_sizes {

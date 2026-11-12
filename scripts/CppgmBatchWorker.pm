@@ -739,10 +739,12 @@ sub run_limited_command_capture
 }
 
 END {
+	my $exit_status = $?;
 	for my $worker (values %limited_workers) {
 		next unless $worker->[0] == $$;
 		close_worker(@{$worker}[1 .. 3]);
 	}
+	$? = $exit_status;
 }
 
 1;

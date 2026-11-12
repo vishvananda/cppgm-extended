@@ -6,6 +6,32 @@ namespace wasm {
 
 using namespace lowir;
 
+const VariadicPlan& Selector::variadic_plan(const lowir::Instruction& inst, const lowir::Signature& signature)
+{
+	if (variadic_plans_.entry.empty())
+		variadic_plans_.reset(body_.instructions.size());
+	const uint32_t id = static_cast<uint32_t>(&inst - body_.instructions.data());
+	if (const auto* known = variadic_plans_.known(id))
+		return *known;
+	auto& plan = variadic_plans_.add(id);
+	plan.arguments.clear();
+	plan.alignment_log = 2;
+	machine::call_argument_types(body_, inst, signature, program_.parameters_of(signature), argument_types_);
+	for (uint32_t index = signature.parameter_count; index < inst.extra_count; ++index)
+	{
+		const Type type = argument_types_[index];
+		const auto passing = classify_value(type,
+			type.is_object() ? machine::argument_shape(body_, inst, index) : ir_model::AggregateShape(),
+			program_.pointer_type());
+		const Type storage = variadic_storage(type, passing);
+		plan.arguments.push_back(VariadicArgument{ type, passing, storage });
+		if (passing.passing != Passing::Ignore)
+			while ((uint32_t(1) << plan.alignment_log) < data_alignment(storage))
+				++plan.alignment_log;
+	}
+	return plan;
+}
+
 void Selector::pack_variadic(const lowir::Instruction& inst, const lowir::Signature& signature)
 {
 	if (inst.extra_count == signature.parameter_count)
@@ -13,14 +39,13 @@ void Selector::pack_variadic(const lowir::Instruction& inst, const lowir::Signat
 		out_.emit(Op::I32Const, { 0 });
 		return;
 	}
-	machine::call_argument_types(body_, inst, signature, program_.parameters_of(signature), argument_types_);
+	const auto& plan = variadic_plan(inst, signature);
 	for (uint32_t index = signature.parameter_count; index < inst.extra_count; ++index)
 	{
-		const Type type = argument_types_[index];
+		const auto& argument = plan.arguments[index - signature.parameter_count];
+		const Type type = argument.type;
 		const Value source = body_.operands[inst.extra_first + index];
-		const auto passing = classify_value(type,
-			type.is_object() ? machine::argument_shape(body_, inst, index) : ir_model::AggregateShape(),
-			program_.pointer_type());
+		const auto passing = argument.passing;
 		if (passing.passing == Passing::Ignore)
 			continue;
 		if (passing.passing == Passing::Indirect)

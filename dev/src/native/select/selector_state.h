@@ -5,6 +5,7 @@
 
 #include "lowir/program.h"
 #include "machine/exception_analysis.h"
+#include "machine/phi_inputs.h"
 #include "native/mir/mir.h"
 #include "native/select/allocation_structures.h"
 #include "native/select/call_abi.h"
@@ -35,11 +36,10 @@ struct SelectorState
 	std::vector<uint32_t> succ_first_; // per block: its first successor
 	std::vector<uint32_t> succs_;      // distinct successors (layout)
 	std::vector<EdgeBlock> edges_;
-	SwitchLowering switches_;                                   // switches lowered as tests, their deferred subtrees
-	std::vector<uint32_t> edge_first_;                          // per block: its first edge block
-	std::vector<uint32_t> edge_mir_;                            // per successor of the current block: its edge block
-	std::vector<uint32_t> wide_phi_first_;                      // wide phis: start of their sorted pairs
-	std::vector<std::pair<uint32_t, uint32_t>> wide_phi_pairs_; // (predecessor id, operand index)
+	SwitchLowering switches_;          // switches lowered as tests, their deferred subtrees
+	std::vector<uint32_t> edge_first_; // per block: its first edge block
+	std::vector<uint32_t> edge_mir_;   // per successor of the current block: its edge block
+	machine::PhiInputs phi_inputs_;
 	std::vector<TempInfo> temps_;
 	std::vector<WordPair> wide_parts_;
 	std::vector<WordPair> incoming_words_;

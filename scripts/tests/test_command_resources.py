@@ -283,6 +283,30 @@ print encode_json(\@rows);
         self.assertEqual(rows[3:], [{'status': 1, 'error': ''}, {'status': 0, 'error': ''}])
 
 
+    def test_supervisor_cleanup_preserves_checker_exit_status(self):
+        code = r'''
+use CppgmBatchWorker qw(run_command_capture);
+run_command_capture(cmd=>[$ARGV[0], 'echo'], supervisor=>$ARGV[0],
+    stdout=>"$ARGV[1]/out", stderr=>"$ARGV[1]/err", timeout=>3,
+    limits=>{cpu_seconds=>2,rss_bytes=>268435456,file_bytes=>8192});
+if ($ARGV[2] eq 'die') { die "expected checker failure\n"; }
+exit int($ARGV[2]);
+'''
+        for ending, expected in [('die', None), ('7', 7), ('0', 0)]:
+            with self.subTest(ending=ending):
+                result = subprocess.run(
+                    ['perl', '-I', str(ROOT / 'scripts'), '-e', code,
+                     str(self.probe), str(self.path), ending],
+                    capture_output=True, text=True, timeout=10,
+                    env={k: v for k, v in os.environ.items()
+                         if k != 'CPPGM_TEST_SUPERVISOR'})
+                if expected is None:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn('expected checker failure', result.stderr)
+                else:
+                    self.assertEqual(result.returncode, expected, result.stderr)
+
+
 class WasmMemoryLimits(unittest.TestCase):
     @unittest.skipUnless(shutil.which('wasmtime') and shutil.which('wasm-tools'), 'pinned Wasm tools not on PATH')
     def test_guest_memory_limit_without_changing_virtual_memory_reservation(self):
