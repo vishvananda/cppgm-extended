@@ -325,6 +325,18 @@ bool form_phi_result_tables(FunctionContext& context);
 // differing phi inputs (at most two) `select`s on the branch condition.
 // O(blocks + merge phis) per round.
 bool form_selects(FunctionContext& context);
+// O2+, after the selects (opt/test_merging.cpp): two tests of one integer
+// value against literals become one where one says the same: `select c, a,
+// 0` and `select c, 1, b` of two compares, `select c, k, (select d, k, l)`,
+// and a branch to a block that only tests the value again and shares a
+// target with it. The values that pass are one run of consecutive values
+// (`x - low <= span`), two values one bit apart, or those with masked bits
+// set or clear. A select of one bit or zero on a test of one bit is the
+// tested bit moved to its place (a shift, a mask, an inversion or a
+// conversion: three instructions at most), and the terms of an `or` tree
+// that keep bits of one value keep them under one mask (`(x & a) | (x & b)`
+// is `x & (a | b)`, at most eight terms). O(instructions).
+bool merge_value_tests(FunctionContext& context);
 
 // O3's closed chains of constant-polynomial bit steps become bounded
 // readonly lookups, with a shared per-unit table budget.

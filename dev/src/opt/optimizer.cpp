@@ -582,6 +582,15 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		RUN_PASS(cleanup_cfg);
 		changed = true;
 	}
+	// Two tests of one value as one, those of the selects just formed too,
+	// and the bits a select moved under one mask.
+	for (unsigned round = 0; round < kSelectRounds && options.level >= 2 && RUN_PASS(merge_value_tests); ++round)
+	{
+		RUN_PASS(cleanup_cfg);
+		RUN_PASS(simplify_values);
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
 	const bool had_loops = has_loop(context);
 	if (had_loops)
 		changed = finish_loops(context, options.level) || changed;

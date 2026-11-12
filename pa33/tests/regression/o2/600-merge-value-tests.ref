@@ -1,0 +1,211 @@
+global @seen : i64 = 0
+global @spare : i64 = 0
+
+function @note(%v : i64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %old = load i64 @seen
+    %new = binary add i64 %v, %old
+    store i64 %new, @seen
+    return void
+}
+function @either_bit(%x : i32) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary and i32 %x, 20
+    branch %t1, ^yes, ^no
+
+  block ^yes:
+    call void @note(1)
+    return void
+
+  block ^no:
+    call void @note(2)
+    return void
+}
+function @both_clear(%x : i32) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary and i32 %x, 20
+    branch %t1, ^no, ^yes
+
+  block ^yes:
+    call void @note(3)
+    return void
+
+  block ^no:
+    call void @note(4)
+    return void
+}
+function @range(%x : i32) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub i32 %x, 10
+    %t2 = cmp ult i32 %t1, 11
+    branch %t2, ^yes, ^no
+
+  block ^yes:
+    call void @note(5)
+    return void
+
+  block ^no:
+    call void @note(6)
+    return void
+}
+function @run_of_three(%x : u8) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub u8 %x, 5
+    %t2 = cmp ult u8 %t1, 3
+    branch %t2, ^yes, ^no
+
+  block ^yes:
+    call void @note(7)
+    return void
+
+  block ^no:
+    call void @note(8)
+    return void
+}
+function @one_bit_apart(%x : i64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary and i64 %x, -5
+    %t2 = cmp eq i64 %t1, 8
+    branch %t2, ^yes, ^no
+
+  block ^yes:
+    call void @note(9)
+    return void
+
+  block ^no:
+    call void @note(10)
+    return void
+}
+function @neither_end(%x : i64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub i64 %x, -1
+    %t2 = cmp ule i64 %t1, 1
+    branch %t2, ^no, ^yes
+
+  block ^yes:
+    call void @note(11)
+    return void
+
+  block ^no:
+    call void @note(12)
+    return void
+}
+function @select_both(%x : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %r = cmp ule i64 %x, 99
+    return i64 %r
+}
+function @select_either(%x : u32) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub u32 %x, 3
+    %r = cmp ule u32 %t1, 1
+    return i64 %r
+}
+function @nested(%x : i32, %k : ptr, %l : ptr) -> ptr [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary and i32 %x, 65
+    %t2 = cmp ne i32 %t1, 0
+    %r = select ptr %t2, %k, %l
+    return ptr %r
+}
+function @nested_both(%x : i16, %k : i64, %l : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub i16 %x, 3
+    %t2 = cmp ule i16 %t1, 5
+    %r = select i64 %t2, %k, %l
+    return i64 %r
+}
+function @two_inputs(%x : i32, %y : i32) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %a = cmp eq i32 %x, 3
+    branch %a, ^yes, ^more
+
+  block ^more:
+    %b = cmp eq i32 %y, 4
+    branch %b, ^yes, ^no
+
+  block ^yes:
+    call void @note(13)
+    return void
+
+  block ^no:
+    call void @note(14)
+    return void
+}
+function @apart(%x : i32) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %a = cmp eq i32 %x, 3
+    branch %a, ^yes, ^more
+
+  block ^more:
+    %b = cmp eq i32 %x, 9
+    branch %b, ^yes, ^no
+
+  block ^yes:
+    call void @note(15)
+    return void
+
+  block ^no:
+    call void @note(16)
+    return void
+}
+function @value_read_later(%x : i32) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %a = cmp eq i32 %x, 5
+    branch %a, ^yes, ^more
+
+  block ^more:
+    %b = cmp eq i32 %x, 6
+    branch %b, ^yes, ^no
+
+  block ^yes:
+    call void @note(17)
+    return void
+
+  block ^no:
+    %s = binary sub i32 %x, 6
+    %w = convert sext i64 i32 %s
+    call void @note(%w)
+    return void
+}
+function @edges_differ(%x : i32) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %a = cmp eq i32 %x, 5
+    branch %a, ^yes, ^more
+
+  block ^more:
+    %b = cmp eq i32 %x, 6
+    branch %b, ^yes, ^no
+
+  block ^yes:
+    %v = phi i64 [^entry: 18, ^more: 19]
+    call void @note(%v)
+    return void
+
+  block ^no:
+    call void @note(20)
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    call void @either_bit(16)
+    call void @both_clear(3)
+    call void @range(20)
+    call void @run_of_three(7)
+    call void @one_bit_apart(12)
+    call void @neither_end(-1)
+    call void @two_inputs(1, 4)
+    call void @apart(9)
+    call void @value_read_later(4)
+    call void @edges_differ(6)
+    %a = call i64 @select_both(99)
+    %b = call i64 @select_either(5)
+    %p = call ptr @nested(64, @seen, @spare)
+    %c = load i64 %p
+    %d = call i64 @nested_both(9, 7, 1)
+    %f = binary add i64 %c, %d
+    %e = binary add i64 %a, %b
+    %g = binary add i64 %e, %f
+    %r = convert trunc i32 i64 %g
+    return i32 %r
+}
