@@ -120,13 +120,23 @@ void Linker::emit(Bytes& output)
 		add_export(name, definitions_.at(name));
 	if (options_.target == target_model::Target::Wasi && !options_.no_startfiles)
 		add_export("_start", definitions_.at("_start"));
-	for (const auto& entry : definitions_)
-		if ((symbol(entry.second).flags & 0x20) != 0)
-			add_export(entry.first, entry.second);
+	std::set<ObjectRef> explicitly_named;
 	for (uint32_t index = 0; index < objects_.size(); ++index)
 		if (active_[index])
 			for (const ObjectExport& entry : objects_[index].exports)
-				add_export(entry.name, indexed_symbol(index, entry.kind == 3 ? 2 : entry.kind, entry.index));
+			{
+				const ObjectRef ref = indexed_symbol(index, entry.kind == 3 ? 2 : entry.kind, entry.index);
+				add_export(entry.name, ref);
+				explicitly_named.insert(selected(ref));
+			}
+	for (uint32_t object = 0; object < objects_.size(); ++object)
+		if (active_[object])
+			for (uint32_t s = 0; s < objects_[object].symbols.size(); ++s)
+			{
+				const ObjectRef ref{ object, s };
+				if ((symbol(ref).flags & 0x20) != 0 && !explicitly_named.count(selected(ref)))
+					add_export(symbol(ref).name, ref);
+			}
 	Bytes exports;
 	exports.unsigned_leb(exported.size() + 1);
 	exports.string("memory");

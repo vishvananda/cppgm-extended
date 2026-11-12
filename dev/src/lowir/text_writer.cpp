@@ -508,6 +508,19 @@ void Writer::write()
 		symbol(entry.target);
 		out_.push_back('\n');
 	}
+	for (const FunctionBinding& binding : program_.function_bindings)
+	{
+		word(spelling(binding.imported ? Keyword::Import : Keyword::Export));
+		symbol(binding.symbol);
+		out_.push_back(' ');
+		if (binding.imported)
+		{
+			debug_name(binding.module);
+			out_.push_back(' ');
+		}
+		debug_name(binding.name);
+		out_.push_back('\n');
+	}
 }
 
 void Writer::global_declaration(const Symbol& symbol)

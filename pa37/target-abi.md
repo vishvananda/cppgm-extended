@@ -116,6 +116,9 @@ requirements. Custom linking/relocation metadata may precede the core sections
 it describes. The static C table is synthesized from symbol references, as in
 the linking convention; independent/passive table or data initialization and
 dynamic-link metadata are outside this static-object profile and must fail.
+Validate memory/table import limits before linking. Size the final memory and
+table from the retained data, stack and function references; object import
+limits do not prescribe the final module's limits.
 Validate UTF-8 names, including names in otherwise unrecognized custom sections.
 Preserve valid non-ASCII import/export names.
 
@@ -146,8 +149,34 @@ while a null check can bypass it. Preserve the declared call signature.
 
 An ordinary undefined C/C++ declaration is not permission to create a host
 import. Declared imports specify their module, field name and exact signature.
-Exports use their requested object names. Reject unresolved live references,
+Explicit `--export` requests name linking symbols; export bindings may give
+them separate public names. Reject unresolved live references,
 incompatible target/features and malformed objects with a diagnostic.
+
+In C++, support GNU `import_module`, `import_name` and `export_name` attributes,
+including their `__name__` spellings and `clang::` scoped forms. Import module
+defaults to `env`; field names default to the function's object spelling.
+An import annotation affects an undefined declaration; a local definition
+still supplies its own body. `export_name` chooses the public field of an
+emitted function. Use `used` when an otherwise unused internal definition
+must be emitted. Keep distinct internal entities distinct across objects.
+Preserve a function template's bindings on its specializations, using each
+specialization's complete parameter/result types.
+
+For example:
+
+```cpp
+extern "C" int host_read(int) __attribute__((import_module("host"), import_name("read")));
+extern "C" __attribute__((export_name("compute")))
+int compute_impl(int value) { return host_read(value) + 1; }
+```
+
+Names are unevaluated ordinary string literals: concatenate adjacent pieces,
+preserve simple escapes and Unicode, and reject numeric escapes and null bytes.
+Repeated declarations must agree. Attribute probes report these forms on Wasm
+targets and no support for them on native targets. Preserve the complete
+signature and binding through LowIR's `import` / `export` records; neither
+operation can be inferred from an ordinary unresolved symbol.
 
 For freestanding arithmetic that needs supplied helpers, pass the pinned
 compiler-rt and C runtime archives as link inputs. Both tools accept those

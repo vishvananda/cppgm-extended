@@ -455,6 +455,8 @@ bool TokenSafeSection(const TokenSpelling& spelling, std::string& name)
 
 void Analyzer::symbol_attributes(Entity* entity, const syntax::Attribute* leading, const syntax::Declarator* declarator)
 {
+	if (target_model::is_wasm(graph_.types.target()))
+		wasm_binding_attributes(entity, leading, declarator);
 	// GNU weak and section (or their [[gnu::...]] forms), before the
 	// declaration, after its declarator-id or (GNU ones) after a function
 	// declarator's parameter clause. weak: a function or variable with

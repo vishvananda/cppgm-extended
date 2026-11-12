@@ -378,6 +378,8 @@ To complete PA30, implement hosted compatibility for:
   `section`, `vector_size`, `mode`, `gnu_inline`, `abi_tag`, `may_alias`, `using_if_exists` and
   `exclude_from_explicit_instantiation`, each also spelled `__name__`) and
   `0` for any other.
+  PA37 adds the Wasm-specific import/export binding attributes and probes;
+  native profiles continue to report no support for those target attributes.
   GNU `deprecated` / `__deprecated__` is recognized with no argument, an
   empty argument list, or one string-literal message (also as a `gnu::`
   attribute). It does not change program behavior, type, or ABI. Deprecation

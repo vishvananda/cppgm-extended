@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 
 // Target vocabulary. Architecture, execution environment, object format and
 // language data layout are distinct facts, selected before source analysis.
@@ -70,6 +71,28 @@ enum class Target : std::uint8_t
 	Wasm32,
 	Wasi
 };
+
+enum class WasmFunctionAttribute : std::uint8_t
+{
+	None,
+	ImportModule,
+	ImportName,
+	ExportName
+};
+
+inline WasmFunctionAttribute wasm_function_attribute(const char* text, std::size_t length)
+{
+	if (length > 4 && std::memcmp(text, "__", 2) == 0 && std::memcmp(text + length - 2, "__", 2) == 0)
+	{
+		text += 2;
+		length -= 4;
+	}
+	static const char* const names[] = { "import_module", "import_name", "export_name" };
+	for (unsigned i = 0; i < 3; ++i)
+		if (std::strlen(names[i]) == length && std::memcmp(names[i], text, length) == 0)
+			return static_cast<WasmFunctionAttribute>(i + 1);
+	return WasmFunctionAttribute::None;
+}
 
 struct DataLayout
 {

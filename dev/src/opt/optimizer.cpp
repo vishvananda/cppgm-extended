@@ -825,6 +825,9 @@ bool parse_inline_limit(const std::string& text, InlineLimits& limits)
 
 void optimize_program(Program& program, const OptimizerOptions& options, OptimizerStats* stats_out)
 {
+	for (const FunctionBinding& binding : program.function_bindings)
+		if (!binding.imported && binding.symbol < program.symbols.size())
+			program.symbols[binding.symbol].metadata.flags |= SF_OBJECT_ROOT;
 	OptimizerStats local;
 	OptimizerStats& stats = stats_out != nullptr ? *stats_out : local;
 	const std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();

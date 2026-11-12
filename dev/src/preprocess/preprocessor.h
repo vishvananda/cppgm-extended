@@ -186,6 +186,7 @@ private:
 	TokenSpelling presumed_file_literal(uint32_t location) override;
 	bool can_include(const std::string& name, bool angle, bool next) override;
 	bool has_feature(const char* spelling, uint32_t length) override;
+	bool has_target_attribute(const char* spelling, uint32_t length) override;
 	bool continue_macro_arguments() override;
 	// SourceFrameObserver.
 	void leaving_file(const SourceFrame& frame) override;
@@ -248,6 +249,7 @@ private:
 	size_t system_paths_;
 	bool hosted_;
 	FeatureModes modes_;
+	bool wasm_attributes_;
 	std::vector<Conditional> conditionals_;
 	// The sections nested in a group being skipped: whether each is in its
 	// #else group.

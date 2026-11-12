@@ -74,8 +74,8 @@ my $source_compiler = $ENV{CPPGM_WASM_CPPGM} // File::Spec->catfile(dirname($com
 my $command_sequence = 0;
 my @units = map { File::Spec->catfile(dirname($test), $_) } @{$expect->{units} // []};
 
-if ($expect->{llvm_interop} && $expect->{interop_linkers} &&
-    !grep { $_ eq 'llvm' } @{$expect->{interop_linkers}}) {
+if ($expect->{reference_limitations} || ($expect->{llvm_interop} && $expect->{interop_linkers} &&
+    !grep { $_ eq 'llvm' } @{$expect->{interop_linkers}})) {
     my $path = File::Spec->catfile($FindBin::Bin, '..', 'doc', 'wasm', 'reference-limitations.json');
     my $limits = decode_json(read_file($path));
     my %limits = map { $_->{id} => $_ } @{$limits->{limitations}};
@@ -109,6 +109,18 @@ sub archive_inputs {
     }
     close($file) or die "Cannot close $path: $!\n";
     return ($main, $path);
+}
+
+my @preloads;
+for my $name (sort keys %{$expect->{hosts} // {}}) {
+    die "$test: host fixture module name cannot contain '='\n" if $name =~ /=/;
+    my $source = File::Spec->catfile(dirname($test), $expect->{hosts}{$name});
+    my $module = "$directory/host-" . ++$command_sequence . '.wasm';
+    my ($status, $stdout, $stderr) = command('host-module', $validator, 'parse', $source, '-o', $module);
+    die "$test: host module failed: $stdout$stderr\n" if $status;
+    ($status, $stdout, $stderr) = command('host-validate', $validator, 'validate', $module);
+    die "$test: invalid host module: $stdout$stderr\n" if $status;
+    push @preloads, '--preload', "$name=$module";
 }
 
 sub standalone_optimizer {
@@ -235,8 +247,8 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     my %initialize;
     my $module = "$directory/program-$level.wasm";
     my @sequence_exports = map { $_->{export} } map { @$_ } @{$expect->{sequences} // []};
-    my @exports = map { ('--export', $_) }
-        ((map { $_->{export} } @{$expect->{calls} // []}), @{$expect->{exports} // []}, @sequence_exports);
+    my @exports = map { ('--export', $_) } @{$expect->{link_exports} //
+        [(map { $_->{export} } @{$expect->{calls} // []}), @{$expect->{exports} // []}, @sequence_exports]};
     if (!$expect->{archive_units}) {
     my $tool = $expect->{source} ? $source_compiler : $compiler;
     ($status, $stdout, $stderr) = command("compile-$level", $tool, "-O$level",
@@ -437,6 +449,13 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         }
     }
     for my $run_module (@modules) {
+        if ($expect->{export_names}) {
+            my $actual = export_signatures($run_module);
+            die "$test: function export names differ in $run_module: expected [" .
+                join(', ', sort @{$expect->{export_names}}) . '], got [' . join(', ', sort keys %$actual) . "]\n"
+                if scalar(keys %$actual) != scalar(@{$expect->{export_names}}) ||
+                   join("\0", sort keys %$actual) ne join("\0", sort @{$expect->{export_names}});
+        }
         check_quality($run_module, $expect->{quality}, $level) if $expect->{quality};
         if ($expect->{tag_abi}) {
             my $actual = export_tag_signatures($run_module);
@@ -452,7 +471,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         if ($expect->{abi}) {
             my $actual = export_signatures($run_module);
             for my $name (sort keys %{$expect->{abi}}) {
-                die "$test: missing ABI export $name\n" unless $actual->{$name};
+                die "$test: missing ABI export $name in $run_module\n" unless $actual->{$name};
                 for my $part ('params', 'results') {
                     my $want = join(',', @{$expect->{abi}{$name}{$part}});
                     my $got = join(',', @{$actual->{$name}{$part}});
@@ -473,7 +492,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                 @preopen = ('--dir', "${files}::.");
             }
             ($status, $stdout, $stderr) = command("command-$level", $runtime, 'run',
-                @preopen, $run_module, @{$run->{args} // []});
+                @preloads, @preopen, $run_module, @{$run->{args} // []});
             die "$test: WASI command exit expected $run->{exit}, got $status: $stdout$stderr\n"
                 if $status != $run->{exit};
             die "$test: WASI command output expected '$run->{stdout}', got '$stdout'\n"
@@ -488,7 +507,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
             my $entry = sequence_module($run_module, $wrapped, $sequence, $initialize{$run_module});
             ($status, $stdout, $stderr) = command("sequence-validate-$level", $validator, 'validate', $wrapped);
             die "$test: invalid sequence driver: $stdout$stderr\n" if $status;
-            ($status, $stdout, $stderr) = command("sequence-run-$level", $runtime, 'run', '--invoke', $entry, $wrapped);
+            ($status, $stdout, $stderr) = command("sequence-run-$level", $runtime, 'run', @preloads, '--invoke', $entry, $wrapped);
             $stdout =~ s/\s+\z//;
             if (!$status && $stdout =~ /^-([0-9]+)$/ && $1 <= @$sequence) {
                 my $call = $sequence->[$1 - 1];
@@ -500,7 +519,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         for my $call (@{$expect->{calls} // []}) {
             my @fuel = exists($call->{fuel}{$level}) ? ('-W', "fuel=$call->{fuel}{$level}") : ();
             ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run',
-                @fuel, '--invoke', $call->{export}, $run_module, @{$call->{args} // []});
+                @preloads, @fuel, '--invoke', $call->{export}, $run_module, @{$call->{args} // []});
             $stdout =~ s/\s+\z//;
             if ($call->{trap}) {
                 die "$test: $call->{export} did not produce a Wasm trap: $stdout$stderr\n"

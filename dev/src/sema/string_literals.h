@@ -25,6 +25,8 @@ bool IsCharacterArrayElement(const Type* type);
 struct StringLiteralFacts
 {
 	FundamentalType element;
+	// Numeric escapes are forbidden in an unevaluated attribute string.
+	bool numeric_escapes;
 	uint64_t units;
 	// A user-defined string literal's ud-suffix (2.14.8p8: the pieces'
 	// suffixes agree), else empty.

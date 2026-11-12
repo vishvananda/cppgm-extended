@@ -103,8 +103,8 @@ Preprocessor::Preprocessor(const PreprocessorOptions& options, const std::string
 	  macro_query_(identifiers_), evaluator_(macro_query_, options.literals, options.plain_char_unsigned),
 	  definition_parser_(arena_, names_.va_args, options.hosted), predefined_(nullptr), command_line_begin_(0),
 	  command_line_end_(0), host_predefines_begin_(0), host_predefines_end_(0), builtin_begin_(0), builtin_end_(0),
-	  hosted_(options.hosted), modes_(options.modes), directives_(0), skipped_directives_(0), includes_(0),
-	  guarded_skips_(0), finished_(false), pack_(0)
+	  hosted_(options.hosted), modes_(options.modes), wasm_attributes_(target_model::is_wasm(options.target)),
+	  directives_(0), skipped_directives_(0), includes_(0), guarded_skips_(0), finished_(false), pack_(0)
 {
 	modes_.language = options.cplusplus == "201703L" ? 17 : options.cplusplus == "201402L" ? 14 : 11;
 	expander_.set_input(&source_);
@@ -356,6 +356,12 @@ TokenSpelling Preprocessor::presumed_file_literal(uint32_t location)
 bool Preprocessor::has_feature(const char* spelling, uint32_t length)
 {
 	return IsProvidedFeature(spelling, length, modes_);
+}
+
+bool Preprocessor::has_target_attribute(const char* spelling, uint32_t length)
+{
+	return wasm_attributes_ &&
+		target_model::wasm_function_attribute(spelling, length) != target_model::WasmFunctionAttribute::None;
 }
 
 void Preprocessor::leaving_file(const SourceFrame& frame)

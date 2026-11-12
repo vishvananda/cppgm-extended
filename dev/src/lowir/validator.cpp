@@ -292,6 +292,7 @@ public:
 private:
 	bool fail(const char* message, NameId detail = 0);
 	bool check_links();
+	bool check_function_bindings();
 	bool check_target_types();
 	// Named entries print as their names and unnamed ones as their index
 	// (the writer's fallback); fails with `message` if two of the `count`
@@ -643,6 +644,33 @@ bool Validator::check_links()
 	for (const EquivalentEntry& entry : program_.equivalent_entries)
 		if (entry.symbol >= symbols || entry.target >= symbols)
 			return fail("invalid equivalent entry");
+	return check_function_bindings();
+}
+
+bool Validator::check_function_bindings()
+{
+	if (program_.function_bindings.empty())
+		return true;
+	if (!target_model::is_wasm(program_.target))
+		return fail("function bindings require a Wasm target");
+	std::vector<uint8_t> imports(program_.symbols.size(), 0);
+	std::vector<uint8_t> exports(program_.names.size(), 0);
+	for (const FunctionBinding& binding : program_.function_bindings)
+	{
+		if (binding.symbol >= program_.symbols.size() || binding.module >= program_.names.size() ||
+			binding.name >= program_.names.size() || (!binding.imported && binding.module != 0))
+			return fail("invalid function binding");
+		const Symbol& symbol = program_.symbols[binding.symbol];
+		if (!is_function_kind(symbol.kind) || program_.functions[symbol.detail].signature == kNoId)
+			return fail("function binding requires a complete function signature", symbol.name);
+		if (binding.imported && symbol.kind != SymbolKind::FunctionDeclaration)
+			return fail("import binding requires a function declaration", symbol.name);
+		if (binding.imported ? imports[binding.symbol]++ != 0 : exports[binding.name]++ != 0)
+			return fail(binding.imported ? "duplicate function import" : "duplicate function export name", symbol.name);
+		for (NameId name : { binding.module, binding.name })
+			if (std::memchr(program_.spelling(name), 0, program_.names.length(name)) != nullptr)
+				return fail("null byte in function binding name", symbol.name);
+	}
 	return true;
 }
 

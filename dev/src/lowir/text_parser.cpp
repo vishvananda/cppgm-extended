@@ -277,6 +277,10 @@ void Parser::parse_top_level_item()
 		parse_alias();
 	else if (accept_keyword(Keyword::EquivalentEntry))
 		parse_equivalent_entry();
+	else if (accept_keyword(Keyword::Import))
+		parse_function_binding(true);
+	else if (accept_keyword(Keyword::Export))
+		parse_function_binding(false);
 	else if (accept_keyword(Keyword::AssemblyGlobal))
 		parse_assembly_global();
 	else if (accept_keyword(Keyword::AssemblyFunction))
@@ -489,6 +493,26 @@ void Parser::parse_equivalent_entry()
 	expect(TokenKind::Equals, "=");
 	const SymbolId target = reference_symbol(expect_name(TokenKind::Global, "equivalent entry target"));
 	program_.equivalent_entries.push_back(EquivalentEntry{ symbol, target });
+}
+
+void Parser::parse_function_binding(bool imported)
+{
+	FunctionBinding binding;
+	binding.symbol = reference_symbol(expect_name(TokenKind::Global, "bound function"));
+	binding.imported = imported;
+	binding.module = 0;
+	if (imported)
+	{
+		if (!at(TokenKind::String))
+			fail("expected quoted import module name");
+		binding.module = token().name;
+		advance();
+	}
+	if (!at(TokenKind::String))
+		fail("expected quoted binding field name");
+	binding.name = token().name;
+	advance();
+	program_.function_bindings.push_back(binding);
 }
 
 // ---------------------------------------------------------------------------

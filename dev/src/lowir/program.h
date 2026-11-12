@@ -265,6 +265,16 @@ struct ObjectAlias
 	SymbolId target;
 };
 
+// Explicit host imports and public export names. The function symbol owns
+// the complete ABI signature; its linking name is a separate identity.
+struct FunctionBinding
+{
+	SymbolId symbol;
+	NameId module; // imports only; 0 is the empty module name
+	NameId name;   // 0 is a valid empty field name
+	bool imported;
+};
+
 // Two ABI entries of one source function with equivalent behavior and no
 // required distinct address identity. Each keeps its object name and binding;
 // a consumer may ignore the proof, share code, or forward to the target.
@@ -410,6 +420,7 @@ struct Program
 	std::vector<Signature> signatures;
 	std::vector<Parameter> parameters;
 	std::vector<ObjectAlias> aliases;
+	std::vector<FunctionBinding> function_bindings;
 	std::vector<EquivalentEntry> equivalent_entries;
 	std::vector<SignatureId> forward_boundaries;
 	std::vector<uint8_t> forward_globals;

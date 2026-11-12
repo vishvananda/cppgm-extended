@@ -324,6 +324,9 @@ uint64_t Analyzer::attribute_alignment(
 		case syntax::AttributeKind::Malloc:
 		case syntax::AttributeKind::Cold:
 		case syntax::AttributeKind::Naked:
+		case syntax::AttributeKind::WasmImportModule:
+		case syntax::AttributeKind::WasmImportName:
+		case syntax::AttributeKind::WasmExportName:
 			break;
 		case syntax::AttributeKind::Alignas:
 		{

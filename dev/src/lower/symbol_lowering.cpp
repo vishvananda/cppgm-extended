@@ -1194,6 +1194,8 @@ lowir::SymbolId ProgramLowering::function_symbol(const sema::FunctionEntity* fun
 	else
 		symbol = external_symbol(object, function_spelling(function));
 	symbols_.set(function, symbol);
+	if (target_model::is_wasm(program_.target))
+		function_bindings(function, symbol, object);
 	if (program_.symbols[symbol].kind == lowir::SymbolKind::Unresolved)
 	{
 		PendingDeclaration pending = PendingDeclaration();

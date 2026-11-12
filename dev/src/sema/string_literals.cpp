@@ -180,6 +180,7 @@ bool BuiltinNanText(const syntax::Expr& text, uint64_t& payload)
 
 bool DecodeStringLiteral(const TokenSpelling& spelling, StringLiteralFacts& out, std::vector<uint64_t>* values)
 {
+	out.numeric_escapes = false;
 	const char* text = spelling.text;
 	const uint32_t length = spelling.length;
 	EncodingPrefix prefix = EncodingPrefix::None;
@@ -244,12 +245,17 @@ bool DecodeStringLiteral(const TokenSpelling& spelling, StringLiteralFacts& out,
 				if (!DecodeLiteralCharacter(body, parts.body_end, position, character))
 					return false;
 				// A numeric escape designates one code unit (2.14.3p4).
-				units += character.numeric ? 1 : UnitsOf(character.value, prefix);
-				if (values != nullptr)
+				if (character.numeric)
 				{
-					if (character.numeric)
+					out.numeric_escapes = true;
+					++units;
+					if (values != nullptr)
 						values->push_back(character.value);
-					else
+				}
+				else
+				{
+					units += UnitsOf(character.value, prefix);
+					if (values != nullptr)
 						AppendUnits(character.value, prefix, *values);
 				}
 			}

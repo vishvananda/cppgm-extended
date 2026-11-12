@@ -3,6 +3,7 @@
 #include "syntax/parser.h"
 
 #include "lex/identifier_table.h"
+#include "target_model.h"
 
 namespace syntax {
 
@@ -188,6 +189,18 @@ bool Parser::gnu_attribute(const char* spelling, Attribute& attribute, bool& kep
 		attribute.expression = parse_assignment_expression();
 		return attribute.expression != nullptr && expect(TokenKind::OP_RPAREN);
 	}
+	const auto binding = target_model::wasm_function_attribute(spelling, std::strlen(spelling));
+	if (binding != target_model::WasmFunctionAttribute::None)
+	{
+		attribute.kind = binding == target_model::WasmFunctionAttribute::ImportModule ? AttributeKind::WasmImportModule
+			: binding == target_model::WasmFunctionAttribute::ImportName              ? AttributeKind::WasmImportName
+																					  : AttributeKind::WasmExportName;
+		kept = true;
+		if (!expect(TokenKind::OP_LPAREN))
+			return false;
+		attribute.expression = parse_assignment_expression();
+		return attribute.expression != nullptr && expect(TokenKind::OP_RPAREN);
+	}
 	return false;
 }
 
@@ -276,9 +289,12 @@ bool Parser::collect_attribute_specifiers(Attribute*& list, bool* standard)
 				const char* space = token.name_space != nullptr ? token.name_space->spelling : nullptr;
 				const bool gnu = space != nullptr &&
 					(std::strcmp(space, "gnu") == 0 || std::strcmp(space, "__gnu__") == 0);
-				const char* spelling = gnu && token.name != nullptr ? token.name->spelling
-					: gnu && token.const_keyword                    ? "const"
-																	: "";
+				const bool wasm = space != nullptr && std::strcmp(space, "clang") == 0 && token.name != nullptr &&
+					target_model::wasm_function_attribute(token.name->spelling, token.name->length) !=
+						target_model::WasmFunctionAttribute::None;
+				const char* spelling = (gnu || wasm) && token.name != nullptr ? token.name->spelling
+					: gnu && token.const_keyword                              ? "const"
+																			  : "";
 				bool skipped = false;
 				if (IsDeprecatedAttribute(spelling))
 				{

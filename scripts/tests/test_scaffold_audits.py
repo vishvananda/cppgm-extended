@@ -225,6 +225,32 @@ class AssemblyContractAudit(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("assembly templates have no retained ledger structure row", result.stderr)
 
+    def test_function_binding_contract_drift_fails(self):
+        mutations = [
+            ("scripts/architecture/lowir-contract-ledger.tsv", "program\timport\t",
+             "program\tother_import\t", "import has no retained program ledger row"),
+            ("dev/src/lowir/text_parser.cpp", "Keyword::Import", "Keyword::OtherImport",
+             "import has no public keyword, reader or writer"),
+            ("dev/src/lowir/text_writer.cpp", "Keyword::Export", "Keyword::OtherExport",
+             "export has no public keyword, reader or writer"),
+            ("dev/src/lowir/validator.cpp", "function_bindings", "other_bindings",
+             "function bindings have no consumer in dev/src/lowir/validator.cpp"),
+            ("dev/src/opt/optimizer.cpp", "function_bindings", "other_bindings",
+             "function bindings have no consumer in dev/src/opt/optimizer.cpp"),
+            ("dev/src/wasm/object_lowering.cpp", "function_bindings", "other_bindings",
+             "function bindings have no consumer in dev/src/wasm/object_lowering.cpp"),
+        ]
+        for relative, before, after, expected in mutations:
+            with self.subTest(relative=relative):
+                path = self.root / relative
+                original = path.read_text()
+                self.assertIn(before, original)
+                path.write_text(original.replace(before, after))
+                result = self.audit()
+                path.write_text(original)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected, result.stderr)
+
     def test_reader_writer_and_documentation_drift_fail(self):
         mutations = [
             ("dev/src/lowir/text_parser_assembly.cpp", 'at_word("unique")', 'at_word("unique2")',

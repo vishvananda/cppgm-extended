@@ -218,6 +218,31 @@ declare function @name(%a : i64, %b : ptr) -> i64
 declare function @printf(%fmt : ptr) -> i32 [arity=variadic]
 ```
 
+Wasm profiles additionally carry explicit function imports and exports:
+
+```text
+declare function @receive(%value : i32) -> i32
+declare function @wrapper(%value : i32) -> i32
+import @receive "host" "read_value"
+export @receive "forwarded_read"
+export @wrapper "public_name"
+```
+
+The function symbol owns the complete typed signature. Its `object` spelling
+is its static linking identity; an import's module and field name are separate
+host identities. An import requires a declaration with a complete signature.
+An export may name a declaration supplied by another object, an imported
+function, or a definition, and roots that function even with internal binding.
+These records may precede their referenced declarations and serialize after
+the other top-level entries. Preserve them through optimization and object
+compilation. Reject duplicate imports of one symbol, duplicate export field
+names, non-function targets and bindings on native profiles.
+
+Module and field names use quoted strings and the escapes documented for
+`object` names below. Empty module/field names are valid; embedded null bytes
+are not. The reader/writer must retain these distinctions without deriving
+them from a symbol's spelling. PA37 implements their execution and linking.
+
 Top-level declarations and definitions may also carry explicit symbol metadata:
 
 ```text

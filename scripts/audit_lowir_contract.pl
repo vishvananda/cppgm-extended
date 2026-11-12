@@ -346,6 +346,30 @@ for my $table ('kDialects', 'kMemories', 'kFunctionUnwinds')
 	}
 }
 
+# 7. Function bindings carry external interface identities separately from
+# static linking names. Keep their typed transport and consumers connected.
+for my $entry (['import', 'Import'], ['export', 'Export'])
+{
+	my ($surface, $enumerator) = @$entry;
+	push @errors, "$surface has no retained program ledger row"
+		if !grep { $_->{category} eq 'program' && $_->{surface} eq $surface } @retained;
+	push @errors, "$surface has no public keyword, reader or writer"
+		if !$keyword{$surface} || $parser !~ /Keyword::\Q$enumerator\E/ ||
+			$writer !~ /Keyword::\Q$enumerator\E/;
+	push @errors, "$surface is absent from pa8/lowir.md"
+		if $documentation !~ /\b\Q$surface\E\s+\@/;
+}
+my %binding_consumers = (
+	'dev/src/lowir/validator.cpp' => read_file('dev/src/lowir/validator.cpp'),
+	'dev/src/opt/optimizer.cpp' => read_file('dev/src/opt/optimizer.cpp'),
+	'dev/src/wasm/object_lowering.cpp' => read_file('dev/src/wasm/object_lowering.cpp'),
+);
+for my $path (sort keys %binding_consumers)
+{
+	push @errors, "function bindings have no consumer in $path"
+		if $binding_consumers{$path} !~ /\bfunction_bindings\b/;
+}
+
 if (@errors)
 {
 	print STDERR "LowIR contract audit: FAIL (" . scalar(@errors) .

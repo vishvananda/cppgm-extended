@@ -1,0 +1,29 @@
+{
+  "source": true,
+  "llvm_interop": true,
+  "reference_link_flags": ["--allow-undefined"],
+  "standalone_optimizer": true,
+  "link_exports": [],
+  "export_names": ["answer", "counter", "defaults", "wide", "half", "indirect", "defined"],
+  "hosts": {"host": "400-host-bindings.wat", "env": "400-host-bindings.wat"},
+  "calls": [
+    {"export": "answer", "args": ["9"], "result": "51"},
+    {"export": "counter", "args": ["3"], "result": "13"},
+    {"export": "defaults", "args": ["7"], "result": "65"},
+    {"export": "wide", "args": ["17"], "result": "1099511627796"},
+    {"export": "half", "args": ["6.5"], "result": "3.25"},
+    {"export": "indirect", "args": ["7"], "result": "44"},
+    {"export": "defined", "args": ["5"], "result": "6"}
+  ],
+  "sequences": [[
+    {"export": "counter", "args": ["1"], "result": "11"},
+    {"export": "answer", "args": ["9"], "result": "51"},
+    {"export": "counter", "args": ["2"], "result": "13"}
+  ]],
+  "abi": {
+    "answer": {"params": ["i32"], "results": ["i32"]},
+    "counter": {"params": ["i32"], "results": ["i32"]},
+    "wide": {"params": ["i64"], "results": ["i64"]},
+    "half": {"params": ["f64"], "results": ["f64"]}
+  }
+}

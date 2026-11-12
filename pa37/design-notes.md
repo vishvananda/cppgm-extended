@@ -99,6 +99,11 @@ behavior unless the program explicitly permits otherwise.
 
 ## Check the boundary in both directions
 
+Keep a function's static linking name, host module/field and public export
+names distinct. Carry bindings with its complete typed signature through
+LowIR. Public exports are reachability roots even when no function in the
+module calls them; an imported function may also be re-exported.
+
 Keep Wasm globals distinct from C++ objects in linear memory. Constant
 initializers can refer to earlier immutable globals or function identities.
 Weak/COMDAT selection may change those dependencies, so preserve their typed

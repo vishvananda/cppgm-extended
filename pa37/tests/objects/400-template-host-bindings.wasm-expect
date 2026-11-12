@@ -1,0 +1,16 @@
+{
+  "source": true,
+  "llvm_interop": true,
+  "standalone_optimizer": true,
+  "link_exports": [],
+  "export_names": ["answer", "specialized"],
+  "hosts": {"host": "400-host-bindings.wat"},
+  "calls": [
+    {"export": "answer", "args": ["5"], "result": "44"},
+    {"export": "specialized", "args": ["5"], "result": "12"}
+  ],
+  "abi": {
+    "answer": {"params": ["i32"], "results": ["i32"]},
+    "specialized": {"params": ["i32"], "results": ["i32"]}
+  }
+}

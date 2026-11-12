@@ -2765,6 +2765,48 @@ sub validate_lowir_equivalent_entries
 	return @errors;
 }
 
+sub lowir_binding_name
+{
+	my ($quoted) = @_;
+	my %escapes = ('n' => "\n", 'r' => "\r", 't' => "\t", '"' => '"', '\\' => '\\');
+	my $name = substr($quoted, 1, length($quoted) - 2);
+	$name =~ s/\\([\\"nrt])/$escapes{$1}/ge;
+	return $name;
+}
+
+sub validate_lowir_function_bindings
+{
+	my ($data, $signatures) = @_;
+	my (@errors, %imports, %exports);
+	my $quoted = qr/"(?:\\[\\"nrt]|[^"\\\n\0])*"/;
+	for my $line (split(/\n/, $data))
+	{
+		next unless $line =~ /^\s*(?:import|export)\b/;
+		if ($line !~ /^\s*(import|export)\s+@([A-Za-z0-9_]+)\s+($quoted)(?:\s+($quoted))?\s*$/)
+		{
+			push @errors, 'invalid function binding syntax';
+			next;
+		}
+		my ($kind, $symbol, $first, $second) = ($1, $2, $3, $4);
+		push @errors, 'function bindings require a Wasm target'
+			unless $data =~ /^target\s+(?:wasm32|wasi)\s+1\b/m;
+		push @errors, 'function binding requires a complete function signature'
+			unless exists($signatures->{$symbol});
+		if ($kind eq 'import')
+		{
+			push @errors, 'import requires module and field names' unless defined($second);
+			push @errors, 'duplicate function import' if $imports{$symbol}++;
+			push @errors, 'import binding requires a declaration' if $data =~ /^function\s+\@\Q$symbol\E\(/m;
+		}
+		else
+		{
+			push @errors, 'export requires one field name' if defined($second);
+			push @errors, 'duplicate function export name' if $exports{lowir_binding_name($first)}++;
+		}
+	}
+	return @errors;
+}
+
 sub validate_lowir_text
 {
 	my ($data, $source_file, $options) = @_;
@@ -2916,6 +2958,7 @@ sub validate_lowir_text
 	}
 
 	push @errors, validate_lowir_equivalent_entries($data, \%signatures);
+	push @errors, validate_lowir_function_bindings($data, \%signatures);
 
 	my %missing_alias_targets;
 	for my $name (@alias_targets)
@@ -3425,6 +3468,17 @@ sub canonicalize_lowir_commutative_operands_for_compare
 	return $data;
 }
 
+sub lowir_symbol_references
+{
+	my ($text) = @_;
+	my @names;
+	while ($text =~ /"(?:\\.|[^"\\])*"|\@([A-Za-z0-9_]+)\b/g)
+	{
+		push @names, $1 if defined($1);
+	}
+	return @names;
+}
+
 sub canonicalize_lowir_for_compare
 {
 	my ($data, $function_symbols) = @_;
@@ -3446,7 +3500,8 @@ sub canonicalize_lowir_for_compare
 		}
 		$function_symbols = \%local_function_symbols;
 	}
-	$data =~ s/@([A-Za-z0-9_]+)\b/exists($function_symbols->{$1}) ? '@' . $function_symbols->{$1} : '@' . $1/ge;
+	$data =~ s/("(?:\\.|[^"\\])*")|@([A-Za-z0-9_]+)\b/
+		defined($1) ? $1 : '@' . (exists($function_symbols->{$2}) ? $function_symbols->{$2} : $2)/gex;
 	# Local names, layout and literal spellings are canonicalized entry by
 	# entry in one pass; commutative operand order needs the local names first.
 	$data = canonicalize_lowir_local_names_for_compare($data);
@@ -4225,7 +4280,7 @@ sub lowir_symbol_reference_counts
 	{
 		next if $entry =~ /^alias object /;
 		my %seen;
-		$seen{$1} = 1 while $entry =~ /\@([A-Za-z0-9_]+)\b/g;
+		$seen{$_} = 1 for lowir_symbol_references($entry);
 		++$counts{$_} for keys(%seen);
 	}
 	return \%counts;
@@ -4370,10 +4425,10 @@ sub canonicalize_lowir_reference_liveness_for_compare
 	{
 		my $entry = $entries[pop @pending];
 		next if $entry =~ /^alias object /;
-		while ($entry =~ /\@([A-Za-z0-9_]+)\b/g)
+		for my $reference (lowir_symbol_references($entry))
 		{
-			next if !exists($by_name{$1});
-			my $i = $by_name{$1};
+			next if !exists($by_name{$reference});
+			my $i = $by_name{$reference};
 			next if $live{$i}++;
 			push @pending, $i;
 		}

@@ -35,9 +35,10 @@ multiplication now avoid the source SIMD memory fallback. Quoted object names
 round-trip with sigil prefixes and reject embedded null bytes. Pinned LLVM
 gaps have explicit shipped reference limitations.
 
-This remains an intermediate implementation. Remaining profile hardening
-(including imported global/limit boundaries), explicit source/LowIR host-import
-bindings and final complete Linux/macOS qualification remain required. Keep
+Source/LowIR host bindings, template specializations, imported host globals and
+static memory/table limit boundaries now have independent checks. The final
+PA36 release check, fresh export and complete Linux/macOS CI qualification
+remain required. Keep
 the full acceptance checks below visible rather than narrowing the assignment to the current emitter.
 Current evidence and qualification details are in the completion journal.
 

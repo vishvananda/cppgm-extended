@@ -107,7 +107,10 @@ enum class AttributeKind : uint8_t
 	// GNU mode(identifier): its machine-mode keyword, never an expression.
 	Mode,
 	// Optional shared assembly: a body owns its ABI and frame.
-	Naked
+	Naked,
+	WasmImportModule,
+	WasmImportName,
+	WasmExportName
 };
 
 struct TypeId;

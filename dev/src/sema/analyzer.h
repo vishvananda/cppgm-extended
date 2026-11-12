@@ -382,6 +382,8 @@ private:
 	static bool has_may_alias(const syntax::Declarator* declarator);
 	void note_may_alias(const Type* type);
 	void symbol_attributes(Entity* entity, const syntax::Attribute* leading, const syntax::Declarator* declarator);
+	void wasm_binding_attributes(
+		Entity* entity, const syntax::Attribute* leading, const syntax::Declarator* declarator);
 	void collect_abi_tags(const syntax::Attribute* list, bool on_class, std::vector<std::string>& tags,
 		const Identifier* implied = nullptr);
 	void declare_abi_tags(const void* owner, std::vector<std::string>& tags, bool redeclaration, uint32_t location);

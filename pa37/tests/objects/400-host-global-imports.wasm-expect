@@ -1,0 +1,16 @@
+{
+  "source": true,
+  "llvm_interop": true,
+  "reference_assembly": ["400-host-global-imports.s"],
+  "reference_link_flags": ["--allow-undefined"],
+  "hosts": {"host": "400-host-bindings.wat"},
+  "calls": [
+    {"export": "observe", "args": ["3"], "result": "1099511627789"}
+  ],
+  "sequences": [[
+    {"export": "observe", "args": ["1"], "result": "1099511627787"},
+    {"export": "observe", "args": ["2"], "result": "1099511627789"},
+    {"export": "observe", "args": ["-3"], "result": "1099511627786"}
+  ]],
+  "abi": {"observe": {"params": ["i32"], "results": ["i64"]}}
+}

@@ -880,3 +880,54 @@ parent/candidate speedup, with identical checksums throughout; A/A is 1.026x.
 The raw engine responses, requests, commands, module hashes and all paired
 ratios are in `vector-lowering/runtime-abba/`. This is the transform improvement,
 not an aggregate speedup for the other kernels or compiler build throughput.
+
+
+## Source/LowIR host bindings
+
+This stage adds typed function import/export records, their reader/writer and
+validation, source attributes and target-specific attribute probes. Sparse
+semantic facts retain module, field and public names separately from static
+linking identities. Function-template specializations preserve inherited
+bindings using their own complete signatures. Public exports root optimization;
+internal exports retain distinct export-facing identities without wrapper code.
+The linker no longer emits an unwanted linking-name alias for a named export.
+
+Required controls cover separate host modules, empty names, persistent i32/i64
+globals, direct/indirect imported calls, imported-function re-exports, local
+exports, template specializations and bad attribute arguments at O0–O3.
+Mixed-producer/linker checks retain the pinned LLVM limitations explicitly:
+LLD drops imported-function and local-symbol exports. Our objects link with LLD;
+LLVM local exports also run through our linker, the independent validator and
+Wasmtime. The shipped reference-limitations JSON records those exceptions.
+
+Independent memory/table probes confirm that both linkers synthesize final
+limits from the linked program rather than copying object import limits. cppgm
+rejects reversed bounds, oversized wasm32 memories and out-of-profile shared/
+64-bit limits; the pinned validator corroborates the malformed cases even where
+LLD accepts them. Commands, original objects, mutated objects and every result
+are in `function-bindings/limits/` outside Git. Source binding rejection probes
+also distinguish Clang warnings from errors: conflicting redeclarations warn
+in Clang, whereas this target contract requires agreement; numeric escapes,
+non-string names and wrong arity are rejected by both.
+
+The final source passes the strict report (10814/10814), PA37 with self-built
+tools (114/114), debug-info checks, PA5 self-host, byte-identical native
+inception, PA36 smoke and architecture/format/file checks. The complete harness
+passes; the new binding/audit harness checks were repeated after the template
+fix. Placement checks find no early-placement or hygiene issues, including a
+final PA37 scan. Seven inherited file-audit warnings remain. String literal
+facts retain their previous sizes: 32 bytes on native and 24 on Wasm hosts.
+
+Frozen native compilers compare the preceding checkpoint with the final source:
+O0 instructions are 3,058,429,576 versus 3,059,003,111 (+0.01875%); O3 are
+10,349,592,425 versus 10,350,104,236 (+0.00495%). Both output objects are
+byte-identical. The final scalar and SIMD O3 benchmark objects/modules are also
+byte-identical to the previous measured campaign. Compiler hashes, patches,
+counts and equality checks are in `function-bindings/perf-qualified/` and
+`function-bindings/benchmark-equivalence.json` outside Git. Earlier candidate
+measurements are retained separately and are not final-source timing evidence.
+
+The full PA36 release check is running. Final paired timing, a fresh student
+export and Linux/macOS CI remain pending. This checkpoint does not complete
+PA37. Compiler/browser inception remains the separately documented optional
+portability project.

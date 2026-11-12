@@ -7,14 +7,38 @@
       "behavior": "The pinned linker rejects v128.const/ref.func initializers and does not correctly relocate the initializer's global index in the supplied case.",
       "required": "Preserve typed initializers and their symbol dependencies after linking.",
       "checks": "Independent wasm-tools validation and Wasmtime execution, with both cppgm and LLVM callers linked by the submitted linker.",
-      "fixtures": ["pa37/tests/objects/400-advanced-globals.t"]
+      "fixtures": [
+        "pa37/tests/objects/400-advanced-globals.t"
+      ]
     },
     {
       "id": "global-comdat-members",
       "behavior": "The pinned linker rejects the global COMDAT member kind defined by the linking convention.",
       "required": "Select a complete COMDAT group, including its Wasm globals.",
       "checks": "Independent wasm-tools validation and Wasmtime execution, with both cppgm and LLVM callers linked by the submitted linker.",
-      "fixtures": ["pa37/tests/objects/400-grouped-globals.t"]
+      "fixtures": [
+        "pa37/tests/objects/400-grouped-globals.t"
+      ]
+    },
+    {
+      "id": "imported-function-exports",
+      "behavior": "The pinned linker does not export imported functions, including explicit core export entries in a relocatable object.",
+      "required": "Preserve explicit exports of imported functions and their complete signatures.",
+      "checks": "Independent wasm-tools validation, public interface checks and Wasmtime execution against separate typed host modules.",
+      "fixtures": [
+        "pa37/tests/objects/400-lowir-host-bindings.t"
+      ],
+      "reference": "https://github.com/llvm/llvm-project/blob/895aa2c896ada719451be2e3673c83da8ddf1141/lld/wasm/Symbols.cpp"
+    },
+    {
+      "id": "local-function-exports",
+      "behavior": "The pinned compiler emits a local exported function symbol, but its linker excludes local symbols from exports.",
+      "required": "Preserve a requested public export while retaining distinct source-internal identities.",
+      "checks": "cppgm objects link with LLD using an export-facing linking identity; both cppgm and LLVM objects link with the submitted linker. Independent wasm-tools validation and Wasmtime execution check the result and export name.",
+      "fixtures": [
+        "pa37/tests/objects/400-local-function-export.t"
+      ],
+      "reference": "https://github.com/llvm/llvm-project/blob/895aa2c896ada719451be2e3673c83da8ddf1141/lld/wasm/Symbols.cpp"
     }
   ]
 }

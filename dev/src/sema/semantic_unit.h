@@ -176,6 +176,17 @@ struct SemanticGraph
 	}
 	PointerMap symbol_attribute_index;
 	std::vector<SymbolAttributes> symbol_attribute_list;
+	// Sparse target function bindings; ordinary function records stay small.
+	struct WasmBinding
+	{
+		const char* module = nullptr;
+		const char* import_name = nullptr;
+		const char* export_name = nullptr;
+	};
+	WasmBinding wasm_binding(const FunctionEntity* function) const;
+	WasmBinding& own_wasm_binding(const Entity* entity);
+	PointerMap wasm_binding_index;
+	std::vector<WasmBinding> wasm_bindings;
 	// GNU abi_tag (pa28): the tags, sorted and unique, of a class, function
 	// or variable, or of an inline namespace (keyed by its scope), kept
 	// beside them as asm labels are. A unit without tags (has_abi_tags()

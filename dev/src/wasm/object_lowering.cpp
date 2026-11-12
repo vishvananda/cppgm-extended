@@ -123,6 +123,30 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 		if (source.metadata.role == ir_model::SR_INIT)
 			object.initializers.push_back({ 65535, symbols[id] });
 	}
+	for (const lowir::FunctionBinding& binding : program.function_bindings)
+	{
+		ObjectSymbol& symbol = object.symbols[symbols[binding.symbol]];
+		ObjectFunction& function = object.functions[symbol.index];
+		if (binding.imported)
+		{
+			function.module = program.spelling(binding.module);
+			function.name = program.spelling(binding.name);
+			symbol.flags |= 0x40;
+		}
+		else
+		{
+			if (symbol.local())
+			{
+				// Object-local definitions need a unique export-facing
+				// linking identity; relocations still name the same index.
+				symbol.flags = (symbol.flags & ~3u) | 4u;
+				symbol.name = std::string("__cppgm_export.") + program.spelling(binding.name);
+				function.name = symbol.name;
+			}
+			symbol.flags |= 0xa0;
+			object.exports.push_back(ObjectExport{ program.spelling(binding.name), symbol.index, 0 });
+		}
+	}
 	symbols[module.stack_symbol] = static_cast<uint32_t>(object.symbols.size());
 	object.symbols.push_back(imported_symbol(2, 0, "__stack_pointer"));
 	object.global_imports.push_back(ObjectGlobal{ "env", "__stack_pointer", ValueType::I32, true });

@@ -1316,6 +1316,7 @@ private:
 	class PlaceholderReader;
 	friend class PlaceholderReader;
 	lowir::SymbolMetadata function_metadata(const sema::FunctionEntity* function, lowir::SymbolId symbol);
+	void function_bindings(const sema::FunctionEntity* function, lowir::SymbolId symbol, const std::string& object);
 	lowir::SymbolMetadata variable_metadata(const sema::VariableEntity* variable, lowir::SymbolId symbol);
 	lowir::NameId variable_section(const sema::VariableEntity* variable);
 	uint32_t overload_ordinal(const sema::FunctionEntity* function);

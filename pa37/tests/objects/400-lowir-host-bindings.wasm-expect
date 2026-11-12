@@ -1,0 +1,15 @@
+{
+  "reference_limitations": ["imported-function-exports"],
+  "link_exports": [],
+  "export_names": ["", "answer with spaces", "forwarded"],
+  "hosts": {"host": "400-host-bindings.wat", "": "400-empty-host.wat"},
+  "calls": [
+    {"export": "answer with spaces", "args": ["9"], "result": "64"},
+    {"export": "forwarded", "args": ["9"], "result": "46"},
+    {"export": "", "args": ["9"], "result": "64"}
+  ],
+  "abi": {
+    "answer with spaces": {"params": ["i32"], "results": ["i32"]},
+    "forwarded": {"params": ["i32"], "results": ["i32"]}
+  }
+}

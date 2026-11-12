@@ -1008,9 +1008,11 @@ void MacroExpander::replace_has_cpp_attribute(bool gnu)
 	read(token);
 	if (token.kind != PPTokenKind::Identifier && !IsIdentifierLikeOperator(token))
 		throw PreprocessError(operator_token.begin, "expected an attribute name");
-	bool reported = IsReportedAttribute(token.spelling, token.length, gnu);
+	bool reported = IsReportedAttribute(token.spelling, token.length, gnu) ||
+		(gnu && environment_.has_target_attribute(token.spelling, token.length));
 	const bool gnu_namespace = (token.length == 3 && std::memcmp(token.spelling, "gnu", 3) == 0) ||
 		(token.length == 7 && std::memcmp(token.spelling, "__gnu__", 7) == 0);
+	const bool clang_namespace = token.length == 5 && std::memcmp(token.spelling, "clang", 5) == 0;
 	const bool no_unique = reported && !gnu &&
 		((token.length == 17 && std::memcmp(token.spelling, "no_unique_address", 17) == 0) ||
 			(token.length == 21 && std::memcmp(token.spelling, "__no_unique_address__", 21) == 0));
@@ -1021,7 +1023,10 @@ void MacroExpander::replace_has_cpp_attribute(bool gnu)
 		read(token);
 		if (token.kind != PPTokenKind::Identifier && !IsIdentifierLikeOperator(token))
 			throw PreprocessError(operator_token.begin, "expected an attribute name");
-		reported = !gnu && gnu_namespace && IsReportedAttribute(token.spelling, token.length, true);
+		reported = !gnu &&
+			((gnu_namespace && IsReportedAttribute(token.spelling, token.length, true)) ||
+				((gnu_namespace || clang_namespace) &&
+					environment_.has_target_attribute(token.spelling, token.length)));
 		answer = reported ? "1" : "0";
 		read(token);
 	}

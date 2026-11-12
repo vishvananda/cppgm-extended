@@ -33,3 +33,9 @@ and their independent validation/execution checks. They remain required.
 Ordinary scalar globals and reference operations are checked with both linkers.
 Table-growth checks pass `--growable-table` to LLD to match the assignment's
 growable function table.
+
+Host-import fixtures pass `--allow-undefined` to reference links when import
+fields retain their default symbol names. The submitted linker still accepts
+only explicitly declared host imports. Local and imported-function exports
+have the narrower checks recorded in the limitations file; they remain part
+of the required interface behavior.

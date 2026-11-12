@@ -1,0 +1,11 @@
+{
+  "source": true,
+  "llvm_link": true,
+  "llvm_interop": true,
+  "interop_linkers": ["cppgm"],
+  "reference_limitations": ["local-function-exports"],
+  "link_exports": [],
+  "export_names": ["local API"],
+  "calls": [{"export": "local API", "args": ["9"], "result": "12"}],
+  "abi": {"local API": {"params": ["i32"], "results": ["i32"]}}
+}

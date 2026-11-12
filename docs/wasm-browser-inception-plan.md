@@ -10,6 +10,12 @@ calls are fixed. Ordinary WASI file streams now pass without the extra runtime
 object described in the original probe below. The remaining compiler-host
 portability and complete browser round-trip work is still optional.
 
+The subsequent binding work carries `import_module`, `import_name` and
+`export_name` from source through typed LowIR and standard objects. Separate
+host-module calls, imported globals, persistent state and imported-function
+re-exports execute correctly. This qualifies the explicit host interface;
+it does not establish the full compiler's WASI import closure or portability.
+
 ## Finding
 
 The practical route is one `wasm32-wasip1` compiler executable, used unchanged

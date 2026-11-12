@@ -158,6 +158,13 @@ objects from both compilers and exercise calls and exceptions across the
 boundary. Repeated-export tests use one module instance to check persistent
 state and initialization. A sidecar's `sequences` lists the ordered export calls that share an instance;
 ordinary `calls` are independent invocations. Native regression tests remain required.
+
+A fixture's `hosts` map names separate supplied host modules. `link_exports`
+selects static linking symbols explicitly; an empty list exercises exports
+declared by the inputs themselves. `export_names` checks the complete public
+function-name set, while `abi` checks parameter/result types. Import/export
+names and signatures are interface requirements, independent of instruction
+selection or optimization strategy.
 An export call with `trap: true` must trap at runtime. WASI command sidecars may
 provide named input `files` and expected `outputs`; each command gets a fresh
 preopened directory for them.
