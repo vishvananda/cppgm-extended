@@ -144,11 +144,9 @@ function @main
     add rcx, rbx
     cmp.i64 r14, r13
     setne r14
-    movzx r14, r14
     cmp.i64 rax, rcx
     setne rax
-    movzx rax, rax
-    or r14, rax
+    or.u8 r14, rax
     jne ^fail
 
   block ^next

@@ -173,8 +173,10 @@ function @nested_both(%x : i16, %k : i64, %l : i64) -> i64 [binding=strong, no_i
 }
 
 # Both tests stay: two values, values that are no run and differ in two
-# bits, a second block whose value the next block reads, and a shared target
-# that tells the two edges apart.
+# bits, and a shared target that tells the two edges apart. A second block
+# whose value the next block reads keeps its test here; once the value has
+# moved to its reader, the late run that joins tests (join_branch_tests)
+# makes the two one run, `x - 5 <= 1`.
 function @two_inputs(%x : i32, %y : i32) -> void [binding=strong, no_inline=yes] {
   block ^entry:
     %a = cmp eq i32 %x, 3

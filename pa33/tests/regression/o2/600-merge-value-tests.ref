@@ -151,12 +151,9 @@ function @apart(%x : i32) -> void [binding=strong, no_inline=yes] {
 }
 function @value_read_later(%x : i32) -> void [binding=strong, no_inline=yes] {
   block ^entry:
-    %a = cmp eq i32 %x, 5
-    branch %a, ^yes, ^more
-
-  block ^more:
-    %b = cmp eq i32 %x, 6
-    branch %b, ^yes, ^no
+    %t1 = binary sub i32 %x, 5
+    %t2 = cmp ule i32 %t1, 1
+    branch %t2, ^yes, ^no
 
   block ^yes:
     call void @note(17)

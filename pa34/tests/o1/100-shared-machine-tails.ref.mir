@@ -184,7 +184,6 @@ function @main
     cmove rdx, r11
     cmp.i64 rcx, rdx
     setne rcx
-    movzx rcx, rcx
     imul rax, 8
     lea rdx, [r12*8]
     mov rdi, -40
@@ -198,12 +197,10 @@ function @main
     cmove rax, rbx
     cmp.ptr r13, rdi
     setne r13
-    movzx r13, r13
     cmp.ptr r14, rax
     setne r14
-    movzx r14, r14
-    or r13, r14
-    or r13, rcx
+    or.u8 r13, r14
+    or.u8 r13, rcx
     jne ^fail
 
   block ^next

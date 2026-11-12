@@ -1025,7 +1025,10 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 	const bool word =
 		(!bitwise || (level_ >= 1 && (kind == TypeKind::U32 || (kind == TypeKind::I32 && low_read(inst.result))))) &&
 		(kind == TypeKind::U32 || (kind == TypeKind::I32 && (level_ < 1 || low_read(inst.result))));
-	const TypeKind width = b.kind == OperandKind::Mem || word ? kind : TypeKind::I64;
+	// Two Booleans every reader of which reads the byte join in their bytes
+	// (find_byte_booleans): their compares wrote no more.
+	const bool bytes = level_ >= 1 && bitwise && byte_only_[inst.result];
+	const TypeKind width = bytes ? TypeKind::U8 : b.kind == OperandKind::Mem || word ? kind : TypeKind::I64;
 	if (a.kind == OperandKind::Reg && a.reg == d)
 		emit2(mop, width, dst, b);
 	else if (commutative && b.kind == OperandKind::Reg && b.reg == d)

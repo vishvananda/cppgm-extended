@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "lowir/builder.h"
+#include "opt/loops.h"
 #include "opt/passes.h"
 #include "opt/scalar_fold.h"
 
@@ -13,6 +14,9 @@ namespace {
 
 // The instructions a second test's block holds before its branch.
 const unsigned kTestInstructions = 3;
+// The instructions a second test's block holds when the two results are
+// joined: the compare and one operation before it.
+const unsigned kJoinInstructions = 2;
 // The instructions a select of one bit may become.
 const unsigned kBitInstructions = 3;
 // The terms of an `or` tree read for one mask, and the masks and
@@ -40,6 +44,12 @@ struct Test
 	uint64_t bits;
 	bool differs;
 };
+
+// The widths the masks cover.
+uint64_t all_bits(Type type)
+{
+	return ~uint64_t(0) >> (64 - 8 * storage_bytes(type));
+}
 
 bool test_type(Type type)
 {
@@ -187,10 +197,25 @@ bool unite(const Test& a, const Test& b, Test& out)
 	return true;
 }
 
+// Whether a branch from `e` to `shared` or `rest` tests for an exit from
+// `e`'s innermost loop before its end: one target leaves the loop, and the
+// one in it is not the header. That branch stays in the loop until the last
+// pass, as predicted, while joined, every pass computes both tests' values.
+// (At the end, where the target in the loop is the header, the two tests
+// end every pass, and joined, a pass ends in one branch, back to the header.)
+bool exits_mid_loop(const LoopForest& forest, BlockId e, BlockId shared, BlockId rest)
+{
+	if (e >= forest.innermost.size() || forest.innermost[e] == kNoId)
+		return false;
+	const uint32_t l = forest.innermost[e];
+	const bool stays = in_loop(forest, l, shared);
+	return stays != in_loop(forest, l, rest) && (stays ? shared : rest) != forest.loops[l].header;
+}
+
 class TestMerging
 {
 public:
-	explicit TestMerging(FunctionContext& context) : c_(context), body_(context.body) {}
+	TestMerging(FunctionContext& context, bool join) : c_(context), body_(context.body), join_(join) {}
 	bool run();
 
 private:
@@ -221,11 +246,22 @@ private:
 	bool unite_masks(BlockId block, InstId before, InstId id);
 	bool merge_branches(BlockId e);
 	bool second_block(BlockId b, BlockId from) const;
+	bool joined_block(BlockId b, BlockId from) const;
+	bool joins(Value condition, bool inverted) const;
+	bool mostly(Value condition, bool truth) const;
+	Value truth(BlockId block, InstId& at, Value condition, bool inverted, uint32_t location);
+	bool join_branches(BlockId e, unsigned side, BlockId next, BlockId shared, BlockId rest);
+	void finish_join(BlockId e, BlockId next, BlockId shared, BlockId rest, Value condition, bool either);
 	bool used_once(Value v) const { return v.is(ValueKind::Temp) && v.index < uses_.size() && uses_[v.index] == 1; }
 	bool dies(Value condition) const;
+	bool invariant_value(uint32_t loop, Value v, unsigned depth) const;
+	bool invariant_test(uint32_t loop, Value condition) const;
 
 	FunctionContext& c_;
 	FunctionBody& body_;
+	const bool join_; // the late run: two tests no one test replaces join their results
+	LoopForest forest_;
+	std::vector<BlockId> def_block_;
 	std::vector<uint32_t> uses_;
 	std::vector<uint8_t> touched_;
 	std::vector<BlockId> block_of_; // per instruction this run has passed: its block
@@ -572,12 +608,16 @@ bool TestMerging::merge_branches(BlockId e)
 	if (term == kNoId || body_.instructions[term].op != Opcode::Branch)
 		return false;
 	const Instruction branch = body_.instructions[term];
-	if (!dies(branch.ops[0]) || branch.ops[1].index == branch.ops[2].index)
+	if (branch.ops[1].index == branch.ops[2].index)
 		return false;
+	const bool dying = dies(branch.ops[0]);
 	for (unsigned side = 0; side < 2; ++side)
 	{
 		const BlockId next = branch.ops[1 + side].index, shared = branch.ops[2 - side].index;
-		if (shared == e || touched_[shared] || !second_block(next, e))
+		if (shared == e || touched_[shared])
+			continue;
+		const bool tests = dying && second_block(next, e);
+		if (!tests && !(join_ && joined_block(next, e)))
 			continue;
 		const Instruction& inner = body_.instructions[body_.blocks[next].last];
 		const BlockId inner_true = inner.ops[1].index, inner_false = inner.ops[2].index;
@@ -586,22 +626,29 @@ bool TestMerging::merge_branches(BlockId e)
 		const BlockId rest = inner_true == shared ? inner_false : inner_true;
 		if (rest == e || touched_[rest] || (c_.cfg.flags[shared] & BF_HANDLER) || (c_.cfg.flags[rest] & BF_HANDLER))
 			continue;
-		Test first, second, merged;
-		if (!test_of(branch.ops[0], true, first) || !test_of(inner.ops[0], true, second))
-			continue;
-		// `e` reaches S on its condition's other side than `next`'s.
-		if (side == 0)
-			first = complement(first);
-		if (inner_true != shared)
-			second = complement(second);
-		if (!unite(first, second, merged))
-			continue;
 		bool agree = true;
 		for (InstId i = body_.blocks[shared].first; i != kNoId && body_.instructions[i].op == Opcode::Phi && agree;
 			i = body_.instructions[i].next)
 			agree = phi_incoming(body_, body_.instructions[i], e) == phi_incoming(body_, body_.instructions[i], next);
 		if (!agree)
 			continue;
+		Test first, second, merged;
+		bool one = tests && test_of(branch.ops[0], true, first) && test_of(inner.ops[0], true, second);
+		if (one)
+		{
+			// `e` reaches S on its condition's other side than `next`'s.
+			if (side == 0)
+				first = complement(first);
+			if (inner_true != shared)
+				second = complement(second);
+			one = unite(first, second, merged);
+		}
+		if (!one)
+		{
+			if (join_ && joined_block(next, e) && join_branches(e, side, next, shared, rest))
+				return true;
+			continue;
+		}
 		const bool other = shorter(merged);
 		InstId at = previous_in_block(body_, e, term);
 		const Instruction test = emit(e, at, merged, branch.location);
@@ -623,10 +670,323 @@ bool TestMerging::merge_branches(BlockId e)
 	return false;
 }
 
-// The widths the masks cover.
-uint64_t all_bits(Type type)
+// A block reached only from `from` that only computes a test and branches
+// on it: at most kJoinInstructions compares of integers or pointers and
+// integer operations that cannot trap, each read once and in the block.
+bool TestMerging::joined_block(BlockId b, BlockId from) const
 {
-	return ~uint64_t(0) >> (64 - 8 * storage_bytes(type));
+	const Cfg& cfg = c_.cfg;
+	if (b == from || touched_[b] || (cfg.flags[b] & (BF_HANDLER | BF_EH)) || cfg.pred_count(b) != 1 ||
+		cfg.preds[cfg.pred_first[b]] != from)
+		return false;
+	const InstId last = body_.blocks[b].last;
+	if (last == kNoId || body_.instructions[last].op != Opcode::Branch)
+		return false;
+	TempId values[kJoinInstructions];
+	unsigned count = 0, read = 0;
+	for (InstId i = body_.blocks[b].first;; i = body_.instructions[i].next)
+	{
+		const Instruction& inst = body_.instructions[i];
+		for_each_operand(body_, inst, [&](const Value& v) {
+			for (unsigned k = 0; k < count && v.is(ValueKind::Temp); ++k)
+				read += v.index == values[k];
+		});
+		if (i == last)
+			return read == count;
+		if (count == kJoinInstructions || inst.result == kNoId || !used_once(Value::temp(inst.result)))
+			return false;
+		const BinaryOp op = static_cast<BinaryOp>(inst.sub);
+		const bool compare = inst.op == Opcode::Compare && (test_type(inst.type) || inst.type.is_pointer());
+		const bool plain = inst.op == Opcode::Binary && test_type(inst.type) &&
+			(op == BinaryOp::Add || op == BinaryOp::Sub || op == BinaryOp::And || op == BinaryOp::Or ||
+				op == BinaryOp::Xor);
+		if (!compare && !plain)
+			return false;
+		values[count++] = inst.result;
+	}
+}
+
+// Whether a condition gives a 0 or 1 result for its truth (or, `inverted`,
+// for its falsehood) at no more than a compare with zero: a compare (of
+// integers or pointers with no other reader, to invert), or an integer or
+// pointer value.
+bool TestMerging::joins(Value condition, bool inverted) const
+{
+	if (!condition.is(ValueKind::Temp))
+		return false;
+	const Instruction* def = producer(condition);
+	if (def != nullptr && def->op == Opcode::Compare)
+		return !inverted || ((test_type(def->type) || def->type.is_pointer()) && used_once(condition));
+	const Type type = body_.temps[condition.index].type;
+	return test_type(type) || type.is_pointer();
+}
+
+// That result: the compare (inverted in place), or a new compare of the
+// value with zero after `at` in `block`.
+Value TestMerging::truth(BlockId block, InstId& at, Value condition, bool inverted, uint32_t location)
+{
+	const Instruction* def = producer(condition);
+	if (def != nullptr && def->op == Opcode::Compare)
+	{
+		if (inverted)
+		{
+			Instruction& compare = body_.instructions[body_.temps[condition.index].def];
+			compare.sub = static_cast<uint8_t>(lowir::inverted(static_cast<ComparePredicate>(compare.sub)));
+		}
+		return condition;
+	}
+	Instruction compare = make_instruction(Opcode::Compare, body_.temps[condition.index].type);
+	compare.sub = static_cast<uint8_t>(inverted ? ComparePredicate::Eq : ComparePredicate::Ne);
+	compare.location = location;
+	compare.ops[0] = condition;
+	compare.ops[1] = integer_value(body_, Literal{ 0, 0 });
+	return add(block, at, compare, Type::scalar(TypeKind::I64));
+}
+
+// Whether a test mostly has the truth `truth`, as LLVM's static estimate
+// has it: two values seldom agree, and a value is seldom zero. A test of one
+// masked bit says nothing.
+bool TestMerging::mostly(Value condition, bool truth) const
+{
+	const Instruction* def = producer(condition);
+	Value tested = condition;
+	if (def != nullptr && def->op == Opcode::Compare)
+	{
+		const ComparePredicate predicate = static_cast<ComparePredicate>(def->sub);
+		if ((predicate != ComparePredicate::Eq && predicate != ComparePredicate::Ne) ||
+			(predicate == ComparePredicate::Ne) != truth || !(test_type(def->type) || def->type.is_pointer()))
+			return false;
+		uint64_t bits = 0;
+		if (!literal_bits(def->ops[1], ~uint64_t(0), bits) || bits != 0)
+			return true;
+		tested = def->ops[0];
+	}
+	else if (!truth)
+		return false;
+	const Instruction* value = producer(tested);
+	uint64_t mask = 0;
+	return value == nullptr || value->op != Opcode::Binary || static_cast<BinaryOp>(value->sub) != BinaryOp::And ||
+		!literal_bits(value->ops[1], ~uint64_t(0), mask) || (mask & (mask - 1)) != 0;
+}
+
+// `e` branches to S or to `next`, which only computes a second test and
+// branches to S or to R, and no one test says which is reached: `e`
+// computes both and branches on their results joined, `a | b` where either
+// reaches S, `a & b` where both reach R. Neither branch states an
+// expectation (one that does seldom runs the second test, or seldom needs
+// it). LLVM folds a branch into its predecessor so (one instruction besides
+// the compare) and its x86 selection keeps two such tests together.
+bool TestMerging::join_branches(BlockId e, unsigned side, BlockId next, BlockId shared, BlockId rest)
+{
+	const InstId term = body_.blocks[e].last, inner_term = body_.blocks[next].last;
+	const Instruction branch = body_.instructions[term], inner = body_.instructions[inner_term];
+	const uint8_t none = static_cast<uint8_t>(BranchPrediction::None);
+	if (branch.sub != none || inner.sub != none)
+		return false;
+	// The truths that reach S; `either` joins those with `or`, the other
+	// form their opposites with `and` (S where the result is 0). The form
+	// that inverts fewer conditions, of those that can be had.
+	const bool truths[2] = { side == 1, inner.ops[1].index == shared };
+	const Value conditions[2] = { branch.ops[0], inner.ops[0] };
+	// A first test that mostly reaches S leaves the second seldom run:
+	// joined, it would be computed each time for nothing.
+	if (mostly(conditions[0], truths[0]))
+		return false;
+	int chosen = -1;
+	unsigned least = 3;
+	for (int either = 1; either >= 0; --either)
+	{
+		unsigned flips = 0;
+		bool can = true;
+		for (unsigned k = 0; k < 2; ++k)
+		{
+			const bool flip = truths[k] != (either == 1);
+			can = can && joins(conditions[k], flip);
+			flips += flip ? 1 : 0;
+		}
+		if (can && flips < least)
+		{
+			least = flips;
+			chosen = either;
+		}
+	}
+	if (chosen < 0)
+		return false;
+	const bool either = chosen == 1;
+	// No `a == x | b == y` (nor `a != x & b != y`): two equalities are each
+	// seldom true, and LLVM's x86 branch merging keeps such tests apart.
+	unsigned same = 0;
+	for (unsigned k = 0; k < 2; ++k)
+	{
+		const Instruction* def = producer(conditions[k]);
+		ComparePredicate p = ComparePredicate::Ne;
+		if (def != nullptr && def->op == Opcode::Compare)
+			p = static_cast<ComparePredicate>(def->sub);
+		if (truths[k] != either)
+			p = lowir::inverted(p);
+		same += p == (either ? ComparePredicate::Eq : ComparePredicate::Ne) ? 1 : 0;
+	}
+	if (same == 2)
+		return false;
+	// No join with a test the loop around `e` does not compute: its branch
+	// is always predicted, and joined, the other test would run each pass.
+	if (e < forest_.innermost.size() && forest_.innermost[e] != kNoId)
+		for (unsigned k = 0; k < 2; ++k)
+			if (invariant_test(forest_.innermost[e], conditions[k]))
+				return false;
+	// Two values tested against zero join as `(a | b) != 0` (S where it
+	// holds): `a != 0 | b != 0`, or `a == 0 & b == 0` that reach R.
+	Value tested[2];
+	Type tested_type = Type::scalar(TypeKind::I64);
+	bool or_form = true;
+	for (unsigned k = 0; k < 2 && or_form; ++k)
+	{
+		const Instruction* def = producer(conditions[k]);
+		ComparePredicate p = ComparePredicate::Ne;
+		Type t = body_.temps[conditions[k].index].type;
+		tested[k] = conditions[k];
+		if (def != nullptr && def->op == Opcode::Compare)
+		{
+			uint64_t bits = 0;
+			or_form = literal_bits(def->ops[1], ~uint64_t(0), bits) && bits == 0 && used_once(conditions[k]);
+			p = static_cast<ComparePredicate>(def->sub);
+			t = def->type;
+			tested[k] = def->ops[0];
+		}
+		if (truths[k] != either)
+			p = lowir::inverted(p);
+		or_form = or_form && p == (either ? ComparePredicate::Ne : ComparePredicate::Eq) && test_type(t) &&
+			(k == 0 || t.kind() == tested_type.kind());
+		tested_type = t;
+	}
+	// Two sign tests of values of one type join as one sign test, as LLVM
+	// does: `a < 0 | b < 0` is `(a | b) < 0`, `a >= 0 | b >= 0` is
+	// `(a & b) >= 0`, and the `and` forms the other way round.
+	ComparePredicate sign = ComparePredicate::Eq;
+	bool sign_form = !or_form;
+	for (unsigned k = 0; k < 2 && sign_form; ++k)
+	{
+		const Instruction* def = producer(conditions[k]);
+		uint64_t bits = 0;
+		sign_form = def != nullptr && def->op == Opcode::Compare && test_type(def->type) && used_once(conditions[k]) &&
+			literal_bits(def->ops[1], all_bits(def->type), bits) && (k == 0 || def->type.kind() == tested_type.kind());
+		if (!sign_form)
+			break;
+		ComparePredicate p = static_cast<ComparePredicate>(def->sub);
+		if (truths[k] != either)
+			p = lowir::inverted(p);
+		// (`x > -1` is `x >= 0`, `x <= -1` is `x < 0`.)
+		if (bits == all_bits(def->type) && (p == ComparePredicate::Gt || p == ComparePredicate::Le))
+		{
+			p = p == ComparePredicate::Gt ? ComparePredicate::Ge : ComparePredicate::Lt;
+			bits = 0;
+		}
+		sign_form = bits == 0 && (p == ComparePredicate::Lt || p == ComparePredicate::Ge) && (k == 0 || p == sign);
+		sign = p;
+		tested[k] = def->ops[0];
+		tested_type = def->type;
+	}
+	// Two results joined cost their values (a setcc each on x86) and an
+	// `and` or `or` for the one branch they save, the first test's, and pay
+	// only where that branch is hard to predict: not where the estimate
+	// predicts the first test (an equality, or a value against zero), nor
+	// on a loop's exit test before its end (see exits_mid_loop).
+	if (!or_form && !sign_form && (mostly(conditions[0], !truths[0]) || exits_mid_loop(forest_, e, shared, rest)))
+		return false;
+	// The second test's instructions, before `e`'s branch.
+	InstId at = previous_in_block(body_, e, term);
+	for (InstId i = body_.blocks[next].first; i != inner_term;)
+	{
+		const InstId following = body_.instructions[i].next;
+		unlink_after(body_, next, kNoId, i);
+		insert_after(body_, e, at, i);
+		if (i < block_of_.size())
+			block_of_[i] = e;
+		at = i;
+		i = following;
+	}
+	if (sign_form)
+	{
+		Instruction joined = make_instruction(Opcode::Binary, tested_type);
+		joined.sub = static_cast<uint8_t>(either == (sign == ComparePredicate::Lt) ? BinaryOp::Or : BinaryOp::And);
+		joined.location = branch.location;
+		joined.ops[0] = tested[0];
+		joined.ops[1] = tested[1];
+		const Value value = add(e, at, joined, tested_type);
+		Instruction compare = make_instruction(Opcode::Compare, tested_type);
+		compare.sub = static_cast<uint8_t>(sign);
+		compare.location = branch.location;
+		compare.ops[0] = value;
+		compare.ops[1] = integer_value(body_, Literal{ 0, 0 });
+		const Value condition = add(e, at, compare, Type::scalar(TypeKind::I64));
+		finish_join(e, next, shared, rest, condition, either);
+		return true;
+	}
+	if (or_form)
+	{
+		Instruction joined = make_instruction(Opcode::Binary, tested_type);
+		joined.sub = static_cast<uint8_t>(BinaryOp::Or);
+		joined.location = branch.location;
+		joined.ops[0] = tested[0];
+		joined.ops[1] = tested[1];
+		const Value condition = add(e, at, joined, tested_type);
+		finish_join(e, next, shared, rest, condition, true);
+		return true;
+	}
+	Value results[2];
+	for (unsigned k = 0; k < 2; ++k)
+		results[k] = truth(e, at, conditions[k], truths[k] != either, branch.location);
+	Instruction joined = make_instruction(Opcode::Binary, Type::scalar(TypeKind::I64));
+	joined.sub = static_cast<uint8_t>(either ? BinaryOp::Or : BinaryOp::And);
+	joined.location = branch.location;
+	joined.ops[0] = results[0];
+	joined.ops[1] = results[1];
+	const Value condition = add(e, at, joined, Type::scalar(TypeKind::I64));
+	finish_join(e, next, shared, rest, condition, either);
+	return true;
+}
+
+bool TestMerging::invariant_value(uint32_t loop, Value v, unsigned depth) const
+{
+	if (!v.is(ValueKind::Temp) || v.index < body_.parameter_count)
+		return true;
+	const InstId def = body_.temps[v.index].def;
+	if (def == kNoId || def >= def_block_.size() || def_block_[def] == kNoId)
+		return false;
+	if (!in_loop(forest_, loop, def_block_[def]))
+		return true;
+	const Instruction& inst = body_.instructions[def];
+	if (depth == 0 ||
+		(inst.op != Opcode::Binary && inst.op != Opcode::Compare && inst.op != Opcode::Convert &&
+			inst.op != Opcode::Unary && inst.op != Opcode::Copy))
+		return false;
+	for (unsigned k = 0; k < 2; ++k)
+		if (!inst.ops[k].is(ValueKind::None) && !invariant_value(loop, inst.ops[k], depth - 1))
+			return false;
+	return true;
+}
+
+bool TestMerging::invariant_test(uint32_t loop, Value condition) const
+{
+	return invariant_value(loop, condition, 2);
+}
+
+// `e` branches on `condition` to S (where it holds, or with `either` false
+// where it does not) or to R in place of `next`, which ends unreachable (the
+// cleanup drops it).
+void TestMerging::finish_join(BlockId e, BlockId next, BlockId shared, BlockId rest, Value condition, bool either)
+{
+	Instruction& out = body_.instructions[body_.blocks[e].last];
+	out.ops[0] = condition;
+	out.ops[1] = Value::block(either ? shared : rest);
+	out.ops[2] = Value::block(either ? rest : shared);
+	remove_phi_incoming(body_, shared, next);
+	rename_phi_incoming(body_, rest, next, e);
+	Instruction& end = body_.instructions[body_.blocks[next].last];
+	end.op = Opcode::Unreachable;
+	end.ops[0] = end.ops[1] = end.ops[2] = Value::none();
+	touched_[e] = touched_[next] = touched_[shared] = touched_[rest] = 1;
+	++c_.stats.branches_folded;
 }
 
 TestMerging::Term TestMerging::term(Value v, Type type, BlockId block) const
@@ -769,6 +1129,11 @@ bool TestMerging::unite_masks(BlockId block, InstId before, InstId id)
 bool TestMerging::run()
 {
 	c_.ensure_cfg();
+	if (join_)
+	{
+		find_loops(body_, c_.cfg, forest_);
+		map_instruction_blocks(body_, def_block_);
+	}
 	count_uses(body_, uses_);
 	touched_.assign(body_.blocks.size(), 0);
 	block_of_.assign(body_.instructions.size(), kNoId);
@@ -782,6 +1147,8 @@ bool TestMerging::run()
 			const Instruction& inst = body_.instructions[i];
 			if (i < block_of_.size())
 				block_of_[i] = b;
+			if (join_)
+				continue;
 			if (inst.op == Opcode::Select)
 				changed = (inst.type.kind() == TypeKind::I64 && merge_select(b, before, i)) ||
 					merge_nested(b, before, i) || move_bit(b, before, i) || changed;
@@ -800,7 +1167,13 @@ bool TestMerging::run()
 
 bool merge_value_tests(FunctionContext& context)
 {
-	TestMerging merging(context);
+	TestMerging merging(context, false);
+	return merging.run();
+}
+
+bool join_branch_tests(FunctionContext& context)
+{
+	TestMerging merging(context, true);
 	return merging.run();
 }
 

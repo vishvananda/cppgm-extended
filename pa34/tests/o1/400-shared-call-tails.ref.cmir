@@ -215,11 +215,9 @@ function @main
     load.i64 rax, @calls
     cmp.i64 rcx, r9
     setne rcx
-    movzx rcx, rcx
     cmp.i64 rax, <gpr2>
     setne rax
-    movzx rax, rax
-    or rcx, rax
+    or.u8 rcx, rax
     jne ^fail
 
   block ^next

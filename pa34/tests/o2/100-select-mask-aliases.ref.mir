@@ -132,11 +132,10 @@ function @main
     setne rax
     cmp.i32 [rbp-8], 0
     setne rcx
-    or.u32 r13, r14
-    or.u32 r15, rax
-    or.u32 r13, r15
-    or.u32 r13, rcx
-    cmp.u8 r13, 0
+    or.u8 r13, r14
+    or.u8 r15, rax
+    or.u8 r13, r15
+    or.u8 r13, rcx
     jne ^failed
 
   block ^next

@@ -144,11 +144,9 @@ function @main
     add rcx, <gpr0>
     cmp.i64 <gpr3>, <gpr2>
     setne <gpr3>
-    movzx <gpr3>, <gpr3>
     cmp.i64 rax, rcx
     setne rax
-    movzx rax, rax
-    or <gpr3>, rax
+    or.u8 <gpr3>, rax
     jne ^fail
 
   block ^next

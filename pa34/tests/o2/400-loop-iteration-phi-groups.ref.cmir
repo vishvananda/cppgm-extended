@@ -40,11 +40,9 @@ function @walk
     zext.i32 <gpr0>, rcx
     cmp.ptr <gpr2>, 0
     setne rax
-    movzx rax, rax
     cmp.i32 <gpr0>, 0
     setg rcx
-    movzx rcx, rcx
-    test.i64 rax, rcx
+    test.u8 rax, rcx
     je ^empty
 
   block ^entry~start

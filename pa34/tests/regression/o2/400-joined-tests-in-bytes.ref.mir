@@ -1,0 +1,186 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @either
+  abi
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, 3
+    sete rdi
+    cmp.i64 rsi, 4
+    setl rsi
+    or.u8 rdi, rsi
+    je ^no
+
+  block ^yes
+    mov rax, 10
+    ret rax
+
+  block ^no
+    mov rax, 20
+    ret rax
+
+function @both
+  abi
+    param %x -> rdi : i32
+    param %p -> rsi : ptr
+    param %q -> rdx : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i32 rdi, 7
+    seta rdi
+    cmp.ptr rsi, rdx
+    setne rsi
+    test.u8 rdi, rsi
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 2
+    ret rax
+
+function @one
+  abi
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, 3
+    sete rdi
+    cmp.i64 rsi, 4
+    sete rsi
+    xor.u8 rdi, rsi
+    je ^no
+
+  block ^yes
+    mov rax, 100
+    ret rax
+
+  block ^no
+    mov rax, 200
+    ret rax
+
+function @wide
+  abi
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, 3
+    sete rax
+    movzx rax, rax
+    cmp.i64 rsi, 4
+    setl rsi
+    movzx rsi, rsi
+    or rax, rsi
+    je ^no
+
+  block ^yes
+    add rax, 1000
+    ret rax
+
+  block ^no
+    mov rax, 2000
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    temp %f -> [rbp-8] : i64
+    temp %g -> [rbp-16] : i64
+
+  block ^entry
+    mov rdi, 3
+    mov rsi, 9
+    call @either [args=(rsi,rdi)]
+    mov rbx, rax
+    mov rdi, 5
+    mov rsi, 9
+    call @either [args=(rsi,rdi)]
+    mov r12, rax
+    mov rdi, 8
+    mov rsi, @main
+    mov rdx, 0
+    call @both [args=(rdx,rsi,rdi)]
+    mov r13, rax
+    mov rdi, 8
+    mov rsi, 0
+    mov rdx, 0
+    call @both [args=(rdx,rsi,rdi)]
+    mov r14, rax
+    mov rdi, 3
+    mov rsi, 5
+    call @one [args=(rsi,rdi)]
+    mov r15, rax
+    mov rdi, 3
+    mov rsi, 4
+    call @one [args=(rsi,rdi)]
+    mov r10, rax
+    store.i64 [rbp-8], r10
+    mov rdi, 0
+    mov rsi, 0
+    call @wide [args=(rsi,rdi)]
+    mov r10, rax
+    store.i64 [rbp-16], r10
+    mov rdi, 0
+    mov rsi, 9
+    call @wide [args=(rsi,rdi)]
+    add rbx, r12
+    add r13, r14
+    add r15, [rbp-8]
+    add rax, [rbp-16]
+    add rbx, r13
+    add r15, rax
+    add rbx, r15
+    mov rax, rbx
+    mov r11, 367465021388636487
+    mul r11
+    mov rax, rbx
+    sub rax, rdx
+    shr rax, 1
+    add rax, rdx
+    shr rax, 7
+    imul rax, 251
+    zext.i32 rdx, rbx
+    sub.u32 rdx, rax
+    zext.i32 rax, rdx
+    ret rax

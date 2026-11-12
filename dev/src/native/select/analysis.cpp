@@ -529,6 +529,22 @@ bool FunctionSelector::known_boolean(uint32_t temp, unsigned depth) const
 		}
 		return true;
 	}
+	// So does an and, an or or an xor of Booleans, from O1: two tests joined.
+	if (level_ >= 1 && def.op == Opcode::Binary && depth < 4 && t.type.is_integer() && t.type.kind() != TypeKind::I128)
+	{
+		const lowir::BinaryOp joined = static_cast<lowir::BinaryOp>(def.sub);
+		if (joined == lowir::BinaryOp::And || joined == lowir::BinaryOp::Or || joined == lowir::BinaryOp::Xor)
+		{
+			for (unsigned k = 0; k < 2; ++k)
+			{
+				const Value v = def.ops[k];
+				if (v.kind == ValueKind::Integer ? (literal(v).high != 0 || literal(v).low > 1)
+												 : v.kind != ValueKind::Temp || !known_boolean(v.index, depth + 1))
+					return false;
+			}
+			return true;
+		}
+	}
 	const Opcode op = def.op;
 	return op == Opcode::Compare || op == Opcode::AtomicCompareExchange ||
 		(t.type.kind() == TypeKind::I1 && op != Opcode::Call && op != Opcode::Load && op != Opcode::AtomicLoad);
@@ -1840,8 +1856,10 @@ void FunctionSelector::find_byte_booleans()
 		const Instruction& inst = body.instructions[id];
 		if (inst.result == kNoId || (marks_[id] & IM_DEAD))
 			return;
+		// (Two Booleans joined are computed in their bytes: emit_binary.)
 		if (inst.op == Opcode::Compare ||
-			(inst.op == Opcode::Call && inst.type.is_integer() && register_bytes(inst.type.kind()) == 1))
+			(inst.op == Opcode::Call && inst.type.is_integer() && register_bytes(inst.type.kind()) == 1) ||
+			(inst.op == Opcode::Binary && !(temps_[inst.result].flags & TF_ALIAS) && known_boolean(inst.result)))
 			byte_only_[inst.result] = !wide[inst.result];
 	});
 }

@@ -654,11 +654,17 @@ void FunctionSelector::emit_branch(const Instruction& inst)
 	}
 	// A Boolean's byte (find_byte_booleans).
 	const bool boolean = level_ >= 1 && cond.kind == ValueKind::Temp && known_boolean(cond.index);
+	// (Two Booleans joined at full width, for a wider reader, are 0 or 1 there:
+	// the join's own flags serve.)
+	const bool joined = boolean && !byte_only_[cond.index] && body_->temps[cond.index].def != kNoId &&
+		body_->instructions[body_->temps[cond.index].def].op == Opcode::Binary &&
+		body_->temps[cond.index].type.kind() == TypeKind::I64;
 	const bool step = type.kind() == TypeKind::I32 && c.kind == OperandKind::Reg && canonical_step(cond);
-	const TypeKind tested = boolean ? TypeKind::U8
-		: type.is_pointer()         ? TypeKind::Ptr
-		: step                      ? TypeKind::I64
-									: type.kind();
+	const TypeKind tested = joined ? TypeKind::I64
+		: boolean                  ? TypeKind::U8
+		: type.is_pointer()        ? TypeKind::Ptr
+		: step                     ? TypeKind::I64
+								   : type.kind();
 	emit2(Op::Cmp, tested, c, Operand::make_imm(0));
 	Inst& jcc = emit1(Op::Jcc, TypeKind::Void, Operand::make_label(on_true));
 	jcc.sub = CC_NE;
@@ -682,6 +688,9 @@ Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set)
 			test_type = body_->instructions[body_->temps[v.index].def].type;
 			folded_memory = true;
 		}
+	// Two Booleans read in their bytes (find_byte_booleans).
+	if (level_ >= 1 && conj.result != kNoId && byte_only_[conj.result])
+		test_type = Type::scalar(TypeKind::U8);
 	const auto tested = [&](Value v) { return v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_TESTED); };
 	if (tested(x))
 		std::swap(x, y);

@@ -341,6 +341,17 @@ bool form_selects(FunctionContext& context);
 // that keep bits of one value keep them under one mask (`(x & a) | (x & b)`
 // is `x & (a | b)`, at most eight terms). O(instructions).
 bool merge_value_tests(FunctionContext& context);
+// O2+, after the loop passes (opt/test_merging.cpp): a branch to a block
+// that only computes a second test (a compare and at most one integer
+// operation, nothing that can trap) and shares a target with it, where no
+// one test replaces the two and neither branch states an expectation,
+// computes both tests and branches on their results joined (`a | b`, or
+// `a & b` for the other side; two values tested against zero as
+// `(a | b) != 0`): one conditional jump for two. Not joined: a first test
+// that mostly reaches the shared target, two equalities that reach it
+// (`a == x | b == y`), and a test the enclosing loop does not compute.
+// O(instructions) plus the loop forest.
+bool join_branch_tests(FunctionContext& context);
 
 // O3's closed chains of constant-polynomial bit steps become bounded
 // readonly lookups, with a shared per-unit table budget.

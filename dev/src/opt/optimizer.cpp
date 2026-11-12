@@ -627,6 +627,15 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	changed = RUN_PASS(hold_loop_literals) || changed;
 	changed = RUN_PASS(issue_long_latency) || changed;
 	changed = RUN_PASS(sink_addresses) || changed;
+	// Two tests of different values with one target between them as one
+	// branch, once the loop passes have read the tests apart (a test of a
+	// joined value leaves the compares it replaces dead).
+	if (options.level >= 2 && RUN_PASS(join_branch_tests))
+	{
+		RUN_PASS(cleanup_cfg);
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
 	if (!changed)
 		return;
 	RUN_PASS(split_branch_compares);

@@ -132,11 +132,10 @@ function @main
     setne rax
     cmp.i32 [rbp-<off0>], 0
     setne rcx
-    or.u32 <gpr3>, <gpr4>
-    or.u32 <gpr5>, rax
-    or.u32 <gpr3>, <gpr5>
-    or.u32 <gpr3>, rcx
-    cmp.u8 <gpr3>, 0
+    or.u8 <gpr3>, <gpr4>
+    or.u8 <gpr5>, rax
+    or.u8 <gpr3>, <gpr5>
+    or.u8 <gpr3>, rcx
     jne ^failed
 
   block ^next
