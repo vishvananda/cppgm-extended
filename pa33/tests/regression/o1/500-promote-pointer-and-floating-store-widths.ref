@@ -1,0 +1,38 @@
+function @distance(%begin : ptr, %end : ptr) -> i32 [unwind=no, no_inline=yes] {
+  block ^entry:
+    %d = binary sub ptr %end, %begin
+    %t2 = convert trunc i32 i64 %d
+    %r = binary add nowrap i32 %t2, 1
+    return i32 %r
+}
+function @address(%offset : i32) -> ptr [unwind=no, no_inline=yes] {
+  block ^entry:
+    %x = binary sub i32 %offset, 8
+    %t2 = convert sext i64 i32 %x
+    %t3 = copy ptr %t2
+    return ptr %t3
+}
+function @low_bits(%wide : i64) -> f32 [unwind=no, no_inline=yes] {
+  block ^entry:
+    %t1 = convert trunc i32 i64 %wide
+    %t2 = copy f32 %t1
+    return f32 %t2
+}
+function @main() -> i32 [unwind=no, role=entry] {
+  slot $buffer : obj<16x1>
+
+  block ^entry:
+    %p = addr $buffer
+    %q = index i8 %p, 5
+    %n = call i32 @distance(%p, %q)
+    %a = call ptr @address(-16)
+    %ai = copy i64 %a
+    %f = call f32 @low_bits(5360320512)
+    %bad_n = cmp ne i32 %n, 6
+    %bad_a = cmp ne i64 %ai, -24
+    %bad_f = cmp ne f32 %f, 1f
+    %bad_na = binary or i64 %bad_n, %bad_a
+    %bad = binary or i64 %bad_f, %bad_na
+    %status = convert trunc i32 i64 %bad
+    return i32 %status
+}

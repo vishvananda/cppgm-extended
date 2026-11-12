@@ -37,15 +37,24 @@ bool phi_type(Type type)
 	}
 }
 
+// The bits of an integer or pointer value (0 for other types).
 unsigned value_bits(Type type)
 {
-	return type.is_pointer() ? 64 : integer_bits(type.kind());
+	return type.is_pointer() ? 8 * static_cast<unsigned>(storage_bytes(type)) : integer_bits(type.kind());
 }
 
 // The bits a slot's value holds, in any phi type.
 unsigned held_bits(Type type)
 {
 	return type.is_float() ? 8 * static_cast<unsigned>(storage_bytes(type)) : value_bits(type);
+}
+
+// The type a truncation or an extension reads or writes for a value of
+// `type`: an integer's own; a pointer's or a floating value's the integer
+// of its width (a retyping copy moves the bits between them).
+Type integer_view(Type type)
+{
+	return type.is_integer() ? type : Type::scalar(held_bits(type) == 32 ? TypeKind::I32 : TypeKind::I64);
 }
 
 // A literal as `type`, where the two differ in being floating: the same bits.
@@ -68,9 +77,9 @@ Type stored_type(const FunctionBody& body, const Instruction& store)
 	return store.ops[0].is(ValueKind::Temp) ? body.temps[store.ops[0].index].type : store.type;
 }
 
-// A store may write an integer value of another width than its type: a
-// wider one keeps its low bits, a narrower one is written as its register
-// holds it (extended by its own signedness). Promotion makes the
+// A store may write an integer or pointer value of another width than its
+// type: a wider one keeps its low bits, a narrower one is written as its
+// register holds it (extended by its own signedness). Promotion makes the
 // conversion explicit.
 bool storable(const FunctionBody& body, const Instruction& store)
 {
@@ -139,6 +148,7 @@ private:
 	void place_phis();
 	void rename();
 	void rename_block(BlockId block);
+	Value append_value(BlockId block, InstId& prev, Instruction inst, uint32_t location);
 	void finish();
 
 	FunctionContext& c_;
@@ -768,26 +778,30 @@ void SlotPromotion::rename_block(BlockId block)
 			}
 			else if (from != held)
 			{
-				// The value the slot holds: a retype, a truncation or an
-				// extension.
+				// The value the slot holds: a retype, or a truncation or an
+				// extension between integer views, which a pointer or
+				// floating slot then retypes.
 				const unsigned bits_from = held_bits(from), bits_to = held_bits(held);
-				const bool same = bits_from == bits_to;
-				Instruction convert = make_instruction(same ? Opcode::Copy : Opcode::Convert, held);
-				convert.ops[0] = inst.ops[0];
-				convert.location = inst.location;
-				if (!same)
+				Value value = inst.ops[0];
+				Type type = from;
+				if (bits_from != bits_to)
 				{
+					type = integer_view(held);
+					Instruction convert = make_instruction(Opcode::Convert, type);
 					convert.sub = static_cast<uint8_t>(bits_from > bits_to ? ConvertOp::Trunc
 							: signed_kind(from)                            ? ConvertOp::SExt
 																		   : ConvertOp::ZExt);
-					set_convert_source_type(convert, from);
+					set_convert_source_type(convert, integer_view(from));
+					convert.ops[0] = value;
+					value = append_value(block, prev, convert, inst.location);
 				}
-				const InstId id = append_instruction(body_, convert);
-				body_.instructions[id].result = append_temp(body_, held, id);
-				insert_after(body_, block, prev, id);
-				remove_.resize(body_.instructions.size(), 0);
-				current_[c] = Value::temp(body_.instructions[id].result);
-				prev = id;
+				if (type != held)
+				{
+					Instruction retype = make_instruction(Opcode::Copy, held);
+					retype.ops[0] = value;
+					value = append_value(block, prev, retype, inst.location);
+				}
+				current_[c] = value;
 			}
 			remove_[i] = 1;
 		}
@@ -821,6 +835,19 @@ void SlotPromotion::rename_block(BlockId block)
 				}
 		}
 	}
+}
+
+// `inst` after `prev` in `block` (which it becomes), with a new result of
+// its type.
+Value SlotPromotion::append_value(BlockId block, InstId& prev, Instruction inst, uint32_t location)
+{
+	inst.location = location;
+	const InstId id = append_instruction(body_, inst);
+	body_.instructions[id].result = append_temp(body_, inst.type, id);
+	insert_after(body_, block, prev, id);
+	remove_.resize(body_.instructions.size(), 0);
+	prev = id;
+	return Value::temp(body_.instructions[id].result);
 }
 
 void SlotPromotion::rename()
