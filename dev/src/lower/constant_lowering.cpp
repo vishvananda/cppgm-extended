@@ -276,15 +276,15 @@ bool ProgramLowering::constant_item(
 namespace {
 
 // A data item's bytes and alignment as the object writer places it.
-uint64_t DataItemBytes(const lowir::DataItem& item, uint64_t& align)
+uint64_t DataItemBytes(const lowir::DataItem& item, uint64_t& align, uint8_t pointer_bytes)
 {
 	align = 1;
 	if (item.kind == lowir::DataItemKind::Zero)
 		return static_cast<uint64_t>(item.amount);
 	if (item.kind == lowir::DataItemKind::Address || item.type.kind() == lowir::TypeKind::Ptr)
 	{
-		align = 8;
-		return 8;
+		align = pointer_bytes;
+		return pointer_bytes;
 	}
 	if (item.type.kind() == lowir::TypeKind::Obj)
 	{
@@ -300,7 +300,7 @@ uint64_t DataItemBytes(const lowir::DataItem& item, uint64_t& align)
 
 } // namespace
 
-void PreserveStaticOffsets(StaticData& data)
+void PreserveStaticOffsets(StaticData& data, uint8_t pointer_bytes)
 {
 	// C++ layout builders state explicit padding. LowIR aligns typed items
 	// naturally, so spell an unaligned scalar's representation as bytes.
@@ -309,7 +309,7 @@ void PreserveStaticOffsets(StaticData& data)
 	for (size_t i = 0; i < data.items.size(); ++i)
 	{
 		uint64_t align = 1;
-		const uint64_t size = DataItemBytes(data.items[i], align);
+		const uint64_t size = DataItemBytes(data.items[i], align, pointer_bytes);
 		if (data.items[i].kind == lowir::DataItemKind::Scalar && (offset & (align - 1)) != 0)
 		{
 			first = i;
@@ -325,7 +325,7 @@ void PreserveStaticOffsets(StaticData& data)
 	{
 		const lowir::DataItem& item = data.items[i];
 		uint64_t align = 1;
-		const uint64_t size = DataItemBytes(item, align);
+		const uint64_t size = DataItemBytes(item, align, pointer_bytes);
 		if (item.kind == lowir::DataItemKind::Scalar && (offset & (align - 1)) != 0)
 		{
 			lowir::DataItem byte = lowir::DataItem();
@@ -529,7 +529,7 @@ void ProgramLowering::null_member_pointers(const sema::Type* type, StaticData& d
 	{
 		// A typed item sits at its alignment (native/image/global_data).
 		uint64_t align = 1;
-		const uint64_t size = DataItemBytes(item, align);
+		const uint64_t size = DataItemBytes(item, align, program_.pointer_type().pointer_bytes());
 		if (item.kind != lowir::DataItemKind::Zero)
 		{
 			at = (at + align - 1) & ~(align - 1);
@@ -919,7 +919,7 @@ lowir::SymbolId ProgramLowering::constant_temporary(const sema::ConstValue* temp
 		StaticData data;
 		if (!constant_data(type, *temporary, data, location))
 			return unavailable();
-		PreserveStaticOffsets(data);
+		PreserveStaticOffsets(data, program_.pointer_type().pointer_bytes());
 		global.init = lowir::GlobalInit::Data;
 		global.first_item = static_cast<uint32_t>(program_.data_items.size());
 		global.item_count = static_cast<uint32_t>(data.items.size());

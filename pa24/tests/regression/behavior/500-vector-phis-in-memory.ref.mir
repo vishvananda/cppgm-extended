@@ -147,8 +147,8 @@ function @rotate
     fmov.v128 xmm15, [rbp-176]
     vector.pshufd xmm14, xmm15, 0
     fmov.v128 [rbp-192], xmm14
-    mov r12, 0
-    mov rbx, rdi
+    mov rbx, 0
+    mov r12, rdi
     fmov.v128 [rbp-208], xmm0
     fmov.v128 [rbp-224], xmm1
     fmov.v128 [rbp-240], xmm2
@@ -180,16 +180,16 @@ function @rotate
     jmp ^loop
 
   block ^loop
-    cmp.i32 r12, rbx
+    cmp.i32 rbx, r12
     jl ^body
     jmp ^done
 
   block ^body
     call @tick [args=()]
-    mov r8, r12
+    mov r8, rbx
     add.i32 r8, 1
     sext.i32 r8
-    mov r12, r8
+    mov rbx, r8
     fmov.v128 xmm15, [rbp-256]
     fmov.v128 [rbp-528], xmm15
     fmov.v128 xmm14, [rbp-208]
@@ -236,14 +236,14 @@ function @rotate
 
   block ^done
     call @tick [args=()]
-    cmp.i32 rbx, 0
+    cmp.i32 r12, 0
     jne ^again
     jmp ^check
 
   block ^again
     call @tick [args=()]
-    mov r12, 0
     mov rbx, 0
+    mov r12, 0
     vector.pzero xmm15
     fmov.v128 [rbp-528], xmm15
     jmp ^loop

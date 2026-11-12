@@ -77,11 +77,28 @@ void prepare_module(const lowir::Program& program, Module& module)
 		module.exception_pair_type = static_cast<uint32_t>(module.signatures.size());
 		module.signatures.push_back(std::move(pair));
 	}
+	std::map<lowir::NameId, lowir::SymbolId> declarations;
 	for (lowir::SymbolId id : program.order)
 	{
 		const auto& symbol = program.symbols[id];
 		if (symbol.kind != lowir::SymbolKind::FunctionDeclaration)
 			continue;
+		// Source builtins and optimizer-created declarations can denote the
+		// same object function. They share one import and linking identity.
+		if (symbol.metadata.binding != ir_model::SBM_INTERNAL)
+		{
+			const auto name = symbol.metadata.object != 0 ? symbol.metadata.object : symbol.name;
+			const auto inserted = declarations.emplace(name, id);
+			if (!inserted.second)
+			{
+				const auto other = program.symbols[inserted.first->second].detail;
+				if (module.signature_types[program.functions[symbol.detail].signature] !=
+					module.signature_types[program.functions[other].signature])
+					throw WasmError("incompatible Wasm declarations for one object function");
+				module.function_indices[id] = module.function_indices[inserted.first->second];
+				continue;
+			}
+		}
 		module.function_indices[id] = static_cast<uint32_t>(module.definition_types.size());
 		module.definition_types.push_back(module.signature_types[program.functions[symbol.detail].signature]);
 	}

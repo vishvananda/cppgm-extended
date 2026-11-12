@@ -82,7 +82,7 @@ private:
 	InstId emit(BlockId block, InstId& prev, const Instruction& inst)
 	{
 		const InstId id = append_instruction(body_, inst);
-		const Type result = inst.op == Opcode::Index ? Type::scalar(TypeKind::Ptr) : inst.type;
+		const Type result = inst.op == Opcode::Index ? body_.pointer_type() : inst.type;
 		body_.instructions[id].result = append_temp(body_, result, id);
 		insert_after(body_, block, prev, id);
 		prev = id;

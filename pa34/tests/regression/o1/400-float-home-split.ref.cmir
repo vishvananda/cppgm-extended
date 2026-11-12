@@ -33,9 +33,9 @@ function @scaled_sum
     frame_pointer keep
     epilogues duplicated
     preserve <gpr0> <gpr1> <gpr2>
-    temp %s -> [rbp-<off0>] : f64
-    param-slot %x -> [rbp-<off1>] : f64
-    param-slot %y -> [rbp-<off2>] : f64
+    param-slot %x -> [rbp-<off0>] : f64
+    param-slot %y -> [rbp-<off1>] : f64
+    temp %s -> [rbp-<off2>] : f64
 
   block ^entry
     mov <gpr1>, rdi
@@ -70,16 +70,16 @@ function @scaled_sum
     jmp ^done
 
   block ^loop~cold
-    fmov.f64 [rbp-<off0>], xmm1
-    fmov.f64 [rbp-<off1>], <xmm0>
-    fmov.f64 [rbp-<off2>], <xmm1>
+    fmov.f64 [rbp-<off0>], <xmm0>
+    fmov.f64 [rbp-<off1>], <xmm1>
+    fmov.f64 [rbp-<off2>], xmm1
 
   block ^cold
-    fmov.f64 xmm1, [rbp-<off1>]
-    call @slow [args=(xmm0,xmm1)]
     fmov.f64 xmm1, [rbp-<off0>]
-    fmov.f64 <xmm0>, [rbp-<off1>]
-    fmov.f64 <xmm1>, [rbp-<off2>]
+    call @slow [args=(xmm0,xmm1)]
+    fmov.f64 <xmm0>, [rbp-<off0>]
+    fmov.f64 <xmm1>, [rbp-<off1>]
+    fmov.f64 xmm1, [rbp-<off2>]
     jmp ^next
 
   block ^entry~done
@@ -96,12 +96,12 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    slot $values -> [rbp-<off0>] : obj<16x8>
+    slot $values -> [rbp-<off1>] : obj<16x8>
 
   block ^entry
-    fmov.f64 [rbp-<off0>], 1.0
-    fmov.f64 [rbp-<off1>], 2.0
-    lea rdi, [rbp-<off0>]
+    fmov.f64 [rbp-<off1>], 1.0
+    fmov.f64 [rbp-<off0>], 2.0
+    lea rdi, [rbp-<off1>]
     mov rsi, 2
     fmov.f64 xmm0, 2.0
     fmov.f64 xmm1, 1.0

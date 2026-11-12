@@ -255,21 +255,35 @@ void Selector::dispatch()
 	out_.emit(Op::I32Const, { body_.layout[0] });
 	out_.emit(Op::LocalSet, { pc_ });
 	out_.emit(Op::Loop, { block_type(ValueType::Void) });
-	nesting_ = 1;
+	// A dense table keeps each fallback edge constant-time even after
+	// inlining creates a large control-flow graph.
+	std::vector<BlockId> blocks;
 	for (BlockId id : body_.layout)
 	{
 		if (exceptions_ != nullptr && exceptions_->active &&
 			exceptions_->analysis.eh_live_[exceptions_->layout_of[id]] == 0)
 			continue;
-		out_.emit(Op::LocalGet, { pc_ });
-		out_.emit(Op::I32Const, { id });
-		out_.emit(Op::I32Eq);
-		out_.emit(Op::If, { block_type(ValueType::Void) });
-		++nesting_;
-		block(id);
-		--nesting_;
-		out_.emit(Op::End);
+		blocks.push_back(id);
 	}
+	const uint32_t count = static_cast<uint32_t>(blocks.size());
+	std::vector<uint32_t> depths(body_.blocks.size() + 1, count);
+	for (uint32_t i = 0; i < count; ++i)
+		depths[blocks[i]] = i;
+	for (uint32_t i = 0; i <= count; ++i)
+		out_.emit(Op::Block, { block_type(ValueType::Void) });
+	nesting_ = count + 2;
+	out_.emit(Op::LocalGet, { pc_ });
+	out_.emit(Op::BrTable);
+	for (uint32_t depth : depths)
+		out_.operands.push_back(depth);
+	out_.instructions.back().operands.count = static_cast<uint32_t>(depths.size());
+	for (BlockId id : blocks)
+	{
+		out_.emit(Op::End);
+		--nesting_;
+		block(id);
+	}
+	out_.emit(Op::End);
 	out_.emit(Op::Unreachable);
 	out_.emit(Op::End);
 	out_.emit(Op::Unreachable);

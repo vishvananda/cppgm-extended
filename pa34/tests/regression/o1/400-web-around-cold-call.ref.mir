@@ -31,9 +31,9 @@ function @sum
     frame_pointer keep
     epilogues duplicated
     preserve rbx r12 r13
+    param-slot %limit -> [rbp-16] : f64
+    temp %s -> [rbp-24] : f64
     temp %v -> [rbp-8] : f64
-    temp %s -> [rbp-16] : f64
-    param-slot %limit -> [rbp-24] : f64
 
   block ^entry
     mov r12, rdi
@@ -56,17 +56,17 @@ function @sum
     jbe ^use~add
 
   block ^use~slow
+    fmov.f64 [rbp-16], xmm2
+    fmov.f64 [rbp-24], xmm1
     fmov.f64 [rbp-8], xmm0
-    fmov.f64 [rbp-16], xmm1
-    fmov.f64 [rbp-24], xmm2
 
   block ^slow
     fmov.f64 xmm0, [rbp-8]
     call @cold [args=(xmm0)]
     fmov.f64 xmm3, xmm0
+    fmov.f64 xmm2, [rbp-16]
+    fmov.f64 xmm1, [rbp-24]
     fmov.f64 xmm0, [rbp-8]
-    fmov.f64 xmm1, [rbp-16]
-    fmov.f64 xmm2, [rbp-24]
     jmp ^add
 
   block ^use~add

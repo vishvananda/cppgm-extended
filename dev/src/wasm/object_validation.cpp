@@ -113,7 +113,7 @@ void validate_object(const Object& object)
 		if (!symbol.local() && symbol.kind != 3 && !names.insert(symbol.name).second)
 			throw WasmError("duplicate name in Wasm object symbol table: " + symbol.name);
 		if (symbol.local() && symbol.undefined())
-			throw WasmError("local Wasm symbol cannot be undefined");
+			throw WasmError("local Wasm symbol cannot be undefined: " + symbol.name);
 		if (symbol.kind == 0)
 		{
 			if (symbol.index >= object.functions.size() ||

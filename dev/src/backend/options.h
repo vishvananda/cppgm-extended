@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,7 @@ struct Options
 	bool exceptions = true;
 	bool no_standard_libraries = false;
 	bool no_startfiles = false;
+	uint32_t wasm_stack_size = 1024 * 1024;
 	const opt::OptimizerOptions* optimizer = nullptr;
 };
 

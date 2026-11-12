@@ -1723,6 +1723,12 @@ const Type* Analyzer::substituted_value(const TemplateParameterEntity* keyed,
 		deduced.kind = access != nullptr && access->kind == EntityKind::Function ? ScopeKind::Function
 																				 : ScopeKind::Class;
 		deduced.parent = access != nullptr ? access->owner : nullptr;
+		if (access != nullptr && access->kind == EntityKind::Function)
+		{
+			const auto* function = static_cast<const FunctionEntity*>(access);
+			if (function->body != nullptr && function->inline_member && function->template_parameters != nullptr)
+				deduced.parent = function->template_parameters;
+		}
 		deduced.entity = const_cast<Entity*>(access);
 		InstantiationContext context(
 			*this, enter_instantiation(instantiation_depth_ + 1, copy->location), true, placeholder->ordinal);

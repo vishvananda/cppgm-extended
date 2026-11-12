@@ -52,7 +52,11 @@ struct Interval
 	uint32_t temp;
 	int32_t start;
 	int32_t end;
-	bool operator<(const Interval& other) const { return start != other.start ? start < other.start : end < other.end; }
+	// Equal live ranges must choose the same registers with either host STL.
+	bool operator<(const Interval& other) const
+	{
+		return start != other.start ? start < other.start : end != other.end ? end < other.end : temp < other.temp;
+	}
 };
 
 } // namespace

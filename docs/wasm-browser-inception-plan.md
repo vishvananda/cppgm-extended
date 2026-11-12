@@ -1,5 +1,10 @@
 # Optional Wasm self-hosting and browser inception
 
+The experimental implementation and reproducible commands now live in
+[`scripts/experimental/README.md`](../scripts/experimental/README.md). The notes
+below preserve the original investigation; their incomplete-work statements
+describe those earlier checkpoints. Student expectations remain unchanged.
+
 Investigation at `41c232dd6`, 2026-11-12. This is maintainer planning material,
 excluded from the student export. The user selected optional qualification:
 running cppgm inside Wasm or a browser is not a required PA37 correctness gate.

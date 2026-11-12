@@ -40,7 +40,8 @@ enum class Immediate : std::uint8_t
 	Bytes16,
 	Shuffle,
 	Lane,
-	MemoryLane
+	MemoryLane,
+	Invalid
 };
 
 // A block's signed 33-bit immediate is a nonnegative type index or a
@@ -218,6 +219,7 @@ enum class RelocationKind : std::uint8_t
 	X(F32Div, 0x95, None, "f32.div") \
 	X(F32Min, 0x96, None, "f32.min") \
 	X(F32Max, 0x97, None, "f32.max") \
+	X(F32Copysign, 0x98, None, "f32.copysign") \
 	X(F64Abs, 0x99, None, "f64.abs") \
 	X(F64Neg, 0x9a, None, "f64.neg") \
 	X(F64Ceil, 0x9b, None, "f64.ceil") \
@@ -582,7 +584,7 @@ inline Immediate immediate_form(Op op)
 		CPPGM_WASM_SIMD_OPERATIONS(CPPGM_WASM_SIMD_FORM)
 #undef CPPGM_WASM_SIMD_FORM
 	}
-	return Immediate::None;
+	return Immediate::Invalid;
 }
 
 inline const char* spelling(Op op)

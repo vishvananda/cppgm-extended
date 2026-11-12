@@ -1117,7 +1117,7 @@ lowir::SymbolId ProgramLowering::memset_function()
 	lowir::Signature signature = lowir::Signature();
 	signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
 	const lowir::Type types[3] = { program_.pointer_type(), lowir::Type::scalar(lowir::TypeKind::I32),
-		lowir::Type::scalar(lowir::TypeKind::I64) };
+		AbiWordType(program_.target) };
 	for (uint32_t i = 0; i < 3; ++i)
 	{
 		lowir::Parameter parameter = lowir::Parameter();

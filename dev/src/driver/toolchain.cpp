@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <utility>
 #include <vector>
@@ -31,6 +30,10 @@
 #include "support/tool_errors.h"
 #include "syntax/syntax_unit.h"
 #include "wasm/backend.h"
+
+#if CPPGM_TELEMETRY_ENABLED
+#include <sys/resource.h>
+#endif
 
 namespace driver {
 
@@ -104,6 +107,7 @@ struct Invocation
 	std::string resource_directory;
 	bool no_standard_libraries = false;
 	bool no_startfiles = false;
+	uint32_t wasm_stack_size = 0;
 	std::vector<Input> inputs;
 	std::vector<std::string> library_paths;
 	std::vector<std::string> exports;
@@ -286,6 +290,20 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 			invocation.preprocess_only = true;
 		else if (arg == "-nostdinc")
 			nostdinc = true;
+		else if (starts_with(arg, "-Wl,-z,stack-size="))
+		{
+			const std::string size = arg.substr(18);
+			uint64_t bytes = 0;
+			for (char digit : size)
+			{
+				if (digit < '0' || digit > '9' || bytes > 0x7fffffffu / 10)
+					throw InvocationError("invalid Wasm stack size");
+				bytes = bytes * 10 + static_cast<unsigned>(digit - '0');
+			}
+			if (bytes == 0 || bytes > 0x7fffffffu || bytes % 16 != 0)
+				throw InvocationError("Wasm stack size must be a positive multiple of 16 below 2 GiB");
+			invocation.wasm_stack_size = static_cast<uint32_t>(bytes);
+		}
 		else if (arg == "--sysroot" || starts_with(arg, "--sysroot=") || arg == "-resource-dir" ||
 			starts_with(arg, "-resource-dir="))
 		{
@@ -474,7 +492,7 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 			invocation.library_paths.push_back(invocation.sysroot + "/lib/wasm32-wasip1");
 	}
 	else if (!invocation.sysroot.empty() || !invocation.resource_directory.empty() ||
-		invocation.no_standard_libraries || invocation.no_startfiles)
+		invocation.no_standard_libraries || invocation.no_startfiles || invocation.wasm_stack_size != 0)
 		throw InvocationError("target runtime directory/options currently require a Wasm target");
 	invocation.optimizer.has_gnu_sincos = target_model::has_gnu_sincos(invocation.target);
 	// Darwin objects are position independent even without an explicit -fPIC.
@@ -916,6 +934,8 @@ int wasm_mode(const Invocation& invocation)
 	options.exceptions = invocation.preprocessor.modes.exceptions;
 	options.no_standard_libraries = invocation.no_standard_libraries;
 	options.no_startfiles = invocation.no_startfiles;
+	if (invocation.wasm_stack_size != 0)
+		options.wasm_stack_size = invocation.wasm_stack_size;
 	options.optimizer = &invocation.optimizer;
 	std::string error;
 	wasm::LinkInputs objects;

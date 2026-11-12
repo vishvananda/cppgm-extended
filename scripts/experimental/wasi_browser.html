@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Experimental WASI compiler inception</title>
+<style>
+body {font: 16px system-ui; max-width: 58rem; margin: 3rem auto; padding: 0 1rem; color: #172331; background: #f4f6f8}
+button, a {font: inherit; margin-right: .8rem} button {padding: .5rem 1rem}
+progress {width: 100%; margin: 1rem 0} pre {white-space: pre-wrap; overflow-wrap: anywhere}
+</style>
+<h1>WASI compiler inception</h1>
+<p>Experimental maintainer check. The compiler rebuilds itself twice in a dedicated browser worker and compares every object and final module with the native-built seed, byte for byte.</p>
+<button id="start">Start fresh run</button><button id="cancel" disabled>Cancel</button>
+<progress id="progress" value="0" max="818"></progress>
+<p id="status">Ready. Inputs and compiler modules are downloaded before use.</p>
+<div id="downloads"></div><pre id="log"></pre>
+<script type="module">
+const start=document.querySelector('#start'), cancel=document.querySelector('#cancel');
+const status=document.querySelector('#status'), log=document.querySelector('#log');
+const progress=document.querySelector('#progress'), downloads=document.querySelector('#downloads');
+let worker, timer, urls=[];
+function stop() {if(worker)worker.terminate();worker=null;clearTimeout(timer);start.disabled=false;cancel.disabled=true;}
+function download(name,data,type) {
+ const url=URL.createObjectURL(new Blob([data],{type}));urls.push(url);
+ const link=document.createElement('a');link.href=url;link.download=name;link.textContent=name;downloads.append(link);
+}
+start.onclick=()=>{
+ for(const url of urls)URL.revokeObjectURL(url);urls=[];downloads.replaceChildren();log.textContent='';
+ progress.value=0;start.disabled=true;cancel.disabled=false;status.textContent='Verifying frozen inputs…';
+ window.lastInceptionEvent={kind:'starting'};
+ worker=new Worker('./wasi_worker.mjs',{type:'module'});
+ timer=setTimeout(()=>{stop();status.textContent='Stopped after 60 minutes. Partial stages discarded.';window.lastInceptionEvent={kind:'error',error:'60 minute deadline exceeded'};},3600000);
+ worker.onmessage=({data})=>{
+  window.lastInceptionEvent=data.kind==='complete'?{...data,module:undefined}:data;
+  if(data.kind==='progress') {progress.max=data.total*2;progress.value=(data.stage-2)*data.total+data.index;status.textContent=`W${data.stage}: ${data.name} (${data.index+1}/${data.total})`;}
+  if(data.kind==='checking')status.textContent=`Checking ${data.name}…`;
+  if(data.kind==='stage')log.textContent+=`W${data.stage} identical: ${data.seconds.toFixed(1)}s; peak linear memory ${Math.ceil(data.peakMemoryBytes/1048576)} MiB\n`;
+  if(data.kind==='error'){stop();status.textContent='Run failed. Partial stages discarded.';log.textContent+=data.error+'\n'+data.stack;}
+  if(data.kind==='complete'){
+   stop();progress.value=progress.max;status.textContent=`Both rebuilds are byte-identical (${data.seconds.toFixed(1)}s).`;
+   download('cppgm-w3.wasm',data.module,'application/wasm');delete data.module;
+   download('inception-results.json',JSON.stringify(data,null,2)+'\n','application/json');
+  }
+ };
+ worker.onerror=event=>{stop();status.textContent='Worker failed. Partial stages discarded.';log.textContent+=event.message;window.lastInceptionEvent={kind:'error',error:event.message};};
+ worker.postMessage({});
+};
+cancel.onclick=()=>{stop();status.textContent='Cancelled. Partial stages discarded. Start a fresh run to retry.';window.lastInceptionEvent={kind:'cancelled'};};
+</script>
+</html>

@@ -8,6 +8,37 @@ bool Selector::builtin_call(const lowir::Instruction& inst, const lowir::Signatu
 	if (!inst.ops[0].is(ValueKind::Symbol))
 		return false;
 	const SymbolId symbol = inst.ops[0].index;
+	if (program_.strlen_function(symbol))
+	{
+		if (inst.extra_count != 1 || value_type(signature.result) != ValueType::I32 ||
+			!program_.parameters_of(signature)[0].type.is_pointer())
+			throw WasmError("invalid Wasm strlen builtin boundary");
+		const uint32_t begin = add_local(ValueType::I32), cursor = add_local(ValueType::I32);
+		value(body_.operands[inst.extra_first], program_.pointer_type());
+		out_.emit(Op::LocalTee, { begin });
+		out_.emit(Op::LocalSet, { cursor });
+		out_.emit(Op::Block, { block_type(ValueType::Void) });
+		out_.emit(Op::Loop, { block_type(ValueType::Void) });
+		out_.emit(Op::LocalGet, { cursor });
+		out_.emit(Op::I32Load8U, { 0, 0 });
+		out_.emit(Op::I32Eqz);
+		out_.emit(Op::BrIf, { 1 });
+		out_.emit(Op::LocalGet, { cursor });
+		out_.emit(Op::I32Const, { 1 });
+		out_.emit(Op::I32Add);
+		out_.emit(Op::LocalSet, { cursor });
+		out_.emit(Op::Br, { 0 });
+		out_.emit(Op::End);
+		out_.emit(Op::End);
+		if (!inst.type.is_void())
+		{
+			out_.emit(Op::LocalGet, { cursor });
+			out_.emit(Op::LocalGet, { begin });
+			out_.emit(Op::I32Sub);
+			out_.emit(Op::LocalSet, { locals_[inst.result] });
+		}
+		return true;
+	}
 	if (program_.trap_function(symbol))
 	{
 		if (inst.extra_count != 0 || !signature.result.is_void())

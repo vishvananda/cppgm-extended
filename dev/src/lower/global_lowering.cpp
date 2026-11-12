@@ -1,4 +1,5 @@
 #include "lower/program_lowering.h"
+#include "lex/extended_float.h"
 #include "sema/floating/binary128.h"
 
 #include <algorithm>
@@ -114,6 +115,13 @@ template<typename T>
 long double FloatingArithmetic(TokenKind op, long double left, long double right)
 {
 	const T a = static_cast<T>(left), b = static_cast<T>(right);
+#ifdef __wasi__
+	return CalculateIeeeFloat(op == TokenKind::OP_PLUS ? '+'
+			: op == TokenKind::OP_MINUS                ? '-'
+			: op == TokenKind::OP_STAR                 ? '*'
+													   : '/',
+		a, b);
+#else
 	T result;
 	switch (op)
 	{
@@ -131,6 +139,7 @@ long double FloatingArithmetic(TokenKind op, long double left, long double right
 		break;
 	}
 	return result;
+#endif
 }
 
 lowir::Constant IntegerConstant(uint64_t bits)
@@ -234,7 +243,7 @@ ProgramLowering::StaticOutcome ProgramLowering::static_global(lowir::SymbolId sy
 		}
 		// Null pointers to data members are -1 (8.5p5, Itanium 2.3).
 		null_member_pointers(type, data);
-		PreserveStaticOffsets(data);
+		PreserveStaticOffsets(data, program_.pointer_type().pointer_bytes());
 		global.typed = false;
 		global.init = lowir::GlobalInit::Data;
 		global.first_item = static_cast<uint32_t>(program_.data_items.size());
@@ -1233,7 +1242,7 @@ bool ProgramLowering::define_reference(lowir::Global& global, const sema::Variab
 									: !static_element(object, *single, data))
 				return false;
 			null_member_pointers(object, data);
-			PreserveStaticOffsets(data);
+			PreserveStaticOffsets(data, program_.pointer_type().pointer_bytes());
 		}
 		else
 		{
@@ -2053,7 +2062,7 @@ bool ProgramLowering::static_item(const sema::Type* type, const StaticValue& val
 		return true;
 	case StaticValue::Kind::Null:
 		item.kind = lowir::DataItemKind::Zero;
-		item.amount = 8;
+		item.amount = target_model::data_layout(program_.target).pointer_bytes;
 		return true;
 	case StaticValue::Kind::Floating:
 		item.kind = lowir::DataItemKind::Scalar;
@@ -2350,7 +2359,15 @@ bool ProgramLowering::static_value(const syntax::Expr& expr, StaticValue& out, b
 			out.floating = static_cast<double>(FloatingArithmetic<double>(binary->op, left.floating, right.floating));
 			break;
 		default:
+#ifdef __wasi__
+			out.floating = CalculateExtended80(binary->op == TokenKind::OP_PLUS ? '+'
+					: binary->op == TokenKind::OP_MINUS                         ? '-'
+					: binary->op == TokenKind::OP_STAR                          ? '*'
+																				: '/',
+				left.floating, right.floating);
+#else
 			out.floating = FloatingArithmetic<long double>(binary->op, left.floating, right.floating);
+#endif
 			break;
 		}
 		return true;

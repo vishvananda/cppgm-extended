@@ -1,5 +1,6 @@
 #include "wasm/object_reader.h"
 
+#include <algorithm>
 #include <map>
 #include "wasm/validation.h"
 
@@ -60,7 +61,9 @@ void decode_object_chunk(const ObjectChunk& chunk, const Signature& signature, c
 			throw WasmError("invalid or excessive Wasm local declarations");
 		function.locals.insert(function.locals.end(), count, type);
 	}
-	std::map<uint32_t, CodeField> fields;
+	// Decoding visits each immediate once, in increasing byte-offset order.
+	std::vector<std::pair<uint32_t, CodeField>> fields;
+	fields.reserve(chunk.relocations.size());
 	while (!input.empty())
 	{
 		unsigned opcode = input.byte();
@@ -72,9 +75,9 @@ void decode_object_chunk(const ObjectChunk& chunk, const Signature& signature, c
 			opcode = (opcode << 8) | suffix;
 		}
 		const Op op = static_cast<Op>(opcode);
-		if (*spelling(op) == '\0')
-			throw WasmError("unsupported opcode in Wasm object function");
 		const Immediate form = immediate_form(op);
+		if (form == Immediate::Invalid)
+			throw WasmError("unsupported opcode " + std::to_string(opcode) + " in Wasm object function");
 		const uint32_t first = static_cast<uint32_t>(function.operands.size());
 		if (form == Immediate::TryTable)
 		{
@@ -82,7 +85,7 @@ void decode_object_chunk(const ObjectChunk& chunk, const Signature& signature, c
 			const int64_t type = input.signed_leb(33);
 			function.operands.push_back(static_cast<uint64_t>(type));
 			if (type >= 0)
-				fields.emplace(offset, CodeField{ RelocationKind::TypeIndex, first });
+				fields.push_back({ offset, CodeField{ RelocationKind::TypeIndex, first } });
 			const uint32_t catches = input.u32();
 			function.operands.push_back(catches);
 			for (uint32_t i = 0; i < catches; ++i)
@@ -96,7 +99,7 @@ void decode_object_chunk(const ObjectChunk& chunk, const Signature& signature, c
 					const uint32_t field = input.position();
 					const uint32_t operand = static_cast<uint32_t>(function.operands.size());
 					function.operands.push_back(input.u32());
-					fields.emplace(field, CodeField{ RelocationKind::TagIndex, operand });
+					fields.push_back({ field, CodeField{ RelocationKind::TagIndex, operand } });
 				}
 				function.operands.push_back(input.u32());
 			}
@@ -133,7 +136,7 @@ void decode_object_chunk(const ObjectChunk& chunk, const Signature& signature, c
 				value = input.u32();
 			const uint32_t operand = static_cast<uint32_t>(function.operands.size());
 			function.operands.push_back(value);
-			const auto field = [&](RelocationKind kind) { fields.emplace(offset, CodeField{ kind, operand }); };
+			const auto field = [&](RelocationKind kind) { fields.push_back({ offset, CodeField{ kind, operand } }); };
 			if (op == Op::I32Const)
 				field(RelocationKind::MemoryAddressSigned);
 			else if ((form == Immediate::Memory || form == Immediate::MemoryLane) && i == 1)
@@ -156,8 +159,10 @@ void decode_object_chunk(const ObjectChunk& chunk, const Signature& signature, c
 	}
 	for (const Relocation& relocation : chunk.relocations)
 	{
-		const auto found = fields.find(relocation.offset);
-		if (found == fields.end() || !compatible(relocation.kind, found->second.kind))
+		const auto found = std::lower_bound(fields.begin(), fields.end(), relocation.offset,
+			[](const std::pair<uint32_t, CodeField>& field, uint32_t offset) { return field.first < offset; });
+		if (found == fields.end() || found->first != relocation.offset || found->second.operand == lowir::kNoId ||
+			!compatible(relocation.kind, found->second.kind))
 			throw WasmError("Wasm code relocation does not match an instruction operand");
 		uint64_t& operand = function.operands[found->second.operand];
 		if (relocation.kind == RelocationKind::TypeIndex)
@@ -174,10 +179,10 @@ void decode_object_chunk(const ObjectChunk& chunk, const Signature& signature, c
 			operand = 0;
 		else if (relocation.kind == RelocationKind::TagIndex)
 			operand = object.symbols[relocation.index].index;
-		fields.erase(found);
+		found->second.operand = lowir::kNoId;
 	}
 	for (const auto& field : fields)
-		if (!declaration &&
+		if (!declaration && field.second.operand != lowir::kNoId &&
 			(field.second.kind == RelocationKind::FunctionIndex || field.second.kind == RelocationKind::TypeIndex ||
 				field.second.kind == RelocationKind::GlobalIndex || field.second.kind == RelocationKind::TagIndex))
 			throw WasmError("Wasm object index operand lacks a relocation");
@@ -249,8 +254,15 @@ void validate_object_code(const Object& object)
 		if (!source.imported)
 		{
 			Function function;
-			decode_object_chunk(source.code, object.types[source.type], object, globals, function);
-			validate_function(function, object.types[source.type], module);
+			try
+			{
+				decode_object_chunk(source.code, object.types[source.type], object, globals, function);
+				validate_function(function, object.types[source.type], module);
+			}
+			catch (const WasmError& failure)
+			{
+				throw WasmError(object.path + " (" + source.name + "): " + failure.what());
+			}
 		}
 }
 

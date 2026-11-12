@@ -1503,8 +1503,10 @@ void FunctionSelector::install_splits(
 	ra_range_first_.swap(range_first);
 	ra_range_block_.swap(range_block);
 	ra_ranges_.swap(ranges);
-	std::sort(split_moves_.begin(), split_moves_.end(),
-		[](const SplitMove& a, const SplitMove& b) { return a.from != b.from ? a.from < b.from : a.to < b.to; });
+	std::sort(split_moves_.begin(), split_moves_.end(), [](const SplitMove& a, const SplitMove& b) {
+		// Moves on one edge also determine frame-home allocation order.
+		return a.from != b.from ? a.from < b.from : a.to != b.to ? a.to < b.to : a.temp < b.temp;
+	});
 }
 
 // Candidate c's register for its ranges [first, past): one no instruction

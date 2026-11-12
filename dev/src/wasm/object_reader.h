@@ -5,6 +5,7 @@
 
 namespace wasm {
 
+Bytes read_link_file(const std::string& path);
 void read_object_bytes(const Bytes& bytes, Object& object);
 void read_linking(Cursor& input, Object& object);
 void read_relocations(Cursor& input, Object& object, uint8_t section);

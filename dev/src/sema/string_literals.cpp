@@ -1,6 +1,7 @@
 #include "sema/string_literals.h"
 
 #include "lex/text_literal.h"
+#include "lex/extended_float.h"
 #include "support/unicode/utf8.h"
 #include "syntax/ast.h"
 #include "sema/semantic_types.h"
@@ -104,9 +105,13 @@ long double BuiltinNan(FundamentalType type, const syntax::Expr& text)
 	std::memcpy(bytes, &significand, 8);
 	const uint16_t sign_exponent = 0x7fff;
 	std::memcpy(bytes + 8, &sign_exponent, 2);
+#ifdef __wasi__
+	return LoadExtended80(bytes);
+#else
 	long double value;
 	std::memcpy(&value, bytes, sizeof value);
 	return value;
+#endif
 }
 
 long double BuiltinSignalingNan(FundamentalType type, const syntax::Expr& text)
@@ -118,9 +123,13 @@ long double BuiltinSignalingNan(FundamentalType type, const syntax::Expr& text)
 	std::memcpy(bytes, &significand, 8);
 	const uint16_t sign_exponent = 0x7fff;
 	std::memcpy(bytes + 8, &sign_exponent, 2);
+#ifdef __wasi__
+	return LoadExtended80(bytes);
+#else
 	long double value;
 	std::memcpy(&value, bytes, sizeof value);
 	return value;
+#endif
 }
 
 uint64_t BuiltinNanPayload(const syntax::Expr& text)

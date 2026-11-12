@@ -1743,7 +1743,7 @@ lowir::BlockId FunctionLowering::cleanup_terminate(bool shared)
 	// the scopes' objects, one for each other destruction), placed after
 	// the block that made it. A host object's landing is installed under
 	// one state of the enclosing regions: each destruction has its own.
-	shared = shared && !lowering_.object_mode();
+	shared = shared && !lowering_.object_mode() && program_.exception_abi != lowir::ExceptionAbi::Cxx;
 	if (shared && lexical_terminate_ != lowir::kNoId)
 		return lexical_terminate_;
 	const lowir::BlockId block = new_block(lowir::BlockKind::LexicalCleanupTerminate);

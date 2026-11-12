@@ -8,6 +8,7 @@
 #include <string>
 
 #include "lex/number_literal.h"
+#include "lex/extended_float.h"
 #include "sema/analyzer.h"
 #include "sema/aggregates.h"
 #include "sema/integral_arithmetic.h"
@@ -115,6 +116,10 @@ long double InPrecision(long double value, const Type* type)
 		return static_cast<double>(value);
 	case FundamentalType::BFloat16:
 		return BFloatRounded(value);
+#ifdef __wasi__
+	case FundamentalType::LongDouble:
+		return RoundExtended80(value);
+#endif
 	default:
 		return value;
 	}
@@ -504,7 +509,11 @@ bool ConstantInterpreter::literal(const syntax::LiteralExpr& expr, ConstValue& o
 		value = scanned;
 	}
 	else
+#ifdef __wasi__
+		value = LoadExtended80(bytes);
+#else
 		std::memcpy(&value, bytes, sizeof value);
+#endif
 	out = FloatingValue(type, value);
 	return true;
 }
@@ -1201,7 +1210,16 @@ bool ConstantInterpreter::floating_operation(
 		defined = defined && !std::isinf(out);
 		break;
 	default:
+#ifdef __wasi__
+		out = CalculateExtended80(op == TokenKind::OP_PLUS ? '+'
+				: op == TokenKind::OP_MINUS                ? '-'
+				: op == TokenKind::OP_STAR                 ? '*'
+														   : '/',
+			left, right);
+		defined = std::isfinite(out) && (op != TokenKind::OP_DIV || right != 0);
+#else
 		defined = FloatingStep<long double>(op, left, right, out);
+#endif
 		break;
 	}
 	return defined || fail(location, "a floating operation with an undefined result");
@@ -1919,7 +1937,11 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 		// The x87 value's quiet bit (significand bit 62), which a
 		// signaling NaN constant keeps (BuiltinSignalingNan).
 		unsigned char bytes[sizeof(long double)] = {};
+#ifdef __wasi__
+		StoreExtended80(v, bytes);
+#else
 		std::memcpy(bytes, &v, sizeof v);
+#endif
 		uint64_t significand = 0;
 		std::memcpy(&significand, bytes, 8);
 		result = nan && (encoded ? ((quad.high >> 47) & 1) == 0 : ((significand >> 62) & 1) == 0);

@@ -20,7 +20,9 @@
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
+#if CPPGM_TELEMETRY_ENABLED
 #include <sys/resource.h>
+#endif
 #include <fstream>
 #include <iostream>
 #include <stdexcept>

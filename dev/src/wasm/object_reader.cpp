@@ -1,8 +1,5 @@
 #include "wasm/object_reader.h"
 
-#include <fstream>
-#include <iterator>
-
 namespace wasm {
 
 namespace {
@@ -177,12 +174,7 @@ void data(Cursor& input, Object& object)
 void read_object(const std::string& path, Object& object)
 {
 	object.path = path;
-	std::ifstream file(path, std::ios::binary);
-	if (!file)
-		throw WasmError("cannot read Wasm object: " + path);
-	Bytes bytes;
-	bytes.data.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
-	read_object_bytes(bytes, object);
+	read_object_bytes(read_link_file(path), object);
 }
 
 static void parse_object_bytes(const Bytes& bytes, Object& object)

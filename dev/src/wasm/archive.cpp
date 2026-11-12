@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <fstream>
-#include <iterator>
 #include <sys/stat.h>
 
 namespace wasm {
@@ -87,6 +86,27 @@ void archive(const Bytes& bytes, const std::string& path, std::vector<Object>& o
 
 } // namespace
 
+Bytes read_link_file(const std::string& path)
+{
+	std::ifstream file(path, std::ios::binary);
+	if (!file)
+		throw WasmError("cannot read Wasm link input: " + path);
+	Bytes bytes;
+	struct stat status;
+	if (::stat(path.c_str(), &status) == 0 && S_ISREG(status.st_mode) && status.st_size > 0)
+		bytes.data.reserve(static_cast<size_t>(status.st_size));
+	char chunk[65536];
+	while (file)
+	{
+		file.read(chunk, sizeof chunk);
+		const std::streamsize count = file.gcount();
+		bytes.data.insert(bytes.data.end(), chunk, chunk + count);
+	}
+	if (file.bad() || !file.eof())
+		throw WasmError("cannot read Wasm link input: " + path);
+	return bytes;
+}
+
 void read_link_inputs(const std::string& path, LinkInputs& inputs, bool once)
 {
 	struct stat status;
@@ -98,11 +118,7 @@ void read_link_inputs(const std::string& path, LinkInputs& inputs, bool once)
 		return;
 	inputs.files.push_back(identity);
 	auto& objects = inputs.objects;
-	std::ifstream file(path, std::ios::binary);
-	if (!file)
-		throw WasmError("cannot read Wasm link input: " + path);
-	Bytes bytes;
-	bytes.data.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+	const Bytes bytes = read_link_file(path);
 	const std::string magic(bytes.data.begin(), bytes.data.begin() + std::min<size_t>(8, bytes.data.size()));
 	if (magic == "!<arch>\n")
 		archive(bytes, path, objects);

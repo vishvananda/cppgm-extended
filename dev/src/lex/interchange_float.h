@@ -14,6 +14,9 @@ struct InterchangeFormat
 extern const InterchangeFormat kBinary16;
 extern const InterchangeFormat kBinary128;
 extern const InterchangeFormat kBFloat16;
+#ifdef __wasi__
+extern const InterchangeFormat kExtended80;
+#endif
 
 // Scans the value of a floating literal from `text`, its decimal or
 // hexadecimal spelling without the floating-suffix, rounded once to the

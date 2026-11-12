@@ -126,7 +126,8 @@ void FunctionLowering::initializer_list_object(const syntax::BracedInitList& lis
 	values[0].type = pointer;
 	if (empty)
 		values[0] = integer(pointer, 0);
-	values[1] = integer(i64, array->bound);
+	values[1] = integer(
+		lowering_.storage_type(static_cast<const sema::VariableEntity*>(second->variable)->type), array->bound);
 	for (unsigned i = 0; i < 2; ++i)
 	{
 		Place member = Place();

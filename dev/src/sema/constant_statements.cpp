@@ -7,6 +7,8 @@
 #include <string>
 
 #include "lex/number_literal.h"
+#include "lex/identifier_table.h"
+#include "lex/extended_float.h"
 #include "lex/text_literal.h"
 #include "sema/analyzer.h"
 #include "sema/constant_memo.h"
@@ -343,7 +345,11 @@ bool ConstantInterpreter::user_literal(const syntax::LiteralExpr& expr, Result& 
 			}
 			else
 			{
+#ifdef __wasi__
+				value = LoadExtended80(bytes);
+#else
 				std::memcpy(&value, bytes, sizeof value);
+#endif
 				argument.value = FloatingValue(parameter, value);
 			}
 		}
@@ -406,7 +412,29 @@ bool ConstantInterpreter::call_place(const syntax::Expr& expr, ConstPlace& out)
 
 bool ConstantInterpreter::constexpr_candidate(const FunctionEntity* function)
 {
-	return function->is_constexpr || function->implicit || (function->defaulted && function->member);
+	if (function->is_constexpr || function->implicit || (function->defaulted && function->member))
+		return true;
+	// Clang permits the standard addressof wrapper in constant expressions
+	// before C++17 too; libc++ uses that extension in its C++11 headers.
+	// Its ordinary body still supplies the operation and must be available.
+	if (function->name == nullptr || std::strcmp(function->name->spelling, "addressof") != 0)
+		return false;
+	const Type* type = function->type->canonical;
+	if (type->param_count != 1 || type->params[0]->kind != TypeKind::LValueReference ||
+		type->element->kind != TypeKind::Pointer || type->element->element != type->params[0]->element)
+		return false;
+	for (const Scope* scope = function->owner; scope != nullptr && scope->kind == ScopeKind::Namespace;
+		scope = scope->parent)
+	{
+		const auto* space = static_cast<const NamespaceEntity*>(scope->entity);
+		if (space == nullptr)
+			return false;
+		if (space->name != nullptr && std::strcmp(space->name->spelling, "std") == 0)
+			return scope->parent != nullptr && scope->parent->parent == nullptr;
+		if (!space->is_inline)
+			return false;
+	}
+	return false;
 }
 
 bool ConstantInterpreter::evaluable(const FunctionEntity* function, uint32_t location)

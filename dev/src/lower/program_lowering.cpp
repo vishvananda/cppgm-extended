@@ -340,7 +340,7 @@ void ProgramLowering::finish()
 	// one would link as address 0); only the references Itanium makes weak
 	// stay so (thread-local entries, weak_references_), as do explicit
 	// GNU weak declarations, distinguished by their replaceable flag.
-	if (object_mode_)
+	if (object_mode_ || target_model::is_wasm(program_.target))
 	{
 		for (lowir::Symbol& symbol : program_.symbols)
 		{

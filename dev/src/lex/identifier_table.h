@@ -10,8 +10,9 @@ struct MacroDefinition;
 
 // An interned identifier. There is one record per distinct spelling in a
 // translation unit, so identifiers compare by address. The spelling is
-// null-terminated and lives as long as the table's arena.
-struct Identifier
+// null-terminated and lives as long as the table's arena. Placeholder keys
+// distinguish these addresses from tags using their three low bits.
+struct alignas(8) Identifier
 {
 	const char* spelling;
 	uint32_t length;

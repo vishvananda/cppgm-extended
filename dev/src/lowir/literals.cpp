@@ -1,4 +1,8 @@
 #include "lowir/literals.h"
+#include "lex/extended_float.h"
+#ifdef __wasi__
+#include "lex/interchange_float.h"
+#endif
 
 #include <algorithm>
 #include <cfloat>
@@ -9,7 +13,9 @@
 
 namespace lowir {
 
+#ifndef __wasi__
 static_assert(sizeof(long double) == 16 && LDBL_MANT_DIG == 64, "x87 extended long double");
+#endif
 
 namespace {
 
@@ -140,7 +146,11 @@ bool reads_back(TypeKind kind, const char* text, long double value)
 			static_cast<float>(std::strtod(text, nullptr)) == static_cast<float>(value);
 	if (kind == TypeKind::F64)
 		return std::strtod(text, nullptr) == static_cast<double>(value);
+#ifdef __wasi__
+	return RoundExtended80(std::strtold(text, nullptr)) == value;
+#else
 	return std::strtold(text, nullptr) == value;
+#endif
 }
 
 } // namespace
@@ -208,6 +218,16 @@ bool scan_float_literal(const char* text, uint32_t length, bool negative, TypeKi
 	}
 	kind = float_rank(context) != 0 ? context : written;
 	scratch.assign(text, digits);
+#ifdef __wasi__
+	if (kind == TypeKind::F80)
+	{
+		if (!ScanInterchangeValue(scratch.data(), scratch.size(), kExtended80, bits.low, bits.high))
+			return false;
+		if (negative)
+			set_sign(kind, bits);
+		return true;
+	}
+#endif
 	char* end = nullptr;
 	long double value;
 	if (kind == TypeKind::F32)
@@ -266,7 +286,11 @@ Literal float_literal(TypeKind kind, long double value)
 		// of its x87 significand (a hardware conversion would quiet a
 		// signaling one); one left with no fraction bit is quiet.
 		unsigned char bytes[sizeof(long double)];
+#ifdef __wasi__
+		StoreExtended80(value, bytes);
+#else
 		std::memcpy(bytes, &value, sizeof value);
+#endif
 		uint64_t significand;
 		uint16_t sign_exponent;
 		std::memcpy(&significand, bytes, 8);
@@ -295,7 +319,11 @@ Literal float_literal(TypeKind kind, long double value)
 	else
 	{
 		unsigned char bytes[sizeof(long double)];
+#ifdef __wasi__
+		StoreExtended80(value, bytes);
+#else
 		std::memcpy(bytes, &value, sizeof value);
+#endif
 		std::memcpy(&bits.low, bytes, 8);
 		uint16_t sign_exponent;
 		std::memcpy(&sign_exponent, bytes + 8, 2);
@@ -323,9 +351,13 @@ long double float_value(TypeKind kind, const Literal& bits)
 	std::memcpy(bytes, &bits.low, 8);
 	const uint16_t sign_exponent = static_cast<uint16_t>(bits.high);
 	std::memcpy(bytes + 8, &sign_exponent, 2);
+#ifdef __wasi__
+	return LoadExtended80(bytes);
+#else
 	long double value;
 	std::memcpy(&value, bytes, sizeof value);
 	return value;
+#endif
 }
 
 Literal integer_as_float(TypeKind kind, const Literal& bits, bool negative_zero)
@@ -335,8 +367,12 @@ Literal integer_as_float(TypeKind kind, const Literal& bits, bool negative_zero)
 	const bool negative = (bits.high >> 63) != 0;
 	if (negative)
 		negate(magnitude);
+#ifdef __wasi__
+	long double value = IntegerExtended80(magnitude.low, magnitude.high, false);
+#else
 	long double value = static_cast<long double>(magnitude.high) * 18446744073709551616.0L +
 		static_cast<long double>(magnitude.low);
+#endif
 	if (negative || (negative_zero && value == 0))
 		value = -value;
 	return float_literal(kind, value);
@@ -419,6 +455,21 @@ void append_float_literal(std::string& out, TypeKind kind, const Literal& bits, 
 	{
 		// A subnormal value as exact hexadecimal floating text: its decimal
 		// reads back only with an underflow the reference reader rejects.
+#ifdef __wasi__
+		if (kind == TypeKind::F80)
+		{
+			// Keep the x87 printf spelling even on a binary128 host.
+			char digits[17];
+			std::snprintf(digits, sizeof digits, "%016llx", static_cast<unsigned long long>(bits.low));
+			unsigned count = 16;
+			while (count > 1 && digits[count - 1] == '0')
+				--count;
+			length = std::snprintf(buffer, sizeof buffer, "%s0x%c%s%.*sp%dL", negative ? "-" : "", digits[0],
+				count > 1 ? "." : "", static_cast<int>(count - 1), digits + 1, -16385);
+			out.append(buffer, static_cast<size_t>(length));
+			return;
+		}
+#endif
 		length = kind == TypeKind::F80 ? std::snprintf(buffer, sizeof buffer, "%La", value)
 									   : std::snprintf(buffer, sizeof buffer, "%a", static_cast<double>(value));
 	}

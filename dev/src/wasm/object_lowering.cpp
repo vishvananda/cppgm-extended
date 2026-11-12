@@ -41,10 +41,76 @@ ObjectSymbol imported_symbol(uint8_t kind, uint32_t index, const char* name)
 	return symbol;
 }
 
+// A constant's declaration can survive after all its uses folded. Wasm
+// linking cannot encode an undefined local symbol; omit it when no typed
+// reference remains, while retaining a referenced one for the diagnostic.
+void discard_unused_local_declarations(lowir::Program& program)
+{
+	using namespace lowir;
+	bool any = false;
+	for (SymbolId id : program.order)
+	{
+		const Symbol& s = program.symbols[id];
+		any = any ||
+			(s.metadata.binding == ir_model::SBM_INTERNAL &&
+				(s.kind == SymbolKind::FunctionDeclaration || s.kind == SymbolKind::GlobalDeclaration));
+	}
+	if (!any)
+		return;
+	std::vector<uint8_t> used(program.symbols.size(), 0);
+	auto mark = [&](Value value) {
+		if (value.kind == ValueKind::Symbol)
+			used[value.index] = 1;
+	};
+	for (SymbolId id : program.order)
+	{
+		const Symbol& s = program.symbols[id];
+		if (s.kind == SymbolKind::FunctionDefinition)
+		{
+			const FunctionBody& body = *program.functions[s.detail].body;
+			for (BlockId block : body.layout)
+				for (InstId i = body.blocks[block].first; i != kNoId; i = body.instructions[i].next)
+				{
+					const lowir::Instruction& inst = body.instructions[i];
+					for (Value value : inst.ops)
+						mark(value);
+					for (uint32_t j = 0; j < inst.extra_count; ++j)
+						mark(body.operands[inst.extra_first + j]);
+				}
+		}
+		if (s.kind == SymbolKind::GlobalDefinition)
+		{
+			const Global& global = program.globals[s.detail];
+			if (global.init == GlobalInit::Address)
+				used[global.address] = 1;
+			for (uint32_t j = 0; global.init == GlobalInit::Data && j < global.item_count; ++j)
+			{
+				const DataItem& item = program.data_items[global.first_item + j];
+				if (item.kind == DataItemKind::Address)
+					used[item.address] = 1;
+			}
+		}
+	}
+	for (const ObjectAlias& alias : program.aliases)
+		used[alias.target] = 1;
+	for (const FunctionBinding& binding : program.function_bindings)
+		used[binding.symbol] = 1;
+	size_t count = 0;
+	for (SymbolId id : program.order)
+	{
+		const Symbol& s = program.symbols[id];
+		if (used[id] || s.metadata.binding != ir_model::SBM_INTERNAL ||
+			(s.kind != SymbolKind::FunctionDeclaration && s.kind != SymbolKind::GlobalDeclaration))
+			program.order[count++] = id;
+	}
+	program.order.resize(count);
+}
+
 } // namespace
 
 void make_object(lowir::Program& program, const backend::Options& options, Object& object, std::string& dump)
 {
+	discard_unused_local_declarations(program);
 	bool uses_table = false;
 	Module module;
 	module.relocatable = true;
@@ -56,6 +122,7 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 	object.memory_count = 1;
 	object.types = module.signatures;
 	object.functions.resize(module.definition_types.size());
+	std::vector<uint32_t> function_symbols(object.functions.size(), lowir::kNoId);
 	std::vector<uint32_t> symbols(program.symbols.size() + (module.tag_types.empty() ? 3 : 4), lowir::kNoId);
 	std::vector<uint32_t> groups(program.symbols.size(), lowir::kNoId);
 	for (lowir::SymbolId id : program.order)
@@ -73,6 +140,16 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 		if (lowir::is_function_kind(source.kind))
 		{
 			symbol.index = module.function_indices[id];
+			if (function_symbols[symbol.index] != lowir::kNoId)
+			{
+				symbols[id] = function_symbols[symbol.index];
+				ObjectSymbol& previous = object.symbols[symbols[id]];
+				if (!symbol.weak())
+					previous.flags &= ~1u;
+				previous.flags |= symbol.flags & 0x80;
+				continue;
+			}
+			function_symbols[symbol.index] = static_cast<uint32_t>(object.symbols.size());
 			ObjectFunction& function = object.functions[symbol.index];
 			function.type = module.definition_types[symbol.index];
 			function.name = symbol.name;
@@ -129,6 +206,10 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 		ObjectFunction& function = object.functions[symbol.index];
 		if (binding.imported)
 		{
+			if ((symbol.flags & 0x40) != 0 &&
+				(function.module != program.spelling(binding.module) ||
+					function.name != program.spelling(binding.name)))
+				throw WasmError("conflicting Wasm imports for one object function");
 			function.module = program.spelling(binding.module);
 			function.name = program.spelling(binding.name);
 			symbol.flags |= 0x40;

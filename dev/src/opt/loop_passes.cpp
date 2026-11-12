@@ -663,7 +663,8 @@ bool LoopPass::bypass(uint32_t loop, const ExitTest& test)
 
 SymbolId LoopPass::fill_symbol()
 {
-	const Type types[3] = { body_.pointer_type(), Type::scalar(TypeKind::I32), Type::scalar(TypeKind::I64) };
+	const Type size = Type::scalar(body_.pointer_bytes == 4 ? TypeKind::I32 : TypeKind::I64);
+	const Type types[3] = { body_.pointer_type(), Type::scalar(TypeKind::I32), size };
 	return builtin_symbol("__cppgm_builtin_memset", "cppgm_builtin_memset", types, 3);
 }
 
@@ -826,7 +827,8 @@ void LoopPass::emit_copy(uint32_t loop, const Induction& src, const Induction& d
 	// The copy block.
 	const BlockId copy = append_block(body_, BlockKind::LoopCopy);
 	InstId in_copy = kNoId;
-	const Type types[3] = { ptr, ptr, i64 };
+	const Type size = Type::scalar(body_.pointer_bytes == 4 ? TypeKind::I32 : TypeKind::I64);
+	const Type types[3] = { ptr, ptr, size };
 	Instruction call = make_instruction(Opcode::Call, ptr);
 	call.ops[0] = Value::symbol(builtin_symbol("__cppgm_builtin_memmove", "cppgm_builtin_memmove", types, 3));
 	const Value args[3] = { dst.init, src.init, bytes };

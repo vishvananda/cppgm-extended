@@ -65,7 +65,8 @@ struct CompoundStmt : Stmt
 {
 	CompoundItems items;
 };
-static_assert(sizeof(CompoundItems) == sizeof(Slice<Stmt*>), "compound locations reuse slice padding");
+static_assert(sizeof(void*) == 4 || sizeof(CompoundItems) == sizeof(Slice<Stmt*>),
+	"compound locations reuse 64-bit slice padding");
 
 struct ExpressionStmt : Stmt
 {

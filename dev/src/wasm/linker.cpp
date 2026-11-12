@@ -334,7 +334,9 @@ void Linker::collect()
 		end += data.contents.bytes.data.size();
 	}
 	stack_floor_ = static_cast<uint32_t>((end + 15) & ~uint64_t(15));
-	stack_top_ = stack_floor_ + 1024 * 1024;
+	if (uint64_t(stack_floor_) + options_.wasm_stack_size > 0x80000000ull)
+		throw WasmError("Wasm linked data and stack exceed the supported memory range");
+	stack_top_ = stack_floor_ + options_.wasm_stack_size;
 	if (needs_ctors_ || !initializers_.empty())
 		ctor_index_ = static_cast<uint32_t>(ordered_functions_.size());
 }

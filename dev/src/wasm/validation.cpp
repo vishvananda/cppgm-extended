@@ -714,10 +714,10 @@ void Validator::run()
 	{
 		if (controls_.empty())
 			throw WasmError("Wasm instruction after function end");
-		if (*spelling(inst.op) == '\0' ||
+		const Immediate form = immediate_form(inst.op);
+		if (form == Immediate::Invalid ||
 			uint64_t(inst.operands.first) + inst.operands.count > function_.operands.size())
 			throw WasmError("invalid Wasm instruction operands");
-		const Immediate form = immediate_form(inst.op);
 		if (form == Immediate::Table          ? inst.operands.count == 0
 				: form == Immediate::TryTable ? inst.operands.count < 2
 											  : inst.operands.count != operand_count(form))

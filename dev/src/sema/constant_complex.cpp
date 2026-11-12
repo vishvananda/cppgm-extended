@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstring>
 
+#include "lex/extended_float.h"
+
 #include "sema/analyzer.h"
 #include "sema/integral_arithmetic.h"
 
@@ -137,7 +139,13 @@ namespace {
 bool SignalingNan(long double value)
 {
 	uint64_t significand = 0;
+#ifdef __wasi__
+	unsigned char bytes[16];
+	StoreExtended80(value, bytes);
+	std::memcpy(&significand, bytes, sizeof significand);
+#else
 	std::memcpy(&significand, &value, sizeof significand);
+#endif
 	return std::isnan(value) && (significand >> 62 & 1) == 0;
 }
 

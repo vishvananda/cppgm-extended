@@ -1295,6 +1295,9 @@ void DefinitionStream::append(const Program& program, SymbolId function)
 	starts_.push_back(spilled_ + buffer_.size());
 	Writer writer(program, buffer_);
 	writer.function_definition(program.symbols[function]);
+	// Preview 1 has no anonymous temporary files. Its host retains the
+	// optional textual IR in memory until the output is written.
+#ifndef __wasi__
 	if (buffer_.size() < kFlushBytes)
 		return;
 	if (spill_ == nullptr)
@@ -1302,6 +1305,7 @@ void DefinitionStream::append(const Program& program, SymbolId function)
 	failed_ = failed_ || spill_ == nullptr || std::fwrite(buffer_.data(), 1, buffer_.size(), spill_) != buffer_.size();
 	spilled_ += buffer_.size();
 	buffer_.clear();
+#endif
 }
 
 bool DefinitionStream::copy_range(std::FILE* file, uint64_t first, uint64_t last)

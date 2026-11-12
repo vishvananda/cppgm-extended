@@ -1,13 +1,22 @@
 #include "lex/interchange_float.h"
+#include "lex/extended_float.h"
 
 #include <cstddef>
 #include <vector>
+#include <utility>
+#ifdef __wasi__
+#include <cmath>
+#include <cstring>
+#endif
 
 #include "preprocess/lexer/char_classes.h"
 
 const InterchangeFormat kBinary16 = { 11, 15 };
 const InterchangeFormat kBinary128 = { 113, 16383 };
 const InterchangeFormat kBFloat16 = { 8, 127 };
+#ifdef __wasi__
+const InterchangeFormat kExtended80 = { 64, 16383 };
+#endif
 
 namespace {
 
@@ -193,6 +202,14 @@ bool RoundToFormat(
 	// sign 0, the biased exponent, then the fraction (M without its
 	// hidden bit).
 	const unsigned fraction = static_cast<unsigned>(p - 1);
+#ifdef __wasi__
+	if (p == 64)
+	{
+		low = m.low;
+		high = static_cast<uint64_t>(biased);
+		return true;
+	}
+#endif
 	if (fraction < 64)
 	{
 		low = (m.low & ((uint64_t(1) << fraction) - 1)) | (static_cast<uint64_t>(biased) << fraction);
@@ -209,7 +226,11 @@ bool RoundToFormat(
 // Sets the format's sign bit.
 void Negate(const InterchangeFormat& format, uint64_t& low, uint64_t& high)
 {
-	const unsigned sign = format.precision == 113 ? 127 : 15;
+	const unsigned sign = format.precision == 113 ? 127
+#ifdef __wasi__
+		: format.precision == 64 ? 79
+#endif
+								 : 15;
 	if (sign < 64)
 		low |= uint64_t(1) << sign;
 	else
@@ -369,3 +390,196 @@ bool ScanInterchangeValue(
 
 	return RoundToFormat(num, den, shift, format, low, high);
 }
+
+#ifdef __wasi__
+namespace {
+using ExtendedWide = unsigned __int128;
+const uint64_t kExtendedInteger = uint64_t(1) << 63;
+
+long double ExtendedBits(uint64_t low, uint64_t high)
+{
+	unsigned char bytes[16] = {};
+	std::memcpy(bytes, &low, 8);
+	std::memcpy(bytes + 8, &high, 8);
+	return LoadExtended80(bytes);
+}
+
+long double ExtendedRounded(bool negative, ExtendedWide magnitude, int64_t exponent)
+{
+	uint64_t low = 0, high = 0;
+	if (!RoundInterchangeValue(negative, static_cast<uint64_t>(magnitude), static_cast<uint64_t>(magnitude >> 64),
+			exponent, kExtended80, low, high))
+	{
+		low = kExtendedInteger;
+		high = (negative ? 0x8000 : 0) | 0x7fff;
+	}
+	return ExtendedBits(low, high);
+}
+
+ExtendedWide ExtendedShiftJam(ExtendedWide value, unsigned shift)
+{
+	if (shift == 0)
+		return value;
+	if (shift >= 128)
+		return value != 0;
+	return (value >> shift) | ((value & ((ExtendedWide(1) << shift) - 1)) != 0);
+}
+
+long double ExtendedNaN(long double left, long double right)
+{
+	uint64_t significand[2];
+	uint16_t exponent[2];
+	bool nan[2];
+	unsigned char bytes[16];
+	for (unsigned i = 0; i != 2; ++i)
+	{
+		StoreExtended80(i == 0 ? left : right, bytes);
+		std::memcpy(&significand[i], bytes, 8);
+		std::memcpy(&exponent[i], bytes + 8, 2);
+		nan[i] = (exponent[i] & 0x7fff) == 0x7fff && (significand[i] << 1) != 0;
+	}
+	// x87 prefers a quiet NaN, then the greater significand; equal
+	// significands of opposite signs produce the positive NaN.
+	unsigned chosen = !nan[0]              ? 1
+		: !nan[1]                          ? 0
+		: significand[0] != significand[1] ? (significand[1] > significand[0] ? 1 : 0)
+		: exponent[1] < exponent[0]        ? 1
+										   : 0;
+	return ExtendedBits(significand[chosen] | (kExtendedInteger >> 1), exponent[chosen]);
+}
+} // namespace
+
+long double LoadExtended80(const unsigned char* bytes)
+{
+	static_assert(sizeof(long double) == 16 && __LDBL_MANT_DIG__ == 113, "WASI binary128 host");
+	uint64_t significand = 0;
+	uint16_t sign_exponent = 0;
+	std::memcpy(&significand, bytes, 8);
+	std::memcpy(&sign_exponent, bytes + 8, 2);
+	const uint64_t low = significand << 49;
+	const uint64_t high = (uint64_t(sign_exponent) << 48) | ((significand & ~kExtendedInteger) >> 15);
+	unsigned char host[16];
+	std::memcpy(host, &low, 8);
+	std::memcpy(host + 8, &high, 8);
+	long double result;
+	std::memcpy(&result, host, 16);
+	return result;
+}
+
+void StoreExtended80(long double value, unsigned char* bytes)
+{
+	uint64_t low = 0, high = 0;
+	unsigned char host[16];
+	std::memcpy(host, &value, 16);
+	std::memcpy(&low, host, 8);
+	std::memcpy(&high, host + 8, 8);
+	const bool negative = (high >> 63) != 0;
+	const unsigned exponent = (high >> 48) & 0x7fff;
+	ExtendedWide magnitude = (ExtendedWide(high & 0xffffffffffffull) << 64) | low;
+	if (exponent == 0x7fff)
+	{
+		low = kExtendedInteger | static_cast<uint64_t>(magnitude >> 49);
+		if (magnitude != 0 && low == kExtendedInteger)
+			low |= kExtendedInteger >> 1;
+		high = (negative ? 0x8000 : 0) | 0x7fff;
+	}
+	else
+	{
+		if (exponent != 0)
+			magnitude |= ExtendedWide(1) << 112;
+		if (!RoundInterchangeValue(negative, static_cast<uint64_t>(magnitude), static_cast<uint64_t>(magnitude >> 64),
+				(exponent ? int64_t(exponent) : 1) - 16383 - 112, kExtended80, low, high))
+		{
+			low = kExtendedInteger;
+			high = (negative ? 0x8000 : 0) | 0x7fff;
+		}
+	}
+	std::memset(bytes, 0, 16);
+	std::memcpy(bytes, &low, 8);
+	std::memcpy(bytes + 8, &high, 2);
+}
+
+long double RoundExtended80(long double value)
+{
+	unsigned char bytes[16];
+	StoreExtended80(value, bytes);
+	return LoadExtended80(bytes);
+}
+
+long double IntegerExtended80(uint64_t low, uint64_t high, bool negative)
+{
+	return ExtendedRounded(negative, (ExtendedWide(high) << 64) | low, 0);
+}
+
+long double CalculateExtended80(char operation, long double left, long double right)
+{
+	if (std::isnan(left) || std::isnan(right))
+		return ExtendedNaN(left, right);
+	if (operation == '-')
+		right = -right;
+	if (!std::isfinite(left) || !std::isfinite(right) || (operation == '/' && right == 0))
+	{
+		const long double result = operation == '*' ? left * right : operation == '/' ? left / right : left + right;
+		if (std::isnan(result) && !std::isnan(left) && !std::isnan(right))
+			return ExtendedBits(0xc000000000000000ull, 0xffff);
+		return RoundExtended80(result);
+	}
+	unsigned char bytes[16];
+	StoreExtended80(left, bytes);
+	uint64_t a = 0, b = 0;
+	uint16_t ae = 0, be = 0;
+	std::memcpy(&a, bytes, 8);
+	std::memcpy(&ae, bytes + 8, 2);
+	StoreExtended80(right, bytes);
+	std::memcpy(&b, bytes, 8);
+	std::memcpy(&be, bytes + 8, 2);
+	bool sign_a = (ae >> 15) != 0, sign_b = (be >> 15) != 0;
+	int64_t exp_a = (ae & 0x7fff) ? (ae & 0x7fff) : 1;
+	int64_t exp_b = (be & 0x7fff) ? (be & 0x7fff) : 1;
+	exp_a -= 16383 + 63;
+	exp_b -= 16383 + 63;
+	if (operation == '*')
+		return ExtendedRounded(sign_a != sign_b, ExtendedWide(a) * b, exp_a + exp_b);
+	if (operation == '/')
+	{
+		if (a == 0)
+			return ExtendedRounded(sign_a != sign_b, 0, 0);
+		while ((a & kExtendedInteger) == 0)
+		{
+			a <<= 1;
+			--exp_a;
+		}
+		while ((b & kExtendedInteger) == 0)
+		{
+			b <<= 1;
+			--exp_b;
+		}
+		const ExtendedWide numerator = ExtendedWide(a) << 64;
+		const ExtendedWide remainder = (numerator % b) << 2;
+		ExtendedWide quotient = ((numerator / b) << 2) | (remainder / b);
+		if (remainder % b != 0)
+			quotient |= 1;
+		return ExtendedRounded(sign_a != sign_b, quotient, exp_a - exp_b - 66);
+	}
+	if (exp_a < exp_b)
+	{
+		std::swap(a, b);
+		std::swap(exp_a, exp_b);
+		std::swap(sign_a, sign_b);
+	}
+	ExtendedWide x = ExtendedWide(a) << 3;
+	const ExtendedWide y = ExtendedShiftJam(ExtendedWide(b) << 3, static_cast<unsigned>(exp_a - exp_b));
+	if (sign_a == sign_b)
+		x += y;
+	else if (x >= y)
+		x -= y;
+	else
+	{
+		x = y - x;
+		sign_a = sign_b;
+	}
+	if (x == 0)
+		sign_a = sign_a && sign_b;
+	return ExtendedRounded(sign_a, x, exp_a - 3);
+}
+#endif

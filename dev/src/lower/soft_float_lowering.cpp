@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "lex/interchange_float.h"
+#include "lex/extended_float.h"
 #include "lex/number_literal.h"
 #include "sema/conversions.h"
 #include "sema/integral_arithmetic.h"
@@ -212,8 +213,12 @@ Decoded DecodeSoft(SoftFloat kind, uint64_t bits, uint64_t high)
 Decoded DecodeExtended(long double value)
 {
 	// x87's format: an explicit integer bit in a 64-bit significand.
-	unsigned char bytes[10];
+	unsigned char bytes[16];
+#ifdef __wasi__
+	StoreExtended80(value, bytes);
+#else
 	std::memcpy(bytes, &value, sizeof bytes);
+#endif
 	uint64_t significand = 0;
 	std::memcpy(&significand, bytes, 8);
 	const unsigned top = bytes[8] | (static_cast<unsigned>(bytes[9]) << 8);
@@ -458,7 +463,11 @@ bool SoftStaticConverted(const StaticValue& value, SoftFloat source, const sema:
 			std::memcpy(bytes, &significand, 8);
 			bytes[8] = 0xff;
 			bytes[9] = 0x7f;
+#ifdef __wasi__
+			special = LoadExtended80(bytes);
+#else
 			std::memcpy(&special, bytes, sizeof special);
+#endif
 		}
 		out.floating = decoded.negative ? -special : special;
 		return true;

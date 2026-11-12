@@ -7,10 +7,17 @@
 
 #include <cstdint>
 
+#ifndef __wasi__
 #include <sys/resource.h>
+#endif
 
 inline std::uintptr_t stack_budget_bytes()
 {
+#ifdef __wasi__
+	// The experimental WASI build reserves an 8 MiB linear-memory stack.
+	// Engine call-stack limits are qualified separately by the runner.
+	return 4u << 20;
+#else
 	const std::uintptr_t kFallback = 4u << 20;
 	const std::uintptr_t kCap = 256u << 20;
 	struct rlimit limit;
@@ -19,6 +26,7 @@ inline std::uintptr_t stack_budget_bytes()
 	if (limit.rlim_cur == RLIM_INFINITY || limit.rlim_cur / 2 > kCap)
 		return kCap;
 	return static_cast<std::uintptr_t>(limit.rlim_cur / 2);
+#endif
 }
 
 // Bytes of stack between `base` (an address recorded higher in the same
