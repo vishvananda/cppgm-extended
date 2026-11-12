@@ -17,14 +17,14 @@ function @byte_test
 
   block ^entry
     test.u8 [rdi], 128
-    je ^no
-
-  block ^yes
-    mov rax, 1
-    ret rax
+    jne ^yes
 
   block ^no
     mov rax, 0
+    ret rax
+
+  block ^yes
+    mov rax, 1
     ret rax
 
 function @half_test
@@ -39,14 +39,14 @@ function @half_test
 
   block ^entry
     test.u8 [rdi+<off0>], 128
-    je ^no
-
-  block ^yes
-    mov rax, 1
-    ret rax
+    jne ^yes
 
   block ^no
     mov rax, 0
+    ret rax
+
+  block ^yes
+    mov rax, 1
     ret rax
 
 function @signed_promotion
@@ -62,14 +62,14 @@ function @signed_promotion
   block ^entry
     load.i8 rdi, [rdi]
     test.i32 rdi, 256
-    je ^no
-
-  block ^yes
-    mov rax, 1
-    ret rax
+    jne ^yes
 
   block ^no
     mov rax, 0
+    ret rax
+
+  block ^yes
+    mov rax, 1
     ret rax
 
 function @before_store
@@ -109,14 +109,14 @@ function @volatile_test
   block ^entry
     load.u8 rdi, [rdi]
     test.u8 rdi, 128
-    je ^no
-
-  block ^yes
-    mov rax, 1
-    ret rax
+    jne ^yes
 
   block ^no
     mov rax, 0
+    ret rax
+
+  block ^yes
+    mov rax, 1
     ret rax
 
 function @clear
@@ -172,14 +172,14 @@ function @wide_mask
 
   block ^entry
     test.u8 [rdi+<off1>], 1
-    je ^no
-
-  block ^yes
-    mov rax, 1
-    ret rax
+    jne ^yes
 
   block ^no
     mov rax, 0
+    ret rax
+
+  block ^yes
+    mov rax, 1
     ret rax
 
 function @two_readers
@@ -195,13 +195,13 @@ function @two_readers
   block ^entry
     load.u32 rax, [rdi]
     test.u8 rax, 16
-    je ^no
-
-  block ^yes
-    ret rax
+    jne ^yes
 
   block ^no
     mov rax, 0
+    ret rax
+
+  block ^yes
     ret rax
 
 function @main

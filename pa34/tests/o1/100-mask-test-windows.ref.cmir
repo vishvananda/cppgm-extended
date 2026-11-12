@@ -17,14 +17,14 @@ function @high
 
   block ^entry
     test.u8 [rdi+<off0>], 128
-    je ^no
-
-  block ^yes
-    mov rax, 1
-    ret rax
+    jne ^yes
 
   block ^no
     mov rax, 0
+    ret rax
+
+  block ^yes
+    mov rax, 1
     ret rax
 
 function @interior
@@ -83,14 +83,14 @@ function @word_high
 
   block ^entry
     test.u8 [rdi+<off2>], 128
-    je ^no
-
-  block ^yes
-    mov rax, 1
-    ret rax
+    jne ^yes
 
   block ^no
     mov rax, 0
+    ret rax
+
+  block ^yes
+    mov rax, 1
     ret rax
 
 function @main

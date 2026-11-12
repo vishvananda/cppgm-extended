@@ -104,9 +104,9 @@ function @main
     mov rax, 1
     ret rax
 
-  block ^cond_then_1
-    mov rax, 0
+  block ^cond_end_3
     ret rax
 
-  block ^cond_end_3
+  block ^cond_then_1
+    mov rax, 0
     ret rax

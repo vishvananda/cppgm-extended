@@ -4821,7 +4821,11 @@ function @check
     mov rsi, rbx
     call @same [args=(rsi,rdi)]
     cmp.i32 rax, 0
-    je ^bad200
+    jne ^ok0
+
+  block ^bad0
+    mov rax, 1
+    ret rax
 
   block ^ok0
     mov rdi, r12
