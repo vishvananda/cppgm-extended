@@ -18,6 +18,7 @@ struct ControlPlan
 	std::vector<Region> regions;
 };
 
-bool structure_control(const lowir::Program& program, const lowir::FunctionBody& body, ControlPlan& result);
+bool structure_control(const lowir::Program& program, const lowir::FunctionBody& body, ControlPlan& result,
+	const opt::Cfg* explicit_edges = nullptr);
 
 } // namespace wasm

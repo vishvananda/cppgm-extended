@@ -306,3 +306,27 @@ does not qualify cppgm-generated handlers. The next selection/runtime steps
 are recorded in `docs/wasm32-assignment/source-eh-lowering.md`, which is excluded
 from the student export. Full source EH, SIMD, the remaining object/quality
 profile, benchmarks and final qualification remain unfinished.
+
+
+## Source exception-selection checkpoint
+
+Wasm now consumes the shared exception analysis and emits modern try-table,
+catch-reference and throw-reference instructions for C++ cleanup, typed catches,
+local resumes and rethrow. LSDA data follows the pinned runtime personality ABI
+and shares each definition's COMDAT lifetime. Exceptional paths restore the
+saved linear-memory stack pointer, including live dynamic allocations.
+
+Active landing contexts retain separate exception references and selectors so
+an inlined destructor may catch its own exception during an outer unwind.
+Actual exceptional edges participate in structured-control analysis; reducible
+EH functions no longer require an unconditional whole-function dispatcher.
+The source lifetime policy also applies the platform catch-copy termination
+boundaries to Wasm while leaving native target selection unchanged.
+
+Focused PA37 qualification passes 75/75 (`source-eh-pa37-contexts.log`).
+The 34 broader source probes matched LLVM before the final structured-control
+and context edits; they must be repeated. Five new required controls cover
+mixed-compiler cleanup/rethrow, typed enclosing handlers, catch-copy termination,
+nested cleanup exceptions and dynamic stack recovery. Full qualification of
+this source checkpoint is pending; explicit LowIR payload throws, runtime
+selection, SIMD, remaining object/quality behavior and benchmarks remain work.

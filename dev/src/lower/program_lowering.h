@@ -480,6 +480,9 @@ public:
 		return strict_aliasing_ && (may_alias_kinds_ >> static_cast<unsigned>(kind) & 1) == 0;
 	}
 	bool host_objects() const { return host_objects_; }
+	// External C++ runtimes require the same lifetime boundaries in native
+	// objects and Wasm, including compilation through serialized LowIR.
+	bool platform_exception_lifetimes() const { return host_objects_ || target_model::is_wasm(program_.target); }
 	// An object compile at any level (its LowIR is the same at every
 	// level) and the LowIR view from -O2: a virtual call tests for the
 	// function it names and calls that one directly

@@ -286,6 +286,10 @@ struct Cfg
 };
 
 void build_cfg(const lowir::Program& program, const lowir::FunctionBody& body, Cfg& cfg);
+// A control view with explicit edges (for example, calls' exceptional exits).
+// These are ordinary control edges for structuring, not optimizer EH regions.
+void build_cfg_edges(const lowir::FunctionBody& body, const std::vector<lowir::BlockId>& placed,
+	const std::vector<std::pair<lowir::BlockId, lowir::BlockId>>& edges, Cfg& cfg);
 // The edges, flags and reverse postorder alone (no dominators: idom,
 // dom_in and dom_out stay as they were), and the rest of build_cfg for a
 // CFG built so.

@@ -2,6 +2,7 @@
 
 #include "machine/global_data.h"
 #include "wasm/object_cursor.h"
+#include "wasm/exceptions.h"
 #include "wasm/selector.h"
 #include "wasm/validation.h"
 
@@ -43,10 +44,12 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 {
 	Module module;
 	module.relocatable = true;
+	prepare_exception_runtime(program, module);
 	prepare_module(program, module);
 	object.types = module.signatures;
 	object.functions.resize(module.definition_types.size());
-	std::vector<uint32_t> symbols(program.symbols.size() + 3, lowir::kNoId);
+	std::vector<uint32_t> symbols(program.symbols.size() + (module.tag_types.empty() ? 3 : 4), lowir::kNoId);
+	std::vector<uint32_t> groups(program.symbols.size(), lowir::kNoId);
 	for (lowir::SymbolId id : program.order)
 	{
 		const auto& source = program.symbols[id];
@@ -104,6 +107,7 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 			ObjectGroup group;
 			group.name = symbol.name;
 			group.members.push_back({ symbol.kind == 0 ? uint8_t(1) : uint8_t(0), symbol.index });
+			groups[id] = static_cast<uint32_t>(object.groups.size());
 			object.groups.push_back(std::move(group));
 		}
 		symbols[id] = static_cast<uint32_t>(object.symbols.size());
@@ -118,12 +122,33 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 	object.symbols.push_back(imported_symbol(1, 0, "__stack_low"));
 	symbols[module.table_symbol] = static_cast<uint32_t>(object.symbols.size());
 	object.symbols.push_back(imported_symbol(5, 0, "__indirect_function_table"));
+	if (!module.tag_types.empty())
+	{
+		symbols[module.exception_tag_symbol] = static_cast<uint32_t>(object.symbols.size());
+		object.symbols.push_back(imported_symbol(4, 0, "__cpp_exception"));
+		ObjectTag tag;
+		tag.type = module.tag_types[0];
+		tag.module = "env";
+		tag.name = "__cpp_exception";
+		tag.imported = true;
+		object.tags.push_back(std::move(tag));
+	}
 	for (lowir::SymbolId id : module.definitions)
 	{
+		ExceptionPlan exceptions;
+		if (module.personality_symbol != lowir::kNoId)
+			prepare_exception_plan(program, id, object, symbols, groups[id], exceptions);
 		Function function;
-		Selector(program, module, id, function).run();
+		Selector(program, module, id, function, &exceptions).run();
 		ObjectFunction& destination = object.functions[module.function_indices[id]];
-		validate_function(function, object.types[destination.type], module);
+		try
+		{
+			validate_function(function, object.types[destination.type], module);
+		}
+		catch (const WasmError& failure)
+		{
+			throw WasmError(std::string(program.spelling(program.symbols[id].name)) + ": " + failure.what());
+		}
 		if (!options.machine_ir.empty())
 			dump_function(function, program.spelling(program.symbols[id].name), dump);
 		Bytes encoded;
@@ -144,6 +169,11 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 				adapt_wasi_entry(object, symbols[id]);
 	object.features = { { '+', "mutable-globals" }, { '+', "sign-ext" }, { '+', "bulk-memory" },
 		{ '+', "nontrapping-fptoint" }, { '+', "reference-types" } };
+	if (!module.tag_types.empty())
+	{
+		object.features.push_back({ '+', "exception-handling" });
+		object.features.push_back({ '+', "multivalue" });
+	}
 }
 
 } // namespace wasm

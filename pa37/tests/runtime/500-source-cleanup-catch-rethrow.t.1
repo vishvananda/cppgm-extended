@@ -1,0 +1,21 @@
+int destroyed;
+int caught;
+struct Guard {
+ int value;
+ explicit Guard(int n) : value(n) {}
+ ~Guard() { destroyed += value; }
+};
+static __attribute__((noinline)) int raise_value(int n) {
+ Guard guard(3);
+ if (n) throw n;
+ return 5;
+}
+extern "C" int relay_value(int n) {
+ Guard guard(7);
+ try { return raise_value(n); }
+ catch (int value) {
+  ++caught;
+  if (value == 4) throw;
+  return value + destroyed;
+ }
+}

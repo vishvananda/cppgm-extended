@@ -6,10 +6,13 @@
 
 namespace wasm {
 
+struct ExceptionPlan;
+
 class Selector
 {
 public:
-	Selector(const lowir::Program& program, const Module& module, lowir::SymbolId symbol, Function& output);
+	Selector(const lowir::Program& program, const Module& module, lowir::SymbolId symbol, Function& output,
+		const ExceptionPlan* exceptions = nullptr);
 	void run();
 
 private:
@@ -18,6 +21,15 @@ private:
 	void constant(lowir::Literal bits, lowir::Type type);
 	void instruction(const lowir::Instruction& inst);
 	void call(const lowir::Instruction& inst);
+	void call_body(const lowir::Instruction& inst, const lowir::Signature& signature);
+	void exception_call(const lowir::Instruction& inst, const lowir::Signature& signature, uint32_t landing);
+	void exception_select(uint32_t landing);
+	void exception_match(uint32_t landing);
+	void exception_snapshot(uint32_t landing, bool restore);
+	void restore_exception_context();
+	void exception_resume(uint32_t site);
+	bool exception_instruction(const lowir::Instruction& inst);
+	void exception_address(uint32_t symbol, int64_t offset = 0);
 	void pack_variadic(const lowir::Instruction& inst, const lowir::Signature& signature);
 	void va_start(const lowir::Instruction& inst);
 	void va_arg(const lowir::Instruction& inst);
@@ -62,6 +74,14 @@ private:
 	const lowir::Signature& signature_;
 	const Boundary& boundary_;
 	Function& out_;
+	const ExceptionPlan* exceptions_;
+	uint32_t exception_pointer_ = lowir::kNoId;
+	uint32_t exception_reference_ = lowir::kNoId;
+	uint32_t exception_filter_ = lowir::kNoId;
+	uint32_t exception_selector_ = lowir::kNoId;
+	uint32_t exception_stack_ = lowir::kNoId;
+	std::vector<uint32_t> exception_contexts_;
+	lowir::InstId current_inst_ = lowir::kNoId;
 	std::vector<uint32_t> slots_;
 	std::vector<uint32_t> locals_;
 	std::vector<uint32_t> objects_;

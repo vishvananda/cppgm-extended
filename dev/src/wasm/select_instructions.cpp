@@ -6,7 +6,8 @@ using namespace lowir;
 
 void Selector::instruction(const lowir::Instruction& inst)
 {
-	if (object_instruction(inst) || wide_instruction(inst))
+	if ((exception_reference_ != kNoId && exception_instruction(inst)) || object_instruction(inst) ||
+		wide_instruction(inst))
 		return;
 	switch (inst.op)
 	{

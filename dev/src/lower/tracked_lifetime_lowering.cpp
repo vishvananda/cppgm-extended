@@ -248,7 +248,7 @@ void FunctionLowering::begin_tracking(const syntax::Expr* const* exprs, size_t c
 	// under it opens its region at once (the course's segment starts with
 	// the full-expression).
 	if (!full_expression_ || tracked_.active || element_scopes_ != 0 || static_initializer_ ||
-		lowering_.host_objects() || body_unwind_target() != lowir::kNoId ||
+		lowering_.platform_exception_lifetimes() || body_unwind_target() != lowir::kNoId ||
 		lowering_.graph().nontrivial_destructors == 0)
 		return;
 	bool found = false;

@@ -407,7 +407,7 @@ void FunctionLowering::catch_variable(
 	// parameter the caller destroys) end with the initialization (1.9p10),
 	// before the handler's statements (the course keeps them to its end).
 	const size_t first = cleanups_.size();
-	const bool host = lowering_.host_objects();
+	const bool host = lowering_.platform_exception_lifetimes();
 	if (variable->constructor != nullptr && call_may_throw(variable->constructor) && host)
 	{
 		// 15.1p7, 15.3p7: the handler is active once its variable is

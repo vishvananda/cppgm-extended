@@ -41,11 +41,13 @@ public:
 	static constexpr uint32_t kResumeTerminal = lowir::kNoId;
 	void reset(uint32_t blocks, uint32_t instructions);
 	void analyze(const lowir::Program& program, lowir::SymbolId symbol, const lowir::FunctionBody& body,
-		const ExceptionGraph& graph, ExceptionTables& tables);
+		const ExceptionGraph& graph, ExceptionTables& tables, bool rematch_resumes = false);
 	std::vector<ExceptionBlock> blocks_;
 	uint64_t eh_walks_ = 0, eh_states_ = 0;
 	std::vector<uint32_t> eh_sites_;
 	std::vector<uint32_t> eh_landing_index_;
+	// Optional explicit-EH support: the active landing at each instruction.
+	std::vector<uint32_t> eh_context_;
 	std::vector<uint8_t> eh_translate_; // per landing: whether its pad translates
 	std::vector<uint8_t> eh_resumed_;   // per landing block: a resume of the frame enters it
 	std::vector<uint8_t> eh_live_;      // per block: 0 never entered, 1 reached, 2 a call's landing
@@ -63,6 +65,7 @@ private:
 	lowir::SymbolId symbol_ = lowir::kNoId;
 	ExceptionGraph graph_{};
 	ExceptionTables* tables_ = nullptr;
+	bool rematch_resumes_ = false;
 	std::vector<uint32_t> block_insts_;
 	[[noreturn]] void eh_fail(const char* what) const;
 	void eh_walk(uint32_t block, bool record);

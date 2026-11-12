@@ -1,15 +1,19 @@
 #include "wasm/selector.h"
 
 #include "lowir/literals.h"
+#include "wasm/exceptions.h"
+#include "machine/exception_clauses.h"
 
 namespace wasm {
 
 using namespace lowir;
 
-Selector::Selector(const Program& program, const Module& module, SymbolId symbol, Function& output)
+Selector::Selector(
+	const Program& program, const Module& module, SymbolId symbol, Function& output, const ExceptionPlan* exceptions)
 	: program_(program), module_(module), body_(*program.functions[program.symbols[symbol].detail].body),
 	  signature_(program.signatures[program.functions[program.symbols[symbol].detail].signature]),
-	  boundary_(module.boundaries[program.functions[program.symbols[symbol].detail].signature]), out_(output)
+	  boundary_(module.boundaries[program.functions[program.symbols[symbol].detail].signature]), out_(output),
+	  exceptions_(exceptions)
 {}
 
 uint32_t Selector::add_local(ValueType type)
@@ -205,9 +209,25 @@ void Selector::restore_stack()
 void Selector::run()
 {
 	prepare_locals();
+	if (exceptions_ != nullptr && exceptions_->active)
+	{
+		exception_pointer_ = add_local(ValueType::I32);
+		exception_reference_ = add_local(ValueType::ExnRef);
+		exception_filter_ = add_local(ValueType::I32);
+		exception_selector_ = add_local(ValueType::I32);
+		exception_stack_ = add_local(ValueType::I32);
+		for (uint32_t i = 0; i < exceptions_->tables.landings.size(); ++i)
+		{
+			exception_contexts_.push_back(add_local(ValueType::ExnRef));
+			add_local(ValueType::I32);
+			add_local(ValueType::I32);
+			add_local(ValueType::I32);
+		}
+	}
 	prepare_frame();
 	const auto last = body_.instructions[body_.blocks[body_.layout[0]].last].op;
-	if (body_.layout.size() == 1 && (last == Opcode::Return || last == Opcode::Unreachable))
+	if ((exceptions_ == nullptr || !exceptions_->active) && body_.layout.size() == 1 &&
+		(last == Opcode::Return || last == Opcode::Unreachable))
 		simple();
 	else if (!structured())
 		dispatch();
@@ -228,6 +248,9 @@ void Selector::dispatch()
 	nesting_ = 1;
 	for (BlockId id : body_.layout)
 	{
+		if (exceptions_ != nullptr && exceptions_->active &&
+			exceptions_->analysis.eh_live_[exceptions_->layout_of[id]] == 0)
+			continue;
 		out_.emit(Op::LocalGet, { pc_ });
 		out_.emit(Op::I32Const, { id });
 		out_.emit(Op::I32Eq);
@@ -248,6 +271,7 @@ void Selector::block(BlockId id)
 	current_block_ = id;
 	for (InstId i = body_.blocks[id].first; i != kNoId; i = body_.instructions[i].next)
 	{
+		current_inst_ = i;
 		out_.location = body_.instructions[i].location;
 		instruction(body_.instructions[i]);
 	}
@@ -281,6 +305,19 @@ void Selector::phi_copies(BlockId from, BlockId to)
 
 void Selector::edge(BlockId from, BlockId to)
 {
+	if (exceptions_ != nullptr && exceptions_->active)
+	{
+		const int64_t selector = exceptions_->entry_selectors[to];
+		if (selector != 0)
+		{
+			out_.emit(Op::I32Const, { static_cast<uint64_t>(selector) });
+			out_.emit(Op::LocalGet, { exception_selector_ });
+			out_.emit(Op::LocalGet, { exception_selector_ });
+			out_.emit(Op::I32Eqz);
+			out_.emit(Op::Select);
+			out_.emit(Op::LocalSet, { exception_selector_ });
+		}
+	}
 	phi_copies(from, to);
 	if (pc_ == kNoId)
 	{
@@ -336,7 +373,8 @@ void Selector::region(uint32_t id)
 
 bool Selector::structured()
 {
-	if (!structure_control(program_, body_, control_))
+	const opt::Cfg* edges = exceptions_ != nullptr && exceptions_->active ? &exceptions_->control : nullptr;
+	if (!structure_control(program_, body_, control_, edges))
 		return false;
 	region(0);
 	out_.emit(Op::Unreachable);

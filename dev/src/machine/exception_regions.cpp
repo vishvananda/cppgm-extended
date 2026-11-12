@@ -355,6 +355,8 @@ void ExceptionAnalysis::eh_walk(uint32_t b, bool record)
 			selector = kNoId;
 		}
 		const EhNode current = eh_nodes_[node];
+		if (record && rematch_resumes_ && node != 0 && current.active && current.tail_hi == 0)
+			eh_context_[i] = current.landing;
 		const bool tail = current.tail_hi != 0;
 		// The tail's base: whether its top is an active try record, which
 		// paths with no tail record would take for their own.
@@ -455,7 +457,7 @@ void ExceptionAnalysis::eh_walk(uint32_t b, bool record)
 			// below the running landing's own record is in its chain (or in
 			// the chain of the landing whose resume entered it, below which
 			// the target is too).
-			if (protect == node)
+			if (!rematch_resumes_ && protect == node)
 				for (uint32_t k = node; k != 0 && !eh_nodes_[k].active; k = eh_nodes_[k].parent)
 					if (eh_nodes_[k].inside && (eh_landing_mask(eh_nodes_[k].landing) & ~static_cast<uint64_t>(1)) != 0)
 						eh_fail("resume into a catching region opened while handling the exception");
@@ -514,16 +516,21 @@ void ExceptionAnalysis::reset(uint32_t blocks, uint32_t instructions)
 	eh_landing_index_.assign(blocks, lowir::kNoId);
 	eh_raw_ = false;
 	eh_walks_ = eh_states_ = 0;
+	if (rematch_resumes_)
+		eh_context_.assign(instructions, lowir::kNoId);
+	else
+		eh_context_.clear();
 }
 
 void ExceptionAnalysis::analyze(const lowir::Program& program, lowir::SymbolId symbol, const lowir::FunctionBody& body,
-	const ExceptionGraph& graph, ExceptionTables& tables)
+	const ExceptionGraph& graph, ExceptionTables& tables, bool rematch_resumes)
 {
 	program_ = &program;
 	body_ = &body;
 	symbol_ = symbol;
 	graph_ = graph;
 	tables_ = &tables;
+	rematch_resumes_ = rematch_resumes;
 	const uint32_t n = static_cast<uint32_t>(blocks_.size());
 	reset(n, static_cast<uint32_t>(body.instructions.size()));
 	bool reads = false;

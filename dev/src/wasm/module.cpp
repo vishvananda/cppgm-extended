@@ -62,6 +62,18 @@ void prepare_module(const lowir::Program& program, Module& module)
 	module.stack_symbol = static_cast<uint32_t>(program.symbols.size());
 	module.stack_low_symbol = module.stack_symbol + 1;
 	module.table_symbol = module.stack_symbol + 2;
+	if (module.personality_symbol != lowir::kNoId)
+	{
+		module.exception_tag_symbol = module.stack_symbol + 3;
+		Signature tag;
+		tag.parameters.push_back(ValueType::I32);
+		module.tag_types.push_back(static_cast<uint32_t>(module.signatures.size()));
+		module.signatures.push_back(std::move(tag));
+		Signature pair;
+		pair.results = { ValueType::I32, ValueType::ExnRef };
+		module.exception_pair_type = static_cast<uint32_t>(module.signatures.size());
+		module.signatures.push_back(std::move(pair));
+	}
 	for (lowir::SymbolId id : program.order)
 	{
 		const auto& symbol = program.symbols[id];

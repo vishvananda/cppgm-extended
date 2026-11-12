@@ -1,4 +1,5 @@
 #include "wasm/selector.h"
+#include "wasm/exceptions.h"
 
 namespace wasm {
 
@@ -13,6 +14,17 @@ void Selector::call(const lowir::Instruction& inst)
 		throw WasmError("Wasm call requires a matching typed boundary");
 	if (builtin_call(inst, *signature))
 		return;
+	const uint32_t site = exceptions_ != nullptr && exceptions_->active ? exceptions_->analysis.eh_sites_[current_inst_]
+																		: 0;
+	if (site != 0)
+		exception_call(inst, *signature, site - 1);
+	else
+		call_body(inst, *signature);
+}
+
+void Selector::call_body(const lowir::Instruction& inst, const lowir::Signature& type)
+{
+	const lowir::Signature* signature = &type;
 	const uint32_t signature_id = static_cast<uint32_t>(signature - program_.signatures.data());
 	const Boundary& boundary = module_.boundaries[signature_id];
 	const Parameter* parameters = program_.parameters_of(*signature);

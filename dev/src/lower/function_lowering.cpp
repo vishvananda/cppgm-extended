@@ -103,7 +103,7 @@ void FunctionLowering::lower_definition()
 	// in a host object, one with a dynamic-exception-specification (15.4p9,
 	// `throw()` too) in one whose handler calls std::unexpected (15.5.2)
 	// through __cxa_call_unexpected, as GCC and Clang guard it.
-	const sema::SemanticGraph::ThrowSpecification* specification = lowering_.host_objects()
+	const sema::SemanticGraph::ThrowSpecification* specification = lowering_.platform_exception_lifetimes()
 		? lowering_.graph().throw_specification(function_)
 		: nullptr;
 	if (!inert_destructor && (specification != nullptr || lowering_.function_nothrow(function_)) &&

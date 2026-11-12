@@ -270,7 +270,7 @@ lowir::Value FunctionLowering::backing_array(
 			// element's handler resumes into the enclosing one, the region
 			// staying open.
 			const bool contexts = enclosing != lowir::kNoId && !eh_contexts_.empty();
-			const bool resumes = contexts && lowering_.host_objects();
+			const bool resumes = contexts && lowering_.platform_exception_lifetimes();
 			if (contexts && !resumes && innermost_try() != nullptr)
 			{
 				const EhContext* attempt = innermost_try();
@@ -431,7 +431,7 @@ lowir::Value FunctionLowering::counted_elements(const syntax::BracedInitList& li
 	region_segment_ = false;
 	place(cleanup);
 	const bool contexts = enclosing != lowir::kNoId && !eh_contexts_.empty();
-	const bool resumes = contexts && lowering_.host_objects();
+	const bool resumes = contexts && lowering_.platform_exception_lifetimes();
 	if (contexts && !resumes && innermost_try() != nullptr)
 	{
 		const EhContext* attempt = innermost_try();

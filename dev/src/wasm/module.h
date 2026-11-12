@@ -34,6 +34,10 @@ struct Module
 	uint32_t stack_symbol = lowir::kNoId;
 	uint32_t stack_low_symbol = lowir::kNoId;
 	uint32_t table_symbol = lowir::kNoId;
+	uint32_t personality_symbol = lowir::kNoId;
+	uint32_t exception_context = lowir::kNoId;
+	uint32_t exception_tag_symbol = lowir::kNoId;
+	uint32_t exception_pair_type = lowir::kNoId;
 };
 
 void prepare_module(const lowir::Program& program, Module& module);

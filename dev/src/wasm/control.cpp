@@ -59,10 +59,13 @@ bool order_region(Region& region, std::vector<std::pair<uint32_t, uint32_t>>& ed
 
 } // namespace
 
-bool structure_control(const lowir::Program& program, const lowir::FunctionBody& body, ControlPlan& result)
+bool structure_control(
+	const lowir::Program& program, const lowir::FunctionBody& body, ControlPlan& result, const opt::Cfg* explicit_edges)
 {
-	opt::Cfg cfg;
-	opt::build_cfg(program, body, cfg);
+	opt::Cfg ordinary;
+	if (explicit_edges == nullptr)
+		opt::build_cfg(program, body, ordinary);
+	const opt::Cfg& cfg = explicit_edges != nullptr ? *explicit_edges : ordinary;
 	opt::LoopForest forest;
 	opt::find_loops(body, cfg, forest);
 	if (forest.partial || std::find(forest.dropped.begin(), forest.dropped.end(), uint8_t(1)) != forest.dropped.end())

@@ -70,6 +70,9 @@ initialization and destruction. C++ exceptions use the modern Wasm exception
 instructions and the runtime's C++ exception tag. A Wasm trap is not a C++
 exception. Support matching catches, cleanup and rethrow across translation
 units and across the reference-compiler boundary.
+Honor exception specifications and lifetime boundaries, including termination
+when initialization of a handler parameter throws or a destructor throws during
+unwinding. These rules also apply after LowIR serialization.
 
 ## Objects and linking
 

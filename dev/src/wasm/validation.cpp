@@ -97,7 +97,8 @@ void Validator::pop(ValueType expected)
 {
 	const ValueType actual = pop_any();
 	if (actual != kUnknown && actual != expected)
-		throw WasmError("Wasm operand stack type mismatch");
+		throw WasmError(std::string("Wasm operand stack type mismatch: expected ") + spelling(expected) + ", got " +
+			spelling(actual));
 }
 
 void Validator::pop(Types types)

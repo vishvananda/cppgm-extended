@@ -575,6 +575,40 @@ void build_cfg(const Program& program, const FunctionBody& body, Cfg& cfg)
 	complete_cfg(cfg);
 }
 
+void build_cfg_edges(const FunctionBody& body, const std::vector<BlockId>& placed,
+	const std::vector<std::pair<BlockId, BlockId>>& edges, Cfg& cfg)
+{
+	const uint32_t n = static_cast<uint32_t>(body.blocks.size());
+	cfg.block_count = n;
+	cfg.flags.assign(n, 0);
+	for (BlockId block : placed)
+		cfg.flags[block] = BF_PLACED;
+	cfg.handler_first.assign(n + 1, 0);
+	cfg.handlers.clear();
+	cfg.succ_first.assign(n + 1, 0);
+	cfg.pred_first.assign(n + 1, 0);
+	for (const auto& edge : edges)
+	{
+		++cfg.succ_first[edge.first + 1];
+		++cfg.pred_first[edge.second + 1];
+	}
+	for (uint32_t b = 0; b < n; ++b)
+	{
+		cfg.succ_first[b + 1] += cfg.succ_first[b];
+		cfg.pred_first[b + 1] += cfg.pred_first[b];
+	}
+	cfg.succs.resize(edges.size());
+	cfg.preds.resize(edges.size());
+	cfg.scratch = cfg.succ_first;
+	for (const auto& edge : edges)
+		cfg.succs[cfg.scratch[edge.first]++] = edge.second;
+	cfg.scratch = cfg.pred_first;
+	for (const auto& edge : edges)
+		cfg.preds[cfg.scratch[edge.second]++] = edge.first;
+	build_order(body, cfg);
+	complete_cfg(cfg);
+}
+
 void build_dom_children(const Cfg& cfg, DomChildren& out)
 {
 	const uint32_t n = cfg.block_count;
