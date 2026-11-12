@@ -54,11 +54,16 @@ sub save_json { write_file($_[0], $json->pretty->encode($_[1])); }
 sub capture {
     my ($cmd, $stdin) = @_;
     my $prefix = sprintf('%s/raw/%04d', $output, ++$command_id);
-    my $status = run_command_capture(cmd => $cmd, stdout => "$prefix.stdout", stderr => "$prefix.stderr",
-        timeout => 120, defined($stdin) ? (stdin => $stdin) : ());
+    my ($status, %outcome);
+    eval { $status = run_command_capture(cmd => $cmd, stdout => "$prefix.stdout", stderr => "$prefix.stderr",
+        timeout => 120, supervisor => $compiler, outcome => \%outcome, internal_error => 70,
+        limits => {cpu_seconds => 120, rss_bytes => 4294967296, file_bytes => 268435456},
+        defined($stdin) ? (stdin => $stdin) : ()); };
+    my $failure = $@;
     push @commands, {command => $cmd, exit => $status, stdin => $stdin,
-        stdout => "$prefix.stdout", stderr => "$prefix.stderr"};
+        outcome => \%outcome, failure => $failure, stdout => "$prefix.stdout", stderr => "$prefix.stderr"};
     save_json("$output/commands.json", \@commands);
+    die $failure if $failure;
     die "Command failed ($status): @$cmd\n" . read_file("$prefix.stderr") . read_file("$prefix.stdout") if $status;
     return read_file("$prefix.stdout");
 }
@@ -97,7 +102,11 @@ my $metadata = {revision => $revision, dirty => $dirty ? JSON::PP::true : JSON::
     linker_sha256 => digest($lld), runner_sha256 => digest($runner), engine_sha256 => digest("$engine/lib/libwasmtime.a"),
     tool_manifest_sha256 => digest("$FindBin::Bin/wasm_tools.json"), optimization => "O$level",
     engine => {version => '50.0.1', compiler => 'Cranelift', optimization => 'speed', simd => JSON::PP::true,
-        parallel_compilation => JSON::PP::false, cache => JSON::PP::false, fuel => JSON::PP::false},
+        parallel_compilation => JSON::PP::false, cache => JSON::PP::false, fuel => JSON::PP::false,
+        guest_memory_bytes => 268435456, guest_table_elements => 100000,
+        guest_instances => 16, guest_tables => 16, guest_memories => 16},
+    resources => {wall_seconds => 120, cpu_seconds => 120, rss_bytes => 4294967296,
+        file_bytes => 268435456, rss_sample_ms => 10},
     clang_version => capture([$clang, '--version']), flags => {cppgm => \@flags, clang => [@flags, '-msimd128']}};
 $metadata->{host_cxx_version} = capture([shellwords($host_cxx), '--version']);
 save_json("$output/metadata.json", $metadata);

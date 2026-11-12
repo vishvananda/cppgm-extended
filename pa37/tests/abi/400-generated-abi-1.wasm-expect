@@ -1,0 +1,179 @@
+{
+   "llvm_interop" : true,
+   "sequences" : [
+      [
+         {
+            "args" : [
+               0
+            ],
+            "export" : "observe0",
+            "result" : "280"
+         },
+         {
+            "args" : [
+               1
+            ],
+            "export" : "observe0",
+            "result" : "281"
+         },
+         {
+            "args" : [
+               17
+            ],
+            "export" : "observe0",
+            "result" : "297"
+         },
+         {
+            "args" : [
+               255
+            ],
+            "export" : "observe0",
+            "result" : "279"
+         },
+         {
+            "args" : [
+               0
+            ],
+            "export" : "observe1",
+            "result" : "1450"
+         },
+         {
+            "args" : [
+               1
+            ],
+            "export" : "observe1",
+            "result" : "1451"
+         },
+         {
+            "args" : [
+               17
+            ],
+            "export" : "observe1",
+            "result" : "1467"
+         },
+         {
+            "args" : [
+               255
+            ],
+            "export" : "observe1",
+            "result" : "1705"
+         },
+         {
+            "args" : [
+               0
+            ],
+            "export" : "observe2",
+            "result" : "14814"
+         },
+         {
+            "args" : [
+               1
+            ],
+            "export" : "observe2",
+            "result" : "14830"
+         },
+         {
+            "args" : [
+               17
+            ],
+            "export" : "observe2",
+            "result" : "15086"
+         },
+         {
+            "args" : [
+               255
+            ],
+            "export" : "observe2",
+            "result" : "18894"
+         },
+         {
+            "args" : [
+               0
+            ],
+            "export" : "observe3",
+            "result" : "8855"
+         },
+         {
+            "args" : [
+               1
+            ],
+            "export" : "observe3",
+            "result" : "8864"
+         },
+         {
+            "args" : [
+               17
+            ],
+            "export" : "observe3",
+            "result" : "9008"
+         },
+         {
+            "args" : [
+               255
+            ],
+            "export" : "observe3",
+            "result" : "11150"
+         },
+         {
+            "args" : [
+               0
+            ],
+            "export" : "observe4",
+            "result" : "16573"
+         },
+         {
+            "args" : [
+               1
+            ],
+            "export" : "observe4",
+            "result" : "16598"
+         },
+         {
+            "args" : [
+               17
+            ],
+            "export" : "observe4",
+            "result" : "16998"
+         },
+         {
+            "args" : [
+               255
+            ],
+            "export" : "observe4",
+            "result" : "19364"
+         },
+         {
+            "args" : [
+               0
+            ],
+            "export" : "observe5",
+            "result" : "24571"
+         },
+         {
+            "args" : [
+               1
+            ],
+            "export" : "observe5",
+            "result" : "24596"
+         },
+         {
+            "args" : [
+               17
+            ],
+            "export" : "observe5",
+            "result" : "24996"
+         },
+         {
+            "args" : [
+               255
+            ],
+            "export" : "observe5",
+            "result" : "30946"
+         }
+      ]
+   ],
+   "source" : true,
+   "units" : [
+      "400-generated-abi-1.t.1"
+   ]
+}

@@ -1,0 +1,651 @@
+{
+   "object_mutations" : [
+      "magic",
+      "version",
+      "truncate"
+   ],
+   "sequences" : [
+      [
+         {
+            "args" : [
+               0,
+               0
+            ],
+            "export" : "kernel0",
+            "result" : "3442499178"
+         },
+         {
+            "args" : [
+               0,
+               1
+            ],
+            "export" : "kernel0",
+            "result" : "3442499178"
+         },
+         {
+            "args" : [
+               0,
+               2
+            ],
+            "export" : "kernel0",
+            "result" : "3442499178"
+         },
+         {
+            "args" : [
+               0,
+               3
+            ],
+            "export" : "kernel0",
+            "result" : "3442499178"
+         },
+         {
+            "args" : [
+               1,
+               0
+            ],
+            "export" : "kernel0",
+            "result" : "1044121409"
+         },
+         {
+            "args" : [
+               1,
+               1
+            ],
+            "export" : "kernel0",
+            "result" : "2255276870"
+         },
+         {
+            "args" : [
+               1,
+               2
+            ],
+            "export" : "kernel0",
+            "result" : "0"
+         },
+         {
+            "args" : [
+               1,
+               3
+            ],
+            "export" : "kernel0",
+            "result" : "0"
+         },
+         {
+            "args" : [
+               2,
+               0
+            ],
+            "export" : "kernel0",
+            "result" : "1969263213"
+         },
+         {
+            "args" : [
+               2,
+               1
+            ],
+            "export" : "kernel0",
+            "result" : "1770189654"
+         },
+         {
+            "args" : [
+               2,
+               2
+            ],
+            "export" : "kernel0",
+            "result" : "3442499178"
+         },
+         {
+            "args" : [
+               2,
+               3
+            ],
+            "export" : "kernel0",
+            "result" : "218950143"
+         },
+         {
+            "args" : [
+               7,
+               0
+            ],
+            "export" : "kernel0",
+            "result" : "3696860526"
+         },
+         {
+            "args" : [
+               7,
+               1
+            ],
+            "export" : "kernel0",
+            "result" : "2640534498"
+         },
+         {
+            "args" : [
+               7,
+               2
+            ],
+            "export" : "kernel0",
+            "result" : "119396668"
+         },
+         {
+            "args" : [
+               7,
+               3
+            ],
+            "export" : "kernel0",
+            "result" : "3837929157"
+         },
+         {
+            "args" : [
+               17,
+               0
+            ],
+            "export" : "kernel0",
+            "result" : "3325203228"
+         },
+         {
+            "args" : [
+               17,
+               1
+            ],
+            "export" : "kernel0",
+            "result" : "964498314"
+         },
+         {
+            "args" : [
+               17,
+               2
+            ],
+            "export" : "kernel0",
+            "result" : "842090360"
+         },
+         {
+            "args" : [
+               17,
+               3
+            ],
+            "export" : "kernel0",
+            "result" : "473888554"
+         },
+         {
+            "args" : [
+               0,
+               0
+            ],
+            "export" : "kernel1",
+            "result" : "2117104813"
+         },
+         {
+            "args" : [
+               0,
+               1
+            ],
+            "export" : "kernel1",
+            "result" : "2117104813"
+         },
+         {
+            "args" : [
+               0,
+               2
+            ],
+            "export" : "kernel1",
+            "result" : "2117104813"
+         },
+         {
+            "args" : [
+               0,
+               3
+            ],
+            "export" : "kernel1",
+            "result" : "2117104813"
+         },
+         {
+            "args" : [
+               1,
+               0
+            ],
+            "export" : "kernel1",
+            "result" : "595768968"
+         },
+         {
+            "args" : [
+               1,
+               1
+            ],
+            "export" : "kernel1",
+            "result" : "426045177"
+         },
+         {
+            "args" : [
+               1,
+               2
+            ],
+            "export" : "kernel1",
+            "result" : "4294967295"
+         },
+         {
+            "args" : [
+               1,
+               3
+            ],
+            "export" : "kernel1",
+            "result" : "1"
+         },
+         {
+            "args" : [
+               2,
+               0
+            ],
+            "export" : "kernel1",
+            "result" : "1154886876"
+         },
+         {
+            "args" : [
+               2,
+               1
+            ],
+            "export" : "kernel1",
+            "result" : "1519652476"
+         },
+         {
+            "args" : [
+               2,
+               2
+            ],
+            "export" : "kernel1",
+            "result" : "2186321398"
+         },
+         {
+            "args" : [
+               2,
+               3
+            ],
+            "export" : "kernel1",
+            "result" : "2782085757"
+         },
+         {
+            "args" : [
+               7,
+               0
+            ],
+            "export" : "kernel1",
+            "result" : "1124750325"
+         },
+         {
+            "args" : [
+               7,
+               1
+            ],
+            "export" : "kernel1",
+            "result" : "1900059784"
+         },
+         {
+            "args" : [
+               7,
+               2
+            ],
+            "export" : "kernel1",
+            "result" : "1077849600"
+         },
+         {
+            "args" : [
+               7,
+               3
+            ],
+            "export" : "kernel1",
+            "result" : "934068170"
+         },
+         {
+            "args" : [
+               17,
+               0
+            ],
+            "export" : "kernel1",
+            "result" : "786179960"
+         },
+         {
+            "args" : [
+               17,
+               1
+            ],
+            "export" : "kernel1",
+            "result" : "1764084671"
+         },
+         {
+            "args" : [
+               17,
+               2
+            ],
+            "export" : "kernel1",
+            "result" : "2803457882"
+         },
+         {
+            "args" : [
+               17,
+               3
+            ],
+            "export" : "kernel1",
+            "result" : "3749949781"
+         },
+         {
+            "args" : [
+               0,
+               0
+            ],
+            "export" : "kernel2",
+            "result" : "1652315450"
+         },
+         {
+            "args" : [
+               0,
+               1
+            ],
+            "export" : "kernel2",
+            "result" : "1652315450"
+         },
+         {
+            "args" : [
+               0,
+               2
+            ],
+            "export" : "kernel2",
+            "result" : "1652315450"
+         },
+         {
+            "args" : [
+               0,
+               3
+            ],
+            "export" : "kernel2",
+            "result" : "1652315450"
+         },
+         {
+            "args" : [
+               1,
+               0
+            ],
+            "export" : "kernel2",
+            "result" : "430370225"
+         },
+         {
+            "args" : [
+               1,
+               1
+            ],
+            "export" : "kernel2",
+            "result" : "919146822"
+         },
+         {
+            "args" : [
+               1,
+               2
+            ],
+            "export" : "kernel2",
+            "result" : "2048"
+         },
+         {
+            "args" : [
+               1,
+               3
+            ],
+            "export" : "kernel2",
+            "result" : "2147483648"
+         },
+         {
+            "args" : [
+               2,
+               0
+            ],
+            "export" : "kernel2",
+            "result" : "1293134285"
+         },
+         {
+            "args" : [
+               2,
+               1
+            ],
+            "export" : "kernel2",
+            "result" : "3310595623"
+         },
+         {
+            "args" : [
+               2,
+               2
+            ],
+            "export" : "kernel2",
+            "result" : "3799799098"
+         },
+         {
+            "args" : [
+               2,
+               3
+            ],
+            "export" : "kernel2",
+            "result" : "3156957439"
+         },
+         {
+            "args" : [
+               7,
+               0
+            ],
+            "export" : "kernel2",
+            "result" : "2332037585"
+         },
+         {
+            "args" : [
+               7,
+               1
+            ],
+            "export" : "kernel2",
+            "result" : "2609586853"
+         },
+         {
+            "args" : [
+               7,
+               2
+            ],
+            "export" : "kernel2",
+            "result" : "2527961362"
+         },
+         {
+            "args" : [
+               7,
+               3
+            ],
+            "export" : "kernel2",
+            "result" : "3041301616"
+         },
+         {
+            "args" : [
+               17,
+               0
+            ],
+            "export" : "kernel2",
+            "result" : "253388646"
+         },
+         {
+            "args" : [
+               17,
+               1
+            ],
+            "export" : "kernel2",
+            "result" : "2848511633"
+         },
+         {
+            "args" : [
+               17,
+               2
+            ],
+            "export" : "kernel2",
+            "result" : "141204263"
+         },
+         {
+            "args" : [
+               17,
+               3
+            ],
+            "export" : "kernel2",
+            "result" : "50789465"
+         },
+         {
+            "args" : [
+               0,
+               0
+            ],
+            "export" : "kernel3",
+            "result" : "3111189037"
+         },
+         {
+            "args" : [
+               0,
+               1
+            ],
+            "export" : "kernel3",
+            "result" : "3111189037"
+         },
+         {
+            "args" : [
+               0,
+               2
+            ],
+            "export" : "kernel3",
+            "result" : "3111189037"
+         },
+         {
+            "args" : [
+               0,
+               3
+            ],
+            "export" : "kernel3",
+            "result" : "3111189037"
+         },
+         {
+            "args" : [
+               1,
+               0
+            ],
+            "export" : "kernel3",
+            "result" : "2919789416"
+         },
+         {
+            "args" : [
+               1,
+               1
+            ],
+            "export" : "kernel3",
+            "result" : "887343497"
+         },
+         {
+            "args" : [
+               1,
+               2
+            ],
+            "export" : "kernel3",
+            "result" : "2120537392"
+         },
+         {
+            "args" : [
+               1,
+               3
+            ],
+            "export" : "kernel3",
+            "result" : "3701860913"
+         },
+         {
+            "args" : [
+               2,
+               0
+            ],
+            "export" : "kernel3",
+            "result" : "597377228"
+         },
+         {
+            "args" : [
+               2,
+               1
+            ],
+            "export" : "kernel3",
+            "result" : "330257121"
+         },
+         {
+            "args" : [
+               2,
+               2
+            ],
+            "export" : "kernel3",
+            "result" : "2653595106"
+         },
+         {
+            "args" : [
+               2,
+               3
+            ],
+            "export" : "kernel3",
+            "result" : "299403613"
+         },
+         {
+            "args" : [
+               7,
+               0
+            ],
+            "export" : "kernel3",
+            "result" : "1609663964"
+         },
+         {
+            "args" : [
+               7,
+               1
+            ],
+            "export" : "kernel3",
+            "result" : "1681261531"
+         },
+         {
+            "args" : [
+               7,
+               2
+            ],
+            "export" : "kernel3",
+            "result" : "2906689189"
+         },
+         {
+            "args" : [
+               7,
+               3
+            ],
+            "export" : "kernel3",
+            "result" : "3071908558"
+         },
+         {
+            "args" : [
+               17,
+               0
+            ],
+            "export" : "kernel3",
+            "result" : "3311568644"
+         },
+         {
+            "args" : [
+               17,
+               1
+            ],
+            "export" : "kernel3",
+            "result" : "1139345340"
+         },
+         {
+            "args" : [
+               17,
+               2
+            ],
+            "export" : "kernel3",
+            "result" : "2040179882"
+         },
+         {
+            "args" : [
+               17,
+               3
+            ],
+            "export" : "kernel3",
+            "result" : "2354441664"
+         }
+      ]
+   ]
+}

@@ -92,7 +92,9 @@ sub command {
     my ($name, @args) = @_;
     $name .= '-' . ++$command_sequence;
     my $status = run_command_capture(cmd => \@args,
-        stdout => "$directory/$name.stdout", stderr => "$directory/$name.stderr", timeout => 30);
+        stdout => "$directory/$name.stdout", stderr => "$directory/$name.stderr", timeout => 30,
+        internal_error => $args[0] eq $runtime ? undef : 70,
+        supervisor => $compiler, limits => {cpu_seconds => 30, rss_bytes => 2147483648, file_bytes => 67108864});
     return ($status, read_file("$directory/$name.stdout"), read_file("$directory/$name.stderr"));
 }
 
@@ -491,7 +493,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                 write_file("$files/$_", $run->{files}{$_}) for keys %{$run->{files} // {}};
                 @preopen = ('--dir', "${files}::.");
             }
-            ($status, $stdout, $stderr) = command("command-$level", $runtime, 'run',
+            ($status, $stdout, $stderr) = command("command-$level", $runtime, 'run', '-W', 'max-memory-size=268435456',
                 @preloads, @preopen, $run_module, @{$run->{args} // []});
             die "$test: WASI command exit expected $run->{exit}, got $status: $stdout$stderr\n"
                 if $status != $run->{exit};
@@ -507,7 +509,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
             my $entry = sequence_module($run_module, $wrapped, $sequence, $initialize{$run_module});
             ($status, $stdout, $stderr) = command("sequence-validate-$level", $validator, 'validate', $wrapped);
             die "$test: invalid sequence driver: $stdout$stderr\n" if $status;
-            ($status, $stdout, $stderr) = command("sequence-run-$level", $runtime, 'run', @preloads, '--invoke', $entry, $wrapped);
+            ($status, $stdout, $stderr) = command("sequence-run-$level", $runtime, 'run', '-W', 'max-memory-size=268435456', @preloads, '--invoke', $entry, $wrapped);
             $stdout =~ s/\s+\z//;
             if (!$status && $stdout =~ /^-([0-9]+)$/ && $1 <= @$sequence) {
                 my $call = $sequence->[$1 - 1];
@@ -518,7 +520,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         }
         for my $call (@{$expect->{calls} // []}) {
             my @fuel = exists($call->{fuel}{$level}) ? ('-W', "fuel=$call->{fuel}{$level}") : ();
-            ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run',
+            ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run', '-W', 'max-memory-size=268435456',
                 @preloads, @fuel, '--invoke', $call->{export}, $run_module, @{$call->{args} // []});
             $stdout =~ s/\s+\z//;
             if ($call->{trap}) {

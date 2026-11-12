@@ -31,3 +31,11 @@ all checksums. Read calibration cautions before interpreting small differences.
 Host, flags, engine configuration and compiler/module hashes are recorded.
 These timings are advisory; the assignment's correctness and quality bounds
 remain required. GCC is not a baseline for this Wasm target.
+
+Each child command has a 120-second wall limit, a 120-second CPU limit per
+process, a 4-GiB resident-memory
+ceiling across its process group sampled every 10 milliseconds, and a 256-MiB
+limit on each output file. A Wasmtime Store limits guest linear memory to
+256 MiB without changing the engine's virtual-memory reservations or guards.
+The supervisor's work is outside the executor's measured intervals. A failed
+limit stops the campaign and retains the command's outcome and captured output.

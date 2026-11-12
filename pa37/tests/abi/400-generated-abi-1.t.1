@@ -1,0 +1,38 @@
+#include "400-generated-abi-1.t.h"
+extern "C" Record0 transform0(Record0 value, unsigned delta) {
+  value.field0 = static_cast<unsigned char>(value.field0 + delta + 7);
+  return value;
+}
+extern "C" Record1 transform1(Record1 value, unsigned delta) {
+  value.field0 = static_cast<unsigned>(value.field0 + delta + 10);
+  return value;
+}
+extern "C" Record2 transform2(Record2 value, unsigned delta) {
+  value.field0 = static_cast<unsigned short>(value.field0 + delta + 2);
+  value.field1 = static_cast<double>(value.field1 + delta + 13);
+  value.field2 = static_cast<double>(value.field2 + delta + 10);
+  value.field3 = static_cast<double>(value.field3 + delta + 15);
+  return value;
+}
+extern "C" Record3 transform3(Record3 value, unsigned delta) {
+  value.field0 = static_cast<double>(value.field0 + delta + 7);
+  value.field1 = static_cast<unsigned long long>(value.field1 + delta + 5);
+  value.field2 = static_cast<unsigned long long>(value.field2 + delta + 5);
+  return value;
+}
+extern "C" Record4 transform4(Record4 value, unsigned delta) {
+  value.field0 = static_cast<unsigned>(value.field0 + delta + 13);
+  value.field1 = static_cast<float>(value.field1 + delta + 9);
+  value.field2 = static_cast<unsigned char>(value.field2 + delta + 8);
+  value.field3 = static_cast<unsigned>(value.field3 + delta + 4);
+  value.field4 = static_cast<unsigned char>(value.field4 + delta + 4);
+  return value;
+}
+extern "C" Record5 transform5(Record5 value, unsigned delta) {
+  value.field0 = static_cast<double>(value.field0 + delta + 8);
+  value.field1 = static_cast<unsigned long long>(value.field1 + delta + 9);
+  value.field2 = static_cast<unsigned long long>(value.field2 + delta + 3);
+  value.field3 = static_cast<unsigned short>(value.field3 + delta + 5);
+  value.field4 = static_cast<unsigned short>(value.field4 + delta + 1);
+  return value;
+}

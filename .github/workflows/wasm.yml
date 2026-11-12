@@ -57,6 +57,10 @@ jobs:
         run: make -C dev cppgm++ -j "$(nproc)"
       - name: Install pinned engine and reference tools
         run: perl scripts/install_wasm_tools.pl --prefix obj/wasm-tools --benchmark-engine
+      - name: Check host and guest resource limits
+        run: |
+          PATH="$PWD/obj/wasm-tools/bin:$PATH" CPPGM_WASM_C_API="$PWD/obj/wasm-tools/wasmtime-c-api" \
+            python3 scripts/tests/test_command_resources.py
       - name: Measure both optimization levels
         run: |
           for level in 0 3; do

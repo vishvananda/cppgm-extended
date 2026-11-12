@@ -198,6 +198,22 @@ and optimization. Install the pinned runtime, validator and reference
 toolchain listed in the supplied reference bundle; missing required tools
 are reported as prerequisite failures.
 
+Each tool invocation has a 30-second wall limit, a 30-second CPU limit per
+process, a 2-GiB resident-memory
+ceiling across its process group, and a 64-MiB limit on each output file.
+Resident memory is sampled every 10 milliseconds on Linux and macOS; it can
+briefly exceed the ceiling between samples. The runtime separately limits each
+guest linear memory to 256 MiB. Resource exhaustion, cancellation and internal
+errors fail the test, including tests that expect an input diagnostic.
+
+The generated CFG and ABI fixtures use published seeds and independent Perl
+arithmetic. They include cyclic phi transfers, switched recurrences, reordered
+blocks, narrow values, mixed and over-aligned records, indirect calls and
+caller-owned argument copies. The ABI cases cross the reference compiler
+boundary in both directions. Reproduce a seed or explore another one with
+`perl scripts/generate_tests.pl --seed 1 --output student.tests/generated`;
+run the resulting inputs with the ordinary `make check TEST=...` command.
+
 Use the assignment target while iterating. Finish with the cumulative
 report through this assignment from the repository root with `make test-report-through-pa37`. That command
 includes this assignment, so running both is unnecessary for final validation.

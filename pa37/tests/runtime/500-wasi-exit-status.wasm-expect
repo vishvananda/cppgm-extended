@@ -1,0 +1,16 @@
+{
+  "source": true,
+  "wasi": true,
+  "target": "wasm32-wasip1",
+  "llvm_interop": true,
+  "commands": [
+    {"exit": 0, "stdout": ""},
+    {"args": ["70"], "exit": 70, "stdout": ""},
+    {"args": ["124"], "exit": 124, "stdout": ""},
+    {"args": ["125"], "exit": 125, "stdout": ""},
+    {"args": ["126"], "exit": 126, "stdout": ""},
+    {"args": ["127"], "exit": 127, "stdout": ""},
+    {"args": ["200"], "exit": 200, "stdout": ""},
+    {"args": ["255"], "exit": 255, "stdout": ""}
+  ]
+}

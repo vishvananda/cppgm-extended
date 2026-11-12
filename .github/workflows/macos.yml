@@ -96,8 +96,11 @@ jobs:
           fi
       - name: Install pinned Wasm validation tools
         run: |
-          perl scripts/install_wasm_tools.pl --prefix "$RUNNER_TEMP/wasm-tools"
+          perl scripts/install_wasm_tools.pl --prefix "$RUNNER_TEMP/wasm-tools" --benchmark-engine
           echo "$RUNNER_TEMP/wasm-tools/bin" >> "$GITHUB_PATH"
+          echo "CPPGM_WASM_C_API=$RUNNER_TEMP/wasm-tools/wasmtime-c-api" >> "$GITHUB_ENV"
+      - name: Check child resource limits and cancellation
+        run: python3 scripts/tests/test_command_resources.py
       - name: Run the default Intel macOS test report
         run: |
           make --no-print-directory -f Makefile -f - ci-report-config <<'MAKE'

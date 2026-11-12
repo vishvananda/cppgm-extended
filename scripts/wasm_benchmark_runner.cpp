@@ -82,6 +82,7 @@ Instance instantiate(wasm_engine_t* engine, wasmtime_module_t* module)
 {
 	Instance result;
 	result.store = wasmtime_store_new(engine, nullptr, nullptr);
+	wasmtime_store_limiter(result.store, 268435456, 100000, 16, 16, 16);
 	wasm_trap_t* trap = nullptr;
 	const auto start = Clock::now();
 	wasmtime_error_t* error = wasmtime_instance_new(result.context(), module, nullptr, 0, &result.instance, &trap);

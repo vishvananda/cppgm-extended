@@ -44,6 +44,7 @@ our @EXPORT_OK = qw(
 
 my %worker_has_process_group;
 my %input_directory_entries;
+my %limited_workers;
 
 # Fixture inputs do not change during a runner invocation. Inventory each
 # directory once: globbing for every fixture repeatedly scans all retained
@@ -448,8 +449,9 @@ sub standard_args_for
 
 sub open_worker
 {
-	my ($app) = @_;
-	my @app_args = app_args_for($app);
+	my ($app, $mode) = @_;
+	$mode //= '--batch-stdin';
+	my @app_args = $mode eq '--batch-stdin' ? app_args_for($app) : ();
 	my ($worker_out, $worker_in);
 	my $pid = open2($worker_out,
 	               $worker_in,
@@ -457,7 +459,7 @@ sub open_worker
 	               'WRAPPED_BATCH_STDIN=1',
 	               $app,
 	               @app_args,
-	               '--batch-stdin');
+	               $mode);
 	$worker_in->autoflush(1);
 	set_cloexec($worker_in, "worker stdin");
 	set_cloexec($worker_out, "worker stdout");
@@ -579,9 +581,12 @@ sub submit_cli_request
 # Those overlap with real exit statuses; a caller that must tell them apart
 # passes `outcome => \%outcome`, which receives `timed_out => 1`, or the
 # `signal` that killed the command (0 for none) and its `exit` status.
+# With `limits`, the native supervisor uses fresh capture files and throws on
+# resource, signal or infrastructure failures; its outcome has `kind`/`status`.
 sub run_command_capture
 {
 	my (%options) = @_;
+	return run_limited_command_capture(%options) if $options{limits};
 	my @cmd = @{$options{cmd}};
 	my $outcome = $options{outcome};
 	my $stdout_path = $options{stdout};
@@ -662,6 +667,82 @@ sub run_command_capture
 		exit => $wait_status >> 8) if ref($outcome) eq 'HASH';
 	return $wait_status >> 8 if ($wait_status & 127) == 0;
 	return 128 + ($wait_status & 127);
+}
+
+# This native worker is shared by requests from one Perl checker, never by
+# forked checkers. The compiler-request protocol and its fast path stay separate.
+sub run_limited_command_capture
+{
+	my (%options) = @_;
+	my $supervisor = $ENV{CPPGM_TEST_SUPERVISOR} // $options{supervisor};
+	die "Resource-limited command needs a native test supervisor\n" unless defined($supervisor);
+	my $limits = $options{limits};
+	my @numbers = ($options{timeout} * 1000, @{$limits}{qw(cpu_seconds rss_bytes file_bytes)});
+	for my $number (@numbers) {
+		die "Invalid command resource limit\n" unless defined($number) && $number =~ /\A[1-9][0-9]*\z/;
+	}
+	my $encode = sub {
+		my ($value) = @_;
+		die "NUL in command argument\n" if !defined($value) || index($value, "\0") >= 0;
+		utf8::encode($value) if utf8::is_utf8($value);
+		return unpack('H*', $value);
+	};
+	my @args = @{$options{cmd}};
+	my $env = $options{env} // {};
+	my @keys = sort keys %$env;
+	my @fields = ('exec-v1', @numbers,
+		map { $encode->($_) } ($options{stdin} // '/dev/null', $options{stdout}, $options{stderr}));
+	push @fields, scalar(@args), map { $encode->($_) } @args;
+	push @fields, scalar(@keys);
+	push @fields, $encode->($_), $encode->($env->{$_}) for @keys;
+	my $request = join("\t", @fields) . "\n";
+	die "Command request exceeds protocol limit\n" if length($request) > 4 * 1024 * 1024;
+	my $key = "$$:$supervisor";
+	$limited_workers{$key} //= [$$, open_worker($supervisor, '--batch-exec-v1')];
+	my (undef, $pid, $reader, $writer) = @{$limited_workers{$key}};
+	my $interrupt = sub {
+		my ($status) = @_;
+		delete $limited_workers{$key};
+		force_terminate_worker($pid);
+		exit $status;
+	};
+	local $SIG{INT} = sub { $interrupt->(130) };
+	local $SIG{TERM} = sub { $interrupt->(143) };
+	local $SIG{ALRM} = sub {
+		delete $limited_workers{$key};
+		force_terminate_worker($pid);
+		die "Native command supervisor did not respond\n";
+	};
+	alarm(int($options{timeout}) + 5);
+	my $reply;
+	my $submitted = eval {
+		print {$writer} $request or die "Cannot submit resource-limited command: $!\n";
+		$reply = <$reader>;
+		1;
+	};
+	my $failure = $@;
+	alarm(0);
+	die $failure unless $submitted;
+	die "Invalid response from native command supervisor\n"
+		unless defined($reply) && $reply =~ /\Aexec-v1\t([0-9]+)\t([a-z]+)\n\z/;
+	my ($status, $kind) = ($1, $2);
+	if (ref($options{outcome}) eq 'HASH') {
+		%{$options{outcome}} = (kind => $kind, status => 0 + $status);
+	}
+	# A resource/worker failure never counts as a compiler rejection or guest
+	# trap, even if the child printed a diagnostic before it stopped.
+	die "Command failed ($kind, $status): $args[0]\n"
+		unless $kind eq 'exit';
+	die "Command stopped with an internal compiler error ($status): $args[0]\n"
+		if defined($options{internal_error}) && $status == $options{internal_error};
+	return $status;
+}
+
+END {
+	for my $worker (values %limited_workers) {
+		next unless $worker->[0] == $$;
+		close_worker(@{$worker}[1 .. 3]);
+	}
 }
 
 1;
