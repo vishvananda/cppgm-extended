@@ -1,6 +1,6 @@
 # A second backend: wasm32 and a reusable machine layer
 
-Status: implementation in progress, 2026-11-12. The working branch is
+Status: implementation and required acceptance complete, 2026-11-12. The working branch is
 `feature/wasm32-backend`, rebased onto `origin/main` at `e2831a513`, including
 the merged LLVM optimization work. Compiler changes are isolated in
 `/mnt/vizier/cppgm-wasm32-backend`; the main checkout is unchanged.
@@ -27,8 +27,8 @@ The consumed Wasm MIR retains typed locals, frame objects, effects and source
 locations. Its local cleanup and initial published quality bounds have independent
 LLVM calibration. Typed globals/constant expressions, reference values,
 global COMDATs and object-section/feature validation are implemented. Host-built
-and self-built tools pass 106/106 PA37 controls; the strict report passes
-10,798/10,798. Target library/header facts, undefined weak runtime calls,
+and self-built tools pass 120/120 PA37 controls; the strict report passes
+10,821/10,821. Target library/header facts, undefined weak runtime calls,
 zero-storage data emission and UTF-8 object names have reduced checks.
 Unsigned vector construction, extraction, shifts and target-aware packed
 multiplication now avoid the source SIMD memory fallback. Quoted object names
@@ -36,10 +36,17 @@ round-trip with sigil prefixes and reject embedded null bytes. Pinned LLVM
 gaps have explicit shipped reference limitations.
 
 Source/LowIR host bindings, template specializations, imported host globals and
-static memory/table limit boundaries now have independent checks. The final
-PA36 release check, fresh export and complete Linux/macOS CI qualification
-remain required. Keep
-the full acceptance checks below visible rather than narrowing the assignment to the current emitter.
+static memory/table limit boundaries have independent checks. Seeded Perl CFG/ABI
+generators, native child resource supervision, guest-memory limits and the
+[AArch64 representation review](wasm32-assignment/machine-boundary-review.md)
+close the remaining implementation checklist. The reduced StoreMotion regression
+and libc++ variadic-macro fixes pass local qualification and full Godot checks.
+The full PA36 release passes every gate and margin in course and student
+configurations. A fresh export passes its document/bundle checks and all
+120 PA37 controls. Both Intel macOS LLVM 18/21 jobs pass their full reports
+and byte-identical inception comparisons. Additional application/upstream CI
+status is recorded in the completion journal.
+Keep the full acceptance checks below visible.
 Current evidence and qualification details are in the completion journal.
 
 ## Qualification of the first implementation

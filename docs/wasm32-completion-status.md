@@ -4,20 +4,26 @@ This is an implementation checklist, not part of the student export. The full
 assignment in `pa37/README.md` remains the completion target. A working subset
 or a green partial suite does not complete PA37.
 
-| Requirement | Current evidence | Remaining qualification |
+Current compiler revision: `953836b1c` on `origin/main` at `e2831a513`.
+`33ea331f4` adds only the release workflow trigger.
+PA37 implementation and required acceptance checks are complete. Full PA36
+release, fresh export, Linux qualification and both Intel macOS inception
+comparisons pass. Additional application/upstream CI status is recorded below.
+
+| Requirement | Current evidence | Qualification |
 | --- | --- | --- |
-| Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes, target-sized class ABI and physical structor returns | Broader portable C++ target cases and final integrated qualification |
-| Scalar and aggregate execution | Qualified binary128 and variadic boundaries; scalar i128 selection and mixed LLVM calls now implemented | Remaining float formats and complete type/layout edge cases |
-| CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
-| Standard objects and own static linker | Linking-v2 objects, typed numeric/vector/reference globals, weak/COMDAT resolution, dependency ordering, multi-result control, modern EH, both LLVM interop directions and static GOT address globals | Qualification of synthesized memory/table limits, explicit host globals, source/LowIR host-import bindings and remaining malformed-profile boundaries |
-| C++ runtime | Class ABI, allocation, dispatch, RTTI, guards, finalization and modern source EH; automatic EH/no-EH runtime selection | Broader portable C++ cases and final integrated qualification |
-| Modern EH execution dependency | Source/serialized EH, typed catches, nested cleanup contexts, stack recovery, opaque LowIR payloads and mixed LLVM producers/linkers pass | Additional merged-context/foreign-language cases and final integrated qualification |
-| WASI commands and freestanding reactors | Qualified WASI startup, argument/I/O/exit behavior, freestanding initialization and same-instance state/EH sequences | Broader C++ services and final integrated qualification |
-| SIMD and shared optimization | All 214 LowIR vector operations legalized; complete standard SIMD128 object vocabulary; consumed typed MIR/local cleanup; target-aware address, loop and inlining policies; published static/fuel envelopes and standard benchmark comparisons | Remaining independent kernel/quality review and final integrated qualification |
-| Robust diagnostics and determinism | Bad target/version/shape tests; bounded MIR validation | Complete malformed object/feature/signature/relocation coverage and deterministic multi-object linking |
-| Course material and export | PA37 handout/design notes, target/MIR scaffolds, offline source/licence pins, normal Perl runner | Final scope and scaffold review, complete reference-tool prerequisites, clean export qualification |
-| Benchmarks and CI | Required correctness lane on both hosts; catalog/report/README integration; Perl O0/O3 scalar/SIMD campaign with separate compile/link/size/startup/setup/steady metrics; hosted and dedicated Intel publication paths | Final Linux/macOS results, live CI publication and measured codegen follow-ups |
-| Native regressions and efficiency | Latest local snapshot: 10798 strict tests, 106 Wasm controls with host/self tools, debug info, PA5 self-host, byte-identical inception and frozen native output/performance checks on e2831a513 | Repeat final required qualification after the remaining implementation changes |
+| Target selection and typed LowIR | Explicit wasm32/WASI profiles, ILP32 type identity/layout, binary128 constants, aggregate/varargs/structor facts, validated host bindings and alternating-target requests | Passed on Linux and Intel macOS |
+| Consumed machine boundary | Shared call facts, exception analyses/tables and global data; target-specific selected streams; [AArch64 representation review](wasm32-assignment/machine-boundary-review.md) and executable probe | Passed on Linux and Intel macOS |
+| Scalar, wide and aggregate values | Independent wide-integer/binary128 controls, layout and snapshot cases, source/text paths and mixed LLVM calls | Passed on Linux and Intel macOS |
+| CFG and calls | Reducible/nested/irreducible flow, cyclic copies, recursive/indirect calls, reproducible Perl CFG generators and independent arithmetic | Passed on Linux and Intel macOS |
+| Objects, ABI and static linker | Linking-v2 objects/archives, weak/COMDAT, typed globals/references/tags, explicit imports/exports, generated aggregate callers/callees, malformed sections/features/relocations and both LLVM directions | Passed on Linux and Intel macOS |
+| Portable C++ and modern EH | Class/RTTI/guard/lifetime behavior, cleanup/typed catches/rethrow, opaque payloads, stack restoration, handler-copy termination and cross-compiler boundaries | Passed on Linux and Intel macOS |
+| WASI and freestanding initialization | Main adapters, arguments/streams/files/allocation/finalization, same-instance state and valid exit statuses including 70 and 124–127 | Passed on Linux and Intel macOS |
+| SIMD and optimization quality | All 214 LowIR vector operations, standard SIMD128 object vocabulary, target costs, consumed MIR cleanup and independent published static/fuel envelopes | Passed on Linux and Intel macOS |
+| Bounded Perl test harness | Wall/CPU/process-group RSS/file ceilings, Wasmtime guest-memory limit, cancellation and setup/exit distinction; 12 resource tests and 17 existing timeout tests pass | Linux/macOS enforcement and inception pass |
+| Course material and export | PA37 handout, ABI/design/quality documents, target/MIR vocabulary, offline licensed references, seeded Perl generators and normal report discovery | Complete: 275-document inventory, 43 wrappers and 120 exported controls |
+| Benchmarks and CI | Local and CI O0/O3 scalar/SIMD campaigns pass all independent oracle cases; compile/link/size/startup/setup/steady phases remain separate | Required Wasm campaigns and Linux/macOS qualification pass |
+| Native regressions and efficiency | 10821 strict tests; 120 PA37 controls with host/self tools; debug, PA5, byte-identical inception, smoke, full audits/harness; frozen native outputs/counts and 96 timing observations | Complete: all 17 gates and release margins in both builds |
 
 All raw results, probes, pinned binaries and performance observations live outside
 Git under `/mnt/vizier/cppgm-wasm32-evidence`. Earlier qualification applies only
@@ -26,10 +32,9 @@ to its recorded snapshot; it does not establish qualification of later changes.
 Optional compiler self-hosting and browser inception are investigated in the
 [separate plan](wasm-browser-inception-plan.md). Chromium and Firefox execute
 the small SIMD/EH/WASI/filesystem probes; the complete compiler has not yet run
-inside Wasm. The investigation also found required target-library gaps:
-target-independent builtin templates are absent from Wasm's injected declarations,
-and an unresolved weak direct call in libc prevents ordinary stdio linking.
-The target-library checkpoint below fixes both gaps.
+inside Wasm. The investigation also exposed missing target-independent builtin templates
+and an unresolved weak direct call that prevented ordinary stdio linking.
+The target-library checkpoint below fixed both required gaps.
 The Clang WASI syntax scan passes 274/406 compiler translation units; the 132
 failures identify host padding, resource APIs and x87 floating assumptions.
 Compiler-host portability remains optional follow-on work.
@@ -975,3 +980,206 @@ also close the planned per-child memory/output bounds: the existing Wasm
 checker has timeouts, but its direct subprocess captures do not set those
 resource limits. This remains required harness work, separately from optional
 compiler/browser inception.
+
+## Resource bounds and generated-test closure
+
+`e256ee7db` repairs nested StoreMotion analysis before it can read invalidated
+loop facts, and renames private Wasm variadic selector methods that collide
+with libc++ macros. The reduced PA33 regression executes 108 input pairs.
+The old CI optimizer has a Memcheck invalid read on that input; the fixed
+optimizer is clean. Scalar, SSSE3 and AVX2 Godot translation-unit replays pass.
+The fix preserves loop promotion and removes the former temporary region vector.
+
+`4e52299e1` supplies deterministic Perl CFG/ABI generators with independent
+arithmetic, four required generated controls, the machine-boundary representation
+probe, and real host/guest resource ceilings. The new native worker protocol
+preserves arbitrary non-NUL argument/environment bytes and empty arguments.
+Only generic limited commands use RSS sampling; ordinary compiler requests
+retain their existing path. CPU limits are per process, file limits per file,
+and sampled RSS is summed across the child process group. The guest memory
+limiter does not change Wasmtime's reservation, guard or JIT settings.
+
+`7abffb9fe` fixes a race exposed by the first CI run: the supervisor could
+inspect an earlier full capture before the next child truncated it. A nonblocking
+setup pipe now distinguishes successful exec from setup failure and delays
+capture-size inspection until setup finishes. Wall/CPU/RSS bounds remain active
+during setup. A deterministic FIFO regression fails the old supervisor and
+passes the fix. The final resource suite has 12 tests, including real ceilings,
+cancellation, descendants, valid guest exits and subsequent healthy requests;
+the existing 17 timeout tests also pass.
+
+The final compiler passes 10821/10821 strict tests and 120/120 PA37 controls
+with self-built tools, debug info, PA5 self-hosting, byte-identical inception,
+PA36 smoke, the complete harness and architecture/format/file audits.
+Placement scans 10159 fixtures with no early-placement or hygiene findings;
+89 existing EH review leads remain advisory. Seven inherited file-audit
+warnings remain. Evidence is in `resource-qualification/final/` and
+`resource-qualification/capture-race/qualification/`; the latter repeats the
+affected checks after the setup-race correction.
+
+Immutable native compilers compare final `7abffb9fe` with the preceding
+`83dc85543` checkpoint and main `e2831a513` on the same frozen input:
+
+| Level | Main instructions | Prior checkpoint | Final compiler | Final versus main |
+| --- | ---: | ---: | ---: | ---: |
+| O0 | 3,051,855,703 | 3,059,003,124 | 3,059,052,729 | +0.2358% |
+| O3 | 10,281,696,850 | 10,350,104,295 | 10,349,976,042 | +0.6641% |
+
+All three compilers emit identical native object bytes. The follow-up changes
+alone are +0.00162% O0 / -0.00124% O3. Four A/A and eight ABBA blocks per
+level retain all 96 timing observations. Paired final/prior wall changes are
++0.455% O0 and -0.782% O3; both block-bootstrap intervals include zero.
+A/A is +0.227%/-1.643%, with substantial O3 variation. Paired RSS changes
+are below 0.06%. This does not establish a small timing change. Hashes,
+commands, counters, objects and observations are in
+`resource-qualification/native-perf-final/`.
+
+The local O0/O3 Wasm campaigns and the
+[CI campaign](https://github.com/vishvananda/cppgm-extended/actions/runs/43239133413)
+pass all 32 independent oracle cases per compiler/configuration. The CI artifact
+is downloaded and SHA-verified; its standard report is reproduced locally.
+All engine/resource settings and observations are retained. Standard publication
+is main-only; this PR does not publish a new badge revision. Final release,
+export and host/application qualification are recorded below when complete.
+
+
+## Darwin supervision and release qualification
+
+`953836b1c` keeps process-group RSS enforcement compatible with native
+self-hosting on macOS. Including `libproc.h` brought unrelated Mach message
+syntax into the SDK header closure; both LLVM 18 and LLVM 21 CI builds passed
+the full report and resource controls, then failed while self-compiling that
+header. The supervisor now declares the two required libproc functions using
+`sys/resource.h` types: `proc_listpgrppids` supplies process IDs and
+`proc_pid_rusage` supplies resident sizes. Counts, errors and disappearing
+children retain explicit handling. The narrow declarations match Apple's XNU
+headers and wrappers. Linux preprocessed source and the rebuilt compiler are
+byte-identical before and after this Darwin-only change; the Linux binary SHA256
+is `e6a02297f96b521534ab56fa2f00da28ab040f98912b96a265891b400ae9c64c`.
+The existing Linux qualification and frozen measurements therefore still apply.
+
+The full local PA36 release run completed all 100 generated seeds and passed
+all ordinary gates in both course and student configurations. Student scaling
+was 2.48, however, giving only 20.97% headroom against the 3.0 limit instead of
+the required 25%; that release attempt failed. A predeclared set of exactly
+three pinned speed-group trials required all three to pass. Two passed, but
+the third failed with members scaling 3.71 and a sharp increase in measured
+large-input time. Every original and follow-up observation is retained; the
+passing trials do not qualify the release. Deterministic and other release
+margins passed in the original complete run.
+
+The new PA36 release workflow runs the unchanged complete calibration with
+100 seeds on a GitHub runner and retains raw results and measured binaries
+even on failure. It preserves all gate limits and release margins. The fresh
+[release run](https://github.com/vishvananda/cppgm-extended/actions/runs/43247726609)
+and [macOS self-host run](https://github.com/vishvananda/cppgm-extended/actions/runs/43247611125)
+remain pending at this checkpoint.
+
+
+The fresh export at this checkpoint regenerates all tracked references and
+debug-info references without differences. Its document audit passes 65
+reviewed prose files and the 275-file inventory; the freshly packaged binary
+bundle installs successfully through all 43 wrappers. All 120 PA37 controls
+pass through those exported wrappers. The 29 changed shipped files are
+byte-identical to the current source, including the deterministic generator
+and Darwin supervisor fix. Maintainer plans, the representation-review journal
+and the local handoff are absent. Evidence is retained in
+`resource-qualification/export*.log`, `export-final-status.json` and
+`export-shipped-equality.json`.
+
+
+The complete [Godot qualification](https://github.com/vishvananda/cppgm-extended/actions/runs/43239133589)
+now passes on the Linux compiler with the StoreMotion fix: all three compilers
+build the unchanged full headless engine, and all five checked workload
+families agree with their independent expected results. This closes the original
+application-level reproducer as well as its reduced PA33 control. The
+[index-cpp campaign](https://github.com/vishvananda/cppgm-extended/actions/runs/43239133306)
+also passes all 50 checksums with cppgm, GCC and Clang. Both artifact archives
+are downloaded, SHA-verified and retained with provenance and every raw
+observation under `resource-qualification/{godot,index}-ci/`. These campaigns
+have their own A/A variation and do not establish a small native regression
+relative to main.
+
+Post-export architecture/format/scaffold/IR audits, file audit, the entire
+harness and placement audit also pass at this source revision. The placement
+counts remain 10159 fixtures, zero early-placement/hygiene findings and 89
+inherited advisory EH leads. Results are in
+`resource-qualification/post-export-status.json`.
+
+
+The upstream Clang CI retry again failed during Ubuntu snapshot package setup
+with HTTP 500/503, before checkout or compiler tests. Both current-head upstream
+jobs also hit that outage. Their setup logs are retained. A subsequent GET of
+the exact pinned Clang package succeeded with HTTP 200, after which the failed
+current-head jobs were retried without changing pins.
+
+Independent local validation uses the same clean upstream revision
+`2078da43e25a4623cab2d0d60decddf709aaea28`, Clang 21.1.8 and the exact current CI
+manifest options. All 562 native qualification cases pass; both cppgm and Clang
+pass all 815 selected language configurations (310 acceptance and 505 required
+diagnostics). All 15465 source/RUN exclusions remain explicit; this is not a
+claim of full Clang-suite coverage or runtime parity. The local Ubuntu host is
+recorded with its package inventory and is distinct from the pinned CI
+container. Frozen binaries, manifests, commands, source hashes, raw outputs
+and status are in `resource-qualification/upstream-clang-local/`. This validates
+the compiler while leaving the CI setup outage visible.
+
+
+The complete [PA36 CI release](https://github.com/vishvananda/cppgm-extended/actions/runs/43247726609)
+passes all 17 gates and every release margin in both course and student
+configurations, with 100 generated seeds each. Course/student scaling is
+2.05/2.06, giving 46.34%/45.63% headroom against the unchanged 3.0 limit;
+the required headroom is 25%. Student O0/O3 compile-time ratios are
+0.1479/0.1594 and peak-RSS ratio is 0.4341. Instruction, cycle-proxy, text
+and kernel ratios also clear their required margins.
+
+The measured merge revision is `e22f2294eaba03fb20fce1c2de9595b4d821b1c6`
+(PR head `33ea331f4`, unchanged main `e2831a513`). The full evidence and
+measured binaries are downloaded and SHA-verified in `resource-qualification/pa36-ci/`;
+the artifact digest is
+`a4b02058652542d025519c6b1177bee65a54f0f1d8241f5564b2f84cdbb25bed`.
+Both generated calibration tables are copied byte-for-byte into their owning
+PA36 paths, as required by `TESTING_AND_REFERENCES.md`. The tables retain
+empty TSV fields and the actual CI provenance. Earlier failed local measurements
+remain preserved separately and are not relabeled as passes.
+
+
+A second fresh export includes the newly generated student calibration. It
+again regenerates all references without differences, passes the 275-file
+inventory and 43 bundle wrappers, and passes all 120 exported PA37 controls.
+All 30 changed shipped files match the source byte-for-byte. Its complete
+logs, binary bundle and status are retained separately in
+`resource-qualification/release-export/`.
+
+The final [Linux matrix](https://github.com/vishvananda/cppgm-extended/actions/runs/43247726300)
+passes all four GCC/Clang and Ubuntu 24.04/26.04 builds, cumulative reports,
+debug-info checks, PA5 self-host ladders and optional target-feature tests,
+as well as source and placement audits. Current-head Wasm, internal C++,
+simdjson and export CI also pass.
+
+
+## Completed PA37 acceptance
+
+Both [Intel macOS jobs](https://github.com/vishvananda/cppgm-extended/actions/runs/43247611125)
+now pass with LLVM 18 and LLVM 21: 10786/10786 platform tests, all 12 resource
+controls, optional target features, and byte-identical self-built/inception
+objects and compiler binaries. This qualifies the narrow Darwin process API
+fix on its affected platform. The complete logs are retained as
+`resource-qualification/macos-final-llvm18.log` and `macos-final-llvm21.log`.
+
+The implementation sequence's required exit criteria are satisfied: independent
+Wasm behavior and quality checks, both LLVM interoperability directions,
+shared-machine representation review, all native regression/performance gates,
+Linux/macOS reports and inception, resource bounds, and a clean student export.
+The checked CI merge tree is identical to branch revision `33ea331f4`.
+Subsequent committed changes contain only the exact generated calibration
+tables and their documentation; the compiler has not changed since platform
+qualification. The full compiler running inside Wasm/browser remains the
+separate optional project described above.
+
+The additional Boost campaign and retried upstream CI jobs were still running
+when this closeout was recorded. They are not labeled as passes. Full Godot,
+index-cpp, simdjson, internal C++, Wasm, Linux test and export campaigns have
+passed; the equivalent local Clang language cohort also passes, with the
+snapshot setup failures and retries retained explicitly above. This closes
+PA37 for review and does not merge or publish the branch on main.
