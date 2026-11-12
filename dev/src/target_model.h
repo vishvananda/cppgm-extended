@@ -129,6 +129,12 @@ constexpr OptimizationModel optimization_model(Target target)
 	return is_wasm(target) ? OptimizationModel{ false, true, false } : OptimizationModel{ true, false, true };
 }
 
+// The course's Linux runtime provides GNU's combined sin/cos call ABI.
+constexpr bool has_gnu_sincos(Target target)
+{
+	return describe(target).environment == Environment::Linux;
+}
+
 constexpr CxxAbi cxx_abi(Target target)
 {
 	return CxxAbi{ data_layout(target).pointer_bytes,

@@ -61,20 +61,7 @@ sub oracle {
 }
 
 sub module_sizes {
-    my ($path) = @_;
-    open(my $file, '<:raw', $path) or die "Cannot read $path: $!\n";
-    local $/;
-    my $reader = {data => scalar(<$file>), offset => 0};
-    CppgmWasmModule::bytes($reader, 8) eq "\0asm\1\0\0\0" or die "Expected core module\n";
-    my %size = (module => length($reader->{data}), code => 0, data => 0);
-    while ($reader->{offset} < length($reader->{data})) {
-        my $id = CppgmWasmModule::byte($reader);
-        my $payload = CppgmWasmModule::number($reader);
-        $size{code} += $payload if $id == 10;
-        $size{data} += $payload if $id == 11;
-        CppgmWasmModule::bytes($reader, $payload);
-    }
-    return \%size;
+    return CppgmWasmModule::module_sizes(@_);
 }
 
 sub median {

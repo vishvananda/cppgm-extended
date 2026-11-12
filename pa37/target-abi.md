@@ -116,6 +116,8 @@ requirements. Custom linking/relocation metadata may precede the core sections
 it describes. The static C table is synthesized from symbol references, as in
 the linking convention; independent/passive table or data initialization and
 dynamic-link metadata are outside this static-object profile and must fail.
+Validate UTF-8 names, including names in otherwise unrecognized custom sections.
+Preserve valid non-ASCII import/export names.
 
 Preserve multi-result signatures in objects and typed block, loop and if
 parameters/results. Branches transfer the target's complete tuple: loop

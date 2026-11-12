@@ -131,7 +131,7 @@ int run_lowiropt_mode(const vector<string>& args)
 		cout << lowiropt_help_text();
 		return EXIT_SUCCESS;
 	}
-	const Invocation invocation = parse_invocation(args);
+	Invocation invocation = parse_invocation(args);
 	lowir::Program program;
 	lowir::ReadStatistics read;
 	string error;
@@ -141,6 +141,7 @@ int run_lowiropt_mode(const vector<string>& args)
 		return EXIT_FAILURE;
 	}
 	opt::OptimizerStats stats;
+	invocation.options.has_gnu_sincos = target_model::has_gnu_sincos(program.target);
 	opt::optimize_program(program, invocation.options, &stats);
 	lowir::Diagnostic diagnostic;
 	if (invocation.validate && !lowir::validate_constructed_program(program, diagnostic))

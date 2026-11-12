@@ -1,0 +1,1 @@
+{"source":true,"reference_assembly":["400-object-name-encoding.s"],"llvm_interop":true,"calls":[{"export":"observe","result":"17"}],"reference_object_mutations":["name-utf8-overlong","name-utf8-surrogate","name-utf8-range","name-utf8-truncated"]}

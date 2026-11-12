@@ -4,6 +4,8 @@ At O1–O3, satisfy the `quality` bounds in each fixture's `.wasm-expect`.
 They are upper bounds, not required instruction sequences. The same bounds
 apply to direct source compilation, serialized LowIR and mixed LLVM objects.
 O0 still runs the correctness checks.
+An explicit `levels` list may also apply a module data-size bound at O0;
+representing zero-initialized storage efficiently does not require optimization.
 
 The checker measures each named exported function in the independently
 validated final module:
@@ -15,6 +17,15 @@ validated final module:
 | `instructions` | Static instructions, including control markers |
 | `memory_ops` | Static scalar/SIMD/bulk linear-memory operations |
 | `control_depth` | Maximum nested block, loop, if or exception regions |
+
+A sidecar's `quality.module` bounds use `module`, `code` and `data` for total
+module bytes and the code/data section payload bytes. Storage omitted from a
+data section must retain its full size, alignment, addresses and initial values.
+Bounds allow segment merging and padding; they do not prescribe segment layout.
+
+The standalone `lowiropt` path must respect the selected target's library
+surface. A fixture's `allowed_function_imports` constrains external dependencies,
+not instruction selection. Optimizations must not introduce unavailable helpers.
 
 These measurements exclude callees. A call's `fuel` bounds include all
 executed Wasm instructions, including initialization and callees, using the

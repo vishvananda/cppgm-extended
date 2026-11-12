@@ -59,7 +59,7 @@ class WasmQuality(unittest.TestCase):
         self.assertEqual(metrics["instructions"], 6)
         self.assertEqual(metrics["control_depth"], 2)
 
-    def check_module(self, name, bounds, level=2):
+    def check_module(self, name, bounds, level=2, module_bounds=None):
         # The export is an alias of function 1, after one imported function.
         data = b"\0asm\1\0\0\0" + section(1, bytes.fromhex("0160017f017f"))
         data += section(2, b"\1\3env\6callee\0\0")
@@ -69,7 +69,11 @@ class WasmQuality(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "module.wasm"
             path.write_bytes(data)
-            quality = json.dumps({"functions": {name: bounds}})
+            quality = {"functions": {name: bounds} if name else {}}
+            if module_bounds is not None:
+                quality["module"] = module_bounds
+                quality["levels"] = [0, 1, 2, 3]
+            quality = json.dumps(quality)
             return perl("CppgmWasmQuality::check_quality($ARGV[0], decode_json($ARGV[1]), $ARGV[2]);",
                         str(path), quality, str(level))
 
@@ -97,6 +101,20 @@ class WasmQuality(unittest.TestCase):
     def test_o0_has_correctness_without_optimizing_envelope(self):
         result = self.check_module("answer", {"instructions": 0}, level=0)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_module_envelopes_check_encoded_sections_without_function_limits(self):
+        result = self.check_module(None, {}, level=0,
+                                   module_bounds={"module": 1000, "code": 6, "data": 0})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        result = self.check_module(None, {}, module_bounds={"code": 5})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("code 6 exceeds 5", result.stderr)
+
+    def test_module_envelopes_reject_unknown_and_invalid_bounds(self):
+        for bounds in ({"unknown": 1}, {"module": -1}):
+            with self.subTest(bounds=bounds):
+                result = self.check_module(None, {}, module_bounds=bounds)
+                self.assertNotEqual(result.returncode, 0)
 
 
 if __name__ == "__main__":

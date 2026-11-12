@@ -383,6 +383,10 @@ false; there is no `replaceable=no` spelling.
 The `object` metadata key carries an explicit backend/object symbol spelling for the top-level
 symbol. This is the textual carrier for cases where later object emission must use a concrete
 host/object name such as `puts`, `_ZTIi`, or a local mangled helper name.
+Use a quoted string when the name contains non-ASCII bytes, spaces or other
+characters outside an ordinary LowIR word. Quoted object names preserve their
+bytes and use the same `\\`, `\"`, `\n`, `\r` and `\t` escapes as debug names.
+An empty object name is invalid. The writer keeps ordinary names unquoted.
 
 The `keep_alias=yes` metadata flag requests that later object emission keep the LowIR-internal
 symbol spelling available as an alias even when `object=...` spells a different

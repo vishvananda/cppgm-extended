@@ -13,7 +13,7 @@ or a green partial suite does not complete PA37.
 | C++ runtime | Class ABI, allocation, dispatch, RTTI, guards, finalization and modern source EH; automatic EH/no-EH runtime selection | Broader portable C++ cases and final integrated qualification |
 | Modern EH execution dependency | Source/serialized EH, typed catches, nested cleanup contexts, stack recovery, opaque LowIR payloads and mixed LLVM producers/linkers pass | Additional merged-context/foreign-language cases and final integrated qualification |
 | WASI commands and freestanding reactors | Qualified WASI startup, argument/I/O/exit behavior, freestanding initialization and same-instance state/EH sequences | Broader C++ services and final integrated qualification |
-| SIMD and shared optimization | All 214 LowIR vector operations legalized; complete standard SIMD128 object vocabulary; consumed typed MIR/local cleanup; target-aware address, loop and inlining policies; published static/fuel envelopes | Broader independent kernels, standard benchmark comparison and final integrated qualification |
+| SIMD and shared optimization | All 214 LowIR vector operations legalized; complete standard SIMD128 object vocabulary; consumed typed MIR/local cleanup; target-aware address, loop and inlining policies; published static/fuel envelopes and standard benchmark comparisons | Source-vector lowering improvements, broader independent kernels and final integrated qualification |
 | Robust diagnostics and determinism | Bad target/version/shape tests; bounded MIR validation | Complete malformed object/feature/signature/relocation coverage and deterministic multi-object linking |
 | Course material and export | PA37 handout/design notes, target/MIR scaffolds, offline source/licence pins, normal Perl runner | Final scope and scaffold review, complete reference-tool prerequisites, clean export qualification |
 | Benchmarks and CI | Required correctness lane on both hosts; catalog/report/README integration; Perl O0/O3 scalar/SIMD campaign with separate compile/link/size/startup/setup/steady metrics; hosted and dedicated Intel publication paths | Final Linux/macOS results, live CI publication and measured codegen follow-ups |
@@ -717,3 +717,71 @@ The optional full-compiler probe advances to the SDK's C11 `_Thread_local`
 outside required inception qualification. Remaining required profile hardening,
 optimizer/source-lowering follow-ups and final Linux/macOS CI qualification
 are unchanged; this checkpoint does not complete PA37.
+
+## Compact data, target-library coherence and name encoding
+
+Static linking now omits trailing zero initialization after relocations, including
+entire zero segments, while retaining the original storage sizes, alignments,
+addresses and memory span. The required zero-storage control checks a large
+volatile array, mixed initialized/zero bytes, relocated pointers, a null weak
+address, a live function pointer and persistent writes. Its published 2048-byte
+data-section bound at O0–O3 also accepts LLVM's merged layout. The quality checker
+and benchmark report share the same module-size reader.
+
+On the existing O3 benchmark inputs, scalar modules shrink from 10921 to 2718
+bytes and SIMD128 modules from 11477 to 3274 bytes. Both lose their 8200-byte
+data payload. Every other section is byte-identical, including code, globals,
+memory/table layout and exports, and all 32 independent cases per compiler/mode
+agree. This is a size improvement, not a claim to fix the slow source-vector
+lowering. Module bytes, commands, 128 oracle results and section checks are in
+`profile-closure/module-comparison/` under the external evidence directory.
+
+The three source/standalone driver paths and the Wasm backend now consume the
+same typed target-library policy. `lowiropt` no longer assumes GNU sincos on a
+Wasm profile. Its new fixture checks the undefined-function dependency surface
+and executes the standalone optimizer's output, alongside the source and normal
+serialized paths. The pinned WASI libc happens to provide GNU sincos, but the
+default Wasm profiles do not promise that extension; the fixture uses the
+freestanding profile with explicit runtime inputs.
+
+Wasm object readers and writers reuse the shared UTF-8 decoder. Required
+mutations cover overlong encodings, surrogates, out-of-range scalars and truncated
+names in otherwise unknown custom sections; the independent validator rejects
+each mutation. A valid non-ASCII export exercises calls, ABI lookup, quality
+limits and same-instance sequences. The Perl runner normalizes JSON name keys
+and values to UTF-8 bytes once. LowIR accepts and writes quoted object spellings
+for Unicode, whitespace, punctuation, escapes and leading digits; PA8 owns
+the reduced format checks and the contract ledger records the extension.
+
+Qualification passes the strict report 10796/10796; PA37 105/105 with host-built
+and self-built compiler, optimizer and backend tools; PA8; PA5 self-host;
+byte-identical native inception; debug info; PA36 smoke 3/3; architecture,
+source-set, registry, scaffold, IR, format and document audits; eight Clang 21
+changed-source syntax checks; and the complete harness. Ten quality-helper and
+six benchmark-helper unit checks pass. Placement scans 10134 tests with no
+placement or local hygiene findings; 89 advisory EH leads and seven inherited
+file warnings remain.
+
+The final student snapshot is `student-profile-closure-final-export`, with
+`profile-closure-final-reference-binaries.tar.gz`. It regenerates consistently,
+passes its 275-document inventory, 65 prose checks and all 43 wrappers, and
+executes all four new Wasm controls through the shipped Perl runner. All 20
+changed shipped documents, scaffold, fixtures and helpers match source. An
+earlier export began before new fixtures were staged; it was explicitly rejected,
+terminated and removed after the replacement passed. That freed 373 MB. Its
+failure and cleanup records remain in `profile-closure/`; it is not qualification
+evidence.
+
+Immutable native A/B compilation emits identical O0/O3 objects. Instruction
+counts change by -0.0049% O0 and +0.0007% O3; peak RSS changes by less than 0.03%.
+Four A/A and eight ABBA blocks at each level retain all 96 observations. Paired
+wall changes are +0.78% O0 and +0.94% O3, while A/A changes by +1.61% and +7.36%:
+this loaded-host campaign cannot resolve a small timing change. Frozen inputs,
+binaries, patches and every observation are in `profile-closure/perf/`.
+
+Subsequent review found an additional quoted-name edge: `object="$prefixed"`
+is written unquoted, then rejected on a second read. The reproducer and results
+are `profile-closure/quoted-edge*`. Correct that lexical classification and review
+NUL object-name handling before final qualification. Remaining profile/import
+hardening, source-vector lowering and full Linux/macOS CI qualification remain;
+this checkpoint does not complete PA37.

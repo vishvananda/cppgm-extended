@@ -1,0 +1,1 @@
+{"source":true,"llvm_interop":true,"calls":[{"export":"caf\u00e9","result":"17"}],"sequences":[[{"export":"caf\u00e9","result":"17"},{"export":"caf\u00e9","result":"17"}]],"abi":{"caf\u00e9":{"params":[],"results":["i32"]}},"quality":{"functions":{"caf\u00e9":{"memory_ops":0,"instructions":6}}}}

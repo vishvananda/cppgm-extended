@@ -54,6 +54,21 @@ uint64_t classes_bytes(Type type)
 	return type.kind() == TypeKind::I128 || type.kind() == TypeKind::F80 ? 16 : (integer_bits(type.kind()) + 7) / 8;
 }
 
+bool bare_object_name(const char* name)
+{
+	if (*name == '@')
+		++name;
+	else if ((*name >= '0' && *name <= '9') || (*name == '.' && name[1] >= '0' && name[1] <= '9'))
+		return false;
+	if (*name == 0)
+		return false;
+	for (; *name != 0; ++name)
+		if (!((*name >= 'a' && *name <= 'z') || (*name >= 'A' && *name <= 'Z') || (*name >= '0' && *name <= '9') ||
+				*name == '_' || *name == '.' || *name == '$'))
+			return false;
+	return true;
+}
+
 class Writer
 {
 public:
@@ -297,7 +312,13 @@ void Writer::metadata(const SymbolMetadata* symbol, const BoundaryMetadata* boun
 		if ((symbol->flags & SF_REPLACEABLE) != 0)
 			item(open, MetadataKey::Replaceable, metadata_yes_spelling());
 		if (symbol->object != 0)
-			item(open, MetadataKey::Object, program_.spelling(symbol->object));
+		{
+			key(open, MetadataKey::Object);
+			if (bare_object_name(program_.spelling(symbol->object)))
+				text(program_.spelling(symbol->object));
+			else
+				debug_name(symbol->object);
+		}
 		if (symbol->tls_for != kNoId)
 		{
 			item(open, MetadataKey::TlsFor, "");

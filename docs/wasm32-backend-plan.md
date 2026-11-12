@@ -27,12 +27,14 @@ The consumed Wasm MIR retains typed locals, frame objects, effects and source
 locations. Its local cleanup and initial published quality bounds have independent
 LLVM calibration. Typed globals/constant expressions, reference values,
 global COMDATs and object-section/feature validation are implemented. Host-built
-and self-built tools pass 95/95 PA37 controls; the strict report passes
-10,784/10,784. Pinned LLVM gaps have explicit shipped reference limitations.
+and self-built tools pass 105/105 PA37 controls; the strict report passes
+10,796/10,796. Target library/header facts, undefined weak runtime calls,
+zero-storage data emission and UTF-8 object names have reduced checks.
+Pinned LLVM gaps have explicit shipped reference limitations.
 
-This remains an intermediate implementation. Target cost policy, remaining
-profile hardening (including imported global/limit boundaries), standard
-benchmark publication, broader language/profile cases and final complete
+This remains an intermediate implementation. Remaining profile hardening
+(including imported global/limit boundaries and the quoted-object-name edge),
+broader language/profile cases, source-vector lowering and final complete
 Linux/macOS qualification remain required. Keep the full acceptance checks
 below visible rather than narrowing the assignment to the current emitter.
 Current evidence and qualification details are in the completion journal.

@@ -2,6 +2,7 @@
 
 use strict;
 use warnings;
+use utf8 ();
 use File::Basename qw(dirname);
 use File::Spec;
 use File::Temp qw(tempdir);
@@ -24,7 +25,8 @@ sub read_file {
 
 sub write_file {
     my ($path, $text) = @_;
-    open(my $file, '>', $path) or die "Cannot write $path: $!\n";
+    utf8::encode($text) if utf8::is_utf8($text);
+    open(my $file, '>:raw', $path) or die "Cannot write $path: $!\n";
     print {$file} $text;
     close($file) or die "Cannot close $path: $!\n";
 }
@@ -33,6 +35,24 @@ sub expectation {
     my ($test) = @_;
     $test =~ s/\.t$/.wasm-expect/;
     return $test;
+}
+
+# JSON names are Unicode strings; the module format, argv and file contents
+# use UTF-8 bytes. Normalize both values and interface-name keys once.
+sub fixture_strings {
+    my ($value) = @_;
+    return [map { fixture_strings($_) } @$value] if ref($value) eq 'ARRAY';
+    if (ref($value) eq 'HASH') {
+        my %out;
+        for my $name (keys %$value) {
+            my $key = $name;
+            utf8::encode($key) if utf8::is_utf8($key);
+            $out{$key} = fixture_strings($value->{$name});
+        }
+        return \%out;
+    }
+    utf8::encode($value) if !ref($value) && utf8::is_utf8($value);
+    return $value;
 }
 
 if (@ARGV && $ARGV[0] eq '--list') {
@@ -45,7 +65,7 @@ if (@ARGV && $ARGV[0] eq '--list') {
 @ARGV == 2 or die "usage: check_wasm.pl <lowir2native> <fixture>\n";
 my ($compiler, $test) = @ARGV;
 $compiler = File::Spec->rel2abs($compiler);
-my $expect = decode_json(read_file(expectation($test)));
+my $expect = fixture_strings(decode_json(read_file(expectation($test))));
 my $directory = tempdir('cppgm-wasm-XXXXXX', TMPDIR => 1, CLEANUP => 1);
 my $validator = $ENV{CPPGM_WASM_TOOLS} // 'wasm-tools';
 my $runtime = $ENV{CPPGM_WASMTIME} // 'wasmtime';
@@ -89,6 +109,30 @@ sub archive_inputs {
     }
     close($file) or die "Cannot close $path: $!\n";
     return ($main, $path);
+}
+
+sub standalone_optimizer {
+    my ($level, $lowir) = @_;
+    my $suffix = $source_compiler =~ /(-ref|-self)\z/ ? $1 : '';
+    my $optimizer = $ENV{CPPGM_WASM_LOWIROPT} // File::Spec->catfile(dirname($source_compiler), "lowiropt$suffix");
+    my $optimized = "$directory/optimized-$level.lowir";
+    my ($status, $stdout, $stderr) = command('standalone-optimize', $optimizer,
+        "-O$level", '--validate', '--verify-passes', $lowir, '-o', $optimized);
+    die "$test: standalone optimizer failed: $stdout$stderr\n" if $status;
+    my $object = "$directory/optimized-$level.o";
+    ($status, $stdout, $stderr) = command('optimized-object', $source_compiler,
+        '--target', ($expect->{target} // 'wasm32-unknown-unknown'), '-O0', '-c', $optimized, '-o', $object);
+    die "$test: optimized object failed: $stdout$stderr\n" if $status;
+    ($status, $stdout, $stderr) = command('optimized-object-validate', $validator, 'validate', $object);
+    die "$test: optimized object is invalid: $stdout$stderr\n" if $status;
+    if ($expect->{allowed_function_imports}) {
+        my %allowed = map { $_ => 1 } @{$expect->{allowed_function_imports}};
+        my (undef, undef, $interface) = CppgmWasmModule::export_interfaces($object);
+        for my $import (@{$interface->{function_imports}}) {
+            die "$test: optimizer introduced unavailable function $import->[1]\n" unless $allowed{$import->[1]};
+        }
+    }
+    return $object;
 }
 
 sub reference_link_rejection {
@@ -222,6 +266,17 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         ($status, $stdout, $stderr) = command("roundtrip-validate-$level", $validator, 'validate', $roundtrip);
         die "$test: invalid round-trip module: $stdout$stderr\n" if $status;
         push @modules, $roundtrip;
+        if ($expect->{standalone_optimizer}) {
+            my $object = standalone_optimizer($level, $lowir);
+            my $output = "$directory/standalone-$level.wasm";
+            ($status, $stdout, $stderr) = command('standalone-link', $source_compiler,
+                '--target', ($expect->{target} // 'wasm32-unknown-unknown'), @target_flags,
+                @{$expect->{link_flags} // []}, @exports, $object, @supplied_inputs, '-o', $output);
+            die "$test: standalone optimized link failed: $stdout$stderr\n" if $status;
+            ($status, $stdout, $stderr) = command('standalone-validate', $validator, 'validate', $output);
+            die "$test: standalone optimized module is invalid: $stdout$stderr\n" if $status;
+            push @modules, $output;
+        }
     }
     }
     my @objects;

@@ -70,6 +70,7 @@ public:
 	{
 		const uint32_t bytes = u32();
 		Cursor text = take(bytes);
+		validate_name(text.data_, bytes);
 		return std::string(reinterpret_cast<const char*>(text.data_), bytes);
 	}
 	Bytes bytes()

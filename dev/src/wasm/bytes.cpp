@@ -1,8 +1,25 @@
 #include "wasm/bytes.h"
 
 #include "wasm/mir.h"
+#include "support/unicode/utf8.h"
 
 namespace wasm {
+
+void validate_name(const uint8_t* data, size_t size)
+{
+	for (size_t offset = 0; offset < size;)
+	{
+		if (data[offset] < 0x80)
+		{
+			++offset;
+			continue;
+		}
+		const Utf8Decoded decoded = DecodeUtf8(data + offset, size - offset);
+		if (decoded.status != Utf8DecodeStatus::Ok)
+			throw WasmError("invalid UTF-8 in Wasm name");
+		offset += decoded.length;
+	}
+}
 
 void Bytes::unsigned_leb(uint64_t value)
 {
@@ -34,6 +51,7 @@ void Bytes::fixed(uint64_t value, unsigned bytes)
 
 void Bytes::string(const std::string& text)
 {
+	validate_name(reinterpret_cast<const uint8_t*>(text.data()), text.size());
 	unsigned_leb(text.size());
 	data.insert(data.end(), text.begin(), text.end());
 }

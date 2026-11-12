@@ -10,7 +10,7 @@ enum class TokenKind : uint8_t
 {
 	End,
 	Word,   // keyword, type, identifier (`obj<16x8>` is one word)
-	String, // quoted presentation name in optional debug records
+	String, // quoted object name, debug name or assembly text
 	Number, // starts with a digit, or '.' and a digit
 	Temp,   // %name
 	Slot,   // $name

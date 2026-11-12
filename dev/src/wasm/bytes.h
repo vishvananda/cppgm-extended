@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
 
 namespace wasm {
+
+void validate_name(const std::uint8_t* data, std::size_t size);
 
 struct Bytes
 {

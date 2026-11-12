@@ -476,7 +476,7 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 	else if (!invocation.sysroot.empty() || !invocation.resource_directory.empty() ||
 		invocation.no_standard_libraries || invocation.no_startfiles)
 		throw InvocationError("target runtime directory/options currently require a Wasm target");
-	invocation.optimizer.has_gnu_sincos = invocation.target == native::Target::Linux;
+	invocation.optimizer.has_gnu_sincos = target_model::has_gnu_sincos(invocation.target);
 	// Darwin objects are position independent even without an explicit -fPIC.
 	if (invocation.target == native::Target::MacOS)
 		invocation.position_independent = true;

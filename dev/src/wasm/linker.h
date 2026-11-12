@@ -34,6 +34,7 @@ private:
 	bool synthetic_data(const std::string& name, uint32_t& value) const;
 	Bytes relocated(uint32_t object, const ObjectChunk& chunk, bool constant = false) const;
 	void emit(Bytes& output);
+	void data_section(Bytes& output) const;
 	void prepare_address_globals();
 	void prepare_globals();
 	bool runtime_global(ObjectRef ref, uint32_t& index) const;

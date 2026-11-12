@@ -1,0 +1,6 @@
+declare function @unicode() -> i32 [linkage=c, object="café"]
+declare function @versioned() -> i32 [object="function@VERSION.1"]
+declare function @spaced() -> i32 [object="with space"]
+declare function @quoted() -> i32 [object="with\"quote"]
+declare function @escaped() -> i32 [object="with\\slash"]
+declare function @digits() -> i32 [object="123name"]

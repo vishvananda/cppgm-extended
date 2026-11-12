@@ -1,0 +1,1 @@
+{"source":true,"llvm_interop":true,"calls":[{"export":"observe","args":["0"],"result":"17"}],"sequences":[[{"export":"observe","args":["0"],"result":"17"},{"export":"observe","args":["1"],"result":"17"},{"export":"observe","args":["2"],"result":"17"}]],"quality":{"levels":[0,1,2,3],"module":{"data":2048}}}

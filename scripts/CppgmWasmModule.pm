@@ -54,7 +54,7 @@ sub export_interfaces {
     local $/;
     my $reader = {data => scalar(<$file>), offset => 0};
     bytes($reader, 8) eq "\0asm\1\0\0\0" or die "Expected core Wasm module\n";
-    my (@types, @functions, @tags, %exports, %tag_exports, @sections);
+    my (@types, @functions, @tags, %exports, %tag_exports, @sections, @function_imports);
     while ($reader->{offset} < length($reader->{data})) {
         my $id = byte($reader);
         my $section = {data => bytes($reader, number($reader)), offset => 0};
@@ -66,9 +66,12 @@ sub export_interfaces {
             }
         } elsif ($id == 2) {
             for (1 .. number($section)) {
-                bytes($section, number($section)) for 1 .. 2;
+                my ($module, $name) = map { bytes($section, number($section)) } 1 .. 2;
                 my $kind = byte($section);
-                if ($kind == 0) { push @functions, number($section); }
+                if ($kind == 0) {
+                    push @functions, number($section);
+                    push @function_imports, [$module, $name];
+                }
                 elsif ($kind == 1) { byte($section); limits($section); }
                 elsif ($kind == 2) { limits($section); }
                 elsif ($kind == 3) { byte($section) for 1 .. 2; }
@@ -108,7 +111,24 @@ sub export_interfaces {
         $tag_result{$name} = $types[$tags[$index]];
     }
     return (\%result, \%tag_result, {sections => \@sections, exports => \%exports,
-        functions => \@functions, types => \@types});
+        functions => \@functions, types => \@types, function_imports => \@function_imports});
+}
+
+sub module_sizes {
+    my ($path) = @_;
+    open(my $file, '<:raw', $path) or die "Cannot read $path: $!\n";
+    local $/;
+    my $reader = {data => scalar(<$file>), offset => 0};
+    bytes($reader, 8) eq "\0asm\1\0\0\0" or die "Expected core module\n";
+    my %size = (module => length($reader->{data}), code => 0, data => 0);
+    while ($reader->{offset} < length($reader->{data})) {
+        my $id = byte($reader);
+        my $payload = number($reader);
+        $size{code} += $payload if $id == 10;
+        $size{data} += $payload if $id == 11;
+        bytes($reader, $payload);
+    }
+    return \%size;
 }
 
 sub export_signatures { my ($functions, $tags) = export_interfaces(@_); return $functions; }

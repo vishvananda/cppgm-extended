@@ -106,7 +106,16 @@ sub mutate_object {
         }
     }
     defined($code) && defined($types) or die "Reference fixture lacks code or types\n";
-    if ($kind eq 'section-order') {
+    if ($kind =~ /^name-utf8-/) {
+        my %invalid = (
+            'name-utf8-overlong' => pack('C*', 0xc0, 0x80),
+            'name-utf8-surrogate' => pack('C*', 0xed, 0xa0, 0x80),
+            'name-utf8-range' => pack('C*', 0xf4, 0x90, 0x80, 0x80),
+            'name-utf8-truncated' => pack('C*', 0xe2, 0x82),
+        );
+        my $name = $invalid{$kind} // die "Unknown name mutation $kind\n";
+        push @sections, [0, uleb(length($name)) . $name];
+    } elsif ($kind eq 'section-order') {
         defined($imports) or die "Reference fixture lacks imports\n";
         @sections[$types, $imports] = @sections[$imports, $types];
     } elsif ($kind eq 'duplicate-section') {

@@ -1030,7 +1030,7 @@ int run_emit_lowir_mode(vector<string> args)
 	const bool stats = consume_stats_flag(args);
 	const bool validate = consume_flag(args, "--validate");
 	SourceOutputInvocation invocation = parse_source_output_invocation(args, true);
-	invocation.optimizer.has_gnu_sincos = invocation.target == native::Target::Linux;
+	invocation.optimizer.has_gnu_sincos = target_model::has_gnu_sincos(invocation.target);
 	// The LowIR half of an object compile: a `.lowir` output (the
 	// toolchain's LowIR object input, `-c x.lowir`) with the object
 	// compile's debug-information level stated (-g0, -gline-tables-only)

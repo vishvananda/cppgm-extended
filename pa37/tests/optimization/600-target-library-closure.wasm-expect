@@ -1,0 +1,1 @@
+{"source":true,"runtime":true,"llvm_interop":true,"standalone_optimizer":true,"allowed_function_imports":["sin","cos","sinf","cosf"],"calls":[{"export":"both","args":["0"],"result":"1"},{"export":"narrow","args":["0"],"result":"1"}]}

@@ -49,7 +49,7 @@ bool compile_object(
 		if (options.optimizer != nullptr)
 			optimization = *options.optimizer;
 		optimization.level = options.optimization_level;
-		optimization.has_gnu_sincos = false;
+		optimization.has_gnu_sincos = target_model::has_gnu_sincos(program.target);
 		opt::OptimizerStats stats;
 		opt::optimize_program(program, optimization, &stats);
 		prepare_finalizers(program);

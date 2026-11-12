@@ -94,6 +94,10 @@ sub function_metrics {
 sub check_quality {
     my ($path, $quality, $level) = @_;
     return unless grep { $_ == $level } @{$quality->{levels} // [1, 2, 3]};
+    if ($quality->{module}) {
+        my $actual = CppgmWasmModule::module_sizes($path);
+        check_bounds($actual, $quality->{module}, "$path: O$level module");
+    }
     my (undef, undef, $module) = CppgmWasmModule::export_interfaces($path, 1);
     my @bodies;
     for my $section (@{$module->{sections}}) {
@@ -102,18 +106,22 @@ sub check_quality {
         push @bodies, bytes($r, number($r)) for 1 .. number($r);
     }
     my $imports = @{$module->{functions}} - @bodies;
-    for my $name (sort keys %{$quality->{functions}}) {
+    for my $name (sort keys %{$quality->{functions} // {}}) {
         die "Missing quality export $name\n" unless exists $module->{exports}{$name};
         my $index = $module->{exports}{$name} - $imports;
         die "Quality export $name has no body\n" if $index < 0 || $index >= @bodies;
         my $actual = function_metrics($bodies[$index]);
-        for my $metric (sort keys %{$quality->{functions}{$name}}) {
-            die "Unknown Wasm quality metric $metric\n" unless exists $actual->{$metric};
-            my $limit = $quality->{functions}{$name}{$metric};
-            die "Invalid Wasm quality bound $metric\n" unless defined($limit) && $limit =~ /^\d+$/;
-            die "$path: O$level $name $metric $actual->{$metric} exceeds $limit\n"
-                if $actual->{$metric} > $limit;
-        }
+        check_bounds($actual, $quality->{functions}{$name}, "$path: O$level $name");
+    }
+}
+
+sub check_bounds {
+    my ($actual, $bounds, $where) = @_;
+    for my $metric (sort keys %$bounds) {
+        die "Unknown Wasm quality metric $metric\n" unless exists $actual->{$metric};
+        my $limit = $bounds->{$metric};
+        die "Invalid Wasm quality bound $metric\n" unless defined($limit) && $limit =~ /^\d+$/;
+        die "$where $metric $actual->{$metric} exceeds $limit\n" if $actual->{$metric} > $limit;
     }
 }
 

@@ -864,6 +864,14 @@ void Parser::parse_symbol_value(MetadataKey key, MetadataContext context, Symbol
 		advance();
 		return;
 	}
+	if (key == MetadataKey::Object && at(TokenKind::String))
+	{
+		if (token().name == 0)
+			fail("object name must not be empty");
+		symbol.object = token().name;
+		advance();
+		return;
+	}
 	if (!at(TokenKind::Word))
 		fail(std::string("missing value after ") + ir_model::spelling(key));
 	const Token& value = token();

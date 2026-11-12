@@ -1,6 +1,6 @@
 #include "wasm/linker.h"
 
-#include <set>
+#include <utility>
 
 namespace wasm {
 
@@ -193,17 +193,34 @@ void Linker::emit(Bytes& output)
 		code.append(body);
 	}
 	output.section(10, code);
-	Bytes data;
-	data.unsigned_leb(ordered_data_.size());
+	data_section(output);
+}
+
+void Linker::data_section(Bytes& output) const
+{
+	std::vector<std::pair<uint32_t, Bytes>> segments;
 	for (ObjectRef ref : ordered_data_)
 	{
-		const Bytes contents = relocated(ref.first, objects_[ref.first].data[ref.second].contents);
+		Bytes contents = relocated(ref.first, objects_[ref.first].data[ref.second].contents);
+		// Defined linear memory starts at zero. Preserve the full layout,
+		// but omit trailing zero initialization after applying relocations.
+		while (!contents.data.empty() && contents.data.back() == 0)
+			contents.data.pop_back();
+		if (!contents.data.empty())
+			segments.push_back({ data_.at(ref), std::move(contents) });
+	}
+	if (segments.empty())
+		return;
+	Bytes data;
+	data.unsigned_leb(segments.size());
+	for (const auto& segment : segments)
+	{
 		data.byte(0);
 		data.byte(0x41);
-		data.signed_leb(data_.at(ref));
+		data.signed_leb(segment.first);
 		data.byte(0x0b);
-		data.unsigned_leb(contents.data.size());
-		data.append(contents);
+		data.unsigned_leb(segment.second.data.size());
+		data.append(segment.second);
 	}
 	output.section(11, data);
 }
