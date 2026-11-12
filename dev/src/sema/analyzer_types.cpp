@@ -254,7 +254,7 @@ void Analyzer::specifiers(const syntax::Slice<syntax::DeclSpecifier>& list, Scop
 			if (deducing_class && !out.is_typedef && !out.is_friend)
 				out.deduction = deduction_template(
 					syntax::Slice<syntax::DeclSpecifier>{ const_cast<syntax::DeclSpecifier*>(&specifier), 1 }, scope);
-			if (out.deduction != nullptr)
+			if (__builtin_expect(out.deduction != nullptr, 0))
 			{
 				named = types_.named(TypeKind::Template, out.deduction);
 				out.type_specifier = &specifier;
@@ -324,7 +324,7 @@ void Analyzer::specifiers(const syntax::Slice<syntax::DeclSpecifier>& list, Scop
 			error(out.location, "more than one type in a declaration");
 		type = int128 ? int128_type(list, out.location) : keyword_type(list, out.location);
 	}
-	if (complex)
+	if (__builtin_expect(complex, 0))
 	{
 		// GNU's complex types: of a floating or integral type, alone of
 		// double.
@@ -665,7 +665,7 @@ LookupResult Analyzer::lookup_name(const syntax::Name& name, Scope* scope, Looku
 	if (!result.found())
 		error(name.location, "undeclared name");
 	// An ambiguous member (10.2p6) in a substitution is its failure.
-	if (result.ambiguous && !(result.injected_template && last.has_arguments))
+	if (__builtin_expect(result.ambiguous, 0) && !(result.injected_template && last.has_arguments))
 	{
 		substitution_error(name.location, "ambiguous name");
 		return LookupResult();

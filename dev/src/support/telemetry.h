@@ -30,7 +30,7 @@ typedef double Milliseconds;
 template<typename Peak, typename Value>
 inline void note_peak(Peak& peak, Value value)
 {
-	if (value > peak)
+	if (__builtin_expect(value > peak, 0))
 		peak = value;
 }
 

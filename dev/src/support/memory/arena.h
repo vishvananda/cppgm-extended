@@ -84,7 +84,7 @@ public:
 	void rewind(const Mark& mark);
 
 private:
-	void* allocate_slow(std::size_t size, std::size_t alignment);
+	[[gnu::cold]] void* allocate_slow(std::size_t size, std::size_t alignment);
 
 	Block* head_;
 	char* next_;

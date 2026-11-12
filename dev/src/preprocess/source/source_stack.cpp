@@ -283,7 +283,7 @@ void SourceStack::stabilize(PPToken& token, const SourceFrame& frame)
 	// A clean spelling is a view of the immutable source image; a translated
 	// one lives in lexer scratch storage until the next token.
 	const char* image = frame.file->buffer().data();
-	if (token.spelling < image || token.spelling >= image + frame.file->buffer().size())
+	if (__builtin_expect(token.spelling < image || token.spelling >= image + frame.file->buffer().size(), 0))
 		token.spelling = arena_.copy_string(token.spelling, token.length);
 }
 

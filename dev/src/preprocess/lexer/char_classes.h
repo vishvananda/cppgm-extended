@@ -44,10 +44,10 @@ inline bool IsHorizontalWhitespace(int32_t c)
 }
 
 // Annex E.1: code points allowed in identifiers.
-bool IsAnnexE1Allowed(int32_t c);
+[[gnu::cold]] bool IsAnnexE1Allowed(int32_t c);
 
 // Annex E.2: code points not allowed as the first identifier character.
-bool IsAnnexE2DisallowedInitially(int32_t c);
+[[gnu::cold]] bool IsAnnexE2DisallowedInitially(int32_t c);
 
 inline bool IsIdentifierStart(int32_t c)
 {

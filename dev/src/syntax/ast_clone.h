@@ -91,7 +91,10 @@ private:
 	Slice<DeclSpecifier> specifiers(const Slice<DeclSpecifier>& list);
 	bool specifier(const DeclSpecifier& in, DeclSpecifier& out);
 	bool component(const NameComponent& in, NameComponent& out, bool leading);
-	Attribute* attributes(const Attribute* list) { return list != nullptr ? attribute_list(list) : nullptr; }
+	Attribute* attributes(const Attribute* list)
+	{
+		return __builtin_expect(list != nullptr, 0) ? attribute_list(list) : nullptr;
+	}
 	Attribute* attribute_list(const Attribute* list);
 	bool suffix(const DeclaratorSuffix& in, DeclaratorSuffix& out);
 	bool qualifier(const FunctionQualifier& in, FunctionQualifier& out);

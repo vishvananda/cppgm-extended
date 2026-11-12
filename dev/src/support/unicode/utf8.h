@@ -33,7 +33,7 @@ const char* DescribeUtf8DecodeStatus(Utf8DecodeStatus status);
 
 inline unsigned Utf8EncodedLength(char32_t code_point)
 {
-	if (code_point < 0x80)
+	if (__builtin_expect(code_point < 0x80, 1))
 		return 1;
 	if (code_point < 0x800)
 		return 2;

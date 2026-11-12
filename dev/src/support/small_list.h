@@ -21,7 +21,7 @@ public:
 	SmallList(const SmallList& other) : SmallList() { assign(other.data_, other.size_); }
 	~SmallList()
 	{
-		if (data_ != inline_)
+		if (__builtin_expect(data_ != inline_, 0))
 			::operator delete(data_);
 	}
 
@@ -49,7 +49,7 @@ public:
 
 	void push_back(const T& value)
 	{
-		if (size_ == capacity_)
+		if (__builtin_expect(size_ == capacity_, 0))
 			reserve(size_ + 1);
 		data_[size_++] = value;
 	}

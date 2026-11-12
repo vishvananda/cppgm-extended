@@ -161,7 +161,7 @@ private:
 	{
 		const TokenRun& run = replays_.back().run;
 		const uint32_t index = position_ + ahead;
-		return index < run.size ? run.tokens[index] : end_;
+		return __builtin_expect(index < run.size, 1) ? run.tokens[index] : end_;
 	}
 	void fill(uint32_t count);
 	void pull();

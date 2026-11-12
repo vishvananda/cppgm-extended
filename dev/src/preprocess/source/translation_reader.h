@@ -60,8 +60,8 @@ public:
 	}
 
 private:
-	SourceChar logical_slow(uint32_t offset, bool comment) const;
-	SourceChar raw_slow(uint32_t offset) const;
+	[[gnu::cold]] SourceChar logical_slow(uint32_t offset, bool comment) const;
+	[[gnu::cold]] SourceChar raw_slow(uint32_t offset) const;
 	SourceChar decode_multibyte(uint32_t offset) const;
 	uint32_t skip_line_splices(uint32_t offset) const;
 	uint32_t new_line_end(uint32_t offset) const;

@@ -13,7 +13,7 @@ PostTokenizer::PostTokenizer(PPTokenCursor& input, IdentifierTable* identifiers,
 
 const PostToken& PostTokenizer::next()
 {
-	if (split_suffix_.length != 0)
+	if (__builtin_expect(split_suffix_.length != 0, 0))
 	{
 		start_token(PostTokenKind::Invalid, split_suffix_, split_suffix_begin_, split_suffix_end_);
 		split_suffix_.length = 0;
@@ -30,7 +30,8 @@ const PostToken& PostTokenizer::next()
 
 const PPToken& PostTokenizer::pull()
 {
-	if (lookahead_ == nullptr)
+	// Only a string literal sequence leaves a lookahead token.
+	if (__builtin_expect(lookahead_ == nullptr, 1))
 		return pull_input();
 	const PPToken& pp = *lookahead_;
 	lookahead_ = nullptr;

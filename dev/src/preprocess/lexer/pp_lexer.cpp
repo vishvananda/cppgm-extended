@@ -30,7 +30,8 @@ const PPToken& PPLexer::next()
 	{
 		return finish_empty(PPTokenKind::WhitespaceSequence);
 	}
-	if (context_ == DirectiveContext::AfterInclude && (c == '<' || c == '"') && try_lex_header_name())
+	if (__builtin_expect(context_ == DirectiveContext::AfterInclude, 0) && (c == '<' || c == '"') &&
+		try_lex_header_name())
 		return finish(PPTokenKind::HeaderName);
 	if (IsIdentifierStart(c))
 		return lex_identifier_or_prefixed_literal();
@@ -42,7 +43,8 @@ const PPToken& PPLexer::next()
 		return lex_quoted_literal(PPTokenKind::StringLiteral, PPTokenKind::UserDefinedStringLiteral);
 	if (c == '\\')
 		return lex_backslash();
-	if (const uint8_t punctuator = try_lex_punctuator())
+	const uint8_t punctuator = try_lex_punctuator();
+	if (__builtin_expect(punctuator != kNoPunctuator, 1))
 		return finish(PPTokenKind::PreprocessingOpOrPunc, punctuator);
 
 	// Any other single non-whitespace code point.
@@ -101,7 +103,7 @@ const PPToken& PPLexer::finish(PPTokenKind kind, uint8_t punctuator)
 	token_.punctuator = punctuator;
 	token_.begin = base_ + token_begin_;
 	token_.end = base_ + token_end_;
-	if (dirty_)
+	if (__builtin_expect(dirty_, 0))
 	{
 		token_.spelling = scratch_.data();
 		token_.length = static_cast<uint32_t>(scratch_.size());
@@ -129,7 +131,8 @@ const PPToken& PPLexer::finish_empty(PPTokenKind kind)
 
 void PPLexer::update_directive_context(PPTokenKind kind)
 {
-	if (header_names_on_request_)
+	// The compiler's preprocessor always lexes this way.
+	if (__builtin_expect(header_names_on_request_, 1))
 	{
 		if (kind != PPTokenKind::WhitespaceSequence)
 			context_ = DirectiveContext::Other;
@@ -478,7 +481,7 @@ bool PPLexer::take_identifier_continue()
 // is where the next byte is its own character.
 bool PPLexer::take_identifier_bytes()
 {
-	if (dirty_ || cur_.begin != clean_end_)
+	if (__builtin_expect(dirty_ || cur_.begin != clean_end_, 0))
 		return false;
 	const unsigned char* const text = bytes();
 	uint32_t end = clean_end_;
@@ -505,19 +508,20 @@ const PPToken& PPLexer::lex_identifier_or_prefixed_literal()
 
 	// An identifier that spells an encoding prefix, directly followed by a
 	// quote, begins a literal instead ([lex.pptoken] 2.5p3 for raw strings).
-	if (cur_.code_point == '"')
+	if (__builtin_expect(cur_.code_point == '"', 0))
 	{
 		if (is_encoding_prefix())
 			return lex_quoted_literal(PPTokenKind::StringLiteral, PPTokenKind::UserDefinedStringLiteral);
 		if (is_raw_string_prefix())
 			return lex_raw_string_literal();
 	}
-	else if (cur_.code_point == '\'' && is_character_prefix())
+	else if (__builtin_expect(cur_.code_point == '\'', 0) && is_character_prefix())
 	{
 		return lex_quoted_literal(PPTokenKind::CharacterLiteral, PPTokenKind::UserDefinedCharacterLiteral);
 	}
 
-	if (const uint8_t punctuator = identifier_like_operator())
+	const uint8_t punctuator = identifier_like_operator();
+	if (__builtin_expect(punctuator != kNoPunctuator, 0))
 		return finish(PPTokenKind::PreprocessingOpOrPunc, punctuator);
 	return finish(PPTokenKind::Identifier);
 }
@@ -547,7 +551,7 @@ const PPToken& PPLexer::lex_backslash()
 // digits that directly follow it.
 void PPLexer::take_digit_bytes()
 {
-	if (dirty_ || cur_.begin != clean_end_)
+	if (__builtin_expect(dirty_ || cur_.begin != clean_end_, 0))
 		return;
 	const unsigned char* const text = bytes();
 	uint32_t end = clean_end_;

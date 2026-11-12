@@ -872,7 +872,7 @@ bool Analyzer::match_template_arguments(const TemplateHead* head, const Type* co
 			return false;
 		out.push_back(argument);
 	}
-	if (next < count)
+	if (__builtin_expect(next < count, 0))
 	{
 		// A residual expansion after the fixed head can still be empty.
 		// Any known extra argument, however, proves excess already.
@@ -904,7 +904,7 @@ const Type* Analyzer::matched_element(const TemplateParameterEntity* parameter, 
 	const bool templ = element->kind == TypeKind::Template || element->kind == TypeKind::TemplateTemplateParameter ||
 		(element->kind == TypeKind::BoundPack &&
 			static_cast<const TemplateParameterEntity*>(element->entity)->template_template);
-	if (value != (parameter->value_type != nullptr) || templ != parameter->template_template)
+	if (__builtin_expect(value != (parameter->value_type != nullptr) || templ != parameter->template_template, 0))
 	{
 		if (fatal)
 			error(location,

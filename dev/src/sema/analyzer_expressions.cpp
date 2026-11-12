@@ -1032,7 +1032,7 @@ const Conversion* Analyzer::intern_conversion(const Conversion& conversion)
 {
 	// Identical conversions share one record (an open-addressed table
 	// owned by the unit's analysis; records live in the graph's arena).
-	if ((conversion_count_ + 1) * 2 > conversion_slots_.size())
+	if (__builtin_expect((conversion_count_ + 1) * 2 > conversion_slots_.size(), 0))
 	{
 		std::vector<const Conversion*> old;
 		old.swap(conversion_slots_);

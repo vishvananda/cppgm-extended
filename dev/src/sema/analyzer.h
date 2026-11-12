@@ -1769,7 +1769,7 @@ private:
 		~DeductionDefaultContext();
 	};
 	DeductionDefaultContext* deduction_default_context_ = nullptr;
-	LookupResult deduction_default_lookup(
+	[[gnu::cold]] LookupResult deduction_default_lookup(
 		Scope* scope, const Identifier* name, LookupFilter filter, const LookupResult& found);
 	bool exceptions_ = true;
 	bool ignore_narrowing_ = false;

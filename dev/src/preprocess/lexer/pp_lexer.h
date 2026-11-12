@@ -105,7 +105,7 @@ private:
 			append_translated(c);
 		token_end_ = c.end;
 	}
-	void append_translated(const SourceChar& c);
+	[[gnu::cold]] void append_translated(const SourceChar& c);
 	void append_source_bytes(uint32_t begin, uint32_t end);
 	void take(const SourceChar& c)
 	{
@@ -160,7 +160,7 @@ private:
 	void current_spelling(const char*& spelling, uint32_t& length) const;
 	uint8_t try_lex_punctuator();
 	bool is_encoding_prefix() const;
-	bool is_character_prefix() const;
+	[[gnu::cold]] bool is_character_prefix() const;
 	bool is_raw_string_prefix() const;
 	uint8_t identifier_like_operator() const;
 

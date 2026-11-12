@@ -556,7 +556,7 @@ NameBinding NameScopes::search(Scope* scope, Query& query)
 {
 	// A class cannot declare a namespace. Namespace-only lookup neither
 	// searches its members nor shares ordinary member-lookup memo entries.
-	if (query.namespace_only && scope->kind == ScopeKind::Class)
+	if (__builtin_expect(query.namespace_only, 0) && scope->kind == ScopeKind::Class)
 		return NameBinding();
 	if (scope->visit == query.visit && (!query.specialization || scope->specialization_visit == query.visit))
 		return NameBinding{ NameCategory::None, false, nullptr };

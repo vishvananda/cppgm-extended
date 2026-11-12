@@ -94,12 +94,12 @@ uint32_t ParseTokenStream::pack_at(uint64_t ordinal) const
 void ParseTokenStream::pull()
 {
 	const PostToken& post = input_.next();
-	if (pack_state_ != nullptr && *pack_state_ != last_pack_)
+	if (__builtin_expect(pack_state_ != nullptr && *pack_state_ != last_pack_, 0))
 	{
 		last_pack_ = *pack_state_;
 		pack_changes_.push_back(PackChange{ base_ + window_.size(), last_pack_ });
 	}
-	if (!prelude_done_ && !(post.begin >= prelude_begin_ && post.begin < prelude_end_))
+	if (__builtin_expect(!prelude_done_, 0) && !(post.begin >= prelude_begin_ && post.begin < prelude_end_))
 	{
 		prelude_done_ = true;
 		prelude_tokens_ = base_ + window_.size();
@@ -116,7 +116,7 @@ void ParseTokenStream::pull()
 	case PostTokenKind::Simple:
 		token.kind = ParseTokenKind::Simple;
 		token.simple = post.simple;
-		if (post.simple == TokenKind::OP_RSHIFT)
+		if (__builtin_expect(post.simple == TokenKind::OP_RSHIFT, 0))
 		{
 			// `>>` becomes two adjacent `>` halves (14.2p3).
 			token.simple = TokenKind::OP_GT;

@@ -218,7 +218,11 @@ public:
 
 	bool plain(uint32_t index) const
 	{
-		return index < size_ && bytes_[index] < 0x80 && bytes_[index] != '\\' && bytes_[index] != '?';
+		// A branch on the expectation, which a caller's test keeps once
+		// this is inlined (a returned expectation is only a value).
+		if (__builtin_expect(index < size_ && bytes_[index] < 0x80 && bytes_[index] != '\\' && bytes_[index] != '?', 1))
+			return true;
+		return false;
 	}
 	unsigned char operator[](uint32_t index) const { return bytes_[index]; }
 
