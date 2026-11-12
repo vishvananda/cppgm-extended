@@ -789,6 +789,16 @@ uint16_t boundary_flags(const lowir::Signature& sig)
 		(sig.boundary.returns == ir_model::CRM_NORETURN ? MF_NORETURN : 0));
 }
 
+// A direct call of a cold function marks its block rare for block
+// placement (GNU cold).
+uint16_t cold_call_flags(const lowir::Program& program, const Value& callee, uint32_t cell)
+{
+	return callee.kind == ValueKind::Symbol && cell == kNoId &&
+			(program.symbols[callee.index].metadata.flags & lowir::SF_COLD) != 0
+		? static_cast<uint16_t>(MF_COLD)
+		: 0;
+}
+
 } // namespace
 
 void FunctionSelector::emit_call(uint32_t id)
@@ -923,12 +933,7 @@ void FunctionSelector::emit_call(uint32_t id)
 	call.aux = arg_mask;
 	call.sub = pack_narrow_arguments(narrow_mask);
 	call.aux2 = layout.stack_bytes;
-	call.flags |= boundary_flags(*sig);
-	// A direct call of a cold function marks its block rare for block
-	// placement (GNU cold).
-	if (callee.kind == ValueKind::Symbol && cell == kNoId &&
-		(program_.symbols[callee.index].metadata.flags & lowir::SF_COLD) != 0)
-		call.flags |= MF_COLD;
+	call.flags |= boundary_flags(*sig) | cold_call_flags(program_, callee, cell);
 	// O1+: a direct strlen call of one pointer (in rdi) with a 64-bit
 	// result first probes the string's first 16 bytes inline and calls
 	// only when they hold no NUL (the probe writes rax, xmm0 and xmm1,
