@@ -488,10 +488,15 @@ void ReturnTables::rewrite_phi_table(const Instruction& term, const PhiTable& fa
 	Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
 	jump.ops[0] = Value::block(join);
 	insert_after(b_, lookup, after, append_instruction(b_, jump));
+	// Each arm the table replaces ends unreachable (the cleanup drops it): the
+	// phi no longer names it, so it must not still jump to the join.
 	for (const PhiIncoming& in : inputs)
 	{
 		b_.operands[term.extra_first + in.position + 1] = Value::block(lookup);
 		remove_phi_incoming(b_, join, in.from);
+		Instruction& end = b_.instructions[b_.blocks[in.from].last];
+		end.op = Opcode::Unreachable;
+		end.ops[0] = Value::none();
 	}
 	const Instruction old_phi = b_.instructions[phi];
 	std::vector<Value> pairs(

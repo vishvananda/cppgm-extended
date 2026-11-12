@@ -1,0 +1,41 @@
+global @__switch_results_0 : obj<4x1> [storage=readonly, binding=internal] = {
+  i8 3
+  i8 9
+  i8 4
+  i8 6
+}
+
+function @lookup(%n : i64, %seed : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    switch %n, ^otherwise, 0:^merge, 1:^switch_case_3, 2:^switch_case_3, 3:^switch_case_3, 4:^switch_case_3
+
+  block ^otherwise:
+    %fallback = binary add i64 %seed, 1
+    jump ^merge
+
+  block ^merge:
+    %result = phi i64 [^otherwise: %fallback, ^entry: 7, ^switch_case_3: %t6]
+    return i64 %result
+
+  block ^switch_case_3:
+    %t3 = binary sub i64 %n, 1
+    %t4 = index i8 @__switch_results_0, %t3
+    %t5 = load i8 %t4
+    %t6 = convert sext i64 i8 %t5
+    jump ^merge
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %zero = call i64 @lookup(0, 40)
+    %four = call i64 @lookup(4, 40)
+    %other = call i64 @lookup(5, 40)
+    %t4 = cmp eq i64 %zero, 7
+    %zero_bit = select i32 %t4, 0, 1
+    %t6 = cmp eq i64 %four, 6
+    %four_bit = select i32 %t6, 0, 2
+    %t8 = cmp eq i64 %other, 41
+    %other_bit = select i32 %t8, 0, 4
+    %some = binary or i32 %zero_bit, %four_bit
+    %status = binary or i32 %other_bit, %some
+    return i32 %status
+}
