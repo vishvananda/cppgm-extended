@@ -11,6 +11,7 @@ use lib $FindBin::Bin;
 use CppgmBatchWorker qw(collect_tests run_command_capture);
 use CppgmWasmModule qw(export_signatures export_tag_signatures sequence_module);
 use CppgmWasmFixture qw(mutate_object);
+use CppgmWasmQuality qw(check_quality);
 
 sub read_file {
     my ($path) = @_;
@@ -333,6 +334,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         }
     }
     for my $run_module (@modules) {
+        check_quality($run_module, $expect->{quality}, $level) if $expect->{quality};
         if ($expect->{tag_abi}) {
             my $actual = export_tag_signatures($run_module);
             for my $name (sort keys %{$expect->{tag_abi}}) {
@@ -378,8 +380,9 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                 if $status || $stdout ne '17';
         }
         for my $call (@{$expect->{calls} // []}) {
+            my @fuel = exists($call->{fuel}{$level}) ? ('-W', "fuel=$call->{fuel}{$level}") : ();
             ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run',
-                '--invoke', $call->{export}, $run_module, @{$call->{args} // []});
+                @fuel, '--invoke', $call->{export}, $run_module, @{$call->{args} // []});
             $stdout =~ s/\s+\z//;
             die "$test: $call->{export} failed ($status): $stdout$stderr\n" if $status;
             die "$test: $call->{export} expected $call->{result}, got '$stdout' from $run_module\n"

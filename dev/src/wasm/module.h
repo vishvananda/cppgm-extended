@@ -43,5 +43,8 @@ struct Module
 };
 
 void prepare_module(const lowir::Program& program, Module& module);
+void dump_module(const lowir::Program& program, const Module& module, std::string& output);
+void dump_function(
+	const Function& function, const lowir::Program& program, lowir::SymbolId symbol, std::string& output);
 
 } // namespace wasm

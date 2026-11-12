@@ -1,7 +1,5 @@
 #include "wasm/encoder.h"
 
-#include <sstream>
-
 namespace wasm {
 
 ValueType value_type(lowir::Type type)
@@ -105,31 +103,6 @@ void encode_function(const Function& function, Bytes& output, std::vector<Reloca
 			relocations->push_back(relocation);
 		}
 	output.append(body);
-}
-
-void dump_function(const Function& function, const char* name, std::string& output)
-{
-	std::ostringstream stream;
-	stream << "function " << name << " frame_bytes " << function.frame_bytes << '\n';
-	for (uint32_t i = 0; i < function.locals.size(); ++i)
-		stream << "  local " << i << ' ' << spelling(function.locals[i]) << '\n';
-	for (const Instruction& inst : function.instructions)
-	{
-		stream << "  " << spelling(inst.op);
-		for (uint32_t i = 0; i < inst.operands.count; ++i)
-		{
-			const uint64_t value = function.operands[inst.operands.first + i];
-			if ((immediate_form(inst.op) == Immediate::BlockType ||
-					(immediate_form(inst.op) == Immediate::TryTable && i == 0)) &&
-				static_cast<int64_t>(value) < 0)
-				stream << ' ' << spelling(static_cast<ValueType>(value + 128));
-			else
-				stream << ' ' << value;
-		}
-		stream << '\n';
-	}
-	stream << "end_function\n";
-	output += stream.str();
 }
 
 } // namespace wasm

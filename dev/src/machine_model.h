@@ -35,4 +35,41 @@ struct FrameObject
 	std::uint32_t identity;
 };
 
+// Conservative observable effects; a target may refine these for a typed call.
+enum Effect : std::uint16_t
+{
+	ReadMemory = 1,
+	WriteMemory = 2,
+	ReadGlobal = 4,
+	WriteGlobal = 8,
+	Call = 16,
+	Control = 32,
+	MayTrap = 64,
+	MayThrow = 128
+};
+
+inline const char* spelling(Effect effect)
+{
+	switch (effect)
+	{
+	case ReadMemory:
+		return "read_memory";
+	case WriteMemory:
+		return "write_memory";
+	case ReadGlobal:
+		return "read_global";
+	case WriteGlobal:
+		return "write_global";
+	case Call:
+		return "call";
+	case Control:
+		return "control";
+	case MayTrap:
+		return "may_trap";
+	case MayThrow:
+		return "may_throw";
+	}
+	return "";
+}
+
 } // namespace machine_model

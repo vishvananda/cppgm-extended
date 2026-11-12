@@ -150,7 +150,8 @@ boundary. Repeated-export tests use one module instance to check persistent
 state and initialization. A sidecar's `sequences` lists the ordered export calls that share an instance;
 ordinary `calls` are independent invocations. Native regression tests remain required.
 
-Quality sidecars publish the actual limits and invariants. Tests do not
+[Quality checks](quality.md) explain the metrics; fixture sidecars publish
+the actual limits and invariants. Tests do not
 compare complete instruction sequences against LLVM. Equivalent legal
 lowerings are accepted. A simple scalar expression should not need a
 linear-memory frame; an ordinary reducible loop should not become a

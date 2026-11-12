@@ -386,6 +386,7 @@ shared_scripts=(
   scripts/check_wasm.pl
   scripts/CppgmWasmModule.pm
   scripts/CppgmWasmFixture.pm
+  scripts/CppgmWasmQuality.pm
   scripts/install_wasm_tools.pl
   scripts/wasm_tools.json
   scripts/canonicalize_lowir_native_refs.pl

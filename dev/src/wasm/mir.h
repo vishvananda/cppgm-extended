@@ -33,6 +33,12 @@ struct Instruction
 	std::uint32_t location;
 };
 
+struct FrameObject
+{
+	machine_model::FrameObject storage;
+	std::uint32_t offset;
+};
+
 // One selected function. Emission and the diagnostic dump read this exact
 // stream; immediate operands are typed by the opcode's vocabulary form.
 struct Function
@@ -42,6 +48,7 @@ struct Function
 	std::vector<std::uint64_t> operands;
 	// Offsets here identify operands; encoding converts them to byte offsets.
 	std::vector<Relocation> relocations;
+	std::vector<FrameObject> frame_objects;
 	std::uint32_t parameter_count = 0;
 	std::uint32_t frame_bytes = 0;
 	std::uint32_t location = 0;
@@ -61,5 +68,7 @@ struct Function
 };
 
 ValueType value_type(lowir::Type type);
+std::uint16_t effects(Op op);
+void cleanup_locals(Function& function, bool optimize);
 
 } // namespace wasm

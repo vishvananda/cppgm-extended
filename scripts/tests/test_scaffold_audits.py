@@ -125,6 +125,9 @@ class ScaffoldSpellingAudit(unittest.TestCase):
         write(root, "dev/src/asm_model.h", 'static const char * const kRecords[1] = { "operand" };\n')
         write(root, "dev/src/native/mir/registers.h",
               'static const char * const kGprs[1] = { "rax" };\n')
+        write(root, "dev/src/machine_model.h", 'static const char * const kEffects[1] = { "read_memory" };\n')
+        write(root, "dev/src/wasm_model.h", 'static const char * const kOps[1] = { "i32.load" };\n')
+        write(root, "dev/src/wasm/mir_writer.cpp", 'void dump() { text("i32.load"); text("effects read_memory"); }\n')
         write(root, "dev/src/lowir/text_writer.cpp",
               f'void write() {{ text("{writer_literal}"); internal_error("not a word: zz"); }}\n')
         write(root, "dev/src/lowir/literals.cpp", "\n")
@@ -148,6 +151,15 @@ class ScaffoldSpellingAudit(unittest.TestCase):
             result = run("perl", SPELLING_AUDIT, "--root", root)
             self.assertEqual(result.returncode, 1)
             self.assertIn("LowIR writer: word 'globl'", result.stderr)
+
+    def test_fails_on_a_misspelled_wasm_dump_word(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.tree(root, "declare global ")
+            write(root, "dev/src/wasm/mir_writer.cpp", 'void dump() { text("frame_objct"); }\n')
+            result = run("perl", SPELLING_AUDIT, "--root", root)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("Wasm MIR dumper: word 'frame_objct'", result.stderr)
 
     def test_passes_on_this_tree(self):
         result = run("perl", SPELLING_AUDIT)

@@ -50,6 +50,8 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 	module.relocatable = true;
 	prepare_exception_runtime(program, module);
 	prepare_module(program, module);
+	if (!options.machine_ir.empty())
+		dump_module(program, module, dump);
 	object.types = module.signatures;
 	object.functions.resize(module.definition_types.size());
 	std::vector<uint32_t> symbols(program.symbols.size() + (module.tag_types.empty() ? 3 : 4), lowir::kNoId);
@@ -157,6 +159,7 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 			prepare_exception_plan(program, id, object, symbols, groups[id], exceptions);
 		Function function;
 		Selector(program, module, id, function, &exceptions).run();
+		cleanup_locals(function, options.optimization_level != 0);
 		for (ValueType local : function.locals)
 			uses_simd = uses_simd || local == ValueType::V128;
 		for (const auto& inst : function.instructions)
@@ -171,7 +174,7 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 			throw WasmError(std::string(program.spelling(program.symbols[id].name)) + ": " + failure.what());
 		}
 		if (!options.machine_ir.empty())
-			dump_function(function, program.spelling(program.symbols[id].name), dump);
+			dump_function(function, program, id, dump);
 		Bytes encoded;
 		encode_function(function, encoded, &destination.code.relocations);
 		Cursor body(encoded);

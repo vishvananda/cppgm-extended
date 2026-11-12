@@ -63,7 +63,8 @@ void Selector::prepare_frame()
 	uint64_t bytes = 0;
 	uint32_t alignment = 16;
 	auto reserve = [&](Type type) {
-		const machine_model::FrameObject object{ storage_bytes(type), data_alignment(type), 0 };
+		const machine_model::FrameObject object{ storage_bytes(type), data_alignment(type),
+			static_cast<uint32_t>(out_.frame_objects.size()) };
 		const uint32_t align = object.alignment;
 		alignment = std::max(alignment, align);
 		bytes = (bytes + align - 1) & ~uint64_t(align - 1);
@@ -71,7 +72,8 @@ void Selector::prepare_frame()
 		bytes += object.bytes;
 		if (bytes + alignment > 1024 * 1024)
 			throw WasmError("Wasm frame exceeds the configured stack reserve");
-		return static_cast<uint32_t>(offset);
+		out_.frame_objects.push_back(FrameObject{ object, static_cast<uint32_t>(offset) });
+		return out_.frame_objects.back().offset;
 	};
 	slots_.resize(body_.slots.size());
 	for (uint32_t i = 0; i < body_.slots.size(); ++i)

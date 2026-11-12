@@ -2,7 +2,7 @@
 
 # The LowIR text writer and reader and the MIR dumper spell their words from
 # the shipped vocabulary headers (lowir_model.h, ir_symbol_model.h,
-# asm_model.h, mir_model.h, native/mir/registers.h): a word chosen by a value (an opcode
+# asm_model.h, mir_model.h, machine_model.h, wasm_model.h, native/mir/registers.h): a word chosen by a value (an opcode
 # head, an operation, a metadata key or value, a register) always comes from
 # a header's table.  A fixed word at a fixed call site may stay a literal
 # ("declare global ", "  slot $"), provided it is a header spelling; the
@@ -25,7 +25,7 @@ my $root = abs_path("$FindBin::Bin/..");
 GetOptions('root=s' => \$root) or die "usage: $0 [--root DIR]\n";
 my $src = "$root/dev/src";
 
-my @vocabulary = qw(ir_symbol_model.h lowir_model.h asm_model.h mir_model.h native/mir/registers.h);
+my @vocabulary = qw(ir_symbol_model.h lowir_model.h asm_model.h mir_model.h machine_model.h wasm_model.h native/mir/registers.h);
 
 # Fixed format words, not vocabulary: LowIR's `!dbg(file, line, column)`
 # marker, and the MIR dump's section and field words.
@@ -34,6 +34,8 @@ my %fixed_mir = map { $_ => 1 } qw(
 	machine_ir x86_64 linux startup storage data scalar item init abi param frame stack_size scratch_bytes
 	frame_pointer omit keep epilogues duplicated shared aligned_base preserve atexit_drain args stack switch
 	_dynamic return global function block i128 dbg);
+my %fixed_wasm = map { $_ => 1 } qw(
+	type params results function_index global mutable tag function frame_bytes frame_object offset bytes align local effects dbg scope end_function);
 
 # The code just before a literal that is not an output word.
 my @skip_contexts = (qr/snprintf\([^;]*,\s*\z/, qr/fopen\([^;]*,\s*\z/, qr/#\s*include\s*\z/,
@@ -128,6 +130,7 @@ sub output_literals
 
 check_words('LowIR writer', \%fixed_lowir, output_literals('lowir/text_writer.cpp', 'lowir/literals.cpp', 'lowir/assembly_writer.cpp'));
 check_words('MIR dumper', \%fixed_mir, output_literals('native/mir/mir_writer.cpp'));
+check_words('Wasm MIR dumper', \%fixed_wasm, output_literals('wasm/mir_writer.cpp'));
 
 # The reader's matches outside the vocabulary tables.
 my @reader;
@@ -147,5 +150,5 @@ if (@problems)
 	print STDERR "  $_\n" for @problems;
 	exit 1;
 }
-printf "Scaffold spelling audit: PASS (words of the LowIR writer %d, LowIR reader %d, MIR dumper %d are vocabulary spellings or fixed format words)\n",
-	$checked{'LowIR writer'} // 0, $checked{'LowIR reader'} // 0, $checked{'MIR dumper'} // 0;
+printf "Scaffold spelling audit: PASS (words of the LowIR writer %d, LowIR reader %d, MIR dumper %d, Wasm MIR dumper %d are vocabulary spellings or fixed format words)\n",
+	$checked{'LowIR writer'} // 0, $checked{'LowIR reader'} // 0, $checked{'MIR dumper'} // 0, $checked{'Wasm MIR dumper'} // 0;

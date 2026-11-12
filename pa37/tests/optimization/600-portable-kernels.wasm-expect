@@ -1,0 +1,175 @@
+{
+  "source": true,
+  "llvm_interop": true,
+  "reference_flags": [
+    "-msimd128"
+  ],
+  "exports": [
+    "transform"
+  ],
+  "calls": [
+    {
+      "export": "scalar",
+      "args": [
+        "9",
+        "14"
+      ],
+      "result": "-95",
+      "fuel": {
+        "1": 256,
+        "2": 256,
+        "3": 256
+      }
+    },
+    {
+      "export": "recurrence",
+      "args": [
+        "0"
+      ],
+      "result": "17",
+      "fuel": {
+        "1": 1024,
+        "2": 1024,
+        "3": 1024
+      }
+    },
+    {
+      "export": "recurrence",
+      "args": [
+        "1"
+      ],
+      "result": "1043865673",
+      "fuel": {
+        "1": 1088,
+        "2": 1088,
+        "3": 1088
+      }
+    },
+    {
+      "export": "recurrence",
+      "args": [
+        "7"
+      ],
+      "result": "-578971648",
+      "fuel": {
+        "1": 1472,
+        "2": 1472,
+        "3": 1472
+      }
+    },
+    {
+      "export": "recurrence",
+      "args": [
+        "67"
+      ],
+      "result": "2010406344",
+      "fuel": {
+        "1": 5312,
+        "2": 5312,
+        "3": 5312
+      }
+    },
+    {
+      "export": "recurrence",
+      "args": [
+        "4096"
+      ],
+      "result": "-1377783791",
+      "fuel": {
+        "1": 263168,
+        "2": 263168,
+        "3": 263168
+      }
+    },
+    {
+      "export": "observe",
+      "args": [
+        "0"
+      ],
+      "result": "17",
+      "fuel": {
+        "1": 4096,
+        "2": 4096,
+        "3": 4096
+      }
+    },
+    {
+      "export": "observe",
+      "args": [
+        "1"
+      ],
+      "result": "17",
+      "fuel": {
+        "1": 4224,
+        "2": 4224,
+        "3": 4224
+      }
+    },
+    {
+      "export": "observe",
+      "args": [
+        "3"
+      ],
+      "result": "17",
+      "fuel": {
+        "1": 4480,
+        "2": 4480,
+        "3": 4480
+      }
+    },
+    {
+      "export": "observe",
+      "args": [
+        "17"
+      ],
+      "result": "17",
+      "fuel": {
+        "1": 6272,
+        "2": 6272,
+        "3": 6272
+      }
+    },
+    {
+      "export": "observe",
+      "args": [
+        "67"
+      ],
+      "result": "17",
+      "fuel": {
+        "1": 12672,
+        "2": 12672,
+        "3": 12672
+      }
+    }
+  ],
+  "quality": {
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "functions": {
+      "scalar": {
+        "locals": 8,
+        "code_bytes": 96,
+        "instructions": 48,
+        "memory_ops": 0,
+        "control_depth": 0
+      },
+      "recurrence": {
+        "locals": 24,
+        "code_bytes": 400,
+        "instructions": 200,
+        "memory_ops": 0,
+        "control_depth": 10
+      },
+      "transform": {
+        "locals": 32,
+        "code_bytes": 768,
+        "instructions": 320,
+        "memory_ops": 16,
+        "control_depth": 12
+      }
+    }
+  }
+}

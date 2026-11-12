@@ -657,6 +657,17 @@ void Validator::instruction(const Instruction& inst)
 
 void Validator::run()
 {
+	uint64_t end = 0;
+	for (uint32_t i = 0; i < function_.frame_objects.size(); ++i)
+	{
+		const FrameObject& object = function_.frame_objects[i];
+		const auto& storage = object.storage;
+		if (storage.identity != i || storage.alignment == 0 || (storage.alignment & (storage.alignment - 1)) != 0 ||
+			object.offset % storage.alignment != 0 || object.offset < end || storage.bytes > function_.frame_bytes ||
+			object.offset > function_.frame_bytes - storage.bytes)
+			throw WasmError("invalid Wasm frame object layout");
+		end = object.offset + storage.bytes;
+	}
 	if (function_.parameter_count != signature_.parameters.size() ||
 		function_.locals.size() < function_.parameter_count)
 		throw WasmError("Wasm parameter count mismatch");

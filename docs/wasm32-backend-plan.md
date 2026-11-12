@@ -1,33 +1,35 @@
 # A second backend: wasm32 and a reusable machine layer
 
-Status: implementation in progress, 2026-11-11. The working branch is
-`feature/wasm32-backend`, rebased onto the latest committed local `opt/llvm-gap-claude` at
-`3b78b4521`. Compiler changes are isolated in
+Status: implementation in progress, 2026-11-12. The working branch is
+`feature/wasm32-backend`, rebased onto `origin/main` at `e2831a513`, including
+the merged LLVM optimization work. Compiler changes are isolated in
 `/mnt/vizier/cppgm-wasm32-backend`; the main checkout is unchanged.
 
-The active student documents are [PA37](../pa37/README.md) and its
-[design notes](../pa37/design-notes.md). Earlier handouts now introduce target
-layout and the shared machine boundary, and PA37 is included in the normal
-course/export discovery. This plan and the
+The active student documents are [PA37](../pa37/README.md), its
+[design notes](../pa37/design-notes.md), [ABI contract](../pa37/target-abi.md)
+and [quality checks](../pa37/quality.md). Earlier handouts introduce target
+layout and the shared machine boundary; normal course/export discovery includes
+PA37. This plan, the [completion journal](wasm32-completion-status.md) and the
 [reference investigation](wasm32-assignment/reference-evidence.md) are
 maintainer material and stay out of the student export.
 
-The first implementation covers typed target profiles, ILP32 frontend layout,
-target-aware LowIR/optimizer pointer operations, common global-data emission,
-and direct scalar Wasm encoding with typed locals, frames, function tables,
-structured reducible control flow and an irreducible fallback. Perl fixtures
-validate and execute direct-source and serialized-LowIR paths at O0–O3 using
-pinned independent tools. Selected machine IR is checked internally before
-encoding. The rebased strict report passes 10,664/10,664 tests. Scalar checks cover
-narrow signed/unsigned operations, unordered floating comparisons and
-freestanding dynamic initialization.
+The implementation covers target-aware frontend/LowIR layout, scalar and wide
+values, structured/irreducible control, separate objects/archives and static
+linking, aggregate/varargs ABI, class/RTTI/runtime boundaries, modern source EH,
+WASIp1 commands, same-instance initialization and all 214 LowIR vector
+operations. The object vocabulary covers all 236 standard SIMD128 operations.
+Shared exception/global-data analyses contain no x86 frame or register facts.
+The consumed Wasm MIR retains typed locals, frame objects, effects and source
+locations. Its local cleanup and initial published quality bounds have independent
+LLVM calibration. Host-built and self-built tools pass 89/89 PA37 controls;
+the current strict report passes 10,778/10,778.
 
-This is an intermediate implementation, not completion of the assignment.
-Relocatable objects/linking, full aggregate/varargs/wide-value ABI, WASIp1
-startup and runtime, virtual/RTTI/EH interoperability, SIMD and performance
-quality gates remain. Steps 0–4 and 8 below are partially implemented; their
-remaining acceptance checks still apply. Keep those requirements visible
-rather than narrowing the assignment to the current scalar emitter.
+This remains an intermediate implementation. Target cost policy, remaining
+object-profile validation and reference-type/global-expression coverage,
+standard benchmark publication, broader profile cases and final complete
+Linux/macOS qualification remain required. Keep the full acceptance checks
+below visible rather than narrowing the assignment to the current emitter.
+Current evidence and qualification details are in the completion journal.
 
 ## Qualification of the first implementation
 

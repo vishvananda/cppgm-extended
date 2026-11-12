@@ -427,3 +427,63 @@ the successful broad semantic sweep is `vector-sweep-third.log`.
 Full integrated native/self-host/export qualification remains required after
 the remaining quality, object-profile and benchmark work. This checkpoint does
 not complete PA37.
+
+## Consumed MIR and initial quality-envelope checkpoint
+
+The selected Wasm function now retains the actual allocated frame objects with
+shared size/alignment/identity facts and target offsets. Validation checks their
+non-overlap, alignment and extent. The dump reads that same selected stream,
+prints module signature/function/global/tag mappings, frame objects and locals,
+and reports conservative typed effects and available source locations. The
+shipped machine vocabulary owns effect spellings; the spelling audit now checks
+the Wasm writer too, including a negative misspelling control.
+
+A linear local cleanup folds adjacent set/get pairs into the value stack or a
+tee and removes unused declarations without renumbering public parameters.
+It preserves the original operand ranges and relocation identities. O3's
+calibration recurrence drops from 32 locals/371 body bytes to 18/303; the array
+transform drops from 37/641 to 24/573. O1's scalar expression drops from 6/49 to
+4/41. These are structural measurements, not elapsed-time claims.
+
+The shipped Perl quality checker measures final-module function bodies rather
+than compiler-rendered text. Published sidecars bound locals, body bytes,
+instructions, memory operations and control depth at O1–O3. The same bounds
+pass cppgm source/LowIR paths and independently produced LLVM objects through
+both linkers. Per-call engine fuel bounds include transitive Wasm work and
+initialization. External negative probes verify that a zero instruction bound
+and an exhausted fuel budget both fail. Eight maintainer unit cases cover
+immediate decoding, imports/export aliases, invalid bounds and level selection.
+All student-facing execution and quality checks remain Perl and use the normal
+parallel runner. The new concise quality document is in the export inventory.
+
+Strict qualification passes 10778/10778; host-built and self-built PA37 tools
+pass 89/89. The complete 205-operation external vector sweep still passes at
+O0/O3 after local cleanup. PA5 self-host, byte-identical inception, debug info,
+PA36 smoke (3/3), Clang syntax, architecture/format/file audits and the full
+harness pass. Placement scans 10116 tests with zero placement or local-hygiene
+findings; seven inherited file warnings and 89 advisory EH review leads remain.
+The first harness run found an oracle filename outside the companion naming
+convention. Renaming it to `.oracle.cpp` fixes discovery; the focused test and
+full harness pass with the corrected name.
+
+The corrected student export regenerates consistently; a fresh bundle client
+passes the 271-document inventory, 64-file prose audit and all 43 wrappers.
+The successful snapshot is `student-simd-quality-final-export`; the earlier
+snapshot predates the companion-file rename. Logs use `simd-quality-` and
+`mir-quality-`; `quality-calibration/` retains both compilers' modules, machine
+dumps, structural measurements and every fuel-calibration observation.
+Frozen native compilers on the same `e2831a513` base compare the EH checkpoint
+with this SIMD/MIR/quality stage. O0 is 3,058,840,896 versus 3,059,251,390
+instructions (+0.0134%); O3 is 10,346,620,732 versus 10,346,740,957 (+0.0012%).
+Objects are byte-identical. `perf-simd-quality/` retains the exact source patch,
+frozen binaries/input hashes, commands and observations; no wall-time claim is
+made.
+
+Target cost policy, remaining object/profile coverage, standard benchmarks and
+final full Linux/macOS qualification remain required. An independent malformed-
+object probe confirms a next reader fix: swapping the type/import sections of
+a valid LLVM SIMD object is rejected by wasm-tools but currently accepted by
+cppgm's linker. Its bytes, commands and results are in
+`object-profile-negatives/`. The remaining element/reference/global-expression
+profile also needs validation rather than skipped payloads. This checkpoint
+does not complete PA37.
