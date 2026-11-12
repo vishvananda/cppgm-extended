@@ -1,0 +1,1 @@
+{"source":true,"llvm_interop":true,"calls":[{"export":"guarded","result":"17"},{"export":"null_addresses","result":"17"},{"export":"force_integer","trap":true},{"export":"force_floating","trap":true}]}

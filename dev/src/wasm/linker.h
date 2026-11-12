@@ -51,6 +51,7 @@ private:
 	std::vector<ObjectRef> roots_;
 	std::set<ObjectRef> discarded_functions_, discarded_data_, discarded_tags_;
 	std::set<ObjectRef> discarded_globals_;
+	std::set<ObjectRef> weak_functions_;
 	std::map<ObjectRef, uint32_t> functions_, data_, tags_, globals_;
 	std::map<ObjectRef, uint32_t> address_globals_;
 	std::vector<ObjectRef> ordered_functions_, ordered_data_, ordered_tags_;

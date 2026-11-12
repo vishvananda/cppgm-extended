@@ -137,6 +137,11 @@ An unused member must not introduce duplicate definitions, unresolved-symbol
 errors or constructor execution. Resolve weak and strong definitions according
 to the linking conventions and reject incompatible function signatures.
 
+An absent weak function has a null function-pointer value. It must not extract
+an archive member solely to satisfy that weak reference. Accept LLVM objects
+with guarded direct calls to such functions: a call that is reached must trap,
+while a null check can bypass it. Preserve the declared call signature.
+
 An ordinary undefined C/C++ declaration is not permission to create a host
 import. Declared imports specify their module, field name and exact signature.
 Exports use their requested object names. Reject unresolved live references,

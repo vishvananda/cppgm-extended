@@ -29,6 +29,7 @@ the small SIMD/EH/WASI/filesystem probes; the complete compiler has not yet run
 inside Wasm. The investigation also found required target-library gaps:
 target-independent builtin templates are absent from Wasm's injected declarations,
 and an unresolved weak direct call in libc prevents ordinary stdio linking.
+The target-library checkpoint below fixes both gaps.
 The Clang WASI syntax scan passes 274/406 compiler translation units; the 132
 failures identify host padding, resource APIs and x87 floating assumptions.
 Compiler-host portability remains optional follow-on work.
@@ -664,3 +665,55 @@ Those improvements, standalone lowiropt target-library consistency, custom host
 globals, imported memory/table limits, malformed names/profile/type boundaries,
 and final Linux/macOS CI qualification remain. This checkpoint does not complete
 PA37, and no benchmark results have been published from the dirty local checkout.
+
+## Target builtin templates and weak runtime calls
+
+Wasm now retains the target-independent builtin templates already supplied on
+native targets, alongside its own pointer-shaped `va_list`. Its predefined
+numeric limits describe IEEE binary32/binary64/binary128, with target-correct
+wide-character types and language memory-order constants. These declarations
+do not enable threads or atomic instructions outside the target profile.
+
+The linker retains null addresses for absent weak functions and supplies typed
+trapping definitions for their live direct-call relocations. Weak references
+still do not extract archive members. This fixes the SDK libc file-I/O link
+without explicitly extracting `chdir.c.obj` or retaining the whole archive.
+Required fixtures cover two call signatures, guarded calls, null address
+initializers, traps and an archive member with an otherwise unavailable
+constructor dependency. Mixed LLVM/cppgm producers and both linkers agree.
+
+The standard Perl runner now supports expected Wasm traps and per-command
+preopened input/output directories. Real tests exercise stat, file streams,
+seek/read/write and exact output bytes, plus libc++ numeric limits, tuple,
+wide-character declarations and unique ownership. Four deliberate harness
+misexpectations reject normal returns as traps, traps as success, wrong file
+contents and invalid fixture filenames.
+
+Qualification on the e2831a513 base passes: strict report 10790/10790; PA37
+101/101 with host and self-built tools; PA5 self-host; byte-identical native
+inception; debug info; PA36 smoke 3/3; architecture, source-set, registry,
+scaffold, IR and format audits; Clang 21 changed-source syntax; the complete
+harness; student document review. Placement scans 10128 tests with no placement
+or hygiene findings, retaining 89 advisory EH leads. Seven inherited file-audit
+warnings remain.
+
+The fresh `student-library-boundary-export` regenerates consistently. Its
+`library-boundary-reference-binaries.tar.gz` installs in a fresh client with
+275 document entries, 65 reviewed prose files and all 43 wrappers passing.
+The exported runner executes the file-I/O and numeric/library fixtures, and
+all 14 changed shipped handout/fixture/runner files match the source snapshot.
+Logs, reductions, immutable binaries and provenance are in `library-boundary/`
+under the external evidence directory.
+
+Against the previous target-cost compiler, frozen native output is byte-identical
+at O0/O3. Instruction counts change by +0.0001% and -0.0042% respectively. Four
+A/A and eight ABBA blocks at each level retain 96 CPU/wall/RSS observations;
+paired wall changes are -0.44% O0 and +0.56% O3, versus A/A -1.33% and -0.96%.
+Peak RSS changes by less than 0.08%. These observations do not establish a
+material timing regression or a speedup.
+
+The optional full-compiler probe advances to the SDK's C11 `_Thread_local`
+`errno` declaration in `<sstream>` dependencies. That portability work remains
+outside required inception qualification. Remaining required profile hardening,
+optimizer/source-lowering follow-ups and final Linux/macOS CI qualification
+are unchanged; this checkpoint does not complete PA37.

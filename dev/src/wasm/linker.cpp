@@ -206,7 +206,9 @@ void Linker::visit(ObjectRef ref)
 			return;
 		if (!source.weak() || source.kind == 4)
 			throw WasmError("undefined Wasm symbol: " + source.name);
-		if (source.kind != 2)
+		if (source.kind == 0)
+			weak_functions_.insert({ ref.first, source.index });
+		else if (source.kind != 2)
 			return;
 	}
 	const ObjectRef key{ ref.first, source.index };
@@ -245,6 +247,7 @@ void Linker::collect()
 		resolve_archive_references();
 		const auto before = std::count(active_.begin(), active_.end(), true);
 		functions_.clear();
+		weak_functions_.clear();
 		data_.clear();
 		tags_.clear();
 		globals_.clear();
@@ -303,12 +306,14 @@ void Linker::collect()
 		[](const std::pair<uint32_t, ObjectRef>& a, const std::pair<uint32_t, ObjectRef>& b) {
 			return a.first < b.first;
 		});
-	std::stable_partition(ordered_functions_.begin(), ordered_functions_.end(),
-		[&](ObjectRef ref) { return objects_[ref.first].functions[ref.second].imported; });
+	std::stable_partition(ordered_functions_.begin(), ordered_functions_.end(), [&](ObjectRef ref) {
+		return objects_[ref.first].functions[ref.second].imported && !weak_functions_.count(ref);
+	});
 	for (uint32_t i = 0; i < ordered_functions_.size(); ++i)
 	{
 		functions_[ordered_functions_[i]] = i;
-		imported_ += objects_[ordered_functions_[i].first].functions[ordered_functions_[i].second].imported;
+		const ObjectRef ref = ordered_functions_[i];
+		imported_ += objects_[ref.first].functions[ref.second].imported && !weak_functions_.count(ref);
 	}
 	std::stable_partition(ordered_tags_.begin(), ordered_tags_.end(),
 		[&](ObjectRef ref) { return objects_[ref.first].tags[ref.second].imported; });

@@ -406,12 +406,27 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
             }
         }
         for my $run (@{$expect->{commands} // []}) {
+            my @preopen;
+            my $files;
+            if ($run->{files} || $run->{outputs}) {
+                $files = tempdir('command-files-XXXXXX', DIR => $directory);
+                for my $name (keys %{$run->{files} // {}}, keys %{$run->{outputs} // {}}) {
+                    die "$test: invalid command fixture filename\n"
+                        unless $name =~ /^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*$/;
+                }
+                write_file("$files/$_", $run->{files}{$_}) for keys %{$run->{files} // {}};
+                @preopen = ('--dir', "${files}::.");
+            }
             ($status, $stdout, $stderr) = command("command-$level", $runtime, 'run',
-                $run_module, @{$run->{args} // []});
+                @preopen, $run_module, @{$run->{args} // []});
             die "$test: WASI command exit expected $run->{exit}, got $status: $stdout$stderr\n"
                 if $status != $run->{exit};
             die "$test: WASI command output expected '$run->{stdout}', got '$stdout'\n"
                 if $stdout ne $run->{stdout};
+            for my $name (sort keys %{$run->{outputs} // {}}) {
+                die "$test: command file $name differs\n"
+                    if read_file("$files/$name") ne $run->{outputs}{$name};
+            }
         }
         for my $sequence (@{$expect->{sequences} // []}) {
             my $wrapped = "$directory/sequence-" . ++$command_sequence . '.wasm';
@@ -432,6 +447,11 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
             ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run',
                 @fuel, '--invoke', $call->{export}, $run_module, @{$call->{args} // []});
             $stdout =~ s/\s+\z//;
+            if ($call->{trap}) {
+                die "$test: $call->{export} did not produce a Wasm trap: $stdout$stderr\n"
+                    if !$status || $status == 124 || $stderr !~ /\bwasm trap\b/;
+                next;
+            }
             die "$test: $call->{export} failed ($status): $stdout$stderr\n" if $status;
             die "$test: $call->{export} expected $call->{result}, got '$stdout' from $run_module\n"
                 if $stdout ne "$call->{result}";

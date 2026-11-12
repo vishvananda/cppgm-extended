@@ -165,7 +165,17 @@ void Linker::emit(Bytes& output)
 	for (uint32_t i = imported_; i < ordered_functions_.size(); ++i)
 	{
 		const ObjectRef ref = ordered_functions_[i];
-		const Bytes body = relocated(ref.first, objects_[ref.first].functions[ref.second].code);
+		Bytes body;
+		if (weak_functions_.count(ref))
+		{
+			// An absent weak function has a null table address, but a direct
+			// call still needs a valid function index with its declared type.
+			body.byte(0);
+			body.byte(0x00);
+			body.byte(0x0b);
+		}
+		else
+			body = relocated(ref.first, objects_[ref.first].functions[ref.second].code);
 		code.unsigned_leb(body.data.size());
 		code.append(body);
 	}

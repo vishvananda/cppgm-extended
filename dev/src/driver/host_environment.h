@@ -20,6 +20,9 @@ void add_host_environment(PreprocessorOptions& options, bool nostdinc);
 // Foreign SDK paths must be explicit; baked host paths are not a foreign SDK.
 void configure_target_environment(PreprocessorOptions& options, native::Target target);
 
+// Builtin templates have language semantics independent of va_list or layout.
+const char* builtin_template_declarations();
+
 // Whether `-stdlib=<name>` agrees with the standard library selection
 // cppgm++ was built with (CPPGM_STDLIB_FLAGS), or, for a build that made
 // none, with the host's default library whose headers it found.

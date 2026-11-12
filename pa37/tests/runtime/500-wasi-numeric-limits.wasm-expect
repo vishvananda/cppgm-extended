@@ -1,0 +1,1 @@
+{"source":true,"wasi":true,"target":"wasm32-wasip1","link_flags":["-nostartfiles"],"reference_link_flags":["-Wl,--no-entry"],"llvm_interop":true,"calls":[{"export":"observe","result":"17"}]}

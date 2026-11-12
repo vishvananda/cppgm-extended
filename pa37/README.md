@@ -38,6 +38,8 @@ runtime linkage and initialization. Run freestanding dynamic initializers once
 at module instantiation; the core start function must not also call `main`.
 An unresolved symbol is an error unless
 explicitly declared as an import with its module, name and signature.
+Absent weak references follow the null-address and call rules in the target
+contract.
 
 Produce valid deterministic module bytes and LLVM-compatible relocatable
 Wasm objects directly. The compiler must perform its own lowering, encoding
@@ -99,6 +101,9 @@ Select target facts before preprocessing and semantic analysis. Wasm32 uses
 `long double`. Match the supplied ABI for type identity, signedness, layout,
 alignment, literals, constant evaluation and calling conventions. Target
 headers and builtin macros must describe the target rather than the host.
+Keep language builtin templates available across targets while adapting types
+such as `va_list`. Numeric-limit and wide-character declarations must agree
+with the target headers, including binary128 `long double` limits.
 
 Carry target/layout metadata and sufficient typed ABI facts in LowIR. Reject
 incompatible inputs; do not reinterpret existing x86-layout LowIR as wasm32.
@@ -153,6 +158,9 @@ objects from both compilers and exercise calls and exceptions across the
 boundary. Repeated-export tests use one module instance to check persistent
 state and initialization. A sidecar's `sequences` lists the ordered export calls that share an instance;
 ordinary `calls` are independent invocations. Native regression tests remain required.
+An export call with `trap: true` must trap at runtime. WASI command sidecars may
+provide named input `files` and expected `outputs`; each command gets a fresh
+preopened directory for them.
 
 [Quality checks](quality.md) explain the metrics; fixture sidecars publish
 the actual limits and invariants. Tests do not

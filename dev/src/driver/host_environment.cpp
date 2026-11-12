@@ -141,7 +141,9 @@ std::string HostMacroText(const FeatureModes& modes, bool strict)
 const char kBuiltinDeclarations[] =
 	"struct __va_list_tag { unsigned int gp_offset; unsigned int fp_offset; void* overflow_arg_area; "
 	"void* reg_save_area; };\n"
-	"typedef __va_list_tag __builtin_va_list[1];\n"
+	"typedef __va_list_tag __builtin_va_list[1];\n";
+
+const char kBuiltinTemplateDeclarations[] =
 	// Clang's builtin templates (GCC 14's too) as alias templates:
 	// __make_integer_seq<S, T, N> is S<T, 0, ..., N-1> (by __integer_pack)
 	// and __type_pack_element<I, T...> the I-th type of the pack.
@@ -156,11 +158,17 @@ const char kBuiltinDeclarations[] =
 
 } // namespace
 
+const char* builtin_template_declarations()
+{
+	return kBuiltinTemplateDeclarations;
+}
+
 void add_host_environment(PreprocessorOptions& options, bool nostdinc)
 {
 	options.hosted = true;
 	options.host_predefines = HostMacroText(options.modes, options.strict);
 	options.builtin_declarations = kBuiltinDeclarations;
+	options.builtin_declarations += builtin_template_declarations();
 	if (nostdinc)
 		return;
 	for (const char* const* path = cppgm_builtin_host_config::kStandardIncludePaths; *path != nullptr; ++path)

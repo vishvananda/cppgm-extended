@@ -1,0 +1,5 @@
+extern "C" void unavailable_dependency();
+struct Register {
+ Register() { unavailable_dependency(); }
+} registration;
+extern "C" int optional_feature(int value) { return value + 90; }

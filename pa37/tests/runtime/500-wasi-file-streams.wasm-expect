@@ -1,0 +1,1 @@
+{"source":true,"wasi":true,"target":"wasm32-wasip1","llvm_interop":true,"commands":[{"exit":0,"stdout":"file streams pass\n","files":{"input.txt":"hello!"},"outputs":{"output.bin":"heXlo!"}}]}
