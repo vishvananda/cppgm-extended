@@ -66,6 +66,7 @@ class IntelBenchmarkTests(unittest.TestCase):
             root = Path(temporary)
             source, target = root / 'run', root / 'artifact'
             keep = ['results.json', 'compile.stdout', 'compile.stderr', 'counter-probe',
+                    'raw/requests.stdin',
                     'runtime/observations.jsonl', 'runtime/000/stdout', 'runtime/000/stderr',
                     'cppgm/libs-json-test/invocations.jsonl', 'cppgm/libs-json-test/b2.log']
             discard = ['compiler', 'output.o', 'source/input.json', 'source/tests/result.stdout',

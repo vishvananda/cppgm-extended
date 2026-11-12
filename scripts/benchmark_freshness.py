@@ -34,7 +34,7 @@ def groups(target):
                   ('self-compile', 'self-built', 'self-compile-clang', 'self-built-clang')]
         yield 'Public programs', host, directory / 'provenance.json', (p for p in public if p.exists()), directory / 'report.md'
         yield 'cppgm++', host, directory / 'self-build-provenance.json', (p for p in builds if p.exists()), directory / 'self-build.md'
-        for workload in ('index-cpp', 'simdjson', 'godot', 'boost/o3', 'internal'):
+        for workload in ('index-cpp', 'simdjson', 'godot', 'boost/o3', 'internal', 'wasm'):
             directory = target / workload
             yield workload, host, directory / host / 'metadata.json', directory.glob(host + '-*.svg'), directory / host / 'report.md'
 
@@ -125,6 +125,8 @@ def main():
     parser.add_argument('--revision', required=True)
     parser.add_argument('--repo', default='vishvananda/cppgm-extended')
     args = parser.parse_args()
+    from wasm_benchmark_results import seed
+    seed(args.target)
     refresh(args.target, args.revision, args.repo)
 
 

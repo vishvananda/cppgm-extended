@@ -232,6 +232,56 @@
         }
       ],
       "documentation": "benchmarks/godot/README.md"
+    },
+    {
+      "id": "wasm",
+      "name": "Wasm32 portable kernels",
+      "kind": "benchmark",
+      "documentation": "pa37/benchmarks/README.md",
+      "configurations": [
+        {
+          "id": "scalar",
+          "name": "Scalar source",
+          "optimizations": [
+            "O0",
+            "O1",
+            "O2",
+            "O3"
+          ],
+          "parameters": {
+            "target": "wasm32-unknown-unknown",
+            "engine": "Wasmtime 50.0.1 / Cranelift speed",
+            "workloads": [
+              "hash",
+              "filter",
+              "matrix",
+              "transform"
+            ],
+            "automatic_vectorization": "permitted in both source forms"
+          }
+        },
+        {
+          "id": "simd128",
+          "name": "Explicit SIMD128 source",
+          "optimizations": [
+            "O0",
+            "O1",
+            "O2",
+            "O3"
+          ],
+          "parameters": {
+            "target": "wasm32-unknown-unknown",
+            "engine": "Wasmtime 50.0.1 / Cranelift speed",
+            "workloads": [
+              "hash",
+              "filter",
+              "matrix",
+              "transform"
+            ],
+            "automatic_vectorization": "permitted in both source forms"
+          }
+        }
+      ]
     }
   ]
 }

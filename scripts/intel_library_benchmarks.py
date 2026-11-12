@@ -14,11 +14,15 @@ SCRIPTS = {
     'godot': 'godot_ci.py',
     'boost': 'boost_benchmarks.py',
     'internal': 'internal_cpp_benchmarks.py',
+    'wasm': 'wasm_benchmarks.pl',
 }
 DIRECTORY = Path(__file__).resolve().parent
 
 
 def run_command(suite, source, jobs):
+    if suite == 'wasm':
+        return ['perl', str(DIRECTORY / SCRIPTS[suite]), '--compiler', str(source / 'dev/cppgm++'),
+                '--repo-root', str(source), '--output', str(source / 'obj' / suite)]
     return [sys.executable, str(DIRECTORY / SCRIPTS[suite]), 'run',
             '--compiler', str(source / 'dev/cppgm++'), '--repo-root', str(source),
             '--output', str(source / 'obj' / suite)] + (
@@ -27,6 +31,17 @@ def run_command(suite, source, jobs):
 
 def run(args):
     command = run_command(args.suite, args.source.resolve(strict=True), args.jobs)
+    if args.suite == 'wasm':
+        tools = args.source / 'obj/wasm-tools'
+        subprocess.run(['perl', str(DIRECTORY / 'install_wasm_tools.pl'), '--prefix', str(tools),
+                        '--benchmark-engine'], check=True)
+        output = args.source / 'obj/wasm'
+        for level in (0, 3):
+            selected = list(command)
+            selected[selected.index('--output') + 1] = str(output / f'O{level}')
+            subprocess.run(selected + ['--tools', str(tools), '--level', str(level)], check=True)
+        (output / 'details.md').write_text('\n'.join((output / f'O{level}/details.md').read_text() for level in (0, 3)))
+        return
     if args.suite != 'boost':
         subprocess.run(command, check=True)
         return
@@ -46,7 +61,7 @@ def collect(source, target):
     for path in source.rglob('*'):
         relative = path.relative_to(source)
         if ({'build', 'source'}.intersection(relative.parts) or not path.is_file()
-                or not (path.suffix in suffixes or path.name in ('stdout', 'stderr')
+                or not (path.suffix in suffixes or path.suffix == '.stdin' or path.name in ('stdout', 'stderr')
                         or path.name.endswith('probe'))):
             continue
         destination = target / relative
@@ -78,6 +93,11 @@ def main():
     elif args.command == 'collect':
         collect(args.source, args.target)
     else:
+        if args.suite == 'wasm':
+            subprocess.run([sys.executable, str(DIRECTORY / 'wasm_benchmark_results.py'), 'publish',
+                            str(args.artifact / 'O0'), str(args.artifact / 'O3'), '--target', str(args.target),
+                            '--revision', args.revision, '--run-url', args.run_url, '--platform', 'intel'], check=True)
+            return
         subprocess.run([sys.executable, str(DIRECTORY / SCRIPTS[args.suite]), 'publish',
                         str(args.artifact), str(args.target), '--revision', args.revision,
                         '--run-url', args.run_url, '--platform', 'intel'], check=True)

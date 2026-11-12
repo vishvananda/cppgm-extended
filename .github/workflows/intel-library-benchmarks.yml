@@ -63,6 +63,8 @@ jobs:
                   python3 -m pip install --break-system-packages scons==4.10.1 ;;
                 boost)
                   apt-get install -y --no-install-recommends bzip2 gdb ;;
+                wasm)
+                  apt-get install -y --no-install-recommends curl xz-utils perl util-linux ;;
                 index-cpp|simdjson|internal) ;;
                 *) exit 2 ;;
               esac

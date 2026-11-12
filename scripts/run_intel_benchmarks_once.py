@@ -22,6 +22,7 @@ SUITES = {
     'godot': 'godot.yml',
     'boost': 'boost.yml',
     'internal': 'internal-cpp.yml',
+    'wasm': 'wasm.yml',
 }
 
 

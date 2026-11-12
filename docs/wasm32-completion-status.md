@@ -16,7 +16,7 @@ or a green partial suite does not complete PA37.
 | SIMD and shared optimization | All 214 LowIR vector operations legalized; complete standard SIMD128 object vocabulary; consumed typed MIR/local cleanup; target-aware address, loop and inlining policies; published static/fuel envelopes | Broader independent kernels, standard benchmark comparison and final integrated qualification |
 | Robust diagnostics and determinism | Bad target/version/shape tests; bounded MIR validation | Complete malformed object/feature/signature/relocation coverage and deterministic multi-object linking |
 | Course material and export | PA37 handout/design notes, target/MIR scaffolds, offline source/licence pins, normal Perl runner | Final scope and scaffold review, complete reference-tool prerequisites, clean export qualification |
-| Benchmarks and CI | Required Wasm lane integrated with pinned runtime/validator/reference SDK on both hosts | Standard benchmark entry, separate compile/size/startup/runtime measurements and final Linux/macOS results |
+| Benchmarks and CI | Required correctness lane on both hosts; catalog/report/README integration; Perl O0/O3 scalar/SIMD campaign with separate compile/link/size/startup/setup/steady metrics; hosted and dedicated Intel publication paths | Final Linux/macOS results, live CI publication and measured codegen follow-ups |
 | Native regressions and efficiency | Target-cost snapshot: 10785 strict tests, 96 Wasm controls with host/self tools, debug info, PA5 self-host, byte-identical inception and frozen native output/performance checks on e2831a513 | Repeat final required qualification after the remaining implementation changes |
 
 All raw results, probes, pinned binaries and performance observations live outside
@@ -488,52 +488,6 @@ cppgm's linker. Its bytes, commands and results are in
 profile also needs validation rather than skipped payloads. This checkpoint
 does not complete PA37.
 
-## Target-aware optimization checkpoint
-
-The shared target description now supplies addressing, call-preservation and
-floating-literal facts to function passes. Wasm keeps invariant scalar/address
-work across calls, avoids native scaled-address sinking and literal-load
-hoisting, and charges short-loop growth for explicit address arithmetic.
-Inlining prices Wasm expansion rather than native x87/SSE/LEA forms, does not
-discount addresses as folded memory operands, and leaves variable/unknown
-expansions unpriced. Required source inlining remains a separate policy.
-
-A source/serialized-LowIR/mixed-LLVM fixture checks call-preserved invariants
-through the normal Perl runner at O0–O3, with portable structural and dynamic
-fuel bounds. At 1,000 iterations, the same checked result uses 80,303 -> 68,315
-fuel at O2 (-14.9%) and 73,138 -> 61,150 at O3 (-16.4%). Pinned LLVM output
-also passes the published bounds. These are engine-work counts, not runtime
-speedups. The student quality guidance describes requirements rather than a
-required pass order or instruction sequence.
-
-The strict report passes 10785/10785. Host-built and self-built PA37 tools pass
-96/96; PA5 self-host, byte-identical inception, debug info, PA36 smoke (3/3),
-Clang syntax and architecture/format/file audits pass. The placement audit
-scans 10123 tests with no placement or hygiene findings; the seven inherited
-file warnings and 89 advisory EH leads remain. The full harness passes.
-student-target-cost-export regenerates consistently; its fresh bundle client
-passes 274 document entries, 64 reviewed prose files and all 43 wrappers.
-
-Frozen native binaries compare 8654da3c9 with this stage on main base e2831a513.
-O0 changes from 3,058,429,628 to 3,058,665,116 instructions (+0.0077%); O3 from
-10,346,620,146 to 10,349,700,222 (+0.0298%). Objects are byte-identical. Four
-A/A blocks and eight paired ABBA blocks per level retain all 96 elapsed/CPU/RSS
-observations and verify every output. Paired elapsed changes are -0.58% at O0
-and +0.22% at O3; A/A median changes are +0.19% and -0.59%, respectively. Peak
-RSS changes by less than 0.03%. This probe detects no material native regression;
-it cannot resolve a timing change near two tenths of a percent. Immutable
-binaries/inputs, patch/hash provenance and observations are in perf-target-cost/;
-Wasm modules, LowIR and every fuel observation are in target-cost-probes/.
-Other validation logs use target-cost-.
-
-Standard benchmark integration, remaining object/type/language boundaries and
-final Linux/macOS CI qualification remain. The benchmark plan now specifies a
-pinned C-API executor to separate VM compilation, instantiation/startup and
-warmed calls, with Perl scheduling and the existing catalog/reporting path.
-Also exercise standalone lowiropt's target-library policy: its default GNU
-combined-math option currently differs from the explicit source/backend policy.
-This checkpoint does not complete PA37.
-
 ## Typed global/reference object checkpoint
 
 The object reader now enforces core section order, duplicate/count rules,
@@ -598,3 +552,105 @@ boundaries and final Linux/macOS qualification remain required. In particular,
 exercise custom imported globals with shifted SP/GOT indices, imported memory/
 table limits and remaining malformed-profile boundaries. This checkpoint does
 not complete PA37.
+
+## Target-aware optimization checkpoint
+
+The shared target description now supplies addressing, call-preservation and
+floating-literal facts to function passes. Wasm keeps invariant scalar/address
+work across calls, avoids native scaled-address sinking and literal-load
+hoisting, and charges short-loop growth for explicit address arithmetic.
+Inlining prices Wasm expansion rather than native x87/SSE/LEA forms, does not
+discount addresses as folded memory operands, and leaves variable/unknown
+expansions unpriced. Required source inlining remains a separate policy.
+
+A source/serialized-LowIR/mixed-LLVM fixture checks call-preserved invariants
+through the normal Perl runner at O0–O3, with portable structural and dynamic
+fuel bounds. At 1,000 iterations, the same checked result uses 80,303 -> 68,315
+fuel at O2 (-14.9%) and 73,138 -> 61,150 at O3 (-16.4%). Pinned LLVM output
+also passes the published bounds. These are engine-work counts, not runtime
+speedups. The student quality guidance describes requirements rather than a
+required pass order or instruction sequence.
+
+The strict report passes 10785/10785. Host-built and self-built PA37 tools pass
+96/96; PA5 self-host, byte-identical inception, debug info, PA36 smoke (3/3),
+Clang syntax and architecture/format/file audits pass. The placement audit
+scans 10123 tests with no placement or hygiene findings; the seven inherited
+file warnings and 89 advisory EH leads remain. The full harness passes.
+student-target-cost-export regenerates consistently; its fresh bundle client
+passes 274 document entries, 64 reviewed prose files and all 43 wrappers.
+
+Frozen native binaries compare 8654da3c9 with this stage on main base e2831a513.
+O0 changes from 3,058,429,628 to 3,058,665,116 instructions (+0.0077%); O3 from
+10,346,620,146 to 10,349,700,222 (+0.0298%). Objects are byte-identical. Four
+A/A blocks and eight paired ABBA blocks per level retain all 96 elapsed/CPU/RSS
+observations and verify every output. Paired elapsed changes are -0.58% at O0
+and +0.22% at O3; A/A median changes are +0.19% and -0.59%, respectively. Peak
+RSS changes by less than 0.03%. This probe detects no material native regression;
+it cannot resolve a timing change near two tenths of a percent. Immutable
+binaries/inputs, patch/hash provenance and observations are in perf-target-cost/;
+Wasm modules, LowIR and every fuel observation are in target-cost-probes/.
+Other validation logs use target-cost-.
+
+Standard benchmark integration, remaining object/type/language boundaries and
+final Linux/macOS CI qualification remain. The benchmark plan now specifies a
+pinned C-API executor to separate VM compilation, instantiation/startup and
+warmed calls, with Perl scheduling and the existing catalog/reporting path.
+Also exercise standalone lowiropt's target-library policy: its default GNU
+combined-math option currently differs from the explicit source/backend policy.
+This checkpoint does not complete PA37.
+
+## Standard benchmark integration checkpoint
+
+PA37 now has a usable `make benchmark` target and shipped measurement guidance.
+Its Perl driver compiles frozen scalar/explicit-SIMD source forms, validates all
+four kernel families against independent unsigned arithmetic, checks every timed
+checksum and output identity, and retains every request/observation. A pinned
+Wasmtime 50.0.1 C-API host executor separates engine compilation, instantiation/
+start, input preparation and warmed execution. CPU/elapsed tool measurements use
+wait4 counters, preserving process startup while excluding Perl notification
+latency. Ordinary correctness installation does not require the extra C API.
+
+The existing catalog, normalized renderer and compact publisher handle both O0
+and O3. Byte metrics have separate integer fields, retain valid zero sections,
+and use exact reference/candidate ratios when the denominator is nonzero. GCC
+is explicitly not applicable. Startup/setup remain separate from steady runtime.
+The README uses the existing host-labeled badges; placeholder seeding and age
+refresh include Wasm. The normal hosted workflow reports and retains results;
+only successful main runs publish. Dedicated Intel uses the existing sequential
+runner campaign and read/measure versus write/publication job separation.
+Raw engine/command observations and binaries stay in Actions artifacts.
+
+Local O0/O3 runs each pass 32 independent cases per compiler/configuration
+(256 oracle comparisons across both levels). The shared report validates 136
+metric records and four standalone correctness rows. Calibration cautions stay
+visible; these loaded-host observations do not establish precise small runtime
+differences. The publication/measurement tests, shared reporting/freshness tests,
+Intel routing tests and full harness pass; later zero-size ratio refinements pass
+all 27 shared tests and six Wasm-specific tests. GCC builds and Clang syntax/
+format checks accept the host executor; workflow YAML parses. Both the direct
+Make target and the exported Perl driver execute successfully.
+
+The final student export regenerates consistently. Its fresh bundle client
+passes 275 document entries, 65 reviewed prose files and all 43 wrappers. Shipped
+script/input bytes match source. The final snapshot is
+student-wasm-benchmark-final-export with wasm-benchmark-final-reference-binaries.tar.gz.
+Logs use wasm-benchmark-. O0/O3/raw campaigns and normalized reports remain in
+the external evidence directory. Local report URLs use example.invalid to avoid
+pretending these measurements came from an Actions run. The superseded export
+and duplicate bundle were removed after verification, freeing 439 MB; their
+replacement and archive hash are recorded in wasm-benchmark-intermediate-cleanup.json.
+No compiler implementation changed in this checkpoint.
+
+The new workloads expose concrete follow-ups: the linker writes an 8,192-byte
+zero-filled global array as encoded data, and source vector construction/multiply/
+extraction still round-trips through scalar memory rather than useful vector SSA.
+The explicit vector kernel is far slower than LLVM, beyond the observed A/A
+spread. Its LowIR reducer is wasm-benchmark-probe/simd.lowir; the relevant source
+lowering modules are vector_construction.cpp and vector_lowering.cpp, and data
+emission is in wasm/link_output.cpp. Keep the workload and observations intact;
+fix general lowering and object principles rather than special-casing it.
+
+Those improvements, standalone lowiropt target-library consistency, custom host
+globals, imported memory/table limits, malformed names/profile/type boundaries,
+and final Linux/macOS CI qualification remain. This checkpoint does not complete
+PA37, and no benchmark results have been published from the dirty local checkout.

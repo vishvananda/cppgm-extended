@@ -10,8 +10,9 @@ python3 scripts/run_intel_benchmarks_once.py --plan \
   --ref main --revision main
 ```
 
-Remove `--plan` to start. The seven suites run sequentially: public programs,
-self-build/inception timing, index-cpp, simdjson scalar and SSE, Godot, Boost O3, and the internal C++ source subset. Each suite gets a fresh temporary runner and Ubuntu 26.04 container. The
+Remove `--plan` to start. The suites run sequentially: public programs,
+self-build/inception timing, index-cpp, simdjson scalar and SSE, Godot, Boost O3,
+the internal C++ source subset, and Wasm O0/O3 kernels. Each suite gets a fresh temporary runner and Ubuntu 26.04 container. The
 launcher waits for the suite and publication to pass before starting the next;
 runner logs and measurements remain in the printed directory. Use `--suite NAME`
 to refresh just one suite.

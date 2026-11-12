@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 from urllib.parse import urlparse
 
-PHASES = {'compile', 'link', 'build', 'runtime', 'test-execution', 'suite'}
+PHASES = {'compile', 'link', 'build', 'startup', 'runtime', 'test-execution', 'suite'}
 STATUSES = {'passed', 'failed', 'partial', 'not-measured', 'not-applicable'}
 LEVELS = {'O0', 'O1', 'O2', 'O3', 'Os', 'Oz', 'mixed'}
 IDENTIFIER = re.compile(r'[a-z0-9][a-z0-9_-]*\Z')
@@ -83,7 +83,7 @@ def validate(catalog, document):
         require(row['optimization'] in LEVELS, 'Missing/unknown optimization level')
         require(row['phase'] in PHASES, 'Unknown measurement phase')
         require(row['scope'] in {'summary', 'test'}, 'Summary/test scope must be explicit')
-        require(row['metric'] in {'cpu_seconds', 'elapsed_seconds'}, 'CPU and elapsed seconds must be explicit')
+        require(row['metric'] in {'cpu_seconds', 'elapsed_seconds', 'bytes'}, 'Measurement unit must be explicit')
         require(row['status'] in STATUSES, 'Unknown result status')
         require(re.fullmatch(r'[0-9a-f]{40}', row['revision']), 'Measured revision must be a full SHA')
         require(bool(row['test']) and bool(row['method']), 'Test and estimator are required')
@@ -111,9 +111,20 @@ def validate(catalog, document):
                    ['candidate_executed', 'candidate_passed', 'reference_executed', 'reference_passed'])
         require(row['status'] != 'passed' or complete, 'Passing result requires complete matching validation')
         speed = row.get('speedup')
-        require(speed is None or (positive(speed) and row['status'] == 'passed' and complete), 'Ineligible speedup')
+        zero_size_ratio = row['metric'] == 'bytes' and type(speed) in (int, float) and speed == 0
+        require(speed is None or ((positive(speed) or zero_size_ratio) and row['status'] == 'passed' and complete), 'Ineligible speedup')
         for k in ['candidate_seconds', 'reference_seconds']:
             require(row.get(k) is None or positive(row[k]), 'Absolute times must be positive or absent')
+            require(row['metric'] != 'bytes' or row.get(k) is None, 'Bytes cannot use seconds fields')
+        for k in ['candidate_value', 'reference_value']:
+            require(row.get(k) is None or (row['metric'] == 'bytes' and type(row[k]) is int and row[k] >= 0),
+                    'Byte values must be nonnegative integers')
+            require(row['metric'] != 'bytes' or row['status'] != 'passed' or row.get(k) is not None,
+                    'Passing byte measurements require absolute values')
+        if row['metric'] == 'bytes' and row['status'] == 'passed':
+            candidate, reference = row['candidate_value'], row['reference_value']
+            require(speed == reference / candidate if candidate else speed is None,
+                    'Byte ratio must match the measured sizes; zero denominator has no ratio')
         for k in ['details_url', 'raw_url', 'run_url']:
             link = urlparse(row[k])
             require(link.scheme == 'https' and bool(link.netloc), 'Evidence must have HTTPS URLs')
@@ -126,11 +137,16 @@ def cell(value):
 
 
 def speed(row):
-    return f"{row['speedup']:.3f}×" if row.get('speedup') is not None else row['status']
+    return f"{row['speedup']:.3f}×" if row.get('speedup') is not None else (
+        'n/a' if row['status'] == 'passed' else row['status'])
 
 
-def seconds(row, key):
-    return f"{row[key]:.6f}" if row.get(key) is not None else 'not provided'
+def measurement(row, side):
+    if row['metric'] == 'bytes':
+        value = row.get(side + '_value')
+        return str(value) if value is not None else 'not provided'
+    value = row.get(side + '_seconds')
+    return f'{value:.6f}' if value is not None else 'not provided'
 
 
 def pairing_context(row):
@@ -225,12 +241,12 @@ def render(catalog, document, output):
     for workload in sorted(by_workload.keys() | by_validation.keys()):
         rows = by_workload[workload]
         detail = ['# '+entries[workload]['name'], '',
-                  '| Configuration / test | CPU / environment | Opt | Baseline | Phase / metric | cppgm seconds | Reference seconds | Speedup | Validation | Revision | Method | Evidence |',
+                  '| Configuration / test | CPU / environment | Opt | Baseline | Phase / metric | cppgm value | Reference value | Speedup | Validation | Revision | Method | Evidence |',
                   '|---|---|---|---|---|---:|---:|---:|---|---|---|---|']
         for row in rows:
             detail.append('| '+ ' | '.join(cell(x) for x in [row['configuration']+'/'+row['test'],
                 row['host']['cpu']+' / '+row['host']['environment'], row['optimization'], row['baseline'],
-                row['phase']+' / '+row['metric'], seconds(row, 'candidate_seconds'), seconds(row, 'reference_seconds'),
+                row['phase']+' / '+row['metric'], measurement(row, 'candidate'), measurement(row, 'reference'),
                 speed(row), f"{row['coverage']['candidate_passed']} candidate / {row['coverage']['reference_passed']} reference / {row['coverage']['selected']} selected; {row['coverage']['excluded']} excluded", row['revision'][:9],
                 row['method'], f'[details]({row["details_url"]}) · [raw]({row["raw_url"]}) · [CI]({row["run_url"]})'])+' |')
         for row in by_validation[workload]:
@@ -239,6 +255,9 @@ def render(catalog, document, output):
                        f"{cov['passed']}/{cov['executed']}/{cov['selected']} passed/executed/selected {cell(cov['unit'])}; "
                        f"{cov['excluded']} excluded; set `{cov['case_set_sha256']}`; revision `{row['revision']}`.",
                        f'[details]({row["details_url"]}) · [raw]({row["raw_url"]}) · [CI]({row["run_url"]})']
+        warnings = sorted({cell(warning) for row in rows for warning in row['provenance'].get('warnings', [])})
+        if warnings:
+            detail += ['', 'Measurement cautions:', ''] + ['- ' + warning for warning in warnings]
         detail += ['', 'The retained records.json contains coverage, case-set hashes and producer provenance for every row.']
         (output/(workload+'.md')).write_text('\n'.join(detail)+'\n')
 

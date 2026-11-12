@@ -186,7 +186,7 @@ are reported as prerequisite failures.
 Use the assignment target while iterating. Finish with the cumulative
 report through this assignment from the repository root with `make test-report-through-pa37`. That command
 includes this assignment, so running both is unnecessary for final validation.
-The benchmark target reports compile time, module size, startup and
+The [benchmark target](benchmarks/README.md), `make benchmark`, reports compile time, module size, startup and
 steady-state execution separately. Timing comparisons use identical inputs
 and runtime settings and are not substitutes for correctness.
 

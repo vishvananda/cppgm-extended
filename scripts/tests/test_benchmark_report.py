@@ -39,6 +39,35 @@ class Results(unittest.TestCase):
             self.assertTrue((target/'godot.md').is_file())
             self.assertIn('Godot build and benchmark', (target/'summary.md').read_text())
 
+    def test_bytes_have_separate_fields_and_preserve_zero_data_sections(self):
+        self.row.update(metric='bytes', phase='link', candidate_seconds=None, reference_seconds=None,
+                        candidate_value=0, reference_value=0, speedup=None)
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / 'report'
+            report.render(self.catalog, self.document(), target)
+            self.assertIn('link / bytes | 0 | 0 |', (target / 'simdjson.md').read_text())
+        self.row['candidate_seconds'] = 20
+        with self.assertRaisesRegex(ValueError, 'Bytes cannot use seconds'):
+            report.validate(self.catalog, self.document())
+
+    def test_byte_values_cannot_be_negative_or_labeled_as_seconds(self):
+        self.row['candidate_value'] = 42
+        with self.assertRaisesRegex(ValueError, 'Byte values'):
+            report.validate(self.catalog, self.document())
+
+    def test_zero_reference_bytes_is_a_real_zero_ratio(self):
+        self.row.update(metric='bytes', candidate_seconds=None, reference_seconds=None,
+                        candidate_value=8192, reference_value=0, speedup=0.)
+        report.validate(self.catalog, self.document())
+        self.assertEqual(report.speed(self.row), '0.000×')
+        self.row['speedup'] = 1
+        with self.assertRaisesRegex(ValueError, 'Byte ratio'):
+            report.validate(self.catalog, self.document())
+        self.row.update(metric='bytes', candidate_seconds=None, reference_seconds=None,
+                        candidate_value=-1, reference_value=32)
+        with self.assertRaisesRegex(ValueError, 'Byte values'):
+            report.validate(self.catalog, self.document())
+
     def test_axes_are_kept_separate(self):
         rows=[self.row]
         for key, value in [('configuration','sse'),('baseline','clang'),('optimization','O0'),('phase','compile')]:

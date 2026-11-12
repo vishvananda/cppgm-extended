@@ -388,6 +388,9 @@ shared_scripts=(
   scripts/CppgmWasmFixture.pm
   scripts/CppgmWasmQuality.pm
   scripts/CppgmWasmGlobals.pm
+  scripts/CppgmWasmBenchmark.pm
+  scripts/wasm_benchmarks.pl
+  scripts/wasm_benchmark_runner.cpp
   scripts/install_wasm_tools.pl
   scripts/wasm_tools.json
   scripts/canonicalize_lowir_native_refs.pl

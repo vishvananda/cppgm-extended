@@ -14,8 +14,9 @@ use JSON::PP;
 use POSIX qw(uname);
 
 my $prefix = 'obj/wasm-tools';
-GetOptions('prefix=s' => \$prefix) && !@ARGV
-    or die "usage: install_wasm_tools.pl [--prefix directory]\n";
+my $benchmark_engine = 0;
+GetOptions('prefix=s' => \$prefix, 'benchmark-engine' => \$benchmark_engine) && !@ARGV
+    or die "usage: install_wasm_tools.pl [--prefix directory] [--benchmark-engine]\n";
 $prefix = File::Spec->rel2abs($prefix);
 make_path("$prefix/bin");
 open(my $lock, '>', "$prefix/.install.lock") or die "$prefix: $!\n";
@@ -45,8 +46,11 @@ my $installed = -f "$prefix/installed.json" ? read_json("$prefix/installed.json"
 for my $name (sort keys %$tools) {
     my $tool = $tools->{$name};
     my $sdk = ($tool->{kind} // '') eq 'sdk';
-    my $binary = $sdk ? "$prefix/wasi-sdk/bin/clang++" : "$prefix/bin/$name";
-    next if -x $binary && ($installed->{$name}{archive_sha256} // '') eq $tool->{sha256}
+    my $c_api = ($tool->{kind} // '') eq 'c-api';
+    next if $c_api && !$benchmark_engine;
+    my $binary = $c_api ? "$prefix/wasmtime-c-api/lib/libwasmtime.a"
+        : $sdk ? "$prefix/wasi-sdk/bin/clang++" : "$prefix/bin/$name";
+    next if ($c_api ? -f $binary : -x $binary) && ($installed->{$name}{archive_sha256} // '') eq $tool->{sha256}
         && ($installed->{$name}{binary_sha256} // '') eq digest($binary);
     my $temporary = tempdir('wasm-tools-XXXXXX', DIR => $prefix, CLEANUP => 1);
     my $archive = "$temporary/download.tar";
@@ -57,10 +61,11 @@ for my $name (sort keys %$tools) {
         or die "Archive checksum mismatch for $name $tool->{version}\n";
     system('tar', '-xf', $archive, '-C', $temporary) == 0
         or die "Cannot extract $name\n";
-    if ($sdk) {
-        remove_tree("$prefix/wasi-sdk");
-        rename("$temporary/$tool->{directory}", "$prefix/wasi-sdk")
-            or die "Cannot install WASI SDK: $!\n";
+    if ($sdk || $c_api) {
+        my $destination = $sdk ? 'wasi-sdk' : 'wasmtime-c-api';
+        remove_tree("$prefix/$destination");
+        rename("$temporary/$tool->{directory}", "$prefix/$destination")
+            or die "Cannot install $name: $!\n";
         $installed->{$name} = {
             version => $tool->{version}, archive_sha256 => $tool->{sha256}, binary_sha256 => digest($binary)
         };

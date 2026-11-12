@@ -252,6 +252,7 @@ pa34/tests/o2/README.md
 pa35/README.md
 pa36/README.md
 pa37/README.md
+pa37/benchmarks/README.md
 pa37/design-notes.md
 pa37/quality.md
 pa37/target-abi.md

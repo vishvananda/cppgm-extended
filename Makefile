@@ -296,6 +296,7 @@ test-cells:
 # export, each a self-contained python unittest file under scripts/tests.
 HARNESS_TESTS = \
 	scripts/tests/test_wasm_quality.py \
+	scripts/tests/test_wasm_benchmarks.py \
 	scripts/tests/test_benchmark_report.py \
 	scripts/tests/test_benchmark_freshness.py \
 	scripts/tests/test_benchmark_publication.py \

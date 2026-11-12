@@ -135,7 +135,7 @@ class FreshnessTests(unittest.TestCase):
     def test_library_and_boost_badges_share_the_same_labels_and_policy(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            for workload in ('index-cpp', 'simdjson', 'godot', 'boost/o3', 'internal'):
+            for workload in ('index-cpp', 'simdjson', 'godot', 'boost/o3', 'internal', 'wasm'):
                 directory = root / workload
                 (directory / 'github-intel').mkdir(parents=True)
                 (directory / 'github-intel/metadata.json').write_text(json.dumps(

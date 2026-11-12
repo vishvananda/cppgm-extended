@@ -96,14 +96,18 @@ The input document is `{"schema":1,"records":[...]}`. Each record contains:
 - `baseline`: `gcc` or `clang`; `revision`: full measured compiler source commit.
 - `context`: explicit `language`, `target_isa`, `standard_library`, positive
   `workers`, CPU `affinity` list (empty means unpinned), and per-compiler `flags`.
-- `phase`: `compile`, `link`, `build`, `runtime`, `test-execution` or `suite`.
-- `metric`: `cpu_seconds` or `elapsed_seconds`; `method`: original estimator.
+- `phase`: `compile`, `link`, `build`, `startup`, `runtime`, `test-execution` or `suite`.
+- `metric`: `cpu_seconds`, `elapsed_seconds` or `bytes`; `method`: original estimator.
 - `status`: `passed`, `failed`, `partial`, `not-measured` or `not-applicable`.
 - `coverage`: `selected`, `candidate_executed`, `candidate_passed`,
   `reference_executed`, `reference_passed`, `excluded`, `unit`, `case_set_sha256`.
 - `speedup`: positive reference/cppgm ratio, or null. Failed/partial/unmeasured
   records cannot publish a speedup. `candidate_seconds`, `reference_seconds`:
   positive absolute times or null when not provided by a historical aggregate.
+- Byte-valued rows use nonnegative integer `candidate_value` and `reference_value`
+  instead of the seconds fields. Zero-sized data sections are valid; a zero
+  denominator has no speedup, and zero reference bytes give a zero ratio when
+  candidate bytes are positive. Size ratios also use reference/cppgm.
 - `details_url`, `raw_url`, `run_url`: retained evidence links.
 - `provenance`: producer-owned flags, toolchain/library/input/binary identities,
   parameter values, observation counts, quality and warnings. Historical unknowns
