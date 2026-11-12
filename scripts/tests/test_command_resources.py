@@ -219,6 +219,26 @@ int test_runner_real_main(int argc, char** argv) {
             self.assertLessEqual(path.stat().st_size, 8192)
             self.healthy()
 
+    def test_previous_output_is_not_inspected_before_child_setup(self):
+        for name in ('stdout', 'stderr'):
+            (self.path / name).write_bytes(b'x' * (64 * 1024))
+        fifo = self.path / 'input'
+        os.mkfifo(fifo)
+        request = self.request('echo', 'ready').replace(b'2f6465762f6e756c6c', str(fifo).encode().hex().encode())
+        self.worker.stdin.write(request)
+        self.worker.stdin.flush()
+        # The child blocks opening stdin before it can truncate either capture.
+        # A previous full capture must not terminate this new command.
+        self.assertFalse(select.select([self.worker.stdout], [], [], .1)[0])
+        descriptor = os.open(fifo, os.O_RDWR | os.O_NONBLOCK)
+        try:
+            self.assertTrue(select.select([self.worker.stdout], [], [], 3)[0])
+            self.assertEqual(self.worker.stdout.readline(), b'exec-v1\t0\texit\n')
+        finally:
+            os.close(descriptor)
+        self.assertEqual((self.path / 'stdout').read_bytes(), b'5:ready')
+        self.healthy()
+
     def test_timeout_kills_descendant_after_leader_exits_on_term(self):
         self.assertEqual(self.send(self.request('descendants', self.path / 'ids', wall=100)), ['124', 'timeout'])
         for pid in self.wait_ids():

@@ -693,14 +693,28 @@ bool captured_limit(const ExecRequest& request)
 	return false;
 }
 
-ExecOutcome supervise_exec(pid_t pid, const ExecRequest& request)
+ExecOutcome supervise_exec(pid_t pid, const ExecRequest& request, int setup_fd)
 {
 	const double deadline = monotonic_ms() + request.wall_ms;
 	int status = 0;
+	bool started = false;
 	for (;;)
 	{
 		struct rusage usage = {};
 		const pid_t waited = wait4(pid, &status, WNOHANG, &usage);
+		const int wait_error = errno;
+		if (!started)
+		{
+			// EOF means exec closed the pipe after preparing the capture files.
+			// Before that, those paths may still contain a previous request's output.
+			char failed;
+			const ssize_t setup = read(setup_fd, &failed, 1);
+			if (setup > 0)
+				return { 125, "setup" };
+			if (setup < 0 && errno != EAGAIN && errno != EINTR)
+				return { 125, "supervision" };
+			started = setup == 0;
+		}
 		if (waited == pid)
 		{
 #ifdef __APPLE__
@@ -710,13 +724,13 @@ ExecOutcome supervise_exec(pid_t pid, const ExecRequest& request)
 #endif
 			if (peak > request.rss_bytes)
 				return { 125, "memory" };
-			if (captured_limit(request) || (WIFSIGNALED(status) && WTERMSIG(status) == SIGXFSZ))
+			if ((started && captured_limit(request)) || (WIFSIGNALED(status) && WTERMSIG(status) == SIGXFSZ))
 				return { 125, "output" };
 			if (WIFSIGNALED(status))
 				return { WTERMSIG(status), "signal" };
 			return { WEXITSTATUS(status), "exit" };
 		}
-		if (waited < 0 && errno != EINTR)
+		if (waited < 0 && wait_error != EINTR)
 			return { 125, "supervision" };
 		if (monotonic_ms() >= deadline)
 			return { 124, "timeout" };
@@ -725,7 +739,7 @@ ExecOutcome supervise_exec(pid_t pid, const ExecRequest& request)
 			return { 125, "supervision" };
 		if (resident > request.rss_bytes)
 			return { 125, "memory" };
-		if (captured_limit(request))
+		if (started && captured_limit(request))
 			return { 125, "output" };
 		// The timer also supervises descendants and intercepted limit signals.
 		usleep(10000);
@@ -737,7 +751,8 @@ ExecOutcome run_exec_request(const ExecRequest& request)
 	int setup_pipe[2];
 	if (pipe(setup_pipe) != 0)
 		return { 125, "setup" };
-	if (fcntl(setup_pipe[0], F_SETFD, FD_CLOEXEC) < 0 || fcntl(setup_pipe[1], F_SETFD, FD_CLOEXEC) < 0)
+	if (fcntl(setup_pipe[0], F_SETFD, FD_CLOEXEC) < 0 || fcntl(setup_pipe[1], F_SETFD, FD_CLOEXEC) < 0 ||
+		fcntl(setup_pipe[0], F_SETFL, O_NONBLOCK) < 0)
 	{
 		close(setup_pipe[0]);
 		close(setup_pipe[1]);
@@ -779,17 +794,15 @@ ExecOutcome run_exec_request(const ExecRequest& request)
 		close(setup_pipe[0]);
 		return { 125, "setup" };
 	}
-	const ExecOutcome outcome = supervise_exec(pid, request);
+	const ExecOutcome outcome = supervise_exec(pid, request, setup_pipe[0]);
 	// Always kill the group, even if its leader exited normally or handled TERM.
 	kill(-pid, SIGKILL);
 	while (waitpid(pid, NULL, 0) < 0 && errno == EINTR)
 	{
 	}
 	active_child = 0;
-	char failed = 0;
-	const ssize_t setup_failed = read(setup_pipe[0], &failed, 1);
 	close(setup_pipe[0]);
-	return setup_failed > 0 ? ExecOutcome{ 125, "setup" } : outcome;
+	return outcome;
 }
 
 int run_exec_stdin()
