@@ -20,7 +20,7 @@ void Selector::wide_shift(const lowir::Instruction& inst)
 		out_.emit(Op::LocalGet, { count });
 		out_.emit(Op::I64Const, { 64 });
 		out_.emit(Op::I64LtU);
-		out_.emit(Op::If, { static_cast<uint8_t>(ValueType::I64) });
+		out_.emit(Op::If, { block_type(ValueType::I64) });
 		wide_part(inst.ops[0], part);
 		out_.emit(Op::LocalGet, { count });
 		out_.emit(left ? Op::I64Shl : sign && part == 1 ? Op::I64ShrS : Op::I64ShrU);

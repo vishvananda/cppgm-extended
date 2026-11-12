@@ -244,6 +244,18 @@ Implementation order:
    persistent state and portable C++14/17 cases. Keep all student checks in
    the standard Perl runner and retain native/export qualification.
 
-This probe demonstrates the required reference ABI; it is not evidence that
-cppgm implements modern EH yet. SIMD, quality and benchmarks remain part of
-the full assignment after these dependencies.
+Steps 1 and 2 now have required object fixtures. They cover multi-value
+parameters/results and branches, relocated signatures, all modern catch kinds,
+exception references, typed select, tag exports and malformed fields. Both
+linker directions pass at O0–O3. Cppgm's own linker also executes the probe and
+the LLVM C++ provider with the supplied EH archives. Reference-library queries
+honor `-fwasm-exceptions`, so this evidence uses the EH profile rather than the
+SDK's default no-EH archives.
+
+SDK 34's assembler spells an untyped integer select `i32.select` and a typed
+exception-reference select `select exnref`. Its accepted `exnref.select` spelling
+emits an untyped select that the independent validator rejects. Fixture objects
+are independently validated before they become linker inputs.
+
+These results qualify object/runtime interoperation, not cppgm's source EH
+lowering. Steps 3–5, SIMD, quality and benchmarks remain required.

@@ -13,6 +13,7 @@ enum class ValueType : std::uint8_t
 	F32 = 0x7d,
 	F64 = 0x7c,
 	V128 = 0x7b,
+	ExnRef = 0x69,
 	Void = 0x40
 };
 
@@ -26,7 +27,24 @@ enum class Immediate : std::uint8_t
 	BlockType,
 	Memory,
 	Indices,
-	Table
+	Table,
+	Types,
+	TryTable
+};
+
+// A block's signed 33-bit immediate is a nonnegative type index or a
+// negative inline value type. ValueType stores that type's seven-bit byte.
+constexpr std::uint64_t block_type(ValueType type)
+{
+	return static_cast<std::uint64_t>(static_cast<std::int64_t>(static_cast<std::uint8_t>(type)) - 128);
+}
+
+enum class CatchKind : std::uint8_t
+{
+	Tag,
+	TagRef,
+	All,
+	AllRef
 };
 
 // Standard linking-v2 relocation vocabulary; indices retain symbol/type identity.
@@ -57,6 +75,8 @@ enum class RelocationKind : std::uint8_t
 	X(Loop, 0x03, BlockType, "loop") \
 	X(If, 0x04, BlockType, "if") \
 	X(Else, 0x05, None, "else") \
+	X(Throw, 0x08, Index, "throw") \
+	X(ThrowRef, 0x0a, None, "throw_ref") \
 	X(End, 0x0b, None, "end") \
 	X(Br, 0x0c, Index, "br") \
 	X(BrIf, 0x0d, Index, "br_if") \
@@ -66,6 +86,8 @@ enum class RelocationKind : std::uint8_t
 	X(CallIndirect, 0x11, Indices, "call_indirect") \
 	X(Drop, 0x1a, None, "drop") \
 	X(Select, 0x1b, None, "select") \
+	X(SelectTyped, 0x1c, Types, "select_t") \
+	X(TryTable, 0x1f, TryTable, "try_table") \
 	X(LocalGet, 0x20, Index, "local.get") \
 	X(LocalSet, 0x21, Index, "local.set") \
 	X(LocalTee, 0x22, Index, "local.tee") \
@@ -227,6 +249,8 @@ enum class RelocationKind : std::uint8_t
 	X(I64Extend8S, 0xc2, None, "i64.extend8_s") \
 	X(I64Extend16S, 0xc3, None, "i64.extend16_s") \
 	X(I64Extend32S, 0xc4, None, "i64.extend32_s") \
+	X(RefNull, 0xd0, Signed, "ref.null") \
+	X(RefIsNull, 0xd1, None, "ref.is_null") \
 	X(I32TruncSatF32S, 0xfc00, None, "i32.trunc_sat_f32_s") \
 	X(I32TruncSatF32U, 0xfc01, None, "i32.trunc_sat_f32_u") \
 	X(I32TruncSatF64S, 0xfc02, None, "i32.trunc_sat_f64_s") \
@@ -288,6 +312,8 @@ inline const char* spelling(ValueType type)
 		return "f64";
 	case ValueType::V128:
 		return "v128";
+	case ValueType::ExnRef:
+		return "exnref";
 	case ValueType::Void:
 		return "void";
 	}

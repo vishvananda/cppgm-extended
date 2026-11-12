@@ -12,8 +12,8 @@ namespace wasm {
 struct Signature
 {
 	std::vector<ValueType> parameters;
-	ValueType result;
-	bool operator==(const Signature& other) const { return result == other.result && parameters == other.parameters; }
+	std::vector<ValueType> results;
+	bool operator==(const Signature& other) const { return results == other.results && parameters == other.parameters; }
 };
 
 struct Module
@@ -25,6 +25,7 @@ struct Module
 	std::vector<uint32_t> signature_types;
 	std::vector<uint32_t> function_indices;
 	std::vector<uint32_t> definition_types;
+	std::vector<uint32_t> tag_types;
 	std::vector<uint32_t> addresses;
 	std::vector<lowir::SymbolId> definitions;
 	uint32_t stack_floor = 0;

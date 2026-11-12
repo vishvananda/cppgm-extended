@@ -5,12 +5,12 @@
 
 namespace wasm {
 
-ObjectRef Linker::function_symbol(uint32_t object, uint32_t function) const
+ObjectRef Linker::indexed_symbol(uint32_t object, uint8_t kind, uint32_t value) const
 {
 	for (uint32_t index = 0; index < objects_[object].symbols.size(); ++index)
-		if (objects_[object].symbols[index].kind == 0 && objects_[object].symbols[index].index == function)
+		if (objects_[object].symbols[index].kind == kind && objects_[object].symbols[index].index == value)
 			return ObjectRef{ object, index };
-	throw WasmError("Wasm function has no linking symbol");
+	throw WasmError("Wasm indexed entry has no linking symbol");
 }
 
 ObjectRef Linker::selected(ObjectRef ref) const
@@ -25,8 +25,10 @@ ObjectRef Linker::selected(ObjectRef ref) const
 bool Linker::host_import(ObjectRef ref) const
 {
 	const ObjectSymbol& source = symbol(ref);
-	if (source.kind != 0 || !source.undefined())
+	if ((source.kind != 0 && source.kind != 4) || !source.undefined())
 		return false;
+	if (source.kind == 4)
+		return objects_[ref.first].tags[source.index].module != "env" || (source.flags & 0x40) != 0;
 	const ObjectFunction& function = objects_[ref.first].functions[source.index];
 	return function.module != "env" || (source.flags & 0x40) != 0;
 }
@@ -73,13 +75,18 @@ void Linker::activate(uint32_t i)
 		const bool duplicate = !groups_.insert(group.name).second;
 		for (const auto& member : group.members)
 		{
-			if (member.first > 1 ||
-				(member.first == 0
-						? member.second >= object.data.size()
-						: member.second >= object.functions.size() || object.functions[member.second].imported))
+			const bool valid = member.first == 0 ? member.second < object.data.size()
+				: member.first == 1
+				? member.second < object.functions.size() && !object.functions[member.second].imported
+				: member.first == 3 ? member.second < object.tags.size() && !object.tags[member.second].imported
+									: false;
+			if (!valid)
 				throw WasmError("invalid or unsupported Wasm COMDAT member");
 			if (duplicate)
-				(member.first == 0 ? discarded_data_ : discarded_functions_).insert({ i, member.second });
+				(member.first == 0          ? discarded_data_
+						: member.first == 1 ? discarded_functions_
+											: discarded_tags_)
+					.insert({ i, member.second });
 		}
 	}
 	for (uint32_t j = 0; j < object.symbols.size(); ++j)
@@ -88,7 +95,8 @@ void Linker::activate(uint32_t i)
 		if (candidate.undefined() || candidate.local() || candidate.kind == 3)
 			continue;
 		if ((candidate.kind == 0 && discarded_functions_.count({ i, candidate.index })) ||
-			(candidate.kind == 1 && discarded_data_.count({ i, candidate.index })))
+			(candidate.kind == 1 && discarded_data_.count({ i, candidate.index })) ||
+			(candidate.kind == 4 && discarded_tags_.count({ i, candidate.index })))
 			continue;
 		const auto inserted = definitions_.emplace(candidate.name, ObjectRef{ i, j });
 		if (!inserted.second)
@@ -117,7 +125,7 @@ void Linker::activate(uint32_t i)
 		}
 	}
 	for (const ObjectExport& entry : object.exports)
-		roots_.push_back(function_symbol(i, entry.function));
+		roots_.push_back(indexed_symbol(i, entry.kind, entry.index));
 }
 
 void Linker::validate_symbols() const
@@ -135,6 +143,10 @@ void Linker::validate_symbols() const
 					!(objects_[i].types[objects_[i].functions[source.index].type] ==
 						objects_[definition.first].types[objects_[definition.first].functions[target.index].type]))
 					throw WasmError("Wasm function signature mismatch: " + source.name);
+				if (source.kind == 4 &&
+					!(objects_[i].types[objects_[i].tags[source.index].type] ==
+						objects_[definition.first].types[objects_[definition.first].tags[target.index].type]))
+					throw WasmError("Wasm tag signature mismatch: " + source.name);
 			}
 }
 
@@ -172,7 +184,7 @@ void Linker::visit(ObjectRef ref)
 		if (source.kind == 0 && source.name == "__wasm_call_ctors")
 		{
 			const Signature& type = objects_[ref.first].types[objects_[ref.first].functions[source.index].type];
-			if (!type.parameters.empty() || type.result != ValueType::Void)
+			if (!type.parameters.empty() || !type.results.empty())
 				throw WasmError("Wasm constructor wrapper signature is not void()");
 			needs_ctors_ = true;
 			return;
@@ -180,7 +192,7 @@ void Linker::visit(ObjectRef ref)
 		uint32_t value = 0;
 		if (source.kind == 1 && synthetic_data(source.name, value))
 			return;
-		if (source.weak())
+		if (source.weak() && source.kind != 4)
 			return;
 		throw WasmError("undefined Wasm symbol: " + source.name);
 	}
@@ -197,6 +209,12 @@ void Linker::visit(ObjectRef ref)
 			return;
 		ordered_data_.push_back(key);
 	}
+	else if (source.kind == 4)
+	{
+		if (!tags_.emplace(key, 0).second)
+			return;
+		ordered_tags_.push_back(key);
+	}
 	else
 		throw WasmError("unsupported live Wasm symbol kind");
 }
@@ -209,8 +227,10 @@ void Linker::collect()
 		const auto before = std::count(active_.begin(), active_.end(), true);
 		functions_.clear();
 		data_.clear();
+		tags_.clear();
 		ordered_functions_.clear();
 		ordered_data_.clear();
+		ordered_tags_.clear();
 		if (options_.target == target_model::Target::Wasi && !options_.no_startfiles)
 		{
 			const ObjectRef entry = lookup("_start");
@@ -218,7 +238,7 @@ void Linker::collect()
 				throw WasmError("WASI command has no _start function");
 			const Object& object = objects_[entry.first];
 			const Signature& type = object.types[object.functions[symbol(entry).index].type];
-			if (!type.parameters.empty() || type.result != ValueType::Void)
+			if (!type.parameters.empty() || !type.results.empty())
 				throw WasmError("WASI _start signature is not void()");
 			visit(entry);
 		}
@@ -259,6 +279,13 @@ void Linker::collect()
 	{
 		functions_[ordered_functions_[i]] = i;
 		imported_ += objects_[ordered_functions_[i].first].functions[ordered_functions_[i].second].imported;
+	}
+	std::stable_partition(ordered_tags_.begin(), ordered_tags_.end(),
+		[&](ObjectRef ref) { return objects_[ref.first].tags[ref.second].imported; });
+	for (uint32_t i = 0; i < ordered_tags_.size(); ++i)
+	{
+		tags_[ordered_tags_[i]] = i;
+		imported_tags_ += objects_[ordered_tags_[i].first].tags[ordered_tags_[i].second].imported;
 	}
 	uint64_t end = 1024;
 	for (ObjectRef ref : ordered_data_)

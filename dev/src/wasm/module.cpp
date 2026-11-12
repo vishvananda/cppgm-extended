@@ -31,14 +31,19 @@ void function_types(const lowir::Program& program, Module& module)
 		}
 		if (source.boundary.arity == ir_model::CAM_VARIADIC)
 			signature.parameters.push_back(ValueType::I32);
-		signature.result = boundary.result.passing == Passing::Indirect || boundary.result.passing == Passing::Ignore
+		const ValueType result = boundary.result.passing == Passing::Indirect ||
+				boundary.result.passing == Passing::Ignore
 			? ValueType::Void
 			: value_type(boundary.result.scalar);
 		if (source.boundary.this_return)
-			signature.result = ValueType::I32;
+			signature.results.push_back(ValueType::I32);
+		else if (result != ValueType::Void)
+			signature.results.push_back(result);
 		for (ValueType parameter : signature.parameters)
 			key.push_back(static_cast<uint8_t>(parameter));
-		key.push_back(static_cast<uint8_t>(signature.result));
+		key.push_back(0);
+		for (ValueType returned : signature.results)
+			key.push_back(static_cast<uint8_t>(returned));
 		auto inserted = known.emplace(key, static_cast<uint32_t>(module.signatures.size()));
 		if (inserted.second)
 			module.signatures.push_back(std::move(signature));

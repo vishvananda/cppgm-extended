@@ -38,6 +38,14 @@ public:
 		for (unsigned i = 0; i < (bits + 6) / 7; ++i)
 		{
 			const uint8_t part = byte();
+			if (i == (bits + 6) / 7 - 1)
+			{
+				const unsigned significant = bits - i * 7;
+				const uint8_t extra = static_cast<uint8_t>((0x7f << significant) & 0x7f);
+				const uint8_t expected = (part & (1u << (significant - 1))) != 0 ? extra : 0;
+				if ((part & extra) != expected)
+					throw WasmError("Wasm object has an overflowing signed LEB");
+			}
 			value |= uint64_t(part & 0x7f) << shift;
 			shift += 7;
 			if ((part & 0x80) == 0)
@@ -45,8 +53,6 @@ public:
 				if (shift < 64 && (part & 0x40) != 0)
 					value |= ~uint64_t(0) << shift;
 				const int64_t result = static_cast<int64_t>(value);
-				if (bits == 32 && result != static_cast<int32_t>(result))
-					throw WasmError("Wasm object has an overflowing signed LEB");
 				return result;
 			}
 		}

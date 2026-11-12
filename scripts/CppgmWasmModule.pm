@@ -3,7 +3,7 @@ package CppgmWasmModule;
 use strict;
 use warnings;
 use Exporter 'import';
-our @EXPORT_OK = qw(export_signatures);
+our @EXPORT_OK = qw(export_signatures export_tag_signatures);
 
 # Read only the public core-module type/index/export sections. Instruction
 # choices, local allocation and control structure are deliberately unobserved.
@@ -42,18 +42,18 @@ sub limits {
 
 sub value_types {
     my ($reader) = @_;
-    my %names = (0x7f => 'i32', 0x7e => 'i64', 0x7d => 'f32', 0x7c => 'f64', 0x7b => 'v128');
+    my %names = (0x7f => 'i32', 0x7e => 'i64', 0x7d => 'f32', 0x7c => 'f64', 0x7b => 'v128', 0x69 => 'exnref');
     return [map { $names{byte($reader)} // die "Unsupported ABI value type\n" }
         1 .. number($reader)];
 }
 
-sub export_signatures {
+sub export_interfaces {
     my ($path) = @_;
     open(my $file, '<:raw', $path) or die "Cannot read $path: $!\n";
     local $/;
     my $reader = {data => scalar(<$file>), offset => 0};
     bytes($reader, 8) eq "\0asm\1\0\0\0" or die "Expected core Wasm module\n";
-    my (@types, @functions, %exports);
+    my (@types, @functions, @tags, %exports, %tag_exports);
     while ($reader->{offset} < length($reader->{data})) {
         my $id = byte($reader);
         my $section = {data => bytes($reader, number($reader)), offset => 0};
@@ -70,17 +70,26 @@ sub export_signatures {
                 elsif ($kind == 1) { byte($section); limits($section); }
                 elsif ($kind == 2) { limits($section); }
                 elsif ($kind == 3) { byte($section) for 1 .. 2; }
-                elsif ($kind == 4) { byte($section); number($section); }
+                elsif ($kind == 4) {
+                    byte($section) == 0 or die "Unsupported tag attribute\n";
+                    push @tags, number($section);
+                }
                 else { die "Unknown Wasm import kind\n"; }
             }
         } elsif ($id == 3) {
             push @functions, map { number($section) } 1 .. number($section);
+        } elsif ($id == 13) {
+            for (1 .. number($section)) {
+                byte($section) == 0 or die "Unsupported tag attribute\n";
+                push @tags, number($section);
+            }
         } elsif ($id == 7) {
             for (1 .. number($section)) {
                 my $name = bytes($section, number($section));
                 my $kind = byte($section);
                 my $index = number($section);
                 $exports{$name} = $index if $kind == 0;
+                $tag_exports{$name} = $index if $kind == 4;
             }
         }
     }
@@ -90,7 +99,16 @@ sub export_signatures {
         die "Invalid Wasm function export\n" if $index >= @functions || $functions[$index] >= @types;
         $result{$name} = $types[$functions[$index]];
     }
-    return \%result;
+    my %tag_result;
+    for my $name (keys %tag_exports) {
+        my $index = $tag_exports{$name};
+        die "Invalid Wasm tag export\n" if $index >= @tags || $tags[$index] >= @types;
+        $tag_result{$name} = $types[$tags[$index]];
+    }
+    return (\%result, \%tag_result);
 }
+
+sub export_signatures { my ($functions, $tags) = export_interfaces(@_); return $functions; }
+sub export_tag_signatures { my ($functions, $tags) = export_interfaces(@_); return $tags; }
 
 1;

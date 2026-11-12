@@ -9,9 +9,9 @@ or a green partial suite does not complete PA37.
 | Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes, target-sized class ABI and physical structor returns | Modern EH boundary and broader portable C++ target cases |
 | Scalar and aggregate execution | Qualified binary128 and variadic boundaries; scalar i128 selection and mixed LLVM calls now implemented | Remaining float formats and complete type/layout edge cases |
 | CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
-| Standard objects and own static linker | Linking-v2 writer/reader/own linker; both LLVM interop directions at O0–O3; GNU/BSD archives; static GOT address globals | Complete tags, multi-results, defined globals, EH/SIMD object profile and malformed-feature/relocation cases |
+| Standard objects and own static linker | Linking-v2 objects, multi-result control/signatures, modern EH tags/references, both LLVM interop directions at O0–O3, archives and static GOT address globals | Defined globals, remaining object/feature/SIMD profile and malformed inputs |
 | C++ runtime | Class ABI, allocation, dispatch, RTTI, guards and finalization qualified with supplied no-EH libraries | Cross-compiler modern EH, automatic C++ runtime selection and broader portable C++ cases |
-| Modern EH execution dependency | Pinned Wasmtime executes an independent try_table/throw probe | Compiler lowering, tags, cleanup/catch/rethrow and runtime libraries |
+| Modern EH execution dependency | Cppgm links LLVM's cleanup/catch/rethrow objects with the pinned EH runtime; raw tag, reference-catch and rethrow interop passes | Cppgm source lowering and automatic EH runtime selection |
 | WASI commands and freestanding reactors | Qualified WASI startup, argument/I/O/exit behavior and freestanding exports | Same-instance repeated-export checks and broader C++ services |
 | SIMD and shared optimization | Shared LowIR optimizer; native-only aggregate carrier rewrite gated by target ABI | Portable SIMD legalization, target costs, local/stack cleanup and published quality envelopes |
 | Robust diagnostics and determinism | Bad target/version/shape tests; bounded MIR validation | Complete malformed object/feature/signature/relocation coverage and deterministic multi-object linking |
@@ -238,3 +238,37 @@ Class tests use the pinned no-EH C++ runtime to qualify their ABI independently.
 This is not completion of the required exception profile. Modern EH, SIMD,
 the rest of the object profile, quality envelopes, benchmarks and final
 qualification remain required. Raw class results have the prefix `class-`.
+
+## Multi-value and modern EH object stage
+
+Object signatures now preserve result tuples. Typed control consumes block
+parameters, loop backedges carry loop parameters, other branches carry results,
+and block types use signed 33-bit encodings. Validation consumes relocated
+function/type/global/tag identities rather than trusting stale placeholder
+indices. Signed immediate overflow and absent required index relocations fail.
+
+Tags, all four modern catch kinds, exception-reference locals, typed select,
+reference null tests and `throw_ref` survive object reading, validation, weak/
+COMDAT resolution and static linking. Supplied LLVM C++ objects exercise
+cleanup, typed catch, rethrow and catch-all against the actual EH runtime.
+Raw-tag interop separately checks payload signatures and linear-stack recovery.
+Neither fixture substitutes LLVM for cppgm's source lowering: C++ source EH
+selection remains unfinished.
+
+The strict report passes 10753/10753; PA37 passes 70/70 with host-built and
+self-built tools. Debug info, PA5 self-host, byte-identical inception, PA36
+smoke, the complete harness, architecture/format/file audits and Clang 21
+changed-source syntax checks pass. The student export regenerates consistently;
+its initial attempt omitted the then-untracked new Perl helper, and the tracked
+rerun includes the helper and all three fixtures. A fresh bundle client passes
+its 270-document inventory and all 43 wrappers. Placement results are recorded
+separately when complete. Eight inherited file warnings
+remain. Logs use `eh-object-`; the successful export is `export-tracked`.
+
+Frozen native binaries on LLVM base `0df33eb68` compare `9ccfdd291` with this
+stage. O0 changes from 3,058,794,073 to 3,058,573,870 instructions (-0.0072%);
+O3 from 9,923,807,522 to 9,923,482,955 (-0.0033%). Objects are byte-identical.
+`perf-eh-object/` retains the baseline source, reused/rebuilt object provenance,
+commands, binary hashes and every observation. These counts make no wall-time
+claim. Source EH, SIMD, the remaining object/quality profile, benchmarks and
+final full qualification remain required.

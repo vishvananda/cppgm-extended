@@ -79,6 +79,20 @@ COMDAT groups, segment alignment, constructor priorities, tags and feature
 requirements. Relocation fields must retain enough space and the specified
 signedness. Check both the referenced symbol kind and the encoded field.
 
+Preserve multi-result signatures in objects and typed block, loop and if
+parameters/results. Branches transfer the target's complete tuple: loop
+parameters on a backedge and block results on an exit. A block type may be
+an inline value type or a signed 33-bit type index. Validate its relocated
+signature and reject missing, incompatible or overflowing fields. These
+internal signatures do not change the public C ABI described above.
+
+Preserve exception-tag signatures and their relocated identities. Tags carry
+parameters and no results. Modern handlers transfer the complete payload and,
+for reference catches, an `exnref` to the target label. Validate catch depths,
+payload types and tag relocations before emission. Preserve exception
+references through rethrow and restore the linear-memory stack on exceptional
+edges; the Wasm value stack and linear-memory stack are distinct.
+
 Accept ordinary GNU and BSD static archives. Extract members needed to
 satisfy live references, including references introduced by extracted members.
 An unused member must not introduce duplicate definitions, unresolved-symbol

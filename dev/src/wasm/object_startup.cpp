@@ -8,7 +8,7 @@ void adapt_wasi_entry(Object& object, uint32_t index)
 	ObjectFunction& function = object.functions.at(entry.index);
 	const Signature& type = object.types.at(function.type);
 	const bool arguments = type.parameters.size() == 2;
-	if (type.result != ValueType::I32 || (!arguments && !type.parameters.empty()) ||
+	if (type.results != std::vector<ValueType>{ ValueType::I32 } || (!arguments && !type.parameters.empty()) ||
 		(arguments && type.parameters != std::vector<ValueType>{ ValueType::I32, ValueType::I32 }))
 		throw WasmError("unsupported WASI main signature");
 	entry.name = arguments ? "__main_argc_argv" : "__main_void";
@@ -23,7 +23,7 @@ void adapt_wasi_entry(Object& object, uint32_t index)
 	ObjectFunction compatibility;
 	compatibility.name = "main";
 	compatibility.type = static_cast<uint32_t>(object.types.size());
-	object.types.push_back(Signature{ { ValueType::I32, ValueType::I32 }, ValueType::I32 });
+	object.types.push_back(Signature{ { ValueType::I32, ValueType::I32 }, { ValueType::I32 } });
 	compatibility.code.bytes.byte(0); // No locals; the compatibility parameters are ignored.
 	compatibility.code.bytes.byte(0x10);
 	compatibility.code.relocations.push_back(Relocation{ RelocationKind::FunctionIndex, 2, index, 0 });

@@ -79,18 +79,29 @@ void validate_object(const Object& object)
 			throw WasmError("Wasm function body is empty or unterminated");
 		validate_chunk(function.code, object);
 	}
+	bool defined_tag = false;
+	for (const ObjectTag& tag : object.tags)
+	{
+		if (tag.type >= object.types.size() || !object.types[tag.type].results.empty())
+			throw WasmError("Wasm exception tag requires a result-free function type");
+		if (defined_tag && tag.imported)
+			throw WasmError("Wasm tag imports must precede definitions");
+		defined_tag = defined_tag || !tag.imported;
+	}
 	for (const auto& data : object.data)
 		validate_chunk(data.contents, object);
 	std::set<std::string> names;
 	for (const ObjectExport& entry : object.exports)
 	{
-		if (!names.insert(entry.name).second || entry.function >= object.functions.size())
+		if (!names.insert(entry.name).second ||
+			(entry.kind == 0 ? entry.index >= object.functions.size()
+							 : entry.kind != 4 || entry.index >= object.tags.size()))
 			throw WasmError("duplicate or invalid Wasm object export");
 		bool found = false;
 		for (const ObjectSymbol& symbol : object.symbols)
-			found = found || (symbol.kind == 0 && symbol.index == entry.function);
+			found = found || (symbol.kind == entry.kind && symbol.index == entry.index);
 		if (!found)
-			throw WasmError("Wasm exported function has no linking symbol");
+			throw WasmError("Wasm exported entry has no linking symbol");
 	}
 	names.clear();
 	for (const ObjectSymbol& symbol : object.symbols)
@@ -115,6 +126,9 @@ void validate_object(const Object& object)
 		}
 		else if (symbol.kind == 2 && (symbol.index >= object.global_imports.size() || !symbol.undefined()))
 			throw WasmError("invalid Wasm global symbol");
+		else if (symbol.kind == 4 &&
+			(symbol.index >= object.tags.size() || object.tags[symbol.index].imported != symbol.undefined()))
+			throw WasmError("Wasm tag symbol/import mismatch");
 		else if (symbol.kind == 5 && (symbol.index != 0 || !symbol.undefined()))
 			throw WasmError("invalid Wasm table symbol");
 	}
@@ -126,7 +140,7 @@ void validate_object(const Object& object)
 		if (symbol.kind != 0 || symbol.undefined())
 			throw WasmError("Wasm initializer is not a defined function");
 		const Signature& type = object.types[object.functions[symbol.index].type];
-		if (!type.parameters.empty() || type.result != ValueType::Void)
+		if (!type.parameters.empty() || !type.results.empty())
 			throw WasmError("Wasm initializer signature is not void()");
 	}
 }

@@ -11,7 +11,7 @@ ValueType read_type(Cursor& input)
 {
 	const auto type = static_cast<ValueType>(input.byte());
 	if (type != ValueType::I32 && type != ValueType::I64 && type != ValueType::F32 && type != ValueType::F64 &&
-		type != ValueType::V128)
+		type != ValueType::V128 && type != ValueType::ExnRef)
 		throw WasmError("unsupported Wasm object value type");
 	return type;
 }
@@ -28,9 +28,8 @@ void types(Cursor& input, Object& object)
 		for (uint32_t j = 0; j < parameters; ++j)
 			signature.parameters.push_back(read_type(input));
 		const uint32_t results = input.u32();
-		if (results > 1)
-			throw WasmError("Wasm object multi-result signatures need legalization");
-		signature.result = results == 0 ? ValueType::Void : read_type(input);
+		for (uint32_t j = 0; j < results; ++j)
+			signature.results.push_back(read_type(input));
 		object.types.push_back(std::move(signature));
 	}
 }
@@ -85,6 +84,17 @@ void imports(Cursor& input, Object& object)
 				throw WasmError("invalid Wasm imported-global mutability");
 			object.global_imports.push_back(ObjectGlobal{ module, name, type, mutable_value != 0 });
 		}
+		else if (kind == 4)
+		{
+			if (input.byte() != 0)
+				throw WasmError("unsupported Wasm exception tag attribute");
+			ObjectTag tag;
+			tag.type = input.u32();
+			tag.module = module;
+			tag.name = name;
+			tag.imported = true;
+			object.tags.push_back(std::move(tag));
+		}
 		else
 			throw WasmError("unsupported Wasm import kind");
 	}
@@ -101,15 +111,29 @@ void functions(Cursor& input, Object& object)
 	}
 }
 
+void tags(Cursor& input, Object& object)
+{
+	const uint32_t count = input.u32();
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		if (input.byte() != 0)
+			throw WasmError("unsupported Wasm exception tag attribute");
+		ObjectTag tag;
+		tag.type = input.u32();
+		object.tags.push_back(std::move(tag));
+	}
+}
+
 void exports(Cursor& input, Object& object)
 {
 	const uint32_t count = input.u32();
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		const std::string name = input.string();
-		if (input.byte() != 0)
-			throw WasmError("unsupported non-function Wasm object export");
-		object.exports.push_back(ObjectExport{ name, input.u32() });
+		const uint8_t kind = input.byte();
+		if (kind != 0 && kind != 4)
+			throw WasmError("unsupported Wasm object export kind");
+		object.exports.push_back(ObjectExport{ name, input.u32(), kind });
 	}
 }
 
@@ -221,6 +245,8 @@ static void parse_object_bytes(const Bytes& bytes, Object& object)
 			imports(section, object);
 		else if (kind == 3)
 			functions(section, object);
+		else if (kind == 13)
+			tags(section, object);
 		else if (kind == 7)
 			exports(section, object);
 		else if (kind == 9)

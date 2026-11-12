@@ -1,0 +1,1 @@
+{"source":true,"reference_assembly":["400-multivalue-control.s"],"reference_flags":["-mmultivalue"],"reference_object_mutations":["block-type-relocation","missing-block-relocation","signed-block-overflow","signed-i64-overflow"],"llvm_interop":true,"calls":[{"export":"observe","result":"17"}]}

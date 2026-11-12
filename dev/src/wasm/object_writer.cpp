@@ -47,6 +47,22 @@ void append_chunk(const ObjectChunk& chunk, Bytes& section, std::vector<Relocati
 	section.append(chunk.bytes);
 }
 
+bool tag_section(const Object& object, uint32_t imported, Bytes& output)
+{
+	if (object.tags.size() == imported)
+		return false;
+	Bytes tags;
+	tags.unsigned_leb(object.tags.size() - imported);
+	for (const ObjectTag& tag : object.tags)
+		if (!tag.imported)
+		{
+			tags.byte(0);
+			tags.unsigned_leb(tag.type);
+		}
+	output.section(13, tags);
+	return true;
+}
+
 void linking_section(const Object& object, Bytes& output)
 {
 	Bytes linking;
@@ -129,16 +145,19 @@ void write_object(const Object& object, Bytes& output)
 		types.unsigned_leb(signature.parameters.size());
 		for (ValueType type : signature.parameters)
 			types.byte(static_cast<uint8_t>(type));
-		types.unsigned_leb(signature.result == ValueType::Void ? 0 : 1);
-		if (signature.result != ValueType::Void)
-			types.byte(static_cast<uint8_t>(signature.result));
+		types.unsigned_leb(signature.results.size());
+		for (ValueType type : signature.results)
+			types.byte(static_cast<uint8_t>(type));
 	}
 	output.section(1, types);
 	Bytes imports;
 	uint32_t imported_functions = 0;
 	for (const auto& function : object.functions)
 		imported_functions += function.imported;
-	imports.unsigned_leb(imported_functions + object.global_imports.size() + 2);
+	uint32_t imported_tags = 0;
+	for (const ObjectTag& tag : object.tags)
+		imported_tags += tag.imported;
+	imports.unsigned_leb(imported_functions + imported_tags + object.global_imports.size() + 2);
 	imports.string("env");
 	imports.string("__linear_memory");
 	imports.byte(2);
@@ -160,6 +179,15 @@ void write_object(const Object& object, Bytes& output)
 		imports.byte(static_cast<uint8_t>(global.type));
 		imports.byte(global.mutable_value ? 1 : 0);
 	}
+	for (const ObjectTag& tag : object.tags)
+		if (tag.imported)
+		{
+			imports.string(tag.module);
+			imports.string(tag.name);
+			imports.byte(4);
+			imports.byte(0);
+			imports.unsigned_leb(tag.type);
+		}
 	imports.string("env");
 	imports.string("__indirect_function_table");
 	imports.byte(1);
@@ -173,6 +201,7 @@ void write_object(const Object& object, Bytes& output)
 		if (!function.imported)
 			functions.unsigned_leb(function.type);
 	output.section(3, functions);
+	const bool defined_tags = tag_section(object, imported_tags, output);
 	if (!object.exports.empty())
 	{
 		Bytes exports;
@@ -180,8 +209,8 @@ void write_object(const Object& object, Bytes& output)
 		for (const ObjectExport& entry : object.exports)
 		{
 			exports.string(entry.name);
-			exports.byte(0);
-			exports.unsigned_leb(entry.function);
+			exports.byte(entry.kind);
+			exports.unsigned_leb(entry.index);
 		}
 		output.section(7, exports);
 	}
@@ -219,8 +248,8 @@ void write_object(const Object& object, Bytes& output)
 	}
 	output.section(11, data);
 	linking_section(object, output);
-	relocation_section(output, "reloc.CODE", 4 + !object.exports.empty(), code_relocations);
-	relocation_section(output, "reloc.DATA", 5 + !object.exports.empty(), data_relocations);
+	relocation_section(output, "reloc.CODE", 4 + !object.exports.empty() + defined_tags, code_relocations);
+	relocation_section(output, "reloc.DATA", 5 + !object.exports.empty() + defined_tags, data_relocations);
 	Bytes features;
 	features.unsigned_leb(object.features.size());
 	for (const auto& feature : object.features)

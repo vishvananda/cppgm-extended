@@ -67,6 +67,8 @@ void encode_function(const Function& function, Bytes& output, std::vector<Reloca
 		const Immediate form = immediate_form(inst.op);
 		if (form == Immediate::Table)
 			body.unsigned_leb(inst.operands.count - 1);
+		else if (form == Immediate::Types)
+			body.unsigned_leb(inst.operands.count);
 		for (uint32_t i = 0; i < inst.operands.count; ++i)
 		{
 			const uint32_t operand = inst.operands.first + i;
@@ -80,12 +82,11 @@ void encode_function(const Function& function, Bytes& output, std::vector<Reloca
 				for (unsigned part = 0; part < 5; ++part)
 					body.byte(((value >> (7 * part)) & 0x7f) | (part == 4 ? 0 : 0x80));
 			}
-			else if (form == Immediate::Signed)
+			else if (form == Immediate::Signed || form == Immediate::BlockType ||
+				(form == Immediate::TryTable && i == 0))
 				body.signed_leb(static_cast<int64_t>(value));
 			else if (form == Immediate::Float32 || form == Immediate::Float64)
 				body.fixed(value, form == Immediate::Float32 ? 4 : 8);
-			else if (form == Immediate::BlockType)
-				body.byte(static_cast<uint8_t>(value));
 			else
 				body.unsigned_leb(value);
 		}
@@ -113,7 +114,15 @@ void dump_function(const Function& function, const char* name, std::string& outp
 	{
 		stream << "  " << spelling(inst.op);
 		for (uint32_t i = 0; i < inst.operands.count; ++i)
-			stream << ' ' << function.operands[inst.operands.first + i];
+		{
+			const uint64_t value = function.operands[inst.operands.first + i];
+			if ((immediate_form(inst.op) == Immediate::BlockType ||
+					(immediate_form(inst.op) == Immediate::TryTable && i == 0)) &&
+				static_cast<int64_t>(value) < 0)
+				stream << ' ' << spelling(static_cast<ValueType>(value + 128));
+			else
+				stream << ' ' << value;
+		}
 		stream << '\n';
 	}
 	stream << "end_function\n";

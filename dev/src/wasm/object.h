@@ -58,7 +58,16 @@ struct ObjectGlobal
 struct ObjectExport
 {
 	std::string name;
-	uint32_t function;
+	uint32_t index;
+	uint8_t kind;
+};
+
+struct ObjectTag
+{
+	uint32_t type = 0;
+	std::string module;
+	std::string name;
+	bool imported = false;
 };
 
 struct Object
@@ -67,6 +76,7 @@ struct Object
 	bool archive_member = false;
 	std::vector<Signature> types;
 	std::vector<ObjectFunction> functions;
+	std::vector<ObjectTag> tags;
 	std::vector<ObjectData> data;
 	std::vector<ObjectSymbol> symbols;
 	std::vector<std::pair<uint32_t, uint32_t>> initializers;

@@ -156,13 +156,13 @@ void Selector::prepare_frame()
 	out_.emit(Op::I32Const, { module_.stack_floor });
 	out_.relocate(RelocationKind::MemoryAddressSigned, module_.stack_low_symbol);
 	out_.emit(Op::I32LtU);
-	out_.emit(Op::If, { static_cast<uint8_t>(ValueType::Void) });
+	out_.emit(Op::If, { block_type(ValueType::Void) });
 	out_.emit(Op::Unreachable);
 	out_.emit(Op::End);
 	out_.emit(Op::LocalGet, { frame_ });
 	out_.emit(Op::LocalGet, { saved_stack_ });
 	out_.emit(Op::I32GtU);
-	out_.emit(Op::If, { static_cast<uint8_t>(ValueType::Void) });
+	out_.emit(Op::If, { block_type(ValueType::Void) });
 	out_.emit(Op::Unreachable);
 	out_.emit(Op::End);
 	out_.emit(Op::LocalGet, { frame_ });

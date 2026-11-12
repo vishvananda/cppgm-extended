@@ -26,7 +26,7 @@ void symbols(Cursor& input, Object& object)
 				symbol.size = input.u32();
 			}
 		}
-		else if (symbol.kind == 0 || symbol.kind == 2 || symbol.kind == 5)
+		else if (symbol.kind == 0 || symbol.kind == 2 || symbol.kind == 4 || symbol.kind == 5)
 		{
 			symbol.index = input.u32();
 			if (!symbol.undefined() || (symbol.flags & 0x40) != 0)
@@ -35,6 +35,8 @@ void symbols(Cursor& input, Object& object)
 				symbol.name = object.functions[symbol.index].name;
 			else if (symbol.kind == 2 && symbol.index < object.global_imports.size())
 				symbol.name = object.global_imports[symbol.index].name;
+			else if (symbol.kind == 4 && symbol.index < object.tags.size())
+				symbol.name = object.tags[symbol.index].name;
 			else if (symbol.kind == 5 && symbol.index == 0)
 				symbol.name = "__indirect_function_table";
 			else

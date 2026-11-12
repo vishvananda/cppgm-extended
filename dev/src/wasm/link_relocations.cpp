@@ -36,6 +36,13 @@ uint32_t Linker::symbol_value(ObjectRef ref) const
 	const auto& source = symbol(ref);
 	if (source.kind == 5)
 		return 0;
+	if (source.kind == 4)
+	{
+		const auto tag = tags_.find({ ref.first, source.index });
+		if (tag == tags_.end())
+			throw WasmError("unresolved Wasm tag relocation: " + source.name);
+		return tag->second;
+	}
 	if (source.kind == 2)
 	{
 		const ObjectGlobal& global = objects_[ref.first].global_imports[source.index];

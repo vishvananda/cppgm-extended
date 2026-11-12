@@ -224,14 +224,14 @@ void Selector::dispatch()
 	pc_ = add_local(ValueType::I32);
 	out_.emit(Op::I32Const, { body_.layout[0] });
 	out_.emit(Op::LocalSet, { pc_ });
-	out_.emit(Op::Loop, { static_cast<uint8_t>(ValueType::Void) });
+	out_.emit(Op::Loop, { block_type(ValueType::Void) });
 	nesting_ = 1;
 	for (BlockId id : body_.layout)
 	{
 		out_.emit(Op::LocalGet, { pc_ });
 		out_.emit(Op::I32Const, { id });
 		out_.emit(Op::I32Eq);
-		out_.emit(Op::If, { static_cast<uint8_t>(ValueType::Void) });
+		out_.emit(Op::If, { block_type(ValueType::Void) });
 		++nesting_;
 		block(id);
 		--nesting_;
@@ -299,7 +299,7 @@ void Selector::edge(BlockId from, BlockId to)
 
 void Selector::open_label(Op op, BlockId target)
 {
-	out_.emit(op, { static_cast<uint8_t>(ValueType::Void) });
+	out_.emit(op, { block_type(ValueType::Void) });
 	labels_.push_back(Label{ target, nesting_++ });
 }
 

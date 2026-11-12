@@ -92,7 +92,7 @@ void Selector::instruction(const lowir::Instruction& inst)
 		return;
 	case Opcode::Branch:
 		condition(inst.ops[0]);
-		out_.emit(Op::If, { static_cast<uint8_t>(ValueType::Void) });
+		out_.emit(Op::If, { block_type(ValueType::Void) });
 		++nesting_;
 		edge(current_block_, inst.ops[1].index);
 		--nesting_;
@@ -107,7 +107,7 @@ void Selector::instruction(const lowir::Instruction& inst)
 			value(inst.ops[0], type);
 			value(body_.operands[inst.extra_first + i], type);
 			out_.emit(value_type(type) == ValueType::I64 ? Op::I64Eq : Op::I32Eq);
-			out_.emit(Op::If, { static_cast<uint8_t>(ValueType::Void) });
+			out_.emit(Op::If, { block_type(ValueType::Void) });
 			++nesting_;
 			edge(current_block_, body_.operands[inst.extra_first + i + 1].index);
 			--nesting_;

@@ -9,7 +9,8 @@ use FindBin;
 use JSON::PP qw(decode_json);
 use lib $FindBin::Bin;
 use CppgmBatchWorker qw(collect_tests run_command_capture);
-use CppgmWasmModule qw(export_signatures);
+use CppgmWasmModule qw(export_signatures export_tag_signatures);
+use CppgmWasmFixture qw(mutate_object);
 
 sub read_file {
     my ($path) = @_;
@@ -78,7 +79,7 @@ my @runtime_libraries;
 for my $library (@{$expect->{libraries} // []}) {
     my $clang = $ENV{CPPGM_WASM_CLANG} // 'wasm-ref-clang++';
     my ($status, $stdout, $stderr) = command('library-path', $clang, '--target=wasm32-wasip1',
-        "-print-file-name=lib$library.a");
+        @{$expect->{reference_flags} // []}, "-print-file-name=lib$library.a");
     $stdout =~ s/\s+\z//;
     die "$test: supplied library lookup failed: $stdout$stderr\n" if $status || !-f $stdout;
     push @runtime_libraries, $stdout;
@@ -112,8 +113,36 @@ if ($expect->{wasi} || $expect->{resource_headers}) {
     push @target_flags, '-resource-dir', $resource;
 }
 
+my @assembly_objects;
+for my $index (0 .. $#{$expect->{reference_assembly} // []}) {
+    my $input = File::Spec->catfile(dirname($test), $expect->{reference_assembly}[$index]);
+    my $output = "$directory/reference-$index.o";
+    my $clang = $ENV{CPPGM_WASM_CLANG} // 'wasm-ref-clang++';
+    my ($status, $stdout, $stderr) = command('reference-assembly', $clang,
+        '--target=' . ($expect->{target} // 'wasm32-unknown-unknown'),
+        @{$expect->{reference_flags} // []}, '-x', 'assembler', '-c', $input, '-o', $output);
+    die "$test: reference object assembly failed: $stdout$stderr\n" if $status;
+    ($status, $stdout, $stderr) = command('reference-object-validate', $validator, 'validate', $output);
+    die "$test: invalid supplied reference object: $stdout$stderr\n" if $status;
+    push @assembly_objects, $output;
+}
+
 for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     my ($status, $stdout, $stderr);
+    my @provided_objects = @assembly_objects;
+    for my $index (0 .. $#{$expect->{reference_sources} // []}) {
+        my $input = File::Spec->catfile(dirname($test), $expect->{reference_sources}[$index]);
+        my $output = "$directory/reference-source-$index-$level.o";
+        my $clang = $ENV{CPPGM_WASM_CLANG} // 'wasm-ref-clang++';
+        ($status, $stdout, $stderr) = command('reference-source', $clang,
+            '--target=' . ($expect->{target} // 'wasm32-unknown-unknown'),
+            '-std=c++11', @{$expect->{reference_flags} // []}, "-O$level", '-x', 'c++', '-c', $input, '-o', $output);
+        die "$test: reference source compilation failed: $stdout$stderr\n" if $status;
+        ($status, $stdout, $stderr) = command('reference-source-validate', $validator, 'validate', $output);
+        die "$test: invalid reference source object: $stdout$stderr\n" if $status;
+        push @provided_objects, $output;
+    }
+    my @supplied_inputs = (@provided_objects, @runtime_libraries);
     my @modules;
     my $module = "$directory/program-$level.wasm";
     my @exports = map { ('--export', $_) }
@@ -122,7 +151,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     my $tool = $expect->{source} ? $source_compiler : $compiler;
     ($status, $stdout, $stderr) = command("compile-$level", $tool, "-O$level",
         '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-        @target_flags, @{$expect->{flags} // []}, @{$expect->{link_flags} // []}, @exports, '-o', $module, $test, @units, @runtime_libraries);
+        @target_flags, @{$expect->{flags} // []}, @{$expect->{link_flags} // []}, @exports, '-o', $module, $test, @units, @supplied_inputs);
     if ($expect->{reject}) {
         die "$test: invalid input accepted at O$level\n" if $status == 0;
         die "$test: rejection was not a compiler diagnostic: $stdout$stderr\n"
@@ -141,7 +170,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         die "$test: LowIR lowering failed: $stdout$stderr\n" if $status;
         my $roundtrip = "$directory/roundtrip-$level.wasm";
         ($status, $stdout, $stderr) = command("roundtrip-$level", $compiler,
-            "-O$level", @target_flags, @{$expect->{link_flags} // []}, @exports, '-o', $roundtrip, $lowir, @runtime_libraries);
+            "-O$level", @target_flags, @{$expect->{link_flags} // []}, @exports, '-o', $roundtrip, $lowir, @supplied_inputs);
         die "$test: LowIR backend failed: $stdout$stderr\n" if $status;
         ($status, $stdout, $stderr) = command("roundtrip-validate-$level", $validator, 'validate', $roundtrip);
         die "$test: invalid round-trip module: $stdout$stderr\n" if $status;
@@ -203,7 +232,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         my $output = "$linked.$pass";
         ($status, $stdout, $stderr) = command("link-$level-$pass", $source_compiler,
             '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-            @target_flags, @{$expect->{link_flags} // []}, @exports, @objects, @runtime_libraries, '-o', $output);
+            @target_flags, @{$expect->{link_flags} // []}, @exports, @objects, @supplied_inputs, '-o', $output);
         die "$test: object link failed: $stdout$stderr\n" if $status;
     }
     die "$test: identical object inputs produced different module bytes\n"
@@ -211,11 +240,41 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     ($status, $stdout, $stderr) = command("linked-validate-$level", $validator, 'validate', "$linked.1");
     die "$test: invalid linked module: $stdout$stderr\n" if $status;
     push @modules, "$linked.1";
+    for my $mutation (@{$expect->{reference_object_mutations} // []}) {
+        die "$test: reference mutation needs a supplied assembly object\n" if !@provided_objects;
+        my $bad = "$directory/bad-reference-$mutation.o";
+        write_file($bad, mutate_object(read_file($provided_objects[0]), $mutation));
+        my @other = @provided_objects > 1 ? @provided_objects[1 .. $#provided_objects] : ();
+        ($status, $stdout, $stderr) = command('reject-reference', $source_compiler,
+            '--target', ($expect->{target} // 'wasm32-unknown-unknown'), @target_flags,
+            @{$expect->{link_flags} // []}, @exports, @objects, $bad, @other,
+            @runtime_libraries, '-o', "$directory/rejected-reference.wasm");
+        die "$test: malformed $mutation reference accepted or rejected without a diagnostic: $stdout$stderr\n"
+            if !$status || $status == 124 || $status >= 128 || "$stdout$stderr" !~ /ERROR:/;
+        ($status, $stdout, $stderr) = command('reference-mutation-object-validate', $validator, 'validate', $bad);
+        if ($status) {
+            die "$test: reference validator failed without a diagnostic: $stdout$stderr\n"
+                if $status == 124 || $status >= 128 || "$stdout$stderr" !~ /error/i;
+            next;
+        }
+        my $oracle = "$directory/oracle-$mutation.wasm";
+        my $lld = $ENV{CPPGM_WASM_LD} // 'wasm-ref-ld';
+        ($status, $stdout, $stderr) = command('reference-mutation-link', $lld,
+            '--no-entry', @exports, @objects, $bad, @other, @runtime_libraries, '-o', $oracle);
+        die "$test: reference linker failed without a diagnostic: $stdout$stderr\n"
+            if $status && ($status == 124 || $status >= 128 || "$stdout$stderr" !~ /error/i);
+        if (!$status) {
+            ($status, $stdout, $stderr) = command('reference-mutation-validate', $validator, 'validate', $oracle);
+            die "$test: $mutation does not violate the independent reference contract\n" if !$status;
+            die "$test: reference validator failed without a diagnostic: $stdout$stderr\n"
+                if $status == 124 || $status >= 128 || "$stdout$stderr" !~ /error/i;
+        }
+    }
     if (@roundtrip_objects) {
         my $output = "$directory/roundtrip-linked-$level.wasm";
         ($status, $stdout, $stderr) = command("roundtrip-link-$level", $source_compiler,
             '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-            @target_flags, @{$expect->{link_flags} // []}, @exports, @roundtrip_objects, @runtime_libraries, '-o', $output);
+            @target_flags, @{$expect->{link_flags} // []}, @exports, @roundtrip_objects, @supplied_inputs, '-o', $output);
         die "$test: round-trip object link failed: $stdout$stderr\n" if $status;
         ($status, $stdout, $stderr) = command("roundtrip-link-validate-$level", $validator, 'validate', $output);
         die "$test: invalid round-trip linked module: $stdout$stderr\n" if $status;
@@ -245,7 +304,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                 my @link_exports = $linker eq 'llvm' && $expect->{wasi}
                     ? map { ('-Xlinker', $_) } @exports : @exports;
                 ($status, $stdout, $stderr) = command("mixed-link-$producer-$linker-$level",
-                    @tool, @link_exports, @mixed, @runtime_libraries, '-o', $output);
+                    @tool, @link_exports, @mixed, @supplied_inputs, '-o', $output);
                 die "$test: mixed-object $linker link failed: $stdout$stderr\n" if $status;
                 ($status, $stdout, $stderr) = command("mixed-validate-$producer-$linker-$level",
                     $validator, 'validate', $output);
@@ -255,6 +314,17 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         }
     }
     for my $run_module (@modules) {
+        if ($expect->{tag_abi}) {
+            my $actual = export_tag_signatures($run_module);
+            for my $name (sort keys %{$expect->{tag_abi}}) {
+                die "$test: missing exported tag $name\n" unless $actual->{$name};
+                for my $part ('params', 'results') {
+                    my $want = join(',', @{$expect->{tag_abi}{$name}{$part}});
+                    my $got = join(',', @{$actual->{$name}{$part}});
+                    die "$test: tag $name ABI $part expected [$want], got [$got]\n" if $want ne $got;
+                }
+            }
+        }
         if ($expect->{abi}) {
             my $actual = export_signatures($run_module);
             for my $name (sort keys %{$expect->{abi}}) {
