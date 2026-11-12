@@ -12,6 +12,7 @@ use CppgmBatchWorker qw(collect_tests run_command_capture);
 use CppgmWasmModule qw(export_signatures export_tag_signatures sequence_module);
 use CppgmWasmFixture qw(mutate_object);
 use CppgmWasmQuality qw(check_quality);
+use CppgmWasmGlobals qw(initialize_globals metadata_first group_object);
 
 sub read_file {
     my ($path) = @_;
@@ -53,6 +54,20 @@ my $source_compiler = $ENV{CPPGM_WASM_CPPGM} // File::Spec->catfile(dirname($com
 my $command_sequence = 0;
 my @units = map { File::Spec->catfile(dirname($test), $_) } @{$expect->{units} // []};
 
+if ($expect->{llvm_interop} && $expect->{interop_linkers} &&
+    !grep { $_ eq 'llvm' } @{$expect->{interop_linkers}}) {
+    my $path = File::Spec->catfile($FindBin::Bin, '..', 'doc', 'wasm', 'reference-limitations.json');
+    my $limits = decode_json(read_file($path));
+    my %limits = map { $_->{id} => $_ } @{$limits->{limitations}};
+    my $relative = File::Spec->abs2rel(File::Spec->rel2abs($test), File::Spec->catdir($FindBin::Bin, '..'));
+    my @reasons = @{$expect->{reference_limitations} // []};
+    die "$test: omitted reference linker needs a documented limitation\n" unless @reasons;
+    for my $reason (@reasons) {
+        die "$test: reference limitation does not cover this fixture\n"
+            unless $limits{$reason} && grep { $_ eq $relative } @{$limits{$reason}{fixtures}};
+    }
+}
+
 sub command {
     my ($name, @args) = @_;
     $name .= '-' . ++$command_sequence;
@@ -74,6 +89,25 @@ sub archive_inputs {
     }
     close($file) or die "Cannot close $path: $!\n";
     return ($main, $path);
+}
+
+sub reference_link_rejection {
+    my ($level, $inputs, $exports) = @_;
+    die "$test: reference rejection needs one freestanding C++ source\n"
+        unless $expect->{source} && !@units && !$expect->{wasi};
+    my $clang = $ENV{CPPGM_WASM_CLANG} // 'wasm-ref-clang++';
+    my $lld = $ENV{CPPGM_WASM_LD} // 'wasm-ref-ld';
+    my $object = "$directory/reference-reject-$level.o";
+    my ($status, $stdout, $stderr) = command('reference-reject-source', $clang,
+        '--target=' . ($expect->{target} // 'wasm32-unknown-unknown'), '-std=c++11',
+        @{$expect->{reference_flags} // []}, "-O$level", '-x', 'c++', '-c', $test, '-o', $object);
+    die "$test: reference rejection source did not compile: $stdout$stderr\n" if $status;
+    ($status, $stdout, $stderr) = command('reference-reject-object', $validator, 'validate', $object);
+    die "$test: invalid reference rejection source object: $stdout$stderr\n" if $status;
+    ($status, $stdout, $stderr) = command('reference-reject-link', $lld, '--no-entry',
+        @$exports, $object, @$inputs, '-o', "$directory/reference-rejected.wasm");
+    die "$test: reference linker accepted incompatible inputs or failed without a diagnostic: $stdout$stderr\n"
+        if !$status || $status == 124 || $status >= 128 || "$stdout$stderr" !~ /error/i;
 }
 
 my @runtime_libraries;
@@ -123,6 +157,15 @@ for my $index (0 .. $#{$expect->{reference_assembly} // []}) {
         '--target=' . ($expect->{target} // 'wasm32-unknown-unknown'),
         @{$expect->{reference_flags} // []}, '-x', 'assembler', '-c', $input, '-o', $output);
     die "$test: reference object assembly failed: $stdout$stderr\n" if $status;
+    if ($index == 0 && $expect->{reference_initializers}) {
+        write_file($output, initialize_globals(read_file($output), $expect->{reference_initializers}));
+    }
+    if ($expect->{reference_groups}) {
+        write_file($output, group_object(read_file($output), $expect->{reference_groups}));
+    }
+    if ($index == 0 && $expect->{reference_metadata_first}) {
+        write_file($output, metadata_first(read_file($output)));
+    }
     ($status, $stdout, $stderr) = command('reference-object-validate', $validator, 'validate', $output);
     die "$test: invalid supplied reference object: $stdout$stderr\n" if $status;
     push @assembly_objects, $output;
@@ -155,10 +198,11 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     ($status, $stdout, $stderr) = command("compile-$level", $tool, "-O$level",
         '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
         @target_flags, @{$expect->{flags} // []}, @{$expect->{link_flags} // []}, @exports, '-o', $module, $test, @units, @supplied_inputs);
-    if ($expect->{reject}) {
+    if ($expect->{reject} || $expect->{reject_link}) {
         die "$test: invalid input accepted at O$level\n" if $status == 0;
         die "$test: rejection was not a compiler diagnostic: $stdout$stderr\n"
             if "$stdout$stderr" !~ /ERROR:/ || $status >= 128;
+        reference_link_rejection($level, \@supplied_inputs, \@exports) if $expect->{reject_link};
         next;
     }
     die "$test: compile O$level failed ($status): $stdout$stderr\n" if $status;
@@ -243,11 +287,14 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     ($status, $stdout, $stderr) = command("linked-validate-$level", $validator, 'validate', "$linked.1");
     die "$test: invalid linked module: $stdout$stderr\n" if $status;
     push @modules, "$linked.1";
-    for my $mutation (@{$expect->{reference_object_mutations} // []}) {
+    for my $entry (@{$expect->{reference_object_mutations} // []}) {
         die "$test: reference mutation needs a supplied assembly object\n" if !@provided_objects;
+        my $unit = ref($entry) ? $entry->{unit} : 0;
+        my $mutation = ref($entry) ? $entry->{kind} : $entry;
+        die "$test: invalid reference mutation unit\n" if $unit < 0 || $unit >= @provided_objects;
         my $bad = "$directory/bad-reference-$mutation.o";
-        write_file($bad, mutate_object(read_file($provided_objects[0]), $mutation));
-        my @other = @provided_objects > 1 ? @provided_objects[1 .. $#provided_objects] : ();
+        write_file($bad, mutate_object(read_file($provided_objects[$unit]), $mutation));
+        my @other = @provided_objects[grep { $_ != $unit } 0 .. $#provided_objects];
         ($status, $stdout, $stderr) = command('reject-reference', $source_compiler,
             '--target', ($expect->{target} // 'wasm32-unknown-unknown'), @target_flags,
             @{$expect->{link_flags} // []}, @exports, @objects, $bad, @other,
@@ -287,7 +334,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         my $lld = $ENV{CPPGM_WASM_LD} // 'wasm-ref-ld';
         my $output = "$directory/llvm-link-$level.wasm";
         ($status, $stdout, $stderr) = command("llvm-link-$level", $lld,
-            '--no-entry', @exports, @objects, @supplied_inputs, '-o', $output);
+            '--no-entry', @{$expect->{reference_link_flags} // []}, @exports, @objects, @supplied_inputs, '-o', $output);
         die "$test: reference link failed: $stdout$stderr\n" if $status;
         ($status, $stdout, $stderr) = command("llvm-link-validate-$level", $validator, 'validate', $output);
         die "$test: invalid reference-linked module: $stdout$stderr\n" if $status;
@@ -309,11 +356,12 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         for my $producer (0 .. $#inputs) {
             my @mixed = @objects;
             $mixed[$producer] = $reference_objects[$producer];
-            for my $linker ('cppgm', 'llvm') {
+            for my $linker (@{$expect->{interop_linkers} // ['cppgm', 'llvm']}) {
+                die "$test: unknown interoperability linker $linker\n" unless $linker eq 'cppgm' || $linker eq 'llvm';
                 my $output = "$directory/mixed-$producer-$linker-$level.wasm";
                 my @tool = $linker eq 'cppgm'
                     ? ($source_compiler, '--target', ($expect->{target} // 'wasm32-unknown-unknown'), @target_flags, @{$expect->{link_flags} // []})
-                    : $expect->{wasi} ? ($clang, '--target=wasm32-wasip1', @{$expect->{link_flags} // []}, @{$expect->{reference_link_flags} // []}) : ($lld, '--no-entry');
+                    : $expect->{wasi} ? ($clang, '--target=wasm32-wasip1', @{$expect->{link_flags} // []}, @{$expect->{reference_link_flags} // []}) : ($lld, '--no-entry', @{$expect->{reference_link_flags} // []});
                 my @link_exports = @exports;
                 if ($linker eq 'llvm' && $expect->{reference_initialize}) {
                     # Exporting the constructor entry disables LLD's per-command
@@ -328,7 +376,7 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                 die "$test: mixed-object $linker link failed: $stdout$stderr\n" if $status;
                 ($status, $stdout, $stderr) = command("mixed-validate-$producer-$linker-$level",
                     $validator, 'validate', $output);
-                die "$test: invalid mixed-object module: $stdout$stderr\n" if $status;
+                die "$test: invalid mixed-object module $output: $stdout$stderr\n" if $status;
                 push @modules, $output;
             }
         }

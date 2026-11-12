@@ -52,6 +52,8 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 	prepare_module(program, module);
 	if (!options.machine_ir.empty())
 		dump_module(program, module, dump);
+	object.table_count = 1;
+	object.memory_count = 1;
 	object.types = module.signatures;
 	object.functions.resize(module.definition_types.size());
 	std::vector<uint32_t> symbols(program.symbols.size() + (module.tag_types.empty() ? 3 : 4), lowir::kNoId);

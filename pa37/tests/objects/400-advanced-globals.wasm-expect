@@ -1,0 +1,205 @@
+{
+  "source": true,
+  "reference_assembly": [
+    "400-advanced-globals.provider.s",
+    "400-advanced-globals.consumer.s"
+  ],
+  "reference_flags": [
+    "-msimd128",
+    "-mreference-types"
+  ],
+  "reference_initializers": {
+    "seed": {
+      "type": "i32",
+      "init": [
+        [
+          "i32.const",
+          17
+        ]
+      ]
+    },
+    "scaled": {
+      "type": "i32",
+      "init": [
+        [
+          "global.get",
+          "seed"
+        ],
+        [
+          "i32.const",
+          3
+        ],
+        [
+          "i32.mul"
+        ]
+      ]
+    },
+    "wide": {
+      "type": "i64",
+      "init": [
+        [
+          "i64.const",
+          "1234605616436508552"
+        ]
+      ]
+    },
+    "single": {
+      "type": "f32",
+      "init": [
+        [
+          "f32.const",
+          "3.25"
+        ]
+      ]
+    },
+    "double_value": {
+      "type": "f64",
+      "init": [
+        [
+          "f64.const",
+          "-7.5"
+        ]
+      ]
+    },
+    "lanes": {
+      "type": "v128",
+      "init": [
+        [
+          "v128.const",
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ]
+      ]
+    },
+    "callback": {
+      "type": "funcref",
+      "init": [
+        [
+          "ref.func",
+          "global_target"
+        ]
+      ]
+    },
+    "outside": {
+      "type": "externref",
+      "init": [
+        [
+          "ref.null",
+          "externref"
+        ]
+      ]
+    },
+    "counter": {
+      "type": "i32",
+      "init": [
+        [
+          "i32.const",
+          17
+        ]
+      ]
+    }
+  },
+  "llvm_interop": true,
+  "calls": [
+    {
+      "export": "observe",
+      "args": [
+        "0"
+      ],
+      "result": "17"
+    },
+    {
+      "export": "observe",
+      "args": [
+        "-3"
+      ],
+      "result": "17"
+    }
+  ],
+  "sequences": [
+    [
+      {
+        "export": "observe",
+        "args": [
+          "0"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "9"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "bump",
+        "args": [
+          "3"
+        ],
+        "result": "20"
+      },
+      {
+        "export": "bump",
+        "args": [
+          "-5"
+        ],
+        "result": "15"
+      },
+      {
+        "export": "get_counter",
+        "result": "15"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "7"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "get_counter",
+        "result": "15"
+      }
+    ]
+  ],
+  "interop_linkers": [
+    "cppgm"
+  ],
+  "exports": [
+    "counter"
+  ],
+  "reference_object_mutations": [
+    "section-order",
+    "duplicate-section",
+    "data-count-mismatch",
+    "global-init-mutable",
+    {
+      "unit": 1,
+      "kind": "element-function-index"
+    },
+    {
+      "unit": 1,
+      "kind": "element-reference-type"
+    },
+    "global-reference-type"
+  ],
+  "reference_metadata_first": true,
+  "reference_limitations": [
+    "advanced-global-initializers"
+  ]
+}

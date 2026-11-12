@@ -8,5 +8,6 @@
 namespace wasm {
 
 void encode_function(const Function& function, Bytes& output, std::vector<Relocation>* relocations = nullptr);
+void encode_expression(const Function& function, Bytes& output);
 
 } // namespace wasm

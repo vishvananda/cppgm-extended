@@ -1,0 +1,62 @@
+{
+  "source": true,
+  "reference_assembly": [
+    "400-global-resolution.weak.s",
+    "400-global-resolution.strong.s"
+  ],
+  "reference_initializers": {
+    "shared_value": {
+      "type": "i32",
+      "init": [
+        [
+          "i32.const",
+          99
+        ]
+      ]
+    }
+  },
+  "llvm_interop": true,
+  "calls": [
+    {
+      "export": "initial",
+      "result": "0"
+    },
+    {
+      "export": "observe",
+      "args": [
+        "3"
+      ],
+      "result": "17"
+    }
+  ],
+  "sequences": [
+    [
+      {
+        "export": "initial",
+        "result": "0"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "1"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "inspect",
+        "result": "18"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "4"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "inspect",
+        "result": "21"
+      }
+    ]
+  ]
+}

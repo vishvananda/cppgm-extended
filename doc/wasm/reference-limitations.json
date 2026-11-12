@@ -1,0 +1,20 @@
+{
+  "wasi_sdk": "34.0",
+  "llvm_revision": "895aa2c896ada719451be2e3673c83da8ddf1141",
+  "limitations": [
+    {
+      "id": "advanced-global-initializers",
+      "behavior": "The pinned linker rejects v128.const/ref.func initializers and does not correctly relocate the initializer's global index in the supplied case.",
+      "required": "Preserve typed initializers and their symbol dependencies after linking.",
+      "checks": "Independent wasm-tools validation and Wasmtime execution, with both cppgm and LLVM callers linked by the submitted linker.",
+      "fixtures": ["pa37/tests/objects/400-advanced-globals.t"]
+    },
+    {
+      "id": "global-comdat-members",
+      "behavior": "The pinned linker rejects the global COMDAT member kind defined by the linking convention.",
+      "required": "Select a complete COMDAT group, including its Wasm globals.",
+      "checks": "Independent wasm-tools validation and Wasmtime execution, with both cppgm and LLVM callers linked by the submitted linker.",
+      "fixtures": ["pa37/tests/objects/400-grouped-globals.t"]
+    }
+  ]
+}

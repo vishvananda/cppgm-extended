@@ -1,0 +1,78 @@
+{
+  "source": true,
+  "reference_assembly": [
+    "400-defined-globals.s",
+    "400-defined-globals.null.s"
+  ],
+  "reference_initializers": {
+    "base": {
+      "type": "i32",
+      "init": [
+        [
+          "i32.const",
+          17
+        ]
+      ]
+    },
+    "derived": {
+      "type": "i32",
+      "init": [
+        [
+          "i32.const",
+          51
+        ]
+      ]
+    },
+    "outside": {
+      "type": "externref",
+      "init": [
+        [
+          "ref.null",
+          "externref"
+        ]
+      ]
+    }
+  },
+  "llvm_interop": true,
+  "exports": [
+    "counter_value"
+  ],
+  "calls": [
+    {
+      "export": "observe",
+      "args": [
+        "5"
+      ],
+      "result": "39"
+    }
+  ],
+  "sequences": [
+    [
+      {
+        "export": "observe",
+        "args": [
+          "1"
+        ],
+        "result": "35"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "2"
+        ],
+        "result": "71"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "-3"
+        ],
+        "result": "102"
+      }
+    ]
+  ],
+  "reference_object_mutations": [
+    "duplicate-feature",
+    "feature-prefix"
+  ]
+}

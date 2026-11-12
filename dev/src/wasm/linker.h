@@ -32,9 +32,13 @@ private:
 	ObjectRef indexed_symbol(uint32_t object, uint8_t kind, uint32_t index) const;
 	uint32_t symbol_value(ObjectRef ref) const;
 	bool synthetic_data(const std::string& name, uint32_t& value) const;
-	Bytes relocated(uint32_t object, const ObjectChunk& chunk) const;
+	Bytes relocated(uint32_t object, const ObjectChunk& chunk, bool constant = false) const;
 	void emit(Bytes& output);
 	void prepare_address_globals();
+	void prepare_globals();
+	bool runtime_global(ObjectRef ref, uint32_t& index) const;
+	void global_imports(Bytes& output) const;
+	void global_section(Bytes& output) const;
 	void tag_imports(Bytes& output) const;
 	void tag_section(Bytes& output) const;
 	const std::vector<Object>& objects_;
@@ -46,9 +50,11 @@ private:
 	size_t next_pending_ = 0;
 	std::vector<ObjectRef> roots_;
 	std::set<ObjectRef> discarded_functions_, discarded_data_, discarded_tags_;
-	std::map<ObjectRef, uint32_t> functions_, data_, tags_;
+	std::set<ObjectRef> discarded_globals_;
+	std::map<ObjectRef, uint32_t> functions_, data_, tags_, globals_;
 	std::map<ObjectRef, uint32_t> address_globals_;
 	std::vector<ObjectRef> ordered_functions_, ordered_data_, ordered_tags_;
+	std::vector<ObjectRef> ordered_globals_, imported_globals_;
 	std::vector<std::pair<uint32_t, ObjectRef>> initializers_;
 	std::vector<Signature> types_;
 	std::vector<std::vector<uint32_t>> type_indices_;

@@ -60,10 +60,17 @@ ObjectChunk* find_chunk(Object& object, uint8_t section, uint32_t offset)
 				return &function.code;
 	}
 	else if (section == 11)
+	{
 		for (auto& data : object.data)
 			if (offset >= data.contents.section_offset &&
 				uint64_t(offset) < uint64_t(data.contents.section_offset) + data.contents.bytes.data.size())
 				return &data.contents;
+	}
+	else if (section == 6)
+		for (auto& global : object.global_definitions)
+			if (offset >= global.initializer.section_offset &&
+				uint64_t(offset) < uint64_t(global.initializer.section_offset) + global.initializer.bytes.data.size())
+				return &global.initializer;
 	return nullptr;
 }
 
@@ -146,7 +153,7 @@ void read_relocations(Cursor& input, Object& object, uint8_t section)
 			throw WasmError("unsupported Wasm relocation kind: " + std::to_string(value));
 		ObjectChunk* chunk = find_chunk(object, section, offset);
 		if (chunk == nullptr)
-			throw WasmError("Wasm relocation does not lie within a code or data body");
+			throw WasmError("Wasm relocation does not lie within a retained section body");
 		const uint32_t relative = offset - chunk->section_offset;
 		const uint32_t width = kind == RelocationKind::TableIndexI32 || kind == RelocationKind::MemoryAddressI32 ||
 				kind == RelocationKind::GlobalIndexI32 || kind == RelocationKind::FunctionIndexI32

@@ -202,6 +202,21 @@ void write_object(const Object& object, Bytes& output)
 			functions.unsigned_leb(function.type);
 	output.section(3, functions);
 	const bool defined_tags = tag_section(object, imported_tags, output);
+	std::vector<Relocation> global_relocations;
+	const bool defined_globals = !object.global_definitions.empty();
+	if (defined_globals)
+	{
+		Bytes globals;
+		globals.unsigned_leb(object.global_definitions.size());
+		for (const auto& global : object.global_definitions)
+		{
+			globals.byte(static_cast<uint8_t>(global.type));
+			globals.byte(global.mutable_value ? 1 : 0);
+			append_chunk(global.initializer, globals, global_relocations);
+		}
+		output.section(6, globals);
+	}
+
 	if (!object.exports.empty())
 	{
 		Bytes exports;
@@ -248,8 +263,11 @@ void write_object(const Object& object, Bytes& output)
 	}
 	output.section(11, data);
 	linking_section(object, output);
-	relocation_section(output, "reloc.CODE", 4 + !object.exports.empty() + defined_tags, code_relocations);
-	relocation_section(output, "reloc.DATA", 5 + !object.exports.empty() + defined_tags, data_relocations);
+	relocation_section(output, "reloc.GLOBAL", 3 + defined_tags, global_relocations);
+	relocation_section(
+		output, "reloc.CODE", 4 + !object.exports.empty() + defined_tags + defined_globals, code_relocations);
+	relocation_section(
+		output, "reloc.DATA", 5 + !object.exports.empty() + defined_tags + defined_globals, data_relocations);
 	Bytes features;
 	features.unsigned_leb(object.features.size());
 	for (const auto& feature : object.features)

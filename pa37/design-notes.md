@@ -99,6 +99,12 @@ behavior unless the program explicitly permits otherwise.
 
 ## Check the boundary in both directions
 
+Keep Wasm globals distinct from C++ objects in linear memory. Constant
+initializers can refer to earlier immutable globals or function identities.
+Weak/COMDAT selection may change those dependencies, so preserve their typed
+references and order the selected definitions before encoding. Do not copy an
+input's numeric indices into a merged module.
+
 Small mixed-object tests expose ABI mistakes more clearly than a large
 program. Vary caller and callee producer, singleton versus padded aggregate,
 direct versus indirect call, varargs, and wide parameters/results. Test

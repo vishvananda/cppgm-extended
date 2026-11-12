@@ -1,0 +1,69 @@
+{
+  "source": true,
+  "reference_assembly": [
+    "400-grouped-globals.s",
+    "400-grouped-globals.s"
+  ],
+  "reference_groups": {
+    "shared_globals": [
+      [
+        "global",
+        "group_value"
+      ],
+      [
+        "function",
+        "group_read"
+      ],
+      [
+        "function",
+        "group_write"
+      ]
+    ]
+  },
+  "llvm_interop": true,
+  "calls": [
+    {
+      "export": "observe",
+      "args": [
+        "99"
+      ],
+      "result": "17"
+    }
+  ],
+  "sequences": [
+    [
+      {
+        "export": "inspect",
+        "result": "0"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "3"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "inspect",
+        "result": "3"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "7"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "inspect",
+        "result": "7"
+      }
+    ]
+  ],
+  "interop_linkers": [
+    "cppgm"
+  ],
+  "reference_limitations": [
+    "global-comdat-members"
+  ]
+}

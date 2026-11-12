@@ -79,6 +79,14 @@ public:
 		position_ = size_;
 		return result;
 	}
+	Bytes consumed(uint32_t start) const
+	{
+		if (start > position_)
+			throw WasmError("invalid Wasm byte range");
+		Bytes result;
+		result.data.assign(data_ + start, data_ + position_);
+		return result;
+	}
 	void done() const
 	{
 		if (!empty())

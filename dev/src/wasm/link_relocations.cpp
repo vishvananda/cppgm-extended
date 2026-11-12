@@ -45,17 +45,13 @@ uint32_t Linker::symbol_value(ObjectRef ref) const
 	}
 	if (source.kind == 2)
 	{
-		const ObjectGlobal& global = objects_[ref.first].global_imports[source.index];
-		if (global.module == "env" && global.type == ValueType::I32)
-		{
-			if (global.name == "__stack_pointer")
-				return 0;
-			if (global.name == "__memory_base")
-				return 1;
-			if (global.name == "__table_base")
-				return 2;
-		}
-		throw WasmError("unresolved Wasm imported global: " + global.module + "." + global.name);
+		uint32_t runtime = 0;
+		if (runtime_global(ref, runtime))
+			return static_cast<uint32_t>(imported_globals_.size()) + runtime;
+		const auto found = globals_.find({ ref.first, source.index });
+		if (found == globals_.end())
+			throw WasmError("unresolved Wasm global relocation: " + source.name);
+		return found->second;
 	}
 	if (source.undefined() && !host_import(ref))
 	{
@@ -81,9 +77,10 @@ void Linker::prepare_address_globals()
 				objects_[object].symbols[relocation.index].kind <= 1)
 			{
 				const ObjectRef target = selected({ object, relocation.index });
-				if (address_globals_.size() >= UINT32_MAX - 3)
+				if (address_globals_.size() >= UINT32_MAX - 3 - imported_globals_.size())
 					throw WasmError("too many Wasm address globals");
-				address_globals_.emplace(target, static_cast<uint32_t>(3 + address_globals_.size()));
+				address_globals_.emplace(
+					target, static_cast<uint32_t>(imported_globals_.size() + 3 + address_globals_.size()));
 			}
 	};
 	for (ObjectRef function : ordered_functions_)
@@ -92,7 +89,7 @@ void Linker::prepare_address_globals()
 		collect(data.first, objects_[data.first].data[data.second].contents);
 }
 
-Bytes Linker::relocated(uint32_t object, const ObjectChunk& chunk) const
+Bytes Linker::relocated(uint32_t object, const ObjectChunk& chunk, bool constant) const
 {
 	Bytes result = chunk.bytes;
 	for (const Relocation& relocation : chunk.relocations)
@@ -103,12 +100,27 @@ Bytes Linker::relocated(uint32_t object, const ObjectChunk& chunk) const
 		else if ((relocation.kind == RelocationKind::GlobalIndex ||
 					 relocation.kind == RelocationKind::GlobalIndexI32) &&
 			objects_[object].symbols[relocation.index].kind <= 1)
-			value = address_globals_.at(selected({ object, relocation.index }));
+			value = constant ? symbol_value({ object, relocation.index })
+							 : address_globals_.at(selected({ object, relocation.index }));
 		else if (relocation.kind == RelocationKind::FunctionIndex ||
 			relocation.kind == RelocationKind::FunctionIndexI32)
 			value = function_index({ object, relocation.index });
 		else
 			value = symbol_value({ object, relocation.index });
+		bool constant_address = false;
+		if (constant && relocation.kind == RelocationKind::GlobalIndex)
+		{
+			const ObjectRef target = selected({ object, relocation.index });
+			uint32_t runtime = 0;
+			if (symbol(target).kind <= 1 || (runtime_global(target, runtime) && runtime != 0))
+			{
+				if (relocation.offset == 0 || result.data[relocation.offset - 1] != 0x23)
+					throw WasmError("Wasm constant global relocation does not target global.get");
+				constant_address = true;
+				result.data[relocation.offset - 1] = 0x41;
+				value = symbol(target).kind <= 1 ? symbol_value(target) : 0;
+			}
+		}
 		const int64_t sum = int64_t(value) + relocation.addend;
 		if (sum < INT32_MIN || sum > UINT32_MAX)
 			throw WasmError("Wasm relocation value overflows 32 bits");
@@ -121,7 +133,7 @@ Bytes Linker::relocated(uint32_t object, const ObjectChunk& chunk) const
 		}
 		else
 		{
-			const bool signed_value = relocation.kind == RelocationKind::TableIndex ||
+			const bool signed_value = constant_address || relocation.kind == RelocationKind::TableIndex ||
 				relocation.kind == RelocationKind::MemoryAddressSigned ||
 				relocation.kind == RelocationKind::MemoryAddressRelative ||
 				relocation.kind == RelocationKind::TableIndexRelative;

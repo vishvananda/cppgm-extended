@@ -26,6 +26,9 @@ struct Module
 	std::vector<uint32_t> function_indices;
 	std::vector<uint32_t> definition_types;
 	std::vector<uint32_t> tag_types;
+	std::vector<uint8_t> declared_functions;
+	uint32_t memory_count = 1;
+	uint32_t table_count = 1;
 	std::vector<uint32_t> addresses;
 	std::vector<lowir::SymbolId> definitions;
 	uint32_t stack_floor = 0;

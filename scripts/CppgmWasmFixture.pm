@@ -85,13 +85,16 @@ sub mutate_object {
     my ($data, $kind) = @_;
     my $r = {data => $data, offset => 8};
     substr($data, 0, 8) eq "\0asm\1\0\0\0" or die "Expected core object\n";
-    my (@sections, $code, $types, $relocations, $prefix, $linking);
+    my (@sections, $code, $types, $relocations, $prefix, $linking, $globals, $elements, $imports);
     while ($r->{offset} < length($data)) {
         my $id = CppgmWasmModule::byte($r);
         my $payload = CppgmWasmModule::bytes($r, CppgmWasmModule::number($r));
         push @sections, [$id, $payload];
         $code = $#sections if $id == 10;
         $types = $#sections if $id == 1;
+        $globals = $#sections if $id == 6;
+        $elements = $#sections if $id == 9;
+        $imports = $#sections if $id == 2;
         if ($id == 0) {
             my $s = {data => $payload, offset => 0};
             my $name = CppgmWasmModule::bytes($s, CppgmWasmModule::number($s));
@@ -102,9 +105,38 @@ sub mutate_object {
             $linking = $#sections if $name eq 'linking';
         }
     }
-    defined($code) && defined($types) && defined($relocations)
-        or die "Reference fixture lacks code, types or relocations\n";
-    if ($kind =~ /^simd-/) {
+    defined($code) && defined($types) or die "Reference fixture lacks code or types\n";
+    if ($kind eq 'section-order') {
+        defined($imports) or die "Reference fixture lacks imports\n";
+        @sections[$types, $imports] = @sections[$imports, $types];
+    } elsif ($kind eq 'duplicate-section') {
+        push @sections, $sections[$types];
+    } elsif ($kind eq 'data-count-mismatch') {
+        splice @sections, $code, 0, [12, uleb(0xffffffff)];
+    } elsif ($kind eq 'global-init-mutable') {
+        defined($globals) or die "Reference fixture lacks globals\n";
+        my $r = {data => $sections[$globals][1], offset => 0};
+        CppgmWasmModule::number($r) or die "Reference fixture lacks a defined global\n";
+        substr($sections[$globals][1], $r->{offset} + 1, 1) = "\x01";
+    } elsif ($kind eq 'global-reference-type') {
+        defined($globals) or die "Reference fixture lacks globals\n";
+        my $needle = "\xd0\x6f\x0b";
+        my $offset = index($sections[$globals][1], $needle);
+        die "Reference fixture needs one null externref initializer\n"
+            if $offset < 0 || rindex($sections[$globals][1], $needle) != $offset;
+        substr($sections[$globals][1], $offset + 1, 1) = "\x70";
+    } elsif ($kind eq 'element-function-index' || $kind eq 'element-reference-type') {
+        defined($elements) or die "Reference fixture lacks elements\n";
+        $sections[$elements][1] = $kind eq 'element-function-index'
+            ? "\x01\x03\x00\x01" . uleb(0xffffffff)
+            : "\x01\x07\x70\x01\x41\x00\x0b";
+    } elsif ($kind eq 'duplicate-feature' || $kind eq 'feature-prefix') {
+        my $name = 'target_features';
+        my $feature = 'reference-types';
+        my $entry = ($kind eq 'feature-prefix' ? '=' : '+') . uleb(length($feature)) . $feature;
+        push @sections, [0, uleb(length($name)) . $name .
+            ($kind eq 'feature-prefix' ? "\x01" . $entry : "\x02" . $entry . $entry)];
+    } elsif ($kind =~ /^simd-/) {
         my %fields = (
             'simd-lane-range' => ["\xfd\x15\0", 2, 16],
             'simd-shuffle-range' => ["\xfd\x0d" . pack('C*', 0 .. 15), 2, 32],
@@ -123,6 +155,7 @@ sub mutate_object {
         $at >= 0 or die "Reference fixture lacks the wide signed literal\n";
         substr($sections[$code][1], $at + 10, 1) = "\x7e";
     } else {
+        defined($relocations) or die "Reference fixture lacks code relocations\n";
         my $s = {data => $sections[$relocations][1], offset => $prefix};
         my $section = CppgmWasmModule::number($s);
         my $count = CppgmWasmModule::number($s);

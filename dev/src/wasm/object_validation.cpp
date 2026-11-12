@@ -67,8 +67,9 @@ void validate_object(const Object& object)
 	const std::set<std::string> supported{ "mutable-globals", "sign-ext", "nontrapping-fptoint", "bulk-memory",
 		"bulk-memory-opt", "extended-const", "multivalue", "reference-types", "call-indirect-overlong", "simd128",
 		"exception-handling" };
+	std::set<std::string> feature_names;
 	for (const auto& feature : object.features)
-		if ((feature.first != '+' && feature.first != '-' && feature.first != '=') ||
+		if (!feature_names.insert(feature.second).second || (feature.first != '+' && feature.first != '-') ||
 			(feature.first != '-' && supported.count(feature.second) == 0))
 			throw WasmError("unsupported Wasm object feature: " + feature.second);
 	for (const auto& function : object.functions)
@@ -90,16 +91,19 @@ void validate_object(const Object& object)
 	}
 	for (const auto& data : object.data)
 		validate_chunk(data.contents, object);
+	for (const auto& global : object.global_definitions)
+		validate_chunk(global.initializer, object);
 	std::set<std::string> names;
 	for (const ObjectExport& entry : object.exports)
 	{
 		if (!names.insert(entry.name).second ||
-			(entry.kind == 0 ? entry.index >= object.functions.size()
-							 : entry.kind != 4 || entry.index >= object.tags.size()))
+			(entry.kind == 0          ? entry.index >= object.functions.size()
+					: entry.kind == 3 ? entry.index >= object.global_imports.size() + object.global_definitions.size()
+									  : entry.kind != 4 || entry.index >= object.tags.size()))
 			throw WasmError("duplicate or invalid Wasm object export");
 		bool found = false;
 		for (const ObjectSymbol& symbol : object.symbols)
-			found = found || (symbol.kind == entry.kind && symbol.index == entry.index);
+			found = found || (symbol.kind == (entry.kind == 3 ? 2 : entry.kind) && symbol.index == entry.index);
 		if (!found)
 			throw WasmError("Wasm exported entry has no linking symbol");
 	}
@@ -124,12 +128,14 @@ void validate_object(const Object& object)
 			if (symbol.offset > size || symbol.size > size - symbol.offset)
 				throw WasmError("Wasm data symbol exceeds its segment");
 		}
-		else if (symbol.kind == 2 && (symbol.index >= object.global_imports.size() || !symbol.undefined()))
+		else if (symbol.kind == 2 &&
+			(symbol.index >= object.global_imports.size() + object.global_definitions.size() ||
+				(symbol.index < object.global_imports.size()) != symbol.undefined()))
 			throw WasmError("invalid Wasm global symbol");
 		else if (symbol.kind == 4 &&
 			(symbol.index >= object.tags.size() || object.tags[symbol.index].imported != symbol.undefined()))
 			throw WasmError("Wasm tag symbol/import mismatch");
-		else if (symbol.kind == 5 && (symbol.index != 0 || !symbol.undefined()))
+		else if (symbol.kind == 5 && (object.table_count != 1 || symbol.index != 0 || !symbol.undefined()))
 			throw WasmError("invalid Wasm table symbol");
 	}
 	for (const auto& initializer : object.initializers)

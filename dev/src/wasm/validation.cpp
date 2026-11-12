@@ -333,7 +333,7 @@ bool Validator::simd(const Instruction& inst)
 		return false;
 	const Immediate immediate = immediate_form(inst.op);
 	if ((immediate == Immediate::Memory || immediate == Immediate::MemoryLane) &&
-		(operand(inst) > info.alignment || operand(inst, 1) > UINT32_MAX))
+		(module_.memory_count != 1 || operand(inst) > info.alignment || operand(inst, 1) > UINT32_MAX))
 		throw WasmError("invalid Wasm SIMD memory alignment");
 	if ((immediate == Immediate::Lane || immediate == Immediate::MemoryLane) &&
 		operand(inst, immediate == Immediate::Lane ? 0 : 2) >= info.lanes)
@@ -450,7 +450,7 @@ void Validator::instruction(const Instruction& inst)
 		return;
 	case Op::MemorySize:
 	case Op::MemoryGrow:
-		if (operand(inst) != 0)
+		if (module_.memory_count != 1 || operand(inst) != 0)
 			throw WasmError("invalid Wasm memory index");
 		if (inst.op == Op::MemoryGrow)
 			pop(ValueType::I32);
@@ -472,13 +472,45 @@ void Validator::instruction(const Instruction& inst)
 		push(ValueType::F64);
 		return;
 	case Op::RefNull:
-		if (operand(inst) != block_type(ValueType::ExnRef))
+		if (operand(inst) != block_type(ValueType::ExnRef) && operand(inst) != block_type(ValueType::FuncRef) &&
+			operand(inst) != block_type(ValueType::ExternRef))
 			throw WasmError("unsupported Wasm null reference type");
-		push(ValueType::ExnRef);
+		push(static_cast<ValueType>(operand(inst) + 128));
 		return;
 	case Op::RefIsNull:
-		pop(ValueType::ExnRef);
+	{
+		const ValueType type = pop_any();
+		if (type != kUnknown && !is_reference(type))
+			throw WasmError("Wasm null test requires a reference");
 		push(ValueType::I32);
+		return;
+	}
+	case Op::RefFunc:
+		if (operand(inst) >= module_.definition_types.size() || operand(inst) >= module_.declared_functions.size() ||
+			!module_.declared_functions[operand(inst)])
+			throw WasmError("Wasm function reference is absent or undeclared");
+		push(ValueType::FuncRef);
+		return;
+	case Op::TableGet:
+	case Op::TableSet:
+	case Op::TableGrow:
+	case Op::TableSize:
+	case Op::TableFill:
+	case Op::TableCopy:
+		if (module_.table_count != 1 || operand(inst) != 0 || (inst.op == Op::TableCopy && operand(inst, 1) != 0))
+			throw WasmError("invalid Wasm table index");
+		if (inst.op == Op::TableFill || inst.op == Op::TableGrow || inst.op == Op::TableCopy)
+			pop(ValueType::I32);
+		if (inst.op == Op::TableFill || inst.op == Op::TableSet || inst.op == Op::TableGrow)
+			pop(ValueType::FuncRef);
+		if (inst.op == Op::TableCopy)
+			pop(ValueType::I32);
+		if (inst.op != Op::TableSize && inst.op != Op::TableGrow)
+			pop(ValueType::I32);
+		if (inst.op == Op::TableGet)
+			push(ValueType::FuncRef);
+		else if (inst.op == Op::TableSize || inst.op == Op::TableGrow)
+			push(ValueType::I32);
 		return;
 	case Op::Throw:
 		pop(Types(tag_type(operand(inst)).parameters));
@@ -582,7 +614,7 @@ void Validator::instruction(const Instruction& inst)
 		return;
 	}
 	case Op::CallIndirect:
-		if (operand(inst) >= module_.signatures.size() || operand(inst, 1) != 0)
+		if (module_.table_count != 1 || operand(inst) >= module_.signatures.size() || operand(inst, 1) != 0)
 			throw WasmError("invalid Wasm indirect call type/table");
 		pop(ValueType::I32);
 		call(module_.signatures[operand(inst)]);
@@ -597,7 +629,7 @@ void Validator::instruction(const Instruction& inst)
 		if (first != kUnknown && second != kUnknown && first != second)
 			throw WasmError("Wasm select type mismatch");
 		const ValueType type = first != kUnknown ? first : second;
-		if (type == ValueType::ExnRef)
+		if (is_reference(type))
 			throw WasmError("Wasm reference selection requires a typed select");
 		push(type);
 		return;
@@ -617,6 +649,8 @@ void Validator::instruction(const Instruction& inst)
 	}
 	case Op::MemoryCopy:
 	case Op::MemoryFill:
+		if (module_.memory_count != 1)
+			throw WasmError("Wasm memory operation lacks a memory");
 		for (uint32_t i = 0; i < inst.operands.count; ++i)
 			if (operand(inst, i) != 0)
 				throw WasmError("invalid Wasm memory index");
@@ -643,7 +677,7 @@ void Validator::instruction(const Instruction& inst)
 			: code == 0x34 || code == 0x35 || code == 0x3e                                                 ? 2
 			: type == ValueType::I64 || type == ValueType::F64                                             ? 3
 																										   : 2;
-		if (operand(inst) > alignment || operand(inst, 1) > UINT32_MAX)
+		if (module_.memory_count != 1 || operand(inst) > alignment || operand(inst, 1) > UINT32_MAX)
 			throw WasmError("invalid Wasm memory immediate");
 		if (store)
 			pop(type);

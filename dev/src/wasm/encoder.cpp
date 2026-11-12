@@ -34,14 +34,15 @@ ValueType value_type(lowir::Type type)
 	}
 }
 
-void encode_function(const Function& function, Bytes& output, std::vector<Relocation>* relocations)
+static void encode_body(const Function& function, Bytes& output, std::vector<Relocation>* relocations, bool expression)
 {
 	Bytes body;
 	uint32_t groups = 0;
 	for (uint32_t i = function.parameter_count; i < function.locals.size(); ++i)
 		if (i == function.parameter_count || function.locals[i] != function.locals[i - 1])
 			++groups;
-	body.unsigned_leb(groups);
+	if (!expression)
+		body.unsigned_leb(groups);
 	for (uint32_t i = function.parameter_count; i < function.locals.size();)
 	{
 		const uint32_t first = i;
@@ -95,7 +96,8 @@ void encode_function(const Function& function, Bytes& output, std::vector<Reloca
 	if (relocations != nullptr && next_relocation != function.relocations.size())
 		throw WasmError("Wasm relocation does not identify an encoded operand");
 
-	output.unsigned_leb(body.data.size());
+	if (!expression)
+		output.unsigned_leb(body.data.size());
 	if (relocations != nullptr)
 		for (Relocation relocation : encoded)
 		{
@@ -103,6 +105,16 @@ void encode_function(const Function& function, Bytes& output, std::vector<Reloca
 			relocations->push_back(relocation);
 		}
 	output.append(body);
+}
+
+void encode_function(const Function& function, Bytes& output, std::vector<Relocation>* relocations)
+{
+	encode_body(function, output, relocations, false);
+}
+
+void encode_expression(const Function& function, Bytes& output)
+{
+	encode_body(function, output, nullptr, true);
 }
 
 } // namespace wasm

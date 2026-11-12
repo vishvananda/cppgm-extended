@@ -65,10 +65,10 @@ void Linker::emit(Bytes& output)
 	output.fixed(0x6d736100, 4);
 	output.fixed(1, 4);
 	type_section(types_, output);
-	if (imported_ != 0 || imported_tags_ != 0)
+	if (imported_ != 0 || imported_tags_ != 0 || !imported_globals_.empty())
 	{
 		Bytes imports;
-		imports.unsigned_leb(imported_ + imported_tags_);
+		imports.unsigned_leb(imported_ + imported_tags_ + imported_globals_.size());
 		for (uint32_t i = 0; i < imported_; ++i)
 		{
 			const ObjectRef ref = ordered_functions_[i];
@@ -79,6 +79,7 @@ void Linker::emit(Bytes& output)
 			imports.unsigned_leb(type_indices_[ref.first][function.type]);
 		}
 		tag_imports(imports);
+		global_imports(imports);
 		output.section(2, imports);
 	}
 	Bytes functions;
@@ -103,34 +104,14 @@ void Linker::emit(Bytes& output)
 	memory.unsigned_leb((stack_top_ + 65535) / 65536);
 	output.section(5, memory);
 	tag_section(output);
-	Bytes globals;
-	globals.unsigned_leb(3 + address_globals_.size());
-	for (uint32_t index = 0; index < 3; ++index)
-	{
-		globals.byte(0x7f);
-		globals.byte(1);
-		globals.byte(0x41);
-		globals.signed_leb(index == 0 ? stack_top_ : 0);
-		globals.byte(0x0b);
-	}
-	std::vector<ObjectRef> addresses(address_globals_.size());
-	for (const auto& address : address_globals_)
-		addresses[address.second - 3] = address.first;
-	for (ObjectRef address : addresses)
-	{
-		globals.byte(0x7f);
-		globals.byte(1);
-		globals.byte(0x41);
-		globals.signed_leb(static_cast<int32_t>(symbol_value(address)));
-		globals.byte(0x0b);
-	}
-	output.section(6, globals);
+	global_section(output);
 	std::map<std::string, std::pair<uint8_t, uint32_t>> exported;
 	const auto add_export = [&](const std::string& name, ObjectRef ref) {
 		const uint8_t kind = symbol(ref).kind;
-		if ((kind != 0 && kind != 4) || name == "memory")
+		if ((kind != 0 && kind != 2 && kind != 4) || name == "memory")
 			throw WasmError("Wasm export is not a function/tag or conflicts with memory: " + name);
-		const auto entry = std::make_pair(kind, kind == 0 ? function_index(ref) : symbol_value(ref));
+		const auto entry = std::make_pair(
+			kind == 2 ? uint8_t(3) : kind, kind == 0 ? function_index(ref) : symbol_value(ref));
 		const auto inserted = exported.emplace(name, entry);
 		if (!inserted.second && inserted.first->second != entry)
 			throw WasmError("conflicting Wasm export: " + name);
@@ -145,7 +126,7 @@ void Linker::emit(Bytes& output)
 	for (uint32_t index = 0; index < objects_.size(); ++index)
 		if (active_[index])
 			for (const ObjectExport& entry : objects_[index].exports)
-				add_export(entry.name, indexed_symbol(index, entry.kind, entry.index));
+				add_export(entry.name, indexed_symbol(index, entry.kind == 3 ? 2 : entry.kind, entry.index));
 	Bytes exports;
 	exports.unsigned_leb(exported.size() + 1);
 	exports.string("memory");

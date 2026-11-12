@@ -27,6 +27,16 @@ uint16_t effects(Op op)
 		return ReadGlobal;
 	case Op::GlobalSet:
 		return WriteGlobal;
+	case Op::TableGet:
+		return ReadGlobal | MayTrap;
+	case Op::TableSize:
+		return ReadGlobal;
+	case Op::TableSet:
+	case Op::TableFill:
+	case Op::TableCopy:
+		return ReadGlobal | WriteGlobal | MayTrap;
+	case Op::TableGrow:
+		return ReadGlobal | WriteGlobal;
 	case Op::Call:
 	case Op::CallIndirect:
 		return Call | ReadMemory | WriteMemory | ReadGlobal | WriteGlobal | MayTrap | MayThrow;

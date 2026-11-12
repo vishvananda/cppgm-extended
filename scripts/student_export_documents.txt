@@ -209,7 +209,10 @@ doc/wasm/binary-values.rst
 doc/wasm/conventions-LICENSE
 doc/wasm/document-LICENSE
 doc/wasm/manifest.json
+doc/wasm/reference-limitations.json
 doc/wasm/spec-LICENSE
+doc/wasm/validation-instructions.rst
+doc/wasm/validation-modules.rst
 pa1/README.md
 pa10/README.md
 pa11/README.md

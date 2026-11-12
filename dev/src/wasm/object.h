@@ -55,6 +55,20 @@ struct ObjectGlobal
 	bool mutable_value;
 };
 
+struct ObjectGlobalDefinition
+{
+	ValueType type;
+	bool mutable_value;
+	ObjectChunk initializer;
+};
+
+struct ObjectElement
+{
+	ValueType type;
+	bool declaration;
+	std::vector<ObjectChunk> values;
+};
+
 struct ObjectExport
 {
 	std::string name;
@@ -83,6 +97,11 @@ struct Object
 	std::vector<ObjectGroup> groups;
 	std::vector<std::pair<char, std::string>> features;
 	std::vector<ObjectGlobal> global_imports;
+	std::vector<ObjectGlobalDefinition> global_definitions;
+	std::vector<uint8_t> declared_functions;
+	std::vector<ObjectElement> elements;
+	uint32_t table_count = 0;
+	uint32_t memory_count = 0;
 	std::vector<ObjectExport> exports;
 };
 
@@ -95,6 +114,8 @@ struct LinkInputs
 };
 
 bool relocation_addend(RelocationKind kind);
+ValueType global_type(const Object& object, uint32_t index);
+bool mutable_global(const Object& object, uint32_t index);
 void prepare_finalizers(lowir::Program& program);
 void adapt_wasi_entry(Object& object, uint32_t symbol);
 void add_runtime_inputs(LinkInputs& inputs, const backend::Options& options);

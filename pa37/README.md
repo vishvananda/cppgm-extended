@@ -119,6 +119,10 @@ your linker must accept the documented object profile produced by LLVM.
 Preserve weak/COMDAT definitions, data and function addresses, initializers,
 exception tags and supported relocations. Reject mismatched signatures and
 features instead of emitting a module that fails only when executed.
+Preserve Wasm globals, constant-expression dependencies and typed reference
+values. Validate element declarations and all supported index spaces. Where
+the pinned linker lacks a required case, the
+[reference notes](../doc/wasm/README.md) identify its independent checks.
 
 ### Machine representation and optimization
 

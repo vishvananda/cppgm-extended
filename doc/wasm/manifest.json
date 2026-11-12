@@ -54,6 +54,20 @@
       "source": "https://raw.githubusercontent.com/WebAssembly/spec/943c5df07e84f11d2b83078964df5812530afbd2/document/LICENSE",
       "revision": "943c5df07e84f11d2b83078964df5812530afbd2",
       "sha256": "0fc6687d64adc265adc788b39dfd8f24e1e2946fc726591faf59b0bfccff093c"
+    },
+    {
+      "file": "validation-instructions.rst",
+      "source": "https://raw.githubusercontent.com/WebAssembly/spec/943c5df07e84f11d2b83078964df5812530afbd2/document/core/valid/instructions.rst",
+      "revision": "943c5df07e84f11d2b83078964df5812530afbd2",
+      "retrieved": "2026-11-12",
+      "sha256": "4305c124553c290cab9633c5b477b0f426fd3726f294b3becce37e716a79b57a"
+    },
+    {
+      "file": "validation-modules.rst",
+      "source": "https://raw.githubusercontent.com/WebAssembly/spec/943c5df07e84f11d2b83078964df5812530afbd2/document/core/valid/modules.rst",
+      "revision": "943c5df07e84f11d2b83078964df5812530afbd2",
+      "retrieved": "2026-11-12",
+      "sha256": "2ea7e85a8f83555cf5e40c994b38b816a8dfb8cb95fa6208e71560e510d2165b"
     }
   ]
 }

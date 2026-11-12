@@ -104,6 +104,19 @@ COMDAT groups, segment alignment, constructor priorities, tags and feature
 requirements. Relocation fields must retain enough space and the specified
 signedness. Check both the referenced symbol kind and the encoded field.
 
+Preserve typed Wasm globals, mutability, explicit imports/exports and their
+constant expressions. An initializer may read earlier immutable globals;
+retain that dependency when selecting weak definitions and COMDAT groups.
+Reference values (`funcref`, `externref`, `exnref`) remain distinct from integer
+table indices and linear-memory pointers. Validate reference operations,
+typed selections, function declarations and the function table's operations.
+
+Check section order and counts, element declarations and incompatible feature
+requirements. Custom linking/relocation metadata may precede the core sections
+it describes. The static C table is synthesized from symbol references, as in
+the linking convention; independent/passive table or data initialization and
+dynamic-link metadata are outside this static-object profile and must fail.
+
 Preserve multi-result signatures in objects and typed block, loop and if
 parameters/results. Branches transfer the target's complete tuple: loop
 parameters on a backedge and block results on an exit. A block type may be

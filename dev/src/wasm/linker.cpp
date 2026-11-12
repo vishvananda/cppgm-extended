@@ -25,8 +25,10 @@ ObjectRef Linker::selected(ObjectRef ref) const
 bool Linker::host_import(ObjectRef ref) const
 {
 	const ObjectSymbol& source = symbol(ref);
-	if ((source.kind != 0 && source.kind != 4) || !source.undefined())
+	if ((source.kind != 0 && source.kind != 2 && source.kind != 4) || !source.undefined())
 		return false;
+	if (source.kind == 2)
+		return objects_[ref.first].global_imports[source.index].module != "env" || (source.flags & 0x40) != 0;
 	if (source.kind == 4)
 		return objects_[ref.first].tags[source.index].module != "env" || (source.flags & 0x40) != 0;
 	const ObjectFunction& function = objects_[ref.first].functions[source.index];
@@ -78,6 +80,8 @@ void Linker::activate(uint32_t i)
 			const bool valid = member.first == 0 ? member.second < object.data.size()
 				: member.first == 1
 				? member.second < object.functions.size() && !object.functions[member.second].imported
+				: member.first == 2 ? member.second >= object.global_imports.size() &&
+					member.second < object.global_imports.size() + object.global_definitions.size()
 				: member.first == 3 ? member.second < object.tags.size() && !object.tags[member.second].imported
 									: false;
 			if (!valid)
@@ -85,6 +89,7 @@ void Linker::activate(uint32_t i)
 			if (duplicate)
 				(member.first == 0          ? discarded_data_
 						: member.first == 1 ? discarded_functions_
+						: member.first == 2 ? discarded_globals_
 											: discarded_tags_)
 					.insert({ i, member.second });
 		}
@@ -96,7 +101,8 @@ void Linker::activate(uint32_t i)
 			continue;
 		if ((candidate.kind == 0 && discarded_functions_.count({ i, candidate.index })) ||
 			(candidate.kind == 1 && discarded_data_.count({ i, candidate.index })) ||
-			(candidate.kind == 4 && discarded_tags_.count({ i, candidate.index })))
+			(candidate.kind == 4 && discarded_tags_.count({ i, candidate.index })) ||
+			(candidate.kind == 2 && discarded_globals_.count({ i, candidate.index })))
 			continue;
 		const auto inserted = definitions_.emplace(candidate.name, ObjectRef{ i, j });
 		if (!inserted.second)
@@ -125,7 +131,7 @@ void Linker::activate(uint32_t i)
 		}
 	}
 	for (const ObjectExport& entry : object.exports)
-		roots_.push_back(indexed_symbol(i, entry.kind, entry.index));
+		roots_.push_back(indexed_symbol(i, entry.kind == 3 ? 2 : entry.kind, entry.index));
 }
 
 void Linker::validate_symbols() const
@@ -143,6 +149,11 @@ void Linker::validate_symbols() const
 					!(objects_[i].types[objects_[i].functions[source.index].type] ==
 						objects_[definition.first].types[objects_[definition.first].functions[target.index].type]))
 					throw WasmError("Wasm function signature mismatch: " + source.name);
+				if (source.kind == 2 &&
+					(global_type(objects_[i], source.index) != global_type(objects_[definition.first], target.index) ||
+						mutable_global(objects_[i], source.index) !=
+							mutable_global(objects_[definition.first], target.index)))
+					throw WasmError("Wasm global type/mutability mismatch: " + source.name);
 				if (source.kind == 4 &&
 					!(objects_[i].types[objects_[i].tags[source.index].type] ==
 						objects_[definition.first].types[objects_[definition.first].tags[target.index].type]))
@@ -177,7 +188,8 @@ void Linker::visit(ObjectRef ref)
 		lookup(symbol(ref).name);
 	ref = selected(ref);
 	const auto& source = symbol(ref);
-	if (source.kind == 2 || source.kind == 5)
+	uint32_t runtime = 0;
+	if (source.kind == 5 || (source.kind == 2 && runtime_global(ref, runtime)))
 		return;
 	if (source.undefined() && !host_import(ref))
 	{
@@ -192,9 +204,10 @@ void Linker::visit(ObjectRef ref)
 		uint32_t value = 0;
 		if (source.kind == 1 && synthetic_data(source.name, value))
 			return;
-		if (source.weak() && source.kind != 4)
+		if (!source.weak() || source.kind == 4)
+			throw WasmError("undefined Wasm symbol: " + source.name);
+		if (source.kind != 2)
 			return;
-		throw WasmError("undefined Wasm symbol: " + source.name);
 	}
 	const ObjectRef key{ ref.first, source.index };
 	if (source.kind == 0)
@@ -208,6 +221,12 @@ void Linker::visit(ObjectRef ref)
 		if (!data_.emplace(key, 0).second)
 			return;
 		ordered_data_.push_back(key);
+	}
+	else if (source.kind == 2)
+	{
+		if (!globals_.emplace(key, 0).second)
+			return;
+		(source.undefined() && host_import(ref) ? imported_globals_ : ordered_globals_).push_back(key);
 	}
 	else if (source.kind == 4)
 	{
@@ -228,6 +247,9 @@ void Linker::collect()
 		functions_.clear();
 		data_.clear();
 		tags_.clear();
+		globals_.clear();
+		ordered_globals_.clear();
+		imported_globals_.clear();
 		ordered_functions_.clear();
 		ordered_data_.clear();
 		ordered_tags_.clear();
@@ -249,9 +271,9 @@ void Linker::collect()
 				throw WasmError("undefined Wasm export: " + name);
 			visit(ref);
 		}
-		size_t next_root = 0, next_function = 0, next_data = 0;
-		while (
-			next_root < roots_.size() || next_function < ordered_functions_.size() || next_data < ordered_data_.size())
+		size_t next_root = 0, next_function = 0, next_data = 0, next_global = 0;
+		while (next_root < roots_.size() || next_function < ordered_functions_.size() ||
+			next_data < ordered_data_.size() || next_global < ordered_globals_.size())
 		{
 			while (next_root < roots_.size())
 				visit(roots_[next_root++]);
@@ -264,6 +286,14 @@ void Linker::collect()
 			{
 				const ObjectRef ref = ordered_data_[next_data++];
 				dependencies(ref.first, objects_[ref.first].data[ref.second].contents);
+			}
+			if (next_global < ordered_globals_.size())
+			{
+				const ObjectRef ref = ordered_globals_[next_global++];
+				const auto& object = objects_[ref.first];
+				if (ref.second >= object.global_imports.size())
+					dependencies(
+						ref.first, object.global_definitions[ref.second - object.global_imports.size()].initializer);
 			}
 		}
 		if (before == std::count(active_.begin(), active_.end(), true))
@@ -309,7 +339,9 @@ void Linker::run(Bytes& output)
 	resolve();
 	collect();
 	validate_symbols();
+	validate_link_features(objects_, active_);
 	prepare_address_globals();
+	prepare_globals();
 	for (uint32_t object_index = 0; object_index < objects_.size(); ++object_index)
 	{
 		const Object& object = objects_[object_index];

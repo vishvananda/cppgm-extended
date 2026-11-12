@@ -487,3 +487,68 @@ cppgm's linker. Its bytes, commands and results are in
 `object-profile-negatives/`. The remaining element/reference/global-expression
 profile also needs validation rather than skipped payloads. This checkpoint
 does not complete PA37.
+
+## Typed global/reference object checkpoint
+
+The object reader now enforces core section order, duplicate/count rules,
+canonical C table declarations and typed element payloads. It rejects passive/
+independent initialization and dynamic-link metadata outside the pinned static
+object convention. Linking/relocation customs are decoded after core sections,
+so their placement does not change interpretation. Missing/mismatched table or
+memory identities and conflicting/duplicate/malformed target features fail.
+
+Typed global definitions retain their exact constant-expression bytes and
+relocation identities. Global type/mutability checks apply across definitions;
+weak/strong and COMDAT selection include globals. Live initializer dependencies
+participate in collection and stable ordering after selection. Explicit host
+global imports have their own index space before synthesized and defined globals.
+The encoder also writes constant expressions directly from typed instructions.
+Read/write probes preserve advanced global objects and repeated-instance state.
+
+The model/validator now covers nullable func/extern references, function
+references/declarations, typed reference calls/selections and the C function
+table's get/set/copy/fill/size/grow operations. Required tests exercise scalar,
+vector and reference globals; earlier immutable dependencies; weak replacement;
+complete global COMDAT groups; repeated state; reference calls and table growth.
+Malformed section order, duplicate sections, maximal wrong data counts, mutable
+or mistyped initializer reads, invalid element payloads and bad/conflicting
+features are independently checked. The mutation runner retains immutable
+per-unit specifications across optimization levels.
+
+SDK 34's mutable __memory_base import is retained, matching the actual CRT.
+LLD needs --growable-table for growth tests. Scalar/null-reference globals,
+weak selection and reference operations pass both linkers. The pinned LLD
+rejects v128.const/ref.func initializers and global COMDAT members, and leaves
+an initializer's global index unrelocated in the supplied case. Core validation
+accepts those inputs; its output for the relocation reducer is invalid. These
+are documented in the shipped reference-limitations.json with fixture links;
+the harness requires a named, fixture-specific entry before omitting LLD.
+Both compiler producers still call the advanced objects through cppgm linking,
+independent validation and engine execution. Ref-null globals are supported by
+LLD and have their own shared positive control, not an exclusion. Pinned core
+instruction/module validation references are included with hashes/attribution.
+
+The strict snapshot passes 10784/10784; host-built and self-built PA37 tools
+pass 95/95. The later null-global addition also passes with both tools and both
+linkers. PA5 self-host, byte-identical inception, debug info, PA36 smoke (3/3),
+Clang syntax and architecture/format/file audits pass. The final harness passes
+after sorting the document inventory; placement scans 10122 tests with zero
+placement/local-hygiene findings. Seven inherited file warnings and 89 advisory
+EH review leads remain. The final export regenerates consistently; its fresh
+bundle client passes the 274-document inventory, 64-file prose audit and all
+43 wrappers. The snapshot is student-object-profile-final-export.
+
+Logs use object-profile-. global-reference-probe/ retains the object codec,
+input/output objects/modules and repeated-instance validation. It also retains
+minimal, independently validated LLVM limitation reducers and raw diagnostics.
+Frozen native binaries on e2831a513 compare 5d98b6b13 with this stage. O0 changes
+from 3,059,252,907 to 3,058,429,083 instructions (-0.0269%); O3 from
+10,346,741,814 to 10,346,618,061 (-0.0012%). Object bytes match. Source patch,
+frozen binary/input hashes, commands and all observations are retained in
+perf-object-profile/; these counts make no wall-time claim.
+
+Target cost policy, standard benchmark integration, broader profile/language
+boundaries and final Linux/macOS qualification remain required. In particular,
+exercise custom imported globals with shifted SP/GOT indices, imported memory/
+table limits and remaining malformed-profile boundaries. This checkpoint does
+not complete PA37.

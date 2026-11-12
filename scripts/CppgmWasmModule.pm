@@ -42,7 +42,8 @@ sub limits {
 
 sub value_types {
     my ($reader) = @_;
-    my %names = (0x7f => 'i32', 0x7e => 'i64', 0x7d => 'f32', 0x7c => 'f64', 0x7b => 'v128', 0x69 => 'exnref');
+    my %names = (0x7f => 'i32', 0x7e => 'i64', 0x7d => 'f32', 0x7c => 'f64',
+                 0x7b => 'v128', 0x70 => 'funcref', 0x6f => 'externref', 0x69 => 'exnref');
     return [map { $names{byte($reader)} // die "Unsupported ABI value type\n" }
         1 .. number($reader)];
 }

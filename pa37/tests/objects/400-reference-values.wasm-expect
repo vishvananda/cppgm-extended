@@ -1,0 +1,87 @@
+{
+  "source": true,
+  "reference_assembly": [
+    "400-advanced-globals.consumer.s"
+  ],
+  "reference_flags": [
+    "-msimd128",
+    "-mreference-types"
+  ],
+  "llvm_interop": true,
+  "calls": [
+    {
+      "export": "observe",
+      "args": [
+        "0"
+      ],
+      "result": "17"
+    },
+    {
+      "export": "observe",
+      "args": [
+        "1"
+      ],
+      "result": "17"
+    },
+    {
+      "export": "observe",
+      "args": [
+        "-9"
+      ],
+      "result": "17"
+    }
+  ],
+  "sequences": [
+    [
+      {
+        "export": "observe",
+        "args": [
+          "0"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "3"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "0"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "-1"
+        ],
+        "result": "17"
+      },
+      {
+        "export": "observe",
+        "args": [
+          "0"
+        ],
+        "result": "17"
+      }
+    ]
+  ],
+  "exports": [
+    "address_ref"
+  ],
+  "abi": {
+    "address_ref": {
+      "params": [],
+      "results": [
+        "i32"
+      ]
+    }
+  },
+  "reference_link_flags": [
+    "--growable-table"
+  ]
+}

@@ -13,9 +13,16 @@ enum class ValueType : std::uint8_t
 	F32 = 0x7d,
 	F64 = 0x7c,
 	V128 = 0x7b,
+	FuncRef = 0x70,
+	ExternRef = 0x6f,
 	ExnRef = 0x69,
 	Void = 0x40
 };
+
+constexpr bool is_reference(ValueType type)
+{
+	return type == ValueType::FuncRef || type == ValueType::ExternRef || type == ValueType::ExnRef;
+}
 
 enum class Immediate : std::uint8_t
 {
@@ -97,6 +104,8 @@ enum class RelocationKind : std::uint8_t
 	X(LocalTee, 0x22, Index, "local.tee") \
 	X(GlobalGet, 0x23, Index, "global.get") \
 	X(GlobalSet, 0x24, Index, "global.set") \
+	X(TableGet, 0x25, Index, "table.get") \
+	X(TableSet, 0x26, Index, "table.set") \
 	X(I32Load, 0x28, Memory, "i32.load") \
 	X(I64Load, 0x29, Memory, "i64.load") \
 	X(F32Load, 0x2a, Memory, "f32.load") \
@@ -255,6 +264,7 @@ enum class RelocationKind : std::uint8_t
 	X(I64Extend32S, 0xc4, None, "i64.extend32_s") \
 	X(RefNull, 0xd0, Signed, "ref.null") \
 	X(RefIsNull, 0xd1, None, "ref.is_null") \
+	X(RefFunc, 0xd2, Index, "ref.func") \
 	X(I32TruncSatF32S, 0xfc00, None, "i32.trunc_sat_f32_s") \
 	X(I32TruncSatF32U, 0xfc01, None, "i32.trunc_sat_f32_u") \
 	X(I32TruncSatF64S, 0xfc02, None, "i32.trunc_sat_f64_s") \
@@ -264,7 +274,11 @@ enum class RelocationKind : std::uint8_t
 	X(I64TruncSatF64S, 0xfc06, None, "i64.trunc_sat_f64_s") \
 	X(I64TruncSatF64U, 0xfc07, None, "i64.trunc_sat_f64_u") \
 	X(MemoryCopy, 0xfc0a, Indices, "memory.copy") \
-	X(MemoryFill, 0xfc0b, Index, "memory.fill")
+	X(MemoryFill, 0xfc0b, Index, "memory.fill") \
+	X(TableCopy, 0xfc0e, Indices, "table.copy") \
+	X(TableGrow, 0xfc0f, Index, "table.grow") \
+	X(TableSize, 0xfc10, Index, "table.size") \
+	X(TableFill, 0xfc11, Index, "table.fill")
 // clang-format on
 
 // SIMD128 facts follow the core specification pinned in doc/wasm/manifest.json.
@@ -623,6 +637,10 @@ inline const char* spelling(ValueType type)
 		return "v128";
 	case ValueType::ExnRef:
 		return "exnref";
+	case ValueType::FuncRef:
+		return "funcref";
+	case ValueType::ExternRef:
+		return "externref";
 	case ValueType::Void:
 		return "void";
 	}
