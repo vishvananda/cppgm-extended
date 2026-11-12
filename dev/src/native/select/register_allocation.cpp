@@ -552,8 +552,8 @@ void FunctionSelector::loop_depths()
 			loop_first.push_back(static_cast<uint32_t>(loop_blocks.size()));
 	}
 	// Cold blocks: ending in a throw, resume or unreachable, holding a
-	// noreturn call, or with only cold successors (their uses weigh
-	// nothing in the registers' choice).
+	// noreturn call or a call of a cold function, or with only cold
+	// successors (their uses weigh nothing in the registers' choice).
 	const lowir::FunctionBody& body = *body_;
 	ra_cold_.assign(n, 0);
 	for (uint32_t b = 0; b < n; ++b)
@@ -562,7 +562,7 @@ void FunctionSelector::loop_depths()
 		{
 			const Instruction& inst = body.instructions[i];
 			ra_cold_[b] = inst.op == Opcode::Throw || inst.op == Opcode::Resume || inst.op == Opcode::Unreachable ||
-				(inst.op == Opcode::Call && program_.may_end_block(inst));
+				program_.rare_call(inst);
 		}
 	for (bool changed = true; changed;)
 	{

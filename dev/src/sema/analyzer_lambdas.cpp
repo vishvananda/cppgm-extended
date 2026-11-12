@@ -1137,13 +1137,15 @@ FunctionEntity* Analyzer::closure_call(ClassEntity* closure, const syntax::Lambd
 		(expr.has_throw && expr.throw_types.empty());
 	if (expr.has_throw)
 		record_throw_specification(call, &suffix, scope);
-	// GNU noinline, used, pure and const on the lambda-declarator are the
-	// call operator's, as GCC reads them (const over pure, see
+	// GNU noinline, cold, used, pure and const on the lambda-declarator are
+	// the call operator's, as GCC reads them (const over pure, see
 	// effect_attributes).
 	for (const syntax::Attribute* attribute = expr.attributes; attribute != nullptr; attribute = attribute->next)
 	{
 		if (attribute->kind == syntax::AttributeKind::NoInline)
 			call->no_inline = true;
+		if (attribute->kind == syntax::AttributeKind::Cold)
+			call->cold = true;
 		if (attribute->kind == syntax::AttributeKind::Used)
 			call->used = true;
 		if (attribute->kind == syntax::AttributeKind::ReturnsNonNull)

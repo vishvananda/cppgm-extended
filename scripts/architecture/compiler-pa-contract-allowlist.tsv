@@ -106,6 +106,7 @@ comment	dev/src/sema/entity_records.h	PA18	handout or fixture cross-reference in
 comment	dev/src/sema/function_records.h	PA30	handout or fixture cross-reference in a comment
 comment	dev/src/sema/function_records.h	PA6	handout or fixture cross-reference in a comment
 comment	dev/src/sema/function_records.h	pa28	handout or fixture cross-reference in a comment
+comment	dev/src/sema/function_records.h	pa33	handout or fixture cross-reference in a comment
 comment	dev/src/sema/placeholder_words.h	PA15	handout or fixture cross-reference in a comment
 comment	dev/src/sema/placeholder_words.h	PA18	handout or fixture cross-reference in a comment
 comment	dev/src/sema/semantic_dump.h	PA6	handout or fixture cross-reference in a comment
@@ -125,6 +126,7 @@ comment	dev/src/syntax/ast_printer.cpp	PA5	handout or fixture cross-reference in
 comment	dev/src/syntax/ast_printer.h	PA5	handout or fixture cross-reference in a comment
 comment	dev/src/syntax/ast_types.h	pa27	handout or fixture cross-reference in a comment
 comment	dev/src/syntax/ast_types.h	pa28	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/ast_types.h	pa33	handout or fixture cross-reference in a comment
 comment	dev/src/syntax/parser.h	PA5	handout or fixture cross-reference in a comment
 comment	dev/src/syntax/parser.h	pa5	handout or fixture cross-reference in a comment
 comment	dev/src/syntax/parser_state.cpp	PA5	handout or fixture cross-reference in a comment

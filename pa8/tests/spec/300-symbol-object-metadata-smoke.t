@@ -12,6 +12,8 @@ declare function @cast(%p : ptr) -> ptr [role=dynamic_cast]
 declare function @throw_bad_cast() -> void [role=bad_cast]
 declare function @throw_bad_typeid() -> void [role=bad_typeid]
 declare function @kept_call_shape() -> void [no_inline=yes]
+declare function @rarely_called() -> void [cold=yes]
+declare function @rarely_kept() -> void [cold=yes, no_inline=yes]
 
 function @main() -> i64 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

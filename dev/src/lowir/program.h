@@ -347,6 +347,12 @@ struct Program
 	// may end a block, but unlike a terminator it may also be followed by
 	// (unreachable) instructions.
 	bool may_end_block(const Instruction& inst) const;
+	// True if `inst` is a direct call of a function stated cold=yes (GNU
+	// cold).
+	bool cold_call(const Instruction& inst) const;
+	// True if `inst` is a call the static estimates take to be rarely
+	// reached: a return=noreturn call or a cold call.
+	bool rare_call(const Instruction& inst) const;
 	// Whether `symbol` computes strlen (C 7.24.6.3, C++11 21.7): the
 	// compiler's builtin (object=cppgm_builtin_strlen) or the C library's
 	// strlen (a reserved name, C++11 17.6.4.3.2). Callers check the call's

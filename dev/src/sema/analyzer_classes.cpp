@@ -322,6 +322,7 @@ uint64_t Analyzer::attribute_alignment(
 		case syntax::AttributeKind::NoReturn:
 		case syntax::AttributeKind::ReturnsNonNull:
 		case syntax::AttributeKind::Malloc:
+		case syntax::AttributeKind::Cold:
 		case syntax::AttributeKind::Naked:
 			break;
 		case syntax::AttributeKind::Alignas:

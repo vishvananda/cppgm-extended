@@ -717,8 +717,8 @@ void Analyzer::effect_attributes(
 	// GNU pure and const (before the declaration or after its
 	// declarator-id): the function's call effects, the strongest any of its
 	// declarations states (const over pure, as GCC merges them); Clang's
-	// exclude_from_explicit_instantiation, which any declaration gives;
-	// [[noreturn]] and GNU noreturn.
+	// exclude_from_explicit_instantiation and GNU cold, which any
+	// declaration gives; [[noreturn]] and GNU noreturn.
 	const auto apply = [this, function](const syntax::Attribute* list) {
 		for (const syntax::Attribute* attribute = list; attribute != nullptr; attribute = attribute->next)
 		{
@@ -747,6 +747,8 @@ void Analyzer::effect_attributes(
 				function->returns_nonnull = true;
 			if (attribute->kind == syntax::AttributeKind::Malloc)
 				function->noalias_result = true;
+			if (attribute->kind == syntax::AttributeKind::Cold)
+				function->cold = true;
 			if (attribute->kind == syntax::AttributeKind::Naked)
 			{
 				function->naked = true;

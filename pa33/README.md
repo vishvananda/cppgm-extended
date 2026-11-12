@@ -136,6 +136,15 @@ same named ELF section and keep relocations originating in that section aimed
 at the same symbols; direct/replayed byte equality alone is not the feature
 definition.
 
+PA33 adds one source attribute, GNU `cold` (also `__cold__` and
+`[[gnu::cold]]`): the function is unlikely to run. The C++ lowering states
+it as `cold=yes` on the function's declarations and definition (see
+`../pa8/lowir.md`, "Facts The C++ Lowering States"), and `__has_attribute`
+answers 1 for `cold` and `__cold__`. The flag is a hint. A call of a cold
+function, and the path that reaches it, are rarely executed; the cold
+function itself is optimized for size. `tests/driver/o0` compares the
+stated fact, and `tests/driver/o2` bounds what the optimizer does with it.
+
 Your output must be deterministic and follow the [LowIR format](../pa8/lowir.md).
 Optimization may change instructions and control flow while preserving their
 meaning, including initialization, destruction, volatile accesses and cleanup.
@@ -282,6 +291,12 @@ pass:
   that never inspects its unnamed arguments can be substituted like a fixed
   argument function, preserving every argument's evaluation and cleanup.
   `va_start` and `va_arg` require a separate proof about the argument area.
+- Treat a call of a `cold=yes` function as GCC treats one: the block that
+  makes it is rare, like a block that reaches a `return=noreturn` call. A
+  rare block keeps its calls unless a copy is no larger than the call. A cold
+  function takes copies of trivial callees only and no loop copies. A small
+  cold callee may still go inline; keep its path rare afterwards, for
+  example with an `unlikely` prediction on the branch into the block.
 - A function that only forwards a call and returns its result may not need a
   separate call at each use. Preserve argument order, conversions, object
   materialization and cleanup when composing such boundaries.
@@ -443,8 +458,9 @@ source-language clauses.
 - `tests/o3` runs `lowiropt -O3` on handwritten LowIR.
 - `tests/driver/o0` runs `cppgm++ --emit-lowir -g0 -O0` on source programs
   whose boundary facts come from attributes that PA27-PA30 introduce (GNU
-  `noinline`, `pure` and `const`, `[[noreturn]]`): the C++ lowering's own
-  output, compared as PA10-PA23 compare theirs, facts included.
+  `noinline`, `pure` and `const`, `[[noreturn]]`) and from PA33's GNU `cold`:
+  the C++ lowering's own output, compared as PA10-PA23 compare theirs, facts
+  included.
 - `tests/driver/o1` runs `cppgm++ --emit-lowir -g0 -O1` on source programs.
 - `tests/driver/o2` runs `cppgm++ --emit-lowir -g0 -O2` on source programs.
 - `tests/driver/o3` runs `cppgm++ --emit-lowir -g0 -O3` on source programs.

@@ -157,6 +157,9 @@ struct Function
 	bool wide_bulk = false;
 	// O2+: loop heads start on a fetch boundary, nops before them.
 	bool align_loops = false;
+	// A cold function (cold=yes), optimized for size: its loop heads are
+	// not aligned and its layout copies no tests or tails.
+	bool cold = false;
 	// Host model: no RBP frame where fixed-stack facts permit it (baseline
 	// user assembly keeps its frame). The layout stays below a
 	// virtual RBP (the saved-RBP slot left unused): the prologue reserves
@@ -209,6 +212,7 @@ struct Function
 		duplicate_epilogues = false;
 		wide_bulk = false;
 		align_loops = false;
+		cold = false;
 		omit_frame_pointer = false;
 		shrink_wrapped = false;
 		aligned_base = aligned_bytes = 0;

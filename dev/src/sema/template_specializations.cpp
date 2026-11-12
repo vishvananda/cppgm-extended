@@ -287,6 +287,7 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 		function->returns_nonnull = false;
 		function->noalias_result = false;
 		function->no_inline = false;
+		function->cold = false;
 		function->naked = false;
 	}
 	// Retain inline from an earlier declaration of this specialization,

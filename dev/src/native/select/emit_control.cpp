@@ -40,7 +40,8 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 	reset(symbol, out);
 	used_callee_saved_ |= extra_preserved_gprs;
 	out.wide_bulk = level_ >= 1;
-	out.align_loops = level_ >= 2;
+	out.cold = (program_.symbols[symbol].metadata.flags & lowir::SF_COLD) != 0;
+	out.align_loops = level_ >= 2 && !out.cold;
 	classify_signature(*signature_, entry_layout_);
 	excluded_ = 0;
 	build_cfg();

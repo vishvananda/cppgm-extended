@@ -295,10 +295,10 @@ void Writer::metadata(const SymbolMetadata* symbol, const BoundaryMetadata* boun
 			item(open, MetadataKey::TlsFor, "");
 			this->symbol(symbol->tls_for);
 		}
-		// The flags from keep_alias to no_inline (replaceable is above).
-		for (unsigned flag = 0; flag < 6u; ++flag)
+		// The flags from keep_alias to cold (replaceable is above).
+		for (unsigned flag = 0; flag < 8u; ++flag)
 		{
-			if ((symbol->flags & (1u << flag)) != 0)
+			if ((symbol->flags & ~SF_REPLACEABLE & (1u << flag)) != 0)
 				item(open, symbol_flag_key(static_cast<SymbolFlag>(1u << flag)), metadata_yes_spelling());
 		}
 	}

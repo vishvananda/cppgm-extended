@@ -33,6 +33,8 @@
 //   others to .data, each in definition order. With `function_sections`
 //   (-ffunction-sections, ELF objects) every function has a .text section
 //   of its own, in the same order, so a linker can order or discard each.
+//   From O1, an ELF object's cold functions (cold=yes) go to .text.unlikely
+//   sections instead (one shared section, or one each).
 // - The init and fini roles become .init_array and .fini_array entries:
 //   link mode runs every object's initialization in link order before
 //   `main` and the finalizations in reverse order after it.

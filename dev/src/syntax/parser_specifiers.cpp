@@ -143,7 +143,8 @@ bool Parser::gnu_attribute(const char* spelling, Attribute& attribute, bool& kep
 		{ "gnu_inline", "__gnu_inline__", AttributeKind::GnuInline }, { "used", "__used__", AttributeKind::Used },
 		{ "noreturn", "__noreturn__", AttributeKind::NoReturn },
 		{ "returns_nonnull", "__returns_nonnull__", AttributeKind::ReturnsNonNull },
-		{ "malloc", "__malloc__", AttributeKind::Malloc }, { "naked", "__naked__", AttributeKind::Naked } };
+		{ "malloc", "__malloc__", AttributeKind::Malloc }, { "cold", "__cold__", AttributeKind::Cold },
+		{ "naked", "__naked__", AttributeKind::Naked } };
 	for (const auto& simple : kSimple)
 	{
 		if (std::strcmp(spelling, simple.spelling) == 0 || std::strcmp(spelling, simple.reserved) == 0)

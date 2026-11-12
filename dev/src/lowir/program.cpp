@@ -126,6 +126,17 @@ bool Program::may_end_block(const Instruction& inst) const
 	return boundary != nullptr && boundary->boundary.returns == ir_model::CRM_NORETURN;
 }
 
+bool Program::cold_call(const Instruction& inst) const
+{
+	return inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) &&
+		(symbols[inst.ops[0].index].metadata.flags & SF_COLD) != 0;
+}
+
+bool Program::rare_call(const Instruction& inst) const
+{
+	return inst.op == Opcode::Call && (cold_call(inst) || may_end_block(inst));
+}
+
 bool Program::strlen_function(SymbolId symbol) const
 {
 	const Symbol& callee = symbols[symbol];

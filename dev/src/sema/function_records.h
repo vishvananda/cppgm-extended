@@ -503,6 +503,9 @@ struct FunctionEntity : Entity
 	bool returns_nonnull;
 	// GNU argumentless malloc: independent of effects and returns_nonnull.
 	bool noalias_result;
+	// GNU cold (pa33): the function is unlikely to run (any declaration's;
+	// a function template's specializations take the template's).
+	bool cold;
 	// An inheriting constructor that is the full form of the constructor
 	// it inherits through its bases' inheriting constructors (no trailing
 	// default argument omitted: the one the hosts declare, P0136, which

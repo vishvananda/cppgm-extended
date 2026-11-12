@@ -262,6 +262,14 @@ ContextPool& context_pool()
 	return pool;
 }
 
+// GNU cold: a cold function is optimized for size, without the loop
+// transforms that copy its code (unrolling, versioning, rotation,
+// unswitching, vectorization).
+bool copies_code(const FunctionContext& context)
+{
+	return (context.program.symbols[context.symbol].metadata.flags & SF_COLD) == 0;
+}
+
 // One function's local pipeline: scalar rounds, slot promotion, and
 // scalar rounds again over what promotion exposed; the body is then
 // compacted so a caller copies only live code.
@@ -343,7 +351,7 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 	if (level >= 2 && RUN_PASS(eliminate_tail_recursion))
 		scalar_rounds(context);
 	again = RUN_PASS(remove_loops);
-	if (RUN_PASS(unroll_loops))
+	if (copies_code(context) && RUN_PASS(unroll_loops))
 		again = true;
 	if (RUN_PASS(form_switches))
 		again = true;
@@ -426,7 +434,8 @@ bool finish_loops(FunctionContext& context, int level)
 	bool changed = false;
 	changed = RUN_PASS(hoist_loop_loads) || changed;
 	changed = hoist_loops(context) || changed;
-	changed = RUN_PASS(version_fill_loops) || changed;
+	const bool copies = copies_code(context);
+	changed = (copies && RUN_PASS(version_fill_loops)) || changed;
 	if (level >= 3 && RUN_PASS(merge_loop_latches))
 	{
 		RUN_PASS(remove_loops);
@@ -439,7 +448,7 @@ bool finish_loops(FunctionContext& context, int level)
 	// read meeting at the new header, where the preheader may load it once.
 	if (level >= 3 && RUN_PASS(merge_loop_entries))
 		RUN_PASS(simplify_values);
-	if (level >= 3 && RUN_PASS(rotate_loops))
+	if (level >= 3 && copies && RUN_PASS(rotate_loops))
 	{
 		RUN_PASS(promote_slots);
 		// (Latches now test what their headers read. A guard of literals goes.)
@@ -456,7 +465,7 @@ bool finish_loops(FunctionContext& context, int level)
 	}
 	// O3: a loop per value of a test it need not repeat, then what each copy's
 	// straight code leaves.
-	if (level >= 3 && RUN_PASS(unswitch_loops))
+	if (level >= 3 && copies && RUN_PASS(unswitch_loops))
 	{
 		RUN_PASS(promote_slots);
 		RUN_PASS(cleanup_cfg);
@@ -496,7 +505,7 @@ bool finish_loops(FunctionContext& context, int level)
 		changed = true;
 	}
 	// O3: loops in lanes, then what their guards and exits leave.
-	if (level >= 3 && RUN_PASS(vectorize_loops))
+	if (level >= 3 && copies && RUN_PASS(vectorize_loops))
 	{
 		RUN_PASS(simplify_values);
 		RUN_PASS(cleanup_cfg);
@@ -511,7 +520,7 @@ bool finish_loops(FunctionContext& context, int level)
 	}
 	// O2: a short loop's passes in groups, after everything that reads a
 	// loop's shape (its counters then widen with the loop's own).
-	if (RUN_PASS(unroll_short_loops))
+	if (copies && RUN_PASS(unroll_short_loops))
 	{
 		RUN_PASS(simplify_values);
 		RUN_PASS(remove_dead_code);

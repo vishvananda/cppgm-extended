@@ -924,6 +924,11 @@ void FunctionSelector::emit_call(uint32_t id)
 	call.sub = pack_narrow_arguments(narrow_mask);
 	call.aux2 = layout.stack_bytes;
 	call.flags |= boundary_flags(*sig);
+	// A direct call of a cold function marks its block rare for block
+	// placement (GNU cold).
+	if (callee.kind == ValueKind::Symbol && cell == kNoId &&
+		(program_.symbols[callee.index].metadata.flags & lowir::SF_COLD) != 0)
+		call.flags |= MF_COLD;
 	// O1+: a direct strlen call of one pointer (in rdi) with a 64-bit
 	// result first probes the string's first 16 bytes inline and calls
 	// only when they hold no NUL (the probe writes rax, xmm0 and xmm1,

@@ -219,7 +219,7 @@ struct SelectorState
 	std::vector<uint32_t> ra_exc_preds_;
 	bool loop_facts_ready_ = false; // the current function's CFG has not changed
 	std::vector<uint32_t> ra_depth_;
-	std::vector<uint8_t> ra_cold_; // blocks that only lead to a throw, resume or noreturn call
+	std::vector<uint8_t> ra_cold_; // blocks that only lead to a throw, resume, noreturn call or cold call
 	std::vector<uint32_t> ra_candidates_;
 	std::vector<uint32_t> ra_use_first_;
 	std::vector<std::pair<uint32_t, int32_t>> ra_uses_;

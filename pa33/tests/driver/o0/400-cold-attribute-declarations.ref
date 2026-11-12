@@ -1,0 +1,153 @@
+global @sink : i32 [binding=strong] = zero
+global @advertised : i32 [storage=readonly, binding=internal, object=_ZL10advertised] = 1
+
+function @report(%code : i32) -> void [binding=strong, object=_Z6reporti, cold=yes] {
+  slot $code : i32
+
+  block ^entry:
+    store typed i32 %code, $code
+    %t1 = load typed i32 $code
+    store volatile i32 %t1, @sink
+    return void
+}
+function @later(%x : i32) -> i32 [binding=strong, object=_Z5lateri, cold=yes] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = binary add nowrap i32 %t1, 1
+    return i32 %t2
+}
+function @bracketed(%x : i32) -> i32 [binding=strong, object=_Z9bracketedi, cold=yes] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = binary mul nowrap i32 %t1, 2
+    return i32 %t2
+}
+function @fallback(%x : i32) -> i32 [binding=strong, object=_Z8fallbackIiET_S0_] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = binary add nowrap i32 %t1, 1
+    return i32 %t2
+}
+function @ordinary(%x : i32) -> i32 [binding=strong, object=_Z8ordinaryi] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = binary add nowrap i32 %t1, 4
+    return i32 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $logger : obj<4x4>
+  slot $failed : obj<8x8>
+  slot $total : i32
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $logger
+    %t2 = addr $logger
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 0, %t3
+    %t4 = addr $failed
+    %t5 = addr $logger
+    store typed ptr %t5, %t4
+    %t6 = load volatile i32 @sink
+    %t7 = cmp ne i32 %t6, 0
+    branch %t7, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    call void @report(1)
+    jump ^if_end_3
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t8 = addr $failed
+    call void @__lambda_main_t202_212__operator__(%t8, 1)
+    %t9 = call i32 @later(1)
+    %t10 = call i32 @bracketed(1)
+    %t11 = binary add nowrap i32 %t9, %t10
+    %t12 = call f64 @fallback__2(2.0)
+    %t13 = convert fptosi i32 f64 %t12
+    %t14 = binary add nowrap i32 %t11, %t13
+    %t15 = call i32 @fallback(3)
+    %t16 = binary add nowrap i32 %t14, %t15
+    %t17 = call i32 @ordinary(0)
+    %t18 = binary add nowrap i32 %t16, %t17
+    %t19 = addr $logger
+    %t20 = index i8 [projection=field] %t19, 0
+    %t21 = load typed i32 %t20
+    %t22 = binary add nowrap i32 %t18, %t21
+    %t23 = binary add nowrap i32 %t22, 1
+    store typed i32 %t23, $total
+    %t24 = load typed i32 $total
+    %t25 = binary add nowrap i32 2, 2
+    %t26 = binary add nowrap i32 %t25, 4
+    %t27 = binary add nowrap i32 %t26, 4
+    %t28 = binary add nowrap i32 %t27, 4
+    %t29 = binary add nowrap i32 %t28, 1
+    %t30 = binary add nowrap i32 %t29, 1
+    %t31 = cmp eq i32 %t24, %t30
+    branch %t31, ^cond_then_4, ^cond_else_5
+
+  block ^cond_then_4:
+    store typed i32 0, $cond__1
+    jump ^cond_end_6
+
+  block ^cond_else_5:
+    store typed i32 1, $cond__1
+    jump ^cond_end_6
+
+  block ^cond_end_6:
+    %t32 = load typed i32 $cond__1
+    return i32 %t32
+}
+function @__lambda_main_t202_212__operator__(%this : ptr [object_bytes=8], %x : i32) -> void [binding=internal, object=_ZZ4mainENK3$_0clEi, prefer_local=yes, inline_hint=yes, cold=yes] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr %t2
+    %t4 = load typed i32 $x
+    call void @Logger__fail(%t3, %t4)
+    return void
+}
+function @fallback__2(%x : f64) -> f64 [binding=weak, object=_Z8fallbackIdET_S0_, cold=yes] {
+  slot $x : f64
+
+  block ^entry:
+    store typed f64 %x, $x
+    %t1 = load typed f64 $x
+    %t2 = load typed f64 $x
+    %t3 = binary add f64 %t1, %t2
+    return f64 %t3
+}
+function @Logger__fail(%this : ptr [object_bytes=4], %code : i32) -> void [binding=weak, object=_ZN6Logger4failEi, inline_hint=yes, cold=yes] {
+  slot $this : ptr
+  slot $code : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %code, $code
+    %t1 = load typed i32 $code
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary add nowrap i32 %t4, %t1
+    store typed i32 %t5, %t3
+    return void
+}

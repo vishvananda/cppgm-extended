@@ -2523,6 +2523,8 @@ lowir::SymbolMetadata ProgramLowering::function_metadata(const sema::FunctionEnt
 		metadata.flags |= lowir::SF_INLINE_HINT;
 	if (function->no_inline)
 		metadata.flags |= lowir::SF_NO_INLINE;
+	if (function->cold)
+		metadata.flags |= lowir::SF_COLD;
 	if (function->used)
 		metadata.flags |= lowir::SF_OBJECT_ROOT;
 	// A captureless closure's function with its operator's effect is an

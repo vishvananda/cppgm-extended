@@ -8,8 +8,8 @@
 // laid out on its way (an if's then-block before the else, a slow path
 // inside a loop). The blocks are ordered by a walk along the likeliest
 // edges (Placement::walk). A two-way branch's static taken-probability
-// comes from its target only leading to a noreturn end (cold), from loop
-// back edges and loop exits, from a NaN being rare, and from an equality
+// comes from its target only leading to a noreturn end or a call of a cold
+// function (cold), from loop back edges and loop exits, from a NaN being rare, and from an equality
 // test being the unlikely outcome; an edge weighs that times its source's
 // frequency (the entry's spread along forward edges by those
 // probabilities, 8 times a loop header's inflow). Branch layout
@@ -68,7 +68,7 @@ bool terminator(const Inst& inst)
 bool cold_inst(const Inst& inst)
 {
 	return inst.op == Op::Trap || inst.op == Op::Throw || inst.op == Op::Resume ||
-		(inst.op == Op::Call && (inst.flags & MF_NORETURN) != 0);
+		(inst.op == Op::Call && (inst.flags & (MF_NORETURN | MF_COLD)) != 0);
 }
 
 class Placement
@@ -147,8 +147,9 @@ bool Placement::successors()
 	return true;
 }
 
-// Cold: a block holding a noreturn call, trap, throw or resume, a host
-// landing pad, or one whose every successor is cold.
+// Cold: a block holding a noreturn call, a call of a cold function, a
+// trap, throw or resume, a host landing pad, or one whose every successor
+// is cold.
 void Placement::find_cold()
 {
 	cold_.assign(n_, 0);
@@ -365,13 +366,14 @@ uint32_t Placement::taken(uint32_t b) const
 }
 
 // A block a jump may take a copy of: at most kCopyCap instructions,
-// simple ones, then `jcc; jmp`; two-way, not a landing.
+// simple ones, then `jcc; jmp`; two-way, not a landing, and not in a cold
+// function (optimized for size).
 const uint32_t kCopyCap = 5;
 
 bool Placement::copyable_test(uint32_t b) const
 {
 	const Block& block = f_.blocks[b];
-	if (!two_way_[b] || block.landing || block.count > kCopyCap)
+	if (!two_way_[b] || block.landing || block.count > kCopyCap || f_.cold)
 		return false;
 	for (uint32_t i = block.first; i + 2 < block.first + block.count; ++i)
 		switch (f_.insts[i].op)

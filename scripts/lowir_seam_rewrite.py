@@ -53,7 +53,7 @@ MODES = [
 # The facts the C++ lowering states by rule (pa8/lowir.md, "Facts The C++
 # Lowering States"), as metadata items.
 SOURCE_FACT = re.compile(
-    r'^(?:unwind=no|return=(?:noreturn|nonnull)|effects=\w+|repeatable=yes|noalias_result=yes|storage=readonly|inline_hint=yes|no_inline=yes|'
+    r'^(?:unwind=no|return=(?:noreturn|nonnull)|effects=\w+|repeatable=yes|noalias_result=yes|storage=readonly|inline_hint=yes|no_inline=yes|cold=yes|'
     r'object_bytes=\d+|alias=(?:noalias|exclusive_result)|classes=\w+|result_classes=\w+|elision=copy)$')
 
 PURE = ('addr', 'const', 'index', 'binary', 'cmp', 'convert', 'copy')

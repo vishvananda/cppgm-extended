@@ -207,8 +207,8 @@ function @boot() -> void [role=init, binding=strong] {
 
 The currently defined top-level metadata keys are `role`, `linkage`, `binding`, `object`,
 `tls_for` (functions only), `keep_alias`, `prefer_local`, `object_root`, `force_inline`
-(functions only), `inline_hint` (functions only), `no_inline` (functions only), and
-`storage` and `section` (globals only).
+(functions only), `inline_hint` (functions only), `no_inline` (functions only), `cold`
+(functions only), and `storage` and `section` (globals only).
 
 The currently defined global `storage` values are:
 
@@ -376,8 +376,16 @@ optional inlining of calls to that function. It does not make the function an ob
 root, change its symbol binding, or suppress other semantics-preserving transforms. Omission
 means false; there is no `no_inline=no` spelling.
 
-The C++ lowering states `inline_hint` and `no_inline` by the rules in Facts The C++ Lowering
-States below.
+The `cold=yes` metadata flag on top-level function declarations and definitions records that
+the function is unlikely to run (GNU `cold`). It is advisory: an optimizer may take a path
+that reaches a direct call of the function to be rarely executed, as it may a path to a
+`return=noreturn` call, keep such calls out of line, and optimize the function itself for size
+rather than speed; object emission may place it apart from other code. It does not change the
+program's behavior, linkage or symbol binding, or make the definition an object root.
+Omission means false; there is no `cold=no` spelling.
+
+The C++ lowering states `inline_hint`, `no_inline` and `cold` by the rules in Facts The C++
+Lowering States below.
 
 `alias object <object-symbol> = @target` records an additional object-file symbol spelling
 that must resolve to the same emitted top-level LowIR function or global as `@target`.
@@ -501,8 +509,8 @@ Lowering States below.
 Call signatures only accept call-boundary metadata such as `arity=...`, `effects=...`,
 `unwind=...`, `return=...`, `repeatable=yes`, and `noalias_result=yes`. Top-level symbol metadata such as `role=...`, `linkage=...`,
 `binding=...`, `replaceable=...`, `object=...`, `keep_alias=...`, `prefer_local=...`, `object_root=...`, and
-`force_inline=...`, `inline_hint=...`, and
-`no_inline=...` are not valid on `as (...) -> ...`
+`force_inline=...`, `inline_hint=...`, `no_inline=...`, and
+`cold=...` are not valid on `as (...) -> ...`
 call signatures.
 
 Later backend lowering may also introduce internal compiler builtin helper symbols for
@@ -2019,6 +2027,11 @@ the call operator; for a function template, its specializations, while an
 explicit specialization keeps only its own declarations'), and the internal
 `cppgm_call_terminate` helper states it.
 
+`cold=yes`: a function declaration or definition states it when any
+declaration of the function carries GNU `cold` (on a lambda-declarator, the
+call operator; for a function template, its specializations, while an
+explicit specialization keeps only its own declarations').
+
 `object_bytes=N`: a pointer parameter states it, `N` the size of the object
 type, when the pointer designates the start of a complete object of that
 type.
@@ -2198,7 +2211,7 @@ follows them, and so must yours.
 - A structured global states its storage type exactly when its alignment is
   greater than that of its items (Structured Global Data Initializers above).
 - The facts the C++ lowering states are part of its output. `unwind`,
-  `return`, `effects`, `storage=readonly`, `inline_hint`, `no_inline`,
+  `return`, `effects`, `storage=readonly`, `inline_hint`, `no_inline`, `cold`,
   `object_bytes`, `alias`, `classes`, `result_classes` and `elision=copy`
   follow the rules of Facts The C++ Lowering States above, on declarations,
   definitions, parameters and call signatures alike; an output that misses

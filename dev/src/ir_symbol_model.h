@@ -118,9 +118,11 @@ enum GlobalStorageMode : std::uint8_t
 
 const unsigned kGlobalStorageModeCount = GSM_METADATA_STRINGS + 1;
 
-// The yes-valued symbol flags (`keep_alias=yes`, ...), as bits.
+// The yes-valued symbol flags (`keep_alias=yes`, ...), as bits, in the
+// order of their keys (MetadataKey::KeepAlias to MetadataKey::Cold).
 // SF_REPLACEABLE (`replaceable=yes`) marks a GNU weak definition and
-// requires binding=weak.
+// requires binding=weak; SF_COLD (`cold=yes`) marks a function unlikely
+// to run.
 enum SymbolFlag : std::uint8_t
 {
 	SF_KEEP_ALIAS = 1,
@@ -129,7 +131,8 @@ enum SymbolFlag : std::uint8_t
 	SF_FORCE_INLINE = 8,
 	SF_INLINE_HINT = 16,
 	SF_NO_INLINE = 32,
-	SF_REPLACEABLE = 64
+	SF_REPLACEABLE = 64,
+	SF_COLD = 128
 };
 
 // ---------------------------------------------------------------------------
@@ -264,6 +267,7 @@ enum class MetadataKey : std::uint8_t
 	InlineHint,
 	NoInline,
 	Replaceable,
+	Cold,
 	// Parameter metadata.
 	Pass,
 	Alias,
@@ -284,7 +288,7 @@ inline bool is_boundary_key(MetadataKey key)
 
 inline bool is_symbol_key(MetadataKey key)
 {
-	return key >= MetadataKey::Storage && key <= MetadataKey::Replaceable;
+	return key >= MetadataKey::Storage && key <= MetadataKey::Cold;
 }
 
 inline bool is_parameter_key(MetadataKey key)
@@ -297,6 +301,7 @@ inline bool is_parameter_key(MetadataKey key)
 inline MetadataKey symbol_flag_key(SymbolFlag flag)
 {
 	return flag == SF_REPLACEABLE ? MetadataKey::Replaceable
+		: flag == SF_COLD         ? MetadataKey::Cold
 		: flag == SF_KEEP_ALIAS   ? MetadataKey::KeepAlias
 		: flag == SF_PREFER_LOCAL ? MetadataKey::PreferLocal
 		: flag == SF_OBJECT_ROOT  ? MetadataKey::ObjectRoot
@@ -307,8 +312,7 @@ inline MetadataKey symbol_flag_key(SymbolFlag flag)
 
 inline std::uint8_t symbol_flag_of(MetadataKey key)
 {
-	return key == MetadataKey::Replaceable ? SF_REPLACEABLE
-		: key >= MetadataKey::KeepAlias && key <= MetadataKey::NoInline
+	return key >= MetadataKey::KeepAlias && key <= MetadataKey::Cold
 		? static_cast<std::uint8_t>(1u << (static_cast<unsigned>(key) - static_cast<unsigned>(MetadataKey::KeepAlias)))
 		: 0;
 }
@@ -408,8 +412,8 @@ inline const char* spelling(MetadataKey key)
 {
 	static const char* const kKeys[kMetadataKeyCount] = { "arity", "effects", "unwind", "return", "repeatable",
 		"noalias_result", "result_classes", "storage", "section", "role", "linkage", "binding", "object", "tls_for",
-		"keep_alias", "prefer_local", "object_root", "force_inline", "inline_hint", "no_inline", "replaceable", "pass",
-		"alias", "object_bytes", "classes", "elision", "projection" };
+		"keep_alias", "prefer_local", "object_root", "force_inline", "inline_hint", "no_inline", "replaceable", "cold",
+		"pass", "alias", "object_bytes", "classes", "elision", "projection" };
 	return kKeys[static_cast<unsigned>(key)];
 }
 

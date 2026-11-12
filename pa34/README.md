@@ -46,6 +46,10 @@ Loop fixtures combine invariant inputs, changing phi values and paths that
 finish an iteration early. Meet their frame-access and size bounds while
 preserving every path, including partial and empty iterations. Keep explicit
 branch predictions effective when choosing registers and arranging blocks.
+A direct call of a function stated `cold=yes` (PA33's GNU `cold`) is such a
+prediction: its block is as rare as one that reaches a `return=noreturn`
+call. A cold function itself is optimized for size, and an optimized ELF
+object may place it in `.text.unlikely`, as GCC and Clang do.
 
 An `unreachable` continuation can justify removing switch arms or range checks
 that serve only impossible inputs. Preserve defined defaults and their effects,

@@ -1,0 +1,25 @@
+# budget from 400-cold-call-sites.ref: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 96
+blocks <= 20
+count(call) <= 10
+count(load) <= 6
+count(store) <= 16
+count(phi) <= 7
+instructions <= 14 in @report
+instructions <= 5 in @note
+instructions <= 12 in @helper
+instructions <= 8 in @slow_path
+instructions <= 22 in @fast_path
+instructions <= 26 in @checked_sum
+instructions <= 11 in @noted
+instructions <= 13 in @main
+
+# GNU cold: a cold callee larger than its call stays a call in a loop; a call
+# on the path to a cold call stays a call, also where a small cold callee goes
+# inline; a cold function keeps its callees out of line, and an ordinary
+# caller inlines the same callee.
+count(call @report) >= 1 in @checked_sum
+count(call @helper) >= 1 in @checked_sum
+count(call @helper) >= 1 in @noted
+count(call @helper) >= 2 in @slow_path
+none(call @helper) in @fast_path

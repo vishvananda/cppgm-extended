@@ -152,6 +152,7 @@ private:
 	uint32_t own_section(const char* name, lowir::SymbolId symbol, SectionKind kind, uint32_t& spelling);
 	uint32_t separate_section(const char* name, SectionKind kind, uint32_t& spelling);
 	uint32_t shared_relro_section();
+	uint32_t shared_unlikely_section();
 	uint32_t named_section(lowir::NameId name, SectionKind kind);
 	lowir::NameId object_name(lowir::SymbolId symbol) const;
 	bool comdat_definition(lowir::SymbolId symbol) const;
@@ -198,6 +199,7 @@ private:
 	EhModel eh_model_;
 	bool position_independent_;
 	bool function_sections_; // -ffunction-sections (ELF): no function shares its section
+	bool cold_sections_;     // O1+ (ELF): cold functions (cold=yes) go to .text.unlikely
 	std::vector<UnwindEntry> unwind_;
 	std::vector<uint8_t> cfi_pool_;
 	std::vector<uint8_t> lsda_pool_;
@@ -223,10 +225,12 @@ private:
 	uint32_t data_ = 0;
 	uint32_t bss_ = 0;
 	uint32_t relro_ = 0;
+	uint32_t unlikely_ = 0;
 	uint32_t tdata_ = 0;
 	uint32_t tbss_ = 0;
 	uint32_t section_names_[11] = {}; // by SectionKind
 	uint32_t relro_name_ = 0;
+	uint32_t unlikely_name_ = 0;
 	// Sections named by globals' section= metadata (name -> section, 0
 	// none; sized on the first).
 	std::vector<uint32_t> named_sections_;
@@ -236,7 +240,8 @@ ObjectCompiler::ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhMo
 	bool position_independent, Target target, bool red_zone, bool function_sections)
 	: program_(program), stats_(stats), selector_(program), emitter_(image_, runtime_, stats.emit),
 	  share_entries_(optimization_level >= 1), eh_model_(eh_model), position_independent_(position_independent),
-	  function_sections_(function_sections && target == Target::Linux)
+	  function_sections_(function_sections && target == Target::Linux),
+	  cold_sections_(optimization_level >= 1 && target == Target::Linux)
 {
 	image_.target = target;
 	selector_.set_target(target);
@@ -305,6 +310,13 @@ uint32_t ObjectCompiler::shared_relro_section()
 	if (relro_ == 0)
 		relro_ = out_->add_section(".data.rel.ro", SectionKind::Data, 1);
 	return relro_;
+}
+
+uint32_t ObjectCompiler::shared_unlikely_section()
+{
+	if (unlikely_ == 0)
+		unlikely_ = out_->add_section(".text.unlikely", SectionKind::Text, 1);
+	return unlikely_;
 }
 
 uint32_t ObjectCompiler::named_section(lowir::NameId name, SectionKind kind)
@@ -658,9 +670,15 @@ void ObjectCompiler::place_text()
 		if (range.dropped)
 			continue;
 		const bool comdat = range.symbol < program_.symbols.size() && comdat_definition(range.symbol);
-		uint32_t& spelling = section_names_[static_cast<unsigned>(SectionKind::Text)];
-		range.section = comdat   ? own_section(".text", range.symbol, SectionKind::Text, spelling)
-			: function_sections_ ? separate_section(".text", SectionKind::Text, spelling)
+		// A cold function goes to .text.unlikely, where GCC and Clang place
+		// one, so that linkers gather the cold code apart from the rest.
+		const bool cold = cold_sections_ && range.symbol < program_.symbols.size() &&
+			(program_.symbols[range.symbol].metadata.flags & lowir::SF_COLD) != 0;
+		const char* name = cold ? ".text.unlikely" : ".text";
+		uint32_t& spelling = cold ? unlikely_name_ : section_names_[static_cast<unsigned>(SectionKind::Text)];
+		range.section = comdat   ? own_section(name, range.symbol, SectionKind::Text, spelling)
+			: function_sections_ ? separate_section(name, SectionKind::Text, spelling)
+			: cold               ? shared_unlikely_section()
 								 : shared_section(".text", SectionKind::Text);
 		object::Section& section = out_->sections[range.section];
 		const ImageSymbol& symbol = image_.symbol(range.symbol);

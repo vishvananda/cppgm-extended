@@ -1373,6 +1373,7 @@ sub parse_lowir_function_metadata_suffix
 		force_inline => '',
 		inline_hint => '',
 		no_inline => '',
+		cold => '',
 	);
 	my %saw;
 	pos($suffix) = 0;
@@ -1487,6 +1488,12 @@ sub parse_lowir_function_metadata_suffix
 			{
 				return (0, "unknown replaceable mode '$value'")
 					if $value ne 'yes';
+			}
+			elsif ($key eq 'cold')
+			{
+				return (0, "unknown cold mode '$value'")
+					if $value ne 'yes';
+				$metadata{cold} = $value;
 			}
 			elsif ($key eq 'result_classes')
 			{
@@ -2960,7 +2967,7 @@ my $LOWIR_COMPARE_SOURCE_FACTS = 1;
 sub lowir_metadata_item_is_source_fact
 {
 	my ($key, $value) = @_;
-	return 1 if $key =~ /^(?:effects|unwind|return|repeatable|noalias_result|inline_hint|no_inline|alias|object_bytes|classes|result_classes|elision)$/;
+	return 1 if $key =~ /^(?:effects|unwind|return|repeatable|noalias_result|inline_hint|no_inline|cold|alias|object_bytes|classes|result_classes|elision)$/;
 	return 1 if $key eq 'storage' && $value eq 'readonly';
 	return 0;
 }

@@ -690,16 +690,16 @@ Shape shape_of(
 			for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1] && !shape.loop; ++k)
 				if (cfg.reachable(cfg.succs[k]) && cfg.rpo_index[cfg.succs[k]] <= cfg.rpo_index[b])
 					shape.loop = true;
-		// Cold blocks: a noreturn call ends them, or every successor is
-		// cold (reverse postorder backwards: successors first, loops stay
-		// hot).
+		// Cold blocks: a noreturn call or a call of a cold function is in
+		// them, or every successor is cold (reverse postorder backwards:
+		// successors first, loops stay hot).
 		std::vector<uint8_t> cold(cfg.block_count, 0);
 		for (uint32_t r = static_cast<uint32_t>(cfg.rpo.size()); r-- > 0;)
 		{
 			const BlockId b = cfg.rpo[r];
 			bool ends = false;
 			for (InstId i = body.blocks[b].first; i != kNoId && !ends; i = body.instructions[i].next)
-				ends = body.instructions[i].op == Opcode::Call && program.may_end_block(body.instructions[i]);
+				ends = program.rare_call(body.instructions[i]);
 			bool all = cfg.succ_count(b) > 0;
 			for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
 				all = all && cold[cfg.succs[k]] && cfg.rpo_index[cfg.succs[k]] > r;
@@ -1720,6 +1720,12 @@ bool InlineWaveRunner::admit(
 		charge = 0;
 		return true;
 	}
+	// GNU cold: a cold function's calls are rare and its own code is
+	// optimized for size, so a call of one, or a call in one, goes inline
+	// only as a trivial leaf (or forced or no larger than the call, above).
+	if (!source_required_ && shape.size > kTrivialLeaf &&
+		((m.flags | program_.symbols[graph_.functions[caller_]].metadata.flags) & SF_COLD) != 0)
+		return false;
 	if (wave_ != InlineWave::Once)
 	{
 		const bool hint = (m.flags & SF_INLINE_HINT) != 0;
@@ -1932,6 +1938,34 @@ SymbolId InlineWaveRunner::folded_copy(
 	return copy;
 }
 
+// GNU cold: a two-way branch that is the one way into a block calling a
+// cold function, and whose other target is not rare, is predicted not to
+// take it (as GCC's static estimate is), so the path stays rare after the
+// call goes inline.
+void predict_cold_calls(const Program& program, FunctionBody& body, const Cfg& cfg)
+{
+	const auto rare = [&](BlockId b, bool cold_only) {
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+			if (cold_only ? program.cold_call(body.instructions[i])
+						  : program.rare_call(body.instructions[i]) || body.instructions[i].op == Opcode::Unreachable)
+				return true;
+		return false;
+	};
+	for (BlockId b : cfg.rpo)
+	{
+		if (b == body.layout[0] || cfg.pred_count(b) != 1 || !rare(b, true))
+			continue;
+		const InstId last = body.blocks[cfg.preds[cfg.pred_first[b]]].last;
+		Instruction* branch = last == kNoId ? nullptr : &body.instructions[last];
+		if (branch == nullptr || branch->op != Opcode::Branch || branch->ops[1].index == branch->ops[2].index ||
+			static_cast<BranchPrediction>(branch->sub) != BranchPrediction::None)
+			continue;
+		const bool taken = branch->ops[1].index == b;
+		if (!rare(taken ? branch->ops[2].index : branch->ops[1].index, false))
+			branch->sub = static_cast<uint8_t>(taken ? BranchPrediction::Unlikely : BranchPrediction::Likely);
+	}
+}
+
 bool InlineWaveRunner::process(SymbolId caller)
 {
 	caller_ = graph_.index_of[caller];
@@ -1953,6 +1987,12 @@ bool InlineWaveRunner::process(SymbolId caller)
 		build_cfg_light(program_, body, cfg);
 	if (!source_required_ && caller_loop_)
 		complete_cfg(cfg);
+	bool cold_callee = false;
+	for (uint32_t k = graph_.callee_first[caller_]; !source_required_ && k < graph_.callee_first[caller_ + 1]; ++k)
+		cold_callee = cold_callee ||
+			(program_.symbols[graph_.functions[graph_.callees[k]]].metadata.flags & SF_COLD) != 0;
+	if (cold_callee)
+		predict_cold_calls(program_, body, cfg);
 	// Any ordinary path from a landing may still carry its exception.
 	// A merge with a normal path is not enough to prove otherwise.
 	const size_t policy_blocks = source_required_ ? 0 : body.blocks.size();
@@ -1981,9 +2021,10 @@ bool InlineWaveRunner::process(SymbolId caller)
 		}
 	}
 	work.clear();
-	// Cold blocks: every path from them ends in a noreturn call or an
-	// unreachable (O2+: only trivial and forced callees go inline there;
-	// new blocks inherit their split block's answer).
+	// Cold blocks: every path from them reaches a noreturn call, a call of
+	// a cold function or an unreachable (O2+: only trivial and forced
+	// callees go inline there; new blocks inherit their split block's
+	// answer).
 	std::vector<uint8_t> cold(policy_blocks, 0);
 	if (options_.level >= 2)
 		for (uint32_t r = static_cast<uint32_t>(cfg.rpo.size()); r-- > 0;)
@@ -1991,8 +2032,7 @@ bool InlineWaveRunner::process(SymbolId caller)
 			const BlockId b = cfg.rpo[r];
 			bool ends = false;
 			for (InstId i = body.blocks[b].first; i != kNoId && !ends; i = body.instructions[i].next)
-				ends = (body.instructions[i].op == Opcode::Call && program_.may_end_block(body.instructions[i])) ||
-					body.instructions[i].op == Opcode::Unreachable;
+				ends = program_.rare_call(body.instructions[i]) || body.instructions[i].op == Opcode::Unreachable;
 			bool all = cfg.succ_count(b) > 0;
 			for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
 				all = all && cold[cfg.succs[k]] && cfg.rpo_index[cfg.succs[k]] > r;
@@ -2114,7 +2154,11 @@ bool InlineWaveRunner::process(SymbolId caller)
 				!admit(g, body.instructions[i], !source_required_ && handler[b] != 0,
 					!source_required_ && in_loop[b] != 0, charge, once))
 			{
-				if (source_required_)
+				// (Nor does a cold callee or caller take a recursive, partial or
+				// folded copy.)
+				if (source_required_ ||
+					((program_.symbols[callee].metadata.flags | program_.symbols[caller].metadata.flags) & SF_COLD) !=
+						0)
 					continue;
 				// Recursive inlining: a call of the caller to itself takes a
 				// copy of the original to the admitted depth; below it, the
