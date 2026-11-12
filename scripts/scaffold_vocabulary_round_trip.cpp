@@ -239,6 +239,16 @@ void check_targets()
 	expect(static_cast<unsigned>(wasm_model::Op::I32Add) == 0x6a &&
 			wasm_model::immediate_form(wasm_model::Op::Call) == wasm_model::Immediate::Index,
 		"Wasm instruction vocabulary", 0);
+	unsigned simd_operations = 0;
+	for (unsigned suffix = 0; suffix < 256; ++suffix)
+	{
+		const auto op = static_cast<wasm_model::Op>(0xfd00 + suffix);
+		if (wasm_model::simd_info(op).form == wasm_model::SimdForm::None)
+			continue;
+		++simd_operations;
+		expect(*wasm_model::spelling(op) != '\0', "Wasm SIMD spelling", suffix);
+	}
+	expect(simd_operations == 236, "Wasm SIMD128 vocabulary", simd_operations);
 	expect(std::strcmp(wasm_model::spelling(wasm_model::Op::CallIndirect), "call_indirect") == 0,
 		"Wasm instruction spelling", 0);
 }

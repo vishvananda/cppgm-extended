@@ -102,11 +102,13 @@ void decode(
 			function.instructions.push_back(Instruction{ op, machine_model::Range{ first, count }, 0 });
 			continue;
 		}
-		const uint32_t count = form == Immediate::None                ? 0
-			: form == Immediate::Indices || form == Immediate::Memory ? 2
-			: form == Immediate::Table                                ? input.u32() + 1
-			: form == Immediate::Types                                ? input.u32()
-																	  : 1;
+		const uint32_t count = form == Immediate::Bytes16 || form == Immediate::Shuffle ? 16
+			: form == Immediate::MemoryLane                                             ? 3
+			: form == Immediate::None                                                   ? 0
+			: form == Immediate::Indices || form == Immediate::Memory                   ? 2
+			: form == Immediate::Table                                                  ? input.u32() + 1
+			: form == Immediate::Types                                                  ? input.u32()
+																						: 1;
 		if (form == Immediate::Table && count == 0)
 			throw WasmError("Wasm branch table count overflow");
 		if (form == Immediate::Types && count != 1)
@@ -122,7 +124,8 @@ void decode(
 					value |= uint64_t(input.byte()) << (byte * 8);
 			else if (form == Immediate::BlockType)
 				value = static_cast<uint64_t>(input.signed_leb(33));
-			else if (form == Immediate::Types)
+			else if (form == Immediate::Types || form == Immediate::Bytes16 || form == Immediate::Shuffle ||
+				form == Immediate::Lane || (form == Immediate::MemoryLane && i == 2))
 				value = input.byte();
 			else
 				value = input.u32();
@@ -131,7 +134,7 @@ void decode(
 			const auto field = [&](RelocationKind kind) { fields.emplace(offset, CodeField{ kind, operand }); };
 			if (op == Op::I32Const)
 				field(RelocationKind::MemoryAddressSigned);
-			else if (form == Immediate::Memory && i == 1)
+			else if ((form == Immediate::Memory || form == Immediate::MemoryLane) && i == 1)
 				field(RelocationKind::MemoryAddress);
 			else if (op == Op::Call)
 				field(RelocationKind::FunctionIndex);

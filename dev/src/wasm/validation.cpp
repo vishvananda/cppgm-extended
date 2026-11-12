@@ -63,6 +63,7 @@ private:
 	void call(const Signature& signature);
 	void instruction(const Instruction& inst);
 	bool numeric(Op op);
+	bool simd(const Instruction& inst);
 	Types branch_types(uint64_t depth) const;
 	uint64_t operand(const Instruction& inst, uint32_t index = 0) const;
 	const Function& function_;
@@ -78,6 +79,10 @@ uint32_t operand_count(Immediate form)
 		return 0;
 	if (form == Immediate::Memory || form == Immediate::Indices)
 		return 2;
+	if (form == Immediate::MemoryLane)
+		return 3;
+	if (form == Immediate::Bytes16 || form == Immediate::Shuffle)
+		return 16;
 	return 1;
 }
 
@@ -321,9 +326,123 @@ bool Validator::numeric(Op op)
 	return true;
 }
 
+bool Validator::simd(const Instruction& inst)
+{
+	const SimdInfo info = simd_info(inst.op);
+	if (info.form == SimdForm::None)
+		return false;
+	const Immediate immediate = immediate_form(inst.op);
+	if ((immediate == Immediate::Memory || immediate == Immediate::MemoryLane) &&
+		(operand(inst) > info.alignment || operand(inst, 1) > UINT32_MAX))
+		throw WasmError("invalid Wasm SIMD memory alignment");
+	if ((immediate == Immediate::Lane || immediate == Immediate::MemoryLane) &&
+		operand(inst, immediate == Immediate::Lane ? 0 : 2) >= info.lanes)
+		throw WasmError("invalid Wasm SIMD lane index");
+	if (immediate == Immediate::Shuffle || immediate == Immediate::Bytes16)
+		for (uint32_t i = 0; i < inst.operands.count; ++i)
+			if (operand(inst, i) >= (immediate == Immediate::Shuffle ? 32u : 256u))
+				throw WasmError("invalid Wasm SIMD byte immediate");
+	ValueType scalar = ValueType::Void;
+	bool extract = false, replace = false, splat = false;
+	switch (info.form)
+	{
+	case SimdForm::ExtractI32:
+		scalar = ValueType::I32;
+		extract = true;
+		break;
+	case SimdForm::ReplaceI32:
+		scalar = ValueType::I32;
+		replace = true;
+		break;
+	case SimdForm::SplatI32:
+		scalar = ValueType::I32;
+		splat = true;
+		break;
+	case SimdForm::ExtractI64:
+		scalar = ValueType::I64;
+		extract = true;
+		break;
+	case SimdForm::ReplaceI64:
+		scalar = ValueType::I64;
+		replace = true;
+		break;
+	case SimdForm::SplatI64:
+		scalar = ValueType::I64;
+		splat = true;
+		break;
+	case SimdForm::ExtractF32:
+		scalar = ValueType::F32;
+		extract = true;
+		break;
+	case SimdForm::ReplaceF32:
+		scalar = ValueType::F32;
+		replace = true;
+		break;
+	case SimdForm::SplatF32:
+		scalar = ValueType::F32;
+		splat = true;
+		break;
+	case SimdForm::ExtractF64:
+		scalar = ValueType::F64;
+		extract = true;
+		break;
+	case SimdForm::ReplaceF64:
+		scalar = ValueType::F64;
+		replace = true;
+		break;
+	case SimdForm::SplatF64:
+		scalar = ValueType::F64;
+		splat = true;
+		break;
+	default:
+		break;
+	}
+	if (extract || replace || splat)
+	{
+		if (!extract)
+			pop(scalar);
+		if (!splat)
+			pop(ValueType::V128);
+		push(extract ? scalar : ValueType::V128);
+		return true;
+	}
+	switch (info.form)
+	{
+	case SimdForm::Load:
+		pop(ValueType::I32);
+		break;
+	case SimdForm::Store:
+	case SimdForm::LoadLane:
+		pop(ValueType::V128);
+		pop(ValueType::I32);
+		break;
+	case SimdForm::Shift:
+		pop(ValueType::I32);
+		pop(ValueType::V128);
+		break;
+	case SimdForm::Ternary:
+		pop(ValueType::V128);
+		// fall through
+	case SimdForm::Binary:
+		pop(ValueType::V128);
+		// fall through
+	case SimdForm::Unary:
+	case SimdForm::ToI32:
+		pop(ValueType::V128);
+		break;
+	case SimdForm::Constant:
+		break;
+	default:
+		throw WasmError("unknown Wasm SIMD stack form");
+	}
+	if (info.form != SimdForm::Store)
+		push(info.form == SimdForm::ToI32 ? ValueType::I32 : ValueType::V128);
+	return true;
+}
+
 void Validator::instruction(const Instruction& inst)
 {
-	if (numeric(inst.op))
+	if (simd(inst) || numeric(inst.op))
 		return;
 	switch (inst.op)
 	{

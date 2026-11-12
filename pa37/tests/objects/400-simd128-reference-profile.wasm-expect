@@ -1,0 +1,1 @@
+{"source":true,"reference_assembly":["400-simd128-reference-profile.s"],"reference_flags":["-msimd128"],"llvm_interop":true,"calls":[{"export":"observe","result":"17"}],"reference_object_mutations":["simd-lane-range","simd-shuffle-range","simd-memory-alignment"]}

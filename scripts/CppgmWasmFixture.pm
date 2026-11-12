@@ -104,7 +104,18 @@ sub mutate_object {
     }
     defined($code) && defined($types) && defined($relocations)
         or die "Reference fixture lacks code, types or relocations\n";
-    if ($kind eq 'tag-with-result') {
+    if ($kind =~ /^simd-/) {
+        my %fields = (
+            'simd-lane-range' => ["\xfd\x15\0", 2, 16],
+            'simd-shuffle-range' => ["\xfd\x0d" . pack('C*', 0 .. 15), 2, 32],
+            'simd-memory-alignment' => ["\xfd\0\x04\0", 2, 5],
+        );
+        my $field = $fields{$kind} // die "Unknown SIMD mutation $kind\n";
+        my $offset = index($sections[$code][1], $field->[0]);
+        die "Missing or ambiguous SIMD fixture field\n"
+            if $offset < 0 || rindex($sections[$code][1], $field->[0]) != $offset;
+        substr($sections[$code][1], $offset + $field->[1], 1) = chr($field->[2]);
+    } elsif ($kind eq 'tag-with-result') {
         $sections[$types][1] = resultful_tag_type($sections[$types][1]);
     } elsif ($kind eq 'signed-i64-overflow') {
         my $needle = "\x42" . ("\x80" x 9) . "\x7f";

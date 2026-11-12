@@ -29,7 +29,11 @@ enum class Immediate : std::uint8_t
 	Indices,
 	Table,
 	Types,
-	TryTable
+	TryTable,
+	Bytes16,
+	Shuffle,
+	Lane,
+	MemoryLane
 };
 
 // A block's signed 33-bit immediate is a nonnegative type index or a
@@ -263,11 +267,290 @@ enum class RelocationKind : std::uint8_t
 	X(MemoryFill, 0xfc0b, Index, "memory.fill")
 // clang-format on
 
+// SIMD128 facts follow the core specification pinned in doc/wasm/manifest.json.
+// The stack form and immediate limits are shared by selection and validation.
+enum class SimdForm : std::uint8_t
+{
+	None,
+	Binary,
+	Constant,
+	ExtractF32,
+	ExtractF64,
+	ExtractI32,
+	ExtractI64,
+	Load,
+	LoadLane,
+	ReplaceF32,
+	ReplaceF64,
+	ReplaceI32,
+	ReplaceI64,
+	Shift,
+	SplatF32,
+	SplatF64,
+	SplatI32,
+	SplatI64,
+	Store,
+	Ternary,
+	ToI32,
+	Unary,
+};
+
+struct SimdInfo
+{
+	SimdForm form;
+	std::uint8_t lanes;
+	std::uint8_t alignment;
+};
+
+// name, opcode, immediates, spelling, stack form, lane bound, maximum alignment
+// clang-format off
+#define CPPGM_WASM_SIMD_OPERATIONS(X) \
+ X(V128Load, 0xfd00, Memory, "v128.load", Load, 0, 4) \
+ X(V128Load8x8S, 0xfd01, Memory, "v128.load8x8_s", Load, 0, 3) \
+ X(V128Load8x8U, 0xfd02, Memory, "v128.load8x8_u", Load, 0, 3) \
+ X(V128Load16x4S, 0xfd03, Memory, "v128.load16x4_s", Load, 0, 3) \
+ X(V128Load16x4U, 0xfd04, Memory, "v128.load16x4_u", Load, 0, 3) \
+ X(V128Load32x2S, 0xfd05, Memory, "v128.load32x2_s", Load, 0, 3) \
+ X(V128Load32x2U, 0xfd06, Memory, "v128.load32x2_u", Load, 0, 3) \
+ X(V128Load8Splat, 0xfd07, Memory, "v128.load8_splat", Load, 0, 0) \
+ X(V128Load16Splat, 0xfd08, Memory, "v128.load16_splat", Load, 0, 1) \
+ X(V128Load32Splat, 0xfd09, Memory, "v128.load32_splat", Load, 0, 2) \
+ X(V128Load64Splat, 0xfd0a, Memory, "v128.load64_splat", Load, 0, 3) \
+ X(V128Store, 0xfd0b, Memory, "v128.store", Store, 0, 4) \
+ X(V128Const, 0xfd0c, Bytes16, "v128.const", Constant, 0, 0) \
+ X(I8x16Shuffle, 0xfd0d, Shuffle, "i8x16.shuffle", Binary, 0, 0) \
+ X(I8x16Swizzle, 0xfd0e, None, "i8x16.swizzle", Binary, 0, 0) \
+ X(I8x16Splat, 0xfd0f, None, "i8x16.splat", SplatI32, 0, 0) \
+ X(I16x8Splat, 0xfd10, None, "i16x8.splat", SplatI32, 0, 0) \
+ X(I32x4Splat, 0xfd11, None, "i32x4.splat", SplatI32, 0, 0) \
+ X(I64x2Splat, 0xfd12, None, "i64x2.splat", SplatI64, 0, 0) \
+ X(F32x4Splat, 0xfd13, None, "f32x4.splat", SplatF32, 0, 0) \
+ X(F64x2Splat, 0xfd14, None, "f64x2.splat", SplatF64, 0, 0) \
+ X(I8x16ExtractLaneS, 0xfd15, Lane, "i8x16.extract_lane_s", ExtractI32, 16, 0) \
+ X(I8x16ExtractLaneU, 0xfd16, Lane, "i8x16.extract_lane_u", ExtractI32, 16, 0) \
+ X(I8x16ReplaceLane, 0xfd17, Lane, "i8x16.replace_lane", ReplaceI32, 16, 0) \
+ X(I16x8ExtractLaneS, 0xfd18, Lane, "i16x8.extract_lane_s", ExtractI32, 8, 0) \
+ X(I16x8ExtractLaneU, 0xfd19, Lane, "i16x8.extract_lane_u", ExtractI32, 8, 0) \
+ X(I16x8ReplaceLane, 0xfd1a, Lane, "i16x8.replace_lane", ReplaceI32, 8, 0) \
+ X(I32x4ExtractLane, 0xfd1b, Lane, "i32x4.extract_lane", ExtractI32, 4, 0) \
+ X(I32x4ReplaceLane, 0xfd1c, Lane, "i32x4.replace_lane", ReplaceI32, 4, 0) \
+ X(I64x2ExtractLane, 0xfd1d, Lane, "i64x2.extract_lane", ExtractI64, 2, 0) \
+ X(I64x2ReplaceLane, 0xfd1e, Lane, "i64x2.replace_lane", ReplaceI64, 2, 0) \
+ X(F32x4ExtractLane, 0xfd1f, Lane, "f32x4.extract_lane", ExtractF32, 4, 0) \
+ X(F32x4ReplaceLane, 0xfd20, Lane, "f32x4.replace_lane", ReplaceF32, 4, 0) \
+ X(F64x2ExtractLane, 0xfd21, Lane, "f64x2.extract_lane", ExtractF64, 2, 0) \
+ X(F64x2ReplaceLane, 0xfd22, Lane, "f64x2.replace_lane", ReplaceF64, 2, 0) \
+ X(I8x16Eq, 0xfd23, None, "i8x16.eq", Binary, 0, 0) \
+ X(I8x16Ne, 0xfd24, None, "i8x16.ne", Binary, 0, 0) \
+ X(I8x16LtS, 0xfd25, None, "i8x16.lt_s", Binary, 0, 0) \
+ X(I8x16LtU, 0xfd26, None, "i8x16.lt_u", Binary, 0, 0) \
+ X(I8x16GtS, 0xfd27, None, "i8x16.gt_s", Binary, 0, 0) \
+ X(I8x16GtU, 0xfd28, None, "i8x16.gt_u", Binary, 0, 0) \
+ X(I8x16LeS, 0xfd29, None, "i8x16.le_s", Binary, 0, 0) \
+ X(I8x16LeU, 0xfd2a, None, "i8x16.le_u", Binary, 0, 0) \
+ X(I8x16GeS, 0xfd2b, None, "i8x16.ge_s", Binary, 0, 0) \
+ X(I8x16GeU, 0xfd2c, None, "i8x16.ge_u", Binary, 0, 0) \
+ X(I16x8Eq, 0xfd2d, None, "i16x8.eq", Binary, 0, 0) \
+ X(I16x8Ne, 0xfd2e, None, "i16x8.ne", Binary, 0, 0) \
+ X(I16x8LtS, 0xfd2f, None, "i16x8.lt_s", Binary, 0, 0) \
+ X(I16x8LtU, 0xfd30, None, "i16x8.lt_u", Binary, 0, 0) \
+ X(I16x8GtS, 0xfd31, None, "i16x8.gt_s", Binary, 0, 0) \
+ X(I16x8GtU, 0xfd32, None, "i16x8.gt_u", Binary, 0, 0) \
+ X(I16x8LeS, 0xfd33, None, "i16x8.le_s", Binary, 0, 0) \
+ X(I16x8LeU, 0xfd34, None, "i16x8.le_u", Binary, 0, 0) \
+ X(I16x8GeS, 0xfd35, None, "i16x8.ge_s", Binary, 0, 0) \
+ X(I16x8GeU, 0xfd36, None, "i16x8.ge_u", Binary, 0, 0) \
+ X(I32x4Eq, 0xfd37, None, "i32x4.eq", Binary, 0, 0) \
+ X(I32x4Ne, 0xfd38, None, "i32x4.ne", Binary, 0, 0) \
+ X(I32x4LtS, 0xfd39, None, "i32x4.lt_s", Binary, 0, 0) \
+ X(I32x4LtU, 0xfd3a, None, "i32x4.lt_u", Binary, 0, 0) \
+ X(I32x4GtS, 0xfd3b, None, "i32x4.gt_s", Binary, 0, 0) \
+ X(I32x4GtU, 0xfd3c, None, "i32x4.gt_u", Binary, 0, 0) \
+ X(I32x4LeS, 0xfd3d, None, "i32x4.le_s", Binary, 0, 0) \
+ X(I32x4LeU, 0xfd3e, None, "i32x4.le_u", Binary, 0, 0) \
+ X(I32x4GeS, 0xfd3f, None, "i32x4.ge_s", Binary, 0, 0) \
+ X(I32x4GeU, 0xfd40, None, "i32x4.ge_u", Binary, 0, 0) \
+ X(F32x4Eq, 0xfd41, None, "f32x4.eq", Binary, 0, 0) \
+ X(F32x4Ne, 0xfd42, None, "f32x4.ne", Binary, 0, 0) \
+ X(F32x4Lt, 0xfd43, None, "f32x4.lt", Binary, 0, 0) \
+ X(F32x4Gt, 0xfd44, None, "f32x4.gt", Binary, 0, 0) \
+ X(F32x4Le, 0xfd45, None, "f32x4.le", Binary, 0, 0) \
+ X(F32x4Ge, 0xfd46, None, "f32x4.ge", Binary, 0, 0) \
+ X(F64x2Eq, 0xfd47, None, "f64x2.eq", Binary, 0, 0) \
+ X(F64x2Ne, 0xfd48, None, "f64x2.ne", Binary, 0, 0) \
+ X(F64x2Lt, 0xfd49, None, "f64x2.lt", Binary, 0, 0) \
+ X(F64x2Gt, 0xfd4a, None, "f64x2.gt", Binary, 0, 0) \
+ X(F64x2Le, 0xfd4b, None, "f64x2.le", Binary, 0, 0) \
+ X(F64x2Ge, 0xfd4c, None, "f64x2.ge", Binary, 0, 0) \
+ X(V128Not, 0xfd4d, None, "v128.not", Unary, 0, 0) \
+ X(V128And, 0xfd4e, None, "v128.and", Binary, 0, 0) \
+ X(V128Andnot, 0xfd4f, None, "v128.andnot", Binary, 0, 0) \
+ X(V128Or, 0xfd50, None, "v128.or", Binary, 0, 0) \
+ X(V128Xor, 0xfd51, None, "v128.xor", Binary, 0, 0) \
+ X(V128Bitselect, 0xfd52, None, "v128.bitselect", Ternary, 0, 0) \
+ X(V128AnyTrue, 0xfd53, None, "v128.any_true", ToI32, 0, 0) \
+ X(V128Load8Lane, 0xfd54, MemoryLane, "v128.load8_lane", LoadLane, 16, 0) \
+ X(V128Load16Lane, 0xfd55, MemoryLane, "v128.load16_lane", LoadLane, 8, 1) \
+ X(V128Load32Lane, 0xfd56, MemoryLane, "v128.load32_lane", LoadLane, 4, 2) \
+ X(V128Load64Lane, 0xfd57, MemoryLane, "v128.load64_lane", LoadLane, 2, 3) \
+ X(V128Store8Lane, 0xfd58, MemoryLane, "v128.store8_lane", Store, 16, 0) \
+ X(V128Store16Lane, 0xfd59, MemoryLane, "v128.store16_lane", Store, 8, 1) \
+ X(V128Store32Lane, 0xfd5a, MemoryLane, "v128.store32_lane", Store, 4, 2) \
+ X(V128Store64Lane, 0xfd5b, MemoryLane, "v128.store64_lane", Store, 2, 3) \
+ X(V128Load32Zero, 0xfd5c, Memory, "v128.load32_zero", Load, 0, 2) \
+ X(V128Load64Zero, 0xfd5d, Memory, "v128.load64_zero", Load, 0, 3) \
+ X(F32x4DemoteF64x2Zero, 0xfd5e, None, "f32x4.demote_f64x2_zero", Unary, 0, 0) \
+ X(F64x2PromoteLowF32x4, 0xfd5f, None, "f64x2.promote_low_f32x4", Unary, 0, 0) \
+ X(I8x16Abs, 0xfd60, None, "i8x16.abs", Unary, 0, 0) \
+ X(I8x16Neg, 0xfd61, None, "i8x16.neg", Unary, 0, 0) \
+ X(I8x16Popcnt, 0xfd62, None, "i8x16.popcnt", Unary, 0, 0) \
+ X(I8x16AllTrue, 0xfd63, None, "i8x16.all_true", ToI32, 0, 0) \
+ X(I8x16Bitmask, 0xfd64, None, "i8x16.bitmask", ToI32, 0, 0) \
+ X(I8x16NarrowI16x8S, 0xfd65, None, "i8x16.narrow_i16x8_s", Binary, 0, 0) \
+ X(I8x16NarrowI16x8U, 0xfd66, None, "i8x16.narrow_i16x8_u", Binary, 0, 0) \
+ X(F32x4Ceil, 0xfd67, None, "f32x4.ceil", Unary, 0, 0) \
+ X(F32x4Floor, 0xfd68, None, "f32x4.floor", Unary, 0, 0) \
+ X(F32x4Trunc, 0xfd69, None, "f32x4.trunc", Unary, 0, 0) \
+ X(F32x4Nearest, 0xfd6a, None, "f32x4.nearest", Unary, 0, 0) \
+ X(I8x16Shl, 0xfd6b, None, "i8x16.shl", Shift, 0, 0) \
+ X(I8x16ShrS, 0xfd6c, None, "i8x16.shr_s", Shift, 0, 0) \
+ X(I8x16ShrU, 0xfd6d, None, "i8x16.shr_u", Shift, 0, 0) \
+ X(I8x16Add, 0xfd6e, None, "i8x16.add", Binary, 0, 0) \
+ X(I8x16AddSatS, 0xfd6f, None, "i8x16.add_sat_s", Binary, 0, 0) \
+ X(I8x16AddSatU, 0xfd70, None, "i8x16.add_sat_u", Binary, 0, 0) \
+ X(I8x16Sub, 0xfd71, None, "i8x16.sub", Binary, 0, 0) \
+ X(I8x16SubSatS, 0xfd72, None, "i8x16.sub_sat_s", Binary, 0, 0) \
+ X(I8x16SubSatU, 0xfd73, None, "i8x16.sub_sat_u", Binary, 0, 0) \
+ X(F64x2Ceil, 0xfd74, None, "f64x2.ceil", Unary, 0, 0) \
+ X(F64x2Floor, 0xfd75, None, "f64x2.floor", Unary, 0, 0) \
+ X(I8x16MinS, 0xfd76, None, "i8x16.min_s", Binary, 0, 0) \
+ X(I8x16MinU, 0xfd77, None, "i8x16.min_u", Binary, 0, 0) \
+ X(I8x16MaxS, 0xfd78, None, "i8x16.max_s", Binary, 0, 0) \
+ X(I8x16MaxU, 0xfd79, None, "i8x16.max_u", Binary, 0, 0) \
+ X(F64x2Trunc, 0xfd7a, None, "f64x2.trunc", Unary, 0, 0) \
+ X(I8x16AvgrU, 0xfd7b, None, "i8x16.avgr_u", Binary, 0, 0) \
+ X(I16x8ExtaddPairwiseI8x16S, 0xfd7c, None, "i16x8.extadd_pairwise_i8x16_s", Unary, 0, 0) \
+ X(I16x8ExtaddPairwiseI8x16U, 0xfd7d, None, "i16x8.extadd_pairwise_i8x16_u", Unary, 0, 0) \
+ X(I32x4ExtaddPairwiseI16x8S, 0xfd7e, None, "i32x4.extadd_pairwise_i16x8_s", Unary, 0, 0) \
+ X(I32x4ExtaddPairwiseI16x8U, 0xfd7f, None, "i32x4.extadd_pairwise_i16x8_u", Unary, 0, 0) \
+ X(I16x8Abs, 0xfd80, None, "i16x8.abs", Unary, 0, 0) \
+ X(I16x8Neg, 0xfd81, None, "i16x8.neg", Unary, 0, 0) \
+ X(I16x8Q15mulrSatS, 0xfd82, None, "i16x8.q15mulr_sat_s", Binary, 0, 0) \
+ X(I16x8AllTrue, 0xfd83, None, "i16x8.all_true", ToI32, 0, 0) \
+ X(I16x8Bitmask, 0xfd84, None, "i16x8.bitmask", ToI32, 0, 0) \
+ X(I16x8NarrowI32x4S, 0xfd85, None, "i16x8.narrow_i32x4_s", Binary, 0, 0) \
+ X(I16x8NarrowI32x4U, 0xfd86, None, "i16x8.narrow_i32x4_u", Binary, 0, 0) \
+ X(I16x8ExtendLowI8x16S, 0xfd87, None, "i16x8.extend_low_i8x16_s", Unary, 0, 0) \
+ X(I16x8ExtendHighI8x16S, 0xfd88, None, "i16x8.extend_high_i8x16_s", Unary, 0, 0) \
+ X(I16x8ExtendLowI8x16U, 0xfd89, None, "i16x8.extend_low_i8x16_u", Unary, 0, 0) \
+ X(I16x8ExtendHighI8x16U, 0xfd8a, None, "i16x8.extend_high_i8x16_u", Unary, 0, 0) \
+ X(I16x8Shl, 0xfd8b, None, "i16x8.shl", Shift, 0, 0) \
+ X(I16x8ShrS, 0xfd8c, None, "i16x8.shr_s", Shift, 0, 0) \
+ X(I16x8ShrU, 0xfd8d, None, "i16x8.shr_u", Shift, 0, 0) \
+ X(I16x8Add, 0xfd8e, None, "i16x8.add", Binary, 0, 0) \
+ X(I16x8AddSatS, 0xfd8f, None, "i16x8.add_sat_s", Binary, 0, 0) \
+ X(I16x8AddSatU, 0xfd90, None, "i16x8.add_sat_u", Binary, 0, 0) \
+ X(I16x8Sub, 0xfd91, None, "i16x8.sub", Binary, 0, 0) \
+ X(I16x8SubSatS, 0xfd92, None, "i16x8.sub_sat_s", Binary, 0, 0) \
+ X(I16x8SubSatU, 0xfd93, None, "i16x8.sub_sat_u", Binary, 0, 0) \
+ X(F64x2Nearest, 0xfd94, None, "f64x2.nearest", Unary, 0, 0) \
+ X(I16x8Mul, 0xfd95, None, "i16x8.mul", Binary, 0, 0) \
+ X(I16x8MinS, 0xfd96, None, "i16x8.min_s", Binary, 0, 0) \
+ X(I16x8MinU, 0xfd97, None, "i16x8.min_u", Binary, 0, 0) \
+ X(I16x8MaxS, 0xfd98, None, "i16x8.max_s", Binary, 0, 0) \
+ X(I16x8MaxU, 0xfd99, None, "i16x8.max_u", Binary, 0, 0) \
+ X(I16x8AvgrU, 0xfd9b, None, "i16x8.avgr_u", Binary, 0, 0) \
+ X(I16x8ExtmulLowI8x16S, 0xfd9c, None, "i16x8.extmul_low_i8x16_s", Binary, 0, 0) \
+ X(I16x8ExtmulHighI8x16S, 0xfd9d, None, "i16x8.extmul_high_i8x16_s", Binary, 0, 0) \
+ X(I16x8ExtmulLowI8x16U, 0xfd9e, None, "i16x8.extmul_low_i8x16_u", Binary, 0, 0) \
+ X(I16x8ExtmulHighI8x16U, 0xfd9f, None, "i16x8.extmul_high_i8x16_u", Binary, 0, 0) \
+ X(I32x4Abs, 0xfda0, None, "i32x4.abs", Unary, 0, 0) \
+ X(I32x4Neg, 0xfda1, None, "i32x4.neg", Unary, 0, 0) \
+ X(I32x4AllTrue, 0xfda3, None, "i32x4.all_true", ToI32, 0, 0) \
+ X(I32x4Bitmask, 0xfda4, None, "i32x4.bitmask", ToI32, 0, 0) \
+ X(I32x4ExtendLowI16x8S, 0xfda7, None, "i32x4.extend_low_i16x8_s", Unary, 0, 0) \
+ X(I32x4ExtendHighI16x8S, 0xfda8, None, "i32x4.extend_high_i16x8_s", Unary, 0, 0) \
+ X(I32x4ExtendLowI16x8U, 0xfda9, None, "i32x4.extend_low_i16x8_u", Unary, 0, 0) \
+ X(I32x4ExtendHighI16x8U, 0xfdaa, None, "i32x4.extend_high_i16x8_u", Unary, 0, 0) \
+ X(I32x4Shl, 0xfdab, None, "i32x4.shl", Shift, 0, 0) \
+ X(I32x4ShrS, 0xfdac, None, "i32x4.shr_s", Shift, 0, 0) \
+ X(I32x4ShrU, 0xfdad, None, "i32x4.shr_u", Shift, 0, 0) \
+ X(I32x4Add, 0xfdae, None, "i32x4.add", Binary, 0, 0) \
+ X(I32x4Sub, 0xfdb1, None, "i32x4.sub", Binary, 0, 0) \
+ X(I32x4Mul, 0xfdb5, None, "i32x4.mul", Binary, 0, 0) \
+ X(I32x4MinS, 0xfdb6, None, "i32x4.min_s", Binary, 0, 0) \
+ X(I32x4MinU, 0xfdb7, None, "i32x4.min_u", Binary, 0, 0) \
+ X(I32x4MaxS, 0xfdb8, None, "i32x4.max_s", Binary, 0, 0) \
+ X(I32x4MaxU, 0xfdb9, None, "i32x4.max_u", Binary, 0, 0) \
+ X(I32x4DotI16x8S, 0xfdba, None, "i32x4.dot_i16x8_s", Binary, 0, 0) \
+ X(I32x4ExtmulLowI16x8S, 0xfdbc, None, "i32x4.extmul_low_i16x8_s", Binary, 0, 0) \
+ X(I32x4ExtmulHighI16x8S, 0xfdbd, None, "i32x4.extmul_high_i16x8_s", Binary, 0, 0) \
+ X(I32x4ExtmulLowI16x8U, 0xfdbe, None, "i32x4.extmul_low_i16x8_u", Binary, 0, 0) \
+ X(I32x4ExtmulHighI16x8U, 0xfdbf, None, "i32x4.extmul_high_i16x8_u", Binary, 0, 0) \
+ X(I64x2Abs, 0xfdc0, None, "i64x2.abs", Unary, 0, 0) \
+ X(I64x2Neg, 0xfdc1, None, "i64x2.neg", Unary, 0, 0) \
+ X(I64x2AllTrue, 0xfdc3, None, "i64x2.all_true", ToI32, 0, 0) \
+ X(I64x2Bitmask, 0xfdc4, None, "i64x2.bitmask", ToI32, 0, 0) \
+ X(I64x2ExtendLowI32x4S, 0xfdc7, None, "i64x2.extend_low_i32x4_s", Unary, 0, 0) \
+ X(I64x2ExtendHighI32x4S, 0xfdc8, None, "i64x2.extend_high_i32x4_s", Unary, 0, 0) \
+ X(I64x2ExtendLowI32x4U, 0xfdc9, None, "i64x2.extend_low_i32x4_u", Unary, 0, 0) \
+ X(I64x2ExtendHighI32x4U, 0xfdca, None, "i64x2.extend_high_i32x4_u", Unary, 0, 0) \
+ X(I64x2Shl, 0xfdcb, None, "i64x2.shl", Shift, 0, 0) \
+ X(I64x2ShrS, 0xfdcc, None, "i64x2.shr_s", Shift, 0, 0) \
+ X(I64x2ShrU, 0xfdcd, None, "i64x2.shr_u", Shift, 0, 0) \
+ X(I64x2Add, 0xfdce, None, "i64x2.add", Binary, 0, 0) \
+ X(I64x2Sub, 0xfdd1, None, "i64x2.sub", Binary, 0, 0) \
+ X(I64x2Mul, 0xfdd5, None, "i64x2.mul", Binary, 0, 0) \
+ X(I64x2Eq, 0xfdd6, None, "i64x2.eq", Binary, 0, 0) \
+ X(I64x2Ne, 0xfdd7, None, "i64x2.ne", Binary, 0, 0) \
+ X(I64x2LtS, 0xfdd8, None, "i64x2.lt_s", Binary, 0, 0) \
+ X(I64x2GtS, 0xfdd9, None, "i64x2.gt_s", Binary, 0, 0) \
+ X(I64x2LeS, 0xfdda, None, "i64x2.le_s", Binary, 0, 0) \
+ X(I64x2GeS, 0xfddb, None, "i64x2.ge_s", Binary, 0, 0) \
+ X(I64x2ExtmulLowI32x4S, 0xfddc, None, "i64x2.extmul_low_i32x4_s", Binary, 0, 0) \
+ X(I64x2ExtmulHighI32x4S, 0xfddd, None, "i64x2.extmul_high_i32x4_s", Binary, 0, 0) \
+ X(I64x2ExtmulLowI32x4U, 0xfdde, None, "i64x2.extmul_low_i32x4_u", Binary, 0, 0) \
+ X(I64x2ExtmulHighI32x4U, 0xfddf, None, "i64x2.extmul_high_i32x4_u", Binary, 0, 0) \
+ X(F32x4Abs, 0xfde0, None, "f32x4.abs", Unary, 0, 0) \
+ X(F32x4Neg, 0xfde1, None, "f32x4.neg", Unary, 0, 0) \
+ X(F32x4Sqrt, 0xfde3, None, "f32x4.sqrt", Unary, 0, 0) \
+ X(F32x4Add, 0xfde4, None, "f32x4.add", Binary, 0, 0) \
+ X(F32x4Sub, 0xfde5, None, "f32x4.sub", Binary, 0, 0) \
+ X(F32x4Mul, 0xfde6, None, "f32x4.mul", Binary, 0, 0) \
+ X(F32x4Div, 0xfde7, None, "f32x4.div", Binary, 0, 0) \
+ X(F32x4Min, 0xfde8, None, "f32x4.min", Binary, 0, 0) \
+ X(F32x4Max, 0xfde9, None, "f32x4.max", Binary, 0, 0) \
+ X(F32x4Pmin, 0xfdea, None, "f32x4.pmin", Binary, 0, 0) \
+ X(F32x4Pmax, 0xfdeb, None, "f32x4.pmax", Binary, 0, 0) \
+ X(F64x2Abs, 0xfdec, None, "f64x2.abs", Unary, 0, 0) \
+ X(F64x2Neg, 0xfded, None, "f64x2.neg", Unary, 0, 0) \
+ X(F64x2Sqrt, 0xfdef, None, "f64x2.sqrt", Unary, 0, 0) \
+ X(F64x2Add, 0xfdf0, None, "f64x2.add", Binary, 0, 0) \
+ X(F64x2Sub, 0xfdf1, None, "f64x2.sub", Binary, 0, 0) \
+ X(F64x2Mul, 0xfdf2, None, "f64x2.mul", Binary, 0, 0) \
+ X(F64x2Div, 0xfdf3, None, "f64x2.div", Binary, 0, 0) \
+ X(F64x2Min, 0xfdf4, None, "f64x2.min", Binary, 0, 0) \
+ X(F64x2Max, 0xfdf5, None, "f64x2.max", Binary, 0, 0) \
+ X(F64x2Pmin, 0xfdf6, None, "f64x2.pmin", Binary, 0, 0) \
+ X(F64x2Pmax, 0xfdf7, None, "f64x2.pmax", Binary, 0, 0) \
+ X(I32x4TruncSatF32x4S, 0xfdf8, None, "i32x4.trunc_sat_f32x4_s", Unary, 0, 0) \
+ X(I32x4TruncSatF32x4U, 0xfdf9, None, "i32x4.trunc_sat_f32x4_u", Unary, 0, 0) \
+ X(F32x4ConvertI32x4S, 0xfdfa, None, "f32x4.convert_i32x4_s", Unary, 0, 0) \
+ X(F32x4ConvertI32x4U, 0xfdfb, None, "f32x4.convert_i32x4_u", Unary, 0, 0) \
+ X(I32x4TruncSatF64x2SZero, 0xfdfc, None, "i32x4.trunc_sat_f64x2_s_zero", Unary, 0, 0) \
+ X(I32x4TruncSatF64x2UZero, 0xfdfd, None, "i32x4.trunc_sat_f64x2_u_zero", Unary, 0, 0) \
+ X(F64x2ConvertLowI32x4S, 0xfdfe, None, "f64x2.convert_low_i32x4_s", Unary, 0, 0) \
+ X(F64x2ConvertLowI32x4U, 0xfdff, None, "f64x2.convert_low_i32x4_u", Unary, 0, 0)
+// clang-format on
+
 enum class Op : std::uint16_t
 {
 #define CPPGM_WASM_ENUM(name, code, immediate, text) name = code,
 	CPPGM_WASM_OPERATIONS(CPPGM_WASM_ENUM)
 #undef CPPGM_WASM_ENUM
+#define CPPGM_WASM_SIMD_ENUM(name, code, immediate, text, stack, lanes, align) name = code,
+		CPPGM_WASM_SIMD_OPERATIONS(CPPGM_WASM_SIMD_ENUM)
+#undef CPPGM_WASM_SIMD_ENUM
 };
 
 inline Immediate immediate_form(Op op)
@@ -279,6 +562,11 @@ inline Immediate immediate_form(Op op)
 		return Immediate::immediate;
 		CPPGM_WASM_OPERATIONS(CPPGM_WASM_FORM)
 #undef CPPGM_WASM_FORM
+#define CPPGM_WASM_SIMD_FORM(name, code, immediate, text, stack, lanes, align) \
+	case Op::name: \
+		return Immediate::immediate;
+		CPPGM_WASM_SIMD_OPERATIONS(CPPGM_WASM_SIMD_FORM)
+#undef CPPGM_WASM_SIMD_FORM
 	}
 	return Immediate::None;
 }
@@ -292,9 +580,30 @@ inline const char* spelling(Op op)
 		return text;
 		CPPGM_WASM_OPERATIONS(CPPGM_WASM_TEXT)
 #undef CPPGM_WASM_TEXT
+#define CPPGM_WASM_SIMD_TEXT(name, code, immediate, text, stack, lanes, align) \
+	case Op::name: \
+		return text;
+		CPPGM_WASM_SIMD_OPERATIONS(CPPGM_WASM_SIMD_TEXT)
+#undef CPPGM_WASM_SIMD_TEXT
 	}
 	return "";
 }
+
+inline SimdInfo simd_info(Op op)
+{
+	switch (op)
+	{
+#define CPPGM_WASM_SIMD_INFO(name, code, immediate, text, stack, lanes, align) \
+	case Op::name: \
+		return SimdInfo{ SimdForm::stack, lanes, align };
+		CPPGM_WASM_SIMD_OPERATIONS(CPPGM_WASM_SIMD_INFO)
+#undef CPPGM_WASM_SIMD_INFO
+	default:
+		return SimdInfo{ SimdForm::None, 0, 0 };
+	}
+}
+
+#undef CPPGM_WASM_SIMD_OPERATIONS
 
 #undef CPPGM_WASM_OPERATIONS
 

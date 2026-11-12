@@ -381,3 +381,25 @@ Raw logs are prefixed `eh-complete-`, with earlier source-only results under
 SIMD, the remaining object/profile checks, quality envelopes, benchmarks and
 final full Linux/macOS qualification remain required. This checkpoint does not
 complete PA37.
+
+
+## SIMD128 object vocabulary checkpoint
+
+The shared Wasm vocabulary now describes all 236 standard SIMD128 operations
+from the pinned core specification. Each operation carries its immediate form,
+stack form, lane bound and maximum memory alignment. Object decoding and typed
+stack validation consume those facts, and the encoder supports fixed sixteen-
+byte constants/shuffles, lane bytes and memory/lane operands.
+
+An independent LLVM assembly fixture covers every standard SIMD128 opcode and
+its signature. Both linkers execute the load/store/extraction witness; malformed
+lane indices, shuffle indices and alignment fields fail with both cppgm and the
+independent validator. The required PA37 suite passes 84/84. Architecture,
+format and file audits pass (seven inherited warnings), Clang syntax passes,
+and all 14 scaffold-audit/vocabulary tests pass. Logs use `simd-object-`.
+
+This is object-profile support, not LowIR-to-SIMD source selection. The latter,
+shared target costs and the published quality/performance checks remain next.
+The full strict/self-host/export qualification above describes the preceding
+EH/runtime checkpoint, not this later SIMD object checkpoint. Final integrated
+qualification remains required.

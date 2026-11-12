@@ -87,6 +87,9 @@ void encode_function(const Function& function, Bytes& output, std::vector<Reloca
 				body.signed_leb(static_cast<int64_t>(value));
 			else if (form == Immediate::Float32 || form == Immediate::Float64)
 				body.fixed(value, form == Immediate::Float32 ? 4 : 8);
+			else if (form == Immediate::Bytes16 || form == Immediate::Shuffle || form == Immediate::Lane ||
+				(form == Immediate::MemoryLane && i == 2))
+				body.byte(static_cast<uint8_t>(value));
 			else
 				body.unsigned_leb(value);
 		}
