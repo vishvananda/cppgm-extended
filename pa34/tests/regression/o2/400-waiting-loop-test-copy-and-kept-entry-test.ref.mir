@@ -58,8 +58,7 @@ function @sort
     sub.i32 rcx, 1
     store.i32 @top, rcx
     cmp.i32 rcx, 1
-    jg ^pass_done~next
-    ret
+    jle ^done
 
   block ^pass_done~next
     mov rax, 1

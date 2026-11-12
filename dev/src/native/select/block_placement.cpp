@@ -12,7 +12,8 @@
 // function (cold), from loop back edges and loop exits, from a NaN being rare, and from an equality
 // test being the unlikely outcome; an edge weighs that times its source's
 // frequency (the entry's spread along forward edges by those
-// probabilities, 8 times a loop header's inflow). Branch layout
+// probabilities, 8 times a loop header's inflow; a cycle entered twice is
+// weighed so only where blocks are ordered, see find_loops). Branch layout
 // (branch_layout.cpp) then drops the jumps to the next block. Every block
 // must end in a jump, return or other terminator (none falls through
 // yet); a function where one does not keeps its order. Blocks keep their
@@ -77,7 +78,9 @@ public:
 	explicit Placement(Function& f) : f_(f), n_(static_cast<uint32_t>(f.blocks.size())) {}
 	uint32_t walk();
 	uint32_t cold_blocks();
-	bool frequencies(std::vector<uint64_t>& frequency);
+	bool frequencies(std::vector<uint64_t>& frequency, bool placing);
+	void spread(std::vector<uint64_t>& frequency, bool placing) const;
+	bool entered_twice() const { return twice_; }
 
 private:
 	bool successors();
@@ -97,7 +100,8 @@ private:
 	std::vector<uint32_t> inner_;              // innermost loop (loops_ index) or kNone
 	std::vector<std::vector<uint32_t>> loops_; // members, ascending
 	std::vector<uint32_t> finished_;           // reachable blocks in postorder
-	std::vector<uint8_t> header_;              // a loop's header
+	std::vector<uint8_t> header_;              // a loop's header: 1, or 2 for a cycle entered twice
+	bool twice_ = false;                       // some cycle is entered twice
 };
 
 bool Placement::successors()
@@ -224,6 +228,7 @@ void Placement::find_loops()
 	depth_.assign(n_, 0);
 	inner_.assign(n_, kNone);
 	header_.assign(n_, 0);
+	twice_ = false;
 	loops_.clear();
 	std::vector<uint32_t> header_loop(n_, kNone), mark(n_, kNone), work;
 	for (uint32_t b = 0; b < n_; ++b)
@@ -267,13 +272,23 @@ void Placement::find_loops()
 	for (uint32_t l = 0; l < loops_.size(); ++l)
 	{
 		std::vector<uint32_t>& members = loops_[l];
+		const uint32_t header = members.front();
 		std::sort(members.begin(), members.end());
 		members.erase(std::unique(members.begin(), members.end()), members.end());
 		// A walk reaching the entry found a header not dominating its
 		// latch (a loop entered in two places, as jump threading leaves
-		// some): its members are no loop, and nothing exits it.
+		// some): its members are no loop, and nothing exits it. Blocks are
+		// still ordered as for a loop (its header's inflow is multiplied):
+		// the walk's edges and a branch's two targets weigh alike. But with
+		// no exit every block after it would weigh as much, so where a
+		// block is weighed against the entry (copied tails, the frame's
+		// order) the header is none, and padding reads both estimates.
 		if (members.front() == 0)
+		{
+			header_[header] = 2;
+			twice_ = true;
 			continue;
+		}
 		for (uint32_t b : members)
 		{
 			++depth_[b];
@@ -342,13 +357,13 @@ uint32_t Placement::taken(uint32_t b) const
 			return cond == CC_L || cond == CC_S ? kNegativeTaken : 1000 - kNegativeTaken;
 	}
 	// A value compared with zero straight from memory (a flag, an optional
-	// pointer field) is usually zero, and so is a byte (a Boolean) in a
-	// register, a little less often.
+	// pointer field; not an indexed element, which says nothing) is usually
+	// zero, and so is a byte (a Boolean) in a register, a little less often.
 	if ((cond == CC_E || cond == CC_NE) && block.count >= 3)
 	{
 		const Inst& test = f_.insts[block.first + block.count - 3];
-		if (test.op == Op::Cmp && test.ops[0].kind == OperandKind::Mem && test.ops[1].kind == OperandKind::Imm &&
-			test.ops[1].imm == 0)
+		if (test.op == Op::Cmp && test.ops[0].kind == OperandKind::Mem && test.ops[0].index == kNoReg &&
+			test.ops[1].kind == OperandKind::Imm && test.ops[1].imm == 0)
 			return cond == CC_E ? kMemoryZeroTaken : 1000 - kMemoryZeroTaken;
 		const bool byte = test.type == lowir::TypeKind::U8 || test.type == lowir::TypeKind::I8 ||
 			test.type == lowir::TypeKind::I1;
@@ -443,21 +458,28 @@ void reorder_blocks(Function& f, const std::vector<uint32_t>& order)
 namespace {
 
 // Frequencies (fixed point) in reverse postorder: a block's inflow over
-// its forward edges, a loop header's times kLevelFrequency. False when the
-// blocks do not all end in branches.
-bool Placement::frequencies(std::vector<uint64_t>& frequency)
+// its forward edges, a loop header's times kLevelFrequency (a cycle entered
+// twice's only when `placing`). False when the blocks do not all end in
+// branches.
+bool Placement::frequencies(std::vector<uint64_t>& frequency, bool placing)
 {
 	if (n_ == 0 || !successors())
 		return false;
 	find_cold();
 	find_loops();
+	spread(frequency, placing);
+	return true;
+}
+
+void Placement::spread(std::vector<uint64_t>& frequency, bool placing) const
+{
 	frequency.assign(n_, 0);
 	std::vector<uint64_t> inflow(n_, 0);
 	inflow[0] = static_cast<uint64_t>(1) << 20;
 	for (uint32_t r = static_cast<uint32_t>(finished_.size()); r-- > 0;)
 	{
 		const uint32_t b = finished_[r];
-		frequency[b] = header_[b] ? inflow[b] * kLevelFrequency : inflow[b];
+		frequency[b] = header_[b] == 1 || (header_[b] == 2 && placing) ? inflow[b] * kLevelFrequency : inflow[b];
 		if (frequency[b] > (static_cast<uint64_t>(1) << 50))
 			frequency[b] = static_cast<uint64_t>(1) << 50;
 		const uint32_t count = succ_first_[b + 1] - succ_first_[b];
@@ -469,7 +491,6 @@ bool Placement::frequencies(std::vector<uint64_t>& frequency)
 				inflow[succs_[k]] += frequency[b] * share / 1000;
 		}
 	}
-	return true;
 }
 
 // A region is cold only when every incoming edge is explicitly unlikely
@@ -566,11 +587,17 @@ const uint64_t kConflictRatio = 2;
 uint32_t Placement::walk()
 {
 	f_.placement_valid = false;
-	std::vector<uint64_t> frequency;
-	if (n_ < 3 || !frequencies(frequency))
+	std::vector<uint64_t> frequency, unplaced;
+	if (n_ < 3 || !frequencies(frequency, true))
 		return 0;
+	// Padding also reads the estimate with no multiple for a cycle entered
+	// twice (see the end).
+	if (twice_)
+		spread(unplaced, false);
 	const uint32_t slots = static_cast<uint32_t>(succs_.size());
-	std::vector<uint64_t> weight(slots, 0);
+	std::vector<uint64_t> weight(slots, 0), unplaced_weight;
+	if (twice_)
+		unplaced_weight.assign(slots, 0);
 	std::vector<uint32_t> from(slots, 0), pred_slot(slots, 0), waiting(n_, 0);
 	std::vector<uint8_t> reached(n_, 0);
 	for (uint32_t b : finished_)
@@ -585,6 +612,8 @@ uint32_t Placement::walk()
 			{
 				const uint64_t share = two_way_[b] ? (k == succ_first_[b] ? p : 1000 - p) : 1000 / count;
 				weight[k] = frequency[b] * share / 1000;
+				if (twice_)
+					unplaced_weight[k] = unplaced[b] * share / 1000;
 				from[k] = b;
 				pred_slot[fill[succs_[k]]++] = k;
 				if (reached[b] && !back_[k] && succs_[k] != b)
@@ -722,14 +751,20 @@ uint32_t Placement::walk()
 	}
 	for (uint32_t k = 1; k < n_; ++k)
 	{
-		const uint32_t src = order[k - 1];
-		uint64_t flow = 0;
+		const uint32_t src = order[k - 1], b = order[k];
+		uint64_t flow = 0, unplaced_flow = 0;
 		for (uint32_t e = succ_first_[src]; e < succ_first_[src + 1]; ++e)
-			if (succs_[e] == order[k])
+			if (succs_[e] == b)
+			{
 				flow += weight[e];
+				unplaced_flow += twice_ ? unplaced_weight[e] : 0;
+			}
 		// (A fifth of the block's entries: padding before it would run that
-		// often for the entries from elsewhere it helps.)
-		f_.blocks[order[k]].fallen_into = flow >= frequency[order[k]] / 5;
+		// often for the entries from elsewhere it helps. Where a cycle is
+		// entered twice, by either estimate: with the multiple, the blocks
+		// after the cycle weigh too much, and without it, its own blocks no
+		// more than the paths that enter them.)
+		f_.blocks[b].fallen_into = flow >= frequency[b] / 5 || (twice_ && unplaced_flow >= unplaced[b] / 5);
 	}
 	f_.placement_valid = true;
 	uint32_t moved = 0;
@@ -752,10 +787,13 @@ uint32_t place_blocks(Function& function)
 	return Placement(function).walk();
 }
 
-void block_frequencies(Function& function, std::vector<uint64_t>& frequency)
+void block_frequencies(Function& function, std::vector<uint64_t>& frequency, std::vector<uint64_t>* placing)
 {
-	if (!Placement(function).frequencies(frequency))
+	Placement placement(function);
+	if (!placement.frequencies(frequency, false))
 		frequency.clear();
+	else if (placing != nullptr && placement.entered_twice())
+		placement.spread(*placing, true);
 }
 
 } // namespace native

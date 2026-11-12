@@ -23,8 +23,7 @@ function @sum_products
 
   block ^entry
     cmp.i32 rsi, 0
-    jg ^entry~loop
-    ret rsi
+    jle ^done
 
   block ^entry~loop
     mov rax, 0

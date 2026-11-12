@@ -19,8 +19,7 @@ function @rotate_right
   block ^entry
     zext.i32 rax, rsi
     and rax, 63
-    jne ^rotate
-    ret rdi
+    je ^zero
 
   block ^rotate
     zext.i32 rcx, rax
@@ -90,8 +89,7 @@ function @oracle
 
   block ^loop
     cmp.i64 rax, rsi
-    jb ^body
-    ret rdi
+    jae ^done
 
   block ^body
     ror rdi, 1

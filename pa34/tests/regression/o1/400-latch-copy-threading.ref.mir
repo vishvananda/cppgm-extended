@@ -29,8 +29,7 @@ function @walk
     mov rdi, 1
     add rcx, 1
     cmp.i64 rcx, rsi
-    jl ^body
-    ret rax
+    jge ^out
 
   block ^body
     lea rdx, [rdi-1]
@@ -40,8 +39,7 @@ function @walk
   block ^latch
     add rcx, 1
     cmp.i64 rcx, rsi
-    jl ^latch~head
-    ret rax
+    jge ^out
 
   block ^latch~head
     cmp.i64 rdi, 0

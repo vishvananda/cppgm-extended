@@ -24,8 +24,7 @@ function @low
 
   block ^head
     sub.i32 rax, 1
-    jne ^head~head
-    ret rax
+    je ^done
 
   block ^head~head
     sub.i32 rax, 1

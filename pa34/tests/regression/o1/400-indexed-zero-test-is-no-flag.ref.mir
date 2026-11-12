@@ -1,0 +1,127 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @seen
+  storage scalar i64
+  init i64 0
+
+function @note
+  abi
+    param %v -> rdi : i64
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add @seen, rdi
+    ret
+
+function @count
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14
+
+  block ^entry
+    mov r13, rdi
+    mov r14, rsi
+    mov rbx, 0
+    mov r12, 0
+
+  block ^head
+    cmp.i64 [r13+rbx*8], 0
+    jne ^nonzero
+
+  block ^zero
+    mov rdi, 1
+    call @note [args=(rdi)]
+
+  block ^next
+    add rbx, 1
+    cmp.i64 rbx, r14
+    jge ^out
+
+  block ^next~head
+    cmp.i64 [r13+rbx*8], 0
+    je ^zero
+
+  block ^nonzero
+    mov rdi, 2
+    call @note [args=(rdi)]
+    add r12, 1
+    add rbx, 1
+    cmp.i64 rbx, r14
+    jl ^next~head
+
+  block ^out
+    ret r12
+
+function @flag
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add rdi, 8
+    cmp.i64 [rdi], 0
+    jne ^nonzero
+
+  block ^zero
+    mov rdi, 4
+    call @note [args=(rdi)]
+    mov rax, 1
+    ret rax
+
+  block ^nonzero
+    mov rdi, 8
+    call @note [args=(rdi)]
+    mov rax, 2
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12
+    slot $data -> [rbp-32] : obj<32x8>
+
+  block ^entry
+    lea rbx, [rbp-32]
+    store.i64 [rbx], 0
+    lea rax, [rbx+8]
+    store.i64 [rax], 5
+    lea rax, [rbx+16]
+    store.i64 [rax], 0
+    lea rax, [rbx+24]
+    store.i64 [rax], 7
+    mov rdi, rbx
+    mov rsi, 4
+    call @count [args=(rsi,rdi)]
+    zext.i32 r12, rax
+    mov rdi, rbx
+    call @flag [args=(rdi)]
+    add.u32 r12, @seen
+    add.u32 rax, r12
+    ret rax

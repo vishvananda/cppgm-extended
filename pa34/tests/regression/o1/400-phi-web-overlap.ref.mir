@@ -37,8 +37,7 @@ function @walk
     add rdx, 1
     add rcx, rdx
     cmp.i64 rcx, rdi
-    jl ^tail~head
-    ret rcx
+    jge ^out
 
   block ^tail~head
     load.i64 rdx, [r8+rax*8]

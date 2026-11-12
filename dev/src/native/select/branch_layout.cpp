@@ -461,6 +461,10 @@ uint32_t FunctionSelector::layout_branches()
 	// A jump to a block that only returns (through jump-only blocks)
 	// returns itself when the return is all its epilogue (a frameless
 	// return, or no saves and no frame): the return is copied over the jump.
+	// After a conditional branch to the next block it jumps to the return
+	// block instead: the two become one inverted branch to the return, and
+	// the likelier path falls into the next block (unless that block only
+	// jumps: its jump replaces it, and the branch then goes elsewhere).
 	const bool object_in_rax = signature_->result.is_object() && entry_layout_.result == ArgClass::Mixed &&
 		entry_layout_.result_parts == 1 && entry_layout_.result_part[0].reg == RAX;
 	const bool bare_returns = f.preserve_mask == 0 && f.stack_size == 0;
@@ -480,8 +484,13 @@ uint32_t FunctionSelector::layout_branches()
 		uint32_t t = last.ops[0].symbol;
 		for (unsigned step = 0; step < 4 && t < blocks && jump_only(t); ++step)
 			t = f.insts[f.blocks[t].first].ops[0].symbol;
-		if (t < blocks && t != b && f.blocks[t].count == 1 && f.insts[f.blocks[t].first].op == Op::Ret &&
-			(bare_returns || (f.insts[f.blocks[t].first].flags & MF_FRAMELESS) != 0))
+		if (t >= blocks || t == b || f.blocks[t].count != 1 || f.insts[f.blocks[t].first].op != Op::Ret)
+			continue;
+		const Inst* jcc = block.count >= 2 ? &f.insts[block.first + block.count - 2] : nullptr;
+		if (jcc != nullptr && jcc->op == Op::Jcc && jcc->ops[0].kind == OperandKind::Label &&
+			jcc->ops[0].symbol == b + 1 && !jump_only(b + 1))
+			last.ops[0].symbol = t;
+		else if (bare_returns || (f.insts[f.blocks[t].first].flags & MF_FRAMELESS) != 0)
 		{
 			last = f.insts[f.blocks[t].first];
 			coalesce_return(f, block, object_in_rax);
@@ -576,12 +585,15 @@ uint32_t FunctionSelector::layout_branches()
 		for (uint32_t c : layout_chain_)
 			end[c] = e;
 	}
-	// (Placement's estimate, read by the old indexes.)
+	// (Placement's estimate, read by the old indexes, and the one it orders
+	// blocks by where a cycle is entered twice.)
 	std::vector<uint64_t>& frequency = layout_frequency_;
+	std::vector<uint64_t> placing;
 	frequency.clear();
 	if (!addressed)
-		block_frequencies(f, frequency);
+		block_frequencies(f, frequency, &placing);
 	share_small_tails(f, end, live, frequency);
+	const std::vector<uint64_t>& ordered = placing.empty() ? frequency : placing;
 	// The kept blocks' new indexes; a removed block's references take its
 	// chain end's.
 	uint32_t kept = 0;
@@ -608,8 +620,8 @@ uint32_t FunctionSelector::layout_branches()
 	// The kept blocks in order: their branches and handler records name
 	// the new indexes, then their fall-through branches are dropped. A
 	// block ending `jcc A; jmp B` with neither next jumps unconditionally
-	// to the less frequent of the two (placement's estimate), so the
-	// likelier path takes only the conditional branch; a jump that closes
+	// to the less frequent of the two (the estimate blocks are ordered by),
+	// so the likelier path takes only the conditional branch; a jump that closes
 	// a loop the branch leaves (closes_range) is the likelier whatever the
 	// estimate of the two targets.
 	uint32_t index = 0;
@@ -628,8 +640,7 @@ uint32_t FunctionSelector::layout_branches()
 			if (a.kind == OperandKind::Label && j.kind == OperandKind::Label && a.symbol < blocks && j.symbol < blocks)
 			{
 				const uint32_t probability = f.insts[block.first + block.count - 2].aux;
-				colder_jcc = addressed ? probability > 0 && probability < 500
-									   : frequency[a.symbol] < frequency[j.symbol];
+				colder_jcc = addressed ? probability > 0 && probability < 500 : ordered[a.symbol] < ordered[j.symbol];
 			}
 		}
 		for (uint32_t i = block.first; i < block.first + block.count; ++i)
