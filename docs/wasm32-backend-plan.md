@@ -13,6 +13,10 @@ PA37. This plan, the [completion journal](wasm32-completion-status.md) and the
 [reference investigation](wasm32-assignment/reference-evidence.md) are
 maintainer material and stay out of the student export.
 
+The optional [Wasm/browser inception plan](wasm-browser-inception-plan.md)
+records the separate self-host qualification path and executed browser probes.
+It does not expand PA37's required closing conditions.
+
 The implementation covers target-aware frontend/LowIR layout, scalar and wide
 values, structured/irreducible control, separate objects/archives and static
 linking, aggregate/varargs ABI, class/RTTI/runtime boundaries, modern source EH,

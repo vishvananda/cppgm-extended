@@ -23,6 +23,16 @@ All raw results, probes, pinned binaries and performance observations live outsi
 Git under `/mnt/vizier/cppgm-wasm32-evidence`. Earlier qualification applies only
 to its recorded snapshot; it does not establish qualification of later changes.
 
+Optional compiler self-hosting and browser inception are investigated in the
+[separate plan](wasm-browser-inception-plan.md). Chromium and Firefox execute
+the small SIMD/EH/WASI/filesystem probes; the complete compiler has not yet run
+inside Wasm. The investigation also found required target-library gaps:
+target-independent builtin templates are absent from Wasm's injected declarations,
+and an unresolved weak direct call in libc prevents ordinary stdio linking.
+The Clang WASI syntax scan passes 274/406 compiler translation units; the 132
+failures identify host padding, resource APIs and x87 floating assumptions.
+Compiler-host portability remains optional follow-on work.
+
 ## Qualified object checkpoint
 
 `f547e4f42` is the object/linker checkpoint on local LLVM base `dd9641977`.
