@@ -55,8 +55,8 @@ uint32_t drop_redundant_constants(Function& function);
 uint32_t hoist_zeroes(Function& function);
 
 // Reloads of a temp's frame home a register still holds go or become
-// register copies (feeding the scratch's readers directly). Returns the
-// instructions removed.
+// register copies (feeding the scratch's readers directly); a store of a
+// register to the home it holds goes. Returns the instructions removed.
 uint32_t forward_home_reloads(Function& function);
 
 // Floating reads of a frame home an XMM register holds read the register.

@@ -838,6 +838,17 @@ void HomeForwarding::transfer(uint32_t b, int32_t* holds, bool rewrite)
 		if (inst.op == Op::Store && frame_slot(inst.ops[0], offset))
 		{
 			const unsigned bytes = wide ? 8 : register_bytes(inst.type);
+			// The home already holds these bytes of the register (a split
+			// value stored again on an edge back into its homed blocks).
+			const int32_t source = plain_gpr(inst.ops[1]) ? holds[inst.ops[1].reg] : kHoldsNothing;
+			if (rewrite && source != kHoldsNothing && held_home(source) == offset && held_bytes(source) >= bytes)
+			{
+				inst.op = Op::Nop;
+				inst.nops = 0;
+				inst.ops[0] = inst.ops[1] = Operand();
+				++removed_;
+				continue;
+			}
 			forget_home(offset, offset + static_cast<int32_t>(bytes));
 			if (plain_gpr(inst.ops[1]) && inst.ops[1].reg != R11 && (offset & 7) == 0 &&
 				(bytes == 8 || bytes == 4 || bytes == 2 || bytes == 1))
@@ -967,7 +978,8 @@ uint32_t HomeForwarding::run()
 // reaches) -- goes when that register is its
 // destination, else becomes a register copy; a copy into a scratch
 // register (r10, r11: dead at block ends) then feeds its readers directly and
-// goes. Calls drop the caller-saved holders, anything not simple drops
+// goes. A store of a register to the home it holds goes too. Calls drop
+// the caller-saved holders, anything not simple drops
 // all; r11 holds nothing here (the emitter carries stored values in it,
 // x86/emitter.cpp). Linear per round; the rounds stop when no state falls.
 uint32_t forward_frame_copies(Function& f, const std::vector<FrameObject>& objects)

@@ -1,0 +1,125 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @seen
+  storage scalar i64
+  init i64 0
+
+function @step
+  abi
+    param %v -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rdi
+    add rax, @seen
+    store.i64 @seen, rax
+    ret rax
+
+function @walk
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    param %c -> rdx : i64
+    param %d -> rcx : i64
+    param %e -> r8 : i64
+    param %f -> r9 : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    temp %g -> [rbp-<off0>] : i64
+    temp %h -> [rbp-<off1>] : i64
+    temp %k -> [rbp-<off2>] : i64
+    param-slot %d -> [rbp-<off3>] : i64
+    param-slot %e -> [rbp-<off4>] : i64
+    param-slot %f -> [rbp-<off5>] : i64
+
+  block ^entry
+    mov <gpr2>, rdi
+    mov <gpr3>, rsi
+    mov <gpr4>, rdx
+    mov rax, <gpr2>
+    imul rax, <gpr3>
+    store.i64 [rbp-<off0>], rax
+    mov rax, <gpr4>
+    imul rax, rcx
+    store.i64 [rbp-<off1>], rax
+    mov rax, r8
+    imul rax, r9
+    store.i64 [rbp-<off2>], rax
+    mov <gpr0>, 0
+    mov <gpr1>, 0
+    store.i64 [rbp-<off3>], rcx
+    store.i64 [rbp-<off4>], r8
+    store.i64 [rbp-<off5>], r9
+
+  block ^head
+    mov rdi, <gpr0>
+    call @step [args=(rdi)]
+    cmp.i64 rax, 1000
+    jge ^done
+
+  block ^head~latch
+    load.i64 rcx, [rbp-<off3>]
+    load.i64 r8, [rbp-<off4>]
+    load.i64 r9, [rbp-<off5>]
+
+  block ^latch
+    add <gpr1>, <gpr2>
+    xor <gpr1>, <gpr3>
+    add <gpr1>, <gpr4>
+    xor <gpr1>, rcx
+    add <gpr1>, r8
+    xor <gpr1>, r9
+    add <gpr1>, [rbp-<off0>]
+    xor <gpr1>, [rbp-<off1>]
+    add <gpr1>, [rbp-<off2>]
+    xor <gpr1>, <gpr2>
+    add <gpr1>, <gpr3>
+    xor <gpr1>, <gpr4>
+    add <gpr1>, rcx
+    xor <gpr1>, r8
+    add <gpr1>, r9
+    xor <gpr1>, [rbp-<off0>]
+    add <gpr1>, [rbp-<off1>]
+    xor <gpr1>, [rbp-<off2>]
+    add <gpr0>, 7
+    jmp ^head
+
+  block ^done
+    ret <gpr1>
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    temp %r -> [rbp-<off0>] : i64
+
+  block ^entry
+    mov rdi, 1
+    mov rsi, 2
+    mov rdx, 3
+    mov rcx, 4
+    mov r8, 5
+    mov r9, 6
+    call @walk [args=(rcx,rdx,rsi,rdi,r8,r9)]
+    zext.i32 <gpr5>, rax
+    and.i32 rax, 127
+    ret rax
