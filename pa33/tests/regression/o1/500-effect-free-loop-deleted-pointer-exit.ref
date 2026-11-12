@@ -1,0 +1,28 @@
+global @values : obj<32x8> = {
+  i64 1
+  i64 2
+  i64 3
+  i64 4
+}
+
+function @end_of(%p : ptr, %n : i64) -> ptr [no_inline=yes] {
+  block ^entry:
+    %t1 = cmp gt i64 %n, 0
+    %t2 = select i64 %t1, %n, 0
+    %t3 = binary mul i64 %t2, 8
+    %t4 = index i8 %p, %t3
+    return ptr %t4
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %end = call ptr @end_of(@values, 3)
+    %last = load i64 %end
+    %none = call ptr @end_of(@values, 0)
+    %first = load i64 %none
+    %t5 = cmp eq i64 %last, 4
+    %last_bit = select i32 %t5, 0, 1
+    %t7 = cmp eq i64 %first, 1
+    %first_bit = select i32 %t7, 0, 2
+    %status = binary or i32 %last_bit, %first_bit
+    return i32 %status
+}

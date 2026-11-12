@@ -295,10 +295,11 @@ void LoopUnswitch::unswitch(const Candidate& candidate)
 	InstId at = previous_in_block(body_, pre, jump);
 	if (!invariant(candidate.loop, tested))
 	{
+		// (The test is a compare: its type is its operands'; its result is i64.)
 		Instruction compare = body_.instructions[body_.temps[tested.index].def];
 		compare.next = kNoId;
 		const InstId id = append_instruction(body_, compare);
-		const TempId result = append_temp(body_, compare.type, id);
+		const TempId result = append_temp(body_, Type::scalar(TypeKind::I64), id);
 		body_.instructions[id].result = result;
 		insert_after(body_, pre, at, id);
 		tested = Value::temp(result);

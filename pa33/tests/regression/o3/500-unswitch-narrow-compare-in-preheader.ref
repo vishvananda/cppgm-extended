@@ -1,0 +1,58 @@
+global @values : obj<32x8> = {
+  i64 5
+  i64 6
+  i64 7
+  i64 8
+}
+global @seen : obj<8x8> = {
+  i64 0
+}
+
+function @note(%v : i64) -> void [unwind=no, no_inline=yes] {
+  block ^entry:
+    %old = load i64 @seen
+    %sum = binary add i64 %v, %old
+    store i64 %sum, @seen
+    return void
+}
+function @narrow_test(%a : i32, %b : i32, %p : ptr, %n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    %t1 = cmp lt i32 %a, %b
+    branch %t1, ^header, ^loop_preheader_2
+
+  block ^header:
+    %i = phi i64 [^header: %next, ^entry: 0]
+    %at = index i64 %p, %i
+    %v = load i64 %at
+    call void @note(%v)
+    %next = binary add nowrap i64 %i, 1
+    %more = cmp lt i64 %next, %n
+    branch %more, ^header, ^exit
+
+  block ^loop_preheader_2:
+    jump ^loop_preheader_3
+
+  block ^loop_preheader_3:
+    %t7 = phi i64 [^loop_preheader_3: %t9, ^loop_preheader_2: 0]
+    %t8 = binary mul i64 %t7, 100
+    call void @note(%t8)
+    %t9 = binary add nowrap i64 %t7, 1
+    %t10 = cmp lt i64 %t9, %n
+    branch %t10, ^loop_preheader_3, ^exit
+
+  block ^exit:
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    call void @narrow_test(1, 2, @values, 4)
+    %values = load i64 @seen
+    call void @narrow_test(2, 1, @values, 4)
+    %both = load i64 @seen
+    %t3 = cmp eq i64 %values, 26
+    %values_bit = select i32 %t3, 0, 1
+    %t5 = cmp eq i64 %both, 626
+    %both_bit = select i32 %t5, 0, 2
+    %status = binary or i32 %values_bit, %both_bit
+    return i32 %status
+}

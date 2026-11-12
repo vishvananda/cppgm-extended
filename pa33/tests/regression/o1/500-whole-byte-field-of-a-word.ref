@@ -1,0 +1,34 @@
+global @word : obj<8x8> = {
+  i64 578437695752307201
+}
+
+function @second_byte(%p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = index i8 %p, 1
+    %t2 = load u8 %t1
+    %f = convert zext i64 u8 %t2
+    return i64 %f
+}
+function @set_second_byte(%p : ptr, %v : i32) -> void [no_inline=yes] {
+  block ^entry:
+    %t1 = convert trunc u8 i32 %v
+    %t2 = index i8 %p, 1
+    store u8 %t1, %t2
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %before = call i64 @second_byte(@word)
+    call void @set_second_byte(@word, 171)
+    %after = call i64 @second_byte(@word)
+    %whole = load i64 @word
+    %t4 = cmp eq i64 %before, 2
+    %before_bit = select i32 %t4, 0, 1
+    %t6 = cmp eq i64 %after, 171
+    %after_bit = select i32 %t6, 0, 2
+    %t8 = cmp eq i64 %whole, 578437695752350465
+    %whole_bit = select i32 %t8, 0, 4
+    %some = binary or i32 %before_bit, %after_bit
+    %status = binary or i32 %whole_bit, %some
+    return i32 %status
+}

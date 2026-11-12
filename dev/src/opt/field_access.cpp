@@ -78,10 +78,12 @@ private:
 			? d
 			: nullptr;
 	}
+	// (An index's type is its element's; its result is a pointer.)
 	InstId emit(BlockId block, InstId& prev, const Instruction& inst)
 	{
 		const InstId id = append_instruction(body_, inst);
-		body_.instructions[id].result = append_temp(body_, inst.type, id);
+		const Type result = inst.op == Opcode::Index ? Type::scalar(TypeKind::Ptr) : inst.type;
+		body_.instructions[id].result = append_temp(body_, result, id);
 		insert_after(body_, block, prev, id);
 		prev = id;
 		block_of_.resize(body_.instructions.size(), block);

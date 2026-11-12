@@ -455,10 +455,12 @@ bool LoopPass::final_values(uint32_t loop, ExitTest& test, const std::vector<Ind
 	const InstId term = body_.blocks[pre].last;
 	InstId at = previous_in_block(body_, pre, term);
 	const uint32_t location = body_.instructions[term].location;
+	// (An index's type is its element's; its result is a pointer.)
 	auto emit = [&](Instruction inst) {
 		inst.location = location;
 		const InstId id = append_instruction(body_, inst);
-		body_.instructions[id].result = append_temp(body_, inst.type, id);
+		const Type result = inst.op == Opcode::Index ? Type::scalar(TypeKind::Ptr) : inst.type;
+		body_.instructions[id].result = append_temp(body_, result, id);
 		insert_after(body_, pre, at, id);
 		at = id;
 		return Value::temp(body_.instructions[id].result);
