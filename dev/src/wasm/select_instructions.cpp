@@ -40,6 +40,9 @@ void Selector::instruction(const lowir::Instruction& inst)
 	}
 	case Opcode::Phi:
 		return;
+	case Opcode::Vector:
+		vector_instruction(inst);
+		return;
 	case Opcode::Addr:
 		address(inst.ops[0]);
 		break;

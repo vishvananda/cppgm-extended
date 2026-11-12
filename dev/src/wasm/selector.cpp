@@ -34,6 +34,9 @@ void Selector::constant(Literal bits, Type type)
 {
 	switch (value_type(type))
 	{
+	case ValueType::V128:
+		vector_constant(bits);
+		break;
 	case ValueType::I32:
 		out_.emit(Op::I32Const, { static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(bits.low))) });
 		break;
@@ -191,6 +194,8 @@ Op Selector::memory_op(Type type, bool store) const
 		return store ? Op::F32Store : Op::F32Load;
 	case TypeKind::F64:
 		return store ? Op::F64Store : Op::F64Load;
+	case TypeKind::V128:
+		return store ? Op::V128Store : Op::V128Load;
 	default:
 		throw WasmError("Wasm memory value requires legalization");
 	}

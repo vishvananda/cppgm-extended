@@ -1,0 +1,1 @@
+{"source":true,"reference_sources":["200-vector-controls-oracle.cpp"],"reference_flags":["-msimd128"],"llvm_interop":true,"runtime":true,"sequences":[[{"export":"observe","args":["0"],"result":"17"},{"export":"observe","args":["2"],"result":"17"},{"export":"observe","args":["7"],"result":"17"}]],"reference_initialize":"__wasm_call_ctors"}

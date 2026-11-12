@@ -1529,19 +1529,22 @@ for integer/float conversions lives in the operator spelling rather than the typ
 ### Vector Operations
 
 PA30 adds these forms for GNU vector types and SSE builtins. A `v128` value is
-sixteen bytes in one XMM register. It has no lanes of its own: each operation
-states how it reads the bits. Every optimization level uses these forms. `-O0`
-keeps each value in a sixteen-byte stack home, aligned to 16.
+sixteen bytes with natural alignment 16. It has no lanes of its own: each
+operation states how it reads the bits. Every optimization level carries these
+forms. PA30's native backend uses XMM registers and aligned sixteen-byte stack
+homes at `-O0`; PA37 uses Wasm's `v128` values and typed locals.
 
 `v128` is valid wherever a scalar value type is: slots, `load`, `store`, `copy`,
 `phi`, parameters, results and call arguments. `select` does not take it. A
 `load` or `store` of `v128` needs no alignment.
 
-At a call boundary a `v128` value takes the next XMM register, SSE and SSEUP
+At a native call boundary a `v128` value takes the next XMM register, SSE and SSEUP
 together, and a result returns in `xmm0`. With no register left it goes on the
 stack at the next 16-byte boundary. This is the psABI's rule for `__m128` and
 any other 16-byte vector. A class containing a vector is still an `obj` with
-stated classes (see [Object ABI Conventions](#object-abi-conventions)).
+stated classes (see [Object ABI Conventions](#object-abi-conventions)). Wasm
+uses the [PA37 target ABI](../pa37/target-abi.md#values-and-calls), including
+singleton-vector records; native register classes do not choose its convention.
 
 The lowering makes a GNU vector of 16 bytes a `v128`. Exceptions are a vector of
 `bool` lanes and a one-lane vector of a floating type, which stay `obj`. A
@@ -1595,7 +1598,8 @@ These forms have no single SSE name:
 - `roundps` and `roundpd` round packed lanes using the immediate's SSE rounding
   controls; `roundss` and `roundsd` round the low lane of the second operand
   and retain the first operand's upper lanes. Callers ensure SSE4.1 support.
-- The blends take `xmm0` as the mask, so a backend moves `%mask` there.
+- The native blends use `xmm0` as their mask register. Other targets preserve
+  the lane selections using their own representation.
 - `movss` and `movsd` are the register forms: the low lane of `%b` above the
   upper lanes of `%a`.
 - `sqrtss`, `sqrtsd`, `rcpss` and `rsqrtss` compute on the low lane of `%b` and

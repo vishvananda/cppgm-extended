@@ -1,0 +1,1 @@
+{"source":true,"units":["400-vector-source-boundaries.t.1"],"reference_flags":["-msimd128"],"llvm_interop":true,"exports":["combine","add_box"],"abi":{"combine":{"params":["v128","v128"],"results":["v128"]},"add_box":{"params":["v128","i32"],"results":["v128"]}},"calls":[{"export":"observe","args":["2"],"result":"17"},{"export":"observe","args":["-9"],"result":"17"}]}

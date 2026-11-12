@@ -13,7 +13,7 @@ namespace {
 
 uint32_t item_align(Type type)
 {
-	const uint32_t align = (type.is_vector() ? 16 : lowir::data_alignment(type));
+	const uint32_t align = lowir::data_alignment(type);
 	return align > 16 ? 16 : align;
 }
 

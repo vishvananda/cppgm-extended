@@ -142,6 +142,14 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 		object.symbols.push_back(std::move(identity));
 		object.tags.push_back(std::move(tag));
 	}
+	bool uses_simd = false;
+	for (const Signature& type : module.signatures)
+	{
+		for (ValueType value : type.parameters)
+			uses_simd = uses_simd || value == ValueType::V128;
+		for (ValueType value : type.results)
+			uses_simd = uses_simd || value == ValueType::V128;
+	}
 	for (lowir::SymbolId id : module.definitions)
 	{
 		ExceptionPlan exceptions;
@@ -149,6 +157,10 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 			prepare_exception_plan(program, id, object, symbols, groups[id], exceptions);
 		Function function;
 		Selector(program, module, id, function, &exceptions).run();
+		for (ValueType local : function.locals)
+			uses_simd = uses_simd || local == ValueType::V128;
+		for (const auto& inst : function.instructions)
+			uses_simd = uses_simd || (static_cast<unsigned>(inst.op) >> 8) == 0xfd;
 		ObjectFunction& destination = object.functions[module.function_indices[id]];
 		try
 		{
@@ -180,6 +192,8 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 				adapt_wasi_entry(object, symbols[id]);
 	object.features = { { '+', "mutable-globals" }, { '+', "sign-ext" }, { '+', "bulk-memory" },
 		{ '+', "nontrapping-fptoint" }, { '+', "reference-types" } };
+	if (uses_simd)
+		object.features.push_back({ '+', "simd128" });
 	if (!module.tag_types.empty())
 	{
 		object.features.push_back({ '+', "exception-handling" });

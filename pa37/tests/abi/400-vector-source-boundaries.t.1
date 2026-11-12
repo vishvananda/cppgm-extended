@@ -1,0 +1,5 @@
+#include "400-vector-source-boundaries.h"
+extern "C" Ints combine(Ints a, Ints b) { return ((a + b) * (a - b)) ^ b; }
+extern "C" Box add_box(Box box, int add) { box.value += add; return box; }
+extern "C" Floats floats(Floats a, Floats b) { return (a + b) * b; }
+extern "C" unsigned alignment(const void* p) { return reinterpret_cast<unsigned long>(p) & 15; }

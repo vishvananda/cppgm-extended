@@ -19,6 +19,7 @@ integer, and `size_t` is `unsigned long`.
 | `float` | 4 | `f32` |
 | `double` | 8 | `f64` |
 | `__int128`, binary128 `long double` | 16 | Two `i64` arguments; indirect result |
+| Portable 16-byte vectors | 16 | `v128` |
 
 Sign-extend signed narrow integer arguments/results and zero-extend unsigned
 ones. Keep the public ABI stable at every optimization level. Available
@@ -46,6 +47,18 @@ from object size alone.
 Pointers to data address linear memory. Function pointers identify table
 entries; index zero is null. Table entries, function indices and type indices
 are separate index spaces. Preserve exact indirect-call signatures.
+
+Packed operations keep their LowIR lane widths, signedness, saturation and
+shuffle rules. Preserve scalar operations' untouched upper lanes. Variable
+packed shift counts use the complete low 64-bit count; counts outside the lane
+width produce zero or sign fill, rather than Wasm's modulo-width shift.
+
+Wasm floating arithmetic follows the core specification's permitted NaN
+results. Moves, shuffles, bit operations and min/max selections preserve the
+selected bits. The profile has a fixed nearest-even floating environment;
+explicit vector rounding controls still select nearest, down, up or toward zero.
+Approximate reciprocals meet the earlier assignment's error bound and preserve
+the documented zero, infinity, NaN and tiny-value behavior.
 
 ## C++ objects and lifetime
 

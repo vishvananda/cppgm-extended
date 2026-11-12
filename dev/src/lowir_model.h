@@ -181,6 +181,7 @@ inline unsigned data_alignment(Type type)
 		return type.pointer_bytes();
 	case TypeKind::I128:
 	case TypeKind::F80:
+	case TypeKind::V128:
 		return 16;
 	case TypeKind::Obj:
 		return 1u << type.align_log2;

@@ -403,3 +403,27 @@ shared target costs and the published quality/performance checks remain next.
 The full strict/self-host/export qualification above describes the preceding
 EH/runtime checkpoint, not this later SIMD object checkpoint. Final integrated
 qualification remains required.
+
+## Complete LowIR vector selection checkpoint
+
+All 214 LowIR vector operations now select to standard SIMD128 instructions or
+bounded semantic legalization. Packed shift counts retain the full low 64 bits;
+float min/max, scalar upper lanes, explicit rounding and invalid conversions
+retain their specified behavior. Carryless multiplication uses a bounded set-bit
+loop; reciprocal approximations use exact arithmetic within the required bound
+and preserve the profile's endpoint behavior. The common V128 alignment is 16,
+matching the existing native value ABI and the Wasm ABI.
+
+Required PA37 controls pass 88/88. The independent native-result sweep passes
+205 operations at O0/O3 over three input sets; separate required controls cover
+the nine remaining operations, including every eight-bit immediate value.
+Reference C++ oracle names differ from builtin names, so missing builtin
+lowering cannot silently call the oracle implementation. Additional required
+cases cover reciprocal exceptional values, full-width shift counts, mixed
+LLVM/cppgm vector boundaries and aligned singleton-vector records. Logs use
+`simd-source-`, `simd-controls-`, `simd-approximate-` and `simd-full-shift-`;
+the successful broad semantic sweep is `vector-sweep-third.log`.
+
+Full integrated native/self-host/export qualification remains required after
+the remaining quality, object-profile and benchmark work. This checkpoint does
+not complete PA37.
