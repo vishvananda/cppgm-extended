@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iterator>
+#include <sys/stat.h>
 
 namespace wasm {
 
@@ -86,8 +87,17 @@ void archive(const Bytes& bytes, const std::string& path, std::vector<Object>& o
 
 } // namespace
 
-void read_link_inputs(const std::string& path, std::vector<Object>& objects)
+void read_link_inputs(const std::string& path, LinkInputs& inputs, bool once)
 {
+	struct stat status;
+	if (::stat(path.c_str(), &status) != 0)
+		throw WasmError("cannot read Wasm link input: " + path);
+	const std::pair<uint64_t, uint64_t> identity{ static_cast<uint64_t>(status.st_dev),
+		static_cast<uint64_t>(status.st_ino) };
+	if (once && std::find(inputs.files.begin(), inputs.files.end(), identity) != inputs.files.end())
+		return;
+	inputs.files.push_back(identity);
+	auto& objects = inputs.objects;
 	std::ifstream file(path, std::ios::binary);
 	if (!file)
 		throw WasmError("cannot read Wasm link input: " + path);

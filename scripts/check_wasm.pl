@@ -9,7 +9,7 @@ use FindBin;
 use JSON::PP qw(decode_json);
 use lib $FindBin::Bin;
 use CppgmBatchWorker qw(collect_tests run_command_capture);
-use CppgmWasmModule qw(export_signatures export_tag_signatures);
+use CppgmWasmModule qw(export_signatures export_tag_signatures sequence_module);
 use CppgmWasmFixture qw(mutate_object);
 
 sub read_file {
@@ -144,9 +144,11 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     }
     my @supplied_inputs = (@provided_objects, @runtime_libraries);
     my @modules;
+    my %initialize;
     my $module = "$directory/program-$level.wasm";
+    my @sequence_exports = map { $_->{export} } map { @$_ } @{$expect->{sequences} // []};
     my @exports = map { ('--export', $_) }
-        ((map { $_->{export} } @{$expect->{calls} // []}), @{$expect->{exports} // []});
+        ((map { $_->{export} } @{$expect->{calls} // []}), @{$expect->{exports} // []}, @sequence_exports);
     if (!$expect->{archive_units}) {
     my $tool = $expect->{source} ? $source_compiler : $compiler;
     ($status, $stdout, $stderr) = command("compile-$level", $tool, "-O$level",
@@ -280,6 +282,16 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         die "$test: invalid round-trip linked module: $stdout$stderr\n" if $status;
         push @modules, $output;
     }
+    if ($expect->{llvm_link}) {
+        my $lld = $ENV{CPPGM_WASM_LD} // 'wasm-ref-ld';
+        my $output = "$directory/llvm-link-$level.wasm";
+        ($status, $stdout, $stderr) = command("llvm-link-$level", $lld,
+            '--no-entry', @exports, @objects, @supplied_inputs, '-o', $output);
+        die "$test: reference link failed: $stdout$stderr\n" if $status;
+        ($status, $stdout, $stderr) = command("llvm-link-validate-$level", $validator, 'validate', $output);
+        die "$test: invalid reference-linked module: $stdout$stderr\n" if $status;
+        push @modules, $output;
+    }
     if ($expect->{llvm_interop}) {
         die "$test: LLVM interoperability needs C++ source units\n" unless $expect->{source};
         my $clang = $ENV{CPPGM_WASM_CLANG} // 'wasm-ref-clang++';
@@ -301,8 +313,15 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                 my @tool = $linker eq 'cppgm'
                     ? ($source_compiler, '--target', ($expect->{target} // 'wasm32-unknown-unknown'), @target_flags, @{$expect->{link_flags} // []})
                     : $expect->{wasi} ? ($clang, '--target=wasm32-wasip1', @{$expect->{link_flags} // []}, @{$expect->{reference_link_flags} // []}) : ($lld, '--no-entry');
-                my @link_exports = $linker eq 'llvm' && $expect->{wasi}
-                    ? map { ('-Xlinker', $_) } @exports : @exports;
+                my @link_exports = @exports;
+                if ($linker eq 'llvm' && $expect->{reference_initialize}) {
+                    # Exporting the constructor entry disables LLD's per-command
+                    # wrappers. The reference reactor host calls it once.
+                    push @link_exports, '--export', $expect->{reference_initialize};
+                    $initialize{$output} = $expect->{reference_initialize};
+                }
+                @link_exports = map { ('-Xlinker', $_) } @link_exports
+                    if $linker eq 'llvm' && $expect->{wasi};
                 ($status, $stdout, $stderr) = command("mixed-link-$producer-$linker-$level",
                     @tool, @link_exports, @mixed, @supplied_inputs, '-o', $output);
                 die "$test: mixed-object $linker link failed: $stdout$stderr\n" if $status;
@@ -343,6 +362,20 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                 if $status != $run->{exit};
             die "$test: WASI command output expected '$run->{stdout}', got '$stdout'\n"
                 if $stdout ne $run->{stdout};
+        }
+        for my $sequence (@{$expect->{sequences} // []}) {
+            my $wrapped = "$directory/sequence-" . ++$command_sequence . '.wasm';
+            my $entry = sequence_module($run_module, $wrapped, $sequence, $initialize{$run_module});
+            ($status, $stdout, $stderr) = command("sequence-validate-$level", $validator, 'validate', $wrapped);
+            die "$test: invalid sequence driver: $stdout$stderr\n" if $status;
+            ($status, $stdout, $stderr) = command("sequence-run-$level", $runtime, 'run', '--invoke', $entry, $wrapped);
+            $stdout =~ s/\s+\z//;
+            if (!$status && $stdout =~ /^-([0-9]+)$/ && $1 <= @$sequence) {
+                my $call = $sequence->[$1 - 1];
+                die "$test: same-instance assertion $1 ($call->{export}) expected $call->{result} in $run_module\n";
+            }
+            die "$test: same-instance sequence failed ($status): $stdout$stderr\n"
+                if $status || $stdout ne '17';
         }
         for my $call (@{$expect->{calls} // []}) {
             ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run',

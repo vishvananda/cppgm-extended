@@ -70,6 +70,18 @@ an untagged file cannot be merged into a wasm32 program. Reject unknown names,
 unsupported versions, repeated profiles and profiles after a definition.
 Preserve an explicit profile when serializing, even in a helper-only unit.
 
+A Wasm header may also state its exception payload protocol:
+`target wasi 1 [exception_abi=cxx]`. Omission means `opaque`: `throw` carries
+scalar/pointer bits, `exception` reads them, and catch-all clauses select the
+handler. C++ producers state `cxx` and use the reserved runtime hooks instead
+of `throw`; `exception ptr` then reads the runtime unwind pointer, and typed
+catch/filter clauses use the supplied C++ personality. Preserve this typed
+fact during serialization. Reject unknown protocols, non-Wasm `cxx` headers
+and input units with conflicting protocols. Link separately compiled objects
+when combining protocols; payloads of one protocol must not be reinterpreted
+as the other's.
+
+
 The selected profile determines pointer storage, alignment and index scaling:
 eight bytes on x86-64 and four on wasm32. Integer and floating LowIR types
 retain their stated widths. In particular, `f80` means x87 format; source

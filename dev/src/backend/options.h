@@ -23,6 +23,8 @@ struct Options
 	std::vector<std::string> link_inputs;
 	std::string sysroot;
 	std::string resource_directory;
+	bool cxx_runtime = false;
+	bool exceptions = true;
 	bool no_standard_libraries = false;
 	bool no_startfiles = false;
 	const opt::OptimizerOptions* optimizer = nullptr;

@@ -854,7 +854,7 @@ int link_mode(const Invocation& invocation)
 // One translation unit's posttoken records (`sof`, the PA2 tokens, `eof`);
 // false after an error.
 bool wasm_input(const Input& input, const Invocation& invocation, const backend::Options& options,
-	std::vector<wasm::Object>& objects, std::string& error)
+	wasm::LinkInputs& inputs, std::string& error)
 {
 	if (input.kind == Input::Kind::Object || input.kind == Input::Kind::Library)
 	{
@@ -863,7 +863,7 @@ bool wasm_input(const Input& input, const Invocation& invocation, const backend:
 		try
 		{
 			wasm::read_link_inputs(
-				input.kind == Input::Kind::Library ? find_library(invocation, input.name) : input.name, objects);
+				input.kind == Input::Kind::Library ? find_library(invocation, input.name) : input.name, inputs);
 			return true;
 		}
 		catch (const wasm::WasmError& failure)
@@ -897,7 +897,7 @@ bool wasm_input(const Input& input, const Invocation& invocation, const backend:
 	wasm::Object object;
 	if (!wasm::compile_object(program, options, object, dump, error))
 		return false;
-	objects.push_back(std::move(object));
+	inputs.objects.push_back(std::move(object));
 	return true;
 }
 
@@ -912,11 +912,13 @@ int wasm_mode(const Invocation& invocation)
 	options.exports = invocation.exports;
 	options.sysroot = invocation.sysroot;
 	options.resource_directory = invocation.resource_directory;
+	options.cxx_runtime = true;
+	options.exceptions = invocation.preprocessor.modes.exceptions;
 	options.no_standard_libraries = invocation.no_standard_libraries;
 	options.no_startfiles = invocation.no_startfiles;
 	options.optimizer = &invocation.optimizer;
 	std::string error;
-	std::vector<wasm::Object> objects;
+	wasm::LinkInputs objects;
 	for (const Input& input : invocation.inputs)
 	{
 		if (!wasm_input(input, invocation, options, objects, error))
@@ -933,7 +935,7 @@ int wasm_mode(const Invocation& invocation)
 				std::cerr << "ERROR: " << error << std::endl;
 				return EXIT_FAILURE;
 			}
-			objects.clear();
+			objects.objects.clear();
 		}
 	}
 	if (!invocation.compile_only)

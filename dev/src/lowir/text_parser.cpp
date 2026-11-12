@@ -47,6 +47,8 @@ void Parser::define_words()
 	};
 	for (unsigned i = 0; i < kKeywordCount; ++i)
 		define(lowir_model::spelling(static_cast<Keyword>(i)), WordClass::Keyword, i);
+	for (unsigned i = 0; i < kExceptionAbiCount; ++i)
+		define(lowir_model::spelling(static_cast<ExceptionAbi>(i)), WordClass::ExceptionAbi, i);
 	for (unsigned i = 0; i < kMetadataKeyCount; ++i)
 	{
 		const char* text = ir_model::spelling(static_cast<MetadataKey>(i));
@@ -214,6 +216,7 @@ void Parser::parse(const char* begin, const char* end, const std::string& source
 void Parser::parse_target()
 {
 	target_model::Target incoming = target_model::Target::Linux;
+	ExceptionAbi abi = ExceptionAbi::Opaque;
 	const bool explicit_target = accept_keyword(Keyword::Target);
 	if (explicit_target)
 	{
@@ -233,10 +236,24 @@ void Parser::parse_target()
 		advance();
 		if (parse_small_integer("target profile version") != 1)
 			fail("unsupported target profile version");
+		if (accept(TokenKind::LBracket))
+		{
+			expect_keyword(Keyword::ExceptionAbi);
+			expect(TokenKind::Equals, "=");
+			const WordInfo value = word(token());
+			if (value.word_class != WordClass::ExceptionAbi)
+				fail("unknown exception ABI");
+			abi = static_cast<ExceptionAbi>(value.value);
+			advance();
+			expect(TokenKind::RBracket, "]");
+		}
+		if (abi != ExceptionAbi::Opaque && !target_model::is_wasm(incoming))
+			fail("exception ABI requires a Wasm target");
 	}
-	if ((unit_seen_ || program_.explicit_target) && program_.target != incoming)
+	if ((unit_seen_ || program_.explicit_target) && (program_.target != incoming || program_.exception_abi != abi))
 		fail("incompatible LowIR target profiles");
 	program_.target = incoming;
+	program_.exception_abi = abi;
 	program_.explicit_target = program_.explicit_target || explicit_target;
 	unit_seen_ = true;
 }

@@ -112,6 +112,7 @@ void check_lowir()
 	round_trip<ComparePredicate>("ComparePredicate", kComparePredicateCount);
 	round_trip<ConvertOp>("ConvertOp", kConvertOpCount);
 	round_trip<Keyword>("Keyword", kKeywordCount);
+	round_trip<ExceptionAbi>("ExceptionAbi", kExceptionAbiCount);
 	round_trip<NamedLiteral>("NamedLiteral", kNamedLiteralCount);
 	for (unsigned bit = 1; bit < 256; bit <<= 1)
 	{

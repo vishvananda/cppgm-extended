@@ -86,14 +86,22 @@ struct Object
 	std::vector<ObjectExport> exports;
 };
 
+// Input identities are retained once per file, never rediscovered from member
+// diagnostic paths. Explicit duplicate objects still reach symbol resolution.
+struct LinkInputs
+{
+	std::vector<Object> objects;
+	std::vector<std::pair<uint64_t, uint64_t>> files;
+};
+
 bool relocation_addend(RelocationKind kind);
 void prepare_finalizers(lowir::Program& program);
 void adapt_wasi_entry(Object& object, uint32_t symbol);
-void add_runtime_inputs(std::vector<Object>& objects, const backend::Options& options);
+void add_runtime_inputs(LinkInputs& inputs, const backend::Options& options);
 void make_object(lowir::Program& program, const backend::Options& options, Object& object, std::string& dump);
 void write_object(const Object& object, Bytes& output);
 void read_object(const std::string& path, Object& object);
-void read_link_inputs(const std::string& path, std::vector<Object>& objects);
+void read_link_inputs(const std::string& path, LinkInputs& inputs, bool once = false);
 void link_objects(const std::vector<Object>& objects, const backend::Options& options, Bytes& output);
 
 } // namespace wasm

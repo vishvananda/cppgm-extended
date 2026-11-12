@@ -211,7 +211,10 @@ void Selector::run()
 	prepare_locals();
 	if (exceptions_ != nullptr && exceptions_->active)
 	{
-		exception_pointer_ = add_local(ValueType::I32);
+		const bool cxx = module_.exception_abi == ExceptionAbi::Cxx;
+		exception_pointer_ = add_local(cxx ? ValueType::I32 : ValueType::I64);
+		if (!cxx)
+			exception_high_ = add_local(ValueType::I64);
 		exception_reference_ = add_local(ValueType::ExnRef);
 		exception_filter_ = add_local(ValueType::I32);
 		exception_selector_ = add_local(ValueType::I32);
@@ -219,9 +222,11 @@ void Selector::run()
 		for (uint32_t i = 0; i < exceptions_->tables.landings.size(); ++i)
 		{
 			exception_contexts_.push_back(add_local(ValueType::ExnRef));
+			add_local(cxx ? ValueType::I32 : ValueType::I64);
 			add_local(ValueType::I32);
 			add_local(ValueType::I32);
-			add_local(ValueType::I32);
+			if (!cxx)
+				add_local(ValueType::I64);
 		}
 	}
 	prepare_frame();

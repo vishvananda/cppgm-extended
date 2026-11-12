@@ -17,11 +17,14 @@ uint32_t flags(const lowir::Symbol& symbol)
 															 : 0;
 }
 
-void relocate_symbols(std::vector<Relocation>& relocations, const std::vector<uint32_t>& symbols)
+void relocate_symbols(std::vector<Relocation>& relocations, const std::vector<uint32_t>& symbols, bool& uses_table)
 {
 	for (Relocation& relocation : relocations)
 		if (relocation.kind != RelocationKind::TypeIndex)
 		{
+			uses_table = uses_table || relocation.kind == RelocationKind::TableIndex ||
+				relocation.kind == RelocationKind::TableIndexI32 ||
+				relocation.kind == RelocationKind::TableIndexRelative || relocation.kind == RelocationKind::TableNumber;
 			if (relocation.index >= symbols.size() || symbols[relocation.index] == lowir::kNoId)
 				throw WasmError("Wasm relocation refers to a symbol without an object identity");
 			relocation.index = symbols[relocation.index];
@@ -42,6 +45,7 @@ ObjectSymbol imported_symbol(uint8_t kind, uint32_t index, const char* name)
 
 void make_object(lowir::Program& program, const backend::Options& options, Object& object, std::string& dump)
 {
+	bool uses_table = false;
 	Module module;
 	module.relocatable = true;
 	prepare_exception_runtime(program, module);
@@ -125,18 +129,23 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 	if (!module.tag_types.empty())
 	{
 		symbols[module.exception_tag_symbol] = static_cast<uint32_t>(object.symbols.size());
-		object.symbols.push_back(imported_symbol(4, 0, "__cpp_exception"));
+		const bool cxx = module.exception_abi == lowir::ExceptionAbi::Cxx;
 		ObjectTag tag;
 		tag.type = module.tag_types[0];
 		tag.module = "env";
-		tag.name = "__cpp_exception";
-		tag.imported = true;
+		tag.name = cxx ? "__cpp_exception" : "__cppgm_opaque_exception";
+		tag.imported = cxx;
+		ObjectSymbol identity = imported_symbol(4, 0, tag.name.c_str());
+		// Opaque payloads use one coalesced private tag across translation units.
+		if (!cxx)
+			identity.flags = 1;
+		object.symbols.push_back(std::move(identity));
 		object.tags.push_back(std::move(tag));
 	}
 	for (lowir::SymbolId id : module.definitions)
 	{
 		ExceptionPlan exceptions;
-		if (module.personality_symbol != lowir::kNoId)
+		if (module.exception_regions)
 			prepare_exception_plan(program, id, object, symbols, groups[id], exceptions);
 		Function function;
 		Selector(program, module, id, function, &exceptions).run();
@@ -159,10 +168,12 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 		destination.code.bytes = body.bytes();
 		for (Relocation& relocation : destination.code.relocations)
 			relocation.offset -= prefix;
-		relocate_symbols(destination.code.relocations, symbols);
+		relocate_symbols(destination.code.relocations, symbols, uses_table);
 	}
 	for (ObjectData& data : object.data)
-		relocate_symbols(data.contents.relocations, symbols);
+		relocate_symbols(data.contents.relocations, symbols, uses_table);
+	if (uses_table)
+		object.symbols[symbols[module.table_symbol]].flags |= 0x80;
 	if (options.target == target_model::Target::Wasi)
 		for (lowir::SymbolId id : program.order)
 			if (program.symbols[id].metadata.role == ir_model::SR_ENTRY)

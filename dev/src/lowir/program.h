@@ -309,6 +309,7 @@ struct Program
 	~Program();
 	target_model::Target target = target_model::Target::Linux;
 	bool explicit_target = false;
+	ExceptionAbi exception_abi = ExceptionAbi::Opaque;
 	Type pointer_type() const { return Type::pointer(target_model::data_layout(target).pointer_bytes); }
 
 	Program(const Program&) = delete;

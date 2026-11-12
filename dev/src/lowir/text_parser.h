@@ -37,6 +37,7 @@ enum class WordClass : uint8_t
 	Opcode, // an instruction head
 	Fact,   // an InstructionFlag word: volatile, typed, nowrap, exact
 	IndexBounds,
+	ExceptionAbi,
 	Storage // a GlobalStorageMode word after a global's name
 };
 

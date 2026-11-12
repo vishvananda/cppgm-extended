@@ -17,7 +17,7 @@ void Selector::call(const lowir::Instruction& inst)
 	const uint32_t site = exceptions_ != nullptr && exceptions_->active ? exceptions_->analysis.eh_sites_[current_inst_]
 																		: 0;
 	if (site != 0)
-		exception_call(inst, *signature, site - 1);
+		exception_call(inst, signature, site - 1);
 	else
 		call_body(inst, *signature);
 }

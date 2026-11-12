@@ -6,18 +6,18 @@ or a green partial suite does not complete PA37.
 
 | Requirement | Current evidence | Remaining qualification |
 | --- | --- | --- |
-| Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes, target-sized class ABI and physical structor returns | Modern EH boundary and broader portable C++ target cases |
+| Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes, target-sized class ABI and physical structor returns | Broader portable C++ target cases and final integrated qualification |
 | Scalar and aggregate execution | Qualified binary128 and variadic boundaries; scalar i128 selection and mixed LLVM calls now implemented | Remaining float formats and complete type/layout edge cases |
 | CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
 | Standard objects and own static linker | Linking-v2 objects, multi-result control/signatures, modern EH tags/references, both LLVM interop directions at O0–O3, archives and static GOT address globals | Defined globals, remaining object/feature/SIMD profile and malformed inputs |
-| C++ runtime | Class ABI, allocation, dispatch, RTTI, guards and finalization qualified with supplied no-EH libraries | Cross-compiler modern EH, automatic C++ runtime selection and broader portable C++ cases |
-| Modern EH execution dependency | Cppgm links LLVM's cleanup/catch/rethrow objects with the pinned EH runtime; raw tag, reference-catch and rethrow interop passes | Cppgm source lowering and automatic EH runtime selection |
-| WASI commands and freestanding reactors | Qualified WASI startup, argument/I/O/exit behavior and freestanding exports | Same-instance repeated-export checks and broader C++ services |
+| C++ runtime | Class ABI, allocation, dispatch, RTTI, guards, finalization and modern source EH; automatic EH/no-EH runtime selection | Broader portable C++ cases and final integrated qualification |
+| Modern EH execution dependency | Source/serialized EH, typed catches, nested cleanup contexts, stack recovery, opaque LowIR payloads and mixed LLVM producers/linkers pass | Additional merged-context/foreign-language cases and final integrated qualification |
+| WASI commands and freestanding reactors | Qualified WASI startup, argument/I/O/exit behavior, freestanding initialization and same-instance state/EH sequences | Broader C++ services and final integrated qualification |
 | SIMD and shared optimization | Shared LowIR optimizer; native-only aggregate carrier rewrite gated by target ABI | Portable SIMD legalization, target costs, local/stack cleanup and published quality envelopes |
 | Robust diagnostics and determinism | Bad target/version/shape tests; bounded MIR validation | Complete malformed object/feature/signature/relocation coverage and deterministic multi-object linking |
 | Course material and export | PA37 handout/design notes, target/MIR scaffolds, offline source/licence pins, normal Perl runner | Final scope and scaffold review, complete reference-tool prerequisites, clean export qualification |
 | Benchmarks and CI | Required Wasm lane integrated with pinned runtime/validator/reference SDK on both hosts | Standard benchmark entry, separate compile/size/startup/runtime measurements and final Linux/macOS results |
-| Native regressions and efficiency | Class snapshot: 10750 strict tests, debug info, PA5 self-host, byte-identical inception; native objects unchanged | Repeat required checks and native performance comparison for the completed implementation on the current LLVM base |
+| Native regressions and efficiency | Latest EH snapshot: 10772 strict tests, 83 Wasm controls with host/self tools, debug info, PA5 self-host and byte-identical inception | Repeat required checks and native performance comparison for the completed implementation on the current LLVM base |
 
 All raw results, probes, pinned binaries and performance observations live outside
 Git under `/mnt/vizier/cppgm-wasm32-evidence`. Earlier qualification applies only
@@ -291,8 +291,8 @@ checks pass. Moving the PA26 contract citation required moving its audit-table
 entry too; the final audit log records the corrected mapping. File warnings
 drop from eight to seven because the native state header is smaller.
 The student export regenerates consistently; a fresh bundle client passes its
-270-document inventory and all 43 wrappers. The new placement result is
-recorded when complete. Results use `eh-shared-`.
+270-document inventory and all 43 wrappers. Placement scans 10093 tests with zero placement/local-hygiene findings and
+89 advisory EH leads. Results use `eh-shared-`.
 
 Frozen native compilers compare the preceding object stage with this extraction
 on the same LLVM base. O0 changes from 3,058,573,959 to 3,058,038,222 instructions
@@ -330,3 +330,54 @@ mixed-compiler cleanup/rethrow, typed enclosing handlers, catch-copy termination
 nested cleanup exceptions and dynamic stack recovery. Full qualification of
 this source checkpoint is pending; explicit LowIR payload throws, runtime
 selection, SIMD, remaining object/quality behavior and benchmarks remain work.
+
+
+## Rebased source EH, opaque payload and reactor checkpoint
+
+Rebased all 24 Wasm commits onto current main `e2831a513`, including the
+merged LLVM optimization work. The preserved pre-rebase branch is
+`backup/wasm-pre-main-20261112`; the rebased source checkpoint is `4bbc71930`.
+
+LowIR now carries the typed `exception_abi=opaque|cxx` target-header fact.
+Opaque scalar/pointer payloads use a distinct coalesced two-word tag and need
+no C++ runtime. Tests cover integer widths through i128, floating bit patterns,
+function/data pointers, cleanup/resume, and mixed LLVM tag objects. Typed
+catches in an opaque unit and raw throws in a C++ unit fail. A thrown function
+pointer's boundary is not the boundary of a call: the added reducer exposed
+and fixed incorrect `unwind=no` propagation into a raw throw.
+
+Sysroot links now supply C++, ABI and unwind libraries automatically, select
+no-EH libraries for `-fno-exceptions`, and honor the explicit library-disable
+flags. Per-input device/inode identities prevent duplicate default archive
+loading without parsing diagnostic member paths. Serialized C++ LowIR defaults
+to the EH runtime; callers needing another library configuration may disable
+default libraries and supply it explicitly.
+
+The Perl checker now appends and independently validates a small assertion
+driver for each same-instance call sequence. It checks persistent memory,
+one-time global/local initialization, signed 64-bit constants and repeated EH
+and stack recovery. Incorrect state expectations fail at the named assertion.
+LLD reference reactors export their constructor entry and the reference host
+calls it once, disabling LLD's per-command constructor/destructor wrappers.
+Cppgm's freestanding module continues to initialize through its actual start
+section. An address-only LLVM interop reducer also exposed a table-liveness
+issue: function-address relocations now retain the table symbol even without
+an indirect call, following the object convention.
+
+The strict report passes 10772/10772; host-built and self-built PA37 tools pass
+83/83. PA5 self-host and byte-identical inception pass. Debug info, PA36 smoke,
+Clang syntax and the architecture/file checks pass; seven inherited file
+warnings remain. The first placement pass scans 10108 tests with zero placement
+or local-hygiene findings and 89 advisory EH leads. The final harness and refreshed student export pass; a fresh bundle client
+passes its 270-document inventory, 63-file prose audit and all 43 wrappers.
+Frozen native compilers on the same main base compare `4bbc71930` with this
+checkpoint: O0 is 3,058,419,177 versus 3,058,840,900 instructions (+0.0138%);
+O3 is 10,346,242,774 versus 10,346,620,736 (+0.0037%). Native objects remain
+byte-identical. `perf-eh-complete/` retains source patch, binary/input hashes,
+commands and every observation; these counts make no wall-time claim.
+Raw logs are prefixed `eh-complete-`, with earlier source-only results under
+`eh-source-`. The 34 broader portable EH probes still match pinned LLVM.
+
+SIMD, the remaining object/profile checks, quality envelopes, benchmarks and
+final full Linux/macOS qualification remain required. This checkpoint does not
+complete PA37.

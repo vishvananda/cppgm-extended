@@ -33,8 +33,9 @@ void Selector::exception_select(uint32_t index)
 
 void Selector::exception_snapshot(uint32_t landing, bool restore)
 {
-	const uint32_t current[4] = { exception_reference_, exception_pointer_, exception_filter_, exception_selector_ };
-	for (uint32_t k = 0; k < 4; ++k)
+	const uint32_t current[5] = { exception_reference_, exception_pointer_, exception_filter_, exception_selector_,
+		exception_high_ };
+	for (uint32_t k = 0; k < (exception_high_ == kNoId ? 4u : 5u); ++k)
 	{
 		out_.emit(Op::LocalGet, { restore ? exception_contexts_[landing] + k : current[k] });
 		out_.emit(Op::LocalSet, { restore ? current[k] : exception_contexts_[landing] + k });
@@ -54,6 +55,22 @@ void Selector::restore_exception_context()
 
 void Selector::exception_match(uint32_t landing)
 {
+	if (module_.exception_abi != ExceptionAbi::Cxx)
+	{
+		const auto& entry = exceptions_->tables.landings[landing];
+		int32_t selector = 0;
+		for (uint32_t k = 0; k < entry.count; ++k)
+			if (exceptions_->tables.filters[entry.first + k] != 0)
+			{
+				selector = exceptions_->tables.filters[entry.first + k];
+				break;
+			}
+		out_.emit(Op::I32Const, { static_cast<uint64_t>(static_cast<int64_t>(selector)) });
+		out_.emit(Op::LocalSet, { exception_filter_ });
+		exception_select(landing);
+		exception_snapshot(landing, false);
+		return;
+	}
 	exception_address(module_.exception_context);
 	out_.emit(Op::I32Const, { landing });
 	out_.emit(Op::I32Store, { 2, 0 });
@@ -71,7 +88,7 @@ void Selector::exception_match(uint32_t landing)
 	exception_snapshot(landing, false);
 }
 
-void Selector::exception_call(const lowir::Instruction& inst, const lowir::Signature& signature, uint32_t landing)
+void Selector::exception_call(const lowir::Instruction& inst, const lowir::Signature* signature, uint32_t landing)
 {
 	out_.emit(Op::GlobalGet, { 0 });
 	out_.relocate(RelocationKind::GlobalIndex, module_.stack_symbol);
@@ -84,13 +101,18 @@ void Selector::exception_call(const lowir::Instruction& inst, const lowir::Signa
 	out_.emit(Op::TryTable, { block_type(ValueType::Void), 1, static_cast<uint64_t>(CatchKind::TagRef), 0, 0 });
 	out_.relocate(RelocationKind::TagIndex, module_.exception_tag_symbol, 3);
 	++nesting_;
-	call_body(inst, signature);
+	if (signature != nullptr)
+		call_body(inst, *signature);
+	else
+		exception_throw(inst);
 	out_.emit(Op::End);
 	--nesting_;
 	out_.emit(Op::Br, { 1 });
 	out_.emit(Op::End);
 	--nesting_;
 	out_.emit(Op::LocalSet, { exception_reference_ });
+	if (exception_high_ != kNoId)
+		out_.emit(Op::LocalSet, { exception_high_ });
 	out_.emit(Op::LocalSet, { exception_pointer_ });
 	out_.emit(Op::LocalGet, { exception_stack_ });
 	out_.emit(Op::GlobalSet, { 0 });
@@ -142,12 +164,25 @@ bool Selector::exception_instruction(const lowir::Instruction& inst)
 		}
 		return true;
 	case Opcode::Exception:
+		restore_exception_context();
+		exception_value(inst.type);
+		if (inst.type.kind() == TypeKind::I128)
+			store_wide(Value::temp(inst.result));
+		else
+			out_.emit(Op::LocalSet, { locals_[inst.result] });
+		return true;
 	case Opcode::ExceptionSelector:
 		restore_exception_context();
-		out_.emit(Op::LocalGet, { inst.op == Opcode::Exception ? exception_pointer_ : exception_selector_ });
+		out_.emit(Op::LocalGet, { exception_selector_ });
 		if (value_type(body_.temps[inst.result].type) == ValueType::I64)
-			out_.emit(inst.op == Opcode::ExceptionSelector ? Op::I64ExtendI32S : Op::I64ExtendI32U);
+			out_.emit(Op::I64ExtendI32S);
 		out_.emit(Op::LocalSet, { locals_[inst.result] });
+		return true;
+	case Opcode::Throw:
+		if (exceptions_->analysis.eh_sites_[current_inst_] != 0)
+			exception_call(inst, nullptr, exceptions_->analysis.eh_sites_[current_inst_] - 1);
+		else
+			exception_throw(inst);
 		return true;
 	case Opcode::Resume:
 		exception_resume(exceptions_->analysis.eh_sites_[current_inst_]);

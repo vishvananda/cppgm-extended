@@ -8,8 +8,7 @@ namespace wasm {
 
 bool compile_object(
 	lowir::Program& program, const backend::Options& options, Object& object, std::string& dump, std::string& error);
-bool output_objects(
-	std::vector<Object>& objects, const backend::Options& options, bool relocatable, std::string& error);
+bool output_objects(LinkInputs& inputs, const backend::Options& options, bool relocatable, std::string& error);
 bool compile_program(lowir::Program& program, const backend::Options& options, std::string& error);
 
 } // namespace wasm

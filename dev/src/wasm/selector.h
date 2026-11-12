@@ -22,8 +22,10 @@ private:
 	void instruction(const lowir::Instruction& inst);
 	void call(const lowir::Instruction& inst);
 	void call_body(const lowir::Instruction& inst, const lowir::Signature& signature);
-	void exception_call(const lowir::Instruction& inst, const lowir::Signature& signature, uint32_t landing);
+	void exception_call(const lowir::Instruction& inst, const lowir::Signature* signature, uint32_t landing);
 	void exception_select(uint32_t landing);
+	void exception_throw(const lowir::Instruction& inst);
+	void exception_value(lowir::Type type);
 	void exception_match(uint32_t landing);
 	void exception_snapshot(uint32_t landing, bool restore);
 	void restore_exception_context();
@@ -76,6 +78,7 @@ private:
 	Function& out_;
 	const ExceptionPlan* exceptions_;
 	uint32_t exception_pointer_ = lowir::kNoId;
+	uint32_t exception_high_ = lowir::kNoId;
 	uint32_t exception_reference_ = lowir::kNoId;
 	uint32_t exception_filter_ = lowir::kNoId;
 	uint32_t exception_selector_ = lowir::kNoId;

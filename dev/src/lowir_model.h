@@ -1036,6 +1036,26 @@ inline const char* float_suffix(TypeKind kind)
 // ---------------------------------------------------------------------------
 // Program structure (pa8/lowir.md "Program Structure", "Globals")
 
+// The exception payload protocol, independent of target and instruction spelling.
+enum class ExceptionAbi : std::uint8_t
+{
+	Opaque,
+	Cxx
+};
+
+const unsigned kExceptionAbiCount = static_cast<unsigned>(ExceptionAbi::Cxx) + 1;
+
+inline const char* spelling(ExceptionAbi abi)
+{
+	static const char* const names[kExceptionAbiCount] = { "opaque", "cxx" };
+	return names[static_cast<unsigned>(abi)];
+}
+
+inline bool from_spelling(const char* text, std::size_t length, ExceptionAbi* abi)
+{
+	return detail::find_spelling(text, length, 0, kExceptionAbiCount, abi);
+}
+
 // The structural words of the text other than instruction heads, types
 // and metadata.
 enum class Keyword : std::uint8_t
@@ -1057,16 +1077,17 @@ enum class Keyword : std::uint8_t
 	AssemblyFunction, // optional opaque assembly-defined function
 	AssemblyGlobal,   // ordered module assembly invocation
 	CodeLabel,        // a named address of a block, inside its function
-	Target            // target <profile> <version>, before definitions
+	Target,           // target <profile> <version>, before definitions
+	ExceptionAbi      // target header exception_abi=<protocol>
 };
 
-const unsigned kKeywordCount = static_cast<unsigned>(Keyword::Target) + 1;
+const unsigned kKeywordCount = static_cast<unsigned>(Keyword::ExceptionAbi) + 1;
 
 inline const char* spelling(Keyword keyword)
 {
 	static const char* const kKeywords[kKeywordCount] = { "declare", "global", "function", "alias", "object", "slot",
 		"block", "zero", "as", "debug_type", "debug_scope", "debug_local", "assembly", "equivalent_entry",
-		"assembly_function", "assembly_global", "code_label", "target" };
+		"assembly_function", "assembly_global", "code_label", "target", "exception_abi" };
 	return kKeywords[static_cast<unsigned>(keyword)];
 }
 

@@ -420,10 +420,13 @@ void ExceptionAnalysis::eh_walk(uint32_t b, bool record)
 			selector = inst.result;
 			break;
 		case Opcode::Call:
+		case Opcode::Throw:
 		{
+			if (inst.op == Opcode::Throw && !rematch_resumes_)
+				eh_fail("a throw instruction (host objects throw through the eh_throw runtime role)");
 			if (!record)
 				break;
-			const lowir::Signature* sig = program_->call_boundary(inst);
+			const lowir::Signature* sig = inst.op == Opcode::Call ? program_->call_boundary(inst) : nullptr;
 			if (sig != nullptr && sig->boundary.unwind == ir_model::CUM_NO)
 				break;
 			// The landing block (eh_prune makes it the landing's index).
@@ -468,8 +471,6 @@ void ExceptionAnalysis::eh_walk(uint32_t b, bool record)
 					eh_landing_mask(target.landing), work);
 			return;
 		}
-		case Opcode::Throw:
-			eh_fail("a throw instruction (host objects throw through the eh_throw runtime role)");
 		case Opcode::Branch:
 		{
 			if (record)
@@ -703,6 +704,7 @@ void ExceptionAnalysis::eh_prune(uint32_t& landings, bool& reads)
 				reads = true;
 				break;
 			case Opcode::Call:
+			case Opcode::Throw:
 				if (site != 0)
 					reach(site - 1, 2);
 				break;
@@ -733,7 +735,8 @@ void ExceptionAnalysis::eh_prune(uint32_t& landings, bool& reads)
 	for (uint32_t b = 0; b < n; ++b)
 		if (live[b] != 0)
 			for (lowir::InstId i = body.blocks[blocks_[b].id].first; i != kNoId; i = body.instructions[i].next)
-				if (body.instructions[i].op == Opcode::Call && eh_sites_[i] != 0)
+				if ((body.instructions[i].op == Opcode::Call || body.instructions[i].op == Opcode::Throw) &&
+					eh_sites_[i] != 0)
 					eh_sites_[i] = 1 + eh_landing_index_[eh_sites_[i] - 1];
 }
 

@@ -80,6 +80,8 @@ void ProgramLowering::lower_unit(
 	graph_ = &graph;
 	program_.target = graph.types.target();
 	program_.explicit_target = target_model::is_wasm(program_.target);
+	if (program_.explicit_target)
+		program_.exception_abi = lowir::ExceptionAbi::Cxx;
 	analyzer_ = &analyzer;
 	may_alias_kinds_ = 0;
 	for (const sema::Type* type : graph.may_alias_types)

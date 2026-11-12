@@ -85,7 +85,7 @@ void control_edges(const FunctionBody& body, ExceptionPlan& plan)
 		{
 			const auto& inst = body.instructions[i];
 			const uint32_t site = plan.analysis.eh_sites_[i];
-			if (inst.op == Opcode::Call && site != 0)
+			if ((inst.op == Opcode::Call || inst.op == Opcode::Throw) && site != 0)
 				add(plan.landing_blocks[site - 1]);
 			if ((inst.op == Opcode::Resume || inst.op == Opcode::Jump) && site != 0 &&
 				site != machine::ExceptionAnalysis::kResumeTerminal)
@@ -103,7 +103,14 @@ void prepare_exception_plan(const Program& program, SymbolId symbol, Object& obj
 	const FunctionBody& body = *program.functions[program.symbols[symbol].detail].body;
 	for (BlockId block : body.layout)
 		for (InstId i = body.blocks[block].first; i != kNoId; i = body.instructions[i].next)
-			plan.active = plan.active || opt::is_eh_instruction(body.instructions[i].op);
+		{
+			const auto op = body.instructions[i].op;
+			if (program.exception_abi == ExceptionAbi::Opaque && (op == Opcode::EhCatch || op == Opcode::EhFilter))
+				throw WasmError("typed catches require the C++ exception ABI");
+			if (program.exception_abi == ExceptionAbi::Cxx && op == Opcode::Throw)
+				throw WasmError("opaque throw requires the opaque exception ABI");
+			plan.active = plan.active || opt::is_eh_instruction(op);
+		}
 	if (!plan.active)
 		return;
 	opt::Cfg cfg;
@@ -156,7 +163,7 @@ void prepare_exception_plan(const Program& program, SymbolId symbol, Object& obj
 			plan.landing_blocks[landing] = block;
 	}
 	control_edges(body, plan);
-	if (plan.tables.landings.empty())
+	if (plan.tables.landings.empty() || program.exception_abi != ExceptionAbi::Cxx)
 		return;
 	ObjectData data;
 	data.alignment = 2;

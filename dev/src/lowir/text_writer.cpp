@@ -409,7 +409,16 @@ void Writer::write()
 	{
 		word(spelling(Keyword::Target));
 		word(target_model::lowir_spelling(program_.target));
-		text("1\n\n");
+		text("1");
+		if (program_.exception_abi != ExceptionAbi::Opaque)
+		{
+			text(" [");
+			text(spelling(Keyword::ExceptionAbi));
+			out_.push_back('=');
+			text(spelling(program_.exception_abi));
+			out_.push_back(']');
+		}
+		text("\n\n");
 	}
 	append_assembly_definitions(out_, program_);
 	const SymbolKind phases[] = { SymbolKind::GlobalDeclaration, SymbolKind::FunctionDeclaration,

@@ -1,6 +1,7 @@
 #include "wasm/exceptions.h"
 
 #include <cstring>
+#include "opt/function_ir.h"
 
 namespace wasm {
 
@@ -16,9 +17,7 @@ bool needs_regions(const Program& program)
 			{
 				const auto& body = *program.functions[program.symbols[id].detail].body;
 				for (InstId inst = body.blocks[block].first; inst != kNoId; inst = body.instructions[inst].next)
-					if ((body.instructions[inst].op == Opcode::EhTry ||
-							body.instructions[inst].op == Opcode::EhCleanup) &&
-						body.instructions[inst].ops[0].is(ValueKind::Block))
+					if (opt::is_eh_instruction(body.instructions[inst].op))
 						return true;
 			}
 	return false;
@@ -39,7 +38,9 @@ SymbolId runtime_symbol(Program& program, const char* name, const char* object)
 void prepare_exception_runtime(lowir::Program& program, Module& module)
 {
 	using namespace lowir;
-	if (!needs_regions(program))
+	module.exception_abi = program.exception_abi;
+	module.exception_regions = needs_regions(program);
+	if (!module.exception_regions || module.exception_abi != ExceptionAbi::Cxx)
 		return;
 	lowir::Signature type{};
 	type.result = Type::scalar(TypeKind::I32);

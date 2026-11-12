@@ -3,7 +3,7 @@ package CppgmWasmModule;
 use strict;
 use warnings;
 use Exporter 'import';
-our @EXPORT_OK = qw(export_signatures export_tag_signatures);
+our @EXPORT_OK = qw(export_signatures export_tag_signatures sequence_module);
 
 # Read only the public core-module type/index/export sections. Instruction
 # choices, local allocation and control structure are deliberately unobserved.
@@ -48,15 +48,16 @@ sub value_types {
 }
 
 sub export_interfaces {
-    my ($path) = @_;
+    my ($path, $keep_sections) = @_;
     open(my $file, '<:raw', $path) or die "Cannot read $path: $!\n";
     local $/;
     my $reader = {data => scalar(<$file>), offset => 0};
     bytes($reader, 8) eq "\0asm\1\0\0\0" or die "Expected core Wasm module\n";
-    my (@types, @functions, @tags, %exports, %tag_exports);
+    my (@types, @functions, @tags, %exports, %tag_exports, @sections);
     while ($reader->{offset} < length($reader->{data})) {
         my $id = byte($reader);
         my $section = {data => bytes($reader, number($reader)), offset => 0};
+        push @sections, [$id, $section->{data}] if $keep_sections;
         if ($id == 1) {
             for (1 .. number($section)) {
                 byte($section) == 0x60 or die "Expected core function type\n";
@@ -105,10 +106,110 @@ sub export_interfaces {
         die "Invalid Wasm tag export\n" if $index >= @tags || $tags[$index] >= @types;
         $tag_result{$name} = $types[$tags[$index]];
     }
-    return (\%result, \%tag_result);
+    return (\%result, \%tag_result, {sections => \@sections, exports => \%exports,
+        functions => \@functions, types => \@types});
 }
 
 sub export_signatures { my ($functions, $tags) = export_interfaces(@_); return $functions; }
 sub export_tag_signatures { my ($functions, $tags) = export_interfaces(@_); return $tags; }
+
+# Append a small assertion driver to the final module. Its calls share one
+# instance and its original start function; no external compiler is involved.
+sub unsigned_leb {
+    my ($n) = @_;
+    my $out = '';
+    do {
+        my $b = $n & 127;
+        $n >>= 7;
+        $out .= chr($b | ($n ? 128 : 0));
+    } while ($n);
+    return $out;
+}
+
+sub scalar_constant {
+    my ($type, $value) = @_;
+    if ($type eq 'i32' || $type eq 'i64') {
+        require Math::BigInt;
+        my $bits = $type eq 'i32' ? 32 : 64;
+        my $n = Math::BigInt->new("$value");
+        my $sign = Math::BigInt->new(2)->bpow($bits - 1);
+        my $modulus = $sign->copy()->bmul(2);
+        die "Invalid sequence integer $value for $type\n"
+            if $n->is_nan() || $n->bcmp($sign->copy()->bneg()) < 0 || $n->bcmp($modulus) >= 0;
+        $n->bsub($modulus) if $n->bcmp($sign) >= 0;
+        my $out = chr($type eq 'i32' ? 0x41 : 0x42);
+        while (1) {
+            my $b = $n->copy()->bmod(128)->numify();
+            $n->brsft(7);
+            my $done = ($n->is_zero() && !($b & 64)) || ($n->is_neg() && $n->is_one('-') && ($b & 64));
+            $out .= chr($b | ($done ? 0 : 128));
+            last if $done;
+        }
+        return $out;
+    }
+    die "Invalid sequence floating value $value\n"
+        unless "$value" =~ /\A[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?\z/i;
+    return chr(0x43) . pack('f<', $value) if $type eq 'f32';
+    return chr(0x44) . pack('d<', $value) if $type eq 'f64';
+    die "Unsupported sequence scalar type $type\n";
+}
+
+sub sequence_module {
+    my ($input, $output, $calls, $initialize) = @_;
+    my ($interfaces, $tags, $module) = export_interfaces($input, 1);
+    my $name = '__cppgm_sequence_check';
+    die "Sequence driver export already exists\n" if exists $interfaces->{$name};
+    my $body = "\0"; # no locals
+    if (defined $initialize) {
+        my $signature = $interfaces->{$initialize} // die "Missing sequence initializer $initialize\n";
+        die "Invalid sequence initializer type\n" if @{$signature->{params}} || @{$signature->{results}};
+        $body .= chr(0x10) . unsigned_leb($module->{exports}{$initialize});
+    }
+    my %ne = (i32 => 0x47, i64 => 0x52, f32 => 0x5c, f64 => 0x62);
+    my $ordinal = 0;
+    for my $call (@$calls) {
+        ++$ordinal;
+        my $signature = $interfaces->{$call->{export}} // die "Missing sequence export $call->{export}\n";
+        my @args = @{$call->{args} // []};
+        die "Sequence argument count mismatch\n" if @args != @{$signature->{params}};
+        for my $i (0 .. $#args) {
+            $body .= scalar_constant($signature->{params}[$i], $args[$i]);
+        }
+        $body .= chr(0x10) . unsigned_leb($module->{exports}{$call->{export}});
+        my @results = @{$signature->{results}};
+        die "Sequence check requires a scalar result or void\n" if @results > 1;
+        if (@results) {
+            my $type = $results[0];
+            die "Sequence result assertion is missing\n" unless exists $call->{result};
+            die "Unsupported sequence result type $type\n" unless exists $ne{$type};
+            $body .= scalar_constant($type, $call->{result}) . chr($ne{$type}) . "\x04\x40"
+                . scalar_constant('i32', -$ordinal) . "\x0f\x0b";
+        } else {
+            die "Void sequence call has a result assertion\n" if exists $call->{result};
+        }
+    }
+    $body .= "\x41\x11\x0b"; # return 17
+    my %append = (
+        1 => "\x60\x00\x01\x7f",
+        3 => unsigned_leb(scalar @{$module->{types}}),
+        7 => unsigned_leb(length($name)) . $name . "\0" . unsigned_leb(scalar @{$module->{functions}}),
+        10 => unsigned_leb(length($body)) . $body,
+    );
+    my $bytes = "\0asm\1\0\0\0";
+    for my $section (@{$module->{sections}}) {
+        my ($id, $data) = @$section;
+        if (exists $append{$id}) {
+            my $reader = {data => $data, offset => 0};
+            my $count = number($reader);
+            $data = unsigned_leb($count + 1) . substr($data, $reader->{offset}) . delete($append{$id});
+        }
+        $bytes .= chr($id) . unsigned_leb(length($data)) . $data;
+    }
+    die "Sequence module lacks required sections\n" if keys %append;
+    open(my $file, '>:raw', $output) or die "Cannot write $output: $!\n";
+    print {$file} $bytes;
+    close($file) or die "Cannot close $output: $!\n";
+    return $name;
+}
 
 1;

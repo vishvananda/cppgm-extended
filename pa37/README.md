@@ -147,7 +147,8 @@ Fixtures check compilation status, independent module validation, program
 output, return/exit status and the resulting memory state. ABI cases link
 objects from both compilers and exercise calls and exceptions across the
 boundary. Repeated-export tests use one module instance to check persistent
-state and initialization. Native regression tests remain required.
+state and initialization. A sidecar's `sequences` lists the ordered export calls that share an instance;
+ordinary `calls` are independent invocations. Native regression tests remain required.
 
 Quality sidecars publish the actual limits and invariants. Tests do not
 compare complete instruction sequences against LLVM. Equivalent legal

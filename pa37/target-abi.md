@@ -74,6 +74,15 @@ Honor exception specifications and lifetime boundaries, including termination
 when initialization of a handler parameter throws or a destructor throws during
 unwinding. These rules also apply after LowIR serialization.
 
+LowIR's default opaque exception protocol uses the reserved coalesced tag
+`__cppgm_opaque_exception : (i64, i64) -> ()`, separate from the C++ tag.
+Its parameters carry the low and high halves of the payload. Narrow scalars
+occupy their low storage bits; floating values preserve their IEEE bits, and
+32-bit data/function pointers retain their respective address spaces. Catch-all,
+cleanup and resume must work without C++ runtime libraries. C++
+source and serialized source LowIR select `exception_abi=cxx`. Reject typed
+C++ catches in an opaque unit and opaque `throw` in a C++ unit.
+
 ## Objects and linking
 
 Emit core Wasm objects using linking metadata version 2 and the pinned
@@ -126,7 +135,12 @@ Source programs still spell both forms `main`; freestanding exports do not
 acquire WASI startup behavior.
 
 Select target headers/libraries with `--sysroot` and builtin headers/compiler-rt
-with `-resource-dir`. Never use native host headers to describe wasm32. Respect
+with `-resource-dir`. C++ links select the supplied C++, ABI and unwind
+libraries automatically; `-fno-exceptions` selects their no-EH configuration.
+Serialized C++ LowIR selects the EH runtime by default. Preserve explicit
+`-nostartfiles`, `-nodefaultlibs` and `-nostdlib` choices. Do not reload an
+explicitly supplied runtime file when adding default libraries.
+Never use native host headers to describe wasm32. Respect
 core export names in input objects, including names different from their
 linking symbols. Resolve archive members before discarding unreachable code:
 a reference from a discarded function can select a member whose strong

@@ -1,0 +1,1 @@
+{"source":true,"wasi":true,"target":"wasm32-wasip1","commands":[{"stdout":"cleanup 3\n","exit":0}]}

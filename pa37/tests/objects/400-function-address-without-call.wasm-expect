@@ -1,0 +1,1 @@
+{"source":true,"llvm_interop":true,"exports":["get_address"],"abi":{"get_address":{"params":[],"results":["i32"]}},"calls":[{"export":"present","result":"17"}]}

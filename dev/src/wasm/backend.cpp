@@ -64,12 +64,13 @@ bool compile_object(
 	}
 }
 
-bool output_objects(std::vector<Object>& objects, const backend::Options& options, bool relocatable, std::string& error)
+bool output_objects(LinkInputs& inputs, const backend::Options& options, bool relocatable, std::string& error)
 {
+	auto& objects = inputs.objects;
 	try
 	{
 		if (!relocatable)
-			add_runtime_inputs(objects, options);
+			add_runtime_inputs(inputs, options);
 		for (const Object& object : objects)
 			validate_object(object);
 		Bytes bytes;
@@ -96,19 +97,21 @@ bool compile_program(lowir::Program& program, const backend::Options& options, s
 	std::string dump = "machine_ir wasm32 1\n";
 	if (!compile_object(program, options, object, dump, error))
 		return false;
-	std::vector<Object> objects;
-	objects.push_back(std::move(object));
+	LinkInputs inputs;
+	inputs.objects.push_back(std::move(object));
 	try
 	{
 		for (const std::string& path : options.link_inputs)
-			read_link_inputs(path, objects);
+			read_link_inputs(path, inputs);
 	}
 	catch (const WasmError& failure)
 	{
 		error = failure.what();
 		return false;
 	}
-	return output_objects(objects, options, false, error);
+	backend::Options link = options;
+	link.cxx_runtime = program.exception_abi == lowir::ExceptionAbi::Cxx;
+	return output_objects(inputs, link, false, error);
 }
 
 } // namespace wasm

@@ -12,6 +12,11 @@ Its graph indices are layout positions. Calls' `eh_sites_` entries name
 terminal sentinel distinguishes a jump to a resume-only block. Mid-landing
 catch-all entries use the same vector as a boolean marker. Keep these distinct.
 
+The core C++ source-selection steps below are implemented. Opaque payloads use the
+typed program exception ABI and a separate tag; same-instance controls now
+cover repeated source and opaque EH. Merged-context adversarial coverage and
+the final integrated assignment qualification remain outstanding.
+
 The native adapter supplies its existing CFG, copies only the small block facts
 when EH is present, applies pruning and assigns the native frame slot. Wasm
 should adapt its CFG to this same analysis rather than implement another
@@ -20,7 +25,8 @@ handler-stack/matching analysis.
 The external `source-eh-throw-boundary/` probe passes at O0/O3: cppgm emits an
 integer throw, LLVM emits its typed catcher, and cppgm links and runs the result
 against the pinned EH archives. There are no cppgm-generated handlers in this
-probe. Source handling/cleanup/resume remain missing.
+probe. Source handling, cleanup and resume are now implemented and covered by the
+latest source/runtime checkpoint in `docs/wasm32-completion-status.md`.
 
 ## Runtime and object preparation
 

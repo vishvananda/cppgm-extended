@@ -1,1 +1,1 @@
-{"source":true,"runtime":true,"libraries":["c++abi","c++"],"wasi":true,"target":"wasm32-wasip1","flags":["-fno-exceptions"],"commands":[{"stdout":"destroyed 26\n","exit":0}]}
+{"source":true,"wasi":true,"target":"wasm32-wasip1","flags":["-fno-exceptions"],"commands":[{"stdout":"destroyed 26\n","exit":0}]}
