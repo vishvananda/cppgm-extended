@@ -9,8 +9,10 @@
 // inside a loop). The blocks are ordered by a walk along the likeliest
 // edges (Placement::walk). A two-way branch's static taken-probability
 // comes from its target only leading to a noreturn end or a call of a cold
-// function (cold), from loop back edges and loop exits, from a NaN being rare, and from an equality
-// test being the unlikely outcome; an edge weighs that times its source's
+// function (cold), from loop back edges and loop exits, from a NaN being
+// rare, from a single-bit test being zero, and from an equality test being
+// the unlikely outcome (one with a nonzero constant more so); an edge weighs
+// that times its source's
 // frequency (the entry's spread along forward edges by those
 // probabilities, 8 times a loop header's inflow; a cycle entered twice is
 // weighed so only where blocks are ordered, see find_loops). Branch layout
@@ -42,6 +44,11 @@ const uint32_t kMemoryZeroTaken = 700;
 const uint32_t kByteZeroTaken = 600;
 // A floating compare is unordered (an operand is a NaN) this often.
 const uint32_t kNanTaken = 30;
+// A test of one bit (a flag in a word) finds it clear this often.
+const uint32_t kBitClearTaken = 850;
+// A value compared with a nonzero constant (a kind, an opcode, a character)
+// equals it this often.
+const uint32_t kConstantEqualTaken = 300;
 const uint64_t kLevelFrequency = 8;
 
 bool terminator(const Inst& inst)
@@ -372,6 +379,22 @@ uint32_t Placement::taken(uint32_t b) const
 				(test.op == Op::Cmp && test.ops[1].kind == OperandKind::Imm && test.ops[1].imm == 0));
 		if (byte && zero_test)
 			return cond == CC_E ? kByteZeroTaken : 1000 - kByteZeroTaken;
+	}
+	// A test of one bit (`test x, 2^k` before an equality branch, `bt x, k`
+	// before a carry branch), and a compare with a nonzero constant (`cmp x,
+	// k` before an equality branch).
+	if (block.count >= 3)
+	{
+		const Inst& test = f_.insts[block.first + block.count - 3];
+		const bool one_bit = test.ops[1].kind == OperandKind::Imm && test.ops[1].imm > 0 &&
+			(test.ops[1].imm & (test.ops[1].imm - 1)) == 0;
+		if (test.op == Op::Test && one_bit && (cond == CC_E || cond == CC_NE))
+			return cond == CC_E ? kBitClearTaken : 1000 - kBitClearTaken;
+		if (test.op == Op::Bt && test.ops[1].kind == OperandKind::Imm && (cond == CC_B || cond == CC_AE))
+			return cond == CC_AE ? kBitClearTaken : 1000 - kBitClearTaken;
+		if (test.op == Op::Cmp && test.ops[1].kind == OperandKind::Imm && test.ops[1].imm != 0 &&
+			(cond == CC_E || cond == CC_NE))
+			return cond == CC_E ? kConstantEqualTaken : 1000 - kConstantEqualTaken;
 	}
 	if (cond == CC_E)
 		return kEqualTaken;
