@@ -5,9 +5,7 @@ margins and generates `pa36/calibration.tsv` and `calibration-course.tsv`.
 These are dated measurements tied to their recorded source, machine and
 compiler configuration; the acceptance limits are defined in `gates.txt`.
 
-The existing snapshots predate the 0.50 compile-time limits and matching
-optimized speed levels. Their O3 compile-time and memory ratios used host
-O2. Current speed measurements use O3 on both sides. Regenerate the speed
-group when updating a run; a fresh speed measurement is not a regeneration
-of the full release calibration. Preserve the historical snapshots' original
-values and provenance until a complete release check replaces them.
+A speed-only measurement does not regenerate the full release calibration.
+Replace both snapshots only after a complete course and student release check
+passes, preserving the generated values and provenance exactly. Current speed
+measurements use matching optimization levels, including O3 on both sides.

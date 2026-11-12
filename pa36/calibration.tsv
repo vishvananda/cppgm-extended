@@ -4,16 +4,16 @@
 # release check, do not edit by hand. Each gate must clear its limit by the
 # release margin of its kind: margin = limit / value - 1. The limits do not depend on
 # this file.
-meta	date	2026-11-07T20:48:37Z
-meta	source	25804418794e91ab4ef6a5edfb994651cdae793e
-meta	cpu	Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz
-meta	processors	88
+meta	date	2026-11-12T15:51:30Z
+meta	source	e22f2294eaba03fb20fce1c2de9595b4d821b1c6
+meta	cpu	AMD EPYC 7763 64-Core Processor
+meta	processors	4
 meta	kernel	Linux 7.0
 meta	host compiler	g++ 15.2.0
 meta	libstdc++	__GLIBCXX__ 20260321, release 15
 meta	libc	glibc 2.43
 meta	valgrind	valgrind 3.26.0
-meta	cache simulation	I1 cache: 32768 B, 64 B, 8-way associative; D1 cache: 32768 B, 64 B, 8-way associative; LL cache: 58720256 B, 64 B, 28-way associative
+meta	cache simulation	I1 cache: 32768 B, 64 B, 8-way associative; D1 cache: 32768 B, 64 B, 8-way associative; LL cache: 268435456 B, 64 B, direct-mapped
 meta	generated seeds	100
 meta	build	CC_FLAGS=-std=gnu++11 -Wall -O3 (the student export's dev/Makefile)
 #
@@ -21,43 +21,43 @@ meta	build	CC_FLAGS=-std=gnu++11 -Wall -O3 (the student export's dev/Makefile)
 gate	workload-compiles	==	1	-	1	-	pass
 gate	behavior	==	0	-	0	-	pass
 gate	generated	==	0	-	0	-	pass
-gate	compile-O0-time	<=	0.50	25.0% (time)	0.1448	245.31%	pass
-gate	compile-O3-time	<=	0.50	25.0% (time)	0.1370	264.92%	pass
-gate	compile-O3-memory	<=	1.00	25.0% (memory)	0.4240	135.87%	pass
+gate	compile-O0-time	<=	0.50	25.0% (time)	0.1479	238.14%	pass
+gate	compile-O3-time	<=	0.50	25.0% (time)	0.1594	213.66%	pass
+gate	compile-O3-memory	<=	1.00	25.0% (memory)	0.4341	130.36%	pass
 gate	compile-scaling	<=	3.00	25.0% (time)	2.0600	45.63%	pass
 gate	workload-identical	==	1	-	1	-	pass
-gate	codegen-O0-instructions	<=	1.08	2.0% (count)	0.9966	8.37%	pass
-gate	codegen-O3-instructions	<=	1.12	2.0% (count)	1.0494	6.72%	pass
-gate	codegen-O0-cycle-proxy	<=	1.09	1.5% (proxy)	1.0163	7.25%	pass
-gate	codegen-O3-cycle-proxy	<=	1.10	1.5% (proxy)	1.0423	5.54%	pass
-gate	text-size	<=	1.20	1.0% (text)	1.1610	3.36%	pass
+gate	codegen-O0-instructions	<=	1.08	2.0% (count)	0.9973	8.30%	pass
+gate	codegen-O3-instructions	<=	1.12	2.0% (count)	1.0044	11.51%	pass
+gate	codegen-O0-cycle-proxy	<=	1.09	1.5% (proxy)	0.9927	9.80%	pass
+gate	codegen-O3-cycle-proxy	<=	1.10	1.5% (proxy)	1.0077	9.16%	pass
+gate	text-size	<=	1.20	1.0% (text)	1.0060	19.28%	pass
 gate	kernel-accessor-distinct	<=	1.30	2.0% (count)	0.9925	30.98%	pass
 gate	kernel-accessor-alias	<=	1.30	2.0% (count)	0.9925	30.98%	pass
-gate	kernel-lookup	<=	1.30	2.0% (count)	1.2571	3.41%	pass
-gate	kernel-exceptions	<=	1.30	2.0% (count)	1.1378	14.26%	pass
+gate	kernel-lookup	<=	1.30	2.0% (count)	1.1238	15.68%	pass
+gate	kernel-exceptions	<=	1.30	2.0% (count)	1.1034	17.82%	pass
 #
 # measurement	seed or cppgm++	self or host	ratio
-detail	O0-own	3115696426	3104995164	0.996565
-detail	O0-total	3266121239	3247760680	0.994378
-detail	O0-calls	48358309	50444185	1.043134
-detail	O0-proxy	2735858824.66667	2780393453.33333	1.016278
-detail	O3-own	8754043643	9186732706	1.049427
-detail	O3-total	9346397521	9782630358	1.046674
-detail	O3-calls	82899914	80918980	0.976105
-detail	O3-proxy	7658304575.33333	7982066201	1.042276
-detail	text-bytes	5811990	6746434	1.160779
-detail	time-E	0.132870	0.131664	1.009160
-detail	rss-E	12056	17968	0.670971
-detail	time-O0	1.034664	7.145617	0.144797
-detail	rss-O0	213544	488048	0.437547
-detail	time-O3	2.516869	18.369170	0.137016
-detail	rss-O3	212124	500344	0.423956
-detail	scaling-functions	2.01	0.00 0.02 0.04 0.06 0.12	
-detail	scaling-macros	flat	0.00 0.01 0.02 0.04 0.08	
-detail	scaling-members	flat	0.00 0.01 0.02 0.05 0.09	
-detail	scaling-scopes	2.06	0.04 0.11 0.18 0.33 0.64	
-detail	scaling-statements	flat	0.00 0.01 0.02 0.03 0.07	
-detail	scaling-templates	flat	0.00 0.02 0.02 0.04 0.08	
+detail	O0-own	2882800895	2874943264	0.997274
+detail	O0-total	3029945567	3015093176	0.995098
+detail	O0-calls	47818670	56088283	1.172937
+detail	O0-proxy	2711057010.66667	2691356998.66667	0.992733
+detail	O3-own	9451939467	9493394617	1.004386
+detail	O3-total	10123484010	9995287285	0.987337
+detail	O3-calls	94533615	101729440	1.076119
+detail	O3-proxy	8310431090	8374446998.33333	1.007703
+detail	text-bytes	7413206	7456514	1.005842
+detail	time-E	0.073663	0.090437	0.814523
+detail	rss-E	12748	17860	0.713774
+detail	time-O0	0.698252	4.722196	0.147866
+detail	rss-O0	223388	490540	0.455392
+detail	time-O3	1.955900	12.269927	0.159406
+detail	rss-O3	217768	501660	0.434095
+detail	scaling-functions	2.00	0.00 0.03 0.04 0.08 0.15	
+detail	scaling-macros	flat	0.00 0.01 0.02 0.03 0.06	
+detail	scaling-members	flat	0.00 0.01 0.02 0.03 0.06	
+detail	scaling-scopes	2.06	0.03 0.07 0.12 0.23 0.45	
+detail	scaling-statements	flat	0.00 0.00 0.01 0.02 0.04	
+detail	scaling-templates	flat	0.00 0.01 0.02 0.03 0.07	
 detail	scaling-worst	2.06		
-detail	behavior	behavior: 96/96 tests pass at O0 O1 O2 O3		
+detail	behavior	behavior: 107/107 tests pass at O0 O1 O2 O3		
 detail	generated	generated: 302/302 programs pass at O0 O1 O2 O3		
