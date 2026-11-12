@@ -754,6 +754,21 @@ bool SwitchFormer::form_region(const std::vector<BlockId>& region, const std::ve
 		term.extra_first = append_operands(body_, pairs.data(), static_cast<uint32_t>(pairs.size()));
 		term.extra_count = static_cast<uint32_t>(pairs.size());
 	}
+	// The region's other blocks end unreachable (the cleanup drops them), as
+	// their inputs are gone: no phi names a block that still jumps to it.
+	for (size_t r = 1; r < region.size(); ++r)
+	{
+		Instruction& end = body_.instructions[body_.blocks[region[r]].last];
+		if (end.ops[0].is(ValueKind::Temp))
+			--c_.uses[end.ops[0].index];
+		end.op = Opcode::Unreachable;
+		end.sub = 0;
+		end.flags = 0;
+		end.type = Type::scalar(TypeKind::Void);
+		end.ops[0] = end.ops[1] = end.ops[2] = Value::none();
+		end.extra_first = 0;
+		end.extra_count = 0;
+	}
 	for (BlockId b : region)
 		consumed_[b] = 1;
 	return true;

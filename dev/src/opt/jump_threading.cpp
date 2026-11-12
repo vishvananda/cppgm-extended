@@ -307,6 +307,14 @@ private:
 	bool apply_moves(BlockId m, const std::vector<BlockId>& preds, uint32_t phis,
 		std::vector<std::pair<uint32_t, BlockId>>& moves, std::vector<uint8_t>& touched);
 	bool copy_branch(BlockId m, BlockId p, const Value* inputs, std::vector<uint8_t>& touched);
+	bool bypassable(BlockId p, BlockId s, BlockId target, TempId cresult) const;
+	bool find_loop(BlockId s);
+	bool in_found_loop(BlockId b) const { return b != kNoId && b < loop_mark_.size() && loop_mark_[b] == loop_epoch_; }
+	bool rotates_to(BlockId into) const;
+	bool keeps_loop_entry(BlockId s, BlockId p, BlockId to, BlockId also, bool all_edges);
+	template<typename Applies>
+	void keep_loop_entries(BlockId s, std::vector<std::pair<BlockId, BlockId>>& redirects, Applies applies,
+		std::vector<std::pair<BlockId, BlockId>>* merges = nullptr, std::vector<BlockId>* merge_targets = nullptr);
 
 	FunctionContext& c_;
 	FunctionBody& body_;
@@ -322,10 +330,173 @@ private:
 	// through), sorted; built at the first query.
 	std::vector<std::pair<BlockId, TempId>> accessed_;
 	bool accessed_built_ = false;
+	// find_loop's loop: the block it was found for (kNoId: none since the
+	// graph last changed), whether that block heads a loop, the loop's
+	// blocks (marked with loop_epoch_) and its entering predecessors.
+	std::vector<uint32_t> loop_mark_;
+	std::vector<BlockId> loop_work_;
+	BlockId loop_header_ = kNoId;
+	bool heads_loop_ = false;
+	uint32_t loop_epoch_ = 0;
+	uint32_t loop_entries_ = 0;
 	uint32_t epoch_ = 0;
 	uint32_t demoted_ = 0; // known_compares' phis demoted to slots this run
 	bool touched_ = false; // the run changed the body so far
 };
+
+// Whether s heads a loop: a predecessor it dominates closes a back edge.
+// The loop's blocks are those reaching such a latch backward without
+// passing s; its entering predecessors are counted. Found once per header
+// and graph (loop_header_ is reset when the graph may have changed):
+// O(loop blocks and edges).
+bool JumpThreading::find_loop(BlockId s)
+{
+	if (loop_header_ == s)
+		return heads_loop_;
+	loop_header_ = s;
+	heads_loop_ = false;
+	loop_entries_ = 0;
+	if (loop_mark_.size() < cfg_.block_count)
+		loop_mark_.resize(cfg_.block_count, 0);
+	const uint32_t epoch = ++loop_epoch_;
+	loop_mark_[s] = epoch;
+	loop_work_.clear();
+	for (uint32_t k = cfg_.pred_first[s]; k < cfg_.pred_first[s + 1]; ++k)
+	{
+		const BlockId u = cfg_.preds[k];
+		if (!cfg_.reachable(u) || u == s)
+			continue;
+		if (!cfg_.dominates(s, u))
+			++loop_entries_;
+		else if (loop_mark_[u] != epoch)
+		{
+			heads_loop_ = true;
+			loop_mark_[u] = epoch;
+			loop_work_.push_back(u);
+		}
+	}
+	while (!loop_work_.empty())
+	{
+		const BlockId x = loop_work_.back();
+		loop_work_.pop_back();
+		for (uint32_t k = cfg_.pred_first[x]; k < cfg_.pred_first[x + 1]; ++k)
+		{
+			const BlockId y = cfg_.preds[k];
+			if (cfg_.reachable(y) && loop_mark_[y] != epoch && cfg_.dominates(s, y))
+			{
+				loop_mark_[y] = epoch;
+				loop_work_.push_back(y);
+			}
+		}
+	}
+	return heads_loop_;
+}
+
+// Whether find_loop's loop, entered at `into` alone (a successor of its
+// header), is a loop `into` heads: into dominates each latch, so every
+// cycle through the old header passes it.
+bool JumpThreading::rotates_to(BlockId into) const
+{
+	for (uint32_t k = cfg_.pred_first[loop_header_]; k < cfg_.pred_first[loop_header_ + 1]; ++k)
+	{
+		const BlockId u = cfg_.preds[k];
+		if (u != loop_header_ && cfg_.reachable(u) && in_found_loop(u) && !cfg_.dominates(into, u))
+			return false;
+	}
+	return true;
+}
+
+// Whether p's edge into s may go to `to` (and `also`, unless kNoId) instead,
+// past s: s heads no loop, or its loop keeps one entry. An edge leaving the
+// loop may; one from inside it, to a block dominating p (it closes an
+// inner loop, or rotates this one); one from outside, to at most one block
+// of the loop and only when p is the loop's one entering predecessor, all
+// its edges into s move and that block can head the loop (rotates_to).
+// Otherwise the loop would be entered at two blocks: an irreducible
+// region, which no loop pass sees.
+bool JumpThreading::keeps_loop_entry(BlockId s, BlockId p, BlockId to, BlockId also, bool all_edges)
+{
+	if (!find_loop(s))
+		return true;
+	const bool to_inside = to != s && in_found_loop(to), also_inside = also != s && in_found_loop(also);
+	if (in_found_loop(p))
+		return (!to_inside || cfg_.dominates(to, p)) && (!also_inside || cfg_.dominates(also, p));
+	return !(to_inside && also_inside) &&
+		(!(to_inside || also_inside) || (all_edges && loop_entries_ == 1 && rotates_to(to_inside ? to : also)));
+}
+
+// The redirects (predecessor, target) of one step past s that heads a loop,
+// and its merges (merge block, predecessor copied for it; the copy's
+// target) if any: each keeps the loop single-entry (keeps_loop_entry), or
+// every entering predecessor goes, each by a redirect the step will apply
+// (`applies`; kNoId stands for a copy), those into the loop to one block
+// that can head it (rotates_to): the test is rotated out of the loop's
+// entry. A merge block goes when each of its predecessors, all outside the
+// loop, is copied.
+template<typename Applies>
+void JumpThreading::keep_loop_entries(BlockId s, std::vector<std::pair<BlockId, BlockId>>& redirects, Applies applies,
+	std::vector<std::pair<BlockId, BlockId>>* merges, std::vector<BlockId>* merge_targets)
+{
+	const size_t merged = merges == nullptr ? 0 : merges->size();
+	if ((redirects.empty() && merged == 0) || !find_loop(s))
+		return;
+	BlockId into = kNoId;
+	uint32_t entering = 0;
+	bool rotates = true;
+	auto enters = [&](BlockId from, BlockId to) {
+		rotates = rotates && applies(from, to);
+		if (to != s && in_found_loop(to))
+		{
+			rotates = rotates && (into == kNoId || into == to);
+			into = to;
+		}
+	};
+	for (const std::pair<BlockId, BlockId>& r : redirects)
+		if (cfg_.reachable(r.first) && !in_found_loop(r.first))
+		{
+			++entering;
+			enters(r.first, r.second);
+		}
+	for (size_t m = 0; m < merged; ++m)
+	{
+		const BlockId p = (*merges)[m].first, q = (*merges)[m].second;
+		if (m == 0 || (*merges)[m - 1].first != p)
+		{
+			bool left = cfg_.reachable(p) && !in_found_loop(p);
+			for (uint32_t k = cfg_.pred_first[p]; k < cfg_.pred_first[p + 1] && left; ++k)
+			{
+				bool copied = !cfg_.reachable(cfg_.preds[k]);
+				for (size_t n = m; n < merged && (*merges)[n].first == p && !copied; ++n)
+					copied = (*merges)[n].second == cfg_.preds[k];
+				left = copied;
+			}
+			entering += left ? 1 : 0;
+		}
+		if (cfg_.reachable(q))
+		{
+			rotates = rotates && !in_found_loop(q);
+			enters(kNoId, (*merge_targets)[m]);
+		}
+	}
+	rotates = rotates && entering == loop_entries_ && (into == kNoId || rotates_to(into));
+	size_t kept = 0;
+	for (const std::pair<BlockId, BlockId>& r : redirects)
+		if ((rotates && !in_found_loop(r.first)) || keeps_loop_entry(s, r.first, r.second, kNoId, false))
+			redirects[kept++] = r;
+	redirects.resize(kept);
+	kept = 0;
+	for (size_t m = 0; m < merged; ++m)
+		if (rotates || keeps_loop_entry(s, (*merges)[m].second, (*merge_targets)[m], kNoId, false))
+		{
+			(*merges)[kept] = (*merges)[m];
+			(*merge_targets)[kept++] = (*merge_targets)[m];
+		}
+	if (merges != nullptr)
+	{
+		merges->resize(kept);
+		merge_targets->resize(kept);
+	}
+}
 
 // A block whose only predecessor branches on `c` knows `c` on its edge: a
 // branch of its own on the same value takes the known side (the dropped
@@ -541,6 +712,7 @@ bool JumpThreading::constant_phis(bool counted)
 	std::vector<uint8_t> touched(cfg_.block_count, 0);
 	for (BlockId m : body_.layout)
 	{
+		loop_header_ = kNoId; // (moves edit the graph)
 		if (!cfg_.reachable(m) || cfg_.pred_count(m) < 1 || (cfg_.flags[m] & BF_HANDLER) != 0 || touched[m] ||
 			m == body_.layout[0])
 			continue;
@@ -665,8 +837,38 @@ bool JumpThreading::constant_phis(bool counted)
 				if (target != m && target != kept[0] && target != kept[1] && (cfg_.flags[target] & BF_HANDLER) == 0)
 					moves.push_back(std::make_pair(k, target));
 			}
-			else if (jumps && copyable)
+			else if (jumps && copyable &&
+				keeps_loop_entry(
+					m, p, body_.instructions[term].ops[1].index, body_.instructions[term].ops[2].index, true))
 				copies.push_back(k);
+		}
+		// Moves past a loop header keep the loop single-entry: those
+		// apply_moves drops (a target with phis the predecessor already
+		// enters, or a predecessor that is a target) and those the repair
+		// below leaves (it takes one) do not rotate it.
+		if (!moves.empty() && find_loop(m))
+		{
+			std::vector<std::pair<BlockId, BlockId>> edges;
+			for (const std::pair<uint32_t, BlockId>& mv : moves)
+				edges.push_back(std::make_pair(preds[mv.first], mv.second));
+			keep_loop_entries(m, edges, [&](BlockId p, BlockId to) {
+				bool applies = !repair_phis;
+				for (const std::pair<uint32_t, BlockId>& mv : moves)
+					applies = applies && mv.second != p;
+				const InstId first = body_.blocks[to].first;
+				if (first != kNoId && body_.instructions[first].op == Opcode::Phi)
+					for (uint32_t k = cfg_.pred_first[to]; k < cfg_.pred_first[to + 1] && applies; ++k)
+						applies = cfg_.preds[k] != p;
+				return applies;
+			});
+			size_t kept_moves = 0, e = 0;
+			for (const std::pair<uint32_t, BlockId>& mv : moves)
+				if (e < edges.size() && edges[e].first == preds[mv.first] && edges[e].second == mv.second)
+				{
+					moves[kept_moves++] = mv;
+					++e;
+				}
+			moves.resize(kept_moves);
 		}
 		if (repair_phis)
 		{
@@ -921,7 +1123,9 @@ bool JumpThreading::apply_moves(BlockId m, const std::vector<BlockId>& preds, ui
 // block's phis move to slots first (demote_phis). A chain of keyword tests
 // on one length then skips the lengths already ruled out or matched, and
 // a second diamond on the test of the first (`dirty_ ? a : b` twice)
-// merges into it.
+// merges into it. Past a loop header, the loop keeps one entry
+// (keep_loop_entries): a bound the entry's tests decide, `i < (f == 3 ? 4 :
+// 8)`, would otherwise enter the loop at both arms.
 const uint32_t kFactDepth = 4;
 // Dominators of a predecessor searched for an entering branch.
 const uint32_t kDominatorFactDepth = 8;
@@ -942,6 +1146,7 @@ bool JumpThreading::known_compares()
 	const std::vector<BlockId> layout = body_.layout;
 	for (BlockId s : layout)
 	{
+		loop_header_ = kNoId; // (the graph may have changed)
 		if (!cfg_.reachable(s) || (cfg_.flags[s] & BF_HANDLER) != 0 || s == cfg_.rpo[0])
 			continue;
 		// The block: its compare and the branch, or the branch alone on a
@@ -1159,6 +1364,9 @@ bool JumpThreading::known_compares()
 				}
 			}
 		}
+		keep_loop_entries(
+			s, redirects, [&](BlockId p, BlockId to) { return bypassable(p, s, to, cresult); }, &merges,
+			&merge_targets);
 		if (!merges.empty())
 		{
 			for (size_t m = 0; m < merges.size(); ++m)
@@ -1204,22 +1412,28 @@ bool JumpThreading::known_compares()
 	return changed;
 }
 
-// Sends p's edges into the test block s to `target`. The target's phis: the
-// predecessor brings what the test block brought (one input per
-// predecessor: a disagreeing existing one keeps the edge, and so does the
-// test's own compare `cresult`, which p does not compute).
-bool JumpThreading::bypass(BlockId p, BlockId s, BlockId target, TempId cresult)
+// Whether bypass can send p's edges into the test block s to `target`. The
+// target's phis: the predecessor brings what the test block brought (one
+// input per predecessor: a disagreeing existing one keeps the edge, and so
+// does the test's own compare `cresult`, which p does not compute).
+bool JumpThreading::bypassable(BlockId p, BlockId s, BlockId target, TempId cresult) const
 {
-	bool ok = true;
-	for (InstId i = body_.blocks[target].first; i != kNoId && body_.instructions[i].op == Opcode::Phi && ok;
+	for (InstId i = body_.blocks[target].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
 		i = body_.instructions[i].next)
 	{
 		const Value from_s = phi_incoming(body_, body_.instructions[i], s);
 		const Value from_p = phi_incoming(body_, body_.instructions[i], p);
-		ok = !from_s.is(ValueKind::None) && !(cresult != kNoId && from_s == Value::temp(cresult)) &&
-			(from_p.is(ValueKind::None) || from_p == from_s);
+		if (from_s.is(ValueKind::None) || (cresult != kNoId && from_s == Value::temp(cresult)) ||
+			!(from_p.is(ValueKind::None) || from_p == from_s))
+			return false;
 	}
-	if (!ok)
+	return true;
+}
+
+// Sends p's edges into the test block s to `target` (bypassable).
+bool JumpThreading::bypass(BlockId p, BlockId s, BlockId target, TempId cresult)
+{
+	if (!bypassable(p, s, target, cresult))
 		return false;
 	bool had_edge = false;
 	Instruction& pt = body_.instructions[body_.blocks[p].last];
@@ -1324,7 +1538,8 @@ bool JumpThreading::split_switch_cases(BlockId p, BlockId s, Value x, unsigned q
 		one.add(body_.literals[key.index].low & ones(bits), body_.literals[key.index].low & ones(bits));
 		const int holds = decided_by(related(cx, one, bits, x, qbits), query);
 		const BlockId target = holds < 0 ? kNoId : holds ? on_true : on_false;
-		if (target == kNoId || target == s || target == p || (cfg_.flags[target] & BF_HANDLER) != 0)
+		if (target == kNoId || target == s || target == p || (cfg_.flags[target] & BF_HANDLER) != 0 ||
+			!keeps_loop_entry(s, p, target, kNoId, false))
 			continue;
 		bool had_edge = false, ok = true;
 		for_each_successor(body_, body_.instructions[t], [&](BlockId& b) { had_edge = had_edge || b == target; });

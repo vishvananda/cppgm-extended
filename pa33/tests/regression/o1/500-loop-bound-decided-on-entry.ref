@@ -1,0 +1,59 @@
+global @bytes : obj<8x8> = {
+  i64 578437695752307201
+}
+
+function @decode_object_chunk(%data : ptr, %form : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %not_three = cmp ne i32 %form, 3
+    branch %not_three, ^not_three, ^loop
+
+  block ^not_three:
+    %not_four = cmp ne i32 %form, 4
+    branch %not_four, ^reject, ^loop
+
+  block ^reject:
+    return i64 0
+
+  block ^loop:
+    %byte = phi u32 [^entry: 0, ^not_three: 0, ^body: %next]
+    %value = phi i64 [^entry: 0, ^not_three: 0, ^body: %merged]
+    %three = cmp eq i32 %form, 3
+    branch %three, ^test, ^long
+
+  block ^long:
+    %t6 = cmp ult u32 %byte, 8
+    branch %t6, ^body, ^done
+
+  block ^test:
+    %more = cmp ult u32 %byte, 4
+    branch %more, ^body, ^done
+
+  block ^body:
+    %at = index inbounds u8 %data, %byte
+    %loaded = load u8 %at
+    %wide = convert zext i64 u8 %loaded
+    %bits = binary mul u32 %byte, 8
+    %shift = convert zext i64 u32 %bits
+    %placed = binary shl i64 %wide, %shift
+    %merged = binary or i64 %value, %placed
+    %next = binary add u32 %byte, 1
+    jump ^loop
+
+  block ^done:
+    return i64 %value
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %short = call i64 @decode_object_chunk(@bytes, 3)
+    %long = call i64 @decode_object_chunk(@bytes, 4)
+    %other = call i64 @decode_object_chunk(@bytes, 5)
+    %t4 = cmp eq i64 %short, 67305985
+    %short_bit = select i32 %t4, 0, 1
+    %t6 = cmp eq i64 %long, 578437695752307201
+    %long_bit = select i32 %t6, 0, 2
+    %t8 = cmp eq i64 %other, 0
+    %other_bit = select i32 %t8, 0, 4
+    %some = binary or i32 %short_bit, %long_bit
+    %status = binary or i32 %other_bit, %some
+    return i32 %status
+}
