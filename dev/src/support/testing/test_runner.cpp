@@ -24,7 +24,10 @@
 #include <vector>
 
 #ifdef __APPLE__
-#include <libproc.h>
+// These libproc entry points only need the types from sys/resource.h. Including
+// libproc.h also brings in unrelated Mach message language extensions.
+extern "C" int proc_listpgrppids(pid_t group, void* buffer, int bytes);
+extern "C" int proc_pid_rusage(int pid, int flavor, rusage_info_t* buffer);
 #endif
 
 #ifdef TEST_RUNNER_ENABLE
@@ -624,26 +627,26 @@ bool group_resident_bytes(pid_t group, unsigned long long& bytes)
 	int count;
 	for (;;)
 	{
-		count = proc_listpids(
-			PROC_PGRP_ONLY, static_cast<uint32_t>(group), pids.data(), static_cast<int>(pids.size() * sizeof(pid_t)));
-		if (count < 0)
+		errno = 0;
+		count = proc_listpgrppids(group, pids.data(), static_cast<int>(pids.size() * sizeof(pid_t)));
+		if (count < 0 || (count == 0 && errno != 0))
 			return false;
-		if (static_cast<size_t>(count) < pids.size() * sizeof(pid_t))
+		if (static_cast<size_t>(count) < pids.size())
 			break;
 		pids.resize(pids.size() * 2);
 	}
-	for (size_t i = 0; i < static_cast<size_t>(count) / sizeof(pid_t); ++i)
+	for (size_t i = 0; i < static_cast<size_t>(count); ++i)
 	{
 		if (pids[i] <= 0)
 			continue;
-		struct proc_taskinfo info;
-		if (proc_pidinfo(pids[i], PROC_PIDTASKINFO, 0, &info, sizeof(info)) != static_cast<int>(sizeof(info)))
+		struct rusage_info_v0 info;
+		if (proc_pid_rusage(pids[i], RUSAGE_INFO_V0, reinterpret_cast<rusage_info_t*>(&info)) != 0)
 		{
 			if (errno == ESRCH || getpgid(pids[i]) != group)
 				continue;
 			return false;
 		}
-		bytes += info.pti_resident_size;
+		bytes += info.ri_resident_size;
 	}
 #else
 	DIR* dir = opendir("/proc");

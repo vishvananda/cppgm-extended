@@ -1,0 +1,73 @@
+name: PA36 release qualification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pa36-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Course and student release margins
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_STDLIB_FLAGS: ''
+      CPPGM_WARNINGS_AS_ERRORS: '1'
+      PA36_JOBS: '4'
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential binutils ca-certificates git perl python3 valgrind
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Trust the mounted checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Build compiler and backend tools
+        run: make -j "$(nproc)"
+      - name: Measure all release gates in both build configurations
+        run: |
+          mkdir -p obj/pa36-release
+          git rev-parse HEAD > obj/pa36-release/revision.txt
+          set +e
+          perl pa36/maintainer/calibrate.pl --seeds 100 \
+            --out obj/pa36-release/student-calibration.tsv \
+            --course-out obj/pa36-release/course-calibration.tsv \
+            > obj/pa36-release/release.log 2>&1
+          status=$?
+          tail -n 45 obj/pa36-release/release.log
+          exit "$status"
+      - name: Package measured binaries and raw evidence
+        if: always()
+        run: |
+          paths=()
+          for path in obj/pa36-release pa36/obj/calibrate/course \
+              pa36/obj/calibrate/student pa36/obj/cache pa36/obj/bin \
+              pa36/obj/calibrate/student-seed/cppgm++ \
+              pa36/obj/calibrate/student-self/cppgm++; do
+            if [ -e "$path" ]; then paths+=("$path"); fi
+          done
+          if [ "${#paths[@]}" -gt 0 ]; then
+            tar -czf "$RUNNER_TEMP/pa36-release.tar.gz" "${paths[@]}"
+          fi
+      - name: Retain complete and failed measurements
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: pa36-release-${{ github.sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/pa36-release.tar.gz
+          if-no-files-found: warn
+          retention-days: 14
