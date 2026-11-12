@@ -60,7 +60,7 @@ comment	dev/src/native/object/object_compiler.h	pa26	handout or fixture cross-re
 comment	dev/src/native/object/object_compiler.h	pa8	handout or fixture cross-reference in a comment
 comment	dev/src/native/select/global_allocation.cpp	PA10	handout or fixture cross-reference in a comment
 comment	dev/src/native/select/global_allocation.cpp	PA23	handout or fixture cross-reference in a comment
-comment	dev/src/native/select/host_eh.cpp	pa26	handout or fixture cross-reference in a comment
+comment	dev/src/machine/exception_regions.cpp	pa26	handout or fixture cross-reference in a comment
 comment	dev/src/native/select/operands.cpp	pa27	handout or fixture cross-reference in a comment
 comment	dev/src/native/select/register_allocation.cpp	PA24	handout or fixture cross-reference in a comment
 comment	dev/src/native/select/selector.h	pa27	handout or fixture cross-reference in a comment

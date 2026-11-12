@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "lowir/program.h"
+#include "machine/exception_analysis.h"
 #include "native/mir/mir.h"
 #include "native/select/allocation_structures.h"
 #include "native/select/call_abi.h"
@@ -97,59 +98,12 @@ struct SelectorState
 	std::vector<uint32_t> early_;
 	bool has_eh_ = false;
 	bool has_stack_alloc_ = false;
-	// Host EH (host_eh.cpp): the handler-record trie (a state is a node),
-	// each block's entry state, per block its landing (its pushed record's
-	// node and landing index), per instruction a call's landing (1 +
-	// index) or a resume's local target (1 + layout block), and per
-	// landing block its pad's MIR block.
+	// Target-independent handler/action facts and reused analysis storage.
 	EhModel eh_model_ = EhModel::Course;
 	bool position_independent_ = false;
-	int level_ = 0; // the optimization level
-	struct EhNode
-	{
-		uint32_t parent;
-		uint32_t landing; // layout block (kNoId: the empty stack, a tail)
-		uint32_t depth;
-		bool cleanup;
-		bool active;
-		bool inside;     // above an active record: opened by a running landing
-		uint8_t tail_lo; // a tail: tail_lo..tail_hi active records of the
-		uint8_t tail_hi; // frame above the parent, the top one's kind
-		uint8_t tail_top;
-		uint32_t protect; // the innermost inactive node at or below
-		uint32_t chain;   // inactive nodes: first of its chain in eh_chains_
-		uint32_t chain_count;
-	};
-	std::vector<EhNode> eh_nodes_;
-	FlatMap<uint64_t, uint32_t, WordKeyHash> eh_node_index_;
-	std::vector<uint32_t> eh_in_;
-	std::vector<uint64_t> eh_mask_in_; // per block: the selectors its dispatch can see
-	std::vector<uint32_t> eh_landing_node_;
-	std::vector<uint32_t> eh_landing_index_;
-	std::vector<uint32_t> eh_sites_;
-	std::vector<uint32_t> pad_mir_;
-	std::vector<uint32_t> select_mir_;  // per landing block: its selector block (kNoId: none)
-	std::vector<uint8_t> eh_translate_; // per landing: whether its pad translates
-	std::vector<uint8_t> eh_resumed_;   // per landing block: a resume of the frame enters it
-	std::vector<uint8_t> eh_live_;      // per block: 0 never entered, 1 reached, 2 a call's landing
-	std::vector<uint8_t> eh_chained_;   // per landing block: its clauses are in some chain
-	bool eh_raw_ = false;               // the pads keep the raw filter
-	bool eh_mid_clauses_ = false;       // some catch-all follows a landing's leading clauses
-	bool eh_identity_ = false;          // clause selectors are the type indexes
-	FlatMap<uint32_t, uint32_t, WordKeyHash> eh_type_index_;     // else: type -> index
-	std::vector<std::pair<uint32_t, int32_t>> eh_filter_values_; // filter clause -> its (negative) filter
-	std::vector<int32_t> eh_chains_;
-	std::vector<uint8_t> eh_work_;       // per block: the no-match walk's memo
-	std::vector<uint32_t> eh_seen_;      // type table: per selector its type
-	std::vector<uint32_t> eh_stamps_;    // chain construction: per selector its last chain
-	std::vector<uint32_t> eh_work_list_; // scratch: a block worklist or stack
-	std::vector<uint64_t> eh_rank_;      // per block: its walking priority (eh_order)
-	std::vector<uint64_t> eh_heap_;      // scratch: the states' worklist by priority
-	std::vector<uint8_t> eh_listed_;     // per block: on the worklist (seen, while ordering)
-	std::vector<uint32_t> eh_dfs_next_;  // per block: the ordering walk's next edge
-	std::vector<uint32_t> eh_pending_;   // scratch: a chain's unbuilt records
-	std::vector<int32_t> eh_own_;        // scratch: a landing's clause filters
-	uint32_t eh_stamp_ = 0;
+	int level_ = 0;
+	machine::ExceptionAnalysis eh_;
+	std::vector<uint32_t> pad_mir_, select_mir_;
 	// Global allocation (global_allocation.cpp): linear positions, hulls,
 	// the registers each block reserves for cross-block values.
 	std::vector<int32_t> block_base_;

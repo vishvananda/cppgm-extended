@@ -315,33 +315,10 @@ public:
 	void emit_edge_blocks(uint32_t from);
 	void emit_eh(uint32_t id);
 
-	// ---- host_eh.cpp
+	// ---- host_eh.cpp: adapt shared region facts to native frame/pad emission.
 	void analyze_host_eh();
-	// Throws BackendError: host EH structure outside the supported subset.
-	[[noreturn]] void eh_fail(const char* what) const;
-	void eh_walk(uint32_t block, bool record);
-	void eh_enter(uint32_t block, uint32_t state, uint64_t mask, std::vector<uint32_t>& work);
-	uint64_t eh_landing_mask(uint32_t block);
 	int64_t eh_entry_selector(uint32_t block) const;
-	uint64_t eh_edge_mask(uint32_t target, uint64_t mask) const;
 	bool eh_entry_edge(uint32_t block) const;
-	void eh_refine(const lowir::Instruction& branch, uint32_t selector, uint64_t& yes, uint64_t& no) const;
-	uint32_t eh_node(uint32_t parent, uint32_t landing, bool cleanup, bool active);
-	uint32_t eh_tail(uint32_t base, uint32_t lo, uint32_t hi, uint8_t top);
-	uint32_t eh_merge(uint32_t a, uint32_t b);
-	bool eh_resume_only(uint32_t block) const;
-	void eh_order();
-	void eh_prune(uint32_t& landings, bool& reads);
-
-	// ---- host_eh_tables.cpp
-	void eh_build_tables(uint32_t landings);
-	void eh_choose_indexes();
-	uint32_t eh_clause_index(const lowir::Instruction& inst);
-	int32_t eh_filter_value(lowir::InstId id, const lowir::Instruction& inst);
-	void eh_landing_clauses(uint32_t block, std::vector<int32_t>& filters, bool& catch_all);
-	void eh_build_chain(uint32_t node);
-	bool eh_unmatched_work(uint32_t block);
-	void eh_build_landing(uint32_t block, uint32_t index);
 	bool eh_selects(uint32_t block, uint32_t index) const;
 	void emit_landing_pad(uint32_t block);
 

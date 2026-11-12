@@ -261,9 +261,10 @@ smoke, the complete harness, architecture/format/file audits and Clang 21
 changed-source syntax checks pass. The student export regenerates consistently;
 its initial attempt omitted the then-untracked new Perl helper, and the tracked
 rerun includes the helper and all three fixtures. A fresh bundle client passes
-its 270-document inventory and all 43 wrappers. Placement results are recorded
-separately when complete. Eight inherited file warnings
-remain. Logs use `eh-object-`; the successful export is `export-tracked`.
+its 270-document inventory and all 43 wrappers. Placement scans 10093 tests with
+zero placement/local-hygiene findings and 89 advisory EH leads. Eight inherited
+file warnings remain. Logs use `eh-object-`; the successful export is
+`export-tracked`.
 
 Frozen native binaries on LLVM base `0df33eb68` compare `9ccfdd291` with this
 stage. O0 changes from 3,058,794,073 to 3,058,573,870 instructions (-0.0072%);
@@ -272,3 +273,36 @@ O3 from 9,923,807,522 to 9,923,482,955 (-0.0033%). Objects are byte-identical.
 commands, binary hashes and every observation. These counts make no wall-time
 claim. Source EH, SIMD, the remaining object/quality profile, benchmarks and
 final full qualification remain required.
+
+## Shared exception-analysis stage
+
+The native handler-state and action-table algorithms now live in `machine/`.
+Native selection supplies its existing CFG; it copies small block facts only
+for functions containing EH, then assigns native frame/pad locations to the
+shared results. The shared tables contain no native frame offset. This makes
+the existing nested-handler, selector-pruning and resume rules available to
+Wasm without another analysis or another CFG build. Native source selection
+and instruction encoding remain in their owning modules.
+
+The strict report passes 10753/10753 and PA37 passes 70/70 with host-built
+and self-built tools. Debug info, PA5 self-host, byte-identical inception,
+PA36 smoke (3/3), the full harness, Clang 21 syntax and architecture/format/file
+checks pass. Moving the PA26 contract citation required moving its audit-table
+entry too; the final audit log records the corrected mapping. File warnings
+drop from eight to seven because the native state header is smaller.
+The student export regenerates consistently; a fresh bundle client passes its
+270-document inventory and all 43 wrappers. The new placement result is
+recorded when complete. Results use `eh-shared-`.
+
+Frozen native compilers compare the preceding object stage with this extraction
+on the same LLVM base. O0 changes from 3,058,573,959 to 3,058,038,222 instructions
+(-0.0175%); O3 from 9,923,483,044 to 9,924,336,282 (+0.0086%). Objects remain
+byte-identical. All commands, binaries, hashes and observations are retained
+in `perf-eh-shared/`; no wall-time claim is made.
+
+An independent `source-eh-throw-boundary/` probe also verifies cppgm-generated
+throws into an LLVM-generated typed catch at O0/O3 with cppgm's linker. This
+does not qualify cppgm-generated handlers. The next selection/runtime steps
+are recorded in `docs/wasm32-assignment/source-eh-lowering.md`, which is excluded
+from the student export. Full source EH, SIMD, the remaining object/quality
+profile, benchmarks and final qualification remain unfinished.

@@ -950,7 +950,7 @@ void FunctionSelector::emit_call(uint32_t id)
 		++stats_.strlen_prefixes;
 	}
 	if (eh_model_ == EhModel::Host)
-		call.eh = eh_sites_[id];
+		call.eh = eh_.eh_sites_[id];
 	if (layout.stack_align > 16)
 		emit2(Op::Load, TypeKind::I64, rsp, saved_rsp);
 	else if (stack_bytes != 0)

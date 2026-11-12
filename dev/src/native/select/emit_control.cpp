@@ -195,12 +195,12 @@ void FunctionSelector::emit_blocks()
 			continue;
 		// A host landing's pad (when a call names it) and selector block
 		// precede its landing block.
-		if (eh_model_ == EhModel::Host && eh_landing_index_[b] != kNoId)
+		if (eh_model_ == EhModel::Host && eh_.eh_landing_index_[b] != kNoId)
 		{
-			EhLanding& landing = out_->eh.landings[eh_landing_index_[b]];
-			if (eh_live_[b] == 2)
+			EhLanding& landing = out_->eh.landings[eh_.eh_landing_index_[b]];
+			if (eh_.eh_live_[b] == 2)
 				landing.pad = pad_mir_[b] = next++;
-			if (eh_selects(b, eh_landing_index_[b]))
+			if (eh_selects(b, eh_.eh_landing_index_[b]))
 				landing.select = select_mir_[b] = next++;
 		}
 		blocks_[b].mir = next++;
@@ -347,7 +347,7 @@ void FunctionSelector::emit_block(uint32_t b)
 {
 	const lowir::FunctionBody& body = *body_;
 	enter_block(b);
-	if (eh_model_ == EhModel::Host && eh_landing_index_[b] != kNoId)
+	if (eh_model_ == EhModel::Host && eh_.eh_landing_index_[b] != kNoId)
 		emit_landing_pad(b);
 	begin_mir_block(lowir::own_name(body.blocks[blocks_[b].id]), kNoId, kNoId);
 	location_ = 0;
@@ -523,9 +523,9 @@ void FunctionSelector::emit_terminator(uint32_t id)
 	case Opcode::Jump:
 	{
 		// Host EH: a jump to a resume-only block resumes (host_eh.cpp).
-		if (eh_model_ == EhModel::Host && eh_sites_[id] != 0)
+		if (eh_model_ == EhModel::Host && eh_.eh_sites_[id] != 0)
 		{
-			emit_resume(eh_sites_[id]);
+			emit_resume(eh_.eh_sites_[id]);
 			break;
 		}
 		const uint32_t s = layout_of_[inst.ops[0].index];
@@ -590,7 +590,7 @@ void FunctionSelector::emit_terminator(uint32_t id)
 		// Host EH: a record left in the frame takes the exception at its
 		// landing (its selector block, else its block: past the pad);
 		// otherwise the resume terminal.
-		emit_resume(eh_model_ == EhModel::Host ? eh_sites_[id] : 0);
+		emit_resume(eh_model_ == EhModel::Host ? eh_.eh_sites_[id] : 0);
 		break;
 	default:
 		throw InternalError("unsupported instruction");
@@ -1470,7 +1470,7 @@ void FunctionSelector::emit_eh(uint32_t id)
 	// clause set.
 	if (eh_model_ == EhModel::Host)
 	{
-		if (inst.op == Opcode::EhCatchAll && eh_sites_[id] != 0)
+		if (inst.op == Opcode::EhCatchAll && eh_.eh_sites_[id] != 0)
 		{
 			Inst& clause = emit1(Op::CatchAll, TypeKind::Void, Operand::make_frame(out_->eh.slot + 8));
 			clause.aux = static_cast<uint32_t>(inst.immediate);

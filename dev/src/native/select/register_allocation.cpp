@@ -421,7 +421,7 @@ bool FunctionSelector::exceptional_edges()
 	std::vector<uint32_t> landing_block;
 	for (uint32_t b = 0; b < n; ++b)
 	{
-		const uint32_t index = eh_landing_index_.empty() ? kNoId : eh_landing_index_[b];
+		const uint32_t index = eh_.eh_landing_index_.empty() ? kNoId : eh_.eh_landing_index_[b];
 		if (index == kNoId)
 			continue;
 		if (landing_block.size() <= index)
@@ -435,7 +435,7 @@ bool FunctionSelector::exceptional_edges()
 			continue;
 		for (lowir::InstId i = body.blocks[blocks_[b].id].first; i != kNoId; i = body.instructions[i].next)
 		{
-			const uint32_t site = eh_sites_[i];
+			const uint32_t site = eh_.eh_sites_[i];
 			if (!live(i) || site == 0)
 				continue;
 			const Opcode op = body.instructions[i].op;
