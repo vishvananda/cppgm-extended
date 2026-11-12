@@ -396,7 +396,12 @@ bool LoopUnswitch::run()
 bool unswitch_loops(FunctionContext& context)
 {
 	LoopUnswitch pass(context);
-	return pass.run();
+	if (!pass.run())
+		return false;
+	// A copy's blocks are laid out in the loop's order (header, latches,
+	// then their predecessors), which may place a use before its definition.
+	restore_definition_order(context);
+	return true;
 }
 
 } // namespace opt
