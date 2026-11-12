@@ -27,6 +27,7 @@ function @tangle
   abi
     param %n -> rdi : i64
     param %odd -> rsi : i64
+    param %key -> rdx : i64
     return i64 -> rax
   frame
     stack_size N
@@ -36,11 +37,13 @@ function @tangle
     preserve <gpr0>
 
   block ^entry
-    cmp.i64 rsi, 0
-    je ^entry~a
-
-  block ^entry~b
     mov <gpr0>, rdi
+    cmp.i64 rdx, 7
+    jne ^skip
+
+  block ^enter
+    cmp.i64 rsi, 0
+    je ^a
 
   block ^b
     sub <gpr0>, 1
@@ -56,9 +59,6 @@ function @tangle
   block ^done
     ret <gpr0>
 
-  block ^entry~a
-    mov <gpr0>, rdi
-
   block ^a
     cmp.i64 <gpr0>, 3
     jge ^a~b
@@ -67,6 +67,9 @@ function @tangle
     mov rdi, 1
     call @note [args=(rdi)]
     jmp ^b
+
+  block ^skip
+    ret <gpr0>
 
 function @main
   abi
@@ -81,11 +84,13 @@ function @main
   block ^entry
     mov rdi, 5
     mov rsi, 0
-    call @tangle [args=(rsi,rdi)]
+    mov rdx, 7
+    call @tangle [args=(rdx,rsi,rdi)]
     zext.i32 <gpr0>, rax
     mov rdi, 6
     mov rsi, 1
-    call @tangle [args=(rsi,rdi)]
+    mov rdx, 7
+    call @tangle [args=(rdx,rsi,rdi)]
     add.u32 <gpr0>, @seen
     add.u32 rax, <gpr0>
     ret rax

@@ -1,0 +1,159 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @seen
+  storage scalar i64
+  init i64 0
+
+global @words
+  storage scalar obj<48x8>
+  init obj<48x8> 0
+
+function @fill
+  abi
+    param %k -> rdi : i64
+    param %v -> rsi : i64
+    param %p -> rdx : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, 0
+    jl ^low
+
+  block ^high
+    cmp.i64 rdi, 100
+    jle ^high_mid
+
+  block ^high_big
+    store.i64 @seen, rsi
+    jmp ^high_tail
+
+  block ^high_mid
+    test.u8 rdi, 2
+    je ^high_tail
+
+  block ^high_two
+    store.i64 @seen, rdi
+
+  block ^high_tail
+    store.i64 [rdx], rsi
+    store.i64 [rdx+<off0>], rsi
+    store.i64 [rdx+<off1>], rsi
+    store.i64 [rdx+<off2>], rsi
+    store.i64 [rdx+<off3>], rsi
+    store.i64 [rdx+<off4>], rsi
+    ret
+
+  block ^low
+    test.u8 rsi, 1
+    je ^low_tail
+
+  block ^low_odd
+    store.i64 @seen, rdi
+
+  block ^low_tail
+    store.i64 [rdx], rsi
+    store.i64 [rdx+<off0>], rsi
+    store.i64 [rdx+<off1>], rsi
+    store.i64 [rdx+<off2>], rsi
+    store.i64 [rdx+<off3>], rsi
+    store.i64 [rdx+<off4>], rsi
+    ret
+
+function @rare
+  abi
+    param %k -> rdi : i64
+    param %m -> rsi : i64
+    param %v -> rdx : i64
+    param %p -> rcx : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, 0
+    jl ^low
+
+  block ^skip
+    cmp.i64 rdx, 100
+    jle ^done
+
+  block ^skip_big
+    store.i64 @seen, rdx
+    ret
+
+  block ^done
+    ret
+
+  block ^low
+    cmp.i64 rsi, 0
+    jl ^first
+
+  block ^second
+    store.i64 @seen, rsi
+    jmp ^first_tail
+
+  block ^first
+    store.i64 @seen, rdi
+
+  block ^first_tail
+    store.i64 [rcx], rdx
+    store.i64 [rcx+<off0>], rdx
+    store.i64 [rcx+<off1>], rdx
+    store.i64 [rcx+<off2>], rdx
+    store.i64 [rcx+<off3>], rdx
+    store.i64 [rcx+<off4>], rdx
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, -3
+    mov rsi, 5
+    mov rdx, @words
+    call @fill [args=(rdx,rsi,rdi)]
+    mov rdi, 200
+    mov rsi, 6
+    mov rdx, @words
+    call @fill [args=(rdx,rsi,rdi)]
+    mov rdi, 7
+    mov rsi, 9
+    mov rdx, @words
+    call @fill [args=(rdx,rsi,rdi)]
+    mov rdi, -1
+    mov rsi, -2
+    mov rdx, 11
+    mov rcx, @words
+    call @rare [args=(rcx,rdx,rsi,rdi)]
+    mov rdi, -1
+    mov rsi, 4
+    mov rdx, 12
+    mov rcx, @words
+    call @rare [args=(rcx,rdx,rsi,rdi)]
+    mov rdi, 5
+    mov rsi, 4
+    mov rdx, 300
+    mov rcx, @words
+    call @rare [args=(rcx,rdx,rsi,rdi)]
+    load.u32 rax, @seen
+    add.u32 rax, @words+40
+    ret rax

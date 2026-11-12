@@ -35,9 +35,10 @@ const uint32_t kUnresolved = 0xffffffffu;
 const uint32_t kWalking = 0xfffffffeu;
 const uint32_t kNoChainEnd = 0xfffffffdu;
 // A tail of at most kShortTail instructions that the block before it runs
-// into stays a copy of its own where it runs at least as often as the
-// function's entry (share_small_tails).
-const uint32_t kShortTail = 5;
+// into stays a copy of its own where it runs at least a kHotTailShare-th as
+// often as the function's entry (share_small_tails).
+const uint32_t kShortTail = 16;
+const uint64_t kHotTailShare = 4;
 
 bool branch_to(const Inst& inst, Op op, uint32_t block)
 {
@@ -201,13 +202,13 @@ void share_small_tails(
 	FlatMap<uint64_t, uint32_t, WordKeyHash> tails;
 	tails.clear(n);
 	bool changed = false;
-	// Whether `b` is short, runs at least as often as the entry (placement's
-	// estimate), and the block laid out before it runs into it: as a jump to
-	// its twin, that path would take a branch to save a few bytes. (A block
-	// only jumps reach is retargeted at no cost.)
+	// Whether `b` is short, runs at least a quarter as often as the entry
+	// (placement's estimate), and the block laid out before it runs into it:
+	// as a jump to its twin, that path would take a branch to save a few
+	// bytes. (A block only jumps reach is retargeted at no cost.)
 	auto short_and_entered = [&](uint32_t b) {
 		const Block& block = f.blocks[b];
-		if (frequency.empty() || frequency[b] < frequency[0])
+		if (frequency.empty() || frequency[b] * kHotTailShare < frequency[0])
 			return false;
 		uint32_t count = 0;
 		for (uint32_t i = block.first; i < block.first + block.count; ++i)
