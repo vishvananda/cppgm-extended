@@ -1,0 +1,18 @@
+{
+  "source": true,
+  "llvm_interop": true,
+  "exports": ["call_loop"],
+  "calls": [
+    {"export": "observe", "args": ["0", "23", "9"], "result": "17"},
+    {"export": "observe", "args": ["1", "23", "9"], "result": "17"},
+    {"export": "observe", "args": ["13", "23", "9"], "result": "17"},
+    {"export": "observe", "args": ["1000", "-1", "-2147483648"], "result": "17",
+     "fuel": {"1": 90000, "2": 72000, "3": 65000}}
+  ],
+  "quality": {
+    "levels": [1, 2, 3],
+    "functions": {
+      "call_loop": {"locals": 20, "code_bytes": 400, "instructions": 180, "memory_ops": 0, "control_depth": 10}
+    }
+  }
+}

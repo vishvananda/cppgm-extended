@@ -305,7 +305,7 @@ bool ShortLoopUnrolling::sized(Shape& s) const
 			case Opcode::Addr:
 				break;
 			case Opcode::Index:
-				size += inst.ops[1].is(ValueKind::Integer) ? 0 : 1;
+				size += c_.costs.scaled_memory_operands ? (inst.ops[1].is(ValueKind::Integer) ? 0 : 1) : 2;
 				break;
 			case Opcode::Convert:
 				size += static_cast<ConvertOp>(inst.sub) == ConvertOp::Trunc ? 0 : 1;

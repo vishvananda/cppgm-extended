@@ -28,6 +28,12 @@ Bounds allow different local allocation, stackification, loop unrolling and
 vectorization choices. Larger runtime counts also check that control lowering
 and repeated work remain bounded. Benchmark timings are reported separately.
 
+Use the selected target when deciding whether a transformation pays for its
+extra work. Wasm address arithmetic and expanded operations need their own
+costs, and local values survive calls. Keep invariant arithmetic out of repeated
+loop work when it is safe; do not assume x86 addressing modes or register
+pressure. Native targets must retain their earlier quality requirements.
+
 The machine dump should help explain these results. Show the actual signature,
 function, global and tag indices consumed by calls and control regions; frame
 objects with size, alignment and offset; typed locals; and each instruction's

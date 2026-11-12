@@ -9,15 +9,15 @@ or a green partial suite does not complete PA37.
 | Target selection and LowIR round-trip | Explicit wasm32/WASI profiles; ILP32 pointer/long types, aggregate shapes, target-sized class ABI and physical structor returns | Broader portable C++ target cases and final integrated qualification |
 | Scalar and aggregate execution | Qualified binary128 and variadic boundaries; scalar i128 selection and mixed LLVM calls now implemented | Remaining float formats and complete type/layout edge cases |
 | CFG and calls | Reducible/nested/irreducible loops, cyclic phi transfers, recursive/indirect calls | Expanded switch/stack restoration and independent generated cases |
-| Standard objects and own static linker | Linking-v2 objects, multi-result control/signatures, modern EH tags/references, both LLVM interop directions at O0–O3, archives and static GOT address globals | Defined globals, remaining object/feature/SIMD profile and malformed inputs |
+| Standard objects and own static linker | Linking-v2 objects, typed numeric/vector/reference globals, weak/COMDAT resolution, dependency ordering, multi-result control, modern EH, both LLVM interop directions and static GOT address globals | Imported memory/table limits, explicit host globals and remaining malformed-profile boundaries |
 | C++ runtime | Class ABI, allocation, dispatch, RTTI, guards, finalization and modern source EH; automatic EH/no-EH runtime selection | Broader portable C++ cases and final integrated qualification |
 | Modern EH execution dependency | Source/serialized EH, typed catches, nested cleanup contexts, stack recovery, opaque LowIR payloads and mixed LLVM producers/linkers pass | Additional merged-context/foreign-language cases and final integrated qualification |
 | WASI commands and freestanding reactors | Qualified WASI startup, argument/I/O/exit behavior, freestanding initialization and same-instance state/EH sequences | Broader C++ services and final integrated qualification |
-| SIMD and shared optimization | Shared LowIR optimizer; native-only aggregate carrier rewrite gated by target ABI | Portable SIMD legalization, target costs, local/stack cleanup and published quality envelopes |
+| SIMD and shared optimization | All 214 LowIR vector operations legalized; complete standard SIMD128 object vocabulary; consumed typed MIR/local cleanup; target-aware address, loop and inlining policies; published static/fuel envelopes | Broader independent kernels, standard benchmark comparison and final integrated qualification |
 | Robust diagnostics and determinism | Bad target/version/shape tests; bounded MIR validation | Complete malformed object/feature/signature/relocation coverage and deterministic multi-object linking |
 | Course material and export | PA37 handout/design notes, target/MIR scaffolds, offline source/licence pins, normal Perl runner | Final scope and scaffold review, complete reference-tool prerequisites, clean export qualification |
 | Benchmarks and CI | Required Wasm lane integrated with pinned runtime/validator/reference SDK on both hosts | Standard benchmark entry, separate compile/size/startup/runtime measurements and final Linux/macOS results |
-| Native regressions and efficiency | Latest EH snapshot: 10772 strict tests, 83 Wasm controls with host/self tools, debug info, PA5 self-host and byte-identical inception | Repeat required checks and native performance comparison for the completed implementation on the current LLVM base |
+| Native regressions and efficiency | Target-cost snapshot: 10785 strict tests, 96 Wasm controls with host/self tools, debug info, PA5 self-host, byte-identical inception and frozen native output/performance checks on e2831a513 | Repeat final required qualification after the remaining implementation changes |
 
 All raw results, probes, pinned binaries and performance observations live outside
 Git under `/mnt/vizier/cppgm-wasm32-evidence`. Earlier qualification applies only
@@ -487,6 +487,52 @@ cppgm's linker. Its bytes, commands and results are in
 `object-profile-negatives/`. The remaining element/reference/global-expression
 profile also needs validation rather than skipped payloads. This checkpoint
 does not complete PA37.
+
+## Target-aware optimization checkpoint
+
+The shared target description now supplies addressing, call-preservation and
+floating-literal facts to function passes. Wasm keeps invariant scalar/address
+work across calls, avoids native scaled-address sinking and literal-load
+hoisting, and charges short-loop growth for explicit address arithmetic.
+Inlining prices Wasm expansion rather than native x87/SSE/LEA forms, does not
+discount addresses as folded memory operands, and leaves variable/unknown
+expansions unpriced. Required source inlining remains a separate policy.
+
+A source/serialized-LowIR/mixed-LLVM fixture checks call-preserved invariants
+through the normal Perl runner at O0–O3, with portable structural and dynamic
+fuel bounds. At 1,000 iterations, the same checked result uses 80,303 -> 68,315
+fuel at O2 (-14.9%) and 73,138 -> 61,150 at O3 (-16.4%). Pinned LLVM output
+also passes the published bounds. These are engine-work counts, not runtime
+speedups. The student quality guidance describes requirements rather than a
+required pass order or instruction sequence.
+
+The strict report passes 10785/10785. Host-built and self-built PA37 tools pass
+96/96; PA5 self-host, byte-identical inception, debug info, PA36 smoke (3/3),
+Clang syntax and architecture/format/file audits pass. The placement audit
+scans 10123 tests with no placement or hygiene findings; the seven inherited
+file warnings and 89 advisory EH leads remain. The full harness passes.
+student-target-cost-export regenerates consistently; its fresh bundle client
+passes 274 document entries, 64 reviewed prose files and all 43 wrappers.
+
+Frozen native binaries compare 8654da3c9 with this stage on main base e2831a513.
+O0 changes from 3,058,429,628 to 3,058,665,116 instructions (+0.0077%); O3 from
+10,346,620,146 to 10,349,700,222 (+0.0298%). Objects are byte-identical. Four
+A/A blocks and eight paired ABBA blocks per level retain all 96 elapsed/CPU/RSS
+observations and verify every output. Paired elapsed changes are -0.58% at O0
+and +0.22% at O3; A/A median changes are +0.19% and -0.59%, respectively. Peak
+RSS changes by less than 0.03%. This probe detects no material native regression;
+it cannot resolve a timing change near two tenths of a percent. Immutable
+binaries/inputs, patch/hash provenance and observations are in perf-target-cost/;
+Wasm modules, LowIR and every fuel observation are in target-cost-probes/.
+Other validation logs use target-cost-.
+
+Standard benchmark integration, remaining object/type/language boundaries and
+final Linux/macOS CI qualification remain. The benchmark plan now specifies a
+pinned C-API executor to separate VM compilation, instantiation/startup and
+warmed calls, with Perl scheduling and the existing catalog/reporting path.
+Also exercise standalone lowiropt's target-library policy: its default GNU
+combined-math option currently differs from the explicit source/backend policy.
+This checkpoint does not complete PA37.
 
 ## Typed global/reference object checkpoint
 

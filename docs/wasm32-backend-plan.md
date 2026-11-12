@@ -486,6 +486,17 @@ measurements, not a count of Wasm instructions. Begin timing as advisory; set
 course quality limits from repeatable independent workloads, not an invented
 universal ratio to LLVM.
 
+For timing, use the pinned engine's C API in a small supplied host executor.
+Compile the module once, then measure instantiation/startup, input preparation
+and warmed export execution in separate intervals. Do not estimate startup by
+subtracting guest time from a CLI process's elapsed time. A Perl benchmark driver
+owns deadlines, seeded inputs, A/A calibration and ABBA scheduling; the executor
+only loads, invokes and measures. Use the catalog and shared normalized renderer,
+with explicit byte-valued size metrics rather than putting bytes in a seconds
+field. Record the selected GCC baseline as not applicable to this Wasm target;
+do not invent a native/Wasm speedup. Keep both scalar and SIMD128 configurations
+visible and retain the exact engine configuration, host executor and module hashes.
+
 ## Course integration and export checklist
 
 - Update `spec.md` with supported targets and the common machine boundary;

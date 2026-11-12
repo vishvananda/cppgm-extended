@@ -90,6 +90,13 @@ struct Description
 	DataLayout layout;
 };
 
+struct OptimizationModel
+{
+	bool scaled_memory_operands;
+	bool locals_survive_calls;
+	bool floating_literal_loads;
+};
+
 constexpr bool is_wasm(Target target)
 {
 	return target == Target::Wasm32 || target == Target::Wasi;
@@ -115,6 +122,11 @@ constexpr Description describe(Target target)
 			: target == Target::MacOS ? CallingConvention::DarwinAmd64
 									  : CallingConvention::SysVAmd64,
 		data_layout(target) };
+}
+
+constexpr OptimizationModel optimization_model(Target target)
+{
+	return is_wasm(target) ? OptimizationModel{ false, true, false } : OptimizationModel{ true, false, true };
 }
 
 constexpr CxxAbi cxx_abi(Target target)

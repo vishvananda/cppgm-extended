@@ -222,6 +222,8 @@ bool LoopLiterals::run()
 
 bool hold_loop_literals(FunctionContext& context)
 {
+	if (!context.costs.floating_literal_loads)
+		return false;
 	LoopLiterals pass(context);
 	return pass.run();
 }

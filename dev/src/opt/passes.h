@@ -27,11 +27,12 @@ void scope_dynamic_allocations(lowir::FunctionBody& body);
 struct FunctionContext
 {
 	FunctionContext(lowir::Program& p, lowir::SymbolId s, OptimizerStats& st, int l)
-		: program(p), symbol(s), body(*p.functions[p.symbols[s].detail].body), stats(st), level(l)
+		: program(p), symbol(s), body(*p.functions[p.symbols[s].detail].body), stats(st), level(l),
+		  costs(target_model::optimization_model(p.target))
 	{}
 
 	FunctionContext(lowir::Program& p, lowir::SymbolId s, lowir::FunctionBody& b, OptimizerStats& st, int l)
-		: program(p), symbol(s), body(b), stats(st), level(l)
+		: program(p), symbol(s), body(b), stats(st), level(l), costs(target_model::optimization_model(p.target))
 	{}
 
 	lowir::Program& program;
@@ -39,6 +40,7 @@ struct FunctionContext
 	lowir::FunctionBody& body;
 	OptimizerStats& stats;
 	int level;
+	const target_model::OptimizationModel costs;
 	BitTablePool* bit_tables = nullptr;
 	// Pipeline-owned presentation counter, independent of declaration ids
 	// so source and serialized-input optimization name tables alike.

@@ -99,12 +99,15 @@ bool LoopMotion::worth_moving(const Instruction& inst, bool calls) const
 	if (inst.type.kind() == TypeKind::I128 ||
 		(inst.op == Opcode::Convert && convert_source_type(inst).kind() == TypeKind::I128))
 		return false; // (a call of the runtime's)
+	// Virtual locals survive calls without spilling. Their address arithmetic
+	// is explicit too, rather than folded into a load/store operand.
+	calls = calls && !c_.costs.locals_survive_calls;
 	switch (inst.op)
 	{
 	case Opcode::Addr:
-		return !calls && in_register_[inst.result] != 0;
+		return !calls && (!c_.costs.scaled_memory_operands || in_register_[inst.result] != 0);
 	case Opcode::Index:
-		return !calls && (!literal_index(inst) || in_register_[inst.result] != 0);
+		return !calls && (!c_.costs.scaled_memory_operands || !literal_index(inst) || in_register_[inst.result] != 0);
 	case Opcode::Binary:
 	{
 		const BinaryOp op = static_cast<BinaryOp>(inst.sub);

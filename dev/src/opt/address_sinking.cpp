@@ -381,6 +381,8 @@ bool AddressSinking::run()
 
 bool sink_addresses(FunctionContext& context)
 {
+	if (!context.costs.scaled_memory_operands)
+		return false;
 	// (Again for a copy that its own block reads memory through.)
 	if (!AddressSinking(context).run())
 		return false;

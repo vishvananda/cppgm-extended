@@ -1,6 +1,7 @@
 #include "opt/inliner.h"
 #include "opt/interprocedural.h"
 #include "opt/scalar_fold.h"
+#include "opt/target_cost.h"
 
 #include "lowir/builder.h"
 #include "opt/loops.h"
@@ -135,7 +136,7 @@ const uint32_t kEhRegionCost = 6;
 
 // Conservative scalar estimate. Unknown operations are unpriced rather than
 // silently treated as one scalar instruction.
-uint32_t inline_instruction_cost(const Instruction& inst)
+uint32_t native_inline_instruction_cost(const Instruction& inst)
 {
 	switch (inst.op)
 	{
@@ -535,6 +536,10 @@ Shape shape_of(
 	uint32_t result_literal = kNoId;
 	uint32_t cheap = 0;
 	std::vector<TempId> address_candidates;
+	const bool wasm = target_model::is_wasm(program.target);
+	auto inline_instruction_cost = [wasm](const Instruction& inst) {
+		return wasm ? wasm_inline_instruction_cost(inst) : native_inline_instruction_cost(inst);
+	};
 	for (BlockId b : body.layout)
 	{
 		++shape.blocks;
@@ -543,7 +548,7 @@ Shape shape_of(
 		{
 			const Instruction& inst = body.instructions[i];
 			++shape.size;
-			if (!source_required && inst.result != kNoId)
+			if (!source_required && !wasm && inst.result != kNoId)
 			{
 				bool candidate = inst.op == Opcode::Addr && inst.ops[0].is(ValueKind::Slot);
 				if (inst.op == Opcode::Index && inst.ops[1].is(ValueKind::Integer) &&
