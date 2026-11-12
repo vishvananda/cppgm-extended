@@ -1,0 +1,233 @@
+{
+  "calls": [
+    {
+      "export": "regional_hot",
+      "args": [
+        "0",
+        "0"
+      ],
+      "result": "3"
+    },
+    {
+      "export": "regional_hot",
+      "args": [
+        "0",
+        "1"
+      ],
+      "result": "15"
+    },
+    {
+      "export": "regional_hot",
+      "args": [
+        "0",
+        "17"
+      ],
+      "result": "207"
+    },
+    {
+      "export": "regional_hot",
+      "args": [
+        "0",
+        "1000"
+      ],
+      "result": "12003"
+    },
+    {
+      "export": "nested_member",
+      "args": [
+        "0",
+        "0"
+      ],
+      "result": "1"
+    },
+    {
+      "export": "nested_member",
+      "args": [
+        "0",
+        "1"
+      ],
+      "result": "1"
+    },
+    {
+      "export": "nested_member",
+      "args": [
+        "0",
+        "4"
+      ],
+      "result": "4"
+    },
+    {
+      "export": "regional_swap",
+      "args": [
+        "0",
+        "1"
+      ],
+      "result": "37"
+    },
+    {
+      "export": "regional_swap",
+      "args": [
+        "0",
+        "2"
+      ],
+      "result": "73"
+    },
+    {
+      "export": "regional_swap",
+      "args": [
+        "0",
+        "3"
+      ],
+      "result": "37"
+    },
+    {
+      "export": "regional_swap",
+      "args": [
+        "0",
+        "100"
+      ],
+      "result": "73"
+    },
+    {
+      "export": "regional_hot",
+      "args": [
+        "1",
+        "0"
+      ],
+      "result": "3"
+    },
+    {
+      "export": "regional_hot",
+      "args": [
+        "1",
+        "1"
+      ],
+      "result": "15"
+    },
+    {
+      "export": "regional_hot",
+      "args": [
+        "1",
+        "17"
+      ],
+      "result": "207"
+    },
+    {
+      "export": "regional_hot",
+      "args": [
+        "1",
+        "1000"
+      ],
+      "result": "12003",
+      "fuel": {
+        "1": 280000,
+        "2": 280000,
+        "3": 280000
+      }
+    },
+    {
+      "export": "nested_member",
+      "args": [
+        "1",
+        "0"
+      ],
+      "result": "0"
+    },
+    {
+      "export": "nested_member",
+      "args": [
+        "1",
+        "1"
+      ],
+      "result": "3"
+    },
+    {
+      "export": "nested_member",
+      "args": [
+        "1",
+        "4"
+      ],
+      "result": "6"
+    },
+    {
+      "export": "regional_swap",
+      "args": [
+        "1",
+        "1"
+      ],
+      "result": "37"
+    },
+    {
+      "export": "regional_swap",
+      "args": [
+        "1",
+        "2"
+      ],
+      "result": "73"
+    },
+    {
+      "export": "regional_swap",
+      "args": [
+        "1",
+        "3"
+      ],
+      "result": "37"
+    },
+    {
+      "export": "regional_swap",
+      "args": [
+        "1",
+        "100"
+      ],
+      "result": "73"
+    },
+    {
+      "export": "nested_regions",
+      "args": [
+        "0",
+        "0"
+      ],
+      "result": "1"
+    },
+    {
+      "export": "nested_regions",
+      "args": [
+        "0",
+        "1"
+      ],
+      "result": "1"
+    },
+    {
+      "export": "nested_regions",
+      "args": [
+        "0",
+        "6"
+      ],
+      "result": "6"
+    },
+    {
+      "export": "nested_regions",
+      "args": [
+        "1",
+        "0"
+      ],
+      "result": "0"
+    },
+    {
+      "export": "nested_regions",
+      "args": [
+        "1",
+        "1"
+      ],
+      "result": "5"
+    },
+    {
+      "export": "nested_regions",
+      "args": [
+        "1",
+        "6"
+      ],
+      "result": "10"
+    }
+  ]
+}

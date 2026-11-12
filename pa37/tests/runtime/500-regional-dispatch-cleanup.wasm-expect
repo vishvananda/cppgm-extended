@@ -1,0 +1,172 @@
+{
+  "source": true,
+  "runtime": true,
+  "libraries": [
+    "c++abi",
+    "c++",
+    "unwind"
+  ],
+  "wasi": true,
+  "target": "wasm32-wasip1",
+  "link_flags": [
+    "-nostartfiles"
+  ],
+  "reference_flags": [
+    "-fexceptions",
+    "-fwasm-exceptions",
+    "-mllvm",
+    "-wasm-use-legacy-eh=false"
+  ],
+  "reference_link_flags": [
+    "-fwasm-exceptions",
+    "-Wl,--no-entry"
+  ],
+  "llvm_interop": true,
+  "calls": [
+    {
+      "export": "observe",
+      "args": [
+        "3",
+        "-1"
+      ],
+      "result": "201"
+    },
+    {
+      "export": "observe",
+      "args": [
+        "4",
+        "-1"
+      ],
+      "result": "201"
+    },
+    {
+      "export": "observe",
+      "args": [
+        "0",
+        "-1"
+      ],
+      "result": "200"
+    },
+    {
+      "export": "observe",
+      "args": [
+        "3",
+        "0"
+      ],
+      "result": "3100"
+    },
+    {
+      "export": "observe",
+      "args": [
+        "4",
+        "7"
+      ],
+      "result": "3107"
+    },
+    {
+      "export": "observe",
+      "args": [
+        "3",
+        "4"
+      ],
+      "result": "201"
+    },
+    {
+      "export": "observe",
+      "args": [
+        "4",
+        "4"
+      ],
+      "result": "3104"
+    }
+  ],
+  "sequences": [
+    [
+      {
+        "export": "observe",
+        "args": [
+          3,
+          -1
+        ],
+        "result": "201"
+      },
+      {
+        "export": "cleanup_trace",
+        "result": "21"
+      },
+      {
+        "export": "observe",
+        "args": [
+          4,
+          -1
+        ],
+        "result": "201"
+      },
+      {
+        "export": "cleanup_trace",
+        "result": "21"
+      },
+      {
+        "export": "observe",
+        "args": [
+          0,
+          -1
+        ],
+        "result": "200"
+      },
+      {
+        "export": "cleanup_trace",
+        "result": "21"
+      },
+      {
+        "export": "observe",
+        "args": [
+          3,
+          0
+        ],
+        "result": "3100"
+      },
+      {
+        "export": "cleanup_trace",
+        "result": "21"
+      },
+      {
+        "export": "observe",
+        "args": [
+          4,
+          7
+        ],
+        "result": "3107"
+      },
+      {
+        "export": "cleanup_trace",
+        "result": "21"
+      },
+      {
+        "export": "observe",
+        "args": [
+          3,
+          4
+        ],
+        "result": "201"
+      },
+      {
+        "export": "cleanup_trace",
+        "result": "21"
+      },
+      {
+        "export": "observe",
+        "args": [
+          4,
+          4
+        ],
+        "result": "3104"
+      },
+      {
+        "export": "cleanup_trace",
+        "result": "21"
+      }
+    ]
+  ],
+  "reference_initialize": "__wasm_call_ctors"
+}

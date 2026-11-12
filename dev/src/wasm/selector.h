@@ -92,6 +92,9 @@ private:
 	void simple();
 	bool structured();
 	void region(uint32_t region);
+	void region_child(uint32_t child);
+	void dispatch_region(uint32_t region);
+	bool branch_label(uint32_t target);
 	void open_label(Op op, lowir::BlockId target);
 	void close_label();
 	Op memory_op(lowir::Type type, bool store) const;
@@ -141,6 +144,8 @@ private:
 		uint32_t depth;
 	};
 	std::vector<Label> labels_;
+	std::vector<Label> dispatch_labels_;
+	std::vector<uint32_t> region_locals_;
 };
 
 } // namespace wasm

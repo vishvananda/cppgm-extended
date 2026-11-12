@@ -1,8 +1,6 @@
 #include "wasm/control.h"
 
 #include <algorithm>
-#include <functional>
-#include <queue>
 
 namespace wasm {
 
@@ -20,43 +18,6 @@ uint32_t project(const opt::LoopForest& forest, uint32_t block, uint32_t owner, 
 	return inner == kNoId ? kNoId : blocks + inner;
 }
 
-bool order_region(Region& region, std::vector<std::pair<uint32_t, uint32_t>>& edges, const opt::Cfg& cfg,
-	const opt::LoopForest& forest, uint32_t blocks, std::vector<uint32_t>& incoming)
-{
-	for (uint32_t child : region.children)
-		incoming[child] = 0;
-	for (const auto& edge : edges)
-		++incoming[edge.second];
-	std::sort(edges.begin(), edges.end());
-	using Ranked = std::pair<uint32_t, uint32_t>;
-	std::priority_queue<Ranked, std::vector<Ranked>, std::greater<Ranked>> ready;
-	auto enqueue = [&](uint32_t child) {
-		const uint32_t entry = child < blocks ? child : forest.loops[child - blocks].header;
-		ready.emplace(cfg.rpo_index[entry], child);
-	};
-	for (uint32_t child : region.children)
-		if (incoming[child] == 0)
-			enqueue(child);
-	std::vector<uint32_t> ordered;
-	while (!ready.empty())
-	{
-		const uint32_t child = ready.top().second;
-		ready.pop();
-		ordered.push_back(child);
-		auto edge = std::lower_bound(edges.begin(), edges.end(), std::make_pair(child, uint32_t(0)));
-		while (edge != edges.end() && edge->first == child)
-		{
-			if (--incoming[edge->second] == 0)
-				enqueue(edge->second);
-			++edge;
-		}
-	}
-	if (ordered.size() != region.children.size())
-		return false;
-	region.children.swap(ordered);
-	return true;
-}
-
 } // namespace
 
 bool structure_control(
@@ -71,6 +32,10 @@ bool structure_control(
 	if (forest.partial || std::find(forest.dropped.begin(), forest.dropped.end(), uint8_t(1)) != forest.dropped.end())
 		return false;
 	const uint32_t blocks = static_cast<uint32_t>(body.blocks.size());
+	result.regions.clear();
+	result.dispatch_region.clear();
+	result.dispatch_case.clear();
+	result.dispatch_children = 0;
 	result.block_count = blocks;
 	result.regions.resize(forest.loops.size() + 1);
 	result.regions[0].header = body.layout[0];
@@ -107,9 +72,11 @@ bool structure_control(
 			owner = forest.loops[owner].parent;
 		}
 	}
-	std::vector<uint32_t> incoming(blocks + forest.loops.size());
-	for (uint32_t i = 0; i < result.regions.size(); ++i)
-		if (!order_region(result.regions[i], edges[i], cfg, forest, blocks, incoming))
+	std::vector<uint32_t> indices(blocks + forest.loops.size());
+	// Newly appended local dispatch regions are cyclic by construction; only
+	// the original natural-loop regions need ordering and SCC condensation.
+	for (uint32_t i = 0; i < edges.size(); ++i)
+		if (!order_control_region(result, i, edges[i], cfg, indices))
 			return false;
 	return true;
 }

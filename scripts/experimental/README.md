@@ -4,7 +4,7 @@ This is an experimental maintainer workflow. It does not add a student assignmen
 change the PA37 report, or ship in the student export. Run from the solution
 checkout on the `experiment/wasi-browser-inception` branch.
 
-The native compiler builds W1. W1 then compiles all 413 frozen compiler sources
+The native compiler builds W1. W1 then compiles all 415 frozen compiler sources
 and links W2; W2 repeats that work to produce W3. Every corresponding object and
 final module must match **actual bytes**, without stripping or normalization.
 The same W1 runs unchanged under Wasmtime and in a dedicated browser worker.
@@ -120,10 +120,10 @@ regression fixtures. The optional browser workflow remains a maintainer choice.
 
 ## Qualification and performance
 
-The 2026-11-12 experiment used a shared Linux machine with two Xeon E5-2696 v4
-processors. All 413 corresponding objects and the final module matched through
-W1/W2/W3, both locally and in Chromium 153.0.8010.12. The final module was
-15,508,798 bytes, SHA-256
+The earlier shared-backend qualification used a shared Linux machine with two
+Xeon E5-2696 v4 processors. All 413 corresponding objects and the final module
+matched through W1/W2/W3, both locally and in Chromium 153.0.8010.12. The final
+module was 15,508,798 bytes, SHA-256
 `fd03a82e3d5b401dbc53cc8be349689b59338eed7f6f17b5d34936de40a5142c`.
 Native/WASI x86 output matched for all 1,242 comparisons at O0/O2/O3, including
 the floating-point corpus. Browser cancellation, restart, final-module download,
@@ -216,7 +216,79 @@ Validation also fixed worker cleanup overwriting a checker's failing exit status
 WASI values reserved by Wasmtime are checked with a host asserting the exact
 `proc_exit` argument, preserving guest code and ordinary host exit checks.
 
-Shared CFG region/SCC analysis and region-local Wasm fallback remain future
-work. A failed structuring attempt still falls back for the whole function;
-general local live-range allocation is also unchanged. Individual contributions
-of these refactors to the measured link improvement have not been isolated.
+General local live-range allocation is unchanged. Individual contributions of
+these shared planning refactors to the measured link improvement have not been
+isolated.
+
+## Local dispatch regions
+
+The decoder contained a four-block cycle with two entries. Although its other
+loops were reducible, that cycle prevented topological ordering and forced all
+797 reachable blocks through a whole-function dispatcher. It accounted for most
+of the remaining execution gap against the Clang-built worker.
+
+Wasm control planning now condenses such cycles into local dispatch regions.
+An iterative SCC walk runs only when the ordinary topological ordering fails.
+Each local dispatcher contains at most 32 children; the function-wide budget is
+128 dispatch children. A child can be a basic block or a complete natural loop.
+Surrounding acyclic code and natural loops stay structured, and each child is
+emitted once. Larger cycles and incomplete loop analysis retain the dense
+whole-function fallback. This avoids the code duplication that made an earlier
+direct-branch experiment slower.
+
+Local region entry states, PHI transfers and exception selector updates are
+explicit. Active natural-loop backedges keep their direct labels. Regression
+fixtures cover multi-entry cycles, nested natural loops and dispatch regions,
+cyclic i64 PHI copies, exits, and exception cleanup. A runtime fuel bound catches
+the previous whole-function fallback without prescribing an instruction sequence.
+
+The LowIR optimizer and decoder source are unchanged. The generic lowering and
+CFG-shape issues found during analysis are recorded separately, with repros, for
+the LowIR optimizer work.
+
+With immutable baseline and fixed workers linking the same frozen 413-object
+input, four paired ABBA blocks measured 18.124 billion versus 11.853 billion
+retired user instructions: 34.6% fewer instructions and 34.0% fewer CPU cycles.
+The paired elapsed-time ratio was 0.708 (about 29% less time). Wall-time A/A
+calibration varied by up to 19.6% on this shared host, while instruction-count
+ratios were stable. All 47 warmup, calibration and comparison links produced
+the exact original module bytes.
+
+Against the original Clang-built worker's 10.783 billion instructions, the fix
+removes 85.4% of cppgm's excess instruction work, leaving a 9.9% instruction
+gap on this input. This comparison uses the same cppgm internal linker in all
+workers. The decoder's Wasmtime-generated native code shrank from 134,824 to
+52,888 bytes and its host frame from 3,536 to 1,136 bytes. Its Wasm local count
+changed only from 655 to 648; local count alone did not explain the slowdown.
+
+A fresh comparison builds both workers from the fixed 415-source package.
+Both workers link exactly the same objects with cppgm's internal linker. Four
+ABBA blocks measured 3.38 s for the cppgm-built worker and 3.15 s for the
+Clang-built worker (paired Clang/cppgm ratio 0.932, A/A variation at most 1.1%).
+Hardware counters give 11.868 billion versus 10.796 billion instructions,
+leaving about 10% excess instruction work. Three native compilation probes have
+paired fixed/baseline time ratios of 0.998, 1.014 and 1.009, with unchanged object
+bytes. The corresponding Wasm compilation probes show no slowdown, but their
+wall-time observations are too noisy for a general speedup claim.
+
+These timings use pinned logical CPUs, not isolated physical cores. CPU 0 and
+CPU 44 are SMT siblings; the concurrent browser qualification initially included
+CPU 44. External workloads also occupied both siblings. Absolute timings from
+separate campaigns must not be compared as compiler regressions: the unchanged
+old Clang worker measured 1.78 s in the earlier campaign and about 3.16 s in this
+one, with unchanged instruction work. An old/new Clang control on identical old
+inputs measured 2.84/2.87 s, with unchanged instruction counts and a paired CPU
+cycle ratio of 1.0005. All 26 control outputs matched. Both threads of that
+physical core were also occupied by external work. The available observations
+do not separate SMT contention, frequency changes and memory contention.
+
+The fixed 415-source compiler passes complete W1/W2/W3 byte comparisons under
+Wasmtime and Chromium 153.0.8010.12. All 1,248 native/WASI x86 object comparisons
+pass at O0/O2/O3. The final module is 15,517,182 bytes, SHA-256
+`191897eb5b7140c54e799106f2612e977a36df6a27dc39bea61fd4fbea344e7d`.
+Observed local W1/W2/W3 times were 60.8/108.4/138.7 s with six jobs; Chromium's
+serial W2/W3 times were 399.8/385.4 s. Browser setup and final checks bring its
+total to 788.6 s, with peak guest linear memory 144,113,664 bytes. Cancellation,
+restart, download, x86 floating-point output and accepted/rejected source checks
+all pass. These are shared-host observations; Firefox and Safari remain
+unqualified.

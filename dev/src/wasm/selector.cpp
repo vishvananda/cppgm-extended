@@ -355,64 +355,28 @@ void Selector::edge(BlockId from, BlockId to)
 	phi_copies(from, to);
 	if (pc_ == kNoId)
 	{
-		for (auto label = labels_.rbegin(); label != labels_.rend(); ++label)
-			if (label->target == to)
-			{
-				out_.emit(Op::Br, { nesting_ - 1 - label->depth });
+		// A natural loop inside a dispatch case keeps its direct backedge.
+		if (branch_label(to))
+			return;
+		const uint32_t region = control_.dispatch_region.empty() ? kNoId : control_.dispatch_region[to];
+		if (region != kNoId)
+		{
+			out_.emit(Op::I32Const, { control_.dispatch_case[to] });
+			out_.emit(Op::LocalSet, { region_locals_[region] });
+			for (auto label = dispatch_labels_.rbegin(); label != dispatch_labels_.rend(); ++label)
+				if (label->target == region)
+				{
+					out_.emit(Op::Br, { nesting_ - 1 - label->depth });
+					return;
+				}
+			if (branch_label(control_.block_count + region - 1))
 				return;
-			}
+		}
 		throw WasmError("Wasm structured branch has no active destination");
 	}
 	out_.emit(Op::I32Const, { to });
 	out_.emit(Op::LocalSet, { pc_ });
 	out_.emit(Op::Br, { nesting_ - 1 });
-}
-
-void Selector::open_label(Op op, BlockId target)
-{
-	out_.emit(op, { block_type(ValueType::Void) });
-	labels_.push_back(Label{ target, nesting_++ });
-}
-
-void Selector::close_label()
-{
-	out_.emit(Op::End);
-	labels_.pop_back();
-	--nesting_;
-}
-
-void Selector::region(uint32_t id)
-{
-	const auto& children = control_.regions[id].children;
-	auto entry = [&](uint32_t child) {
-		return child < control_.block_count ? child : control_.regions[child - control_.block_count + 1].header;
-	};
-	for (uint32_t i = static_cast<uint32_t>(children.size()); i > 1; --i)
-		open_label(Op::Block, entry(children[i - 1]));
-	for (uint32_t i = 0; i < children.size(); ++i)
-	{
-		if (i != 0)
-			close_label();
-		const uint32_t child = children[i];
-		if (child < control_.block_count)
-			block(child);
-		else
-		{
-			open_label(Op::Loop, entry(child));
-			region(child - control_.block_count + 1);
-			close_label();
-		}
-	}
-}
-
-bool Selector::structured()
-{
-	const opt::Cfg* edges = exceptions_ != nullptr && exceptions_->active ? &exceptions_->control : nullptr;
-	if (!structure_control(program_, body_, control_, edges))
-		return false;
-	region(0);
-	out_.emit(Op::Unreachable);
-	return true;
 }
 
 } // namespace wasm
