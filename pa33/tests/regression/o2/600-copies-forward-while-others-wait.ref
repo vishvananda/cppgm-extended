@@ -1,0 +1,86 @@
+global @first : obj<160x8> [binding=internal] = {
+  i64 1
+  i64 2
+  i64 3
+  i64 4
+  zero 120
+  u8 5
+  zero 7
+}
+global @second : obj<160x8> [binding=internal] = {
+  i64 10
+  i64 20
+  i64 30
+  i64 40
+  zero 120
+  u8 50
+  zero 7
+}
+global @sum : i64 = 0
+
+function @take(%p : ptr, %q : ptr) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %a = load i64 %p
+    %b = load i64 %q
+    %p3 = index i8 %p, 24
+    %c = load i64 %p3
+    %q4 = index i8 %q, 152
+    %d = load u8 %q4
+    %dw = convert zext i64 u8 %d
+    %s0 = load i64 @sum
+    %s1 = binary add i64 %a, %s0
+    %s2 = binary add i64 %b, %s1
+    %s3 = binary add i64 %c, %s2
+    %s4 = binary add i64 %dw, %s3
+    store i64 %s4, @sum
+    return void
+}
+function @range() -> void [binding=strong, no_inline=yes] {
+  slot $begin : obj<160x8>
+  slot $end : obj<160x8>
+
+  block ^entry:
+    %b = addr $begin
+    copyobj 153x8 @first, %b
+    %e = addr $end
+    copyobj 153x8 @second, %e
+    call void @take(%b, %e)
+    return void
+}
+function @written() -> void [binding=strong, no_inline=yes] {
+  slot $x : obj<160x8>
+  slot $begin : obj<160x8>
+
+  block ^entry:
+    %x = addr $x
+    copyobj 160x8 @first, %x
+    store i64 100, @first
+    %b = addr $begin
+    copyobj 160x8 %x, %b
+    store i64 1, @first
+    call void @take(%b, %b)
+    return void
+}
+function @called() -> void [binding=strong, no_inline=yes] {
+  slot $x : obj<160x8>
+  slot $begin : obj<160x8>
+
+  block ^entry:
+    %x = addr $x
+    copyobj 160x8 @first, %x
+    call void @take(@first, @second)
+    %b = addr $begin
+    copyobj 160x8 %x, %b
+    call void @take(%b, %b)
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    call void @range()
+    call void @written()
+    call void @called()
+    %s = load i64 @sum
+    %t = convert trunc i32 i64 %s
+    %u = binary and i32 %t, 255
+    return i32 %u
+}

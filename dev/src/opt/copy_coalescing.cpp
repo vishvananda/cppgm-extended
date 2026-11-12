@@ -45,6 +45,17 @@ bool rooted(const FunctionBody& body, Value v, Rooted& out)
 	return false;
 }
 
+// A copy into a slot that a later copy may read through (forward_copies).
+struct Pending
+{
+	InstId copy;
+	uint32_t slot;
+	bool written; // a write since that may reach the copy's source
+};
+
+// The most copies that wait in one block: a range's two ends with room.
+const size_t kPendingCopies = 8;
+
 struct Pair
 {
 	InstId load;
@@ -90,6 +101,7 @@ private:
 	std::vector<uint32_t> slot_uses_; // per slot: instructions naming it (directly or by addr)
 	std::vector<uint8_t> escaped_;    // per slot: its address reaches more than accesses and copies
 	std::vector<uint8_t> dead_;       // per instruction: a merged pair or removable fill
+	std::vector<Pending> pending_;    // forward_copies' waiting copies
 	uint32_t merges_ = 0;
 	bool changed_ = false;
 };
@@ -184,19 +196,35 @@ void CopyCoalescing::flush(BlockId block, std::vector<Pair>& run)
 	run.clear();
 }
 
-// A copy into a whole slot that only a later copy of the whole slot reads
-// (nothing else names the slot): the later copy reads the first one's
+// A copy into the start of a slot that only a later copy from its start
+// reads (nothing else names the slot): the later copy reads the first one's
 // source instead, when that is an object value or storage nothing in
-// between writes (disjoint from the later destination), and the first
+// between may write (disjoint from the later destination), and the first
 // copy goes; so does one a return of the slot follows, the return naming
-// the source slot. Returns whether the block changed.
+// the source slot. The later copy moves the bytes both copies cover: the
+// rest of what it read was never written (the tail padding a by-value
+// argument's copy leaves out). Several copies wait at once (the two ends
+// of a range, passed on together), each watched for writes to its own
+// source. Returns whether the block changed.
 bool CopyCoalescing::forward_copies(BlockId block)
 {
-	bool changed = false;
-	InstId first_prev = kNoId, first = kNoId, prev = kNoId;
-	uint32_t slot = kNoId;
-	bool written = false; // a write since the first copy
-	for (InstId i = body_.blocks[block].first; i != kNoId; prev = i, i = body_.instructions[i].next)
+	bool changed = false, removed = false;
+	pending_.clear();
+	if (dead_.size() < body_.instructions.size())
+		dead_.resize(body_.instructions.size(), 0);
+	// Whether `inst`, a write, may reach the storage `copy` reads.
+	auto reaches = [&](const Instruction& inst, const Instruction& copy) {
+		Rooted origin, to;
+		if (!rooted(body_, copy.ops[0], origin))
+			return true;
+		const bool addressed = inst.op == Opcode::Store || inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit;
+		const Value target = inst.op == Opcode::ZeroInit ? inst.ops[0] : inst.ops[1];
+		if (addressed && rooted(body_, target, to))
+			return !disjoint(origin.root, to.root);
+		return !(
+			origin.root.is(ValueKind::Slot) && origin.root.index < escaped_.size() && !escaped_[origin.root.index]);
+	};
+	for (InstId i = body_.blocks[block].first; i != kNoId; i = body_.instructions[i].next)
 	{
 		Instruction& inst = body_.instructions[i];
 		Rooted from, to;
@@ -231,67 +259,100 @@ bool CopyCoalescing::forward_copies(BlockId block)
 				body_.instructions[i] = load;
 				body_.instructions[next] = store;
 				body_.temps[value].def = i;
-				first = kNoId;
+				pending_.clear();
 				changed = true;
 				continue;
 			}
 		}
-		if (inst.op == Opcode::CopyObject && first != kNoId && rooted(body_, inst.ops[0], from) &&
-			from.root == Value::slot(slot) && from.offset == 0 &&
-			inst.immediate == body_.instructions[first].immediate && slot_uses_[slot] == 2)
+		// The waiting copy that filled the slot this instruction reads.
+		size_t waiting = pending_.size();
+		bool reads_slot = inst.op == Opcode::Return && inst.ops[0].is(ValueKind::Slot);
+		if (inst.op == Opcode::CopyObject && !pending_.empty())
+			reads_slot = rooted(body_, inst.ops[0], from) && from.root.is(ValueKind::Slot) && from.offset == 0;
+		if (reads_slot)
 		{
-			const Value source = body_.instructions[first].ops[0];
+			const uint32_t slot = inst.op == Opcode::Return ? inst.ops[0].index : from.root.index;
+			for (size_t k = 0; k < pending_.size(); ++k)
+				if (pending_[k].slot == slot)
+					waiting = k;
+		}
+		if (inst.op == Opcode::CopyObject && waiting != pending_.size() && !(inst.flags & IF_VOLATILE) &&
+			slot_uses_[pending_[waiting].slot] == 2)
+		{
+			const Instruction& head = body_.instructions[pending_[waiting].copy];
+			const Value source = head.ops[0];
 			Rooted origin;
 			const bool value = source.is(ValueKind::Temp) && body_.temps[source.index].type.is_object();
+			const uint64_t bytes = static_cast<uint64_t>(std::min(inst.immediate, head.immediate));
 			// A destination slot no pointer reaches needs no root for the
 			// source (a variable element of an array).
 			const bool private_to = rooted(body_, inst.ops[1], to) && to.root.is(ValueKind::Slot) &&
 				to.root.index < escaped_.size() && !escaped_[to.root.index];
 			if (value ||
-				(!written &&
+				(!pending_[waiting].written &&
 					(private_to ||
 						(rooted(body_, source, origin) && rooted(body_, inst.ops[1], to) &&
-							disjoint(origin, to, static_cast<uint64_t>(inst.immediate))))))
+							disjoint(origin, to, bytes)))))
 			{
 				inst.ops[0] = source;
-				unlink_after(body_, block, first_prev, first);
-				if (prev == first)
-					prev = first_prev;
+				inst.immediate = static_cast<int64_t>(bytes);
+				inst.sub = std::min(inst.sub, head.sub);
+				dead_[pending_[waiting].copy] = 1;
+				pending_.erase(pending_.begin() + static_cast<std::ptrdiff_t>(waiting));
 				++c_.stats.stores_removed;
-				changed = true;
-				first = kNoId;
-				continue;
+				changed = removed = true;
+				waiting = pending_.size();
 			}
 		}
 		// A return of the slot the copy just filled from another slot
 		// returns that slot (nothing reads the copy after the return).
 		Rooted origin;
-		if (inst.op == Opcode::Return && first != kNoId && !written && inst.ops[0] == Value::slot(slot) &&
-			rooted(body_, body_.instructions[first].ops[0], origin) && origin.root.is(ValueKind::Slot) &&
-			origin.offset == 0 &&
+		if (inst.op == Opcode::Return && waiting != pending_.size() && !pending_[waiting].written &&
+			rooted(body_, body_.instructions[pending_[waiting].copy].ops[0], origin) &&
+			origin.root.is(ValueKind::Slot) && origin.offset == 0 &&
 			storage_bytes(body_.slots[origin.root.index].type) ==
-				static_cast<uint64_t>(body_.instructions[first].immediate))
+				static_cast<uint64_t>(body_.instructions[pending_[waiting].copy].immediate) &&
+			storage_bytes(body_.slots[inst.ops[0].index].type) ==
+				static_cast<uint64_t>(body_.instructions[pending_[waiting].copy].immediate))
 		{
 			inst.ops[0] = origin.root;
-			unlink_after(body_, block, first_prev, first);
+			dead_[pending_[waiting].copy] = 1;
+			pending_.erase(pending_.begin() + static_cast<std::ptrdiff_t>(waiting));
 			++c_.stats.stores_removed;
-			changed = true;
-			first = kNoId;
+			changed = removed = true;
 			continue;
 		}
-		if (inst.op == Opcode::CopyObject && rooted(body_, inst.ops[1], to) && to.root.is(ValueKind::Slot) &&
-			to.offset == 0 && static_cast<uint64_t>(inst.immediate) == storage_bytes(body_.slots[to.root.index].type))
-		{
-			first_prev = prev;
-			first = i;
-			slot = to.root.index;
-			written = false;
-			continue;
-		}
-		if (first != kNoId &&
+		if (!pending_.empty() &&
 			(inst.op == Opcode::Store || inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit ||
 				may_write_memory(c_.program, inst)))
-			written = true;
+			for (Pending& wait : pending_)
+				wait.written = wait.written || reaches(inst, body_.instructions[wait.copy]);
+		if (inst.op == Opcode::CopyObject && !(inst.flags & IF_VOLATILE) && rooted(body_, inst.ops[1], to) &&
+			to.root.is(ValueKind::Slot) && to.offset == 0 &&
+			static_cast<uint64_t>(inst.immediate) <= storage_bytes(body_.slots[to.root.index].type))
+		{
+			for (size_t k = 0; k < pending_.size(); ++k)
+				if (pending_[k].slot == to.root.index)
+					pending_.erase(pending_.begin() + static_cast<std::ptrdiff_t>(k--));
+			if (pending_.size() == kPendingCopies)
+				pending_.erase(pending_.begin());
+			pending_.push_back(Pending{ i, to.root.index, false });
+		}
+	}
+	if (!removed)
+		return changed;
+	InstId prev = kNoId;
+	for (InstId i = body_.blocks[block].first; i != kNoId;)
+	{
+		const InstId next = body_.instructions[i].next;
+		if (dead_[i])
+		{
+			unlink_after(body_, block, prev, i);
+			dead_[i] = 0;
+		}
+		else
+			prev = i;
+		i = next;
 	}
 	return changed;
 }
