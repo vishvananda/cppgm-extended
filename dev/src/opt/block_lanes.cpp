@@ -79,7 +79,7 @@ private:
 	bool adjacent_loads(const Value* lanes) const;
 	bool pure(const Instruction& inst) const;
 	bool apart(const Instruction& store, Value address, const Located& at, uint64_t bytes, Type type, bool typed) const;
-	int net_gain(const int* roots, size_t count);
+	int net_gain(BlockId b, const int* roots, size_t count);
 	Value lane_value(Value v);
 	Value make(int node);
 	Value emit(Instruction inst, Type type);
@@ -399,7 +399,7 @@ int BlockLanes::build(
 // gathered. A node two trees share counts the readers of both; the nodes are
 // read parents first (a later tree's nodes read only earlier nodes, which
 // its own parents reach once theirs are read).
-int BlockLanes::net_gain(const int* roots, size_t count)
+int BlockLanes::net_gain(BlockId b, const int* roots, size_t count)
 {
 	std::vector<uint32_t> removed(nodes_.size() * kMaxLanes, 0); // per node and lane: readers that go
 	std::vector<uint32_t> parents(nodes_.size(), 0), seen(nodes_.size(), 0);
@@ -459,10 +459,18 @@ int BlockLanes::net_gain(const int* roots, size_t count)
 		const bool reads = node.kind == NodeKind::Operation;
 		if (node.kind == NodeKind::Gather || node.kind == NodeKind::Splat)
 		{
-			gain -= node.kind == NodeKind::Splat ? 1 : static_cast<int>(lanes_) - 1;
-			for (unsigned lane = 0; lane < (node.kind == NodeKind::Splat ? 1 : lanes_); ++lane)
+			// A floating lane is already in a vector register; an integer
+			// lane moves there before the shuffles (lane_value). Lanes made
+			// before this block can be packed once, before a loop.
+			const unsigned packed = node.kind == NodeKind::Splat ? 1 : lanes_;
+			gain -= static_cast<int>(node.kind == NodeKind::Splat ? 1 : lanes_ - 1);
+			for (unsigned lane = 0; lane < packed; ++lane)
+			{
 				if (!node.lanes[lane].is(ValueKind::Temp))
 					gain -= 1;
+				else if (lane_type_.is_integer() && same_block(b, node.lanes[lane]))
+					gain -= 1;
+			}
 		}
 		else
 			gain += going - 1;
@@ -631,7 +639,7 @@ bool BlockLanes::group(BlockId b, const std::vector<Stored>& stores, const std::
 	if (root < 0)
 		return false;
 	const std::vector<Node> built = nodes_;
-	if (net_gain(&root, 1) > 0 && nodes_[root].kind >= NodeKind::Loaded)
+	if (net_gain(b, &root, 1) > 0 && nodes_[root].kind >= NodeKind::Loaded)
 	{
 		pack(b, stores, first, last, root);
 		return true;
@@ -657,7 +665,7 @@ bool BlockLanes::group(BlockId b, const std::vector<Stored>& stores, const std::
 		if (next < 0 || !reuses)
 			continue;
 		const int roots[2] = { root, next };
-		if (net_gain(roots, 2) <= 0 || nodes_[root].kind < NodeKind::Loaded || nodes_[next].kind < NodeKind::Loaded)
+		if (net_gain(b, roots, 2) <= 0 || nodes_[root].kind < NodeKind::Loaded || nodes_[next].kind < NodeKind::Loaded)
 			continue;
 		pack(b, stores, first, last, root);
 		pack(b, stores, second, later, next);
@@ -826,7 +834,7 @@ bool BlockLanes::reduction(BlockId b)
 		const int root = build(b, parts, stores, 0, id, 0);
 		// Four scalar additions become two shuffle/add pairs, an extract
 		// and the carry addition: five more instructions than store roots.
-		if (root < 0 || net_gain(&root, 1) <= 5 || nodes_[root].kind < NodeKind::Loaded)
+		if (root < 0 || net_gain(b, &root, 1) <= 5 || nodes_[root].kind < NodeKind::Loaded)
 			continue;
 		block_ = b;
 		tail_ = previous_in_block(body_, b, id);
