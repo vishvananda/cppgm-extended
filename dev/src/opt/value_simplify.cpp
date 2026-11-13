@@ -261,7 +261,8 @@ private:
 	bool select_phi(BlockId block, InstId prev, InstId id);
 	void select_equal_arm(Instruction& inst);
 	// After appending temporaries or instructions: the per-temporary and
-	// per-instruction tables cover them.
+	// per-instruction tables cover them (a later block's edge facts may meet
+	// a new temporary as its branch's operand).
 	void grow_facts()
 	{
 		repl_.resize(body_.temps.size(), Value::none());
@@ -2069,8 +2070,7 @@ bool Simplifier::project_or(BlockId block, InstId& prev, InstId id)
 	result.ops[0] = value;
 	result.ops[1] = Value::none();
 	result.flags = 0;
-	repl_.resize(body_.temps.size(), Value::none());
-	uses_.resize(body_.temps.size(), 0);
+	grow_facts();
 	return true;
 }
 
@@ -2134,8 +2134,7 @@ bool Simplifier::affine_constant(BlockId block, InstId& prev, InstId id)
 	result.ops[0] = Value::temp(body_.instructions[at].result);
 	result.ops[1] = bias;
 	result.flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT));
-	repl_.resize(body_.temps.size(), Value::none());
-	uses_.resize(body_.temps.size(), 0);
+	grow_facts();
 	return true;
 }
 
@@ -2452,7 +2451,7 @@ bool Simplifier::bulk_call(Instruction& inst)
 	if (inst.result != kNoId)
 	{
 		if (repl_.size() <= inst.result)
-			repl_.resize(body_.temps.size(), Value::none());
+			grow_facts();
 		replace(inst.result, to);
 	}
 	inst.op = zero ? Opcode::ZeroInit : Opcode::CopyObject;
@@ -2569,10 +2568,7 @@ bool Simplifier::equality_memcmp(BlockId block, InstId& prev, InstId id)
 	const Value differs = emit(ne, Type::scalar(TypeKind::I64));
 	// The new temporaries in every per-temp table (edge facts may meet
 	// them as a branch's operands).
-	repl_.resize(body_.temps.size(), Value::none());
-	uses_.resize(body_.temps.size(), 0);
-	nonzero_.resize(body_.temps.size(), 0);
-	equal_.resize(body_.temps.size(), Value::none());
+	grow_facts();
 	// The call becomes the i32 the comparisons read.
 	Instruction& replaced = body_.instructions[id];
 	replaced.op = Opcode::Convert;
@@ -2724,10 +2720,7 @@ bool Simplifier::math_call(BlockId block, InstId& prev, InstId id)
 	default:
 		return false;
 	}
-	repl_.resize(body_.temps.size(), Value::none());
-	uses_.resize(body_.temps.size(), 0);
-	nonzero_.resize(body_.temps.size(), 0);
-	equal_.resize(body_.temps.size(), Value::none());
+	grow_facts();
 	Instruction& replaced = body_.instructions[id];
 	replaced.op = last.op;
 	replaced.sub = last.sub;
@@ -2874,8 +2867,7 @@ bool Simplifier::reuse_quotient(BlockId block, InstId& prev, InstId id)
 	difference.sub = static_cast<uint8_t>(BinaryOp::Sub);
 	difference.ops[1] = Value::temp(body_.instructions[at].result);
 	difference.flags = 0;
-	repl_.resize(body_.temps.size(), Value::none());
-	uses_.resize(body_.temps.size(), 0);
+	grow_facts();
 	return true;
 }
 
@@ -2923,11 +2915,7 @@ bool Simplifier::shifted_truth_mask(BlockId block, InstId& prev, InstId id)
 		insert_after(body_, block, prev, at);
 		prev = at;
 		body_.instructions[id].ops[0] = Value::temp(temp);
-		repl_.resize(body_.temps.size(), Value::none());
-		uses_.resize(body_.temps.size(), 0);
-		// Successor edge facts can name the newly inserted truth value.
-		nonzero_.resize(body_.temps.size(), 0);
-		equal_.resize(body_.temps.size(), Value::none());
+		grow_facts();
 		uses_[temp] = 1;
 		if (direct.ops[0].is(ValueKind::Temp) && uses_[direct.ops[0].index] != 0xffffffffu)
 			++uses_[direct.ops[0].index];
@@ -3009,8 +2997,7 @@ void Simplifier::process_block(BlockId block)
 		if (inst.op == Opcode::Copy && inst.type.is_float() &&
 			simplify_packed_load(body_, uses_, c_.block_of, block, prev, id))
 		{
-			repl_.resize(body_.temps.size(), Value::none());
-			uses_.resize(body_.temps.size(), 0);
+			grow_facts();
 			changed_ = true;
 			continue;
 		}
@@ -3036,8 +3023,7 @@ void Simplifier::process_block(BlockId block)
 				simplify_integer_arithmetic(body_, uses_, *this, block, prev, id);
 			if (changed)
 			{
-				repl_.resize(body_.temps.size(), Value::none());
-				uses_.resize(body_.temps.size(), 0);
+				grow_facts();
 				changed_ = true;
 				continue;
 			}
@@ -3060,10 +3046,7 @@ void Simplifier::process_block(BlockId block)
 			static_cast<BinaryOp>(inst.sub) == BinaryOp::Shr && (inst.flags & IF_EXACT) != 0 &&
 			simplify_pointer_distance(body_, *this, block, prev, id))
 		{
-			repl_.resize(body_.temps.size(), Value::none());
-			uses_.resize(body_.temps.size(), 0);
-			nonzero_.resize(body_.temps.size(), 0);
-			equal_.resize(body_.temps.size(), Value::none());
+			grow_facts();
 			changed_ = true;
 			continue;
 		}
