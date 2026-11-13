@@ -305,7 +305,7 @@ bool TailRecursion::run()
 		if (kind == TypeKind::Obj || kind == TypeKind::F80 || kind == TypeKind::V128)
 			return false;
 	}
-	const Cfg& cfg = c_.ensure_cfg();
+	const Cfg& cfg = c_.ensure_cfg_light();
 	const BlockId header = body_.layout[0];
 	if (cfg.pred_first[header] != cfg.pred_first[header + 1])
 		return false;

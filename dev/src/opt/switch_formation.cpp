@@ -776,7 +776,7 @@ bool SwitchFormer::form_region(const std::vector<BlockId>& region, const std::ve
 
 bool SwitchFormer::run()
 {
-	c_.ensure_cfg();
+	c_.ensure_cfg_light();
 	c_.entry_uses(form_switches);
 	c_.entry_block_of(form_switches);
 	consumed_.assign(body_.blocks.size(), 0);
@@ -789,7 +789,7 @@ bool SwitchFormer::run()
 		// The graph changed: fresh predecessors for the next head.
 		changed = true;
 		c_.invalidate_cfg();
-		c_.ensure_cfg();
+		c_.ensure_cfg_light();
 	}
 	return changed;
 }

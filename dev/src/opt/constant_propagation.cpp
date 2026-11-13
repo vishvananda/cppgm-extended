@@ -473,7 +473,7 @@ bool Propagator::rewrite()
 
 bool Propagator::run()
 {
-	c_.ensure_cfg();
+	c_.ensure_cfg_light();
 	if (cfg_.rpo.empty())
 		return false;
 	const size_t temps = body_.temps.size();

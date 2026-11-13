@@ -404,8 +404,8 @@ void SqrtGuards::guard(BlockId block, InstId before, InstId id, BlockId& rest)
 bool SqrtGuards::run()
 {
 	bool changed = false;
-	c_.ensure_cfg();
-	// (The blocks of the calls gather past `end`.)
+	// (The blocks of the calls gather past `end`. The CFG is built at the
+	// first call and again after each guard: it stays current.)
 	size_t end = body_.layout.size();
 	for (size_t at = 0; at < end; ++at)
 	{
@@ -414,6 +414,7 @@ bool SqrtGuards::run()
 		for (InstId i = body_.blocks[block].first; i != kNoId; before = i, i = body_.instructions[i].next)
 			if (guarded(i))
 			{
+				c_.ensure_cfg();
 				const Value x = body_.operands[body_.instructions[i].extra_first];
 				if (never_negative(x, body_.instructions[i].type, 0) || tested_not_negative(block, x))
 				{
@@ -438,10 +439,7 @@ bool SqrtGuards::run()
 			}
 	}
 	if (changed)
-	{
-		c_.invalidate_cfg();
 		c_.invalidate_block_of();
-	}
 	return changed;
 }
 

@@ -619,7 +619,7 @@ bool WideIntegers::run()
 		any = any || t.type.kind() == TypeKind::I128;
 	if (!any)
 		return false;
-	const Cfg& cfg = c_.ensure_cfg();
+	const Cfg& cfg = c_.ensure_cfg_light();
 	split_slots();
 	const uint32_t temps = static_cast<uint32_t>(body_.temps.size());
 	halves_.assign(temps, Pair{ Value::none(), Value::none() });

@@ -282,6 +282,8 @@ public:
 	bool run();
 	bool nonzero_phis();
 	uint32_t demoted() const { return demoted_; }
+	// constant_phis moved edges: the CFG run leaves is no longer current.
+	bool moved() const { return moved_; }
 
 private:
 	bool known_edges();
@@ -342,6 +344,7 @@ private:
 	uint32_t epoch_ = 0;
 	uint32_t demoted_ = 0; // known_compares' phis demoted to slots this run
 	bool touched_ = false; // the run changed the body so far
+	bool moved_ = false;   // constant_phis changed the graph
 };
 
 // Whether s heads a loop: a predecessor it dominates closes a back edge.
@@ -2152,6 +2155,7 @@ bool JumpThreading::demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockI
 	++demoted_;
 	// The stores' blocks: the predecessor, or a new block on its edge.
 	std::vector<std::pair<BlockId, BlockId>> edge; // (predecessor, block storing)
+	bool split = false;
 	for (uint32_t k = cfg_.pred_first[s]; k < cfg_.pred_first[s + 1]; ++k)
 	{
 		const BlockId p = cfg_.preds[k];
@@ -2163,6 +2167,7 @@ bool JumpThreading::demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockI
 		BlockId at = p;
 		if (cfg_.succ_count(p) != 1)
 		{
+			split = true;
 			at = append_block(body_, BlockKind::Split);
 			Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
 			jump.ops[0] = Value::block(s);
@@ -2223,8 +2228,12 @@ bool JumpThreading::demote_phis(BlockId s, std::vector<std::pair<BlockId, BlockI
 		}
 		unlink_after(body_, s, kNoId, i);
 	}
-	c_.invalidate_cfg();
-	c_.ensure_cfg();
+	// The stores and loads leave the graph as it was; new edge blocks do not.
+	if (split)
+	{
+		c_.invalidate_cfg();
+		c_.ensure_cfg();
+	}
 	return true;
 }
 
@@ -2619,32 +2628,30 @@ bool JumpThreading::nonzero_phis()
 bool JumpThreading::run()
 {
 	c_.ensure_cfg();
+	// dominating_facts and nonzero_phis rewrite operands only (a branch
+	// keeps both edges whatever it tests): the CFG stays current.
 	bool changed = dominating_facts();
 	changed = nonzero_phis() || changed;
-	changed = known_edges() || changed;
-	if (changed)
+	if (known_edges())
 	{
+		changed = true;
 		c_.invalidate_cfg();
 		c_.ensure_cfg();
 	}
 	touched_ = changed;
 	// (known_compares counts uses first: still current when it changes
-	// nothing.)
+	// nothing. It builds the CFG again after each change to the graph.)
 	bool counted = false;
 	if (c_.level >= 1)
 	{
 		if (known_compares())
-		{
 			changed = true;
-			c_.invalidate_cfg();
-			c_.ensure_cfg();
-		}
 		else
 			counted = true;
 	}
 	touched_ = changed;
-	changed = constant_phis(counted) || changed;
-	return changed;
+	moved_ = constant_phis(counted);
+	return moved_ || changed;
 }
 
 } // namespace
@@ -2667,7 +2674,8 @@ bool thread_jumps(FunctionContext& context)
 	// empty: the cleanup removes it. Demoted phis return to SSA form.
 	if (changed)
 	{
-		context.invalidate_cfg();
+		if (threading.moved())
+			context.invalidate_cfg();
 		cleanup_cfg(context);
 		if (threading.demoted() != 0)
 			promote_slots(context);

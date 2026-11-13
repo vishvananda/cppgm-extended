@@ -162,7 +162,7 @@ bool RegionStripper::run()
 		}
 	if (opener_.empty())
 		return false;
-	c_.ensure_cfg();
+	c_.ensure_cfg_light();
 	nodes_.assign(1, StackNode{ kNoId, 0 });
 	marked_.assign(1, 1);
 	interned_.clear();

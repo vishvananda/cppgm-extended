@@ -186,8 +186,7 @@ BlockId DecidingBranch(const FunctionBody& body, const Cfg& cfg, BlockId from, B
 bool drop_null_edges(FunctionContext& c)
 {
 	FunctionBody& body = c.body;
-	c.ensure_cfg();
-	const Cfg& cfg = c.cfg;
+	const Cfg& cfg = c.ensure_cfg_light();
 	bool changed = false;
 	std::vector<BlockId> dead;
 	for (BlockId block : body.layout)
