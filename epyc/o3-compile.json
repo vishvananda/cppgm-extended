@@ -1,1 +1,1 @@
-{"schemaVersion":1,"label":"-O3 compile speed vs gcc","message":"4.3×","color":"14532d","left_label":"EPYC"}
+{"schemaVersion":1,"label":"-O3 compile speed vs gcc","message":"4.4×","color":"14532d","left_label":"EPYC"}
