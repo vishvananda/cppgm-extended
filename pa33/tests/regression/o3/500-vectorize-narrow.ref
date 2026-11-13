@@ -196,20 +196,20 @@ function @mul_bytes(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t13 = vector fromi32 255
     %t14 = vector pshuflw %t13, 0
     %t15 = vector pshufd %t14, 0
+    %t16 = vector psrlqi %t12, 32
     jump ^wide_loop_3
 
   block ^wide_loop_3:
-    %t16 = phi i64 [^loop_preheader_2: 0, ^wide_loop_3: %t36]
-    %t17 = index u8 %x, %t16
-    %t18 = load i32 %t17
-    %t19 = vector fromi32 %t18
-    %t20 = vector punpcklbw %t19, %t10
-    %t21 = vector punpcklwd %t20, %t10
-    %t22 = vector pmuludq %t21, %t12
-    %t23 = vector psrlqi %t21, 32
-    %t24 = vector psrlqi %t12, 32
-    %t25 = vector pmuludq %t23, %t24
-    %t26 = vector pshufd %t22, 8
+    %t17 = phi i64 [^loop_preheader_2: 0, ^wide_loop_3: %t36]
+    %t18 = index u8 %x, %t17
+    %t19 = load i32 %t18
+    %t20 = vector fromi32 %t19
+    %t21 = vector punpcklbw %t20, %t10
+    %t22 = vector punpcklwd %t21, %t10
+    %t23 = vector pmuludq %t22, %t12
+    %t24 = vector psrlqi %t22, 32
+    %t25 = vector pmuludq %t24, %t16
+    %t26 = vector pshufd %t23, 8
     %t27 = vector pshufd %t25, 8
     %t28 = vector punpckldq %t26, %t27
     %t29 = vector pslldi %t28, 16
@@ -217,10 +217,10 @@ function @mul_bytes(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t31 = vector packssdw %t30, %t30
     %t32 = vector pand %t31, %t15
     %t33 = vector packuswb %t32, %t32
-    %t34 = index u8 %d, %t16
+    %t34 = index u8 %d, %t17
     %t35 = vector toi32 %t33
     store i32 %t35, %t34
-    %t36 = binary add nowrap i64 %t16, 4
+    %t36 = binary add nowrap i64 %t17, 4
     %t37 = cmp le i64 %t36, %t9
     branch %t37, ^wide_loop_3, ^loop_exit_4
 

@@ -1,6 +1,8 @@
 #include "lowir/builder.h"
 #include "opt/loops.h"
 #include "opt/passes.h"
+#include "opt/scalar_fold.h"
+#include "opt/vector_lanes.h"
 
 #include <algorithm>
 
@@ -17,8 +19,8 @@ const uint32_t kMaxNodes = 24;
 const unsigned kMaxDepth = 8;
 const unsigned kMaxLanes = 4;
 
-// Block lanes at O3: adjacent stores of one block, f64 in twos and f32 in
-// fours, become one sixteen-byte store when the values they store are worth
+// Block lanes at O3: adjacent stores of one block, f64 in twos and f32 or
+// i32 in fours, become one sixteen-byte store when their values are worth
 // computing in lanes. From the stores the pass walks up: lanes of one
 // operation become a lane operation, loads of adjacent memory one load, and
 // anything else the lanes of values computed as before. A value something
@@ -27,7 +29,8 @@ const unsigned kMaxLanes = 4;
 // store, where every value exists. A group that does not pay alone may pay
 // with a later group of the block that reads the same lanes (the two halves
 // of a butterfly read one loaded pair): the later group reuses the vectors
-// the first made.
+// the first made. Four contributions to an integer sum can use the same
+// planner, paying for a horizontal sum instead of a vector store.
 class BlockLanes
 {
 public:
@@ -47,6 +50,7 @@ private:
 	{
 		NodeKind kind = NodeKind::Gather;
 		VectorOp op = VectorOp::Addpd;
+		int immediate = -1;
 		Value lanes[kMaxLanes];
 		int left = -1, right = -1;
 		Value made = Value::none();
@@ -58,6 +62,7 @@ private:
 	};
 
 	bool block(BlockId b);
+	bool reduction(BlockId b);
 	bool reload(BlockId b, const std::vector<Stored>& stores, const std::vector<size_t>& runs);
 	bool quiet(const Instruction& inst) const;
 	int plan(BlockId b, const std::vector<Stored>& stores, size_t first, InstId& last);
@@ -68,6 +73,7 @@ private:
 	int build(
 		BlockId b, const Value* lanes, const std::vector<Stored>& stores, size_t first, InstId last, unsigned depth);
 	int add_gather(const Value* lanes);
+	bool same(Value a, Value b) const;
 	bool same_block(BlockId b, Value v) const;
 	int match_score(const Value* a, const Value* b) const;
 	bool adjacent_loads(const Value* lanes) const;
@@ -175,7 +181,7 @@ bool BlockLanes::load_moves(InstId load, const std::vector<Stored>& stores, size
 	const Located at = locate_steps(body_, read.ops[0]);
 	const uint64_t bytes = storage_bytes(read.type);
 	const bool typed = (read.flags & IF_TYPED) != 0;
-	for (unsigned lane = 0; lane < lanes_; ++lane)
+	for (unsigned lane = 0; lane < lanes_ && first + lane < stores.size(); ++lane)
 	{
 		const InstId id = stores[first + lane].id;
 		if (position_[id] < position_[load] && !apart(body_.instructions[id], read.ops[0], at, bytes, read.type, typed))
@@ -189,7 +195,7 @@ bool BlockLanes::load_moves(InstId load, const std::vector<Stored>& stores, size
 		if (inst.op != Opcode::Store || (inst.flags & IF_VOLATILE) != 0)
 			return false;
 		bool ours = false;
-		for (unsigned lane = 0; lane < lanes_; ++lane)
+		for (unsigned lane = 0; lane < lanes_ && first + lane < stores.size(); ++lane)
 			ours = ours || stores[first + lane].id == i;
 		if (!ours && !apart(inst, read.ops[0], at, bytes, read.type, typed))
 			return false;
@@ -230,11 +236,19 @@ int BlockLanes::add_gather(const Value* lanes)
 	for (unsigned lane = 0; lane < lanes_; ++lane)
 	{
 		node.lanes[lane] = lanes[lane];
-		if (!(lanes[lane] == lanes[0]))
+		if (!same(lanes[lane], lanes[0]))
 			node.kind = NodeKind::Gather;
 	}
 	nodes_.push_back(node);
 	return static_cast<int>(nodes_.size()) - 1;
+}
+
+bool BlockLanes::same(Value a, Value b) const
+{
+	if (a == b)
+		return true;
+	Constant x, y;
+	return literal_constant(body_, a, x) && literal_constant(body_, b, y) && same_constant(lane_type_, x, y);
 }
 
 // How well two lists of lanes would pack, for a commutative operation's
@@ -249,7 +263,7 @@ int BlockLanes::match_score(const Value* a, const Value* b) const
 		{
 			temps = temps && lanes[lane].is(ValueKind::Temp) && lanes[lane].index < body_.temps.size() &&
 				body_.temps[lanes[lane].index].def != kNoId;
-			same = same && lanes[lane] == lanes[0];
+			same = same && this->same(lanes[lane], lanes[0]);
 		}
 		if (same)
 			score += 1;
@@ -278,9 +292,10 @@ int BlockLanes::build(
 		here = here && same_block(b, lanes[lane]);
 	if (!here)
 		return add_gather(lanes);
-	// Each scalar has one place in the tree. An earlier group's node of
-	// these very lanes is reused: its vector exists where this group packs.
-	for (size_t n = 0; n < shared_; ++n)
+	// Identical ordered lanes share their vector, both within this tree and
+	// with an earlier group. net_gain counts all parents before deciding
+	// whether the scalar producers can disappear.
+	for (size_t n = 0; n < nodes_.size(); ++n)
 	{
 		bool same = nodes_[n].kind >= NodeKind::Loaded;
 		for (unsigned lane = 0; lane < lanes_ && same; ++lane)
@@ -311,6 +326,9 @@ int BlockLanes::build(
 	const bool binary = head.op == Opcode::Binary && head.type == lane_type_;
 	const bool root = head.op == Opcode::Unary && head.type == lane_type_ &&
 		static_cast<UnaryOp>(head.sub) == UnaryOp::Sqrt;
+	const BinaryOp binary_op = static_cast<BinaryOp>(head.sub);
+	const bool shift = binary && lane_type_.is_integer() &&
+		(binary_op == BinaryOp::Shl || binary_op == BinaryOp::UShr || binary_op == BinaryOp::Shr);
 	if (!binary && !root)
 		return add_gather(lanes);
 	for (unsigned lane = 1; lane < lanes_; ++lane)
@@ -318,32 +336,33 @@ int BlockLanes::build(
 		const Instruction& inst = body_.instructions[body_.temps[lanes[lane].index].def];
 		if (inst.op != head.op || inst.sub != head.sub || inst.type != head.type)
 			return add_gather(lanes);
+		if (shift &&
+			(!inst.ops[1].is(ValueKind::Integer) || !head.ops[1].is(ValueKind::Integer) ||
+				body_.literals[inst.ops[1].index].low != body_.literals[head.ops[1].index].low ||
+				body_.literals[inst.ops[1].index].high != body_.literals[head.ops[1].index].high))
+			return add_gather(lanes);
 	}
-	const bool wide = lanes_ == 2;
 	VectorOp op;
 	if (root)
-		op = wide ? VectorOp::Sqrtpd : VectorOp::Sqrtps;
-	else
-		switch (static_cast<BinaryOp>(head.sub))
-		{
-		case BinaryOp::Add:
-			op = wide ? VectorOp::Addpd : VectorOp::Addps;
-			break;
-		case BinaryOp::Sub:
-			op = wide ? VectorOp::Subpd : VectorOp::Subps;
-			break;
-		case BinaryOp::Mul:
-			op = wide ? VectorOp::Mulpd : VectorOp::Mulps;
-			break;
-		case BinaryOp::Div:
-			op = wide ? VectorOp::Divpd : VectorOp::Divps;
-			break;
-		default:
+		op = lanes_ == 2 ? VectorOp::Sqrtpd : VectorOp::Sqrtps;
+	else if (shift)
+	{
+		if (!head.ops[1].is(ValueKind::Integer) || body_.literals[head.ops[1].index].low >= 32)
 			return add_gather(lanes);
-		}
+		op = binary_op == BinaryOp::Shl   ? VectorOp::Pslldi
+			: binary_op == BinaryOp::UShr ? VectorOp::Psrldi
+										  : VectorOp::Psradi;
+	}
+	else if (lane_type_.is_integer() && static_cast<BinaryOp>(head.sub) == BinaryOp::Mul &&
+		c_.costs.packed_i32_multiply)
+		op = VectorOp::Pmulld;
+	else if (!lane_operation(static_cast<BinaryOp>(head.sub), lane_type_, op))
+		return add_gather(lanes);
 	const int index = add_gather(lanes);
 	nodes_[index].kind = NodeKind::Operation;
 	nodes_[index].op = op;
+	if (shift)
+		nodes_[index].immediate = static_cast<int>(body_.literals[head.ops[1].index].low);
 	Value left[kMaxLanes], right[kMaxLanes];
 	for (unsigned lane = 0; lane < lanes_; ++lane)
 	{
@@ -351,14 +370,16 @@ int BlockLanes::build(
 		left[lane] = inst.ops[0];
 		right[lane] = root ? Value::none() : inst.ops[1];
 	}
-	if (root)
+	if (root || shift)
 	{
 		const int child = build(b, left, stores, first, last, depth + 1);
 		nodes_[index].left = child;
 		return index;
 	}
 	// An addition or a product takes each lane's operands in either order.
-	if (op == VectorOp::Addpd || op == VectorOp::Addps || op == VectorOp::Mulpd || op == VectorOp::Mulps)
+	if (op == VectorOp::Addpd || op == VectorOp::Addps || op == VectorOp::Mulpd || op == VectorOp::Mulps ||
+		op == VectorOp::Paddd || op == VectorOp::Pmulld || op == VectorOp::Pand || op == VectorOp::Por ||
+		op == VectorOp::Pxor)
 		for (unsigned lane = 1; lane < lanes_; ++lane)
 		{
 			const int kept = match_score(left, right);
@@ -439,7 +460,7 @@ int BlockLanes::net_gain(const int* roots, size_t count)
 		if (node.kind == NodeKind::Gather || node.kind == NodeKind::Splat)
 		{
 			gain -= node.kind == NodeKind::Splat ? 1 : static_cast<int>(lanes_) - 1;
-			for (unsigned lane = 0; lane < lanes_; ++lane)
+			for (unsigned lane = 0; lane < (node.kind == NodeKind::Splat ? 1 : lanes_); ++lane)
 				if (!node.lanes[lane].is(ValueKind::Temp))
 					gain -= 1;
 		}
@@ -496,6 +517,12 @@ Value BlockLanes::vector(VectorOp op, Value a, Value b, int immediate)
 
 Value BlockLanes::lane_value(Value v)
 {
+	if (lane_type_.is_integer())
+	{
+		Instruction copy = make_instruction(Opcode::Copy, Type::scalar(TypeKind::I32));
+		copy.ops[0] = phi_input(body_, lane_type_, v);
+		return vector(VectorOp::Fromi32, emit(copy, copy.type));
+	}
 	return vector(lanes_ == 2 ? VectorOp::Fromf64 : VectorOp::Fromf32, phi_input(body_, lane_type_, v));
 }
 
@@ -523,9 +550,10 @@ Value BlockLanes::make(int index)
 			const Value b = lane_value(node.lanes[1]);
 			const Value c = lane_value(node.lanes[2]);
 			const Value d = lane_value(node.lanes[3]);
-			const Value low = vector(VectorOp::Unpcklps, a, b);
-			const Value high = vector(VectorOp::Unpcklps, c, d);
-			out = vector(VectorOp::Movlhps, low, high);
+			const bool integer = lane_type_.is_integer();
+			const Value low = vector(integer ? VectorOp::Punpckldq : VectorOp::Unpcklps, a, b);
+			const Value high = vector(integer ? VectorOp::Punpckldq : VectorOp::Unpcklps, c, d);
+			out = vector(integer ? VectorOp::Punpcklqdq : VectorOp::Movlhps, low, high);
 		}
 		break;
 	case NodeKind::Loaded:
@@ -541,7 +569,7 @@ Value BlockLanes::make(int index)
 	{
 		const Value a = make(node.left);
 		const Value b = node.right >= 0 ? make(node.right) : Value::none();
-		out = vector(node.op, a, b);
+		out = vector(node.op, a, b, node.immediate);
 		break;
 	}
 	}
@@ -750,6 +778,73 @@ bool BlockLanes::reload(BlockId b, const std::vector<Stored>& stores, const std:
 	return false;
 }
 
+// Pack four contributions of an integer addition chain. Unlike floating
+// addition, integer addition can regroup modulo its width. The scalar carry
+// stays scalar; this also handles a loop the early unroller expanded.
+bool BlockLanes::reduction(BlockId b)
+{
+	const std::vector<Stored> stores;
+	for (InstId id = body_.blocks[b].first; id != kNoId; id = body_.instructions[id].next)
+	{
+		const Instruction last = body_.instructions[id];
+		if (last.op != Opcode::Binary || static_cast<BinaryOp>(last.sub) != BinaryOp::Add ||
+			(last.type.kind() != TypeKind::I32 && last.type.kind() != TypeKind::U32))
+			continue;
+		Value carry = Value::temp(last.result), parts[kMaxLanes];
+		bool chain = true;
+		for (unsigned lane = 4; lane-- > 0;)
+		{
+			if (!same_block(b, carry))
+			{
+				chain = false;
+				break;
+			}
+			const Instruction& add = body_.instructions[body_.temps[carry.index].def];
+			if (add.op != Opcode::Binary || static_cast<BinaryOp>(add.sub) != BinaryOp::Add || add.type != last.type ||
+				(lane != 3 && uses_[carry.index] != 1))
+			{
+				chain = false;
+				break;
+			}
+			// The earlier add is the recurrence; its other operand is this
+			// pass's contribution. Either source operand order is accepted.
+			unsigned side = 0;
+			if (lane == 0 && !same_block(b, add.ops[1]))
+				side = 1;
+			else if (same_block(b, add.ops[0]) && same_block(b, add.ops[1]) &&
+				position_[body_.temps[add.ops[1].index].def] < position_[body_.temps[add.ops[0].index].def])
+				side = 1;
+			parts[lane] = add.ops[1 - side];
+			carry = add.ops[side];
+		}
+		if (!chain)
+			continue;
+		lanes_ = 4;
+		lane_type_ = last.type;
+		nodes_.clear();
+		shared_ = 0;
+		const int root = build(b, parts, stores, 0, id, 0);
+		// Four scalar additions become two shuffle/add pairs, an extract
+		// and the carry addition: five more instructions than store roots.
+		if (root < 0 || net_gain(&root, 1) <= 5 || nodes_[root].kind < NodeKind::Loaded)
+			continue;
+		block_ = b;
+		tail_ = previous_in_block(body_, b, id);
+		Value sum = make(root);
+		sum = vector(VectorOp::Paddd, sum, vector(VectorOp::Pshufd, sum, Value::none(), 0x4e));
+		sum = vector(VectorOp::Paddd, sum, vector(VectorOp::Pshufd, sum, Value::none(), 0xb1));
+		const Value scalar = vector(VectorOp::Toi32, sum);
+		Instruction cast = make_instruction(Opcode::Copy, last.type);
+		cast.ops[0] = scalar;
+		const Value part = emit(cast, last.type);
+		body_.instructions[id].ops[0] = carry;
+		body_.instructions[id].ops[1] = part;
+		body_.instructions[id].flags &= static_cast<uint8_t>(~IF_NO_WRAP);
+		return true;
+	}
+	return false;
+}
+
 bool BlockLanes::block(BlockId b)
 {
 	std::vector<Stored> stores;
@@ -759,13 +854,17 @@ bool BlockLanes::block(BlockId b)
 		const Instruction& inst = body_.instructions[i];
 		position_[i] = position++;
 		if (inst.op == Opcode::Store && (inst.flags & IF_VOLATILE) == 0 &&
-			(inst.type.kind() == TypeKind::F64 || inst.type.kind() == TypeKind::F32) && stores.size() < kBlockStores)
+			(inst.type.kind() == TypeKind::F64 || inst.type.kind() == TypeKind::F32 ||
+				inst.type.kind() == TypeKind::I32 || inst.type.kind() == TypeKind::U32) &&
+			stores.size() < kBlockStores)
 		{
 			const Located at = locate_steps(body_, inst.ops[1]);
 			if (at.known)
 				stores.push_back(Stored{ i, at });
 		}
 	}
+	if (reduction(b))
+		return true;
 	if (stores.size() < 2)
 		return false;
 	std::sort(stores.begin(), stores.end(), [](const Stored& a, const Stored& b) {
@@ -806,11 +905,15 @@ bool BlockLanes::block(BlockId b)
 
 bool BlockLanes::run()
 {
-	// (Only a block with two floating stores costs anything below.)
-	bool any = false;
+	// Avoid planning when there are neither packable stores nor integer sums.
+	unsigned stores = 0, adds = 0;
 	for (const Instruction& inst : body_.instructions)
-		any = any || (inst.op == Opcode::Store && inst.type.is_float());
-	if (!any)
+	{
+		stores += inst.op == Opcode::Store && (inst.type.is_float() || lane_bytes(inst.type) == 4);
+		adds += inst.op == Opcode::Binary && static_cast<BinaryOp>(inst.sub) == BinaryOp::Add &&
+			(inst.type.kind() == TypeKind::I32 || inst.type.kind() == TypeKind::U32);
+	}
+	if (stores < 2 && adds < 4)
 		return false;
 	position_.assign(body_.instructions.size(), 0);
 	count_uses(body_, uses_);

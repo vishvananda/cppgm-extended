@@ -1,0 +1,13 @@
+{
+  "source": true,
+  "llvm_interop": true,
+  "reference_flags": ["-msimd128"],
+  "exports": ["planned_transform", "planned_matrix", "wrapped_index", "shift_only"],
+  "calls": [
+    {"export": "planning_observe", "args": ["0"], "result": "17"},
+    {"export": "planning_observe", "args": ["17"], "result": "17"},
+    {"export": "planning_observe", "args": ["2147483647"], "result": "17"},
+    {"export": "planning_observe", "args": ["-2147483648"], "result": "17"},
+    {"export": "planning_observe", "args": ["-1"], "result": "17"}
+  ]
+}

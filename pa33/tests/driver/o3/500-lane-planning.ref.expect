@@ -1,0 +1,6 @@
+# Allow alternative optimizer strategies; the source behavior check covers
+# matrix arithmetic, masked per-lane shifts and wrapped unsigned indexes.
+instructions <= 768 in @planned_matrix
+instructions <= 256 in @planned_transform
+instructions <= 256 in @wrapped_index
+instructions <= 256 in @shift_only

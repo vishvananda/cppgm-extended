@@ -1,0 +1,13 @@
+{
+  "source": true,
+  "llvm_interop": true,
+  "reference_flags": ["-msimd128"],
+  "exports": ["sum_less", "sum_le", "sum_greater", "sum_ge", "dependent"],
+  "calls": [
+    {"export": "observe", "args": ["0", "0"], "result": "17"},
+    {"export": "observe", "args": ["17", "1"], "result": "17"},
+    {"export": "observe", "args": ["42", "3"], "result": "17"},
+    {"export": "observe", "args": ["-2147483648", "7"], "result": "17"},
+    {"export": "observe", "args": ["-1", "83"], "result": "17"}
+  ]
+}

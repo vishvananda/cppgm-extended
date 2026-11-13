@@ -1,0 +1,8 @@
+# Correctness is exercised through every tail and unsigned comparison boundary.
+# The course does not require this solution's particular vectorization choices.
+instructions <= 256 in @sum_less
+instructions <= 256 in @sum_le
+instructions <= 256 in @sum_greater
+instructions <= 256 in @sum_ge
+instructions <= 64 in @dependent
+instructions <= 64 in @packed_sum

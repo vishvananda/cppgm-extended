@@ -505,11 +505,14 @@ bool finish_loops(FunctionContext& context, int level)
 		changed = true;
 	}
 	// O3: loops in lanes, then what their guards and exits leave.
+	if (level >= 3)
+		changed = RUN_PASS(mark_unsigned_ranges) || changed;
 	if (level >= 3 && copies && RUN_PASS(vectorize_loops))
 	{
 		RUN_PASS(simplify_values);
 		RUN_PASS(cleanup_cfg);
 		RUN_PASS(remove_dead_code);
+		RUN_PASS(hoist_loop_invariants);
 		changed = true;
 	}
 	// O2: products of a counter, after everything that reads a loop's shape.
@@ -528,6 +531,8 @@ bool finish_loops(FunctionContext& context, int level)
 	}
 	if (RUN_PASS(widen_counters))
 	{
+		if (level >= 3)
+			RUN_PASS(simplify_values);
 		RUN_PASS(remove_dead_code);
 		changed = true;
 	}

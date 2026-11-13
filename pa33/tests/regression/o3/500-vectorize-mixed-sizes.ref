@@ -302,16 +302,16 @@ function @two_sizes(%a : ptr, %b : ptr, %n : i64) -> void [no_inline=yes] {
     %t7 = vector pshufd %t6, 0
     %t8 = vector fromi32 2
     %t9 = vector pshufd %t8, 0
+    %t10 = vector toi64 %t7
     jump ^wide_loop_2
 
   block ^wide_loop_2:
-    %t10 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t14]
-    %t11 = index i16 %a, %t10
-    %t12 = vector toi64 %t7
-    store i64 %t12, %t11
-    %t13 = index i32 %b, %t10
+    %t11 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t14]
+    %t12 = index i16 %a, %t11
+    store i64 %t10, %t12
+    %t13 = index i32 %b, %t11
     store v128 %t9, %t13
-    %t14 = binary add nowrap i64 %t10, 4
+    %t14 = binary add nowrap i64 %t11, 4
     %t15 = cmp le i64 %t14, %t4
     branch %t15, ^wide_loop_2, ^loop_exit_3
 

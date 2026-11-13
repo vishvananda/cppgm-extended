@@ -21,24 +21,24 @@ function @counter_as_data(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %t12 = vector pshufd %t11, 0
     %t13 = vector fromi32 8
     %t14 = vector pshufd %t13, 0
+    %t15 = vector psrlqi %t12, 32
     jump ^wide_loop_2
 
   block ^wide_loop_2:
-    %t15 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t28]
-    %t16 = phi v128 [^loop_preheader_1: %t10, ^wide_loop_2: %t27]
-    %t17 = phi i32 [^loop_preheader_1: 3, ^wide_loop_2: %t26]
-    %t18 = vector pmuludq %t16, %t12
-    %t19 = vector psrlqi %t16, 32
-    %t20 = vector psrlqi %t12, 32
-    %t21 = vector pmuludq %t19, %t20
-    %t22 = vector pshufd %t18, 8
+    %t16 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t28]
+    %t17 = phi v128 [^loop_preheader_1: %t10, ^wide_loop_2: %t27]
+    %t18 = phi i32 [^loop_preheader_1: 3, ^wide_loop_2: %t26]
+    %t19 = vector pmuludq %t17, %t12
+    %t20 = vector psrlqi %t17, 32
+    %t21 = vector pmuludq %t20, %t15
+    %t22 = vector pshufd %t19, 8
     %t23 = vector pshufd %t21, 8
     %t24 = vector punpckldq %t22, %t23
-    %t25 = index i32 %d, %t15
+    %t25 = index i32 %d, %t16
     store v128 %t24, %t25
-    %t26 = binary add nowrap i32 %t17, 8
-    %t27 = vector paddd %t16, %t14
-    %t28 = binary add nowrap i64 %t15, 4
+    %t26 = binary add nowrap i32 %t18, 8
+    %t27 = vector paddd %t17, %t14
+    %t28 = binary add nowrap i64 %t16, 4
     %t29 = cmp le i64 %t28, %t4
     branch %t29, ^wide_loop_2, ^loop_exit_3
 
@@ -825,33 +825,31 @@ function @step_after_widening(%d : ptr, %n : i32) -> void [no_inline=yes] {
     jump ^wide_loop_2
 
   block ^wide_loop_2:
-    %t7 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t11]
-    %t8 = copy i64 %t7
-    %t9 = binary add i64 %t8, 2
-    %t10 = index i32 %d, %t9
-    store v128 %t6, %t10
-    %t11 = binary add nowrap i64 %t7, 4
-    %t12 = convert trunc exact i32 i64 %t11
-    %t13 = cmp le i32 %t12, %t4
-    branch %t13, ^wide_loop_2, ^loop_exit_3
+    %t7 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t10]
+    %t8 = binary add i64 %t7, 2
+    %t9 = index i32 %d, %t8
+    store v128 %t6, %t9
+    %t10 = binary add nowrap i64 %t7, 4
+    %t11 = convert trunc exact i32 i64 %t10
+    %t12 = cmp le i32 %t11, %t4
+    branch %t12, ^wide_loop_2, ^loop_exit_3
 
   block ^loop_exit_3:
-    %t14 = cmp lt i32 %t12, %n
-    branch %t14, ^loop_preheader_4, ^done
+    %t13 = cmp lt i32 %t11, %n
+    branch %t13, ^loop_preheader_4, ^done
 
   block ^loop_preheader_4:
-    %t15 = phi i32 [^entry: 0, ^loop_exit_3: %t12]
-    %t16 = convert sext i64 i32 %t15
+    %t14 = phi i32 [^entry: 0, ^loop_exit_3: %t11]
+    %t15 = convert sext i64 i32 %t14
     jump ^body
 
   block ^body:
-    %t17 = phi i64 [^loop_preheader_4: %t16, ^body: %t21]
-    %w = copy i64 %t17
-    %a = binary add i64 %w, 2
+    %t16 = phi i64 [^loop_preheader_4: %t15, ^body: %t19]
+    %a = binary add i64 %t16, 2
     %o = index i32 %d, %a
     store typed i32 1, %o
-    %t21 = binary add nowrap i64 %t17, 1
-    %next = convert trunc exact i32 i64 %t21
+    %t19 = binary add nowrap i64 %t16, 1
+    %next = convert trunc exact i32 i64 %t19
     %c = cmp lt i32 %next, %n
     branch %c, ^body, ^done
 

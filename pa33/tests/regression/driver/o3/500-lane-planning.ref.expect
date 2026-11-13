@@ -1,0 +1,4 @@
+count(vector) >= 1 in @planned_matrix
+count(vector) >= 1 in @planned_transform
+none(vector) in @shift_only
+none(vector) in @wrapped_index

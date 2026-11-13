@@ -223,6 +223,7 @@ bool remove_loops(FunctionContext& context);
 // Loop counters that never wrap marked IF_NO_WRAP for the selector (O2+,
 // last, after every transform: opt/loop_passes.cpp).
 bool mark_no_wrap_counters(FunctionContext& context);
+bool mark_unsigned_ranges(FunctionContext& context);
 
 // Loop-invariant loads (O2+, after all inlining: opt/loop_passes.cpp): a
 // load of an address the loop does not change, from memory nothing in the

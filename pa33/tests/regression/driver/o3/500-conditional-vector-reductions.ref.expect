@@ -1,0 +1,7 @@
+count(vector) >= 1 in @sum_less
+count(vector) >= 1 in @sum_le
+count(vector) >= 1 in @sum_greater
+count(vector) >= 1 in @sum_ge
+none(vector) in @dependent
+none(vector) in @updated_condition
+count(vector) >= 1 in @packed_sum

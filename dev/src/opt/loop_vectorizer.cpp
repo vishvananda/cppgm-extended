@@ -2,6 +2,7 @@
 #include "opt/loops.h"
 #include "opt/passes.h"
 #include "opt/scalar_fold.h"
+#include "opt/vector_lanes.h"
 
 #include <algorithm>
 
@@ -13,7 +14,7 @@ namespace {
 
 // The most instructions of a loop this pass reads, and the overlap tests one
 // loop's vector form may wait on.
-const size_t kBodyInstructions = 64;
+const size_t kBodyInstructions = 128;
 const size_t kOverlapTests = 8;
 // The most registers a lane cell's elements fill, and its most elements.
 const int64_t kCellGroups = 4;
@@ -22,7 +23,7 @@ const int64_t kCellModulus = 64;
 const unsigned kNarrowDepth = 6;
 
 // Loop vectorization at O3: a loop of one block, whose count a counter and an
-// invariant bound give, runs in sixteen-byte steps of the x86-64 baseline. The
+// invariant bound give, runs in portable sixteen-byte vector steps. The
 // lanes hold what the scalar loop computes pass by pass, so each operation
 // is the one on each lane. The widest value sets how many passes one wide pass
 // does, and a narrower value keeps that many lanes at the bottom of its
@@ -73,6 +74,7 @@ private:
 		Value cell;   // a sum in memory: its address
 		InstId store; // and its store (each kNoId if none)
 		InstId load;  // `phi` is this load's result, not a phi's
+		bool conditional;
 	};
 	// A value as offset + scale * pass + term_scale * term.
 	struct Linear
@@ -161,7 +163,9 @@ private:
 	Value narrow(Value v, unsigned from, unsigned to);
 	void widen_convert(const Instruction& inst);
 	Value widen_multiply(Value a, Value b);
+	Value widen_shift(const Instruction& inst);
 	Value widen_mask(const Instruction& test, bool& swapped);
+	bool widen_reduction_select(const Instruction& inst, Value mask, bool swapped);
 	void widen_binary(const Instruction& inst);
 	void widen_unary(const Instruction& inst);
 	void widen(const Instruction& inst, InstId origin);
@@ -170,6 +174,7 @@ private:
 	Value add_across(const Reduction& r, Value v);
 	Value add_in_order(const Reduction& r, Value sum, Value lanes);
 	bool lanes_pay_for_order() const;
+	bool lanes_pay_for_shifts() const;
 	bool halves(const Instruction& inst, unsigned& shift) const;
 	void make_phi(BlockId block, Type type, std::initializer_list<Value> pairs, Value& out);
 	bool read_after_loop() const;
@@ -209,84 +214,6 @@ private:
 	std::vector<Value> scalars_, wides_; // per temp of the loop
 	std::vector<std::pair<std::pair<Value, TypeKind>, Value>> broadcasts_;
 };
-
-unsigned lane_bytes(Type type)
-{
-	switch (type.kind())
-	{
-	case TypeKind::I8:
-	case TypeKind::U8:
-		return 1;
-	case TypeKind::I16:
-	case TypeKind::U16:
-		return 2;
-	case TypeKind::I32:
-	case TypeKind::U32:
-	case TypeKind::F32:
-		return 4;
-	case TypeKind::I64:
-	case TypeKind::F64:
-		return 8;
-	default:
-		return 0;
-	}
-}
-
-// The operation on each lane of a binary operator, or false.
-bool lane_operation(BinaryOp op, Type type, VectorOp& out)
-{
-	const unsigned bytes = lane_bytes(type);
-	if (type.is_float())
-	{
-		const bool wide_lanes = bytes == 8;
-		switch (op)
-		{
-		case BinaryOp::Add:
-			out = wide_lanes ? VectorOp::Addpd : VectorOp::Addps;
-			return true;
-		case BinaryOp::Sub:
-			out = wide_lanes ? VectorOp::Subpd : VectorOp::Subps;
-			return true;
-		case BinaryOp::Mul:
-			out = wide_lanes ? VectorOp::Mulpd : VectorOp::Mulps;
-			return true;
-		case BinaryOp::Div:
-			out = wide_lanes ? VectorOp::Divpd : VectorOp::Divps;
-			return true;
-		default:
-			return false;
-		}
-	}
-	switch (op)
-	{
-	case BinaryOp::Add:
-		out = bytes == 1 ? VectorOp::Paddb
-			: bytes == 2 ? VectorOp::Paddw
-			: bytes == 4 ? VectorOp::Paddd
-						 : VectorOp::Paddq;
-		return true;
-	case BinaryOp::Sub:
-		out = bytes == 1 ? VectorOp::Psubb
-			: bytes == 2 ? VectorOp::Psubw
-			: bytes == 4 ? VectorOp::Psubd
-						 : VectorOp::Psubq;
-		return true;
-	case BinaryOp::And:
-		out = VectorOp::Pand;
-		return true;
-	case BinaryOp::Or:
-		out = VectorOp::Por;
-		return true;
-	case BinaryOp::Xor:
-		out = VectorOp::Pxor;
-		return true;
-	case BinaryOp::Mul:
-		out = VectorOp::Pmullw;
-		return bytes == 2;
-	default:
-		return false;
-	}
-}
 
 // The lane shift by an immediate of a shift operator, or false.
 bool lane_shift(BinaryOp op, Type type, VectorOp& out)
@@ -556,16 +483,30 @@ void LoopVectorizer::narrow_arithmetic()
 // Whether `step` folds a pass's value into `read`, of the running value.
 bool LoopVectorizer::add_reduction(TempId read, const Instruction& step, Value start, Type type)
 {
-	const BinaryOp op = static_cast<BinaryOp>(step.sub);
 	const Value self = Value::temp(read);
-	const bool left = step.ops[0] == self, right = step.ops[1] == self;
+	const Instruction* update = &step;
+	if (step.op == Opcode::Select)
+	{
+		// Integer reductions may leave a lane unchanged. Floating reductions
+		// keep scalar evaluation order and cannot use this lane recurrence.
+		if (!type.is_integer())
+			return false;
+		const bool left = step.ops[1] == self, right = step.ops[2] == self;
+		if (left == right || !in_body(step.ops[left ? 2 : 1]))
+			return false;
+		update = &body_.instructions[body_.temps[step.ops[left ? 2 : 1].index].def];
+	}
+	if (update->op != Opcode::Binary || update->type != type)
+		return false;
+	const BinaryOp op = static_cast<BinaryOp>(update->sub);
+	const bool left = update->ops[0] == self, right = update->ops[1] == self;
 	const bool ordered = type.is_float();
 	const bool commutes = op == BinaryOp::Add || (ordered && op == BinaryOp::Mul) ||
 		(!ordered && (op == BinaryOp::And || op == BinaryOp::Or || op == BinaryOp::Xor));
 	if ((left == right) || (right && !commutes) || (!commutes && op != BinaryOp::Sub) || lane_bytes(type) == 0)
 		return false;
-	reductions_.push_back(Reduction{ read, step.result, start, step.ops[left ? 1 : 0], op, type, ordered, Value::none(),
-		Value::none(), kNoId, kNoId });
+	reductions_.push_back(Reduction{ read, step.result, start, update->ops[left ? 1 : 0], op, type, ordered,
+		Value::none(), Value::none(), kNoId, kNoId, step.op == Opcode::Select });
 	return true;
 }
 
@@ -626,6 +567,12 @@ bool LoopVectorizer::read_phis()
 		if (step.op == Opcode::Convert && extends_counter(step, start, phi.type, by))
 		{
 			inductions_.push_back(Induction{ phi.result, next.index, start, by, phi.type, true });
+			continue;
+		}
+		if (step.op == Opcode::Select)
+		{
+			if (!add_reduction(phi.result, step, start, phi.type))
+				return false;
 			continue;
 		}
 		if (step.op != Opcode::Binary)
@@ -1142,6 +1089,13 @@ bool LoopVectorizer::read_accesses()
 		// The running value is the operator's alone: a lane holds its own
 		// pass's part only.
 		uint32_t reads = 0;
+		uint32_t update_reads = 0;
+		Value update = Value::none();
+		if (r.conditional)
+		{
+			const Instruction& select = body_.instructions[body_.temps[r.next].def];
+			update = select.ops[select.ops[1] == Value::temp(r.phi) ? 2 : 1];
+		}
 		for (InstId id : code_)
 		{
 			// (A copy for the code after the loop reads the scalar loop's value.)
@@ -1149,9 +1103,13 @@ bool LoopVectorizer::read_accesses()
 			if (inst.op == Opcode::Copy && !in_wide_[inst.result] && !in_scalar_[inst.result])
 				continue;
 			for (const Value& v : inst.ops)
+			{
 				reads += v.is(ValueKind::Temp) && (v.index == r.phi || v.index == r.next);
+				update_reads += r.conditional && v == update;
+			}
 		}
-		if (reads != 1 || body_.instructions[body_.blocks[b_].last].ops[0] == Value::temp(r.next))
+		if (reads != (r.conditional ? 2u : 1u) || (r.conditional && update_reads != 1) ||
+			body_.instructions[body_.blocks[b_].last].ops[0] == Value::temp(r.next))
 			return false;
 	}
 	return true;
@@ -1188,8 +1146,9 @@ bool LoopVectorizer::supported(const Instruction& inst) const
 	{
 		const BinaryOp operation = static_cast<BinaryOp>(inst.sub);
 		if (lane_shift(operation, inst.type, op))
-			return inst.ops[1].is(ValueKind::Integer) &&
-				body_.literals[inst.ops[1].index].low < lane_bytes(inst.type) * 8;
+			return inst.ops[1].is(ValueKind::Integer)
+				? body_.literals[inst.ops[1].index].low < lane_bytes(inst.type) * 8
+				: lane_bytes(inst.type) == 4;
 		if (operation == BinaryOp::Mul && !inst.type.is_float() && lane_bytes(inst.type) == 4)
 			return true;
 		unsigned shift;
@@ -1238,7 +1197,9 @@ bool LoopVectorizer::supported(const Instruction& inst) const
 				p == ComparePredicate::Le || p == ComparePredicate::Gt || p == ComparePredicate::Ge;
 		return lane_bytes(test.type) != 8 &&
 			(p == ComparePredicate::Eq || p == ComparePredicate::Ne || p == ComparePredicate::Lt ||
-				p == ComparePredicate::Le || p == ComparePredicate::Gt || p == ComparePredicate::Ge);
+				p == ComparePredicate::Le || p == ComparePredicate::Gt || p == ComparePredicate::Ge ||
+				p == ComparePredicate::Ult || p == ComparePredicate::Ule || p == ComparePredicate::Ugt ||
+				p == ComparePredicate::Uge);
 	}
 	case Opcode::Compare:
 	{
@@ -1292,7 +1253,31 @@ bool LoopVectorizer::choose_lanes()
 	if (lane_bytes_ == 0 || (accesses_.empty() && reductions_.empty() && lane_cells_.empty()) || !lanes_pay_for_order())
 		return false;
 	lanes_ = 16 / lane_bytes_;
-	return true;
+	return lanes_pay_for_shifts();
+}
+
+// Per-lane variable shifts use scalar lane operations on the baseline targets.
+// Accept that expansion only when enough independent vector work pays for it.
+bool LoopVectorizer::lanes_pay_for_shifts() const
+{
+	int gain = 0;
+	unsigned shifts = 0;
+	for (InstId id : code_)
+	{
+		const Instruction& inst = body_.instructions[id];
+		if (inst.result == kNoId || !in_wide_[inst.result])
+			continue;
+		VectorOp op;
+		if (inst.op == Opcode::Binary && lane_shift(static_cast<BinaryOp>(inst.sub), inst.type, op) &&
+			!inst.ops[1].is(ValueKind::Integer))
+			++shifts;
+		else if (inst.op == Opcode::Load || inst.op == Opcode::Binary)
+			gain += inst.op == Opcode::Binary && static_cast<BinaryOp>(inst.sub) == BinaryOp::Mul &&
+					inst.type.is_integer() && lane_bytes(inst.type) == 4 && !c_.costs.packed_i32_multiply
+				? -4
+				: 3;
+	}
+	return shifts == 0 || (lanes_ == 4 && gain > static_cast<int>(shifts) * 21);
 }
 
 // A floating sum adds its lanes one at a time, as many additions as the scalar
@@ -1679,9 +1664,12 @@ void LoopVectorizer::widen_convert(const Instruction& inst)
 	wides_[inst.result] = out;
 }
 
-// i32 lanes multiplied: SSE2 multiplies the even lanes only.
+// i32 lanes multiplied: use packed multiplication when the target has it;
+// the baseline native target multiplies the even lanes only.
 Value LoopVectorizer::widen_multiply(Value a, Value b)
 {
+	if (c_.costs.packed_i32_multiply)
+		return vector(VectorOp::Pmulld, a, b);
 	// (Two lanes at the bottom of the register move to the even lanes.)
 	if (lanes_ == 2)
 	{
@@ -1701,8 +1689,8 @@ Value LoopVectorizer::widen_multiply(Value a, Value b)
 // The mask of a compare's lanes. Set `swapped` when it is of the opposite test.
 Value LoopVectorizer::widen_mask(const Instruction& test, bool& swapped)
 {
-	const Value a = wide(test.ops[0], test.type), b = wide(test.ops[1], test.type);
-	const ComparePredicate p = static_cast<ComparePredicate>(test.sub);
+	Value a = wide(test.ops[0], test.type), b = wide(test.ops[1], test.type);
+	ComparePredicate p = static_cast<ComparePredicate>(test.sub);
 	swapped = false;
 	if (test.type.is_float())
 	{
@@ -1724,6 +1712,23 @@ Value LoopVectorizer::widen_mask(const Instruction& test, bool& swapped)
 		}
 	}
 	const unsigned bytes = lane_bytes(test.type);
+	if (p == ComparePredicate::Ult || p == ComparePredicate::Ule || p == ComparePredicate::Ugt ||
+		p == ComparePredicate::Uge)
+	{
+		// Flipping each sign bit maps unsigned order to signed order on
+		// every target, including the native baseline's signed compares.
+		const uint64_t sign_bit = uint64_t(1) << (bytes * 8 - 1);
+		if (index_upper_bound(body_, test.ops[0]) >= sign_bit || index_upper_bound(body_, test.ops[1]) >= sign_bit)
+		{
+			const Value sign = broadcast(literal(static_cast<int64_t>(sign_bit)), test.type);
+			a = vector(VectorOp::Pxor, a, sign);
+			b = vector(VectorOp::Pxor, b, sign);
+		}
+		p = p == ComparePredicate::Ult   ? ComparePredicate::Lt
+			: p == ComparePredicate::Ule ? ComparePredicate::Le
+			: p == ComparePredicate::Ugt ? ComparePredicate::Gt
+										 : ComparePredicate::Ge;
+	}
 	const VectorOp equal = bytes == 1 ? VectorOp::Pcmpeqb : bytes == 2 ? VectorOp::Pcmpeqw : VectorOp::Pcmpeqd;
 	const VectorOp greater = bytes == 1 ? VectorOp::Pcmpgtb : bytes == 2 ? VectorOp::Pcmpgtw : VectorOp::Pcmpgtd;
 	swapped = p == ComparePredicate::Ne || p == ComparePredicate::Le || p == ComparePredicate::Ge;
@@ -1764,6 +1769,11 @@ void LoopVectorizer::widen_binary(const Instruction& inst)
 	VectorOp op;
 	if (lane_shift(operation, inst.type, op))
 	{
+		if (!inst.ops[1].is(ValueKind::Integer))
+		{
+			wides_[inst.result] = widen_shift(inst);
+			return;
+		}
 		wides_[inst.result] = vector(
 			op, wide(inst.ops[0], inst.type), Value::none(), static_cast<int>(body_.literals[inst.ops[1].index].low));
 		return;
@@ -1787,6 +1797,29 @@ void LoopVectorizer::widen_binary(const Instruction& inst)
 		wides_[inst.result] = vector(op, a, b);
 	else
 		wides_[inst.result] = widen_multiply(a, b);
+}
+
+Value LoopVectorizer::widen_shift(const Instruction& inst)
+{
+	const Value a = wide(inst.ops[0], inst.type), b = wide(inst.ops[1], inst.type);
+	Value parts[4];
+	for (unsigned lane = 0; lane < 4; ++lane)
+	{
+		auto extract = [&](Value v) {
+			if (lane != 0)
+				v = vector(VectorOp::Pshufd, v, Value::none(), 0x55 * lane);
+			const Value bits = vector(VectorOp::Toi32, v);
+			Instruction copy = make_instruction(Opcode::Copy, inst.type);
+			copy.ops[0] = bits;
+			return emit(copy, inst.type);
+		};
+		const Value x = extract(a), count = extract(b);
+		const Value shifted = binary(static_cast<BinaryOp>(inst.sub), inst.type, x, count, inst.type);
+		parts[lane] = vector(VectorOp::Fromi32, exact_scalar(shifted, inst.type));
+	}
+	const Value low = vector(VectorOp::Punpckldq, parts[0], parts[1]);
+	const Value high = vector(VectorOp::Punpckldq, parts[2], parts[3]);
+	return vector(VectorOp::Punpcklqdq, low, high);
 }
 
 void LoopVectorizer::widen_unary(const Instruction& inst)
@@ -1908,6 +1941,33 @@ void LoopVectorizer::emit_round(
 	}
 }
 
+// Factor the integer recurrence before selecting lanes: a skipped pass adds
+// zero (or ANDs all ones). This removes the full blend of two accumulators.
+bool LoopVectorizer::widen_reduction_select(const Instruction& inst, Value mask, bool swapped)
+{
+	for (const Reduction& r : reductions_)
+	{
+		if (!r.conditional || r.next != inst.result)
+			continue;
+		const bool takes_update = !(inst.ops[swapped ? 2 : 1] == Value::temp(r.phi));
+		Value part = wide(r.operand, r.type);
+		if (r.op == BinaryOp::And)
+		{
+			const Value skip = takes_update
+				? vector(VectorOp::Pxor, mask, broadcast(literal(-1), Type::scalar(TypeKind::I32)))
+				: mask;
+			part = vector(VectorOp::Por, part, skip);
+		}
+		else
+			part = vector(takes_update ? VectorOp::Pand : VectorOp::Pandn, mask, part);
+		VectorOp op;
+		lane_operation(r.op, r.type, op);
+		wides_[inst.result] = vector(op, wides_[r.phi], part);
+		return true;
+	}
+	return false;
+}
+
 void LoopVectorizer::widen(const Instruction& inst, InstId origin)
 {
 	switch (inst.op)
@@ -1939,6 +1999,8 @@ void LoopVectorizer::widen(const Instruction& inst, InstId origin)
 		bool swapped;
 		const Instruction test = body_.instructions[body_.temps[inst.ops[0].index].def];
 		const Value mask = widen_mask(test, swapped);
+		if (widen_reduction_select(inst, mask, swapped))
+			break;
 		const Value chosen = wide(inst.ops[swapped ? 2 : 1], inst.type),
 					other = wide(inst.ops[swapped ? 1 : 2], inst.type);
 		const Value taken = vector(VectorOp::Pand, mask, chosen);

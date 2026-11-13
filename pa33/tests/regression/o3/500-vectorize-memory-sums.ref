@@ -58,7 +58,7 @@ function @row(%out : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes] 
   block ^body:
     %old = phi f64 [^loop_preheader_5: %t34, ^body: %sum]
     %t39 = phi i64 [^loop_preheader_5: %t37, ^body: %t47]
-    %w = phi i64 [^loop_preheader_5: %t35, ^body: %wide]
+    %w = phi i64 [^loop_preheader_5: %t35, ^body: %t47]
     %p = index f64 %x, %w
     %v = load typed f64 %p
     %q = index f64 %y, %w
@@ -67,8 +67,7 @@ function @row(%out : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=yes] 
     %sum = binary add f64 %old, %m
     store typed f64 %sum, %out
     %t47 = binary add nowrap i64 %t39, 1
-    %wide = copy i64 %t47
-    %c = cmp ult i64 %wide, %n
+    %c = cmp ult i64 %t47, %n
     branch %c, ^body, ^done
 
   block ^done:

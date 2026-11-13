@@ -14,112 +14,104 @@ function @f() -> void [binding=strong, object=_Z1fv] {
     %t1 = addr @E
     %t2 = addr @C
     %t3 = addr @D
+    %t4 = vector fromf64 0
+    %t5 = vector pshufd %t4, 68
     jump ^loop_preheader_1
 
   block ^loop_preheader_1:
-    %t4 = phi i32 [^entry: 0, ^for_end_13: %t64]
-    %t5 = phi i32 [^for_end_13: %t63, ^entry: 0]
-    %t6 = copy i32 %t4
-    %t7 = vector fromf64 0
-    %t8 = vector pshufd %t7, 68
-    %t9 = index f64 %t1, %t6
+    %t6 = phi i32 [^entry: 0, ^for_end_13: %t56]
+    %t7 = phi i32 [^for_end_13: %t55, ^entry: 0]
+    %t8 = index f64 %t1, %t6
     jump ^wide_loop_2
 
   block ^wide_loop_2:
-    %t10 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t12]
-    %t11 = index inbounds f64 [projection=array_element] %t9, %t10
-    store v128 %t8, %t11
-    %t12 = binary add nowrap i64 %t10, 2
-    %t13 = convert trunc exact i32 i64 %t12
-    %t14 = cmp le i32 %t13, 48
-    branch %t14, ^wide_loop_2, ^loop_exit_3
+    %t9 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t11]
+    %t10 = index inbounds f64 [projection=array_element] %t8, %t9
+    store v128 %t5, %t10
+    %t11 = binary add nowrap i64 %t9, 2
+    %t12 = convert trunc exact i32 i64 %t11
+    %t13 = cmp le i32 %t12, 48
+    branch %t13, ^wide_loop_2, ^loop_exit_3
 
   block ^loop_exit_3:
-    %t15 = cmp lt i32 %t13, 50
-    branch %t15, ^loop_preheader_4, ^loop_preheader_6
+    %t14 = cmp lt i32 %t12, 50
+    branch %t14, ^loop_preheader_4, ^loop_preheader_6
 
   block ^loop_preheader_4:
-    %t16 = phi i32 [^loop_exit_3: %t13]
-    %t17 = convert sext i64 i32 %t16
-    %t18 = index f64 %t1, %t6
+    %t15 = convert sext i64 i32 %t12
     jump ^for_body_5
 
   block ^for_body_5:
-    %t19 = phi i64 [^for_body_5: %t21, ^loop_preheader_4: %t17]
-    %t20 = index inbounds f64 [projection=array_element] %t18, %t19
-    store typed f64 0, %t20
-    %t21 = binary add nowrap i64 %t19, 1
-    %t22 = convert trunc exact i32 i64 %t21
-    %t23 = cmp lt i32 %t22, 50
-    branch %t23, ^for_body_5, ^loop_preheader_6
+    %t16 = phi i64 [^for_body_5: %t18, ^loop_preheader_4: %t15]
+    %t17 = index inbounds f64 [projection=array_element] %t8, %t16
+    store typed f64 0, %t17
+    %t18 = binary add nowrap i64 %t16, 1
+    %t19 = convert trunc exact i32 i64 %t18
+    %t20 = cmp lt i32 %t19, 50
+    branch %t20, ^for_body_5, ^loop_preheader_6
 
   block ^loop_preheader_6:
-    %t24 = index f64 %t2, %t6
+    %t21 = index f64 %t2, %t6
     jump ^for_body_7
 
   block ^for_body_7:
-    %t25 = phi i32 [^loop_preheader_6: 0, ^for_end_12: %t61]
-    %t26 = phi i64 [^for_end_12: %t59, ^loop_preheader_6: 0]
-    %t27 = index inbounds f64 [projection=array_element] %t24, %t26
-    %t28 = copy i32 %t25
-    %t29 = load typed f64 %t27
-    %t30 = vector fromf64 %t29
-    %t31 = vector pshufd %t30, 68
-    %t32 = index f64 %t1, %t6
-    %t33 = index f64 %t3, %t28
+    %t22 = phi i32 [^loop_preheader_6: 0, ^for_end_12: %t53]
+    %t23 = phi i64 [^for_end_12: %t51, ^loop_preheader_6: 0]
+    %t24 = index inbounds f64 [projection=array_element] %t21, %t23
+    %t25 = load typed f64 %t24
+    %t26 = vector fromf64 %t25
+    %t27 = vector pshufd %t26, 68
+    %t28 = index f64 %t3, %t22
     jump ^wide_loop_8
 
   block ^wide_loop_8:
-    %t34 = phi i64 [^for_body_7: 0, ^wide_loop_8: %t41]
-    %t35 = index inbounds f64 [projection=array_element] %t32, %t34
-    %t36 = load v128 %t35
-    %t37 = index inbounds f64 [projection=array_element] %t33, %t34
-    %t38 = load v128 %t37
-    %t39 = vector mulpd %t31, %t38
-    %t40 = vector addpd %t39, %t36
-    store v128 %t40, %t35
-    %t41 = binary add nowrap i64 %t34, 2
-    %t42 = convert trunc exact i32 i64 %t41
-    %t43 = cmp le i32 %t42, 48
-    branch %t43, ^wide_loop_8, ^loop_exit_9
+    %t29 = phi i64 [^for_body_7: 0, ^wide_loop_8: %t36]
+    %t30 = index inbounds f64 [projection=array_element] %t8, %t29
+    %t31 = load v128 %t30
+    %t32 = index inbounds f64 [projection=array_element] %t28, %t29
+    %t33 = load v128 %t32
+    %t34 = vector mulpd %t27, %t33
+    %t35 = vector addpd %t34, %t31
+    store v128 %t35, %t30
+    %t36 = binary add nowrap i64 %t29, 2
+    %t37 = convert trunc exact i32 i64 %t36
+    %t38 = cmp le i32 %t37, 48
+    branch %t38, ^wide_loop_8, ^loop_exit_9
 
   block ^loop_exit_9:
-    %t44 = cmp lt i32 %t42, 50
-    branch %t44, ^loop_preheader_10, ^for_end_12
+    %t39 = cmp lt i32 %t37, 50
+    branch %t39, ^loop_preheader_10, ^for_end_12
 
   block ^loop_preheader_10:
-    %t45 = phi i32 [^loop_exit_9: %t42]
-    %t46 = convert sext i64 i32 %t45
-    %t47 = index f64 %t1, %t6
-    %t48 = index f64 %t3, %t28
+    %t40 = convert sext i64 i32 %t37
     jump ^loop_preheader_11
 
   block ^loop_preheader_11:
-    %t49 = phi i64 [^loop_preheader_11: %t56, ^loop_preheader_10: %t46]
-    %t50 = index inbounds f64 [projection=array_element] %t47, %t49
-    %t51 = load typed f64 %t50
-    %t52 = index inbounds f64 [projection=array_element] %t48, %t49
-    %t53 = load typed f64 %t52
-    %t54 = binary mul f64 %t29, %t53
-    %t55 = binary add f64 %t54, %t51
-    store typed f64 %t55, %t50
-    %t56 = binary add nowrap i64 %t49, 1
-    %t57 = convert trunc exact i32 i64 %t56
-    %t58 = cmp lt i32 %t57, 50
-    branch %t58, ^loop_preheader_11, ^for_end_12
+    %t41 = phi i64 [^loop_preheader_11: %t48, ^loop_preheader_10: %t40]
+    %t42 = index inbounds f64 [projection=array_element] %t8, %t41
+    %t43 = load typed f64 %t42
+    %t44 = index inbounds f64 [projection=array_element] %t28, %t41
+    %t45 = load typed f64 %t44
+    %t46 = binary mul f64 %t25, %t45
+    %t47 = binary add f64 %t46, %t43
+    store typed f64 %t47, %t42
+    %t48 = binary add nowrap i64 %t41, 1
+    %t49 = convert trunc exact i32 i64 %t48
+    %t50 = cmp lt i32 %t49, 50
+    branch %t50, ^loop_preheader_11, ^for_end_12
 
   block ^for_end_12:
-    %t59 = binary add nowrap i64 %t26, 1
-    %t60 = convert trunc exact i32 i64 %t59
-    %t61 = binary add nowrap i32 %t25, 50
-    %t62 = cmp lt i32 %t60, 50
-    branch %t62, ^for_body_7, ^for_end_13
+    %t51 = binary add nowrap i64 %t23, 1
+    %t52 = convert trunc exact i32 i64 %t51
+    %t53 = binary add nowrap i32 %t22, 50
+    %t54 = cmp lt i32 %t52, 50
+    branch %t54, ^for_body_7, ^for_end_13
 
   block ^for_end_13:
-    %t63 = binary add nowrap i32 %t5, 1
-    %t64 = binary add i32 %t4, 50
-    %t65 = cmp lt i32 %t63, 50
-    branch %t65, ^loop_preheader_1, ^for_end_14
+    %t55 = binary add nowrap i32 %t7, 1
+    %t56 = binary add i32 %t6, 50
+    %t57 = cmp lt i32 %t55, 50
+    branch %t57, ^loop_preheader_1, ^for_end_14
 
   block ^for_end_14:
     return void

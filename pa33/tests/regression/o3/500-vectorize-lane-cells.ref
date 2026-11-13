@@ -161,43 +161,41 @@ function @decay(%x : ptr, %w : f32, %n : i32, %out : ptr) -> void [no_inline=yes
     jump ^wide_loop_2
 
   block ^wide_loop_2:
-    %t9 = phi v128 [^loop_preheader_1: %t6, ^wide_loop_2: %t15]
-    %t10 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t16]
-    %t11 = copy i64 %t10
-    %t12 = index f32 %x, %t11
-    %t13 = load v128 %t12
-    %t14 = vector mulps %t8, %t9
-    %t15 = vector addps %t13, %t14
-    %t16 = binary add nowrap i64 %t10, 4
-    %t17 = convert trunc exact i32 i64 %t16
-    %t18 = cmp le i32 %t17, %t5
-    branch %t18, ^wide_loop_2, ^loop_exit_3
+    %t9 = phi v128 [^loop_preheader_1: %t6, ^wide_loop_2: %t14]
+    %t10 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t15]
+    %t11 = index f32 %x, %t10
+    %t12 = load v128 %t11
+    %t13 = vector mulps %t8, %t9
+    %t14 = vector addps %t12, %t13
+    %t15 = binary add nowrap i64 %t10, 4
+    %t16 = convert trunc exact i32 i64 %t15
+    %t17 = cmp le i32 %t16, %t5
+    branch %t17, ^wide_loop_2, ^loop_exit_3
 
   block ^loop_exit_3:
-    store v128 %t15, %s
-    %t19 = cmp lt i32 %t17, %n
-    branch %t19, ^loop_preheader_4, ^done
+    store v128 %t14, %s
+    %t18 = cmp lt i32 %t16, %n
+    branch %t18, ^loop_preheader_4, ^done
 
   block ^loop_preheader_4:
-    %t20 = phi i32 [^entry: 0, ^loop_exit_3: %t17]
-    %t21 = convert sext i64 i32 %t20
+    %t19 = phi i32 [^entry: 0, ^loop_exit_3: %t16]
+    %t20 = convert sext i64 i32 %t19
     jump ^body
 
   block ^body:
-    %t22 = phi i64 [^loop_preheader_4: %t21, ^body: %t33]
-    %i = convert trunc exact i32 i64 %t22
+    %t21 = phi i64 [^loop_preheader_4: %t20, ^body: %t31]
+    %i = convert trunc exact i32 i64 %t21
     %r = binary and i32 %i, 3
     %k = convert sext i64 i32 %r
     %e = index f32 %s, %k
     %old = load typed f32 %e
-    %wide = copy i64 %t22
-    %p = index f32 %x, %wide
+    %p = index f32 %x, %t21
     %v = load typed f32 %p
     %m = binary mul f32 %w, %old
     %new = binary add f32 %v, %m
     store typed f32 %new, %e
-    %t33 = binary add nowrap i64 %t22, 1
-    %next = convert trunc exact i32 i64 %t33
+    %t31 = binary add nowrap i64 %t21, 1
+    %next = convert trunc exact i32 i64 %t31
     %more = cmp lt i32 %next, %n
     branch %more, ^body, ^done
 
