@@ -1,10 +1,10 @@
-<svg data-original-label="Boost compile CPU vs clang" data-original-message="4.48×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Boost compile CPU vs clang; AMD EPYC 9V74 80-Core Processor; measured 393d1b1d09089ffdade676f4e7cbad8759c15d2a; 27 commits behind main: 4.48×*">
-  <title>Boost compile CPU vs clang; AMD EPYC 9V74 80-Core Processor; measured 393d1b1d09089ffdade676f4e7cbad8759c15d2a; 27 commits behind main: 4.48×*</title>
+<svg data-original-label="Boost compile CPU vs clang" data-original-message="4.43×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Boost compile CPU vs clang; AMD EPYC 9V74 80-Core Processor; measured b858d4082cddcb8e1e930d786f3f1139c6996e6d; 0 commits behind main: 4.43×">
+  <title>Boost compile CPU vs clang; AMD EPYC 9V74 80-Core Processor; measured b858d4082cddcb8e1e930d786f3f1139c6996e6d; 0 commits behind main: 4.43×</title>
   <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
   <g clip-path="url(#badge)">
     <rect width="64" height="24" fill="#555"/>
     <rect x="64" width="56" height="24" fill="#14532d"/>
   </g>
   <text x="32" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" textLength="31" lengthAdjust="spacingAndGlyphs">EPYC</text>
-  <text x="92" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="44" lengthAdjust="spacingAndGlyphs">4.48×*</text>
+  <text x="92" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">4.43×</text>
 </svg>
