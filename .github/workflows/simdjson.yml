@@ -78,6 +78,16 @@ jobs:
             obj/simdjson/*.perf
             obj/simdjson/*probe
             obj/simdjson/*.log
+          if-no-files-found: warn
+          retention-days: 14
+      # A separate artifact: a second directory in the paths above would move
+      # results.json out of the artifact root, where the publish job reads it.
+      - name: Retain the singleheader demo results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: simdjson-demo-${{ github.sha }}-${{ github.run_id }}
+          path: |
             obj/simdjson-demo/*.json
             obj/simdjson-demo/*.md
             obj/simdjson-demo/*.log
