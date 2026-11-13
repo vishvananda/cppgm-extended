@@ -21,7 +21,8 @@ namespace {
 // back edge (forward_memory's pre_load, hoist_loop_loads), and a store
 // can leave the loop. The header's values go
 // through slots, promoted again by the caller: its phis stored on its
-// predecessors' edges (before a predecessor's terminator), the others
+// predecessors' edges (before a predecessor's terminator, or in a block of
+// the edge's own when the predecessor also goes elsewhere), the others
 // right after their definition, each use outside the header and each
 // read of a phi loading.
 const uint32_t kRotateCopy = 4;
@@ -102,6 +103,8 @@ private:
 	std::vector<uint32_t> owner_;    // per instruction: the candidate whose header defines it
 	std::vector<uint8_t> touched_;   // per block: this round's rotation may change it
 	std::vector<BlockId> preheader_; // per block: the preheader to place after it
+	// A header, and a block of an edge's own to place before it.
+	std::vector<std::pair<BlockId, BlockId>> entries_;
 };
 
 } // namespace
@@ -221,6 +224,29 @@ void LoopRotation::rotate(const Candidate& candidate)
 	const InstId term = body_.blocks[h].last;
 	const std::vector<Use>& uses = candidate.uses;
 	std::vector<InstId> defined = candidate.defined;
+	// A phi's value from a block that also goes elsewhere is stored in a block
+	// of the edge's own. That block may be the header of the loop before,
+	// which rotates in a later round only while its header just tests.
+	std::vector<std::pair<BlockId, BlockId>> edges;
+	auto entering = [&](BlockId from) {
+		const InstId last = body_.blocks[from].last;
+		if (body_.instructions[last].op == Opcode::Jump)
+			return from;
+		for (const std::pair<BlockId, BlockId>& e : edges)
+			if (e.first == from)
+				return e.second;
+		const BlockId edge = append_block(body_, BlockKind::Split);
+		Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+		jump.ops[0] = Value::block(h);
+		insert_after(body_, edge, kNoId, append_instruction(body_, jump));
+		for_each_successor(body_, body_.instructions[last], [&](BlockId& target) {
+			if (target == h)
+				target = edge;
+		});
+		edges.push_back(std::make_pair(from, edge));
+		entries_.push_back(std::make_pair(h, edge));
+		return edge;
+	};
 	// Demote the header's values, the phis last: what a phi takes from the
 	// header is then a load the latch made, ahead of the phi's store.
 	std::stable_partition(
@@ -240,7 +266,7 @@ void LoopRotation::rotate(const Candidate& candidate)
 		{
 			for (uint32_t k = 0; k + 1 < value.extra_count; k += 2)
 			{
-				const BlockId from = body_.operands[value.extra_first + k].index;
+				const BlockId from = entering(body_.operands[value.extra_first + k].index);
 				Instruction store = make_instruction(Opcode::Store, type);
 				store.ops[0] = body_.operands[value.extra_first + k + 1];
 				store.ops[1] = Value::slot(slot);
@@ -343,9 +369,12 @@ void LoopRotation::rotate(const Candidate& candidate)
 void LoopRotation::place_preheaders()
 {
 	std::vector<BlockId> layout;
-	layout.reserve(body_.layout.size() + candidates_.size());
+	layout.reserve(body_.layout.size() + candidates_.size() + entries_.size());
 	for (BlockId b : body_.layout)
 	{
+		for (const std::pair<BlockId, BlockId>& e : entries_)
+			if (e.first == b)
+				layout.push_back(e.second);
 		layout.push_back(b);
 		if (preheader_[b] != kNoId)
 			layout.push_back(preheader_[b]);
@@ -371,6 +400,7 @@ bool LoopRotation::run()
 			break;
 		read_uses();
 		preheader_.assign(body_.blocks.size(), kNoId);
+		entries_.clear();
 		bool one = false;
 		for (const Candidate& candidate : candidates_)
 			if (candidate.ok)
