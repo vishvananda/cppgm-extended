@@ -471,10 +471,15 @@ void ReturnTables::rewrite_phi_table(const Instruction& term, const PhiTable& fa
 	Value value = emit(lookup, after, load, element);
 	if (element != result)
 	{
-		Instruction cast = make_instruction(Opcode::Convert, result);
+		// (A byte result of the other signedness is the element's bits.)
+		const unsigned to = integer_bits(result.kind());
+		Instruction cast = make_instruction(to == 8 ? Opcode::Copy : Opcode::Convert, result);
 		cast.ops[0] = value;
-		cast.sub = static_cast<uint8_t>(integer_bits(result.kind()) > 8 ? ConvertOp::SExt : ConvertOp::Trunc);
-		set_convert_source_type(cast, element);
+		if (cast.op == Opcode::Convert)
+		{
+			cast.sub = static_cast<uint8_t>(to > 8 ? ConvertOp::SExt : ConvertOp::Trunc);
+			set_convert_source_type(cast, element);
+		}
 		value = emit(lookup, after, cast, result);
 	}
 	if (powers)
