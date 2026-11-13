@@ -17,6 +17,12 @@ from library_benchmark_badges import HOSTS, geometric, svg
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ('hash', 'filter', 'matrix', 'transform', 'sort', 'graph', 'json', 'lzss')
+# The complete WASI compiler self-build (wasm_selfbuild_benchmarks.py) is
+# published beside the kernels, with its own host and revision.
+SELFBUILD = 'wasm-selfbuild'
+SELFBUILD_METRICS = ('seconds', 'cpu_seconds', 'compile_seconds', 'compile_cpu_seconds', 'link_seconds',
+                     'link_cpu_seconds')
+PRODUCERS = ('cppgm-producer', 'clang-producer')
 
 
 def load(artifacts):
@@ -182,7 +188,91 @@ def publish(args, documents):
     seed(args.target)
 
 
+def load_selfbuild(path):
+    document = json.loads((path / 'results.json').read_text())
+    metadata = document['metadata']
+    if document.get('status') != 'complete' or document.get('schema') != 1:
+        raise ValueError('only a complete self-build comparison can be published')
+    if not re.fullmatch('[0-9a-f]{40}', metadata['revision']) or not metadata.get('cpu'):
+        raise ValueError('the self-build comparison lacks its revision or CPU')
+    for mode in ('AA', 'AB'):
+        for metric in SELFBUILD_METRICS:
+            values = document['phases'][mode][metric]
+            if (not values['ratios'] or not all(math.isfinite(v) and v > 0 for v in values['ratios'])
+                    or not math.isclose(values['speedup'], statistics.median(values['ratios']), rel_tol=1e-12)):
+                raise ValueError('invalid paired estimate: ' + metric)
+    # The observations carry every command and output digest; the
+    # publication keeps the producer timings and module identity only.
+    rows = json.loads((path / 'observations.json').read_text())
+    fields = (*SELFBUILD_METRICS, 'sources', 'module_bytes', 'module_sha256')
+    producers = {row['name']: {field: row[field] for field in fields} for row in rows if row['name'] in PRODUCERS}
+    if set(producers) != set(PRODUCERS) or not all(row['cpu_seconds'] > 0 for row in producers.values()):
+        raise ValueError('the self-build comparison lacks its producer observations')
+    return dict(document, producers=producers)
+
+
+def selfbuild_speedups(document):
+    producers = document['producers']
+    return dict(compile=producers['clang-producer']['cpu_seconds'] / producers['cppgm-producer']['cpu_seconds'],
+                runtime=document['phases']['AB']['cpu_seconds']['speedup'])
+
+
+def selfbuild_report(document, run_url):
+    producers, phases = document['producers'], document['phases']['AB']
+    lines = ['# WASI compiler self-build', '',
+             'cppgm and Clang each build `cppgm++` for WASI. Both WASI compilers then rebuild '
+             f'`cppgm++` from the same {document["metadata"]["sources"]} sources in one pinned engine. '
+             'Speedup is Clang time / cppgm time; higher is better.', '',
+             '| Measurement | cppgm | Clang | Speedup |', '|---|---:|---:|---:|']
+    for name, key in [('Build the WASI compiler, CPU', 'cpu_seconds'), ('Build the WASI compiler, elapsed', 'seconds')]:
+        a, b = producers['cppgm-producer'][key], producers['clang-producer'][key]
+        lines.append(f'| {name} | {a:.1f} s | {b:.1f} s | {b / a:.2f}× |')
+    for name, key in [('Rebuild with the WASI compiler, CPU', 'cpu_seconds'),
+                      ('Rebuild with the WASI compiler, elapsed', 'seconds')]:
+        lines.append(f'| {name} | {phases[key]["candidate"]:.1f} s | {phases[key]["reference"]:.1f} s | '
+                     f'{phases[key]["speedup"]:.3f}× |')
+    lines += ['', 'The build is one observation. The rebuild is the median of '
+              f'{len(phases["cpu_seconds"]["ratios"])} paired ABBA blocks.', '',
+              f'CPU: {document["metadata"]["cpu"]}. [Raw CI observations]({run_url}).']
+    return '\n'.join(lines) + '\n'
+
+
+def publish_selfbuild(args):
+    document = load_selfbuild(args.artifact)
+    metadata = document['metadata']
+    if metadata['dirty'] or metadata['revision'] != args.revision:
+        raise ValueError('publication requires the clean measured compiler revision')
+    platform = benchmark_hosts.publication_platform(metadata['cpu'], 'github')
+    directory = args.target / SELFBUILD
+    for destination in (directory / platform, directory / 'history' / args.revision / platform):
+        destination.mkdir(parents=True, exist_ok=True)
+        (destination / 'metadata.json').write_text(json.dumps(metadata) + '\n')
+        (destination / 'results.json').write_text(json.dumps(document) + '\n')
+        (destination / 'report.md').write_text(selfbuild_report(document, args.run_url))
+    seed(args.target)
+
+
+def seed_selfbuild(target):
+    directory = target / SELFBUILD
+    directory.mkdir(parents=True, exist_ok=True)
+    for host, caption in HOSTS.items():
+        path = directory / host / 'results.json'
+        document = json.loads(path.read_text()) if path.exists() else None
+        values = selfbuild_speedups(document) if document else dict(compile=None, runtime=None)
+        for phase, value in values.items():
+            label = 'WASI cppgm++ ' + ('build' if phase == 'compile' else 'rebuild') + ' vs Clang'
+            if document:
+                label += '; ' + document['metadata']['cpu']
+            (directory / f'{host}-{phase}-clang.svg').write_text(svg(label, caption, value))
+    benchmark_hosts.library_index(directory, 'WASI compiler self-build hosts')
+    if not any((directory / host / 'metadata.json').exists() for host in HOSTS):
+        (directory / 'report.md').write_text('# WASI compiler self-build hosts\n\nNot measured yet. '
+            '[Method](https://github.com/vishvananda/cppgm-extended/blob/main/scripts/experimental/README.md'
+            '#full-compiler-benchmark).\n')
+
+
 def seed(target):
+    seed_selfbuild(target)
     directory = target / 'wasm'
     directory.mkdir(parents=True, exist_ok=True)
     for host, caption in HOSTS.items():
@@ -208,6 +298,11 @@ def seed(target):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
+    selfbuild = commands.add_parser('publish-selfbuild')
+    selfbuild.add_argument('artifact', type=Path)
+    selfbuild.add_argument('--target', type=Path, required=True)
+    selfbuild.add_argument('--revision', required=True)
+    selfbuild.add_argument('--run-url', required=True)
     for command in ('report', 'publish'):
         sub = commands.add_parser(command)
         sub.add_argument('artifacts', type=Path, nargs='+')
@@ -220,6 +315,9 @@ def main():
             sub.add_argument('--revision', required=True)
             sub.add_argument('--platform', choices=['github', 'intel'], default='github')
     args = parser.parse_args()
+    if args.command == 'publish-selfbuild':
+        publish_selfbuild(args)
+        return
     documents = load(args.artifacts)
     if args.command == 'publish':
         publish(args, documents)

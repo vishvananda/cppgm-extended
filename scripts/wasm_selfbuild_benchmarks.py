@@ -14,6 +14,7 @@ import sys
 import time
 
 from experimental import wasi_inception as inception
+import public_benchmarks
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -180,7 +181,7 @@ def run(args):
     inception.verify(package, manifest)
     metadata = dict(revision=manifest['revision'],
                     dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)),
-                    sources=len(manifest['sources']), affinity=cpus,
+                    sources=len(manifest['sources']), cpu=public_benchmarks.cpu_model(), affinity=cpus,
                     jobs=args.jobs, manifest_sha256=digest(package / 'manifest.json'),
                     candidate_sha256=digest(candidate), reference_sha256=digest(reference),
                     engine_sha256=digest(args.tools / 'bin/wasmtime'),

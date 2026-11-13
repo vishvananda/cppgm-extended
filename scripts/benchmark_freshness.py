@@ -34,7 +34,7 @@ def groups(target):
                   ('self-compile', 'self-built', 'self-compile-clang', 'self-built-clang')]
         yield 'Public programs', host, directory / 'provenance.json', (p for p in public if p.exists()), directory / 'report.md'
         yield 'cppgm++', host, directory / 'self-build-provenance.json', (p for p in builds if p.exists()), directory / 'self-build.md'
-        for workload in ('index-cpp', 'simdjson', 'godot', 'boost/o3', 'internal', 'wasm'):
+        for workload in ('index-cpp', 'simdjson', 'godot', 'boost/o3', 'internal', 'wasm', 'wasm-selfbuild'):
             directory = target / workload
             yield workload, host, directory / host / 'metadata.json', directory.glob(host + '-*.svg'), directory / host / 'report.md'
 

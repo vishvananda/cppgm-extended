@@ -131,6 +131,53 @@ class WasmBenchmarkTests(unittest.TestCase):
                 self.assertIn('n/m', path.read_text())
             self.assertFalse(list(target.rglob('metadata.json')))
 
+    def test_selfbuild_publication_keeps_producer_timings_and_its_host(self):
+        def estimate(ratios):
+            return dict(candidate=2., reference=1.8, speedup=sorted(ratios)[1], ratios=ratios)
+
+        def row(name, cpu):
+            return dict(name=name, slot=None, seconds=cpu / 2, cpu_seconds=cpu, compile_seconds=cpu / 2,
+                        compile_cpu_seconds=cpu, link_seconds=.1, link_cpu_seconds=.1, sources=3,
+                        module_bytes=10, module_sha256='0' * 64, commands=['x' * 1000], outputs={'a': '1'})
+
+        with tempfile.TemporaryDirectory() as directory:
+            artifact, target = Path(directory) / 'artifact', Path(directory) / 'target'
+            artifact.mkdir()
+            phases = {mode: {metric: estimate([.8, .9, 1.]) for metric in producer.SELFBUILD_METRICS}
+                      for mode in ('AA', 'AB')}
+            metadata = dict(revision='a' * 40, dirty=False, sources=3, cpu='AMD EPYC 7763 64-Core Processor')
+            (artifact / 'results.json').write_text(json.dumps(dict(schema=1, status='complete', metadata=metadata,
+                                                                   phases=phases, warnings=[])))
+            (artifact / 'observations.json').write_text(json.dumps([row('cppgm-producer', 10.),
+                                                                    row('clang-producer', 75.)]))
+            args = argparse.Namespace(artifact=artifact, target=target, revision='a' * 40,
+                                      run_url='https://example.org/run')
+            producer.publish_selfbuild(args)
+            directory = target / producer.SELFBUILD
+            self.assertIn('7.50', (directory / 'epyc-compile-clang.svg').read_text())
+            self.assertIn('0.90', (directory / 'epyc-runtime-clang.svg').read_text())
+            self.assertIn('n/m', (directory / 'github-intel-runtime-clang.svg').read_text())
+            published = json.loads((directory / 'history' / ('a' * 40) / 'epyc/results.json').read_text())
+            self.assertNotIn('commands', published['producers']['cppgm-producer'])
+            self.assertIn('[Results](epyc/report.md)', (directory / 'report.md').read_text())
+            benchmark_publication.prepare(target)
+            args.revision = 'b' * 40
+            with self.assertRaisesRegex(ValueError, 'clean measured'):
+                producer.publish_selfbuild(args)
+            (artifact / 'observations.json').write_text(json.dumps([row('cppgm-producer', 10.)]))
+            with self.assertRaisesRegex(ValueError, 'producer observations'):
+                producer.load_selfbuild(artifact)
+
+    def test_selfbuild_badges_are_placeholders_until_measured(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            producer.seed(target)
+            paths = list((target / producer.SELFBUILD).glob('*.svg'))
+            self.assertEqual(len(paths), 6)
+            for path in paths:
+                self.assertIn('n/m', path.read_text())
+            self.assertIn('Not measured yet', (target / producer.SELFBUILD / 'report.md').read_text())
+
     def test_legacy_four_kernel_reports_are_retained_without_reusing_their_badges(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)
