@@ -1362,10 +1362,6 @@ DEBUG_RENAMED = """function @add1(%a : i32) -> i32 !dbg(main.cpp, 1, 1) {
 """
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 LOWIR2NATIVE = REPO_ROOT / "dev" / "lowir2native"
 
 
@@ -1651,3 +1647,7 @@ function @main() -> i64 {
         result = self.compare(broken, self.RETURNS_124, self.RETURNS_124)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("the input does not build through the reference backend", result.stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()

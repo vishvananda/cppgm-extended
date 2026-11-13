@@ -14,6 +14,7 @@ use CppgmWasmModule qw(export_signatures export_tag_signatures sequence_module r
 use CppgmWasmFixture qw(mutate_object);
 use CppgmWasmQuality qw(check_quality);
 use CppgmWasmGlobals qw(initialize_globals metadata_first group_object);
+use CppgmWasmCheckCache;
 
 sub read_file {
     my ($path) = @_;
@@ -72,6 +73,8 @@ my $runtime = $ENV{CPPGM_WASMTIME} // 'wasmtime';
 my $source_compiler = $ENV{CPPGM_WASM_CPPGM} // File::Spec->catfile(dirname($compiler),
     $compiler =~ /-ref\z/ ? 'cppgm++-ref' : 'cppgm++');
 my $command_sequence = 0;
+my $checked = CppgmWasmCheckCache->new(validator => $validator, runtime => $runtime);
+my %lowered_source;
 my @units = map { File::Spec->catfile(dirname($test), $_) } @{$expect->{units} // []};
 
 if ($expect->{reference_limitations} || ($expect->{llvm_interop} && $expect->{interop_linkers} &&
@@ -91,7 +94,7 @@ if ($expect->{reference_limitations} || ($expect->{llvm_interop} && $expect->{in
 sub command {
     my ($name, @args) = @_;
     $name .= '-' . ++$command_sequence;
-    my $status = run_command_capture(cmd => \@args,
+    my $status = $checked->capture(cmd => \@args,
         stdout => "$directory/$name.stdout", stderr => "$directory/$name.stderr", timeout => 30,
         internal_error => $args[0] eq $runtime ? undef : 70,
         supervisor => $compiler, limits => {cpu_seconds => 30, rss_bytes => 2147483648, file_bytes => 67108864});
@@ -268,11 +271,14 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
     die "$test: invalid module at O$level: $stdout$stderr\n" if $status;
     push @modules, $module;
     if ($expect->{source} && !@units) {
-        my $lowir = "$directory/source.lowir";
-        ($status, $stdout, $stderr) = command("lowir-$level", $source_compiler,
-            '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-            @target_flags, @{$expect->{flags} // []}, '--emit-lowir', '-O0', '-o', $lowir, $test, @units);
-        die "$test: LowIR lowering failed: $stdout$stderr\n" if $status;
+        my $lowir = $lowered_source{$test} // "$directory/source.lowir";
+        if (!$lowered_source{$test}) {
+            ($status, $stdout, $stderr) = command("lowir-$level", $source_compiler,
+                '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
+                @target_flags, @{$expect->{flags} // []}, '--emit-lowir', '-O0', '-o', $lowir, $test, @units);
+            die "$test: LowIR lowering failed: $stdout$stderr\n" if $status;
+            $lowered_source{$test} = $lowir;
+        }
         my $roundtrip = "$directory/roundtrip-$level.wasm";
         ($status, $stdout, $stderr) = command("roundtrip-$level", $compiler,
             "-O$level", @target_flags, @{$expect->{link_flags} // []}, @exports, '-o', $roundtrip, $lowir, @supplied_inputs);
@@ -311,11 +317,14 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
         die "$test: invalid relocatable object: $stdout$stderr\n" if $status;
         push @objects, $object;
         if ($expect->{source} && @units) {
-            my $lowir = "$directory/unit-$index.lowir";
-            ($status, $stdout, $stderr) = command("unit-lowir-$index-$level", $source_compiler,
-                '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
-                @target_flags, @{$expect->{flags} // []}, '--emit-lowir', '-O0', $inputs[$index], '-o', $lowir);
-            die "$test: unit LowIR lowering failed: $stdout$stderr\n" if $status;
+            my $lowir = $lowered_source{$inputs[$index]} // "$directory/unit-$index.lowir";
+            if (!$lowered_source{$inputs[$index]}) {
+                ($status, $stdout, $stderr) = command("unit-lowir-$index-$level", $source_compiler,
+                    '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
+                    @target_flags, @{$expect->{flags} // []}, '--emit-lowir', '-O0', $inputs[$index], '-o', $lowir);
+                die "$test: unit LowIR lowering failed: $stdout$stderr\n" if $status;
+                $lowered_source{$inputs[$index]} = $lowir;
+            }
             my $roundtrip = "$directory/unit-$index-$level.o";
             ($status, $stdout, $stderr) = command("unit-roundtrip-$index-$level", $source_compiler,
                 '--target', ($expect->{target} // 'wasm32-unknown-unknown'),
@@ -551,6 +560,8 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
             if ($call->{trap}) {
                 die "$test: $call->{export} did not produce a Wasm trap: $stdout$stderr\n"
                     if !$status || $status == 124 || $stderr !~ /\bwasm trap\b/;
+                die "$test: expected fuel exhaustion, got: $stdout$stderr\n"
+                    if $call->{trap} eq 'fuel' && $stderr !~ /wasm trap: all fuel consumed\b/;
                 next;
             }
             die "$test: $call->{export} failed ($status): $stdout$stderr\n" if $status;

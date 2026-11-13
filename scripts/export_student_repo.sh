@@ -409,6 +409,7 @@ shared_scripts=(
   scripts/check_object_expectations.pl
   scripts/check_wasm.pl
   scripts/CppgmWasmModule.pm
+  scripts/CppgmWasmCheckCache.pm
   scripts/CppgmWasmFixture.pm
   scripts/CppgmWasmQuality.pm
   scripts/CppgmWasmGlobals.pm

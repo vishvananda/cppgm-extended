@@ -101,6 +101,9 @@ jobs:
           echo "CPPGM_WASM_C_API=$RUNNER_TEMP/wasm-tools/wasmtime-c-api" >> "$GITHUB_ENV"
       - name: Check child resource limits and cancellation
         run: python3 scripts/tests/test_command_resources.py
+      - name: Check comparison harness on macOS
+        if: matrix.llvm == 21
+        run: python3 scripts/tests/test_compare_lowir_results.py LowIrComparisonTest ParallelLowIrComparisonTest
       - name: Run the default Intel macOS test report
         run: |
           make --no-print-directory -f Makefile -f - ci-report-config <<'MAKE'

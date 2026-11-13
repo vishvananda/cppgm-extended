@@ -165,7 +165,10 @@ declared by the inputs themselves. `export_names` checks the complete public
 function-name set, while `abi` checks parameter/result types. Import/export
 names and signatures are interface requirements, independent of instruction
 selection or optimization strategy.
-An export call with `trap: true` must trap at runtime. WASI command sidecars may
+An export call with `trap: true` must trap at runtime. `trap: "fuel"`
+requires fuel exhaustion specifically, using the call's per-level `fuel` budgets.
+Fuel-limited calls use segment initialization so host memory-image mapping does
+not change their budgets. WASI command sidecars may
 provide named input `files` and expected `outputs`; each command gets a fresh
 preopened directory for them.
 For exit values reserved by the runtime, a command's `proc_exit` assertion
@@ -198,14 +201,18 @@ export PATH="$(cd ../obj/wasm-tools/bin && pwd):$PATH"
 Run `make test` for this assignment or `make check TEST=<fixture>` for a
 focused check. Both use the standard parallel runner. Numbered fixture groups
 cover targets/modules, values/memory, control/calls, objects/ABI, C++ runtime
-and optimization. Install the pinned runtime, validator and reference
+and optimization. The checker reuses successful trusted-tool results for byte-identical inputs
+and identical settings within one fixture. WASI commands, failures and traps
+still run independently; every compiler path and optimization level still runs.
+Install the pinned runtime, validator and reference
 toolchain listed in the supplied reference bundle; missing required tools
 are reported as prerequisite failures.
 
 Each tool invocation has a 30-second wall limit, a 30-second CPU limit per
 process, a 2-GiB resident-memory
 ceiling across its process group, and a 64-MiB limit on each output file.
-Resident memory is sampled every 10 milliseconds on Linux and macOS; it can
+The supervisor wakes when a child exits. While it runs, resident memory is
+sampled every 10 milliseconds on Linux and macOS; it can
 briefly exceed the ceiling between samples. The runtime separately limits each
 guest linear memory to 256 MiB. Resource exhaustion, cancellation and internal
 errors fail the test, including tests that expect an input diagnostic.

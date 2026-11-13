@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/select.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -696,8 +697,52 @@ bool captured_limit(const ExecRequest& request)
 	return false;
 }
 
+void exec_child_finished(int)
+{}
+
+// Keep SIGCHLD blocked between wait4 and pselect so an exit cannot be missed.
+// Live children still receive the same 10 ms resource sampling.
+class ExecChildWake
+{
+	struct sigaction previous_action;
+	sigset_t previous_mask;
+	bool ready;
+
+public:
+	ExecChildWake() : ready(false)
+	{
+		sigset_t blocked;
+		sigemptyset(&blocked);
+		sigaddset(&blocked, SIGCHLD);
+		if (sigprocmask(SIG_BLOCK, &blocked, &previous_mask) != 0)
+			return;
+		struct sigaction action = {};
+		action.sa_handler = exec_child_finished;
+		sigemptyset(&action.sa_mask);
+		action.sa_flags = SA_NOCLDSTOP;
+		if (sigaction(SIGCHLD, &action, &previous_action) == 0)
+			ready = true;
+		else
+			sigprocmask(SIG_SETMASK, &previous_mask, NULL);
+	}
+	~ExecChildWake()
+	{
+		if (ready)
+		{
+			sigaction(SIGCHLD, &previous_action, NULL);
+			sigprocmask(SIG_SETMASK, &previous_mask, NULL);
+		}
+	}
+	void wait()
+	{
+		timespec delay = { 0, 10000000 };
+		pselect(0, NULL, NULL, NULL, &delay, ready ? &previous_mask : NULL);
+	}
+};
+
 ExecOutcome supervise_exec(pid_t pid, const ExecRequest& request, int setup_fd)
 {
+	ExecChildWake wake;
 	const double deadline = monotonic_ms() + request.wall_ms;
 	int status = 0;
 	bool started = false;
@@ -745,7 +790,7 @@ ExecOutcome supervise_exec(pid_t pid, const ExecRequest& request, int setup_fd)
 		if (started && captured_limit(request))
 			return { 125, "output" };
 		// The timer also supervises descendants and intercepted limit signals.
-		usleep(10000);
+		wake.wait();
 	}
 }
 

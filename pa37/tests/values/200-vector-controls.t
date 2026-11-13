@@ -3,7 +3,11 @@ template<class V, unsigned N> bool same(V a, V b) {
  for (unsigned i = 0; i != N; ++i) if (a[i] != b[i]) return false;
  return true;
 }
+#ifdef __CPPGM__
 template<unsigned Control> int check_control(int seed) {
+#else
+int check_control(int seed, unsigned Control) {
+#endif
   Quads a = {static_cast<long long>(0xfedcba9876543210ULL ^ seed), static_cast<long long>(0x89abcdef01234567ULL)};
   Quads b = {seed ? -1LL : 0, static_cast<long long>(0xa5a5a5a5a5a5a5a5ULL)};
   if (!same<Quads,2>(__builtin_ia32_pclmulqdq128(a,b,Control),expected_carryless(a,b,Control))) return 1;
@@ -19,6 +23,7 @@ template<unsigned Control> int check_control(int seed) {
   if (!same<Doubles,2>(__builtin_ia32_roundsd(p,q,Control),expected_round_sd(p,q,Control))) return 8;
   return 0;
 }
+#ifdef __CPPGM__
 template<unsigned Control> struct Check {
  static int run(int seed) {
   int result = check_control<Control>(seed);
@@ -26,10 +31,19 @@ template<unsigned Control> struct Check {
  }
 };
 template<> struct Check<0> { static int run(int seed) { return check_control<0>(seed); } };
+#endif
 extern "C" int observe(int seed) {
  Words a = {-1, 7, 2, 2, 5, 8, 9, 2};
  a[seed & 7] = -2;
  if (!same<Words,8>(__builtin_ia32_phminposuw128(a),expected_minpos(a))) return 9;
+#ifdef __CPPGM__
  int result = Check<255>::run(seed);
  return result ? result : 17;
+#else
+ for (unsigned control = 0; control != 256; ++control) {
+  int result = check_control(seed, control);
+  if (result) return result;
+ }
+ return 17;
+#endif
 }

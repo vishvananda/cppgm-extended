@@ -353,3 +353,9 @@ build. This is independent of `make test` and the student report. It verifies
 W1/W2/W3 byte equality under Wasmtime and Chromium and native/WASI x86 code at
 O0/O2/O3. See [dependencies, frozen inputs and observations](scripts/experimental/README.md).
 The Tests workflow runs this lane once with the Ubuntu 24.04 GCC artifact.
+
+The cumulative report starts PA37, PA34 and PA33 first to avoid a long backend
+tail. It still displays assignments in course order. PA11's maintainer seam lane
+runs the comparison checks that need a built backend and checks rewrites of the
+actual fixture outputs. Pure comparison-harness unit tests belong to
+`make test-harness`; CI runs them once per Ubuntu image and once on macOS.

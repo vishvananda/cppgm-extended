@@ -67,6 +67,8 @@ PAS = $(filter-out $(EXPERIMENTAL_PAS),$(ALL_PAS))
 SORTED_PAS = $(shell printf '%s\n' $(PAS) | sort -t a -k 2,2n)
 TEST_REPORT_PAS ?= $(SORTED_PAS)
 ACTIVE_TEST_REPORT_PAS ?= $(TEST_REPORT_PAS)
+# Start the expensive backends first; display order still follows ACTIVE_TEST_REPORT_PAS.
+TEST_REPORT_SCHEDULE_PAS = $(foreach pa,pa37 pa34 pa33,$(filter $(pa),$(ACTIVE_TEST_REPORT_PAS))) $(filter-out pa37 pa34 pa33,$(ACTIVE_TEST_REPORT_PAS))
 REF_TEST_PAS ?= $(SORTED_PAS)
 # One assignment at a time gets the whole machine: there is nothing else to
 # share it with, unlike test-report where assignments run side by side.
@@ -304,6 +306,8 @@ test-cells:
 # The harness unit tests: the comparison, the workers, the audits and the
 # export, each a self-contained python unittest file under scripts/tests.
 HARNESS_TESTS = \
+	scripts/tests/test_wasm_check_cache.py \
+	scripts/tests/test_wasm_checker.py \
 	scripts/tests/test_wasm_module.py \
 	scripts/tests/test_wasm_quality.py \
 	scripts/tests/test_wasi_inception.py \
@@ -497,7 +501,7 @@ test-report-nobuild: audit-compiler-exceptions
 	trap 'cleanup' EXIT; \
 	trap 'interrupt' INT TERM; \
 	rm -f pa*/"$$CPPGM_TEST_FAILURE_MARKER"; \
-	printf '%s\n' $(ACTIVE_TEST_REPORT_PAS) > "$$tmpdir/pas.list"; \
+	printf '%s\n' $(TEST_REPORT_SCHEDULE_PAS) > "$$tmpdir/pas.list"; \
 	xargs -P$(TEST_REPORT_ASSIGNMENT_JOBS) -I{} /bin/bash -c '\
 		dir="$$1"; \
 		echo "===== $$dir =====" > "$$2/$$dir.out"; \

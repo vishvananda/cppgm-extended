@@ -79,15 +79,16 @@ test: $(TEST_DEPS)
 test-controls: $(TEST_DEPS)
 	@$(CONTROLS_RUN)
 
-# The LowIR comparison seams: the harness's own unit tests, then every
+# The LowIR comparison seams: built-backend harness checks, then every
 # rewrite of this lane's outputs that ../pa8/lowir.md says the comparison
 # absorbs must pass, and every rewrite it says the course enforces as a
 # convention must fail. Needs the outputs `test` produces for this run.
+# Pure comparison unit tests run in root `make test-harness`.
 # Maintainer lane: the invariant is about the comparison harness and the
 # contract text in ../pa8/lowir.md, not about an implementation, so the
 # repository-root report runs it rather than `make test`.
 test-seams:
-	@python3 ../scripts/tests/test_compare_lowir_results.py
+	@env -u CPPGM_TEST_RUN_ID python3 ../scripts/tests/test_compare_lowir_results.py OptimizedLowIrBehaviorTest
 	@python3 ../scripts/check_lowir_seams.py . tests/general
 
 ref-test:

@@ -13,6 +13,31 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class TestReportOutputTests(unittest.TestCase):
+    def test_expensive_assignments_start_first(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shutil.copy(ROOT / 'Makefile', root / 'Makefile')
+            (root / 'scripts').mkdir()
+            for name in ('test_run_id.mk', 'test_platform.pl', 'CppgmTestPlatform.pm'):
+                shutil.copy(ROOT / 'scripts' / name, root / 'scripts' / name)
+            (root / 'scripts/audit_compiler_exceptions.pl').write_text('exit 0;\n')
+            for pa in ('pa1', 'pa33', 'pa34', 'pa37'):
+                (root / pa).mkdir()
+                (root / pa / 'Makefile').write_text(
+                    'test:\n\t@echo ' + pa + ' >> ../started\n'
+                    '\t@echo "1 1" >> "$$CPPGM_TEST_COUNTS_FILE"\n')
+            env = os.environ.copy()
+            for key in ('MAKEFLAGS', 'MFLAGS', 'MAKELEVEL', 'MAKEOVERRIDES',
+                        'CPPGM_TEST_RUN_ID', 'CPPGM_TEST_COUNTS_FILE'):
+                env.pop(key, None)
+            result = subprocess.run(
+                ['make', 'test-report-nobuild', 'ACTIVE_TEST_REPORT_PAS=pa1 pa33 pa34 pa37',
+                 'TEST_REPORT_ASSIGNMENT_JOBS=1', 'TEST_REPORT_SUBTEST_JOBS=1'],
+                cwd=root, env=env, capture_output=True, text=True, timeout=20)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual((root / 'started').read_text().splitlines(), ['pa37', 'pa34', 'pa33', 'pa1'])
+            self.assertIn('(4 / 4)', result.stdout)
+
     def test_seams_overlap_other_assignments_instead_of_running_after_them(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

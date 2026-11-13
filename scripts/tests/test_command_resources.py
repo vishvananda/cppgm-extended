@@ -31,6 +31,11 @@ class CommandResources(unittest.TestCase):
 int test_runner_real_main(int argc, char** argv) {
     if (argc < 2) return 0;
     if (!strcmp(argv[1], "exit")) return atoi(argv[2]);
+    if (!strcmp(argv[1], "signal-mask")) {
+        sigset_t mask;
+        if (sigprocmask(SIG_SETMASK, nullptr, &mask) != 0) return 2;
+        return sigismember(&mask, SIGCHLD) ? 1 : 0;
+    }
     if (!strcmp(argv[1], "echo")) {
         for (int i = 2; i < argc; ++i) {
             printf("%zu:", strlen(argv[i]));
@@ -145,6 +150,13 @@ int test_runner_real_main(int argc, char** argv) {
         self.worker.stdin.flush()
         self.assertTrue(select.select([self.worker.stdout], [], [], 8)[0], 'worker did not respond')
         return self.worker.stdout.readline().decode().strip().split('\t')[1:]
+
+    def test_fast_child_exits_leave_later_requests_healthy(self):
+        # Exercise exits on both sides of the supervisor's wait/reap boundary.
+        for status in range(64):
+            self.assertEqual(self.send(self.request('exit', status)), [str(status), 'exit'])
+        self.assertEqual(self.send(self.request('signal-mask')), ['0', 'exit'])
+        self.healthy()
 
     def healthy(self):
         self.assertEqual(self.send(self.request('echo', 'ready')), ['0', 'exit'])

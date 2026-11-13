@@ -1,1 +1,1 @@
-{"calls":[]}
+{"calls": [{"export": "repeat_forever", "trap": "fuel", "fuel": {"0": 1000, "1": 1000, "2": 1000, "3": 1000}}], "abi": {"repeat_forever": {"params": [], "results": []}}}

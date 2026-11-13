@@ -390,6 +390,12 @@ jobs:
           perl scripts/install_wasm_tools.pl --prefix "$RUNNER_TEMP/wasm-tools"
           echo "$RUNNER_TEMP/wasm-tools/bin" >> "$GITHUB_PATH"
 
+      # The audit job covers this pure harness logic on Ubuntu 24.04. Run it
+      # once on 26.04 too; it does not depend on the selected C++ compiler.
+      - name: Check comparison harness on Ubuntu 26.04
+        if: matrix.suite.id == 'test-report' && matrix.flavor.id == 'ubuntu-26.04-gcc'
+        run: python3 scripts/tests/test_compare_lowir_results.py LowIrComparisonTest ParallelLowIrComparisonTest
+
       - name: Check semantic work reuse
         if: matrix.suite.id == 'test-report'
         run: |
