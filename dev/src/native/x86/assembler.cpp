@@ -364,6 +364,12 @@ void Assembler::alu_mr(unsigned digit, const RM& dst, Reg src, unsigned bytes)
 
 void Assembler::alu_ri(unsigned digit, const RM& dst, int64_t value, unsigned bytes)
 {
+	// The immediate as the operation's width reads it: 0xffffffff in a 32-bit
+	// operation is the sign-extended byte -1 and takes the byte form.
+	if (bytes == 4)
+		value = static_cast<int32_t>(value);
+	else if (bytes == 2)
+		value = static_cast<int16_t>(value);
 	// The accumulator's forms have no ModRM byte (04+ ib, 05+ iw/id): one
 	// byte shorter where the immediate is not a sign-extended byte.
 	if (dst.is_reg && dst.reg == RAX && (bytes == 1 || !fits_i8(value)))
