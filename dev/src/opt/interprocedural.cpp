@@ -308,6 +308,96 @@ static FunctionWrites bounded_writes(const Program& program, const FunctionBody&
 	return out;
 }
 
+// Whether operand `at` (for_each_operand's order) of `inst` uses an address
+// without keeping it: an access through it, a test of it, a step from it, or
+// an argument for a parameter the direct callee does not keep.
+static bool uses_without_keeping(const Program& program, const Instruction& inst, uint32_t at)
+{
+	switch (inst.op)
+	{
+	case Opcode::Load:
+	case Opcode::AtomicLoad:
+	case Opcode::AtomicAddFetch:
+	case Opcode::AtomicExchange:
+	case Opcode::ZeroInit:
+	case Opcode::Index:
+		return at == 0;
+	case Opcode::Store:
+	case Opcode::AtomicStore:
+		return at == 1;
+	case Opcode::AtomicCompareExchange:
+		return at == 0 || at == 1;
+	case Opcode::CopyObject:
+	case Opcode::Compare:
+	case Opcode::Phi:
+		return true;
+	case Opcode::Copy:
+		return inst.type.is_pointer();
+	case Opcode::Select:
+		return at != 0;
+	case Opcode::Branch:
+		return at == 0;
+	case Opcode::Call:
+		return at >= 3 && unkept_argument(program, inst, at - 3);
+	default:
+		return false;
+	}
+}
+
+// The pointer parameters (bit k, k < 64) no copy of whose address outlives
+// a call: each use of the address, or of one stepped from it (index, pointer
+// copy, phi, select), uses it without keeping it (uses_without_keeping). A
+// callee not yet decided (a call cycle's) keeps its arguments.
+static uint64_t unkept_parameters(const Program& program, const FunctionBody& body)
+{
+	const uint32_t count = std::min<uint32_t>(body.parameter_count, 64);
+	std::vector<uint64_t> from(body.temps.size(), 0); // parameters an address may be stepped from
+	uint64_t unkept = 0;
+	for (uint32_t p = 0; p < count; ++p)
+		if (body.temps[p].type.is_pointer())
+			unkept |= from[p] = static_cast<uint64_t>(1) << p;
+	if (unkept == 0)
+		return 0;
+	auto of = [&](const Value& v) { return v.is(ValueKind::Temp) && v.index < from.size() ? from[v.index] : 0; };
+	// (A phi may name a step defined later in layout.)
+	for (bool grew = true; grew;)
+	{
+		grew = false;
+		for (BlockId b : body.layout)
+			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+			{
+				const Instruction& inst = body.instructions[i];
+				if (inst.result == kNoId)
+					continue;
+				uint64_t bits = 0;
+				if (inst.op == Opcode::Index || (inst.op == Opcode::Copy && inst.type.is_pointer()))
+					bits = of(inst.ops[0]);
+				else if (inst.op == Opcode::Select)
+					bits = of(inst.ops[1]) | of(inst.ops[2]);
+				else if (inst.op == Opcode::Phi)
+					for_each_operand(body, inst, [&](const Value& v) { bits |= of(v); });
+				if ((from[inst.result] | bits) != from[inst.result])
+				{
+					from[inst.result] |= bits;
+					grew = true;
+				}
+			}
+	}
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId && unkept != 0; i = body.instructions[i].next)
+		{
+			const Instruction& inst = body.instructions[i];
+			uint32_t position = 0;
+			for_each_operand(body, inst, [&](const Value& v) {
+				const uint32_t at = position++;
+				const uint64_t bits = of(v);
+				if (bits != 0 && !uses_without_keeping(program, inst, at))
+					unkept &= ~bits;
+			});
+		}
+	return unkept;
+}
+
 // Optimized callees are visited before their callers. A positive fact remains
 // valid through semantics-preserving transformations; recursive/unknown calls
 // conservatively prevent a proof. This says nothing about repeatability.
@@ -375,13 +465,19 @@ bool infer_function_memory(Program& program)
 			any = true;
 		}
 	program.function_writes.assign(program.symbols.size(), FunctionWrites());
+	program.unkept_parameters.assign(program.symbols.size(), 0);
 	for (uint32_t f : graph.bottom_up)
 	{
 		const SymbolId s = graph.functions[f];
 		const Symbol& symbol = program.symbols[s];
-		if (writes[f] == 0 || graph.recursive[f] || (symbol.metadata.flags & SF_REPLACEABLE) != 0)
+		if ((symbol.metadata.flags & SF_REPLACEABLE) != 0)
 			continue;
-		program.function_writes[s] = bounded_writes(program, *program.functions[symbol.detail].body);
+		const FunctionBody& body = *program.functions[symbol.detail].body;
+		program.unkept_parameters[s] = unkept_parameters(program, body);
+		any = any || program.unkept_parameters[s] != 0;
+		if (writes[f] == 0 || graph.recursive[f])
+			continue;
+		program.function_writes[s] = bounded_writes(program, body);
 		any = any || program.function_writes[s].bytes != 0;
 	}
 	return any;

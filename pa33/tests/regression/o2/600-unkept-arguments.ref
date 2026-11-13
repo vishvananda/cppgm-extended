@@ -1,0 +1,122 @@
+declare function @external(%p : ptr) -> void [unwind=no, linkage=c, binding=strong, object=external]
+
+global @saved : ptr = 0
+
+function @append(%s : ptr, %c : i8) -> void [no_inline=yes] {
+  block ^entry:
+    %cur = load ptr %s
+    %next = index i8 %cur, 1
+    store ptr %next, %s
+    store i8 %c, %cur
+    return void
+}
+function @append_twice(%s : ptr, %c : i8) -> void [no_inline=yes] {
+  block ^entry:
+    call void @append(%s, %c)
+    call void @append(%s, %c)
+    return void
+}
+function @keep(%s : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    store ptr %s, @saved
+    return void
+}
+function @pass_on(%s : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    call void @external(%s)
+    return void
+}
+function @same(%s : ptr) -> ptr [no_inline=yes] {
+  block ^entry:
+    return ptr %s
+}
+function @cursor(%start : ptr, %c : i8) -> ptr [no_inline=yes] {
+  slot $s : ptr
+
+  block ^entry:
+    %a = addr $s
+    store ptr %start, %a
+    call void @append(%a, %c)
+    %p = load ptr %a
+    %n = index i8 %p, 1
+    store ptr %n, %a
+    store i8 %c, %p
+    return ptr %n
+}
+function @cursor_twice(%start : ptr, %c : i8) -> ptr [no_inline=yes] {
+  slot $s : ptr
+
+  block ^entry:
+    %a = addr $s
+    store ptr %start, %a
+    call void @append_twice(%a, %c)
+    %p = load ptr %a
+    %n = index i8 %p, 1
+    store ptr %n, %a
+    store i8 %c, %p
+    return ptr %n
+}
+function @kept_by_store(%start : ptr, %c : i8) -> ptr [no_inline=yes] {
+  slot $s : ptr
+
+  block ^entry:
+    %a = addr $s
+    store ptr %start, %a
+    call void @keep(%a)
+    %p = load ptr %a
+    %n = index i8 %p, 1
+    store ptr %n, %a
+    store i8 %c, %p
+    %r = load ptr %a
+    return ptr %r
+}
+function @kept_by_external(%start : ptr, %c : i8) -> ptr [no_inline=yes] {
+  slot $s : ptr
+
+  block ^entry:
+    %a = addr $s
+    store ptr %start, %a
+    call void @pass_on(%a)
+    %p = load ptr %a
+    %n = index i8 %p, 1
+    store ptr %n, %a
+    store i8 %c, %p
+    %r = load ptr %a
+    return ptr %r
+}
+function @kept_by_return(%start : ptr, %c : i8) -> ptr [no_inline=yes] {
+  slot $s : ptr
+
+  block ^entry:
+    %a = addr $s
+    store ptr %start, %a
+    %b = call ptr @same(%a)
+    %p = load ptr %b
+    %n = index i8 %p, 1
+    store ptr %n, %b
+    store i8 %c, %p
+    %r = load ptr %a
+    return ptr %r
+}
+function @read_by_call(%start : ptr, %c : i8) -> void [no_inline=yes] {
+  slot $s : ptr
+
+  block ^entry:
+    %a = addr $s
+    store ptr %start, %a
+    call void @append(%a, %c)
+    return void
+}
+function @own_address(%c : i8) -> void [no_inline=yes] {
+  slot $s : ptr
+
+  block ^entry:
+    %a = addr $s
+    store ptr %a, %a
+    call void @append(%a, %c)
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

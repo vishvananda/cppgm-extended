@@ -356,6 +356,12 @@ struct Program
 	// Derived from typed definitions, like read_only_functions; not written
 	// out. Calls still write memory, but may invalidate a known byte range.
 	std::vector<FunctionWrites> function_writes;
+	// Per symbol: bit k is set when no copy of pointer parameter k (k < 64)
+	// of a defined function outlives a call: the function reads and writes
+	// through the address, compares it, and passes it on only to parameters
+	// that do not keep it either. Derived like read_only_functions; not
+	// written out.
+	std::vector<uint64_t> unkept_parameters;
 	// Per symbol: a declaration of an allocation function; empty until the
 	// optimizer looks the names up once.
 	std::vector<uint8_t> allocation_functions;

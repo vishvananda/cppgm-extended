@@ -173,6 +173,8 @@ private:
 	bool diamond_join(BlockId block);
 	void replay_arms();
 	void escapes();
+	bool passes_slot(const Instruction& call, uint32_t slot) const;
+	void forget_passed(const Instruction& call);
 	void drop_self_pointers();
 	Value value_at_end(BlockId block, Value address, Type type, bool typed = false);
 	Value value_at_end(BlockId block, const Key& key, const AddressFacts& want, Type type, bool typed);
@@ -222,6 +224,8 @@ private:
 	std::vector<AddressFacts> address_;                   // per temp
 	mutable std::vector<Strided> strided_;                // per temp once asked (known: base set)
 	std::vector<uint8_t> escaped_;                        // per slot: address leaves the analysis
+	std::vector<uint8_t> passed_;                         // per slot: address an unkept call argument (empty: none)
+	bool any_passed_ = false;                             // some slot is passed_
 	std::vector<std::pair<BlockId, InstId>> self_stores_; // stores of a slot's address into itself
 	std::vector<TempId> allocation_;                      // per temp: the allocation it points into
 	std::vector<uint8_t> allocation_left_;                // per temp: the allocation's address leaves
@@ -277,7 +281,7 @@ private:
 struct MemoryForwarding::Pool
 {
 	std::vector<AddressFacts> address;
-	std::vector<uint8_t> escaped;
+	std::vector<uint8_t> escaped, passed;
 	std::vector<TempId> allocation;
 	std::vector<uint8_t> allocation_left;
 	FlatMap<Key, uint32_t, KeyHash> index;
@@ -298,6 +302,7 @@ void MemoryForwarding::exchange(Pool& pool)
 {
 	address_.swap(pool.address);
 	escaped_.swap(pool.escaped);
+	passed_.swap(pool.passed);
 	allocation_.swap(pool.allocation);
 	allocation_left_.swap(pool.allocation_left);
 	index_.swap(pool.index);
@@ -573,10 +578,14 @@ void MemoryForwarding::remember_at(const AddressFacts& f, const Key& key, Type t
 
 // Slots whose address reaches anything but loads, stores (as the address),
 // index/copy chains, copyobj and zeroinit. A slot's address stored into the
-// slot itself leaves only when something reads it (drop_self_pointers).
+// slot itself leaves only when something reads it (drop_self_pointers). An
+// argument for a parameter its callee does not keep (unkept_argument) stays
+// too: that call reads and writes the slot (passed_), nothing else reaches it.
 void MemoryForwarding::escapes()
 {
 	escaped_.assign(body_.slots.size(), 0);
+	passed_.clear();
+	any_passed_ = false;
 	self_stores_.clear();
 	address_.assign(body_.temps.size(), AddressFacts());
 	allocation_.clear();
@@ -646,6 +655,13 @@ void MemoryForwarding::escapes()
 						return;
 					}
 				}
+				if (f.base == ValueKind::Slot && at >= 3 && unkept_argument(c_.program, inst, at - 3))
+				{
+					passed_.resize(body_.slots.size(), 0);
+					passed_[f.index] = 1;
+					any_passed_ = true;
+					return;
+				}
 				if (f.base == ValueKind::Slot && (v.is(ValueKind::Temp) || inst.op != Opcode::Load))
 					escaped_[f.index] = 1;
 				if (inst.op != Opcode::Compare && v.is(ValueKind::Temp) && v.index < allocation_.size() &&
@@ -680,15 +696,44 @@ void MemoryForwarding::escapes()
 	drop_self_pointers();
 }
 
+// Whether `call` is given the address of private slot `slot` (passed_): it
+// may read and write all of it.
+bool MemoryForwarding::passes_slot(const Instruction& call, uint32_t slot) const
+{
+	if (!any_passed_ || call.op != Opcode::Call || slot >= passed_.size() || !passed_[slot] || escaped_[slot])
+		return false;
+	for (uint32_t k = 0; k < call.extra_count; ++k)
+	{
+		const AddressFacts f = facts_of(body_.operands[call.extra_first + k]);
+		if (f.base == ValueKind::Slot && f.index == slot)
+			return true;
+	}
+	return false;
+}
+
+// The facts of the private slots a call is given lapse (passes_slot).
+void MemoryForwarding::forget_passed(const Instruction& call)
+{
+	if (!any_passed_ || call.op != Opcode::Call)
+		return;
+	for (uint32_t k = 0; k < call.extra_count; ++k)
+	{
+		const AddressFacts f = facts_of(body_.operands[call.extra_first + k]);
+		if (f.base == ValueKind::Slot && f.index < passed_.size() && passed_[f.index] && !escaped_[f.index])
+			invalidate(Value::slot(f.index), ~static_cast<uint64_t>(0) >> 1);
+	}
+}
+
 // A slot that holds its own address (an object's pointer to its own array)
-// keeps it private when no load or copy reads those bytes: the stores go.
-// Otherwise the address leaves through them.
+// keeps it private when no load, copy or call reads those bytes: the stores
+// go. Otherwise the address leaves through them.
 void MemoryForwarding::drop_self_pointers()
 {
-	// (Most slots that store their own address leave some other way.)
+	// (Most slots that store their own address leave some other way. A call
+	// given the slot (passed_) may load the address it holds and keep it.)
 	auto slot_of = [&](InstId s) { return facts_of(body_.instructions[s].ops[1]).index; };
 	for (const auto& s : self_stores_)
-		if ((body_.instructions[s.second].flags & IF_VOLATILE) != 0)
+		if ((body_.instructions[s.second].flags & IF_VOLATILE) != 0 || (any_passed_ && passed_[slot_of(s.second)]))
 			escaped_[slot_of(s.second)] = 1;
 	size_t kept = 0;
 	for (const auto& s : self_stores_)
@@ -962,7 +1007,10 @@ void MemoryForwarding::process(BlockId block)
 			if (writes != nullptr)
 				invalidate(body_.operands[inst.extra_first + writes->parameter], writes->bytes);
 			else
+			{
 				invalidate(Value::none(), ~static_cast<uint64_t>(0) >> 1); // private slots survive
+				forget_passed(inst);                                       // but those it is given
+			}
 		}
 		prev = i;
 		i = next;
@@ -1225,16 +1273,21 @@ InstId MemoryForwarding::field_copy(BlockId block, InstId prev, InstId id)
 	return first;
 }
 
-// Writes to a private slot nothing reads (no load or copy from it; its
-// address reaches nothing else) go.
+// Writes to a private slot nothing reads (no load or copy from it, and no
+// call is given it; its address reaches nothing else) go.
 void MemoryForwarding::drop_unread_writes()
 {
 	address_.resize(body_.temps.size(), AddressFacts());
 	if (std::find(escaped_.begin(), escaped_.end(), 0) == escaped_.end())
 		return; // no private slot
+	// (A slot passed to a call is read there.)
 	std::vector<uint8_t> read(body_.slots.size(), 0);
+	for (size_t s = 0; any_passed_ && s < passed_.size() && s < read.size(); ++s)
+		read[s] = passed_[s];
 	// (Once every private slot is read, no write goes.)
-	size_t unread = static_cast<size_t>(std::count(escaped_.begin(), escaped_.end(), 0));
+	size_t unread = 0;
+	for (size_t s = 0; s < body_.slots.size(); ++s)
+		unread += escaped_[s] == 0 && read[s] == 0 ? 1 : 0;
 	for (size_t at = 0; at < body_.layout.size() && unread != 0; ++at)
 		for (InstId i = body_.blocks[body_.layout[at]].first; i != kNoId && unread != 0; i = body_.instructions[i].next)
 		{
@@ -1606,7 +1659,10 @@ void MemoryForwarding::replay_arms()
 				invalidate(inst.ops[0], static_cast<uint64_t>(inst.immediate));
 			else if (inst.op != Opcode::Load && inst.op != Opcode::Exception && inst.op != Opcode::ExceptionSelector &&
 				!region_marker(inst.op) && may_write_memory(c_.program, inst))
+			{
 				invalidate(Value::none(), ~static_cast<uint64_t>(0) >> 1);
+				forget_passed(inst);
+			}
 		}
 }
 
@@ -1706,7 +1762,8 @@ const unsigned kPhiLoadScan = 128;
 // cheap test first), may write the location `want` (key `key`, `type`,
 // typed access `typed`): a store of another location that may alias it,
 // an object copy or fill over it, or any other writer (a call) unless the
-// location is a slot whose address never leaves the analysis.
+// location is a slot whose address never leaves the analysis and the call
+// is not given it (passes_slot).
 bool MemoryForwarding::may_clobber(
 	const Instruction& inst, const Key& key, const AddressFacts& want, Type type, bool typed) const
 {
@@ -1724,6 +1781,8 @@ bool MemoryForwarding::may_clobber(
 		const Value dst = inst.op == Opcode::CopyObject ? inst.ops[1] : inst.ops[0];
 		return may_alias(facts_of(dst), static_cast<uint64_t>(inst.immediate), want, storage_bytes(type));
 	}
+	if (want.base == ValueKind::Slot && passes_slot(inst, want.index))
+		return true;
 	return !((want.base == ValueKind::Slot && !escaped_[want.index]) || private_allocation(want));
 }
 

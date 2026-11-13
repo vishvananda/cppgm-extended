@@ -395,20 +395,58 @@ bool has_loop(FunctionContext& context)
 	return false;
 }
 
+// The slot `v` addresses (an addr of it, or a step or pointer copy from
+// one), or kNoId.
+uint32_t addressed_slot(const FunctionBody& body, Value v)
+{
+	for (unsigned depth = 0; depth < 4 && v.is(ValueKind::Temp) && v.index < body.temps.size(); ++depth)
+	{
+		const InstId def = body.temps[v.index].def;
+		if (def == kNoId)
+			return kNoId;
+		const Instruction& inst = body.instructions[def];
+		if (inst.op == Opcode::Addr)
+			return inst.ops[0].is(ValueKind::Slot) ? inst.ops[0].index : kNoId;
+		if (inst.op != Opcode::Index && !(inst.op == Opcode::Copy && inst.type.is_pointer()))
+			return kNoId;
+		v = inst.ops[0];
+	}
+	return v.is(ValueKind::Slot) ? v.index : kNoId;
+}
+
+// Whether a call's memory is now better known: its callee reads only, its
+// writes are bounded, or it is given a slot it does not keep that the
+// function reads as well.
 bool calls_known_memory(const FunctionContext& context)
 {
 	const Program& program = context.program;
 	const FunctionBody& body = context.body;
+	std::vector<uint8_t> uses; // per slot: 1 passed, 2 read
+	auto note = [&](uint32_t slot, uint8_t use) {
+		if (slot == kNoId || slot >= body.slots.size())
+			return false;
+		uses.resize(body.slots.size(), 0);
+		uses[slot] |= use;
+		return uses[slot] == 3;
+	};
 	for (BlockId b : body.layout)
 		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
 		{
 			const Instruction& inst = body.instructions[i];
+			if ((inst.op == Opcode::Load || inst.op == Opcode::CopyObject) &&
+				note(addressed_slot(body, inst.ops[0]), 2))
+				return true;
 			if (inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol))
 			{
 				const SymbolId s = inst.ops[0].index;
 				if ((s < program.read_only_functions.size() && program.read_only_functions[s] != 0) ||
 					(s < program.function_writes.size() && program.function_writes[s].bytes != 0))
 					return true;
+				if (s < program.unkept_parameters.size() && program.unkept_parameters[s] != 0)
+					for (uint32_t k = 0; k < inst.extra_count; ++k)
+						if (unkept_argument(program, inst, k) &&
+							note(addressed_slot(body, body.operands[inst.extra_first + k]), 1))
+							return true;
 			}
 		}
 	return false;
@@ -841,6 +879,7 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 	{
 		program.read_only_functions.clear();
 		program.function_writes.clear();
+		program.unkept_parameters.clear();
 		find_allocation_functions(program);
 		std::vector<uint32_t> original(program.symbols.size(), 0);
 		for (SymbolId s = 0; s < program.symbols.size(); ++s)

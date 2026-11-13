@@ -196,6 +196,16 @@ inline bool is_eh_instruction(lowir::Opcode op)
 // Whether a call may write memory visible to other code (its boundary's
 // effects).
 bool call_may_write_memory(const lowir::Program& program, const lowir::Instruction& call);
+// Whether argument `k` of an ordinary direct call is for a parameter the
+// callee does not keep (Program::unkept_parameters): the call may read and
+// write through the address, but nothing holds it after the call.
+inline bool unkept_argument(const lowir::Program& program, const lowir::Instruction& call, uint32_t k)
+{
+	return call.op == lowir::Opcode::Call && (call.flags & lowir::IF_SIGNATURE) == 0 && k < 64 &&
+		k < call.extra_count && call.ops[0].is(lowir::ValueKind::Symbol) &&
+		call.ops[0].index < program.unkept_parameters.size() &&
+		((program.unkept_parameters[call.ops[0].index] >> k) & 1) != 0;
+}
 // A derived write footprint for an ordinary direct call with matching
 // argument positions. It bounds writes only; reads and other effects remain.
 inline const lowir::FunctionWrites* bounded_call_writes(const lowir::Program& program, const lowir::Instruction& call)
