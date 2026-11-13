@@ -1,0 +1,264 @@
+// Each result is compared with a lane-by-lane model for several inputs and
+// masks: none, all, a literal all-ones mask and mixed bits.
+typedef char v64qi __attribute__((vector_size(64)));
+typedef short v32hi __attribute__((vector_size(64)));
+typedef int v16si __attribute__((vector_size(64)));
+typedef long long v8di __attribute__((vector_size(64)));
+typedef char v16qi __attribute__((vector_size(16)));
+typedef int v4si __attribute__((vector_size(16)));
+typedef unsigned char Byte;
+typedef unsigned long long Mask;
+#define BW __attribute__((target("avx512f,avx512bw")))
+
+static int calls;
+
+static void fill(Byte* out, unsigned seed, unsigned count)
+{
+	static const Byte edges[4] = {0x00, 0x7f, 0x80, 0xff};
+	unsigned x = seed * 2654435761u + 777u;
+	for (unsigned i = 0; i < count; ++i)
+	{
+		x ^= x << 13;
+		x ^= x >> 17;
+		x ^= x << 5;
+		out[i] = (i + seed) % 5 < 3 ? edges[(i + seed) % 4] : static_cast<Byte>(x >> 9);
+	}
+}
+
+static bool bit(Mask m, unsigned i) { return (m >> i & 1) != 0; }
+static int s8(Byte b) { return static_cast<signed char>(b); }
+static unsigned u16(const Byte* in, unsigned i) { return in[2 * i] | in[2 * i + 1] << 8; }
+static unsigned u32(const Byte* in, unsigned i) { return u16(in, 2 * i) | u16(in, 2 * i + 1) << 16; }
+
+BW static v64qi load(const Byte* in)
+{
+	v64qi v;
+	__builtin_memcpy(&v, in, 64);
+	return v;
+}
+
+BW static v64qi counted(v64qi v)
+{
+	++calls;
+	return v;
+}
+
+static bool predicate(int p, int s, int w)
+{
+	switch (p)
+	{
+	case 0: return s == w;
+	case 1: return s < w;
+	case 2: return s <= w;
+	case 3: return false;
+	case 4: return s != w;
+	case 5: return s >= w;
+	case 6: return s > w;
+	default: return true;
+	}
+}
+
+template<int P> BW bool compare(const Byte* x, const Byte* y, Mask m)
+{
+	const Mask r = __builtin_ia32_cmpb512_mask(load(x), load(y), P, m);
+	for (unsigned i = 0; i < 64; ++i)
+		if (bit(r, i) != (bit(m, i) && predicate(P, s8(x[i]), s8(y[i]))))
+			return false;
+	return true;
+}
+
+BW static bool masks(const Byte* x, const Byte* y, Mask m)
+{
+	const v64qi a = load(x), b = load(y);
+	const Mask eq = __builtin_ia32_pcmpeqb512_mask(a, b, m), gt = __builtin_ia32_pcmpgtb512_mask(a, b, m);
+	const Mask test = __builtin_ia32_ptestmb512(a, b, m), sign = __builtin_ia32_cvtb2mask512(a);
+	const Mask literal = __builtin_ia32_pcmpeqb512_mask(a, b, (Mask)-1);
+	for (unsigned i = 0; i < 64; ++i)
+	{
+		if (bit(eq, i) != (bit(m, i) && x[i] == y[i]) || bit(gt, i) != (bit(m, i) && s8(x[i]) > s8(y[i])))
+			return false;
+		if (bit(test, i) != (bit(m, i) && (x[i] & y[i]) != 0) || bit(sign, i) != (x[i] >= 0x80))
+			return false;
+		if (bit(literal, i) != (x[i] == y[i]))
+			return false;
+	}
+	return compare<0>(x, y, m) && compare<1>(x, y, m) && compare<2>(x, y, m) && compare<3>(x, y, m) &&
+		compare<4>(x, y, m) && compare<5>(x, y, m) && compare<6>(x, y, m) && compare<7>(x, y, m);
+}
+
+static Byte op(int which, const Byte* x, const Byte* y, unsigned i)
+{
+	const int u = x[i], v = y[i], s = s8(x[i]), w = s8(y[i]);
+	switch (which)
+	{
+	case 0: return u + v > 255 ? 255 : u + v;
+	case 1: return u > v ? u - v : 0;
+	case 2: return s > w ? s : w;
+	case 3: return u > v ? u : v;
+	case 4: return s < w ? s : w;
+	case 5: return u < v ? u : v;
+	case 6: return s < 0 ? -s : s;
+	default: return (v & 0x80) ? 0 : x[(i & 48) + (v & 15)];
+	}
+}
+
+BW static bool lanes(const Byte* x, const Byte* y, const Byte* z, Mask m)
+{
+	const v64qi a = load(x), b = load(y), c = load(z);
+	v64qi r[10] = {
+		__builtin_ia32_paddusb512_mask(a, b, c, m),
+		__builtin_ia32_psubusb512_mask(a, b, c, m),
+		__builtin_ia32_pmaxsb512_mask(a, b, c, m),
+		__builtin_ia32_pmaxub512_mask(a, b, c, m),
+		__builtin_ia32_pminsb512_mask(a, b, c, m),
+		__builtin_ia32_pminub512_mask(a, b, c, m),
+		__builtin_ia32_pabsb512_mask(a, c, m),
+		__builtin_ia32_pshufb512_mask(a, b, c, m),
+		__builtin_ia32_blendmb_512_mask(a, b, m),
+		__builtin_ia32_selectb_512(m, a, b),
+	};
+	const v64qi plain = __builtin_ia32_pshufb512(a, b), full = __builtin_ia32_paddusb512_mask(a, b, c, (Mask)-1);
+	Byte out[10][64], p[64], f[64];
+	__builtin_memcpy(out, r, sizeof out);
+	__builtin_memcpy(p, &plain, 64);
+	__builtin_memcpy(f, &full, 64);
+	for (unsigned i = 0; i < 64; ++i)
+	{
+		for (int which = 0; which < 8; ++which)
+			if (out[which][i] != (bit(m, i) ? op(which, x, y, i) : z[i]))
+				return false;
+		if (out[8][i] != (bit(m, i) ? y[i] : x[i]) || out[9][i] != (bit(m, i) ? x[i] : y[i]))
+			return false;
+		if (p[i] != op(7, x, y, i) || f[i] != op(0, x, y, i))
+			return false;
+	}
+	return true;
+}
+
+static bool shifted(const Byte* x, const Byte* z, const Byte* l, const Byte* r, unsigned count, Mask m)
+{
+	for (unsigned i = 0; i < 32; ++i)
+	{
+		const unsigned w = u16(x, i);
+		const unsigned left = count > 15 ? 0 : (w << count) & 0xffff, right = count > 15 ? 0 : w >> count;
+		if (u16(l, i) != (bit(m, i) ? left : u16(z, i)) || u16(r, i) != (bit(m, i) ? right : u16(z, i)))
+			return false;
+	}
+	return true;
+}
+
+template<int Count> BW bool shift(const Byte* x, const Byte* z, Mask m)
+{
+	v32hi a, c;
+	__builtin_memcpy(&a, x, 64);
+	__builtin_memcpy(&c, z, 64);
+	const unsigned words = static_cast<unsigned>(m);
+	const v32hi l = __builtin_ia32_psllwi512(a, Count), r = __builtin_ia32_psrlwi512(a, Count);
+	const v32hi ml = __builtin_ia32_psllwi512_mask(a, Count, c, words);
+	const v32hi mr = __builtin_ia32_psrlwi512_mask(a, Count, c, words);
+	Byte o[4][64];
+	__builtin_memcpy(o[0], &l, 64);
+	__builtin_memcpy(o[1], &r, 64);
+	__builtin_memcpy(o[2], &ml, 64);
+	__builtin_memcpy(o[3], &mr, 64);
+	return shifted(x, z, o[0], o[1], Count, ~0ULL) && shifted(x, z, o[2], o[3], Count, words);
+}
+
+static bool aligned(const Byte* x, const Byte* y, const Byte* r, unsigned count)
+{
+	// Each 128-bit lane: the second operand's bytes, then the first's.
+	for (unsigned lane = 0; lane < 64; lane += 16)
+		for (unsigned i = 0; i < 16; ++i)
+		{
+			const unsigned at = i + count;
+			const Byte expected = at >= 32 ? 0 : at < 16 ? y[lane + at] : x[lane + at - 16];
+			if (r[lane + i] != expected)
+				return false;
+		}
+	return true;
+}
+
+// GCC's spelling: 64-bit lanes and a count of bits; Clang's: bytes.
+template<int Count> BW bool align(const Byte* x, const Byte* y)
+{
+	v8di a, b;
+	__builtin_memcpy(&a, x, 64);
+	__builtin_memcpy(&b, y, 64);
+	const v8di t = __builtin_ia32_palignr512(a, b, Count * 8);
+	const v64qi u = (v64qi)__builtin_ia32_palignr512(load(x), load(y), Count);
+	Byte r[64], s[64];
+	__builtin_memcpy(r, &t, 64);
+	__builtin_memcpy(s, &u, 64);
+	return aligned(x, y, r, Count) && aligned(x, y, s, Count);
+}
+
+template<int Piece> BW bool words(const Byte* x, const Byte* y, const Byte* z, Mask m)
+{
+	v16si a, b, c;
+	v16qi bytes;
+	v4si small;
+	__builtin_memcpy(&a, x, 64);
+	__builtin_memcpy(&b, y, 64);
+	__builtin_memcpy(&c, z, 64);
+	__builtin_memcpy(&bytes, y + 5, 16);
+	__builtin_memcpy(&small, z + 7, 16);
+	const unsigned short sixteen = static_cast<unsigned short>(m >> 9);
+	const unsigned char eight = static_cast<unsigned char>(m >> 3);
+	const v16si n = __builtin_ia32_pandnd512_mask(a, b, c, sixteen);
+	const v16si e = __builtin_ia32_pmovzxbd512_mask(bytes, c, sixteen);
+	const v4si p = __builtin_ia32_extracti32x4_mask(a, Piece, small, eight);
+	const v4si q = __builtin_ia32_extracti32x4_mask(a, Piece, small, (unsigned char)-1);
+	Byte nb[64], eb[64], pb[16], qb[16];
+	__builtin_memcpy(nb, &n, 64);
+	__builtin_memcpy(eb, &e, 64);
+	__builtin_memcpy(pb, &p, 16);
+	__builtin_memcpy(qb, &q, 16);
+	for (unsigned j = 0; j < 16; ++j)
+	{
+		if (u32(nb, j) != (bit(sixteen, j) ? (~u32(x, j) & u32(y, j)) : u32(z, j)))
+			return false;
+		if (u32(eb, j) != (bit(sixteen, j) ? y[5 + j] : u32(z, j)))
+			return false;
+	}
+	for (unsigned j = 0; j < 4; ++j)
+		if (u32(pb, j) != (bit(eight, j) ? u32(x, 4 * Piece + j) : u32(z + 7, j)) ||
+			u32(qb, j) != u32(x, 4 * Piece + j))
+			return false;
+	return true;
+}
+
+BW static bool once(const Byte* x, const Byte* y, Mask m)
+{
+	const v64qi a = load(x), b = load(y);
+	calls = 0;
+	const Mask eq = __builtin_ia32_cmpb512_mask(counted(a), counted(b), 0, m);
+	const v64qi s = __builtin_ia32_pminub512_mask(counted(a), counted(b), counted(a), m);
+	const v64qi t = __builtin_ia32_selectb_512(m, counted(a), counted(b));
+	return calls == 7 && eq == __builtin_ia32_pcmpeqb512_mask(a, b, m) &&
+		__builtin_ia32_pcmpeqb512_mask(s, __builtin_ia32_pminub512_mask(a, b, a, m), ~0ULL) == ~0ULL &&
+		__builtin_ia32_pcmpeqb512_mask(t, __builtin_ia32_blendmb_512_mask(b, a, m), ~0ULL) == ~0ULL;
+}
+
+static bool all(const Byte* x, const Byte* y, const Byte* z, Mask m)
+{
+	return masks(x, y, m) && masks(x, x, m) && lanes(x, y, z, m) && shift<0>(x, z, m) && shift<1>(x, z, m) &&
+		shift<9>(x, z, m) && shift<15>(x, z, m) && shift<16>(x, z, m) && shift<100>(x, z, m) &&
+		align<0>(x, y) && align<3>(x, y) && align<16>(x, y) && align<29>(x, y) && words<0>(x, y, z, m) &&
+		words<1>(x, y, z, m) && words<2>(x, y, z, m) && words<3>(x, y, z, m) && once(x, y, m);
+}
+
+int main()
+{
+	const Mask cases[] = {0, ~0ULL, 0x9c3e5a71f00f1248ULL, 0x8000000000000001ULL, 0x00ff00ff0f0f3333ULL};
+	Byte x[64], y[64], z[64];
+	for (unsigned seed = 0; seed < 4; ++seed)
+	{
+		fill(x, seed, 64);
+		fill(y, seed + 37, 64);
+		fill(z, seed + 71, 64);
+		for (unsigned k = 0; k < sizeof cases / sizeof cases[0]; ++k)
+			if (!all(x, y, z, cases[k]))
+				return 1 + k;
+	}
+	return 0;
+}

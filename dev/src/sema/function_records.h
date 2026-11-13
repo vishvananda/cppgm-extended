@@ -151,6 +151,7 @@ enum class Intrinsic : uint8_t
 	FindFirstSet,
 	// __builtin_clzg/ctzg/popcountg (x[, zero]): an int, of x's own
 	// unsigned type; clzg and ctzg give `zero` for 0 when it is given.
+	// With facts bit 8, x86's lzcnt and tzcnt: of x's type, its width for 0.
 	GenericCountLeadingZeros,
 	GenericCountTrailingZeros,
 	GenericPopCount,
@@ -288,7 +289,10 @@ enum class Intrinsic : uint8_t
 	SyncBoolCompareSwap,
 	SyncValCompareSwap,
 	// Clang scalar/vector min/max; bit 8 selects maximum.
-	ElementwiseMinMax
+	ElementwiseMinMax,
+	// Clang's __builtin_nondeterministic_value(x): zero of x's type, x not
+	// evaluated.
+	NondeterministicValue
 };
 
 // Generic GNU atomics whose object needs the size-prefixed runtime ABI.
@@ -402,9 +406,11 @@ struct FunctionEntity : Entity
 	// Its own class declaration has public access; inherited constructors
 	// still use their originating declaration. Recorded by declare_in.
 	bool public_special_access;
-	// A VectorLanewise builtin's: its shapes, and whether it is a scalar form.
+	// A VectorLanewise builtin's: its shapes, and whether it is a scalar or
+	// a masked form.
 	const char* builtin_shapes = nullptr;
 	bool builtin_scalar = false;
+	bool builtin_masked = false;
 	// An operator function (13.5): its operator and array form. A literal
 	// operator (13.5.8) is no operator function: its operator_token is
 	// KW_OPERATOR (see IsLiteralOperator).

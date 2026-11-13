@@ -643,9 +643,16 @@ lowering. The existing limit of 64 lanes also applies here.
 
 The GCC/Clang `__builtin_shufflevector(first, second, index...)` form uses
 constant indexes into two matching inputs. Its result has one lane per
-index. An index of -1 leaves that lane unspecified; choosing zero is valid.
-Validate and retain these constants in typed facts. Both public GCC and
-Clang SSE wrappers can then use the same permutation lowering.
+index. With one index per lane it has the inputs' type; otherwise it is a
+vector of the inputs' kind, GNU or Clang extended, so a shuffle of shuffles
+can widen a vector. An index of -1 leaves that lane unspecified; choosing
+zero is valid. Validate and retain these constants in typed facts. Both
+public GCC and Clang SSE wrappers can then use the same permutation lowering.
+
+`__builtin_nondeterministic_value(x)` returns an unspecified value of `x`'s
+type, which is a fundamental or vector type, and does not evaluate `x`.
+Clang's headers pass it to a shuffle to widen a vector; any value, such as
+zero, is valid.
 
 ### Clang vector scalar casts
 
@@ -708,7 +715,9 @@ level. [lowir.md](../pa8/lowir.md#vector-operations) defines `v128`, `vector`, t
 list of operations and the call boundary. Extend the LowIR reader, writer and
 validator and `lowir2native` to match. Each operation encodes as its legacy SSE
 form. A vector of another size, a vector of `bool` lanes and an operation with no
-`vector` form stay lane by lane.
+`vector` form stay lane by lane, except that the
+[AVX2 and AVX-512 builtins](#avx2-and-avx-512-integer-builtins) may compute
+128-bit pieces with `vector` operations.
 
 Unsigned 32-bit lanes have the same packed bit representation as signed lanes.
 Preserve those bits during construction, scalar broadcasts and constant-index
@@ -717,6 +726,52 @@ volatile reads. On later targets, choose direct packed operations using the
 selected target's capabilities: the native SSE2 baseline does not limit a
 target that provides packed 32-bit multiplication. Equivalent lane lowering
 remains valid when the target has no suitable operation.
+
+### AVX2 and AVX-512 integer builtins
+
+GCC's and Clang's AVX2, AVX-512F, AVX-512BW and AVX-512VBMI2 headers use
+these `__builtin_ia32_` builtins on 32- and 64-byte GNU vectors. Each returns
+its instruction's result:
+
+- byte and word lanes: `paddusb256`, `psubusb256`, `pmaxsb256`, `pmaxub256`,
+  `pminsb256`, `pminub256`, `pshufb256` and `pshufb512`, the 512-bit `_mask`
+  forms of these and `pabsb512_mask`, and `psllwi` and `psrlwi` of both
+  widths with `_mask` forms;
+- `andnotsi256` and `pandnd512_mask`, the complement of the first operand
+  ANDed with the second; `ptestz256`, 1 when the operands' AND is zero;
+- masks, one bit per lane with lane i at bit i: `pmovmskb256` and
+  `cvtb2mask512` collect sign bits; `pcmpeqb512_mask`, `pcmpgtb512_mask`,
+  `ptestmb512` and `cmpb512_mask` compare signed bytes and AND the result
+  with their last operand. `cmpb512_mask`'s predicates 0 to 7 are equal,
+  less, less or equal, false, not equal, not less, greater and true;
+- `blendmb_512_mask(a, b, m)` takes `b`'s lane where `m`'s bit is set, else
+  `a`'s; `selectb_512(m, a, b)` takes `a`'s lane where it is set, else `b`'s;
+- `compressqi512_mask(a, passthrough, m)` packs the lanes of `a` whose mask
+  bits are set into the low lanes in order, and the other lanes are the
+  passthrough's; `compressstoreqi512_mask` and `compressstoreuqi512_mask`
+  store only the packed bytes, at any alignment;
+- `vpermt2varq512_mask(index, a, b, m)` and `vpermi2varq512(a, index, b)`
+  select each lane from `a`'s eight lanes followed by `b`'s by the index
+  lane's low four bits; where `m`'s bit is clear, the lane is `a`'s;
+- `vextractf128_si256`, `extracti32x4_mask`, `vinsertf128_si256` and
+  `pmovzxbd512_mask` move or widen 128-bit pieces; `si_si256` is the low
+  piece and `si256_si` places one, its other lanes unspecified;
+- `palignr256` and `palignr512`: GCC's count is in bits on 64-bit lanes and
+  Clang's in bytes on byte lanes, as for `palignr128`.
+
+`pshufb`, `palignr` and the shifts work within each 128-bit piece. The
+512-bit `_mask` lane forms, `pandnd512_mask`, `pmovzxbd512_mask` and
+`extracti32x4_mask` end with a passthrough vector and a mask: a lane whose
+mask bit is clear takes the passthrough lane. Selectors and predicates are
+constant after substitution. Evaluate each operand once. Compute the results
+with 128-bit operations, so programs run without AVX.
+
+### x86 zero counts
+
+`__builtin_ia32_lzcnt_u16`, `_u32` and `_u64` count leading zero bits and
+`__builtin_ia32_tzcnt_u16`, `_u32` and `_u64` trailing zero bits. The result
+has the operand type of the builtin's width, and a zero operand gives that
+width. The operand converts to that type and is evaluated once.
 
 ### Design Notes (Non-Normative)
 

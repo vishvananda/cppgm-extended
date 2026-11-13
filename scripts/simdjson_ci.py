@@ -22,6 +22,8 @@ UPSTREAM = 'https://github.com/simdjson/simdjson.git'
 LABELS = ('cppgm', 'gcc', 'clang')
 INPUTS = ('twitter.json', 'citm_catalog.json')
 MODES = ('scalar', 'sse')
+KERNELS = ('fallback', 'westmere', 'haswell', 'icelake')
+DEMO_INPUTS = ('twitter.json', 'amazon_cellphones.ndjson')
 
 
 def save(path, value):
@@ -279,6 +281,63 @@ def run(args):
         (directory / 'details.md').write_text(report(document))
 
 
+def demo_outputs(executable, source, kernels):
+    """The singleheader demo's exit status and output for each kernel; 'auto' selects by CPU."""
+    arguments = [str(source / 'jsonexamples' / name) for name in DEMO_INPUTS]
+    outputs = {}
+    for kernel in kernels:
+        env = {key: value for key, value in os.environ.items() if key != 'SIMDJSON_FORCE_IMPLEMENTATION'}
+        if kernel != 'auto':
+            env['SIMDJSON_FORCE_IMPLEMENTATION'] = kernel
+        run = subprocess.run([str(executable), *arguments], env=env, capture_output=True, timeout=120)
+        outputs[kernel] = dict(status=run.returncode, stdout=run.stdout.decode(errors='replace'))
+    return outputs
+
+
+def demo_mismatches(expected, outputs):
+    if set(outputs) != {'auto', *KERNELS}:
+        raise ValueError('missing demo kernels')
+    return [kernel for kernel, value in outputs.items() if value != expected]
+
+
+def demo(args):
+    """Build the singleheader demo with all kernels at -O3; each kernel must print GCC's output."""
+    directory = args.output.resolve()
+    directory.mkdir(parents=True, exist_ok=False)
+    source = args.source.resolve() if args.source else directory / 'source'
+    if args.source is None:
+        fetch(source)
+    source_check(source)
+    gcc = common.compiler_path(args.gcc)
+    executables = {}
+    for label, compiler in (('cppgm', args.compiler.resolve(strict=True)), ('gcc', gcc)):
+        objects = []
+        for name in ('amalgamate_demo', 'simdjson'):
+            output = directory / (name + '-' + label + '.o')
+            with (directory / ('compile-' + name + '-' + label + '.log')).open('w') as log:
+                subprocess.run([str(compiler), '-std=c++17', '-O3', '-pthread', '-c',
+                                str(source / 'singleheader' / (name + '.cpp')), '-o', str(output)],
+                               stdout=log, stderr=subprocess.STDOUT, check=True, timeout=1800)
+            objects.append(str(output))
+        # cppgm++ links only the course runtime, so GCC links libstdc++.
+        executables[label] = directory / ('demo-' + label)
+        with (directory / ('link-' + label + '.log')).open('w') as log:
+            subprocess.run([str(gcc), *objects, '-pthread', '-o', str(executables[label])],
+                           stdout=log, stderr=subprocess.STDOUT, check=True)
+    expected = demo_outputs(executables['gcc'], source, ('auto',))['auto']
+    outputs = demo_outputs(executables['cppgm'], source, ('auto',) + KERNELS)
+    save(directory / 'demo.json', dict(source_commit=COMMIT, expected=expected, cppgm=outputs))
+    if expected['status'] != 0:
+        raise ValueError('the GCC-built demo failed')
+    wrong = demo_mismatches(expected, outputs)
+    (directory / 'details.md').write_text(
+        '# simdjson demo\n\nThe singleheader demo of v5.1.1, built by cppgm++ at `-O3` with all kernels, '
+        + ('prints the output of the GCC build with each kernel: auto, ' + ', '.join(KERNELS) + '.\n'
+           if not wrong else '**differs from the GCC build** with: ' + ', '.join(wrong) + '.\n'))
+    if wrong:
+        raise ValueError('the cppgm-built demo differs from the GCC build: ' + ', '.join(wrong))
+
+
 def publish(args):
     document = json.loads((args.artifact / 'results.json').read_text())
     validate(document)
@@ -317,6 +376,11 @@ def main():
     runner.add_argument('--blocks', type=int, default=3)
     runner.add_argument('--aa-blocks', type=int, default=1)
     runner.add_argument('--seconds', type=float, default=.35)
+    demonstration = commands.add_parser('demo')
+    demonstration.add_argument('--compiler', type=Path, default=ROOT / 'dev/cppgm++')
+    demonstration.add_argument('--source', type=Path)
+    demonstration.add_argument('--output', type=Path, required=True)
+    demonstration.add_argument('--gcc', default='g++')
     publisher = commands.add_parser('publish')
     publisher.add_argument('artifact', type=Path)
     publisher.add_argument('target', type=Path)
@@ -328,6 +392,8 @@ def main():
         if args.blocks < 1 or args.aa_blocks < 1 or args.seconds <= 0 or not math.isfinite(args.seconds):
             parser.error('positive block counts and measurement interval required')
         run(args)
+    elif args.command == 'demo':
+        demo(args)
     else:
         publish(args)
 

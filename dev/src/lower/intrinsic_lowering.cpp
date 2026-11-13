@@ -367,8 +367,10 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		// "Unary and Binary Operations").
 		RValue x = operand(*expr.arguments[0], ConversionContext::Argument);
 		const RValue given = x;
+		// lzcnt's and tzcnt's operand converts to their result's type.
+		const bool width_for_zero = (expr.facts->value >> 8 & 1) != 0;
 		const uint32_t bits = static_cast<uint32_t>(
-			lowering_.size_of(expr.arguments[0]->facts->type, expr.location) * 8);
+			lowering_.size_of(width_for_zero ? expr.facts->type : expr.arguments[0]->facts->type, expr.location) * 8);
 		const sema::Intrinsic base = static_cast<sema::Intrinsic>(static_cast<uint8_t>(kind) -
 			static_cast<uint8_t>(sema::Intrinsic::GenericCountLeadingZeros) +
 			static_cast<uint8_t>(sema::Intrinsic::CountLeadingZeros));
@@ -415,8 +417,19 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 			count.value = emit_value(choice, i32);
 			count.type = i32;
 		}
+		if (width_for_zero)
+		{
+			// lzcnt and tzcnt give the width for 0, in the operand's type.
+			const RValue nonzero = compare(lowir::ComparePredicate::Ne, given.type, given, integer(given.type, 0));
+			count = select_value(nonzero, count, integer(i32, bits));
+			return convert(count, lowering_.graph().types.fundamental(FundamentalType::Int), expr.facts->type,
+				ConversionContext::Cast);
+		}
 		return count;
 	}
+	case sema::Intrinsic::NondeterministicValue:
+		// Zero is a value of the type; the operand is not evaluated.
+		return zero_value(expr.facts->type);
 	default:
 		break;
 	}

@@ -51,14 +51,18 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Build compiler
         run: make -C dev cppgm++ -j "$(nproc)"
+      - name: Build and run the singleheader demo with every kernel
+        run: python3 scripts/simdjson_ci.py demo --output obj/simdjson-demo
       - name: Build, validate and measure scalar and SSE parsers
-        run: python3 scripts/simdjson_ci.py run --output obj/simdjson
+        run: python3 scripts/simdjson_ci.py run --source obj/simdjson-demo/source --output obj/simdjson
       - name: Report
         if: always()
         run: |
-          if [ -f obj/simdjson/details.md ]; then
-            cat obj/simdjson/details.md >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for details in obj/simdjson-demo/details.md obj/simdjson/details.md; do
+            if [ -f "$details" ]; then
+              cat "$details" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
       - name: Retain results and raw observations
         if: always()
         uses: actions/upload-artifact@v6
@@ -74,6 +78,9 @@ jobs:
             obj/simdjson/*.perf
             obj/simdjson/*probe
             obj/simdjson/*.log
+            obj/simdjson-demo/*.json
+            obj/simdjson-demo/*.md
+            obj/simdjson-demo/*.log
           if-no-files-found: warn
           retention-days: 14
 

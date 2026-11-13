@@ -132,6 +132,7 @@ FunctionEntity* Analyzer::builtin_function(const Identifier* name)
 	function->builtin_variant = entry.variant;
 	function->builtin_shapes = vector_shapes ? entry.signature : nullptr;
 	function->builtin_scalar = entry.floating == 's';
+	function->builtin_masked = entry.floating == 'm';
 	function->nothrow = true;
 	function->c_linkage = true;
 	Binding* binding = new_binding(BindingKind::Function, name, function, type);
@@ -510,6 +511,24 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 	}
 	case GnuBuiltin::GenericBitCount:
 	{
+		if (variant >= 3)
+		{
+			// x86's lzcnt and tzcnt of a 16-, 32- or 64-bit unsigned operand:
+			// the count of its type, the width for 0.
+			static const FundamentalType kWidths[] = { FundamentalType::UnsignedShortInt, FundamentalType::UnsignedInt,
+				FundamentalType::UnsignedLongLongInt };
+			if (count != 1)
+				error(expr.location, "wrong number of arguments to a bit builtin");
+			if (typed_value(*expr.arguments[0], scope) == nullptr)
+				return nullptr;
+			const Type* type = types_.fundamental(kWidths[(variant - 3) % 3]);
+			convert(*expr.arguments[0], type, false);
+			facts = new_facts(expr, type, ValueCategory::PRValue);
+			facts->value = static_cast<uint64_t>(variant < 6 ? Intrinsic::GenericCountLeadingZeros
+															 : Intrinsic::GenericCountTrailingZeros) |
+				uint64_t(1) << 8;
+			break;
+		}
 		// GCC 14's type-generic clzg, ctzg and popcountg: an operand of an
 		// unsigned integer type (no bool or character type), the count an
 		// int; clzg and ctzg take the int they give for 0 second (an int
@@ -627,6 +646,31 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		convert(*expr.arguments[0], type, false);
 		facts = new_facts(expr, type, ValueCategory::PRValue);
 		facts->value = static_cast<uint64_t>(Intrinsic::Launder);
+		break;
+	}
+	case GnuBuiltin::NondeterministicValue:
+	{
+		// A value of the operand's type (a fundamental or vector type, as
+		// Clang's), the operand not evaluated: Clang's headers widen a vector
+		// with one.
+		if (count != 1)
+			error(expr.location, "__builtin_nondeterministic_value takes one argument");
+		++unevaluated_;
+		const ExprFacts* operand = typed_value(*expr.arguments[0], scope);
+		--unevaluated_;
+		if (operand == nullptr)
+			return nullptr;
+		const Type* type = operand->type->unqualified;
+		if (!dependent_type(type) && (type->kind != TypeKind::Fundamental || IsVoid(type)) &&
+			type->kind != TypeKind::Vector)
+		{
+			substitution_error(
+				expr.location, "__builtin_nondeterministic_value of a type that is no fundamental or vector type");
+			return nullptr;
+		}
+		convert(*expr.arguments[0], type, false);
+		facts = new_facts(expr, type, ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(Intrinsic::NondeterministicValue);
 		break;
 	}
 	case GnuBuiltin::AssumeAligned:
@@ -1053,9 +1097,15 @@ ExprFacts* Analyzer::vector_index_shuffle_builtin(const syntax::CallExpr& expr, 
 	}
 	convert(*expr.arguments[0], input, false);
 	convert(*expr.arguments[1], input, false);
-	const Type* output = checked_vector(input->element, expr.arguments.size - 2, false, expr.location);
+	// Clang's result: the operands' type for as many lanes, else a vector
+	// of their kind (a GNU vector or an extended one), as Clang's headers
+	// rely on when they widen a vector by a shuffle of shuffles.
+	const uint64_t lanes = expr.arguments.size - 2;
+	const Type* output = lanes == input->bound ? input : checked_vector(input->element, lanes, false, expr.location);
 	if (output == nullptr)
 		return nullptr;
+	if (output != input && !input->extended_vector())
+		output = types_.vector(output->element, lanes);
 	ExprFacts* facts = new_facts(expr, output, ValueCategory::PRValue);
 	facts->flags |= kIntrinsic;
 	facts->value = static_cast<uint64_t>(Intrinsic::VectorPermute) | uint64_t(1) << 8;
@@ -1130,19 +1180,21 @@ ExprFacts* Analyzer::vector_binary_immediate_builtin(const syntax::CallExpr& exp
 	return facts;
 }
 
-bool Analyzer::integer_register(const Type* type)
+bool Analyzer::integer_register(const Type* type, uint64_t bytes)
 {
 	type = type->unqualified;
 	uint64_t size = 0;
 	uint64_t alignment = 0;
 	return type->kind == TypeKind::Vector && IsIntegralType(type->element->unqualified) &&
-		type_size(type, size, alignment, 0) && size == 16;
+		type_size(type, size, alignment, 0) && size == bytes;
 }
 
 const Type* Analyzer::vector_shape(const char*& shape, bool const_pointee)
 {
-	// A letter of a VectorLanewise signature (lex/gnu_builtins.h).
+	// A letter of a VectorLanewise signature (lex/gnu_builtins.h), after
+	// any width digit.
 	const Type* type = nullptr;
+	const uint64_t times = *shape == '2' || *shape == '4' ? static_cast<uint64_t>(*shape++ - '0') : 1;
 	const char letter = *shape++;
 	const Type* byte = types_.fundamental(FundamentalType::Char);
 	const Type* single = types_.fundamental(FundamentalType::Float);
@@ -1192,6 +1244,8 @@ const Type* Analyzer::vector_shape(const char*& shape, bool const_pointee)
 		type = types_.fundamental(FundamentalType::Void);
 		break;
 	}
+	if (times != 1 && type->kind == TypeKind::Vector)
+		type = types_.vector(type->element, type->bound * times);
 	if (*shape == '*')
 	{
 		++shape;
@@ -1217,14 +1271,17 @@ ExprFacts* Analyzer::vector_lanewise_builtin(const syntax::CallExpr& expr, const
 	{
 		if (*shape == '\0')
 			error(expr.location, "too many arguments to a packed operation");
-		const bool whole = *shape == 'R';
+		const char width = *shape == '2' || *shape == '4' ? *shape : '1';
+		const bool whole = shape[width == '1' ? 0 : 1] == 'R';
+		const uint64_t bytes = static_cast<uint64_t>(width - '0') * 16;
 		const Type* parameter = vector_shape(shape, reads);
 		const ExprFacts* operand = typed_value(*argument, scope);
 		if (operand == nullptr)
 			return nullptr;
-		const bool same_lanes = integer_register(parameter) && operand->type->unqualified->kind == TypeKind::Vector &&
+		const bool same_lanes = integer_register(parameter, bytes) &&
+			operand->type->unqualified->kind == TypeKind::Vector &&
 			operand->type->unqualified->bound == parameter->bound;
-		const bool kept = (whole || same_lanes) && integer_register(operand->type);
+		const bool kept = (whole || same_lanes) && integer_register(operand->type, bytes);
 		convert(*argument, kept ? operand->type : parameter, false);
 	}
 	if (*shape != '\0')
@@ -1249,7 +1306,7 @@ ExprFacts* Analyzer::vector_lanewise_builtin(const syntax::CallExpr& expr, const
 	}
 	ExprFacts* facts = new_facts(expr, result, ValueCategory::PRValue);
 	facts->value = static_cast<uint64_t>(Intrinsic::VectorLanewise) | (static_cast<uint64_t>(operation) << 8) |
-		(builtin->builtin_scalar ? uint64_t(1) << 16 : 0);
+		(builtin->builtin_scalar ? uint64_t(1) << 16 : 0) | (builtin->builtin_masked ? uint64_t(1) << 17 : 0);
 	facts->flags |= kIntrinsic;
 	return facts;
 }

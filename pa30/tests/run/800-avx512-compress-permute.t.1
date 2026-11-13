@@ -1,0 +1,133 @@
+// Compression keeps the selected lanes in order: a vector result takes its
+// other lanes from the passthrough, and a store writes only the selected
+// bytes. A permutation index's low four bits choose a table and a lane.
+typedef char v64qi __attribute__((vector_size(64)));
+typedef long long v8di __attribute__((vector_size(64)));
+typedef unsigned char Byte;
+typedef unsigned long long Mask;
+#define VBMI2 __attribute__((target("avx512f,avx512bw,avx512vbmi2")))
+#define F __attribute__((target("avx512f")))
+
+static int calls;
+
+static void fill(Byte* out, unsigned seed, unsigned count)
+{
+	unsigned x = seed * 2654435761u + 99u;
+	for (unsigned i = 0; i < count; ++i)
+	{
+		x ^= x << 13;
+		x ^= x >> 17;
+		x ^= x << 5;
+		out[i] = static_cast<Byte>(x >> 7);
+	}
+}
+
+static bool bit(Mask m, unsigned i) { return (m >> i & 1) != 0; }
+
+VBMI2 static v64qi counted(v64qi v)
+{
+	++calls;
+	return v;
+}
+
+VBMI2 static bool compress(const Byte* x, const Byte* z, Mask m)
+{
+	v64qi a, c;
+	__builtin_memcpy(&a, x, 64);
+	__builtin_memcpy(&c, z, 64);
+	const v64qi r = __builtin_ia32_compressqi512_mask(a, c, m);
+	Byte out[64], first[80], second[80];
+	__builtin_memcpy(out, &r, 64);
+	for (unsigned i = 0; i < 80; ++i)
+		first[i] = second[i] = static_cast<Byte>(0xa5 ^ i);
+	// Clang's and GCC's names for the unaligned store.
+	__builtin_ia32_compressstoreqi512_mask((v64qi*)(first + 3), a, m);
+	__builtin_ia32_compressstoreuqi512_mask((v64qi*)(second + 5), a, m);
+	unsigned n = 0;
+	for (unsigned i = 0; i < 64; ++i)
+		if (bit(m, i))
+		{
+			if (out[n] != x[i] || first[3 + n] != x[i] || second[5 + n] != x[i])
+				return false;
+			++n;
+		}
+	for (unsigned i = n; i < 64; ++i)
+		if (out[i] != z[i])
+			return false;
+	for (unsigned i = 0; i < 80; ++i)
+		if ((i < 3 || i >= 3 + n) && first[i] != static_cast<Byte>(0xa5 ^ i))
+			return false;
+	for (unsigned i = 0; i < 80; ++i)
+		if ((i < 5 || i >= 5 + n) && second[i] != static_cast<Byte>(0xa5 ^ i))
+			return false;
+	return true;
+}
+
+VBMI2 static bool compress_once(const Byte* x, const Byte* z, Mask m)
+{
+	v64qi a, c;
+	__builtin_memcpy(&a, x, 64);
+	__builtin_memcpy(&c, z, 64);
+	Byte buffer[64];
+	calls = 0;
+	const v64qi r = __builtin_ia32_compressqi512_mask(counted(a), counted(c), m);
+	__builtin_ia32_compressstoreuqi512_mask((v64qi*)buffer, counted(a), m);
+	const v64qi s = __builtin_ia32_compressqi512_mask(a, c, m);
+	return calls == 3 && __builtin_memcmp(&r, &s, 64) == 0;
+}
+
+static long long pick(const long long* first, const long long* second, long long index)
+{
+	const unsigned i = static_cast<unsigned>(index) & 15;
+	return i < 8 ? first[i] : second[i - 8];
+}
+
+F static bool permute(const long long* index, const long long* first, const long long* second, unsigned char m)
+{
+	v8di i, a, b;
+	__builtin_memcpy(&i, index, 64);
+	__builtin_memcpy(&a, first, 64);
+	__builtin_memcpy(&b, second, 64);
+	// GCC's spelling: the index first, merging with the first table.
+	const v8di t = __builtin_ia32_vpermt2varq512_mask(i, a, b, m);
+	const v8di u = __builtin_ia32_vpermt2varq512_mask(i, a, b, (unsigned char)-1);
+	// Clang's spelling: the index between the tables.
+	const v8di v = __builtin_ia32_vpermi2varq512(a, i, b);
+	long long r[3][8];
+	__builtin_memcpy(r[0], &t, 64);
+	__builtin_memcpy(r[1], &u, 64);
+	__builtin_memcpy(r[2], &v, 64);
+	for (unsigned k = 0; k < 8; ++k)
+	{
+		const long long value = pick(first, second, index[k]);
+		if (r[0][k] != (bit(m, k) ? value : first[k]) || r[1][k] != value || r[2][k] != value)
+			return false;
+	}
+	return true;
+}
+
+int main()
+{
+	const Mask masks[] = {0, ~0ULL, 1, 0x8000000000000000ULL, 0x9c3e5a71f00f1248ULL, 0x5555555555555555ULL};
+	Byte x[64], z[64];
+	for (unsigned seed = 0; seed < 3; ++seed)
+	{
+		fill(x, seed, 64);
+		fill(z, seed + 50, 64);
+		for (unsigned k = 0; k < sizeof masks / sizeof masks[0]; ++k)
+			if (!compress(x, z, masks[k]) || !compress_once(x, z, masks[k]))
+				return 1;
+	}
+	long long index[8], first[8], second[8];
+	for (unsigned seed = 0; seed < 4; ++seed)
+	{
+		fill(reinterpret_cast<Byte*>(index), seed + 3, 64);
+		fill(reinterpret_cast<Byte*>(first), seed + 7, 64);
+		fill(reinterpret_cast<Byte*>(second), seed + 11, 64);
+		const unsigned char m[] = {0, 0xff, 0x5a, 0x81};
+		for (unsigned k = 0; k < 4; ++k)
+			if (!permute(index, first, second, m[k]))
+				return 2;
+	}
+	return 0;
+}

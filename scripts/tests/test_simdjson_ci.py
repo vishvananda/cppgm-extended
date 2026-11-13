@@ -33,6 +33,17 @@ class SimdjsonCITests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ci.summarize(rows, 'cpu')
 
+    def test_demo_requires_every_kernel_to_match(self):
+        expected = dict(status=0, stdout='loaded\n')
+        outputs = {kernel: dict(expected) for kernel in ('auto',) + ci.KERNELS}
+        self.assertEqual(ci.demo_mismatches(expected, outputs), [])
+        outputs['icelake'] = dict(status=0, stdout='other\n')
+        outputs['haswell'] = dict(status=132, stdout='')
+        self.assertEqual(sorted(ci.demo_mismatches(expected, outputs)), ['haswell', 'icelake'])
+        del outputs['fallback']
+        with self.assertRaisesRegex(ValueError, 'missing demo kernels'):
+            ci.demo_mismatches(expected, outputs)
+
     def test_cross_backend_disagreement_is_not_publishable(self):
         document = self.document()
         ci.validate(document)

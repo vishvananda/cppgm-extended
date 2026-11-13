@@ -37,7 +37,10 @@ enum class GnuBuiltin : uint8_t
 	// islessequal, islessgreater, isunordered; FloatConstant 3 * (nan,
 	// nans, inf) + (double, float, long double); BitCount 3 * (bswap, clz,
 	// ctz, popcount, ffs) + the operand type by suffix (16/32/64, or int,
-	// long, long long; unsigned except ffs); GenericBitCount clzg, ctzg, popcountg; VaList
+	// long, long long; unsigned except ffs); GenericBitCount clzg, ctzg,
+	// popcountg, then 3 + 3 * (x86's lzcnt, tzcnt) + the 16/32/64-bit
+	// unsigned operand by suffix (the count of the operand's type, its
+	// width for 0); VaList
 	// start, end, copy; Overflow add, sub, mul; Atomic an index of
 	// kGnuAtomicOperations; Sync an index of kGnuSyncOperations; C11Atomic
 	// an index of kGnuC11Operations; SourceLocation FILE, LINE, FUNCTION,
@@ -91,7 +94,10 @@ enum class GnuBuiltin : uint8_t
 	VectorImmediate, // SSE4.1 dot, insert and rounding; typed signature shapes
 	// The SSE family computed lane by lane: the variant is a
 	// VectorLanewiseOp, the signature the shapes (see below), and `floating`
-	// is 's' for a scalar form, which leaves the first operand's other lanes.
+	// is 's' for a scalar form, which leaves the first operand's other lanes,
+	// and 'm' for an AVX-512 masked form, whose last two operands are a
+	// vector and a mask: a result lane whose mask bit is clear is that
+	// vector's.
 	VectorLanewise,
 	Overflow,
 	OperatorNew,
@@ -112,14 +118,19 @@ enum class GnuBuiltin : uint8_t
 	// variant is a VectorLanewiseOp.
 	VectorElementwise,
 	// Libm fabs family: inline sign clearing for f32/f64, a call for f80.
-	FloatAbs
+	FloatAbs,
+	// Clang's __builtin_nondeterministic_value(x): a value of x's type that
+	// is not specified (x is not evaluated).
+	NondeterministicValue
 };
 
 // A VectorLanewise builtin's operation. Its signature is the result and then
 // the operands, one letter each: F, D, G __v4sf, __v2df, __v2sf; B, H, W, Q
 // __v16qi, __v8hi, __v4si, __v2di; R __v2di or any other 128-bit integer
 // lanes; f d c i x v float, double, char, int, long long, void; `*` after a
-// letter a pointer to it.
+// letter a pointer to it. A 2 or 4 before a vector letter doubles or
+// quadruples its lanes (AVX's 256-bit and AVX-512's 512-bit vectors, which
+// the operations compute in 128-bit pieces).
 enum class VectorLanewiseOp : uint8_t
 {
 	Add,
@@ -210,7 +221,40 @@ enum class VectorLanewiseOp : uint8_t
 	StoreHigh,
 	StoreLow,
 	Fence,
-	Hint
+	Hint,
+	// The 256- and 512-bit forms only. The bytes' sign bits, lane i at bit
+	// i.
+	SignMask,
+	// A mask of byte lanes (lane i at bit i) and-ed with the last operand:
+	// equal, signed greater, and-ed lanes not zero, and Clang's comparison
+	// by the third operand's predicate (0 eq, 1 lt, 2 le, 3 false, 4 ne,
+	// 5 nlt, 6 nle, 7 true; signed).
+	MaskEqual,
+	MaskGreater,
+	MaskTest,
+	MaskCompare,
+	// Each lane of the second vector where the mask's bit is set, else of
+	// the other: GCC's (vector, second, mask), Clang's (mask, second,
+	// vector).
+	BlendMask,
+	SelectMask,
+	// The first operand's lanes whose mask bits are set, in order, then
+	// the second's lanes; CompressStore writes only the selected lanes, to
+	// its pointer.
+	Compress,
+	CompressStore,
+	// Each lane of the two tables an index lane's low bits select: GCC's
+	// (index, first, second, mask; the first's lane where the mask's bit
+	// is clear), Clang's (first, index, second).
+	PermuteIndexFirst,
+	PermuteIndexSecond,
+	// The 128-bit piece the index selects (of the pieces' count); the
+	// vector with that piece replaced; a 128-bit vector as the low piece
+	// (the rest zero); the low piece.
+	ExtractPiece,
+	InsertPiece,
+	Widen,
+	Narrow
 };
 
 struct GnuBuiltinEntry

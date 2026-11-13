@@ -1402,8 +1402,25 @@ private:
 	RValue elementwise_minmax(const syntax::CallExpr& expr);
 	RValue numeric_minmax(const sema::Type* lane, const RValue& first, const RValue& second, bool maximum);
 	RValue vector_andnot(const syntax::CallExpr& expr);
-	// sse_lowering.cpp: the SSE family computed lane by lane.
-	struct LanewiseCall;
+	// sse_lowering.cpp: the SSE family computed lane by lane; its 256- and
+	// 512-bit forms in 128-bit pieces (wide_vector_lowering.cpp). A call's
+	// operation, result type and evaluated operands, the operands' types
+	// after their conversions and, where an operation reads lanes from
+	// memory, the slots they are stored in.
+	struct LanewiseCall
+	{
+		VectorLanewiseOp operation;
+		bool scalar;
+		bool masked;
+		const sema::Type* result;
+		uint32_t count;
+		const sema::Type* types[4];
+		lowir::Value addresses[4];
+		RValue values[4];
+
+		uint64_t lanes() const { return result->unqualified->bound; }
+		const sema::Type* lane() const { return result->unqualified->element; }
+	};
 	// One `vector` instruction: `immediate` when not negative; the operands
 	// the operation's shape reads (lowir_model.h).
 	RValue vector_instruction(lowir::VectorOp op, const RValue* a = nullptr, const RValue* b = nullptr,
@@ -1424,6 +1441,22 @@ private:
 		TokenKind op, const sema::Type* vector, const RValue& value, const RValue& count, RValue& result);
 	bool direct_vector_lane(const syntax::SubscriptExpr& expr, RValue& result);
 	RValue lanewise_vector(const syntax::CallExpr& expr);
+	RValue lanewise_call(LanewiseCall& call, const syntax::CallExpr& expr);
+	uint64_t vector_pieces(const LanewiseCall& call);
+	const sema::Type* piece_type(const sema::Type* vector);
+	RValue vector_piece(lowir::Value address, uint64_t piece);
+	void set_vector_piece(lowir::Value address, uint64_t piece, const RValue& value);
+	RValue wide_lanewise(LanewiseCall& call, const syntax::CallExpr& expr);
+	RValue piecewise_vector(const LanewiseCall& call, const syntax::CallExpr& expr);
+	RValue wide_mask(const LanewiseCall& call, const syntax::CallExpr& expr);
+	RValue wide_select(const LanewiseCall& call);
+	RValue wide_compress(const LanewiseCall& call);
+	RValue wide_permute(const LanewiseCall& call);
+	RValue wide_piece_move(const LanewiseCall& call);
+	RValue wide_extend(const LanewiseCall& call, const syntax::CallExpr& expr);
+	RValue masked_lanes(const sema::Type* vector, const RValue& value, const RValue& passthrough, const RValue& mask);
+	RValue byte_lane_mask(const RValue& bits);
+	RValue vector_pair(uint64_t low, uint64_t high);
 	RValue select_value(const RValue& condition, const RValue& first, const RValue& second);
 	RValue lane_bits(lowir::Value address, uint64_t bytes, uint64_t lane);
 	void set_lane_bits(lowir::Value address, uint64_t bytes, uint64_t lane, const RValue& value);
@@ -1447,6 +1480,8 @@ private:
 	RValue permute_vector(const syntax::CallExpr& expr);
 	RValue unpack_vector(const syntax::CallExpr& expr);
 	RValue shift_vector_lanes(const syntax::CallExpr& expr);
+	// 0 left, 1 logical right, 2 arithmetic right by an int count.
+	RValue shift_lanes(const sema::Type* vector, const RValue& value, const RValue& count, unsigned operation);
 	RValue shuffle_vector(const syntax::CallExpr& expr);
 	RValue binary_immediate_vector(const syntax::CallExpr& expr);
 	RValue immediate_vector(const syntax::CallExpr& expr);

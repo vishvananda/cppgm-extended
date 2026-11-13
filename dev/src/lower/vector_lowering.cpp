@@ -753,14 +753,19 @@ RValue FunctionLowering::unpack_vector(const syntax::CallExpr& expr)
 
 RValue FunctionLowering::shift_vector_lanes(const syntax::CallExpr& expr)
 {
+	const RValue value = operand(*expr.arguments[0], ConversionContext::Argument);
+	const RValue count = operand(*expr.arguments[1], ConversionContext::Argument);
+	return shift_lanes(expr.facts->type, value, count, (expr.facts->value >> 8 & 0xff) % 3);
+}
+
+RValue FunctionLowering::shift_lanes(
+	const sema::Type* vector, const RValue& value, const RValue& count, unsigned operation)
+{
 	// GCC accepts a runtime int count. Clamp it before shifting: LowIR
 	// shifts must never receive an out-of-range count. Negative int
 	// counts are oversized too, when compared as unsigned.
-	const sema::Type* vector = expr.facts->type;
-	const RValue value = operand(*expr.arguments[0], ConversionContext::Argument);
-	const RValue count = operand(*expr.arguments[1], ConversionContext::Argument);
+	vector = vector->unqualified;
 	const uint64_t bits = 128 / vector->bound;
-	const unsigned operation = (expr.facts->value >> 8 & 0xff) % 3;
 	if (value.type.is_vector() && !(bits == 64 && operation == 2))
 	{
 		// The width index, then left, logical right, arithmetic right.

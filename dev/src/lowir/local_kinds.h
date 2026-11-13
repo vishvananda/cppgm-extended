@@ -209,6 +209,9 @@ enum class BlockKind : uint8_t
 	VectorTake,
 	VectorJoin,
 	VectorUnordered,
+	VectorCompress,
+	VectorCompressLane,
+	VectorCompressEnd,
 	// The optimizer's blocks (lowiropt, cppgm++ -O1 and above).
 	InlineEntry,
 	InlineCont,

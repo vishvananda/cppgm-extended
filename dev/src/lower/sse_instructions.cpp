@@ -299,8 +299,8 @@ bool SseInstructionOf(VectorLanewiseOp operation, const SseForm& form, SseInstru
 		out.op = Offset(VectorOp::Andps, form.lane_bytes == 8 ? 1 : 0);
 		return form.floating;
 	case VectorLanewiseOp::AndNot:
-		out.op = Offset(VectorOp::Andnps, form.lane_bytes == 8 ? 1 : 0);
-		return form.floating;
+		out.op = form.floating ? Offset(VectorOp::Andnps, form.lane_bytes == 8 ? 1 : 0) : VectorOp::Pandn;
+		return true;
 	case VectorLanewiseOp::Or:
 		out.op = Offset(VectorOp::Orps, form.lane_bytes == 8 ? 1 : 0);
 		return form.floating;

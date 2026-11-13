@@ -1579,6 +1579,8 @@ singleton-vector records; native register classes do not choose its convention.
 The lowering makes a GNU vector of 16 bytes a `v128`. Exceptions are a vector of
 `bool` lanes and a one-lane vector of a floating type, which stay `obj`. A
 vector of any other size stays `obj`, and its operations go lane by lane.
+PA30's 256- and 512-bit x86 builtins may instead load 128-bit pieces of such
+an `obj` as `v128` values and compute them with `vector`.
 
 ```text
 %r = vector <op> %a, %b           ; binary

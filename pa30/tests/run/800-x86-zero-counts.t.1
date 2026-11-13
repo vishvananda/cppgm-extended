@@ -1,0 +1,72 @@
+// The operand converts to the builtin's width, is evaluated once and may be
+// a runtime value.
+#define COUNTS __attribute__((target("lzcnt,bmi")))
+typedef unsigned short U16;
+typedef unsigned U32;
+typedef unsigned long long U64;
+
+static int calls;
+static U64 counted(U64 value)
+{
+	++calls;
+	return value;
+}
+
+static unsigned leading(U64 value, unsigned width)
+{
+	unsigned n = 0;
+	for (unsigned i = width; i-- > 0 && !(value >> i & 1);)
+		++n;
+	return n;
+}
+
+static unsigned trailing(U64 value, unsigned width)
+{
+	unsigned n = 0;
+	for (unsigned i = 0; i < width && !(value >> i & 1); ++i)
+		++n;
+	return n;
+}
+
+COUNTS static bool counts(U64 value)
+{
+	const U16 h = static_cast<U16>(value);
+	const U32 w = static_cast<U32>(value);
+	return __builtin_ia32_lzcnt_u16(h) == leading(h, 16) && __builtin_ia32_lzcnt_u32(w) == leading(w, 32) &&
+		__builtin_ia32_lzcnt_u64(value) == leading(value, 64) && __builtin_ia32_tzcnt_u16(h) == trailing(h, 16) &&
+		__builtin_ia32_tzcnt_u32(w) == trailing(w, 32) && __builtin_ia32_tzcnt_u64(value) == trailing(value, 64);
+}
+
+COUNTS static bool literals()
+{
+	static_assert(__is_same(decltype(__builtin_ia32_lzcnt_u16(0)), U16), "16-bit leading count");
+	static_assert(__is_same(decltype(__builtin_ia32_lzcnt_u32(0)), U32), "32-bit leading count");
+	static_assert(__is_same(decltype(__builtin_ia32_lzcnt_u64(0)), U64), "64-bit leading count");
+	static_assert(__is_same(decltype(__builtin_ia32_tzcnt_u16(0)), U16), "16-bit trailing count");
+	static_assert(__is_same(decltype(__builtin_ia32_tzcnt_u32(0)), U32), "32-bit trailing count");
+	static_assert(__is_same(decltype(__builtin_ia32_tzcnt_u64(0)), U64), "64-bit trailing count");
+	// Wider operands convert: 0x12345 is the 16-bit 0x2345, 0x10000 is zero.
+	return __builtin_ia32_lzcnt_u16(0) == 16 && __builtin_ia32_lzcnt_u16(0x12345) == 2 &&
+		__builtin_ia32_tzcnt_u16(0x10000) == 16 && __builtin_ia32_lzcnt_u32(0) == 32 &&
+		__builtin_ia32_tzcnt_u32(0x80000000u) == 31 && __builtin_ia32_lzcnt_u64(0) == 64 &&
+		__builtin_ia32_tzcnt_u64(0) == 64 && __builtin_ia32_lzcnt_u64(1) == 63;
+}
+
+COUNTS static bool once()
+{
+	calls = 0;
+	const U32 a = __builtin_ia32_lzcnt_u32(static_cast<U32>(counted(0x100)));
+	const U64 b = __builtin_ia32_tzcnt_u64(counted(0x100));
+	const U16 c = __builtin_ia32_tzcnt_u16(static_cast<U16>(counted(0)));
+	return calls == 3 && a == 23 && b == 8 && c == 16;
+}
+
+int main()
+{
+	volatile U64 values[] = {0, 1, 2, 3, 0x80, 0x8000, 0x10000, 0x80000000ULL, 0x100000000ULL,
+		0x8000000000000000ULL, ~0ULL, 0x00f0f0f0f0f0f000ULL, 0x123456789abcdef0ULL, 0xfffe000000000000ULL};
+	for (unsigned i = 0; i < sizeof values / sizeof values[0]; ++i)
+		if (!counts(values[i]))
+			return 1 + i;
+	return literals() && once() ? 0 : 100;
+}

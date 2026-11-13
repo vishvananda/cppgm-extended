@@ -40,10 +40,20 @@ blocks follow warmup, with A/A calibration before and after each comparison.
 The report uses the median block ratio, flags calibration differences above
 2%, and retains every observation. Small differences need confirmation.
 
+Before the measurements, the job builds the singleheader `amalgamate_demo` with
+all kernels at `-O3 -pthread`, once with `cppgm++ -c` and once with `g++`, and
+links both with `g++`. The demo reads `twitter.json` and
+`amazon_cellphones.ndjson`. The `cppgm++` build must print the GCC build's
+output with the kernel the CPU selects and with each of `fallback`, `westmere`,
+`haswell` and `icelake` forced by `SIMDJSON_FORCE_IMPLEMENTATION`. Its
+256- and 512-bit operations use SSE instructions, so the Haswell and Icelake
+kernels run without AVX.
+
 To reproduce on Linux:
 
 ```sh
 make -C dev cppgm++ -j "$(nproc)" CXX=g++ CPPGM_HOST_CXX=g++
+python3 scripts/simdjson_ci.py demo --output obj/simdjson-demo-local
 python3 scripts/simdjson_ci.py run --output obj/simdjson-local --cpus 0
 ```
 

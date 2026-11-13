@@ -1,0 +1,223 @@
+// Each result is compared with a lane-by-lane model for several inputs,
+// including the byte values 0, 0x7f, 0x80 and 0xff.
+typedef char v32qi __attribute__((vector_size(32)));
+typedef short v16hi __attribute__((vector_size(32)));
+typedef int v8si __attribute__((vector_size(32)));
+typedef long long v4di __attribute__((vector_size(32)));
+typedef int v4si __attribute__((vector_size(16)));
+typedef unsigned char Byte;
+#define AVX2 __attribute__((target("avx2")))
+
+static int calls;
+
+static void fill(Byte* out, unsigned seed, unsigned count)
+{
+	static const Byte edges[4] = {0x00, 0x7f, 0x80, 0xff};
+	unsigned x = seed * 2654435761u + 12345u;
+	for (unsigned i = 0; i < count; ++i)
+	{
+		x ^= x << 13;
+		x ^= x >> 17;
+		x ^= x << 5;
+		out[i] = (i + seed) % 7 < 4 ? edges[(i + seed) % 7] : static_cast<Byte>(x >> 11);
+	}
+}
+
+static unsigned word(const Byte* in, unsigned i) { return in[2 * i] | in[2 * i + 1] << 8; }
+
+AVX2 static v32qi counted(v32qi v)
+{
+	++calls;
+	return v;
+}
+
+AVX2 static bool bytes(const Byte* x, const Byte* y)
+{
+	v32qi a, b;
+	__builtin_memcpy(&a, x, 32);
+	__builtin_memcpy(&b, y, 32);
+	Byte r[7][32];
+	v32qi t = __builtin_ia32_paddusb256(a, b);
+	__builtin_memcpy(r[0], &t, 32);
+	t = __builtin_ia32_psubusb256(a, b);
+	__builtin_memcpy(r[1], &t, 32);
+	t = __builtin_ia32_pmaxsb256(a, b);
+	__builtin_memcpy(r[2], &t, 32);
+	t = __builtin_ia32_pminsb256(a, b);
+	__builtin_memcpy(r[3], &t, 32);
+	t = __builtin_ia32_pmaxub256(a, b);
+	__builtin_memcpy(r[4], &t, 32);
+	t = __builtin_ia32_pminub256(a, b);
+	__builtin_memcpy(r[5], &t, 32);
+	t = __builtin_ia32_pshufb256(a, b);
+	__builtin_memcpy(r[6], &t, 32);
+	unsigned signs = 0;
+	for (unsigned i = 0; i < 32; ++i)
+	{
+		const int u = x[i], v = y[i];
+		const int s = static_cast<signed char>(x[i]), w = static_cast<signed char>(y[i]);
+		if (r[0][i] != (u + v > 255 ? 255 : u + v) || r[1][i] != (u > v ? u - v : 0))
+			return false;
+		if (static_cast<signed char>(r[2][i]) != (s > w ? s : w) ||
+			static_cast<signed char>(r[3][i]) != (s < w ? s : w))
+			return false;
+		if (r[4][i] != (u > v ? u : v) || r[5][i] != (u < v ? u : v))
+			return false;
+		if (r[6][i] != ((v & 0x80) ? 0 : x[(i & 16) + (v & 15)]))
+			return false;
+		signs |= static_cast<unsigned>(u >> 7) << i;
+	}
+	return static_cast<unsigned>(__builtin_ia32_pmovmskb256(a)) == signs;
+}
+
+AVX2 static bool whole(const Byte* x, const Byte* y)
+{
+	v4di a, b;
+	__builtin_memcpy(&a, x, 32);
+	__builtin_memcpy(&b, y, 32);
+	const v4di n = __builtin_ia32_andnotsi256(a, b);
+	Byte r[32];
+	__builtin_memcpy(r, &n, 32);
+	bool zero = true;
+	for (unsigned i = 0; i < 32; ++i)
+	{
+		if (r[i] != static_cast<Byte>(~x[i] & y[i]))
+			return false;
+		zero = zero && (x[i] & y[i]) == 0;
+	}
+	return __builtin_ia32_ptestz256(a, b) == (zero ? 1 : 0) && __builtin_ia32_ptestz256(a, n) == 1 &&
+		__builtin_ia32_ptestz256(n, n) == (n[0] == 0 && n[1] == 0 && n[2] == 0 && n[3] == 0 ? 1 : 0);
+}
+
+AVX2 static bool shifted(const Byte* x, const v16hi* left, const v16hi* right, unsigned count)
+{
+	Byte l[32], r[32];
+	__builtin_memcpy(l, left, 32);
+	__builtin_memcpy(r, right, 32);
+	for (unsigned i = 0; i < 16; ++i)
+	{
+		const unsigned w = word(x, i);
+		if (word(l, i) != (count > 15 ? 0 : (w << count) & 0xffff) || word(r, i) != (count > 15 ? 0 : w >> count))
+			return false;
+	}
+	return true;
+}
+
+template<int Count> AVX2 bool shift(const Byte* x)
+{
+	v16hi a;
+	__builtin_memcpy(&a, x, 32);
+	const v16hi l = __builtin_ia32_psllwi256(a, Count), r = __builtin_ia32_psrlwi256(a, Count);
+	return shifted(x, &l, &r, Count);
+}
+
+AVX2 static bool shift_runtime(const Byte* x, int count)
+{
+	v16hi a;
+	__builtin_memcpy(&a, x, 32);
+	const v16hi l = __builtin_ia32_psllwi256(a, count), r = __builtin_ia32_psrlwi256(a, count);
+	return shifted(x, &l, &r, count < 0 ? 16 : count);
+}
+
+static bool aligned(const Byte* x, const Byte* y, const Byte* r, unsigned count)
+{
+	// Each 128-bit lane: the second operand's bytes, then the first's.
+	for (unsigned lane = 0; lane < 32; lane += 16)
+		for (unsigned i = 0; i < 16; ++i)
+		{
+			const unsigned at = i + count;
+			const Byte expected = at >= 32 ? 0 : at < 16 ? y[lane + at] : x[lane + at - 16];
+			if (r[lane + i] != expected)
+				return false;
+		}
+	return true;
+}
+
+// GCC's spelling: 64-bit lanes and a count of bits.
+template<int Count> AVX2 bool align_bits(const Byte* x, const Byte* y)
+{
+	v4di a, b;
+	__builtin_memcpy(&a, x, 32);
+	__builtin_memcpy(&b, y, 32);
+	const v4di t = __builtin_ia32_palignr256(a, b, Count * 8);
+	Byte r[32];
+	__builtin_memcpy(r, &t, 32);
+	return aligned(x, y, r, Count);
+}
+
+// Clang's spelling: byte lanes and a count of bytes.
+template<int Count> AVX2 bool align_bytes(const Byte* x, const Byte* y)
+{
+	v32qi a, b;
+	__builtin_memcpy(&a, x, 32);
+	__builtin_memcpy(&b, y, 32);
+	const v32qi t = (v32qi)__builtin_ia32_palignr256(a, b, Count);
+	Byte r[32];
+	__builtin_memcpy(r, &t, 32);
+	return aligned(x, y, r, Count);
+}
+
+template<int Half> AVX2 bool halves(const Byte* x, const Byte* y)
+{
+	v8si a;
+	v4si h;
+	__builtin_memcpy(&a, x, 32);
+	__builtin_memcpy(&h, y, 16);
+	const v4si out = __builtin_ia32_vextractf128_si256(a, Half);
+	const v8si in = __builtin_ia32_vinsertf128_si256(a, h, Half);
+	Byte o[16], n[32];
+	__builtin_memcpy(o, &out, 16);
+	__builtin_memcpy(n, &in, 32);
+	for (unsigned i = 0; i < 16; ++i)
+		if (o[i] != x[16 * Half + i] || n[16 * Half + i] != y[i] || n[16 * (1 - Half) + i] != x[16 * (1 - Half) + i])
+			return false;
+	return true;
+}
+
+AVX2 static bool casts(const Byte* x)
+{
+	v4si h;
+	v8si a;
+	__builtin_memcpy(&h, x, 16);
+	__builtin_memcpy(&a, x + 8, 32);
+	const v8si wide = __builtin_ia32_si256_si(h);
+	const v4si low = __builtin_ia32_si_si256(a);
+	// The upper half of the widened vector is unspecified.
+	return __builtin_memcmp(&wide, x, 16) == 0 && __builtin_memcmp(&low, x + 8, 16) == 0;
+}
+
+AVX2 static bool once(const Byte* x, const Byte* y)
+{
+	v32qi a, b;
+	__builtin_memcpy(&a, x, 32);
+	__builtin_memcpy(&b, y, 32);
+	calls = 0;
+	const v32qi s = __builtin_ia32_pshufb256(counted(a), counted(b));
+	const int mask = __builtin_ia32_pmovmskb256(counted(s));
+	const v4si h = __builtin_ia32_vextractf128_si256((v8si)counted(a), 1);
+	return calls == 4 && mask == __builtin_ia32_pmovmskb256(s) && __builtin_memcmp(&h, x + 16, 16) == 0;
+}
+
+static bool all(const Byte* x, const Byte* y)
+{
+	return bytes(x, y) && whole(x, y) && whole(x, x) && shift<0>(x) && shift<1>(x) && shift<7>(x) &&
+		shift<15>(x) && shift<16>(x) && shift<200>(x) && shift_runtime(x, 3) && shift_runtime(x, 17) &&
+		shift_runtime(x, -1) && align_bits<0>(x, y) && align_bits<1>(x, y) && align_bits<7>(x, y) &&
+		align_bits<15>(x, y) && align_bits<16>(x, y) && align_bits<17>(x, y) && align_bits<31>(x, y) &&
+		align_bytes<0>(x, y) && align_bytes<5>(x, y) && align_bytes<16>(x, y) && align_bytes<31>(x, y) &&
+		align_bytes<32>(x, y) && align_bytes<255>(x, y) && halves<0>(x, y) && halves<1>(x, y) && casts(x) &&
+		once(x, y);
+}
+
+int main()
+{
+	Byte x[48], y[48];
+	for (unsigned seed = 0; seed < 6; ++seed)
+	{
+		fill(x, seed, 48);
+		fill(y, seed + 101, 48);
+		if (!all(x, y))
+			return 1;
+	}
+	return 0;
+}

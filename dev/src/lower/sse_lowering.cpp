@@ -37,20 +37,6 @@ const lowir::Type kI64 = lowir::Type::scalar(lowir::TypeKind::I64);
 
 } // namespace
 
-struct FunctionLowering::LanewiseCall
-{
-	VectorLanewiseOp operation;
-	bool scalar;
-	const sema::Type* result;
-	uint32_t count;
-	const sema::Type* types[4];
-	lowir::Value addresses[4];
-	RValue values[4];
-
-	uint64_t lanes() const { return result->unqualified->bound; }
-	const sema::Type* lane() const { return result->unqualified->element; }
-};
-
 RValue FunctionLowering::select_value(const RValue& condition, const RValue& first, const RValue& second)
 {
 	lowir::Instruction choice = lowir::make_instruction(lowir::Opcode::Select, first.type);
@@ -177,6 +163,7 @@ RValue FunctionLowering::lanewise_vector(const syntax::CallExpr& expr)
 	LanewiseCall call = LanewiseCall();
 	call.operation = static_cast<VectorLanewiseOp>(expr.facts->value >> 8 & 0xff);
 	call.scalar = (expr.facts->value >> 16 & 1) != 0;
+	call.masked = (expr.facts->value >> 17 & 1) != 0;
 	call.result = expr.facts->type;
 	call.count = static_cast<uint32_t>(expr.arguments.size);
 	for (uint32_t i = 0; i < call.count; ++i)
@@ -185,8 +172,17 @@ RValue FunctionLowering::lanewise_vector(const syntax::CallExpr& expr)
 		call.types[i] = (argument->conversion != nullptr ? argument->conversion->result : argument->type)->unqualified;
 		call.values[i] = operand(*expr.arguments[i], ConversionContext::Argument);
 	}
+	// A memory operation moves a wider vector whole.
+	const bool memory = call.operation >= VectorLanewiseOp::Store && call.operation <= VectorLanewiseOp::Hint;
+	if (call.masked || (!memory && vector_pieces(call) > 1))
+		return wide_lanewise(call, expr);
 	if (call.operation == VectorLanewiseOp::Sqrt && call.result->unqualified->kind != sema::TypeKind::Vector)
 		return unary(lowir::UnaryOp::Sqrt, call.values[0]);
+	return lanewise_call(call, expr);
+}
+
+RValue FunctionLowering::lanewise_call(LanewiseCall& call, const syntax::CallExpr& expr)
+{
 	RValue direct;
 	if (direct_vector_call(call, expr, direct))
 		return direct;
@@ -299,6 +295,23 @@ RValue FunctionLowering::lanewise_vector(const syntax::CallExpr& expr)
 	case VectorLanewiseOp::Fence:
 	case VectorLanewiseOp::Hint:
 		return lanewise_memory(call);
+	// The wide forms' own operations (wide_lanewise).
+	case VectorLanewiseOp::SignMask:
+	case VectorLanewiseOp::MaskEqual:
+	case VectorLanewiseOp::MaskGreater:
+	case VectorLanewiseOp::MaskTest:
+	case VectorLanewiseOp::MaskCompare:
+	case VectorLanewiseOp::BlendMask:
+	case VectorLanewiseOp::SelectMask:
+	case VectorLanewiseOp::Compress:
+	case VectorLanewiseOp::CompressStore:
+	case VectorLanewiseOp::PermuteIndexFirst:
+	case VectorLanewiseOp::PermuteIndexSecond:
+	case VectorLanewiseOp::ExtractPiece:
+	case VectorLanewiseOp::InsertPiece:
+	case VectorLanewiseOp::Widen:
+	case VectorLanewiseOp::Narrow:
+		break;
 	}
 	throw LoweringError(expr.location, "an unknown packed operation");
 }
