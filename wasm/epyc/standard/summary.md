@@ -28,10 +28,10 @@ Availability describes the supplied records; measurements from other reports may
 
 | Workload / configuration | Oracle | CPU / environment | Opt | Passed / executed / selected | Excluded | Status | Revision |
 |---|---|---|---|---|---|---|---|
-| [wasm/scalar](wasm.md) | Independent Perl arithmetic, seeded edge cases and cross-compiler checksums | AMD EPYC 9V74 80-Core Processor / GitHub hosted; Ubuntu 26.04 container | O0 | 32 / 32 / 32 independent oracle cases | 0 | passed | 393d1b1d0 |
-| [wasm/simd128](wasm.md) | Independent Perl arithmetic, seeded edge cases and cross-compiler checksums | AMD EPYC 9V74 80-Core Processor / GitHub hosted; Ubuntu 26.04 container | O0 | 32 / 32 / 32 independent oracle cases | 0 | passed | 393d1b1d0 |
-| [wasm/scalar](wasm.md) | Independent Perl arithmetic, seeded edge cases and cross-compiler checksums | AMD EPYC 9V74 80-Core Processor / GitHub hosted; Ubuntu 26.04 container | O3 | 32 / 32 / 32 independent oracle cases | 0 | passed | 393d1b1d0 |
-| [wasm/simd128](wasm.md) | Independent Perl arithmetic, seeded edge cases and cross-compiler checksums | AMD EPYC 9V74 80-Core Processor / GitHub hosted; Ubuntu 26.04 container | O3 | 32 / 32 / 32 independent oracle cases | 0 | passed | 393d1b1d0 |
+| [wasm/scalar](wasm.md) | Independent Perl arithmetic, seeded edge cases and cross-compiler checksums | AMD EPYC 9V74 80-Core Processor / GitHub hosted; Ubuntu 26.04 container | O0 | 64 / 64 / 64 independent oracle cases | 0 | passed | dc9084330 |
+| [wasm/simd128](wasm.md) | Independent Perl arithmetic, seeded edge cases and cross-compiler checksums | AMD EPYC 9V74 80-Core Processor / GitHub hosted; Ubuntu 26.04 container | O0 | 64 / 64 / 64 independent oracle cases | 0 | passed | dc9084330 |
+| [wasm/scalar](wasm.md) | Independent Perl arithmetic, seeded edge cases and cross-compiler checksums | AMD EPYC 9V74 80-Core Processor / GitHub hosted; Ubuntu 26.04 container | O3 | 64 / 64 / 64 independent oracle cases | 0 | passed | dc9084330 |
+| [wasm/simd128](wasm.md) | Independent Perl arithmetic, seeded edge cases and cross-compiler checksums | AMD EPYC 9V74 80-Core Processor / GitHub hosted; Ubuntu 26.04 container | O3 | 64 / 64 / 64 independent oracle cases | 0 | passed | dc9084330 |
 
 ## AMD EPYC 9V74 80-Core Processor — GitHub hosted; Ubuntu 26.04 container
 
@@ -39,31 +39,35 @@ Architecture: x86_64; host profile `wasm-5c098553cfcfe614`.
 
 | Workload / configuration / test | Opt | Phase / metric | vs GCC | vs Clang | Validation | Case set | Revision |
 |---|---|---|---:|---:|---|---|---|
-| [wasm/scalar/checked-kernels](wasm.md) | O0 | runtime / elapsed_seconds | not-applicable | 0.981× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/checked-kernels](wasm.md) | O3 | runtime / elapsed_seconds | not-applicable | 0.380× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/instantiation-and-start](wasm.md) | O0 | startup / elapsed_seconds | not-applicable | 1.030× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/instantiation-and-start](wasm.md) | O3 | startup / elapsed_seconds | not-applicable | 0.944× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/module-size](wasm.md) | O0 | link / bytes | not-applicable | 0.634× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/module-size](wasm.md) | O3 | link / bytes | not-applicable | 0.981× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/one-translation-unit](wasm.md) | O0 | compile / cpu_seconds | not-applicable | 7.561× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/one-translation-unit](wasm.md) | O0 | compile / elapsed_seconds | not-applicable | 6.712× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/one-translation-unit](wasm.md) | O0 | link / cpu_seconds | not-applicable | 4.899× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/one-translation-unit](wasm.md) | O0 | link / elapsed_seconds | not-applicable | 2.977× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/one-translation-unit](wasm.md) | O3 | compile / cpu_seconds | not-applicable | 12.342× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/one-translation-unit](wasm.md) | O3 | compile / elapsed_seconds | not-applicable | 11.668× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/one-translation-unit](wasm.md) | O3 | link / cpu_seconds | not-applicable | 4.464× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/scalar/one-translation-unit](wasm.md) | O3 | link / elapsed_seconds | not-applicable | 4.024× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/checked-kernels](wasm.md) | O0 | runtime / elapsed_seconds | not-applicable | 0.960× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/checked-kernels](wasm.md) | O3 | runtime / elapsed_seconds | not-applicable | 0.419× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/instantiation-and-start](wasm.md) | O0 | startup / elapsed_seconds | not-applicable | 0.708× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/instantiation-and-start](wasm.md) | O3 | startup / elapsed_seconds | not-applicable | 0.961× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/module-size](wasm.md) | O0 | link / bytes | not-applicable | 0.485× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/module-size](wasm.md) | O3 | link / bytes | not-applicable | 0.737× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/one-translation-unit](wasm.md) | O0 | compile / cpu_seconds | not-applicable | 7.561× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/one-translation-unit](wasm.md) | O0 | compile / elapsed_seconds | not-applicable | 13.594× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/one-translation-unit](wasm.md) | O0 | link / cpu_seconds | not-applicable | 4.323× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/one-translation-unit](wasm.md) | O0 | link / elapsed_seconds | not-applicable | 0.437× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/one-translation-unit](wasm.md) | O3 | compile / cpu_seconds | not-applicable | 11.403× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/one-translation-unit](wasm.md) | O3 | compile / elapsed_seconds | not-applicable | 10.748× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/one-translation-unit](wasm.md) | O3 | link / cpu_seconds | not-applicable | 4.519× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
-| [wasm/simd128/one-translation-unit](wasm.md) | O3 | link / elapsed_seconds | not-applicable | 4.062× | clang: 32/32 cppgm, 32/32 reference; gcc: not-applicable | 32 independent oracle cases; set 831e4780 | `393d1b1d0` |
+| [wasm/scalar/checked-workloads](wasm.md) | O0 | runtime / cpu_seconds | not-applicable | 0.964× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/checked-workloads](wasm.md) | O0 | runtime / elapsed_seconds | not-applicable | 0.965× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/checked-workloads](wasm.md) | O3 | runtime / cpu_seconds | not-applicable | 0.823× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/checked-workloads](wasm.md) | O3 | runtime / elapsed_seconds | not-applicable | 0.824× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/instantiation-and-start](wasm.md) | O0 | startup / elapsed_seconds | not-applicable | 0.894× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/instantiation-and-start](wasm.md) | O3 | startup / elapsed_seconds | not-applicable | 1.173× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/module-size](wasm.md) | O0 | link / bytes | not-applicable | 0.549× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/module-size](wasm.md) | O3 | link / bytes | not-applicable | 0.572× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/one-translation-unit](wasm.md) | O0 | compile / cpu_seconds | not-applicable | 3.224× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/one-translation-unit](wasm.md) | O0 | compile / elapsed_seconds | not-applicable | 3.160× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/one-translation-unit](wasm.md) | O0 | link / cpu_seconds | not-applicable | 1.441× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/one-translation-unit](wasm.md) | O0 | link / elapsed_seconds | not-applicable | 1.405× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/one-translation-unit](wasm.md) | O3 | compile / cpu_seconds | not-applicable | 8.921× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/one-translation-unit](wasm.md) | O3 | compile / elapsed_seconds | not-applicable | 8.713× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/one-translation-unit](wasm.md) | O3 | link / cpu_seconds | not-applicable | 1.492× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/scalar/one-translation-unit](wasm.md) | O3 | link / elapsed_seconds | not-applicable | 1.465× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/checked-workloads](wasm.md) | O0 | runtime / cpu_seconds | not-applicable | 0.950× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/checked-workloads](wasm.md) | O0 | runtime / elapsed_seconds | not-applicable | 0.950× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/checked-workloads](wasm.md) | O3 | runtime / cpu_seconds | not-applicable | 0.778× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/checked-workloads](wasm.md) | O3 | runtime / elapsed_seconds | not-applicable | 0.779× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/instantiation-and-start](wasm.md) | O0 | startup / elapsed_seconds | not-applicable | 0.777× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/instantiation-and-start](wasm.md) | O3 | startup / elapsed_seconds | not-applicable | 0.759× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/module-size](wasm.md) | O0 | link / bytes | not-applicable | 0.518× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/module-size](wasm.md) | O3 | link / bytes | not-applicable | 0.534× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/one-translation-unit](wasm.md) | O0 | compile / cpu_seconds | not-applicable | 3.290× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/one-translation-unit](wasm.md) | O0 | compile / elapsed_seconds | not-applicable | 3.227× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/one-translation-unit](wasm.md) | O0 | link / cpu_seconds | not-applicable | 1.381× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/one-translation-unit](wasm.md) | O0 | link / elapsed_seconds | not-applicable | 1.364× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/one-translation-unit](wasm.md) | O3 | compile / cpu_seconds | not-applicable | 8.958× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/one-translation-unit](wasm.md) | O3 | compile / elapsed_seconds | not-applicable | 8.751× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/one-translation-unit](wasm.md) | O3 | link / cpu_seconds | not-applicable | 1.411× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
+| [wasm/simd128/one-translation-unit](wasm.md) | O3 | link / elapsed_seconds | not-applicable | 1.395× | clang: 64/64 cppgm, 64/64 reference; gcc: not-applicable | 64 independent oracle cases; set e6ee71a3 | `dc9084330` |
