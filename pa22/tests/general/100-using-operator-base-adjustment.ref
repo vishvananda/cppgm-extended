@@ -15,29 +15,29 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = convert sext i64 i32 5
     %t3 = addr $f
     %t4 = index i8 %t3, 0
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = index inbounds i64 [projection=array_element] %t5, 0
     store typed i64 %t2, %t6
     %t7 = convert sext i64 i32 6
     %t8 = addr $f
     %t9 = index i8 %t8, 0
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = index inbounds i64 [projection=array_element] %t10, 1
     store typed i64 %t7, %t11
     %t12 = convert sext i64 i32 7
     %t13 = addr $f
     %t14 = index i8 %t13, 16
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     store typed i64 %t12, %t15
     %t16 = convert sext i64 i32 8
     %t17 = addr $f
     %t18 = index i8 %t17, 16
-    %t19 = index i8 [projection=field] %t18, 8
+    %t19 = index inbounds i8 [projection=field] %t18, 8
     store typed i64 %t16, %t19
     %t20 = addr $f
     %t21 = index i8 %t20, 32
-    %t22 = index i8 [projection=field] %t21, 0
-    %t23 = index i8 [projection=field] %t22, 0
+    %t22 = index inbounds i8 [projection=field] %t21, 0
+    %t23 = index inbounds i8 [projection=field] %t22, 0
     store typed i32 42, %t23
     %t24 = addr $f
     %t25 = index i8 %t24, 32
@@ -88,7 +88,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t44 = addr $f
     %t45 = index i8 %t44, 32
     %t46 = call ptr @Base__operator____2(%t45)
-    %t47 = index i8 [projection=field] %t46, 0
+    %t47 = index inbounds i8 [projection=field] %t46, 0
     %t48 = load typed i32 %t47
     %t49 = cmp ne i32 %t48, 43
     store typed i64 %t49, $lor__2
@@ -106,7 +106,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t51 = load typed ptr $c
     %t52 = index i8 %t51, 32
     %t53 = call ptr @Base__operator____ov2__2(%t52)
-    %t54 = index i8 [projection=field] %t53, 0
+    %t54 = index inbounds i8 [projection=field] %t53, 0
     %t55 = load typed i32 %t54
     %t56 = cmp ne i32 %t55, 43
     store typed i64 %t56, $lor__3
@@ -129,8 +129,8 @@ function @Base__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr
     store typed ptr %this, $this
     store typed i32 %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     return ptr %t3
 }
 function @Base__operator____ov2(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZNK4BaseixEi, inline_hint=yes] {
@@ -141,8 +141,8 @@ function @Base__operator____ov2(%this : ptr [object_bytes=4], %__param1 : i32) -
     store typed ptr %this, $this
     store typed i32 %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     return ptr %t3
 }
 function @Base__operator____2(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN4BaseptEv, inline_hint=yes] {
@@ -151,7 +151,7 @@ function @Base__operator____2(%this : ptr [object_bytes=4]) -> ptr [binding=weak
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 function @Base__operator____ov2__2(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZNK4BaseptEv, inline_hint=yes] {
@@ -160,6 +160,6 @@ function @Base__operator____ov2__2(%this : ptr [object_bytes=4]) -> ptr [binding
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }

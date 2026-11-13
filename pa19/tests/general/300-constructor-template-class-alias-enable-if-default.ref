@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $refarg__1
     call void @duration_like_int___duration_like(%t1, %t2)
     %t3 = addr $x
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     return i32 %t5
 }
@@ -22,7 +22,7 @@ function @duration_like_int___duration_like(%this : ptr [object_bytes=4], %r : p
     %t1 = load typed ptr $r
     %t2 = load typed i32 %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }

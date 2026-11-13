@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr @cache_holder_true___cache
     %t2 = binary mul i64 1, 16
     %t3 = index inbounds i8 [projection=array_element] %t1, %t2
-    %t4 = index i8 [projection=field] %t3, 8
+    %t4 = index inbounds i8 [projection=field] %t3, 8
     %t5 = load typed i64 %t4
     %t6 = convert sext i64 i32 4
     %t7 = cmp eq i64 %t5, %t6
@@ -41,11 +41,11 @@ function @uint128__uint128__ov3(%this : ptr [object_bytes=16], %high_ : i64, %lo
     store typed i64 %low_, $low_
     %t1 = load typed i64 $high_
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     %t4 = load typed i64 $low_
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i64 %t4, %t6
     return void
 }

@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $arg__1
     call void @wrapper_void___wrapper(%t1, %t2)
     %t3 = addr $value
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_1, ^cond_else_2
@@ -33,7 +33,7 @@ function @wrapper_void___wrapper(%this : ptr [object_bytes=4], %__param1 : ptr [
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }

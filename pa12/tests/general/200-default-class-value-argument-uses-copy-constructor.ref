@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @copied_value__copied_value__ov2(%t2, %t3)
     call void @consumer__consumer(%t1, %t2)
     %t4 = addr $value
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t6, 5
     branch %t7, ^cond_then_1, ^cond_else_2
@@ -37,7 +37,7 @@ function @copied_value__copied_value(%this : ptr [object_bytes=4]) -> void [bind
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 4, %t2
     return void
 }
@@ -49,11 +49,11 @@ function @copied_value__copied_value__ov2(%this : ptr [alias=noalias, object_byt
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 1
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     return void
 }
@@ -63,10 +63,10 @@ function @consumer__consumer(%this : ptr [object_bytes=4], %input : ptr [pass=by
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = index i8 [projection=field] %input, 0
+    %t1 = index inbounds i8 [projection=field] %input, 0
     %t2 = load typed i32 %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }

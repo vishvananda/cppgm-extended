@@ -3,8 +3,8 @@ declare function @_GLOBAL__N_1__g() -> ptr [binding=internal, object=_ZN12_GLOBA
 function @_GLOBAL__N_1__f() -> i32 [binding=internal, object=_ZN12_GLOBAL__N_11fEv] {
   block ^entry:
     %t1 = call ptr @_GLOBAL__N_1__g()
-    %t2 = index i8 [projection=field] %t1, 4
-    %t3 = index i8 [projection=field] %t2, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     return i32 %t4
 }

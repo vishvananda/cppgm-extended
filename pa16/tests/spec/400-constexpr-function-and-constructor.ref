@@ -15,7 +15,7 @@ function @Point__Point(%this : ptr [object_bytes=4], %v : i32) -> void [binding=
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

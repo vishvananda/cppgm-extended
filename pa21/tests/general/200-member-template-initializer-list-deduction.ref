@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = call ptr @any_like__emplace(%t2, $argobj__1, %t7)
     store typed ptr %t8, $ref
     %t9 = load typed ptr $ref
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 2
     branch %t12, ^cond_then_1, ^cond_else_2
@@ -51,7 +51,7 @@ function @item__item__aggregate(%this : ptr [object_bytes=4], %value : i32) -> v
     store typed i32 %value, $value
     %t1 = load typed i32 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -89,10 +89,10 @@ function @any_like__emplace(%this : ptr [object_bytes=8], %il : obj<16x8>, %args
     store typed ptr %t3, $raw
     %t7 = load typed ptr $raw
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     store typed ptr %t7, %t9
     %t10 = load typed ptr $raw
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     return ptr %t11
 }
 function @any_like__holder_payload___holder(%this : ptr [object_bytes=4], %il : obj<16x8>, %args : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8any_like6holderI7payloadEC1I4itemJRiEEESt16initializer_listIT_EDpOT0_, inline_hint=yes] {
@@ -107,7 +107,7 @@ function @any_like__holder_payload___holder(%this : ptr [object_bytes=4], %il : 
     copyobj 16x8 %il, %t1
     store typed ptr %args, $args
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = addr $argobj__1
     %t5 = addr $il
     copyobj 16x8 %t5, %t4
@@ -130,7 +130,7 @@ function @payload__payload__ov2(%this : ptr [object_bytes=4], %list : obj<16x8>,
     %t3 = call i64 @std__initializer_list_item___size(%t2)
     %t4 = convert trunc i32 i64 %t3
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     return void
 }
@@ -140,7 +140,7 @@ function @std__initializer_list_item___size(%this : ptr [object_bytes=16]) -> i6
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = load typed i64 %t2
     return i64 %t3
 }

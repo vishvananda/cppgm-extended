@@ -8,7 +8,7 @@ global @value [binding=strong] = {
 function @read() -> i32 [binding=strong, object=_Z4readv] {
   block ^entry:
     %t1 = addr @value
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4

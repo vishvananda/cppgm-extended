@@ -65,7 +65,7 @@ function @lone(%p : ptr) -> i32 [binding=strong, object=_Z4loneP4Lone] {
     branch %t3, ^1, ^2
 
   block ^1:
-    %t4 = index i8 [projection=field] %p, 8
+    %t4 = index inbounds i8 [projection=field] %p, 8
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t5, 1
     store typed i32 %t6, %t4
@@ -94,7 +94,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 }
 function @Lone__next(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN4Lone4nextEv, inline_hint=yes] {
   block ^entry:
-    %t1 = index i8 [projection=field] %this, 8
+    %t1 = index inbounds i8 [projection=field] %this, 8
     %t2 = load typed i32 %t1
     %t3 = binary add nowrap i32 %t2, 1
     store typed i32 %t3, %t1

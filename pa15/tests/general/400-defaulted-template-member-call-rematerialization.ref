@@ -80,12 +80,12 @@ function @Lazy___cppgm_class_template_identity_1_int_constint____operator__(%thi
     store typed ptr %this, $this
     store typed i32 %input, $input
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed i32 $input
     %t5 = call i32 @Lazy_Root_int_constint____operator__(%t3, %t4)
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     %t8 = load typed ptr %t7
     %t9 = load typed i32 %t8
     %t10 = binary add nowrap i32 %t5, %t9
@@ -102,11 +102,11 @@ function @Lazy_Root_int_constint____Lazy(%this : ptr [object_bytes=16], %p : ptr
     store typed ptr %v, $v
     %t1 = load typed ptr $p
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed ptr $v
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed ptr %t4, %t6
     return void
 }
@@ -121,11 +121,11 @@ function @Lazy___cppgm_class_template_identity_1_int_constint____Lazy(%this : pt
     store typed ptr %v, $v
     %t1 = load typed ptr $p
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed ptr $v
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed ptr %t4, %t6
     return void
 }
@@ -137,12 +137,12 @@ function @Lazy_Root_int_constint____operator__(%this : ptr [object_bytes=16], %i
     store typed ptr %this, $this
     store typed i32 %input, $input
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed i32 $input
     %t5 = call i32 @Root__operator__(%t3, %t4)
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     %t8 = load typed ptr %t7
     %t9 = load typed i32 %t8
     %t10 = binary add nowrap i32 %t5, %t9

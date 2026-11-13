@@ -22,11 +22,11 @@ function @Count__Count(%this : ptr [object_bytes=8], %p : ptr, %__param2 : obj<1
     store typed ptr %this, $this
     store typed ptr %p, $p
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed ptr 0, %t2
     %t3 = load typed ptr $p
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     return void
 }
@@ -55,7 +55,7 @@ function @Holder__Holder(%this : ptr [object_bytes=8], %p : ptr, %d : obj<1x1> [
     store typed ptr %this, $this
     store typed ptr %p, $p
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $p
     %t4 = addr $argobj__1
     %t5 = addr $d
@@ -71,7 +71,7 @@ function @Count__Count__2(%this : ptr [object_bytes=8], %__param1 : ptr, %__para
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed ptr 0, %t2
     return void
 }

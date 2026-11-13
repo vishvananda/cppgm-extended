@@ -41,7 +41,7 @@ function @impl_double_tag___cppgm_class_template_identity_1___compute(%value : i
     %t1 = load typed i32 $value
     %t2 = addr $result
     %t3 = addr $result
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i64 0, %t4
     %t5 = addr $retobj__1
     %t6 = addr $result
@@ -58,7 +58,7 @@ function @impl_float_tag___cppgm_class_template_identity_2___compute(%value : i3
     %t1 = load typed i32 $value
     %t2 = addr $result
     %t3 = addr $result
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 0, %t4
     %t5 = addr $retobj__1
     %t6 = addr $result

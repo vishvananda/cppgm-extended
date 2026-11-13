@@ -7,27 +7,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $value
     %t2 = addr $value
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 1, %t4
     %t5 = addr $value
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = index i8 [projection=field] %t6, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 4
     store typed i32 2, %t7
     %t8 = addr $value
-    %t9 = index i8 [projection=field] %t8, 8
+    %t9 = index inbounds i8 [projection=field] %t8, 8
     store typed i32 3, %t9
     %t10 = addr $value
-    %t11 = index i8 [projection=field] %t10, 0
-    %t12 = index i8 [projection=field] %t11, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp eq i32 %t13, 1
     branch %t14, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t15 = addr $value
-    %t16 = index i8 [projection=field] %t15, 0
-    %t17 = index i8 [projection=field] %t16, 4
+    %t16 = index inbounds i8 [projection=field] %t15, 0
+    %t17 = index inbounds i8 [projection=field] %t16, 4
     %t18 = load typed i32 %t17
     %t19 = cmp eq i32 %t18, 2
     store typed i64 %t19, $land__2
@@ -43,7 +43,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_7:
     %t21 = addr $value
-    %t22 = index i8 [projection=field] %t21, 8
+    %t22 = index inbounds i8 [projection=field] %t21, 8
     %t23 = load typed i32 %t22
     %t24 = cmp eq i32 %t23, 3
     store typed i64 %t24, $land__3

@@ -24,17 +24,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = addr $e
     call void @DefaultedSafe__DefaultedSafe__ov2(%t8, %t9)
     %t10 = addr $b
-    %t11 = index i8 [projection=field] %t10, 0
-    %t12 = index i8 [projection=field] %t11, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed i64 %t12
     %t14 = addr $d
-    %t15 = index i8 [projection=field] %t14, 0
-    %t16 = index i8 [projection=field] %t15, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     %t17 = load typed i64 %t16
     %t18 = binary add nowrap i64 %t13, %t17
     %t19 = addr $f
-    %t20 = index i8 [projection=field] %t19, 0
-    %t21 = index i8 [projection=field] %t20, 0
+    %t20 = index inbounds i8 [projection=field] %t19, 0
+    %t21 = index inbounds i8 [projection=field] %t20, 0
     %t22 = load typed i64 %t21
     %t23 = binary add nowrap i64 %t18, %t22
     %t24 = cmp eq i64 %t23, 4
@@ -58,7 +58,7 @@ function @HoldsSafe__HoldsSafe(%this : ptr [object_bytes=8]) -> void [unwind=no,
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Safe__Safe(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -66,7 +66,7 @@ function @HoldsSafe__HoldsSafe(%this : ptr [object_bytes=8]) -> void [unwind=no,
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Safe___Safe(%t4)
     eh_end
     resume
@@ -79,9 +79,9 @@ function @HoldsSafe__HoldsSafe__2(%this : ptr [alias=noalias, object_bytes=8], %
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $other
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Safe__Safe__ov2(%t2, %t4)
     return void
 }
@@ -91,7 +91,7 @@ function @HoldsRisky__HoldsRisky(%this : ptr [object_bytes=8]) -> void [binding=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Risky__Risky(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -99,7 +99,7 @@ function @HoldsRisky__HoldsRisky(%this : ptr [object_bytes=8]) -> void [binding=
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Risky___Risky(%t4)
     eh_end
     resume
@@ -112,9 +112,9 @@ function @HoldsRisky__HoldsRisky__2(%this : ptr [alias=noalias, object_bytes=8],
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $other
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Risky__Risky__ov2(%t2, %t4)
     return void
 }
@@ -124,7 +124,7 @@ function @DefaultedSafe__DefaultedSafe(%this : ptr [object_bytes=8]) -> void [un
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Safe__Safe(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -132,7 +132,7 @@ function @DefaultedSafe__DefaultedSafe(%this : ptr [object_bytes=8]) -> void [un
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Safe___Safe(%t4)
     eh_end
     resume
@@ -145,9 +145,9 @@ function @DefaultedSafe__DefaultedSafe__ov2(%this : ptr [alias=noalias, object_b
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $__param1
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Safe__Safe__ov2(%t2, %t4)
     return void
 }
@@ -157,7 +157,7 @@ function @Safe__Safe(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=w
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i64 1, %t2
     return void
 }
@@ -169,10 +169,10 @@ function @Safe__Safe__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i64 %t3, %t5
     return void
 }
@@ -182,7 +182,7 @@ function @Risky__Risky(%this : ptr [object_bytes=8]) -> void [binding=weak, obje
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i64 2, %t2
     return void
 }
@@ -194,10 +194,10 @@ function @Risky__Risky__ov2(%this : ptr [alias=noalias, object_bytes=8], %other 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i64 %t3, %t5
     return void
 }

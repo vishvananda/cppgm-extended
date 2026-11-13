@@ -12,10 +12,10 @@ function @impl_handler___create(%__param0 : i32) -> i32 [binding=weak, object=_Z
     store typed i32 %__param0, $__param0
     %t1 = addr $d
     %t2 = addr $d
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     zeroinit 4x4 %t3
     %t4 = addr $d
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t5, $p
     %t6 = load typed ptr $p
     %t7 = call i32 @traits_allocator___check(%t6)

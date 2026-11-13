@@ -12,12 +12,12 @@ function @make(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_
     store typed ptr %first, $first
     store typed ptr %second, $second
     %t1 = addr $monitor
-    %t2 = index i8 [projection=field] %ret, 0
+    %t2 = index inbounds i8 [projection=field] %ret, 0
     store typed i32 1, %t2
-    %t3 = index i8 [projection=field] %ret, 8
+    %t3 = index inbounds i8 [projection=field] %ret, 8
     %t4 = load typed ptr $first
     call void @Value__Value__ov2(%t3, %t4)
-    %t5 = index i8 [projection=field] %ret, 24
+    %t5 = index inbounds i8 [projection=field] %ret, 24
     %t6 = load typed ptr $second
     call void @Value__Value__ov2(%t5, %t6)
     %t7 = addr $monitor
@@ -65,7 +65,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_7:
     %t11 = addr $result
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp eq i32 %t13, 1
     store typed i64 %t14, $land__3
@@ -81,8 +81,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_10:
     %t16 = addr $result
-    %t17 = index i8 [projection=field] %t16, 8
-    %t18 = index i8 [projection=field] %t17, 8
+    %t17 = index inbounds i8 [projection=field] %t16, 8
+    %t18 = index inbounds i8 [projection=field] %t17, 8
     %t19 = load typed i32 %t18
     %t20 = cmp eq i32 %t19, 3
     store typed i64 %t20, $land__4
@@ -98,8 +98,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_13:
     %t22 = addr $result
-    %t23 = index i8 [projection=field] %t22, 24
-    %t24 = index i8 [projection=field] %t23, 8
+    %t23 = index inbounds i8 [projection=field] %t22, 24
+    %t24 = index inbounds i8 [projection=field] %t23, 8
     %t25 = load typed i32 %t24
     %t26 = cmp eq i32 %t25, 4
     store typed i64 %t26, $land__5
@@ -115,11 +115,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_16:
     %t28 = addr $result
-    %t29 = index i8 [projection=field] %t28, 8
-    %t30 = index i8 [projection=field] %t29, 0
+    %t29 = index inbounds i8 [projection=field] %t28, 8
+    %t30 = index inbounds i8 [projection=field] %t29, 0
     %t31 = load typed ptr %t30
     %t32 = addr $result
-    %t33 = index i8 [projection=field] %t32, 8
+    %t33 = index inbounds i8 [projection=field] %t32, 8
     %t34 = cmp eq ptr %t31, %t33
     store typed i64 %t34, $land__6
     jump ^land_end_18
@@ -134,11 +134,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_19:
     %t36 = addr $result
-    %t37 = index i8 [projection=field] %t36, 24
-    %t38 = index i8 [projection=field] %t37, 0
+    %t37 = index inbounds i8 [projection=field] %t36, 24
+    %t38 = index inbounds i8 [projection=field] %t37, 0
     %t39 = load typed ptr %t38
     %t40 = addr $result
-    %t41 = index i8 [projection=field] %t40, 24
+    %t41 = index inbounds i8 [projection=field] %t40, 24
     %t42 = cmp eq ptr %t39, %t41
     store typed i64 %t42, $land__7
     jump ^land_end_21
@@ -172,13 +172,13 @@ function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=16], %value
     store typed ptr %value, $value
     %t1 = load typed ptr $this
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed ptr $value
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     %t6 = load typed i32 %t5
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     store typed i32 %t6, %t8
     %t9 = load typed i32 @copies
     %t10 = binary add nowrap i32 %t9, 1
@@ -205,11 +205,11 @@ function @Value__Value(%this : ptr [object_bytes=16], %number : i32) -> void [un
     store typed i32 %number, $number
     %t1 = load typed ptr $this
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed i32 $number
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i32 %t4, %t6
     return void
 }

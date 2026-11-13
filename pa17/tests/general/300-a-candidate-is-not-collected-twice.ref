@@ -7,10 +7,10 @@ function @operator__(%s : ptr [pass=by_address, object_bytes=4], %operation : ob
     %t1 = addr $operation
     copyobj 4x4 %operation, %t1
     %t2 = addr $operation
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = load typed ptr $s
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = binary add nowrap i32 %t7, %t4
     store typed i32 %t8, %t6
@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $s
     %t2 = addr $s
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 0, %t3
     %t4 = addr $o
     call void @op_t__op_t__ov2(%t4, 1)
@@ -36,7 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 4x4 %t7, %t6
     %t8 = call ptr @operator__(%t5, $argobj__1)
     %t9 = addr $s
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 1
     branch %t12, ^cond_then_1, ^cond_else_2
@@ -62,7 +62,7 @@ function @op_t__op_t__ov2(%this : ptr [object_bytes=4], %value : i32) -> void [b
     store typed i32 %value, $value
     %t1 = load typed i32 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

@@ -9,10 +9,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $src
     %t2 = addr $dst
     %t3 = addr $src
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 305419896, %t4
     %t5 = addr $dst
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 2139062143, %t6
     %t7 = addr $dst
     %t8 = index i8 %t7, 0
@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load typed ptr $lhs
     %t12 = load typed ptr $rhs
     %t13 = addr $dst
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = load typed i32 %t14
     %t16 = cmp eq i32 %t15, 2139062143
     branch %t16, ^cond_then_1, ^cond_else_2

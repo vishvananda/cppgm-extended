@@ -74,7 +74,7 @@ function @__lambda_run_t168_174__operator__(%this : ptr [object_bytes=8], %args2
     store typed ptr %args2, $args2
     store typed ptr %args2__pack2, $args2__pack2
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed i32 %t3
     %t5 = load typed ptr $args2

@@ -47,7 +47,7 @@ function @wrapper___cppgm_class_template_identity_1___async_write_some(%this : p
     store typed ptr %buffer, $buffer
     store typed ptr %handler, $handler
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $buffer
     %t4 = load typed ptr $handler
     %t5 = call i32 @basic_stream_socket_tcp_executor___async_write_some(%t2, %t3, %t4)

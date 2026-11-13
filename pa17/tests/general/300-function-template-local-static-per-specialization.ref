@@ -57,11 +57,11 @@ function @function_n_void____assign_to(%this : ptr [object_bytes=1], %__param1 :
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__decl0__stored
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = call i32 %t3() as () -> i32
     %t5 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__decl0__stored
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     %t7 = load typed ptr %t6
     %t8 = call i32 %t7() as () -> i32
     %t9 = binary add nowrap i32 %t4, %t8
@@ -74,11 +74,11 @@ function @function_n_void____assign_to__2(%this : ptr [object_bytes=1], %__param
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f493132696e69745f66756e63746f72454569545f__decl0__stored
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = call i32 %t3() as () -> i32
     %t5 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f493132696e69745f66756e63746f72454569545f__decl0__stored
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     %t7 = load typed ptr %t6
     %t8 = call i32 %t7() as () -> i32
     %t9 = binary add nowrap i32 %t4, %t8

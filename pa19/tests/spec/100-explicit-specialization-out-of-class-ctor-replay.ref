@@ -4,7 +4,7 @@ function @s_int___s__base_entry(%this : ptr [object_bytes=4]) -> void [binding=s
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 2, %t2
     return void
 }
@@ -14,7 +14,7 @@ function @s_int___s(%this : ptr [object_bytes=4]) -> void [binding=strong, objec
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 2, %t2
     return void
 }
@@ -28,7 +28,7 @@ function @s_int___s__ov2__base_entry(%this : ptr [object_bytes=4], %x : i32) -> 
     %t1 = load typed i32 $x
     %t2 = binary add nowrap i32 %t1, 10
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }
@@ -42,7 +42,7 @@ function @s_int___s__ov2(%this : ptr [object_bytes=4], %x : i32) -> void [bindin
     %t1 = load typed i32 $x
     %t2 = binary add nowrap i32 %t1, 10
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }
@@ -56,10 +56,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $c
     call void @s_int___s__ov2(%t2, 5)
     %t3 = addr $b
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = addr $c
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = binary add nowrap i32 %t5, %t8
     %t10 = binary sub nowrap i32 %t9, 17

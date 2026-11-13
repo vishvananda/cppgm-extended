@@ -10,12 +10,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $alias
     %t2 = addr $data
     %t3 = addr $alias
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     %t5 = addr $direct
     %t6 = addr $data
     %t7 = addr $direct
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed ptr %t6, %t8
     %t9 = addr $alias
     %t10 = call ptr @AliasBuffer__ptr(%t9)
@@ -40,7 +40,7 @@ function @AliasBuffer__ptr(%this : ptr [object_bytes=8]) -> ptr [binding=weak, o
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 function @DirectBuffer__ptr(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK12DirectBuffer3ptrEv, inline_hint=yes] {
@@ -49,6 +49,6 @@ function @DirectBuffer__ptr(%this : ptr [object_bytes=8]) -> ptr [binding=weak, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }

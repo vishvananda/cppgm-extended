@@ -4,7 +4,7 @@ function @Holder__by_ref(%this : ptr [object_bytes=8]) -> ptr [binding=strong, o
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 function @by_value(%x : ptr [pass=by_address, object_bytes=8]) -> obj<8x4> [binding=strong, object=_Z8by_valueRK1X] {
@@ -46,10 +46,10 @@ function @f(%h : ptr [pass=by_address, object_bytes=8], %in : ptr [pass=by_addre
 
   block ^condobj_end_3:
     %t7 = addr $local
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i32 %t8
     %t10 = addr $local
-    %t11 = index i8 [projection=field] %t10, 4
+    %t11 = index inbounds i8 [projection=field] %t10, 4
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     return i32 %t13

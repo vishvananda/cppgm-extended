@@ -32,14 +32,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $source
     call void @make(%t3, %t4)
     %t5 = addr $source
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed ptr %t6
     %t8 = cmp eq ptr %t7, 0
     branch %t8, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t9 = addr $moved
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed ptr %t10
     %t12 = addr $value
     %t13 = cmp eq ptr %t11, %t12
@@ -74,13 +74,13 @@ function @Owner__Owner__ov2(%this : ptr [alias=noalias, object_bytes=8], %other 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     %t6 = load typed ptr $other
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed ptr 0, %t7
     return void
 }
@@ -93,7 +93,7 @@ function @Owner__Owner(%this : ptr [object_bytes=8], %ptr : ptr) -> void [bindin
     store typed ptr %ptr, $ptr
     %t1 = load typed ptr $ptr
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

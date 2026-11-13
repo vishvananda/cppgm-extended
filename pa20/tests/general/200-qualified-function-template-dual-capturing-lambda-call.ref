@@ -62,7 +62,7 @@ function @N__Vec____lambda_N__Vec__add_t66_66__operator__(%this : ptr [object_by
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 1
     return i32 %t4
@@ -73,7 +73,7 @@ function @N__Vec____lambda_N__Vec__add_t77_77_n1__operator__(%this : ptr [object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary sub nowrap i32 %t3, 1
     return i32 %t4

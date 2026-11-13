@@ -16,7 +16,7 @@ function @ptr_X___ptr(%this : ptr [object_bytes=1]) -> void [binding=weak, objec
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @count_X___count(%t2)
     return void
 }
@@ -29,11 +29,11 @@ function @ptr_Y___ptr(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, o
     store typed ptr %this, $this
     store typed ptr %p, $p
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = addr $arg__1
     zeroinit 1x1 %t3
     %t4 = load typed ptr $p
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     call void @count_Y___count(%t2, %t3, %t5)
     return void
 }

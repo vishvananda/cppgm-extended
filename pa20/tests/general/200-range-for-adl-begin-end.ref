@@ -11,7 +11,7 @@ function @begin(%r : ptr [pass=by_address, object_bytes=8]) -> obj<8x8> [binding
     store typed ptr %r, $r
     %t1 = addr $retobj__1
     %t2 = load typed ptr $r
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     call void @Iter__Iter(%t1, %t4)
     return obj<8x8> $retobj__1
@@ -24,7 +24,7 @@ function @end(%r : ptr [pass=by_address, object_bytes=8]) -> obj<8x8> [binding=s
     store typed ptr %r, $r
     %t1 = addr $retobj__1
     %t2 = load typed ptr $r
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = binary mul i64 2, 4
     %t6 = index inbounds i8 %t4, %t5
@@ -91,7 +91,7 @@ function @Iter__Iter(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=we
     store typed ptr %p, $p
     %t1 = load typed ptr $p
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -104,7 +104,7 @@ function @Range__Range(%this : ptr [object_bytes=8], %data : ptr) -> void [bindi
     store typed ptr %data, $data
     %t1 = load typed ptr $data
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -116,10 +116,10 @@ function @Iter__operator__(%this : ptr [object_bytes=8], %o : ptr [pass=by_addre
     store typed ptr %this, $this
     store typed ptr %o, $o
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $o
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed ptr %t5
     %t7 = cmp ne ptr %t3, %t6
     %t8 = convert trunc u8 i64 %t7
@@ -131,7 +131,7 @@ function @Iter__operator_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     return ptr %t3
 }
@@ -141,7 +141,7 @@ function @Iter__operator____2(%this : ptr [object_bytes=8]) -> ptr [binding=weak
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = binary mul i64 1, 4
     %t5 = index inbounds i8 %t3, %t4

@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call obj<4x4> @convert_error()
     copyobj 4x4 %t2, %t1
     %t3 = addr $value
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 9
     branch %t6, ^cond_then_1, ^cond_else_2
@@ -50,7 +50,7 @@ function @leaf__result_char___result(%this : ptr [object_bytes=4], %input : i32)
     store typed i32 %input, $input
     %t1 = load typed i32 $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -62,7 +62,7 @@ function @leaf__result_char___error(%this : ptr [object_bytes=4]) -> obj<4x4> [b
     store typed ptr %this, $this
     %t1 = addr $retobj__1
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     call void @leaf__result_char___error_result__error_result__aggregate(%t1, %t4)
     return obj<4x4> $retobj__1
@@ -76,7 +76,7 @@ function @leaf__result_char___error_result__error_result__aggregate(%this : ptr 
     store typed i32 %value, $value
     %t1 = load typed i32 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -88,7 +88,7 @@ function @leaf__result_char___error_result__operatorresult_U_(%this : ptr [objec
     store typed ptr %this, $this
     %t1 = addr $retobj__1
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     call void @leaf__result_int___result(%t1, %t4)
     return obj<4x4> $retobj__1
@@ -102,7 +102,7 @@ function @leaf__result_int___result(%this : ptr [object_bytes=4], %input : i32) 
     store typed i32 %input, $input
     %t1 = load typed i32 $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

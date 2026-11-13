@@ -34,7 +34,7 @@ function @build() -> i32 [binding=strong, object=_Z5buildv] {
     %t11 = addr $elements
     %t12 = binary mul i64 11, 4
     %t13 = index inbounds i8 [projection=array_element] %t11, %t12
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = load typed i32 %t14
     %t16 = binary add nowrap i32 %t10, %t15
     %t17 = addr $elements
@@ -119,7 +119,7 @@ function @Element__Element(%this : ptr [object_bytes=4]) -> void [unwind=no, bin
     store typed ptr %this, $this
     %t1 = load typed i32 @constructed
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @constructed
     %t5 = binary add nowrap i32 %t4, 1

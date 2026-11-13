@@ -12,11 +12,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Holder__Holder(%t1)
     %t2 = addr $aggregate
     %t3 = addr $aggregate
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = binary and u32 7, 2
     store volatile u32 %t5, %t4
     %t6 = addr $aggregate
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = binary and u32 7, 5
     %t9 = binary shl u32 %t8, 3
     %t10 = load u32 %t7
@@ -24,14 +24,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = binary or u32 %t11, %t9
     store u32 %t12, %t7
     %t13 = addr $aggregate
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = load volatile i32 %t14
     %t16 = binary and i32 %t15, 7
     %t17 = copy u32 %t16
     %t18 = copy i32 %t17
     %t19 = binary add nowrap i32 %t18, 1
     %t20 = addr $aggregate
-    %t21 = index i8 [projection=field] %t20, 0
+    %t21 = index inbounds i8 [projection=field] %t20, 0
     %t22 = binary and i32 %t19, 7
     %t23 = copy u32 %t22
     %t24 = load volatile i32 %t21
@@ -39,7 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t26 = binary or i32 %t25, %t22
     store volatile i32 %t26, %t21
     %t27 = addr $holder
-    %t28 = index i8 [projection=field] %t27, 0
+    %t28 = index inbounds i8 [projection=field] %t27, 0
     %t29 = index inbounds i32 [projection=array_element] %t28, 0
     %t30 = load volatile i32 %t29
     %t31 = cmp ne i32 %t30, 5
@@ -47,7 +47,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_1:
     %t32 = addr $holder
-    %t33 = index i8 [projection=field] %t32, 0
+    %t33 = index inbounds i8 [projection=field] %t32, 0
     %t34 = index inbounds i32 [projection=array_element] %t33, 1
     %t35 = load volatile i32 %t34
     %t36 = cmp ne i32 %t35, 6
@@ -64,7 +64,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_4:
     %t38 = addr $holder
-    %t39 = index i8 [projection=field] %t38, 8
+    %t39 = index inbounds i8 [projection=field] %t38, 8
     %t40 = load volatile u8 %t39
     %t41 = binary and u8 %t40, 7
     %t42 = convert zext u32 u8 %t41
@@ -83,7 +83,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_7:
     %t46 = addr $holder
-    %t47 = index i8 [projection=field] %t46, 8
+    %t47 = index inbounds i8 [projection=field] %t46, 8
     %t48 = load u8 %t47
     %t49 = binary ushr u8 %t48, 3
     %t50 = binary and u8 %t49, 7
@@ -103,7 +103,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_10:
     %t55 = addr $aggregate
-    %t56 = index i8 [projection=field] %t55, 0
+    %t56 = index inbounds i8 [projection=field] %t55, 0
     %t57 = load volatile i32 %t56
     %t58 = binary and i32 %t57, 7
     %t59 = copy u32 %t58
@@ -122,7 +122,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_13:
     %t63 = addr $aggregate
-    %t64 = index i8 [projection=field] %t63, 0
+    %t64 = index inbounds i8 [projection=field] %t63, 0
     %t65 = load i32 %t64
     %t66 = binary shr i32 %t65, 3
     %t67 = binary and i32 %t66, 7
@@ -147,19 +147,19 @@ function @Holder__Holder(%this : ptr [object_bytes=12]) -> void [binding=weak, o
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = index i32 [projection=array_element] %t2, 0
     store volatile i32 5, %t3
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = index i32 [projection=array_element] %t5, 1
     store volatile i32 6, %t6
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     %t9 = binary and u8 7, 3
     store volatile u8 %t9, %t8
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 8
+    %t11 = index inbounds i8 [projection=field] %t10, 8
     %t12 = binary and u8 7, 4
     %t13 = binary shl u8 %t12, 3
     %t14 = load u8 %t11

@@ -571,11 +571,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_61:
     %t91 = addr $yes
     %t92 = addr $yes
-    %t93 = index i8 [projection=field] %t92, 0
+    %t93 = index inbounds i8 [projection=field] %t92, 0
     store typed i32 2, %t93
     %t94 = addr $no
     %t95 = addr $no
-    %t96 = index i8 [projection=field] %t95, 0
+    %t96 = index inbounds i8 [projection=field] %t95, 0
     store typed i32 0, %t96
     %t97 = addr $yes
     %t98 = call u8 @converted(0, %t97)
@@ -637,7 +637,7 @@ function @Convertible__operatorbool(%this : ptr [object_bytes=4]) -> u8 [binding
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @hits
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp ne i32 %t5, 0
     %t7 = convert trunc u8 i64 %t6

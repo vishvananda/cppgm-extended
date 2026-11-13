@@ -7,19 +7,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $a
     %t2 = addr $a
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 1, %t4
     %t5 = addr $b
     %t6 = addr $b
     %t7 = index i8 %t6, 0
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i32 2, %t8
     %t9 = addr $a
     %t10 = addr $b
     %t11 = call ptr @Derived__operator_(%t9, %t10)
     %t12 = addr $a
     %t13 = index i8 %t12, 0
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = load typed i32 %t14
     %t16 = cmp eq i32 %t15, 2
     branch %t16, ^cond_then_1, ^cond_else_2

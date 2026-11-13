@@ -31,22 +31,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $bits
     %t2 = addr $bits
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = binary and u32 7, 0
     store u32 %t4, %t3
     %t5 = addr $bits
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     %t7 = binary and u32 4294967295, 0
     store u32 %t7, %t6
     %t8 = convert sext i64 i32 0
     %t9 = addr $bits
-    %t10 = index i8 [projection=field] %t9, 8
+    %t10 = index inbounds i8 [projection=field] %t9, 8
     %t11 = binary and i64 7, %t8
     store i64 %t11, %t10
     %t12 = unary neg i32 1
     %t13 = convert sext i64 i32 %t12
     %t14 = addr $bits
-    %t15 = index i8 [projection=field] %t14, 8
+    %t15 = index inbounds i8 [projection=field] %t14, 8
     %t16 = binary and i64 7, %t13
     %t17 = binary shl i64 %t16, 3
     %t18 = load i64 %t15
@@ -54,7 +54,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = binary or i64 %t19, %t17
     store i64 %t20, %t15
     %t21 = addr $bits
-    %t22 = index i8 [projection=field] %t21, 8
+    %t22 = index inbounds i8 [projection=field] %t21, 8
     %t23 = binary and i64 1, 0
     %t24 = binary shl i64 %t23, 6
     %t25 = load i64 %t22
@@ -62,7 +62,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = binary or i64 %t26, %t24
     store i64 %t27, %t22
     %t28 = addr $bits
-    %t29 = index i8 [projection=field] %t28, 8
+    %t29 = index inbounds i8 [projection=field] %t28, 8
     %t30 = binary and i64 7, 0
     %t31 = binary shl i64 %t30, 7
     %t32 = load i64 %t29
@@ -71,20 +71,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i64 %t34, %t29
     %t35 = addr $compound
     %t36 = addr $compound
-    %t37 = index i8 [projection=field] %t36, 0
+    %t37 = index inbounds i8 [projection=field] %t36, 0
     %t38 = binary and u32 7, 3
     store u32 %t38, %t37
     %t39 = addr $compound
-    %t40 = index i8 [projection=field] %t39, 4
+    %t40 = index inbounds i8 [projection=field] %t39, 4
     %t41 = binary and u32 4294967295, 0
     store u32 %t41, %t40
     %t42 = convert sext i64 i32 0
     %t43 = addr $compound
-    %t44 = index i8 [projection=field] %t43, 8
+    %t44 = index inbounds i8 [projection=field] %t43, 8
     %t45 = binary and i64 7, %t42
     store i64 %t45, %t44
     %t46 = addr $compound
-    %t47 = index i8 [projection=field] %t46, 8
+    %t47 = index inbounds i8 [projection=field] %t46, 8
     %t48 = binary and i64 7, 0
     %t49 = binary shl i64 %t48, 3
     %t50 = load i64 %t47
@@ -92,7 +92,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t52 = binary or i64 %t51, %t49
     store i64 %t52, %t47
     %t53 = addr $compound
-    %t54 = index i8 [projection=field] %t53, 8
+    %t54 = index inbounds i8 [projection=field] %t53, 8
     %t55 = binary and i64 1, 0
     %t56 = binary shl i64 %t55, 6
     %t57 = load i64 %t54
@@ -100,7 +100,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t59 = binary or i64 %t58, %t56
     store i64 %t59, %t54
     %t60 = addr $compound
-    %t61 = index i8 [projection=field] %t60, 8
+    %t61 = index inbounds i8 [projection=field] %t60, 8
     %t62 = binary and i64 7, 0
     %t63 = binary shl i64 %t62, 7
     %t64 = load i64 %t61
@@ -108,7 +108,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t66 = binary or i64 %t65, %t63
     store i64 %t66, %t61
     %t67 = addr $compound
-    %t68 = index i8 [projection=field] %t67, 0
+    %t68 = index inbounds i8 [projection=field] %t67, 0
     %t69 = load i32 %t68
     %t70 = binary and i32 %t69, 7
     %t71 = copy u32 %t70
@@ -124,7 +124,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t81 = binary or i32 %t80, %t77
     store i32 %t81, %t68
     %t82 = addr $bits
-    %t83 = index i8 [projection=field] %t82, 0
+    %t83 = index inbounds i8 [projection=field] %t82, 0
     %t84 = load i32 %t83
     %t85 = binary and i32 %t84, 7
     %t86 = copy u32 %t85
@@ -136,7 +136,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t91 = addr $bits
-    %t92 = index i8 [projection=field] %t91, 0
+    %t92 = index inbounds i8 [projection=field] %t91, 0
     %t93 = load i32 %t92
     %t94 = binary and i32 %t93, 7
     %t95 = copy u32 %t94
@@ -156,7 +156,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_7:
     %t100 = addr $bits
-    %t101 = index i8 [projection=field] %t100, 0
+    %t101 = index inbounds i8 [projection=field] %t100, 0
     %t102 = load i32 %t101
     %t103 = binary and i32 %t102, 7
     %t104 = copy u32 %t103
@@ -178,7 +178,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_10:
     %t111 = addr $bits
-    %t112 = index i8 [projection=field] %t111, 0
+    %t112 = index inbounds i8 [projection=field] %t111, 0
     %t113 = load i32 %t112
     %t114 = binary and i32 %t113, 7
     %t115 = copy u32 %t114
@@ -199,7 +199,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_13:
     %t121 = addr $bits
-    %t122 = index i8 [projection=field] %t121, 0
+    %t122 = index inbounds i8 [projection=field] %t121, 0
     %t123 = load i32 %t122
     %t124 = binary and i32 %t123, 7
     %t125 = copy u32 %t124
@@ -219,7 +219,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_16:
     %t130 = addr $bits
-    %t131 = index i8 [projection=field] %t130, 4
+    %t131 = index inbounds i8 [projection=field] %t130, 4
     %t132 = load u32 %t131
     %t133 = binary and u32 %t132, 4294967295
     %t134 = binary sub u32 %t133, 1
@@ -238,7 +238,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_19:
     %t138 = addr $bits
-    %t139 = index i8 [projection=field] %t138, 8
+    %t139 = index inbounds i8 [projection=field] %t138, 8
     %t140 = load i64 %t139
     %t141 = binary and i64 %t140, 7
     %t142 = convert trunc i32 i64 %t141
@@ -258,7 +258,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_22:
     %t147 = addr $bits
-    %t148 = index i8 [projection=field] %t147, 8
+    %t148 = index inbounds i8 [projection=field] %t147, 8
     %t149 = load i64 %t148
     %t150 = binary and i64 %t149, 7
     %t151 = convert trunc i32 i64 %t150
@@ -277,7 +277,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_25:
     %t155 = addr $bits
-    %t156 = index i8 [projection=field] %t155, 8
+    %t156 = index inbounds i8 [projection=field] %t155, 8
     %t157 = load i64 %t156
     %t158 = binary shr i64 %t157, 3
     %t159 = binary and i64 %t158, 7
@@ -299,7 +299,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_28:
     %t166 = addr $bits
-    %t167 = index i8 [projection=field] %t166, 8
+    %t167 = index inbounds i8 [projection=field] %t166, 8
     %t168 = load i64 %t167
     %t169 = binary ushr i64 %t168, 6
     %t170 = binary and i64 %t169, 1
@@ -320,7 +320,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_31:
     %t176 = addr $compound
-    %t177 = index i8 [projection=field] %t176, 0
+    %t177 = index inbounds i8 [projection=field] %t176, 0
     %t178 = load i32 %t177
     %t179 = binary and i32 %t178, 7
     %t180 = copy u32 %t179
@@ -339,7 +339,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_34:
     %t184 = addr $bits
-    %t185 = index i8 [projection=field] %t184, 8
+    %t185 = index inbounds i8 [projection=field] %t184, 8
     %t186 = load i64 %t185
     %t187 = binary ushr i64 %t186, 7
     %t188 = binary and i64 %t187, 7

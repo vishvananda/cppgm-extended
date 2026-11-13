@@ -199,7 +199,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 4x1 @__constexpr_template__1, %t1
     %t2 = addr $words
     store typed u32 1, %t2
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     store typed u32 2, %t3
     %t4 = load volatile u32 $zero
     call void @fill_bytes(%t1, 0, %t4)

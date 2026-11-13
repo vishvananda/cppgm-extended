@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $arg
     %t2 = addr $arg
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 7, %t3
     %t4 = addr $argobj__2
     %t5 = addr $arg
@@ -34,7 +34,7 @@ function @unwrap(%arg : obj<8x8>) -> i64 [binding=weak, object=_Z6unwrapIlET_3Bo
     %t1 = addr $arg
     copyobj 8x8 %arg, %t1
     %t2 = addr $arg
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i64 %t3
     return i64 %t4
 }

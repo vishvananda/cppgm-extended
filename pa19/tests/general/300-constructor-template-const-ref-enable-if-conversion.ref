@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $src
     call void @duration_like_int___duration_like(%t3, %t4)
     %t5 = addr $dst
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     return i32 %t7
 }
@@ -26,7 +26,7 @@ function @duration_like_longlongint___duration_like(%this : ptr [object_bytes=8]
     %t1 = load typed ptr $r
     %t2 = load typed i64 %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i64 %t2, %t4
     return void
 }
@@ -38,11 +38,11 @@ function @duration_like_int___duration_like(%this : ptr [object_bytes=4], %other
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     %t4 = convert trunc i32 i64 %t3
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     return void
 }

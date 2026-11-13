@@ -91,7 +91,7 @@ function @probe__probe(%this : ptr [object_bytes=1], %input : u8) -> void [bindi
     store u8 %input, $input
     %t1 = load typed u8 $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed u8 %t1, %t3
     return void
 }
@@ -101,7 +101,7 @@ function @probe__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak,
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed u8 %t2
     return u8 %t3
 }

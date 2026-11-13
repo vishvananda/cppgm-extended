@@ -13,7 +13,7 @@ function @call(%h : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=stron
   block ^entry:
     store typed ptr %h, $h
     %t1 = load typed ptr $h
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = call i32 %t3(4) as (%arg0 : i32) -> i32
     return i32 %t4
@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $h
     %t2 = addr @plus_one
     %t3 = addr $h
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     %t5 = addr $h
     %t6 = call i32 @call(%t5)

@@ -53,7 +53,7 @@ function @holder_constint___holder(%this : ptr [object_bytes=8]) -> void [unwind
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @cache_constint___cache(%t2)
     return void
 }

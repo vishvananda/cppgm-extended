@@ -23,14 +23,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = addr $d
     %t10 = call ptr @Value__operator_(%t8, %t9)
     %t11 = addr $a
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed i64 %t12
     %t14 = cmp eq i64 %t13, 8
     branch %t14, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t15 = addr $b
-    %t16 = index i8 [projection=field] %t15, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     %t17 = load typed i64 %t16
     %t18 = cmp eq i64 %t17, 0
     store typed i64 %t18, $land__2
@@ -46,7 +46,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_7:
     %t20 = addr $c
-    %t21 = index i8 [projection=field] %t20, 0
+    %t21 = index inbounds i8 [projection=field] %t20, 0
     %t22 = load typed i64 %t21
     %t23 = cmp eq i64 %t22, 4
     store typed i64 %t23, $land__3
@@ -81,7 +81,7 @@ function @Value__Value(%this : ptr [object_bytes=8], %x : i64) -> void [binding=
     store typed i64 %x, $x
     %t1 = load typed i64 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     return void
 }
@@ -95,13 +95,13 @@ function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=8], %other 
     store typed ptr %other, $other
     store typed i32 %scale, $scale
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     %t4 = load typed i32 $scale
     %t5 = convert sext i64 i32 %t4
     %t6 = binary mul nowrap i64 %t3, %t5
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i64 %t6, %t8
     return void
 }
@@ -113,14 +113,14 @@ function @Value__Value__ov3(%this : ptr [alias=noalias, object_bytes=8], %other 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i64 %t3, %t5
     %t6 = convert sext i64 i32 0
     %t7 = load typed ptr $other
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i64 %t6, %t8
     return void
 }
@@ -132,10 +132,10 @@ function @Value__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_a
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i64 %t3, %t5
     %t6 = load typed ptr $this
     return ptr %t6

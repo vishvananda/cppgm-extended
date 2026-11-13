@@ -92,7 +92,7 @@ function @logic__tribool__tribool(%this : ptr [object_bytes=4], %initial : u8) -
   block ^cond_end_3:
     %t2 = load typed i32 $cond__1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }
@@ -104,7 +104,7 @@ function @logic__indeterminate(%value : obj<4x4>, %__param1 : obj<1x1> [classes=
     %t1 = addr $value
     copyobj 4x4 %value, %t1
     %t2 = addr $value
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = cmp eq i32 %t4, 2
     %t6 = convert trunc u8 i64 %t5

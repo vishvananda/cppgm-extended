@@ -445,7 +445,7 @@ function @read(%out : ptr) -> i32 [binding=strong, object=_Z4readP7OStream] {
 
   block ^basecast_end_3:
     %t8 = load typed ptr $basecast__1
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     return i32 %t10
 }
@@ -473,7 +473,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @IOStream__IOStream(%t1)
     %t2 = addr $stream
     %t3 = index i8 %t2, 28
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 7, %t4
     %t5 = addr $stream
     %t6 = index i8 %t5, 8
@@ -492,7 +492,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Weird__Weird(%t9)
     %t10 = addr $weird
     %t11 = index i8 %t10, 40
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     store typed i32 9, %t12
     %t13 = addr $weird
     %t14 = index i8 %t13, 32
@@ -511,7 +511,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @F__F(%t17)
     %t18 = addr $f
     %t19 = index i8 %t18, 32
-    %t20 = index i8 [projection=field] %t19, 0
+    %t20 = index inbounds i8 [projection=field] %t19, 0
     store typed i32 9, %t20
     %t21 = addr $f
     %t22 = index i8 %t21, 24
@@ -548,7 +548,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_12:
     %t41 = addr $e
     %t42 = call ptr @convert(%t41)
-    %t43 = index i8 [projection=field] %t42, 0
+    %t43 = index inbounds i8 [projection=field] %t42, 0
     %t44 = load typed i32 %t43
     %t45 = cmp ne i32 %t44, 7
     branch %t45, ^if_then_10, ^if_else_11
@@ -753,7 +753,7 @@ function @B__B__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }

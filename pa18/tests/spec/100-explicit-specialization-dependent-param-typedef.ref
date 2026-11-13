@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = call obj<16x8> @convert(1, 2, %t2, %t4)
     copyobj 16x8 %t5, %t1
     %t6 = addr $r
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed ptr %t7
     %t9 = addr $buf
     %t10 = index inbounds i8 %t9, 11
@@ -64,11 +64,11 @@ function @result__result__aggregate(%this : ptr [object_bytes=16], %ptr : ptr, %
     store typed i32 %ec, $ec
     %t1 = load typed ptr $ptr
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed i32 $ec
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i32 %t4, %t6
     return void
 }

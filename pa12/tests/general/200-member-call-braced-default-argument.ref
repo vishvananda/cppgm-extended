@@ -41,7 +41,7 @@ function @storage_ptr__storage_ptr(%this : ptr [object_bytes=4]) -> void [bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }
@@ -54,7 +54,7 @@ function @parser__reset(%this : ptr [object_bytes=1], %sp : obj<4x4>) -> void [b
     %t1 = addr $sp
     copyobj 4x4 %sp, %t1
     %t2 = addr $sp
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     store typed i32 %t4, @seen
     return void

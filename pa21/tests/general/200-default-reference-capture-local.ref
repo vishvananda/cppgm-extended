@@ -63,7 +63,7 @@ function @__lambda_main_t16_20__operator__(%this : ptr [object_bytes=8]) -> i32 
     eh_cleanup ^catch_cleanup_6
     store typed ptr %t6, $error
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed ptr %t8
     %t10 = load typed i32 %t9
     %t11 = load typed ptr $error

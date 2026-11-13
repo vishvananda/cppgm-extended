@@ -6,7 +6,7 @@ function @operator__(%out : ptr [pass=by_address, object_bytes=4], %__param1 : p
     store typed ptr %out, $out
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $out
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 2, %t2
     %t3 = load typed ptr $out
     return ptr %t3
@@ -18,12 +18,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $out
     %t2 = addr $out
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 0, %t3
     %t4 = addr $out
     call void @bound(%t4)
     %t5 = addr $out
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp ne i32 %t7, 2
     branch %t8, ^if_then_1, ^if_else_2
@@ -38,7 +38,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = addr $out
     call void @constant(%t9)
     %t10 = addr $out
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp ne i32 %t12, 2
     branch %t13, ^if_then_4, ^if_else_5
@@ -53,7 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = addr $out
     call void @alias(%t14)
     %t15 = addr $out
-    %t16 = index i8 [projection=field] %t15, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     %t17 = load typed i32 %t16
     %t18 = cmp ne i32 %t17, 2
     branch %t18, ^if_then_7, ^if_else_8
@@ -71,7 +71,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t21 = addr $text
     call void @parameter(%t20, %t21)
     %t22 = addr $out
-    %t23 = index i8 [projection=field] %t22, 0
+    %t23 = index inbounds i8 [projection=field] %t22, 0
     %t24 = load typed i32 %t23
     %t25 = cmp ne i32 %t24, 1
     branch %t25, ^if_then_10, ^if_else_11
@@ -87,7 +87,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = addr $text
     call void @reference(%t26, %t27)
     %t28 = addr $out
-    %t29 = index i8 [projection=field] %t28, 0
+    %t29 = index inbounds i8 [projection=field] %t28, 0
     %t30 = load typed i32 %t29
     %t31 = cmp ne i32 %t30, 2
     %t32 = convert trunc i32 i64 %t31
@@ -166,7 +166,7 @@ function @Stream__operator__(%this : ptr [object_bytes=4], %__param1 : ptr) -> p
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     %t3 = load typed ptr $this
     return ptr %t3

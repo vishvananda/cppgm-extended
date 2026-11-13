@@ -33,7 +33,7 @@ function @const_method_array_member_reference__holder__check(%this : ptr [object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = addr @__strlit__1
     %t4 = call u32 @const_method_array_member_reference__take(%t2, %t3)
     return u32 %t4

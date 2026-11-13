@@ -56,7 +56,7 @@ function @change(%p : ptr, %i : u32, %mode : u32) -> void [binding=strong, objec
     store volatile f64 0.25, @factor
     %t3 = binary add u32 %i, 2
     %t4 = convert uitofp f64 u32 %t3
-    %t5 = index i8 [projection=field] %p, 8
+    %t5 = index inbounds i8 [projection=field] %p, 8
     %t6 = load typed f64 %t5
     %t7 = binary add f64 %t4, %t6
     store typed f64 %t7, %t5
@@ -93,7 +93,7 @@ function @guarded_pair(%p : ptr, %n : u32, %denominator : u32, %mode : u32) -> u
     %t6 = load typed f64 %p
     %t7 = binary mul f64 %t5, %t6
     store typed f64 %t7, %p
-    %t8 = index i8 [projection=field] %p, 8
+    %t8 = index inbounds i8 [projection=field] %p, 8
     %t9 = load typed f64 %t8
     %t10 = binary mul f64 %t5, %t9
     store typed f64 %t10, %t8
@@ -152,7 +152,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = phi u32 [^if_end_20: %t47, ^lor_rhs_4: 0]
     %t7 = addr $p
     store typed f64 8, %t7
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     store typed f64 -16, %t8
     branch %t6, ^loop_preheader_7, ^for_end_12
 
@@ -204,7 +204,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t34, ^if_then_15, ^lor_rhs_14
 
   block ^lor_rhs_14:
-    %t35 = index i8 [projection=field] %t7, 8
+    %t35 = index inbounds i8 [projection=field] %t7, 8
     %t36 = load typed f64 %t35
     %t37 = binary mul f64 %t30, -2
     %t38 = cmp ne f64 %t36, %t37
@@ -214,7 +214,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_end_16:
-    %t39 = index i8 [projection=field] %t7, 8
+    %t39 = index inbounds i8 [projection=field] %t7, 8
     store typed f64 -0, %t7
     store typed f64 0, %t39
     %t40 = call u32 @scale_pair(%t7, %t39, %t6, 0.5)
@@ -243,7 +243,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_21:
     %t49 = addr $p__shadow2
     store typed f64 8, %t49
-    %t50 = index i8 [projection=field] %t49, 8
+    %t50 = index inbounds i8 [projection=field] %t49, 8
     store typed f64 16, %t50
     store volatile f64 0.5, @factor
     store volatile u32 0, @destroyed
@@ -259,7 +259,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t55, ^if_then_24, ^lor_rhs_23
 
   block ^lor_rhs_23:
-    %t56 = index i8 [projection=field] %t49, 8
+    %t56 = index inbounds i8 [projection=field] %t49, 8
     %t57 = load typed f64 %t56
     %t58 = cmp ne f64 %t57, 5.375
     branch %t58, ^if_then_24, ^if_end_25
@@ -281,7 +281,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 6
 
   block ^if_end_28:
-    %t63 = index i8 [projection=field] %t49, 8
+    %t63 = index inbounds i8 [projection=field] %t49, 8
     store typed f64 8, %t49
     store typed f64 16, %t63
     store volatile f64 0.5, @factor

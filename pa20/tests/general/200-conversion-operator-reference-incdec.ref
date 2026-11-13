@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = binary add u32 %t8, 1
     store typed u32 %t9, %t7
     %t10 = addr $counter
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed u32 %t11
     %t13 = cmp eq u32 %t12, 5
     branch %t13, ^cond_then_1, ^cond_else_2
@@ -42,7 +42,7 @@ function @Counter__Counter(%this : ptr [object_bytes=4], %initial : u32) -> void
     store typed u32 %initial, $initial
     %t1 = load typed u32 $initial
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed u32 %t1, %t3
     return void
 }
@@ -52,7 +52,7 @@ function @Counter__operatorunsigned_(%this : ptr [object_bytes=4]) -> ptr [bindi
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 alias object _ZN7CounterC2Ej = @Counter__Counter

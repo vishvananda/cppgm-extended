@@ -10,7 +10,7 @@ function @case0__A__A__ov2__base_entry(%this : ptr [object_bytes=4], %__param1 :
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -22,7 +22,7 @@ function @case0__A__A__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=b
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -38,7 +38,7 @@ function @case0__check() -> i32 [binding=strong, object=_ZN5case05checkEv] {
     %t4 = call obj<4x4> @case0__X__operatorA(%t3)
     copyobj 4x4 %t4, %t2
     %t5 = addr $a
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 2
     branch %t8, ^cond_then_1, ^cond_else_2
@@ -63,7 +63,7 @@ function @case1__A__A__ov2__base_entry(%this : ptr [object_bytes=4], %__param1 :
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -75,7 +75,7 @@ function @case1__A__A__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=b
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -90,7 +90,7 @@ function @case1__check() -> i32 [binding=strong, object=_ZN5case15checkEv] {
     %t3 = addr $x
     call void @case1__A__A__ov2(%t2, %t3)
     %t4 = addr $a
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t6, 1
     branch %t7, ^cond_then_1, ^cond_else_2
@@ -115,7 +115,7 @@ function @case2__A__A__ov2__base_entry(%this : ptr [object_bytes=4], %__param1 :
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -127,7 +127,7 @@ function @case2__A__A__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=b
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -143,7 +143,7 @@ function @case2__check() -> i32 [binding=strong, object=_ZN5case25checkEv] {
     %t3 = call obj<4x4> @case2__X__operatorA(%t2)
     copyobj 4x4 %t3, %t1
     %t4 = addr $a
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t6, 2
     branch %t7, ^cond_then_1, ^cond_else_2
@@ -168,7 +168,7 @@ function @case3__A__A__ov2__base_entry(%this : ptr [object_bytes=4], %__param1 :
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -180,7 +180,7 @@ function @case3__A__A__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=b
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -196,7 +196,7 @@ function @case3__check() -> i32 [binding=strong, object=_ZN5case35checkEv] {
     %t4 = call obj<4x4> @case3__X__operatorA(%t3)
     copyobj 4x4 %t4, %t2
     %t5 = addr $a
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 2
     branch %t8, ^cond_then_1, ^cond_else_2
@@ -221,7 +221,7 @@ function @case4__A__A__ov2__base_entry(%this : ptr [object_bytes=4], %__param1 :
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -233,7 +233,7 @@ function @case4__A__A__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=b
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -250,7 +250,7 @@ function @case4__check() -> i32 [binding=strong, object=_ZN5case45checkEv] {
     %t5 = call obj<4x4> @case4__Base__operatorA(%t4)
     copyobj 4x4 %t5, %t2
     %t6 = addr $a
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 2
     branch %t9, ^cond_then_1, ^cond_else_2
@@ -275,7 +275,7 @@ function @case5__A__A__ov2__base_entry(%this : ptr [object_bytes=4], %__param1 :
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -287,7 +287,7 @@ function @case5__A__A__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=b
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -304,7 +304,7 @@ function @case5__check() -> i32 [binding=strong, object=_ZN5case55checkEv] {
     %t5 = call obj<4x4> @case5__Mid__operatorA(%t4)
     copyobj 4x4 %t5, %t2
     %t6 = addr $a
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 2
     branch %t9, ^cond_then_1, ^cond_else_2
@@ -329,7 +329,7 @@ function @case6__A__A__ov2__base_entry(%this : ptr [object_bytes=4], %__param1 :
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -341,7 +341,7 @@ function @case6__A__A__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=b
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -358,7 +358,7 @@ function @case6__check() -> i32 [binding=strong, object=_ZN5case65checkEv] {
     %t5 = call obj<4x4> @case6__Base__operatorA(%t4)
     copyobj 4x4 %t5, %t2
     %t6 = addr $a
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 2
     branch %t9, ^cond_then_1, ^cond_else_2
@@ -383,7 +383,7 @@ function @case7__A__A__ov2__base_entry(%this : ptr [object_bytes=4], %__param1 :
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -395,7 +395,7 @@ function @case7__A__A__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=b
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -412,7 +412,7 @@ function @case7__check() -> i32 [binding=strong, object=_ZN5case75checkEv] {
     %t5 = call obj<4x4> @case7__Base__operatorA(%t4)
     copyobj 4x4 %t5, %t2
     %t6 = addr $a
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 2
     branch %t9, ^cond_then_1, ^cond_else_2
@@ -437,7 +437,7 @@ function @case8__A__A__ov2__base_entry(%this : ptr [object_bytes=4], %__param1 :
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -449,7 +449,7 @@ function @case8__A__A__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=b
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -466,7 +466,7 @@ function @case8__check() -> i32 [binding=strong, object=_ZN5case85checkEv] {
     %t5 = call obj<4x4> @case8__Base__operatorA(%t4)
     copyobj 4x4 %t5, %t2
     %t6 = addr $a
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 2
     branch %t9, ^cond_then_1, ^cond_else_2
@@ -500,7 +500,7 @@ function @case9__check() -> i32 [binding=strong, object=_ZN5case95checkEv] {
     %t7 = index i8 %t6, 0
     copyobj 4x4 %t7, %t2
     %t8 = addr $a
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 3
     branch %t11, ^cond_then_1, ^cond_else_2
@@ -529,7 +529,7 @@ function @case10__check() -> i32 [binding=strong, object=_ZN6case105checkEv] {
     %t4 = call ptr @case10__X__operatorA_(%t3)
     copyobj 4x4 %t4, %t2
     %t5 = addr $a
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 2
     branch %t8, ^cond_then_1, ^cond_else_2
@@ -802,7 +802,7 @@ function @case10__A__A(%this : ptr [object_bytes=4], %n : i32) -> void [binding=
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -823,7 +823,7 @@ function @case0__A__A(%this : ptr [object_bytes=4], %n : i32) -> void [binding=w
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -836,7 +836,7 @@ function @case2__A__A(%this : ptr [object_bytes=4], %n : i32) -> void [binding=w
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -849,7 +849,7 @@ function @case3__A__A(%this : ptr [object_bytes=4], %n : i32) -> void [binding=w
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -862,7 +862,7 @@ function @case4__A__A(%this : ptr [object_bytes=4], %n : i32) -> void [binding=w
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -875,7 +875,7 @@ function @case5__A__A(%this : ptr [object_bytes=4], %n : i32) -> void [binding=w
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -888,7 +888,7 @@ function @case6__A__A(%this : ptr [object_bytes=4], %n : i32) -> void [binding=w
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -901,7 +901,7 @@ function @case7__A__A(%this : ptr [object_bytes=4], %n : i32) -> void [binding=w
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -914,7 +914,7 @@ function @case8__A__A(%this : ptr [object_bytes=4], %n : i32) -> void [binding=w
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -937,7 +937,7 @@ function @case9__A__A__base_entry(%this : ptr [object_bytes=4], %n : i32) -> voi
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

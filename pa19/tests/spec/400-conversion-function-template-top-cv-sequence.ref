@@ -12,14 +12,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call obj<4x4> @make_result__2()
     copyobj 4x4 %t4, %t3
     %t5 = addr $first
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 7
     branch %t8, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t9 = addr $second
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 7
     store typed i64 %t12, $land__2
@@ -88,7 +88,7 @@ function @result_int___result(%this : ptr [object_bytes=4], %input : i32) -> voi
     store typed i32 %input, $input
     %t1 = load typed i32 $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

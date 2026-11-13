@@ -16,6 +16,7 @@ validated final module:
 | `code_bytes` | Function body bytes, including local declarations |
 | `instructions` | Static instructions, including control markers |
 | `memory_ops` | Static scalar/SIMD/bulk linear-memory operations |
+| `zero_offset_memory_ops` | Static scalar/SIMD loads and stores with zero memory-immediate offset |
 | `control_depth` | Maximum nested block, loop, if or exception regions |
 
 A sidecar's `quality.module` bounds use `module`, `code` and `data` for total

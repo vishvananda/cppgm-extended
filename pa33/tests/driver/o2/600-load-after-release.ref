@@ -64,7 +64,7 @@ function @sum_after_delete(%big : ptr [pass=by_address, object_bytes=1048592], %
   block ^unrolled_2:
     %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t29]
     %t4 = phi i64 [^loop_preheader_1: 1, ^unrolled_2: %t28]
-    %t5 = index i8 [projection=field] %big, 8
+    %t5 = index inbounds i8 [projection=field] %big, 8
     %t6 = load typed ptr %t5
     %t7 = index inbounds i8 [projection=array_element] %t6, %t3
     %t8 = load i8 %t7
@@ -107,7 +107,7 @@ function @sum_after_delete(%big : ptr [pass=by_address, object_bytes=1048592], %
     branch %t38, ^for_body_5, ^for_end_6
 
   block ^for_body_5:
-    %t39 = index i8 [projection=field] %big, 8
+    %t39 = index inbounds i8 [projection=field] %big, 8
     %t40 = load typed ptr %t39
     %t41 = index inbounds i8 [projection=array_element] %t40, %t35
     %t42 = load i8 %t41
@@ -196,7 +196,7 @@ function @sum_after_branch_delete(%big : ptr [pass=by_address, object_bytes=1677
   block ^unrolled_5:
     %t5 = phi i64 [^loop_preheader_4: 0, ^unrolled_5: %t31]
     %t6 = phi i64 [^loop_preheader_4: %t2, ^unrolled_5: %t30]
-    %t7 = index i8 [projection=field] %big, 8
+    %t7 = index inbounds i8 [projection=field] %big, 8
     %t8 = load typed ptr %t7
     %t9 = index inbounds i8 [projection=array_element] %t8, %t5
     %t10 = load i8 %t9
@@ -239,7 +239,7 @@ function @sum_after_branch_delete(%big : ptr [pass=by_address, object_bytes=1677
     branch %t40, ^for_body_8, ^for_end_9
 
   block ^for_body_8:
-    %t41 = index i8 [projection=field] %big, 8
+    %t41 = index inbounds i8 [projection=field] %big, 8
     %t42 = load typed ptr %t41
     %t43 = index inbounds i8 [projection=array_element] %t42, %t37
     %t44 = load i8 %t43
@@ -319,7 +319,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call ptr @operatornew(1048592)
     %t2 = addr @__strlit__1
-    %t3 = index i8 [projection=field] %t1, 8
+    %t3 = index inbounds i8 [projection=field] %t1, 8
     store typed ptr %t2, %t3
     %t4 = load volatile i32 @zero
     %t5 = binary add nowrap i32 %t4, 5
@@ -332,7 +332,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_2:
     %t8 = call ptr @operatornew(1048592)
-    %t9 = index i8 [projection=field] %t8, 8
+    %t9 = index inbounds i8 [projection=field] %t8, 8
     store typed ptr %t2, %t9
     %t10 = load volatile i32 @zero
     %t11 = call i64 @sum_after_delete(%t8, %t10)
@@ -347,7 +347,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i64 42, %t13
     %t14 = addr $out
     store typed i64 7, %t14
-    %t15 = index i8 [projection=field] %t14, 8
+    %t15 = index inbounds i8 [projection=field] %t14, 8
     store typed i64 7, %t15
     %t16 = load volatile i32 @zero
     call void @fill_after_delete(%t13, %t14, %t16)
@@ -360,7 +360,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_6:
     %t19 = call ptr @operatornew(16777232)
-    %t20 = index i8 [projection=field] %t19, 8
+    %t20 = index inbounds i8 [projection=field] %t19, 8
     store typed ptr %t2, %t20
     %t21 = load volatile i32 @zero
     %t22 = call i64 @sum_after_branch_delete(%t19, %t21, 1)

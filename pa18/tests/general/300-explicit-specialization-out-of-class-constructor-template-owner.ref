@@ -16,7 +16,7 @@ function @explicit_specialization_constructor_owner__run() -> i32 [binding=stron
     %t2 = addr @explicit_specialization_constructor_owner__target
     call void @explicit_specialization_constructor_owner__box_void___box(%t1, %t2)
     %t3 = addr $value
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_1, ^cond_else_2
@@ -47,7 +47,7 @@ function @explicit_specialization_constructor_owner__box_void___box(%this : ptr 
     store typed ptr %this, $this
     store typed ptr %fn, $fn
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     store typed i32 0, $value
     %t3 = addr $value
@@ -55,7 +55,7 @@ function @explicit_specialization_constructor_owner__box_void___box(%this : ptr 
     call void %t4(%t3) as (%arg0 : ptr [pass=by_address, object_bytes=4]) -> void
     %t5 = load typed i32 $value
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed i32 %t5, %t7
     return void
 }

@@ -1,0 +1,19 @@
+{
+  "exports": ["folded_load", "folded_store", "copied_load", "address_used"],
+  "calls": [
+    {"export": "exercise", "result": "241"},
+    {"export": "plain_field", "args": ["-16"], "result": "91"},
+    {"export": "scaled_wrap", "args": ["-16"], "result": "92"},
+    {"export": "negative_wrap", "args": ["8"], "result": "93"},
+    {"export": "plain_copy", "args": ["-16"], "result": "94"}
+  ],
+  "quality": {
+    "levels": [0, 1, 2, 3],
+    "functions": {
+      "folded_load": {"memory_ops": 1, "zero_offset_memory_ops": 0},
+      "folded_store": {"memory_ops": 1, "zero_offset_memory_ops": 0},
+      "copied_load": {"memory_ops": 1, "zero_offset_memory_ops": 0},
+      "address_used": {"memory_ops": 1, "zero_offset_memory_ops": 0}
+    }
+  }
+}

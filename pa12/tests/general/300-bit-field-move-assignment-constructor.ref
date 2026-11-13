@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $target
     call void @Bits__Bits(%t2)
     %t3 = addr $source
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = binary and u8 0, 1
     %t6 = convert zext u32 u8 %t5
     %t7 = load u8 %t4
@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = binary or u8 %t8, %t5
     store u8 %t9, %t4
     %t10 = addr $source
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = binary and u8 3, 3
     %t13 = convert zext u32 u8 %t12
     %t14 = binary shl u8 %t12, 1
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = addr $source
     copyobj 1x4 %t19, %t18
     %t20 = addr $target
-    %t21 = index i8 [projection=field] %t20, 0
+    %t21 = index inbounds i8 [projection=field] %t20, 0
     %t22 = load u8 %t21
     %t23 = binary and u8 %t22, 1
     %t24 = convert zext u32 u8 %t23
@@ -39,7 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_1:
     %t27 = addr $target
-    %t28 = index i8 [projection=field] %t27, 0
+    %t28 = index inbounds i8 [projection=field] %t27, 0
     %t29 = load u8 %t28
     %t30 = binary ushr u8 %t29, 1
     %t31 = binary and u8 %t30, 3
@@ -64,11 +64,11 @@ function @Bits__Bits(%this : ptr [object_bytes=4]) -> void [binding=weak, object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary and u8 1, 1
     store u8 %t3, %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = binary and u8 3, 2
     %t7 = binary shl u8 %t6, 1
     %t8 = load u8 %t5

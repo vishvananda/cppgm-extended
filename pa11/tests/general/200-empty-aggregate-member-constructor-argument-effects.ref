@@ -15,12 +15,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $holder
     %t2 = addr $holder
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = call i32 @next()
     %t5 = call i32 @next()
     call void @Empty__Empty(%t3, %t4, %t5)
     %t6 = addr $holder
-    %t7 = index i8 [projection=field] %t6, 4
+    %t7 = index inbounds i8 [projection=field] %t6, 4
     store typed i32 7, %t7
     %t8 = load typed i32 @calls
     %t9 = cmp eq i32 %t8, 2
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t10 = addr $holder
-    %t11 = index i8 [projection=field] %t10, 4
+    %t11 = index inbounds i8 [projection=field] %t10, 4
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 7
     store typed i64 %t13, $land__2

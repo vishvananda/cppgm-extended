@@ -11,10 +11,10 @@ function @make_count() -> i32 [binding=strong, object=_Z10make_countv] {
     %t3 = load typed i32 @destroyed
     %t4 = binary sub nowrap i32 %t2, %t3
     %t5 = addr $holder
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = binary mul i64 2, 4
     %t8 = index inbounds i8 [projection=array_element] %t6, %t7
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = binary add nowrap i32 %t4, %t10
     %t12 = addr $holder
@@ -80,17 +80,17 @@ function @Holder__Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, bind
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary mul i64 0, 4
     %t4 = index i8 [projection=array_element] %t2, %t3
     call void @Element__Element(%t4)
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = binary mul i64 1, 4
     %t8 = index i8 [projection=array_element] %t6, %t7
     call void @Element__Element(%t8)
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = binary mul i64 2, 4
     %t12 = index i8 [projection=array_element] %t10, %t11
     call void @Element__Element(%t12)
@@ -100,17 +100,17 @@ function @Holder__Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, bind
 
   block ^constructor_cleanup_1:
     %t13 = load typed ptr $this
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = binary mul i64 2, 4
     %t16 = index i8 [projection=array_element] %t14, %t15
     call void @Element___Element(%t16)
     %t17 = load typed ptr $this
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     %t19 = binary mul i64 1, 4
     %t20 = index i8 [projection=array_element] %t18, %t19
     call void @Element___Element(%t20)
     %t21 = load typed ptr $this
-    %t22 = index i8 [projection=field] %t21, 0
+    %t22 = index inbounds i8 [projection=field] %t21, 0
     %t23 = binary mul i64 0, 4
     %t24 = index i8 [projection=array_element] %t22, %t23
     call void @Element___Element(%t24)
@@ -126,7 +126,7 @@ function @Holder___Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, bin
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary mul i64 2, 4
     %t4 = index i8 [projection=array_element] %t2, %t3
     call void @Element___Element(%t4)
@@ -135,12 +135,12 @@ function @Holder___Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, bin
 
   block ^destructor_suffix_cleanup_3:
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = binary mul i64 1, 4
     %t8 = index i8 [projection=array_element] %t6, %t7
     call void @Element___Element(%t8)
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = binary mul i64 0, 4
     %t12 = index i8 [projection=array_element] %t10, %t11
     call void @Element___Element(%t12)
@@ -150,7 +150,7 @@ function @Holder___Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, bin
   block ^destructor_suffix_next_4:
     eh_cleanup ^destructor_suffix_cleanup_5
     %t13 = load typed ptr $this
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = binary mul i64 1, 4
     %t16 = index i8 [projection=array_element] %t14, %t15
     call void @Element___Element(%t16)
@@ -159,7 +159,7 @@ function @Holder___Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, bin
 
   block ^destructor_suffix_cleanup_5:
     %t17 = load typed ptr $this
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     %t19 = binary mul i64 0, 4
     %t20 = index i8 [projection=array_element] %t18, %t19
     call void @Element___Element(%t20)
@@ -168,7 +168,7 @@ function @Holder___Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, bin
 
   block ^destructor_suffix_next_6:
     %t21 = load typed ptr $this
-    %t22 = index i8 [projection=field] %t21, 0
+    %t22 = index inbounds i8 [projection=field] %t21, 0
     %t23 = binary mul i64 0, 4
     %t24 = index i8 [projection=array_element] %t22, %t23
     call void @Element___Element(%t24)
@@ -176,17 +176,17 @@ function @Holder___Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, bin
 
   block ^destructor_cleanup_1:
     %t25 = load typed ptr $this
-    %t26 = index i8 [projection=field] %t25, 0
+    %t26 = index inbounds i8 [projection=field] %t25, 0
     %t27 = binary mul i64 2, 4
     %t28 = index i8 [projection=array_element] %t26, %t27
     call void @Element___Element(%t28)
     %t29 = load typed ptr $this
-    %t30 = index i8 [projection=field] %t29, 0
+    %t30 = index inbounds i8 [projection=field] %t29, 0
     %t31 = binary mul i64 1, 4
     %t32 = index i8 [projection=array_element] %t30, %t31
     call void @Element___Element(%t32)
     %t33 = load typed ptr $this
-    %t34 = index i8 [projection=field] %t33, 0
+    %t34 = index inbounds i8 [projection=field] %t33, 0
     %t35 = binary mul i64 0, 4
     %t36 = index i8 [projection=array_element] %t34, %t35
     call void @Element___Element(%t36)
@@ -202,7 +202,7 @@ function @Element__Element(%this : ptr [object_bytes=4]) -> void [unwind=no, bin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     %t3 = load typed i32 @constructed
     %t4 = binary add nowrap i32 %t3, 1

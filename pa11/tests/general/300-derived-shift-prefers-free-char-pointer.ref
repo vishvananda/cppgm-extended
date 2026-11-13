@@ -11,7 +11,7 @@ function @operator__(%b : ptr [pass=by_address, object_bytes=4], %__param1 : ptr
     store typed ptr %b, $b
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $b
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 2, %t2
     %t3 = load typed ptr $b
     return ptr %t3
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = call ptr @operator__(%t3, %t4)
     %t6 = addr $d
     %t7 = index i8 %t6, 0
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i32 %t8
     %t10 = cmp eq i32 %t9, 2
     branch %t10, ^cond_then_1, ^cond_else_2
@@ -62,7 +62,7 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=4]) -> void [binding=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }

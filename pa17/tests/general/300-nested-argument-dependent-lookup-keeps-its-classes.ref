@@ -6,17 +6,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $s
     %t2 = addr $s
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 0, %t3
     %t4 = addr $f
     %t5 = addr $f
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 4, %t6
     %t7 = addr $s
     %t8 = addr $f
     %t9 = call ptr @operator__(%t7, %t8)
     %t10 = addr $s
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 4
     branch %t13, ^cond_then_1, ^cond_else_2
@@ -41,10 +41,10 @@ function @operator__(%s : ptr [pass=by_address, object_bytes=4], %f : ptr [pass=
     store typed ptr %s, $s
     store typed ptr %f, $f
     %t1 = load typed ptr $f
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $s
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = binary add nowrap i32 %t6, %t3
     store typed i32 %t7, %t5

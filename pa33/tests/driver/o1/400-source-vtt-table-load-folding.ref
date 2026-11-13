@@ -86,7 +86,7 @@ function @Middle__Middle__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr
     %t4 = index i8 %this, %t3
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t5, 1
-    %t7 = index i8 [projection=field] %this, 8
+    %t7 = index inbounds i8 [projection=field] %this, 8
     store typed i32 %t6, %t7
     return void
 }

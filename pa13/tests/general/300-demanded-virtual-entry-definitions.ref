@@ -260,7 +260,7 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=16], %n : i32) -> voi
     store typed ptr %t3, %t1
     %t4 = load typed i32 $n
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i32 %t4, %t6
     %t7 = load typed i32 @base_constructions
     %t8 = binary add nowrap i32 %t7, 1
@@ -295,7 +295,7 @@ function @Base__value(%this : ptr [object_bytes=16]) -> i32 [binding=weak, objec
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = load typed i32 %t2
     return i32 %t3
 }

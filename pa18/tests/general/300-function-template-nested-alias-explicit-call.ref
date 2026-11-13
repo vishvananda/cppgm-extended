@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed ptr $dst
     %t8 = call obj<16x8> @helper(%t6, 2, %t7)
     copyobj 16x8 %t8, %t5
-    %t9 = index i8 [projection=field] %t5, 8
+    %t9 = index inbounds i8 [projection=field] %t5, 8
     %t10 = load typed ptr %t9
     %t11 = load typed ptr $dst
     %t12 = binary sub ptr %t10, %t11
@@ -45,11 +45,11 @@ function @helper(%first : ptr, %n : i64, %result : ptr) -> obj<16x8> [binding=we
     %t1 = addr $p
     %t2 = load typed ptr $first
     %t3 = addr $p
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     %t5 = load typed ptr $result
     %t6 = addr $p
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     store typed ptr %t5, %t7
     %t8 = addr $retobj__1
     %t9 = addr $p

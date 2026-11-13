@@ -270,9 +270,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr @__constexpr_template__1
     %t2 = addr $fills
     store typed u32 0, %t2
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     store typed u32 165, %t3
-    %t4 = index i8 [projection=field] %t2, 8
+    %t4 = index inbounds i8 [projection=field] %t2, 8
     store typed u32 255, %t4
     jump ^for_cond_1
 

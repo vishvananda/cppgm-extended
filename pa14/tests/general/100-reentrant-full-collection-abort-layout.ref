@@ -10,7 +10,7 @@ function @pa13_reentrant_layout_read_tail(%node : ptr) -> i32 [binding=strong, o
   block ^entry:
     store typed ptr %node, $node
     %t1 = load typed ptr $node
-    %t2 = index i8 [projection=field] %t1, 28
+    %t2 = index inbounds i8 [projection=field] %t1, 28
     %t3 = load typed i32 %t2
     return i32 %t3
 }

@@ -222,7 +222,9 @@ Place FunctionLowering::member_pointer_place(const syntax::BinaryExpr& expr)
 	const lowir::Value object = member_pointer_object(expr);
 	const RValue offset = operand(*expr.right, ConversionContext::Operand);
 	Place place = Place();
-	place.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, object, offset).value;
+	place.storage = index(
+		lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, object, offset, lowir::IndexBounds::InBounds)
+						.value;
 	// A member of a union object (lowir.md "Instruction Facts").
 	const sema::Type* object_type = WithoutParentheses(expr.left)->facts->type;
 	const sema::ClassEntity* cls = sema::ClassOf(

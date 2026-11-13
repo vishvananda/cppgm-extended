@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $b
     %t2 = addr $b
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed u32 2, %t3
     %t4 = addr $b
     %t5 = call u32 @bits__remove(%t4, 1)
@@ -32,7 +32,7 @@ function @bits__remove(%this : ptr [object_bytes=4], %exponent_bits : u32) -> u3
     store typed ptr %this, $this
     store typed u32 %exponent_bits, $exponent_bits
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed u32 %t2
     %t4 = load typed u32 $exponent_bits
     %t5 = binary add u32 %t3, %t4

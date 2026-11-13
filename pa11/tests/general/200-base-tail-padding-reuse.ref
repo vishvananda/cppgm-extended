@@ -74,13 +74,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t24 = index i8 %t23, 0
     store typed ptr %t24, $base
     %t25 = load typed ptr $base
-    %t26 = index i8 [projection=field] %t25, 4
+    %t26 = index inbounds i8 [projection=field] %t25, 4
     store i8 9, %t26
     %t27 = load typed ptr $base
-    %t28 = index i8 [projection=field] %t27, 0
+    %t28 = index inbounds i8 [projection=field] %t27, 0
     store typed i32 10, %t28
     %t29 = addr $derived
-    %t30 = index i8 [projection=field] %t29, 5
+    %t30 = index inbounds i8 [projection=field] %t29, 5
     %t31 = load i8 %t30
     %t32 = convert sext i32 i8 %t31
     %t33 = cmp ne i32 %t32, 3
@@ -88,7 +88,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_15:
     %t34 = addr $derived
-    %t35 = index i8 [projection=field] %t34, 6
+    %t35 = index inbounds i8 [projection=field] %t34, 6
     %t36 = load typed i16 %t35
     %t37 = convert sext i32 i16 %t36
     %t38 = cmp ne i32 %t37, 4
@@ -97,7 +97,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_14:
     %t39 = addr $derived
     %t40 = index i8 %t39, 0
-    %t41 = index i8 [projection=field] %t40, 4
+    %t41 = index inbounds i8 [projection=field] %t40, 4
     %t42 = load i8 %t41
     %t43 = convert sext i32 i8 %t42
     %t44 = cmp ne i32 %t43, 9
@@ -106,7 +106,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_13:
     %t45 = addr $derived
     %t46 = index i8 %t45, 0
-    %t47 = index i8 [projection=field] %t46, 0
+    %t47 = index inbounds i8 [projection=field] %t46, 0
     %t48 = load typed i32 %t47
     %t49 = cmp ne i32 %t48, 10
     branch %t49, ^if_then_11, ^if_else_12
@@ -121,10 +121,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t50 = addr $pod
     %t51 = addr $pod
     %t52 = index i8 %t51, 0
-    %t53 = index i8 [projection=field] %t52, 4
+    %t53 = index inbounds i8 [projection=field] %t52, 4
     store i8 5, %t53
     %t54 = addr $pod
-    %t55 = index i8 [projection=field] %t54, 8
+    %t55 = index inbounds i8 [projection=field] %t54, 8
     store i8 6, %t55
     %t56 = addr $pod
     %t57 = call u8 @byte_at(%t56, 8)
@@ -135,7 +135,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_19:
     %t60 = addr $pod
     %t61 = index i8 %t60, 0
-    %t62 = index i8 [projection=field] %t61, 4
+    %t62 = index inbounds i8 [projection=field] %t61, 4
     %t63 = load i8 %t62
     %t64 = convert sext i32 i8 %t63
     %t65 = cmp ne i32 %t64, 5
@@ -159,10 +159,10 @@ function @Derived__Derived(%this : ptr [object_bytes=8]) -> void [binding=weak, 
     %t2 = index i8 %t1, 0
     call void @Base__Base__base_entry(%t2)
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 5
+    %t4 = index inbounds i8 [projection=field] %t3, 5
     store i8 3, %t4
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 6
+    %t6 = index inbounds i8 [projection=field] %t5, 6
     store typed i16 4, %t6
     return void
 }
@@ -172,10 +172,10 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [binding=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     store i8 2, %t4
     return void
 }

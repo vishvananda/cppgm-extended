@@ -13,10 +13,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $no
     %t2 = convert trunc u8 i32 64
     %t3 = addr $no
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store u8 %t2, %t4
     %t5 = addr $no
-    %t6 = index i8 [projection=field] %t5, 1
+    %t6 = index inbounds i8 [projection=field] %t5, 1
     store typed u8 0, %t6
     %t7 = addr $no
     %t8 = call u8 @Proxy__operatorbool(%t7)
@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = addr $tmpref__1
     store typed ptr %t9, $first
     %t10 = addr $no
-    %t11 = index i8 [projection=field] %t10, 1
+    %t11 = index inbounds i8 [projection=field] %t10, 1
     store typed u8 1, %t11
     %t12 = load typed ptr $first
     %t13 = load typed u8 %t12
@@ -45,10 +45,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = addr $yes
     %t17 = convert trunc u8 i32 0
     %t18 = addr $yes
-    %t19 = index i8 [projection=field] %t18, 0
+    %t19 = index inbounds i8 [projection=field] %t18, 0
     store u8 %t17, %t19
     %t20 = addr $yes
-    %t21 = index i8 [projection=field] %t20, 1
+    %t21 = index inbounds i8 [projection=field] %t20, 1
     store typed u8 1, %t21
     %t22 = addr $yes
     %t23 = call u8 @Proxy__operatorbool(%t22)
@@ -56,7 +56,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t24 = addr $tmpref__2
     store typed ptr %t24, $second
     %t25 = addr $yes
-    %t26 = index i8 [projection=field] %t25, 1
+    %t26 = index inbounds i8 [projection=field] %t25, 1
     store typed u8 0, %t26
     %t27 = load typed ptr $second
     %t28 = load typed u8 %t27
@@ -87,7 +87,7 @@ function @Proxy__operatorbool(%this : ptr [object_bytes=2]) -> u8 [binding=weak,
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @conversions
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 1
+    %t4 = index inbounds i8 [projection=field] %t3, 1
     %t5 = load typed u8 %t4
     return u8 %t5
 }

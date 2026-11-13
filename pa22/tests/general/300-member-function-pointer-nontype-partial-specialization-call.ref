@@ -61,7 +61,7 @@ function @holder___cppgm_class_template_identity_1___apply(%this : ptr [object_b
     store typed ptr %this, $this
     store typed ptr %value, $value
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $value
     %t4 = call i32 @example__fast_mem_fn_int__target_____target__id_1___operator__(%t2, %t3)
     return i32 %t4
@@ -80,7 +80,7 @@ function @holder___cppgm_class_template_identity_1___holder(%this : ptr [object_
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return void
 }
 function @example__fast_mem_fn_int__target_____target__id_1___operator__(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZNK7example11fast_mem_fnIM6targetKFivEXadL_ZNKS1_2idEvEELi1EEclIS1_EEiRKT_, inline_hint=yes] {

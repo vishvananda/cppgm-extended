@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call obj<16x8> @allocate_at_least(%t2, %t3)
     copyobj 16x8 %t4, %t1
     %t5 = addr $result
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed ptr %t6
     %t8 = addr $value
     %t9 = cmp eq ptr %t7, %t8
@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t10 = addr $result
-    %t11 = index i8 [projection=field] %t10, 8
+    %t11 = index inbounds i8 [projection=field] %t10, 8
     %t12 = load typed i64 %t11
     %t13 = convert sext i64 i32 1
     %t14 = cmp eq i64 %t12, %t13
@@ -72,11 +72,11 @@ function @allocation_result__allocation_result__aggregate(%this : ptr [object_by
     store typed i64 %count, $count
     %t1 = load typed ptr $ptr
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed i64 $count
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i64 %t4, %t6
     return void
 }

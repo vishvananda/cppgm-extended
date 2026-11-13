@@ -1,0 +1,34 @@
+function @read_field(%object : ptr) -> i32 [binding=strong, object=_Z10read_fieldP5Outer] {
+  slot $object : ptr
+
+  block ^entry:
+    store typed ptr %object, $object
+    %t1 = load typed ptr $object
+    %t2 = index inbounds i8 [projection=field] %t1, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    return i32 %t4
+}
+function @write_field(%object : ptr, %value : i32) -> void [binding=strong, object=_Z11write_fieldP5Outeri] {
+  slot $object : ptr
+  slot $value : i32
+
+  block ^entry:
+    store typed ptr %object, $object
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $object
+    %t3 = index inbounds i8 [projection=field] %t2, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
+    store volatile i32 %t1, %t4
+    return void
+}
+function @zero_field(%object : ptr) -> ptr [binding=strong, object=_Z10zero_fieldP5Outer] {
+  slot $object : ptr
+
+  block ^entry:
+    store typed ptr %object, $object
+    %t1 = load typed ptr $object
+    %t2 = index inbounds i8 [projection=field] %t1, 0
+    return ptr %t2
+}

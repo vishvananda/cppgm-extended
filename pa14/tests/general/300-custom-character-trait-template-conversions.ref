@@ -81,7 +81,7 @@ function @UChar__UChar(%this : ptr [object_bytes=4], %code : u32) -> void [bindi
     store typed u32 %code, $code
     %t1 = load typed u32 $code
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed u32 %t1, %t3
     return void
 }
@@ -91,7 +91,7 @@ function @UChar__operatorunsignedint(%this : ptr [object_bytes=4]) -> u32 [bindi
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed u32 %t2
     return u32 %t3
 }

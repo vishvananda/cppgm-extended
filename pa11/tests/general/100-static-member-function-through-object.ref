@@ -68,7 +68,7 @@ function @through(%w : obj<8x8>) -> u8 [binding=strong, object=_Z7through4Wrap] 
     %t1 = addr $w
     copyobj 8x8 %w, %t1
     %t2 = addr $w
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = call u8 %t4(2, 1) as (%arg0 : i32, %arg1 : i32) -> u8
     return u8 %t5
@@ -180,7 +180,7 @@ function @Wrap__Wrap(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=we
     store typed ptr %p, $p
     %t1 = load typed ptr $p
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

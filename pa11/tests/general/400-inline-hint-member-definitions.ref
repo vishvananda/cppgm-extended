@@ -4,7 +4,7 @@ function @Box__out_of_class(%this : ptr [object_bytes=8]) -> i32 [binding=strong
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 4
     return i32 %t4
@@ -32,11 +32,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $box
     %t2 = addr $box
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 0, %t3
     %t4 = addr $box
-    %t5 = index i8 [projection=field] %t4, 4
-    %t6 = index i8 [projection=field] %t5, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 1, %t6
     eh_try ^cleanup_action_5
     %t7 = addr $box
@@ -105,7 +105,7 @@ function @Box__in_class(%this : ptr [object_bytes=8]) -> i32 [binding=weak, obje
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 1
     return i32 %t4
@@ -125,7 +125,7 @@ function @Box__inline_out_of_class(%this : ptr [object_bytes=8]) -> i32 [binding
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 5
     return i32 %t4
@@ -136,7 +136,7 @@ function @friend_in_class(%box : ptr [pass=by_address, object_bytes=8]) -> i32 [
   block ^entry:
     store typed ptr %box, $box
     %t1 = load typed ptr $box
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 3
     return i32 %t4
@@ -158,13 +158,13 @@ function @Box___Box(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=we
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     call void @Member___Member(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     call void @Member___Member(%t4)
     eh_end
     resume
@@ -178,7 +178,7 @@ function @Member___Member(%this : ptr [object_bytes=4]) -> void [unwind=no, bind
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }

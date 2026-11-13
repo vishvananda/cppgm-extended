@@ -234,7 +234,7 @@ function @G__G(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1G
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @created
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }
@@ -244,7 +244,7 @@ function @G___G(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed i32 @next
     %t5 = binary sub nowrap i32 %t4, 1
@@ -264,7 +264,7 @@ function @G___G(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1
     %t8 = binary add nowrap i32 %t7, 1
     store typed i32 %t8, @drops
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 2
     branch %t12, ^if_then_4, ^if_else_5

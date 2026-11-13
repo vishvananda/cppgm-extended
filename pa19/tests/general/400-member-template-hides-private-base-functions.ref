@@ -34,7 +34,7 @@ function @matcher_traits_true____cppgm_class_template_identity_1___match(%this :
     store i8 %ch, $ch
     store typed ptr %tr, $tr
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load i8 $ch
     %t4 = load typed ptr $tr
     %t5 = addr $argobj__1

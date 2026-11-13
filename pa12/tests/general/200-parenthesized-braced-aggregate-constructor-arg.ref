@@ -14,12 +14,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Payload__Payload__aggregate(%t4, 3, 4)
     call void @Holder__Holder__ov2(%t3, %t4)
     %t5 = addr $direct
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = index i8 [projection=field] %t6, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 4
     %t8 = load typed i32 %t7
     %t9 = addr $functional
-    %t10 = index i8 [projection=field] %t9, 0
-    %t11 = index i8 [projection=field] %t10, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t8, %t12
     %t14 = binary sub nowrap i32 %t13, 5
@@ -36,11 +36,11 @@ function @Payload__Payload__aggregate(%this : ptr [object_bytes=8], %code : i32,
     store typed i32 %detail, $detail
     %t1 = load typed i32 $code
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $detail
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -52,7 +52,7 @@ function @Holder__Holder__ov2(%this : ptr [object_bytes=8], %v : ptr [pass=by_ad
     store typed ptr %this, $this
     store typed ptr %v, $v
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $v
     copyobj 8x4 %t3, %t2
     return void

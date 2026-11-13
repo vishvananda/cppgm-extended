@@ -102,7 +102,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^call_unwind_end_3:
     %t4 = addr $whole
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     %t6 = load typed i32 %t5
     %t7 = cmp ne i32 %t6, 1
     branch %t7, ^if_then_4, ^if_else_5
@@ -130,7 +130,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_9:
     %t10 = addr $part
     %t11 = index i8 %t10, 0
-    %t12 = index i8 [projection=field] %t11, 8
+    %t12 = index inbounds i8 [projection=field] %t11, 8
     %t13 = load typed i32 %t12
     %t14 = cmp ne i32 %t13, 2
     branch %t14, ^if_then_10, ^if_else_11
@@ -176,7 +176,7 @@ function @counted__counted__base_entry(%this : ptr [object_bytes=16], %__vtt : p
     store typed i32 %t4, @__local_static__counted__counted__decl0__count
     %t5 = load typed i32 @__local_static__counted__counted__decl0__count
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     store typed i32 %t5, %t7
     return void
 }
@@ -290,7 +290,7 @@ function @shared__shared__base_entry(%this : ptr [object_bytes=4]) -> void [bind
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -311,7 +311,7 @@ function @counted__counted(%this : ptr [object_bytes=16]) -> void [binding=weak,
     store typed i32 %t7, @__local_static__counted__counted__decl0__count
     %t8 = load typed i32 @__local_static__counted__counted__decl0__count
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 8
+    %t10 = index inbounds i8 [projection=field] %t9, 8
     store typed i32 %t8, %t10
     return void
 }

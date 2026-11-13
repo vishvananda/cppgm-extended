@@ -107,7 +107,7 @@ function @member_control(%x : i32) -> i32 [binding=strong, object=_Z14member_con
     %t2 = load typed i32 $x
     call void @Member__Member(%t1, %t2)
     %t3 = addr $object
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     return i32 %t5
 }
@@ -194,7 +194,7 @@ function @Member__Member(%this : ptr [object_bytes=4], %x : i32) -> void [bindin
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

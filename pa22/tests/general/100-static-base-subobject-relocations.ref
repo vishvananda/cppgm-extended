@@ -23,18 +23,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = load typed ptr @member_reference
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 3, %t2
     %t3 = load typed ptr @array_reference
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 5, %t4
     %t5 = load typed ptr @nested_reference
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 7, %t6
     %t7 = addr @holder
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     %t9 = index i8 %t8, 4
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp ne i32 %t11, 3
     branch %t12, ^lor_short_2, ^lor_rhs_1
@@ -44,7 +44,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = binary mul i64 1, 12
     %t15 = index inbounds i8 [projection=array_element] %t13, %t14
     %t16 = index i8 %t15, 4
-    %t17 = index i8 [projection=field] %t16, 0
+    %t17 = index inbounds i8 [projection=field] %t16, 0
     %t18 = load typed i32 %t17
     %t19 = cmp ne i32 %t18, 5
     store typed i64 %t19, $lor__1
@@ -61,7 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_4:
     %t21 = addr @further
     %t22 = index i8 %t21, 4
-    %t23 = index i8 [projection=field] %t22, 0
+    %t23 = index inbounds i8 [projection=field] %t22, 0
     %t24 = load typed i32 %t23
     %t25 = cmp ne i32 %t24, 7
     store typed i64 %t25, $lor__2
@@ -80,7 +80,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t28 = binary mul i64 0, 12
     %t29 = index inbounds i8 [projection=array_element] %t27, %t28
     %t30 = index i8 %t29, 4
-    %t31 = index i8 [projection=field] %t30, 0
+    %t31 = index inbounds i8 [projection=field] %t30, 0
     %t32 = load typed i32 %t31
     %t33 = cmp ne i32 %t32, 0
     store typed i64 %t33, $lor__3
@@ -99,7 +99,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t36 = binary mul i64 2, 12
     %t37 = index inbounds i8 [projection=array_element] %t35, %t36
     %t38 = index i8 %t37, 4
-    %t39 = index i8 [projection=field] %t38, 0
+    %t39 = index inbounds i8 [projection=field] %t38, 0
     %t40 = load typed i32 %t39
     %t41 = cmp ne i32 %t40, 0
     store typed i64 %t41, $lor__4
@@ -116,7 +116,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_13:
     %t43 = load typed ptr @member_pointer
     %t44 = addr @holder
-    %t45 = index i8 [projection=field] %t44, 8
+    %t45 = index inbounds i8 [projection=field] %t44, 8
     %t46 = index i8 %t45, 4
     %t47 = cmp ne ptr %t43, %t46
     store typed i64 %t47, $lor__5

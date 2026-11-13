@@ -15,16 +15,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $b
     call void @build(%t3, %t4, %t5)
     %t6 = addr $p
-    %t7 = index i8 [projection=field] %t6, 0
-    %t8 = index i8 [projection=field] %t7, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i32 %t8
     %t10 = cmp eq i32 %t9, 1
     branch %t10, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t11 = addr $p
-    %t12 = index i8 [projection=field] %t11, 4
-    %t13 = index i8 [projection=field] %t12, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 4
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = load typed i32 %t13
     %t15 = cmp eq i32 %t14, 2
     store typed i64 %t15, $land__2
@@ -59,7 +59,7 @@ function @movable__movable(%this : ptr [object_bytes=4], %v : i32) -> void [bind
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -95,12 +95,12 @@ function @pair_movable_movable___pair(%this : ptr [object_bytes=8], %u : ptr [pa
     store typed ptr %u, $u
     store typed ptr %v, $v
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $u
     %t4 = call ptr @forward(%t3)
     call void @movable__movable__ov3(%t2, %t4)
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     %t7 = load typed ptr $v
     %t8 = call ptr @forward(%t7)
     call void @movable__movable__ov3(%t6, %t8)
@@ -114,14 +114,14 @@ function @movable__movable__ov3(%this : ptr [alias=noalias, object_bytes=4], %ot
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     %t6 = unary neg i32 1
     %t7 = load typed ptr $other
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i32 %t6, %t8
     return void
 }

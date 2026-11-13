@@ -25,7 +25,7 @@ function @__lambda_get_t31_36___FUN(%x : ptr [pass=by_address, object_bytes=4]) 
   block ^entry:
     store typed ptr %x, $x
     %t1 = load typed ptr $x
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -38,7 +38,7 @@ function @U__U(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, ob
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

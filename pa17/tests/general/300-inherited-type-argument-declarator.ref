@@ -18,8 +18,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $machine
     %t2 = addr $machine
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
-    %t5 = index i8 [projection=field] %t4, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 7, %t5
     %t6 = addr $machine
     %t7 = call i32 @Player__read(%t6)
@@ -49,7 +49,7 @@ function @Player__read(%fsm : ptr [pass=by_address, object_bytes=4]) -> i32 [bin
     store typed ptr %fsm, $fsm
     %t1 = load typed ptr $fsm
     %t2 = call ptr @Machine_Playing____get_state(%t1)
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     return i32 %t4
 }
@@ -95,6 +95,6 @@ function @Machine_Playing____get_state(%this : ptr [object_bytes=4]) -> ptr [bin
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     return ptr %t3
 }

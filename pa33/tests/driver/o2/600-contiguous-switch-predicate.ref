@@ -3274,9 +3274,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_210:
     %t542 = addr $choices__shadow1
     store typed i64 65533, %t542
-    %t543 = index i8 [projection=field] %t542, 8
+    %t543 = index inbounds i8 [projection=field] %t542, 8
     store typed i64 65534, %t543
-    %t544 = index i8 [projection=field] %t542, 16
+    %t544 = index inbounds i8 [projection=field] %t542, 16
     store typed i64 65535, %t544
     jump ^for_cond_211
 
@@ -3372,9 +3372,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_228:
     %t583 = addr $choices__shadow2
     store typed i64 32767, %t583
-    %t584 = index i8 [projection=field] %t583, 8
+    %t584 = index inbounds i8 [projection=field] %t583, 8
     store typed i64 32768, %t584
-    %t585 = index i8 [projection=field] %t583, 16
+    %t585 = index inbounds i8 [projection=field] %t583, 16
     store typed i64 32769, %t585
     jump ^for_cond_229
 
@@ -3470,9 +3470,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_246:
     %t624 = addr $choices__shadow3
     store typed i64 65535, %t624
-    %t625 = index i8 [projection=field] %t624, 8
+    %t625 = index inbounds i8 [projection=field] %t624, 8
     store typed i64 0, %t625
-    %t626 = index i8 [projection=field] %t624, 16
+    %t626 = index inbounds i8 [projection=field] %t624, 16
     store typed i64 1, %t626
     jump ^for_cond_247
 
@@ -3568,9 +3568,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_264:
     %t665 = addr $choices__shadow4
     store typed i64 1, %t665
-    %t666 = index i8 [projection=field] %t665, 8
+    %t666 = index inbounds i8 [projection=field] %t665, 8
     store typed i64 3, %t666
-    %t667 = index i8 [projection=field] %t665, 16
+    %t667 = index inbounds i8 [projection=field] %t665, 16
     store typed i64 4, %t667
     jump ^for_cond_265
 
@@ -3666,9 +3666,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_282:
     %t706 = addr $choices__shadow5
     store typed i64 1, %t706
-    %t707 = index i8 [projection=field] %t706, 8
+    %t707 = index inbounds i8 [projection=field] %t706, 8
     store typed i64 2, %t707
-    %t708 = index i8 [projection=field] %t706, 16
+    %t708 = index inbounds i8 [projection=field] %t706, 16
     store typed i64 3, %t708
     %t709 = addr @__constexpr_template__19
     jump ^for_cond_283
@@ -3765,9 +3765,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_300:
     %t748 = addr $choices__shadow6
     store typed i64 4294967293, %t748
-    %t749 = index i8 [projection=field] %t748, 8
+    %t749 = index inbounds i8 [projection=field] %t748, 8
     store typed i64 4294967294, %t749
-    %t750 = index i8 [projection=field] %t748, 16
+    %t750 = index inbounds i8 [projection=field] %t748, 16
     store typed i64 4294967295, %t750
     %t751 = addr @__constexpr_template__21
     jump ^for_cond_301
@@ -3864,9 +3864,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_318:
     %t790 = addr $choices__shadow7
     store typed i64 2147483647, %t790
-    %t791 = index i8 [projection=field] %t790, 8
+    %t791 = index inbounds i8 [projection=field] %t790, 8
     store typed i64 2147483648, %t791
-    %t792 = index i8 [projection=field] %t790, 16
+    %t792 = index inbounds i8 [projection=field] %t790, 16
     store typed i64 2147483649, %t792
     %t793 = addr @__constexpr_template__23
     jump ^for_cond_319
@@ -3963,9 +3963,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_336:
     %t832 = addr $choices__shadow8
     store typed i64 4294967295, %t832
-    %t833 = index i8 [projection=field] %t832, 8
+    %t833 = index inbounds i8 [projection=field] %t832, 8
     store typed i64 0, %t833
-    %t834 = index i8 [projection=field] %t832, 16
+    %t834 = index inbounds i8 [projection=field] %t832, 16
     store typed i64 1, %t834
     %t835 = addr @__constexpr_template__25
     jump ^for_cond_337
@@ -4062,9 +4062,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_354:
     %t874 = addr $choices__shadow9
     store typed i64 1, %t874
-    %t875 = index i8 [projection=field] %t874, 8
+    %t875 = index inbounds i8 [projection=field] %t874, 8
     store typed i64 3, %t875
-    %t876 = index i8 [projection=field] %t874, 16
+    %t876 = index inbounds i8 [projection=field] %t874, 16
     store typed i64 4, %t876
     %t877 = addr @__constexpr_template__26
     jump ^for_cond_355
@@ -4161,9 +4161,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_372:
     %t916 = addr $choices__shadow10
     store typed i64 1, %t916
-    %t917 = index i8 [projection=field] %t916, 8
+    %t917 = index inbounds i8 [projection=field] %t916, 8
     store typed i64 2, %t917
-    %t918 = index i8 [projection=field] %t916, 16
+    %t918 = index inbounds i8 [projection=field] %t916, 16
     store typed i64 3, %t918
     jump ^for_cond_373
 
@@ -4259,9 +4259,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_390:
     %t957 = addr $choices__shadow11
     store typed i64 4294967293, %t957
-    %t958 = index i8 [projection=field] %t957, 8
+    %t958 = index inbounds i8 [projection=field] %t957, 8
     store typed i64 4294967294, %t958
-    %t959 = index i8 [projection=field] %t957, 16
+    %t959 = index inbounds i8 [projection=field] %t957, 16
     store typed i64 4294967295, %t959
     jump ^for_cond_391
 
@@ -4357,9 +4357,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_408:
     %t998 = addr $choices__shadow12
     store typed i64 2147483647, %t998
-    %t999 = index i8 [projection=field] %t998, 8
+    %t999 = index inbounds i8 [projection=field] %t998, 8
     store typed i64 2147483648, %t999
-    %t1000 = index i8 [projection=field] %t998, 16
+    %t1000 = index inbounds i8 [projection=field] %t998, 16
     store typed i64 2147483649, %t1000
     jump ^for_cond_409
 
@@ -4455,9 +4455,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_426:
     %t1039 = addr $choices__shadow13
     store typed i64 4294967295, %t1039
-    %t1040 = index i8 [projection=field] %t1039, 8
+    %t1040 = index inbounds i8 [projection=field] %t1039, 8
     store typed i64 0, %t1040
-    %t1041 = index i8 [projection=field] %t1039, 16
+    %t1041 = index inbounds i8 [projection=field] %t1039, 16
     store typed i64 1, %t1041
     jump ^for_cond_427
 
@@ -4553,9 +4553,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_444:
     %t1080 = addr $choices__shadow14
     store typed i64 1, %t1080
-    %t1081 = index i8 [projection=field] %t1080, 8
+    %t1081 = index inbounds i8 [projection=field] %t1080, 8
     store typed i64 3, %t1081
-    %t1082 = index i8 [projection=field] %t1080, 16
+    %t1082 = index inbounds i8 [projection=field] %t1080, 16
     store typed i64 4, %t1082
     jump ^for_cond_445
 
@@ -4651,9 +4651,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_462:
     %t1121 = addr $choices__shadow15
     store typed i64 1, %t1121
-    %t1122 = index i8 [projection=field] %t1121, 8
+    %t1122 = index inbounds i8 [projection=field] %t1121, 8
     store typed i64 2, %t1122
-    %t1123 = index i8 [projection=field] %t1121, 16
+    %t1123 = index inbounds i8 [projection=field] %t1121, 16
     store typed i64 3, %t1123
     %t1124 = addr @__constexpr_template__27
     jump ^for_cond_463
@@ -4748,9 +4748,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_480:
     %t1161 = addr $choices__shadow16
     store typed i64 -3, %t1161
-    %t1162 = index i8 [projection=field] %t1161, 8
+    %t1162 = index inbounds i8 [projection=field] %t1161, 8
     store typed i64 -2, %t1162
-    %t1163 = index i8 [projection=field] %t1161, 16
+    %t1163 = index inbounds i8 [projection=field] %t1161, 16
     store typed i64 -1, %t1163
     %t1164 = addr @__constexpr_template__29
     jump ^for_cond_481
@@ -4845,9 +4845,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_498:
     %t1201 = addr $choices__shadow17
     store typed i64 9223372036854775807, %t1201
-    %t1202 = index i8 [projection=field] %t1201, 8
+    %t1202 = index inbounds i8 [projection=field] %t1201, 8
     store typed i64 -9223372036854775808, %t1202
-    %t1203 = index i8 [projection=field] %t1201, 16
+    %t1203 = index inbounds i8 [projection=field] %t1201, 16
     store typed i64 -9223372036854775807, %t1203
     %t1204 = addr @__constexpr_template__31
     jump ^for_cond_499
@@ -4942,9 +4942,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_516:
     %t1241 = addr $choices__shadow18
     store typed i64 -1, %t1241
-    %t1242 = index i8 [projection=field] %t1241, 8
+    %t1242 = index inbounds i8 [projection=field] %t1241, 8
     store typed i64 0, %t1242
-    %t1243 = index i8 [projection=field] %t1241, 16
+    %t1243 = index inbounds i8 [projection=field] %t1241, 16
     store typed i64 1, %t1243
     %t1244 = addr @__constexpr_template__33
     jump ^for_cond_517
@@ -5039,9 +5039,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_534:
     %t1281 = addr $choices__shadow19
     store typed i64 1, %t1281
-    %t1282 = index i8 [projection=field] %t1281, 8
+    %t1282 = index inbounds i8 [projection=field] %t1281, 8
     store typed i64 3, %t1282
-    %t1283 = index i8 [projection=field] %t1281, 16
+    %t1283 = index inbounds i8 [projection=field] %t1281, 16
     store typed i64 4, %t1283
     %t1284 = addr @__constexpr_template__34
     jump ^for_cond_535
@@ -5136,9 +5136,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_552:
     %t1321 = addr $choices__shadow20
     store typed i64 1, %t1321
-    %t1322 = index i8 [projection=field] %t1321, 8
+    %t1322 = index inbounds i8 [projection=field] %t1321, 8
     store typed i64 2, %t1322
-    %t1323 = index i8 [projection=field] %t1321, 16
+    %t1323 = index inbounds i8 [projection=field] %t1321, 16
     store typed i64 3, %t1323
     jump ^for_cond_553
 
@@ -5232,9 +5232,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_570:
     %t1360 = addr $choices__shadow21
     store typed i64 -3, %t1360
-    %t1361 = index i8 [projection=field] %t1360, 8
+    %t1361 = index inbounds i8 [projection=field] %t1360, 8
     store typed i64 -2, %t1361
-    %t1362 = index i8 [projection=field] %t1360, 16
+    %t1362 = index inbounds i8 [projection=field] %t1360, 16
     store typed i64 -1, %t1362
     jump ^for_cond_571
 
@@ -5328,9 +5328,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_588:
     %t1399 = addr $choices__shadow22
     store typed i64 9223372036854775807, %t1399
-    %t1400 = index i8 [projection=field] %t1399, 8
+    %t1400 = index inbounds i8 [projection=field] %t1399, 8
     store typed i64 -9223372036854775808, %t1400
-    %t1401 = index i8 [projection=field] %t1399, 16
+    %t1401 = index inbounds i8 [projection=field] %t1399, 16
     store typed i64 -9223372036854775807, %t1401
     jump ^for_cond_589
 
@@ -5424,9 +5424,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_606:
     %t1438 = addr $choices__shadow23
     store typed i64 -1, %t1438
-    %t1439 = index i8 [projection=field] %t1438, 8
+    %t1439 = index inbounds i8 [projection=field] %t1438, 8
     store typed i64 0, %t1439
-    %t1440 = index i8 [projection=field] %t1438, 16
+    %t1440 = index inbounds i8 [projection=field] %t1438, 16
     store typed i64 1, %t1440
     jump ^for_cond_607
 
@@ -5520,9 +5520,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_624:
     %t1477 = addr $choices__shadow24
     store typed i64 1, %t1477
-    %t1478 = index i8 [projection=field] %t1477, 8
+    %t1478 = index inbounds i8 [projection=field] %t1477, 8
     store typed i64 3, %t1478
-    %t1479 = index i8 [projection=field] %t1477, 16
+    %t1479 = index inbounds i8 [projection=field] %t1477, 16
     store typed i64 4, %t1479
     jump ^for_cond_625
 

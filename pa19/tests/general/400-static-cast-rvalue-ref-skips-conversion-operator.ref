@@ -6,12 +6,12 @@ function @consume(%value : ptr [pass=by_address, object_bytes=8]) -> void [bindi
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = index i8 [projection=field] %value, 0
+    %t1 = index inbounds i8 [projection=field] %value, 0
     %t2 = load typed ptr %t1
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    %t3 = index i8 [projection=field] %value, 0
+    %t3 = index inbounds i8 [projection=field] %value, 0
     %t4 = load typed ptr %t3
     %t5 = load typed i32 %t4
     store typed i32 %t5, $cond__1
@@ -83,7 +83,7 @@ function @Holder__Holder(%this : ptr [object_bytes=8], %q : ptr) -> void [bindin
     store typed ptr %q, $q
     %t1 = load typed ptr $q
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -103,13 +103,13 @@ function @Holder__Holder__ov2(%this : ptr [alias=noalias, object_bytes=8], %othe
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     %t6 = load typed ptr $other
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed ptr 0, %t7
     return void
 }

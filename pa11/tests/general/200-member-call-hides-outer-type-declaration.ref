@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $db
     call void @n__fuzz__response(%t3, %t4)
     %t5 = addr $db
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 1
     branch %t8, ^cond_then_1, ^cond_else_2
@@ -34,7 +34,7 @@ function @n__buffer__buffer(%this : ptr [object_bytes=4]) -> void [binding=weak,
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -60,7 +60,7 @@ function @n__fuzz__fields(%this : ptr [object_bytes=1], %db : ptr [pass=by_addre
     store typed ptr %this, $this
     store typed ptr %db, $db
     %t1 = load typed ptr $db
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }
@@ -70,7 +70,7 @@ function @n__buffer__prepare(%this : ptr [object_bytes=4]) -> void [binding=weak
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }

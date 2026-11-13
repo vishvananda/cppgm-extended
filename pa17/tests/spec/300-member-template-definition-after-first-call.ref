@@ -14,7 +14,7 @@ function @call_apply(%value : i32) -> i32 [binding=strong, object=_Z10call_apply
     %t2 = addr $operation
     %t3 = load typed i32 $value
     %t4 = addr $operation
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     %t6 = addr $object
     %t7 = addr $argobj__1
@@ -49,7 +49,7 @@ function @add_one__operator__(%this : ptr [object_bytes=4], %value : i32) -> i32
     store typed ptr %this, $this
     store typed i32 %value, $value
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed i32 $value
     %t5 = binary add nowrap i32 %t3, %t4

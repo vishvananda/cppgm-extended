@@ -6,7 +6,7 @@ function @boost__operator__(%target : ptr [pass=by_address, object_bytes=4], %__
     store typed ptr %target, $target
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $target
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     %t3 = load typed ptr $target
     return ptr %t3
@@ -21,12 +21,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Holder__Holder(%t1)
     %t2 = addr $s
     %t3 = addr $h
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = addr $s
     %t6 = call ptr @boost__operator__(%t4, %t5)
     %t7 = addr $h
-    %t8 = index i8 [projection=field] %t7, 0
-    %t9 = index i8 [projection=field] %t8, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 7
     branch %t11, ^cond_then_1, ^cond_else_2
@@ -49,7 +49,7 @@ function @Holder__Holder(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @lib__String__String(%t2)
     return void
 }
@@ -59,7 +59,7 @@ function @lib__String__String(%this : ptr [object_bytes=4]) -> void [binding=wea
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }

@@ -6,7 +6,7 @@ function @g(%x : i32) -> i32 [binding=strong, object=_Z1gi] {
     store typed i32 %x, $x
     %t1 = addr $h
     %t2 = addr $h
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 $x
     %t5 = call i32 @Fn__operator__(%t3, %t4)
     return i32 %t5

@@ -6,7 +6,7 @@ function @operator__(%p : ptr [pass=by_address, object_bytes=4], %__param1 : i64
     store typed ptr %p, $p
     store typed i64 %__param1, $__param1
     %t1 = load typed ptr $p
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = cmp ne i32 %t3, 0
     %t5 = convert trunc u8 i64 %t4
@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $p
     %t2 = addr $p
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 1, %t3
     %t4 = addr $p
     %t5 = call u8 @operator__(%t4, 0)

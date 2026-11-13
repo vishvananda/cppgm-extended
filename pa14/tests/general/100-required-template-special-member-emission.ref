@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @box_int___box__ov2(%t2, %t3)
     %t4 = load typed i32 @total
     %t5 = addr $b
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = binary add nowrap i32 %t4, %t7
     store typed i32 %t8, @total
@@ -30,7 +30,7 @@ function @box_int___box(%this : ptr [object_bytes=4]) -> void [unwind=no, bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -42,11 +42,11 @@ function @box_int___box__ov2(%this : ptr [alias=noalias, object_bytes=4], %other
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 2
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     return void
 }
@@ -57,7 +57,7 @@ function @box_int____box(%this : ptr [object_bytes=4]) -> void [unwind=no, bindi
     store typed ptr %this, $this
     %t1 = load typed i32 @total
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary add nowrap i32 %t1, %t4
     store typed i32 %t5, @total

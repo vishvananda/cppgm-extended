@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $shared
     call void @Shared__Shared(%t1)
     %t2 = addr $shared
-    %t3 = index i8 [projection=field] %t2, 6
+    %t3 = index inbounds i8 [projection=field] %t2, 6
     store i8 4, %t3
     %t4 = const i64 8
     %t5 = convert sext i64 i32 8
@@ -39,7 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_3:
     %t12 = addr $shared
-    %t13 = index i8 [projection=field] %t12, 6
+    %t13 = index inbounds i8 [projection=field] %t12, 6
     %t14 = addr $shared
     %t15 = call i64 @offset_of(%t13, %t14)
     %t16 = cmp ne i64 %t15, 6
@@ -54,7 +54,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_5:
     %t17 = addr $shared
     %t18 = index i8 %t17, 5
-    %t19 = index i8 [projection=field] %t18, 0
+    %t19 = index inbounds i8 [projection=field] %t18, 0
     %t20 = load i8 %t19
     %t21 = convert sext i32 i8 %t20
     %t22 = cmp ne i32 %t21, 3
@@ -63,7 +63,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_9:
     %t23 = addr $shared
     %t24 = index i8 %t23, 0
-    %t25 = index i8 [projection=field] %t24, 4
+    %t25 = index inbounds i8 [projection=field] %t24, 4
     %t26 = load i8 %t25
     %t27 = convert sext i32 i8 %t26
     %t28 = cmp ne i32 %t27, 2
@@ -71,7 +71,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_8:
     %t29 = addr $shared
-    %t30 = index i8 [projection=field] %t29, 6
+    %t30 = index inbounds i8 [projection=field] %t29, 6
     %t31 = load i8 %t30
     %t32 = convert sext i32 i8 %t31
     %t33 = cmp ne i32 %t32, 4
@@ -168,10 +168,10 @@ function @Packed__Packed__base_entry(%this : ptr [object_bytes=8]) -> void [bind
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     store i8 2, %t4
     return void
 }
@@ -181,7 +181,7 @@ function @Small__Small__base_entry(%this : ptr [object_bytes=1]) -> void [bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store i8 3, %t2
     return void
 }

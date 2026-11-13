@@ -12,9 +12,9 @@ function @Holder__Holder(%this : ptr [object_bytes=8]) -> void [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = call obj<4x4> @Range__begin(%t4)
     copyobj 4x4 %t5, %t2
     return void
@@ -28,7 +28,7 @@ function @Range__begin(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, 
     store typed ptr %this, $this
     %t1 = addr $it
     %t2 = addr $it
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 1, %t3
     %t4 = addr $retobj__1
     %t5 = addr $it

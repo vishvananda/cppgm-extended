@@ -13,23 +13,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $root
     %t2 = addr $root
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr 0, %t3
     %t4 = addr $q
     %t5 = addr $q
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed u8 1, %t6
     %t7 = addr @__strlit__1
     %t8 = addr $q
-    %t9 = index i8 [projection=field] %t8, 8
+    %t9 = index inbounds i8 [projection=field] %t8, 8
     store typed ptr %t7, %t9
     %t10 = addr $q
-    %t11 = index i8 [projection=field] %t10, 16
+    %t11 = index inbounds i8 [projection=field] %t10, 16
     store typed ptr 0, %t11
     %t12 = addr $a
     %t13 = addr $root
     %t14 = addr $a
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     store typed ptr %t13, %t15
     %t16 = addr $discard__1
     %t17 = addr $a
@@ -97,13 +97,13 @@ function @Analyzer__lookup_qualified_generic(%this : ptr [object_bytes=8], %scop
     store typed ptr %final_lookup, $final_lookup
     %t1 = addr $retobj__1
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = load typed ptr $qualified
     %t6 = addr $arg__2
     %t7 = load typed ptr $this
     store typed ptr %t7, %t6
-    %t8 = index i8 [projection=field] %t6, 8
+    %t8 = index inbounds i8 [projection=field] %t6, 8
     %t9 = load typed ptr $scope
     store typed ptr %t9, %t8
     %t10 = addr $arg__3
@@ -127,13 +127,13 @@ function @Analyzer__lookup_qualified_generic__2(%this : ptr [object_bytes=8], %s
     store typed ptr %final_lookup, $final_lookup
     %t1 = addr $retobj__1
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = load typed ptr $qualified
     %t6 = addr $arg__2
     %t7 = load typed ptr $this
     store typed ptr %t7, %t6
-    %t8 = index i8 [projection=field] %t6, 8
+    %t8 = index inbounds i8 [projection=field] %t6, 8
     %t9 = load typed ptr $scope
     store typed ptr %t9, %t8
     %t10 = addr $arg__3
@@ -157,13 +157,13 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     store typed ptr %resolve_direct_qualifier, $resolve_direct_qualifier
     store typed ptr %final_lookup, $final_lookup
     %t1 = load typed ptr $qualified
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed u8 %t2
     branch %t3, ^land_rhs_3, ^if_else_2
 
   block ^land_rhs_3:
     %t4 = load typed ptr $qualified
-    %t5 = index i8 [projection=field] %t4, 16
+    %t5 = index inbounds i8 [projection=field] %t4, 16
     %t6 = load typed ptr %t5
     %t7 = cmp eq ptr %t6, 0
     branch %t7, ^if_then_1, ^if_else_2
@@ -173,7 +173,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     %t9 = load typed ptr $final_lookup
     %t10 = load typed ptr $root
     %t11 = load typed ptr $qualified
-    %t12 = index i8 [projection=field] %t11, 8
+    %t12 = index inbounds i8 [projection=field] %t11, 8
     %t13 = load typed ptr %t12
     %t14 = call obj<1x1> @Analyzer____lambda_Analyzer__lookup_a_t347_361__operator__(%t9, %t10, %t13)
     return obj<1x1> $retobj__1
@@ -183,14 +183,14 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
 
   block ^if_end_4:
     %t15 = load typed ptr $qualified
-    %t16 = index i8 [projection=field] %t15, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     %t17 = load typed u8 %t16
     %t18 = cmp eq u8 %t17, 0
     branch %t18, ^land_rhs_7, ^if_else_6
 
   block ^land_rhs_7:
     %t19 = load typed ptr $qualified
-    %t20 = index i8 [projection=field] %t19, 16
+    %t20 = index inbounds i8 [projection=field] %t19, 16
     %t21 = load typed ptr %t20
     %t22 = cmp eq ptr %t21, 0
     branch %t22, ^if_then_5, ^if_else_6
@@ -206,7 +206,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
   block ^if_end_8:
     store typed ptr 0, $current
     %t24 = load typed ptr $qualified
-    %t25 = index i8 [projection=field] %t24, 0
+    %t25 = index inbounds i8 [projection=field] %t24, 0
     %t26 = load typed u8 %t25
     branch %t26, ^if_then_9, ^if_else_10
 
@@ -218,7 +218,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
   block ^if_else_10:
     %t28 = load typed ptr $resolve_unqualified_qualifier
     %t29 = load typed ptr $qualified
-    %t30 = index i8 [projection=field] %t29, 16
+    %t30 = index inbounds i8 [projection=field] %t29, 16
     %t31 = load typed ptr %t30
     %t32 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic_t274_282__operator__(%t28, %t31)
     store typed ptr %t32, $current
@@ -241,7 +241,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     %t36 = load typed ptr $resolve_direct_qualifier
     %t37 = load typed ptr $current
     %t38 = load typed ptr $qualified
-    %t39 = index i8 [projection=field] %t38, 16
+    %t39 = index inbounds i8 [projection=field] %t38, 16
     %t40 = load typed ptr %t39
     %t41 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic_t291_303__operator__(%t36, %t37, %t40)
     store typed ptr %t41, $current
@@ -262,7 +262,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     %t46 = load typed ptr $final_lookup
     %t47 = load typed ptr $current
     %t48 = load typed ptr $qualified
-    %t49 = index i8 [projection=field] %t48, 8
+    %t49 = index inbounds i8 [projection=field] %t48, 8
     %t50 = load typed ptr %t49
     %t51 = call obj<1x1> @Analyzer____lambda_Analyzer__lookup_a_t347_361__operator__(%t46, %t47, %t50)
     return obj<1x1> $retobj__1
@@ -283,13 +283,13 @@ function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, ob
     store typed ptr %resolve_direct_qualifier, $resolve_direct_qualifier
     store typed ptr %final_lookup, $final_lookup
     %t1 = load typed ptr $qualified
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed u8 %t2
     branch %t3, ^land_rhs_3, ^if_else_2
 
   block ^land_rhs_3:
     %t4 = load typed ptr $qualified
-    %t5 = index i8 [projection=field] %t4, 16
+    %t5 = index inbounds i8 [projection=field] %t4, 16
     %t6 = load typed ptr %t5
     %t7 = cmp eq ptr %t6, 0
     branch %t7, ^if_then_1, ^if_else_2
@@ -299,7 +299,7 @@ function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, ob
     %t9 = load typed ptr $final_lookup
     %t10 = load typed ptr $root
     %t11 = load typed ptr $qualified
-    %t12 = index i8 [projection=field] %t11, 8
+    %t12 = index inbounds i8 [projection=field] %t11, 8
     %t13 = load typed ptr %t12
     %t14 = call obj<1x1> @Analyzer____lambda_Analyzer__lookup_b_t408_422__operator__(%t9, %t10, %t13)
     return obj<1x1> $retobj__1
@@ -309,14 +309,14 @@ function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, ob
 
   block ^if_end_4:
     %t15 = load typed ptr $qualified
-    %t16 = index i8 [projection=field] %t15, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     %t17 = load typed u8 %t16
     %t18 = cmp eq u8 %t17, 0
     branch %t18, ^land_rhs_7, ^if_else_6
 
   block ^land_rhs_7:
     %t19 = load typed ptr $qualified
-    %t20 = index i8 [projection=field] %t19, 16
+    %t20 = index inbounds i8 [projection=field] %t19, 16
     %t21 = load typed ptr %t20
     %t22 = cmp eq ptr %t21, 0
     branch %t22, ^if_then_5, ^if_else_6
@@ -332,7 +332,7 @@ function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, ob
   block ^if_end_8:
     store typed ptr 0, $current
     %t24 = load typed ptr $qualified
-    %t25 = index i8 [projection=field] %t24, 0
+    %t25 = index inbounds i8 [projection=field] %t24, 0
     %t26 = load typed u8 %t25
     branch %t26, ^if_then_9, ^if_else_10
 
@@ -344,7 +344,7 @@ function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, ob
   block ^if_else_10:
     %t28 = load typed ptr $resolve_unqualified_qualifier
     %t29 = load typed ptr $qualified
-    %t30 = index i8 [projection=field] %t29, 16
+    %t30 = index inbounds i8 [projection=field] %t29, 16
     %t31 = load typed ptr %t30
     %t32 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic_t274_282__operator____2(%t28, %t31)
     store typed ptr %t32, $current
@@ -367,7 +367,7 @@ function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, ob
     %t36 = load typed ptr $resolve_direct_qualifier
     %t37 = load typed ptr $current
     %t38 = load typed ptr $qualified
-    %t39 = index i8 [projection=field] %t38, 16
+    %t39 = index inbounds i8 [projection=field] %t38, 16
     %t40 = load typed ptr %t39
     %t41 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic_t291_303__operator____2(%t36, %t37, %t40)
     store typed ptr %t41, $current
@@ -388,7 +388,7 @@ function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, ob
     %t46 = load typed ptr $final_lookup
     %t47 = load typed ptr $current
     %t48 = load typed ptr $qualified
-    %t49 = index i8 [projection=field] %t48, 8
+    %t49 = index inbounds i8 [projection=field] %t48, 8
     %t50 = load typed ptr %t49
     %t51 = call obj<1x1> @Analyzer____lambda_Analyzer__lookup_b_t408_422__operator__(%t46, %t47, %t50)
     return obj<1x1> $retobj__1
@@ -422,7 +422,7 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic_t274_282__operat
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = load typed ptr %t2
     return ptr %t3
 }
@@ -467,7 +467,7 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic_t274_282__operat
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = load typed ptr %t2
     return ptr %t3
 }

@@ -7,7 +7,7 @@ function @overloaded_member_pointer_target_init__C__set(%this : ptr [object_byte
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -22,7 +22,7 @@ function @overloaded_member_pointer_target_init__C__set__ov2(%this : ptr [object
     %t2 = binary add nowrap i64 %t1, 1
     %t3 = convert trunc i32 i64 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     return void
 }
@@ -66,7 +66,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = load typed ptr $member_pointer_callee__1
     call void %t18(%t12, 4) as (%arg0 : ptr [object_bytes=4], %arg1 : i32) -> void
     %t19 = addr $c
-    %t20 = index i8 [projection=field] %t19, 0
+    %t20 = index inbounds i8 [projection=field] %t19, 0
     %t21 = load typed i32 %t20
     %t22 = cmp eq i32 %t21, 4
     branch %t22, ^cond_then_4, ^cond_else_5
@@ -89,7 +89,7 @@ function @overloaded_member_pointer_target_init__C__C(%this : ptr [object_bytes=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }

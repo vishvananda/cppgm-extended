@@ -9,18 +9,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 1, $one
     %t1 = addr $empty
     %t2 = addr $empty
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed u8 0, %t3
     %t4 = addr $empty
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     store typed ptr 0, %t5
     %t6 = addr $full
     %t7 = addr $full
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed u8 0, %t8
     %t9 = addr $one
     %t10 = addr $full
-    %t11 = index i8 [projection=field] %t10, 8
+    %t11 = index inbounds i8 [projection=field] %t10, 8
     store typed ptr %t9, %t11
     %t12 = addr $empty
     %t13 = call u8 @state__read(%t12)
@@ -60,13 +60,13 @@ function @state__read(%this : ptr [object_bytes=16]) -> u8 [binding=weak, object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = load typed ptr %t2
     branch %t3, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     %t6 = load typed ptr %t5
     %t7 = load typed i32 %t6
     %t8 = cmp ne i32 %t7, 0
@@ -78,7 +78,7 @@ function @state__read(%this : ptr [object_bytes=16]) -> u8 [binding=weak, object
 
   block ^if_end_3:
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed u8 %t11
     return u8 %t12
 }

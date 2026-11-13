@@ -43,7 +43,7 @@ function @ref_view_constvolatileint___get(%this : ptr [object_bytes=8]) -> ptr [
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     return ptr %t3
 }
@@ -56,7 +56,7 @@ function @ref_view_constvolatileint___ref_view(%this : ptr [object_bytes=8], %va
     store typed ptr %value, $value
     %t1 = load typed ptr $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

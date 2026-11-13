@@ -23,7 +23,7 @@ function @outer__token_iterator_base_int_char_constchar__int___apply_modifier(%t
     store typed ptr %this, $this
     store typed ptr %m, $m
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $m
     %t4 = addr $argobj__1
     %t5 = addr @outer___GLOBAL__N_1__max_tokens

@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call ptr @source()
     %t3 = call obj<8x8> @holder_int___make(%t2)
     copyobj 8x8 %t3, %t1
-    %t4 = index i8 [projection=field] %t1, 0
+    %t4 = index inbounds i8 [projection=field] %t1, 0
     %t5 = load typed ptr %t4
     branch %t5, ^cond_then_1, ^cond_else_2
 
@@ -45,7 +45,7 @@ function @holder_int___holder(%this : ptr [object_bytes=8], %p : ptr) -> void [b
     store typed ptr %p, $p
     %t1 = load typed ptr $p
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

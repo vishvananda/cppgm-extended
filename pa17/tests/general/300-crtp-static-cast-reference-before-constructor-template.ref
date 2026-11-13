@@ -61,7 +61,7 @@ function @iterator__iterator(%this : ptr [object_bytes=1], %init : ptr [pass=by_
     store typed ptr %this, $this
     store typed ptr %init, $init
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $init
     call void @payload__payload__ov2(%t2, %t3)
     return void

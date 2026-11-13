@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Holder__Holder(%t2, 7)
     store typed ptr %t2, $p
     %t3 = load typed ptr $p
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_1, ^cond_else_2
@@ -48,7 +48,7 @@ function @Holder__Holder(%this : ptr [object_bytes=4], %initial : i32) -> void [
     store typed i32 %initial, $initial
     %t1 = load typed i32 $initial
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

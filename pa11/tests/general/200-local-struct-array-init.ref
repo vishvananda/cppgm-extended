@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $arr
     %t6 = binary mul i64 0, 16
     %t7 = index inbounds i8 [projection=array_element] %t5, %t6
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     %t9 = load typed i32 %t8
     %t10 = cmp eq i32 %t9, 0
     branch %t10, ^land_rhs_4, ^land_short_5
@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = addr $arr
     %t12 = binary mul i64 1, 16
     %t13 = index inbounds i8 [projection=array_element] %t11, %t12
-    %t14 = index i8 [projection=field] %t13, 8
+    %t14 = index inbounds i8 [projection=field] %t13, 8
     %t15 = load typed i32 %t14
     %t16 = cmp eq i32 %t15, 1
     store typed i64 %t16, $land__2
@@ -68,11 +68,11 @@ function @Pair__Pair__aggregate(%this : ptr [object_bytes=16], %prefix : ptr, %k
     store typed i32 %kind, $kind
     %t1 = load typed ptr $prefix
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed i32 $kind
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i32 %t4, %t6
     return void
 }

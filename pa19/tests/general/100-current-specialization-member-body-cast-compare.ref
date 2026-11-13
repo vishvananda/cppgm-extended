@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $h
     call void @holder_unsignedint_int___holder(%t1)
     %t2 = addr $h
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed u32 %t3
     %t5 = copy i32 %t4
     return i32 %t5
@@ -21,7 +21,7 @@ function @holder_unsignedint_int___holder(%this : ptr [object_bytes=4]) -> void 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed u32 %t2
     %t4 = binary sub nowrap i32 8, 1
     %t5 = copy u32 %t4
@@ -32,7 +32,7 @@ function @holder_unsignedint_int___holder(%this : ptr [object_bytes=4]) -> void 
     %t7 = unary bitnot i32 0
     %t8 = copy u32 %t7
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed u32 %t10
     %t12 = binary add u32 %t11, 1
     %t13 = binary sub u32 8, %t12
@@ -65,7 +65,7 @@ function @holder_unsignedint_int___holder(%this : ptr [object_bytes=4]) -> void 
     %t20 = load typed i32 $cond__2
     %t21 = copy u32 %t20
     %t22 = load typed ptr $this
-    %t23 = index i8 [projection=field] %t22, 0
+    %t23 = index inbounds i8 [projection=field] %t22, 0
     store typed u32 %t21, %t23
     return void
 }

@@ -36,8 +36,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $tmpobj__2
     call void @local(%t1)
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t4, 42
     branch %t5, ^lor_short_2, ^lor_rhs_1
@@ -47,8 +47,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = addr $arg__4
     call void @Value__Value(%t7, 44)
     call void @parameter(%t6, %t7)
-    %t8 = index i8 [projection=field] %t6, 0
-    %t9 = index i8 [projection=field] %t8, 0
+    %t8 = index inbounds i8 [projection=field] %t6, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = cmp ne i32 %t10, 44
     store typed i64 %t11, $lor__1
@@ -65,8 +65,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_4:
     %t13 = addr $tmpobj__6
     call void @parenthesized(%t13)
-    %t14 = index i8 [projection=field] %t13, 0
-    %t15 = index i8 [projection=field] %t14, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp ne i32 %t16, 43
     store typed i64 %t17, $lor__5
@@ -90,7 +90,7 @@ function @Value__Value(%this : ptr [object_bytes=4], %v : i32) -> void [binding=
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -102,7 +102,7 @@ function @Box_Value___Box__ov2(%this : ptr [object_bytes=4], %v : ptr [pass=by_a
     store typed ptr %this, $this
     store typed ptr %v, $v
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $v
     call void @Value__Value__ov3(%t2, %t3)
     return void
@@ -115,14 +115,14 @@ function @Value__Value__ov3(%this : ptr [alias=noalias, object_bytes=4], %other 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     %t6 = unary neg i32 1
     %t7 = load typed ptr $other
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i32 %t6, %t8
     return void
 }

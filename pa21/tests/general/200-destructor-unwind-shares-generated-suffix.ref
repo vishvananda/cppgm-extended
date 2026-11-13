@@ -90,17 +90,17 @@ function @Owner___Owner(%this : ptr [object_bytes=3]) -> void [binding=weak, obj
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 2
+    %t2 = index inbounds i8 [projection=field] %t1, 2
     call void @Throwing___Throwing(%t2)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 1
+    %t4 = index inbounds i8 [projection=field] %t3, 1
     call void @Second___Second(%t4)
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     call void @First___First(%t6)
     eh_end
     resume
@@ -108,35 +108,35 @@ function @Owner___Owner(%this : ptr [object_bytes=3]) -> void [binding=weak, obj
   block ^destructor_suffix_next_4:
     eh_cleanup ^destructor_suffix_cleanup_5
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 1
+    %t8 = index inbounds i8 [projection=field] %t7, 1
     call void @Second___Second(%t8)
     eh_end
     jump ^destructor_suffix_next_6
 
   block ^destructor_suffix_cleanup_5:
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     call void @First___First(%t10)
     eh_end
     resume
 
   block ^destructor_suffix_next_6:
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     call void @First___First(%t12)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     eh_try ^lexical_cleanup_terminate_7
     %t13 = load typed ptr $this
-    %t14 = index i8 [projection=field] %t13, 2
+    %t14 = index inbounds i8 [projection=field] %t13, 2
     call void @Throwing___Throwing(%t14)
     eh_end
     %t15 = load typed ptr $this
-    %t16 = index i8 [projection=field] %t15, 1
+    %t16 = index inbounds i8 [projection=field] %t15, 1
     call void @Second___Second(%t16)
     %t17 = load typed ptr $this
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     call void @First___First(%t18)
     eh_end
     resume

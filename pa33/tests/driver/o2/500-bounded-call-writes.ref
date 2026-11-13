@@ -4,13 +4,13 @@ function @fill(%out : ptr, %value : i64) -> void [linkage=c, binding=strong, no_
   block ^entry:
     store typed i64 %value, %out
     %t1 = binary add nowrap i64 %value, 1
-    %t2 = index i8 [projection=field] %out, 8
+    %t2 = index inbounds i8 [projection=field] %out, 8
     store typed i64 %t1, %t2
     %t3 = binary add nowrap i64 %value, 2
-    %t4 = index i8 [projection=field] %out, 16
+    %t4 = index inbounds i8 [projection=field] %out, 16
     store typed i64 %t3, %t4
     %t5 = binary add nowrap i64 %value, 3
-    %t6 = index i8 [projection=field] %out, 24
+    %t6 = index inbounds i8 [projection=field] %out, 24
     store typed i64 %t5, %t6
     return void
 }
@@ -18,11 +18,11 @@ function @construct(%ret : ptr [pass=indirect_result, alias=exclusive_result, ob
   block ^entry:
     %t1 = load typed i64 %input
     call void @fill(%ret, %t1)
-    %t2 = index i8 [projection=field] %ret, 8
+    %t2 = index inbounds i8 [projection=field] %ret, 8
     %t3 = load typed i64 %t2
     %t4 = binary add nowrap i64 %t1, %t3
     store typed i64 %t4, %t2
-    %t5 = index i8 [projection=field] %ret, 16
+    %t5 = index inbounds i8 [projection=field] %ret, 16
     %t6 = load typed i64 %t5
     %t7 = binary add nowrap i64 %t1, %t6
     store typed i64 %t7, %t5
@@ -45,7 +45,7 @@ function @nested_construct(%ret : ptr [pass=indirect_result, alias=exclusive_res
   block ^entry:
     %t1 = load typed i64 %input
     call void @nested_fill(%ret, %t1)
-    %t2 = index i8 [projection=field] %ret, 24
+    %t2 = index inbounds i8 [projection=field] %ret, 24
     %t3 = load typed i64 %t2
     %t4 = binary add nowrap i64 %t1, %t3
     store typed i64 %t4, %t2
@@ -58,7 +58,7 @@ function @fill_first(%out : ptr, %value : i64) -> void [linkage=c, binding=stron
 }
 function @range(%input : ptr, %value : i64) -> i64 [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
-    %t1 = index i8 [projection=field] %input, 24
+    %t1 = index inbounds i8 [projection=field] %input, 24
     %t2 = load typed i64 %t1
     call void @fill_first(%input, %value)
     %t3 = binary add nowrap i64 %t2, %t2
@@ -76,7 +76,7 @@ function @construct_global(%ret : ptr [pass=indirect_result, alias=exclusive_res
     call void @fill_global(%ret, %value)
     %t2 = load typed i64 @global_value
     %t3 = binary add nowrap i64 %t1, %t2
-    %t4 = index i8 [projection=field] %ret, 24
+    %t4 = index inbounds i8 [projection=field] %ret, 24
     %t5 = load typed i64 %t4
     %t6 = binary add nowrap i64 %t3, %t5
     store typed i64 %t6, %t4
@@ -92,11 +92,11 @@ function @fill_two(%out : ptr, %other : ptr, %value : i64) -> void [linkage=c, b
 function @construct_two(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %input : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     store typed i64 0, %ret
-    %t1 = index i8 [projection=field] %ret, 8
+    %t1 = index inbounds i8 [projection=field] %ret, 8
     store typed i64 0, %t1
-    %t2 = index i8 [projection=field] %ret, 16
+    %t2 = index inbounds i8 [projection=field] %ret, 16
     store typed i64 0, %t2
-    %t3 = index i8 [projection=field] %ret, 24
+    %t3 = index inbounds i8 [projection=field] %ret, 24
     store typed i64 0, %t3
     %t4 = load typed i64 %input
     call void @fill_two(%ret, %input, 7)
@@ -113,7 +113,7 @@ function @fill_dynamic(%out : ptr, %offset : i64, %value : i64) -> void [linkage
 }
 function @dynamic_range(%input : ptr, %offset : i64) -> i64 [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
-    %t1 = index i8 [projection=field] %input, 24
+    %t1 = index inbounds i8 [projection=field] %input, 24
     %t2 = load typed i64 %t1
     call void @fill_dynamic(%input, %offset, 17)
     %t3 = load typed i64 %t1
@@ -175,11 +175,11 @@ function @recursive_control(%input : ptr) -> i64 [linkage=c, binding=strong, no_
 function @loop_construct(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %input : ptr, %n : u32) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     store typed i64 0, %ret
-    %t1 = index i8 [projection=field] %ret, 8
+    %t1 = index inbounds i8 [projection=field] %ret, 8
     store typed i64 0, %t1
-    %t2 = index i8 [projection=field] %ret, 16
+    %t2 = index inbounds i8 [projection=field] %ret, 16
     store typed i64 0, %t2
-    %t3 = index i8 [projection=field] %ret, 24
+    %t3 = index inbounds i8 [projection=field] %ret, 24
     store typed i64 0, %t3
     jump ^for_cond_1
 
@@ -202,11 +202,11 @@ function @loop_construct(%ret : ptr [pass=indirect_result, alias=exclusive_resul
 function @loop_stores(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %input : ptr, %n : u32) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     store typed i64 0, %ret
-    %t1 = index i8 [projection=field] %ret, 8
+    %t1 = index inbounds i8 [projection=field] %ret, 8
     store typed i64 0, %t1
-    %t2 = index i8 [projection=field] %ret, 16
+    %t2 = index inbounds i8 [projection=field] %ret, 16
     store typed i64 0, %t2
-    %t3 = index i8 [projection=field] %ret, 24
+    %t3 = index inbounds i8 [projection=field] %ret, 24
     store typed i64 0, %t3
     %t4 = binary and u32 %n, 4294967292
     branch %t4, ^loop_preheader_1, ^wide_tail_3
@@ -276,11 +276,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $input
     store typed i64 4, %t1
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     store typed i64 0, %t2
-    %t3 = index i8 [projection=field] %t1, 16
+    %t3 = index inbounds i8 [projection=field] %t1, 16
     store typed i64 0, %t3
-    %t4 = index i8 [projection=field] %t1, 24
+    %t4 = index inbounds i8 [projection=field] %t1, 24
     store typed i64 0, %t4
     %t5 = addr $aggregate__1
     call void @construct(%t5, %t1)
@@ -320,11 +320,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_else_7:
     %t19 = addr $other
     store typed i64 0, %t19
-    %t20 = index i8 [projection=field] %t19, 8
+    %t20 = index inbounds i8 [projection=field] %t19, 8
     store typed i64 0, %t20
-    %t21 = index i8 [projection=field] %t19, 16
+    %t21 = index inbounds i8 [projection=field] %t19, 16
     store typed i64 0, %t21
-    %t22 = index i8 [projection=field] %t19, 24
+    %t22 = index inbounds i8 [projection=field] %t19, 24
     store typed i64 0, %t22
     %t23 = call i64 @overlap(%t1, %t19)
     %t24 = cmp ne i64 %t23, 18
@@ -372,7 +372,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 5
 
   block ^if_end_16:
-    %t39 = index i8 [projection=field] %t1, 24
+    %t39 = index inbounds i8 [projection=field] %t1, 24
     store typed i64 11, %t39
     %t40 = call i64 @range(%t1, 5)
     %t41 = cmp ne i64 %t40, 22
@@ -413,7 +413,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t53, ^if_then_25, ^lor_rhs_24
 
   block ^lor_rhs_24:
-    %t54 = index i8 [projection=field] %t1, 24
+    %t54 = index inbounds i8 [projection=field] %t1, 24
     %t55 = load typed i64 %t54
     %t56 = cmp ne i64 %t55, 17
     branch %t56, ^if_then_25, ^if_end_26

@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call ptr @Buffer__operator____ov2(%t2, 0)
     %t4 = call i32 @fill(%t3, 97)
     %t5 = addr $buffer
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = index inbounds i8 [projection=array_element] %t6, 0
     %t8 = load i8 %t7
     %t9 = convert sext i32 i8 %t8
@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t11 = addr $buffer
-    %t12 = index i8 [projection=field] %t11, 2
+    %t12 = index inbounds i8 [projection=field] %t11, 2
     %t13 = index inbounds i8 [projection=array_element] %t12, 0
     %t14 = load i8 %t13
     %t15 = convert sext i32 i8 %t14
@@ -53,19 +53,19 @@ function @Buffer__Buffer(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = index inbounds i8 [projection=array_element] %t2, 0
     store i8 0, %t3
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = index inbounds i8 [projection=array_element] %t5, 1
     store i8 0, %t6
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 2
+    %t8 = index inbounds i8 [projection=field] %t7, 2
     %t9 = index inbounds i8 [projection=array_element] %t8, 0
     store i8 122, %t9
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 2
+    %t11 = index inbounds i8 [projection=field] %t10, 2
     %t12 = index inbounds i8 [projection=array_element] %t11, 1
     store i8 0, %t12
     return void
@@ -78,7 +78,7 @@ function @Buffer__operator____ov2(%this : ptr [object_bytes=4], %i : i32) -> ptr
     store typed ptr %this, $this
     store typed i32 %i, $i
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 $i
     %t4 = index inbounds i8 [projection=array_element] %t2, %t3
     return ptr %t4

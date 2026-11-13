@@ -8,7 +8,7 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
     %t2 = addr $refarg__1
     call void @Box_int___Box(%t1, %t2)
     %t3 = addr $b
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     return i32 %t5
 }
@@ -27,7 +27,7 @@ function @Box_int___Box(%this : ptr [object_bytes=4], %x : ptr [pass=by_address,
     %t1 = load typed ptr $x
     %t2 = load typed i32 %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }

@@ -284,7 +284,7 @@ function @read(%out : ptr) -> i32 [binding=strong, object=_Z4readP7OStream] {
 
   block ^basecast_end_3:
     %t8 = load typed ptr $basecast__1
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     return i32 %t10
 }
@@ -370,7 +370,7 @@ function @StringStream__StringStream(%this : ptr [object_bytes=24]) -> void [bin
     %t19 = load typed i64 %t18
     %t20 = index i8 %t16, %t19
     %t21 = index i8 %t20, 0
-    %t22 = index i8 [projection=field] %t21, 0
+    %t22 = index inbounds i8 [projection=field] %t21, 0
     store typed i32 7, %t22
     return void
 }

@@ -9,17 +9,17 @@ function @Resolver__resolve(%this : ptr [object_bytes=8], %value : i32) -> ptr [
     %t2 = cmp gt i32 %t1, 0
     %t3 = convert trunc u8 i64 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    %t6 = index i8 [projection=field] %t5, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed u8 %t3, %t6
     %t7 = load typed i32 $value
     %t8 = binary mul nowrap i32 %t7, 2
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
-    %t11 = index i8 [projection=field] %t10, 4
+    %t10 = index inbounds i8 [projection=field] %t9, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 4
     store typed i32 %t8, %t11
     %t12 = load typed ptr $this
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     return ptr %t13
 }
 function @Resolver__go(%this : ptr [object_bytes=8], %value : i32) -> i32 [binding=strong, object=_ZN8Resolver2goEi] {
@@ -36,13 +36,13 @@ function @Resolver__go(%this : ptr [object_bytes=8], %value : i32) -> i32 [bindi
     %t3 = call ptr @Resolver__resolve(%t1, %t2)
     store typed ptr %t3, $resolved
     %t4 = load typed ptr $resolved
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed u8 %t5
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     %t7 = load typed ptr $resolved
-    %t8 = index i8 [projection=field] %t7, 4
+    %t8 = index inbounds i8 [projection=field] %t7, 4
     %t9 = load typed i32 %t8
     store typed i32 %t9, $cond__1
     jump ^cond_end_3

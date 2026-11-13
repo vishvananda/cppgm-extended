@@ -6,11 +6,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $object
     %t2 = addr $object
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 3, %t4
     %t5 = addr $object
     %t6 = index i8 %t5, 4
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed i32 7, %t7
     %t8 = addr $object
     %t9 = call i32 @derived__test(%t8)
@@ -47,7 +47,7 @@ function @second_base__read(%this : ptr [object_bytes=4], %__param1 : i32) -> i3
     store typed ptr %this, $this
     store typed i32 %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }

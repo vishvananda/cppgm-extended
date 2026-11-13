@@ -15,11 +15,11 @@ function @std__initializer_list_char___initializer_list__ov2(%this : ptr [object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed ptr 0, %t2
     %t3 = convert sext i64 i32 0
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     store typed i64 %t3, %t5
     return void
 }
@@ -29,7 +29,7 @@ function @std__initializer_list_char___size(%this : ptr [object_bytes=16]) -> i6
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = load typed i64 %t2
     return i64 %t3
 }

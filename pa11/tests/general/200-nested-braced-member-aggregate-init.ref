@@ -4,13 +4,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $x
     %t2 = addr $x
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     call void @value__value(%t3, 1, 2)
     %t4 = addr $x
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     store typed i32 0, %t5
     %t6 = addr $x
-    %t7 = index i8 [projection=field] %t6, 4
+    %t7 = index inbounds i8 [projection=field] %t6, 4
     %t8 = load typed i32 %t7
     return i32 %t8
 }

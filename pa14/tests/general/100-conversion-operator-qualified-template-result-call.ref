@@ -21,6 +21,6 @@ function @Lazy_int___operatorN__Vec_T____ov2(%this : ptr [object_bytes=1]) -> pt
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }

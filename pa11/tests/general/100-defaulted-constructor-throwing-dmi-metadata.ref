@@ -15,7 +15,7 @@ function @Y__Y(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1Y
     store typed ptr %this, $this
     %t1 = call i32 @may_throw()
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

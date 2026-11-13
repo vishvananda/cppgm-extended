@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Box__Box(%t1)
     eh_try ^cleanup_action_2
     %t2 = addr $box
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = addr $arg__1
     %t5 = addr @__strlit__1
     call void @Text__Text__ov2(%t4, %t5)

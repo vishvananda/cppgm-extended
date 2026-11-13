@@ -6,8 +6,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call obj<8x4> @api__make_pairish(0)
     copyobj 8x4 %t2, %t1
     %t3 = addr $p
-    %t4 = index i8 [projection=field] %t3, 0
-    %t5 = index i8 [projection=field] %t4, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = binary sub nowrap i32 %t6, 1
     return i32 %t7
@@ -32,7 +32,7 @@ function @api__text_char___text(%this : ptr [object_bytes=4]) -> void [binding=w
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -47,12 +47,12 @@ function @api__pair_const__cppgm_class_template_identity_1_tag___pair(%this : pt
     copyobj 4x4 %a, %t1
     store typed i32 %b, $b
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = addr $a
     copyobj 4x4 %t4, %t3
     %t5 = load typed i32 $b
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 4
+    %t7 = index inbounds i8 [projection=field] %t6, 4
     store typed i32 %t5, %t7
     return void
 }

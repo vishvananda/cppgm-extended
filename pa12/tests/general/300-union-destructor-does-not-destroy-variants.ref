@@ -16,7 +16,7 @@ function @YU__YU(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store i32 0, %t2
     return void
 }

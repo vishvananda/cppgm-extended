@@ -101,7 +101,7 @@ function @switch_statement(%a0 : ptr [pass=by_address, object_bytes=1], %a1 : pt
     %t5 = load typed ptr $a0
     %t6 = addr $argobj__5
     %t7 = load typed ptr $a1
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     call void @tuple___cppgm_class_template_identity_7___cppgm_class_template_identity_6___tuple(%t3, $argobj__4, $argobj__5)
     call void @lambda_functor_base___cppgm_class_template_identity_8___cppgm_class_template_identity_9___lambda_functor_base(%t2, $argobj__3)
     call void @lambda_functor___cppgm_class_template_identity_10___lambda_functor(%t1, $argobj__2)
@@ -121,7 +121,7 @@ function @tagged_lambda_functor___cppgm_class_template_identity_5___cppgm_class_
     store typed ptr %this, $this
     store typed ptr %l, $l
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return void
 }
 function @tuple___cppgm_class_template_identity_7___cppgm_class_template_identity_6___tuple(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none], %__param2 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN5tupleI14lambda_functorI11placeholderES0_I19lambda_functor_baseI30pre_increment_decrement_actionI16increment_actionES_I8identityIiE9null_typeEEEEC1ES2_SC_, inline_hint=yes] {

@@ -26,7 +26,7 @@ function @Analyzer____lambda_Analyzer__f_t20_22__operator__(%this : ptr [object_
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     call void @Analyzer__register_builtin_function(%t3)
     return void

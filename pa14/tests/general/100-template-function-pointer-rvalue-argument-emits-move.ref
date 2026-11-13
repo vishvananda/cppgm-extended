@@ -2,7 +2,7 @@ function @check(%value : ptr [pass=by_address, object_bytes=8]) -> u8 [unwind=no
   slot $value : obj<8x8>
 
   block ^entry:
-    %t1 = index i8 [projection=field] %value, 0
+    %t1 = index inbounds i8 [projection=field] %value, 0
     %t2 = load typed ptr %t1
     %t3 = cmp ne ptr %t2, 0
     %t4 = convert trunc u8 i64 %t3
@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @holder_int___holder(%t1)
     %t2 = addr $value
     %t3 = addr $object
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     %t5 = addr @check
     %t6 = addr $arg__2
@@ -47,7 +47,7 @@ function @holder_int___holder(%this : ptr [object_bytes=8]) -> void [unwind=no, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed ptr 0, %t2
     return void
 }
@@ -59,10 +59,10 @@ function @holder_int___holder__ov2(%this : ptr [alias=noalias, object_bytes=8], 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     return void
 }
@@ -87,13 +87,13 @@ function @holder_int___holder__ov3(%this : ptr [alias=noalias, object_bytes=8], 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     %t6 = load typed ptr $other
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed ptr 0, %t7
     return void
 }

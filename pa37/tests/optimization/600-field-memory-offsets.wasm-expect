@@ -1,0 +1,39 @@
+{
+  "source": true,
+  "wasi": true,
+  "llvm_interop": true,
+  "standalone_optimizer": true,
+  "exports": [
+    "read_field",
+    "write_field",
+    "observe_field"
+  ],
+  "commands": [
+    {
+      "stdout": "",
+      "exit": 0
+    }
+  ],
+  "quality": {
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "functions": {
+      "read_field": {
+        "memory_ops": 1,
+        "zero_offset_memory_ops": 0
+      },
+      "write_field": {
+        "memory_ops": 1,
+        "zero_offset_memory_ops": 0
+      },
+      "observe_field": {
+        "memory_ops": 2,
+        "zero_offset_memory_ops": 0
+      }
+    }
+  },
+  "target": "wasm32-wasip1"
+}

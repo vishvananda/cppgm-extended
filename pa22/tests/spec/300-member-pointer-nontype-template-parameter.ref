@@ -28,7 +28,7 @@ function @foo__pair__x___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_add
     store typed ptr %this, $this
     store typed ptr %p, $p
     %t1 = load typed ptr $p
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -40,7 +40,7 @@ function @foo__pair__y___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_add
     store typed ptr %this, $this
     store typed ptr %p, $p
     %t1 = load typed ptr $p
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     %t3 = load typed i32 %t2
     return i32 %t3
 }

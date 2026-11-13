@@ -15,7 +15,7 @@ function @Use__Use(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @mini__tuple_Node__int___tuple(%t2, 0)
     return void
 }

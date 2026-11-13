@@ -19,7 +19,7 @@ function @__lambda_replay_t17_22__operator__(%this : ptr [object_bytes=8], %incr
     store typed ptr %this, $this
     store typed u32 %increment, $increment
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed u32 %t3
     %t5 = load typed u32 $increment

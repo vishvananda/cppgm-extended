@@ -8,9 +8,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $value
     call void @outer__outer(%t1)
     %t2 = addr $value
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
-    %t5 = index i8 [projection=field] %t4, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed ptr %t5
     %t7 = cmp ne ptr %t6, 0
     branch %t7, ^if_then_1, ^if_else_2
@@ -48,7 +48,7 @@ function @outer__outer(%this : ptr [object_bytes=8]) -> void [binding=weak, obje
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @box_outer___box(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -56,7 +56,7 @@ function @outer__outer(%this : ptr [object_bytes=8]) -> void [binding=weak, obje
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @box_outer____box(%t4)
     eh_end
     resume
@@ -69,13 +69,13 @@ function @outer___outer(%this : ptr [object_bytes=8]) -> void [unwind=no, bindin
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @box_outer____box(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @box_outer____box(%t4)
     eh_end
     resume
@@ -89,7 +89,7 @@ function @box_outer___box(%this : ptr [object_bytes=8]) -> void [binding=weak, o
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @owning_outer___owning(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -97,7 +97,7 @@ function @box_outer___box(%this : ptr [object_bytes=8]) -> void [binding=weak, o
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @owning_outer____owning(%t4)
     eh_end
     resume
@@ -110,13 +110,13 @@ function @box_outer____box(%this : ptr [object_bytes=8]) -> void [unwind=no, bin
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @owning_outer____owning(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @owning_outer____owning(%t4)
     eh_end
     resume
@@ -130,7 +130,7 @@ function @owning_outer___owning(%this : ptr [object_bytes=8]) -> void [binding=w
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed ptr 0, %t2
     return void
 }
@@ -143,7 +143,7 @@ function @owning_outer____owning(%this : ptr [object_bytes=8]) -> void [unwind=n
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @destroyed
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr 0, %t4
     return void
 }

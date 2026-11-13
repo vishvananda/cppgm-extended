@@ -135,7 +135,7 @@ function @read(%value : ptr) -> i32 [binding=strong, object=_Z4readP4Root] {
     %t4 = call i32 %t3(%t1) as (%arg0 : ptr [object_bytes=16]) -> i32
     %t5 = binary mul nowrap i32 %t4, 10
     %t6 = load typed ptr $value
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     %t8 = load typed i32 %t7
     %t9 = binary add nowrap i32 %t5, %t8
     return i32 %t9
@@ -257,7 +257,7 @@ function @Top__Top(%this : ptr [object_bytes=48]) -> void [binding=weak, object=
     %t29 = load typed i64 %t28
     %t30 = index i8 %t26, %t29
     %t31 = index i8 %t30, 0
-    %t32 = index i8 [projection=field] %t31, 8
+    %t32 = index inbounds i8 [projection=field] %t31, 8
     store typed i32 7, %t32
     return void
 }

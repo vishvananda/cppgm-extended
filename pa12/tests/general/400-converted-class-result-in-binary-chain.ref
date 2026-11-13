@@ -12,13 +12,13 @@ function @operator_(%ret : ptr [pass=indirect_result, alias=exclusive_result, ob
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @evaluations
     %t3 = load typed ptr $size
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i64 %t4
     %t6 = load typed i32 $factor
     %t7 = convert sext i64 i32 %t6
     %t8 = binary mul nowrap i64 %t5, %t7
     %t9 = load typed ptr $size
-    %t10 = index i8 [projection=field] %t9, 8
+    %t10 = index inbounds i8 [projection=field] %t9, 8
     %t11 = load typed u8 %t10
     call void @Size__Size(%ret, %t8, %t11)
     return void
@@ -176,11 +176,11 @@ function @Size__Size(%this : ptr [object_bytes=16], %n : i64, %s : u8) -> void [
     store u8 %s, $s
     %t1 = load typed i64 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     %t4 = load typed u8 $s
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed u8 %t4, %t6
     return void
 }
@@ -200,7 +200,7 @@ function @Size__operatorlong(%this : ptr [object_bytes=16]) -> i64 [binding=weak
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     return i64 %t3
 }

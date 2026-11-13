@@ -68,11 +68,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @D__D(%t2)
     %t3 = addr $left
     %t4 = index i8 %t3, 8
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 2, %t5
     %t6 = addr $right
     %t7 = index i8 %t6, 8
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i32 5, %t8
     %t9 = addr $left
     %t10 = index i8 %t9, 0
@@ -111,7 +111,7 @@ function @add(%left : ptr [pass=by_address, object_bytes=16], %right : ptr [pass
     %t4 = load typed i64 %t3
     %t5 = index i8 %t1, %t4
     %t6 = index i8 %t5, 0
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = load typed ptr $right
     %t10 = load typed ptr %t9
@@ -119,7 +119,7 @@ function @add(%left : ptr [pass=by_address, object_bytes=16], %right : ptr [pass
     %t12 = load typed i64 %t11
     %t13 = index i8 %t9, %t12
     %t14 = index i8 %t13, 0
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = binary add nowrap i32 %t8, %t16
     return i32 %t17

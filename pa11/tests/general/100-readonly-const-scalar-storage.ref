@@ -11,7 +11,7 @@ function @read_values() -> u32 [binding=strong, object=_Z11read_valuesv] {
     %t2 = binary add u32 9, %t1
     %t3 = binary add u32 %t2, 5
     %t4 = addr @_GLOBAL__N_1__class_object
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed u32 %t5
     %t7 = binary add u32 %t3, %t6
     return u32 %t7

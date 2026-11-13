@@ -122,7 +122,7 @@ function @Trace__Trace(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=
     store typed ptr %p, $p
     %t1 = load typed ptr $p
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -132,13 +132,13 @@ function @Trace___Trace(%this : ptr [object_bytes=8]) -> void [unwind=no, bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed i32 %t3
     %t5 = binary mul nowrap i32 %t4, 10
     %t6 = binary add nowrap i32 %t5, 1
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed ptr %t8
     store typed i32 %t6, %t9
     return void

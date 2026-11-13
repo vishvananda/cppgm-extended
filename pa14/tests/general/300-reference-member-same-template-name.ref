@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $value
     %t2 = addr $value
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i16 2, %t3
     %t4 = addr $it
     %t5 = addr $value
@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = call ptr @deref(%t6)
     store typed i16 7, %t7
     %t8 = addr $value
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i16 %t9
     %t11 = convert sext i32 i16 %t10
     %t12 = cmp eq i32 %t11, 7
@@ -42,7 +42,7 @@ function @iter___cppgm_class_template_identity_1___iter(%this : ptr [object_byte
     store typed ptr %value, $value
     %t1 = load typed ptr $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -52,9 +52,9 @@ function @deref(%i : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak
   block ^entry:
     store typed ptr %i, $i
     %t1 = load typed ptr $i
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     return ptr %t4
 }
 alias object _ZN4iterI4consIs3nilEEC2ERS2_ = @iter___cppgm_class_template_identity_1___iter

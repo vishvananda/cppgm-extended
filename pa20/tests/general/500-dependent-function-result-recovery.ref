@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = addr $wrapped
     %t14 = addr @src
     %t15 = addr $wrapped
-    %t16 = index i8 [projection=field] %t15, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     store typed ptr %t14, %t16
     %t17 = addr $argobj__2
     %t18 = addr $wrapped
@@ -64,11 +64,11 @@ function @lib__copy_unwrap_iters(%first : ptr, %last : ptr, %out_first : ptr) ->
     %t8 = addr $tmpobj__1
     zeroinit 1x1 %t8
     %t9 = addr $range
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = call ptr @lib__move(%t10)
     %t12 = load typed ptr %t11
     %t13 = addr $range
-    %t14 = index i8 [projection=field] %t13, 8
+    %t14 = index inbounds i8 [projection=field] %t13, 8
     %t15 = call ptr @lib__move(%t14)
     %t16 = load typed ptr %t15
     %t17 = load typed ptr $out_first
@@ -80,7 +80,7 @@ function @lib__copy_unwrap_iters(%first : ptr, %last : ptr, %out_first : ptr) ->
     %t22 = call ptr @lib__move(%t21)
     %t23 = load typed ptr %t22
     %t24 = addr $result
-    %t25 = index i8 [projection=field] %t24, 0
+    %t25 = index inbounds i8 [projection=field] %t24, 0
     %t26 = call ptr @lib__move(%t25)
     %t27 = load typed ptr %t26
     %t28 = call ptr @lib__rewrap_range(%t23, %t27)
@@ -88,7 +88,7 @@ function @lib__copy_unwrap_iters(%first : ptr, %last : ptr, %out_first : ptr) ->
     %t30 = call ptr @lib__move(%t29)
     %t31 = load typed ptr %t30
     %t32 = addr $result
-    %t33 = index i8 [projection=field] %t32, 8
+    %t33 = index inbounds i8 [projection=field] %t32, 8
     %t34 = call ptr @lib__move(%t33)
     %t35 = load typed ptr %t34
     %t36 = call ptr @lib__rewrap_iter(%t31, %t35)
@@ -302,11 +302,11 @@ function @lib__pair_int__int____pair(%this : ptr [object_bytes=16], %a : ptr, %b
     store typed ptr %b, $b
     %t1 = load typed ptr $a
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed ptr $b
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed ptr %t4, %t6
     return void
 }
@@ -325,7 +325,7 @@ function @lib__to_address(%value : obj<8x8>) -> ptr [binding=weak, object=_ZN3li
     %t1 = addr $value
     copyobj 8x8 %value, %t1
     %t2 = addr $value
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     return ptr %t4
 }

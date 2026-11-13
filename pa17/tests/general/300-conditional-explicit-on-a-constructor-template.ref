@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $source
     call void @guarded_longint___guarded(%t5, %t6)
     %t7 = addr $direct
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i64 %t8
     %t10 = cmp eq i64 %t9, 0
     branch %t10, ^cond_then_1, ^cond_else_2
@@ -53,7 +53,7 @@ function @box_int___box(%this : ptr [object_bytes=4]) -> void [binding=weak, obj
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -65,11 +65,11 @@ function @box_longint___box(%this : ptr [object_bytes=8], %other : ptr [pass=by_
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = convert sext i64 i32 %t3
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i64 %t4, %t6
     return void
 }
@@ -79,7 +79,7 @@ function @guarded_int___guarded(%this : ptr [object_bytes=4]) -> void [binding=w
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -91,11 +91,11 @@ function @guarded_longint___guarded(%this : ptr [object_bytes=8], %other : ptr [
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = convert sext i64 i32 %t3
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i64 %t4, %t6
     return void
 }

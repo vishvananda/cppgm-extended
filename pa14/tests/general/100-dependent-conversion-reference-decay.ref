@@ -6,19 +6,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $b
     %t2 = addr $b
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = index i32 [projection=array_element] %t3, 0
     store typed i32 1, %t4
     %t5 = addr $b
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = index i32 [projection=array_element] %t6, 1
     store typed i32 2, %t7
     %t8 = addr $b
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = index i32 [projection=array_element] %t9, 2
     store typed i32 3, %t10
     %t11 = addr $b
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = index i32 [projection=array_element] %t12, 3
     store typed i32 4, %t13
     %t14 = addr $b
@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = addr $b
     %t16 = call ptr @pointer(%t15)
     %t17 = addr $b
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     %t19 = cmp ne ptr %t16, %t18
     branch %t19, ^if_then_1, ^lor_rhs_4
 
@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = load typed ptr $c
     %t21 = call ptr @pointer__2(%t20)
     %t22 = addr $b
-    %t23 = index i8 [projection=field] %t22, 0
+    %t23 = index inbounds i8 [projection=field] %t22, 0
     %t24 = cmp ne ptr %t21, %t23
     branch %t24, ^if_then_1, ^lor_rhs_3
 
@@ -44,7 +44,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = binary mul i64 3, 4
     %t28 = index inbounds i8 %t26, %t27
     %t29 = addr $b
-    %t30 = index i8 [projection=field] %t29, 0
+    %t30 = index inbounds i8 [projection=field] %t29, 0
     %t31 = binary mul i64 3, 4
     %t32 = index inbounds i8 %t30, %t31
     %t33 = cmp ne ptr %t28, %t32
@@ -62,7 +62,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t36 = index inbounds i32 [projection=array_element] %t35, 2
     store typed i32 42, %t36
     %t37 = addr $b
-    %t38 = index i8 [projection=field] %t37, 0
+    %t38 = index inbounds i8 [projection=field] %t37, 0
     %t39 = index inbounds i32 [projection=array_element] %t38, 2
     %t40 = load typed i32 %t39
     %t41 = cmp eq i32 %t40, 42
@@ -104,7 +104,7 @@ function @Buffer_int___operatorArray_(%this : ptr [object_bytes=16]) -> ptr [bin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 function @Buffer_int___operatorconstArray___ov2(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZNK6BufferIiEcvRA4_KiEv, inline_hint=yes] {
@@ -113,6 +113,6 @@ function @Buffer_int___operatorconstArray___ov2(%this : ptr [object_bytes=16]) -
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }

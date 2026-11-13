@@ -6,11 +6,11 @@ function @peek(%p : ptr) -> i64 [effects=readonly, repeatable=yes, linkage=c, bi
 function @stored(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %p : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     store typed i64 0, %ret
-    %t1 = index i8 [projection=field] %ret, 8
+    %t1 = index inbounds i8 [projection=field] %ret, 8
     store typed i64 0, %t1
-    %t2 = index i8 [projection=field] %ret, 16
+    %t2 = index inbounds i8 [projection=field] %ret, 16
     store typed i64 0, %t2
-    %t3 = index i8 [projection=field] %ret, 24
+    %t3 = index inbounds i8 [projection=field] %ret, 24
     store typed i64 0, %t3
     %t4 = call i64 @peek(%p)
     store typed i64 %t4, %ret
@@ -32,10 +32,10 @@ function @copied(%ret : ptr [pass=indirect_result, alias=exclusive_result, objec
 function @zeroed(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %p : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     %t1 = call i64 @peek(%p)
-    %t2 = index i8 [projection=field] %ret, 8
-    %t3 = index i8 [projection=field] %ret, 16
+    %t2 = index inbounds i8 [projection=field] %ret, 8
+    %t3 = index inbounds i8 [projection=field] %ret, 16
     store typed i64 0, %t3
-    %t4 = index i8 [projection=field] %ret, 24
+    %t4 = index inbounds i8 [projection=field] %ret, 24
     store typed i64 0, %t4
     store typed i64 %t1, %ret
     store typed i64 %t1, %t2
@@ -43,11 +43,11 @@ function @zeroed(%ret : ptr [pass=indirect_result, alias=exclusive_result, objec
 }
 function @escaped(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32]) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
-    %t1 = index i8 [projection=field] %ret, 8
+    %t1 = index inbounds i8 [projection=field] %ret, 8
     store typed i64 0, %t1
-    %t2 = index i8 [projection=field] %ret, 16
+    %t2 = index inbounds i8 [projection=field] %ret, 16
     store typed i64 0, %t2
-    %t3 = index i8 [projection=field] %ret, 24
+    %t3 = index inbounds i8 [projection=field] %ret, 24
     store typed i64 0, %t3
     store typed i64 2, %ret
     %t4 = call i64 @peek(%ret)
@@ -60,11 +60,11 @@ function @escaped(%ret : ptr [pass=indirect_result, alias=exclusive_result, obje
 function @observed(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=32], %p : ptr) -> void [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     store volatile i64 0, %ret
-    %t1 = index i8 [projection=field] %ret, 8
+    %t1 = index inbounds i8 [projection=field] %ret, 8
     store typed i64 0, %t1
-    %t2 = index i8 [projection=field] %ret, 16
+    %t2 = index inbounds i8 [projection=field] %ret, 16
     store typed i64 0, %t2
-    %t3 = index i8 [projection=field] %ret, 24
+    %t3 = index inbounds i8 [projection=field] %ret, 24
     store typed i64 0, %t3
     %t4 = call i64 @peek(%p)
     store volatile i64 %t4, %ret
@@ -207,18 +207,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t51, ^if_then_26, ^lor_rhs_23
 
   block ^lor_rhs_23:
-    %t52 = index i8 [projection=field] %t38, 8
+    %t52 = index inbounds i8 [projection=field] %t38, 8
     %t53 = load typed i64 %t52
     %t54 = cmp ne i64 %t39, %t53
     branch %t54, ^if_then_26, ^lor_rhs_24
 
   block ^lor_rhs_24:
-    %t55 = index i8 [projection=field] %t38, 16
+    %t55 = index inbounds i8 [projection=field] %t38, 16
     %t56 = load typed i64 %t55
     branch %t56, ^if_then_26, ^lor_rhs_25
 
   block ^lor_rhs_25:
-    %t57 = index i8 [projection=field] %t38, 24
+    %t57 = index inbounds i8 [projection=field] %t38, 24
     %t58 = load typed i64 %t57
     branch %t58, ^if_then_26, ^if_end_27
 

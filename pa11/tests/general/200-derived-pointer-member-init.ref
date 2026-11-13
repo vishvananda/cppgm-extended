@@ -20,7 +20,7 @@ function @Iter__Iter(%this : ptr [object_bytes=8], %node : ptr) -> void [binding
     %t1 = load typed ptr $node
     %t2 = index i8 %t1, 0
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     return void
 }

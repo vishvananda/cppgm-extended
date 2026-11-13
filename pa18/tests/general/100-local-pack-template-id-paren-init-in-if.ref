@@ -43,11 +43,11 @@ function @probe(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : pt
     %t6 = load typed ptr $args__pack2
     call void @pair_constint__constint____pair(%t4, %t5, %t6)
     %t7 = addr $refs
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed ptr %t8
     %t10 = load typed i32 %t9
     %t11 = addr $refs
-    %t12 = index i8 [projection=field] %t11, 8
+    %t12 = index inbounds i8 [projection=field] %t11, 8
     %t13 = load typed ptr %t12
     %t14 = load typed i32 %t13
     %t15 = binary add nowrap i32 %t10, %t14
@@ -70,11 +70,11 @@ function @pair_constint__constint____pair(%this : ptr [object_bytes=16], %a : pt
     store typed ptr %b, $b
     %t1 = load typed ptr $a
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed ptr $b
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed ptr %t4, %t6
     return void
 }

@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $values
     call void @take(%t2, %t3)
     %t4 = addr $result
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t6, 7
     branch %t7, ^land_rhs_4, ^land_short_5
@@ -40,7 +40,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $values
     %t9 = binary mul i64 0, 4
     %t10 = index inbounds i8 [projection=array_element] %t8, %t9
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 7
     store typed i64 %t13, $land__2
@@ -74,10 +74,10 @@ function @item__item__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     return void
 }
@@ -87,7 +87,7 @@ function @item__item(%this : ptr [object_bytes=4]) -> void [binding=weak, object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }

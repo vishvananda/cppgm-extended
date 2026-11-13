@@ -67,7 +67,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = call obj<16x8> @pure_small(%t10)
     copyobj 16x8 %t11, %t9
     %t12 = addr $a
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = load typed i64 %t13
     %t15 = load typed i64 $i
     %t16 = cmp ne i64 %t14, %t15
@@ -75,7 +75,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_8:
     %t17 = addr $a
-    %t18 = index i8 [projection=field] %t17, 8
+    %t18 = index inbounds i8 [projection=field] %t17, 8
     %t19 = load typed i64 %t18
     %t20 = load typed i64 $i
     %t21 = binary add nowrap i64 %t20, 1
@@ -84,7 +84,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_7:
     %t23 = addr $a
-    %t24 = index i8 [projection=field] %t23, 16
+    %t24 = index inbounds i8 [projection=field] %t23, 16
     %t25 = load typed i64 %t24
     %t26 = load typed i64 $i
     %t27 = binary add nowrap i64 %t26, 2
@@ -99,7 +99,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_9:
     %t29 = addr $b
-    %t30 = index i8 [projection=field] %t29, 0
+    %t30 = index inbounds i8 [projection=field] %t29, 0
     %t31 = load typed i64 %t30
     %t32 = load typed i64 $i
     %t33 = binary add nowrap i64 %t32, 3
@@ -108,7 +108,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_13:
     %t35 = addr $b
-    %t36 = index i8 [projection=field] %t35, 8
+    %t36 = index inbounds i8 [projection=field] %t35, 8
     %t37 = load typed i64 %t36
     %t38 = load typed i64 $i
     %t39 = binary add nowrap i64 %t38, 4
@@ -117,7 +117,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_12:
     %t41 = addr $b
-    %t42 = index i8 [projection=field] %t41, 16
+    %t42 = index inbounds i8 [projection=field] %t41, 16
     %t43 = load typed i64 %t42
     %t44 = load typed i64 $i
     %t45 = binary add nowrap i64 %t44, 5
@@ -132,7 +132,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_14:
     %t47 = addr $c
-    %t48 = index i8 [projection=field] %t47, 0
+    %t48 = index inbounds i8 [projection=field] %t47, 0
     %t49 = load typed i64 %t48
     %t50 = load typed i64 $i
     %t51 = cmp ne i64 %t49, %t50
@@ -140,7 +140,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_17:
     %t52 = addr $c
-    %t53 = index i8 [projection=field] %t52, 8
+    %t53 = index inbounds i8 [projection=field] %t52, 8
     %t54 = load typed i64 %t53
     %t55 = load typed i64 $i
     %t56 = binary add nowrap i64 %t55, 1
@@ -178,15 +178,15 @@ function @Large__Large__aggregate(%this : ptr [object_bytes=24], %a : i64, %b : 
     store typed i64 %c, $c
     %t1 = load typed i64 $a
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     %t4 = load typed i64 $b
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i64 %t4, %t6
     %t7 = load typed i64 $c
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 16
+    %t9 = index inbounds i8 [projection=field] %t8, 16
     store typed i64 %t7, %t9
     return void
 }
@@ -201,11 +201,11 @@ function @Small__Small__aggregate(%this : ptr [object_bytes=16], %a : i64, %b : 
     store typed i64 %b, $b
     %t1 = load typed i64 $a
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     %t4 = load typed i64 $b
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i64 %t4, %t6
     return void
 }

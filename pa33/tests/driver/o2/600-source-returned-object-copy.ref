@@ -43,13 +43,13 @@ function @expose(%out : ptr, %from : ptr, %seed : u32) -> void [binding=strong, 
   block ^entry:
     store typed u32 %seed, %out
     %t1 = binary add u32 %seed, 3
-    %t2 = index i8 [projection=field] %out, 4
+    %t2 = index inbounds i8 [projection=field] %out, 4
     store typed u32 %t1, %t2
     %t3 = binary add u32 %seed, 5
-    %t4 = index i8 [projection=field] %out, 8
+    %t4 = index inbounds i8 [projection=field] %out, 8
     store typed u32 %t3, %t4
     %t5 = binary add u32 %seed, 7
-    %t6 = index i8 [projection=field] %out, 12
+    %t6 = index inbounds i8 [projection=field] %out, 12
     store typed u32 %t5, %t6
     store typed ptr %out, %from
     return void
@@ -64,15 +64,15 @@ function @captured(%seed : u32) -> i128 [result_classes=integer_integer, binding
     call void @expose(%t1, %t2, %seed)
     %t3 = load typed ptr $from
     %t4 = load typed u32 %t3
-    %t5 = index i8 [projection=field] %t1, 4
+    %t5 = index inbounds i8 [projection=field] %t1, 4
     store typed u32 %t4, %t5
     %t6 = index inbounds u32 [projection=array_element] %t3, 1
     %t7 = load typed u32 %t6
-    %t8 = index i8 [projection=field] %t1, 8
+    %t8 = index inbounds i8 [projection=field] %t1, 8
     store typed u32 %t7, %t8
     %t9 = index inbounds u32 [projection=array_element] %t3, 2
     %t10 = load typed u32 %t9
-    %t11 = index i8 [projection=field] %t1, 12
+    %t11 = index inbounds i8 [projection=field] %t1, 12
     store typed u32 %t10, %t11
     %t12 = load i64 %t1
     %t13 = load i64 %t8

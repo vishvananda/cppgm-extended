@@ -4,21 +4,21 @@ function @make(%ret : ptr [pass=indirect_result, alias=exclusive_result, object_
   block ^entry:
     store typed ptr %input, $input
     %t1 = load typed ptr $input
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
-    %t4 = index i8 [projection=field] %ret, 0
+    %t4 = index inbounds i8 [projection=field] %ret, 0
     store typed i64 %t3, %t4
     %t5 = load typed ptr $input
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i64 %t6
     %t8 = binary add nowrap i64 %t7, 1
-    %t9 = index i8 [projection=field] %ret, 8
+    %t9 = index inbounds i8 [projection=field] %ret, 8
     store typed i64 %t8, %t9
     %t10 = load typed ptr $input
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i64 %t11
     %t13 = binary add nowrap i64 %t12, 2
-    %t14 = index i8 [projection=field] %ret, 16
+    %t14 = index inbounds i8 [projection=field] %ret, 16
     store typed i64 %t13, %t14
     return void
 }
@@ -56,7 +56,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $input
     %t2 = addr $input
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 13, %t3
     %t4 = addr $a
     %t5 = addr $input
@@ -68,38 +68,38 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = addr $c
     call void @direct(%t9, 17)
     %t10 = addr $a
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i64 %t11
     %t13 = addr $a
-    %t14 = index i8 [projection=field] %t13, 8
+    %t14 = index inbounds i8 [projection=field] %t13, 8
     %t15 = load typed i64 %t14
     %t16 = binary add nowrap i64 %t12, %t15
     %t17 = addr $a
-    %t18 = index i8 [projection=field] %t17, 16
+    %t18 = index inbounds i8 [projection=field] %t17, 16
     %t19 = load typed i64 %t18
     %t20 = binary add nowrap i64 %t16, %t19
     %t21 = addr $b
-    %t22 = index i8 [projection=field] %t21, 0
+    %t22 = index inbounds i8 [projection=field] %t21, 0
     %t23 = load typed i64 %t22
     %t24 = binary add nowrap i64 %t20, %t23
     %t25 = addr $b
-    %t26 = index i8 [projection=field] %t25, 8
+    %t26 = index inbounds i8 [projection=field] %t25, 8
     %t27 = load typed i64 %t26
     %t28 = binary add nowrap i64 %t24, %t27
     %t29 = addr $b
-    %t30 = index i8 [projection=field] %t29, 16
+    %t30 = index inbounds i8 [projection=field] %t29, 16
     %t31 = load typed i64 %t30
     %t32 = binary add nowrap i64 %t28, %t31
     %t33 = addr $c
-    %t34 = index i8 [projection=field] %t33, 0
+    %t34 = index inbounds i8 [projection=field] %t33, 0
     %t35 = load typed i64 %t34
     %t36 = binary add nowrap i64 %t32, %t35
     %t37 = addr $c
-    %t38 = index i8 [projection=field] %t37, 8
+    %t38 = index inbounds i8 [projection=field] %t37, 8
     %t39 = load typed i64 %t38
     %t40 = binary add nowrap i64 %t36, %t39
     %t41 = addr $c
-    %t42 = index i8 [projection=field] %t41, 16
+    %t42 = index inbounds i8 [projection=field] %t41, 16
     %t43 = load typed i64 %t42
     %t44 = binary add nowrap i64 %t40, %t43
     %t45 = binary sub nowrap i64 %t44, 138
@@ -119,15 +119,15 @@ function @Result__Result__aggregate(%this : ptr [object_bytes=24], %first : i64,
     store typed i64 %third, $third
     %t1 = load typed i64 $first
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     %t4 = load typed i64 $second
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i64 %t4, %t6
     %t7 = load typed i64 $third
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 16
+    %t9 = index inbounds i8 [projection=field] %t8, 16
     store typed i64 %t7, %t9
     return void
 }

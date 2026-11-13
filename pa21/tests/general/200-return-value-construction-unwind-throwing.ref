@@ -428,7 +428,7 @@ function @member(%ret : ptr [pass=indirect_result, alias=exclusive_result, objec
     call void @Box__Box(%t8, 7)
     eh_end
     eh_try ^cleanup_action_10
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     call void @R__R__ov3(%ret, %t9)
     call void @Box___Box(%t8)
     eh_end
@@ -764,7 +764,7 @@ function @R__R__ov2(%this : ptr [object_bytes=4], %x : i32) -> void [binding=wea
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     call void @R__step()
     %t4 = load typed i32 @live
@@ -788,7 +788,7 @@ function @R__R(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1R
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     call void @R__step()
     %t3 = load typed i32 @live
@@ -852,10 +852,10 @@ function @R__R__ov3(%this : ptr [alias=noalias, object_bytes=4], %o : ptr [pass=
     store typed ptr %this, $this
     store typed ptr %o, $o
     %t1 = load typed ptr $o
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     call void @R__step()
     %t6 = load typed i32 @live
@@ -871,7 +871,7 @@ function @Box__Box(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak
     store typed ptr %this, $this
     store typed i32 %x, $x
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 $x
     call void @R__R__ov2(%t2, %t3)
     eh_cleanup ^constructor_cleanup_1
@@ -883,7 +883,7 @@ function @Box__Box(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak
 
   block ^constructor_cleanup_1:
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     call void @R___R(%t7)
     eh_end
     resume
@@ -899,13 +899,13 @@ function @Box___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=we
     store typed i32 %t2, @live
     eh_end
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @R___R(%t4)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     call void @R___R(%t6)
     eh_end
     resume

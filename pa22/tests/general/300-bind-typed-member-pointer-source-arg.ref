@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = addr $x
     call void @bind(%t2, $argobj__1, %t6, %t7)
     %t8 = addr $selected
-    %t9 = index i8 [projection=field] %t8, 16
+    %t9 = index inbounds i8 [projection=field] %t8, 16
     %t10 = load typed ptr %t9
     %t11 = addr $x
     %t12 = cmp eq ptr %t10, %t11
@@ -97,7 +97,7 @@ function @member_fn_int__X____int_X___member_fn(%this : ptr [object_bytes=16], %
     store typed i128 %f_, $f_
     %t1 = load typed i128 $f_
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i128 %t1, %t3
     return void
 }
@@ -112,12 +112,12 @@ function @bound_void___cppgm_class_template_identity_1_X____bound(%this : ptr [o
     copyobj 16x8 %f_, %t1
     store typed ptr %a_, $a_
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = addr $f_
     copyobj 16x8 %t4, %t3
     %t5 = load typed ptr $a_
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 16
+    %t7 = index inbounds i8 [projection=field] %t6, 16
     store typed ptr %t5, %t7
     return void
 }

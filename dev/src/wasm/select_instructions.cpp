@@ -4,6 +4,41 @@ namespace wasm {
 
 using namespace lowir;
 
+uint32_t Selector::memory_address(Value operand)
+{
+	uint64_t offset = 0;
+	// A Wasm memarg adds without wrapping at 32 bits. Only the typed
+	// nonwrapping promise permits moving a displacement into that memarg.
+	for (unsigned depth = 0; depth < 16 && operand.is(ValueKind::Temp); ++depth)
+	{
+		const InstId id = body_.temps[operand.index].def;
+		if (id == kNoId)
+			break;
+		const auto& def = body_.instructions[id];
+		// A slot operand of copy is a load, not the slot's address.
+		if (def.op == Opcode::Copy && def.type.is_pointer() && def.ops[0].is(ValueKind::Temp) &&
+			body_.temps[def.ops[0].index].type.is_pointer())
+		{
+			operand = def.ops[0];
+			continue;
+		}
+		if (def.op != Opcode::Index || def.index_bounds() != IndexBounds::InBounds ||
+			!def.ops[1].is(ValueKind::Integer))
+			break;
+		const auto& literal = body_.literals[def.ops[1].index];
+		const uint64_t scale = storage_bytes(def.type);
+		if (scale == 0 || literal.high != 0 || literal.low > UINT32_MAX / scale)
+			break;
+		const uint64_t bytes = literal.low * scale;
+		if (bytes > UINT32_MAX - offset)
+			break;
+		offset += bytes;
+		operand = def.ops[0];
+	}
+	address(operand);
+	return static_cast<uint32_t>(offset);
+}
+
 void Selector::instruction(const lowir::Instruction& inst)
 {
 	if ((exception_reference_ != kNoId && exception_instruction(inst)) || object_instruction(inst) ||
@@ -47,14 +82,18 @@ void Selector::instruction(const lowir::Instruction& inst)
 		address(inst.ops[0]);
 		break;
 	case Opcode::Load:
-		address(inst.ops[0]);
-		out_.emit(memory_op(inst.type, false), { 0, 0 });
+	{
+		const uint32_t offset = memory_address(inst.ops[0]);
+		out_.emit(memory_op(inst.type, false), { 0, offset });
 		break;
+	}
 	case Opcode::Store:
-		address(inst.ops[1]);
+	{
+		const uint32_t offset = memory_address(inst.ops[1]);
 		value(inst.ops[0], inst.type);
-		out_.emit(memory_op(inst.type, true), { 0, 0 });
+		out_.emit(memory_op(inst.type, true), { 0, offset });
 		return;
+	}
 	case Opcode::Index:
 	{
 		address(inst.ops[0]);

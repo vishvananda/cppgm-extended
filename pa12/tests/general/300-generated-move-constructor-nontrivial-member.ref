@@ -14,16 +14,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $source
     call void @Wrapper__Wrapper__2(%t3, %t4)
     %t5 = addr $source
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = index i8 [projection=field] %t6, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed ptr %t7
     %t9 = cmp eq ptr %t8, 0
     branch %t9, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t10 = addr $moved
-    %t11 = index i8 [projection=field] %t10, 0
-    %t12 = index i8 [projection=field] %t11, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed ptr %t12
     %t14 = addr $value
     %t15 = cmp eq ptr %t13, %t14
@@ -58,7 +58,7 @@ function @Wrapper__Wrapper(%this : ptr [object_bytes=8], %ptr : ptr) -> void [bi
     store typed ptr %this, $this
     store typed ptr %ptr, $ptr
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $ptr
     call void @Owner__Owner(%t2, %t3)
     return void
@@ -71,9 +71,9 @@ function @Wrapper__Wrapper__2(%this : ptr [alias=noalias, object_bytes=8], %othe
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $other
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Owner__Owner__ov2(%t2, %t4)
     return void
 }
@@ -86,7 +86,7 @@ function @Owner__Owner(%this : ptr [object_bytes=8], %ptr : ptr) -> void [bindin
     store typed ptr %ptr, $ptr
     %t1 = load typed ptr $ptr
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -98,13 +98,13 @@ function @Owner__Owner__ov2(%this : ptr [alias=noalias, object_bytes=8], %other 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     %t6 = load typed ptr $other
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed ptr 0, %t7
     return void
 }

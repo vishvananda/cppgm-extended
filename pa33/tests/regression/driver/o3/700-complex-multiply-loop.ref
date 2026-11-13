@@ -2,7 +2,7 @@ declare function @__cppgm_libgcc_muldc3(%arg0 : f64, %arg1 : f64, %arg2 : f64, %
 
 function @sum_scaled(%v : ptr, %w : i128 [classes=integer_integer]) -> f64 [binding=strong, object=_Z10sum_scaledP3VecCd] {
   block ^entry:
-    %t1 = index i8 [projection=field] %v, 8
+    %t1 = index inbounds i8 [projection=field] %v, 8
     %t2 = load typed i64 %t1
     %t3 = cmp gt i64 %t2, 0
     branch %t3, ^split_1, ^for_end_6

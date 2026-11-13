@@ -44,7 +44,7 @@ function @map_const_iter_value_type___map_const_iter__ov2(%this : ptr [object_by
     %t1 = addr $x
     copyobj 1x1 %x, %t1
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     return void
 }
 function @use_const_ref(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_Z13use_const_refIZN7builder1fEvE10value_typeEvRK14map_const_iterIT_E] {

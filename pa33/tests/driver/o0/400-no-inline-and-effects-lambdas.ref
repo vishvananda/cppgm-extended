@@ -46,7 +46,7 @@ function @__lambda_main_t16_26__operator__(%this : ptr [object_bytes=8], %x : i3
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t1, %t5
@@ -61,7 +61,7 @@ function @__lambda_main_t40_50_n1__operator__(%this : ptr [object_bytes=8], %x :
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t1, %t5

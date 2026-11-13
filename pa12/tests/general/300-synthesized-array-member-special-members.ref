@@ -30,20 +30,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = addr $copied
     %t13 = call ptr @Owner__operator___ov2(%t11, %t12)
     %t14 = addr $source
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = binary mul i64 0, 4
     %t17 = index inbounds i8 [projection=array_element] %t15, %t16
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     %t19 = load typed i32 %t18
     %t20 = cmp eq i32 %t19, 0
     branch %t20, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t21 = addr $moved
-    %t22 = index i8 [projection=field] %t21, 0
+    %t22 = index inbounds i8 [projection=field] %t21, 0
     %t23 = binary mul i64 0, 4
     %t24 = index inbounds i8 [projection=array_element] %t22, %t23
-    %t25 = index i8 [projection=field] %t24, 0
+    %t25 = index inbounds i8 [projection=field] %t24, 0
     %t26 = load typed i32 %t25
     %t27 = cmp eq i32 %t26, 3
     store typed i64 %t27, $land__2
@@ -59,10 +59,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_7:
     %t29 = addr $copied
-    %t30 = index i8 [projection=field] %t29, 0
+    %t30 = index inbounds i8 [projection=field] %t29, 0
     %t31 = binary mul i64 0, 4
     %t32 = index inbounds i8 [projection=array_element] %t30, %t31
-    %t33 = index i8 [projection=field] %t32, 0
+    %t33 = index inbounds i8 [projection=field] %t32, 0
     %t34 = load typed i32 %t33
     %t35 = cmp eq i32 %t34, 0
     store typed i64 %t35, $land__3
@@ -78,10 +78,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_10:
     %t37 = addr $copy_assigned
-    %t38 = index i8 [projection=field] %t37, 0
+    %t38 = index inbounds i8 [projection=field] %t37, 0
     %t39 = binary mul i64 0, 4
     %t40 = index inbounds i8 [projection=array_element] %t38, %t39
-    %t41 = index i8 [projection=field] %t40, 0
+    %t41 = index inbounds i8 [projection=field] %t40, 0
     %t42 = load typed i32 %t41
     %t43 = cmp eq i32 %t42, 5
     store typed i64 %t43, $land__4
@@ -97,10 +97,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_13:
     %t45 = addr $move_assigned
-    %t46 = index i8 [projection=field] %t45, 0
+    %t46 = index inbounds i8 [projection=field] %t45, 0
     %t47 = binary mul i64 0, 4
     %t48 = index inbounds i8 [projection=array_element] %t46, %t47
-    %t49 = index i8 [projection=field] %t48, 0
+    %t49 = index inbounds i8 [projection=field] %t48, 0
     %t50 = load typed i32 %t49
     %t51 = cmp eq i32 %t50, 6
     store typed i64 %t51, $land__5
@@ -132,7 +132,7 @@ function @Owner__Owner(%this : ptr [object_bytes=4]) -> void [binding=weak, obje
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary mul i64 0, 4
     %t4 = index i8 [projection=array_element] %t2, %t3
     call void @Value__Value(%t4)
@@ -146,11 +146,11 @@ function @Owner__Owner__2(%this : ptr [alias=noalias, object_bytes=4], %other : 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary mul i64 0, 4
     %t4 = index i8 [projection=array_element] %t2, %t3
     %t5 = load typed ptr $other
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = binary mul i64 0, 4
     %t8 = index i8 [projection=array_element] %t6, %t7
     call void @Value__Value__ov2(%t4, %t8)
@@ -164,11 +164,11 @@ function @Owner__Owner__3(%this : ptr [alias=noalias, object_bytes=4], %other : 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary mul i64 0, 4
     %t4 = index i8 [projection=array_element] %t2, %t3
     %t5 = load typed ptr $other
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = binary mul i64 0, 4
     %t8 = index i8 [projection=array_element] %t6, %t7
     call void @Value__Value__ov3(%t4, %t8)
@@ -182,11 +182,11 @@ function @Owner__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_a
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary mul i64 0, 4
     %t4 = index i8 [projection=array_element] %t2, %t3
     %t5 = load typed ptr $other
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = binary mul i64 0, 4
     %t8 = index i8 [projection=array_element] %t6, %t7
     %t9 = call ptr @Value__operator_(%t4, %t8)
@@ -201,11 +201,11 @@ function @Owner__operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary mul i64 0, 4
     %t4 = index i8 [projection=array_element] %t2, %t3
     %t5 = load typed ptr $other
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = binary mul i64 0, 4
     %t8 = index i8 [projection=array_element] %t6, %t7
     %t9 = call ptr @Value__operator___ov2(%t4, %t8)
@@ -218,7 +218,7 @@ function @Value__Value(%this : ptr [object_bytes=4]) -> void [binding=weak, obje
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -230,11 +230,11 @@ function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=4], %other 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 1
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     return void
 }
@@ -246,14 +246,14 @@ function @Value__Value__ov3(%this : ptr [alias=noalias, object_bytes=4], %other 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 2
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     %t7 = load typed ptr $other
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i32 0, %t8
     return void
 }
@@ -265,11 +265,11 @@ function @Value__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_a
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 3
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     %t7 = load typed ptr $this
     return ptr %t7
@@ -282,14 +282,14 @@ function @Value__operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 4
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     %t7 = load typed ptr $other
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i32 0, %t8
     %t9 = load typed ptr $this
     return ptr %t9

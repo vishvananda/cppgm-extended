@@ -77,7 +77,7 @@ function @model__mem_fn(%pmf : i128) -> obj<16x8> [binding=weak, object=_ZN5mode
     %t1 = addr $out
     %t2 = load typed i128 $pmf
     %t3 = addr $out
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i128 %t2, %t4
     %t5 = addr $retobj__1
     %t6 = addr $out
@@ -99,7 +99,7 @@ function @model__bind__2(%f : obj<16x8>, %__param1 : ptr, %__param2 : i32, %__pa
     store typed i32 %__param2, $__param2
     %t2 = addr $out
     %t3 = addr $out
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = addr $f
     copyobj 16x8 %t5, %t4
     %t6 = addr $retobj__1

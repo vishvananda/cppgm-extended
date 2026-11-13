@@ -4,7 +4,7 @@ function @using_namespace_vector_link__total(%value : ptr [pass=by_address, obje
   block ^entry:
     store typed ptr %value, $value
     %t1 = load typed ptr $value
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -41,7 +41,7 @@ function @helper_inline_ns__v1__vec_int___vec(%this : ptr [object_bytes=4], %ini
     store typed i32 %init, $init
     %t1 = load typed i32 $init
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

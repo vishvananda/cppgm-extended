@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $part
     call void @derived__derived(%t2)
     %t3 = addr $whole
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp ne i32 %t5, 6
     branch %t6, ^if_then_1, ^if_else_2
@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_3:
     %t7 = addr $part
     %t8 = index i8 %t7, 0
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = cmp ne i32 %t10, 7
     branch %t11, ^if_then_4, ^if_else_5
@@ -60,7 +60,7 @@ function @counter__counter__base_entry(%this : ptr [object_bytes=4]) -> void [bi
     store typed ptr %this, $this
     %t1 = call i32 @step__next(5)
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -94,7 +94,7 @@ function @counter__counter(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     store typed ptr %this, $this
     %t1 = call i32 @step__next(5)
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

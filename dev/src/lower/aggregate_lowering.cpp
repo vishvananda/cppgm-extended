@@ -185,9 +185,7 @@ lowir::Value FunctionLowering::path_address(const AddressPath& path)
 		switch (step.kind)
 		{
 		case PathStep::Kind::Field:
-			address = index(
-				lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, address, integer(i64, step.amount))
-						  .value;
+			address = field_address(address, step.amount);
 			if (step.untyped)
 				mark_untyped(address);
 			break;
@@ -1500,9 +1498,7 @@ void FunctionLowering::structured_class(const sema::ClassEntity* entity, uint8_t
 			close_region();
 			eager_pending_ = false;
 		}
-		const lowir::Value address = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, object,
-			integer(lowir::Type::scalar(lowir::TypeKind::I64), lowering_.member_offset(variable, location)))
-										 .value;
+		const lowir::Value address = field_address(object, lowering_.member_offset(variable, location));
 		if (through_union(variable, entity))
 			mark_untyped(address);
 		const OverlapScope overlap(overlapping_empty_, member);
@@ -1774,16 +1770,14 @@ bool FunctionLowering::copy_members(const sema::Type* type, lowir::Value source,
 	to.storage = destination;
 	const lowir::Value base_from = address_of(from);
 	const lowir::Value base_to = address_of(to);
-	const lowir::Type bytes = lowir::Type::scalar(lowir::TypeKind::I8);
-	const lowir::Type offset_type = lowir::Type::scalar(lowir::TypeKind::I64);
 	for (const MovedField& field : fields)
 	{
 		from.storage = base_from;
 		to.storage = base_to;
 		if (field.offset != 0)
 		{
-			from.storage = index(bytes, ir_model::IPK_FIELD, base_from, integer(offset_type, field.offset)).value;
-			to.storage = index(bytes, ir_model::IPK_FIELD, base_to, integer(offset_type, field.offset)).value;
+			from.storage = field_address(base_from, field.offset);
+			to.storage = field_address(base_to, field.offset);
 		}
 		store(field.type, load(field.type, from), to);
 	}
@@ -1874,16 +1868,13 @@ void FunctionLowering::lower_aggregate_helper(const sema::ClassEntity* entity, u
 		Place place = Place();
 		if (taken)
 			place.storage = lowir::Value::slot(slots[next++]);
-		const lowir::Value offset =
-			integer(lowir::Type::scalar(lowir::TypeKind::I64), lowering_.member_offset(variable, 0)).value;
+		const uint64_t offset = lowering_.member_offset(variable, 0);
 		if (type->kind != sema::TypeKind::Array)
 		{
 			const lowir::Type storage = type->is_reference() ? pointer : lowering_.storage_type(type);
 			const RValue value = taken ? load(storage, place) : zero_value(type);
 			Place target = Place();
-			target.storage = this->index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, this_pointer(0),
-									 RValue{ offset, lowir::Type::scalar(lowir::TypeKind::I64) })
-								 .value;
+			target.storage = field_address(this_pointer(0), offset);
 			if (through_union(variable, entity))
 				mark_untyped(target.storage);
 			// A volatile member's initializing store is a volatile access (the
@@ -1892,10 +1883,7 @@ void FunctionLowering::lower_aggregate_helper(const sema::ClassEntity* entity, u
 			store(storage, value, target);
 			continue;
 		}
-		const lowir::Value target = this->index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD,
-											this_pointer(0),
-											RValue{ offset, lowir::Type::scalar(lowir::TypeKind::I64) })
-										.value;
+		const lowir::Value target = field_address(this_pointer(0), offset);
 		if (through_union(variable, entity))
 			mark_untyped(target);
 		copy_object(type, load(pointer, place).value, target, 0);
@@ -2209,9 +2197,7 @@ Place FunctionLowering::bit_field_unit(
 	object = anonymous_object(object, from, holder, expr.location);
 	object = to_base(object, from, holder, expr.location);
 	Place place = Place();
-	place.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, object,
-		integer(lowir::Type::scalar(lowir::TypeKind::I64), anonymous + field.unit_offset))
-						.value;
+	place.storage = field_address(object, anonymous + field.unit_offset);
 	qualify(place, expr.facts->type);
 	return place;
 }

@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 4x4 %t5, %t3
     %t6 = call ptr @box_int_longint_char___operator_(%t2, $argobj__1)
     %t7 = addr $b
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i32 %t8
     %t10 = cmp eq i32 %t9, 7
     branch %t10, ^cond_then_1, ^cond_else_2
@@ -38,7 +38,7 @@ function @box_int_longint_char___box(%this : ptr [object_bytes=4]) -> void [bind
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -51,7 +51,7 @@ function @source_int___source(%this : ptr [object_bytes=4], %v : i32) -> void [b
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -63,7 +63,7 @@ function @source_int___operatorimpl_type(%this : ptr [object_bytes=4]) -> obj<4x
     store typed ptr %this, $this
     %t1 = addr $retobj__1
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     call void @box_int_longint_char___box__ov2(%t1, %t4)
     return obj<4x4> $retobj__1
@@ -77,10 +77,10 @@ function @box_int_longint_char___operator_(%this : ptr [object_bytes=4], %other 
     %t1 = addr $other
     copyobj 4x4 %other, %t1
     %t2 = addr $other
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     %t7 = load typed ptr $this
     return ptr %t7
@@ -94,7 +94,7 @@ function @box_int_longint_char___box__ov2(%this : ptr [object_bytes=4], %v : i32
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

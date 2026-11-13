@@ -34,7 +34,7 @@ function @object__object(%this : ptr [object_bytes=12]) -> void [binding=weak, o
     %t4 = index i8 %t3, 4
     call void @holder_object___holder__base_entry(%t4)
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i32 42, %t6
     return void
 }
@@ -54,7 +54,7 @@ function @pad__pad__base_entry(%this : ptr [object_bytes=4]) -> void [binding=we
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }
@@ -64,7 +64,7 @@ function @holder_object___holder__base_entry(%this : ptr [object_bytes=4]) -> vo
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 11, %t2
     return void
 }
@@ -75,7 +75,7 @@ function @holder_object___read(%this : ptr [object_bytes=4]) -> i32 [binding=wea
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = call ptr @holder_object___final(%t1)
-    %t3 = index i8 [projection=field] %t2, 8
+    %t3 = index inbounds i8 [projection=field] %t2, 8
     %t4 = load typed i32 %t3
     return i32 %t4
 }

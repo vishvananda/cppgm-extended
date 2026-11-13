@@ -35,7 +35,7 @@ function @complex_double___complex(%this : ptr [object_bytes=8], %re : f64) -> v
     store typed f64 %re, $re
     %t1 = load typed f64 $re
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed f64 %t1, %t3
     return void
 }
@@ -50,7 +50,7 @@ function @complex_float___complex(%this : ptr [object_bytes=4], %c : ptr [pass=b
     %t2 = call f64 @complex_double___real(%t1)
     %t3 = convert fptrunc f32 f64 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed f32 %t3, %t5
     return void
 }
@@ -60,7 +60,7 @@ function @complex_float___real(%this : ptr [object_bytes=4]) -> f32 [binding=wea
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed f32 %t2
     return f32 %t3
 }
@@ -70,7 +70,7 @@ function @complex_double___real(%this : ptr [object_bytes=8]) -> f64 [binding=we
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed f64 %t2
     return f64 %t3
 }

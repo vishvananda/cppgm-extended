@@ -10,7 +10,7 @@ function @Leaf__outside(%this : ptr [object_bytes=8]) -> i32 [binding=strong, ob
     call void @Root__RecordEvent(%t2, 19)
     %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     return i32 %t6
 }
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Leaf__Leaf(%t1)
     %t2 = addr $value
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 19
     branch %t6, ^land_rhs_4, ^land_short_5
@@ -113,7 +113,7 @@ function @Root__RecordEvent(%this : ptr [object_bytes=8], %code : i32) -> void [
     store typed i32 %code, $code
     %t1 = load typed i32 $code
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -127,7 +127,7 @@ function @Leaf__Leaf(%this : ptr [object_bytes=8]) -> void [binding=weak, object
     call void @Root__RecordEvent(%t2, 19)
     %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     store typed i32 7, %t5
     return void
 }
@@ -163,11 +163,11 @@ function @Leaf__argument_check(%this : ptr [object_bytes=8]) -> i32 [binding=wea
     %t1 = addr $BBGetter
     %t2 = load typed ptr $this
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     %t5 = load typed i32 %t4
     call void @Leaf__Helper__Helper(%t1, %t5)
     %t6 = addr $BBGetter
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     return i32 %t8
 }
@@ -180,7 +180,7 @@ function @Leaf__Helper__Helper(%this : ptr [object_bytes=4], %n : i32) -> void [
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

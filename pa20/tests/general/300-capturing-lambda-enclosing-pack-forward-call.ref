@@ -75,7 +75,7 @@ function @run(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : ptr 
     %t1 = addr $lambda
     %t2 = load typed ptr $args
     store typed ptr %t2, %t1
-    %t3 = index i8 [projection=field] %t1, 8
+    %t3 = index inbounds i8 [projection=field] %t1, 8
     %t4 = load typed ptr $args__pack2
     store typed ptr %t4, %t3
     %t5 = addr $lambda
@@ -88,11 +88,11 @@ function @__lambda_run_t166_166__operator__(%this : ptr [object_bytes=16]) -> i3
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = call ptr @std__forward(%t3)
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     %t7 = load typed ptr %t6
     %t8 = call ptr @std__forward__2(%t7)
     %t9 = call i32 @sink(%t4, %t8)

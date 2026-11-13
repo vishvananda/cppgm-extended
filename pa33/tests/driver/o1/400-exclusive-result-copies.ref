@@ -20,15 +20,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i64 %t1, %t3
     %t4 = binary mul i64 %t1, 3
     %t5 = binary add i64 %t4, 1
-    %t6 = index i8 [projection=field] %t3, 8
+    %t6 = index inbounds i8 [projection=field] %t3, 8
     store typed i64 %t5, %t6
     %t7 = binary mul i64 %t1, 7
     %t8 = binary add i64 %t7, 2
-    %t9 = index i8 [projection=field] %t3, 16
+    %t9 = index inbounds i8 [projection=field] %t3, 16
     store typed i64 %t8, %t9
     %t10 = binary mul i64 %t1, 4294967297
     %t11 = binary add i64 %t10, 3
-    %t12 = index i8 [projection=field] %t3, 24
+    %t12 = index inbounds i8 [projection=field] %t3, 24
     store typed i64 %t11, %t12
     %t13 = addr $aggregate__1
     call void @pack(%t13, %t3)

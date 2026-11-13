@@ -16,13 +16,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $d
     %t2 = addr $d
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 7, %t4
     %t5 = addr $d
     %t6 = call ptr @as_base(%t5)
     store typed ptr %t6, $p
     %t7 = load typed ptr $p
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i32 %t8
     %t10 = cmp eq i32 %t9, 7
     branch %t10, ^cond_then_1, ^cond_else_2

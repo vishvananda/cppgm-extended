@@ -13,12 +13,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $item
     %t2 = addr $item
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed u32 7, %t3
     %t4 = addr $item
     call void @destroy(%t4)
     %t5 = addr $item
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed u32 %t6
     %t8 = cmp eq u32 %t7, 7
     branch %t8, ^cond_then_1, ^cond_else_2

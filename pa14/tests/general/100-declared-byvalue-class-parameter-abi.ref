@@ -30,7 +30,7 @@ function @api__Handle__Handle__ov2(%this : ptr [object_bytes=8], %scope_in : ptr
     store typed ptr %scope_in, $scope_in
     %t1 = load typed ptr $scope_in
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

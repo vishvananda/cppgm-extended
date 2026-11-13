@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call ptr @source_duration()
     %t3 = call obj<4x4> @duration_like_int___cast(%t2)
     copyobj 4x4 %t3, %t1
-    %t4 = index i8 [projection=field] %t1, 0
+    %t4 = index inbounds i8 [projection=field] %t1, 0
     %t5 = load typed i32 %t4
     %t6 = binary sub nowrap i32 %t5, 7
     return i32 %t6
@@ -32,11 +32,11 @@ function @duration_like_int___duration_like(%this : ptr [object_bytes=4], %other
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     %t4 = convert trunc i32 i64 %t3
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     return void
 }

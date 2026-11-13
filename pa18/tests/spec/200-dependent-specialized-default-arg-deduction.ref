@@ -13,7 +13,7 @@ function @boostish__log_type__write(%this : ptr [object_bytes=1], %b : ptr [pass
     %t1 = addr @boostish__file_name
     %t2 = addr $argobj__1
     %t3 = load typed ptr $b
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @boostish__assign_op(%t1, $argobj__1, 0)
     return void
 }

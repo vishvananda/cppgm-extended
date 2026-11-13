@@ -7,17 +7,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $a
     %t2 = addr $b
     %t3 = addr $a
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 7, %t4
     %t5 = addr $b
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 1, %t6
     %t7 = addr $b
     %t8 = addr $a
     copyobj 4x4 %t8, %t7
     %t9 = addr $b
     %t10 = call ptr @Iter__operator_(%t9)
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 7
     branch %t13, ^cond_then_1, ^cond_else_2

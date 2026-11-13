@@ -377,3 +377,26 @@ is small. Profiles show distributed frontend/optimizer execution, without a new
 large dispatcher catastrophe; the remaining gap is not causally classified as
 generic LowIR or Wasm selection. Repros and generic leads remain in the external
 LowIR notes. Evidence: `wasm-cycle-analysis17/analysis-summary.json`.
+
+
+### Production field-address fix (2026-11-13)
+
+Actual member/capture/bitfield lowerers now emit inbounds facts, shared with
+x86. Wasm folds proven nonnegative field displacements into load/store offsets.
+Synthetic byte offsets stay plain. Pointer copies through stored stack slots
+are deliberately excluded; a mutation test catches the incorrect folding.
+
+Matched SDK34 EH libc++, matched feature defines, fixed 415-source full builds:
+4.06% fewer cppgm cycles and 4.92% fewer instructions; cycle excess over Clang
+falls from 22.98% to 18.03%. Clang before/after cycles change by -0.03%. Eight
+complete builds plus links, 3,328 byte-equal outputs and 24 calibration samples
+are retained in field-offset-implementation/cycle-comparison. These are summed
+CPU counters, not wall throughput; external SMT/cache load remains uncontrolled.
+The residual has not been assigned entirely to generic optimization.
+
+Final frozen19 qualification: 416 compiler sources, W1/W2/W3 objects and modules
+byte-identical under Wasmtime and Chromium; 1,251 native/WASI x86 objects equal
+at O0/O2/O3. Strict 10,864/10,864, debug info, PA5 selfhost, native inception,
+PA36 smoke, architecture/format/placement audits, harness and student export pass.
+The harness timeout test failed once under load and passed the focused recheck
+and complete harness rerun; all observations remain in the evidence directory.

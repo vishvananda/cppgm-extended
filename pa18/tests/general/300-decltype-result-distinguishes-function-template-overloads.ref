@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $first
     %t2 = addr $second
     %t3 = addr $second
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i64 42, %t4
     %t5 = addr $first
     %t6 = call i32 @pick(%t5)
@@ -49,7 +49,7 @@ function @pick__2(%object : ptr [pass=by_address, object_bytes=8]) -> i64 [bindi
   block ^entry:
     store typed ptr %object, $object
     %t1 = load typed ptr $object
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     return i64 %t3
 }

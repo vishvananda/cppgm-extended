@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $it
     %t2 = addr $value
     %t3 = addr $it
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     %t5 = addr $base
     %t6 = addr $it
@@ -54,7 +54,7 @@ function @iter_int___operator_(%this : ptr [object_bytes=8]) -> ptr [binding=wea
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     return ptr %t3
 }

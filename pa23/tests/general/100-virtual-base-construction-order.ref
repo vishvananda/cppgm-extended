@@ -254,7 +254,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Implicit__Implicit(%t6)
     %t7 = addr $source
     %t8 = index i8 %t7, 8
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     store typed i32 5, %t9
     %t10 = addr $copy
     %t11 = addr $source
@@ -274,7 +274,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^call_unwind_end_6:
     %t13 = addr $copy
     %t14 = index i8 %t13, 8
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp ne i32 %t16, 5
     branch %t17, ^if_then_7, ^if_else_8
@@ -608,7 +608,7 @@ function @Root__Root__base_entry(%this : ptr [object_bytes=4]) -> void [binding=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     call void @mark(1)
     return void
@@ -755,10 +755,10 @@ function @Root__Root__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=4
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     call void @mark(11)
     return void

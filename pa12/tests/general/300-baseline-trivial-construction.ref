@@ -90,13 +90,13 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t1 = addr $first
     %t2 = convert sext i64 i32 29
     %t3 = addr $first
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i64 %t2, %t4
     %t5 = addr $second
     %t6 = addr $first
     copyobj 8x8 %t6, %t5
     %t7 = addr $second
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i64 %t8
     %t10 = cmp ne i64 %t9, 29
     %t11 = convert trunc u32 i64 %t10
@@ -116,7 +116,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
 
   block ^lor_rhs_1:
     %t21 = load typed ptr $copied
-    %t22 = index i8 [projection=field] %t21, 0
+    %t22 = index inbounds i8 [projection=field] %t21, 0
     %t23 = load typed i64 %t22
     %t24 = cmp ne i64 %t23, 73
     store typed i64 %t24, $lor__1
@@ -173,7 +173,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
   block ^new_end_8:
     store typed ptr %t44, $custom
     %t46 = load typed ptr $custom
-    %t47 = index i8 [projection=field] %t46, 0
+    %t47 = index inbounds i8 [projection=field] %t46, 0
     %t48 = load typed i32 %t47
     %t49 = cmp ne i32 %t48, 51
     branch %t49, ^lor_short_10, ^lor_rhs_9
@@ -207,7 +207,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
   block ^new_end_13:
     store typed ptr %t58, $variadic
     %t60 = load typed ptr $variadic
-    %t61 = index i8 [projection=field] %t60, 0
+    %t61 = index inbounds i8 [projection=field] %t60, 0
     %t62 = load typed i64 %t61
     %t63 = cmp ne i64 %t62, 91
     branch %t63, ^lor_short_15, ^lor_rhs_14
@@ -286,21 +286,21 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t98 = addr $d
     %t99 = addr $d
     %t100 = index i8 %t99, 0
-    %t101 = index i8 [projection=field] %t100, 0
+    %t101 = index inbounds i8 [projection=field] %t100, 0
     store typed i32 1, %t101
     %t102 = addr $d
     %t103 = index i8 %t102, 0
-    %t104 = index i8 [projection=field] %t103, 4
+    %t104 = index inbounds i8 [projection=field] %t103, 4
     store i8 2, %t104
     %t105 = addr $d
-    %t106 = index i8 [projection=field] %t105, 5
+    %t106 = index inbounds i8 [projection=field] %t105, 5
     store i8 99, %t106
     %t107 = addr $b
     %t108 = addr $b
-    %t109 = index i8 [projection=field] %t108, 0
+    %t109 = index inbounds i8 [projection=field] %t108, 0
     store typed i32 47, %t109
     %t110 = addr $b
-    %t111 = index i8 [projection=field] %t110, 4
+    %t111 = index inbounds i8 [projection=field] %t110, 4
     store i8 8, %t111
     %t112 = convert sext i64 i32 8
     %t113 = addr $d
@@ -309,14 +309,14 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     copyobj 5x4 %t115, %t114
     store typed ptr %t114, $base
     %t116 = load typed ptr $base
-    %t117 = index i8 [projection=field] %t116, 0
+    %t117 = index inbounds i8 [projection=field] %t116, 0
     %t118 = load typed i32 %t117
     %t119 = cmp ne i32 %t118, 47
     branch %t119, ^lor_short_24, ^lor_rhs_23
 
   block ^lor_rhs_23:
     %t120 = load typed ptr $base
-    %t121 = index i8 [projection=field] %t120, 4
+    %t121 = index inbounds i8 [projection=field] %t120, 4
     %t122 = load i8 %t121
     %t123 = convert sext i32 i8 %t122
     %t124 = cmp ne i32 %t123, 8
@@ -333,7 +333,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
 
   block ^lor_rhs_26:
     %t126 = addr $d
-    %t127 = index i8 [projection=field] %t126, 5
+    %t127 = index inbounds i8 [projection=field] %t126, 5
     %t128 = load i8 %t127
     %t129 = convert sext i32 i8 %t128
     %t130 = cmp ne i32 %t129, 99
@@ -369,7 +369,7 @@ function @Custom__Custom__aggregate(%this : ptr [object_bytes=4], %value : i32) 
     store typed i32 %value, $value
     %t1 = load typed i32 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -382,7 +382,7 @@ function @Variadic__Variadic__aggregate(%this : ptr [object_bytes=8], %value : i
     store typed i64 %value, $value
     %t1 = load typed i64 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     return void
 }

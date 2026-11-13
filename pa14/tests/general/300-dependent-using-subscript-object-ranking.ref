@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $w
     %t2 = addr $w
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 42, %t4
     %t5 = addr $w
     store typed ptr %t5, $c
@@ -44,7 +44,7 @@ function @Base__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr
     store typed ptr %this, $this
     store typed i32 %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 function @Base__operator____ov2(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZNK4BaseixEi, inline_hint=yes] {
@@ -55,6 +55,6 @@ function @Base__operator____ov2(%this : ptr [object_bytes=4], %__param1 : i32) -
     store typed ptr %this, $this
     store typed i32 %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }

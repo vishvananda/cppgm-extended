@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $stream
     %t2 = addr $token
     %t3 = addr $stream
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 0, %t4
     %t5 = addr $stream
     %t6 = addr $token
@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t41 = addr $stream
-    %t42 = index i8 [projection=field] %t41, 0
+    %t42 = index inbounds i8 [projection=field] %t41, 0
     %t43 = load typed i32 %t42
     %t44 = cmp eq i32 %t43, 16
     store typed i64 %t44, $land__2
@@ -86,11 +86,11 @@ function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %__param1 
     store typed ptr %stream, $stream
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $stream
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 1
     %t5 = load typed ptr $stream
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     %t7 = load typed ptr $stream
     return ptr %t7

@@ -32,7 +32,7 @@ function @static_xpression_matcher_next___run(%this : ptr [object_bytes=1], %s :
     store typed ptr %s, $s
     %t1 = load typed ptr $s
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = call u8 @matcher__match(%t1, %t3)
     return u8 %t4
 }

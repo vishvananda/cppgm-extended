@@ -20,9 +20,9 @@ function @holder__operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $__param1
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = call ptr @element__operator_(%t2, %t4)
     %t6 = load typed ptr $this
     return ptr %t6

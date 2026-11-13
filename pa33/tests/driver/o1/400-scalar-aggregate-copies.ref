@@ -57,7 +57,7 @@ function @children(%ret : ptr [pass=indirect_result, alias=exclusive_result, obj
     store i64 %t3, %ret
     %t4 = index i8 [projection=field] %ret, 8
     store u32 0, %t4
-    %t5 = index i8 [projection=field] %ret, 16
+    %t5 = index inbounds i8 [projection=field] %ret, 16
     store i64 %t3, %t5
     %t6 = index i8 [projection=field] %ret, 24
     store u32 %t2, %t6

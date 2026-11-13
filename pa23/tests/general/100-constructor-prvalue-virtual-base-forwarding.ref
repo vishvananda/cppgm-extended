@@ -190,25 +190,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @D__D(%t22)
     %t23 = addr $d
     %t24 = index i8 %t23, 8
-    %t25 = index i8 [projection=field] %t24, 0
+    %t25 = index inbounds i8 [projection=field] %t24, 0
     store typed i32 7, %t25
     %t26 = addr $d
     %t27 = index i8 %t26, 12
-    %t28 = index i8 [projection=field] %t27, 0
+    %t28 = index inbounds i8 [projection=field] %t27, 0
     store typed i32 8, %t28
     %t29 = addr $d
     %t30 = index i8 %t29, 16
-    %t31 = index i8 [projection=field] %t30, 0
+    %t31 = index inbounds i8 [projection=field] %t30, 0
     store typed i32 9, %t31
     %t32 = addr $w
     %t33 = addr $d
     %t34 = addr $d
     %t35 = index i8 %t34, 8
-    %t36 = index i8 [projection=field] %t35, 0
+    %t36 = index inbounds i8 [projection=field] %t35, 0
     call void @make_wrap(%t32, %t33, %t36)
     %t37 = addr $w
     %t38 = index i8 %t37, 8
-    %t39 = index i8 [projection=field] %t38, 0
+    %t39 = index inbounds i8 [projection=field] %t38, 0
     %t40 = load typed i32 %t39
     %t41 = cmp eq i32 %t40, 7
     branch %t41, ^land_rhs_8, ^land_short_9
@@ -216,7 +216,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_8:
     %t42 = addr $w
     %t43 = index i8 %t42, 12
-    %t44 = index i8 [projection=field] %t43, 0
+    %t44 = index inbounds i8 [projection=field] %t43, 0
     %t45 = load typed i32 %t44
     %t46 = cmp eq i32 %t45, 8
     store typed i64 %t46, $land__2
@@ -233,7 +233,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_11:
     %t48 = addr $w
     %t49 = index i8 %t48, 16
-    %t50 = index i8 [projection=field] %t49, 0
+    %t50 = index inbounds i8 [projection=field] %t49, 0
     %t51 = load typed i32 %t50
     %t52 = cmp eq i32 %t51, 9
     store typed i64 %t52, $land__3
@@ -344,7 +344,7 @@ function @A__A__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [
     store typed i32 %value, $value
     %t1 = load typed i32 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -357,7 +357,7 @@ function @B__B__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [
     store typed i32 %value, $value
     %t1 = load typed i32 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -370,7 +370,7 @@ function @C__C__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [
     store typed i32 %value, $value
     %t1 = load typed i32 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -396,7 +396,7 @@ function @W_D___W(%this : ptr [object_bytes=24], %e : ptr [pass=by_address, obje
     %t10 = load typed i64 %t9
     %t11 = index i8 %t7, %t10
     %t12 = index i8 %t11, 0
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = load typed i32 %t13
     call void @B__B__base_entry(%t6, %t14)
     %t15 = load typed ptr $this
@@ -407,7 +407,7 @@ function @W_D___W(%this : ptr [object_bytes=24], %e : ptr [pass=by_address, obje
     %t20 = load typed i64 %t19
     %t21 = index i8 %t17, %t20
     %t22 = index i8 %t21, 0
-    %t23 = index i8 [projection=field] %t22, 0
+    %t23 = index inbounds i8 [projection=field] %t22, 0
     %t24 = load typed i32 %t23
     call void @C__C__base_entry(%t16, %t24)
     %t25 = load typed ptr $this

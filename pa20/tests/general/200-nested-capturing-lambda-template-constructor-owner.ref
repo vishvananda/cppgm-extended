@@ -21,7 +21,7 @@ function @Analyzer__lookup_functions(%this : ptr [object_bytes=1], %base : i32) 
     %t1 = addr $collect
     %t2 = addr $base
     store typed ptr %t2, %t1
-    %t3 = index i8 [projection=field] %t1, 8
+    %t3 = index inbounds i8 [projection=field] %t1, 8
     %t4 = addr $result
     store typed ptr %t4, %t3
     %t5 = addr $collect
@@ -40,18 +40,18 @@ function @Analyzer____lambda_Analyzer__lookup_functions_t83_85__operator__(%this
     %t1 = addr $visit
     %t2 = addr $argobj__1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed ptr %t4
     store typed ptr %t5, %t2
-    %t6 = index i8 [projection=field] %t2, 8
+    %t6 = index inbounds i8 [projection=field] %t2, 8
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     %t9 = load typed ptr %t8
     store typed ptr %t9, %t6
     call void @Function_void_Scope_____Function(%t1, $argobj__1)
     %t10 = addr $s
     %t11 = addr $s
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     store typed i32 5, %t12
     %t13 = addr $visit
     %t14 = addr $s

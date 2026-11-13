@@ -93,7 +93,7 @@ function @Derived___Derived(%this : ptr [object_bytes=1]) -> void [binding=weak,
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     call void @Member___Member(%t5)
     eh_end
     jump ^destructor_suffix_next_4
@@ -114,7 +114,7 @@ function @Derived___Derived(%this : ptr [object_bytes=1]) -> void [binding=weak,
   block ^destructor_cleanup_1:
     eh_try ^lexical_cleanup_terminate_5
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     call void @Member___Member(%t11)
     eh_end
     %t12 = load typed ptr $this

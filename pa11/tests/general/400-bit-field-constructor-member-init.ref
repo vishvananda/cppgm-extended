@@ -12,11 +12,11 @@ function @Bits__Bits(%this : ptr [object_bytes=4]) -> void [binding=weak, object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary and u8 1, 1
     store u8 %t3, %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = binary and u8 3, 2
     %t7 = binary shl u8 %t6, 1
     %t8 = load u8 %t5

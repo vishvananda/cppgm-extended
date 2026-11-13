@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @table_int___row
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = index inbounds i8 [projection=array_element] %t3, 0
     %t5 = load i8 %t4
@@ -42,7 +42,7 @@ function @entry__entry(%this : ptr [object_bytes=8], %value : ptr) -> void [bind
     store typed ptr %value, $value
     %t1 = load typed ptr $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

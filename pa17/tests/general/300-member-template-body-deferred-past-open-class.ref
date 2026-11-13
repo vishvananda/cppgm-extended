@@ -6,18 +6,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $dst
     %t2 = addr $src
     %t3 = addr $dst
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     store typed i32 1, %t4
     %t5 = addr $src
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 2, %t6
     %t7 = addr $dst
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = addr $dst
     %t10 = addr $src
     call void @box_node___demand(%t8, %t9, %t10)
     %t11 = addr $dst
-    %t12 = index i8 [projection=field] %t11, 4
+    %t12 = index inbounds i8 [projection=field] %t11, 4
     %t13 = load typed i32 %t12
     %t14 = cmp ne i32 %t13, 2
     %t15 = convert trunc i32 i64 %t14

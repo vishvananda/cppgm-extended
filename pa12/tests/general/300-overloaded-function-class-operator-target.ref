@@ -22,7 +22,7 @@ function @operator_(%function : ptr, %value : ptr [pass=by_address, object_bytes
     store typed ptr %function, $function
     store typed ptr %value, $value
     %t1 = load typed ptr $value
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $function
     %t5 = call i32 %t4(%t3) as (%arg0 : i32) -> i32
@@ -36,7 +36,7 @@ function @operator___ov2(%value : ptr [pass=by_address, object_bytes=4], %functi
     store typed ptr %value, $value
     store typed ptr %function, $function
     %t1 = load typed ptr $value
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $function
     %t5 = call i32 %t4(%t3) as (%arg0 : i32) -> i32

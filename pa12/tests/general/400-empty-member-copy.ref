@@ -40,17 +40,17 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
   block ^entry:
     %t1 = addr $a
     %t2 = addr $a
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 17, %t3
     %t4 = addr $a
-    %t5 = index i8 [projection=field] %t4, 16
+    %t5 = index inbounds i8 [projection=field] %t4, 16
     store typed i64 23, %t5
     %t6 = addr $b
     %t7 = addr $b
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i64 0, %t8
     %t9 = addr $b
-    %t10 = index i8 [projection=field] %t9, 16
+    %t10 = index inbounds i8 [projection=field] %t9, 16
     store typed i64 0, %t10
     %t11 = addr $b
     %t12 = addr $a
@@ -61,11 +61,11 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t15 = addr $x
     %t16 = convert sext i64 i32 29
     %t17 = addr $x
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     store typed i64 %t16, %t18
     %t19 = convert sext i64 i32 31
     %t20 = addr $x
-    %t21 = index i8 [projection=field] %t20, 16
+    %t21 = index inbounds i8 [projection=field] %t20, 16
     store typed i64 %t19, %t21
     %t22 = addr $y
     %t23 = addr $x
@@ -74,14 +74,14 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     %t25 = addr $x
     call void @copy_effect(%t24, %t25)
     %t26 = addr $b
-    %t27 = index i8 [projection=field] %t26, 0
+    %t27 = index inbounds i8 [projection=field] %t26, 0
     %t28 = load typed i64 %t27
     %t29 = cmp ne i64 %t28, 17
     branch %t29, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
     %t30 = addr $b
-    %t31 = index i8 [projection=field] %t30, 16
+    %t31 = index inbounds i8 [projection=field] %t30, 16
     %t32 = load typed i64 %t31
     %t33 = cmp ne i64 %t32, 23
     store typed i64 %t33, $lor__1
@@ -97,7 +97,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
 
   block ^lor_rhs_4:
     %t35 = addr $c
-    %t36 = index i8 [projection=field] %t35, 0
+    %t36 = index inbounds i8 [projection=field] %t35, 0
     %t37 = load typed i64 %t36
     %t38 = cmp ne i64 %t37, 17
     store typed i64 %t38, $lor__2
@@ -113,7 +113,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
 
   block ^lor_rhs_7:
     %t40 = addr $c
-    %t41 = index i8 [projection=field] %t40, 16
+    %t41 = index inbounds i8 [projection=field] %t40, 16
     %t42 = load typed i64 %t41
     %t43 = cmp ne i64 %t42, 23
     store typed i64 %t43, $lor__3
@@ -129,7 +129,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
 
   block ^lor_rhs_10:
     %t45 = addr $y
-    %t46 = index i8 [projection=field] %t45, 0
+    %t46 = index inbounds i8 [projection=field] %t45, 0
     %t47 = load typed i64 %t46
     %t48 = cmp ne i64 %t47, 29
     store typed i64 %t48, $lor__4
@@ -145,7 +145,7 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
 
   block ^lor_rhs_13:
     %t50 = addr $y
-    %t51 = index i8 [projection=field] %t50, 16
+    %t51 = index inbounds i8 [projection=field] %t50, 16
     %t52 = load typed i64 %t51
     %t53 = cmp ne i64 %t52, 31
     store typed i64 %t53, $lor__5
@@ -190,15 +190,15 @@ function @Nontrivial__operator_(%this : ptr [object_bytes=24], %other : ptr [pas
     %t2 = load typed ptr $other
     copyobj 8x8 %t2, %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 8
+    %t4 = index inbounds i8 [projection=field] %t3, 8
     %t5 = load typed ptr $other
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     %t7 = call ptr @Effect__operator_(%t4, %t6)
     %t8 = load typed ptr $other
-    %t9 = index i8 [projection=field] %t8, 16
+    %t9 = index inbounds i8 [projection=field] %t8, 16
     %t10 = load typed i64 %t9
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 16
+    %t12 = index inbounds i8 [projection=field] %t11, 16
     store typed i64 %t10, %t12
     %t13 = load typed ptr $this
     return ptr %t13
@@ -214,14 +214,14 @@ function @Nontrivial__Nontrivial(%this : ptr [alias=noalias, object_bytes=24], %
     %t2 = load typed ptr $other
     copyobj 8x8 %t2, %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 8
+    %t4 = index inbounds i8 [projection=field] %t3, 8
     %t5 = load typed ptr $other
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     call void @Effect__Effect__ov2(%t4, %t6)
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 16
+    %t8 = index inbounds i8 [projection=field] %t7, 16
     %t9 = load typed ptr $other
-    %t10 = index i8 [projection=field] %t9, 16
+    %t10 = index inbounds i8 [projection=field] %t9, 16
     %t11 = load typed i64 %t10
     store typed i64 %t11, %t8
     return void

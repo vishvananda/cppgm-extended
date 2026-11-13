@@ -38,7 +38,7 @@ function @owner____lambda_owner__call_t49_53__operator__(%this : ptr [object_byt
     store typed ptr %this, $this
     store typed i32 %input, $input
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed i32 $input
     %t5 = call i32 @owner__value(%t3, %t4)

@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $x
     %t2 = addr $x
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 9, %t3
     %t4 = addr $x
     %t5 = call ptr @get(%t4)
@@ -31,6 +31,6 @@ function @get(%x : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, bin
   block ^entry:
     store typed ptr %x, $x
     %t1 = load typed ptr $x
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }

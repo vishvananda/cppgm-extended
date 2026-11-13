@@ -28,7 +28,7 @@ function @str__str(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -55,7 +55,7 @@ function @str__build(%this : ptr [object_bytes=4], %first : i32, %second : i32) 
     copyobj 4x4 %t7, %t5
     call void @str__str__ov2(%t1, $argobj__1, %t3, %t4, $argobj__2)
     %t8 = addr $temp
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     return i32 %t10
 }
@@ -86,11 +86,11 @@ function @str__str__ov2(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [clas
     %t3 = load typed i32 $second
     %t4 = binary add nowrap i32 %t2, %t3
     %t5 = addr $a
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = binary add nowrap i32 %t4, %t7
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     store typed i32 %t8, %t10
     return void
 }
@@ -103,7 +103,7 @@ function @alloc__alloc__ov2(%this : ptr [object_bytes=4], %seed : i32) -> void [
     store typed i32 %seed, $seed
     %t1 = load typed i32 $seed
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

@@ -17,7 +17,7 @@ function @U_int___U(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [classes=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store u8 0, %t2
     return void
 }
@@ -32,7 +32,7 @@ function @U_int___U__2(%this : ptr [object_bytes=4], %args : ptr [pass=by_addres
     %t2 = call ptr @forward(%t1)
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store i32 %t3, %t5
     return void
 }

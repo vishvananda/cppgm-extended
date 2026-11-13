@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Outer_int___Ref__Ref__ov2(%t3, %t4)
     %t5 = addr $iter
     %t6 = addr $iter
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed i32 0, %t7
     %t8 = addr $iter
     %t9 = call ptr @Iter_int___operator__(%t8)
@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t12 = addr $iter
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = load typed i32 %t13
     %t15 = cmp eq i32 %t14, 1
     store typed i64 %t15, $land__2
@@ -61,7 +61,7 @@ function @Outer_int___Ref__Ref(%this : ptr [object_bytes=8], %input : ptr [pass=
     store typed ptr %input, $input
     %t1 = load typed ptr $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -73,10 +73,10 @@ function @Outer_int___Ref__Ref__ov2(%this : ptr [alias=noalias, object_bytes=8],
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $__param1
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     return void
 }
@@ -86,7 +86,7 @@ function @Iter_int___operator__(%this : ptr [object_bytes=4]) -> ptr [binding=we
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 1
     store typed i32 %t4, %t2
@@ -99,7 +99,7 @@ function @Outer_int___Ref__operatorbool(%this : ptr [object_bytes=8]) -> u8 [bin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t4, 0

@@ -27,7 +27,7 @@ function @owner__call_begin(%this : ptr [object_bytes=1]) -> ptr [binding=weak, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = index i8 %t2, 0
     %t4 = call ptr @layout__begin(%t3)
     return ptr %t4

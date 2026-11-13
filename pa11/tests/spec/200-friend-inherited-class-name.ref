@@ -14,7 +14,7 @@ function @Base__read(%this : ptr [object_bytes=1], %object : ptr [pass=by_addres
     store typed ptr %this, $this
     store typed ptr %object, $object
     %t1 = load typed ptr $object
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -68,7 +68,7 @@ function @inner__Derived__Derived(%this : ptr [object_bytes=4]) -> void [unwind=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }

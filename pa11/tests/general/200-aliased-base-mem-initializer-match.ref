@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $d
     %t3 = index i8 %t2, 0
     %t4 = addr $d
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     %t6 = call i32 @Base__ok(%t3, %t5)
     branch %t6, ^cond_then_1, ^cond_else_2
 
@@ -32,7 +32,7 @@ function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [binding=weak,
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 8
+    %t4 = index inbounds i8 [projection=field] %t3, 8
     call void @Base__Base__base_entry(%t2, %t4)
     return void
 }
@@ -44,7 +44,7 @@ function @Base__ok(%this : ptr [object_bytes=8], %field : ptr) -> i32 [binding=w
     store typed ptr %this, $this
     store typed ptr %field, $field
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $field
     %t5 = cmp eq ptr %t3, %t4
@@ -60,7 +60,7 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=8], %field : ptr) -> 
     store typed ptr %field, $field
     %t1 = load typed ptr $field
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

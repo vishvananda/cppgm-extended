@@ -6,18 +6,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $value
     %t2 = addr $value
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 11, %t3
     %t4 = addr $it
     %t5 = addr $value
     call void @iter__iter(%t4, %t5)
     %t6 = addr $it
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed ptr %t7
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     store typed i32 23, %t9
     %t10 = addr $value
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 23
     branch %t13, ^cond_then_1, ^cond_else_2
@@ -43,7 +43,7 @@ function @iter__iter(%this : ptr [object_bytes=8], %value : ptr [pass=by_address
     store typed ptr %value, $value
     %t1 = load typed ptr $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

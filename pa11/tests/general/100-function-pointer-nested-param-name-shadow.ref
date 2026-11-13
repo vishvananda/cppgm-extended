@@ -10,7 +10,7 @@ function @set_internal_non_blocking(%__param0 : i32, %__param1 : ptr [pass=by_ad
     store u8 %__param2, $__param2
     store typed ptr %ec, $ec
     %t1 = load typed ptr $ec
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -38,7 +38,7 @@ function @do_start_op(%descriptor : i32, %state : ptr [pass=by_address, object_b
     %t2 = load typed i32 $descriptor
     %t3 = load typed ptr $state
     %t4 = load typed ptr $op
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = call i32 @set_internal_non_blocking(%t2, %t3, 1, %t5)
     return i32 %t6
 }
@@ -51,8 +51,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store u8 0, $state
     %t1 = addr $op
     %t2 = addr $op
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 7, %t4
     %t5 = addr $state
     %t6 = addr $op

@@ -73,7 +73,7 @@ function @Work_int___Work(%this : ptr [object_bytes=4], %v : i32) -> void [bindi
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -85,7 +85,7 @@ function @Work_int___operator__(%this : ptr [object_bytes=4], %x : i32) -> i32 [
     store typed ptr %this, $this
     store typed i32 %x, $x
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed i32 $x
     %t5 = binary add nowrap i32 %t3, %t4

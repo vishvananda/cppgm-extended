@@ -4,7 +4,7 @@ function @use_service(%ioc : ptr [pass=by_address, object_bytes=8]) -> ptr [bind
   block ^entry:
     store typed ptr %ioc, $ioc
     %t1 = load typed ptr $ioc
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     return ptr %t2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @context__context(%t1)
     %t2 = addr $c
     %t3 = call ptr @use_service__2(%t2)
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 3
     branch %t6, ^cond_then_1, ^cond_else_2
@@ -39,11 +39,11 @@ function @context__context(%this : ptr [object_bytes=4]) -> void [binding=weak, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @service__service(%t2)
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
-    %t5 = index i8 [projection=field] %t4, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 3, %t5
     return void
 }
@@ -53,7 +53,7 @@ function @use_service__2(%e : ptr [pass=by_address, object_bytes=4]) -> ptr [bin
   block ^entry:
     store typed ptr %e, $e
     %t1 = load typed ptr $e
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 function @service__service(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7serviceC1Ev, inline_hint=yes] {
@@ -62,7 +62,7 @@ function @service__service(%this : ptr [object_bytes=4]) -> void [binding=weak, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }

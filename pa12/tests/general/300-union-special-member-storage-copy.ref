@@ -5,10 +5,10 @@ function @make() -> obj<8x8> [binding=strong, object=_Z4makev] {
   block ^entry:
     %t1 = addr $p
     %t2 = addr $p
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store i32 0, %t3
     %t4 = addr $p
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store i64 7, %t5
     %t6 = addr $retobj__1
     %t7 = addr $p
@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $a
     %t2 = addr $a
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store i32 0, %t3
     %t4 = addr $a
     %t5 = addr $arg__1
@@ -35,7 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $a
     copyobj 8x8 %t8, %t7
     %t9 = addr $b
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load i64 %t10
     %t12 = cmp eq i64 %t11, 7
     branch %t12, ^cond_then_1, ^cond_else_2

@@ -54,7 +54,7 @@ function @read_table() -> i32 [binding=strong, object=_Z10read_tablev] {
 
   block ^local_static_ready_1:
     %t12 = load typed ptr @__local_static__read_table__decl0__table
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = index inbounds i32 [projection=array_element] %t13, 1
     %t15 = load typed i32 %t14
     return i32 %t15

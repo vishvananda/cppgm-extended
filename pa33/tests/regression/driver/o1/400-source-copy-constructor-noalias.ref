@@ -5,17 +5,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $source
     store typed i64 5, %t1
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     store typed i64 17, %t2
-    %t3 = index i8 [projection=field] %t1, 16
+    %t3 = index inbounds i8 [projection=field] %t1, 16
     store typed i64 20, %t3
     %t4 = addr $destination
     call void @Pair__Pair__ov2(%t4, %t1)
     %t5 = load typed i64 %t4
-    %t6 = index i8 [projection=field] %t4, 8
+    %t6 = index inbounds i8 [projection=field] %t4, 8
     %t7 = load typed i64 %t6
     %t8 = binary add nowrap i64 %t5, %t7
-    %t9 = index i8 [projection=field] %t4, 16
+    %t9 = index inbounds i8 [projection=field] %t4, 16
     %t10 = load typed i64 %t9
     %t11 = binary add nowrap i64 %t8, %t10
     %t12 = binary sub nowrap i64 %t11, 42

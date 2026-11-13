@@ -26,7 +26,7 @@ function @table__table__aggregate(%this : ptr [object_bytes=4], %size : u32) -> 
     store typed u32 %size, $size
     %t1 = load typed u32 $size
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed u32 %t1, %t3
     return void
 }

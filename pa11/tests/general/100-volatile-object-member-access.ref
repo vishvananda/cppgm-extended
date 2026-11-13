@@ -8,7 +8,7 @@ function @read_reference(%device : ptr [pass=by_address, object_bytes=16]) -> i3
   block ^entry:
     store typed ptr %device, $device
     %t1 = load typed ptr $device
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load volatile i32 %t2
     return i32 %t3
 }
@@ -18,14 +18,14 @@ function @write_pointer(%device : ptr) -> void [binding=strong, object=_Z13write
   block ^entry:
     store typed ptr %device, $device
     %t1 = load typed ptr $device
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store volatile i32 5, %t2
     return void
 }
 function @read_global() -> i32 [binding=strong, object=_Z11read_globalv] {
   block ^entry:
     %t1 = addr @global_device
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     %t3 = index inbounds i32 [projection=array_element] %t2, 1
     %t4 = load volatile i32 %t3
     return i32 %t4
@@ -36,8 +36,8 @@ function @read_nested(%device : ptr [pass=by_address, object_bytes=16]) -> i32 [
   block ^entry:
     store typed ptr %device, $device
     %t1 = load typed ptr $device
-    %t2 = index i8 [projection=field] %t1, 12
-    %t3 = index i8 [projection=field] %t2, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 12
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load volatile i32 %t3
     return i32 %t4
 }
@@ -47,7 +47,7 @@ function @read_plain(%device : ptr [pass=by_address, object_bytes=16]) -> i32 [b
   block ^entry:
     store typed ptr %device, $device
     %t1 = load typed ptr $device
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -57,20 +57,20 @@ function @read_local() -> i32 [binding=strong, object=_Z10read_localv] {
   block ^entry:
     %t1 = addr $local
     %t2 = addr $local
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = index inbounds i32 [projection=array_element] %t3, 0
     store volatile i32 6, %t4
     %t5 = addr $local
-    %t6 = index i8 [projection=field] %t5, 12
-    %t7 = index i8 [projection=field] %t6, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 12
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store volatile i32 4, %t7
     %t8 = addr $local
-    %t9 = index i8 [projection=field] %t8, 4
+    %t9 = index inbounds i8 [projection=field] %t8, 4
     %t10 = index inbounds i32 [projection=array_element] %t9, 0
     %t11 = load volatile i32 %t10
     %t12 = addr $local
-    %t13 = index i8 [projection=field] %t12, 12
-    %t14 = index i8 [projection=field] %t13, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 12
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = load volatile i32 %t14
     %t16 = binary add nowrap i32 %t11, %t15
     return i32 %t16
@@ -86,29 +86,29 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $plain
     %t2 = addr $plain
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 7, %t3
     %t4 = addr $plain
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     %t6 = index i32 [projection=array_element] %t5, 0
     store typed i32 8, %t6
     %t7 = addr $plain
-    %t8 = index i8 [projection=field] %t7, 4
+    %t8 = index inbounds i8 [projection=field] %t7, 4
     %t9 = index i32 [projection=array_element] %t8, 1
     store typed i32 9, %t9
     %t10 = addr $plain
-    %t11 = index i8 [projection=field] %t10, 12
-    %t12 = index i8 [projection=field] %t11, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 12
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     store typed i32 10, %t12
     %t13 = addr @global_device
     call void @write_pointer(%t13)
     %t14 = addr @global_device
-    %t15 = index i8 [projection=field] %t14, 4
+    %t15 = index inbounds i8 [projection=field] %t14, 4
     %t16 = index inbounds i32 [projection=array_element] %t15, 1
     store volatile i32 11, %t16
     %t17 = addr @global_device
-    %t18 = index i8 [projection=field] %t17, 12
-    %t19 = index i8 [projection=field] %t18, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 12
+    %t19 = index inbounds i8 [projection=field] %t18, 0
     store volatile i32 12, %t19
     %t20 = addr @global_device
     %t21 = call i32 @read_reference(%t20)

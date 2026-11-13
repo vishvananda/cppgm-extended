@@ -163,19 +163,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $r
     call void @RvalueImpl_shortint___RvalueImpl(%t3)
     %t4 = addr $p
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     %t6 = index i8 %t5, 0
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed i32 17, %t7
     %t8 = addr $l
-    %t9 = index i8 [projection=field] %t8, 8
+    %t9 = index inbounds i8 [projection=field] %t8, 8
     %t10 = index i8 %t9, 0
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     store typed i32 23, %t11
     %t12 = addr $r
-    %t13 = index i8 [projection=field] %t12, 8
+    %t13 = index inbounds i8 [projection=field] %t12, 8
     %t14 = index i8 %t13, 0
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     store typed i32 31, %t15
     %t16 = addr $p
     %t17 = index i8 %t16, 0
@@ -190,20 +190,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t23 = load typed ptr %t22
     %t24 = load typed ptr %t23
     %t25 = call ptr %t24(%t22) as (%arg0 : ptr [object_bytes=8]) -> ptr
-    %t26 = index i8 [projection=field] %t25, 0
+    %t26 = index inbounds i8 [projection=field] %t25, 0
     %t27 = load typed i32 %t26
     %t28 = load typed ptr $b
     %t29 = load typed ptr %t28
     %t30 = load typed ptr %t29
     %t31 = call ptr %t30(%t28) as (%arg0 : ptr [object_bytes=8]) -> ptr
-    %t32 = index i8 [projection=field] %t31, 0
+    %t32 = index inbounds i8 [projection=field] %t31, 0
     %t33 = load typed i32 %t32
     %t34 = binary add nowrap i32 %t27, %t33
     %t35 = load typed ptr $c
     %t36 = load typed ptr %t35
     %t37 = load typed ptr %t36
     %t38 = call ptr %t37(%t35) as (%arg0 : ptr [object_bytes=8]) -> ptr
-    %t39 = index i8 [projection=field] %t38, 0
+    %t39 = index inbounds i8 [projection=field] %t38, 0
     %t40 = load typed i32 %t39
     %t41 = binary add nowrap i32 %t34, %t40
     %t42 = binary sub nowrap i32 %t41, 71
@@ -268,7 +268,7 @@ function @PointerImpl_int___get(%this : ptr [object_bytes=16]) -> ptr [binding=w
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     return ptr %t2
 }
 function @Lvalue__Lvalue__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6LvalueC2Ev, object_root=yes, inline_hint=yes] {
@@ -288,7 +288,7 @@ function @LvalueImpl_longint___get(%this : ptr [object_bytes=24]) -> ptr [bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     return ptr %t2
 }
 function @Rvalue__Rvalue__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6RvalueC2Ev, object_root=yes, inline_hint=yes] {
@@ -308,7 +308,7 @@ function @RvalueImpl_shortint___get(%this : ptr [object_bytes=16]) -> ptr [bindi
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     return ptr %t2
 }
 alias object _ZN11PointerImplIiEC2Ev = @PointerImpl_int___PointerImpl

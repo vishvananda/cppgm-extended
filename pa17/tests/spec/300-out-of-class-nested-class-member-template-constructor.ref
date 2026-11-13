@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $value
     call void @body_longint___reader__reader(%t3, %t4, %t5)
     %t6 = addr $result
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = const i64 8
     %t10 = const i64 4
@@ -62,7 +62,7 @@ function @body_longint___reader__reader(%this : ptr [object_bytes=4], %__param1 
     %t6 = binary add i64 %t3, %t5
     %t7 = convert trunc i32 i64 %t6
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     store typed i32 %t7, %t9
     return void
 }

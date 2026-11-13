@@ -263,7 +263,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = load typed i64 %t21
     %t23 = index i8 %t19, %t22
     %t24 = index i8 %t23, 0
-    %t25 = index i8 [projection=field] %t24, 8
+    %t25 = index inbounds i8 [projection=field] %t24, 8
     %t26 = load typed i32 %t25
     %t27 = cmp ne i32 %t26, 7
     branch %t27, ^if_then_6, ^lor_rhs_8
@@ -361,7 +361,7 @@ function @Root__Root__base_entry(%this : ptr [object_bytes=16]) -> void [binding
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     store typed i32 7, %t5
     return void
 }
@@ -390,7 +390,7 @@ function @Inner__Inner__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) 
     %t9 = load typed ptr $this
     %t10 = index i8 %t9, %t5
     %t11 = index i8 %t10, 0
-    %t12 = index i8 [projection=field] %t11, 8
+    %t12 = index inbounds i8 [projection=field] %t11, 8
     %t13 = load typed i32 %t12
     %t14 = binary mul nowrap i32 %t13, 10
     %t15 = load typed ptr $this

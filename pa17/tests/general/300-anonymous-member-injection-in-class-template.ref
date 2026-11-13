@@ -12,20 +12,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i64 @str_char___total(%t2)
     store typed i64 %t3, $through_member
     %t4 = addr $made
-    %t5 = index i8 [projection=field] %t4, 0
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = index i8 [projection=field] %t6, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load i64 %t7
     %t9 = addr $made
-    %t10 = index i8 [projection=field] %t9, 0
-    %t11 = index i8 [projection=field] %t10, 0
-    %t12 = index i8 [projection=field] %t11, 8
+    %t10 = index inbounds i8 [projection=field] %t9, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 8
     %t13 = load i64 %t12
     %t14 = binary add i64 %t8, %t13
     %t15 = addr $made
-    %t16 = index i8 [projection=field] %t15, 0
-    %t17 = index i8 [projection=field] %t16, 0
-    %t18 = index i8 [projection=field] %t17, 16
+    %t16 = index inbounds i8 [projection=field] %t15, 0
+    %t17 = index inbounds i8 [projection=field] %t16, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 16
     %t19 = load i64 %t18
     %t20 = binary add i64 %t14, %t19
     store typed i64 %t20, $through_object
@@ -67,20 +67,20 @@ function @str_char___total(%this : ptr [object_bytes=24]) -> i64 [binding=weak, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load i64 %t4
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 0
-    %t8 = index i8 [projection=field] %t7, 0
-    %t9 = index i8 [projection=field] %t8, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 8
     %t10 = load i64 %t9
     %t11 = binary add i64 %t5, %t10
     %t12 = load typed ptr $this
-    %t13 = index i8 [projection=field] %t12, 0
-    %t14 = index i8 [projection=field] %t13, 0
-    %t15 = index i8 [projection=field] %t14, 16
+    %t13 = index inbounds i8 [projection=field] %t12, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 16
     %t16 = load i64 %t15
     %t17 = binary add i64 %t11, %t16
     return i64 %t17

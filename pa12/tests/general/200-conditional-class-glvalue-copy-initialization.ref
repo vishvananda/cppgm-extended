@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $base
     %t2 = addr $base
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 3, %t3
     %t4 = addr $derived
     call void @Derived__Derived(%t4)
@@ -46,7 +46,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load typed ptr $condaddr__1
     copyobj 4x4 %t10, %t5
     %t11 = addr $copy
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp ne i32 %t13, 7
     branch %t14, ^if_then_4, ^lor_rhs_6
@@ -64,11 +64,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_7:
     %t17 = addr $copy
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     store typed i32 9, %t18
     %t19 = addr $derived
     %t20 = index i8 %t19, 0
-    %t21 = index i8 [projection=field] %t20, 0
+    %t21 = index inbounds i8 [projection=field] %t20, 0
     %t22 = load typed i32 %t21
     %t23 = cmp ne i32 %t22, 7
     branch %t23, ^if_then_8, ^if_else_9
@@ -129,7 +129,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Observed__Observed__ov2(%t27, %t33)
     eh_end
     %t34 = addr $copied
-    %t35 = index i8 [projection=field] %t34, 0
+    %t35 = index inbounds i8 [projection=field] %t34, 0
     %t36 = load typed i32 %t35
     %t37 = cmp ne i32 %t36, 8
     branch %t37, ^if_then_19, ^lor_rhs_23
@@ -180,7 +180,7 @@ function @Derived__Derived(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 7, %t3
     return void
 }
@@ -193,7 +193,7 @@ function @Observed__Observed(%this : ptr [object_bytes=4], %input : i32) -> void
     store typed i32 %input, $input
     %t1 = load typed i32 $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @alive
     %t5 = binary add nowrap i32 %t4, 1
@@ -218,10 +218,10 @@ function @Observed__Observed__ov2(%this : ptr [alias=noalias, object_bytes=4], %
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     %t6 = load typed i32 @alive
     %t7 = binary add nowrap i32 %t6, 1

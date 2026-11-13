@@ -50,7 +50,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $samples
     store u8 1, %t1
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     store typed f32 -3f, %t2
     %t3 = index i8 %t1, 8
     store u8 2, %t3
@@ -102,7 +102,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = addr $sample
     %t23 = convert trunc u8 u32 %t20
     store u8 %t23, %t22
-    %t24 = index i8 [projection=field] %t22, 4
+    %t24 = index inbounds i8 [projection=field] %t22, 4
     store typed f32 0f, %t24
     %t25 = index inbounds u32 [projection=array_element] %t19, %t20
     copyobj 4x1 %t25, %t24

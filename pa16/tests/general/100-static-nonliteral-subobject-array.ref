@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr @counts
     %t4 = binary mul i64 0, 4
     %t5 = index inbounds i8 [projection=array_element] %t3, %t4
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp ne i32 %t7, 1
     store typed i64 %t8, $lor__1
@@ -38,7 +38,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = addr @counts
     %t11 = binary mul i64 1, 4
     %t12 = index inbounds i8 [projection=array_element] %t10, %t11
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = load typed i32 %t13
     %t15 = cmp ne i32 %t14, 7
     store typed i64 %t15, $lor__2
@@ -62,7 +62,7 @@ function @Count__Count(%this : ptr [object_bytes=4], %v : i32) -> void [binding=
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -74,19 +74,19 @@ function @Early__Early(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
     %t1 = addr @counts
     %t2 = binary mul i64 0, 4
     %t3 = index inbounds i8 [projection=array_element] %t1, %t2
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = addr @counts
     %t7 = binary mul i64 1, 4
     %t8 = index inbounds i8 [projection=array_element] %t6, %t7
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = binary add nowrap i32 %t5, %t10
     store typed i32 %t11, @observed
     %t12 = addr @counts
     %t13 = binary mul i64 1, 4
     %t14 = index inbounds i8 [projection=array_element] %t12, %t13
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     store typed i32 7, %t15
     return void
 }

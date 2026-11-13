@@ -68,7 +68,7 @@ function @read(%a : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=stro
     %t4 = load typed i64 %t3
     %t5 = index i8 %t1, %t4
     %t6 = index i8 %t5, 0
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     return i32 %t8
 }
@@ -87,7 +87,7 @@ function @poison(%__param0 : i32, %p : ptr) -> void [binding=strong, object=_Z6p
     store typed i32 %__param0, $__param0
     store typed ptr %p, $p
     %t1 = load typed ptr $p
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 13, %t2
     return void
 }
@@ -103,7 +103,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @V__V(%t2)
     %t3 = addr $d
     %t4 = index i8 %t3, 8
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 7, %t5
     %t6 = addr $other
     call void @poison(0, %t6)
@@ -150,7 +150,7 @@ function @V__V__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -160,7 +160,7 @@ function @V__V(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1V
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }

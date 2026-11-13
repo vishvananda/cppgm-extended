@@ -65,7 +65,7 @@ function @LambdaBox_int_____lambda_LambdaBox_int___run_t80_80__operator__(%this 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     store typed i32 1, %t3
     return void
@@ -76,7 +76,7 @@ function @LambdaBox_int_____lambda_LambdaBox_int___run_t90_90_n1__operator__(%th
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     store typed i32 2, %t3
     return void

@@ -19,7 +19,7 @@ function @make(%value : i32) -> obj<4x4> [binding=strong, object=_Z4makei] {
     %t1 = addr $result
     %t2 = load typed i32 $value
     %t3 = addr $result
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     %t5 = addr $retobj__1
     %t6 = addr $result
@@ -97,7 +97,7 @@ function @conditional(%select : i32) -> i32 [binding=strong, object=_Z11conditio
     %t2 = addr $tmpobj__2
     %t3 = call obj<4x4> @make(7)
     copyobj 4x4 %t3, %t2
-    %t4 = index i8 [projection=field] %t2, 0
+    %t4 = index inbounds i8 [projection=field] %t2, 0
     %t5 = load typed i32 %t4
     store typed i32 %t5, $cond__1
     jump ^cond_end_3

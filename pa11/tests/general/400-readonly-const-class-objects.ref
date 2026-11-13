@@ -39,48 +39,48 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @mutable_member
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     store typed i32 1, %t2
     %t3 = addr @pair_object
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     %t5 = load typed i32 %t4
     %t6 = addr @pair_array
     %t7 = binary mul i64 1, 8
     %t8 = index inbounds i8 [projection=array_element] %t6, %t7
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = binary add nowrap i32 %t5, %t10
     %t12 = addr @nested_object
-    %t13 = index i8 [projection=field] %t12, 0
-    %t14 = index i8 [projection=field] %t13, 4
+    %t13 = index inbounds i8 [projection=field] %t12, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 4
     %t15 = load typed i32 %t14
     %t16 = binary add nowrap i32 %t11, %t15
     %t17 = addr @nested_object
-    %t18 = index i8 [projection=field] %t17, 8
+    %t18 = index inbounds i8 [projection=field] %t17, 8
     %t19 = load typed i32 %t18
     %t20 = binary add nowrap i32 %t16, %t19
     %t21 = addr @mutable_member
-    %t22 = index i8 [projection=field] %t21, 0
+    %t22 = index inbounds i8 [projection=field] %t21, 0
     %t23 = load typed i32 %t22
     %t24 = binary add nowrap i32 %t20, %t23
     %t25 = addr @mutable_member
-    %t26 = index i8 [projection=field] %t25, 4
+    %t26 = index inbounds i8 [projection=field] %t25, 4
     %t27 = load typed i32 %t26
     %t28 = binary add nowrap i32 %t24, %t27
     %t29 = addr @mutable_in_member
-    %t30 = index i8 [projection=field] %t29, 8
+    %t30 = index inbounds i8 [projection=field] %t29, 8
     %t31 = load typed i32 %t30
     %t32 = binary add nowrap i32 %t28, %t31
     %t33 = addr @mutable_in_base
-    %t34 = index i8 [projection=field] %t33, 8
+    %t34 = index inbounds i8 [projection=field] %t33, 8
     %t35 = load typed i32 %t34
     %t36 = binary add nowrap i32 %t32, %t35
     %t37 = addr @volatile_member
-    %t38 = index i8 [projection=field] %t37, 0
+    %t38 = index inbounds i8 [projection=field] %t37, 0
     %t39 = load volatile i32 %t38
     %t40 = binary add nowrap i32 %t36, %t39
     %t41 = addr @destroyed
-    %t42 = index i8 [projection=field] %t41, 0
+    %t42 = index inbounds i8 [projection=field] %t41, 0
     %t43 = load typed i32 %t42
     %t44 = binary add nowrap i32 %t40, %t43
     store typed i32 %t44, $sum

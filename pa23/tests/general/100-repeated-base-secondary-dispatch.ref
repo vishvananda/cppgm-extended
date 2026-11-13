@@ -218,7 +218,7 @@ function @Left__Left__base_entry(%this : ptr [object_bytes=16]) -> void [binding
     store typed ptr %t5, %t3
     %t6 = load typed ptr $this
     %t7 = index i8 %t6, 0
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     store typed i32 10, %t8
     return void
 }
@@ -236,7 +236,7 @@ function @Right__Right__base_entry(%this : ptr [object_bytes=16]) -> void [bindi
     store typed ptr %t5, %t3
     %t6 = load typed ptr $this
     %t7 = index i8 %t6, 0
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     store typed i32 20, %t8
     return void
 }
@@ -253,7 +253,7 @@ function @Tagged__g(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -267,7 +267,7 @@ function @Tagged__Tagged__base_entry(%this : ptr [object_bytes=16]) -> void [bin
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     store typed i32 0, %t5
     return void
 }

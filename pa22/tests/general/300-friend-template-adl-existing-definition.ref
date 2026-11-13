@@ -39,7 +39,7 @@ function @ns__error_info_file_tag_constchar____error_info(%this : ptr [object_by
     store typed ptr %v, $v
     %t1 = load typed ptr $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -51,11 +51,11 @@ function @ns__detail__set_info(%x : ptr [pass=by_address, object_bytes=16], %y :
     store typed ptr %x, $x
     store typed ptr %y, $y
     %t1 = load typed ptr $y
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $x
     %t5 = index i8 %t4, 0
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed ptr %t3, %t6
     %t7 = load typed ptr $x
     return ptr %t7
@@ -69,7 +69,7 @@ function @ns__error_info_line_tag_int___error_info(%this : ptr [object_bytes=4],
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -81,11 +81,11 @@ function @ns__detail__set_info__2(%x : ptr [pass=by_address, object_bytes=16], %
     store typed ptr %x, $x
     store typed ptr %y, $y
     %t1 = load typed ptr $y
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $x
     %t5 = index i8 %t4, 0
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i32 %t3, %t6
     %t7 = load typed ptr $x
     return ptr %t7

@@ -276,28 +276,28 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^conditional_temporary_done_48:
     %t40 = addr $left
-    %t41 = index i8 [projection=field] %t40, 0
+    %t41 = index inbounds i8 [projection=field] %t40, 0
     %t42 = load typed i32 %t41
     %t43 = cmp ne i32 %t42, 7
     branch %t43, ^if_then_49, ^lor_rhs_57
 
   block ^lor_rhs_57:
     %t44 = addr $right
-    %t45 = index i8 [projection=field] %t44, 0
+    %t45 = index inbounds i8 [projection=field] %t44, 0
     %t46 = load typed i32 %t45
     %t47 = cmp ne i32 %t46, 15
     branch %t47, ^if_then_49, ^lor_rhs_56
 
   block ^lor_rhs_56:
     %t48 = addr $reversed
-    %t49 = index i8 [projection=field] %t48, 0
+    %t49 = index inbounds i8 [projection=field] %t48, 0
     %t50 = load typed i32 %t49
     %t51 = cmp ne i32 %t50, 18
     branch %t51, ^if_then_49, ^lor_rhs_55
 
   block ^lor_rhs_55:
     %t52 = addr $constant
-    %t53 = index i8 [projection=field] %t52, 0
+    %t53 = index inbounds i8 [projection=field] %t52, 0
     %t54 = load typed i32 %t53
     %t55 = cmp ne i32 %t54, 12
     branch %t55, ^if_then_49, ^lor_rhs_54
@@ -366,7 +366,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t70 = addr $reference
     %t71 = addr $existing
     %t72 = addr $reference
-    %t73 = index i8 [projection=field] %t72, 0
+    %t73 = index inbounds i8 [projection=field] %t72, 0
     store typed ptr %t71, %t73
     branch 1, ^condaddr_then_66, ^condaddr_else_67
 
@@ -402,7 +402,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t80 = load typed ptr $condaddr__10
     store typed ptr %t80, $selected
     %t81 = load typed ptr $selected
-    %t82 = index i8 [projection=field] %t81, 0
+    %t82 = index inbounds i8 [projection=field] %t81, 0
     store typed i32 9, %t82
     %t83 = load typed ptr $selected
     %t84 = addr $existing
@@ -411,7 +411,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_75:
     %t86 = addr $existing
-    %t87 = index i8 [projection=field] %t86, 0
+    %t87 = index inbounds i8 [projection=field] %t86, 0
     %t88 = load typed i32 %t87
     %t89 = cmp ne i32 %t88, 9
     branch %t89, ^if_then_72, ^lor_rhs_74
@@ -479,7 +479,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_84:
     %t109 = load typed ptr $selected__shadow2
-    %t110 = index i8 [projection=field] %t109, 0
+    %t110 = index inbounds i8 [projection=field] %t109, 0
     %t111 = load typed i32 %t110
     %t112 = cmp ne i32 %t111, 11
     branch %t112, ^if_then_82, ^if_else_83
@@ -541,7 +541,7 @@ function @Box__Box__base_entry(%this : ptr [object_bytes=4], %input : i32) -> vo
     store typed i32 %input, $input
     %t1 = load typed i32 $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @box_alive
     %t5 = binary add nowrap i32 %t4, 1
@@ -557,7 +557,7 @@ function @Tracker__Tracker(%this : ptr [object_bytes=4], %input : i32) -> void [
     store typed i32 %input, $input
     %t1 = load typed i32 $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @tracker_alive
     %t5 = binary add nowrap i32 %t4, 1
@@ -572,11 +572,11 @@ function @Box__Box__ov2(%this : ptr [object_bytes=4], %input : ptr [pass=by_addr
     store typed ptr %this, $this
     store typed ptr %input, $input
     %t1 = load typed ptr $input
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 10
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     %t7 = load typed i32 @tracker_alive
     %t8 = cmp ne i32 %t7, 1
@@ -608,10 +608,10 @@ function @Box__Box__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : pt
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     %t6 = load typed i32 @box_alive
     %t7 = binary add nowrap i32 %t6, 1
@@ -644,7 +644,7 @@ function @Reference__operatorBox_(%this : ptr [object_bytes=8]) -> ptr [binding=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     return ptr %t3
 }
@@ -698,7 +698,7 @@ function @Box__Box(%this : ptr [object_bytes=4], %input : i32) -> void [binding=
     store typed i32 %input, $input
     %t1 = load typed i32 $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @box_alive
     %t5 = binary add nowrap i32 %t4, 1

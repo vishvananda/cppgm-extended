@@ -22,7 +22,7 @@ function @by_pointer(%value : ptr) -> i64 [binding=strong, object=_Z10by_pointer
   block ^entry:
     store typed ptr %value, $value
     %t1 = load typed ptr $value
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     return i64 %t3
 }
@@ -80,7 +80,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_1:
     %t7 = addr $value
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     %t9 = call i64 @by_scalar_reference(%t8)
     %t10 = cmp ne i64 %t9, 6
     store typed i64 %t10, $lor__1
@@ -128,7 +128,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = addr $holders
     %t21 = binary mul i64 0, 16
     %t22 = index inbounds i8 [projection=array_element] %t20, %t21
-    %t23 = index i8 [projection=field] %t22, 0
+    %t23 = index inbounds i8 [projection=field] %t22, 0
     %t24 = load typed ptr %t23
     %t25 = load typed i32 %t24
     %t26 = cmp ne i32 %t25, 4
@@ -155,11 +155,11 @@ function @Holder__Holder__aggregate(%this : ptr [object_bytes=16], %target : ptr
     store typed i64 %tag, $tag
     %t1 = load typed ptr $target
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed i64 $tag
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i64 %t4, %t6
     return void
 }
@@ -169,14 +169,14 @@ function @Triple__total(%this : ptr [object_bytes=24]) -> i64 [binding=weak, obj
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     %t6 = load typed i64 %t5
     %t7 = binary add nowrap i64 %t3, %t6
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 16
+    %t9 = index inbounds i8 [projection=field] %t8, 16
     %t10 = load typed i64 %t9
     %t11 = binary add nowrap i64 %t7, %t10
     return i64 %t11
@@ -190,17 +190,17 @@ function @Triple__Triple(%this : ptr [object_bytes=24], %base : i64) -> void [bi
     store typed i64 %base, $base
     %t1 = load typed i64 $base
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     %t4 = load typed i64 $base
     %t5 = binary add nowrap i64 %t4, 1
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     store typed i64 %t5, %t7
     %t8 = load typed i64 $base
     %t9 = binary add nowrap i64 %t8, 2
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 16
+    %t11 = index inbounds i8 [projection=field] %t10, 16
     store typed i64 %t9, %t11
     return void
 }

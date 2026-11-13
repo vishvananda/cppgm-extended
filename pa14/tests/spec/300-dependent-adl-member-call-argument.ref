@@ -52,20 +52,20 @@ function @check_int___run(%this : ptr [object_bytes=1], %needle : i32) -> i32 [b
     %t2 = addr $argobj__1
     %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = call obj<4x4> @user__list_like__begin(%t5)
     copyobj 4x4 %t6, %t2
     %t7 = addr $argobj__2
     %t8 = load typed ptr $this
     %t9 = index i8 %t8, 0
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = call obj<4x4> @user__list_like__end(%t10)
     copyobj 4x4 %t11, %t7
     %t12 = load typed i32 $needle
     %t13 = call obj<4x4> @user__find($argobj__1, $argobj__2, %t12)
     copyobj 4x4 %t13, %t1
     %t14 = addr $it
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     return i32 %t16
 }
@@ -78,7 +78,7 @@ function @user__list_like__begin(%this : ptr [object_bytes=1]) -> obj<4x4> [bind
     store typed ptr %this, $this
     %t1 = addr $result
     %t2 = addr $result
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 7, %t3
     %t4 = addr $retobj__1
     %t5 = addr $result
@@ -94,7 +94,7 @@ function @user__list_like__end(%this : ptr [object_bytes=1]) -> obj<4x4> [bindin
     store typed ptr %this, $this
     %t1 = addr $result
     %t2 = addr $result
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 9, %t3
     %t4 = addr $retobj__1
     %t5 = addr $result

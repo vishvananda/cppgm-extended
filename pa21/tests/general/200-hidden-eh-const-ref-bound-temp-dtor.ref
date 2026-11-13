@@ -4,8 +4,8 @@ function @make_hooks(%ret : ptr [pass=indirect_result, alias=exclusive_result, o
   block ^entry:
     store typed ptr %p, $p
     %t1 = load typed ptr $p
-    %t2 = index i8 [projection=field] %ret, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t2 = index inbounds i8 [projection=field] %ret, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -15,8 +15,8 @@ function @read(%h : ptr [pass=by_address, object_bytes=8]) -> i32 [unwind=no, bi
   block ^entry:
     store typed ptr %h, $h
     %t1 = load typed ptr $h
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = load typed i32 %t4
     return i32 %t5
@@ -97,13 +97,13 @@ function @Hooks___Hooks(%this : ptr [object_bytes=8]) -> void [unwind=no, bindin
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Counter___Counter(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Counter___Counter(%t4)
     eh_end
     resume
@@ -117,7 +117,7 @@ function @Counter___Counter(%this : ptr [object_bytes=8]) -> void [unwind=no, bi
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed i32 %t3
     %t5 = binary add nowrap i32 %t4, 1

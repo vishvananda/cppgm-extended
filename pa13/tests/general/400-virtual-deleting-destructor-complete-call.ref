@@ -73,13 +73,13 @@ function @base___base(%this : ptr [object_bytes=16]) -> void [unwind=no, binding
     store typed i32 2, @observed
     eh_end
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     call void @member___member(%t5)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     call void @member___member(%t7)
     eh_end
     resume

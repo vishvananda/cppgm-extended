@@ -8,8 +8,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call ptr @Inner__operator__(%t3, 1)
     store typed i32 7, %t4
     %t5 = addr $o
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = index i8 [projection=field] %t6, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     return i32 %t8
 }
@@ -21,7 +21,7 @@ function @Outer__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> pt
     store typed ptr %this, $this
     store typed i32 %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 function @Inner__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZN5InnerixEi, inline_hint=yes] {
@@ -32,6 +32,6 @@ function @Inner__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> pt
     store typed ptr %this, $this
     store typed i32 %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }

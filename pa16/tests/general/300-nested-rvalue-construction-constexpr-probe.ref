@@ -24,7 +24,7 @@ function @Middle__Middle(%this : ptr [object_bytes=1], %source : ptr [pass=by_ad
     store typed ptr %this, $this
     store typed ptr %source, $source
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $source
     call void @Leaf__Leaf__ov2(%t2, %t3)
     return void
@@ -37,7 +37,7 @@ function @Outer__Outer(%this : ptr [object_bytes=1], %source : ptr [pass=by_addr
     store typed ptr %this, $this
     store typed ptr %source, $source
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $source
     call void @Middle__Middle__2(%t2, %t3)
     return void
@@ -50,9 +50,9 @@ function @Middle__Middle__2(%this : ptr [alias=noalias, object_bytes=1], %other 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $other
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Leaf__Leaf__ov2(%t2, %t4)
     return void
 }

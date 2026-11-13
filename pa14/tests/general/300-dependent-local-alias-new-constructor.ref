@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call ptr @make_pair_argument(%t1)
     store typed ptr %t2, $result
     %t3 = load typed ptr $result
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i64 %t4
     %t6 = convert sext i64 i32 2
     %t7 = cmp eq i64 %t5, %t6
@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t8 = load typed ptr $result
-    %t9 = index i8 [projection=field] %t8, 8
+    %t9 = index inbounds i8 [projection=field] %t8, 8
     %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 0
     store typed i64 %t11, $land__2
@@ -66,11 +66,11 @@ function @pair_argument_int___pair_argument(%this : ptr [object_bytes=16], %coun
     store typed i32 %value_, $value_
     %t1 = load typed i64 $count_
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     %t4 = load typed i32 $value_
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed i32 %t4, %t6
     return void
 }

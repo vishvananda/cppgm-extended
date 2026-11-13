@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $expr
     %t4 = call obj<8x8> @detail__expression___cppgm_class_template_identity_1___get_width(%t3)
     copyobj 8x8 %t4, %t2
-    %t5 = index i8 [projection=field] %t2, 0
+    %t5 = index inbounds i8 [projection=field] %t2, 0
     %t6 = load typed i64 %t5
     %t7 = convert sext i64 i32 1
     %t8 = cmp eq i64 %t6, %t7
@@ -64,7 +64,7 @@ function @detail__result__result(%this : ptr [object_bytes=8], %v : i64) -> void
     store typed i64 %v, $v
     %t1 = load typed i64 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     return void
 }

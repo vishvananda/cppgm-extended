@@ -110,20 +110,20 @@ function @Packs_int_char___Member_void_longint____Member(%this : ptr [object_byt
     store typed ptr %this, $this
     store i8 %n, $n
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = index i8 [projection=array_element] %t2, 0
     %t4 = load i8 $n
     store i8 %t4, %t3
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = index i8 [projection=array_element] %t6, 1
     store i8 0, %t7
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = index i8 [projection=array_element] %t9, 2
     store i8 0, %t10
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = index i8 [projection=array_element] %t12, 3
     store i8 0, %t13
     return void
@@ -136,20 +136,20 @@ function @Packs_longint___Member_void_int_char____Member(%this : ptr [object_byt
     store typed ptr %this, $this
     store i8 %n, $n
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = index i8 [projection=array_element] %t2, 0
     %t4 = load i8 $n
     store i8 %t4, %t3
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = index i8 [projection=array_element] %t6, 1
     store i8 0, %t7
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = index i8 [projection=array_element] %t9, 2
     store i8 0, %t10
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = index i8 [projection=array_element] %t12, 3
     store i8 0, %t13
     return void
@@ -190,7 +190,7 @@ function @Packs_int_char___Member_void_longint____first(%this : ptr [object_byte
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = index inbounds i8 [projection=array_element] %t2, 0
     %t4 = load i8 %t3
     return i8 %t4
@@ -201,7 +201,7 @@ function @Packs_longint___Member_void_int_char____first(%this : ptr [object_byte
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = index inbounds i8 [projection=array_element] %t2, 0
     %t4 = load i8 %t3
     return i8 %t4

@@ -44,9 +44,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @holder__holder(%t11)
     store typed ptr %t11, $object
     %t12 = load typed ptr $object
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = index i8 %t13, 0
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed ptr %t15
     %t17 = cmp eq ptr %t16, 0
     branch %t17, ^cond_then_5, ^cond_else_6
@@ -69,7 +69,7 @@ function @holder__holder(%this : ptr [object_bytes=8]) -> void [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     zeroinit 8x8 %t2
     return void
 }

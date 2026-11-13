@@ -23,11 +23,11 @@ function @construct__2(%args : i32, %args__pack2 : i32) -> i32 [binding=weak, ob
     %t1 = addr $value
     %t2 = load typed i32 $args
     %t3 = addr $value
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     %t5 = load typed i32 $args__pack2
     %t6 = addr $value
-    %t7 = index i8 [projection=field] %t6, 4
+    %t7 = index inbounds i8 [projection=field] %t6, 4
     store typed i32 %t5, %t7
     %t8 = addr $value
     return i32 0

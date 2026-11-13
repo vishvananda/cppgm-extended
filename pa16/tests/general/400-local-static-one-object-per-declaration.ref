@@ -75,7 +75,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $part
     call void @derived__derived(%t2)
     %t3 = addr $whole
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp ne i32 %t5, 1
     branch %t6, ^if_then_1, ^if_else_2
@@ -89,7 +89,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_3:
     %t7 = addr $part
     %t8 = index i8 %t7, 0
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = cmp ne i32 %t10, 2
     branch %t11, ^if_then_4, ^if_else_5
@@ -129,7 +129,7 @@ function @counted__counted__base_entry(%this : ptr [object_bytes=4]) -> void [bi
     store typed i32 %t2, @__local_static__counted__counted__decl0__count
     %t3 = load typed i32 @__local_static__counted__counted__decl0__count
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     return void
 }
@@ -153,7 +153,7 @@ function @counted__counted(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     store typed i32 %t2, @__local_static__counted__counted__decl0__count
     %t3 = load typed i32 @__local_static__counted__counted__decl0__count
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     return void
 }

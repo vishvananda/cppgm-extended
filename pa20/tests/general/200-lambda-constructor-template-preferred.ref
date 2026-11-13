@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $argobj__1
     call void @Sink__Sink(%t1, $argobj__1)
     %t3 = addr $sink
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_1, ^cond_else_2
@@ -34,7 +34,7 @@ function @Sink__Sink(%this : ptr [object_bytes=4], %f : obj<1x1> [classes=none])
     %t1 = addr $f
     %t2 = call i32 @__lambda_main_t66_70__operator__(%t1, 6)
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }

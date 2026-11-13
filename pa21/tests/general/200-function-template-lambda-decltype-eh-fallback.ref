@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call obj<4x4> @instantiate_value(7)
     copyobj 4x4 %t2, %t1
     %t3 = addr $parsed
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_1, ^cond_else_2
@@ -113,7 +113,7 @@ function @__lambda_instantiate_value_t71_75__operator__(%this : ptr [object_byte
     store typed ptr %this, $this
     %t1 = addr $retobj__1
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = load typed i32 %t4
     call void @Parsed__Parsed__aggregate(%t1, %t5)
@@ -128,7 +128,7 @@ function @Parsed__Parsed__aggregate(%this : ptr [object_bytes=4], %value : i32) 
     store typed i32 %value, $value
     %t1 = load typed i32 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $h
     call void @take(%t2)
     %t3 = addr $h
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = binary sub nowrap i32 %t5, 5
     return i32 %t6
@@ -29,7 +29,7 @@ function @outer_int___holder__holder(%this : ptr [object_bytes=4], %v : i64) -> 
     %t1 = load typed i64 $v
     %t2 = convert trunc i32 i64 %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }

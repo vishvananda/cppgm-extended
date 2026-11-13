@@ -5,7 +5,7 @@ function @make_f() -> obj<4x4> [binding=strong, object=_Z6make_fv] {
   block ^entry:
     %t1 = addr $value
     %t2 = addr $value
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 7, %t3
     %t4 = addr $retobj__1
     %t5 = addr $value
@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call obj<4x4> @make_f()
     copyobj 4x4 %t2, %t1
     %t3 = addr $value
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_1, ^cond_else_2

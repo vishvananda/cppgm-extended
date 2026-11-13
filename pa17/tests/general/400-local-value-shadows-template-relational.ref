@@ -8,13 +8,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     zeroinit 16x8 %t2
     %t3 = addr $values
     %t4 = addr $buffer
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     %t6 = addr $values
     %t7 = binary mul i64 2, 8
     %t8 = index inbounds i8 %t6, %t7
     %t9 = addr $buffer
-    %t10 = index i8 [projection=field] %t9, 8
+    %t10 = index inbounds i8 [projection=field] %t9, 8
     store typed ptr %t8, %t10
     %t11 = addr $buffer
     %t12 = call i32 @direct_streambuf_int___seek_impl(%t11, 1)
@@ -37,10 +37,10 @@ function @direct_streambuf_int___seek_impl(%this : ptr [object_bytes=16], %off :
   block ^lor_rhs_3:
     %t4 = load typed i64 $next
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     %t7 = load typed ptr %t6
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed ptr %t9
     %t11 = binary sub ptr %t7, %t10
     %t12 = binary shr exact i64 %t11, 3

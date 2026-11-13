@@ -77,7 +77,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed ptr %t6
     %t8 = call obj<4x4> %t7(%t5) as (%arg0 : ptr [object_bytes=8]) -> obj<4x4>
     copyobj 4x4 %t8, %t4
-    %t9 = index i8 [projection=field] %t4, 0
+    %t9 = index inbounds i8 [projection=field] %t4, 0
     %t10 = load typed i32 %t9
     %t11 = binary sub nowrap i32 %t10, 7
     return i32 %t11
@@ -142,7 +142,7 @@ function @D__current(%this : ptr [object_bytes=16]) -> obj<4x4> [binding=weak, o
     store typed ptr %this, $this
     %t1 = addr $out
     %t2 = addr $out
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 7, %t3
     %t4 = addr $retobj__1
     %t5 = addr $out

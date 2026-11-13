@@ -11,7 +11,7 @@ function @probe__run() -> i32 [binding=strong, object=_ZN5probe3runEv] {
     %t3 = call ptr @probe__incrementable__operator__(%t2)
     store typed i32 7, $result
     %t4 = addr $x
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t6, 3
     branch %t7, ^land_rhs_4, ^land_short_5
@@ -53,7 +53,7 @@ function @probe__incrementable__incrementable(%this : ptr [object_bytes=4]) -> v
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -63,7 +63,7 @@ function @probe__incrementable__operator__(%this : ptr [object_bytes=4]) -> ptr 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 3, %t2
     %t3 = load typed ptr $this
     return ptr %t3

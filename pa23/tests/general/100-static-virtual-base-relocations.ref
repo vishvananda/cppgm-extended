@@ -158,10 +158,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = load typed ptr @reference
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     store typed i32 7, %t2
     %t3 = load typed ptr @array_reference
-    %t4 = index i8 [projection=field] %t3, 8
+    %t4 = index inbounds i8 [projection=field] %t3, 8
     store typed i32 11, %t4
     %t5 = addr @object
     %t6 = load typed ptr %t5
@@ -172,7 +172,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t10, $expected
     %t11 = addr @object
     %t12 = index i8 %t11, 24
-    %t13 = index i8 [projection=field] %t12, 8
+    %t13 = index inbounds i8 [projection=field] %t12, 8
     %t14 = load typed i32 %t13
     %t15 = cmp ne i32 %t14, 7
     branch %t15, ^lor_short_2, ^lor_rhs_1
@@ -246,7 +246,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t37 = load typed i64 %t36
     %t38 = index i8 %t34, %t37
     %t39 = index i8 %t38, 0
-    %t40 = index i8 [projection=field] %t39, 8
+    %t40 = index inbounds i8 [projection=field] %t39, 8
     %t41 = load typed i32 %t40
     %t42 = cmp ne i32 %t41, 11
     store typed i64 %t42, $lor__5
@@ -269,7 +269,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t49 = load typed i64 %t48
     %t50 = index i8 %t46, %t49
     %t51 = index i8 %t50, 0
-    %t52 = index i8 [projection=field] %t51, 8
+    %t52 = index inbounds i8 [projection=field] %t51, 8
     %t53 = load typed i32 %t52
     %t54 = cmp ne i32 %t53, 0
     store typed i64 %t54, $lor__6

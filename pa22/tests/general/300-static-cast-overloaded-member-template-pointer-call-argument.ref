@@ -72,7 +72,7 @@ function @member_template_cast_arg__stream__read_some(%this : ptr [object_bytes=
     store typed ptr %this, $this
     store typed ptr %buffer, $buffer
     %t1 = load typed ptr $buffer
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -103,7 +103,7 @@ function @member_template_cast_arg__stream__read_some__2(%this : ptr [object_byt
     store typed ptr %buffer, $buffer
     store typed ptr %__param2, $__param2
     %t1 = load typed ptr $buffer
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 1
     return i32 %t4

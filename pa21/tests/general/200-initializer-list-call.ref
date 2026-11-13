@@ -14,7 +14,7 @@ function @sum(%xs : obj<16x8>) -> i32 [binding=strong, object=_Z3sumSt16initiali
   block ^for_cond_1:
     %t2 = load typed i32 $__idx1
     %t3 = addr $xs
-    %t4 = index i8 [projection=field] %t3, 8
+    %t4 = index inbounds i8 [projection=field] %t3, 8
     %t5 = load typed i64 %t4
     %t6 = convert sext i64 i32 %t2
     %t7 = cmp lt i64 %t6, %t5
@@ -22,7 +22,7 @@ function @sum(%xs : obj<16x8>) -> i32 [binding=strong, object=_Z3sumSt16initiali
 
   block ^for_body_2:
     %t8 = addr $xs
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed ptr %t9
     %t11 = load typed i32 $__idx1
     %t12 = index inbounds i32 [projection=array_element] %t10, %t11

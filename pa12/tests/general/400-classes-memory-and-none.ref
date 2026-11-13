@@ -19,7 +19,7 @@ function @take_double_empty(%p : obj<16x8> [classes=sse_none]) -> f64 [binding=s
     %t1 = addr $p
     copyobj 16x8 %p, %t1
     %t2 = addr $p
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed f64 %t3
     return f64 %t4
 }
@@ -33,7 +33,7 @@ function @make_double_empty(%x : f64) -> obj<16x8> [result_classes=sse_none, bin
     %t1 = addr $r
     %t2 = load typed f64 $x
     %t3 = addr $r
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed f64 %t2, %t4
     %t5 = addr $retobj__1
     %t6 = addr $r
@@ -47,7 +47,7 @@ function @take_float_empty(%p : obj<8x4> [classes=sse]) -> f32 [binding=strong, 
     %t1 = addr $p
     copyobj 8x4 %p, %t1
     %t2 = addr $p
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed f32 %t3
     return f32 %t4
 }
@@ -58,7 +58,7 @@ function @take_extended(%p : obj<16x16> [classes=memory]) -> f80 [binding=strong
     %t1 = addr $p
     copyobj 16x16 %p, %t1
     %t2 = addr $p
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed f80 %t3
     return f80 %t4
 }
@@ -72,7 +72,7 @@ function @make_extended(%x : f80) -> obj<16x16> [binding=strong, object=_Z13make
     %t1 = addr $r
     %t2 = load typed f80 $x
     %t3 = addr $r
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed f80 %t2, %t4
     %t5 = addr $retobj__1
     %t6 = addr $r
@@ -101,7 +101,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 16x8 %t4, %t3
     %t5 = addr $fe
     %t6 = addr $fe
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed f32 3f, %t7
     %t8 = addr $x
     %t9 = call obj<16x16> @make_extended(4L)

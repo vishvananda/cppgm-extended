@@ -849,7 +849,7 @@ function @Guard__Guard(%this : ptr [object_bytes=4], %count : i32) -> void [bind
     store typed i32 %count, $count
     %t1 = load typed i32 $count
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -863,7 +863,7 @@ function @Guard___Guard(%this : ptr [object_bytes=4]) -> void [unwind=no, bindin
     store typed i32 %t2, @drops
     %t3 = load typed i32 @live
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp ne i32 %t3, %t6
     branch %t7, ^if_then_1, ^if_else_2

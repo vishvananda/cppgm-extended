@@ -67,7 +67,7 @@ function @Buffer__Buffer(%this : ptr [object_bytes=4]) -> void [unwind=no, bindi
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -109,7 +109,7 @@ function @Buffer__assign(%this : ptr [object_bytes=4], %first : ptr [pass=by_add
     %t1 = load typed ptr $this
     %t2 = addr $arg__1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @make_assign_range(%t2, %first, %last, %t4)
     eh_end
     jump ^call_unwind_end_2
@@ -170,30 +170,30 @@ function @AssignRange_Iterator_int____AssignRange(%this : ptr [object_bytes=16])
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 1
+    %t2 = index inbounds i8 [projection=field] %t1, 1
     call void @Iterator___Iterator(%t2)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Iterator___Iterator(%t4)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     call void @Iterator___Iterator(%t6)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 1
+    %t8 = index inbounds i8 [projection=field] %t7, 1
     call void @Iterator___Iterator(%t8)
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     call void @Iterator___Iterator(%t10)
     eh_end
     resume
@@ -213,29 +213,29 @@ function @AssignRange_Iterator_int___AssignRange(%this : ptr [object_bytes=16], 
     store typed ptr %l, $l
     store typed ptr %a, $a
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     eh_cleanup ^constructor_cleanup_1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 1
+    %t4 = index inbounds i8 [projection=field] %t3, 1
     eh_end
     eh_cleanup ^constructor_cleanup_2
     %t5 = load typed ptr $a
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     store typed ptr %t5, %t7
     eh_end
     return void
 
   block ^constructor_cleanup_1:
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     call void @Iterator___Iterator(%t9)
     eh_end
     resume
 
   block ^constructor_cleanup_2:
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 1
+    %t11 = index inbounds i8 [projection=field] %t10, 1
     call void @Iterator___Iterator(%t11)
     jump ^constructor_cleanup_1
 }

@@ -1,6 +1,6 @@
 function @fill(%t : ptr, %from : ptr) -> void [binding=strong, object=_Z4fillP5TablePK3Vec] {
   block ^entry:
-    %t1 = index i8 [projection=field] %t, 8
+    %t1 = index inbounds i8 [projection=field] %t, 8
     %t2 = load typed i64 %t1
     jump ^for_cond_1
 
@@ -17,8 +17,8 @@ function @fill(%t : ptr, %from : ptr) -> void [binding=strong, object=_Z4fillP5T
     %t9 = index inbounds i8 [projection=array_element] %from, %t7
     %t10 = load typed f64 %t9
     store typed f64 %t10, %t8
-    %t11 = index i8 [projection=field] %t9, 8
-    %t12 = index i8 [projection=field] %t8, 8
+    %t11 = index inbounds i8 [projection=field] %t9, 8
+    %t12 = index inbounds i8 [projection=field] %t8, 8
     %t13 = load typed f64 %t11
     store typed f64 %t13, %t12
     %t14 = binary add nowrap i64 %t4, 1

@@ -36,12 +36,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @object
     %t2 = index i8 %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = index inbounds i32 [projection=array_element] %t3, 0
     store typed i32 7, %t4
     %t5 = addr @object
     %t6 = index i8 %t5, 0
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = index inbounds i32 [projection=array_element] %t7, 1
     store typed i32 42, %t8
     %t9 = call ptr @receiver()
@@ -114,7 +114,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t41 = addr $f
     %t42 = addr $f
     %t43 = index i8 %t42, 0
-    %t44 = index i8 [projection=field] %t43, 0
+    %t44 = index inbounds i8 [projection=field] %t43, 0
     %t45 = index inbounds i32 [projection=array_element] %t44, 1
     store typed i32 42, %t45
     %t46 = addr $f
@@ -158,7 +158,7 @@ function @Base__operator__(%this : ptr [object_bytes=8], %n : i32) -> ptr [bindi
     store typed ptr %this, $this
     store typed i32 %n, $n
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 $n
     %t4 = index inbounds i32 [projection=array_element] %t2, %t3
     return ptr %t4
@@ -171,7 +171,7 @@ function @Base__operator____ov2(%this : ptr [object_bytes=8], %n : i32) -> ptr [
     store typed ptr %this, $this
     store typed i32 %n, $n
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 $n
     %t4 = index inbounds i32 [projection=array_element] %t2, %t3
     return ptr %t4
@@ -185,7 +185,7 @@ function @Key__Key(%this : ptr [object_bytes=8], %s : ptr) -> void [binding=weak
     store typed ptr %s, $s
     %t1 = load typed ptr $s
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed i32 @key_calls
     %t5 = binary add nowrap i32 %t4, 1
@@ -200,9 +200,9 @@ function @Base__operator____ov3(%this : ptr [object_bytes=8], %k : ptr [pass=by_
     store typed ptr %this, $this
     store typed ptr %k, $k
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $k
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed ptr %t4
     %t6 = index inbounds i8 [projection=array_element] %t5, 0
     %t7 = load i8 %t6
@@ -219,9 +219,9 @@ function @Base__operator____ov4(%this : ptr [object_bytes=8], %k : ptr [pass=by_
     store typed ptr %this, $this
     store typed ptr %k, $k
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $k
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed ptr %t4
     %t6 = index inbounds i8 [projection=array_element] %t5, 0
     %t7 = load i8 %t6

@@ -6,8 +6,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $n
     %t2 = addr $n
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 61, %t4
     %t5 = addr $h
     %t6 = addr $h
@@ -50,7 +50,7 @@ function @node_value_key____M_v(%this : ptr [object_bytes=4]) -> ptr [binding=we
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 function @identity__operator__(%this : ptr [object_bytes=1], %x : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZNK8identityclIRK3keyEEOT_S5_, inline_hint=yes] {
@@ -84,7 +84,7 @@ function @hash_key__operator__(%this : ptr [object_bytes=1], %k : ptr [pass=by_a
     store typed ptr %this, $this
     store typed ptr %k, $k
     %t1 = load typed ptr $k
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }

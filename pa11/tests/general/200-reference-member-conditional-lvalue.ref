@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $s
     %t2 = addr $s
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 3, %t3
     %t4 = addr $r
     %t5 = addr $s
@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^condaddr_else_2:
     %t9 = addr $r
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed ptr %t10
     store typed ptr %t11, $condaddr__1
     jump ^condaddr_end_3
@@ -35,10 +35,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load typed ptr $condaddr__1
     store typed ptr %t12, $decl_scope
     %t13 = load typed ptr $decl_scope
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     store typed i32 9, %t14
     %t15 = addr $s
-    %t16 = index i8 [projection=field] %t15, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     %t17 = load typed i32 %t16
     %t18 = cmp eq i32 %t17, 9
     branch %t18, ^cond_then_4, ^cond_else_5
@@ -64,7 +64,7 @@ function @R__R(%this : ptr [object_bytes=8], %x : ptr [pass=by_address, object_b
     store typed ptr %x, $x
     %t1 = load typed ptr $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

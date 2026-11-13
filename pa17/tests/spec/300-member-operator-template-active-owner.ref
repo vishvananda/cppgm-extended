@@ -37,7 +37,7 @@ function @active_owner_case__buffer_item___cppgm_class_template_identity_1___beg
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @active_owner_case__iter___cppgm_class_template_identity_2___cppgm_class_template_identity_3___iter__ov3(%ret, %t2)
     return void
 }
@@ -62,10 +62,10 @@ function @active_owner_case__iter___cppgm_class_template_identity_2___cppgm_clas
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     return void
 }
@@ -94,7 +94,7 @@ function @active_owner_case__iter___cppgm_class_template_identity_2___cppgm_clas
     store typed ptr %value, $value
     %t1 = load typed ptr $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -106,10 +106,10 @@ function @active_owner_case__iter___cppgm_class_template_identity_2___cppgm_clas
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     return void
 }
@@ -121,13 +121,13 @@ function @active_owner_case__iter___cppgm_class_template_identity_2___cppgm_clas
     store typed ptr %this, $this
     store typed i64 %n, $n
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed i64 $n
     %t5 = binary mul i64 %t4, 4
     %t6 = index inbounds i8 %t3, %t5
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed ptr %t6, %t8
     %t9 = load typed ptr $this
     return ptr %t9
@@ -140,10 +140,10 @@ function @active_owner_case__iter___cppgm_class_template_identity_2___cppgm_clas
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $other
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed ptr %t5
     %t7 = binary sub ptr %t3, %t6
     %t8 = binary shr exact i64 %t7, 2

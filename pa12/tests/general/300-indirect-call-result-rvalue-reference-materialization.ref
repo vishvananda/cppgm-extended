@@ -10,8 +10,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $s
     call void @binder_base__binder_base(%t2, %t3)
     %t4 = addr $b
-    %t5 = index i8 [projection=field] %t4, 0
-    %t6 = index i8 [projection=field] %t5, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 13
     branch %t8, ^cond_then_1, ^cond_else_2
@@ -34,7 +34,7 @@ function @source__source(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @executor__executor(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -42,7 +42,7 @@ function @source__source(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @executor___executor(%t4)
     eh_end
     resume
@@ -57,7 +57,7 @@ function @binder_base__binder_base(%this : ptr [object_bytes=4], %other : ptr [p
     store typed ptr %other, $other
     eh_try ^cleanup_resume_1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = addr $tmpobj__1
     %t4 = load typed ptr $other
     call void @source__get_executor(%t3, %t4)
@@ -85,7 +85,7 @@ function @binder_base__binder_base(%this : ptr [object_bytes=4], %other : ptr [p
 
   block ^constructor_cleanup_5:
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     call void @executor___executor(%t6)
     eh_end
     resume
@@ -96,7 +96,7 @@ function @executor__executor(%this : ptr [object_bytes=4]) -> void [binding=weak
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 11, %t2
     return void
 }
@@ -106,7 +106,7 @@ function @source__get_executor(%ret : ptr [pass=indirect_result, alias=exclusive
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @executor__executor__ov2(%ret, %t2)
     return void
 }
@@ -118,11 +118,11 @@ function @executor__executor__ov2(%this : ptr [alias=noalias, object_bytes=4], %
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 1
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
     return void
 }

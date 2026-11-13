@@ -24,10 +24,10 @@ function @library__read() -> i32 [binding=weak, object=_ZN7library4readIiEEiv] {
   block ^entry:
     %t1 = addr $value
     %t2 = addr $value
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 7, %t3
     %t4 = addr $value
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     return i32 %t6
 }

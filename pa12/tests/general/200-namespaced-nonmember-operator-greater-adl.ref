@@ -8,10 +8,10 @@ function @N__operator_(%a : obj<4x4>, %b : obj<4x4>) -> u8 [binding=strong, obje
     %t2 = addr $b
     copyobj 4x4 %b, %t2
     %t3 = addr $a
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = addr $b
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = cmp gt i32 %t5, %t8
     %t10 = convert trunc u8 i64 %t9
@@ -28,10 +28,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $a
     %t2 = addr $b
     %t3 = addr $a
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 9, %t4
     %t5 = addr $b
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 4, %t6
     %t7 = addr $argobj__2
     %t8 = addr $a

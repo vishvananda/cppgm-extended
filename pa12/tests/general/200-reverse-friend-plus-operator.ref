@@ -17,14 +17,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = call obj<8x8> @operator_(5, %t6)
     copyobj 8x8 %t7, %t5
     %t8 = addr $a
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i64 %t9
     %t11 = cmp eq i64 %t10, 7
     branch %t11, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t12 = addr $b
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = load typed i64 %t13
     %t15 = cmp eq i64 %t14, 8
     store typed i64 %t15, $land__2
@@ -59,7 +59,7 @@ function @Iter__Iter(%this : ptr [object_bytes=8], %x : i64) -> void [binding=we
     store typed i64 %x, $x
     %t1 = load typed i64 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     return void
 }
@@ -107,7 +107,7 @@ function @Iter__operator__(%this : ptr [object_bytes=8], %n : i64) -> ptr [bindi
     store typed i64 %n, $n
     %t1 = load typed i64 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i64 %t3
     %t5 = binary add nowrap i64 %t4, %t1
     store typed i64 %t5, %t3

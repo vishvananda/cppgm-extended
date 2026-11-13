@@ -32,7 +32,7 @@ function @detail__adaptor_base_int____outer_allocator(%this : ptr [object_bytes=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 function @detail__dispatch(%__param0 : i32, %__param1 : i32, %__param2 : ptr) -> void [binding=weak, object=_ZN6detail8dispatchIiiiJEEEvT_T0_PT1_DpT2_] {

@@ -15,7 +15,7 @@ function @Box_int___Box(%this : ptr [object_bytes=1]) -> void [binding=weak, obj
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Box_int___Tag__Tag(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -23,7 +23,7 @@ function @Box_int___Box(%this : ptr [object_bytes=1]) -> void [binding=weak, obj
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Box_int___Tag___Tag(%t4)
     eh_end
     resume
@@ -34,7 +34,7 @@ function @Box_char___Box(%this : ptr [object_bytes=1]) -> void [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Box_char___Tag__Tag(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -42,7 +42,7 @@ function @Box_char___Box(%this : ptr [object_bytes=1]) -> void [binding=weak, ob
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Box_char___Tag___Tag(%t4)
     eh_end
     resume

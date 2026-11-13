@@ -2562,11 +2562,11 @@ function @case_0__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
     store typed i32 %e, $e
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $e
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -2577,7 +2577,7 @@ function @case_0__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     store typed ptr %this, $this
     %t1 = load typed i32 @case_0__live
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
@@ -2596,12 +2596,12 @@ function @case_0__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t8 = load typed i32 @case_0__trace
     %t9 = binary mul nowrap i32 %t8, 10
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     store typed i32 %t13, @case_0__trace
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_6, ^if_else_5
@@ -2658,11 +2658,11 @@ function @case_1__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
     store typed i32 %e, $e
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $e
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -2673,7 +2673,7 @@ function @case_1__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     store typed ptr %this, $this
     %t1 = load typed i32 @case_1__live
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
@@ -2692,12 +2692,12 @@ function @case_1__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t8 = load typed i32 @case_1__trace
     %t9 = binary mul nowrap i32 %t8, 10
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     store typed i32 %t13, @case_1__trace
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_6, ^if_else_5
@@ -2754,11 +2754,11 @@ function @case_2__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
     store typed i32 %e, $e
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $e
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -2769,7 +2769,7 @@ function @case_2__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     store typed ptr %this, $this
     %t1 = load typed i32 @case_2__live
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
@@ -2788,12 +2788,12 @@ function @case_2__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t8 = load typed i32 @case_2__trace
     %t9 = binary mul nowrap i32 %t8, 10
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     store typed i32 %t13, @case_2__trace
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_6, ^if_else_5
@@ -2850,11 +2850,11 @@ function @case_3__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
     store typed i32 %e, $e
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $e
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -2865,7 +2865,7 @@ function @case_3__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     store typed ptr %this, $this
     %t1 = load typed i32 @case_3__live
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
@@ -2884,12 +2884,12 @@ function @case_3__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t8 = load typed i32 @case_3__trace
     %t9 = binary mul nowrap i32 %t8, 10
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     store typed i32 %t13, @case_3__trace
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_6, ^if_else_5
@@ -2958,11 +2958,11 @@ function @case_4__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
     store typed i32 %e, $e
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $e
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -2973,7 +2973,7 @@ function @case_4__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     store typed ptr %this, $this
     %t1 = load typed i32 @case_4__live
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
@@ -2992,12 +2992,12 @@ function @case_4__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t8 = load typed i32 @case_4__trace
     %t9 = binary mul nowrap i32 %t8, 10
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     store typed i32 %t13, @case_4__trace
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_6, ^if_else_5
@@ -3054,11 +3054,11 @@ function @case_5__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
     store typed i32 %e, $e
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $e
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -3069,7 +3069,7 @@ function @case_5__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     store typed ptr %this, $this
     %t1 = load typed i32 @case_5__live
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
@@ -3088,12 +3088,12 @@ function @case_5__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t8 = load typed i32 @case_5__trace
     %t9 = binary mul nowrap i32 %t8, 10
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     store typed i32 %t13, @case_5__trace
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_6, ^if_else_5
@@ -3126,11 +3126,11 @@ function @case_6__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
     store typed i32 %e, $e
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $e
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -3165,7 +3165,7 @@ function @case_6__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     store typed ptr %this, $this
     %t1 = load typed i32 @case_6__live
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
@@ -3184,12 +3184,12 @@ function @case_6__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t8 = load typed i32 @case_6__trace
     %t9 = binary mul nowrap i32 %t8, 10
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     store typed i32 %t13, @case_6__trace
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_6, ^if_else_5
@@ -3222,11 +3222,11 @@ function @case_7__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
     store typed i32 %e, $e
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $e
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -3237,7 +3237,7 @@ function @case_7__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     store typed ptr %this, $this
     %t1 = load typed i32 @case_7__live
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
@@ -3256,12 +3256,12 @@ function @case_7__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t8 = load typed i32 @case_7__trace
     %t9 = binary mul nowrap i32 %t8, 10
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     store typed i32 %t13, @case_7__trace
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_6, ^if_else_5
@@ -3318,11 +3318,11 @@ function @case_8__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
     store typed i32 %e, $e
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $e
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -3333,7 +3333,7 @@ function @case_8__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     store typed ptr %this, $this
     %t1 = load typed i32 @case_8__live
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
@@ -3352,12 +3352,12 @@ function @case_8__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t8 = load typed i32 @case_8__trace
     %t9 = binary mul nowrap i32 %t8, 10
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     store typed i32 %t13, @case_8__trace
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_6, ^if_else_5
@@ -3390,11 +3390,11 @@ function @case_9__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
     store typed i32 %e, $e
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 $e
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -3429,7 +3429,7 @@ function @case_9__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     store typed ptr %this, $this
     %t1 = load typed i32 @case_9__live
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
@@ -3448,12 +3448,12 @@ function @case_9__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t8 = load typed i32 @case_9__trace
     %t9 = binary mul nowrap i32 %t8, 10
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     store typed i32 %t13, @case_9__trace
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_6, ^if_else_5

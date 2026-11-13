@@ -25,7 +25,7 @@ function @depth(%remaining : i32) -> i32 [binding=strong, object=_Z5depthi] {
     store typed i32 %remaining, $remaining
     %t1 = addr $vector
     %t2 = addr $vector
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store i8 1, %t3
     store i8 1, $scalar
     %t4 = addr $line

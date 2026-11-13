@@ -32,7 +32,7 @@ function @StringLike__resize_and_overwrite(%this : ptr [object_bytes=1], %n : i3
     copyobj 4x4 %op, %t1
     %t2 = addr $term
     %t3 = addr $term
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 0, %t4
     %t5 = addr $op
     %t6 = call ptr @move_ref(%t5)
@@ -42,7 +42,7 @@ function @StringLike__resize_and_overwrite(%this : ptr [object_bytes=1], %n : i3
     store typed i32 %t9, $r
     %t10 = load typed i32 $r
     %t11 = addr $term
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     store typed i32 %t10, %t12
     return void
 }
@@ -64,7 +64,7 @@ function @__lambda_helper_t113_123__operator__(%this : ptr [object_bytes=4], %__
     store typed ptr %__param1, $__param1
     store typed i64 %n, $n
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed i64 $n
     %t5 = convert trunc i32 i64 %t4

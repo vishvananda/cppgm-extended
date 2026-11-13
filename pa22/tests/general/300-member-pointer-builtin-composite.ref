@@ -34,31 +34,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $b
     %t2 = const i64 0
     %t3 = addr $b
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i64 %t2, %t4
     %t5 = addr $bn
     %t6 = addr $bn
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed i64 -1, %t7
     %t8 = addr $d
     %t9 = const i64 4
     %t10 = addr $d
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     store typed i64 %t9, %t11
     %t12 = addr $dn
     %t13 = addr $dn
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     store typed i64 -1, %t14
     %t15 = addr $f
     %t16 = addr @Base__get
     %t17 = copy i64 %t16
     %t18 = convert zext i128 i64 %t17
     %t19 = addr $f
-    %t20 = index i8 [projection=field] %t19, 0
+    %t20 = index inbounds i8 [projection=field] %t19, 0
     store typed i128 %t18, %t20
     %t21 = addr $fn
     %t22 = addr $fn
-    %t23 = index i8 [projection=field] %t22, 0
+    %t23 = index inbounds i8 [projection=field] %t22, 0
     store typed i128 0, %t23
     %t24 = addr $g
     %t25 = addr @Base__get
@@ -67,20 +67,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t28 = binary shl i128 4, 64
     %t29 = binary add i128 %t27, %t28
     %t30 = addr $g
-    %t31 = index i8 [projection=field] %t30, 0
+    %t31 = index inbounds i8 [projection=field] %t30, 0
     store typed i128 %t29, %t31
     %t32 = addr $gn
     %t33 = addr $gn
-    %t34 = index i8 [projection=field] %t33, 0
+    %t34 = index inbounds i8 [projection=field] %t33, 0
     store typed i128 0, %t34
     %t35 = addr $r
     %t36 = const i64 0
     %t37 = addr $r
-    %t38 = index i8 [projection=field] %t37, 0
+    %t38 = index inbounds i8 [projection=field] %t37, 0
     store typed i64 %t36, %t38
     %t39 = addr $rn
     %t40 = addr $rn
-    %t41 = index i8 [projection=field] %t40, 0
+    %t41 = index inbounds i8 [projection=field] %t40, 0
     store typed i64 -1, %t41
     %t42 = addr $b
     %t43 = call i64 @DataBase__operatorPointer(%t42)
@@ -373,13 +373,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t228 = addr $object
     %t229 = addr $object
     %t230 = index i8 %t229, 4
-    %t231 = index i8 [projection=field] %t230, 0
+    %t231 = index inbounds i8 [projection=field] %t230, 0
     store typed i32 42, %t231
     %t232 = addr $object
     %t233 = addr $d
-    %t234 = index i8 [projection=field] %t233, 0
+    %t234 = index inbounds i8 [projection=field] %t233, 0
     %t235 = load typed i64 %t234
-    %t236 = index i8 [projection=field] %t232, %t235
+    %t236 = index inbounds i8 [projection=field] %t232, %t235
     %t237 = load typed i32 %t236
     %t238 = cmp ne i32 %t237, 42
     branch %t238, ^if_then_35, ^lor_rhs_37
@@ -387,7 +387,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_37:
     %t239 = addr $object
     %t240 = addr $g
-    %t241 = index i8 [projection=field] %t240, 0
+    %t241 = index inbounds i8 [projection=field] %t240, 0
     %t242 = load typed i128 %t241
     %t243 = binary shr i128 %t242, 64
     %t244 = convert trunc i64 i128 %t243
@@ -431,7 +431,7 @@ function @Base__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -441,7 +441,7 @@ function @DataBase__operatorPointer(%this : ptr [object_bytes=8]) -> i64 [bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     return i64 %t3
 }
@@ -451,7 +451,7 @@ function @DataDerived__operatorPointer(%this : ptr [object_bytes=8]) -> i64 [bin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     return i64 %t3
 }
@@ -461,7 +461,7 @@ function @FunctionBase__operatorPointer(%this : ptr [object_bytes=16]) -> i128 [
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i128 %t2
     return i128 %t3
 }
@@ -471,7 +471,7 @@ function @FunctionDerived__operatorPointer(%this : ptr [object_bytes=16]) -> i12
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i128 %t2
     return i128 %t3
 }
@@ -481,6 +481,6 @@ function @Reference__operatorPointer_(%this : ptr [object_bytes=8]) -> ptr [bind
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }

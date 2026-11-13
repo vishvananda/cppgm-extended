@@ -27,7 +27,7 @@ function @params__params__aggregate(%this : ptr [object_bytes=8], %value : ptr) 
     store typed ptr %value, $value
     %t1 = load typed ptr $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

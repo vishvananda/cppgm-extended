@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $yes
     %t2 = addr $yes
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed u8 1, %t3
     %t4 = addr $no
     %t5 = addr $yes
@@ -50,7 +50,7 @@ function @has_value(%value : ptr [pass=by_address, object_bytes=1], %__param1 : 
     store typed ptr %value, $value
     store typed i32 %__param1, $__param1
     %t1 = load typed ptr $value
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed u8 %t2
     return u8 %t3
 }

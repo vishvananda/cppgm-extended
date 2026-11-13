@@ -20,18 +20,18 @@ function @poll(%port : ptr, %device : ptr [pass=by_address, object_bytes=8]) -> 
     %t6 = load volatile i32 %t5
     store typed i32 %t6, $sampled
     %t7 = load typed ptr $device
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load volatile i32 %t8
     %t10 = load typed i32 $sampled
     %t11 = binary add nowrap i32 %t10, %t9
     store typed i32 %t11, $sampled
     %t12 = load typed i32 $sampled
     %t13 = load typed ptr $device
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     store volatile i32 %t12, %t14
     %t15 = load typed i32 $sampled
     %t16 = load typed ptr $device
-    %t17 = index i8 [projection=field] %t16, 4
+    %t17 = index inbounds i8 [projection=field] %t16, 4
     store typed i32 %t15, %t17
     %t18 = addr $gate
     store typed ptr %t18, $indirect
@@ -50,10 +50,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $device
     %t2 = addr $device
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store volatile i32 0, %t3
     %t4 = addr $device
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     store typed i32 0, %t5
     %t6 = addr $devices
     call void @Device__Device__aggregate(%t6, 0, 0)
@@ -70,7 +70,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = addr $devices
     %t13 = binary mul i64 0, 8
     %t14 = index inbounds i8 [projection=array_element] %t12, %t13
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load volatile i32 %t15
     %t17 = cmp ne i32 %t16, 0
     branch %t17, ^if_then_1, ^lor_rhs_7
@@ -79,7 +79,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = addr $devices
     %t19 = binary mul i64 1, 8
     %t20 = index inbounds i8 [projection=array_element] %t18, %t19
-    %t21 = index i8 [projection=field] %t20, 0
+    %t21 = index inbounds i8 [projection=field] %t20, 0
     %t22 = load volatile i32 %t21
     %t23 = cmp ne i32 %t22, 1
     branch %t23, ^if_then_1, ^lor_rhs_6
@@ -145,11 +145,11 @@ function @Device__Device__aggregate(%this : ptr [object_bytes=8], %status : i32,
     store typed i32 %data, $data
     %t1 = load typed i32 $status
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store volatile i32 %t1, %t3
     %t4 = load typed i32 $data
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }

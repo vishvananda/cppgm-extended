@@ -8,27 +8,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $a
     %t2 = addr $a
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 2, %t3
     %t4 = addr $a
     %t5 = call ptr @Prefix__operator__(%t4)
     %t6 = addr $b
     %t7 = addr $b
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i32 3, %t8
     %t9 = addr $old
     %t10 = addr $b
     %t11 = call obj<4x4> @Postfix__operator__(%t10, 0)
     copyobj 4x4 %t11, %t9
     %t12 = addr $a
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = load typed i32 %t13
     %t15 = cmp ne i32 %t14, 3
     branch %t15, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
     %t16 = addr $old
-    %t17 = index i8 [projection=field] %t16, 0
+    %t17 = index inbounds i8 [projection=field] %t16, 0
     %t18 = load typed i32 %t17
     %t19 = cmp ne i32 %t18, 3
     store typed i64 %t19, $lor__1
@@ -44,7 +44,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_4:
     %t21 = addr $b
-    %t22 = index i8 [projection=field] %t21, 0
+    %t22 = index inbounds i8 [projection=field] %t21, 0
     %t23 = load typed i32 %t22
     %t24 = cmp ne i32 %t23, 4
     store typed i64 %t24, $lor__2
@@ -65,7 +65,7 @@ function @Prefix__operator__(%this : ptr [object_bytes=4]) -> ptr [binding=weak,
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = binary add nowrap i32 %t3, 1
     store typed i32 %t4, %t2
@@ -85,7 +85,7 @@ function @Postfix__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> 
     %t2 = load typed ptr $this
     copyobj 4x4 %t2, %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t5, 1
     store typed i32 %t6, %t4

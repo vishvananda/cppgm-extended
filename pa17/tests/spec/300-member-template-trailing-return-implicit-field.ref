@@ -10,11 +10,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $w
     %t3 = addr $table_value
     %t4 = addr $w
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     %t6 = addr $value
     %t7 = addr $w
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     store typed ptr %t6, %t8
     %t9 = addr $w
     %t10 = call i32 @wrapper__call_it(%t9)
@@ -39,10 +39,10 @@ function @wrapper__call_it(%this : ptr [object_bytes=16]) -> i32 [binding=weak, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     %t6 = load typed ptr %t5
     %t7 = call i32 @table__call(%t3, %t6)
     return i32 %t7

@@ -64,7 +64,7 @@ function @descend(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z7d
     branch %depth, ^cond_then_1, ^cond_end_2
 
   block ^cond_then_1:
-    %t1 = index i8 [projection=field] %node, 8
+    %t1 = index inbounds i8 [projection=field] %node, 8
     %t2 = load typed ptr %t1
     %t3 = binary sub u32 %depth, 1
     %t4 = call i32 @walk(%t2, %t3)
@@ -83,12 +83,12 @@ function @route(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z5rou
     switch %t3, ^switch_default_6, 0:^switch_case_1, 1:^switch_case_2, 2:^inline_entry_3
 
   block ^switch_case_1:
-    %t4 = index i8 [projection=field] %node, 4
+    %t4 = index inbounds i8 [projection=field] %node, 4
     %t5 = load typed i32 %t4
     return i32 %t5
 
   block ^switch_case_2:
-    %t6 = index i8 [projection=field] %node, 4
+    %t6 = index inbounds i8 [projection=field] %node, 4
     %t7 = load typed i32 %t6
     %t8 = unary neg i32 %t7
     return i32 %t8
@@ -102,7 +102,7 @@ function @route(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z5rou
 
   block ^inline_cont_5:
     %t10 = phi i32 [^cond_then_4: %t9, ^inline_entry_3: 0]
-    %t11 = index i8 [projection=field] %node, 4
+    %t11 = index inbounds i8 [projection=field] %node, 4
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t10, %t12
     return i32 %t13
@@ -169,12 +169,12 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     switch %t11, ^switch_default_11, 0:^switch_case_6, 1:^switch_case_7, 2:^inline_entry_8
 
   block ^switch_case_6:
-    %t12 = index i8 [projection=field] %t2, 4
+    %t12 = index inbounds i8 [projection=field] %t2, 4
     %t13 = load typed i32 %t12
     jump ^inline_cont_12
 
   block ^switch_case_7:
-    %t14 = index i8 [projection=field] %t2, 4
+    %t14 = index inbounds i8 [projection=field] %t2, 4
     %t15 = load typed i32 %t14
     %t16 = unary neg i32 %t15
     jump ^inline_cont_12
@@ -188,7 +188,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
 
   block ^inline_cont_10:
     %t18 = phi i32 [^cond_then_9: %t17, ^inline_entry_8: 0]
-    %t19 = index i8 [projection=field] %t2, 4
+    %t19 = index inbounds i8 [projection=field] %t2, 4
     %t20 = load typed i32 %t19
     %t21 = binary add nowrap i32 %t18, %t20
     jump ^inline_cont_12
@@ -200,7 +200,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
   block ^inline_cont_12:
     %t22 = phi i32 [^switch_case_6: %t13, ^switch_case_7: %t16, ^inline_cont_10: %t21]
     %t23 = binary add nowrap i32 %t1, %t22
-    %t24 = index i8 [projection=field] %t2, 16
+    %t24 = index inbounds i8 [projection=field] %t2, 16
     %t25 = load typed ptr %t24
     jump ^while_cond_1
 
@@ -347,19 +347,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = copy i32 %t10
     store typed i32 %t11, %t9
     %t12 = binary add i32 %t8, -18
-    %t13 = index i8 [projection=field] %t9, 4
+    %t13 = index inbounds i8 [projection=field] %t9, 4
     store typed i32 %t12, %t13
-    %t14 = index i8 [projection=field] %t9, 8
+    %t14 = index inbounds i8 [projection=field] %t9, 8
     store typed ptr 0, %t14
-    %t15 = index i8 [projection=field] %t9, 16
+    %t15 = index inbounds i8 [projection=field] %t9, 16
     store typed ptr 0, %t15
     %t16 = addr $root
     store typed i32 2, %t16
     %t17 = binary add i32 %t8, -13
-    %t18 = index i8 [projection=field] %t16, 4
+    %t18 = index inbounds i8 [projection=field] %t16, 4
     store typed i32 %t17, %t18
-    %t19 = index i8 [projection=field] %t16, 8
-    %t20 = index i8 [projection=field] %t16, 16
+    %t19 = index inbounds i8 [projection=field] %t16, 8
+    %t20 = index inbounds i8 [projection=field] %t16, 16
     store typed ptr %t9, %t20
     store typed ptr %t16, %t19
     jump ^for_cond_3
@@ -512,11 +512,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_32:
     %t73 = addr $bad
     store typed i32 4, %t73
-    %t74 = index i8 [projection=field] %t73, 4
+    %t74 = index inbounds i8 [projection=field] %t73, 4
     store typed i32 0, %t74
-    %t75 = index i8 [projection=field] %t73, 8
+    %t75 = index inbounds i8 [projection=field] %t73, 8
     store typed ptr 0, %t75
-    %t76 = index i8 [projection=field] %t73, 16
+    %t76 = index inbounds i8 [projection=field] %t73, 16
     store typed ptr 0, %t76
     store typed u32 0, @depth_sum
     store typed u32 0, @cleanups

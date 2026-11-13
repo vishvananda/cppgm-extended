@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $tmpobj__1
     call void @X__X(%t1, 4)
     %t2 = call ptr @X__base(%t1)
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary sub nowrap i32 %t4, 4
     return i32 %t5
@@ -19,7 +19,7 @@ function @X__X(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, ob
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

@@ -7,7 +7,7 @@ function @consume(%value : ptr [pass=by_address, object_bytes=8]) -> i32 [bindin
   slot $value : obj<8x8>
 
   block ^entry:
-    %t1 = index i8 [projection=field] %value, 0
+    %t1 = index inbounds i8 [projection=field] %value, 0
     %t2 = load typed ptr %t1
     %t3 = load typed i32 %t2
     return i32 %t3
@@ -60,7 +60,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_9:
     %t9 = addr $source
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed ptr %t10
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 7
@@ -112,7 +112,7 @@ function @Value__Value(%this : ptr [object_bytes=8]) -> void [binding=weak, obje
     %t2 = call ptr @operatornew(%t1)
     store typed i32 7, %t2
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     %t5 = load typed i32 @Value__live
     %t6 = binary add nowrap i32 %t5, 1
@@ -129,12 +129,12 @@ function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=8], %other 
     %t1 = convert sext i64 i32 4
     %t2 = call ptr @operatornew(%t1)
     %t3 = load typed ptr $other
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed ptr %t4
     %t6 = load typed i32 %t5
     store typed i32 %t6, %t2
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed ptr %t2, %t8
     %t9 = load typed i32 @Value__live
     %t10 = binary add nowrap i32 %t9, 1
@@ -147,7 +147,7 @@ function @Value___Value(%this : ptr [object_bytes=8]) -> void [unwind=no, bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     call void @operatordelete(%t3)
     %t4 = load typed i32 @Value__live

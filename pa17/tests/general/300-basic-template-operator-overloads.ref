@@ -26,28 +26,28 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $a
     %t4 = addr $b
     %t5 = addr $stream
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 0, %t6
     %t7 = addr $a
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i32 5, %t8
     %t9 = addr $a
-    %t10 = index i8 [projection=field] %t9, 4
+    %t10 = index inbounds i8 [projection=field] %t9, 4
     %t11 = index inbounds i32 [projection=array_element] %t10, 0
     store typed i32 4, %t11
     %t12 = addr $a
-    %t13 = index i8 [projection=field] %t12, 4
+    %t13 = index inbounds i8 [projection=field] %t12, 4
     %t14 = index inbounds i32 [projection=array_element] %t13, 1
     store typed i32 9, %t14
     %t15 = addr $b
-    %t16 = index i8 [projection=field] %t15, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     store typed i32 3, %t16
     %t17 = addr $b
-    %t18 = index i8 [projection=field] %t17, 4
+    %t18 = index inbounds i8 [projection=field] %t17, 4
     %t19 = index inbounds i32 [projection=array_element] %t18, 0
     store typed i32 1, %t19
     %t20 = addr $b
-    %t21 = index i8 [projection=field] %t20, 4
+    %t21 = index inbounds i8 [projection=field] %t20, 4
     %t22 = index inbounds i32 [projection=array_element] %t21, 1
     store typed i32 2, %t22
     %t23 = addr $stream
@@ -65,7 +65,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t33 = addr $stream
-    %t34 = index i8 [projection=field] %t33, 0
+    %t34 = index inbounds i8 [projection=field] %t33, 0
     %t35 = load typed i32 %t34
     %t36 = cmp eq i32 %t35, 13
     store typed i64 %t36, $land__2
@@ -306,14 +306,14 @@ function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %value : p
     store typed ptr %stream, $stream
     store typed ptr %value, $value
     %t1 = load typed ptr $stream
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $value
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = binary add nowrap i32 %t3, %t6
     %t8 = load typed ptr $stream
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     store typed i32 %t7, %t9
     %t10 = load typed ptr $stream
     return ptr %t10
@@ -326,7 +326,7 @@ function @Number_int___operator__(%this : ptr [object_bytes=12], %i : i32) -> i3
     store typed ptr %this, $this
     store typed i32 %i, $i
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     %t3 = load typed i32 $i
     %t4 = index inbounds i32 [projection=array_element] %t2, %t3
     %t5 = load typed i32 %t4
@@ -338,7 +338,7 @@ function @Number_int___operator_(%this : ptr [object_bytes=12]) -> i32 [binding=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -348,7 +348,7 @@ function @Number_int___operator___2(%this : ptr [object_bytes=12]) -> i32 [bindi
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = unary neg i32 %t3
     return i32 %t4
@@ -361,10 +361,10 @@ function @operator_(%a : ptr [pass=by_address, object_bytes=12], %b : ptr [pass=
     store typed ptr %a, $a
     store typed ptr %b, $b
     %t1 = load typed ptr $a
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $b
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = binary add nowrap i32 %t3, %t6
     return i32 %t7
@@ -377,10 +377,10 @@ function @operator___2(%a : ptr [pass=by_address, object_bytes=12], %b : ptr [pa
     store typed ptr %a, $a
     store typed ptr %b, $b
     %t1 = load typed ptr $a
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $b
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = binary sub nowrap i32 %t3, %t6
     return i32 %t7
@@ -393,10 +393,10 @@ function @operator___3(%a : ptr [pass=by_address, object_bytes=12], %b : ptr [pa
     store typed ptr %a, $a
     store typed ptr %b, $b
     %t1 = load typed ptr $a
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $b
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp lt i32 %t3, %t6
     %t8 = convert trunc u8 i64 %t7
@@ -410,10 +410,10 @@ function @operator___4(%a : ptr [pass=by_address, object_bytes=12], %b : ptr [pa
     store typed ptr %a, $a
     store typed ptr %b, $b
     %t1 = load typed ptr $a
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $b
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp gt i32 %t3, %t6
     %t8 = convert trunc u8 i64 %t7
@@ -427,10 +427,10 @@ function @operator____2(%a : ptr [pass=by_address, object_bytes=12], %b : ptr [p
     store typed ptr %a, $a
     store typed ptr %b, $b
     %t1 = load typed ptr $a
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $b
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp le i32 %t3, %t6
     %t8 = convert trunc u8 i64 %t7
@@ -444,10 +444,10 @@ function @operator____3(%a : ptr [pass=by_address, object_bytes=12], %b : ptr [p
     store typed ptr %a, $a
     store typed ptr %b, $b
     %t1 = load typed ptr $a
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $b
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp ge i32 %t3, %t6
     %t8 = convert trunc u8 i64 %t7
@@ -461,10 +461,10 @@ function @operator____4(%a : ptr [pass=by_address, object_bytes=12], %b : ptr [p
     store typed ptr %a, $a
     store typed ptr %b, $b
     %t1 = load typed ptr $a
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $b
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t3, %t6
     %t8 = convert trunc u8 i64 %t7

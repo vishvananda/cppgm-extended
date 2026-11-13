@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $cvt
     %t6 = call obj<4x4> @path__string(%t4, %t5)
     copyobj 4x4 %t6, %t3
-    %t7 = index i8 [projection=field] %t3, 0
+    %t7 = index inbounds i8 [projection=field] %t3, 0
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 7
     branch %t9, ^cond_then_1, ^cond_else_2
@@ -36,7 +36,7 @@ function @path__path(%this : ptr [object_bytes=4]) -> void [binding=weak, object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @string__string(%t2)
     return void
 }
@@ -61,7 +61,7 @@ function @string__string(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }
@@ -73,7 +73,7 @@ function @path__string__ov2(%this : ptr [object_bytes=4], %cvt : ptr [pass=by_ad
     store typed ptr %this, $this
     store typed ptr %cvt, $cvt
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 alias object _ZN4pathC2Ev = @path__path

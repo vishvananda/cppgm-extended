@@ -18,7 +18,7 @@ function @aligned_call(%a : i32, %b : i32, %c : i32, %d : i32, %e : i32, %f : i3
     store typed i32 %g, $g
     %t1 = addr $local
     %t2 = addr $local
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store i8 7, %t3
     %t4 = addr $local
     %t5 = copy i64 %t4
@@ -30,7 +30,7 @@ function @aligned_call(%a : i32, %b : i32, %c : i32, %d : i32, %e : i32, %f : i3
 
   block ^lor_rhs_3:
     %t10 = addr $local
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load i8 %t11
     %t13 = convert sext i32 i8 %t12
     %t14 = cmp ne i32 %t13, 7
@@ -118,7 +118,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_12:
     %t19 = addr $local
     %t20 = addr $local
-    %t21 = index i8 [projection=field] %t20, 0
+    %t21 = index inbounds i8 [projection=field] %t20, 0
     store i8 9, %t21
     %t22 = addr $local
     %t23 = copy i64 %t22
@@ -130,7 +130,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_15:
     %t28 = addr $local
-    %t29 = index i8 [projection=field] %t28, 0
+    %t29 = index inbounds i8 [projection=field] %t28, 0
     %t30 = load i8 %t29
     %t31 = convert sext i32 i8 %t30
     %t32 = cmp ne i32 %t31, 9
@@ -155,7 +155,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_19:
     %t35 = addr $local
-    %t36 = index i8 [projection=field] %t35, 0
+    %t36 = index inbounds i8 [projection=field] %t35, 0
     %t37 = load i8 %t36
     %t38 = convert sext i32 i8 %t37
     %t39 = cmp ne i32 %t38, 9

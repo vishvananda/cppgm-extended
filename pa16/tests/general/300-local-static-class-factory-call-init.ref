@@ -17,15 +17,15 @@ function @make_wide(%ret : ptr [pass=indirect_result, alias=exclusive_result, ob
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @factory_calls
     %t3 = load typed i64 $seed
-    %t4 = index i8 [projection=field] %ret, 0
+    %t4 = index inbounds i8 [projection=field] %ret, 0
     store typed i64 %t3, %t4
     %t5 = load typed i64 $seed
     %t6 = binary add nowrap i64 %t5, 1
-    %t7 = index i8 [projection=field] %ret, 8
+    %t7 = index inbounds i8 [projection=field] %ret, 8
     store typed i64 %t6, %t7
     %t8 = load typed i64 $seed
     %t9 = binary add nowrap i64 %t8, 2
-    %t10 = index i8 [projection=field] %ret, 16
+    %t10 = index inbounds i8 [projection=field] %ret, 16
     store typed i64 %t9, %t10
     return void
 }
@@ -68,10 +68,10 @@ function @read_cached(%seed : i64) -> i64 [binding=strong, object=_Z11read_cache
 
   block ^local_static_ready_1:
     %t11 = addr @__local_static__read_cached__decl0__cached
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed i64 %t12
     %t14 = addr @__local_static__read_cached__decl0__cached
-    %t15 = index i8 [projection=field] %t14, 16
+    %t15 = index inbounds i8 [projection=field] %t14, 16
     %t16 = load typed i64 %t15
     %t17 = binary add nowrap i64 %t13, %t16
     return i64 %t17

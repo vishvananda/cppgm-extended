@@ -74,7 +74,7 @@ function @vector_detail__store_0_int___store__base_entry(%this : ptr [object_byt
     %t1 = load typed ptr $u
     %t2 = load typed i32 %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }
@@ -89,7 +89,7 @@ function @vector_detail__store_1_shortint___store__base_entry(%this : ptr [objec
     %t2 = load typed i32 %t1
     %t3 = convert trunc i16 i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i16 %t3, %t5
     return void
 }
@@ -104,7 +104,7 @@ function @vector_detail__store_2_longint___store__base_entry(%this : ptr [object
     %t2 = load typed i32 %t1
     %t3 = convert sext i64 i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i64 %t3, %t5
     return void
 }

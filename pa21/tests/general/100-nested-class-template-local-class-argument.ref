@@ -49,7 +49,7 @@ function @Maker__one(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=
     %t1 = addr $box
     call void @Box_Piece___Box(%t1)
     %t2 = addr $box
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = addr $box
     call void @Box_Piece____Box(%t5)
@@ -64,7 +64,7 @@ function @Maker__two(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=
     %t1 = addr $box
     call void @Box_Piece___Box__2(%t1)
     %t2 = addr $box
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = addr $box
     call void @Box_Piece____Box__2(%t5)
@@ -76,7 +76,7 @@ function @Box_Piece___Box(%this : ptr [object_bytes=4]) -> void [binding=interna
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -118,7 +118,7 @@ function @Box_Piece___Box__2(%this : ptr [object_bytes=4]) -> void [binding=inte
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -157,7 +157,7 @@ function @Box_Piece___Guard__Guard(%this : ptr [object_bytes=8], %owner : ptr [p
     store typed ptr %owner, $owner
     %t1 = load typed ptr $owner
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -167,9 +167,9 @@ function @Box_Piece___Guard__operator__(%this : ptr [object_bytes=8]) -> void [b
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t5, 1
     store typed i32 %t6, %t4
@@ -184,7 +184,7 @@ function @Box_Piece___Guard__Guard__2(%this : ptr [object_bytes=8], %owner : ptr
     store typed ptr %owner, $owner
     %t1 = load typed ptr $owner
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -194,9 +194,9 @@ function @Box_Piece___Guard__operator____2(%this : ptr [object_bytes=8]) -> void
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t5, 1
     store typed i32 %t6, %t4

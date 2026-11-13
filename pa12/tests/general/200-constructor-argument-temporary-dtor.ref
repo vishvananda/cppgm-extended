@@ -81,30 +81,30 @@ function @Holder__Holder(%this : ptr [object_bytes=5], %__param1 : i32, %value :
     store typed i32 %__param1, $__param1
     store typed ptr %value, $value
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $value
     call void @Counter__Counter__ov2(%t2, %t3)
     eh_cleanup ^constructor_cleanup_1
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 1
+    %t5 = index inbounds i8 [projection=field] %t4, 1
     %t6 = load typed ptr $value
     call void @Counter__Counter__ov2(%t5, %t6)
     eh_end
     eh_cleanup ^constructor_cleanup_2
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 2
+    %t8 = index inbounds i8 [projection=field] %t7, 2
     %t9 = load typed ptr $value
     call void @Counter__Counter__ov2(%t8, %t9)
     eh_end
     eh_cleanup ^constructor_cleanup_3
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 3
+    %t11 = index inbounds i8 [projection=field] %t10, 3
     %t12 = load typed ptr $value
     call void @Counter__Counter__ov2(%t11, %t12)
     eh_end
     eh_cleanup ^constructor_cleanup_4
     %t13 = load typed ptr $this
-    %t14 = index i8 [projection=field] %t13, 4
+    %t14 = index inbounds i8 [projection=field] %t13, 4
     %t15 = load typed ptr $value
     call void @Counter__Counter__ov2(%t14, %t15)
     eh_end
@@ -114,32 +114,32 @@ function @Holder__Holder(%this : ptr [object_bytes=5], %__param1 : i32, %value :
 
   block ^constructor_cleanup_1:
     %t16 = load typed ptr $this
-    %t17 = index i8 [projection=field] %t16, 0
+    %t17 = index inbounds i8 [projection=field] %t16, 0
     call void @Counter___Counter(%t17)
     eh_end
     resume
 
   block ^constructor_cleanup_2:
     %t18 = load typed ptr $this
-    %t19 = index i8 [projection=field] %t18, 1
+    %t19 = index inbounds i8 [projection=field] %t18, 1
     call void @Counter___Counter(%t19)
     jump ^constructor_cleanup_1
 
   block ^constructor_cleanup_3:
     %t20 = load typed ptr $this
-    %t21 = index i8 [projection=field] %t20, 2
+    %t21 = index inbounds i8 [projection=field] %t20, 2
     call void @Counter___Counter(%t21)
     jump ^constructor_cleanup_2
 
   block ^constructor_cleanup_4:
     %t22 = load typed ptr $this
-    %t23 = index i8 [projection=field] %t22, 3
+    %t23 = index inbounds i8 [projection=field] %t22, 3
     call void @Counter___Counter(%t23)
     jump ^constructor_cleanup_3
 
   block ^constructor_cleanup_5:
     %t24 = load typed ptr $this
-    %t25 = index i8 [projection=field] %t24, 4
+    %t25 = index inbounds i8 [projection=field] %t24, 4
     call void @Counter___Counter(%t25)
     jump ^constructor_cleanup_4
 }
@@ -162,23 +162,23 @@ function @Holder___Holder(%this : ptr [object_bytes=5]) -> void [unwind=no, bind
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     call void @Counter___Counter(%t2)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 3
+    %t4 = index inbounds i8 [projection=field] %t3, 3
     call void @Counter___Counter(%t4)
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 2
+    %t6 = index inbounds i8 [projection=field] %t5, 2
     call void @Counter___Counter(%t6)
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 1
+    %t8 = index inbounds i8 [projection=field] %t7, 1
     call void @Counter___Counter(%t8)
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     call void @Counter___Counter(%t10)
     eh_end
     resume
@@ -186,20 +186,20 @@ function @Holder___Holder(%this : ptr [object_bytes=5]) -> void [unwind=no, bind
   block ^destructor_suffix_next_4:
     eh_cleanup ^destructor_suffix_cleanup_5
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 3
+    %t12 = index inbounds i8 [projection=field] %t11, 3
     call void @Counter___Counter(%t12)
     eh_end
     jump ^destructor_suffix_next_6
 
   block ^destructor_suffix_cleanup_5:
     %t13 = load typed ptr $this
-    %t14 = index i8 [projection=field] %t13, 2
+    %t14 = index inbounds i8 [projection=field] %t13, 2
     call void @Counter___Counter(%t14)
     %t15 = load typed ptr $this
-    %t16 = index i8 [projection=field] %t15, 1
+    %t16 = index inbounds i8 [projection=field] %t15, 1
     call void @Counter___Counter(%t16)
     %t17 = load typed ptr $this
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     call void @Counter___Counter(%t18)
     eh_end
     resume
@@ -207,17 +207,17 @@ function @Holder___Holder(%this : ptr [object_bytes=5]) -> void [unwind=no, bind
   block ^destructor_suffix_next_6:
     eh_cleanup ^destructor_suffix_cleanup_7
     %t19 = load typed ptr $this
-    %t20 = index i8 [projection=field] %t19, 2
+    %t20 = index inbounds i8 [projection=field] %t19, 2
     call void @Counter___Counter(%t20)
     eh_end
     jump ^destructor_suffix_next_8
 
   block ^destructor_suffix_cleanup_7:
     %t21 = load typed ptr $this
-    %t22 = index i8 [projection=field] %t21, 1
+    %t22 = index inbounds i8 [projection=field] %t21, 1
     call void @Counter___Counter(%t22)
     %t23 = load typed ptr $this
-    %t24 = index i8 [projection=field] %t23, 0
+    %t24 = index inbounds i8 [projection=field] %t23, 0
     call void @Counter___Counter(%t24)
     eh_end
     resume
@@ -225,39 +225,39 @@ function @Holder___Holder(%this : ptr [object_bytes=5]) -> void [unwind=no, bind
   block ^destructor_suffix_next_8:
     eh_cleanup ^destructor_suffix_cleanup_9
     %t25 = load typed ptr $this
-    %t26 = index i8 [projection=field] %t25, 1
+    %t26 = index inbounds i8 [projection=field] %t25, 1
     call void @Counter___Counter(%t26)
     eh_end
     jump ^destructor_suffix_next_10
 
   block ^destructor_suffix_cleanup_9:
     %t27 = load typed ptr $this
-    %t28 = index i8 [projection=field] %t27, 0
+    %t28 = index inbounds i8 [projection=field] %t27, 0
     call void @Counter___Counter(%t28)
     eh_end
     resume
 
   block ^destructor_suffix_next_10:
     %t29 = load typed ptr $this
-    %t30 = index i8 [projection=field] %t29, 0
+    %t30 = index inbounds i8 [projection=field] %t29, 0
     call void @Counter___Counter(%t30)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t31 = load typed ptr $this
-    %t32 = index i8 [projection=field] %t31, 4
+    %t32 = index inbounds i8 [projection=field] %t31, 4
     call void @Counter___Counter(%t32)
     %t33 = load typed ptr $this
-    %t34 = index i8 [projection=field] %t33, 3
+    %t34 = index inbounds i8 [projection=field] %t33, 3
     call void @Counter___Counter(%t34)
     %t35 = load typed ptr $this
-    %t36 = index i8 [projection=field] %t35, 2
+    %t36 = index inbounds i8 [projection=field] %t35, 2
     call void @Counter___Counter(%t36)
     %t37 = load typed ptr $this
-    %t38 = index i8 [projection=field] %t37, 1
+    %t38 = index inbounds i8 [projection=field] %t37, 1
     call void @Counter___Counter(%t38)
     %t39 = load typed ptr $this
-    %t40 = index i8 [projection=field] %t39, 0
+    %t40 = index inbounds i8 [projection=field] %t39, 0
     call void @Counter___Counter(%t40)
     eh_end
     resume

@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $second
     call void @tuple_like_first_arg_second_arg___tuple_like(%t3, %t4, %t5)
     %t6 = addr $value
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 2
     branch %t9, ^cond_then_1, ^cond_else_2
@@ -39,7 +39,7 @@ function @tuple_like_first_arg_second_arg___tuple_like(%this : ptr [object_bytes
     store typed ptr %__param1, $__param1
     store typed ptr %__param2, $__param2
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 2, %t2
     return void
 }

@@ -17,7 +17,7 @@ function @box_int___add(%this : ptr [object_bytes=4], %delta : i32) -> i32 [bind
     %t1 = load typed ptr $this
     call void @box_int___touch(%t1)
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = load typed i32 $delta
     %t6 = binary add nowrap i32 %t4, %t5

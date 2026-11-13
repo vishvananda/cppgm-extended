@@ -33,10 +33,10 @@ function @callable_box_int_int____callable_box(%this : ptr [object_bytes=16]) ->
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed ptr 0, %t2
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 8
+    %t4 = index inbounds i8 [projection=field] %t3, 8
     store typed ptr 0, %t4
     return void
 }
@@ -49,11 +49,11 @@ function @callable_box_int_int____assign(%this : ptr [object_bytes=16], %functor
     store typed ptr %functor, $functor
     %t1 = load typed ptr $functor
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = addr @callable_box_int_int____invoke
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed ptr %t4, %t6
     return void
 }
@@ -65,11 +65,11 @@ function @callable_box_int_int____operator__(%this : ptr [object_bytes=16], %arg
     store typed ptr %this, $this
     store typed i32 %arg, $arg
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed i32 $arg
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     %t7 = load typed ptr %t6
     %t8 = call i32 %t7(%t3, %t4) as (%arg0 : ptr, %arg1 : i32) -> i32
     return i32 %t8

@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $node
     call void @Owner_Node___Owner(%t2, %t3)
     %t4 = addr $owner
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed ptr %t5
     %t7 = cmp eq ptr %t6, 0
     branch %t7, ^cond_then_1, ^cond_else_2
@@ -41,7 +41,7 @@ function @Owner_Node___Owner(%this : ptr [object_bytes=8], %p : ptr) -> void [bi
     call void @Control_Node___Control(%t2, %t3)
     %t4 = index i8 %t2, 0
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed ptr %t4, %t6
     return void
 }
@@ -54,7 +54,7 @@ function @Control_Node___Control(%this : ptr [object_bytes=8], %p : ptr) -> void
     store typed ptr %p, $p
     %t1 = load typed ptr $p
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

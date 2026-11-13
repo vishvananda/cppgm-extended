@@ -64,7 +64,7 @@ function @descend(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z7d
     branch %depth, ^cond_then_1, ^cond_end_2
 
   block ^cond_then_1:
-    %t1 = index i8 [projection=field] %node, 8
+    %t1 = index inbounds i8 [projection=field] %node, 8
     %t2 = load typed ptr %t1
     %t3 = binary sub u32 %depth, 1
     %t4 = call i32 @walk(%t2, %t3)
@@ -83,12 +83,12 @@ function @route(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z5rou
     switch %t3, ^switch_default_6, 0:^switch_case_1, 1:^switch_case_2, 2:^inline_entry_3
 
   block ^switch_case_1:
-    %t4 = index i8 [projection=field] %node, 4
+    %t4 = index inbounds i8 [projection=field] %node, 4
     %t5 = load typed i32 %t4
     return i32 %t5
 
   block ^switch_case_2:
-    %t6 = index i8 [projection=field] %node, 4
+    %t6 = index inbounds i8 [projection=field] %node, 4
     %t7 = load typed i32 %t6
     %t8 = unary neg i32 %t7
     return i32 %t8
@@ -97,7 +97,7 @@ function @route(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z5rou
     branch %depth, ^cond_then_4, ^cond_end_5
 
   block ^cond_then_4:
-    %t9 = index i8 [projection=field] %node, 8
+    %t9 = index inbounds i8 [projection=field] %node, 8
     %t10 = load typed ptr %t9
     %t11 = binary sub u32 %depth, 1
     %t12 = call i32 @walk(%t10, %t11)
@@ -105,7 +105,7 @@ function @route(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z5rou
 
   block ^cond_end_5:
     %t13 = phi i32 [^cond_then_4: %t12, ^inline_entry_3: 0]
-    %t14 = index i8 [projection=field] %node, 4
+    %t14 = index inbounds i8 [projection=field] %node, 4
     %t15 = load typed i32 %t14
     %t16 = binary add nowrap i32 %t15, %t13
     return i32 %t16
@@ -141,12 +141,12 @@ function @relay(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z5rel
     switch %t9, ^switch_default_9, 0:^switch_case_4, 1:^switch_case_5, 2:^inline_entry_6
 
   block ^switch_case_4:
-    %t10 = index i8 [projection=field] %node, 4
+    %t10 = index inbounds i8 [projection=field] %node, 4
     %t11 = load typed i32 %t10
     jump ^inline_cont_10
 
   block ^switch_case_5:
-    %t12 = index i8 [projection=field] %node, 4
+    %t12 = index inbounds i8 [projection=field] %node, 4
     %t13 = load typed i32 %t12
     %t14 = unary neg i32 %t13
     jump ^inline_cont_10
@@ -155,7 +155,7 @@ function @relay(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z5rel
     branch %depth, ^cond_then_7, ^cond_end_8
 
   block ^cond_then_7:
-    %t15 = index i8 [projection=field] %node, 8
+    %t15 = index inbounds i8 [projection=field] %node, 8
     %t16 = load typed ptr %t15
     %t17 = binary sub u32 %depth, 1
     %t18 = call i32 @walk(%t16, %t17)
@@ -163,7 +163,7 @@ function @relay(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z5rel
 
   block ^cond_end_8:
     %t19 = phi i32 [^cond_then_7: %t18, ^inline_entry_6: 0]
-    %t20 = index i8 [projection=field] %node, 4
+    %t20 = index inbounds i8 [projection=field] %node, 4
     %t21 = load typed i32 %t20
     %t22 = binary add nowrap i32 %t19, %t21
     jump ^inline_cont_10
@@ -214,12 +214,12 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     switch %t14, ^switch_default_77, 0:^switch_case_6, 1:^switch_case_7, 2:^inline_entry_8
 
   block ^switch_case_6:
-    %t15 = index i8 [projection=field] %t7, 4
+    %t15 = index inbounds i8 [projection=field] %t7, 4
     %t16 = load typed i32 %t15
     jump ^inline_cont_78
 
   block ^switch_case_7:
-    %t17 = index i8 [projection=field] %t7, 4
+    %t17 = index inbounds i8 [projection=field] %t7, 4
     %t18 = load typed i32 %t17
     %t19 = unary neg i32 %t18
     jump ^inline_cont_78
@@ -228,7 +228,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     branch %depth, ^cond_then_9, ^cond_end_76
 
   block ^cond_then_9:
-    %t20 = index i8 [projection=field] %t7, 8
+    %t20 = index inbounds i8 [projection=field] %t7, 8
     %t21 = load typed ptr %t20
     %t22 = binary sub u32 %depth, 1
     branch %t21, ^inline_entry_10, ^cond_end_76
@@ -262,12 +262,12 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     switch %t34, ^switch_default_74, 0:^switch_case_14, 1:^switch_case_15, 2:^inline_entry_16
 
   block ^switch_case_14:
-    %t35 = index i8 [projection=field] %t27, 4
+    %t35 = index inbounds i8 [projection=field] %t27, 4
     %t36 = load typed i32 %t35
     jump ^inline_cont_75
 
   block ^switch_case_15:
-    %t37 = index i8 [projection=field] %t27, 4
+    %t37 = index inbounds i8 [projection=field] %t27, 4
     %t38 = load typed i32 %t37
     %t39 = unary neg i32 %t38
     jump ^inline_cont_75
@@ -276,7 +276,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     branch %t22, ^cond_then_17, ^cond_end_73
 
   block ^cond_then_17:
-    %t40 = index i8 [projection=field] %t27, 8
+    %t40 = index inbounds i8 [projection=field] %t27, 8
     %t41 = load typed ptr %t40
     %t42 = binary add u32 %depth, 4294967294
     branch %t41, ^inline_entry_18, ^cond_end_73
@@ -310,12 +310,12 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     switch %t54, ^switch_default_71, 0:^switch_case_22, 1:^switch_case_23, 2:^inline_entry_24
 
   block ^switch_case_22:
-    %t55 = index i8 [projection=field] %t47, 4
+    %t55 = index inbounds i8 [projection=field] %t47, 4
     %t56 = load typed i32 %t55
     jump ^inline_cont_72
 
   block ^switch_case_23:
-    %t57 = index i8 [projection=field] %t47, 4
+    %t57 = index inbounds i8 [projection=field] %t47, 4
     %t58 = load typed i32 %t57
     %t59 = unary neg i32 %t58
     jump ^inline_cont_72
@@ -324,7 +324,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     branch %t42, ^cond_then_25, ^cond_end_70
 
   block ^cond_then_25:
-    %t60 = index i8 [projection=field] %t47, 8
+    %t60 = index inbounds i8 [projection=field] %t47, 8
     %t61 = load typed ptr %t60
     %t62 = binary add u32 %depth, 4294967293
     branch %t61, ^inline_entry_26, ^cond_end_70
@@ -358,12 +358,12 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     switch %t74, ^switch_default_68, 0:^switch_case_30, 1:^switch_case_31, 2:^inline_entry_32
 
   block ^switch_case_30:
-    %t75 = index i8 [projection=field] %t67, 4
+    %t75 = index inbounds i8 [projection=field] %t67, 4
     %t76 = load typed i32 %t75
     jump ^inline_cont_69
 
   block ^switch_case_31:
-    %t77 = index i8 [projection=field] %t67, 4
+    %t77 = index inbounds i8 [projection=field] %t67, 4
     %t78 = load typed i32 %t77
     %t79 = unary neg i32 %t78
     jump ^inline_cont_69
@@ -372,7 +372,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     branch %t62, ^cond_then_33, ^cond_end_67
 
   block ^cond_then_33:
-    %t80 = index i8 [projection=field] %t67, 8
+    %t80 = index inbounds i8 [projection=field] %t67, 8
     %t81 = load typed ptr %t80
     %t82 = binary add u32 %depth, 4294967292
     branch %t81, ^inline_entry_34, ^cond_end_67
@@ -406,12 +406,12 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     switch %t94, ^switch_default_65, 0:^switch_case_38, 1:^switch_case_39, 2:^inline_entry_40
 
   block ^switch_case_38:
-    %t95 = index i8 [projection=field] %t87, 4
+    %t95 = index inbounds i8 [projection=field] %t87, 4
     %t96 = load typed i32 %t95
     jump ^inline_cont_66
 
   block ^switch_case_39:
-    %t97 = index i8 [projection=field] %t87, 4
+    %t97 = index inbounds i8 [projection=field] %t87, 4
     %t98 = load typed i32 %t97
     %t99 = unary neg i32 %t98
     jump ^inline_cont_66
@@ -420,7 +420,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     branch %t82, ^cond_then_41, ^cond_end_64
 
   block ^cond_then_41:
-    %t100 = index i8 [projection=field] %t87, 8
+    %t100 = index inbounds i8 [projection=field] %t87, 8
     %t101 = load typed ptr %t100
     %t102 = binary add u32 %depth, 4294967291
     branch %t101, ^inline_entry_42, ^cond_end_64
@@ -454,12 +454,12 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     switch %t114, ^switch_default_62, 0:^switch_case_46, 1:^switch_case_47, 2:^inline_entry_48
 
   block ^switch_case_46:
-    %t115 = index i8 [projection=field] %t107, 4
+    %t115 = index inbounds i8 [projection=field] %t107, 4
     %t116 = load typed i32 %t115
     jump ^inline_cont_63
 
   block ^switch_case_47:
-    %t117 = index i8 [projection=field] %t107, 4
+    %t117 = index inbounds i8 [projection=field] %t107, 4
     %t118 = load typed i32 %t117
     %t119 = unary neg i32 %t118
     jump ^inline_cont_63
@@ -468,7 +468,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     branch %t102, ^cond_then_49, ^cond_end_61
 
   block ^cond_then_49:
-    %t120 = index i8 [projection=field] %t107, 8
+    %t120 = index inbounds i8 [projection=field] %t107, 8
     %t121 = load typed ptr %t120
     %t122 = binary add u32 %depth, 4294967290
     branch %t121, ^inline_entry_50, ^cond_end_61
@@ -502,12 +502,12 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     switch %t134, ^switch_default_59, 0:^switch_case_54, 1:^switch_case_55, 2:^inline_entry_56
 
   block ^switch_case_54:
-    %t135 = index i8 [projection=field] %t127, 4
+    %t135 = index inbounds i8 [projection=field] %t127, 4
     %t136 = load typed i32 %t135
     jump ^inline_cont_60
 
   block ^switch_case_55:
-    %t137 = index i8 [projection=field] %t127, 4
+    %t137 = index inbounds i8 [projection=field] %t127, 4
     %t138 = load typed i32 %t137
     %t139 = unary neg i32 %t138
     jump ^inline_cont_60
@@ -516,7 +516,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     branch %t122, ^cond_then_57, ^cond_end_58
 
   block ^cond_then_57:
-    %t140 = index i8 [projection=field] %t127, 8
+    %t140 = index inbounds i8 [projection=field] %t127, 8
     %t141 = load typed ptr %t140
     %t142 = binary add u32 %depth, 4294967289
     %t143 = call i32 @walk(%t141, %t142)
@@ -531,7 +531,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t149 = phi u32 [^inline_entry_56: %t129, ^cond_then_57: %t146]
     %t150 = phi u32 [^inline_entry_56: %t124, ^cond_then_57: %t145]
     %t151 = phi i32 [^cond_then_57: %t143, ^inline_entry_56: 0]
-    %t152 = index i8 [projection=field] %t127, 4
+    %t152 = index inbounds i8 [projection=field] %t127, 4
     %t153 = load typed i32 %t152
     %t154 = binary add nowrap i32 %t151, %t153
     jump ^inline_cont_60
@@ -547,7 +547,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t158 = phi u32 [^switch_case_54: %t124, ^switch_case_55: %t124, ^cond_end_58: %t150]
     %t159 = phi i32 [^switch_case_54: %t136, ^switch_case_55: %t139, ^cond_end_58: %t154]
     %t160 = binary add nowrap i32 %t159, %t128
-    %t161 = index i8 [projection=field] %t127, 16
+    %t161 = index inbounds i8 [projection=field] %t127, 16
     %t162 = load typed ptr %t161
     branch %t162, ^inline_entry_50, ^cond_end_61
 
@@ -557,7 +557,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t165 = phi u32 [^inline_entry_48: %t109, ^cond_then_49: %t109, ^inline_cont_60: %t157]
     %t166 = phi u32 [^inline_entry_48: %t104, ^cond_then_49: %t104, ^inline_cont_60: %t158]
     %t167 = phi i32 [^inline_entry_48: 0, ^cond_then_49: 0, ^inline_cont_60: %t160]
-    %t168 = index i8 [projection=field] %t107, 4
+    %t168 = index inbounds i8 [projection=field] %t107, 4
     %t169 = load typed i32 %t168
     %t170 = binary add nowrap i32 %t167, %t169
     jump ^inline_cont_63
@@ -573,7 +573,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t174 = phi u32 [^switch_case_46: %t104, ^switch_case_47: %t104, ^cond_end_61: %t166]
     %t175 = phi i32 [^switch_case_46: %t116, ^switch_case_47: %t119, ^cond_end_61: %t170]
     %t176 = binary add nowrap i32 %t175, %t108
-    %t177 = index i8 [projection=field] %t107, 16
+    %t177 = index inbounds i8 [projection=field] %t107, 16
     %t178 = load typed ptr %t177
     branch %t178, ^inline_entry_42, ^cond_end_64
 
@@ -583,7 +583,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t181 = phi u32 [^inline_entry_40: %t89, ^cond_then_41: %t89, ^inline_cont_63: %t173]
     %t182 = phi u32 [^inline_entry_40: %t84, ^cond_then_41: %t84, ^inline_cont_63: %t174]
     %t183 = phi i32 [^inline_entry_40: 0, ^cond_then_41: 0, ^inline_cont_63: %t176]
-    %t184 = index i8 [projection=field] %t87, 4
+    %t184 = index inbounds i8 [projection=field] %t87, 4
     %t185 = load typed i32 %t184
     %t186 = binary add nowrap i32 %t183, %t185
     jump ^inline_cont_66
@@ -599,7 +599,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t190 = phi u32 [^switch_case_38: %t84, ^switch_case_39: %t84, ^cond_end_64: %t182]
     %t191 = phi i32 [^switch_case_38: %t96, ^switch_case_39: %t99, ^cond_end_64: %t186]
     %t192 = binary add nowrap i32 %t191, %t88
-    %t193 = index i8 [projection=field] %t87, 16
+    %t193 = index inbounds i8 [projection=field] %t87, 16
     %t194 = load typed ptr %t193
     branch %t194, ^inline_entry_34, ^cond_end_67
 
@@ -609,7 +609,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t197 = phi u32 [^inline_entry_32: %t69, ^cond_then_33: %t69, ^inline_cont_66: %t189]
     %t198 = phi u32 [^inline_entry_32: %t64, ^cond_then_33: %t64, ^inline_cont_66: %t190]
     %t199 = phi i32 [^inline_entry_32: 0, ^cond_then_33: 0, ^inline_cont_66: %t192]
-    %t200 = index i8 [projection=field] %t67, 4
+    %t200 = index inbounds i8 [projection=field] %t67, 4
     %t201 = load typed i32 %t200
     %t202 = binary add nowrap i32 %t199, %t201
     jump ^inline_cont_69
@@ -625,7 +625,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t206 = phi u32 [^switch_case_30: %t64, ^switch_case_31: %t64, ^cond_end_67: %t198]
     %t207 = phi i32 [^switch_case_30: %t76, ^switch_case_31: %t79, ^cond_end_67: %t202]
     %t208 = binary add nowrap i32 %t207, %t68
-    %t209 = index i8 [projection=field] %t67, 16
+    %t209 = index inbounds i8 [projection=field] %t67, 16
     %t210 = load typed ptr %t209
     branch %t210, ^inline_entry_26, ^cond_end_70
 
@@ -635,7 +635,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t213 = phi u32 [^inline_entry_24: %t49, ^cond_then_25: %t49, ^inline_cont_69: %t205]
     %t214 = phi u32 [^inline_entry_24: %t44, ^cond_then_25: %t44, ^inline_cont_69: %t206]
     %t215 = phi i32 [^inline_entry_24: 0, ^cond_then_25: 0, ^inline_cont_69: %t208]
-    %t216 = index i8 [projection=field] %t47, 4
+    %t216 = index inbounds i8 [projection=field] %t47, 4
     %t217 = load typed i32 %t216
     %t218 = binary add nowrap i32 %t215, %t217
     jump ^inline_cont_72
@@ -651,7 +651,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t222 = phi u32 [^switch_case_22: %t44, ^switch_case_23: %t44, ^cond_end_70: %t214]
     %t223 = phi i32 [^switch_case_22: %t56, ^switch_case_23: %t59, ^cond_end_70: %t218]
     %t224 = binary add nowrap i32 %t223, %t48
-    %t225 = index i8 [projection=field] %t47, 16
+    %t225 = index inbounds i8 [projection=field] %t47, 16
     %t226 = load typed ptr %t225
     branch %t226, ^inline_entry_18, ^cond_end_73
 
@@ -661,7 +661,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t229 = phi u32 [^inline_entry_16: %t29, ^cond_then_17: %t29, ^inline_cont_72: %t221]
     %t230 = phi u32 [^inline_entry_16: %t25, ^cond_then_17: %t25, ^inline_cont_72: %t222]
     %t231 = phi i32 [^inline_entry_16: 0, ^cond_then_17: 0, ^inline_cont_72: %t224]
-    %t232 = index i8 [projection=field] %t27, 4
+    %t232 = index inbounds i8 [projection=field] %t27, 4
     %t233 = load typed i32 %t232
     %t234 = binary add nowrap i32 %t231, %t233
     jump ^inline_cont_75
@@ -677,7 +677,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t238 = phi u32 [^switch_case_14: %t25, ^switch_case_15: %t25, ^cond_end_73: %t230]
     %t239 = phi i32 [^switch_case_14: %t36, ^switch_case_15: %t39, ^cond_end_73: %t234]
     %t240 = binary add nowrap i32 %t239, %t28
-    %t241 = index i8 [projection=field] %t27, 16
+    %t241 = index inbounds i8 [projection=field] %t27, 16
     %t242 = load typed ptr %t241
     branch %t242, ^inline_entry_10, ^cond_end_76
 
@@ -686,7 +686,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t244 = phi u32 [^inline_entry_8: %t5, ^cond_then_9: %t5, ^inline_cont_75: %t236]
     %t245 = phi u32 [^inline_entry_8: %t9, ^cond_then_9: %t9, ^inline_cont_75: %t237]
     %t246 = phi i32 [^inline_entry_8: 0, ^cond_then_9: 0, ^inline_cont_75: %t240]
-    %t247 = index i8 [projection=field] %t7, 4
+    %t247 = index inbounds i8 [projection=field] %t7, 4
     %t248 = load typed i32 %t247
     %t249 = binary add nowrap i32 %t246, %t248
     jump ^inline_cont_78
@@ -701,7 +701,7 @@ function @walk(%node : ptr, %depth : u32) -> i32 [binding=strong, object=_Z4walk
     %t252 = phi u32 [^switch_case_6: %t9, ^switch_case_7: %t9, ^cond_end_76: %t245]
     %t253 = phi i32 [^switch_case_6: %t16, ^switch_case_7: %t19, ^cond_end_76: %t249]
     %t254 = binary add nowrap i32 %t253, %t8
-    %t255 = index i8 [projection=field] %t7, 16
+    %t255 = index inbounds i8 [projection=field] %t7, 16
     %t256 = load typed ptr %t255
     branch %t256, ^inline_entry_2, ^while_end_79
 
@@ -981,19 +981,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = copy i32 %t12
     store typed i32 %t13, %t11
     %t14 = binary add i32 %t10, -18
-    %t15 = index i8 [projection=field] %t11, 4
+    %t15 = index inbounds i8 [projection=field] %t11, 4
     store typed i32 %t14, %t15
-    %t16 = index i8 [projection=field] %t11, 8
+    %t16 = index inbounds i8 [projection=field] %t11, 8
     store typed ptr 0, %t16
-    %t17 = index i8 [projection=field] %t11, 16
+    %t17 = index inbounds i8 [projection=field] %t11, 16
     store typed ptr 0, %t17
     %t18 = addr $root
     store typed i32 2, %t18
     %t19 = binary add i32 %t10, -13
-    %t20 = index i8 [projection=field] %t18, 4
+    %t20 = index inbounds i8 [projection=field] %t18, 4
     store typed i32 %t19, %t20
-    %t21 = index i8 [projection=field] %t18, 8
-    %t22 = index i8 [projection=field] %t18, 16
+    %t21 = index inbounds i8 [projection=field] %t18, 8
+    %t22 = index inbounds i8 [projection=field] %t18, 16
     store typed ptr %t11, %t22
     store typed ptr %t18, %t21
     jump ^for_cond_4
@@ -1166,11 +1166,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_35:
     %t88 = addr $bad
     store typed i32 4, %t88
-    %t89 = index i8 [projection=field] %t88, 4
+    %t89 = index inbounds i8 [projection=field] %t88, 4
     store typed i32 0, %t89
-    %t90 = index i8 [projection=field] %t88, 8
+    %t90 = index inbounds i8 [projection=field] %t88, 8
     store typed ptr 0, %t90
-    %t91 = index i8 [projection=field] %t88, 16
+    %t91 = index inbounds i8 [projection=field] %t88, 16
     store typed ptr 0, %t91
     store typed u32 0, @depth_sum
     store typed u32 0, @cleanups

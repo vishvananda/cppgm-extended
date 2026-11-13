@@ -37,13 +37,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $bucket
     %t2 = addr $bucket
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 1311768467463790320, %t3
     %t4 = convert sext i64 i32 1
     %t5 = addr $bucket
     %t6 = call ptr @Bucket__second(%t5)
     %t7 = addr $bucket
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i64 %t8
     %t10 = cmp ne i64 %t9, 1311768467463790320
     branch %t10, ^if_then_1, ^if_else_2
@@ -59,7 +59,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = call ptr @Bucket__second(%t11)
     call void @initialize(%t12)
     %t13 = addr $bucket
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = load typed i64 %t14
     %t16 = cmp ne i64 %t15, 1311768467463790320
     branch %t16, ^if_then_4, ^if_else_5
@@ -75,7 +75,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = call ptr @Bucket__second(%t17)
     call void @initialize_list(%t18)
     %t19 = addr $bucket
-    %t20 = index i8 [projection=field] %t19, 0
+    %t20 = index inbounds i8 [projection=field] %t19, 0
     %t21 = load typed i64 %t20
     %t22 = cmp ne i64 %t21, 1311768467463790320
     branch %t22, ^if_then_7, ^if_else_8
@@ -90,14 +90,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t23 = addr $counted
     call void @CountedBucket__CountedBucket(%t23)
     %t24 = addr $counted
-    %t25 = index i8 [projection=field] %t24, 0
+    %t25 = index inbounds i8 [projection=field] %t24, 0
     store typed i64 -81985529216486896, %t25
     %t26 = convert sext i64 i32 1
     %t27 = addr $counted
     %t28 = index i8 %t27, 0
     call void @Counted__Counted(%t28)
     %t29 = addr $counted
-    %t30 = index i8 [projection=field] %t29, 0
+    %t30 = index inbounds i8 [projection=field] %t29, 0
     %t31 = load typed i64 %t30
     %t32 = cmp eq i64 %t31, -81985529216486896
     branch %t32, ^land_rhs_13, ^land_short_14

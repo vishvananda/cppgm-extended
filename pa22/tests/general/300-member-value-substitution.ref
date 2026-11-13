@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $object
     %t2 = addr $object
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 9, %t3
     %t4 = addr $tmpobj__2
     %t5 = addr @Object__function
@@ -150,7 +150,7 @@ function @Apply__operator____2(%this : ptr [object_bytes=1], %member : i64, %obj
     store typed ptr %object, $object
     %t1 = load typed ptr $object
     %t2 = load typed i64 $member
-    %t3 = index i8 [projection=field] %t1, %t2
+    %t3 = index inbounds i8 [projection=field] %t1, %t2
     return ptr %t3
 }
 function @IndirectApply__operator__(%this : ptr [object_bytes=1], %member : i128, %object : ptr) -> i32 [binding=weak, object=_ZNK13IndirectApplyclI6ObjectKFivES1_JEEEDTclpmfp0_fp_spfp1_EEMT_T0_PT1_DpT2_, inline_hint=yes] {
@@ -202,6 +202,6 @@ function @IndirectApply__operator____2(%this : ptr [object_bytes=1], %member : i
     store typed ptr %object, $object
     %t1 = load typed ptr $object
     %t2 = load typed i64 $member
-    %t3 = index i8 [projection=field] %t1, %t2
+    %t3 = index inbounds i8 [projection=field] %t1, %t2
     return ptr %t3
 }

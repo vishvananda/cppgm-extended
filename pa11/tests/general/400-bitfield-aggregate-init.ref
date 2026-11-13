@@ -6,7 +6,7 @@ function @observe(%value : ptr [pass=by_address, object_bytes=4], %x : ptr [pass
     store typed ptr %value, $value
     store typed ptr %x, $x
     %t1 = load typed ptr $x
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = unary neg i32 1
     %t4 = binary and i32 %t3, 7
     %t5 = binary shl i32 %t4, 29
@@ -29,11 +29,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $x
     %t2 = addr $x
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = binary and i32 7, 3
     store i32 %t4, %t3
     %t5 = addr $x
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load i32 %t6
     %t8 = binary and i32 %t7, 7
     %t9 = binary shl i32 %t8, 29
@@ -42,7 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = addr $tmpref__1
     store typed ptr %t11, $snapshot
     %t12 = addr $x
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = unary neg i32 1
     %t15 = binary and i32 %t14, 7
     %t16 = binary shl i32 %t15, 29
@@ -58,7 +58,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_3:
     %t24 = addr $x
-    %t25 = index i8 [projection=field] %t24, 0
+    %t25 = index inbounds i8 [projection=field] %t24, 0
     %t26 = load i32 %t25
     %t27 = binary and i32 %t26, 7
     %t28 = binary shl i32 %t27, 29
@@ -75,7 +75,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_4:
     %t32 = addr $x
-    %t33 = index i8 [projection=field] %t32, 0
+    %t33 = index inbounds i8 [projection=field] %t32, 0
     %t34 = binary and i32 3, 7
     %t35 = binary shl i32 %t34, 29
     %t36 = binary shr i32 %t35, 29
@@ -84,7 +84,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t39 = binary or i32 %t38, %t34
     store i32 %t39, %t33
     %t40 = addr $x
-    %t41 = index i8 [projection=field] %t40, 0
+    %t41 = index inbounds i8 [projection=field] %t40, 0
     %t42 = load i32 %t41
     %t43 = binary and i32 %t42, 7
     %t44 = binary shl i32 %t43, 29
@@ -98,7 +98,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_5:
     %t50 = addr $x
-    %t51 = index i8 [projection=field] %t50, 0
+    %t51 = index inbounds i8 [projection=field] %t50, 0
     %t52 = load i32 %t51
     %t53 = binary and i32 %t52, 7
     %t54 = binary shl i32 %t53, 29

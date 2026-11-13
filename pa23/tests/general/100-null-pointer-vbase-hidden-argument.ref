@@ -28,7 +28,7 @@ function @read(%p : ptr) -> i32 [binding=strong, object=_Z4readP1A] {
 
   block ^basecast_end_6:
     %t9 = load typed ptr $basecast__2
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     store typed i32 %t11, $cond__1
     jump ^cond_end_3

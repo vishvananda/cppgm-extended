@@ -36,7 +36,7 @@ function @operator_(%ret : ptr [pass=indirect_result, alias=exclusive_result, ob
     store typed ptr %__param2, $__param2
     eh_try ^cleanup_resume_1
     %t1 = load typed ptr $lhs
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = cmp eq i32 %t3, 3
     eh_end
@@ -88,7 +88,7 @@ function @operator___ov2(%ret : ptr [pass=indirect_result, alias=exclusive_resul
     store i8 %__param2, $__param2
     eh_try ^cleanup_resume_1
     %t1 = load typed ptr $lhs
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = cmp eq i32 %t3, 3
     eh_end
@@ -203,7 +203,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^call_unwind_end_9:
     %t11 = addr $terminator
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp eq i32 %t13, 3
     branch %t14, ^cond_then_10, ^cond_else_11
@@ -226,7 +226,7 @@ function @Alloc__Alloc(%this : ptr [object_bytes=4]) -> void [binding=weak, obje
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 3, %t2
     return void
 }
@@ -240,10 +240,10 @@ function @Text__Text(%this : ptr [object_bytes=4], %__param1 : ptr, %alloc : ptr
     store typed ptr %__param1, $__param1
     store typed ptr %alloc, $alloc
     %t1 = load typed ptr $alloc
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     return void
 }

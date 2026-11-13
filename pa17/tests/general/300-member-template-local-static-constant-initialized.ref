@@ -52,18 +52,18 @@ function @function_n_void___assign_to(%this : ptr [object_bytes=1], %__param1 : 
 
   block ^goto_3:
     %t2 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__decl0__stored
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = cmp ne ptr %t4, 0
     branch %t5, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
     %t6 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__decl0__stored
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed ptr %t7
     %t9 = call i32 %t8() as () -> i32
     %t10 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__decl0__stored
-    %t11 = index i8 [projection=field] %t10, 8
+    %t11 = index inbounds i8 [projection=field] %t10, 8
     %t12 = load typed ptr %t11
     %t13 = call i32 %t12() as () -> i32
     %t14 = binary add nowrap i32 %t9, %t13

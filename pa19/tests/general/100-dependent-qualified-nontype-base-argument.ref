@@ -24,7 +24,7 @@ function @AllocBox___cppgm_class_template_identity_1___AllocBox__base_entry(%thi
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Holder___cppgm_class_template_identity_1___Holder(%t2)
     return void
 }

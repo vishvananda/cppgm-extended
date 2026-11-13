@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Derived__Derived(%t1)
     %t2 = addr $value
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^land_rhs_4, ^land_short_5
@@ -31,8 +31,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t7 = addr $value
     %t8 = index i8 %t7, 0
-    %t9 = index i8 [projection=field] %t8, 4
-    %t10 = index i8 [projection=field] %t9, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 4
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 13
     store typed i64 %t12, $land__2
@@ -83,11 +83,11 @@ function @Derived__Derived(%this : ptr [object_bytes=8]) -> void [binding=weak, 
     %t1 = load typed i32 $value
     %t2 = load typed ptr $this
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t1, %t4
     %t5 = load typed ptr $this
     %t6 = index i8 %t5, 0
-    %t7 = index i8 [projection=field] %t6, 4
+    %t7 = index inbounds i8 [projection=field] %t6, 4
     call void @Root__ABI__set(%t7, 13)
     return void
 }
@@ -111,7 +111,7 @@ function @Root__ABI__set(%this : ptr [object_bytes=4], %n : i32) -> void [bindin
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

@@ -7,7 +7,7 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
     %t1 = addr $tmpobj__1
     %t2 = call obj<8x4> @make()
     copyobj 8x4 %t2, %t1
-    %t3 = index i8 [projection=field] %t1, 4
+    %t3 = index inbounds i8 [projection=field] %t1, 4
     %t4 = load typed i32 %t3
     return i32 %t4
 }

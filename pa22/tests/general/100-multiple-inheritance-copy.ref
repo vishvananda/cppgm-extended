@@ -10,25 +10,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 8x4 %t3, %t2
     %t4 = addr $d
     %t5 = index i8 %t4, 0
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 4, %t6
     %t7 = addr $c
     %t8 = index i8 %t7, 0
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = addr $c
     %t12 = index i8 %t11, 4
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = load typed i32 %t13
     %t15 = binary add nowrap i32 %t10, %t14
     %t16 = addr $d
     %t17 = index i8 %t16, 0
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     %t19 = load typed i32 %t18
     %t20 = binary add nowrap i32 %t15, %t19
     %t21 = addr $d
     %t22 = index i8 %t21, 4
-    %t23 = index i8 [projection=field] %t22, 0
+    %t23 = index inbounds i8 [projection=field] %t22, 0
     %t24 = load typed i32 %t23
     %t25 = binary add nowrap i32 %t20, %t24
     return i32 %t25
@@ -52,7 +52,7 @@ function @YA__YA__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     return void
 }
@@ -62,7 +62,7 @@ function @YB__YB__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 2, %t2
     return void
 }

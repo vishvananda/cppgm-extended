@@ -21,14 +21,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t5, %t4
     call void @Sink__Sink__2(%t3, $argobj__2)
     %t6 = addr $captureless
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 5
     branch %t9, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t10 = addr $captured
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 5
     store typed i64 %t13, $land__4
@@ -63,7 +63,7 @@ function @Sink__Sink(%this : ptr [object_bytes=4], %function : obj<1x1> [classes
     %t1 = addr $function
     %t2 = call i32 @__lambda_main_t101_105__operator__(%t1, 4)
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }
@@ -78,7 +78,7 @@ function @Sink__Sink__2(%this : ptr [object_bytes=4], %function : obj<8x8>) -> v
     %t2 = addr $function
     %t3 = call i32 @__lambda_main_t125_129_n1__operator__(%t2, 4)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     return void
 }
@@ -102,7 +102,7 @@ function @__lambda_main_t125_129_n1__operator__(%this : ptr [object_bytes=8], %n
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t1, %t5

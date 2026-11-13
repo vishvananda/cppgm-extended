@@ -7,7 +7,7 @@ global @__local_static__function_symbol_5f5a33676574493576616c75654552545f76__de
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = load typed ptr @holder_value___instance
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = cmp ne i32 %t3, 7
     %t5 = convert trunc i32 i64 %t4

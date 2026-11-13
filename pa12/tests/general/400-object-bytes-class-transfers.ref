@@ -2,12 +2,12 @@ function @consume(%value : ptr [pass=by_address, object_bytes=24]) -> i64 [bindi
   slot $value : obj<24x8>
 
   block ^entry:
-    %t1 = index i8 [projection=field] %value, 0
+    %t1 = index inbounds i8 [projection=field] %value, 0
     %t2 = load typed i64 %t1
-    %t3 = index i8 [projection=field] %value, 8
+    %t3 = index inbounds i8 [projection=field] %value, 8
     %t4 = load typed i64 %t3
     %t5 = binary add nowrap i64 %t2, %t4
-    %t6 = index i8 [projection=field] %value, 16
+    %t6 = index inbounds i8 [projection=field] %value, 16
     %t7 = load typed i64 %t6
     %t8 = binary add nowrap i64 %t5, %t7
     return i64 %t8
@@ -53,17 +53,17 @@ function @Large__Large(%this : ptr [object_bytes=24], %x : i64) -> void [binding
     store typed i64 %x, $x
     %t1 = load typed i64 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     %t4 = load typed i64 $x
     %t5 = binary add nowrap i64 %t4, 1
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     store typed i64 %t5, %t7
     %t8 = load typed i64 $x
     %t9 = binary add nowrap i64 %t8, 2
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 16
+    %t11 = index inbounds i8 [projection=field] %t10, 16
     store typed i64 %t9, %t11
     return void
 }

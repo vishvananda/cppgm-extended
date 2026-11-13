@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $first
     call void @Chain_char___cppgm_class_template_identity_1_void___Chain__ov3(%t2, 5, %t3)
     %t4 = addr $second
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     %t6 = load typed i32 %t5
     return i32 %t6
 }
@@ -22,7 +22,7 @@ function @Chain_int_Empty_void___Chain(%this : ptr [object_bytes=4], %v : i32) -
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -41,7 +41,7 @@ function @Chain_char___cppgm_class_template_identity_1_void___Chain__ov3(%this :
     call void @Chain_int_Empty_void___Chain__ov2__base_entry(%t2, %t3)
     %t4 = load typed i32 $v
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -55,11 +55,11 @@ function @Chain_int_Empty_void___Chain__ov2__base_entry(%this : ptr [alias=noali
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     %t3 = load typed ptr $other
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t5, 1
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed i32 %t6, %t8
     return void
 }

@@ -37,7 +37,7 @@ function @value_holder__value_holder(%this : ptr [object_bytes=8], %v : i64) -> 
     store typed i64 %v, $v
     %t1 = load typed i64 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     return void
 }
@@ -47,7 +47,7 @@ function @value_holder__matches(%this : ptr [object_bytes=8]) -> u8 [binding=wea
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     %t4 = unary neg i32 100
     %t5 = convert sext i64 i32 %t4

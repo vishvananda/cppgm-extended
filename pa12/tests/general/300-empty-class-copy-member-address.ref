@@ -18,7 +18,7 @@ function @Wrapper__Wrapper(%this : ptr [object_bytes=1], %input : ptr [pass=by_a
     store typed ptr %this, $this
     store typed ptr %input, $input
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return void
 }
 alias object _ZN7WrapperC2ERK5Empty = @Wrapper__Wrapper

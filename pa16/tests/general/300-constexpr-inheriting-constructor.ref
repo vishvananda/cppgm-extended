@@ -55,15 +55,15 @@ function @read_static() -> i32 [binding=strong, object=_Z11read_staticv] {
   block ^entry:
     %t1 = addr @constant_initialized
     %t2 = index i8 %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = addr @constant_initialized
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     %t7 = load typed i32 %t6
     %t8 = binary add nowrap i32 %t4, %t7
     %t9 = addr @defaulted_static
     %t10 = index i8 %t9, 0
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t8, %t12
     return i32 %t13
@@ -71,7 +71,7 @@ function @read_static() -> i32 [binding=strong, object=_Z11read_staticv] {
 function @read_dynamic() -> i32 [binding=strong, object=_Z12read_dynamicv] {
   block ^entry:
     %t1 = addr @dynamic
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -84,7 +84,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @plain
     %t2 = index i8 %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t4, 1
     branch %t5, ^if_then_1, ^lor_rhs_4
@@ -99,7 +99,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_3:
     %t11 = addr @members
-    %t12 = index i8 [projection=field] %t11, 8
+    %t12 = index inbounds i8 [projection=field] %t11, 8
     %t13 = load typed i32 %t12
     %t14 = cmp ne i32 %t13, 11
     branch %t14, ^if_then_1, ^if_else_2
@@ -113,21 +113,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_5:
     %t15 = addr @shorter
     %t16 = index i8 %t15, 0
-    %t17 = index i8 [projection=field] %t16, 0
+    %t17 = index inbounds i8 [projection=field] %t16, 0
     %t18 = load typed i32 %t17
     %t19 = cmp ne i32 %t18, 21
     branch %t19, ^if_then_6, ^lor_rhs_9
 
   block ^lor_rhs_9:
     %t20 = addr @wrapped
-    %t21 = index i8 [projection=field] %t20, 4
+    %t21 = index inbounds i8 [projection=field] %t20, 4
     %t22 = load typed i32 %t21
     %t23 = cmp ne i32 %t22, 3
     branch %t23, ^if_then_6, ^lor_rhs_8
 
   block ^lor_rhs_8:
     %t24 = addr @chained
-    %t25 = index i8 [projection=field] %t24, 16
+    %t25 = index inbounds i8 [projection=field] %t24, 16
     %t26 = load typed i32 %t25
     %t27 = cmp ne i32 %t26, 4
     branch %t27, ^if_then_6, ^if_else_7
@@ -162,7 +162,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_17:
     %t34 = addr @dynamic
     %t35 = index i8 %t34, 0
-    %t36 = index i8 [projection=field] %t35, 0
+    %t36 = index inbounds i8 [projection=field] %t35, 0
     %t37 = load typed i32 %t36
     %t38 = cmp ne i32 %t37, 40
     branch %t38, ^if_then_14, ^lor_rhs_16
@@ -184,7 +184,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t42 = addr $runtime
     call void @Counted__Counted(%t42, 9)
     %t43 = addr $runtime
-    %t44 = index i8 [projection=field] %t43, 4
+    %t44 = index inbounds i8 [projection=field] %t43, 4
     %t45 = load typed i32 %t44
     %t46 = cmp eq i32 %t45, 2
     branch %t46, ^land_rhs_23, ^land_short_24
@@ -192,7 +192,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_23:
     %t47 = addr $runtime
     %t48 = index i8 %t47, 0
-    %t49 = index i8 [projection=field] %t48, 0
+    %t49 = index inbounds i8 [projection=field] %t48, 0
     %t50 = load typed i32 %t49
     %t51 = cmp eq i32 %t50, 9
     store typed i64 %t51, $land__2
@@ -243,21 +243,21 @@ function @Members__Members__base_entry(%this : ptr [object_bytes=16], %__param1 
     %t3 = load typed i32 $__param1
     call void @Base__Base__base_entry(%t2, %t3)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     store typed i32 10, %t5
     %t6 = load typed ptr $this
     %t7 = index i8 %t6, 0
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i32 %t8
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 4
+    %t11 = index inbounds i8 [projection=field] %t10, 4
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 8
+    %t15 = index inbounds i8 [projection=field] %t14, 8
     store typed i32 %t13, %t15
     %t16 = load typed ptr $this
-    %t17 = index i8 [projection=field] %t16, 12
+    %t17 = index inbounds i8 [projection=field] %t16, 12
     call void @Inner__Inner(%t17)
     return void
 }
@@ -302,7 +302,7 @@ function @Wrapped_Base___Wrapped(%this : ptr [object_bytes=8], %__param1 : i32) 
     %t3 = load typed i32 $__param1
     call void @Base__Base__base_entry(%t2, %t3)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     store typed i32 3, %t5
     return void
 }
@@ -318,7 +318,7 @@ function @Chained__Chained(%this : ptr [object_bytes=20], %__param1 : i32) -> vo
     %t3 = load typed i32 $__param1
     call void @Members__Members__base_entry(%t2, %t3)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 16
+    %t5 = index inbounds i8 [projection=field] %t4, 16
     store typed i32 4, %t5
     return void
 }
@@ -335,7 +335,7 @@ function @Counted__Counted(%this : ptr [object_bytes=8], %__param1 : i32) -> voi
     call void @Base__Base__base_entry(%t2, %t3)
     %t4 = call i32 @counted()
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     return void
 }
@@ -348,7 +348,7 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=4], %x : i32) -> void
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -358,7 +358,7 @@ function @Inner__Inner(%this : ptr [object_bytes=4]) -> void [binding=weak, obje
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }
@@ -375,7 +375,7 @@ function @Defaults__Defaults__base_entry(%this : ptr [object_bytes=4], %a : i32,
     %t2 = load typed i32 $b
     %t3 = binary add nowrap i32 %t1, %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     return void
 }
@@ -391,21 +391,21 @@ function @Members__Members(%this : ptr [object_bytes=16], %__param1 : i32) -> vo
     %t3 = load typed i32 $__param1
     call void @Base__Base__base_entry(%t2, %t3)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     store typed i32 10, %t5
     %t6 = load typed ptr $this
     %t7 = index i8 %t6, 0
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i32 %t8
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 4
+    %t11 = index inbounds i8 [projection=field] %t10, 4
     %t12 = load typed i32 %t11
     %t13 = binary add nowrap i32 %t9, %t12
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 8
+    %t15 = index inbounds i8 [projection=field] %t14, 8
     store typed i32 %t13, %t15
     %t16 = load typed ptr $this
-    %t17 = index i8 [projection=field] %t16, 12
+    %t17 = index inbounds i8 [projection=field] %t16, 12
     call void @Inner__Inner(%t17)
     return void
 }

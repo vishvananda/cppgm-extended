@@ -65,7 +65,7 @@ function @scalar_box__scalar_box__ov2(%this : ptr [object_bytes=8], %value : i64
     store typed i64 %value, $value
     %t1 = load typed i64 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     return void
 }
@@ -75,7 +75,7 @@ function @scalar_box__scalar_box(%this : ptr [object_bytes=8]) -> void [binding=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i64 0, %t2
     return void
 }
@@ -85,7 +85,7 @@ function @scalar_box__operatorlong(%this : ptr [object_bytes=8]) -> i64 [binding
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     return i64 %t3
 }
@@ -98,7 +98,7 @@ function @scalar_box__operator_(%this : ptr [object_bytes=8], %value : i64) -> p
     store typed i64 %value, $value
     %t1 = load typed i64 $value
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     %t4 = load typed ptr $this
     return ptr %t4
@@ -109,7 +109,7 @@ function @scalar_box__value(%this : ptr [object_bytes=8]) -> i64 [binding=weak, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i64 %t2
     return i64 %t3
 }

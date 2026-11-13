@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = call obj<4x4> @make_owner__2(%t6, %t7, %t8)
     copyobj 4x4 %t9, %t5
     %t10 = addr $two
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp ne i32 %t12, 2
     branch %t13, ^if_then_1, ^if_else_2
@@ -38,7 +38,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_3:
     %t14 = addr $three
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp ne i32 %t16, 3
     branch %t17, ^if_then_4, ^if_else_5
@@ -102,7 +102,7 @@ function @owner_int___owner(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [
     %t1 = const i64 2
     %t2 = convert trunc i32 i64 %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }
@@ -121,7 +121,7 @@ function @owner_longint___owner(%this : ptr [object_bytes=4], %__param1 : obj<1x
     %t1 = const i64 3
     %t2 = convert trunc i32 i64 %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }

@@ -133,7 +133,7 @@ function @by_value() -> i32 [binding=strong, object=_Z8by_valuev] {
 
   block ^land_rhs_10:
     %t11 = load typed ptr $p
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp eq i32 %t13, 7
     store typed i64 %t14, $land__3
@@ -438,7 +438,7 @@ function @class_still_works() -> i32 [binding=strong, object=_Z17class_still_wor
     eh_try ^catch_dispatch_1
     %t1 = addr $thrown
     %t2 = addr $thrown
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 3, %t3
     %t4 = call ptr @__external_runtime____cxa_allocate_exception(4)
     %t5 = addr $thrown
@@ -464,7 +464,7 @@ function @class_still_works() -> i32 [binding=strong, object=_Z17class_still_wor
     eh_cleanup ^catch_cleanup_6
     store typed ptr %t10, $b
     %t11 = load typed ptr $b
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp eq i32 %t13, 3
     branch %t14, ^cond_then_7, ^cond_else_8

@@ -27,7 +27,7 @@ function @ns__core___cppgm_class_template_identity_1___init() -> u8 [binding=wea
     %t1 = addr $a
     call void @ns__core___cppgm_class_template_identity_1___holder_arg__holder_arg(%t1)
     %t2 = addr $a
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     return u8 1
 }
 function @ns__core___cppgm_class_template_identity_1___holder_arg__holder_arg(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN2ns4coreI14factory_markerIXadL_ZNS_4markEEEEE10holder_argC1Ev, inline_hint=yes] {
@@ -36,7 +36,7 @@ function @ns__core___cppgm_class_template_identity_1___holder_arg__holder_arg(%t
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @factory_class__ns__mark_int_int___factory_class(%t2)
     return void
 }

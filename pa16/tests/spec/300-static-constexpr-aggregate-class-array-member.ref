@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr @tables_true___data
     %t2 = binary mul i64 1, 4
     %t3 = index inbounds i8 [projection=array_element] %t1, %t2
-    %t4 = index i8 [projection=field] %t3, 2
+    %t4 = index inbounds i8 [projection=field] %t3, 2
     %t5 = load typed u16 %t4
     %t6 = convert zext i32 u16 %t5
     %t7 = cmp eq i32 %t6, 244

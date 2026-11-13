@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $e
     %t2 = addr $e
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed u32 3, %t3
     %t4 = addr $e
     %t5 = call u32 @engine_unsignedint_1_0_2___run(%t4)
@@ -30,7 +30,7 @@ function @engine_unsignedint_1_0_2___run(%this : ptr [object_bytes=4]) -> u32 [b
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed u32 %t2
     %t4 = convert zext i64 u32 %t3
     %t5 = call i64 @helper_1_0_2_4294967295___next(%t4)

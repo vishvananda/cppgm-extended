@@ -7,14 +7,14 @@ function @operator_(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pa
     store typed ptr %lhs, $lhs
     store typed ptr %rhs, $rhs
     %t1 = load typed ptr $lhs
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = cmp eq i32 %t3, 1
     branch %t4, ^land_rhs_1, ^land_short_2
 
   block ^land_rhs_1:
     %t5 = load typed ptr $rhs
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 2
     store typed i64 %t8, $land__1
@@ -38,14 +38,14 @@ function @operator___2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr 
     store typed ptr %lhs, $lhs
     store typed ptr %rhs, $rhs
     %t1 = load typed ptr $lhs
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = cmp eq i32 %t3, 1
     branch %t4, ^land_rhs_1, ^land_short_2
 
   block ^land_rhs_1:
     %t5 = load typed ptr $rhs
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 2
     store typed i64 %t8, $land__1
@@ -68,14 +68,14 @@ function @operator__(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [p
     store typed ptr %lhs, $lhs
     store typed ptr %rhs, $rhs
     %t1 = load typed ptr $lhs
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $rhs
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = binary add nowrap i32 %t3, %t6
     %t8 = load typed ptr $lhs
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     store typed i32 %t7, %t9
     %t10 = load typed ptr $lhs
     return ptr %t10
@@ -88,15 +88,15 @@ function @operator____2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr
     store typed ptr %lhs, $lhs
     store typed ptr %rhs, $rhs
     %t1 = load typed ptr $lhs
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $rhs
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = binary add nowrap i32 %t3, %t6
     %t8 = binary add nowrap i32 %t7, 1
     %t9 = load typed ptr $lhs
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     store typed i32 %t8, %t10
     %t11 = load typed ptr $lhs
     return ptr %t11
@@ -109,15 +109,15 @@ function @operator____3(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr
     store typed ptr %lhs, $lhs
     store typed ptr %rhs, $rhs
     %t1 = load typed ptr $lhs
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $rhs
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = binary add nowrap i32 %t3, %t6
     %t8 = binary add nowrap i32 %t7, 2
     %t9 = load typed ptr $lhs
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     store typed i32 %t8, %t10
     %t11 = load typed ptr $lhs
     return ptr %t11
@@ -159,10 +159,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $a
     %t2 = addr $b
     %t3 = addr $a
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 1, %t4
     %t5 = addr $b
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 2, %t6
     store typed i32 0, $result
     %t7 = load typed i32 $result

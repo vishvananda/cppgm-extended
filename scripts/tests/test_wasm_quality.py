@@ -41,7 +41,7 @@ class WasmQuality(unittest.TestCase):
     def test_local_declarations_and_instructions_are_separate(self):
         self.assertEqual(self.metrics(bytes.fromhex("01027f200041016a0b")),
                          dict(code_bytes=9, locals=2, instructions=4,
-                              memory_ops=0, control_depth=0))
+                              memory_ops=0, zero_offset_memory_ops=0, control_depth=0))
 
     def test_simd_immediates_are_not_counted_as_instructions(self):
         body = b"\0\xfd\x0c" + bytes(range(16)) + b"\xfd\x1b\0\x0b"
@@ -53,6 +53,14 @@ class WasmQuality(unittest.TestCase):
         metrics = self.metrics(bytes.fromhex("00fd54000003fc0a00000b"))
         self.assertEqual(metrics["instructions"], 3)
         self.assertEqual(metrics["memory_ops"], 2)
+
+    def test_memory_offsets_are_separate_from_alignment(self):
+        # Scalar loads/stores and a SIMD lane load, with different offsets.
+        metrics = self.metrics(bytes.fromhex("00280210360200fd540000030b"))
+        self.assertEqual(metrics["memory_ops"], 3)
+        self.assertEqual(metrics["zero_offset_memory_ops"], 2)
+        metrics = self.metrics(bytes.fromhex("002800ffffffff0f0b"))
+        self.assertEqual(metrics["zero_offset_memory_ops"], 0)
 
     def test_nested_control_and_branch_table(self):
         metrics = self.metrics(bytes.fromhex("00024003400e0100010b0b0b"))

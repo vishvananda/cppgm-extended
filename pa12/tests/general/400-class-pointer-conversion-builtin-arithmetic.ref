@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $p
     %t3 = addr $values
     %t4 = addr $p
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     %t6 = addr $p
     %t7 = call ptr @pointer__operatorint_(%t6)
@@ -42,7 +42,7 @@ function @pointer__operatorint_(%this : ptr [object_bytes=8]) -> ptr [binding=we
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     return ptr %t3
 }

@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = load typed ptr @alias
     store typed i32 11, %t1
     %t2 = addr @observer
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed u8 %t3
     branch %t4, ^land_rhs_4, ^land_short_5
 
@@ -156,7 +156,7 @@ function @Observer__Observer(%this : ptr [object_bytes=1]) -> void [binding=weak
     %t14 = load typed i64 $land__2
     %t15 = convert trunc u8 i64 %t14
     %t16 = load typed ptr $this
-    %t17 = index i8 [projection=field] %t16, 0
+    %t17 = index inbounds i8 [projection=field] %t16, 0
     store typed u8 %t15, %t17
     return void
 }

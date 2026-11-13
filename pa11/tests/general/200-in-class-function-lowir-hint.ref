@@ -13,7 +13,7 @@ function @Box__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_Z
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }

@@ -20,20 +20,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_4:
     %t4 = addr $braced
-    %t5 = index i8 [projection=field] %t4, 4
-    %t6 = index i8 [projection=field] %t5, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp ne i32 %t7, 40
     branch %t8, ^if_then_1, ^lor_rhs_3
 
   block ^lor_rhs_3:
     %t9 = addr $braced
-    %t10 = index i8 [projection=field] %t9, 4
-    %t11 = index i8 [projection=field] %t10, 4
+    %t10 = index inbounds i8 [projection=field] %t9, 4
+    %t11 = index inbounds i8 [projection=field] %t10, 4
     %t12 = load typed i32 %t11
     %t13 = addr $braced
     %t14 = index i8 %t13, 0
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp le i32 %t12, %t16
     branch %t17, ^if_then_1, ^if_else_2
@@ -68,8 +68,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_11:
     %t25 = addr $converted
-    %t26 = index i8 [projection=field] %t25, 4
-    %t27 = index i8 [projection=field] %t26, 0
+    %t26 = index inbounds i8 [projection=field] %t25, 4
+    %t27 = index inbounds i8 [projection=field] %t26, 0
     %t28 = load typed i32 %t27
     %t29 = cmp ne i32 %t28, 41
     branch %t29, ^if_then_9, ^if_else_10
@@ -104,22 +104,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_20:
     %t37 = addr $scalars
-    %t38 = index i8 [projection=field] %t37, 4
+    %t38 = index inbounds i8 [projection=field] %t37, 4
     %t39 = load typed i32 %t38
     %t40 = cmp ne i32 %t39, 5
     branch %t40, ^if_then_16, ^lor_rhs_19
 
   block ^lor_rhs_19:
     %t41 = addr $scalars
-    %t42 = index i8 [projection=field] %t41, 8
-    %t43 = index i8 [projection=field] %t42, 0
+    %t42 = index inbounds i8 [projection=field] %t41, 8
+    %t43 = index inbounds i8 [projection=field] %t42, 0
     %t44 = load typed i32 %t43
     %t45 = cmp ne i32 %t44, 5
     branch %t45, ^if_then_16, ^lor_rhs_18
 
   block ^lor_rhs_18:
     %t46 = addr $scalars
-    %t47 = index i8 [projection=field] %t46, 16
+    %t47 = index inbounds i8 [projection=field] %t46, 16
     %t48 = load typed i32 %t47
     %t49 = cmp ne i32 %t48, 6
     branch %t49, ^if_then_16, ^if_else_17
@@ -154,17 +154,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_28:
     %t57 = addr $aggregates
-    %t58 = index i8 [projection=field] %t57, 4
-    %t59 = index i8 [projection=field] %t58, 0
+    %t58 = index inbounds i8 [projection=field] %t57, 4
+    %t59 = index inbounds i8 [projection=field] %t58, 0
     %t60 = load typed i32 %t59
     %t61 = cmp ne i32 %t60, 1
     branch %t61, ^if_then_25, ^lor_rhs_27
 
   block ^lor_rhs_27:
     %t62 = addr $aggregates
-    %t63 = index i8 [projection=field] %t62, 4
-    %t64 = index i8 [projection=field] %t63, 4
-    %t65 = index i8 [projection=field] %t64, 0
+    %t63 = index inbounds i8 [projection=field] %t62, 4
+    %t64 = index inbounds i8 [projection=field] %t63, 4
+    %t65 = index inbounds i8 [projection=field] %t64, 0
     %t66 = load typed i32 %t65
     %t67 = cmp ne i32 %t66, 2
     branch %t67, ^if_then_25, ^if_else_26
@@ -186,20 +186,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_31:
     %t69 = addr $aggregates
-    %t70 = index i8 [projection=field] %t69, 16
+    %t70 = index inbounds i8 [projection=field] %t69, 16
     %t71 = binary mul i64 0, 8
     %t72 = index inbounds i8 [projection=array_element] %t70, %t71
-    %t73 = index i8 [projection=field] %t72, 0
+    %t73 = index inbounds i8 [projection=field] %t72, 0
     %t74 = load typed i32 %t73
     %t75 = cmp ne i32 %t74, 3
     branch %t75, ^if_then_32, ^lor_rhs_34
 
   block ^lor_rhs_34:
     %t76 = addr $aggregates
-    %t77 = index i8 [projection=field] %t76, 16
+    %t77 = index inbounds i8 [projection=field] %t76, 16
     %t78 = binary mul i64 1, 8
     %t79 = index inbounds i8 [projection=array_element] %t77, %t78
-    %t80 = index i8 [projection=field] %t79, 0
+    %t80 = index inbounds i8 [projection=field] %t79, 0
     %t81 = load typed i32 %t80
     %t82 = cmp ne i32 %t81, 4
     branch %t82, ^if_then_32, ^if_else_33
@@ -213,7 +213,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_35:
     %t83 = addr $aggregates
-    %t84 = index i8 [projection=field] %t83, 32
+    %t84 = index inbounds i8 [projection=field] %t83, 32
     %t85 = index inbounds i32 [projection=array_element] %t84, 0
     %t86 = load typed i32 %t85
     %t87 = cmp ne i32 %t86, 7
@@ -221,7 +221,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_38:
     %t88 = addr $aggregates
-    %t89 = index i8 [projection=field] %t88, 32
+    %t89 = index inbounds i8 [projection=field] %t88, 32
     %t90 = index inbounds i32 [projection=array_element] %t89, 2
     %t91 = load typed i32 %t90
     %t92 = cmp ne i32 %t91, 9
@@ -257,23 +257,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_47:
     %t99 = addr $defaulted
     %t100 = index i8 %t99, 0
-    %t101 = index i8 [projection=field] %t100, 0
+    %t101 = index inbounds i8 [projection=field] %t100, 0
     %t102 = load typed i32 %t101
     %t103 = cmp ne i32 %t102, 30
     branch %t103, ^if_then_43, ^lor_rhs_46
 
   block ^lor_rhs_46:
     %t104 = addr $defaulted
-    %t105 = index i8 [projection=field] %t104, 4
-    %t106 = index i8 [projection=field] %t105, 0
+    %t105 = index inbounds i8 [projection=field] %t104, 4
+    %t106 = index inbounds i8 [projection=field] %t105, 0
     %t107 = load typed i32 %t106
     %t108 = cmp ne i32 %t107, 50
     branch %t108, ^if_then_43, ^lor_rhs_45
 
   block ^lor_rhs_45:
     %t109 = addr $defaulted
-    %t110 = index i8 [projection=field] %t109, 12
-    %t111 = index i8 [projection=field] %t110, 0
+    %t110 = index inbounds i8 [projection=field] %t109, 12
+    %t111 = index inbounds i8 [projection=field] %t110, 0
     %t112 = load typed i32 %t111
     %t113 = cmp ne i32 %t112, 51
     branch %t113, ^if_then_43, ^if_else_44
@@ -308,15 +308,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_55:
     %t121 = addr $templated
-    %t122 = index i8 [projection=field] %t121, 4
-    %t123 = index i8 [projection=field] %t122, 0
+    %t122 = index inbounds i8 [projection=field] %t121, 4
+    %t123 = index inbounds i8 [projection=field] %t122, 0
     %t124 = load typed i32 %t123
     %t125 = cmp ne i32 %t124, 60
     branch %t125, ^if_then_52, ^lor_rhs_54
 
   block ^lor_rhs_54:
     %t126 = addr $templated
-    %t127 = index i8 [projection=field] %t126, 12
+    %t127 = index inbounds i8 [projection=field] %t126, 12
     %t128 = load typed i32 %t127
     %t129 = cmp ne i32 %t128, 61
     branch %t129, ^if_then_52, ^if_else_53
@@ -357,7 +357,7 @@ function @Braced__Braced(%this : ptr [object_bytes=12], %__param1 : i32) -> void
     %t3 = load typed i32 $__param1
     call void @Base__Base__base_entry(%t2, %t3)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     call void @Tracked__Tracked(%t5, 40)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -365,7 +365,7 @@ function @Braced__Braced(%this : ptr [object_bytes=12], %__param1 : i32) -> void
 
   block ^constructor_cleanup_1:
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 4
+    %t7 = index inbounds i8 [projection=field] %t6, 4
     call void @Tracked___Tracked(%t7)
     eh_end
     resume
@@ -378,13 +378,13 @@ function @Braced___Braced(%this : ptr [object_bytes=12]) -> void [unwind=no, bin
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     call void @Tracked___Tracked(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     call void @Tracked___Tracked(%t4)
     eh_end
     resume
@@ -404,7 +404,7 @@ function @Converted__Converted(%this : ptr [object_bytes=12], %__param1 : i32) -
     %t3 = load typed i32 $__param1
     call void @Base__Base__base_entry(%t2, %t3)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     call void @Tracked__Tracked(%t5, 41)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -412,7 +412,7 @@ function @Converted__Converted(%this : ptr [object_bytes=12], %__param1 : i32) -
 
   block ^constructor_cleanup_1:
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 4
+    %t7 = index inbounds i8 [projection=field] %t6, 4
     call void @Tracked___Tracked(%t7)
     eh_end
     resume
@@ -425,13 +425,13 @@ function @Converted___Converted(%this : ptr [object_bytes=12]) -> void [unwind=n
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     call void @Tracked___Tracked(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     call void @Tracked___Tracked(%t4)
     eh_end
     resume
@@ -451,24 +451,24 @@ function @Scalars__Scalars(%this : ptr [object_bytes=20], %__param1 : i32) -> vo
     %t3 = load typed i32 $__param1
     call void @Base__Base__base_entry(%t2, %t3)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     store typed i32 5, %t5
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 4
+    %t9 = index inbounds i8 [projection=field] %t8, 4
     %t10 = load typed i32 %t9
     call void @Tracked__Tracked(%t7, %t10)
     eh_cleanup ^constructor_cleanup_1
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 16
+    %t12 = index inbounds i8 [projection=field] %t11, 16
     store typed i32 6, %t12
     eh_end
     return void
 
   block ^constructor_cleanup_1:
     %t13 = load typed ptr $this
-    %t14 = index i8 [projection=field] %t13, 8
+    %t14 = index inbounds i8 [projection=field] %t13, 8
     call void @Tracked___Tracked(%t14)
     eh_end
     resume
@@ -481,13 +481,13 @@ function @Scalars___Scalars(%this : ptr [object_bytes=20]) -> void [unwind=no, b
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     call void @Tracked___Tracked(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 8
+    %t4 = index inbounds i8 [projection=field] %t3, 8
     call void @Tracked___Tracked(%t4)
     eh_end
     resume
@@ -508,16 +508,16 @@ function @Aggregates__Aggregates(%this : ptr [object_bytes=44], %__param1 : i32)
     %t3 = load typed i32 $__param1
     call void @Base__Base__base_entry(%t2, %t3)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
-    %t6 = index i8 [projection=field] %t5, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed i32 1, %t6
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 4
-    %t9 = index i8 [projection=field] %t8, 4
+    %t8 = index inbounds i8 [projection=field] %t7, 4
+    %t9 = index inbounds i8 [projection=field] %t8, 4
     call void @Tracked__Tracked(%t9, 2)
     eh_cleanup ^constructor_cleanup_1
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 16
+    %t11 = index inbounds i8 [projection=field] %t10, 16
     store typed i64 0, $constructor_array_index__1
     eh_try ^construction_cleanup_3
     call void @Tracked__Tracked(%t11, 3)
@@ -529,7 +529,7 @@ function @Aggregates__Aggregates(%this : ptr [object_bytes=44], %__param1 : i32)
 
   block ^constructor_cleanup_1:
     %t13 = load typed ptr $this
-    %t14 = index i8 [projection=field] %t13, 4
+    %t14 = index inbounds i8 [projection=field] %t13, 4
     call void @Pair___Pair(%t14)
     eh_end
     resume
@@ -560,15 +560,15 @@ function @Aggregates__Aggregates(%this : ptr [object_bytes=44], %__param1 : i32)
     eh_end
     eh_cleanup ^constructor_cleanup_8
     %t20 = load typed ptr $this
-    %t21 = index i8 [projection=field] %t20, 32
+    %t21 = index inbounds i8 [projection=field] %t20, 32
     %t22 = index i32 [projection=array_element] %t21, 0
     store typed i32 7, %t22
     %t23 = load typed ptr $this
-    %t24 = index i8 [projection=field] %t23, 32
+    %t24 = index inbounds i8 [projection=field] %t23, 32
     %t25 = index i32 [projection=array_element] %t24, 1
     store typed i32 8, %t25
     %t26 = load typed ptr $this
-    %t27 = index i8 [projection=field] %t26, 32
+    %t27 = index inbounds i8 [projection=field] %t26, 32
     %t28 = index i32 [projection=array_element] %t27, 2
     store typed i32 9, %t28
     eh_end
@@ -576,12 +576,12 @@ function @Aggregates__Aggregates(%this : ptr [object_bytes=44], %__param1 : i32)
 
   block ^constructor_cleanup_8:
     %t29 = load typed ptr $this
-    %t30 = index i8 [projection=field] %t29, 16
+    %t30 = index inbounds i8 [projection=field] %t29, 16
     %t31 = binary mul i64 1, 8
     %t32 = index i8 [projection=array_element] %t30, %t31
     call void @Tracked___Tracked(%t32)
     %t33 = load typed ptr $this
-    %t34 = index i8 [projection=field] %t33, 16
+    %t34 = index inbounds i8 [projection=field] %t33, 16
     %t35 = binary mul i64 0, 8
     %t36 = index i8 [projection=array_element] %t34, %t35
     call void @Tracked___Tracked(%t36)
@@ -596,7 +596,7 @@ function @Aggregates___Aggregates(%this : ptr [object_bytes=44]) -> void [unwind
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 16
+    %t2 = index inbounds i8 [projection=field] %t1, 16
     %t3 = binary mul i64 1, 8
     %t4 = index i8 [projection=array_element] %t2, %t3
     call void @Tracked___Tracked(%t4)
@@ -605,12 +605,12 @@ function @Aggregates___Aggregates(%this : ptr [object_bytes=44]) -> void [unwind
 
   block ^destructor_suffix_cleanup_3:
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 16
+    %t6 = index inbounds i8 [projection=field] %t5, 16
     %t7 = binary mul i64 0, 8
     %t8 = index i8 [projection=array_element] %t6, %t7
     call void @Tracked___Tracked(%t8)
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 4
+    %t10 = index inbounds i8 [projection=field] %t9, 4
     call void @Pair___Pair(%t10)
     eh_end
     resume
@@ -618,7 +618,7 @@ function @Aggregates___Aggregates(%this : ptr [object_bytes=44]) -> void [unwind
   block ^destructor_suffix_next_4:
     eh_cleanup ^destructor_suffix_cleanup_5
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 16
+    %t12 = index inbounds i8 [projection=field] %t11, 16
     %t13 = binary mul i64 0, 8
     %t14 = index i8 [projection=array_element] %t12, %t13
     call void @Tracked___Tracked(%t14)
@@ -627,30 +627,30 @@ function @Aggregates___Aggregates(%this : ptr [object_bytes=44]) -> void [unwind
 
   block ^destructor_suffix_cleanup_5:
     %t15 = load typed ptr $this
-    %t16 = index i8 [projection=field] %t15, 4
+    %t16 = index inbounds i8 [projection=field] %t15, 4
     call void @Pair___Pair(%t16)
     eh_end
     resume
 
   block ^destructor_suffix_next_6:
     %t17 = load typed ptr $this
-    %t18 = index i8 [projection=field] %t17, 4
+    %t18 = index inbounds i8 [projection=field] %t17, 4
     call void @Pair___Pair(%t18)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t19 = load typed ptr $this
-    %t20 = index i8 [projection=field] %t19, 16
+    %t20 = index inbounds i8 [projection=field] %t19, 16
     %t21 = binary mul i64 1, 8
     %t22 = index i8 [projection=array_element] %t20, %t21
     call void @Tracked___Tracked(%t22)
     %t23 = load typed ptr $this
-    %t24 = index i8 [projection=field] %t23, 16
+    %t24 = index inbounds i8 [projection=field] %t23, 16
     %t25 = binary mul i64 0, 8
     %t26 = index i8 [projection=array_element] %t24, %t25
     call void @Tracked___Tracked(%t26)
     %t27 = load typed ptr $this
-    %t28 = index i8 [projection=field] %t27, 4
+    %t28 = index inbounds i8 [projection=field] %t27, 4
     call void @Pair___Pair(%t28)
     eh_end
     resume
@@ -670,11 +670,11 @@ function @Defaulted__Defaulted__ov2(%this : ptr [object_bytes=20], %__param1 : i
     %t3 = load typed i32 $__param1
     call void @Defaults__Defaults__base_entry(%t2, %t3, 30)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     call void @Tracked__Tracked(%t5, 50)
     eh_cleanup ^constructor_cleanup_1
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 12
+    %t7 = index inbounds i8 [projection=field] %t6, 12
     call void @Tracked__Tracked(%t7, 51)
     eh_end
     eh_cleanup ^constructor_cleanup_2
@@ -683,14 +683,14 @@ function @Defaulted__Defaulted__ov2(%this : ptr [object_bytes=20], %__param1 : i
 
   block ^constructor_cleanup_1:
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 4
+    %t9 = index inbounds i8 [projection=field] %t8, 4
     call void @Tracked___Tracked(%t9)
     eh_end
     resume
 
   block ^constructor_cleanup_2:
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 12
+    %t11 = index inbounds i8 [projection=field] %t10, 12
     call void @Tracked___Tracked(%t11)
     jump ^constructor_cleanup_1
 }
@@ -703,30 +703,30 @@ function @Defaulted___Defaulted(%this : ptr [object_bytes=20]) -> void [unwind=n
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 12
+    %t2 = index inbounds i8 [projection=field] %t1, 12
     call void @Tracked___Tracked(%t2)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     call void @Tracked___Tracked(%t4)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     call void @Tracked___Tracked(%t6)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 12
+    %t8 = index inbounds i8 [projection=field] %t7, 12
     call void @Tracked___Tracked(%t8)
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 4
+    %t10 = index inbounds i8 [projection=field] %t9, 4
     call void @Tracked___Tracked(%t10)
     eh_end
     resume
@@ -746,18 +746,18 @@ function @Templated_Base___Templated(%this : ptr [object_bytes=16], %__param1 : 
     %t3 = load typed i32 $__param1
     call void @Base__Base__base_entry(%t2, %t3)
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     call void @Tracked__Tracked(%t5, 60)
     eh_cleanup ^constructor_cleanup_1
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 12
+    %t7 = index inbounds i8 [projection=field] %t6, 12
     store typed i32 61, %t7
     eh_end
     return void
 
   block ^constructor_cleanup_1:
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 4
+    %t9 = index inbounds i8 [projection=field] %t8, 4
     call void @Tracked___Tracked(%t9)
     eh_end
     resume
@@ -770,13 +770,13 @@ function @Templated_Base____Templated(%this : ptr [object_bytes=16]) -> void [un
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     call void @Tracked___Tracked(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     call void @Tracked___Tracked(%t4)
     eh_end
     resume
@@ -795,7 +795,7 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=4], %__param1 : i32) 
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @clock
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }
@@ -808,13 +808,13 @@ function @Tracked__Tracked(%this : ptr [object_bytes=8], %i : i32) -> void [bind
     store typed i32 %i, $i
     %t1 = load typed i32 $i
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @clock
     %t5 = binary add nowrap i32 %t4, 1
     store typed i32 %t5, @clock
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 4
+    %t7 = index inbounds i8 [projection=field] %t6, 4
     store typed i32 %t5, %t7
     %t8 = load typed i32 @constructed
     %t9 = binary add nowrap i32 %t8, 1
@@ -839,13 +839,13 @@ function @Pair___Pair(%this : ptr [object_bytes=12]) -> void [unwind=no, binding
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     call void @Tracked___Tracked(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     call void @Tracked___Tracked(%t4)
     eh_end
     resume
@@ -864,7 +864,7 @@ function @Defaults__Defaults__base_entry(%this : ptr [object_bytes=4], %__param1
     store typed i32 %b, $b
     %t1 = load typed i32 $b
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

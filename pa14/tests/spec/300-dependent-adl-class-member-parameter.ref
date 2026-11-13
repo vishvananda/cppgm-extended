@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $g
     call void @lib__vertex_list_graph_graph___const_constraints(%t3, %t4)
     %t5 = addr $check
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 7
     branch %t8, ^cond_then_1, ^cond_else_2
@@ -44,7 +44,7 @@ function @lib__vertex_list_graph_graph___const_constraints(%this : ptr [object_b
     %t1 = load typed ptr $cg
     %t2 = call i32 @user__num_vertices(%t1)
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }

@@ -10,9 +10,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $holder
     call void @Owner__assign(%t3, %t4)
     %t5 = addr $holder
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed ptr %t6
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i32 %t8
     %t10 = binary sub nowrap i32 %t9, 3
     return i32 %t10
@@ -23,17 +23,17 @@ function @Owner__Owner(%this : ptr [object_bytes=16]) -> void [binding=weak, obj
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     zeroinit 4x4 %t2
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed ptr %t4, %t6
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = index i8 %t8, 0
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     store typed i32 3, %t10
     return void
 }
@@ -49,7 +49,7 @@ function @Owner__assign(%this : ptr [object_bytes=16], %holder : ptr [pass=by_ad
     %t3 = load typed ptr %t2
     %t4 = index i8 %t3, 0
     %t5 = load typed ptr $holder
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     store typed ptr %t4, %t6
     return void
 }
@@ -59,7 +59,7 @@ function @Owner__get(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     return ptr %t2
 }
 alias object _ZN5OwnerC2Ev = @Owner__Owner

@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $source
     call void @YBits__YBits(%t1)
     %t2 = addr $source
-    %t3 = index i8 [projection=field] %t2, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 4
     %t4 = binary and i32 5, 7
     %t5 = copy u32 %t4
     %t6 = load i32 %t3
@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = binary or i32 %t7, %t4
     store i32 %t8, %t3
     %t9 = addr $source
-    %t10 = index i8 [projection=field] %t9, 4
+    %t10 = index inbounds i8 [projection=field] %t9, 4
     %t11 = binary and i32 17, 31
     %t12 = copy u32 %t11
     %t13 = binary shl i32 %t11, 3
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = binary or i32 %t15, %t13
     store i32 %t16, %t10
     %t17 = addr $source
-    %t18 = index i8 [projection=field] %t17, 8
+    %t18 = index inbounds i8 [projection=field] %t17, 8
     %t19 = binary and u8 9, 15
     %t20 = convert zext u32 u8 %t19
     %t21 = load u8 %t18
@@ -35,7 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t23 = binary or u8 %t22, %t19
     store u8 %t23, %t18
     %t24 = addr $source
-    %t25 = index i8 [projection=field] %t24, 8
+    %t25 = index inbounds i8 [projection=field] %t24, 8
     %t26 = binary and u8 12, 15
     %t27 = convert zext u32 u8 %t26
     %t28 = binary shl u8 %t26, 4
@@ -44,14 +44,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t31 = binary or u8 %t30, %t28
     store u8 %t31, %t25
     %t32 = addr $source
-    %t33 = index i8 [projection=field] %t32, 0
-    %t34 = index i8 [projection=field] %t33, 0
+    %t33 = index inbounds i8 [projection=field] %t32, 0
+    %t34 = index inbounds i8 [projection=field] %t33, 0
     store typed i32 23, %t34
     %t35 = addr $copied
     %t36 = addr $source
     call void @YBits__YBits__2(%t35, %t36)
     %t37 = addr $copied
-    %t38 = index i8 [projection=field] %t37, 4
+    %t38 = index inbounds i8 [projection=field] %t37, 4
     %t39 = load i32 %t38
     %t40 = binary and i32 %t39, 7
     %t41 = copy u32 %t40
@@ -61,7 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_1:
     %t44 = addr $copied
-    %t45 = index i8 [projection=field] %t44, 4
+    %t45 = index inbounds i8 [projection=field] %t44, 4
     %t46 = load i32 %t45
     %t47 = binary shr i32 %t46, 3
     %t48 = binary and i32 %t47, 31
@@ -81,7 +81,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_4:
     %t53 = addr $copied
-    %t54 = index i8 [projection=field] %t53, 8
+    %t54 = index inbounds i8 [projection=field] %t53, 8
     %t55 = load u8 %t54
     %t56 = binary and u8 %t55, 15
     %t57 = convert zext u32 u8 %t56
@@ -100,7 +100,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_7:
     %t61 = addr $copied
-    %t62 = index i8 [projection=field] %t61, 8
+    %t62 = index inbounds i8 [projection=field] %t61, 8
     %t63 = load u8 %t62
     %t64 = binary ushr u8 %t63, 4
     %t65 = binary and u8 %t64, 15
@@ -120,8 +120,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_10:
     %t70 = addr $copied
-    %t71 = index i8 [projection=field] %t70, 0
-    %t72 = index i8 [projection=field] %t71, 0
+    %t71 = index inbounds i8 [projection=field] %t70, 0
+    %t72 = index inbounds i8 [projection=field] %t71, 0
     %t73 = load typed i32 %t72
     %t74 = cmp ne i32 %t73, 23
     store typed i64 %t74, $lor__4
@@ -142,7 +142,7 @@ function @YBits__YBits(%this : ptr [object_bytes=12]) -> void [binding=weak, obj
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @YMember__YMember(%t2)
     return void
 }
@@ -154,21 +154,21 @@ function @YBits__YBits__2(%this : ptr [alias=noalias, object_bytes=12], %other :
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $other
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @YMember__YMember__ov2(%t2, %t4)
     %t5 = load typed ptr $other
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     %t7 = load u32 %t6
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 4
+    %t9 = index inbounds i8 [projection=field] %t8, 4
     store u32 %t7, %t9
     %t10 = load typed ptr $other
-    %t11 = index i8 [projection=field] %t10, 8
+    %t11 = index inbounds i8 [projection=field] %t10, 8
     %t12 = load u8 %t11
     %t13 = load typed ptr $this
-    %t14 = index i8 [projection=field] %t13, 8
+    %t14 = index inbounds i8 [projection=field] %t13, 8
     store u8 %t12, %t14
     return void
 }
@@ -178,7 +178,7 @@ function @YMember__YMember(%this : ptr [object_bytes=4]) -> void [binding=weak, 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -190,10 +190,10 @@ function @YMember__YMember__ov2(%this : ptr [alias=noalias, object_bytes=4], %ot
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     return void
 }

@@ -25,7 +25,7 @@ function @X__operatorT(%this : ptr [object_bytes=4]) -> obj<4x4> [result_classes
     store typed ptr %this, $this
     %t1 = addr $retobj__1
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     copyobj 4x4 %t3, %t1
     return obj<4x4> $retobj__1
 }

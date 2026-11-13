@@ -89,7 +89,7 @@ function @iterator__iterator(%this : ptr [object_bytes=1]) -> void [binding=weak
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @member__member(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -97,7 +97,7 @@ function @iterator__iterator(%this : ptr [object_bytes=1]) -> void [binding=weak
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @member___member(%t4)
     eh_end
     resume
@@ -118,9 +118,9 @@ function @iterator__iterator__2(%this : ptr [alias=noalias, object_bytes=1], %ot
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $other
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @member__member__ov2(%t2, %t4)
     return void
 }
@@ -132,13 +132,13 @@ function @iterator___iterator(%this : ptr [object_bytes=1]) -> void [unwind=no, 
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @member___member(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @member___member(%t4)
     eh_end
     resume

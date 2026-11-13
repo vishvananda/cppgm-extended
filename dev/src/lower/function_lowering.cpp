@@ -1196,6 +1196,15 @@ lowir::Value FunctionLowering::address_of(const Place& place)
 	return emit_value(inst, program_.pointer_type());
 }
 
+lowir::Value FunctionLowering::field_address(lowir::Value object, uint64_t offset)
+{
+	// Called for recorded members of an existing object or its initialization
+	// storage. Synthetic byte/ABI offsets do not inherit this allocation proof.
+	return index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, object,
+		integer(lowir::Type::scalar(lowir::TypeKind::I64), offset), lowir::IndexBounds::InBounds)
+		.value;
+}
+
 RValue FunctionLowering::index(
 	lowir::Type element, uint8_t projection, lowir::Value base, const RValue& offset, lowir::IndexBounds bounds)
 {

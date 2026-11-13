@@ -20,7 +20,7 @@ function @shared_ptr_X_int___cppgm_class_template_identity_1___shared_ptr(%this 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -42,10 +42,10 @@ function @weak_ptr_Y_int___cppgm_class_template_identity_1___weak_ptr(%this : pt
     store typed ptr %this, $this
     store typed ptr %r, $r
     %t1 = load typed ptr $r
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     return void
 }
@@ -55,7 +55,7 @@ function @shared_ptr_Y_int___cppgm_class_template_identity_1___shared_ptr(%this 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }

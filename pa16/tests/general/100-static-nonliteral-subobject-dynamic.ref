@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_1:
     %t3 = addr @holder
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp ne i32 %t5, 2
     store typed i64 %t6, $lor__1
@@ -35,8 +35,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_4:
     %t8 = addr @holder
-    %t9 = index i8 [projection=field] %t8, 4
-    %t10 = index i8 [projection=field] %t9, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 4
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp ne i32 %t11, 1
     store typed i64 %t12, $lor__2
@@ -71,13 +71,13 @@ function @Early__Early(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr @holder
-    %t2 = index i8 [projection=field] %t1, 4
-    %t3 = index i8 [projection=field] %t2, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 4
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     store typed i32 %t4, @observed
     %t5 = addr @holder
-    %t6 = index i8 [projection=field] %t5, 4
-    %t7 = index i8 [projection=field] %t6, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 4
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed i32 7, %t7
     return void
 }
@@ -87,10 +87,10 @@ function @Holder__Holder(%this : ptr [object_bytes=8]) -> void [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 2, %t2
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     call void @Count__Count(%t4)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -98,7 +98,7 @@ function @Holder__Holder(%this : ptr [object_bytes=8]) -> void [binding=weak, ob
 
   block ^constructor_cleanup_1:
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     call void @Count___Count(%t6)
     eh_end
     resume
@@ -112,7 +112,7 @@ function @Count__Count(%this : ptr [object_bytes=4]) -> void [binding=weak, obje
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @calls
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }

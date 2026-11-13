@@ -23,7 +23,7 @@ function @A__A(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, ob
     store typed ptr %p, $p
     %t1 = load typed ptr $p
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -35,13 +35,13 @@ function @A__A__ov2(%this : ptr [alias=noalias, object_bytes=8], %a : ptr [pass=
     store typed ptr %this, $this
     store typed ptr %a, $a
     %t1 = load typed ptr $a
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed ptr %t7
     %t9 = load typed i32 %t8
     %t10 = binary add nowrap i32 %t9, 1

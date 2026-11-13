@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $blank
     %t2 = addr $blank
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store i8 98, %t3
     %t4 = addr $integer
     call void @Wrapper_Valid___Rebind_int___Rebind(%t4, 7)
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_1:
     %t9 = addr $blank
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load i8 %t10
     %t12 = convert sext i32 i8 %t11
     %t13 = cmp ne i32 %t12, 98
@@ -44,7 +44,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_4:
     %t15 = addr @global
-    %t16 = index i8 [projection=field] %t15, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     %t17 = load i8 %t16
     %t18 = convert sext i32 i8 %t17
     %t19 = cmp ne i32 %t18, 103
@@ -100,7 +100,7 @@ function @Wrapper_Valid___Rebind_int___Rebind(%this : ptr [object_bytes=4], %n :
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -113,7 +113,7 @@ function @Wrapper_Valid____Rebind_char___Rebind(%this : ptr [object_bytes=1], %n
     store i8 %n, $n
     %t1 = load i8 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store i8 %t1, %t3
     return void
 }
@@ -123,7 +123,7 @@ function @Wrapper_Valid___Rebind_int___get(%this : ptr [object_bytes=4]) -> i32 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     return i32 %t3
 }
@@ -133,7 +133,7 @@ function @Wrapper_Valid____Rebind_char___get(%this : ptr [object_bytes=1]) -> i8
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load i8 %t2
     return i8 %t3
 }

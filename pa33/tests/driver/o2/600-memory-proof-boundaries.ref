@@ -7,7 +7,7 @@ function @fields(%a : ptr, %b : ptr) -> i32 [binding=strong, object=_Z6fieldsP4C
   block ^entry:
     %t1 = load typed i32 %a
     %t2 = binary add nowrap i32 %t1, 3
-    %t3 = index i8 [projection=field] %b, 4
+    %t3 = index inbounds i8 [projection=field] %b, 4
     store typed i32 %t2, %t3
     %t4 = load typed i32 %a
     %t5 = binary add nowrap i32 %t1, %t4
@@ -133,18 +133,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $c
     %t2 = load volatile i32 $input
     store typed i32 %t2, %t1
-    %t3 = index i8 [projection=field] %t1, 4
+    %t3 = index inbounds i8 [projection=field] %t1, 4
     store typed i32 0, %t3
     %t4 = addr $d
     store typed i32 0, %t4
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     store typed i32 0, %t5
     %t6 = call i32 @fields(%t1, %t1)
     %t7 = cmp ne i32 %t6, 14
     branch %t7, ^if_then_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
-    %t8 = index i8 [projection=field] %t1, 4
+    %t8 = index inbounds i8 [projection=field] %t1, 4
     %t9 = load typed i32 %t8
     %t10 = cmp ne i32 %t9, 10
     branch %t10, ^if_then_2, ^if_end_3
@@ -158,7 +158,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t12, ^if_then_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t13 = index i8 [projection=field] %t4, 4
+    %t13 = index inbounds i8 [projection=field] %t4, 4
     %t14 = load typed i32 %t13
     %t15 = cmp ne i32 %t14, 10
     branch %t15, ^if_then_5, ^if_end_6

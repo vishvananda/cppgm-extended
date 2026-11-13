@@ -8,13 +8,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $b
     call void @Holder__Holder(%t2)
     %t3 = addr $a
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 7, %t4
     %t5 = addr $b
     %t6 = addr $a
     copyobj 4x4 %t6, %t5
     %t7 = addr $b
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i32 %t8
     return i32 %t9
 }

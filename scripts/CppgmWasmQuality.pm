@@ -22,7 +22,7 @@ sub function_metrics {
     my ($data) = @_;
     my $r = {data => $data, offset => 0};
     my %metrics = (code_bytes => length($data), locals => 0, instructions => 0,
-        memory_ops => 0, control_depth => 0);
+        memory_ops => 0, zero_offset_memory_ops => 0, control_depth => 0);
     for (1 .. number($r)) {
         $metrics{locals} += number($r);
         byte($r);
@@ -55,7 +55,8 @@ sub function_metrics {
             bytes($r, number($r));
         } elsif ($op >= 0x28 && $op <= 0x3e) {
             ++$metrics{memory_ops};
-            number($r) for 1 .. 2;
+            number($r); # alignment
+            ++$metrics{zero_offset_memory_ops} if number($r) == 0;
         } elsif ($op == 0x3f || $op == 0x40) {
             ++$metrics{memory_ops};
             number($r);
@@ -74,7 +75,8 @@ sub function_metrics {
             die "Unsupported SIMD extension in quality measurement\n" if $sub > 255;
             if ($sub <= 11 || ($sub >= 84 && $sub <= 93)) {
                 ++$metrics{memory_ops};
-                number($r) for 1 .. 2;
+                number($r); # alignment
+                ++$metrics{zero_offset_memory_ops} if number($r) == 0;
                 byte($r) if $sub >= 84 && $sub <= 91;
             } elsif ($sub == 12 || $sub == 13) {
                 bytes($r, 16);

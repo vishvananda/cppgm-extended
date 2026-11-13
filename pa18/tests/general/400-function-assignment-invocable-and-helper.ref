@@ -8,7 +8,7 @@ function @S__g(%this : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = addr $arg__1
     %t4 = call ptr @function_void_int____operator_(%t2, %t3)
     return void
@@ -39,7 +39,7 @@ function @S__S(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1S
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @function_void_int____function(%t2)
     return void
 }

@@ -78,8 +78,7 @@ lowir::Value FunctionLowering::subobject_of(lowir::Value object, const sema::Sub
 	if (init.base != nullptr)
 		return index(i8, ir_model::IPK_NONE, object, integer(i64, init.base->offset)).value;
 	const sema::VariableEntity* variable = static_cast<const sema::VariableEntity*>(init.member->variable);
-	const lowir::Value address =
-		index(i8, ir_model::IPK_FIELD, object, integer(i64, lowering_.member_offset(variable, location))).value;
+	const lowir::Value address = field_address(object, lowering_.member_offset(variable, location));
 	if (union_member(variable))
 		mark_untyped(address);
 	return address;
@@ -1019,8 +1018,6 @@ uint32_t FunctionLowering::copy_bit_fields(uint32_t first, uint32_t location)
 			break;
 		last = i;
 	}
-	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	if (!unit_transferable(first, last, field, location))
 	{
 		// Field by field: each value read and merged into the object's
@@ -1034,12 +1031,11 @@ uint32_t FunctionLowering::copy_bit_fields(uint32_t first, uint32_t location)
 			const BitField each = bit_field(variable, location);
 			const bool is_volatile = (variable->type->cv & sema::kVolatile) != 0;
 			Place from = Place();
-			from.storage = index(i8, ir_model::IPK_FIELD, source_object(), integer(i64, each.unit_offset)).value;
+			from.storage = field_address(source_object(), each.unit_offset);
 			from.is_volatile = is_volatile;
 			const RValue value = read_bit_field(each, from, false);
 			Place target = Place();
-			target.storage =
-				index(i8, ir_model::IPK_FIELD, this_pointer(location), integer(i64, each.unit_offset)).value;
+			target.storage = field_address(this_pointer(location), each.unit_offset);
 			target.is_volatile = is_volatile;
 			write_bit_field(each, target, to_unit(each, value, variable->type->unqualified), false);
 		}
@@ -1052,11 +1048,11 @@ uint32_t FunctionLowering::copy_bit_fields(uint32_t first, uint32_t location)
 			: unit_bits == 32                                   ? lowir::TypeKind::U32
 																: field.unit.kind());
 	Place from = Place();
-	from.storage = index(i8, ir_model::IPK_FIELD, source_object(), integer(i64, field.unit_offset)).value;
+	from.storage = field_address(source_object(), field.unit_offset);
 	from.untyped = true;
 	const RValue value = load(unit, from);
 	Place target = Place();
-	target.storage = index(i8, ir_model::IPK_FIELD, this_pointer(location), integer(i64, field.unit_offset)).value;
+	target.storage = field_address(this_pointer(location), field.unit_offset);
 	target.untyped = true;
 	store(unit, value, target);
 	return last;

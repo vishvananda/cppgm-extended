@@ -9,14 +9,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $value
     zeroinit 32x8 %t1
     %t2 = addr $value
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = cmp eq ptr %t4, 0
     branch %t5, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t6 = addr $value
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     %t8 = load typed u32 %t7
     %t9 = cmp eq u32 %t8, 0
     store typed i64 %t9, $land__2
@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_7:
     %t11 = addr $value
-    %t12 = index i8 [projection=field] %t11, 16
+    %t12 = index inbounds i8 [projection=field] %t11, 16
     %t13 = load typed ptr %t12
     %t14 = cmp eq ptr %t13, 0
     store typed i64 %t14, $land__3
@@ -48,7 +48,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_10:
     %t16 = addr $value
-    %t17 = index i8 [projection=field] %t16, 24
+    %t17 = index inbounds i8 [projection=field] %t16, 24
     %t18 = load typed i32 %t17
     %t19 = cmp eq i32 %t18, 0
     store typed i64 %t19, $land__4

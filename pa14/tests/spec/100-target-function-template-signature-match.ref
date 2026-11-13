@@ -11,7 +11,7 @@ function @call(%target : ptr) -> i32 [binding=strong, object=_Z4callPFiR4SinkPKc
     store typed ptr %target, $target
     %t1 = addr $sink
     %t2 = addr $sink
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 5, %t3
     %t4 = addr $sink
     %t5 = addr @__strlit__1
@@ -34,7 +34,7 @@ function @select(%sink : ptr [pass=by_address, object_bytes=4], %__param1 : ptr)
     store typed ptr %sink, $sink
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $sink
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = cmp eq i32 %t3, 5
     branch %t4, ^cond_then_1, ^cond_else_2

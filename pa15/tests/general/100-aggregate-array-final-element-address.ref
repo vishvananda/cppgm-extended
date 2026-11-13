@@ -6,13 +6,13 @@ function @inspect(%array : ptr [pass=by_address, object_bytes=16]) -> i32 [bindi
   block ^entry:
     store typed ptr %array, $array
     %t1 = load typed ptr $array
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary mul i64 0, 8
     %t4 = index inbounds i8 [projection=array_element] %t2, %t3
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed ptr %t5
     %t7 = load typed ptr $array
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = binary mul i64 0, 8
     %t10 = index inbounds i8 [projection=array_element] %t8, %t9
     %t11 = cmp eq ptr %t6, %t10
@@ -20,13 +20,13 @@ function @inspect(%array : ptr [pass=by_address, object_bytes=16]) -> i32 [bindi
 
   block ^land_rhs_4:
     %t12 = load typed ptr $array
-    %t13 = index i8 [projection=field] %t12, 0
+    %t13 = index inbounds i8 [projection=field] %t12, 0
     %t14 = binary mul i64 1, 8
     %t15 = index inbounds i8 [projection=array_element] %t13, %t14
-    %t16 = index i8 [projection=field] %t15, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     %t17 = load typed ptr %t16
     %t18 = load typed ptr $array
-    %t19 = index i8 [projection=field] %t18, 0
+    %t19 = index inbounds i8 [projection=field] %t18, 0
     %t20 = binary mul i64 1, 8
     %t21 = index inbounds i8 [projection=array_element] %t19, %t20
     %t22 = cmp eq ptr %t17, %t21
@@ -63,7 +63,7 @@ function @check() -> i32 [binding=weak, object=_Z5checkI5ArrayI4ItemLi2EEEiv] {
 
   block ^entry:
     %t1 = addr $arg__1
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Item__Item(%t2, 0)
     %t3 = index i8 %t2, 8
     call void @Item__Item(%t3, 1)
@@ -79,7 +79,7 @@ function @Item__Item(%this : ptr [object_bytes=8], %__param1 : i32) -> void [unw
     store typed i32 %__param1, $__param1
     %t1 = load typed ptr $this
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

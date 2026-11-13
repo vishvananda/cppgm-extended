@@ -81,7 +81,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $table
     %t2 = addr @quiet
     %t3 = addr $table
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     eh_try ^catch_dispatch_1
     %t5 = load typed ptr @quiet_pointer
@@ -93,7 +93,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = call i32 %t10(0) as (%arg0 : i32) -> i32 [unwind=no]
     %t12 = binary add nowrap i32 %t9, %t11
     %t13 = addr $table
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = load typed ptr %t14
     %t16 = call i32 %t15(0) as (%arg0 : i32) -> i32 [unwind=no]
     %t17 = binary add nowrap i32 %t12, %t16

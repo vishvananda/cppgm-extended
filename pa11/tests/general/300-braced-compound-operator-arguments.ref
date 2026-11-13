@@ -28,7 +28,7 @@ function @adl__operator__(%value : ptr [pass=by_address, object_bytes=4], %n : i
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $value
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary add nowrap i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -64,7 +64,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $sink
     %t2 = addr $sink
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 10, %t3
     %t4 = addr $sink
     %t5 = call ptr @left(%t4)
@@ -90,7 +90,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t24 = addr $sink
     %t25 = call ptr @Sink__operator____8(%t24, 8)
     %t26 = addr $sink
-    %t27 = index i8 [projection=field] %t26, 0
+    %t27 = index inbounds i8 [projection=field] %t26, 0
     %t28 = load typed i32 %t27
     %t29 = cmp ne i32 %t28, 15
     branch %t29, ^if_then_1, ^lor_rhs_5
@@ -120,7 +120,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_6:
     %t37 = addr $item
     %t38 = addr $item
-    %t39 = index i8 [projection=field] %t38, 0
+    %t39 = index inbounds i8 [projection=field] %t38, 0
     store typed i32 1, %t39
     %t40 = addr $item
     %t41 = call ptr @adl__operator__(%t40, 2)
@@ -131,12 +131,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t44 = addr $constant
     %t45 = addr $n
     %t46 = addr $constant
-    %t47 = index i8 [projection=field] %t46, 0
+    %t47 = index inbounds i8 [projection=field] %t46, 0
     store typed ptr %t45, %t47
     %t48 = addr $constant
     %t49 = call ptr @Constant__operator__(%t48, 3)
     %t50 = addr $item
-    %t51 = index i8 [projection=field] %t50, 0
+    %t51 = index inbounds i8 [projection=field] %t50, 0
     %t52 = load typed i32 %t51
     %t53 = cmp ne i32 %t52, 3
     branch %t53, ^lor_short_8, ^lor_rhs_7
@@ -179,7 +179,7 @@ function @Sink__operator__(%this : ptr [object_bytes=4], %n : i32) -> ptr [bindi
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary add nowrap i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -195,7 +195,7 @@ function @Sink__operator____2(%this : ptr [object_bytes=4], %n : i32) -> ptr [bi
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary sub nowrap i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -211,7 +211,7 @@ function @Sink__operator____3(%this : ptr [object_bytes=4], %n : i32) -> ptr [bi
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary mul nowrap i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -227,7 +227,7 @@ function @Sink__operator____4(%this : ptr [object_bytes=4], %n : i32) -> ptr [bi
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary div i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -243,7 +243,7 @@ function @Sink__operator____5(%this : ptr [object_bytes=4], %n : i32) -> ptr [bi
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary mod i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -259,7 +259,7 @@ function @Sink__operator___(%this : ptr [object_bytes=4], %n : i32) -> ptr [bind
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary shl i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -275,7 +275,7 @@ function @Sink__operator_____2(%this : ptr [object_bytes=4], %n : i32) -> ptr [b
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary shr i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -291,7 +291,7 @@ function @Sink__operator____6(%this : ptr [object_bytes=4], %n : i32) -> ptr [bi
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary and i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -307,7 +307,7 @@ function @Sink__operator____7(%this : ptr [object_bytes=4], %n : i32) -> ptr [bi
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary xor i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -323,7 +323,7 @@ function @Sink__operator____8(%this : ptr [object_bytes=4], %n : i32) -> ptr [bi
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = binary or i32 %t4, %t1
     store typed i32 %t5, %t3
@@ -339,7 +339,7 @@ function @Constant__operator__(%this : ptr [object_bytes=8], %n : i32) -> ptr [b
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = load typed i32 %t4
     %t6 = binary add nowrap i32 %t5, %t1

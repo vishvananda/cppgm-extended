@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 4x4 %t8, %t4
     %t9 = call ptr @rule__operator_(%t3, %t4)
     %t10 = addr $tag
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 7
     branch %t13, ^cond_then_1, ^cond_else_2
@@ -43,7 +43,7 @@ function @rule__rule(%this : ptr [object_bytes=4]) -> void [binding=weak, object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -69,10 +69,10 @@ function @rule__operator_(%this : ptr [object_bytes=4], %parser : ptr [pass=by_a
     store typed ptr %this, $this
     store typed ptr %parser, $parser
     %t1 = load typed ptr $parser
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     %t6 = load typed ptr $this
     return ptr %t6
@@ -87,7 +87,7 @@ function @parser_action_rule_action___parser_action(%this : ptr [object_bytes=4]
     store typed ptr %__param1, $__param1
     store typed ptr %__param2, $__param2
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }

@@ -29,7 +29,7 @@ function @Property__Property(%this : ptr [object_bytes=4]) -> void [binding=weak
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed u32 1, %t2
     return void
 }
@@ -39,7 +39,7 @@ function @Property__operatorread_access_t(%this : ptr [object_bytes=4]) -> ptr [
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     return ptr %t2
 }
 alias object _ZN8PropertyC2Ev = @Property__Property

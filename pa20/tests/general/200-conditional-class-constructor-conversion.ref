@@ -36,7 +36,7 @@ function @Box__Box(%this : ptr [object_bytes=4], %__param1 : ptr) -> void [bindi
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }

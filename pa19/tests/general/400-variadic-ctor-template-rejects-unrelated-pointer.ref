@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = index i8 %t5, 0
     call void @Scoped__Scoped__ov2(%t3, %t4, %t6)
     %t7 = addr $scoped
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     %t9 = load typed i32 %t8
     %t10 = cmp eq i32 %t9, 7
     branch %t10, ^cond_then_1, ^cond_else_2
@@ -40,7 +40,7 @@ function @Scoped__Scoped__ov2(%this : ptr [object_bytes=4], %node : ptr, %alloc 
     store typed ptr %node, $node
     store typed ptr %alloc, $alloc
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     %t3 = load typed ptr $node
     %t4 = load typed ptr $alloc

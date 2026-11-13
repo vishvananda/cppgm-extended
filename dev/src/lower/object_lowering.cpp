@@ -469,8 +469,6 @@ void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::V
 	if (facts == nullptr)
 		return;
 	const lowir::Type pointer = program_.pointer_type();
-	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	const uint32_t first = facts->this_member != nullptr ? 1 : 0;
 	const bool copied_this = first != 0 && sema::ClassOf(facts->this_member->type) != nullptr;
 	const sema::Capture this_capture{ nullptr, facts->this_member, facts->this_constructor, nullptr };
@@ -501,7 +499,7 @@ void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::V
 		const sema::Capture* capture = is_this ? (copied_this ? &this_capture : nullptr) : &facts->captures[i - first];
 		const uint64_t offset = lowering_.member_offset(is_this ? facts->this_member : capture->member, location);
 		Place member = Place();
-		member.storage = offset == 0 ? object : index(i8, ir_model::IPK_FIELD, object, integer(i64, offset)).value;
+		member.storage = offset == 0 ? object : field_address(object, offset);
 		const sema::Type* type = capture != nullptr ? capture->member->type : nullptr;
 		if (pending && capture != nullptr && copy_throws(*capture))
 		{
@@ -1871,9 +1869,7 @@ lowir::Value FunctionLowering::subobject_address(
 			integer(lowir::Type::scalar(lowir::TypeKind::I64), base->offset))
 			.value;
 	const sema::VariableEntity* variable = static_cast<const sema::VariableEntity*>(member->variable);
-	const lowir::Value address = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, object,
-		integer(lowir::Type::scalar(lowir::TypeKind::I64), this_member_offset(variable, location)))
-									 .value;
+	const lowir::Value address = field_address(object, this_member_offset(variable, location));
 	if (union_member(variable))
 		mark_untyped(address);
 	return address;

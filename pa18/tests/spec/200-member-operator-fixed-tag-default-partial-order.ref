@@ -68,7 +68,7 @@ function @tagged_argument_weight_tag_supplied_map___tagged_argument(%this : ptr 
     store typed ptr %v, $v
     %t1 = load typed ptr $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -81,7 +81,7 @@ function @tagged_argument_predecessor_tag_int___tagged_argument(%this : ptr [obj
     store typed ptr %v, $v
     %t1 = load typed ptr $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -97,7 +97,7 @@ function @arg_list___cppgm_class_template_identity_1_empty_arg_list___arg_list(%
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed ptr $tagged
     copyobj 8x8 %t5, %t4
     return void
@@ -116,7 +116,7 @@ function @arg_list___cppgm_class_template_identity_2___cppgm_class_template_iden
     %t3 = load typed ptr $next
     copyobj 8x8 %t3, %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     %t6 = load typed ptr $tagged
     copyobj 8x8 %t6, %t5
     return void
@@ -142,7 +142,7 @@ function @arg_list___cppgm_class_template_identity_2___cppgm_class_template_iden
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = call ptr @tagged_argument_weight_tag_supplied_map___get_value(%t2)
     return ptr %t3
 }
@@ -155,7 +155,7 @@ function @default__weight_tag_default_map___default_(%this : ptr [object_bytes=8
     store typed ptr %v, $v
     %t1 = load typed ptr $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -165,7 +165,7 @@ function @tagged_argument_weight_tag_supplied_map___get_value(%this : ptr [objec
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     return ptr %t3
 }

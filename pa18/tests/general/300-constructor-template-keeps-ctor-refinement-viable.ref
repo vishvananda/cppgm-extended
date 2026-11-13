@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @String__String(%t2, %t3)
     call void @Stream__Stream__ov2(%t1, %t2)
     %t4 = addr $stream
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t6, 2
     branch %t7, ^cond_then_1, ^cond_else_2
@@ -43,7 +43,7 @@ function @String__String(%this : ptr [object_bytes=8], %p : ptr) -> void [bindin
     store typed ptr %p, $p
     %t1 = load typed ptr $p
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -55,7 +55,7 @@ function @Stream__Stream__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pas
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 2, %t2
     return void
 }

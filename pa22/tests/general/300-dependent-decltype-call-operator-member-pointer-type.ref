@@ -35,7 +35,7 @@ function @invoke(%f1 : obj<1x1> [classes=none]) -> i32 [binding=weak, object=_Z6
     %t5 = addr $enc
     call void @first_callable__operator__(%t4, %t5)
     %t6 = addr $enc
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     return i32 %t8
 }
@@ -47,7 +47,7 @@ function @json_encoder_json___json_encoder(%this : ptr [object_bytes=4], %__para
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -59,7 +59,7 @@ function @first_callable__operator__(%this : ptr [object_bytes=1], %enc : ptr [p
     store typed ptr %this, $this
     store typed ptr %enc, $enc
     %t1 = load typed ptr $enc
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 7, %t2
     return void
 }

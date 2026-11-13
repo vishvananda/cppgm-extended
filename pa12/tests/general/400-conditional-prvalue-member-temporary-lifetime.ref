@@ -47,7 +47,7 @@ function @choose(%ret : ptr [pass=indirect_result, alias=exclusive_result, objec
     call void @Result__Result(%t6, %t7)
     eh_end
     eh_try ^cleanup_action_7
-    %t8 = index i8 [projection=field] %t6, 0
+    %t8 = index inbounds i8 [projection=field] %t6, 0
     call void @Owner__Owner__ov3(%ret, %t8)
     call void @Result___Result(%t6)
     eh_end
@@ -75,18 +75,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $result
     call void @choose(%t1, 0)
     %t2 = addr $result
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t6, 0
     branch %t7, ^if_then_1, ^lor_rhs_3
 
   block ^lor_rhs_3:
     %t8 = addr $result
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed ptr %t9
-    %t11 = index i8 [projection=field] %t10, 8
+    %t11 = index inbounds i8 [projection=field] %t10, 8
     %t12 = load typed i32 %t11
     %t13 = cmp ne i32 %t12, 7
     branch %t13, ^if_then_1, ^if_else_2
@@ -105,17 +105,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = addr $result__shadow2
     call void @choose(%t16, 1)
     %t17 = addr $result__shadow2
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     %t19 = load typed ptr %t18
-    %t20 = index i8 [projection=field] %t19, 4
+    %t20 = index inbounds i8 [projection=field] %t19, 4
     %t21 = load typed i32 %t20
     branch %t21, ^land_rhs_8, ^land_short_9
 
   block ^land_rhs_8:
     %t22 = addr $result__shadow2
-    %t23 = index i8 [projection=field] %t22, 0
+    %t23 = index inbounds i8 [projection=field] %t22, 0
     %t24 = load typed ptr %t23
-    %t25 = index i8 [projection=field] %t24, 8
+    %t25 = index inbounds i8 [projection=field] %t24, 8
     %t26 = load typed i32 %t25
     %t27 = cmp eq i32 %t26, 5
     store typed i64 %t27, $land__2
@@ -152,21 +152,21 @@ function @Owner__Owner(%this : ptr [object_bytes=8], %input : ptr) -> void [bind
     store typed ptr %input, $input
     %t1 = load typed ptr $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed ptr %t5
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 0
     branch %t9, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
+    %t11 = index inbounds i8 [projection=field] %t10, 0
     %t12 = load typed ptr %t11
-    %t13 = index i8 [projection=field] %t12, 4
+    %t13 = index inbounds i8 [projection=field] %t12, 4
     store typed i32 1, %t13
     jump ^if_end_3
 
@@ -175,9 +175,9 @@ function @Owner__Owner(%this : ptr [object_bytes=8], %input : ptr) -> void [bind
 
   block ^if_end_3:
     %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = load typed ptr %t15
-    %t17 = index i8 [projection=field] %t16, 0
+    %t17 = index inbounds i8 [projection=field] %t16, 0
     %t18 = load typed i32 %t17
     %t19 = binary add nowrap i32 %t18, 1
     store typed i32 %t19, %t17
@@ -191,23 +191,23 @@ function @Owner__Owner__ov2(%this : ptr [alias=noalias, object_bytes=8], %other 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed ptr %t7
-    %t9 = index i8 [projection=field] %t8, 4
+    %t9 = index inbounds i8 [projection=field] %t8, 4
     %t10 = load typed i32 %t9
     branch %t10, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed ptr %t12
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = load typed i32 %t14
     %t16 = binary add nowrap i32 %t15, 1
     store typed i32 %t16, %t14
@@ -225,15 +225,15 @@ function @Owner___Owner(%this : ptr [object_bytes=8]) -> void [unwind=no, bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     branch %t3, ^land_rhs_3, ^if_else_2
 
   block ^land_rhs_3:
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed ptr %t5
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = binary sub nowrap i32 %t8, 1
     store typed i32 %t9, %t7
@@ -242,9 +242,9 @@ function @Owner___Owner(%this : ptr [object_bytes=8]) -> void [unwind=no, bindin
 
   block ^if_then_1:
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = load typed ptr %t12
-    %t14 = index i8 [projection=field] %t13, 4
+    %t14 = index inbounds i8 [projection=field] %t13, 4
     store typed i32 0, %t14
     jump ^if_end_4
 
@@ -262,7 +262,7 @@ function @Result__Result(%this : ptr [object_bytes=8], %control : ptr) -> void [
     store typed ptr %this, $this
     store typed ptr %control, $control
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $control
     call void @Owner__Owner(%t2, %t3)
     eh_cleanup ^constructor_cleanup_1
@@ -271,7 +271,7 @@ function @Result__Result(%this : ptr [object_bytes=8], %control : ptr) -> void [
 
   block ^constructor_cleanup_1:
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     call void @Owner___Owner(%t5)
     eh_end
     resume
@@ -284,13 +284,13 @@ function @Owner__Owner__ov3(%this : ptr [alias=noalias, object_bytes=8], %other 
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed ptr %t3, %t5
     %t6 = load typed ptr $other
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed ptr 0, %t7
     return void
 }
@@ -302,13 +302,13 @@ function @Result___Result(%this : ptr [object_bytes=8]) -> void [unwind=no, bind
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Owner___Owner(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @Owner___Owner(%t4)
     eh_end
     resume

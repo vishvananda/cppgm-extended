@@ -88,7 +88,7 @@ function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [binding=weak,
     %t5 = index i8 %t4, 16
     store typed ptr %t5, %t3
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     store typed i32 7, %t7
     return void
 }
@@ -109,7 +109,7 @@ function @Derived__value(%this : ptr [object_bytes=16]) -> i32 [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = load typed i32 %t2
     return i32 %t3
 }

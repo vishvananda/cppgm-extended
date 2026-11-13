@@ -4,11 +4,11 @@ function @mutate(%value : u32, %state : ptr) -> u32 [binding=strong, object=_Z6m
     %t2 = binary mul u32 %t1, 33
     %t3 = binary xor u32 %value, %t2
     store typed u32 %t3, %state
-    %t4 = index i8 [projection=field] %state, 4
+    %t4 = index inbounds i8 [projection=field] %state, 4
     %t5 = load typed u32 %t4
     %t6 = binary add u32 %t5, 1
     store typed u32 %t6, %t4
-    %t7 = index i8 [projection=field] %state, 8
+    %t7 = index inbounds i8 [projection=field] %state, 8
     %t8 = load typed u32 %t7
     %t9 = binary xor u32 %value, %t8
     %t10 = binary mul u32 %t9, 17
@@ -37,9 +37,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $s0
     store typed u32 305419896, %t1
-    %t2 = index i8 [projection=field] %t1, 4
+    %t2 = index inbounds i8 [projection=field] %t1, 4
     store typed u32 0, %t2
-    %t3 = index i8 [projection=field] %t1, 8
+    %t3 = index inbounds i8 [projection=field] %t1, 8
     store typed u32 0, %t3
     %t4 = addr @mutate
     %t5 = call u32 @exercise(%t4, %t1)
@@ -49,9 +49,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_1:
     %t7 = addr $s1
     store typed u32 305419896, %t7
-    %t8 = index i8 [projection=field] %t7, 4
+    %t8 = index inbounds i8 [projection=field] %t7, 4
     store typed u32 0, %t8
-    %t9 = index i8 [projection=field] %t7, 8
+    %t9 = index inbounds i8 [projection=field] %t7, 8
     store typed u32 0, %t9
     %t10 = call u32 @exercise__2(%t4, %t7)
     %t11 = cmp ne u32 %t10, 2551510890
@@ -66,13 +66,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t13, ^if_then_6, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t14 = index i8 [projection=field] %t7, 4
+    %t14 = index inbounds i8 [projection=field] %t7, 4
     %t15 = load typed u32 %t14
     %t16 = cmp ne u32 %t15, 1
     branch %t16, ^if_then_6, ^lor_rhs_5
 
   block ^lor_rhs_5:
-    %t17 = index i8 [projection=field] %t7, 8
+    %t17 = index inbounds i8 [projection=field] %t7, 8
     %t18 = load typed u32 %t17
     %t19 = cmp ne u32 %t18, 882314565
     branch %t19, ^if_then_6, ^if_end_7
@@ -83,9 +83,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_7:
     %t20 = addr $s2
     store typed u32 305419896, %t20
-    %t21 = index i8 [projection=field] %t20, 4
+    %t21 = index inbounds i8 [projection=field] %t20, 4
     store typed u32 0, %t21
-    %t22 = index i8 [projection=field] %t20, 8
+    %t22 = index inbounds i8 [projection=field] %t20, 8
     store typed u32 0, %t22
     %t23 = call u32 @exercise__3(%t4, %t20)
     %t24 = cmp ne u32 %t23, 1873748474
@@ -97,13 +97,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t26, ^if_then_11, ^lor_rhs_9
 
   block ^lor_rhs_9:
-    %t27 = index i8 [projection=field] %t20, 4
+    %t27 = index inbounds i8 [projection=field] %t20, 4
     %t28 = load typed u32 %t27
     %t29 = cmp ne u32 %t28, 2
     branch %t29, ^if_then_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t30 = index i8 [projection=field] %t20, 8
+    %t30 = index inbounds i8 [projection=field] %t20, 8
     %t31 = load typed u32 %t30
     %t32 = cmp ne u32 %t31, 3066209789
     branch %t32, ^if_then_11, ^if_end_12
@@ -114,9 +114,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_12:
     %t33 = addr $s3
     store typed u32 305419896, %t33
-    %t34 = index i8 [projection=field] %t33, 4
+    %t34 = index inbounds i8 [projection=field] %t33, 4
     store typed u32 0, %t34
-    %t35 = index i8 [projection=field] %t33, 8
+    %t35 = index inbounds i8 [projection=field] %t33, 8
     store typed u32 0, %t35
     %t36 = call u32 @exercise__4(%t4, %t33)
     %t37 = cmp ne u32 %t36, 1370289332
@@ -128,13 +128,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t39, ^if_then_16, ^lor_rhs_14
 
   block ^lor_rhs_14:
-    %t40 = index i8 [projection=field] %t33, 4
+    %t40 = index inbounds i8 [projection=field] %t33, 4
     %t41 = load typed u32 %t40
     %t42 = cmp ne u32 %t41, 3
     branch %t42, ^if_then_16, ^lor_rhs_15
 
   block ^lor_rhs_15:
-    %t43 = index i8 [projection=field] %t33, 8
+    %t43 = index inbounds i8 [projection=field] %t33, 8
     %t44 = load typed u32 %t43
     %t45 = cmp ne u32 %t44, 4069710674
     branch %t45, ^if_then_16, ^if_end_17
@@ -145,9 +145,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_17:
     %t46 = addr $s4
     store typed u32 305419896, %t46
-    %t47 = index i8 [projection=field] %t46, 4
+    %t47 = index inbounds i8 [projection=field] %t46, 4
     store typed u32 0, %t47
-    %t48 = index i8 [projection=field] %t46, 8
+    %t48 = index inbounds i8 [projection=field] %t46, 8
     store typed u32 0, %t48
     %t49 = call u32 @exercise__5(%t4, %t46)
     %t50 = cmp ne u32 %t49, 300127489
@@ -159,13 +159,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t52, ^if_then_21, ^lor_rhs_19
 
   block ^lor_rhs_19:
-    %t53 = index i8 [projection=field] %t46, 4
+    %t53 = index inbounds i8 [projection=field] %t46, 4
     %t54 = load typed u32 %t53
     %t55 = cmp ne u32 %t54, 4
     branch %t55, ^if_then_21, ^lor_rhs_20
 
   block ^lor_rhs_20:
-    %t56 = index i8 [projection=field] %t46, 8
+    %t56 = index inbounds i8 [projection=field] %t46, 8
     %t57 = load typed u32 %t56
     %t58 = cmp ne u32 %t57, 4189306053
     branch %t58, ^if_then_21, ^if_end_22
@@ -176,9 +176,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_22:
     %t59 = addr $s5
     store typed u32 305419896, %t59
-    %t60 = index i8 [projection=field] %t59, 4
+    %t60 = index inbounds i8 [projection=field] %t59, 4
     store typed u32 0, %t60
-    %t61 = index i8 [projection=field] %t59, 8
+    %t61 = index inbounds i8 [projection=field] %t59, 8
     store typed u32 0, %t61
     %t62 = call u32 @exercise__6(%t4, %t59)
     %t63 = cmp ne u32 %t62, 2019334652
@@ -190,13 +190,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t65, ^if_then_26, ^lor_rhs_24
 
   block ^lor_rhs_24:
-    %t66 = index i8 [projection=field] %t59, 4
+    %t66 = index inbounds i8 [projection=field] %t59, 4
     %t67 = load typed u32 %t66
     %t68 = cmp ne u32 %t67, 5
     branch %t68, ^if_then_26, ^lor_rhs_25
 
   block ^lor_rhs_25:
-    %t69 = index i8 [projection=field] %t59, 8
+    %t69 = index inbounds i8 [projection=field] %t59, 8
     %t70 = load typed u32 %t69
     %t71 = cmp ne u32 %t70, 2741830639
     branch %t71, ^if_then_26, ^if_end_27
@@ -207,9 +207,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_27:
     %t72 = addr $s6
     store typed u32 305419896, %t72
-    %t73 = index i8 [projection=field] %t72, 4
+    %t73 = index inbounds i8 [projection=field] %t72, 4
     store typed u32 0, %t73
-    %t74 = index i8 [projection=field] %t72, 8
+    %t74 = index inbounds i8 [projection=field] %t72, 8
     store typed u32 0, %t74
     %t75 = call u32 @exercise__7(%t4, %t72)
     %t76 = cmp ne u32 %t75, 1250819180
@@ -221,13 +221,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t78, ^if_then_31, ^lor_rhs_29
 
   block ^lor_rhs_29:
-    %t79 = index i8 [projection=field] %t72, 4
+    %t79 = index inbounds i8 [projection=field] %t72, 4
     %t80 = load typed u32 %t79
     %t81 = cmp ne u32 %t80, 8
     branch %t81, ^if_then_31, ^lor_rhs_30
 
   block ^lor_rhs_30:
-    %t82 = index i8 [projection=field] %t72, 8
+    %t82 = index inbounds i8 [projection=field] %t72, 8
     %t83 = load typed u32 %t82
     %t84 = cmp ne u32 %t83, 1852791944
     branch %t84, ^if_then_31, ^if_end_32
@@ -238,9 +238,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_32:
     %t85 = addr $s7
     store typed u32 305419896, %t85
-    %t86 = index i8 [projection=field] %t85, 4
+    %t86 = index inbounds i8 [projection=field] %t85, 4
     store typed u32 0, %t86
-    %t87 = index i8 [projection=field] %t85, 8
+    %t87 = index inbounds i8 [projection=field] %t85, 8
     store typed u32 0, %t87
     %t88 = call u32 @exercise__8(%t4, %t85)
     %t89 = cmp ne u32 %t88, 3
@@ -249,9 +249,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_33:
     %t90 = addr $s8
     store typed u32 305419896, %t90
-    %t91 = index i8 [projection=field] %t90, 4
+    %t91 = index inbounds i8 [projection=field] %t90, 4
     store typed u32 0, %t91
-    %t92 = index i8 [projection=field] %t90, 8
+    %t92 = index inbounds i8 [projection=field] %t90, 8
     store typed u32 0, %t92
     %t93 = call u32 @exercise__9(%t4, %t90)
     %t94 = cmp ne u32 %t93, 4294967292
@@ -263,9 +263,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_35:
     %t95 = addr $s9
     store typed u32 305419896, %t95
-    %t96 = index i8 [projection=field] %t95, 4
+    %t96 = index inbounds i8 [projection=field] %t95, 4
     store typed u32 0, %t96
-    %t97 = index i8 [projection=field] %t95, 8
+    %t97 = index inbounds i8 [projection=field] %t95, 8
     store typed u32 0, %t97
     %t98 = call u32 @exercise__10(%t4, %t95)
     %t99 = cmp ne u32 %t98, 2551510888
@@ -280,13 +280,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t101, ^if_then_40, ^lor_rhs_38
 
   block ^lor_rhs_38:
-    %t102 = index i8 [projection=field] %t95, 4
+    %t102 = index inbounds i8 [projection=field] %t95, 4
     %t103 = load typed u32 %t102
     %t104 = cmp ne u32 %t103, 1
     branch %t104, ^if_then_40, ^lor_rhs_39
 
   block ^lor_rhs_39:
-    %t105 = index i8 [projection=field] %t95, 8
+    %t105 = index inbounds i8 [projection=field] %t95, 8
     %t106 = load typed u32 %t105
     %t107 = cmp ne u32 %t106, 882314565
     branch %t107, ^if_then_40, ^if_end_41
@@ -297,9 +297,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_41:
     %t108 = addr $s10
     store typed u32 305419896, %t108
-    %t109 = index i8 [projection=field] %t108, 4
+    %t109 = index inbounds i8 [projection=field] %t108, 4
     store typed u32 0, %t109
-    %t110 = index i8 [projection=field] %t108, 8
+    %t110 = index inbounds i8 [projection=field] %t108, 8
     store typed u32 0, %t110
     %t111 = call u32 @exercise__11(%t4, %t108)
     %t112 = cmp ne u32 %t111, 2421286339
@@ -311,13 +311,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t114, ^if_then_45, ^lor_rhs_43
 
   block ^lor_rhs_43:
-    %t115 = index i8 [projection=field] %t108, 4
+    %t115 = index inbounds i8 [projection=field] %t108, 4
     %t116 = load typed u32 %t115
     %t117 = cmp ne u32 %t116, 2
     branch %t117, ^if_then_45, ^lor_rhs_44
 
   block ^lor_rhs_44:
-    %t118 = index i8 [projection=field] %t108, 8
+    %t118 = index inbounds i8 [projection=field] %t108, 8
     %t119 = load typed u32 %t118
     %t120 = cmp ne u32 %t119, 3065061762
     branch %t120, ^if_then_45, ^if_end_46
@@ -328,9 +328,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_46:
     %t121 = addr $s11
     store typed u32 305419896, %t121
-    %t122 = index i8 [projection=field] %t121, 4
+    %t122 = index inbounds i8 [projection=field] %t121, 4
     store typed u32 0, %t122
-    %t123 = index i8 [projection=field] %t121, 8
+    %t123 = index inbounds i8 [projection=field] %t121, 8
     store typed u32 0, %t123
     %t124 = call u32 @exercise__12(%t4, %t121)
     %t125 = cmp ne u32 %t124, 939851475
@@ -342,13 +342,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t127, ^if_then_50, ^lor_rhs_48
 
   block ^lor_rhs_48:
-    %t128 = index i8 [projection=field] %t121, 4
+    %t128 = index inbounds i8 [projection=field] %t121, 4
     %t129 = load typed u32 %t128
     %t130 = cmp ne u32 %t129, 3
     branch %t130, ^if_then_50, ^lor_rhs_49
 
   block ^lor_rhs_49:
-    %t131 = index i8 [projection=field] %t121, 8
+    %t131 = index inbounds i8 [projection=field] %t121, 8
     %t132 = load typed u32 %t131
     %t133 = cmp ne u32 %t132, 3470039829
     branch %t133, ^if_then_50, ^if_end_51
@@ -359,9 +359,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_51:
     %t134 = addr $s12
     store typed u32 305419896, %t134
-    %t135 = index i8 [projection=field] %t134, 4
+    %t135 = index inbounds i8 [projection=field] %t134, 4
     store typed u32 0, %t135
-    %t136 = index i8 [projection=field] %t134, 8
+    %t136 = index inbounds i8 [projection=field] %t134, 8
     store typed u32 0, %t136
     %t137 = call u32 @exercise__13(%t4, %t134)
     %t138 = cmp ne u32 %t137, 73940559
@@ -373,13 +373,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t140, ^if_then_55, ^lor_rhs_53
 
   block ^lor_rhs_53:
-    %t141 = index i8 [projection=field] %t134, 4
+    %t141 = index inbounds i8 [projection=field] %t134, 4
     %t142 = load typed u32 %t141
     %t143 = cmp ne u32 %t142, 4
     branch %t143, ^if_then_55, ^lor_rhs_54
 
   block ^lor_rhs_54:
-    %t144 = index i8 [projection=field] %t134, 8
+    %t144 = index inbounds i8 [projection=field] %t134, 8
     %t145 = load typed u32 %t144
     %t146 = cmp ne u32 %t145, 124255015
     branch %t146, ^if_then_55, ^if_end_56
@@ -390,9 +390,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_56:
     %t147 = addr $s13
     store typed u32 305419896, %t147
-    %t148 = index i8 [projection=field] %t147, 4
+    %t148 = index inbounds i8 [projection=field] %t147, 4
     store typed u32 0, %t148
-    %t149 = index i8 [projection=field] %t147, 8
+    %t149 = index inbounds i8 [projection=field] %t147, 8
     store typed u32 0, %t149
     %t150 = call u32 @exercise__14(%t4, %t147)
     %t151 = cmp ne u32 %t150, 2946688875
@@ -404,13 +404,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t153, ^if_then_60, ^lor_rhs_58
 
   block ^lor_rhs_58:
-    %t154 = index i8 [projection=field] %t147, 4
+    %t154 = index inbounds i8 [projection=field] %t147, 4
     %t155 = load typed u32 %t154
     %t156 = cmp ne u32 %t155, 5
     branch %t156, ^if_then_60, ^lor_rhs_59
 
   block ^lor_rhs_59:
-    %t157 = index i8 [projection=field] %t147, 8
+    %t157 = index inbounds i8 [projection=field] %t147, 8
     %t158 = load typed u32 %t157
     %t159 = cmp ne u32 %t158, 2058572365
     branch %t159, ^if_then_60, ^if_end_61
@@ -421,9 +421,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_61:
     %t160 = addr $s14
     store typed u32 305419896, %t160
-    %t161 = index i8 [projection=field] %t160, 4
+    %t161 = index inbounds i8 [projection=field] %t160, 4
     store typed u32 0, %t161
-    %t162 = index i8 [projection=field] %t160, 8
+    %t162 = index inbounds i8 [projection=field] %t160, 8
     store typed u32 0, %t162
     %t163 = call u32 @exercise__15(%t4, %t160)
     %t164 = cmp ne u32 %t163, 1426575603
@@ -435,13 +435,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t166, ^if_then_65, ^lor_rhs_63
 
   block ^lor_rhs_63:
-    %t167 = index i8 [projection=field] %t160, 4
+    %t167 = index inbounds i8 [projection=field] %t160, 4
     %t168 = load typed u32 %t167
     %t169 = cmp ne u32 %t168, 8
     branch %t169, ^if_then_65, ^lor_rhs_64
 
   block ^lor_rhs_64:
-    %t170 = index i8 [projection=field] %t160, 8
+    %t170 = index inbounds i8 [projection=field] %t160, 8
     %t171 = load typed u32 %t170
     %t172 = cmp ne u32 %t171, 2403971506
     branch %t172, ^if_then_65, ^if_end_66
@@ -452,9 +452,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_66:
     %t173 = addr $s15
     store typed u32 305419896, %t173
-    %t174 = index i8 [projection=field] %t173, 4
+    %t174 = index inbounds i8 [projection=field] %t173, 4
     store typed u32 0, %t174
-    %t175 = index i8 [projection=field] %t173, 8
+    %t175 = index inbounds i8 [projection=field] %t173, 8
     store typed u32 0, %t175
     %t176 = call u32 @exercise__16(%t4, %t173)
     %t177 = cmp ne u32 %t176, 3

@@ -11,7 +11,7 @@ function @take(%t : obj<16x8>) -> i32 [binding=strong, object=_Z4take4Text] {
     %t1 = addr $t
     copyobj 16x8 %t, %t1
     %t2 = addr $t
-    %t3 = index i8 [projection=field] %t2, 8
+    %t3 = index inbounds i8 [projection=field] %t2, 8
     %t4 = load typed i32 %t3
     %t5 = cmp eq i32 %t4, 7
     branch %t5, ^cond_then_1, ^cond_else_2
@@ -48,7 +48,7 @@ function @Text__Text(%this : ptr [object_bytes=16], %p : ptr) -> void [binding=w
     store typed ptr %p, $p
     %t1 = load typed ptr $p
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed ptr $p
     %t5 = index inbounds i8 [projection=array_element] %t4, 0
@@ -68,7 +68,7 @@ function @Text__Text(%this : ptr [object_bytes=16], %p : ptr) -> void [binding=w
   block ^cond_end_3:
     %t9 = load typed i32 $cond__1
     %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 8
+    %t11 = index inbounds i8 [projection=field] %t10, 8
     store typed i32 %t9, %t11
     return void
 }

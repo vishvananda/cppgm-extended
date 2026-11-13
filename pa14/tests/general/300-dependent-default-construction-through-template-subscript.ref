@@ -10,12 +10,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $values
     %t3 = addr $key
     %t4 = call ptr @tiny_assoc_unsignedchar_value_box___subscript(%t2, %t3)
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 3, %t5
     %t6 = addr $values
     %t7 = addr $key
     %t8 = call ptr @tiny_assoc_unsignedchar_value_box___subscript(%t6, %t7)
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 3
     branch %t11, ^cond_then_1, ^cond_else_2
@@ -38,13 +38,13 @@ function @tiny_assoc_unsignedchar_value_box___tiny_assoc(%this : ptr [object_byt
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store u8 0, %t2
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     call void @value_box__value_box(%t4)
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed u8 0, %t6
     return void
 }
@@ -57,14 +57,14 @@ function @tiny_assoc_unsignedchar_value_box___subscript(%this : ptr [object_byte
     store typed ptr %this, $this
     store typed ptr %key, $key
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = load typed u8 %t2
     %t4 = cmp eq u8 %t3, 0
     branch %t4, ^if_then_1, ^lor_rhs_3
 
   block ^lor_rhs_3:
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load u8 %t6
     %t8 = load typed ptr $key
     %t9 = load u8 %t8
@@ -77,15 +77,15 @@ function @tiny_assoc_unsignedchar_value_box___subscript(%this : ptr [object_byte
     %t13 = load typed ptr $key
     %t14 = load u8 %t13
     %t15 = load typed ptr $this
-    %t16 = index i8 [projection=field] %t15, 0
+    %t16 = index inbounds i8 [projection=field] %t15, 0
     store u8 %t14, %t16
     %t17 = load typed ptr $this
-    %t18 = index i8 [projection=field] %t17, 4
+    %t18 = index inbounds i8 [projection=field] %t17, 4
     %t19 = addr $arg__1
     call void @value_box__value_box(%t19)
     copyobj 4x4 %t19, %t18
     %t20 = load typed ptr $this
-    %t21 = index i8 [projection=field] %t20, 8
+    %t21 = index inbounds i8 [projection=field] %t20, 8
     store typed u8 1, %t21
     jump ^if_end_4
 
@@ -94,7 +94,7 @@ function @tiny_assoc_unsignedchar_value_box___subscript(%this : ptr [object_byte
 
   block ^if_end_4:
     %t22 = load typed ptr $this
-    %t23 = index i8 [projection=field] %t22, 4
+    %t23 = index inbounds i8 [projection=field] %t22, 4
     return ptr %t23
 }
 function @value_box__value_box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN9value_boxC1Ev, inline_hint=yes] {
@@ -103,7 +103,7 @@ function @value_box__value_box(%this : ptr [object_bytes=4]) -> void [unwind=no,
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }

@@ -7,13 +7,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     zeroinit 16x8 %t1
     %t2 = addr $n
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr 0, %t4
     %t5 = addr $n
     %t6 = call ptr @descend(%t5)
     %t7 = addr $n
     %t8 = index i8 %t7, 0
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = cmp eq ptr %t6, %t9
     branch %t10, ^cond_then_1, ^cond_else_2
 
@@ -38,7 +38,7 @@ function @descend(%nd : ptr) -> ptr [binding=weak, object=_Z7descendIiEPP4baseP4
     %t2 = call ptr @addrof(%t1)
     %t3 = load typed ptr $nd
     %t4 = index i8 %t3, 0
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = call ptr @addrof__2(%t5)
     return ptr %t6
 }

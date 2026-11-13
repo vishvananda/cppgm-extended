@@ -85,7 +85,7 @@ function @combine_second_first___combine(%this : ptr [object_bytes=1], %np : ptr
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     return void
 }
 function @combine_third___cppgm_class_template_identity_1___combine(%this : ptr [object_bytes=2], %np : ptr [pass=by_address, object_bytes=1], %rest : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7combineI5thirdS_I6second5firstEEC1ERKS0_RKS3_, inline_hint=yes] {
@@ -102,7 +102,7 @@ function @combine_third___cppgm_class_template_identity_1___combine(%this : ptr 
     %t3 = load typed ptr $rest
     copyobj 1x1 %t3, %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 1
+    %t5 = index inbounds i8 [projection=field] %t4, 1
     return void
 }
 function @combine_fourth___cppgm_class_template_identity_2___combine(%this : ptr [object_bytes=3], %np : ptr [pass=by_address, object_bytes=1], %rest : ptr [pass=by_address, object_bytes=2]) -> void [binding=weak, object=_ZN7combineI6fourthS_I5thirdS_I6second5firstEEEC1ERKS0_RKS5_, inline_hint=yes] {
@@ -119,7 +119,7 @@ function @combine_fourth___cppgm_class_template_identity_2___combine(%this : ptr
     %t3 = load typed ptr $rest
     copyobj 2x1 %t3, %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 2
+    %t5 = index inbounds i8 [projection=field] %t4, 2
     return void
 }
 alias object _ZN7combineI6second5firstEC2ERKS0_RKS1_ = @combine_second_first___combine

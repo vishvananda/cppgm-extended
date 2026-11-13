@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^cleanup_resume_1
     %t3 = addr $holder
     %t4 = addr $holder
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = addr $arg__1
     %t7 = addr $first
     call void @Token__Token__ov2(%t6, %t7)
@@ -42,7 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^cleanup_action_5
     call void @Empty__Empty(%t5, %t6, %t8)
     %t10 = addr $holder
-    %t11 = index i8 [projection=field] %t10, 4
+    %t11 = index inbounds i8 [projection=field] %t10, 4
     store typed i32 7, %t11
     call void @Token___Token(%t8)
     call void @Token___Token(%t6)
@@ -60,7 +60,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_9:
     %t14 = addr $holder
-    %t15 = index i8 [projection=field] %t14, 4
+    %t15 = index inbounds i8 [projection=field] %t14, 4
     %t16 = load typed i32 %t15
     %t17 = cmp ne i32 %t16, 7
     branch %t17, ^if_then_7, ^if_else_8

@@ -19,15 +19,15 @@ function @main(%argc : i32, %__param1 : ptr) -> i32 [role=entry, binding=strong,
     %t1 = addr $h
     %t2 = load typed i32 $argc
     %t3 = addr $h
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     %t5 = addr $h
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     %t7 = index ptr [projection=array_element] %t6, 0
     %t8 = addr @__strlit__1
     store typed ptr %t8, %t7
     %t9 = addr $h
-    %t10 = index i8 [projection=field] %t9, 8
+    %t10 = index inbounds i8 [projection=field] %t9, 8
     %t11 = index inbounds ptr [projection=array_element] %t10, 0
     %t12 = load typed ptr %t11
     %t13 = index inbounds i8 [projection=array_element] %t12, 0
@@ -38,7 +38,7 @@ function @main(%argc : i32, %__param1 : ptr) -> i32 [role=entry, binding=strong,
 
   block ^land_rhs_4:
     %t17 = addr $h
-    %t18 = index i8 [projection=field] %t17, 8
+    %t18 = index inbounds i8 [projection=field] %t17, 8
     %t19 = index inbounds ptr [projection=array_element] %t18, 0
     %t20 = load typed ptr %t19
     %t21 = index inbounds i8 [projection=array_element] %t20, 2
@@ -58,7 +58,7 @@ function @main(%argc : i32, %__param1 : ptr) -> i32 [role=entry, binding=strong,
 
   block ^land_rhs_7:
     %t26 = addr $h
-    %t27 = index i8 [projection=field] %t26, 0
+    %t27 = index inbounds i8 [projection=field] %t26, 0
     %t28 = load typed i32 %t27
     %t29 = load typed i32 $argc
     %t30 = cmp eq i32 %t28, %t29

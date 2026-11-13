@@ -21,6 +21,7 @@ public:
 private:
 	void value(lowir::Value value, lowir::Type type);
 	void address(lowir::Value value);
+	uint32_t memory_address(lowir::Value value);
 	void constant(lowir::Literal bits, lowir::Type type);
 	void instruction(const lowir::Instruction& inst);
 	void call(const lowir::Instruction& inst);

@@ -166,17 +166,17 @@ function @S__S__base_entry(%this : ptr [object_bytes=8], %n : i32) -> void [bind
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = call i32 @next()
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     %t7 = load typed i32 @live
     %t8 = binary add nowrap i32 %t7, 1
     store typed i32 %t8, @live
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 4
+    %t10 = index inbounds i8 [projection=field] %t9, 4
     %t11 = load typed i32 %t10
     %t12 = addr @trace
     %t13 = load typed i32 @count
@@ -195,17 +195,17 @@ function @S__S(%this : ptr [object_bytes=8], %n : i32) -> void [binding=strong, 
     store typed i32 %n, $n
     %t1 = load typed i32 $n
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = call i32 @next()
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
+    %t6 = index inbounds i8 [projection=field] %t5, 4
     store typed i32 %t4, %t6
     %t7 = load typed i32 @live
     %t8 = binary add nowrap i32 %t7, 1
     store typed i32 %t8, @live
     %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 4
+    %t10 = index inbounds i8 [projection=field] %t9, 4
     %t11 = load typed i32 %t10
     %t12 = addr @trace
     %t13 = load typed i32 @count
@@ -223,20 +223,20 @@ function @S__S__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=8], %x 
     store typed ptr %this, $this
     store typed ptr %x, $x
     %t1 = load typed ptr $x
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     %t6 = call i32 @next()
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 4
+    %t8 = index inbounds i8 [projection=field] %t7, 4
     store typed i32 %t6, %t8
     %t9 = load typed i32 @live
     %t10 = binary add nowrap i32 %t9, 1
     store typed i32 %t10, @live
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 4
+    %t12 = index inbounds i8 [projection=field] %t11, 4
     %t13 = load typed i32 %t12
     %t14 = addr @trace
     %t15 = load typed i32 @count
@@ -254,20 +254,20 @@ function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=8], %x : ptr [pass=
     store typed ptr %this, $this
     store typed ptr %x, $x
     %t1 = load typed ptr $x
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
     %t6 = call i32 @next()
     %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 4
+    %t8 = index inbounds i8 [projection=field] %t7, 4
     store typed i32 %t6, %t8
     %t9 = load typed i32 @live
     %t10 = binary add nowrap i32 %t9, 1
     store typed i32 %t10, @live
     %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 4
+    %t12 = index inbounds i8 [projection=field] %t11, 4
     %t13 = load typed i32 %t12
     %t14 = addr @trace
     %t15 = load typed i32 @count
@@ -286,7 +286,7 @@ function @S___S__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, bi
     %t2 = binary sub nowrap i32 %t1, 1
     store typed i32 %t2, @live
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     %t5 = load typed i32 %t4
     %t6 = unary neg i32 %t5
     %t7 = addr @trace
@@ -306,7 +306,7 @@ function @S___S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=strong
     %t2 = binary sub nowrap i32 %t1, 1
     store typed i32 %t2, @live
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     %t5 = load typed i32 %t4
     %t6 = unary neg i32 %t5
     %t7 = addr @trace

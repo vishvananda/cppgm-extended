@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $x
     call void @X__X(%t1)
     %t2 = addr $x
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 3, %t3
     %t4 = addr @X__add
     %t5 = copy i64 %t4
@@ -48,7 +48,7 @@ function @X__X(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1X
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 0, %t2
     return void
 }
@@ -60,7 +60,7 @@ function @X__add(%this : ptr [object_bytes=4], %y : i32) -> i32 [binding=weak, o
     store typed ptr %this, $this
     store typed i32 %y, $y
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = load typed i32 $y
     %t5 = binary add nowrap i32 %t3, %t4

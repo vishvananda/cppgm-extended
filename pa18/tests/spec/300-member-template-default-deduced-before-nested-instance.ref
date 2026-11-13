@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t8 = load typed ptr $p
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 7
     store typed i64 %t11, $land__3
@@ -55,7 +55,7 @@ function @S__S__aggregate(%this : ptr [object_bytes=4], %x : i32) -> void [unwin
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -68,7 +68,7 @@ function @rev_S____rev__ov2(%this : ptr [object_bytes=8], %x : ptr) -> void [bin
     store typed ptr %x, $x
     %t1 = load typed ptr $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }
@@ -101,7 +101,7 @@ function @rev___cppgm_class_template_identity_1___rev__ov2(%this : ptr [object_b
     %t1 = addr $x
     copyobj 8x8 %x, %t1
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = addr $x
     copyobj 8x8 %t4, %t3
     return void
@@ -123,7 +123,7 @@ function @rev___cppgm_class_template_identity_1___operator_(%this : ptr [object_
     store typed ptr %this, $this
     %t1 = addr $tmp
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     copyobj 8x8 %t3, %t1
     %t4 = addr $tmp
     %t5 = call ptr @rev_S____operator__(%t4)
@@ -136,7 +136,7 @@ function @rev_S____operator__(%this : ptr [object_bytes=8]) -> ptr [binding=weak
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = binary mul i64 1, 4
     %t5 = index inbounds i8 %t3, %t4
@@ -151,7 +151,7 @@ function @rev_S____operator_(%this : ptr [object_bytes=8]) -> ptr [binding=weak,
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     store typed ptr %t3, $tmp
     %t4 = load typed ptr $tmp

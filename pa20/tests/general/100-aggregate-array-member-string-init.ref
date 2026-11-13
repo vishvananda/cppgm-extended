@@ -6,23 +6,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $s
     %t2 = addr $s
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = index i8 [projection=array_element] %t3, 0
     store i8 97, %t4
     %t5 = addr $s
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = index i8 [projection=array_element] %t6, 1
     store i8 98, %t7
     %t8 = addr $s
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = index i8 [projection=array_element] %t9, 2
     store i8 99, %t10
     %t11 = addr $s
-    %t12 = index i8 [projection=field] %t11, 0
+    %t12 = index inbounds i8 [projection=field] %t11, 0
     %t13 = index i8 [projection=array_element] %t12, 3
     store i8 0, %t13
     %t14 = addr $s
-    %t15 = index i8 [projection=field] %t14, 0
+    %t15 = index inbounds i8 [projection=field] %t14, 0
     %t16 = index inbounds i8 [projection=array_element] %t15, 2
     %t17 = load i8 %t16
     %t18 = convert sext i32 i8 %t17
@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t20 = addr $s
-    %t21 = index i8 [projection=field] %t20, 0
+    %t21 = index inbounds i8 [projection=field] %t20, 0
     %t22 = index inbounds i8 [projection=array_element] %t21, 3
     %t23 = load i8 %t22
     %t24 = convert sext i32 i8 %t23

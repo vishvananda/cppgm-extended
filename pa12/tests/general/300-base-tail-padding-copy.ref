@@ -37,14 +37,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = addr $target
     call void @Tagged__Tagged(%t11)
     %t12 = addr $source
-    %t13 = index i8 [projection=field] %t12, 1
+    %t13 = index inbounds i8 [projection=field] %t12, 1
     store i8 3, %t13
     %t14 = addr $target
-    %t15 = index i8 [projection=field] %t14, 1
+    %t15 = index inbounds i8 [projection=field] %t14, 1
     store i8 9, %t15
     %t16 = addr $source
     %t17 = index i8 %t16, 0
-    %t18 = index i8 [projection=field] %t17, 0
+    %t18 = index inbounds i8 [projection=field] %t17, 0
     %t19 = binary and u8 0, 1
     %t20 = convert zext u32 u8 %t19
     %t21 = load u8 %t18
@@ -53,7 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store u8 %t23, %t18
     %t24 = addr $source
     %t25 = index i8 %t24, 0
-    %t26 = index i8 [projection=field] %t25, 0
+    %t26 = index inbounds i8 [projection=field] %t25, 0
     %t27 = binary and u8 3, 3
     %t28 = convert zext u32 u8 %t27
     %t29 = binary shl u8 %t27, 1
@@ -67,7 +67,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t36 = index i8 %t35, 0
     copyobj 1x4 %t36, %t34
     %t37 = addr $target
-    %t38 = index i8 [projection=field] %t37, 1
+    %t38 = index inbounds i8 [projection=field] %t37, 1
     %t39 = load i8 %t38
     %t40 = convert sext i32 i8 %t39
     %t41 = cmp ne i32 %t40, 9
@@ -76,7 +76,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_9:
     %t42 = addr $target
     %t43 = index i8 %t42, 0
-    %t44 = index i8 [projection=field] %t43, 0
+    %t44 = index inbounds i8 [projection=field] %t43, 0
     %t45 = load u8 %t44
     %t46 = binary and u8 %t45, 1
     %t47 = convert zext u32 u8 %t46
@@ -87,7 +87,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_8:
     %t50 = addr $target
     %t51 = index i8 %t50, 0
-    %t52 = index i8 [projection=field] %t51, 0
+    %t52 = index inbounds i8 [projection=field] %t51, 0
     %t53 = load u8 %t52
     %t54 = binary ushr u8 %t53, 1
     %t55 = binary and u8 %t54, 3
@@ -107,7 +107,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t60 = addr $source
     copyobj 2x4 %t60, %t59
     %t61 = addr $copied
-    %t62 = index i8 [projection=field] %t61, 1
+    %t62 = index inbounds i8 [projection=field] %t61, 1
     %t63 = load i8 %t62
     %t64 = convert sext i32 i8 %t63
     %t65 = cmp ne i32 %t64, 3
@@ -116,7 +116,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_14:
     %t66 = addr $copied
     %t67 = index i8 %t66, 0
-    %t68 = index i8 [projection=field] %t67, 0
+    %t68 = index inbounds i8 [projection=field] %t67, 0
     %t69 = load u8 %t68
     %t70 = binary and u8 %t69, 1
     %t71 = convert zext u32 u8 %t70
@@ -127,7 +127,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_13:
     %t74 = addr $copied
     %t75 = index i8 %t74, 0
-    %t76 = index i8 [projection=field] %t75, 0
+    %t76 = index inbounds i8 [projection=field] %t75, 0
     %t77 = load u8 %t76
     %t78 = binary ushr u8 %t77, 1
     %t79 = binary and u8 %t78, 3
@@ -148,14 +148,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t84 = addr $second
     call void @Extended__Extended(%t84)
     %t85 = addr $first
-    %t86 = index i8 [projection=field] %t85, 5
+    %t86 = index inbounds i8 [projection=field] %t85, 5
     store i8 4, %t86
     %t87 = addr $second
-    %t88 = index i8 [projection=field] %t87, 5
+    %t88 = index inbounds i8 [projection=field] %t87, 5
     store i8 8, %t88
     %t89 = addr $first
     %t90 = index i8 %t89, 0
-    %t91 = index i8 [projection=field] %t90, 0
+    %t91 = index inbounds i8 [projection=field] %t90, 0
     store typed i32 7, %t91
     %t92 = addr $second
     %t93 = index i8 %t92, 0
@@ -163,7 +163,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t95 = index i8 %t94, 0
     copyobj 5x4 %t95, %t93
     %t96 = addr $second
-    %t97 = index i8 [projection=field] %t96, 5
+    %t97 = index inbounds i8 [projection=field] %t96, 5
     %t98 = load i8 %t97
     %t99 = convert sext i32 i8 %t98
     %t100 = cmp ne i32 %t99, 8
@@ -172,7 +172,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_19:
     %t101 = addr $second
     %t102 = index i8 %t101, 0
-    %t103 = index i8 [projection=field] %t102, 0
+    %t103 = index inbounds i8 [projection=field] %t102, 0
     %t104 = load typed i32 %t103
     %t105 = cmp ne i32 %t104, 7
     branch %t105, ^if_then_16, ^lor_rhs_18
@@ -180,7 +180,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_18:
     %t106 = addr $second
     %t107 = index i8 %t106, 0
-    %t108 = index i8 [projection=field] %t107, 4
+    %t108 = index inbounds i8 [projection=field] %t107, 4
     %t109 = load i8 %t108
     %t110 = convert sext i32 i8 %t109
     %t111 = cmp ne i32 %t110, 2
@@ -201,7 +201,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Pair__Pair(%t115)
     copyobj 5x4 %t115, %t114
     %t116 = addr $second
-    %t117 = index i8 [projection=field] %t116, 5
+    %t117 = index inbounds i8 [projection=field] %t116, 5
     %t118 = load i8 %t117
     %t119 = convert sext i32 i8 %t118
     %t120 = cmp ne i32 %t119, 8
@@ -210,7 +210,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_23:
     %t121 = addr $second
     %t122 = index i8 %t121, 0
-    %t123 = index i8 [projection=field] %t122, 0
+    %t123 = index inbounds i8 [projection=field] %t122, 0
     %t124 = load typed i32 %t123
     %t125 = cmp ne i32 %t124, 1
     branch %t125, ^if_then_21, ^if_else_22
@@ -250,10 +250,10 @@ function @Pair__Pair__base_entry(%this : ptr [object_bytes=8]) -> void [binding=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     store i8 2, %t4
     return void
 }
@@ -263,11 +263,11 @@ function @Bits__Bits__base_entry(%this : ptr [object_bytes=4]) -> void [binding=
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = binary and u8 1, 1
     store u8 %t3, %t2
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = binary and u8 3, 2
     %t7 = binary shl u8 %t6, 1
     %t8 = load u8 %t5
@@ -282,10 +282,10 @@ function @Pair__Pair(%this : ptr [object_bytes=8]) -> void [binding=weak, object
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 1, %t2
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     store i8 2, %t4
     return void
 }

@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i64 2, %t5
     call void @Pick__Pick__ov2(%t1, %t2)
     %t6 = addr $p
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 2
     branch %t9, ^cond_then_1, ^cond_else_2
@@ -41,7 +41,7 @@ function @Pick__Pick__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 2, %t2
     return void
 }

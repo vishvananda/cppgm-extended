@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $first
     call void @R_int___R__ov2(%t3, %t4)
     %t5 = addr $second
-    %t6 = index i8 [projection=field] %t5, 0
+    %t6 = index inbounds i8 [projection=field] %t5, 0
     %t7 = load typed ptr %t6
     %t8 = load typed i32 %t7
     %t9 = binary add nowrap i32 %t8, 2
@@ -31,7 +31,7 @@ function @R_int___R(%this : ptr [object_bytes=8], %input : ptr) -> void [binding
     store typed ptr %input, $input
     %t1 = load typed ptr $input
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

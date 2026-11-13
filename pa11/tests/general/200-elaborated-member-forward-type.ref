@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $o
     call void @Outer__set(%t2, 0)
     %t3 = addr $o
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed ptr %t4
     %t6 = cmp eq ptr %t5, 0
     branch %t6, ^cond_then_1, ^cond_else_2
@@ -33,7 +33,7 @@ function @Outer__set(%this : ptr [object_bytes=8], %q : ptr) -> void [binding=we
     store typed ptr %q, $q
     %t1 = load typed ptr $q
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     return void
 }

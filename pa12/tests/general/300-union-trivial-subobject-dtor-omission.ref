@@ -17,13 +17,13 @@ function @Wrapper___Wrapper(%this : ptr [object_bytes=16]) -> void [unwind=no, b
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     call void @Sink___Sink(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 8
+    %t4 = index inbounds i8 [projection=field] %t3, 8
     call void @Sink___Sink(%t4)
     eh_end
     resume

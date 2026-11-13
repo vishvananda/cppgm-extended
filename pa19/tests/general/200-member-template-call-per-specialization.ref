@@ -74,7 +74,7 @@ function @leaf_int___leaf(%this : ptr [object_bytes=4], %t : ptr [pass=by_addres
     %t1 = load typed ptr $t
     %t2 = load typed i32 %t1
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
 }
@@ -86,7 +86,7 @@ function @leaf_wide___leaf(%this : ptr [object_bytes=16], %t : ptr [pass=by_addr
     store typed ptr %this, $this
     store typed ptr %t, $t
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr $t
     copyobj 16x1 %t3, %t2
     return void

@@ -52,7 +52,7 @@ function @publish(%s : ptr) -> i32 [binding=strong, object=_Z7publishP4Self, no_
     %t2 = load typed i32 %t1
     %t3 = binary add nowrap i32 %t2, 4
     store typed i32 %t3, %t1
-    %t4 = index i8 [projection=field] %s, 8
+    %t4 = index inbounds i8 [projection=field] %s, 8
     %t5 = load typed i32 %t4
     return i32 %t5
 }
@@ -88,7 +88,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = call ptr @memset(%t7, 90, 8)
     store i8 113, %t7
     %t9 = load volatile i32 $n
-    %t10 = index i8 [projection=field] %t7, 4
+    %t10 = index inbounds i8 [projection=field] %t7, 4
     store typed i32 %t9, %t10
     %t11 = load i64 %t7
     %t12 = call i64 @copy(%t11)
@@ -233,7 +233,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_24:
     %t82 = addr $self
     %t83 = load volatile i32 $n
-    %t84 = index i8 [projection=field] %t82, 8
+    %t84 = index inbounds i8 [projection=field] %t82, 8
     store typed ptr %t84, %t82
     store typed i32 %t83, %t84
     %t85 = call i32 @publish(%t82)

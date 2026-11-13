@@ -20,13 +20,13 @@ function @YB___YB(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak
 
   block ^destructor_return_epilogue_2:
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @YA___YA(%t2)
     jump ^destructor_end_3
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @YA___YA(%t4)
     eh_end
     resume

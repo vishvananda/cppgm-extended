@@ -17,7 +17,7 @@ function @YB__YB(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @YA__YA(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
@@ -25,7 +25,7 @@ function @YB__YB(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @YA___YA(%t4)
     eh_end
     resume
@@ -38,13 +38,13 @@ function @YB___YB(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak
     eh_cleanup ^destructor_cleanup_1
     eh_end
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @YA___YA(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     call void @YA___YA(%t4)
     eh_end
     resume

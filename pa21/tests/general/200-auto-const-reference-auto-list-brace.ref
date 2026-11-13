@@ -62,7 +62,7 @@ function @std__initializer_list_int___size(%this : ptr [object_bytes=16]) -> i64
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
+    %t2 = index inbounds i8 [projection=field] %t1, 8
     %t3 = load typed i64 %t2
     return i64 %t3
 }
@@ -72,7 +72,7 @@ function @std__initializer_list_int___begin(%this : ptr [object_bytes=16]) -> pt
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     return ptr %t3
 }

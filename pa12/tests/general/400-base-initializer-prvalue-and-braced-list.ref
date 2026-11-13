@@ -9,10 +9,10 @@ function @make_plain() -> obj<8x4> [binding=strong, object=_Z10make_plainv] {
   block ^entry:
     %t1 = addr $plain
     %t2 = addr $plain
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 6, %t3
     %t4 = addr $plain
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     store typed i32 7, %t5
     %t6 = addr $retobj__1
     %t7 = addr $plain
@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @FromValue__FromValue(%t1)
     %t2 = addr $value
     %t3 = index i8 %t2, 0
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp ne i32 %t5, 5
     branch %t6, ^if_then_1, ^if_else_2
@@ -47,7 +47,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @FromCall__FromCall(%t7)
     %t8 = addr $call
     %t9 = index i8 %t8, 0
-    %t10 = index i8 [projection=field] %t9, 0
+    %t10 = index inbounds i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp ne i32 %t11, 6
     branch %t12, ^if_then_4, ^lor_rhs_6
@@ -55,7 +55,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_6:
     %t13 = addr $call
     %t14 = index i8 %t13, 0
-    %t15 = index i8 [projection=field] %t14, 4
+    %t15 = index inbounds i8 [projection=field] %t14, 4
     %t16 = load typed i32 %t15
     %t17 = cmp ne i32 %t16, 7
     branch %t17, ^if_then_4, ^if_else_5
@@ -71,7 +71,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Braced__Braced(%t18)
     %t19 = addr $braced
     %t20 = index i8 %t19, 0
-    %t21 = index i8 [projection=field] %t20, 0
+    %t21 = index inbounds i8 [projection=field] %t20, 0
     %t22 = load typed i32 %t21
     %t23 = cmp ne i32 %t22, 3
     branch %t23, ^if_then_8, ^lor_rhs_10
@@ -79,7 +79,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_10:
     %t24 = addr $braced
     %t25 = index i8 %t24, 0
-    %t26 = index i8 [projection=field] %t25, 4
+    %t26 = index inbounds i8 [projection=field] %t25, 4
     %t27 = load typed i32 %t26
     %t28 = cmp ne i32 %t27, 4
     branch %t28, ^if_then_8, ^if_else_9
@@ -121,7 +121,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t39, $partial
     %t40 = load typed ptr $partial
     %t41 = index i8 %t40, 0
-    %t42 = index i8 [projection=field] %t41, 0
+    %t42 = index inbounds i8 [projection=field] %t41, 0
     %t43 = load typed i32 %t42
     %t44 = cmp ne i32 %t43, 5
     branch %t44, ^if_then_16, ^lor_rhs_18
@@ -129,7 +129,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_18:
     %t45 = load typed ptr $partial
     %t46 = index i8 %t45, 0
-    %t47 = index i8 [projection=field] %t46, 4
+    %t47 = index inbounds i8 [projection=field] %t46, 4
     %t48 = load typed i32 %t47
     %t49 = cmp ne i32 %t48, 0
     branch %t49, ^if_then_16, ^if_else_17
@@ -171,9 +171,9 @@ function @Braced__Braced(%this : ptr [object_bytes=8]) -> void [binding=weak, ob
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 3, %t3
-    %t4 = index i8 [projection=field] %t2, 4
+    %t4 = index inbounds i8 [projection=field] %t2, 4
     store typed i32 4, %t4
     return void
 }
@@ -184,9 +184,9 @@ function @Partial__Partial(%this : ptr [object_bytes=8]) -> void [binding=weak, 
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 5, %t3
-    %t4 = index i8 [projection=field] %t2, 4
+    %t4 = index inbounds i8 [projection=field] %t2, 4
     store typed i32 0, %t4
     return void
 }
@@ -199,7 +199,7 @@ function @Value__Value(%this : ptr [object_bytes=4], %x : i32) -> void [binding=
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }

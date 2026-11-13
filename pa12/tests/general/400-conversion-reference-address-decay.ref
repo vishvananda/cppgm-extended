@@ -68,22 +68,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $b
     %t2 = addr $b
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 123, %t3
     %t4 = addr $b
-    %t5 = index i8 [projection=field] %t4, 4
+    %t5 = index inbounds i8 [projection=field] %t4, 4
     %t6 = index i32 [projection=array_element] %t5, 0
     store typed i32 1, %t6
     %t7 = addr $b
-    %t8 = index i8 [projection=field] %t7, 4
+    %t8 = index inbounds i8 [projection=field] %t7, 4
     %t9 = index i32 [projection=array_element] %t8, 1
     store typed i32 2, %t9
     %t10 = addr $b
-    %t11 = index i8 [projection=field] %t10, 4
+    %t11 = index inbounds i8 [projection=field] %t10, 4
     %t12 = index i32 [projection=array_element] %t11, 2
     store typed i32 3, %t12
     %t13 = addr $b
-    %t14 = index i8 [projection=field] %t13, 4
+    %t14 = index inbounds i8 [projection=field] %t13, 4
     %t15 = index i32 [projection=array_element] %t14, 3
     store typed i32 4, %t15
     %t16 = addr $b
@@ -93,7 +93,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t18, $p
     %t19 = load typed ptr $p
     %t20 = addr $b
-    %t21 = index i8 [projection=field] %t20, 4
+    %t21 = index inbounds i8 [projection=field] %t20, 4
     %t22 = cmp ne ptr %t19, %t21
     branch %t22, ^if_then_1, ^if_else_2
 
@@ -110,7 +110,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t24, $p
     %t25 = load typed ptr $p
     %t26 = addr $b
-    %t27 = index i8 [projection=field] %t26, 4
+    %t27 = index inbounds i8 [projection=field] %t26, 4
     %t28 = cmp ne ptr %t25, %t27
     branch %t28, ^if_then_4, ^if_else_5
 
@@ -124,7 +124,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t29 = addr $b
     %t30 = call ptr @returned(%t29)
     %t31 = addr $b
-    %t32 = index i8 [projection=field] %t31, 4
+    %t32 = index inbounds i8 [projection=field] %t31, 4
     %t33 = cmp ne ptr %t30, %t32
     branch %t33, ^if_then_7, ^lor_rhs_9
 
@@ -132,7 +132,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t34 = load typed ptr $c
     %t35 = call ptr @returned__ov2(%t34)
     %t36 = addr $b
-    %t37 = index i8 [projection=field] %t36, 4
+    %t37 = index inbounds i8 [projection=field] %t36, 4
     %t38 = cmp ne ptr %t35, %t37
     branch %t38, ^if_then_7, ^if_else_8
 
@@ -146,7 +146,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t39 = addr $b
     %t40 = call ptr @Buffer__operatorArray_(%t39)
     %t41 = addr $b
-    %t42 = index i8 [projection=field] %t41, 4
+    %t42 = index inbounds i8 [projection=field] %t41, 4
     %t43 = call i32 @argument(%t40, %t42)
     branch %t43, ^if_then_11, ^if_else_12
 
@@ -162,7 +162,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t45, $cp
     %t46 = load typed ptr $cp
     %t47 = addr $b
-    %t48 = index i8 [projection=field] %t47, 4
+    %t48 = index inbounds i8 [projection=field] %t47, 4
     %t49 = cmp ne ptr %t46, %t48
     branch %t49, ^if_then_14, ^if_else_15
 
@@ -178,7 +178,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t51, $vp
     %t52 = load typed ptr $vp
     %t53 = addr $b
-    %t54 = index i8 [projection=field] %t53, 4
+    %t54 = index inbounds i8 [projection=field] %t53, 4
     %t55 = cmp ne ptr %t52, %t54
     branch %t55, ^if_then_17, ^if_else_18
 
@@ -210,7 +210,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t64 = binary mul i64 2, 4
     %t65 = index inbounds i8 %t63, %t64
     %t66 = addr $b
-    %t67 = index i8 [projection=field] %t66, 4
+    %t67 = index inbounds i8 [projection=field] %t66, 4
     %t68 = binary mul i64 2, 4
     %t69 = index inbounds i8 %t67, %t68
     %t70 = cmp ne ptr %t65, %t69
@@ -220,7 +220,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t71 = addr $b
     %t72 = call ptr @Buffer__operatorArray_(%t71)
     %t73 = addr $b
-    %t74 = index i8 [projection=field] %t73, 4
+    %t74 = index inbounds i8 [projection=field] %t73, 4
     %t75 = cmp ne ptr %t72, %t74
     branch %t75, ^if_then_23, ^lor_rhs_25
 
@@ -230,7 +230,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t78 = binary mul i64 3, 4
     %t79 = index inbounds i8 %t77, %t78
     %t80 = addr $b
-    %t81 = index i8 [projection=field] %t80, 4
+    %t81 = index inbounds i8 [projection=field] %t80, 4
     %t82 = binary mul i64 3, 4
     %t83 = index inbounds i8 %t81, %t82
     %t84 = cmp ne ptr %t79, %t83
@@ -250,7 +250,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t88 = index inbounds i32 [projection=array_element] %t87, 1
     store typed i32 42, %t88
     %t89 = addr $b
-    %t90 = index i8 [projection=field] %t89, 4
+    %t90 = index inbounds i8 [projection=field] %t89, 4
     %t91 = index inbounds i32 [projection=array_element] %t90, 1
     %t92 = load typed i32 %t91
     %t93 = cmp ne i32 %t92, 42
@@ -326,7 +326,7 @@ function @Buffer__operatorArray_(%this : ptr [object_bytes=20]) -> ptr [binding=
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @calls
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     return ptr %t4
 }
 function @Buffer__operatorconstArray___ov2(%this : ptr [object_bytes=20]) -> ptr [binding=weak, object=_ZNK6BuffercvRA4_KiEv, inline_hint=yes] {
@@ -338,7 +338,7 @@ function @Buffer__operatorconstArray___ov2(%this : ptr [object_bytes=20]) -> ptr
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @calls
     %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
+    %t4 = index inbounds i8 [projection=field] %t3, 4
     return ptr %t4
 }
 function @Callable__operatorFunction_(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK8CallablecvRFiiEEv, inline_hint=yes] {

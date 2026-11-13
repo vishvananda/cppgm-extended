@@ -1997,10 +1997,13 @@ comparison checks them as part of the instruction:
   `shr` for a power of two and the `div` otherwise: the difference of two
   pointers into one array is a multiple of the element size (5.7p6).
 - `inbounds` on source array subscripting and addition, subtraction, increment
-  or decrement of a pointer to an object type. These operations stay within
-  one array or its one-past address on a defined source execution. Mechanically
-  computed member addresses and GNU arithmetic on `void*` or function pointers
-  do not acquire the promise from this rule.
+  or decrement of a pointer to an object type, and on addresses of actual
+  non-static data members (including capture members and bit-field storage
+  units) in their containing object or initialization storage. These operations
+  stay within the same allocation on a defined source execution. This also
+  covers member selection through a valid data-member pointer. A field projection
+  label alone is not proof: synthetic byte/ABI offsets and GNU arithmetic on
+  `void*` or function pointers do not acquire the promise from this rule.
 
 Every reader accepts the facts and every writer prints those the program
 holds, so a program keeps them through serialization: an object compiled

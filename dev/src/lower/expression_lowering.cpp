@@ -873,11 +873,7 @@ Place FunctionLowering::variable_place(const sema::Entity* entity, const sema::T
 		{
 			const sema::VariableEntity* object = static_cast<const sema::VariableEntity*>(home->storage->entity);
 			const Place outer = variable_place(object, object->type, location);
-			place.storage = this->index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD,
-									address_of(outer),
-									integer(lowir::Type::scalar(lowir::TypeKind::I64),
-										offset + lowering_.member_offset(member, location)))
-								.value;
+			place.storage = this->field_address(address_of(outer), offset + lowering_.member_offset(member, location));
 			if (union_member(member))
 				mark_untyped(place.storage);
 			return place;
@@ -889,10 +885,7 @@ Place FunctionLowering::variable_place(const sema::Entity* entity, const sema::T
 	{
 		// A lambda's capture: the closure's member is its copy or holds its
 		// address.
-		place.storage = this->index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD,
-								this_pointer(location),
-								integer(lowir::Type::scalar(lowir::TypeKind::I64), locals_[index].slot))
-							.value;
+		place.storage = this->field_address(this_pointer(location), locals_[index].slot);
 		reference = locals_[index].reference;
 	}
 	else if (index != PointerMap::kMissing)
@@ -1147,9 +1140,7 @@ lowir::Value FunctionLowering::object_pointer(uint32_t location)
 	if (!closure_this_)
 		return this_pointer(location);
 	Place captured = Place();
-	captured.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, this_pointer(location),
-		integer(lowir::Type::scalar(lowir::TypeKind::I64), closure_this_offset_))
-						   .value;
+	captured.storage = field_address(this_pointer(location), closure_this_offset_);
 	return closure_this_copied_ ? captured.storage : load(program_.pointer_type(), captured).value;
 }
 
@@ -1301,9 +1292,7 @@ Place FunctionLowering::member_place(lowir::Value object, const sema::ClassEntit
 	object = anonymous_object(object, from, holder, location);
 	object = to_base(object, from, holder, location, access);
 	Place place = Place();
-	place.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, object,
-		integer(lowir::Type::scalar(lowir::TypeKind::I64), anonymous + lowering_.member_offset(member, location)))
-						.value;
+	place.storage = field_address(object, anonymous + lowering_.member_offset(member, location));
 	// Named in a union, or in a union object (lowir.md "Instruction Facts").
 	if (union_member(member) || (holder != nullptr && holder->key == TokenKind::KW_UNION) ||
 		(from != nullptr && from->key == TokenKind::KW_UNION))

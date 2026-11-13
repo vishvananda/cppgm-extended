@@ -34,7 +34,7 @@ function @case_0__check_case() -> i32 [binding=strong, object=_ZN6case_010check_
     call void @case_0__S__S__aggregate(%t1, 3)
     store typed ptr %t1, $s
     %t2 = load typed ptr $s
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t4, 3
     %t6 = convert trunc i32 i64 %t5
@@ -110,7 +110,7 @@ function @case_2__check_case() -> i32 [binding=strong, object=_ZN6case_210check_
 
   block ^lor_rhs_3:
     %t4 = load typed ptr $s
-    %t5 = index i8 [projection=field] %t4, 0
+    %t5 = index inbounds i8 [projection=field] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp ne i32 %t6, 3
     branch %t7, ^if_then_1, ^if_else_2
@@ -167,7 +167,7 @@ function @case_3__check_case() -> i32 [binding=strong, object=_ZN6case_310check_
 
   block ^lor_rhs_10:
     %t8 = load typed ptr $s
-    %t9 = index i8 [projection=field] %t8, 0
+    %t9 = index inbounds i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
     %t11 = load typed i32 @case_3__pick
     branch %t11, ^cond_then_11, ^cond_else_12
@@ -233,7 +233,7 @@ function @case_4__check_case() -> i32 [binding=strong, object=_ZN6case_410check_
     copyobj 4x4 %t2, %t1
     store typed ptr %t1, $s
     %t3 = load typed ptr $s
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp ne i32 %t5, 3
     %t7 = convert trunc i32 i64 %t6
@@ -249,7 +249,7 @@ function @case_5__check_case() -> i32 [binding=strong, object=_ZN6case_510check_
     call void @case_5__S__S(%t1, 3)
     store typed ptr %t1, $s
     %t2 = load typed ptr $s
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t4, 3
     branch %t5, ^lor_short_2, ^lor_rhs_1
@@ -274,7 +274,7 @@ function @case_6__check_case() -> i32 [binding=strong, object=_ZN6case_610check_
 
   block ^entry:
     %t1 = load typed ptr @case_6__s
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     %t3 = load typed i32 %t2
     %t4 = cmp ne i32 %t3, 3
     branch %t4, ^lor_short_2, ^lor_rhs_1
@@ -439,7 +439,7 @@ function @case_11__check_case() -> i32 [binding=strong, object=_ZN7case_1110chec
     %t1 = call ptr @case_11__get()
     store typed ptr %t1, $s
     %t2 = load typed ptr $s
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t4, 3
     branch %t5, ^lor_short_2, ^lor_rhs_1
@@ -607,7 +607,7 @@ function @case_0__S__S__aggregate(%this : ptr [object_bytes=4], %x : i32) -> voi
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -620,7 +620,7 @@ function @case_4__S__S__aggregate(%this : ptr [object_bytes=4], %x : i32) -> voi
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -633,7 +633,7 @@ function @case_6__S__S(%this : ptr [object_bytes=4], %v : i32) -> void [binding=
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @case_6__calls
     %t5 = binary add nowrap i32 %t4, 1
@@ -649,7 +649,7 @@ function @case_1__S__S(%this : ptr [object_bytes=4], %v : i32) -> void [unwind=n
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @case_1__alive
     %t5 = binary add nowrap i32 %t4, 1
@@ -675,7 +675,7 @@ function @case_2__S__S(%this : ptr [object_bytes=4], %v : i32) -> void [unwind=n
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @case_2__alive
     %t5 = binary add nowrap i32 %t4, 1
@@ -701,7 +701,7 @@ function @case_3__S__S(%this : ptr [object_bytes=4], %v : i32) -> void [unwind=n
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @case_3__alive
     %t5 = binary add nowrap i32 %t4, 1
@@ -727,7 +727,7 @@ function @case_5__S__S(%this : ptr [object_bytes=4], %v : i32) -> void [binding=
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @case_5__calls
     %t5 = binary add nowrap i32 %t4, 1
@@ -743,7 +743,7 @@ function @case_11__S__S(%this : ptr [object_bytes=4], %v : i32) -> void [binding
     store typed i32 %v, $v
     %t1 = load typed i32 $v
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     %t4 = load typed i32 @case_11__calls
     %t5 = binary add nowrap i32 %t4, 1

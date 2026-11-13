@@ -8,7 +8,7 @@ function @Written_Member___Written(%this : ptr [object_bytes=4]) -> void [bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Member__Member(%t2)
     return void
 }
@@ -18,7 +18,7 @@ function @Outside_Member___Outside(%this : ptr [object_bytes=4]) -> void [bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     call void @Member__Member(%t2)
     return void
 }
@@ -28,7 +28,7 @@ function @Member__Member(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
+    %t2 = index inbounds i8 [projection=field] %t1, 0
     store typed i32 29, %t2
     return void
 }

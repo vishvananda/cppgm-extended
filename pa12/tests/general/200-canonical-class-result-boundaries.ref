@@ -42,7 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load typed ptr $small
     %t4 = call obj<4x4> %t3(7) as (%arg0 : i32) -> obj<4x4>
     copyobj 4x4 %t4, %t2
-    %t5 = index i8 [projection=field] %t2, 0
+    %t5 = index inbounds i8 [projection=field] %t2, 0
     %t6 = load typed i32 %t5
     %t7 = cmp ne i32 %t6, 7
     branch %t7, ^if_then_1, ^lor_rhs_3
@@ -51,7 +51,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $tmpobj__2
     %t9 = call obj<4x4> @make_small(9)
     copyobj 4x4 %t9, %t8
-    %t10 = index i8 [projection=field] %t8, 0
+    %t10 = index inbounds i8 [projection=field] %t8, 0
     %t11 = load typed i32 %t10
     %t12 = cmp ne i32 %t11, 9
     branch %t12, ^if_then_1, ^if_else_2
@@ -128,14 +128,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t23 = load typed ptr $sixteen
     call void %t23(%t22, 31) as (%arg0 : ptr [pass=indirect_result, alias=exclusive_result, object_bytes=16], %arg1 : i64) -> void
     %t24 = addr $value
-    %t25 = index i8 [projection=field] %t24, 0
+    %t25 = index inbounds i8 [projection=field] %t24, 0
     %t26 = load typed i64 %t25
     %t27 = cmp ne i64 %t26, 31
     branch %t27, ^if_then_17, ^lor_rhs_19
 
   block ^lor_rhs_19:
     %t28 = addr $value
-    %t29 = index i8 [projection=field] %t28, 8
+    %t29 = index inbounds i8 [projection=field] %t28, 8
     %t30 = load typed i64 %t29
     %t31 = cmp ne i64 %t30, 42
     branch %t31, ^if_then_17, ^if_else_18
@@ -165,7 +165,7 @@ function @Small__Small(%this : ptr [object_bytes=4], %x : i32) -> void [binding=
     store typed i32 %x, $x
     %t1 = load typed i32 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
 }
@@ -185,10 +185,10 @@ function @Sixteen__Sixteen(%this : ptr [object_bytes=16], %x : i64) -> void [bin
     store typed i64 %x, $x
     %t1 = load typed i64 $x
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed i64 %t1, %t3
     %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
+    %t5 = index inbounds i8 [projection=field] %t4, 8
     store typed i64 42, %t5
     return void
 }

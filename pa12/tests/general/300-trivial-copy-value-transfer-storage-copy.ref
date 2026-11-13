@@ -22,14 +22,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $a
     %t2 = addr $x
     %t3 = addr $a
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     %t5 = addr $x
     %t6 = addr $a
-    %t7 = index i8 [projection=field] %t6, 8
+    %t7 = index inbounds i8 [projection=field] %t6, 8
     store typed ptr %t5, %t7
     %t8 = addr $a
-    %t9 = index i8 [projection=field] %t8, 16
+    %t9 = index inbounds i8 [projection=field] %t8, 16
     store typed i64 7, %t9
     %t10 = addr $b
     %t11 = addr $argobj__1
@@ -37,7 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 24x8 %t12, %t11
     call void @forward(%t10, $argobj__1)
     %t13 = addr $b
-    %t14 = index i8 [projection=field] %t13, 0
+    %t14 = index inbounds i8 [projection=field] %t13, 0
     %t15 = load typed ptr %t14
     %t16 = addr $x
     %t17 = cmp eq ptr %t15, %t16
@@ -45,7 +45,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t18 = addr $b
-    %t19 = index i8 [projection=field] %t18, 8
+    %t19 = index inbounds i8 [projection=field] %t18, 8
     %t20 = load typed ptr %t19
     %t21 = addr $x
     %t22 = cmp eq ptr %t20, %t21
@@ -62,7 +62,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_7:
     %t24 = addr $b
-    %t25 = index i8 [projection=field] %t24, 16
+    %t25 = index inbounds i8 [projection=field] %t24, 16
     %t26 = load typed i64 %t25
     %t27 = cmp eq i64 %t26, 7
     store typed i64 %t27, $land__4

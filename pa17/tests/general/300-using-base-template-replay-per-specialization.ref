@@ -10,13 +10,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i64 5, $l
     %t2 = addr $l
     %t3 = addr $first
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     %t5 = addr $second
     store typed i32 7, $x
     %t6 = addr $x
     %t7 = addr $second
-    %t8 = index i8 [projection=field] %t7, 0
+    %t8 = index inbounds i8 [projection=field] %t7, 0
     store typed ptr %t6, %t8
     %t9 = addr $first
     %t10 = call i32 @holder_longint___run(%t9)
@@ -48,7 +48,7 @@ function @holder_longint___run(%this : ptr [object_bytes=8]) -> i32 [binding=wea
     %t2 = load typed ptr $this
     call void @holder_longint___temp__temp(%t1, %t2, 0)
     %t3 = addr $t
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     return i32 %t5
 }
@@ -62,7 +62,7 @@ function @holder_int___run(%this : ptr [object_bytes=8]) -> i32 [binding=weak, o
     %t2 = load typed ptr $this
     call void @holder_int___temp__temp(%t1, %t2, 0)
     %t3 = addr $t
-    %t4 = index i8 [projection=field] %t3, 0
+    %t4 = index inbounds i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     return i32 %t5
 }
@@ -79,11 +79,11 @@ function @holder_longint___temp__temp(%this : ptr [object_bytes=4], %h : ptr, %_
     store typed i64 0, $a
     %t1 = addr $a
     %t2 = load typed ptr $h
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = call i32 @traits_longint___construct(%t1, %t4)
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed i32 %t5, %t7
     return void
 }
@@ -100,11 +100,11 @@ function @holder_int___temp__temp(%this : ptr [object_bytes=4], %h : ptr, %__par
     store typed i32 0, $a
     %t1 = addr $a
     %t2 = load typed ptr $h
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = call i32 @traits_int___construct(%t1, %t4)
     %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 0
+    %t7 = index inbounds i8 [projection=field] %t6, 0
     store typed i32 %t5, %t7
     return void
 }

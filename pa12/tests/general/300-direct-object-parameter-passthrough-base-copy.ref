@@ -7,7 +7,7 @@ function @use(%value : ptr [pass=by_address, object_bytes=16]) -> void [binding=
     store typed ptr %value, $value
     %t1 = load typed ptr $value
     %t2 = index i8 %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = cmp eq ptr %t4, 0
     branch %t5, ^land_rhs_3, ^if_else_2
@@ -15,7 +15,7 @@ function @use(%value : ptr [pass=by_address, object_bytes=16]) -> void [binding=
   block ^land_rhs_3:
     %t6 = load typed ptr $value
     %t7 = index i8 %t6, 0
-    %t8 = index i8 [projection=field] %t7, 8
+    %t8 = index inbounds i8 [projection=field] %t7, 8
     %t9 = load typed ptr %t8
     %t10 = copy ptr 16
     %t11 = cmp eq ptr %t9, %t10
@@ -112,11 +112,11 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=16], %first : ptr, %s
     store typed ptr %second, $second
     %t1 = load typed ptr $first
     %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
+    %t3 = index inbounds i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
     %t4 = load typed ptr $second
     %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
+    %t6 = index inbounds i8 [projection=field] %t5, 8
     store typed ptr %t4, %t6
     return void
 }
