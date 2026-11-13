@@ -334,3 +334,46 @@ earlier large whole-function dispatcher patterns. The aggregate-accessor
 inlining and demanded-field/PHI repros remain. The separate local Wasm accessor
 fix is not included in the published PR measured here. Recheck commands and
 remaining generic optimization leads are retained outside the student export.
+
+## Cycles and matched libc++ comparison
+
+The comparison uses the same WASI SDK 34 libc++ headers and EH archives in both
+producers. The cppgm producer additionally passes
+`-D__cpp_exceptions=199711L -D__cpp_rtti=199711L`, matching Clang's C++11 feature
+macros. cppgm's current Wasm environment omits these macros despite enabling the
+language features; libc++ otherwise selects different exception/RTTI branches.
+The matched producers both emit the `nqe230100` libc++ ABI tag. Library hashes,
+commands and constant-return configuration probes are retained with the evidence.
+
+Four pinned-core cohorts run every version on each frozen source in close
+succession, rotating order. All 415 translation units and the internal link are
+covered. Four campaigns contain 18 complete worker rebuilds; all 7,488 outputs
+and 96 calibration/warmup outputs match current-version native bytes. External
+SMT/cache contention remains; no observations or calibration outliers are removed.
+These measurements compare summed CPU cycles, not parallel-build elapsed time.
+
+With matched libc++ configuration, cppgm uses 22.4% more cycles than Clang
+and 33.2% more instructions. The field-address diagnostic saves 3.1% of
+cppgm's cycles. A combined field/copy/return/inlining diagnostic saves 5.7%,
+closing 31% of the excess cycles and leaving 15.5% over Clang.
+The reverse control, disabling the same feature macros in Clang, changes its
+instruction work by only 0.13%; configuration differences do not explain the gap.
+
+The strongest isolated shape is field addressing. A dependent field-gather
+kernel is within about 1% of Clang's native x86 cycles but uses about 32% more
+through Wasm. Supplying field allocation facts and selecting constant memory
+offsets reduces that kernel's gap to about 5%. Plain LowIR index wraps at pointer
+width; Wasm memory offsets use a wider effective address, so folding needs a
+nonwrapping proof. Most source fields lack `inbounds`, and the Wasm selector
+also leaves existing constant offsets outside memory instructions. x86 already
+folds this shape into memory operands.
+
+These are causal diagnostic builds. Broad field annotations and early return-slot
+writes require allocation, escape and alias proofs before production use. The
+combined diagnostic's instruction savings are substantially larger than its
+cycle savings. Exact constant division is another backend opportunity, but Clang
+emits the same Wasm division in the repro and its measured whole-build effect
+is small. Profiles show distributed frontend/optimizer execution, without a new
+large dispatcher catastrophe; the remaining gap is not causally classified as
+generic LowIR or Wasm selection. Repros and generic leads remain in the external
+LowIR notes. Evidence: `wasm-cycle-analysis17/analysis-summary.json`.
