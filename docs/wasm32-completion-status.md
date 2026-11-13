@@ -4,7 +4,17 @@ This is an implementation checklist, not part of the student export. The full
 assignment in `pa37/README.md` remains the completion target. A working subset
 or a green partial suite does not complete PA37.
 
-Current compiler revision: `953836b1c` on `origin/main` at `e2831a513`.
+The optional full-compiler project is now included through the separate
+`test-wasm-inception` / `test-wasm-inception-nobuild` maintainer lane and its
+Linux CI job. It checks Wasmtime and Chromium W1/W2/W3 fixed points and full
+native/WASI x86 output at O0/O2/O3. It remains outside the student report and
+export. See [setup and retained observations](../scripts/experimental/README.md).
+The integrated branch includes the merged LLVM optimizer work and the shared
+member-bounds/Wasm memory-offset fixes.
+
+## Original acceptance snapshot
+
+Compiler revision at this snapshot: `953836b1c` on `origin/main` at `e2831a513`.
 `33ea331f4` adds only the release workflow trigger.
 PA37 implementation and required acceptance checks are complete. Full PA36
 release, fresh export, Linux qualification and both Intel macOS inception
@@ -29,15 +39,10 @@ All raw results, probes, pinned binaries and performance observations live outsi
 Git under `/mnt/vizier/cppgm-wasm32-evidence`. Earlier qualification applies only
 to its recorded snapshot; it does not establish qualification of later changes.
 
-Optional compiler self-hosting and browser inception are investigated in the
-[separate plan](wasm-browser-inception-plan.md). Chromium and Firefox execute
-the small SIMD/EH/WASI/filesystem probes; the complete compiler has not yet run
-inside Wasm. The investigation also exposed missing target-independent builtin templates
-and an unresolved weak direct call that prevented ordinary stdio linking.
-The target-library checkpoint below fixed both required gaps.
-The Clang WASI syntax scan passes 274/406 compiler translation units; the 132
-failures identify host padding, resource APIs and x87 floating assumptions.
-Compiler-host portability remains optional follow-on work.
+The original [optional project plan](wasm-browser-inception-plan.md) recorded
+the portability investigation before full compiler inception worked. Its syntax
+scan and small engine probes are historical evidence. Full local and Chromium
+compiler inception are now implemented in the optional lane linked above.
 
 ## Qualified object checkpoint
 
