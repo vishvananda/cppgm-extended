@@ -56,9 +56,15 @@ void Analyzer::deduction_guide_declaration(const syntax::DeductionGuideDecl& dec
 	}
 	record_default_arguments(guide, decl.parameters, scope);
 	ClassDeductionSet& set = class_deduction_set(cls);
+	// A templated guide's result is part of its signature, as a function
+	// template's return type is (1.3.18): two with one parameter list and
+	// template-head but different results are distinct guides. A
+	// non-template guide is compared by its parameter list alone.
+	const Type* key = guide->templated ? declared_type(type) : guide->signature;
 	for (const FunctionEntity* previous : set.declared)
 	{
-		if (previous->signature == guide->signature && previous->templated == guide->templated &&
+		const Type* other = previous->templated ? declared_type(previous->type) : previous->signature;
+		if (other == key && previous->templated == guide->templated &&
 			(!guide->templated || HeadOf(previous)->shape == HeadOf(guide)->shape))
 			error(decl.location, "equivalent deduction guides in one translation unit");
 	}
