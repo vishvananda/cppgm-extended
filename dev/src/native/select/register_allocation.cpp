@@ -1230,6 +1230,14 @@ void FunctionSelector::assign_registers()
 	// edge transfers then move nothing.
 	// Overlapping subsets can take different registers. Bound retries as well
 	// as members considered, so a large spilled web cannot cause quadratic work.
+	// Whether every register of the class is clobbered somewhere in c's ranges.
+	auto crosses_clobbers = [&](uint32_t c) {
+		const uint32_t all = temps_[ra_candidates_[c]].cls == VClass::Gpr ? kAllocatableGprs : kAllocatableXmms;
+		uint32_t clobbered = 0;
+		for (uint32_t r = ra_range_first_[c]; r < ra_range_first_[c + 1]; ++r)
+			clobbered |= ra_clobber_.query(ra_ranges_[r].first + 1, ra_ranges_[r].second - 1);
+		return (clobbered & all) == all;
+	};
 	std::vector<uint8_t> web_trials(m, 0);
 	std::vector<uint32_t> web_local(m, 0); // assign_web: a member's place among those considered, plus one
 	auto assign_web = [&](uint32_t c, Reg tied) {
@@ -1244,8 +1252,12 @@ void FunctionSelector::assign_registers()
 		// overlaps none already taken. (A value live through the loop that
 		// also feeds a phi would otherwise cost the rest of the web theirs.)
 		std::vector<uint32_t> members(web_members.begin() + web_first[root], web_members.begin() + web_first[root + 1]);
+		// (A member no register outlasts, as one live across calls, takes
+		// one only when split: it cannot share the others'.)
 		members.erase(std::remove_if(members.begin(), members.end(),
-						  [&](uint32_t w) { return temps_[ra_candidates_[w]].greg != kNoReg; }),
+						  [&](uint32_t w) {
+							  return temps_[ra_candidates_[w]].greg != kNoReg || (w != c && crosses_clobbers(w));
+						  }),
 			members.end());
 		for (uint32_t w : members)
 			if (temps_[ra_candidates_[w]].cls != temps_[ra_candidates_[c]].cls)
@@ -1440,14 +1452,6 @@ void FunctionSelector::assign_registers()
 		}
 		if (reg != kNoReg)
 			commit(c, reg, first, past);
-	};
-	// Whether every register of the class is clobbered somewhere in c's ranges.
-	auto crosses_clobbers = [&](uint32_t c) {
-		const uint32_t all = temps_[ra_candidates_[c]].cls == VClass::Gpr ? kAllocatableGprs : kAllocatableXmms;
-		uint32_t clobbered = 0;
-		for (uint32_t r = ra_range_first_[c]; r < ra_range_first_[c + 1]; ++r)
-			clobbered |= ra_clobber_.query(ra_ranges_[r].first + 1, ra_ranges_[r].second - 1);
-		return (clobbered & all) == all;
 	};
 	for (size_t k = 0; k < m; ++k)
 	{

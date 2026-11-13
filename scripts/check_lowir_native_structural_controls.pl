@@ -58,7 +58,7 @@ if (scalar(@ARGV) != 3)
 exit 0 unless CppgmTestPlatform::require_platform(
     'linux', "$FindBin::Script:$root", 'ELF symbol, section and code inspection');
 my @tests = collect_tests($root,
-	qr/(?:acyclic-phi-shared-register|call-result-loop-register|conditional-fallthrough-layout|medium-copy-direct-chunks|selected-parameter-index-home|private-stage-promotion).*\.t$/);
+	qr/(?:acyclic-phi-shared-register|call-crossing-phi-web|call-result-loop-register|conditional-fallthrough-layout|medium-copy-direct-chunks|selected-parameter-index-home|private-stage-promotion).*\.t$/);
 die "No native structural-control tests found under $root\n" if !@tests;
 
 for my $test (@tests)
@@ -397,6 +397,24 @@ for my $test (@tests)
 		die "$test: O0 control no longer keeps the unconditional trace jump\n"
 			if !defined($baseline_entry) ||
 			   $baseline_entry !~ /^\s+jmp \^done$/m;
+		next;
+	}
+	if ($test =~ /call-crossing-phi-web/) {
+		# A phi web takes one register over its members that no call
+		# crosses. Each of the four sums stays in one register through the
+		# pair loop and the scalar loop; the value read after the call is
+		# kept on its own.
+		my $moments = function_body($test, $mir, 'moments');
+		my $lanes = block_body($moments, 'lanes');
+		die "$test: moments lost its pair loop\n" if !defined($lanes);
+		die "$test: the pair loop's back edge moves its sums\n"
+			if $lanes !~ /^\s+j\w+ \^lanes\s*$/m;
+		for my $label (qw(lanes~lanes lanes_exit tail_pre)) {
+			my $block = block_body($moments, $label);
+			die "$test: ^$label moves a sum to another register\n"
+				if defined($block) &&
+				   $block =~ /^\s+fmov\.(?:f64|v128) xmm\d+, xmm\d+\s*$/m;
+		}
 		next;
 	}
 
