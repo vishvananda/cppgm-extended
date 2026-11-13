@@ -160,6 +160,17 @@ TailCopies duplicate_short_tails(Function& f)
 		if (!dispatch && (target >= b || !rotatable(f, target)))
 			continue;
 		const Block tail = f.blocks[target];
+		// (A jump alone that the test's own block repeats through: threaded
+		// away, that block closes its loop itself, and the copy would be the
+		// loop a second time.)
+		if (!dispatch && block.count == 1)
+		{
+			const Inst& jump = f.insts[tail.first + tail.count - 1];
+			const Inst& branch = f.insts[tail.first + tail.count - 2];
+			if ((jump.ops[0].kind == OperandKind::Label && jump.ops[0].symbol == b) ||
+				(branch.ops[0].kind == OperandKind::Label && branch.ops[0].symbol == b))
+				continue;
+		}
 		const uint32_t first = static_cast<uint32_t>(f.insts.size());
 		const size_t required = f.insts.size() + block.count - 1 + tail.count;
 		// Preserve amortized growth when many block tails are copied.

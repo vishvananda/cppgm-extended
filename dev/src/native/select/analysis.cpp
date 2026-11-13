@@ -1138,6 +1138,9 @@ const int64_t kShiftLimit = int64_t(1) << 20;
 // offset `x + c` or `x - c` only indexes of 1, 2, 4 or 8 byte elements, or
 // such a byte offset that is its alias, read is an alias of x, each address
 // taking c in its displacement: the wrapping sum of the address is the same.
+// So is a word offset `x + c` or `x - c` that never wraps (`nowrap`): its
+// readers read it in full, so x holds its extended form (find_low_reads),
+// and that form plus c is the offset's own.
 void FunctionSelector::find_scaled_offsets()
 {
 	const lowir::FunctionBody& body = *body_;
@@ -1155,9 +1158,12 @@ void FunctionSelector::find_scaled_offsets()
 	std::vector<uint64_t> factor(temps_.size(), 0);
 	for_each_inst([&](uint32_t id, uint32_t) {
 		const Instruction& inst = body.instructions[id];
+		const TypeKind kind = inst.type.kind();
+		const bool wide = kind == TypeKind::I64 || kind == TypeKind::Ptr;
+		const bool word = (kind == TypeKind::I32 || kind == TypeKind::U32) && (inst.flags & lowir::IF_NO_WRAP) != 0 &&
+			!low_read(inst.result);
 		if ((marks_[id] & IM_DEAD) || inst.op != Opcode::Binary || inst.result == kNoId ||
-			(temps_[inst.result].flags & TF_ALIAS) ||
-			(inst.type.kind() != TypeKind::I64 && inst.type.kind() != TypeKind::Ptr))
+			(temps_[inst.result].flags & TF_ALIAS) || (!wide && !word))
 			return;
 		const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
 		Value x = resolve(inst.ops[0]), k = resolve(inst.ops[1]);
@@ -1167,7 +1173,10 @@ void FunctionSelector::find_scaled_offsets()
 			return;
 		if (op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub)
 		{
-			const int64_t c = static_cast<int64_t>(literal(k).low);
+			const uint64_t bits = literal(k).low;
+			const int64_t c = kind == TypeKind::I32 ? static_cast<int64_t>(static_cast<int32_t>(bits))
+				: kind == TypeKind::U32             ? static_cast<int64_t>(static_cast<uint32_t>(bits))
+													: static_cast<int64_t>(bits);
 			if (c < -kShiftLimit || c > kShiftLimit)
 				return;
 			state[inst.result] = 1;
@@ -1175,7 +1184,7 @@ void FunctionSelector::find_scaled_offsets()
 			candidates.push_back(inst.result);
 			return;
 		}
-		if ((op != lowir::BinaryOp::Mul && op != lowir::BinaryOp::Shl) || literal(k).high != 0)
+		if (!wide || (op != lowir::BinaryOp::Mul && op != lowir::BinaryOp::Shl) || literal(k).high != 0)
 			return;
 		const uint64_t K = op == lowir::BinaryOp::Shl ? (literal(k).low < 7 ? uint64_t(1) << literal(k).low : 0)
 													  : literal(k).low;
@@ -2194,11 +2203,14 @@ void FunctionSelector::find_folds()
 				(user.type.is_pointer() && inst.type.kind() == TypeKind::I64));
 		const bool floating = level_ >= 1 && t.cls == VClass::Xmm && user.type == inst.type &&
 			(inst.type.kind() == TypeKind::F32 || inst.type.kind() == TypeKind::F64);
+		// O1+: a loaded target only an indirect jump reads is jumped through
+		// (jmp [m]).
+		const bool jump_target = level_ >= 1 && user.op == Opcode::IndirectJump && left && inst.type.is_pointer();
 		if (inst.op != Opcode::Load || (inst.flags & lowir::IF_VOLATILE) || (t.cls != VClass::Gpr && !floating) ||
-			left == right || (user.type != inst.type && !branch_test && !retyped))
+			left == right || (user.type != inst.type && !branch_test && !retyped && !jump_target))
 			return;
 		const TypeKind k = inst.type.kind();
-		bool ok = branch_test && k != TypeKind::I128 && !floating;
+		bool ok = (branch_test && k != TypeKind::I128 && !floating) || jump_target;
 		if (floating)
 		{
 			// (The operand `ucomis` reads second, where memory is allowed;

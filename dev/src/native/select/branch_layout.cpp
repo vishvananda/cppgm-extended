@@ -591,8 +591,10 @@ uint32_t FunctionSelector::layout_branches()
 	std::vector<uint64_t>& frequency = layout_frequency_;
 	std::vector<uint64_t> placing;
 	frequency.clear();
+	std::vector<uint16_t>& taken_odds = layout_odds_;
+	taken_odds.clear();
 	if (!addressed)
-		block_frequencies(f, frequency, &placing);
+		block_frequencies(f, frequency, &placing, &taken_odds);
 	share_small_tails(f, end, live, frequency);
 	const std::vector<uint64_t>& ordered = placing.empty() ? frequency : placing;
 	// The kept blocks' new indexes; a removed block's references take its
@@ -621,8 +623,9 @@ uint32_t FunctionSelector::layout_branches()
 	// The kept blocks in order: their branches and handler records name
 	// the new indexes, then their fall-through branches are dropped. A
 	// block ending `jcc A; jmp B` with neither next jumps unconditionally
-	// to the less frequent of the two (the estimate blocks are ordered by),
-	// so the likelier path takes only the conditional branch; a jump that closes
+	// to the one the branch reaches less often (the odds blocks are ordered
+	// by; where they are even, the less frequent of the two blocks), so the
+	// likelier path takes only the conditional branch; a jump that closes
 	// a loop the branch leaves (closes_range) is the likelier whatever the
 	// estimate of the two targets.
 	uint32_t index = 0;
@@ -641,7 +644,10 @@ uint32_t FunctionSelector::layout_branches()
 			if (a.kind == OperandKind::Label && j.kind == OperandKind::Label && a.symbol < blocks && j.symbol < blocks)
 			{
 				const uint32_t probability = f.insts[block.first + block.count - 2].aux;
-				colder_jcc = addressed ? probability > 0 && probability < 500 : ordered[a.symbol] < ordered[j.symbol];
+				const uint32_t odds = b < taken_odds.size() ? taken_odds[b] : 0;
+				colder_jcc = addressed         ? probability > 0 && probability < 500
+					: odds != 0 && odds != 500 ? odds < 500
+											   : ordered[a.symbol] < ordered[j.symbol];
 			}
 		}
 		for (uint32_t i = block.first; i < block.first + block.count; ++i)

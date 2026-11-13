@@ -20,8 +20,10 @@ uint32_t place_cold_blocks(Function& function);
 // place_blocks weighs them); empty when a block does not end in a branch.
 // `placing` takes the estimate place_blocks orders blocks by, with a cycle
 // entered twice's header times 8 too, where there is one (else it stays
-// empty).
-void block_frequencies(Function& function, std::vector<uint64_t>& frequency, std::vector<uint64_t>* placing = nullptr);
+// empty). `taken_odds` takes, per block ending `jcc A; jmp B`, how often of
+// 1000 times the branch goes to A (0 for any other block).
+void block_frequencies(Function& function, std::vector<uint64_t>& frequency, std::vector<uint64_t>* placing = nullptr,
+	std::vector<uint16_t>* taken_odds = nullptr);
 
 // Puts the blocks in `order` (block indexes, the entry first), renaming
 // every branch label, jump table entry and landing.

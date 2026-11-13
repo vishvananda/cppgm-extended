@@ -106,6 +106,8 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 	allocate_globals();
 	layout_slots();
 	emit_blocks();
+	if (level_ >= 1 && precise_globals_ && body_->code_labels.empty())
+		hoist_latch_transfers();
 	for (const lowir::CodeLabel& label : body_->code_labels)
 		out.code_labels.push_back(lowir::CodeLabel{ label.symbol, blocks_[layout_of_[label.block]].mir });
 	if (level_ >= 2)
@@ -477,6 +479,214 @@ void FunctionSelector::emit_edge_blocks(uint32_t from)
 	}
 }
 
+namespace {
+
+// The most transfers a loop's back edge gives to its test's block.
+const uint32_t kLatchTransfers = 4;
+
+bool frame_operand(const Operand& op)
+{
+	return op.kind == OperandKind::Mem && (op.reg == kFrame || op.index == kFrame || op.reg == RSP);
+}
+
+// An edge transfer that writes only its register destination and cannot
+// fault on another path: a move, an address, an extension, or a load of a
+// frame home.
+bool hoistable_move(const Inst& inst)
+{
+	switch (inst.op)
+	{
+	case Op::Mov:
+	case Op::Lea:
+	case Op::Movzx:
+	case Op::Sext:
+		break;
+	case Op::Load:
+		if (!frame_operand(inst.ops[1]))
+			return false;
+		break;
+	case Op::Zext:
+		if (inst.type == TypeKind::I1)
+			return false;
+		break;
+	default:
+		return false;
+	}
+	if (inst.nops != 2 || inst.ops[0].kind != OperandKind::Reg || inst.ops[0].reg >= 32)
+		return false;
+	return inst.ops[1].kind != OperandKind::Mem || inst.op == Op::Load || inst.op == Op::Lea;
+}
+
+} // namespace
+
+// O1+: a loop block that ends in a test and repeats the loop through an
+// edge block of transfers (the counter's next value moved to its register)
+// runs the transfers at the test instead. The edge block is then a jump
+// alone, which branch layout threads away: the conditional branch itself
+// repeats the loop, where each pass took it not taken, the transfers and a
+// jump. Nothing the other successor reads (or its own edge block, before the
+// block's phis are set) is in a register the transfers write; they run once
+// more, on the way out.
+void FunctionSelector::hoist_latch_transfers()
+{
+	if (edges_.empty())
+		return;
+	loop_depths();
+	const lowir::FunctionBody& body = *body_;
+	Function& f = *out_;
+	auto reads = [](const Inst& inst) {
+		uint32_t read = 0;
+		// (A transfer's register destination is written, not read.)
+		for (unsigned k = hoistable_move(inst) ? 1 : 0; k < inst.nops; ++k)
+		{
+			const Operand& op = inst.ops[k];
+			if (op.kind == OperandKind::Reg && op.reg < 32)
+				read |= 1u << op.reg;
+			else if (op.kind == OperandKind::Mem)
+			{
+				if (op.reg < 32)
+					read |= 1u << op.reg;
+				if (op.index != kNoReg && op.index < 32)
+					read |= 1u << op.index;
+			}
+		}
+		return read;
+	};
+	for (uint32_t b = 0; b < blocks_.size(); ++b)
+	{
+		const uint32_t count = edge_first_[b + 1] - edge_first_[b];
+		const lowir::Block& block = body.blocks[blocks_[b].id];
+		if (!blocks_[b].reachable || count == 0 || count > 2 || block.last == kNoId ||
+			body.instructions[block.last].op != Opcode::Branch || succ_first_[b + 1] - succ_first_[b] != 2)
+			continue;
+		// The edge back to a block of a loop this block is in, and the other
+		// successor's edge block, if it has one.
+		auto closes = [&](const EdgeBlock& e) {
+			return e.to <= b && ra_depth_[e.to] != 0 && ra_depth_[b] >= ra_depth_[e.to] && !eh_entry_edge(e.to) &&
+				blocks_[e.to].has_phi && !split_edge(split_moves_, b, e.to);
+		};
+		const EdgeBlock* edges = &edges_[edge_first_[b]];
+		const uint32_t back = closes(edges[0]) ? 0 : 1;
+		if (back == count || !closes(edges[back]))
+			continue;
+		const EdgeBlock edge = edges[back];
+		const uint32_t s0 = succs_[succ_first_[b]], s1 = succs_[succ_first_[b] + 1];
+		const uint32_t other = s0 == edge.to ? s1 : s0;
+		if (other == edge.to || edges[0].mir == 0 ||
+			(count == 2 && (edges[1 - back].to != other || eh_entry_edge(other))))
+			continue;
+		Block& from = f.blocks[edges[0].mir - 1];
+		Block& into = f.blocks[edge.mir];
+		Block* aside = count == 2 ? &f.blocks[edges[1 - back].mir] : nullptr;
+		// (The blocks' instructions lie one after the other, as emitted.)
+		const Block& second = f.blocks[edges[count - 1].mir];
+		if (from.first + from.count != f.blocks[edges[0].mir].first ||
+			(count == 2 && f.blocks[edges[0].mir].first + f.blocks[edges[0].mir].count != second.first) ||
+			into.count < 2 || into.count > kLatchTransfers + 1 || f.insts[into.first + into.count - 1].op != Op::Jmp)
+			continue;
+		const uint32_t moves = into.count - 1;
+		uint32_t written = 0;
+		bool ok = true, framed_moves = false, constant = false;
+		for (uint32_t i = into.first; i < into.first + moves && ok; ++i)
+		{
+			const Inst& inst = f.insts[i];
+			ok = hoistable_move(inst);
+			if (ok)
+			{
+				written |= 1u << inst.ops[0].reg;
+				framed_moves = framed_moves || frame_operand(inst.ops[1]);
+				constant = constant || inst.ops[1].kind == OperandKind::Imm;
+			}
+		}
+		if (!ok)
+			continue;
+		// What the other successor reads on entry: what its own edge block
+		// reads, the values live into it (but a phi its edge block sets: one
+		// that shares its register with its source is set by no move, and
+		// is the source still), the values homed in it, and each parameter
+		// this block leaves in its incoming register (retain_parameters).
+		uint32_t live = 0, set = 0;
+		if (aside != nullptr)
+			for (uint32_t i = aside->first; i < aside->first + aside->count; ++i)
+			{
+				live |= reads(f.insts[i]);
+				if (hoistable_move(f.insts[i]))
+					set |= 1u << f.insts[i].ops[0].reg;
+			}
+		for (uint32_t k = block_globals_first_[other]; k < block_globals_first_[other + 1]; ++k)
+		{
+			const TempInfo& t = temps_[block_entries_[k].temp];
+			if (block_entries_[k].live_in && t.greg != kNoReg &&
+				!(t.block == other && t.def < 0 && (set & (1u << t.greg))))
+				live |= 1u << t.greg;
+		}
+		if (!split_homes_.temps.empty())
+			for (uint32_t k = split_homes_.first[other]; k < split_homes_.first[other + 1]; ++k)
+				if (temps_[split_homes_.temps[k]].greg != kNoReg)
+					live |= 1u << temps_[split_homes_.temps[k]].greg;
+		for (uint32_t p = 0; p < body.parameter_count && p < 32; ++p)
+			if ((avail_out_[b] & (1u << p)) && incoming_reg(p) != kNoReg)
+				live |= 1u << incoming_reg(p);
+		if (written & live)
+			continue;
+		// The trailing branches and the compare that sets their flags: the
+		// transfers go before the compare where it reads no register they
+		// write (the compare and its branch stay one after the other).
+		uint32_t j = from.first + from.count;
+		while (j > from.first && (f.insts[j - 1].op == Op::Jcc || f.insts[j - 1].op == Op::Jmp))
+			--j;
+		if (j == from.first + from.count || j == from.first)
+			continue;
+		const Inst& setter = f.insts[j - 1];
+		if (setter.op != Op::Cmp && setter.op != Op::Test && setter.op != Op::Bt && setter.op != Op::FCmp)
+			continue;
+		uint32_t read = 0;
+		for (unsigned k = 0; k < setter.nops; ++k)
+		{
+			const Operand& op = setter.ops[k];
+			if (op.kind == OperandKind::Reg && op.reg < 32)
+				read |= 1u << op.reg;
+			else if (op.kind == OperandKind::Mem)
+			{
+				if (op.reg < 32)
+					read |= 1u << op.reg;
+				if (op.index != kNoReg && op.index < 32)
+					read |= 1u << op.index;
+			}
+		}
+		// (Where it reads one, they go after it: a move leaves the flags as
+		// they are. A constant does not qualify, since clearing a register
+		// may write them.)
+		if ((read & written) && constant)
+			continue;
+		if (!(read & written))
+			--j;
+		// A frame home read where the block reads no frame (shrink-wrapping
+		// would then have to set the frame up before it).
+		if (framed_moves)
+		{
+			bool framed = false;
+			for (uint32_t i = from.first; i < from.first + from.count && !framed; ++i)
+			{
+				const Inst& inst = f.insts[i];
+				framed = inst.op == Op::Call;
+				for (unsigned k = 0; k < inst.nops && !framed; ++k)
+					framed = frame_operand(inst.ops[k]);
+			}
+			if (!framed)
+				continue;
+		}
+		std::rotate(f.insts.begin() + j, f.insts.begin() + into.first, f.insts.begin() + into.first + moves);
+		// (The other edge block, when it lies between, moved down with the
+		// block's branches.)
+		if (aside != nullptr && aside->first < into.first)
+			aside->first += moves;
+		from.count += moves;
+		into.first += moves;
+		into.count = 1;
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Terminators
 
@@ -487,8 +697,12 @@ void FunctionSelector::emit_terminator(uint32_t id)
 	{
 	case Opcode::IndirectJump:
 	{
-		Inst& jump = emit1(
-			Op::IndirectJump, TypeKind::Ptr, reg_operand(inst.ops[0], Type::scalar(TypeKind::Ptr), kSelectScratch));
+		// (A target loaded for this jump alone is read from memory, find_folds.)
+		const Value target = resolve(inst.ops[0]);
+		const bool folded = target.kind == ValueKind::Temp && (temps_[target.index].flags & TF_FOLDED) != 0;
+		const Type pointer = Type::scalar(TypeKind::Ptr);
+		Inst& jump = emit1(Op::IndirectJump, TypeKind::Ptr,
+			folded ? rm_operand(target, pointer, kSelectScratch) : reg_operand(target, pointer, kSelectScratch));
 		jump.aux = static_cast<uint32_t>(out_->jump_targets.size());
 		jump.aux2 = inst.extra_count;
 		for (uint32_t k = 0; k < inst.extra_count; ++k)

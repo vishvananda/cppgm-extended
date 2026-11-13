@@ -318,6 +318,7 @@ public:
 	// ---- host_eh.cpp: adapt shared region facts to native frame/pad emission.
 	void analyze_host_eh();
 	int64_t eh_entry_selector(uint32_t block) const;
+	void hoist_latch_transfers();
 	bool eh_entry_edge(uint32_t block) const;
 	bool eh_selects(uint32_t block, uint32_t index) const;
 	void emit_landing_pad(uint32_t block);

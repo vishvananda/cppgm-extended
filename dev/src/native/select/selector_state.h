@@ -198,6 +198,7 @@ struct SelectorState
 	// its new index; scratch: one jump chain.
 	std::vector<uint32_t> layout_map_;
 	std::vector<uint64_t> layout_frequency_; // layout_branches: block_frequencies
+	std::vector<uint16_t> layout_odds_;      // layout_branches: two-way blocks' taken odds
 	std::vector<uint32_t> layout_chain_;
 	std::vector<uint8_t> layout_live_; // layout_branches: blocks the entry and the pads reach
 };
