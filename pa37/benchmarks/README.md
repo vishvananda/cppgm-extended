@@ -42,6 +42,8 @@ The runtime summary weights all eight workloads equally; individual results
 remain visible. There are 64 independent seed/count cases per compiler and
 configuration. The compile figure still describes one header-free translation
 unit, including these workloads; it does not describe a large C++ project.
+Version 1's four-kernel reports remain in history; the current badges require
+version 2's eight-workload CPU measurements.
 These timings are advisory; the assignment's correctness and quality bounds
 remain required. GCC is not a baseline for this Wasm target.
 

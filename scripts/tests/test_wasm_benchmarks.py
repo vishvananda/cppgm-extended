@@ -131,6 +131,25 @@ class WasmBenchmarkTests(unittest.TestCase):
                 self.assertIn('n/m', path.read_text())
             self.assertFalse(list(target.rglob('metadata.json')))
 
+    def test_legacy_four_kernel_reports_are_retained_without_reusing_their_badges(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            legacy = document('O3')
+            legacy['schema'] = 1
+            for config in legacy['configurations']:
+                for name in producer.CASES[4:]:
+                    del config['phases'][name]
+                for name in producer.CASES[:4]:
+                    for mode in ('AA', 'AB'):
+                        del config['phases'][name][mode]['cpu_seconds']
+            path = target / 'wasm/github-intel/results.json'
+            path.parent.mkdir(parents=True)
+            original = json.dumps(dict(schema=1, measurements=[legacy]))
+            path.write_text(original)
+            producer.seed(target)
+            self.assertEqual(path.read_text(), original)
+            self.assertIn('n/m', (target / 'wasm/github-intel-scalar-runtime-clang.svg').read_text())
+
 
 if __name__ == '__main__':
     unittest.main()

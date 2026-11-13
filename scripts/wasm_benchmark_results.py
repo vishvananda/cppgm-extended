@@ -188,7 +188,8 @@ def seed(target):
     for host, caption in HOSTS.items():
         path = directory / host / 'results.json'
         measured = json.loads(path.read_text())['measurements'] if path.exists() else []
-        o3 = next((d for d in measured if d['metadata']['optimization'] == 'O3'), None)
+        o3 = next((d for d in measured if d.get('schema') == 2 and d.get('status') == 'complete'
+                   and d['metadata']['optimization'] == 'O3'), None)
         for configuration in ('scalar', 'simd128'):
             config = next((c for c in o3['configurations'] if c['id'] == configuration), None) if o3 else None
             for phase in ('compile', 'runtime'):
