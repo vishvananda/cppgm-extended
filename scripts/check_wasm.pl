@@ -541,7 +541,10 @@ for my $level (@{$expect->{levels} // [0, 1, 2, 3]}) {
                 if $status || $stdout ne '17';
         }
         for my $call (@{$expect->{calls} // []}) {
-            my @fuel = exists($call->{fuel}{$level}) ? ('-W', "fuel=$call->{fuel}{$level}") : ();
+            # CoW initialization can charge a padded memory image against fuel
+            # on hosts that cannot map it. Use segment initialization consistently.
+            my @fuel = exists($call->{fuel}{$level})
+                ? ('-O', 'memory-init-cow=n', '-W', "fuel=$call->{fuel}{$level}") : ();
             ($status, $stdout, $stderr) = command("run-$level-$call->{export}", $runtime, 'run', '-W', 'max-memory-size=268435456',
                 @preloads, @fuel, '--invoke', $call->{export}, $run_module, @{$call->{args} // []});
             $stdout =~ s/\s+\z//;
