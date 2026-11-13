@@ -35,7 +35,7 @@ extern "C" {
 
 CppgmLowir* cppgm_lowir_create(uint32_t version, uint32_t target)
 {
-	if (version != CPPGM_LOWIR_ABI_VERSION || target > 1 || !backend::c_api::direct_layout())
+	if (version != CPPGM_LOWIR_ABI_VERSION || target > 1)
 		return nullptr;
 	try
 	{
@@ -86,12 +86,6 @@ int cppgm_lowir_global(CppgmLowir* module, uint32_t symbol, CppgmType type, uint
 {
 	return invoke(
 		module, 0, [&]() { return module->global(symbol, type, binding, storage, items, count, declaration); });
-}
-
-int cppgm_lowir_body(CppgmLowir* module, uint32_t symbol, const CppgmBody* body)
-{
-	return invoke(
-		module, 0, [&]() { return body != nullptr ? module->body(symbol, *body) : module->fail("null body"); });
 }
 
 int cppgm_lowir_body_reserve(

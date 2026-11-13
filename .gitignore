@@ -52,3 +52,5 @@ dev/obj-clang-libcxx/
 /dev/libcppgm_lowir.a
 /dev/libcppgm_lowir.so
 /dev/libcppgm_lowir.dylib
+
+/dev/.lowir-library-toolchain

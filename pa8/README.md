@@ -28,9 +28,12 @@ function owns its instructions and blocks, where an edit touches only that
 function and use counts are cheap to keep current, serves all of that; one
 that packs a whole program into flat append-only pools, or that can only be
 rebuilt from text, makes every later rewrite a rebuild.
-`dev/src/lowir_model.h` gives the format's vocabulary and no containers. The
-model's shape is yours, using the header is optional, and storing its enums
-rather than words is advice.
+`dev/src/lowir_model.h` gives the format's vocabulary. Its companion
+`lowir_records.h` gives shared records: values, literals, instructions, slots and
+signatures. Use these typed records across lowering, optimization and emission.
+`lowir_interface.h` also defines a batched construction contract for optional foreign
+frontends. Containers, storage, name tables and algorithms remain your work;
+PA8 does not require a library or a foreign frontend.
 
 ### Prerequisites and starter kit
 
@@ -45,6 +48,8 @@ The starter kit provides:
 - `dev/src/lowir_model.h`, the LowIR vocabulary (every enumerable concept of
   the format as an enum with its spellings and readers, and the 8-byte
   `Type`);
+- `dev/src/lowir_records.h` and `lowir_local_model.h`, shared records and
+  presentation kinds; the C projection uses `lowir_c_vocabulary.h`;
 - `dev/src/ir_symbol_model.h`, the metadata vocabulary;
 - `dev/src/target_model.h`, target identity and data-layout vocabulary;
 - [the format reference](lowir.md), [the grammar](pa8.gram), and its HTML
@@ -53,7 +58,8 @@ The starter kit provides:
 - downloaded `lowir-ref` and `lowir2native-ref` tools for reference observation
   and the grading support described below.
 
-Your choice of classes, containers, names and construction helpers is your own.
+Your choice of owning classes, containers, names and construction helpers is your own.
+Keep the shared record types as the vocabulary between compiler stages.
 Implement compiler work in `dev/`; leave the assignment fixtures and harnesses
 unchanged during normal student work.
 

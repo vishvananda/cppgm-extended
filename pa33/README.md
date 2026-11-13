@@ -564,3 +564,8 @@ all outgoing/addressed control-flow edges. Do not reinterpret instruction
 strings as arithmetic or infer undeclared effects. PA34's normal
 `test-assembly` lane reuses the PA29 native/roundtrip controls at O3 after both
 optimizer milestones, with independent result files for parallel reports.
+
+### Optional typed library lane
+
+`make test-lowir-library` runs the O1–O3 optimized library checks outside
+the normal report. See [the library contract](../pa27/lowir-library.md).

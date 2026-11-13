@@ -148,3 +148,6 @@ test-macho: $(TEST_DEPS)
 ifeq ($(shell uname -s),Darwin)
 test: test-macho
 endif
+
+LOWIR_LIBRARY_LEVELS := 0
+include ../scripts/lowir_library_lane.mk

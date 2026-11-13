@@ -142,6 +142,7 @@ jobs:
             ca-certificates \
             git \
             perl \
+            python3 \
             tar \
             ${{ matrix.packages }}
 
@@ -158,6 +159,9 @@ jobs:
 
       - name: Build host compiler
         run: make
+
+      - name: Check optional typed LowIR library (PA27 and PA33)
+        run: make test-lowir-library
 
       # Reads this build's dependency files, so it runs where the build is.
       - name: Check that the build uses the shipped scaffold files

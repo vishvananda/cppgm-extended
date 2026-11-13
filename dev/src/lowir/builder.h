@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lowir/program.h"
+#include "lowir_interface.h"
 
 namespace lowir {
 
@@ -16,10 +17,14 @@ Literal integer_literal(int64_t value);
 // end of the insertion block. The builder records what it is given: the
 // reader checks external input, and validate_constructed_program
 // (lowir/validator.h) checks a constructed program in audit builds.
-class FunctionBuilder
+class FunctionBuilder : public BodyConstruction
 {
 public:
 	FunctionBuilder(Program& program, SymbolId function);
+
+	bool reserve(const BodyCounts& minimum, BodyBuffers& buffers) override;
+	bool commit(const BodyCounts& counts, uint32_t temp_count) override;
+	const char* construction_error() const override { return construction_error_; }
 
 	Program& program() { return program_; }
 	FunctionBody& body() { return body_; }
@@ -84,6 +89,8 @@ public:
 
 private:
 	void locate(InstId inst);
+	bool construction_fail(const char* message);
+	const char* construction_error_ = "";
 
 	Program& program_;
 	FunctionBody& body_;

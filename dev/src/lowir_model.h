@@ -6,13 +6,10 @@
 // metadata vocabulary is in ir_symbol_model.h.  The course solution builds
 // on this header exactly as it is shipped.
 //
-// What is deliberately not here: program containers.  How a program,
-// function, block, instruction and operand are stored is your design, and
-// PA33 will rewrite it in place, one function at a time (see the PA8
-// handout).  Store these enums in it rather than text: an instruction is
-// an Opcode, not the word `binary`; an operand's kind is a ValueKind, not
-// its sigil.  Names (temporaries, slots, blocks, symbols) are the only
-// text, and how you store them (strings, interned ids) is also yours.
+// lowir_records.h supplies the common typed records and bulk construction
+// interface. It contains no program containers or algorithms: ownership,
+// mutable storage, names and analysis remain the implementation's design.
+// Foreign frontends and C++ lowering use the same records; text is a view.
 //
 // The spelling() and from_spelling() conventions are those of
 // ir_symbol_model.h.

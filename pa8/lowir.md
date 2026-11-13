@@ -26,9 +26,12 @@ LowIR is:
   for values selected by incoming control-flow edges
 
 LowIR text is the serialized form of the compiler-owned backend program model.
-Implementations may use a typed in-memory representation. The starter support's
+Use a typed in-memory representation built on the shared scaffold records. The starter support's
 `dev/src/lowir_model.h` and `dev/src/ir_symbol_model.h` give its vocabulary:
-the format's fixed words as enums, with their spellings and readers. The text
+the format's fixed words as enums, with their spellings and readers.
+`lowir_records.h` adds common records; `lowir_interface.h` adds the batched
+construction contract. Neither supplies owning containers or implementation
+algorithms. The text
 remains the durable boundary. A backend-visible fact that cannot be serialized
 to LowIR and parsed back is not part of the LowIR contract.
 

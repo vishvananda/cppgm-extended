@@ -147,3 +147,9 @@ It is excluded from required reports; see the PA30 handout for the CPU option.
 Run the debug, object and link checks required by the current handout.
 `make test-debuginfo` collects the later debug suites; it is not an extra
 prerequisite for early assignments.
+
+`make test-lowir-library` is another optional lane: PA27 checks an in-process
+LowIR producer and native host objects at O0; PA33 adds O1–O3. It uses the shared
+PA8 scaffold records and a supplied C frontend, with no external language-tool
+installation. See [the library contract](pa27/lowir-library.md). The lane stays
+outside normal assignment reports.

@@ -390,3 +390,8 @@ Linux suite. On Intel macOS it links with Clang and runs checks of calls,
 aggregate returns, virtual dispatch, weak definitions, initialization,
 exceptions in both directions and per-thread storage. Linux can check emitted
 objects with LLVM tools, but cannot execute these macOS programs.
+
+### Optional typed library lane
+
+`make test-lowir-library` runs the O0 construction and host-object checks outside
+the normal report. See [the library contract](../pa27/lowir-library.md).

@@ -264,3 +264,6 @@ $(DDEPDIR)/%.d: ;
 -include $(addprefix $(DDEPDIR)/,$(addsuffix .d,$(common_obj_basenames)))
 -include $(RDEPDIR)/test_runner_enabled.d
 -include $(DDEPDIR)/test_runner_enabled.d
+
+LOWIR_LIBRARY_LEVELS := 1 2 3
+include ../scripts/lowir_library_lane.mk

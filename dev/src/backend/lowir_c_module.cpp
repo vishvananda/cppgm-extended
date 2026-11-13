@@ -1,7 +1,5 @@
 #include "backend/lowir_c_module.h"
-#include "backend/lowir_c_vocabulary.h"
 
-#include <algorithm>
 #include <cstring>
 #include <mutex>
 
@@ -34,21 +32,6 @@ bool valid_type(CppgmType bits)
 	if (t.is_pointer())
 		return t.align_log2 == 0 && (t.bytes == 0 || t.bytes == 8);
 	return t.align_log2 == 0 && t.bytes == 0;
-}
-
-bool valid_value(CppgmValue input)
-{
-	const unsigned kind = input.kind & 255;
-	const unsigned floating = input.kind >> 8;
-	return kind < lowir::kValueKindCount &&
-		(kind == CPPGM_VALUE_FLOAT ? floating >= CPPGM_TYPE_F32 && floating <= CPPGM_TYPE_F80 : floating == 0);
-}
-
-lowir::Value value(CppgmValue input)
-{
-	lowir::Value result = lowir::Value::make(static_cast<lowir::ValueKind>(input.kind & 255), input.index);
-	result.float_kind = static_cast<lowir::TypeKind>((input.kind >> 8) & 255);
-	return result;
 }
 
 } // namespace c_api
@@ -168,8 +151,9 @@ bool CppgmLowir::validate()
 		return fail("module has already been consumed");
 	if (validated)
 		return true;
-	if (std::find(direct_bodies.begin(), direct_bodies.end(), 1) != direct_bodies.end())
-		return fail("uncommitted direct function body");
+	for (const lowir::Function& function : program.functions)
+		if (function.body && function.body->construction_state == 1)
+			return fail("uncommitted direct function body");
 	lowir::apply_legacy_roles(program);
 	lowir::Diagnostic diagnostic;
 	if (!lowir::validate_constructed_program(program, diagnostic, false))

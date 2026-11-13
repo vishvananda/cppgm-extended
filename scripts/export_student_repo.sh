@@ -92,7 +92,7 @@ copy_tracked_paths() {
         # Export reviewed student documents only, including public doc/ texts.
         next if (m{\.md$}i || m{^doc/}) && !$documents{$_};
         next if m{(^|/)[^/]+-ref$};
-        next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite|check_optimization_quality|check_macho|run_resource_limited)\.py$};
+        next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite|check_optimization_quality|check_macho|run_resource_limited|test_lowir_library|generate_lowir_c_vocabulary)\.py$};
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
         # Tests-first audit controls run only under the maintainer
@@ -398,6 +398,9 @@ for makefile in "$repo_root"/pa[0-9]*/Makefile; do
 done
 
 shared_scripts=(
+  scripts/lowir_library_lane.mk
+  scripts/test_lowir_library.py
+  scripts/generate_lowir_c_vocabulary.py
   scripts/CppgmBatchWorker.pm
   scripts/CppgmTestPlatform.pm
   scripts/test_platform.pl
@@ -449,6 +452,7 @@ done
 dev_public=(
   dev/.gitignore
   dev/gen_builtin_host_config.pl
+  dev/lowir_library.mk
 )
 
 # The shipped scaffold files: the vocabulary headers of the LowIR, MIR and
@@ -460,6 +464,10 @@ dev_support_files=(
   dev/src/abi/itanium/abi_mangle.h
   dev/src/ir_symbol_model.h
   dev/src/lowir_model.h
+  dev/src/lowir_records.h
+  dev/src/lowir_local_model.h
+  dev/src/lowir_c_vocabulary.h
+  dev/src/lowir_interface.h
   dev/src/target_model.h
   dev/src/machine_model.h
   dev/src/wasm_model.h
@@ -511,6 +519,8 @@ for pair in "${scaffold_pairs[@]}"; do
   cp -p "$repo_root/dev/$scaffold" "$dest/dev/$target.cpp"
 done
 
+cp -p "$repo_root/dev/lowir_library-scaffold.cpp" "$dest/dev/lowir_library.cpp"
+
 cat > "$dest/dev/frontend_source_sets.mk" <<'EOF'
 # Per-tool implementation source lists for the compiler.
 #
@@ -529,6 +539,11 @@ FRONTEND_OBJ_BASENAMES_cppgm++ :=
 FRONTEND_OBJ_BASENAMES_lowiropt :=
 FRONTEND_OBJ_BASENAMES_lowir :=
 FRONTEND_OBJ_BASENAMES_lowir2native :=
+
+# Optional PA27/PA33 library implementation modules, without the C boundary.
+# Put the boundary in dev/lowir_library.cpp; add shared modules here.
+FRONTEND_LIBRARY_SOURCE_SET_TARGETS := lowir_library
+FRONTEND_LIBRARY_SOURCE_IDS_lowir_library :=
 EOF
 
 cat > "$dest/dev/Makefile" <<'EOF'
@@ -650,6 +665,8 @@ $(DEPDIR)/%.d: ;
 -include $(DEPDIR)/test_runner_enabled.d
 
 .PHONY: all clean FORCE
+
+include lowir_library.mk
 EOF
 
 student_makefiles=(

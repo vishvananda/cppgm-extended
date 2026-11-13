@@ -235,6 +235,7 @@ pa24/native-encoding.md
 pa25/README.md
 pa26/README.md
 pa27/README.md
+pa27/lowir-library.md
 pa28/README.md
 pa29/README.md
 pa29/assembly.md

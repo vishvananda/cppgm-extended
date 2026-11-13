@@ -54,15 +54,6 @@ enum class MathFunction : uint8_t
 	Cos   // cos, cosf
 };
 
-struct Slot
-{
-	NameId name;
-	SlotKind kind;
-	uint8_t reserved;
-	uint16_t index;
-	Type type;
-};
-
 // Instructions of a block form a list through Instruction::next. A block
 // of a kind other than Plain prints its kind's name (an inlined copy's
 // derives from the name of the block it copies).
@@ -135,6 +126,7 @@ struct CodeLabel
 struct FunctionBody
 {
 	uint32_t parameter_count = 0;
+	uint8_t construction_state = 0; // batched body: untouched, open, committed
 	uint8_t pointer_bytes = 8;
 	Type pointer_type() const { return Type::pointer(pointer_bytes); }
 	std::vector<Temp> temps;
@@ -166,28 +158,6 @@ struct FunctionBody
 // pair), which an object-mode lowering states from the class's layout and
 // a host object's call boundary follows: ObjectClassBits and
 // EightbyteClass of ir_symbol_model.h.
-
-// The parameter's pass, alias, classes (object mode) and object_bytes
-// metadata are the scaffold's record.
-struct Parameter : ir_model::ParameterMetadata
-{
-	NameId name;
-	Type type;
-};
-
-// A boundary's arity, effects, unwind, return and query metadata, and the
-// classes of an object result (object mode).
-typedef ir_model::FunctionBoundaryMetadata BoundaryMetadata;
-
-// A function or call boundary: parameters [first_parameter,
-// first_parameter + parameter_count) of Program::parameters.
-struct Signature
-{
-	uint32_t first_parameter;
-	uint32_t parameter_count;
-	Type result;
-	BoundaryMetadata boundary;
-};
 
 // The named-value metadata (role, linkage, binding, storage and the
 // SymbolFlag bits) is the scaffold's record; the names are interned.
