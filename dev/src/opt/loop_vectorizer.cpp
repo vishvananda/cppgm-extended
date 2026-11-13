@@ -15,6 +15,9 @@ namespace {
 // loop's vector form may wait on.
 const size_t kBodyInstructions = 64;
 const size_t kOverlapTests = 8;
+// The most registers a lane cell's elements fill, and its most elements.
+const int64_t kCellGroups = 4;
+const int64_t kCellModulus = 64;
 // How deep a truncation's arithmetic is rewritten.
 const unsigned kNarrowDepth = 6;
 
@@ -36,6 +39,13 @@ const unsigned kNarrowDepth = 6;
 //
 // A sum the loop keeps in memory is a reduction too: the lanes load it before
 // they start and store it when they stop.
+//
+// A lane cell is an element of a local array that each pass picks by its
+// count modulo K, reads and writes back (x[i % K] = f(x[i % K], ...)). K
+// passes in a row take K different elements in order, so the lanes of a wide
+// pass hold different elements, and each element's passes keep their order.
+// The elements stay in registers of lanes for the whole vector loop, which
+// does K passes a round (one copy of the lanes' code per register).
 class LoopVectorizer
 {
 public:
@@ -85,6 +95,16 @@ private:
 		uint32_t lowest;
 		int64_t low, high, scale;
 	};
+	// An element the pass picks by its count modulo `modulus`, read and then
+	// written: the lanes keep the array's elements.
+	struct LaneCell
+	{
+		InstId load, store;
+		TempId value, next; // what the load reads, what the store writes
+		Value base;         // the array's first element
+		Type type;
+		int64_t modulus, first; // and the element of the first pass
+	};
 
 	bool in_body(Value v) const;
 	bool narrow_fits(Value v, Type type, unsigned depth) const;
@@ -98,6 +118,10 @@ private:
 	bool read_code();
 	bool fixed_address(Value v) const;
 	void read_cells();
+	bool count_modulo(Value v, int64_t& modulus, int64_t& first) const;
+	void read_lane_cells();
+	bool lane_cells_apart();
+	bool lane_cells_fit();
 	void mark(Value v, std::vector<uint8_t>& marks);
 	void mark_uses();
 	bool integer_term(Value v, Linear& out, int64_t factor, unsigned depth) const;
@@ -128,6 +152,11 @@ private:
 	void widen_store(Value value, Value address, unsigned bytes, InstId origin);
 	Value lane_address(Value address, Type type);
 	Value cell_address(const Reduction& r);
+	Value group_address(const LaneCell& cell, int64_t group);
+	Value stepped(const Induction& iv, Value from, int64_t by);
+	void advance_copy(const std::vector<Value>& counters, const std::vector<Value>& lane_counters, int64_t passes);
+	void emit_round(const std::vector<Value>& counters, const std::vector<Value>& lane_counters,
+		std::vector<std::vector<Value>>& cells);
 	Value extend(Value v, unsigned from, unsigned to, bool is_signed);
 	Value narrow(Value v, unsigned from, unsigned to);
 	void widen_convert(const Instruction& inst);
@@ -160,6 +189,8 @@ private:
 	BlockId b_ = kNoId;
 	std::vector<Induction> inductions_;
 	std::vector<Reduction> reductions_;
+	std::vector<LaneCell> lane_cells_;
+	int64_t copies_ = 1; // copies of the lanes' code a round of the vector loop runs
 	std::vector<InstId> code_;
 	std::vector<Access> accesses_;
 	std::vector<Group> groups_;
@@ -797,6 +828,129 @@ void LoopVectorizer::read_cells()
 	}
 }
 
+// Whether `v` is the pass's count modulo a literal K, (offset + pass) % K for
+// a known offset of at least zero: a remainder or a mask, under integer
+// conversions (a value below K keeps itself through each). `first` is the
+// first pass's remainder.
+bool LoopVectorizer::count_modulo(Value v, int64_t& modulus, int64_t& first) const
+{
+	for (unsigned depth = 0; depth < 4 && in_body(v); ++depth)
+	{
+		const Instruction& def = body_.instructions[body_.temps[v.index].def];
+		if (!def.type.is_integer())
+			return false;
+		const ConvertOp conversion = static_cast<ConvertOp>(def.sub);
+		if (def.op == Opcode::Copy ||
+			(def.op == Opcode::Convert &&
+				(conversion == ConvertOp::ZExt || conversion == ConvertOp::SExt || conversion == ConvertOp::Trunc)))
+		{
+			v = def.ops[0];
+			continue;
+		}
+		if (def.op != Opcode::Binary || !def.ops[1].is(ValueKind::Integer))
+			return false;
+		const BinaryOp op = static_cast<BinaryOp>(def.sub);
+		const int64_t k = static_cast<int64_t>(body_.literals[def.ops[1].index].low);
+		if (op == BinaryOp::And && k > 0 && (k & (k + 1)) == 0)
+			modulus = k + 1;
+		else if ((op == BinaryOp::UMod || op == BinaryOp::Mod) && k > 1)
+			modulus = k;
+		else
+			return false;
+		Linear count;
+		if (modulus > kCellModulus || !integer_term(def.ops[0], count, 1, 8) || count.scale != 1 ||
+			count.term_scale != 0 || count.offset < 0)
+			return false;
+		first = count.offset % modulus;
+		return true;
+	}
+	return false;
+}
+
+// The lane cells: a load of an element the pass's count modulo K picks, and
+// a later store of a value of the pass to the same address. Both leave the
+// code the lanes read. Any other access of the element stays an access,
+// which has no lanes (its address is no line in the pass).
+void LoopVectorizer::read_lane_cells()
+{
+	lane_cells_.clear();
+	for (size_t i = 0; i < code_.size(); ++i)
+	{
+		const Instruction& read = body_.instructions[code_[i]];
+		if (read.op != Opcode::Load || lane_bytes(read.type) == 0 || !in_body(read.ops[0]))
+			continue;
+		const Value at = read.ops[0];
+		const Instruction& element = body_.instructions[body_.temps[at.index].def];
+		int64_t modulus = 0, first = 0;
+		if (element.op != Opcode::Index || in_body(element.ops[0]) ||
+			storage_bytes(element.type) != lane_bytes(read.type) || !count_modulo(element.ops[1], modulus, first))
+			continue;
+		for (size_t j = i + 1; j < code_.size(); ++j)
+		{
+			const Instruction& write = body_.instructions[code_[j]];
+			if (write.op != Opcode::Store || !(write.ops[1] == at))
+				continue;
+			if (write.type.kind() == read.type.kind() && in_body(write.ops[0]))
+			{
+				lane_cells_.push_back(LaneCell{
+					code_[i], code_[j], read.result, write.ops[0].index, element.ops[0], read.type, modulus, first });
+				code_.erase(code_.begin() + static_cast<std::ptrdiff_t>(j));
+				code_.erase(code_.begin() + static_cast<std::ptrdiff_t>(i));
+				--i;
+			}
+			break;
+		}
+	}
+}
+
+// Whether no other access of the loop reaches a lane cell's array, a local
+// one whose address only accesses and steps take (escaped_slots): no pointer
+// of another root reaches it. The lanes hold the elements in the order of
+// the passes, so the accesses step up, and the cells' values are lanes only.
+bool LoopVectorizer::lane_cells_apart()
+{
+	if (lane_cells_.empty())
+		return true;
+	if (backward_)
+		return false;
+	const std::vector<uint8_t> escaped = escaped_slots(body_, true);
+	for (size_t k = 0; k < lane_cells_.size(); ++k)
+	{
+		const LaneCell& cell = lane_cells_[k];
+		const Value object = locate(body_, cell.base).root;
+		if (!object.is(ValueKind::Slot) || escaped[object.index] != 0 || in_scalar_[cell.value] != 0 ||
+			in_scalar_[cell.next] != 0)
+			return false;
+		for (const Access& a : accesses_)
+			if (a.object == object)
+				return false;
+		for (size_t j = 0; j < k; ++j)
+			if (locate(body_, lane_cells_[j].base).root == object)
+				return false;
+	}
+	return true;
+}
+
+// Whether each lane cell's elements fill whole registers of lanes, at most
+// kCellGroups of them, with the first pass's element in a register's first
+// lane. A round of the vector loop then runs as many copies of the lanes'
+// code as the cell of the most registers has.
+bool LoopVectorizer::lane_cells_fit()
+{
+	const int64_t lanes = static_cast<int64_t>(lanes_);
+	copies_ = 1;
+	for (const LaneCell& cell : lane_cells_)
+	{
+		if (cell.modulus % lanes != 0 || cell.first % lanes != 0 || cell.modulus / lanes > kCellGroups)
+			return false;
+		copies_ = std::max(copies_, cell.modulus / lanes);
+	}
+	for (const LaneCell& cell : lane_cells_)
+		if (copies_ % (cell.modulus / lanes) != 0)
+			return false;
+	return true;
+}
+
 void LoopVectorizer::mark(Value v, std::vector<uint8_t>& marks)
 {
 	if (in_body(v))
@@ -816,6 +970,8 @@ void LoopVectorizer::mark_uses()
 		if (r.store != kNoId)
 			mark(r.cell, in_scalar_);
 	}
+	for (const LaneCell& cell : lane_cells_)
+		in_wide_[cell.next] = 1;
 	for (size_t at = code_.size(); at-- > 0;)
 	{
 		const Instruction& inst = body_.instructions[code_[at]];
@@ -1125,13 +1281,15 @@ bool LoopVectorizer::choose_lanes()
 	for (const Reduction& r : reductions_)
 		if (!lane(lane_bytes(r.type)))
 			return false;
+	for (const LaneCell& cell : lane_cells_)
+		lane(lane_bytes(cell.type));
 	for (const Induction& iv : inductions_)
 		if (in_wide_[iv.phi])
 		{
 			if (!lane(lane_bytes(iv.type)) || iv.step != static_cast<int32_t>(iv.step))
 				return false;
 		}
-	if (lane_bytes_ == 0 || (accesses_.empty() && reductions_.empty()) || !lanes_pay_for_order())
+	if (lane_bytes_ == 0 || (accesses_.empty() && reductions_.empty() && lane_cells_.empty()) || !lanes_pay_for_order())
 		return false;
 	lanes_ = 16 / lane_bytes_;
 	return true;
@@ -1240,8 +1398,9 @@ bool LoopVectorizer::analyze(uint32_t loop)
 	if (!read_phis() || !read_exit() || !read_code())
 		return false;
 	read_cells();
+	read_lane_cells();
 	mark_uses();
-	return read_accesses() && choose_lanes() && read_dependences();
+	return read_accesses() && lane_cells_apart() && choose_lanes() && lane_cells_fit() && read_dependences();
 }
 
 void LoopVectorizer::at(BlockId block, InstId tail)
@@ -1675,6 +1834,80 @@ Value LoopVectorizer::cell_address(const Reduction& r)
 	return emit(field, body_.temps[r.cell.index].type);
 }
 
+// Where a lane cell's register `group` of elements lies.
+Value LoopVectorizer::group_address(const LaneCell& cell, int64_t group)
+{
+	if (group == 0)
+		return cell.base;
+	Instruction field = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
+	field.ops[0] = cell.base;
+	field.ops[1] = literal(group * static_cast<int64_t>(lanes_ * lane_bytes(cell.type)));
+	return emit(field, Type::scalar(TypeKind::Ptr));
+}
+
+// An induction's value `by` of its units on from `from`. (Each value is one
+// the scalar counter takes.)
+Value LoopVectorizer::stepped(const Induction& iv, Value from, int64_t by)
+{
+	if (iv.type.is_pointer())
+	{
+		Instruction inst = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
+		inst.ops[0] = from;
+		inst.ops[1] = literal(by);
+		return emit(inst, iv.type);
+	}
+	Instruction add = make_instruction(Opcode::Binary, iv.type);
+	add.sub = static_cast<uint8_t>(BinaryOp::Add);
+	add.ops[0] = from;
+	add.ops[1] = literal(by);
+	if (iv.no_wrap)
+		add.flags |= IF_NO_WRAP;
+	return emit(add, iv.type);
+}
+
+// Where a later copy of the lanes' code starts: the counters `passes` passes
+// on from the round's first, the sums as the copy before leaves them.
+void LoopVectorizer::advance_copy(
+	const std::vector<Value>& counters, const std::vector<Value>& lane_counters, int64_t passes)
+{
+	for (size_t k = 0; k < inductions_.size(); ++k)
+	{
+		const Induction& iv = inductions_[k];
+		scalars_[iv.phi] = stepped(iv, counters[k], iv.step * passes);
+		if (in_wide_[iv.phi])
+		{
+			VectorOp add;
+			lane_operation(BinaryOp::Add, iv.type, add);
+			wides_[iv.phi] = vector(add, lane_counters[k], broadcast(literal(iv.step * passes), iv.type));
+		}
+	}
+	for (const Reduction& r : reductions_)
+		wides_[r.phi] = r.ordered ? r.next_sum : wides_[r.next];
+}
+
+// One round of the vector loop: copies_ copies of the lanes' code, each
+// lanes_ passes on from the one before, each reading and writing the register
+// of every lane cell that holds its passes' elements. `cells` holds the
+// cells' registers, and then what the round leaves in them.
+void LoopVectorizer::emit_round(
+	const std::vector<Value>& counters, const std::vector<Value>& lane_counters, std::vector<std::vector<Value>>& cells)
+{
+	const int64_t lanes = static_cast<int64_t>(lanes_);
+	for (int64_t copy = 0; copy < copies_; ++copy)
+	{
+		auto group = [&](size_t k) {
+			return static_cast<size_t>((lane_cells_[k].first / lanes + copy) % static_cast<int64_t>(cells[k].size()));
+		};
+		if (copy != 0)
+			advance_copy(counters, lane_counters, copy * lanes);
+		for (size_t k = 0; k < lane_cells_.size(); ++k)
+			wides_[lane_cells_[k].value] = cells[k][group(k)];
+		clone_scalars(true);
+		for (size_t k = 0; k < lane_cells_.size(); ++k)
+			cells[k][group(k)] = wides_[lane_cells_[k].next];
+	}
+}
+
 void LoopVectorizer::widen(const Instruction& inst, InstId origin)
 {
 	switch (inst.op)
@@ -1978,7 +2211,7 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	const bool up = counter.step > 0;
 	const Type type = counter.type, v128 = Type::scalar(TypeKind::V128);
 	const Type i64 = Type::scalar(TypeKind::I64);
-	const int64_t span = static_cast<int64_t>(lanes_) * (up ? counter.step : -counter.step);
+	const int64_t span = static_cast<int64_t>(lanes_) * copies_ * (up ? counter.step : -counter.step);
 	const ComparePredicate below = unsigned_counter_ ? ComparePredicate::Ult : ComparePredicate::Lt;
 	const ComparePredicate within = unsigned_counter_ ? ComparePredicate::Ule : ComparePredicate::Le;
 	const bool drains = !read_after_loop();
@@ -2039,6 +2272,13 @@ void LoopVectorizer::vectorize(uint32_t loop)
 		}
 	const std::vector<Value> wide_start = reduction_starts();
 	const std::vector<Value> wide_counter = counter_lanes();
+	std::vector<std::vector<Value>> cells(lane_cells_.size());
+	at(vector_pre_, pre_tail_);
+	for (size_t k = 0; k < lane_cells_.size(); ++k)
+		for (int64_t g = 0; g < lane_cells_[k].modulus / static_cast<int64_t>(lanes_); ++g)
+			cells[k].push_back(widen_load(
+				group_address(lane_cells_[k], g), lanes_ * lane_bytes(lane_cells_[k].type), lane_cells_[k].load));
+	pre_tail_ = tail_;
 
 	// The wide loop.
 	at(wide_loop, kNoId);
@@ -2065,8 +2305,12 @@ void LoopVectorizer::vectorize(uint32_t loop)
 			{ Value::block(vector_pre_), wide_start[k], Value::block(wide_loop), Value::none() }, sums[k]);
 		wides_[r.phi] = sums[k];
 	}
+	for (std::vector<Value>& registers : cells)
+		for (Value& v : registers)
+			make_phi(wide_loop, v128, { Value::block(vector_pre_), v, Value::block(wide_loop), Value::none() }, v);
+	const std::vector<std::vector<Value>> cell_phis = cells;
 	at(wide_loop, body_.blocks[wide_loop].last);
-	clone_scalars(true);
+	emit_round(counters, lane_counters, cells);
 	auto set_back_edge = [&](Value phi, Value next) {
 		Instruction& inst = body_.instructions[body_.temps[phi.index].def];
 		body_.operands[inst.extra_first + 3] = next;
@@ -2076,26 +2320,8 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	for (size_t k = 0; k < inductions_.size(); ++k)
 	{
 		const Induction& iv = inductions_[k];
-		const int64_t by = iv.step * static_cast<int64_t>(lanes_);
-		Value next = Value::none();
-		if (iv.type.is_pointer())
-		{
-			Instruction inst = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
-			inst.ops[0] = counters[k];
-			inst.ops[1] = literal(by);
-			next = emit(inst, iv.type);
-		}
-		else
-		{
-			Instruction add = make_instruction(Opcode::Binary, iv.type);
-			add.sub = static_cast<uint8_t>(BinaryOp::Add);
-			add.ops[0] = counters[k];
-			add.ops[1] = literal(by);
-			// (Each value is one the scalar counter takes.)
-			if (iv.no_wrap)
-				add.flags |= IF_NO_WRAP;
-			next = emit(add, iv.type);
-		}
+		const int64_t by = iv.step * static_cast<int64_t>(lanes_) * copies_;
+		const Value next = stepped(iv, counters[k], by);
 		set_back_edge(counters[k], next);
 		next_values[k] = next;
 		if (k == counter_)
@@ -2109,6 +2335,9 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	}
 	for (size_t k = 0; k < reductions_.size(); ++k)
 		set_back_edge(sums[k], reductions_[k].ordered ? reductions_[k].next_sum : wides_[reductions_[k].next]);
+	for (size_t k = 0; k < cells.size(); ++k)
+		for (size_t g = 0; g < cells[k].size(); ++g)
+			set_back_edge(cell_phis[k][g], cells[k][g]);
 	const ComparePredicate keep_going = drains ? within : below;
 	const Value more = up ? compare(keep_going, type, next_counter, limit)
 						  : compare(keep_going, type, limit, next_counter);
@@ -2139,6 +2368,10 @@ void LoopVectorizer::vectorize(uint32_t loop)
 		write.next = kNoId;
 		emit_void(write);
 	}
+	for (size_t k = 0; k < cells.size(); ++k)
+		for (size_t g = 0; g < cells[k].size(); ++g)
+			widen_store(cells[k][g], group_address(lane_cells_[k], static_cast<int64_t>(g)),
+				lanes_ * lane_bytes(lane_cells_[k].type), lane_cells_[k].store);
 	if (drains)
 	{
 		const Value left = up ? compare(below, type, next_counter, bound) : compare(below, type, bound, next_counter);

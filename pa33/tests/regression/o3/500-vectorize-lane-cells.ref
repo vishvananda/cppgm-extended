@@ -1,0 +1,540 @@
+declare function @observe(%p : ptr) -> void [unwind=no]
+
+function @digest(%data : ptr, %n : i64, %init : ptr, %out : ptr) -> void [no_inline=yes] {
+  slot $hashes : obj<32x4>
+
+  block ^entry:
+    %h = addr $hashes
+    copyobj 32x4 %init, %h
+    %t2 = cmp ne i64 %n, 0
+    %t3 = cmp uge i64 %n, 8
+    %t4 = binary and i64 %t2, %t3
+    branch %t4, ^loop_preheader_1, ^loop_preheader_4
+
+  block ^loop_preheader_1:
+    %t5 = binary add i64 %n, -8
+    %t6 = load v128 %h
+    %t7 = index i8 %h, 16
+    %t8 = load v128 %t7
+    %t9 = vector pzero
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t10 = phi v128 [^loop_preheader_1: %t8, ^wide_loop_2: %t37]
+    %t11 = phi v128 [^loop_preheader_1: %t6, ^wide_loop_2: %t24]
+    %t12 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t38]
+    %t13 = vector pslldi %t11, 5
+    %t14 = vector paddd %t11, %t13
+    %t15 = index u8 %data, %t12
+    %t16 = load i32 %t15
+    %t17 = vector fromi32 %t16
+    %t18 = vector punpcklbw %t17, %t9
+    %t19 = vector punpcklwd %t18, %t9
+    %t20 = vector paddd %t14, %t19
+    %t21 = vector pslldi %t20, 10
+    %t22 = vector paddd %t20, %t21
+    %t23 = vector psrldi %t20, 6
+    %t24 = vector pxor %t22, %t23
+    %t25 = binary add nowrap i64 %t12, 4
+    %t26 = vector pslldi %t10, 5
+    %t27 = vector paddd %t10, %t26
+    %t28 = index u8 %data, %t25
+    %t29 = load i32 %t28
+    %t30 = vector fromi32 %t29
+    %t31 = vector punpcklbw %t30, %t9
+    %t32 = vector punpcklwd %t31, %t9
+    %t33 = vector paddd %t27, %t32
+    %t34 = vector pslldi %t33, 10
+    %t35 = vector paddd %t33, %t34
+    %t36 = vector psrldi %t33, 6
+    %t37 = vector pxor %t35, %t36
+    %t38 = binary add nowrap i64 %t12, 8
+    %t39 = cmp ule i64 %t38, %t5
+    branch %t39, ^wide_loop_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t40 = index i8 %h, 16
+    store v128 %t24, %h
+    store v128 %t37, %t40
+    %t41 = cmp ult i64 %t38, %n
+    branch %t41, ^loop_preheader_4, ^done
+
+  block ^loop_preheader_4:
+    %t42 = phi i64 [^entry: 0, ^loop_exit_3: %t38]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^loop_preheader_4: %t42, ^body: %next]
+    %r = binary umod i64 %i, 8
+    %k = convert trunc u32 i64 %r
+    %e = index u32 %h, %k
+    %old = load typed u32 %e
+    %s5 = binary shl u32 %old, 5
+    %a = binary add u32 %old, %s5
+    %p = index u8 %data, %i
+    %b = load u8 %p
+    %z = convert zext u32 u8 %b
+    %c = binary add u32 %a, %z
+    %s10 = binary shl u32 %c, 10
+    %d = binary add u32 %c, %s10
+    %u6 = binary ushr u32 %c, 6
+    %new = binary xor u32 %d, %u6
+    store typed u32 %new, %e
+    %next = binary add i64 %i, 1
+    %more = cmp ult i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    copyobj 32x4 %h, %out
+    return void
+}
+function @mask(%x : ptr, %n : i64, %out : ptr) -> void [no_inline=yes] {
+  slot $sums : obj<16x4>
+
+  block ^entry:
+    %s = addr $sums
+    copyobj 16x4 %out, %s
+    %t2 = cmp ne i64 %n, 0
+    %t3 = cmp uge i64 %n, 4
+    %t4 = binary and i64 %t2, %t3
+    branch %t4, ^loop_preheader_1, ^loop_preheader_4
+
+  block ^loop_preheader_1:
+    %t5 = binary add i64 %n, -4
+    %t6 = load v128 %s
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t7 = phi v128 [^loop_preheader_1: %t6, ^wide_loop_2: %t12]
+    %t8 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t13]
+    %t9 = index i32 %x, %t8
+    %t10 = load v128 %t9
+    %t11 = vector paddd %t7, %t7
+    %t12 = vector pxor %t10, %t11
+    %t13 = binary add nowrap i64 %t8, 4
+    %t14 = cmp ule i64 %t13, %t5
+    branch %t14, ^wide_loop_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    store v128 %t12, %s
+    %t15 = cmp ult i64 %t13, %n
+    branch %t15, ^loop_preheader_4, ^done
+
+  block ^loop_preheader_4:
+    %t16 = phi i64 [^entry: 0, ^loop_exit_3: %t13]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^loop_preheader_4: %t16, ^body: %next]
+    %r = binary and i64 %i, 3
+    %e = index i32 %s, %r
+    %old = load typed i32 %e
+    %twice = binary add i32 %old, %old
+    %p = index i32 %x, %i
+    %v = load typed i32 %p
+    %new = binary xor i32 %v, %twice
+    store typed i32 %new, %e
+    %next = binary add i64 %i, 1
+    %more = cmp ult i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    copyobj 16x4 %s, %out
+    return void
+}
+function @decay(%x : ptr, %w : f32, %n : i32, %out : ptr) -> void [no_inline=yes] {
+  slot $acc : obj<16x4>
+
+  block ^entry:
+    %s = addr $acc
+    copyobj 16x4 %out, %s
+    %t2 = cmp gt i32 %n, 0
+    %t3 = cmp uge i32 %n, 4
+    %t4 = binary and i64 %t2, %t3
+    branch %t4, ^loop_preheader_1, ^loop_preheader_4
+
+  block ^loop_preheader_1:
+    %t5 = binary add i32 %n, -4
+    %t6 = load v128 %s
+    %t7 = vector fromf32 %w
+    %t8 = vector pshufd %t7, 0
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t9 = phi v128 [^loop_preheader_1: %t6, ^wide_loop_2: %t15]
+    %t10 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t16]
+    %t11 = copy i64 %t10
+    %t12 = index f32 %x, %t11
+    %t13 = load v128 %t12
+    %t14 = vector mulps %t8, %t9
+    %t15 = vector addps %t13, %t14
+    %t16 = binary add nowrap i64 %t10, 4
+    %t17 = convert trunc exact i32 i64 %t16
+    %t18 = cmp le i32 %t17, %t5
+    branch %t18, ^wide_loop_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    store v128 %t15, %s
+    %t19 = cmp lt i32 %t17, %n
+    branch %t19, ^loop_preheader_4, ^done
+
+  block ^loop_preheader_4:
+    %t20 = phi i32 [^entry: 0, ^loop_exit_3: %t17]
+    %t21 = convert sext i64 i32 %t20
+    jump ^body
+
+  block ^body:
+    %t22 = phi i64 [^loop_preheader_4: %t21, ^body: %t33]
+    %i = convert trunc exact i32 i64 %t22
+    %r = binary and i32 %i, 3
+    %k = convert sext i64 i32 %r
+    %e = index f32 %s, %k
+    %old = load typed f32 %e
+    %wide = copy i64 %t22
+    %p = index f32 %x, %wide
+    %v = load typed f32 %p
+    %m = binary mul f32 %w, %old
+    %new = binary add f32 %v, %m
+    store typed f32 %new, %e
+    %t33 = binary add nowrap i64 %t22, 1
+    %next = convert trunc exact i32 i64 %t33
+    %more = cmp lt i32 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    copyobj 16x4 %s, %out
+    return void
+}
+function @offset(%data : ptr, %n : i64, %out : ptr) -> void [no_inline=yes] {
+  slot $hashes : obj<32x4>
+
+  block ^entry:
+    %h = addr $hashes
+    copyobj 32x4 %out, %h
+    %more0 = cmp ugt i64 %n, 4
+    branch %more0, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t3 = binary sub i64 %n, 4
+    %t4 = cmp uge i64 %t3, 8
+    %t5 = binary and i64 %more0, %t4
+    branch %t5, ^loop_preheader_2, ^loop_preheader_5
+
+  block ^loop_preheader_2:
+    %t6 = binary add i64 %n, -8
+    %t7 = load v128 %h
+    %t8 = index i8 %h, 16
+    %t9 = load v128 %t8
+    %t10 = vector pzero
+    jump ^wide_loop_3
+
+  block ^wide_loop_3:
+    %t11 = phi v128 [^loop_preheader_2: %t9, ^wide_loop_3: %t19]
+    %t12 = phi v128 [^loop_preheader_2: %t7, ^wide_loop_3: %t26]
+    %t13 = phi i64 [^loop_preheader_2: 4, ^wide_loop_3: %t27]
+    %t14 = index u8 %data, %t13
+    %t15 = load i32 %t14
+    %t16 = vector fromi32 %t15
+    %t17 = vector punpcklbw %t16, %t10
+    %t18 = vector punpcklwd %t17, %t10
+    %t19 = vector paddd %t11, %t18
+    %t20 = binary add nowrap i64 %t13, 4
+    %t21 = index u8 %data, %t20
+    %t22 = load i32 %t21
+    %t23 = vector fromi32 %t22
+    %t24 = vector punpcklbw %t23, %t10
+    %t25 = vector punpcklwd %t24, %t10
+    %t26 = vector paddd %t12, %t25
+    %t27 = binary add nowrap i64 %t13, 8
+    %t28 = cmp ule i64 %t27, %t6
+    branch %t28, ^wide_loop_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t29 = index i8 %h, 16
+    store v128 %t26, %h
+    store v128 %t19, %t29
+    %t30 = cmp ult i64 %t27, %n
+    branch %t30, ^loop_preheader_5, ^done
+
+  block ^loop_preheader_5:
+    %t31 = phi i64 [^loop_preheader_1: 4, ^loop_exit_4: %t27]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^loop_preheader_5: %t31, ^body: %next]
+    %r = binary umod i64 %i, 8
+    %e = index u32 %h, %r
+    %old = load typed u32 %e
+    %p = index u8 %data, %i
+    %b = load u8 %p
+    %z = convert zext u32 u8 %b
+    %new = binary add u32 %old, %z
+    store typed u32 %new, %e
+    %next = binary add i64 %i, 1
+    %more = cmp ult i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    copyobj 32x4 %h, %out
+    return void
+}
+function @escaped(%data : ptr, %n : i64, %out : ptr) -> void [no_inline=yes] {
+  slot $hashes : obj<32x4>
+
+  block ^entry:
+    %h = addr $hashes
+    copyobj 32x4 %out, %h
+    call void @observe(%h)
+    %t2 = binary and i64 %n, -2
+    branch %t2, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t19]
+    %t4 = binary umod i64 %t3, 8
+    %t5 = index u32 %h, %t4
+    %t6 = load typed u32 %t5
+    %t7 = index u8 %data, %t3
+    %t8 = load u8 %t7
+    %t9 = convert zext u32 u8 %t8
+    %t10 = binary add u32 %t6, %t9
+    store typed u32 %t10, %t5
+    %t11 = binary add i64 %t3, 1
+    %t12 = binary umod i64 %t11, 8
+    %t13 = index u32 %h, %t12
+    %t14 = load typed u32 %t13
+    %t15 = index u8 %data, %t11
+    %t16 = load u8 %t15
+    %t17 = convert zext u32 u8 %t16
+    %t18 = binary add u32 %t14, %t17
+    store typed u32 %t18, %t13
+    %t19 = binary add i64 %t3, 2
+    %t20 = cmp ne i64 %t2, %t19
+    branch %t20, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t21 = cmp ult i64 %t19, %n
+    branch %t21, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t22 = phi i64 [^entry: 0, ^loop_exit_3: %t19]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^wide_tail_4: %t22, ^body: %next]
+    %r = binary umod i64 %i, 8
+    %e = index u32 %h, %r
+    %old = load typed u32 %e
+    %p = index u8 %data, %i
+    %b = load u8 %p
+    %z = convert zext u32 u8 %b
+    %new = binary add u32 %old, %z
+    store typed u32 %new, %e
+    %next = binary add i64 %i, 1
+    %more = cmp ult i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    copyobj 32x4 %h, %out
+    return void
+}
+function @also_read(%data : ptr, %n : i64, %out : ptr) -> void [no_inline=yes] {
+  slot $hashes : obj<32x4>
+
+  block ^entry:
+    %h = addr $hashes
+    copyobj 32x4 %out, %h
+    %t2 = binary and i64 %n, -2
+    branch %t2, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t23]
+    %t4 = binary umod i64 %t3, 8
+    %t5 = index u32 %h, %t4
+    %t6 = load typed u32 %t5
+    %t7 = load typed u32 %h
+    %t8 = index u8 %data, %t3
+    %t9 = load u8 %t8
+    %t10 = convert zext u32 u8 %t9
+    %t11 = binary add u32 %t6, %t10
+    %t12 = binary xor u32 %t7, %t11
+    store typed u32 %t12, %t5
+    %t13 = binary add i64 %t3, 1
+    %t14 = binary umod i64 %t13, 8
+    %t15 = index u32 %h, %t14
+    %t16 = load typed u32 %t15
+    %t17 = load typed u32 %h
+    %t18 = index u8 %data, %t13
+    %t19 = load u8 %t18
+    %t20 = convert zext u32 u8 %t19
+    %t21 = binary add u32 %t16, %t20
+    %t22 = binary xor u32 %t17, %t21
+    store typed u32 %t22, %t15
+    %t23 = binary add i64 %t3, 2
+    %t24 = cmp ne i64 %t2, %t23
+    branch %t24, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t25 = cmp ult i64 %t23, %n
+    branch %t25, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t26 = phi i64 [^entry: 0, ^loop_exit_3: %t23]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^wide_tail_4: %t26, ^body: %next]
+    %r = binary umod i64 %i, 8
+    %e = index u32 %h, %r
+    %old = load typed u32 %e
+    %first = load typed u32 %h
+    %p = index u8 %data, %i
+    %b = load u8 %p
+    %z = convert zext u32 u8 %b
+    %sum = binary add u32 %old, %z
+    %new = binary xor u32 %first, %sum
+    store typed u32 %new, %e
+    %next = binary add i64 %i, 1
+    %more = cmp ult i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    copyobj 32x4 %h, %out
+    return void
+}
+function @misaligned(%data : ptr, %n : i64, %out : ptr) -> void [no_inline=yes] {
+  slot $hashes : obj<32x4>
+
+  block ^entry:
+    %h = addr $hashes
+    copyobj 32x4 %out, %h
+    %more0 = cmp ugt i64 %n, 1
+    branch %more0, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    branch 1, ^loop_preheader_2, ^wide_tail_6
+
+  block ^loop_preheader_2:
+    %t3 = binary sub i64 %n, 1
+    %t4 = binary and i64 %t3, -2
+    branch %t4, ^loop_preheader_3, ^wide_tail_6
+
+  block ^loop_preheader_3:
+    %t5 = binary add i64 %t4, 1
+    jump ^unrolled_4
+
+  block ^unrolled_4:
+    %t6 = phi i64 [^loop_preheader_3: 1, ^unrolled_4: %t22]
+    %t7 = binary umod i64 %t6, 8
+    %t8 = index u32 %h, %t7
+    %t9 = load typed u32 %t8
+    %t10 = index u8 %data, %t6
+    %t11 = load u8 %t10
+    %t12 = convert zext u32 u8 %t11
+    %t13 = binary add u32 %t9, %t12
+    store typed u32 %t13, %t8
+    %t14 = binary add i64 %t6, 1
+    %t15 = binary umod i64 %t14, 8
+    %t16 = index u32 %h, %t15
+    %t17 = load typed u32 %t16
+    %t18 = index u8 %data, %t14
+    %t19 = load u8 %t18
+    %t20 = convert zext u32 u8 %t19
+    %t21 = binary add u32 %t17, %t20
+    store typed u32 %t21, %t16
+    %t22 = binary add i64 %t6, 2
+    %t23 = cmp ne i64 %t5, %t22
+    branch %t23, ^unrolled_4, ^loop_exit_5
+
+  block ^loop_exit_5:
+    %t24 = cmp ult i64 %t22, %n
+    branch %t24, ^wide_tail_6, ^done
+
+  block ^wide_tail_6:
+    %t25 = phi i64 [^loop_preheader_1: 1, ^loop_exit_5: %t22, ^loop_preheader_2: 1]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^wide_tail_6: %t25, ^body: %next]
+    %r = binary umod i64 %i, 8
+    %e = index u32 %h, %r
+    %old = load typed u32 %e
+    %p = index u8 %data, %i
+    %b = load u8 %p
+    %z = convert zext u32 u8 %b
+    %new = binary add u32 %old, %z
+    store typed u32 %new, %e
+    %next = binary add i64 %i, 1
+    %more = cmp ult i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    copyobj 32x4 %h, %out
+    return void
+}
+function @pair(%data : ptr, %n : i64, %out : ptr) -> void [no_inline=yes] {
+  slot $hashes : obj<8x4>
+
+  block ^entry:
+    %h = addr $hashes
+    copyobj 8x4 %out, %h
+    %t2 = binary and i64 %n, -2
+    branch %t2, ^loop_preheader_1, ^wide_tail_4
+
+  block ^loop_preheader_1:
+    jump ^unrolled_2
+
+  block ^unrolled_2:
+    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t19]
+    %t4 = binary umod i64 %t3, 2
+    %t5 = index u32 %h, %t4
+    %t6 = load typed u32 %t5
+    %t7 = index u8 %data, %t3
+    %t8 = load u8 %t7
+    %t9 = convert zext u32 u8 %t8
+    %t10 = binary add u32 %t6, %t9
+    store typed u32 %t10, %t5
+    %t11 = binary add i64 %t3, 1
+    %t12 = binary umod i64 %t11, 2
+    %t13 = index u32 %h, %t12
+    %t14 = load typed u32 %t13
+    %t15 = index u8 %data, %t11
+    %t16 = load u8 %t15
+    %t17 = convert zext u32 u8 %t16
+    %t18 = binary add u32 %t14, %t17
+    store typed u32 %t18, %t13
+    %t19 = binary add i64 %t3, 2
+    %t20 = cmp ne i64 %t2, %t19
+    branch %t20, ^unrolled_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t21 = cmp ult i64 %t19, %n
+    branch %t21, ^wide_tail_4, ^done
+
+  block ^wide_tail_4:
+    %t22 = phi i64 [^entry: 0, ^loop_exit_3: %t19]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^wide_tail_4: %t22, ^body: %next]
+    %r = binary umod i64 %i, 2
+    %e = index u32 %h, %r
+    %old = load typed u32 %e
+    %p = index u8 %data, %i
+    %b = load u8 %p
+    %z = convert zext u32 u8 %b
+    %new = binary add u32 %old, %z
+    store typed u32 %new, %e
+    %next = binary add i64 %i, 1
+    %more = cmp ult i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    copyobj 8x4 %h, %out
+    return void
+}
