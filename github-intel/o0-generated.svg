@@ -1,10 +1,10 @@
-<svg data-original-label="Public O0 generated vs gcc; INTEL(R) XEON(R) PLATINUM 8573C; revision e2831a513b668c602faa8098e55eb22ee08a670f" data-original-message="1.14×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Public O0 generated vs gcc; INTEL(R) XEON(R) PLATINUM 8573C; revision e2831a513b668c602faa8098e55eb22ee08a670f; measured e2831a513b668c602faa8098e55eb22ee08a670f; 78 commits behind main: 1.14×*">
-  <title>Public O0 generated vs gcc; INTEL(R) XEON(R) PLATINUM 8573C; revision e2831a513b668c602faa8098e55eb22ee08a670f; measured e2831a513b668c602faa8098e55eb22ee08a670f; 78 commits behind main: 1.14×*</title>
+<svg data-original-label="Public O0 generated vs gcc; Intel(R) Xeon(R) 6973P-C; revision 393d1b1d09089ffdade676f4e7cbad8759c15d2a" data-original-message="1.11×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Public O0 generated vs gcc; Intel(R) Xeon(R) 6973P-C; revision 393d1b1d09089ffdade676f4e7cbad8759c15d2a; measured 393d1b1d09089ffdade676f4e7cbad8759c15d2a; 0 commits behind main: 1.11×">
+  <title>Public O0 generated vs gcc; Intel(R) Xeon(R) 6973P-C; revision 393d1b1d09089ffdade676f4e7cbad8759c15d2a; measured 393d1b1d09089ffdade676f4e7cbad8759c15d2a; 0 commits behind main: 1.11×</title>
   <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
   <g clip-path="url(#badge)">
     <rect width="64" height="24" fill="#555"/>
     <rect x="64" width="56" height="24" fill="#14532d"/>
   </g>
   <text x="32" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" textLength="52" lengthAdjust="spacingAndGlyphs">CI Intel</text>
-  <text x="92" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="44" lengthAdjust="spacingAndGlyphs">1.14×*</text>
+  <text x="92" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">1.11×</text>
 </svg>
