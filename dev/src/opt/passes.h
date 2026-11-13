@@ -301,6 +301,11 @@ bool widen_counters(FunctionContext& context);
 bool eliminate_tail_recursion(FunctionContext& context);
 // O2+: `sin` and `cos` of one value become one `sincos`.
 bool combine_sin_cos(FunctionContext& context);
+// O2+: the call `id` of a C library math function the compiler can do itself
+// becomes that instruction, after new ones inserted following `prev` (which
+// ends at the last of them). Value simplification calls it
+// (opt/math_calls.cpp).
+bool simplify_math_call(FunctionContext& context, lowir::BlockId block, lowir::InstId& prev, lowir::InstId id);
 // O2+: a `sqrt` of what may be negative becomes the instruction, with the call
 // on the path of a negative operand (opt/math_calls.cpp).
 bool guard_sqrt_calls(FunctionContext& context);

@@ -445,7 +445,160 @@ bool SqrtGuards::run()
 	return changed;
 }
 
+// Whether a floating value is never below zero: its square root is no domain
+// error, whose errno a call must set. (A NaN sets none.)
+bool nonnegative(const FunctionBody& body, Value v, unsigned depth)
+{
+	Constant c;
+	if (literal_constant(body, v, c))
+		return c.kind == ValueKind::Float &&
+			(c.float_kind == TypeKind::F32 ? (c.bits.low >> 31) & 1 : c.bits.low >> 63) == 0;
+	const Instruction* def = depth != 0 && v.is(ValueKind::Temp) && v.index >= body.parameter_count &&
+			body.temps[v.index].def != kNoId
+		? &body.instructions[body.temps[v.index].def]
+		: nullptr;
+	if (def == nullptr)
+		return false;
+	switch (def->op)
+	{
+	case Opcode::Binary:
+	{
+		const BinaryOp op = static_cast<BinaryOp>(def->sub);
+		if (op == BinaryOp::Mul && def->ops[0] == def->ops[1])
+			return true;
+		return (op == BinaryOp::Add || op == BinaryOp::Mul || op == BinaryOp::Div) &&
+			nonnegative(body, def->ops[0], depth - 1) && nonnegative(body, def->ops[1], depth - 1);
+	}
+	case Opcode::Unary:
+		return static_cast<UnaryOp>(def->sub) == UnaryOp::Sqrt;
+	default:
+		return false;
+	}
+}
+
 } // namespace
+
+// fabs is the sign bit cleared, abs a selected negation. pow of a literal
+// exponent 2, 1, 0 or -1 is x * x, x, 1 or 1 / x, as GCC folds it (no errno
+// either). sqrt of a value that cannot be negative is the instruction.
+bool simplify_math_call(FunctionContext& context, BlockId block, InstId& prev, InstId id)
+{
+	FunctionBody& body = context.body;
+	const Instruction call = body.instructions[id];
+	if (context.level < 2 || !call.ops[0].is(ValueKind::Symbol) || call.result == kNoId || call.extra_count == 0 ||
+		call.extra_count > 2)
+		return false;
+	const MathFunction function = context.program.math_function(call.ops[0].index);
+	if (function == MathFunction::None || function == MathFunction::Sin || function == MathFunction::Cos)
+		return false;
+	const Value x = body.operands[call.extra_first];
+	const Type type = call.type;
+	const TypeKind kind = type.kind();
+	const bool typed = x.is(ValueKind::Temp) ? body.temps[x.index].type == type
+											 : function == MathFunction::Pow && x.is(ValueKind::Float);
+	if (!typed || call.extra_count != (function == MathFunction::Pow ? 2u : 1u))
+		return false;
+	const bool floating = kind == TypeKind::F32 || kind == TypeKind::F64;
+	if (function == MathFunction::Abs ? kind != TypeKind::I32 && kind != TypeKind::I64 : !floating)
+		return false;
+	auto emit = [&](Instruction inst, Type result_type) {
+		inst.location = call.location;
+		const InstId at = append_instruction(body, inst);
+		body.instructions[at].result = append_temp(body, result_type, at);
+		insert_after(body, block, prev, at);
+		prev = at;
+		return Value::temp(body.instructions[at].result);
+	};
+	// The call becomes the instruction left in `last`.
+	Instruction last = make_instruction(Opcode::Copy, type);
+	last.ops[0] = x;
+	switch (function)
+	{
+	case MathFunction::Fabs:
+	{
+		const Type bits = Type::scalar(kind == TypeKind::F64 ? TypeKind::I64 : TypeKind::I32);
+		Instruction copy = make_instruction(Opcode::Copy, bits);
+		copy.ops[0] = x;
+		Instruction mask = make_instruction(Opcode::Binary, bits);
+		mask.sub = static_cast<uint8_t>(BinaryOp::And);
+		mask.ops[0] = emit(copy, bits);
+		mask.ops[1] = integer_value(
+			body, integer_literal(kind == TypeKind::F64 ? INT64_C(0x7fffffffffffffff) : INT64_C(0x7fffffff)));
+		last.ops[0] = emit(mask, bits);
+		break;
+	}
+	case MathFunction::Abs:
+	{
+		Instruction negate = make_instruction(Opcode::Unary, type);
+		negate.sub = static_cast<uint8_t>(UnaryOp::Neg);
+		negate.ops[0] = x;
+		const Value negated = emit(negate, type);
+		Instruction below = make_instruction(Opcode::Compare, type);
+		below.sub = static_cast<uint8_t>(ComparePredicate::Lt);
+		below.ops[0] = x;
+		below.ops[1] = integer_value(body, integer_literal(0));
+		last = make_instruction(Opcode::Select, type);
+		last.ops[0] = emit(below, Type::scalar(TypeKind::I64));
+		last.ops[1] = negated;
+		last.ops[2] = x;
+		break;
+	}
+	case MathFunction::Pow:
+	{
+		Constant e;
+		if (!literal_constant(body, body.operands[call.extra_first + 1], e) || e.kind != ValueKind::Float ||
+			e.float_kind != kind)
+			return false;
+		double exponent;
+		if (kind == TypeKind::F64)
+			std::memcpy(&exponent, &e.bits.low, 8);
+		else
+		{
+			float narrow;
+			const uint32_t raw = static_cast<uint32_t>(e.bits.low);
+			std::memcpy(&narrow, &raw, 4);
+			exponent = narrow;
+		}
+		if (exponent == 2)
+		{
+			last = make_instruction(Opcode::Binary, type);
+			last.sub = static_cast<uint8_t>(BinaryOp::Mul);
+			last.ops[0] = last.ops[1] = x;
+		}
+		else if (exponent == -1)
+		{
+			last = make_instruction(Opcode::Binary, type);
+			last.sub = static_cast<uint8_t>(BinaryOp::Div);
+			last.ops[0] = phi_input(body, type, integer_value(body, integer_literal(1)));
+			last.ops[1] = x;
+		}
+		else if (exponent == 0)
+			last.ops[0] = phi_input(body, type, integer_value(body, integer_literal(1)));
+		else if (exponent != 1)
+			return false;
+		break;
+	}
+	case MathFunction::Sqrt:
+		if (!nonnegative(body, x, 6))
+			return false;
+		last = make_instruction(Opcode::Unary, type);
+		last.sub = static_cast<uint8_t>(UnaryOp::Sqrt);
+		last.ops[0] = x;
+		break;
+	default:
+		return false;
+	}
+	Instruction& replaced = body.instructions[id];
+	replaced.op = last.op;
+	replaced.sub = last.sub;
+	replaced.type = type;
+	replaced.ops[0] = last.ops[0];
+	replaced.ops[1] = last.ops[1];
+	replaced.ops[2] = last.ops[2];
+	replaced.extra_first = replaced.extra_count = 0;
+	replaced.flags = 0;
+	return true;
+}
 
 bool guard_sqrt_calls(FunctionContext& context)
 {
