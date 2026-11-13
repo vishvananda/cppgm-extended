@@ -11,7 +11,7 @@ namespace {
 // without disturbing either operand. Keep full-address scratch dependencies.
 Reg divide_scratch(const Inst& inst)
 {
-	if (inst.op != Op::Div || inst.type != lowir::TypeKind::I64 || inst.nops != 1)
+	if ((inst.op != Op::Div && inst.op != Op::Idiv) || inst.type != lowir::TypeKind::I64 || inst.nops != 1)
 		return kNoReg;
 	const Operand& divisor = inst.ops[0];
 	if (divisor.kind != OperandKind::Reg && divisor.kind != OperandKind::Mem)
@@ -38,7 +38,9 @@ Inst operation(Op op, lowir::TypeKind type, Operand a, Operand b = Operand())
 // A 32-bit unsigned divide gives the full 64-bit result when both operands
 // fit, including a zero divisor's hardware trap. The cold path retains the
 // original operation for every other input. Unlike an IR narrowing guess,
-// this guard never discards high operand bits.
+// this guard never discards high operand bits. A signed divide takes the
+// same path: operands that fit are not negative, so the quotient and
+// remainder are the unsigned ones, and the cqo before it has cleared rdx.
 void narrow_variable_divides(Function& function)
 {
 	bool candidate = false;
@@ -93,6 +95,7 @@ void narrow_variable_divides(Function& function)
 			emit(operation(Op::Jmp, lowir::TypeKind::Void, Operand::make_label(fast)));
 			begin(fast);
 			Inst word = divide;
+			word.op = Op::Div;
 			word.type = lowir::TypeKind::I32;
 			emit(word);
 			emit(operation(Op::Jmp, lowir::TypeKind::Void, Operand::make_label(join)));
