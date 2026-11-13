@@ -1,0 +1,9 @@
+{
+  "name": "cppgm-wasi-inception",
+  "private": true,
+  "description": "Optional maintainer browser inception dependencies",
+  "dependencies": {
+    "@bjorn3/browser_wasi_shim": "0.4.2",
+    "playwright": "1.63.0"
+  }
+}

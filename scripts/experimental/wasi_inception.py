@@ -125,6 +125,7 @@ def prepare(args):
     (inputs / "checks/floating.cpp").write_text(floating_cases())
     flags = ["--target=wasm32-wasip1", "--sysroot=sysroot", "-resource-dir=resource",
              "-std=c++11", "-D_GNU_SOURCE", "-include", "wasi_host.h",
+             "-D__cpp_exceptions=199711L", "-D__cpp_rtti=199711L",
              "-DCPPGM_TELEMETRY_ENABLED=0", "-Idev/src", "-Igenerated", "-O" + str(args.optimization)]
     files = []
     with (package / "bundle.bin").open("wb") as bundle:

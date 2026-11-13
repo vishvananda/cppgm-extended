@@ -293,9 +293,12 @@ verify_expectation_sidecars() {
 # comments, the audit prerequisite of test-report-nobuild, and their .PHONY
 # names.  The with-clang-% and with-clang-libcxx-% prefixes stay: they run
 # one target with a chosen toolchain.
-STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS='test-cells test-harness test-seams build-telemetry-off test-telemetry-off audit-cwg-references'
+STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS='test-cells test-harness test-seams build-telemetry-off test-telemetry-off audit-cwg-references test-wasm-inception test-wasm-inception-nobuild'
 sanitize_student_root_makefile() {
   perl -0pi -e '
+    s/^# Optional maintainer lane;[^\n]*\n(?:#[^\n]*\n)*test-wasm-inception: build\n(?:\t[^\n]*\n)+\n?//m;
+    s/^test-wasm-inception-nobuild:\n(?:\t[^\n]*\n)+\n?//m;
+    s/\btest-wasm-inception(?:-nobuild)? //g;
     s/^test-report-nobuild: audit-compiler-exceptions$/test-report-nobuild:/m;
     s/(?:^#[^\n]*\n)*^audit-[a-z-]+:[^\n]*\n\t\@(?:perl|python3) scripts\/audit_[a-z_]+\.(?:pl|py)[^\n]*\n\n?//mg;
     s/^build-telemetry-off:\n(?:\t[^\n]*\n)+\n?//m;

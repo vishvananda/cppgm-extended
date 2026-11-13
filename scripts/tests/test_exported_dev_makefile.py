@@ -228,13 +228,13 @@ class ExportedDevMakefileTests(unittest.TestCase):
         match = re.search(r"^STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS='([^']*)'$", script, re.M)
         self.assertIsNotNone(match, "missing STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS")
         dropped = match.group(1).split()
-        for target in ("test-cells", "test-harness"):
+        for target in ("test-cells", "test-harness", "test-wasm-inception", "test-wasm-inception-nobuild"):
             self.assertIn(target, dropped)
         self.assertIn('for target in $STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS; do', script)
         start = script.index("sanitize_student_root_makefile() {")
         end = script.index("\n}\n", start) + len("\n}\n")
         maintainer = (REPO_ROOT / "Makefile").read_text()
-        for target in ("test-cells", "test-harness"):
+        for target in ("test-cells", "test-harness", "test-wasm-inception", "test-wasm-inception-nobuild"):
             self.assertRegex(maintainer, rf"(?m)^{target}:")
         with tempfile.TemporaryDirectory(prefix="exported-root-makefile.") as temp:
             makefile = Path(temp) / "Makefile"

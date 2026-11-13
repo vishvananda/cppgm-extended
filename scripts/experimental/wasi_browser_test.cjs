@@ -3,8 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const [directory, playwright, chromium, firefox, selected = 'all'] = process.argv.slice(2);
-if (!firefox) throw Error('usage: wasi_browser_test.cjs PACKAGE PLAYWRIGHT_MODULE CHROMIUM FIREFOX');
+const [directory, playwright, chromium, firefox, selected = 'chromium'] = process.argv.slice(2);
+if (!directory || !playwright) throw Error('usage: wasi_browser_test.cjs PACKAGE PLAYWRIGHT_MODULE [CHROMIUM FIREFOX [chromium|firefox|all]]');
 if (!['all', 'chromium', 'firefox'].includes(selected)) throw Error('unknown browser selection');
 const root = path.resolve(directory);
 const pw = require(path.resolve(playwright));
@@ -26,7 +26,7 @@ const server = http.createServer((req, res) => {
     for (const [name, engine, executablePath] of [
       ['chromium', pw.chromium, chromium], ['firefox', pw.firefox, firefox]]) {
       if (selected !== 'all' && selected !== name) continue;
-      const browser = await engine.launch({headless: true, executablePath,
+      const browser = await engine.launch({headless: true, executablePath: executablePath || undefined,
         args: name === 'chromium' ? ['--no-sandbox'] : []});
       try {
         const context = await browser.newContext({viewport: null, acceptDownloads: true});

@@ -90,6 +90,7 @@ SUBMAKE_CC_FLAGS_ARG = $(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)")
 
 .PHONY: all build build-telemetry-off test test-telemetry-off audit-student-documents audit-cwg-references audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-usage audit-scaffold-spellings audit-ir-expectations audit-clang-format ref-test ref-test-debuginfo \
 	test-debuginfo test-debuginfo-nobuild    \
+	test-wasm-inception test-wasm-inception-nobuild \
 	test-target-features test-target-features-nobuild \
 	require-clang require-clang-libcxx asan-build test-cells \
 	test-report inception clean run-cppgm run-cppgm-nobuild \
@@ -100,6 +101,14 @@ SUBMAKE_CC_FLAGS_ARG = $(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)")
 .NOTPARALLEL: ref-test ref-test-debuginfo 
 
 all: build
+
+# Optional maintainer lane; dependencies and frozen results are described in
+# scripts/experimental/README.md. This is independent of the student report.
+test-wasm-inception: build
+	@$(MAKE) test-wasm-inception-nobuild WASM_INCEPTION_ARGS='$(WASM_INCEPTION_ARGS)'
+
+test-wasm-inception-nobuild:
+	python3 scripts/experimental/run_inception.py $(WASM_INCEPTION_ARGS)
 
 audit-student-documents:
 	@perl scripts/audit_student_documents.pl
@@ -297,6 +306,7 @@ test-cells:
 HARNESS_TESTS = \
 	scripts/tests/test_wasm_module.py \
 	scripts/tests/test_wasm_quality.py \
+	scripts/tests/test_wasi_inception.py \
 	scripts/tests/test_wasm_generators.py \
 	scripts/tests/test_machine_boundary.py \
 	scripts/tests/test_wasm_benchmarks.py \

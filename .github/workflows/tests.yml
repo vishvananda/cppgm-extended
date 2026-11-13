@@ -199,6 +199,62 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  wasm-inception:
+    name: optional WASI and Chromium inception
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install host headers and tool installer dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential curl xz-utils
+
+      - name: Download host compiler build
+        uses: actions/download-artifact@v7
+        with:
+          name: cppgm-build-ubuntu-24.04-gcc
+          path: ${{ runner.temp }}/cppgm-build-artifact
+
+      - name: Restore host compiler build
+        run: tar -xzf "$RUNNER_TEMP/cppgm-build-artifact/cppgm-build.tar.gz"
+
+      - name: Install pinned Wasm tools
+        run: perl scripts/install_wasm_tools.pl --prefix obj/wasm-tools
+
+      - name: Install pinned browser and WASI shim
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install browser dependencies
+        run: |
+          npm ci --ignore-scripts --prefix scripts/experimental
+          node scripts/experimental/node_modules/playwright/cli.js install --with-deps chromium
+
+      - name: Run optional inception lane
+        run: make test-wasm-inception-nobuild WASM_INCEPTION_ARGS="--directory obj/wasm-inception/ci --jobs 2"
+
+      - name: Retain inception observations and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: wasm-inception
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            obj/wasm-inception/**/*-complete.json
+            obj/wasm-inception/**/*-failed.json
+            obj/wasm-inception/**/*results.json
+            obj/wasm-inception/**/manifest.*
+            obj/wasm-inception/**/*.log
+            obj/wasm-inception/**/w3/cppgm.wasm
+            obj/wasm-inception/**/chromium-w3.wasm
+
   test:
     name: ${{ matrix.suite.name }} / ${{ matrix.flavor.name }}
     needs: build

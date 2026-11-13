@@ -1,15 +1,56 @@
 # Optional WASI and browser inception
 
-This is an experimental maintainer workflow. It does not add a student assignment,
-change the PA37 report, or ship in the student export. Run from the solution
-checkout on the `experiment/wasi-browser-inception` branch.
+This optional maintainer lane is part of PA37. It does not change the student
+report or ship in the student export. The `Tests` workflow runs it once with
+the Ubuntu 24.04 GCC host compiler, independently of the normal report.
 
-The native compiler builds W1. W1 then compiles all 416 frozen compiler sources
+The native compiler builds W1. W1 then compiles all frozen compiler sources
 and links W2; W2 repeats that work to produce W3. Every corresponding object and
 final module must match **actual bytes**, without stripping or normalization.
 The same W1 runs unchanged under Wasmtime and in a dedicated browser worker.
 The browser performs both complete rebuilds locally; the HTTP server only serves
 files. It also checks x86 floating-point output and accepted/rejected programs.
+
+## Optional test target
+
+On Linux x86-64, install the pinned tools and browser dependencies once:
+
+```sh
+perl scripts/install_wasm_tools.pl --prefix obj/wasm-tools
+npm ci --ignore-scripts --prefix scripts/experimental
+node scripts/experimental/node_modules/playwright/cli.js install --with-deps chromium
+make test-wasm-inception CXX=g++ CPPGM_HOST_CXX=g++
+```
+
+`test-wasm-inception-nobuild` uses an existing native build, like
+`test-debuginfo-nobuild`. Both execute local W1/W2/W3, full x86 comparisons at
+O0/O2/O3, and browser W2/W3, including cancellation/restart and final downloads.
+The root `make test` and student expectations do not include this target.
+Node 20 or newer is required; CI uses Node 24. npm's lockfile pins Playwright
+1.63.0 (including Chromium) and browser_wasi_shim 0.4.2 with package integrity.
+The current lane qualifies Chromium; Firefox and Safari are not qualified.
+
+The default creates a new package under `obj/wasm-inception/` and a sibling
+`-logs` directory. Existing packages, including failed stages, are never reused.
+Every phase and command retains elapsed time, hashes and diagnostics. A failure
+stops the lane, preserves observations, and makes the target fail. No stage
+fetches dependencies. A local phase has a two-hour deadline; the browser has a
+60-minute deadline. The lane uses two parallel local compiler processes by
+default. Override paths or concurrency explicitly:
+
+```sh
+make test-wasm-inception-nobuild WASM_INCEPTION_ARGS="--directory /absolute/new-package --tools /absolute/tools --jobs 6"
+```
+
+`--playwright`, `--shim`, `--chromium` and `--compiler` can select external
+installations. `--help` lists options. The frozen WASI producer explicitly enables
+`__cpp_exceptions` and `__cpp_rtti`, matching the pinned SDK's EH libc++ profile.
+This does not change the compiler driver's general target predefines.
+
+The CI lane reuses the host compiler artifact, runs the same target, and uploads
+stage observations, manifests, diagnostics and final modules even on failure.
+It is a separate job rather than four copies in the host-toolchain matrix.
+Student exports remove the maintainer target and its dependency declarations.
 
 ## Dependencies and preparation
 
@@ -21,10 +62,10 @@ make -j8 CXX=g++ CPPGM_HOST_CXX=g++
 
 Qualification uses WASI SDK 34.0 (Clang 23.1.0), Wasmtime 50.0.1 and
 `@bjorn3/browser_wasi_shim` 0.4.2. Supply an extracted SDK and shim package;
-the runner does not download dependencies. Keep them and the output package
-outside the repository. The shim's MIT and Apache licenses accompany the package.
-The optional automated browser driver additionally needs Playwright and installed
-Chromium/Firefox executables; those are not compiler build dependencies.
+the stage runner does not download dependencies. Keep dependencies and output
+packages outside tracked source paths. The shim's MIT and Apache licenses accompany the package.
+The optional automated browser driver needs Playwright and installed Chromium;
+these are not native compiler build dependencies.
 
 ```sh
 python3 scripts/experimental/wasi_inception.py prepare \
@@ -87,12 +128,12 @@ x86 floating output, and the downloaded final module:
 
 ```sh
 node scripts/experimental/wasi_browser_test.cjs \
-  /absolute/path/inception-package /absolute/path/playwright-core \
-  /absolute/path/chromium /absolute/path/firefox
+  /absolute/path/inception-package /absolute/path/playwright
 ```
 
-An optional final argument, `chromium` or `firefox`, selects one engine. Separate
-invocations can run concurrently. Browser binaries, package downloads and test
+The driver defaults to Playwright's pinned Chromium. Its optional trailing
+arguments `CHROMIUM FIREFOX chromium|firefox|all` support external executables
+and diagnostic engine selection. Separate invocations can run concurrently. Browser binaries, package downloads and test
 results stay outside Git. No cross-origin isolation or shared guest memory is
 required. The engine must support the module's modern exceptions and SIMD128;
 compiling the actual seed checks that support. Safari has not been qualified.

@@ -341,3 +341,13 @@ in the default Intel macOS report. Linux checks cross-emission; Intel macOS also
 executes standalone programs and links generated objects with Clang, including
 exceptions and thread-local data. The Intel macOS CI lane additionally compares
 self-built and inception compilers. See [the macOS guide](docs/intel-macos.md).
+
+
+## Optional WASI and browser inception
+
+`make test-wasm-inception` builds the native tools and runs PA37's optional
+maintainer inception lane; `make test-wasm-inception-nobuild` reuses an existing
+build. This is independent of `make test` and the student report. It verifies
+W1/W2/W3 byte equality under Wasmtime and Chromium and native/WASI x86 code at
+O0/O2/O3. See [dependencies, frozen inputs and observations](scripts/experimental/README.md).
+The Tests workflow runs this lane once with the Ubuntu 24.04 GCC artifact.
