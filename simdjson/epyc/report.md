@@ -1,6 +1,6 @@
 # simdjson benchmarks
 
-Compiler: `72d294c916f0f3f43e50e812f7efa91937eb9b66` · CPU: AMD EPYC 9V74 80-Core Processor
+Compiler: `393d1b1d09089ffdade676f4e7cbad8759c15d2a` · CPU: AMD EPYC 7763 64-Core Processor
 
 Unmodified simdjson v5.1.1 (`40a686ab89dc5ee58ec10d0514dd5c99abbc472b`), C++17 `-O3 -g0 -DNDEBUG`. Each backend is compiled separately; the SSE profile enables `-mpopcnt` for all three compilers. Compile times cover `src/simdjson.cpp` to an object; runtime covers repeated DOM parsing of hot input with a reused parser. One GCC-built driver per backend isolates library code generation. All three libraries produce identical canonical JSON for both inputs.
 
@@ -8,14 +8,14 @@ Ratios are reference time / cppgm time: **higher is better**. Medians of paired 
 
 | Backend | Measurement | vs GCC CPU | vs Clang CPU | vs GCC wall | vs Clang wall |
 |---|---|---:|---:|---:|---:|
-| scalar | Compile | 4.253× | 2.042× | 4.110× | 2.010× |
-| scalar | twitter.json | 0.969× | 0.969× | 0.969× | 0.969× |
-| scalar | citm_catalog.json | 0.949× | 1.056× | 0.949× | 1.056× |
-| sse | Compile | 4.407× | 2.202× | 4.307× | 2.150× |
-| sse | twitter.json | 1.007× | 0.998× | 1.007× | 0.998× |
-| sse | citm_catalog.json | 0.999× | 1.002× | 0.999× | 1.002× |
+| scalar | Compile | 4.359× | 2.208× | 4.305× | 2.180× |
+| scalar | twitter.json | 1.008× | 0.916× | 1.008× | 0.916× |
+| scalar | citm_catalog.json | 0.942× | 0.991× | 0.942× | 0.991× |
+| sse | Compile | 4.392× | 2.448× | 4.337× | 2.420× |
+| sse | twitter.json | 1.028× | 1.020× | 1.028× | 1.020× |
+| sse | citm_catalog.json | 1.010× | 1.001× | 1.010× | 1.001× |
 
-Calibration variation above 2%: sse Compile gcc wall A/A after: 1.037×. No observations are dropped.
+Calibration variation above 2%: sse Compile clang cpu A/A before: 1.023×; sse Compile clang cpu A/A after: 0.961×; sse Compile clang wall A/A before: 1.023×; sse Compile clang wall A/A after: 0.961×. No observations are dropped.
 
 ## Toolchains
 
@@ -25,4 +25,4 @@ Calibration variation above 2%: sse Compile gcc wall A/A after: 1.037×. No obse
 
 [Results and per-block ratios](results.json) · [Provenance and header hashes](metadata.json) · [Compile observations](compile-observations.jsonl) · [Runtime observations](runtime-observations.jsonl)
 
-[CI run and complete artifacts](https://github.com/vishvananda/cppgm-extended/actions/runs/43348824559)
+[CI run and complete artifacts](https://github.com/vishvananda/cppgm-extended/actions/runs/43357224983)
