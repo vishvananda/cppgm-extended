@@ -33,10 +33,13 @@ using lowir::ValueKind;
 namespace {
 
 // RBP, last of the callee-saved registers, only without a frame pointer
-// (rbp_free_).
+// (rbp_free_). The compact orders (-O1 and up) take R13 and R12 after the
+// other callee-saved registers: as the base of a memory operand R13 needs a
+// displacement byte where there is no displacement, and R12 a SIB byte.
 const Reg kGprOrder[] = { R8, R9, RDI, RSI, RDX, RCX, RAX, RBX, R12, R13, R14, R15, RBP };
-const Reg kCompactGprOrder[] = { RAX, RCX, RDX, RSI, RDI, R8, R9, RBX, R12, R13, R14, R15, RBP };
+const Reg kCompactGprOrder[] = { RAX, RCX, RDX, RSI, RDI, R8, R9, RBX, R14, R15, R13, R12, RBP };
 const Reg kCalleeFirstOrder[] = { RBX, R12, R13, R14, R15, RBP, R8, R9, RDI, RSI, RDX, RCX, RAX };
+const Reg kCompactCalleeFirstOrder[] = { RBX, R14, R15, R13, R12, RBP, R8, R9, RDI, RSI, RDX, RCX, RAX };
 
 // The conversion scratch area (x87 transfers, saved rbx), sized as the
 // reference frame layout sizes it.
@@ -753,9 +756,10 @@ Reg FunctionSelector::allocate(uint32_t temp, uint32_t exclude, Reg prefer0, Reg
 				return r;
 		return kNoReg;
 	}
-	const Reg* order = (t.forbid & kCallerSavedGprs) == (kCallerSavedGprs & kAllocatableGprs) ? kCalleeFirstOrder
-		: level_ >= 1                                                                         ? kCompactGprOrder
-																							  : kGprOrder;
+	const bool callee_first = (t.forbid & kCallerSavedGprs) == (kCallerSavedGprs & kAllocatableGprs);
+	const Reg* order = level_ >= 1 ? (callee_first ? kCompactCalleeFirstOrder : kCompactGprOrder)
+		: callee_first             ? kCalleeFirstOrder
+								   : kGprOrder;
 	for (unsigned k = 0; k < 13; ++k)
 		if (allowed & (1u << order[k]))
 			return order[k];

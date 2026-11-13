@@ -253,7 +253,8 @@ const uint64_t kLoopSlack = 4096;
 const uint64_t kLivenessStepsPerItem = 64;
 const uint64_t kLivenessSlack = 4096;
 const Reg kGlobalCallerOrder[] = { RAX, RCX, RDX, RSI, RDI, R8, R9 };
-const Reg kGlobalCalleeOrder[] = { RBX, R12, R13, R14, R15, RBP }; // RBP: rbp_free_ only
+// (R13 and R12 after the others, as in allocation.cpp's compact orders.)
+const Reg kGlobalCalleeOrder[] = { RBX, R14, R15, R13, R12, RBP }; // RBP: rbp_free_ only
 
 inline int32_t read_slot(int32_t base, int32_t pos)
 {
