@@ -177,8 +177,10 @@ private:
 	bool lanes_pay_for_shifts() const;
 	bool halves(const Instruction& inst, unsigned& shift) const;
 	void make_phi(BlockId block, Type type, std::initializer_list<Value> pairs, Value& out);
-	bool read_after_loop() const;
-	void add_incoming(BlockId block, BlockId from, BlockId extra);
+	bool read_live_outs(BlockId after);
+	bool literal_rounds(int64_t span, bool& whole) const;
+	void join_exits(
+		BlockId after, BlockId exit, const std::vector<Value>& finals, const std::vector<Value>& next_values);
 	BlockId place_block(BlockKind kind);
 	std::vector<Value> reduction_starts();
 	std::vector<Value> counter_lanes();
@@ -213,6 +215,7 @@ private:
 	InstId tail_ = kNoId, pre_tail_ = kNoId;
 	std::vector<Value> scalars_, wides_; // per temp of the loop
 	std::vector<std::pair<std::pair<Value, TypeKind>, Value>> broadcasts_;
+	std::vector<TempId> live_outs_; // the loop's values code after it reads
 };
 
 // The lane shift by an immediate of a shift operator, or false.
@@ -2164,33 +2167,118 @@ BlockId LoopVectorizer::place_block(BlockKind kind)
 	return block;
 }
 
-// Whether code after the loop reads a value of its body.
-bool LoopVectorizer::read_after_loop() const
+// Whether the vector loop may finish the loop: code after the loop reads no
+// value of the body, or only sums' and counters' next values, which the lanes
+// know when they stop. The phis of `after` take them as the loop leaves; for
+// other readers the loop must leave to a block of its own, where a new phi
+// takes them. live_outs_ gets the values those readers read.
+bool LoopVectorizer::read_live_outs(BlockId after)
 {
-	bool read = false;
+	auto known = [&](Value v) {
+		return std::any_of(reductions_.begin(), reductions_.end(),
+				   [&](const Reduction& r) { return v == Value::temp(r.next); }) ||
+			std::any_of(
+				inductions_.begin(), inductions_.end(), [&](const Induction& iv) { return v == Value::temp(iv.next); });
+	};
+	live_outs_.clear();
 	for (BlockId b : body_.layout)
-		if (b != b_)
-			for (InstId i = body_.blocks[b].first; i != kNoId && !read; i = body_.instructions[i].next)
-				for_each_operand(body_, body_.instructions[i], [&](const Value& v) { read = read || in_body(v); });
-	return read;
+	{
+		if (b == b_)
+			continue;
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if (b == after && inst.op == Opcode::Phi)
+			{
+				for (uint32_t k = 0; k + 1 < inst.extra_count; k += 2)
+				{
+					const Value v = body_.operands[inst.extra_first + k + 1];
+					if (in_body(v) && (body_.operands[inst.extra_first + k].index != b_ || !known(v)))
+						return false;
+				}
+				continue;
+			}
+			bool fits = true;
+			for_each_operand(body_, inst, [&](const Value& v) {
+				if (!in_body(v) || std::find(live_outs_.begin(), live_outs_.end(), v.index) != live_outs_.end())
+					return;
+				fits = fits && known(v);
+				live_outs_.push_back(v.index);
+			});
+			if (!fits)
+				return false;
+		}
+	}
+	return live_outs_.empty() || cfg_.pred_count(after) == 1;
 }
 
-// Each phi of `block` takes from `extra` what it takes from `from`.
-void LoopVectorizer::add_incoming(BlockId block, BlockId from, BlockId extra)
+// Whether the counter runs between literals; `whole` is then whether that is
+// whole rounds of `span`, so that each vector loop the lanes start ends at
+// the bound, or else leaves passes to the scalar loop.
+bool LoopVectorizer::literal_rounds(int64_t span, bool& whole) const
 {
-	for (InstId i = body_.blocks[block].first; i != kNoId; i = body_.instructions[i].next)
+	const Induction& counter = inductions_[counter_];
+	if (counter.type.is_pointer() || !counter.start.is(ValueKind::Integer) || !bound_.is(ValueKind::Integer))
+		return false;
+	const uint64_t from = body_.literals[counter.start.index].low;
+	const uint64_t to = body_.literals[bound_.index].low + static_cast<uint64_t>(bound_add_);
+	uint64_t distance = counter.step > 0 ? to - from : from - to;
+	if (lane_bytes(counter.type) < 8)
+		distance &= 0xffffffffu;
+	whole = distance % static_cast<uint64_t>(span) == 0;
+	return true;
+}
+
+// The loop leaves to `after` from the scalar loop or, having finished it,
+// from the vector loop's `exit`. A phi of `after` takes each value the code
+// after the loop reads: from the scalar loop its own, from `exit` what the
+// lanes leave (`finals` for the sums, `next_values` for the counters).
+void LoopVectorizer::join_exits(
+	BlockId after, BlockId exit, const std::vector<Value>& finals, const std::vector<Value>& next_values)
+{
+	auto finished = [&](Value v) {
+		for (size_t k = 0; k < reductions_.size(); ++k)
+			if (v == Value::temp(reductions_[k].next))
+				return finals[k];
+		for (size_t k = 0; k < inductions_.size(); ++k)
+			if (v == Value::temp(inductions_[k].next))
+				return next_values[k];
+		return v;
+	};
+	for (InstId i = body_.blocks[after].first; i != kNoId; i = body_.instructions[i].next)
 	{
 		if (body_.instructions[i].op != Opcode::Phi)
 			break;
 		const Instruction phi = body_.instructions[i];
 		std::vector<Value> edges(
 			body_.operands.begin() + phi.extra_first, body_.operands.begin() + phi.extra_first + phi.extra_count);
-		const Value value = phi_incoming(body_, phi, from);
-		edges.push_back(Value::block(extra));
-		edges.push_back(value);
+		edges.push_back(Value::block(exit));
+		edges.push_back(finished(phi_incoming(body_, phi, b_)));
 		Instruction& out = body_.instructions[i];
 		out.extra_first = append_operands(body_, edges.data(), static_cast<uint32_t>(edges.size()));
 		out.extra_count = static_cast<uint32_t>(edges.size());
+	}
+	if (live_outs_.empty())
+		return;
+	std::vector<Value> joined(live_outs_.size(), Value::none());
+	for (size_t k = 0; k < live_outs_.size(); ++k)
+	{
+		const Value v = Value::temp(live_outs_[k]);
+		make_phi(after, body_.temps[live_outs_[k]].type, { Value::block(b_), v, Value::block(exit), finished(v) },
+			joined[k]);
+	}
+	// (The phis of `after` read the loop's values at the end of the loop.)
+	for (BlockId b : body_.layout)
+	{
+		if (b == b_)
+			continue;
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			if (b != after || body_.instructions[i].op != Opcode::Phi)
+				for_each_operand(body_, body_.instructions[i], [&](Value& v) {
+					for (size_t k = 0; k < live_outs_.size(); ++k)
+						if (v == Value::temp(live_outs_[k]))
+							v = joined[k];
+				});
 	}
 }
 
@@ -2276,10 +2364,15 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	const int64_t span = static_cast<int64_t>(lanes_) * copies_ * (up ? counter.step : -counter.step);
 	const ComparePredicate below = unsigned_counter_ ? ComparePredicate::Ult : ComparePredicate::Lt;
 	const ComparePredicate within = unsigned_counter_ ? ComparePredicate::Ule : ComparePredicate::Le;
-	const bool drains = !read_after_loop();
 	const BlockId after = body_.instructions[body_.blocks[b_].last].ops[1].index == b_
 		? body_.instructions[body_.blocks[b_].last].ops[2].index
 		: body_.instructions[body_.blocks[b_].last].ops[1].index;
+	// (Between literals the exit knows whether passes are left: with some,
+	// the scalar loop always runs; with none, never, when the lanes may
+	// finish the loop.)
+	bool whole = false;
+	const bool literal_bounds = literal_rounds(span, whole);
+	const bool drains = (!literal_bounds || whole) && read_live_outs(after), finishes = drains && literal_bounds;
 	const BlockId guard = tests_.empty() ? kNoId : place_block(BlockKind::LoopPreheader);
 	vector_pre_ = place_block(BlockKind::LoopPreheader);
 	const BlockId wide_loop = place_block(BlockKind::WideLoop);
@@ -2434,7 +2527,7 @@ void LoopVectorizer::vectorize(uint32_t loop)
 		for (size_t g = 0; g < cells[k].size(); ++g)
 			widen_store(cells[k][g], group_address(lane_cells_[k], static_cast<int64_t>(g)),
 				lanes_ * lane_bytes(lane_cells_[k].type), lane_cells_[k].store);
-	if (drains)
+	if (drains && !finishes)
 	{
 		const Value left = up ? compare(below, type, next_counter, bound) : compare(below, type, bound, next_counter);
 		Instruction leave = make_instruction(Opcode::Branch, Type::scalar(TypeKind::Void));
@@ -2442,14 +2535,15 @@ void LoopVectorizer::vectorize(uint32_t loop)
 		leave.ops[1] = Value::block(scalar_pre);
 		leave.ops[2] = Value::block(after);
 		finish_block(leave);
-		add_incoming(after, b_, exit);
 	}
 	else
 	{
 		Instruction leave = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
-		leave.ops[0] = Value::block(scalar_pre);
+		leave.ops[0] = Value::block(finishes ? after : scalar_pre);
 		finish_block(leave);
 	}
+	if (drains)
+		join_exits(after, exit, finals, next_values);
 
 	at(scalar_pre, kNoId);
 	auto scalar_start = [&](TempId phi_temp, Value start_value, Value from_lanes) {
@@ -2466,9 +2560,11 @@ void LoopVectorizer::vectorize(uint32_t loop)
 			if (body_.operands[phi.extra_first + k].index == pre)
 				body_.operands[phi.extra_first + k + 1] = joined;
 	};
-	for (size_t k = 0; k < inductions_.size(); ++k)
+	// (When the lanes finish every loop they start, only loops they do not
+	// start reach the scalar loop, which then starts where it did.)
+	for (size_t k = 0; k < inductions_.size() && !finishes; ++k)
 		scalar_start(inductions_[k].phi, inductions_[k].start, next_values[k]);
-	for (size_t k = 0; k < reductions_.size(); ++k)
+	for (size_t k = 0; k < reductions_.size() && !finishes; ++k)
 		if (reductions_[k].load == kNoId)
 			scalar_start(reductions_[k].phi, reductions_[k].start, finals[k]);
 	Instruction into = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));

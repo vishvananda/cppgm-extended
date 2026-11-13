@@ -168,48 +168,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t31 = convert trunc exact i32 i64 %t30
     %t32 = vector paddd %t15, %t13
     %t33 = cmp le i32 %t31, 996
-    branch %t33, ^wide_loop_1, ^loop_exit_2
+    branch %t33, ^wide_loop_1, ^for_end_2
 
-  block ^loop_exit_2:
-    %t34 = cmp lt i32 %t31, 1000
-    branch %t34, ^loop_preheader_3, ^for_end_5
+  block ^for_end_2:
+    %t34 = call u32 @digest(1000)
+    %t35 = cmp eq u32 %t34, 911731218
+    branch %t35, ^land_rhs_3, ^cond_else_5
 
-  block ^loop_preheader_3:
-    %t35 = binary mul i32 %t31, 7
-    %t36 = convert sext i64 i32 %t31
-    jump ^for_body_4
+  block ^land_rhs_3:
+    %t36 = call u32 @digest(13)
+    %t37 = cmp eq u32 %t36, 3500121845
+    branch %t37, ^land_rhs_4, ^cond_else_5
 
-  block ^for_body_4:
-    %t37 = phi i32 [^loop_preheader_3: %t35, ^for_body_4: %t43]
-    %t38 = phi i64 [^for_body_4: %t41, ^loop_preheader_3: %t36]
-    %t39 = convert trunc u8 i32 %t37
-    %t40 = index inbounds u8 [projection=array_element] %t1, %t38
-    store u8 %t39, %t40
-    %t41 = binary add nowrap i64 %t38, 1
-    %t42 = convert trunc exact i32 i64 %t41
-    %t43 = binary add nowrap i32 %t37, 7
-    %t44 = cmp lt i32 %t42, 1000
-    branch %t44, ^for_body_4, ^for_end_5
+  block ^land_rhs_4:
+    %t38 = call u32 @digest(8)
+    %t39 = cmp eq u32 %t38, 793687266
+    branch %t39, ^cond_end_6, ^cond_else_5
 
-  block ^for_end_5:
-    %t45 = call u32 @digest(1000)
-    %t46 = cmp eq u32 %t45, 911731218
-    branch %t46, ^land_rhs_6, ^cond_else_8
+  block ^cond_else_5:
+    jump ^cond_end_6
 
-  block ^land_rhs_6:
-    %t47 = call u32 @digest(13)
-    %t48 = cmp eq u32 %t47, 3500121845
-    branch %t48, ^land_rhs_7, ^cond_else_8
-
-  block ^land_rhs_7:
-    %t49 = call u32 @digest(8)
-    %t50 = cmp eq u32 %t49, 793687266
-    branch %t50, ^cond_end_9, ^cond_else_8
-
-  block ^cond_else_8:
-    jump ^cond_end_9
-
-  block ^cond_end_9:
-    %t51 = phi i32 [^cond_else_8: 1, ^land_rhs_7: 0]
-    return i32 %t51
+  block ^cond_end_6:
+    %t40 = phi i32 [^cond_else_5: 1, ^land_rhs_4: 0]
+    return i32 %t40
 }

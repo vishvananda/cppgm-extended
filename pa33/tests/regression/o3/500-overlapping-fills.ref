@@ -65,7 +65,7 @@ function @two_pointers(%a : ptr, %b : ptr) -> void [no_inline=yes] {
     %t3 = cmp ule ptr %t1, %b
     %t4 = cmp ule ptr %t2, %a
     %t5 = binary or i64 %t3, %t4
-    branch %t5, ^loop_preheader_1, ^loop_preheader_4
+    branch %t5, ^loop_preheader_1, ^loop_preheader_3
 
   block ^loop_preheader_1:
     %t6 = vector fromi64 1
@@ -82,25 +82,55 @@ function @two_pointers(%a : ptr, %b : ptr) -> void [no_inline=yes] {
     store v128 %t9, %t12
     %t13 = binary add nowrap i64 %t10, 2
     %t14 = cmp le i64 %t13, 28
-    branch %t14, ^wide_loop_2, ^loop_exit_3
+    branch %t14, ^wide_loop_2, ^done
 
-  block ^loop_exit_3:
-    %t15 = cmp lt i64 %t13, 30
-    branch %t15, ^loop_preheader_4, ^done
+  block ^loop_preheader_3:
+    branch 1, ^loop_preheader_4, ^wide_tail_7
 
   block ^loop_preheader_4:
-    %t16 = phi i64 [^entry: 0, ^loop_exit_3: %t13]
+    jump ^unrolled_5
+
+  block ^unrolled_5:
+    %t15 = phi i64 [^loop_preheader_4: 0, ^unrolled_5: %t27]
+    %t16 = index i64 %a, %t15
+    store i64 1, %t16
+    %t17 = index i64 %b, %t15
+    store i64 2, %t17
+    %t18 = binary add nowrap i64 %t15, 1
+    %t19 = index i64 %a, %t18
+    store i64 1, %t19
+    %t20 = index i64 %b, %t18
+    store i64 2, %t20
+    %t21 = binary add nowrap i64 %t15, 2
+    %t22 = index i64 %a, %t21
+    store i64 1, %t22
+    %t23 = index i64 %b, %t21
+    store i64 2, %t23
+    %t24 = binary add nowrap i64 %t15, 3
+    %t25 = index i64 %a, %t24
+    store i64 1, %t25
+    %t26 = index i64 %b, %t24
+    store i64 2, %t26
+    %t27 = binary add nowrap i64 %t15, 4
+    %t28 = cmp ne i64 %t27, 28
+    branch %t28, ^unrolled_5, ^loop_exit_6
+
+  block ^loop_exit_6:
+    branch 1, ^wide_tail_7, ^done
+
+  block ^wide_tail_7:
+    %t29 = phi i64 [^loop_preheader_3: 0, ^loop_exit_6: %t27]
     jump ^body
 
   block ^body:
-    %t17 = phi i64 [^body: %next, ^loop_preheader_4: %t16]
-    %p = index i64 %a, %t17
+    %t30 = phi i64 [^body: %next, ^wide_tail_7: %t29]
+    %p = index i64 %a, %t30
     store i64 1, %p
-    %q = index i64 %b, %t17
+    %q = index i64 %b, %t30
     store i64 2, %q
-    %next = binary add nowrap i64 %t17, 1
-    %t21 = cmp lt i64 %next, 30
-    branch %t21, ^body, ^done
+    %next = binary add nowrap i64 %t30, 1
+    %t34 = cmp lt i64 %next, 30
+    branch %t34, ^body, ^done
 
   block ^done:
     return void

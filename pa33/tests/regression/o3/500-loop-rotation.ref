@@ -75,27 +75,14 @@ function @literal_guard(%p : ptr) -> i64 [no_inline=yes] {
     %t5 = load v128 %t4
     %t6 = vector paddq %t5, %t2
     %t7 = binary add nowrap i64 %t3, 2
-    %t8 = cmp lt i64 %t7, 998
+    %t8 = cmp le i64 %t7, 998
     branch %t8, ^wide_loop_1, ^loop_exit_2
 
   block ^loop_exit_2:
     %t9 = vector pshufd %t6, 78
     %t10 = vector paddq %t6, %t9
     %t11 = vector toi64 %t10
-    jump ^body
-
-  block ^body:
-    %t12 = phi i64 [^body: %t, ^loop_exit_2: %t11]
-    %t13 = phi i64 [^body: %next, ^loop_exit_2: %t7]
-    %q = index i64 %p, %t13
-    %v = load i64 %q
-    %t = binary add i64 %v, %t12
-    %next = binary add nowrap i64 %t13, 1
-    %t18 = cmp lt i64 %next, 1000
-    branch %t18, ^body, ^done
-
-  block ^done:
-    return i64 %t
+    return i64 %t11
 }
 function @swap(%n : i64) -> i64 [no_inline=yes] {
   block ^entry:
