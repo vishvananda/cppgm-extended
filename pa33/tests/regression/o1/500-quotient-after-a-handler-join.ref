@@ -1,0 +1,22 @@
+declare function @may_throw() -> void
+
+function @after_opener(%n : i64, %d : i64) -> i64 {
+  block ^entry:
+    %big = binary mul i64 %n, 1000003
+    eh_try ^landing
+    call void @may_throw()
+    %r = binary mod i64 %big, %d
+    %scaled = binary mul i64 %r, 1000
+    eh_end
+    jump ^join
+
+  block ^landing:
+    eh_catch_all, 1
+    jump ^join
+
+  block ^join:
+    %low = phi i64 [^entry: %scaled, ^landing: 0]
+    %q = binary div i64 %big, %d
+    %sum = binary add i64 %low, %q
+    return i64 %sum
+}

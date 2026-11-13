@@ -7,6 +7,7 @@
 #include "opt/scalar_fold.h"
 #include "support/flat_map.h"
 
+#include <algorithm>
 #include <cstring>
 
 namespace opt {
@@ -185,6 +186,10 @@ private:
 	bool bulk_call(Instruction& inst);
 	ExprKey expression_key(const Instruction& inst);
 	bool reuse_quotient(BlockId block, InstId& prev, InstId id);
+	InstId quotient_block(BlockId block, const Instruction& quotient, const ExprKey& key, BlockId& join);
+	bool always_reaches(BlockId block, BlockId target) const;
+	InstId computes(InstId from, const Instruction& quotient, const ExprKey& key, uint32_t reach);
+	bool same_value(Value a, Value b, Type type, unsigned depth);
 	bool equality_memcmp(BlockId block, InstId& prev, InstId id);
 	void simplify_branch(Instruction& term);
 	bool phi_value(const Instruction& phi, Value& out);
@@ -2653,8 +2658,127 @@ ExprKey Simplifier::expression_key(const Instruction& inst)
 	return key;
 }
 
+// A forward region of at most kRegion blocks (successors later in reverse
+// postorder) from `block`.
+const uint32_t kRegion = 12;
+
+// The quotient in the first block of the region after `block`, in
+// breadth-first order, that computes `quotient` (within kJoinReach
+// instructions; that block in `join`), or kNoId.
+InstId Simplifier::quotient_block(BlockId block, const Instruction& quotient, const ExprKey& key, BlockId& join)
+{
+	const uint32_t kJoinReach = 32;
+	const Cfg& cfg = c_.cfg;
+	BlockId order[kRegion];
+	uint32_t count = 1;
+	order[0] = block;
+	for (uint32_t k = 0; k < count; ++k)
+	{
+		const BlockId b = order[k];
+		const InstId at = k != 0 ? computes(body_.blocks[b].first, quotient, key, kJoinReach) : kNoId;
+		if (at != kNoId)
+		{
+			join = b;
+			return at;
+		}
+		for (uint32_t e = cfg.succ_first[b]; e < cfg.succ_first[b + 1]; ++e)
+		{
+			const BlockId s = cfg.succs[e];
+			if (cfg.rpo_index[s] == kNoId || cfg.rpo_index[s] <= cfg.rpo_index[b] ||
+				std::find(order, order + count, s) != order + count)
+				continue;
+			if (count == kRegion)
+				return kNoId;
+			order[count++] = s;
+		}
+	}
+	return kNoId;
+}
+
+// Whether every path from `block` reaches `target` without returning or
+// taking a back edge, within the region. (A path that ends in unreachable
+// code, after a call that does not return, does not count.)
+bool Simplifier::always_reaches(BlockId block, BlockId target) const
+{
+	const Cfg& cfg = c_.cfg;
+	BlockId order[kRegion];
+	uint32_t count = 1;
+	order[0] = block;
+	for (uint32_t k = 0; k < count; ++k)
+	{
+		const BlockId b = order[k];
+		const InstId last = body_.blocks[b].last;
+		if (cfg.succ_count(b) == 0 && (last == kNoId || body_.instructions[last].op != Opcode::Unreachable))
+			return false;
+		for (uint32_t e = cfg.succ_first[b]; e < cfg.succ_first[b + 1]; ++e)
+		{
+			const BlockId s = cfg.succs[e];
+			if (s == target)
+				continue;
+			if (cfg.rpo_index[s] == kNoId || cfg.rpo_index[s] <= cfg.rpo_index[b])
+				return false;
+			if (std::find(order, order + count, s) != order + count)
+				continue;
+			if (count == kRegion)
+				return false;
+			order[count++] = s;
+		}
+	}
+	return true;
+}
+
+// Whether a and b (of `type`), read with the substitutions made so far, are
+// one value: equal, or the results of equal reusable computations of such
+// values, to `depth` definitions down. (The walk merges those only when it
+// reaches them: a later block may still convert a divisor of its own.)
+bool Simplifier::same_value(Value a, Value b, Type type, unsigned depth)
+{
+	a = resolve(a);
+	b = resolve(b);
+	if (key_of(a, type) == key_of(b, type))
+		return true;
+	const Instruction* x = producer(a);
+	const Instruction* y = producer(b);
+	if (depth == 0 || x == nullptr || y == nullptr || x->op != y->op || x->sub != y->sub || x->type != y->type ||
+		x->immediate != y->immediate || !is_pure(*x) || x->op == Opcode::Phi || x->op == Opcode::Const ||
+		x->extra_count != 0 || y->extra_count != 0)
+		return false;
+	const Type operand = scalar_operand_type(*x);
+	for (uint32_t i = 0; i < 3; ++i)
+		if (!same_value(x->ops[i], y->ops[i], operand, depth - 1))
+			return false;
+	return true;
+}
+
+// The first of the `reach` instructions from `from` that computes
+// `quotient` (whose key is `key`), read with the substitutions made so
+// far, or kNoId.
+InstId Simplifier::computes(InstId from, const Instruction& quotient, const ExprKey& key, uint32_t reach)
+{
+	const uint32_t kDepth = 2;
+	for (uint32_t k = 0; from != kNoId && k < reach; ++k)
+	{
+		const Instruction& inst = body_.instructions[from];
+		if (inst.op == Opcode::Binary && inst.sub == quotient.sub && type_bits(inst.type) == key.type &&
+			inst.result != kNoId)
+		{
+			Instruction read = inst;
+			substitute(read);
+			if (expression_key(read) == key ||
+				(same_value(read.ops[0], quotient.ops[0], quotient.type, kDepth) &&
+					same_value(read.ops[1], quotient.ops[1], quotient.type, kDepth)))
+				return from;
+		}
+		from = inst.next;
+	}
+	return kNoId;
+}
+
 // `x % y` where `x / y` is also computed is `x - (x / y) * y`: no second
-// divide. A quotient computed just after the remainder moves up to it.
+// divide. A quotient computed after the remainder moves up to it, and the
+// later one becomes a copy: one within kReach instructions in its block,
+// or one in a later block that every path from it reaches (quotient_block,
+// always_reaches): the paths that divide here divide once.
 bool Simplifier::reuse_quotient(BlockId block, InstId& prev, InstId id)
 {
 	const uint32_t kReach = 8;
@@ -2671,33 +2795,40 @@ bool Simplifier::reuse_quotient(BlockId block, InstId& prev, InstId id)
 	quotient.location = remainder.location;
 	const ExprKey key = expression_key(quotient);
 	Value q = Value::none();
-	const Available* found = table_.find(key);
+	Available* found = table_.find(key);
 	if (found != nullptr && c_.cfg.dominates(found->block, block) &&
 		!(handler_reached_[block] && first_opener_[found->block] != kNoId &&
 			found->ordinal >= first_opener_[found->block]))
 		q = Value::temp(found->temp);
-	InstId later = remainder.next;
-	for (uint32_t k = 0; q.is(ValueKind::None) && later != kNoId && k < kReach; ++k)
+	InstId later = q.is(ValueKind::None) ? computes(remainder.next, quotient, key, kReach) : kNoId;
+	if (q.is(ValueKind::None) && later == kNoId)
 	{
-		const Instruction& inst = body_.instructions[later];
-		if (inst.op == Opcode::Binary && inst.sub == quotient.sub && type_bits(inst.type) == key.type &&
-			inst.result != kNoId)
-		{
-			Instruction read = inst;
-			substitute(read);
-			const ExprKey other = expression_key(read);
-			if (other == key)
-			{
-				const InstId at = append_instruction(body_, quotient);
-				body_.instructions[at].result = append_temp(body_, remainder.type, at);
-				insert_after(body_, block, prev, at);
-				prev = at;
-				q = Value::temp(body_.instructions[at].result);
-				table_.insert(key, Available{ q.index, block, ordinal_[id] });
-			}
-			break;
-		}
-		later = inst.next;
+		BlockId join = kNoId;
+		later = quotient_block(block, quotient, key, join);
+		// (A handler reaching the join may skip what this block computes
+		// after its first opener: the table's rule.)
+		if (later != kNoId &&
+			(!c_.cfg.dominates(block, join) || walked_[join] != 0 || !always_reaches(block, join) ||
+				(handler_reached_[join] && first_opener_[block] != kNoId && ordinal_[id] >= first_opener_[block])))
+			later = kNoId;
+	}
+	if (later != kNoId)
+	{
+		const InstId at = append_instruction(body_, quotient);
+		body_.instructions[at].result = append_temp(body_, remainder.type, at);
+		insert_after(body_, block, prev, at);
+		prev = at;
+		q = Value::temp(body_.instructions[at].result);
+		if (found != nullptr)
+			*found = Available{ q.index, block, ordinal_[id] };
+		else
+			table_.insert(key, Available{ q.index, block, ordinal_[id] });
+		Instruction& copy = body_.instructions[later];
+		copy.op = Opcode::Copy;
+		copy.sub = 0;
+		copy.flags = 0;
+		copy.ops[0] = q;
+		copy.ops[1] = Value::none();
 	}
 	if (q.is(ValueKind::None))
 		return false;
