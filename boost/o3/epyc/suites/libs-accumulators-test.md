@@ -4,55 +4,55 @@ All original oracles passed for all three compilers. Seconds are child CPU, one 
 
 | Test | Kind | Compile cppgm | GCC | Clang | Test cppgm | GCC | Clang |
 |---|---|---:|---:|---:|---:|---:|---:|
-| count.test | RUN | 1.029750 | 2.755708 | 3.426698 | 0.004153 | 0.003949 | 0.003907 |
-| covariance.test | RUN | 1.999196 | 6.891741 | 8.768556 | 0.004043 | 0.004182 | 0.004356 |
-| droppable.test | RUN | 1.246636 | 3.798825 | 4.652602 | 0.004105 | 0.004452 | 0.004092 |
-| error_of.test | RUN | 1.374476 | 3.628288 | 5.216757 | 0.003653 | 0.003544 | 0.003805 |
-| extended_p_square.test | RUN | 1.432875 | 4.528551 | 5.176826 | 0.006152 | 0.006180 | 0.005817 |
-| extended_p_square_quantile.test | RUN | 1.879046 | 6.953296 | 7.470070 | 0.012264 | 0.012465 | 0.010271 |
-| external_accumulator.test | RUN | 1.186972 | 3.549760 | 4.665136 | 0.004247 | 0.003837 | 0.003920 |
-| external_weights.test | RUN | 1.094374 | 2.863834 | 3.636519 | 0.003708 | 0.004242 | 0.003440 |
-| kurtosis.test | RUN | 1.652222 | 4.537975 | 6.163405 | 0.007152 | 0.007185 | 0.005126 |
-| max.test | RUN | 1.055995 | 2.593250 | 3.365815 | 0.003920 | 0.004273 | 0.004100 |
-| mean.test | RUN | 1.281489 | 3.941153 | 4.958075 | 0.003787 | 0.004162 | 0.004154 |
-| median.test | RUN | 1.829740 | 7.147428 | 7.434243 | 0.178561 | 0.167680 | 0.147717 |
-| min.test | RUN | 1.015855 | 2.721522 | 3.387090 | 0.003786 | 0.004880 | 0.003988 |
-| moment.test | RUN | 1.156314 | 3.167562 | 4.107858 | 0.003969 | 0.004328 | 0.004117 |
-| p_square_cumul_dist.test | RUN | 1.450612 | 5.203719 | 5.640099 | 1.222820 | 1.287065 | 1.077472 |
-| p_square_quantile.test | RUN | 1.257140 | 4.647820 | 4.795900 | 0.038206 | 0.038319 | 0.032764 |
-| reference.test | RUN | 1.136531 | 3.103882 | 4.159523 | 0.004107 | 0.004217 | 0.004215 |
-| rolling_count.test | RUN | 1.182155 | 3.240910 | 3.865781 | 0.003340 | 0.004145 | 0.004037 |
-| rolling_sum.test | RUN | 1.130220 | 3.424971 | 4.232561 | 0.004323 | 0.004133 | 0.004165 |
-| rolling_mean.test | RUN | 1.576920 | 5.920722 | 6.657135 | 0.004069 | 0.004676 | 0.004182 |
-| rolling_variance.test | RUN | 1.837597 | 6.837532 | 7.646943 | 0.004060 | 0.003901 | 0.004469 |
-| rolling_moment.test | RUN | 1.397538 | 4.256505 | 5.287043 | 0.004006 | 0.004352 | 0.004695 |
-| skewness.test | RUN | 1.564800 | 4.359917 | 5.802885 | 0.007198 | 0.005965 | 0.005236 |
-| sum.test | RUN | 1.052597 | 2.947529 | 3.784761 | 0.003392 | 0.004054 | 0.003740 |
-| sum_kahan.test | RUN | 1.107083 | 3.136468 | 4.073705 | 0.019495 | 0.030849 | 0.019215 |
-| tail.test | RUN | 1.264756 | 4.347111 | 4.551597 | 0.003852 | 0.003960 | 0.003596 |
-| tail_mean.test | RUN | 1.691688 | 5.087603 | 6.666937 | 0.026362 | 0.034773 | 0.027972 |
-| tail_quantile.test | RUN | 1.395074 | 3.977457 | 5.072612 | 0.033330 | 0.041698 | 0.030567 |
-| variance.test | RUN | 1.331260 | 3.693273 | 4.944287 | 0.003851 | 0.004149 | 0.003992 |
-| vector.test | RUN | 1.435407 | 4.556779 | 6.002670 | 0.003713 | 0.003815 | 0.003691 |
-| weighted_covariance.test | RUN | 1.970570 | 7.031960 | 9.213053 | 0.004101 | 0.004061 | 0.003567 |
-| weighted_extended_p_square.test | RUN | 1.359168 | 4.121362 | 4.661042 | 0.031632 | 0.031668 | 0.026065 |
-| weighted_kurtosis.test | RUN | 1.549186 | 4.173661 | 5.846594 | 0.007595 | 0.006358 | 0.005615 |
-| weighted_mean.test | RUN | 1.286485 | 3.751025 | 5.035831 | 0.003456 | 0.003850 | 0.003732 |
-| weighted_median.test | RUN | 1.667701 | 4.924427 | 6.439601 | 1.472518 | 1.386142 | 1.299201 |
-| weighted_moment.test | RUN | 1.048283 | 2.759378 | 3.733398 | 0.003766 | 0.003620 | 0.003909 |
-| weighted_p_square_cumul_dist.test | RUN | 1.261910 | 4.197780 | 4.313920 | 0.168650 | 0.166069 | 0.140002 |
-| weighted_p_square_quantile.test | RUN | 1.201491 | 3.925811 | 4.385960 | 0.044753 | 0.041096 | 0.036547 |
-| weighted_skewness.test | RUN | 1.505438 | 4.070596 | 5.531712 | 0.007913 | 0.006256 | 0.004610 |
-| weighted_sum.test | RUN | 0.792560 | 2.307523 | 2.956575 | 0.003888 | 0.003991 | 0.003448 |
-| weighted_sum_kahan.test | RUN | 0.962832 | 2.524256 | 3.206761 | 0.011695 | 0.017671 | 0.011605 |
-| weighted_variance.test | RUN | 1.653711 | 4.471383 | 6.307272 | 0.004541 | 0.004488 | 0.004049 |
-| valarray.test | RUN | 1.524117 | 4.249791 | 5.866171 | 0.004956 | 0.004033 | 0.003602 |
-| tail_variate_means.test | RUN | 1.952703 | 6.793831 | 8.158056 | 0.003802 | 0.003559 | 0.003594 |
-| pot_quantile.test | RUN | 2.357947 | 7.476657 | 9.864927 | 0.019416 | 0.015421 | 0.013834 |
-| weighted_pot_quantile.test | RUN | 2.354335 | 7.356471 | 9.719446 | 0.037013 | 0.042464 | 0.034213 |
-| weighted_tail_mean.test | RUN | 2.114245 | 5.948018 | 8.277037 | 0.023362 | 0.039281 | 0.021753 |
-| weighted_tail_quantile.test | RUN | 2.076492 | 4.742131 | 7.385547 | 0.027427 | 0.028722 | 0.022760 |
-| weighted_tail_variate_means.test | RUN | 2.238200 | 6.239088 | 8.215649 | 0.002946 | 0.002508 | 0.002394 |
+| count.test | RUN | 0.967474 | 2.767443 | 3.507666 | 0.004387 | 0.003966 | 0.003872 |
+| covariance.test | RUN | 1.781694 | 6.639100 | 8.874260 | 0.004319 | 0.004605 | 0.004046 |
+| droppable.test | RUN | 1.166448 | 3.678310 | 4.723877 | 0.003817 | 0.004061 | 0.003874 |
+| error_of.test | RUN | 1.298277 | 3.575751 | 4.996363 | 0.003561 | 0.003771 | 0.003623 |
+| extended_p_square.test | RUN | 1.348001 | 4.475069 | 5.239056 | 0.005830 | 0.005973 | 0.005647 |
+| extended_p_square_quantile.test | RUN | 1.757291 | 6.763388 | 7.329320 | 0.011537 | 0.012164 | 0.011003 |
+| external_accumulator.test | RUN | 1.178563 | 3.476715 | 4.579185 | 0.003906 | 0.003739 | 0.004095 |
+| external_weights.test | RUN | 1.022431 | 2.777943 | 3.600807 | 0.003572 | 0.004028 | 0.004001 |
+| kurtosis.test | RUN | 1.547211 | 4.351174 | 6.117521 | 0.007159 | 0.006206 | 0.005085 |
+| max.test | RUN | 0.959787 | 2.730021 | 3.423561 | 0.003725 | 0.004003 | 0.003875 |
+| mean.test | RUN | 1.280488 | 3.709328 | 4.869312 | 0.004044 | 0.003860 | 0.003893 |
+| median.test | RUN | 1.759199 | 6.979286 | 7.407826 | 0.165208 | 0.169824 | 0.149374 |
+| min.test | RUN | 0.948077 | 2.655178 | 3.493399 | 0.003624 | 0.003724 | 0.003892 |
+| moment.test | RUN | 1.088942 | 3.100443 | 4.033318 | 0.004208 | 0.003858 | 0.003500 |
+| p_square_cumul_dist.test | RUN | 1.418733 | 5.245644 | 5.596668 | 1.350426 | 1.292246 | 1.080899 |
+| p_square_quantile.test | RUN | 1.289664 | 4.579201 | 4.888995 | 0.037387 | 0.035809 | 0.033606 |
+| reference.test | RUN | 1.070905 | 2.861568 | 4.092598 | 0.003715 | 0.003736 | 0.003854 |
+| rolling_count.test | RUN | 1.086518 | 3.342945 | 4.154459 | 0.003702 | 0.003826 | 0.004134 |
+| rolling_sum.test | RUN | 1.104510 | 3.357348 | 3.847068 | 0.004026 | 0.003705 | 0.003772 |
+| rolling_mean.test | RUN | 1.479552 | 5.928397 | 6.764831 | 0.003965 | 0.003305 | 0.004130 |
+| rolling_variance.test | RUN | 1.787660 | 6.725323 | 7.682102 | 0.004171 | 0.003844 | 0.004151 |
+| rolling_moment.test | RUN | 1.308695 | 4.042922 | 5.206942 | 0.004662 | 0.004013 | 0.004331 |
+| skewness.test | RUN | 1.434242 | 4.219705 | 5.756058 | 0.006750 | 0.005871 | 0.005415 |
+| sum.test | RUN | 1.003186 | 2.870514 | 3.853303 | 0.003747 | 0.003772 | 0.003985 |
+| sum_kahan.test | RUN | 1.097233 | 2.988533 | 3.854982 | 0.019235 | 0.030799 | 0.019727 |
+| tail.test | RUN | 1.165106 | 4.398366 | 4.460190 | 0.003957 | 0.004013 | 0.003537 |
+| tail_mean.test | RUN | 1.637413 | 5.084754 | 6.654114 | 0.026884 | 0.035538 | 0.026518 |
+| tail_quantile.test | RUN | 1.365627 | 3.953676 | 5.106231 | 0.033610 | 0.042358 | 0.031501 |
+| variance.test | RUN | 1.291582 | 3.649185 | 4.965851 | 0.003813 | 0.003479 | 0.004084 |
+| vector.test | RUN | 1.401196 | 4.459054 | 5.942069 | 0.003709 | 0.003773 | 0.004273 |
+| weighted_covariance.test | RUN | 1.851975 | 6.845578 | 9.016967 | 0.003615 | 0.003719 | 0.003860 |
+| weighted_extended_p_square.test | RUN | 1.259417 | 4.049651 | 4.609027 | 0.031919 | 0.032073 | 0.026716 |
+| weighted_kurtosis.test | RUN | 1.497080 | 4.081211 | 5.891538 | 0.006669 | 0.006055 | 0.005353 |
+| weighted_mean.test | RUN | 1.271402 | 3.631752 | 5.045681 | 0.003523 | 0.003410 | 0.003738 |
+| weighted_median.test | RUN | 1.646102 | 5.003650 | 6.478048 | 1.489990 | 1.391749 | 1.307693 |
+| weighted_moment.test | RUN | 0.999099 | 2.720165 | 3.826737 | 0.003834 | 0.003476 | 0.003682 |
+| weighted_p_square_cumul_dist.test | RUN | 1.258148 | 4.055345 | 4.642932 | 0.176958 | 0.165678 | 0.137962 |
+| weighted_p_square_quantile.test | RUN | 1.190177 | 3.979696 | 4.255085 | 0.046019 | 0.041841 | 0.036881 |
+| weighted_skewness.test | RUN | 1.404080 | 3.880378 | 4.980949 | 0.006994 | 0.006612 | 0.005720 |
+| weighted_sum.test | RUN | 0.876751 | 2.278385 | 2.990444 | 0.003481 | 0.003954 | 0.003656 |
+| weighted_sum_kahan.test | RUN | 0.797441 | 2.499147 | 3.348307 | 0.010626 | 0.017020 | 0.011643 |
+| weighted_variance.test | RUN | 1.552518 | 4.435337 | 6.342816 | 0.003981 | 0.003874 | 0.004119 |
+| valarray.test | RUN | 1.443967 | 4.185838 | 5.908744 | 0.003768 | 0.003509 | 0.003792 |
+| tail_variate_means.test | RUN | 1.830194 | 6.559698 | 7.980527 | 0.003574 | 0.003793 | 0.003671 |
+| pot_quantile.test | RUN | 2.213669 | 7.497989 | 9.752337 | 0.019074 | 0.015824 | 0.014009 |
+| weighted_pot_quantile.test | RUN | 2.249991 | 7.022162 | 9.881419 | 0.032069 | 0.040918 | 0.033462 |
+| weighted_tail_mean.test | RUN | 1.977629 | 5.762404 | 8.300390 | 0.028608 | 0.036612 | 0.028309 |
+| weighted_tail_quantile.test | RUN | 2.042821 | 5.053425 | 7.433712 | 0.026630 | 0.028299 | 0.023247 |
+| weighted_tail_variate_means.test | RUN | 2.244113 | 5.701449 | 7.986723 | 0.002564 | 0.002382 | 0.002497 |
 
 ## Native runtime replay
 
@@ -60,63 +60,63 @@ Child CPU of successful native tests, with process startup included; GDB and exp
 
 | Reference | CPU speedup ↑ | Paired blocks | A/A speedup |
 |---|---:|---|---:|
-| gcc | 1.069× | 1.068×, 1.071× | 0.989× |
-| clang | 0.889× | 0.888×, 0.890× | 0.997× |
+| gcc | 1.043× | 1.037×, 1.048× | 0.985× |
+| clang | 0.876× | 0.872×, 0.881× | 1.005× |
 
-† A/A drift or paired-block spread exceeds 5%; small differences are unresolved. 1375 native tests in the full cohort; 1360 have byte-identical output throughout. [Raw replay evidence in CI artifacts](https://github.com/vishvananda/cppgm-extended/actions/runs/43133898266).
+† A/A drift or paired-block spread exceeds 5%; small differences are unresolved. 1375 native tests in the full cohort; 1360 have byte-identical output throughout. [Raw replay evidence in CI artifacts](https://github.com/vishvananda/cppgm-extended/actions/runs/43348824563).
 
 | Test | Repeats | CPU cppgm | GCC | Clang | Output check |
 |---|---:|---:|---:|---:|---|
-| count.test | 1 | 0.003208s | 0.003039s | 0.002933s | byte equality observed |
-| covariance.test | 1 | 0.003116s | 0.003056s | 0.003048s | byte equality observed |
-| droppable.test | 1 | 0.002897s | 0.003083s | 0.003086s | byte equality observed |
-| error_of.test | 1 | 0.003038s | 0.002917s | 0.003013s | byte equality observed |
-| extended_p_square.test | 4 | 0.004701s | 0.004771s | 0.004331s | byte equality observed |
-| extended_p_square_quantile.test | 2 | 0.010883s | 0.010490s | 0.008831s | byte equality observed |
-| external_accumulator.test | 4 | 0.002744s | 0.002704s | 0.002629s | byte equality observed |
-| external_weights.test | 5 | 0.002626s | 0.002546s | 0.002543s | byte equality observed |
-| kurtosis.test | 3 | 0.005803s | 0.004725s | 0.004051s | byte equality observed |
-| max.test | 6 | 0.002688s | 0.002637s | 0.002620s | byte equality observed |
-| mean.test | 5 | 0.002792s | 0.002709s | 0.002647s | byte equality observed |
-| median.test | 1 | 0.173195s | 0.165990s | 0.141425s | byte equality observed |
-| min.test | 6 | 0.002679s | 0.002661s | 0.002516s | byte equality observed |
-| moment.test | 5 | 0.002630s | 0.002550s | 0.002555s | byte equality observed |
-| p_square_cumul_dist.test | 1 | 1.000846s | 1.170009s | 0.902291s | byte equality observed |
-| p_square_quantile.test | 1 | 0.039536s | 0.035120s | 0.030973s | byte equality observed |
-| pot_quantile.test | 2 | 0.017463s | 0.013639s | 0.011862s | byte equality observed |
-| reference.test | 5 | 0.002644s | 0.002636s | 0.002595s | byte equality observed |
-| rolling_count.test | 7 | 0.002637s | 0.002610s | 0.002507s | byte equality observed |
-| rolling_mean.test | 6 | 0.002738s | 0.002796s | 0.002646s | byte equality observed |
-| rolling_moment.test | 6 | 0.002739s | 0.002769s | 0.002656s | byte equality observed |
-| rolling_sum.test | 7 | 0.002642s | 0.002590s | 0.002529s | byte equality observed |
-| rolling_variance.test | 6 | 0.002776s | 0.002771s | 0.002646s | byte equality observed |
-| skewness.test | 3 | 0.005663s | 0.004718s | 0.003967s | byte equality observed |
-| sum.test | 7 | 0.002600s | 0.002563s | 0.002603s | byte equality observed |
-| sum_kahan.test | 1 | 0.018295s | 0.030451s | 0.018222s | byte equality observed |
-| tail.test | 7 | 0.002571s | 0.002496s | 0.002545s | byte equality observed |
-| tail_mean.test | 1 | 0.024735s | 0.029205s | 0.025109s | byte equality observed |
-| tail_quantile.test | 1 | 0.032097s | 0.040667s | 0.028737s | byte equality observed |
-| tail_variate_means.test | 5 | 0.002598s | 0.002449s | 0.002563s | byte equality observed |
-| valarray.test | 6 | 0.002604s | 0.002423s | 0.002430s | byte equality observed |
-| variance.test | 6 | 0.002712s | 0.002564s | 0.002667s | byte equality observed |
-| vector.test | 7 | 0.002581s | 0.002488s | 0.002488s | byte equality observed |
-| weighted_covariance.test | 7 | 0.002510s | 0.002433s | 0.002483s | byte equality observed |
-| weighted_extended_p_square.test | 1 | 0.029768s | 0.031254s | 0.024934s | byte equality observed |
-| weighted_kurtosis.test | 3 | 0.006238s | 0.005198s | 0.003872s | byte equality observed |
-| weighted_mean.test | 6 | 0.002493s | 0.002427s | 0.002409s | byte equality observed |
-| weighted_median.test | 1 | 1.266475s | 1.277372s | 1.141927s | byte equality observed |
-| weighted_moment.test | 5 | 0.002472s | 0.002471s | 0.002360s | byte equality observed |
-| weighted_p_square_cumul_dist.test | 1 | 0.167910s | 0.187103s | 0.140649s | byte equality observed |
-| weighted_p_square_quantile.test | 1 | 0.043472s | 0.039720s | 0.031933s | byte equality observed |
-| weighted_pot_quantile.test | 1 | 0.035141s | 0.032713s | 0.028789s | byte equality observed |
-| weighted_skewness.test | 3 | 0.006184s | 0.005236s | 0.003750s | byte equality observed |
-| weighted_sum.test | 6 | 0.002429s | 0.002425s | 0.002337s | byte equality observed |
-| weighted_sum_kahan.test | 2 | 0.010143s | 0.016012s | 0.009996s | byte equality observed |
-| weighted_tail_mean.test | 1 | 0.025109s | 0.030139s | 0.024411s | byte equality observed |
-| weighted_tail_quantile.test | 1 | 0.030094s | 0.034030s | 0.026561s | byte equality observed |
-| weighted_tail_variate_means.test | 6 | 0.002514s | 0.002592s | 0.002355s | byte equality observed |
-| weighted_variance.test | 5 | 0.003123s | 0.002983s | 0.002607s | byte equality observed |
+| count.test | 1 | 0.002979s | 0.002934s | 0.002691s | byte equality observed |
+| covariance.test | 1 | 0.003035s | 0.003006s | 0.002742s | byte equality observed |
+| droppable.test | 1 | 0.002999s | 0.002935s | 0.002763s | byte equality observed |
+| error_of.test | 1 | 0.002791s | 0.002760s | 0.002898s | byte equality observed |
+| extended_p_square.test | 4 | 0.004729s | 0.004593s | 0.004254s | byte equality observed |
+| extended_p_square_quantile.test | 2 | 0.010176s | 0.010156s | 0.008739s | byte equality observed |
+| external_accumulator.test | 5 | 0.002687s | 0.002640s | 0.002635s | byte equality observed |
+| external_weights.test | 6 | 0.002464s | 0.002414s | 0.002450s | byte equality observed |
+| kurtosis.test | 3 | 0.005738s | 0.004792s | 0.004005s | byte equality observed |
+| max.test | 5 | 0.002622s | 0.002503s | 0.002463s | byte equality observed |
+| mean.test | 6 | 0.002647s | 0.002614s | 0.002610s | byte equality observed |
+| median.test | 1 | 0.160436s | 0.166945s | 0.141030s | byte equality observed |
+| min.test | 6 | 0.002586s | 0.002542s | 0.002454s | byte equality observed |
+| moment.test | 3 | 0.002613s | 0.002537s | 0.002502s | byte equality observed |
+| p_square_cumul_dist.test | 1 | 1.062936s | 1.165171s | 0.908869s | byte equality observed |
+| p_square_quantile.test | 1 | 0.036872s | 0.035134s | 0.030702s | byte equality observed |
+| pot_quantile.test | 2 | 0.017461s | 0.013438s | 0.011968s | byte equality observed |
+| reference.test | 6 | 0.002566s | 0.002442s | 0.002464s | byte equality observed |
+| rolling_count.test | 7 | 0.002601s | 0.002458s | 0.002469s | byte equality observed |
+| rolling_mean.test | 7 | 0.002667s | 0.002618s | 0.002591s | byte equality observed |
+| rolling_moment.test | 7 | 0.002680s | 0.002602s | 0.002568s | byte equality observed |
+| rolling_sum.test | 7 | 0.002584s | 0.002493s | 0.002455s | byte equality observed |
+| rolling_variance.test | 7 | 0.002712s | 0.002636s | 0.002588s | byte equality observed |
+| skewness.test | 4 | 0.005658s | 0.004604s | 0.003976s | byte equality observed |
+| sum.test | 6 | 0.002558s | 0.002498s | 0.002450s | byte equality observed |
+| sum_kahan.test | 1 | 0.017991s | 0.029977s | 0.018333s | byte equality observed |
+| tail.test | 6 | 0.002588s | 0.002435s | 0.002452s | byte equality observed |
+| tail_mean.test | 1 | 0.023515s | 0.028920s | 0.026257s | byte equality observed |
+| tail_quantile.test | 1 | 0.030436s | 0.036910s | 0.029073s | byte equality observed |
+| tail_variate_means.test | 7 | 0.002555s | 0.002346s | 0.002501s | byte equality observed |
+| valarray.test | 6 | 0.002508s | 0.002398s | 0.002377s | byte equality observed |
+| variance.test | 7 | 0.002632s | 0.002553s | 0.002585s | byte equality observed |
+| vector.test | 7 | 0.002525s | 0.002475s | 0.002503s | byte equality observed |
+| weighted_covariance.test | 7 | 0.002565s | 0.002409s | 0.002379s | byte equality observed |
+| weighted_extended_p_square.test | 1 | 0.030286s | 0.029989s | 0.024878s | byte equality observed |
+| weighted_kurtosis.test | 4 | 0.006233s | 0.005109s | 0.003807s | byte equality observed |
+| weighted_mean.test | 8 | 0.002447s | 0.002312s | 0.002304s | byte equality observed |
+| weighted_median.test | 1 | 1.264040s | 1.250967s | 1.143122s | byte equality observed |
+| weighted_moment.test | 7 | 0.002396s | 0.002319s | 0.002307s | byte equality observed |
+| weighted_p_square_cumul_dist.test | 1 | 0.167969s | 0.198695s | 0.142493s | byte equality observed |
+| weighted_p_square_quantile.test | 1 | 0.043923s | 0.039144s | 0.032897s | byte equality observed |
+| weighted_pot_quantile.test | 1 | 0.035435s | 0.032208s | 0.028916s | byte equality observed |
+| weighted_skewness.test | 4 | 0.006123s | 0.004993s | 0.003772s | byte equality observed |
+| weighted_sum.test | 8 | 0.002380s | 0.002355s | 0.002303s | byte equality observed |
+| weighted_sum_kahan.test | 2 | 0.010140s | 0.015775s | 0.009963s | byte equality observed |
+| weighted_tail_mean.test | 1 | 0.027010s | 0.027059s | 0.024547s | byte equality observed |
+| weighted_tail_quantile.test | 1 | 0.031348s | 0.032161s | 0.027553s | byte equality observed |
+| weighted_tail_variate_means.test | 7 | 0.002537s | 0.002357s | 0.002394s | byte equality observed |
+| weighted_variance.test | 6 | 0.003073s | 0.002752s | 0.002620s | byte equality observed |
 
-[Raw outcomes, commands and timing observations in CI artifacts](https://github.com/vishvananda/cppgm-extended/actions/runs/43133898266).
+[Raw outcomes, commands and timing observations in CI artifacts](https://github.com/vishvananda/cppgm-extended/actions/runs/43348824563).
 
 [Comparison records](../results.json) · [Host and toolchains](../metadata.json)
