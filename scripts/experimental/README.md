@@ -4,7 +4,7 @@ This is an experimental maintainer workflow. It does not add a student assignmen
 change the PA37 report, or ship in the student export. Run from the solution
 checkout on the `experiment/wasi-browser-inception` branch.
 
-The native compiler builds W1. W1 then compiles all 415 frozen compiler sources
+The native compiler builds W1. W1 then compiles all 416 frozen compiler sources
 and links W2; W2 repeats that work to produce W3. Every corresponding object and
 final module must match **actual bytes**, without stripping or normalization.
 The same W1 runs unchanged under Wasmtime and in a dedicated browser worker.
@@ -292,3 +292,45 @@ total to 788.6 s, with peak guest linear memory 144,113,664 bytes. Cancellation,
 restart, download, x86 floating-point output and accepted/rejected source checks
 all pass. These are shared-host observations; Firefox and Safari remain
 unqualified.
+
+## Rebase onto PR135
+
+The experiment was rebased onto the published [LLVM optimization series,
+PR135](https://github.com/vishvananda/cppgm-extended/pull/135), head
+`4fa32a6b478dfd8ee7393f5121be28019bd52039`. Compiler commit `70b53fa0f`
+retains the Wasm implementation, sharing changes and bounded local dispatch.
+The pre-rebase tip remains at `backup/wasi-before-pr135-20261113`.
+
+The new package contains 416 compiler sources. W1/W2/W3 objects and final modules
+match under Wasmtime and Chromium 153.0.8010.12, including the downloaded browser
+module. Its 15,650,661 bytes have SHA-256
+`b5170b3c924b9f1cdea906e382407d52969afd50f4b1d4bb31e717246131f075`.
+All 1,251 native/WASI x86 comparisons at O0/O2/O3 pass. The strict report passes
+10,861/10,861, along with debug-info, PA5 self-hosting, native inception, PA36
+smoke, harness, architecture/format/placement audits and student export.
+
+The performance comparison keeps the previous frozen 415-source workload and
+flags unchanged. Four immutable AOT workers cover cppgm-built and Clang-built
+compilers, before and after the rebase. Two A/A builds and two mirrored blocks
+retain every observation. Each version's outputs must match that version's
+native reference; optimizer changes intentionally alter generated objects
+between versions. All 7,488 outputs from 18 full builds pass those comparisons.
+
+| Worker version | cppgm-built instructions | Clang-built instructions | Excess |
+| --- | ---: | ---: | ---: |
+| Before PR135 | 1.1209 trillion | 0.8021 trillion | 39.7% |
+| After PR135 | 1.0837 trillion | 0.8037 trillion | 34.8% |
+
+This removes 3.3% of full-build instruction work and about 12% of the excess
+instruction gap. Wall-time results do not resolve a reliable speedup: the two
+paired cppgm before/after ratios were 1.009 and 0.938, and some Clang runs varied
+from about 39 to 68 seconds. No observations are discarded. Shared-host timings
+from separate campaigns must still not be treated as compiler regressions.
+
+Much of the PR improves native MIR and x86 layout, which does not select Wasm
+instructions. The generic changes transfer partially. The pointer-view and
+loop-reducibility repros now pass, and the new worker has none of the three
+earlier large whole-function dispatcher patterns. The aggregate-accessor
+inlining and demanded-field/PHI repros remain. The separate local Wasm accessor
+fix is not included in the published PR measured here. Recheck commands and
+remaining generic optimization leads are retained outside the student export.
