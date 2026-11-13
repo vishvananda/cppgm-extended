@@ -84,6 +84,10 @@ EXTERNAL_LANES = (
     ("pa36", "tests/behavior/*.cpp", "pa36/scripts/behavior.pl", "pattern"),
     ("pa36", "tests/byte_values/*", "pa36/scripts/generated.pl", "name"),
     ("pa36", "tests/generators/*", "pa36/scripts/generated.pl", "name"),
+    # The test-lowir-library target of scripts/lowir_library_lane.mk runs
+    # scripts/test_lowir_library.py from the repository root, which names
+    # each source it builds.
+    ("*", "tests/lowir-library/*", "scripts/test_lowir_library.py", "name"),
     # Tests-first records of known defects, kept out of the course lanes and
     # the student export until their fixes land; see
     # docs/student-reference-audit-review.md.
