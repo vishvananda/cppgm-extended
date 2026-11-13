@@ -38,7 +38,7 @@ def main():
             exe = out / form
             library = ["-Ldev", "-lcppgm_lowir", f"-Wl,-rpath,{ROOT / 'dev'}"] if form == "shared" else ["dev/libcppgm_lowir.a"]
             run([*cxx, *stdlib, out / "client.o", *library, "-pthread", "-o", exe])
-            for case in ("bad-operand", "bad-layout", "bad-result", "bad-extra", "bad-type", "bad-kind", "bad-float-kind", "bad-conversion", "bad-open", "bad-counts", "bad-recommit"):
+            for case in ("bad-operand", "bad-layout", "bad-result", "bad-extra", "bad-type", "bad-kind", "bad-float-kind", "bad-reserved", "bad-conversion", "bad-open", "bad-counts", "bad-recommit"):
                 run([exe, out / "unused.o", out / "unused.lowir", 0, case])
             for level in args.levels:
                 obj = out / f"{form}-{level}.o"

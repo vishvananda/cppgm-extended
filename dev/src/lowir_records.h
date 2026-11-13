@@ -38,7 +38,11 @@ typedef struct LOWIR_RECORD(Value)
 	LOWIR_ENUM(ValueKind) kind;
 	// The kind of a Float literal: F32, F64 or F80.
 	LOWIR_ENUM(TypeKind) float_kind;
+#ifndef __cplusplus
+	// Zero. In C++ these two bytes are padding, so GCC keeps a Value in one
+	// 8-byte word; batched construction checks that a producer wrote zero.
 	uint16_t reserved;
+#endif
 	uint32_t index;
 
 #ifdef __cplusplus
@@ -61,7 +65,6 @@ typedef struct LOWIR_RECORD(Value)
 		Value value;
 		value.kind = kind;
 		value.float_kind = TypeKind::Void;
-		value.reserved = 0;
 		value.index = index;
 		return value;
 	}

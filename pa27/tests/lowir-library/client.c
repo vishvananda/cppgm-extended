@@ -162,6 +162,8 @@ static int compile_case(int argc, char** argv)
 		code[10].ops[0].kind = 255;
 	else if (strcmp(argv[4], "bad-float-kind") == 0)
 		{ code[10].ops[0].kind = CPPGM_VALUE_FLOAT; code[10].ops[0].float_kind = 255; }
+	else if (strcmp(argv[4], "bad-reserved") == 0)
+		code[10].ops[0].reserved = 1;
 	else if (strcmp(argv[4], "bad-conversion") == 0)
 	{
 		code[0].op = CPPGM_OP_CONVERT;

@@ -1,6 +1,7 @@
 #include "lowir/builder.h"
 
 #include <algorithm>
+#include <cstring>
 
 namespace {
 template<class T>
@@ -21,9 +22,18 @@ bool valid_type(lowir::Type t)
 	return t.align_log2 == 0 && t.bytes == 0;
 }
 
-bool valid_value(lowir::Value v)
+// The producer's halfword after float_kind (C's `reserved`), read in place:
+// C++'s Value leaves those bytes as padding.
+uint16_t reserved_halfword(const lowir::Value& v)
 {
-	return static_cast<unsigned>(v.kind) < lowir::kValueKindCount && v.reserved == 0 &&
+	uint16_t bits;
+	std::memcpy(&bits, reinterpret_cast<const unsigned char*>(&v) + 2, sizeof bits);
+	return bits;
+}
+
+bool valid_value(const lowir::Value& v)
+{
+	return static_cast<unsigned>(v.kind) < lowir::kValueKindCount && reserved_halfword(v) == 0 &&
 		(v.kind == lowir::ValueKind::Float
 				? v.float_kind >= lowir::TypeKind::F32 && v.float_kind <= lowir::TypeKind::F80
 				: v.float_kind == lowir::TypeKind::Void);
@@ -90,7 +100,7 @@ bool FunctionBuilder::commit(const BodyCounts& counts, uint32_t temp_count)
 			return construction_fail("invalid direct slot");
 	for (lowir::Block& block : body_.blocks)
 		block = lowir::Block{ 0, lowir::kNoId, lowir::kNoId, lowir::BlockKind::Plain };
-	for (lowir::Value operand : body_.operands)
+	for (const lowir::Value& operand : body_.operands)
 		if (!valid_value(operand))
 			return construction_fail("invalid direct operand");
 	for (lowir::InstId id = 0; id < body_.instructions.size(); ++id)
@@ -108,7 +118,7 @@ bool FunctionBuilder::commit(const BodyCounts& counts, uint32_t temp_count)
 		else
 			body_.instructions[block.last].next = id;
 		block.last = id;
-		for (lowir::Value operand : inst.ops)
+		for (const lowir::Value& operand : inst.ops)
 			if (!valid_value(operand))
 				return construction_fail("invalid direct operand");
 		if (!lowir::defines_value(inst.op) || (inst.op == lowir::Opcode::Call && inst.type.is_void()))
