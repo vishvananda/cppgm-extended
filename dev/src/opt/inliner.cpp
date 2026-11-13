@@ -100,6 +100,7 @@ struct Shape
 	bool constant_body = false;
 	uint64_t constant_parameters = 0;
 	uint32_t cost = 0, hot_cost = 0, unpriced = 0, hot_unpriced = 0;
+	uint32_t atomics = 0; // unpriced read-modify-write atomics (native; non_growing)
 	uint32_t size = 0;
 	uint32_t hot = 0;      // instructions outside cold blocks (every path from them
 						   // ends in noreturn)
@@ -133,6 +134,9 @@ uint32_t call_site_cost(const Instruction& call)
 const uint32_t kBulkCost = 6;
 // The charge of a handler region a copy would bring into its caller.
 const uint32_t kEhRegionCost = 6;
+// A read-modify-write atomic's size in non_growing: the locked instruction
+// and the moves around it.
+const uint32_t kAtomicCost = 4;
 
 // Conservative scalar estimate. Unknown operations are unpriced rather than
 // silently treated as one scalar instruction.
@@ -205,7 +209,9 @@ uint32_t native_inline_instruction_cost(const Instruction& inst)
 	// An atomic load, store or fence is a move's worth. The read-modify-write
 	// operations stay unpriced: their callees (a shared count's steps) would
 	// go inline at every copy of a shared pointer, at a compile cost their
-	// calls do not repay.
+	// calls do not repay. Only a callee no larger than its call with each
+	// of them counted as kAtomicCost (a wrapper of one, std::atomic<bool>'s
+	// compare_exchange_weak) goes inline (InlineWaveRunner::non_growing).
 	case Opcode::AtomicLoad:
 	case Opcode::AtomicThreadFence:
 	case Opcode::AtomicSignalFence:
@@ -595,7 +601,12 @@ Shape shape_of(
 			{
 				const uint32_t cost = inline_instruction_cost(inst);
 				if (cost == UINT32_MAX)
+				{
 					++shape.unpriced;
+					shape.atomics += !wasm &&
+						(inst.op == Opcode::AtomicAddFetch || inst.op == Opcode::AtomicExchange ||
+							inst.op == Opcode::AtomicCompareExchange);
+				}
 				else
 					shape.cost += cost;
 			}
@@ -1603,7 +1614,7 @@ private:
 
 bool InlineWaveRunner::non_growing(const Shape& shape, const Instruction& call) const
 {
-	if (shape.unpriced == 0 && shape.cost <= call_site_cost(call))
+	if (shape.unpriced == shape.atomics && shape.cost + kAtomicCost * shape.atomics <= call_site_cost(call))
 		return true;
 	if (!shape.constant_body)
 		return false;

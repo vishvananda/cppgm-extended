@@ -1,20 +1,15 @@
-function @bump(%a : ptr) -> i64 [binding=internal] {
-  block ^entry:
-    %r = atomic_add_fetch i64 %a, 1, 5
-    return i64 %r
-}
 function @count(%a : ptr) -> i64 {
   block ^entry:
-    %x = call i64 @bump(%a)
+    %r_1 = atomic_add_fetch i64 %a, 1, 5
     %r_2 = atomic_load i64 %a, 5
-    %z = binary add i64 %x, %r_2
+    %z = binary add i64 %r_1, %r_2
     return i64 %z
 }
 function @count_again(%a : ptr, %b : ptr) -> i64 {
   block ^entry:
-    %x = call i64 @bump(%b)
+    %r_1 = atomic_add_fetch i64 %b, 1, 5
     %r_2 = atomic_load i64 %a, 5
-    %z = binary sub i64 %x, %r_2
+    %z = binary sub i64 %r_1, %r_2
     return i64 %z
 }
 function @product(%a : f80, %b : f80) -> f80 {

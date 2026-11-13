@@ -1,6 +1,7 @@
 # A small callee goes inline whatever its instructions are, once each has a
 # charge: an atomic load, x87 arithmetic and a long clear have one. A
-# read-modify-write atomic has none, so @bump stays a call.
+# read-modify-write atomic has none, but a callee no larger than its call
+# with the atomic counted as a few moves, @bump, goes inline too.
 function @bump(%a : ptr) -> i64 [binding=internal] {
   block ^entry:
     %r = atomic_add_fetch i64 %a, 1, 5
