@@ -216,6 +216,19 @@ for my $test (@tests) {
             write(root / 'pa33/Makefile', (root / 'pa26/Makefile').read_text())
             self.assertEqual(audit.scan_optimization_requirements(root, ['pa33']), [])
 
+    def test_optimization_scan_skips_scripts_named_only_in_comments(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root / 'pa26/Makefile', '''test:
+	@scripts/run_all_tests.pl scripts/wrapper.sh my tests
+''')
+            write(root / 'pa26/scripts/run_all_tests.pl', '# generic runner\n')
+            write(root / 'pa26/scripts/wrapper.sh',
+                  '#!/bin/sh\n# scripts/optimized.sh is the maintainer variant.\nexec ../dev/cppgm++ "$@"\n')
+            write(root / 'pa26/scripts/optimized.sh', '#!/bin/sh\nexec ../dev/cppgm++ -O2 "$@"\n')
+            write(root / 'pa26/tests/general/300-catch.t', 'int main() {}\n')
+            self.assertEqual(audit.scan_optimization_requirements(root, ['pa26']), [])
+
     def test_native_optimization_flags_belong_to_pa34(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -91,6 +91,13 @@ def script_requirements(script, tests):
         guards = [(level, g) for level, g in guards if level <= depth]
 
 
+def code_text(script):
+    """A script's text without its comment lines: a script that a comment
+    names does not run."""
+    return '\n'.join(line for line in script.read_text(errors='replace').splitlines()
+                     if not line.lstrip().startswith('#'))
+
+
 def local_scripts(text, directory, root):
     for match in SCRIPT.finditer(text):
         candidates = [(base / match.group()).resolve() for base in (directory, directory.parent)]
@@ -175,7 +182,7 @@ def scan_optimization_requirements(root, pas):
                 for number, options, reachable in script_requirements(script, selected):
                     evidence = f'{pa} course: {script.relative_to(root)}:{number}; {sorted(reachable)[0]}'
                     record(script, options, evidence, pa, owner)
-                for child in local_scripts(script.read_text(errors='replace'), script.parent, root):
+                for child in local_scripts(code_text(script), script.parent, root):
                     scripts.setdefault((child, owner), set()).update(selected)
             for test in inputs:
                 for suffix in ('.env', '.flags'):
