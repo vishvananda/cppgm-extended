@@ -135,7 +135,27 @@ public:
 
 private:
 	AddressFacts facts_of(Value address) const;
-	bool may_alias(const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const;
+	// Whether two accesses may overlap. Answered here when the bases settle
+	// it: one object, distinct slots and globals, or an unknown pointer,
+	// which reaches no private slot and no allocation that never left.
+	bool may_alias(const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const
+	{
+		const bool ka = a.base != ValueKind::None, kb = b.base != ValueKind::None;
+		if (ka && kb)
+		{
+			if (a.base == b.base && a.index == b.index)
+				return a.offset < b.offset + static_cast<int64_t>(b_bytes) &&
+					b.offset < a.offset + static_cast<int64_t>(a_bytes);
+			return (a.base == ValueKind::Temp || b.base == ValueKind::Temp) &&
+				pointer_may_alias(a, a_bytes, b, b_bytes);
+		}
+		if (ka && ((a.base == ValueKind::Slot && !escaped_[a.index]) || private_allocation(a)))
+			return false;
+		if (kb && ((b.base == ValueKind::Slot && !escaped_[b.index]) || private_allocation(b)))
+			return false;
+		return true;
+	}
+	bool pointer_may_alias(const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const;
 	bool fields_apart(const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const;
 	TempId allocation_of(const AddressFacts& f) const;
 	bool private_allocation(const AddressFacts& f) const;
@@ -374,44 +394,30 @@ bool MemoryForwarding::fields_apart(
 	return strided_apart(of(a), a_bytes, of(b), b_bytes);
 }
 
-bool MemoryForwarding::may_alias(const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const
+// may_alias for two known addresses of different objects, at least one
+// stepped from a pointer temporary: a pointer base may point anywhere but
+// into a private slot.
+bool MemoryForwarding::pointer_may_alias(
+	const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const
 {
-	const bool ka = a.base != ValueKind::None, kb = b.base != ValueKind::None;
-	if (ka && kb)
-	{
-		if (a.base == b.base && a.index == b.index)
-			return a.offset < b.offset + static_cast<int64_t>(b_bytes) &&
-				b.offset < a.offset + static_cast<int64_t>(a_bytes);
-		// Distinct slots and globals are disjoint; a pointer base may
-		// point anywhere but into a private slot.
-		if (a.base != ValueKind::Temp && b.base != ValueKind::Temp)
-			return false;
-		if ((a.base == ValueKind::Slot && !escaped_[a.index]) || (b.base == ValueKind::Slot && !escaped_[b.index]))
-			return false;
-		// Explicit result storage is disjoint from other incoming objects.
-		// Unknown loaded/call-produced pointers may be derived from it.
-		if (result_apart(a, a_bytes, b) || result_apart(b, b_bytes, a))
-			return false;
-		if (a.base == ValueKind::Temp && b.base == ValueKind::Temp && fields_apart(a, a_bytes, b, b_bytes))
-			return false;
-		// New storage is no slot, no global, no other allocation and nothing a
-		// parameter reaches; what never leaves is reached by nothing else.
-		const TempId fa = allocation_of(a), fb = allocation_of(b);
-		if (fa == fb)
-			return true;
-		if (fa != kNoId && fb != kNoId)
-			return false;
-		const TempId fresh = fa != kNoId ? fa : fb;
-		const AddressFacts& other = fa != kNoId ? b : a;
-		return other.base == ValueKind::Temp && other.index >= body_.parameter_count && allocation_left_[fresh] != 0;
-	}
-	// An unknown pointer reaches no private slot, and no allocation that
-	// never left.
-	if (ka && ((a.base == ValueKind::Slot && !escaped_[a.index]) || private_allocation(a)))
+	if ((a.base == ValueKind::Slot && !escaped_[a.index]) || (b.base == ValueKind::Slot && !escaped_[b.index]))
 		return false;
-	if (kb && ((b.base == ValueKind::Slot && !escaped_[b.index]) || private_allocation(b)))
+	// Explicit result storage is disjoint from other incoming objects.
+	// Unknown loaded/call-produced pointers may be derived from it.
+	if (result_apart(a, a_bytes, b) || result_apart(b, b_bytes, a))
 		return false;
-	return true;
+	if (a.base == ValueKind::Temp && b.base == ValueKind::Temp && fields_apart(a, a_bytes, b, b_bytes))
+		return false;
+	// New storage is no slot, no global, no other allocation and nothing a
+	// parameter reaches; what never leaves is reached by nothing else.
+	const TempId fa = allocation_of(a), fb = allocation_of(b);
+	if (fa == fb)
+		return true;
+	if (fa != kNoId && fb != kNoId)
+		return false;
+	const TempId fresh = fa != kNoId ? fa : fb;
+	const AddressFacts& other = fa != kNoId ? b : a;
+	return other.base == ValueKind::Temp && other.index >= body_.parameter_count && allocation_left_[fresh] != 0;
 }
 
 // At an allocation call nothing the program reaches changes but errno, an
@@ -668,7 +674,7 @@ void MemoryForwarding::escapes()
 					allocation_[v.index] != kNoId)
 					allocation_left_[allocation_[v.index]] = 1;
 			});
-			if (fresh_result_call(c_.program, inst))
+			if (inst.op == Opcode::Call && fresh_result_call(c_.program, inst))
 			{
 				if (allocation_.empty())
 				{
@@ -999,7 +1005,7 @@ void MemoryForwarding::process(BlockId block)
 			invalidate(inst.ops[0], static_cast<uint64_t>(inst.immediate));
 			note_zero(inst.ops[0], static_cast<uint64_t>(inst.immediate));
 		}
-		else if (allocation_call(c_.program, inst))
+		else if (inst.op == Opcode::Call && allocation_call(c_.program, inst))
 			forget_int_cells();
 		else if (may_write_memory(c_.program, inst) && !region_marker(inst.op))
 		{
