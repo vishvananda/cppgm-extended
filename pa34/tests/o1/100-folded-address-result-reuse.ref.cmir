@@ -73,8 +73,8 @@ function @main
     xor rcx, 4
     xor rcx, 37
     cmp.i64 rax, rcx
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
     mov rdi, <gpr0>
     mov rsi, 16
     call @masked_index [args=(rsi,rdi)]
@@ -82,22 +82,22 @@ function @main
     xor rcx, 16
     xor rcx, 73
     cmp.i64 rax, rcx
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
     mov rdi, <gpr0>
     mov rsi, 4
     call @live_index [args=(rsi,rdi)]
     cmp.i64 rax, 37
-    setne <gpr3>
-    movzx <gpr3>, <gpr3>
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
     mov rdi, <gpr0>
     mov rsi, 16
     call @live_index [args=(rsi,rdi)]
     cmp.i64 rax, 65
     setne rax
     movzx rax, rax
-    or.u32 <gpr1>, <gpr2>
-    or.u32 <gpr3>, rax
-    zext.i32 rax, <gpr1>
-    or.u32 rax, <gpr3>
+    or.u32 <gpr2>, <gpr3>
+    or.u32 <gpr1>, rax
+    zext.i32 rax, <gpr2>
+    or.u32 rax, <gpr1>
     ret rax

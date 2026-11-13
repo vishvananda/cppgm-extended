@@ -544,607 +544,607 @@ function @main
     temp %lo -> [rbp-8] : u32
 
   block ^entry
-    mov r13, @inputs
+    mov r15, @inputs
     mov rbx, 0
-    mov r12, 0
+    mov r14, 0
 
   block ^loop
     lea rax, [rbx+rbx]
-    lea r14, [r13+rax*8]
-    load.u32 r15, [r14]
-    store.u32 [rbp-8], r15
-    load.u32 r15, [r14+4]
-    mov rdi, r14
+    lea r13, [r15+rax*8]
+    load.u32 r12, [r13]
+    store.u32 [rbp-8], r12
+    load.u32 r12, [r13+4]
+    mov rdi, r13
     lea rsi, @output
     call @f32_0 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f32_1 [args=(rsi,rdi)]
     cmp.u32 @output, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f32_85 [args=(rsi,rdi)]
     cmp.u32 @output, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+4, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+8, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+12, 0
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f32_170 [args=(rsi,rdi)]
     cmp.u32 @output, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+4, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+8, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+12, 0
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f32_255 [args=(rsi,rdi)]
     cmp.u32 @output, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+4, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+8, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+12, 0
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f32_27 [args=(rsi,rdi)]
     cmp.u32 @output, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+4, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+8, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_0 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_1 [args=(rsi,rdi)]
-    cmp.u32 @output, r15
+    cmp.u32 @output, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_4 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+4, r15
+    or r14, rax
+    cmp.u32 @output+4, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_5 [args=(rsi,rdi)]
-    cmp.u32 @output, r15
+    cmp.u32 @output, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+4, r15
+    or r14, rax
+    cmp.u32 @output+4, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_16 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+8, r15
+    or r14, rax
+    cmp.u32 @output+8, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_17 [args=(rsi,rdi)]
-    cmp.u32 @output, r15
+    cmp.u32 @output, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+8, r15
+    or r14, rax
+    cmp.u32 @output+8, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_20 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+4, r15
+    or r14, rax
+    cmp.u32 @output+4, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+8, r15
+    or r14, rax
+    cmp.u32 @output+8, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_21 [args=(rsi,rdi)]
-    cmp.u32 @output, r15
+    cmp.u32 @output, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+4, r15
+    or r14, rax
+    cmp.u32 @output+4, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+8, r15
+    or r14, rax
+    cmp.u32 @output+8, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_64 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+12, r15
+    or r14, rax
+    cmp.u32 @output+12, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_65 [args=(rsi,rdi)]
-    cmp.u32 @output, r15
+    cmp.u32 @output, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+12, r15
+    or r14, rax
+    cmp.u32 @output+12, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_68 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+4, r15
+    or r14, rax
+    cmp.u32 @output+4, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+12, r15
+    or r14, rax
+    cmp.u32 @output+12, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_69 [args=(rsi,rdi)]
-    cmp.u32 @output, r15
+    cmp.u32 @output, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+4, r15
+    or r14, rax
+    cmp.u32 @output+4, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+12, r15
+    or r14, rax
+    cmp.u32 @output+12, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_80 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+8, r15
+    or r14, rax
+    cmp.u32 @output+8, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+12, r15
+    or r14, rax
+    cmp.u32 @output+12, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_81 [args=(rsi,rdi)]
-    cmp.u32 @output, r15
+    cmp.u32 @output, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+8, r15
+    or r14, rax
+    cmp.u32 @output+8, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+12, r15
+    or r14, rax
+    cmp.u32 @output+12, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_84 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+4, r15
+    or r14, rax
+    cmp.u32 @output+4, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+8, r15
+    or r14, rax
+    cmp.u32 @output+8, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+12, r15
+    or r14, rax
+    cmp.u32 @output+12, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_85 [args=(rsi,rdi)]
-    cmp.u32 @output, r15
+    cmp.u32 @output, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+4, r15
+    or r14, rax
+    cmp.u32 @output+4, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+8, r15
+    or r14, rax
+    cmp.u32 @output+8, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+12, r15
+    or r14, rax
+    cmp.u32 @output+12, r12
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_170 [args=(rsi,rdi)]
     cmp.u32 @output, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+4, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+8, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+12, 0
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_255 [args=(rsi,rdi)]
     cmp.u32 @output, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+4, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+8, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+12, 0
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @f64_228 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+4, r15
+    or r14, rax
+    cmp.u32 @output+4, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+8, 0
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     cmp.u32 @output+12, 0
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @i32_0 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rdi, r14
+    or r14, rax
+    mov rdi, r13
     lea rsi, @output
     call @i64_68 [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+4, r15
+    or r14, rax
+    cmp.u32 @output+4, r12
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
-    cmp.u32 @output+12, r15
-    setne r15
-    movzx r15, r15
-    or r12, r15
-    mov rdi, r14
+    or r14, rax
+    cmp.u32 @output+12, r12
+    setne r12
+    movzx r12, r12
+    or r14, r12
+    mov rdi, r13
     lea rsi, @output
     call @live_source [args=(rsi,rdi)]
     load.u32 r10, @output
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+4
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+8
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+12
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     load.u32 r10, @output+16
     cmp.u32 r10, [rbp-8]
     setne rax
     movzx rax, rax
-    or r12, rax
+    or r14, rax
     add rbx, 1
     cmp.i64 rbx, 16
     jl ^loop
 
   block ^exit
-    ret r12
+    ret r14

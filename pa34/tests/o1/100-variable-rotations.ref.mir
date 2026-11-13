@@ -46,15 +46,15 @@ function @with_live_values
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13
+    preserve rbx r14 r15
 
   block ^entry
     mov rbx, r9
     mov r9, r8
     mov r8, rdx
     mov rdx, rcx
-    load.i64 r12, [rbp+16]
-    load.i64 r13, [rbp+24]
+    load.i64 r14, [rbp+16]
+    load.i64 r15, [rbp+24]
     zext.i32 rax, rdx
     and rax, 63
     je ^merge
@@ -66,8 +66,8 @@ function @with_live_values
   block ^merge
     lea rax, [rdi+rsi]
     add r8, r9
-    add rbx, r12
-    add rbx, r13
+    add rbx, r14
+    add rbx, r15
     xor rax, r8
     xor rax, rbx
     add rax, rdx
@@ -109,24 +109,24 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13 r14
+    preserve rbx r13 r14 r15
 
   block ^entry
     mov rbx, 0
-    mov r12, 81985529216486895
+    mov r14, 81985529216486895
 
   block ^loop
     zext.i32 rsi, rbx
     and rsi, 63
-    mov rdi, r12
+    mov rdi, r14
     call @oracle [args=(rsi,rdi)]
-    mov r13, rax
-    mov rdi, r12
+    mov r15, rax
+    mov rdi, r14
     mov rsi, rbx
     call @rotate_right [args=(rsi,rdi)]
-    mov r14, rax
+    mov r13, rax
     sub rsp, 16
-    mov rdi, r12
+    mov rdi, r14
     mov rsi, 11
     mov rdx, 22
     mov rcx, rbx
@@ -138,21 +138,21 @@ function @main
     store.i64 [rsp+8], r11
     call @with_live_values [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    lea rcx, [r13+11]
+    lea rcx, [r15+11]
     xor rcx, 55
     xor rcx, 165
     add rcx, rbx
-    cmp.i64 r14, r13
-    setne r14
+    cmp.i64 r13, r15
+    setne r13
     cmp.i64 rax, rcx
     setne rax
-    or.u8 r14, rax
+    or.u8 r13, rax
     jne ^fail
 
   block ^next
     mov r11, 6364136223846793005
-    imul r12, r11
-    add r12, 1
+    imul r14, r11
+    add r14, 1
     add rbx, 1
     cmp.i64 rbx, 128
     jb ^loop

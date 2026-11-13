@@ -79,7 +79,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13
+    preserve rbx r14 r15
     slot $values -> [rbp-16] : obj<12x4>
 
   block ^entry
@@ -93,11 +93,11 @@ function @main
     mov rdi, 8589934597
     mov rsi, 7
     call @sub [args=(rsi,rdi)]
-    mov r12, rax
+    mov r14, rax
     mov rdi, -4294967293
     mov rsi, -5
     call @mul [args=(rsi,rdi)]
-    mov r13, rax
+    mov r15, rax
     lea rdi, [rbp-16]
     mov rsi, 4294967297
     mov rdx, 1
@@ -105,17 +105,17 @@ function @main
     cmp.i64 rbx, 3
     setne rbx
     movzx rbx, rbx
-    cmp.i64 r12, -2
-    setne r12
-    movzx r12, r12
-    cmp.i64 r13, -15
-    setne r13
-    movzx r13, r13
+    cmp.i64 r14, -2
+    setne r14
+    movzx r14, r14
+    cmp.i64 r15, -15
+    setne r15
+    movzx r15, r15
     cmp.i32 rax, 30
     setne rax
     movzx rax, rax
-    or rbx, r12
-    or r13, rax
+    or rbx, r14
+    or r15, rax
     mov rax, rbx
-    or rax, r13
+    or rax, r15
     ret rax

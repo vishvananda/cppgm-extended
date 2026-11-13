@@ -101,41 +101,41 @@ function @main
     zext.i32 rax, rbx
     and.i32 rax, 127
     mov r11, 11
-    mov r12, 29
-    cmovne r12, r11
+    mov r14, 29
+    cmovne r14, r11
     lea rdi, [rbp-8]
     mov rsi, 11
     mov rdx, 29
     call @masked_alias [args=(rdx,rsi,rdi)]
-    mov r13, rax
+    mov r15, rax
     lea rdi, [rbp-8]
     call @shared_load [args=(rdi)]
-    mov r14, rax
+    mov r13, rax
     lea rdi, [rbp-8]
     mov rsi, 11
     mov rdx, 29
     call @volatile_mask [args=(rdx,rsi,rdi)]
-    mov r15, rax
+    mov r12, rax
     lea rdi, [rbp-8]
     mov rsi, 11
     mov rdx, 29
     call @stored_after_mask [args=(rdx,rsi,rdi)]
     sext.i32 rcx, rbx
-    add rcx, r12
-    cmp.i64 r13, r12
-    setne r13
-    cmp.i64 r14, rcx
-    setne r14
-    cmp.i64 r15, r12
+    add rcx, r14
+    cmp.i64 r15, r14
     setne r15
-    cmp.i64 rax, r12
+    cmp.i64 r13, rcx
+    setne r13
+    cmp.i64 r12, r14
+    setne r12
+    cmp.i64 rax, r14
     setne rax
     cmp.i32 [rbp-8], 0
     setne rcx
-    or.u8 r13, r14
-    or.u8 r15, rax
-    or.u8 r13, r15
-    or.u8 r13, rcx
+    or.u8 r15, r13
+    or.u8 r12, rax
+    or.u8 r15, r12
+    or.u8 r15, rcx
     jne ^failed
 
   block ^next

@@ -101,41 +101,41 @@ function @main
     zext.i32 rax, <gpr1>
     and.i32 rax, 127
     mov <gpr0>, 11
-    mov <gpr2>, 29
-    cmovne <gpr2>, <gpr0>
+    mov <gpr4>, 29
+    cmovne <gpr4>, <gpr0>
     lea rdi, [rbp-<off0>]
     mov rsi, 11
     mov rdx, 29
     call @masked_alias [args=(rdx,rsi,rdi)]
-    mov <gpr3>, rax
+    mov <gpr5>, rax
     lea rdi, [rbp-<off0>]
     call @shared_load [args=(rdi)]
-    mov <gpr4>, rax
+    mov <gpr3>, rax
     lea rdi, [rbp-<off0>]
     mov rsi, 11
     mov rdx, 29
     call @volatile_mask [args=(rdx,rsi,rdi)]
-    mov <gpr5>, rax
+    mov <gpr2>, rax
     lea rdi, [rbp-<off0>]
     mov rsi, 11
     mov rdx, 29
     call @stored_after_mask [args=(rdx,rsi,rdi)]
     sext.i32 rcx, <gpr1>
-    add rcx, <gpr2>
-    cmp.i64 <gpr3>, <gpr2>
-    setne <gpr3>
-    cmp.i64 <gpr4>, rcx
-    setne <gpr4>
-    cmp.i64 <gpr5>, <gpr2>
+    add rcx, <gpr4>
+    cmp.i64 <gpr5>, <gpr4>
     setne <gpr5>
-    cmp.i64 rax, <gpr2>
+    cmp.i64 <gpr3>, rcx
+    setne <gpr3>
+    cmp.i64 <gpr2>, <gpr4>
+    setne <gpr2>
+    cmp.i64 rax, <gpr4>
     setne rax
     cmp.i32 [rbp-<off0>], 0
     setne rcx
-    or.u8 <gpr3>, <gpr4>
-    or.u8 <gpr5>, rax
-    or.u8 <gpr3>, <gpr5>
-    or.u8 <gpr3>, rcx
+    or.u8 <gpr5>, <gpr3>
+    or.u8 <gpr2>, rax
+    or.u8 <gpr5>, <gpr2>
+    or.u8 <gpr5>, rcx
     jne ^failed
 
   block ^next

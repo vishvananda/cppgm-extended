@@ -1,0 +1,30 @@
+function @merged(%x : i32) -> i32 {
+  block ^entry:
+    %b = binary add nowrap i32 %x, 2
+    return i32 %b
+}
+function @mixed(%x : i32) -> i32 {
+  block ^entry:
+    %b = binary add nowrap i32 %x, 3
+    return i32 %b
+}
+function @word(%x : u32) -> u32 {
+  block ^entry:
+    %b = binary add nowrap u32 %x, 7
+    return u32 %b
+}
+function @past(%x : i32) -> i32 {
+  block ^entry:
+    %b = binary add i32 %x, -2147483648
+    return i32 %b
+}
+function @plain(%x : i32) -> i32 {
+  block ^entry:
+    %b = binary add i32 %x, 2
+    return i32 %b
+}
+function @down(%x : u32) -> u32 {
+  block ^entry:
+    %b = binary add u32 %x, 4294967293
+    return u32 %b
+}

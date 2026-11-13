@@ -1,0 +1,103 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @touch
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add.i32 [rdi], 1
+    ret
+
+function @three
+  abi
+    param %a -> rdi : ptr
+    param %b -> rsi : ptr
+    param %c -> rdx : ptr
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r14 r15
+
+  block ^entry
+    mov rbx, rdi
+    mov r14, rsi
+    mov r15, rdx
+    call @touch [args=(rdi)]
+    load.u32 rax, [rbx]
+    add.i32 rax, [r14]
+    add.i32 rax, [r15]
+    ret rax
+
+function @five
+  abi
+    param %a -> rdi : ptr
+    param %b -> rsi : ptr
+    param %c -> rdx : ptr
+    param %d -> rcx : ptr
+    param %e -> r8 : ptr
+    return i32 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+
+  block ^entry
+    mov rbx, rdi
+    mov r14, rsi
+    mov r15, rdx
+    mov r13, rcx
+    mov r12, r8
+    call @touch [args=(rdi)]
+    load.u32 rax, [rbx]
+    add.i32 rax, [r14]
+    add.i32 rax, [r15]
+    add.i32 rax, [r13]
+    add.i32 rax, [r12]
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
+    slot $v -> [rbp-24] : obj<20x4>
+
+  block ^entry
+    store.i32 [rbp-24], 1
+    store.i32 [rbp-20], 2
+    store.i32 [rbp-16], 3
+    store.i32 [rbp-12], 4
+    store.i32 [rbp-8], 5
+    lea rdi, [rbp-24]
+    lea rsi, [rbp-20]
+    lea rdx, [rbp-16]
+    call @three [args=(rdx,rsi,rdi)]
+    zext.i32 rbx, rax
+    lea rdi, [rbp-24]
+    lea rsi, [rbp-20]
+    lea rdx, [rbp-16]
+    lea rcx, [rbp-12]
+    lea r8, [rbp-8]
+    call @five [args=(rcx,rdx,rsi,rdi,r8)]
+    add.i32 rax, rbx
+    ret rax

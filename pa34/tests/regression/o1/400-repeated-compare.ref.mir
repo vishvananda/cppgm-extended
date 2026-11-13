@@ -97,21 +97,21 @@ function @main
     mov rdi, 2
     mov rsi, 1
     call @three_way [args=(rsi,rdi)]
-    zext.i32 r12, rax
+    zext.i32 r14, rax
     mov rdi, 2
     mov rsi, 2
     call @three_way [args=(rsi,rdi)]
-    zext.i32 r13, rax
+    zext.i32 r15, rax
     mov rdi, 1
     mov rsi, 2
     mov rdx, 0
     call @not_every_edge [args=(rdx,rsi,rdi)]
-    zext.i32 r14, rax
+    zext.i32 r13, rax
     mov rdi, 2
     mov rsi, 2
     mov rdx, 0
     call @not_every_edge [args=(rdx,rsi,rdi)]
-    zext.i32 r15, rax
+    zext.i32 r12, rax
     mov rdi, 2
     mov rsi, 2
     mov rdx, 1
@@ -123,13 +123,13 @@ function @main
     mov rdx, 1
     call @not_every_edge [args=(rdx,rsi,rdi)]
     imul.i32 rbx, 10
-    add.i32 rbx, r12
+    add.i32 rbx, r14
     imul.i32 rbx, 10
-    add.i32 rbx, r13
-    add.i32 r14, r15
-    add.i32 r14, [rbp-8]
-    add.i32 r14, rax
-    add.u32 rbx, r14
+    add.i32 rbx, r15
+    add.i32 r13, r12
+    add.i32 r13, [rbp-8]
+    add.i32 r13, rax
+    add.u32 rbx, r13
     zext.i32 r10, rbx
     imul rax, r10, 1374389535
     shr rax, 38

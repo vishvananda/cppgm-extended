@@ -81,7 +81,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12
+    preserve rbx r14
 
   block ^entry
     store.i32 @table, 3
@@ -95,11 +95,11 @@ function @main
     mov rdi, 9
     mov rsi, 3
     call @divides [args=(rsi,rdi)]
-    zext.i32 r12, rax
+    zext.i32 r14, rax
     mov rdi, 9
     mov rsi, 4
     call @divides [args=(rsi,rdi)]
     imul.i32 rbx, 2
-    add.i32 rbx, r12
+    add.i32 rbx, r14
     sub.i32 rbx, rax
     ret rbx

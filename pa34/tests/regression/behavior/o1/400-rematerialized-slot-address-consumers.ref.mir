@@ -31,16 +31,16 @@ function @copy_and_store_address
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12
+    preserve rbx r14
     slot $value -> [rbp-8] : i64
     slot $saved -> [rbp-16] : ptr
 
   block ^entry
-    mov r12, rdi
+    mov r14, rdi
     lea rbx, [rbp-8]
     mov rdi, 7
     call @identity [args=(rdi), unwind=no]
-    cmp.i64 r12, 0
+    cmp.i64 r14, 0
     je ^direct
 
   block ^copy
@@ -162,25 +162,25 @@ function @main
     mov rbx, rax
     mov rdi, 0
     call @copy_and_store_address [args=(rdi), unwind=no]
-    mov r12, rax
+    mov r14, rax
     call @return_slot_address [args=(), unwind=no]
     cmp.ptr rax, 0
-    sete r13
-    movzx r13, r13
+    sete r15
+    movzx r15, r15
     call @integer_copy_arithmetic [args=(), unwind=no]
-    mov r14, rax
+    mov r13, rax
     call @copy_and_store_global_address [args=(), unwind=no]
-    mov r15, rax
+    mov r12, rax
     call @return_global_address [args=(), unwind=no]
     cmp.ptr rax, 0
     sete r10
     movzx r10, r10
     store.i64 [rbp-8], r10
     call @global_integer_arithmetic [args=(), unwind=no]
-    or rbx, r12
-    or rbx, r13
     or rbx, r14
     or rbx, r15
+    or rbx, r13
+    or rbx, r12
     or rbx, [rbp-8]
     or rax, rbx
     ret rax

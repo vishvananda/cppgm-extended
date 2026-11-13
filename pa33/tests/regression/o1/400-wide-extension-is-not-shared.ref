@@ -1,0 +1,21 @@
+function @twice(%x : i64, %a : i64, %b : i64) -> i64 {
+  block ^entry:
+    %w1 = convert zext i128 i64 %x
+    %wa = convert zext i128 i64 %a
+    %p1 = binary mul i128 %w1, %wa
+    %h1 = binary ushr i128 %p1, 64
+    %r1 = convert trunc i64 i128 %h1
+    %w2 = convert zext i128 i64 %x
+    %wb = convert zext i128 i64 %b
+    %p2 = binary mul i128 %w2, %wb
+    %h2 = binary ushr i128 %p2, 64
+    %r2 = convert trunc i64 i128 %h2
+    %s = binary add i64 %r1, %r2
+    return i64 %s
+}
+function @narrow(%x : i64, %y : i64) -> i64 {
+  block ^entry:
+    %a = binary add i64 %x, %y
+    %c = binary mul i64 %a, %a
+    return i64 %c
+}

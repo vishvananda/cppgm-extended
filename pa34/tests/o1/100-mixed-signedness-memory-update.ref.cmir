@@ -171,26 +171,26 @@ function @main
     lea rdi, [rbp-<off0>]
     call @word_update [args=(rdi)]
     cmp.i64 [rbp-<off0>], 32767
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
     store.i64 [rbp-<off0>], 4294967296
     lea rdi, [rbp-<off0>]
     call @dword_update [args=(rdi)]
     cmp.i64 [rbp-<off0>], 8589934591
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
     store.i64 [rbp-<off0>], 131071
     lea rdi, [rbp-<off0>]
     call @wide_update [args=(rdi)]
     cmp.i64 [rbp-<off0>], 65536
-    setne <gpr3>
-    movzx <gpr3>, <gpr3>
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
     store.i64 [rbp-<off0>], 254
     lea rdi, [rbp-<off0>]
     call @truth_update [args=(rdi)]
     cmp.i64 [rbp-<off0>], 1
-    setne <gpr4>
-    movzx <gpr4>, <gpr4>
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
     store.i64 [rbp-<off0>], 255
     lea rdi, [rbp-<off0>]
     call @volatile_update [args=(rdi)]
@@ -222,14 +222,14 @@ function @main
     cmp.i64 [rbp-<off0>], 0
     setne rax
     movzx rax, rax
-    or.u32 <gpr0>, <gpr1>
-    or.u32 <gpr2>, <gpr3>
-    or.u32 <gpr4>, [rbp-<off1>]
+    or.u32 <gpr0>, <gpr3>
+    or.u32 <gpr4>, <gpr2>
+    or.u32 <gpr1>, [rbp-<off1>]
     load.u32 rcx, [rbp-<off2>]
     or.u32 rcx, [rbp-<off3>]
-    or.u32 <gpr0>, <gpr2>
-    or.u32 <gpr4>, rcx
     or.u32 <gpr0>, <gpr4>
+    or.u32 <gpr1>, rcx
+    or.u32 <gpr0>, <gpr1>
     or.u32 <gpr0>, [rbp-<off4>]
     or.u32 rax, <gpr0>
     ret rax

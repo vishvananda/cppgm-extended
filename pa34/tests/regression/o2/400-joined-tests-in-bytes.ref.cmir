@@ -136,21 +136,21 @@ function @main
     mov rdi, 5
     mov rsi, 9
     call @either [args=(rsi,rdi)]
-    mov <gpr1>, rax
+    mov <gpr3>, rax
     mov rdi, 8
     mov rsi, @main
     mov rdx, 0
     call @both [args=(rdx,rsi,rdi)]
-    mov <gpr2>, rax
+    mov <gpr4>, rax
     mov rdi, 8
     mov rsi, 0
     mov rdx, 0
     call @both [args=(rdx,rsi,rdi)]
-    mov <gpr3>, rax
+    mov <gpr2>, rax
     mov rdi, 3
     mov rsi, 5
     call @one [args=(rsi,rdi)]
-    mov <gpr4>, rax
+    mov <gpr1>, rax
     mov rdi, 3
     mov rsi, 4
     call @one [args=(rsi,rdi)]
@@ -164,13 +164,13 @@ function @main
     mov rdi, 0
     mov rsi, 9
     call @wide [args=(rsi,rdi)]
-    add <gpr0>, <gpr1>
-    add <gpr2>, <gpr3>
-    add <gpr4>, [rbp-<off0>]
+    add <gpr0>, <gpr3>
+    add <gpr4>, <gpr2>
+    add <gpr1>, [rbp-<off0>]
     add rax, [rbp-<off1>]
-    add <gpr0>, <gpr2>
-    add <gpr4>, rax
     add <gpr0>, <gpr4>
+    add <gpr1>, rax
+    add <gpr0>, <gpr1>
     mov rax, <gpr0>
     mov <gpr6>, 367465021388636487
     mul <gpr6>

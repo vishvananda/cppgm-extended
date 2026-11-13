@@ -150,7 +150,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_end_4:
-    %t9 = binary add i32 %t3, -505
+    %t9 = binary add nowrap i32 %t3, -505
     %t10 = call i32 @write_between(%t5)
     %t11 = cmp ne i32 %t9, %t10
     branch %t11, ^if_then_6, ^lor_rhs_5

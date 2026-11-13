@@ -32,18 +32,18 @@ function @probe
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12
+    preserve rbx r14
 
   block ^entry
     load.i64 rbx, [rsi]
-    load.i64 r12, [rdi+8]
+    load.i64 r14, [rdi+8]
     mov rdi, 0
     mov rsi, 0
     mov rdx, 0
     mov rcx, 0
     mov r8, 0
     call @sink [args=(rcx,rdx,rsi,rdi,r8), unwind=no]
-    cmp.i64 rbx, r12
+    cmp.i64 rbx, r14
     je ^same
 
   block ^differ

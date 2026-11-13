@@ -1,0 +1,89 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @classes
+  storage data
+  item u8 0
+  item u8 1
+  item u8 3
+  item u8 0
+
+global @text
+  storage data
+  item u8 1
+  item u8 2
+  item u8 1
+  item u8 0
+  item zero 4
+
+global @ends
+  storage data
+  item zero 8
+
+function @take
+  abi
+    param %bytes -> rdi : ptr
+    param %at -> rsi : u32
+    param %out -> rdx : ptr
+    return u8 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rsi
+
+  block ^test
+    load.u8 rcx, [rdi+rax]
+    mov r10, @classes
+    add rcx, r10
+    test.u8 [rcx], 1
+    je ^after
+
+  block ^step
+    add.u32 rax, 1
+    load.u8 rcx, [rdi+rax]
+    mov r10, @classes
+    add rcx, r10
+    test.u8 [rcx], 1
+    jne ^step
+
+  block ^after
+    cmp.u32 rsi, rax
+    je ^empty
+
+  block ^some
+    store.u32 [rdx], rax
+    store.u32 [rdx+4], rax
+    mov rax, 1
+    ret rax
+
+  block ^empty
+    mov rax, 0
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, @text
+    mov rsi, 0
+    mov rdx, @ends
+    call @take [args=(rdx,rsi,rdi)]
+    zext.i8 rax
+    load.u32 rcx, @ends
+    imul.i32 rax, 10
+    add.i32 rax, rcx
+    ret rax

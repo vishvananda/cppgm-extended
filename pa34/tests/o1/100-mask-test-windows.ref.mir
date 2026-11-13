@@ -116,22 +116,22 @@ function @main
     lea rdi, [rbp-8]
     call @interior [args=(rdi)]
     cmp.i32 rax, 1
-    setne r12
-    movzx r12, r12
+    setne r14
+    movzx r14, r14
     lea rdi, [rbp-8]
     call @wide_holes [args=(rdi)]
     cmp.i32 rax, 1
-    setne r13
-    movzx r13, r13
+    setne r15
+    movzx r15, r15
     lea rdi, [rbp-8]
     call @word_high [args=(rdi)]
     cmp.i32 rax, 1
-    setne r14
-    movzx r14, r14
+    setne r13
+    movzx r13, r13
     store.i64 [rbp-8], 0
     lea rdi, [rbp-8]
     call @high [args=(rdi)]
-    zext.i32 r15, rax
+    zext.i32 r12, rax
     lea rdi, [rbp-8]
     call @interior [args=(rdi)]
     zext.i32 r10, rax
@@ -143,10 +143,10 @@ function @main
     lea rdi, [rbp-8]
     call @word_high [args=(rdi)]
     sext.i32 rax
-    or.u32 rbx, r12
-    or.u32 rbx, r13
     or.u32 rbx, r14
     or.u32 rbx, r15
+    or.u32 rbx, r13
+    or.u32 rbx, r12
     or.i32 rbx, [rbp-16]
     or.i32 rbx, [rbp-24]
     sext.i32 rbx

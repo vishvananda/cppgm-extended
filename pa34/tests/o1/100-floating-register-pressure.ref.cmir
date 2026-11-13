@@ -236,21 +236,21 @@ function @main
     fne.f64 <gpr0>, xmm0, 2.0
     lea rdi, [rbp-<off13>]
     call @across_call [args=(rdi)]
-    fne.f64 <gpr1>, xmm0, 2.25
+    fne.f64 <gpr2>, xmm0, 2.25
     lea rdi, [rbp-<off13>]
     fmov.f64 xmm0, 4.0
     call @in_place [args=(rdi,xmm0)]
-    fne.f64 <gpr2>, xmm0, -3.0
+    fne.f64 <gpr3>, xmm0, -3.0
     fmov.f64 xmm0, 6.0
     fmov.f64 xmm1, 2.0
     call @keeps_numerator [args=(xmm0,xmm1)]
-    fne.f64 <gpr3>, xmm0, 8.0
+    fne.f64 <gpr1>, xmm0, 8.0
     fmov.f32 xmm0, 5.0f
     fmov.f32 xmm1, 2.0f
     call @keeps_minuend [args=(xmm0,xmm1)]
     fne.f32 rax, xmm0, 1e+01f
-    or <gpr0>, <gpr1>
-    or <gpr2>, <gpr3>
     or <gpr0>, <gpr2>
+    or <gpr3>, <gpr1>
+    or <gpr0>, <gpr3>
     or rax, <gpr0>
     ret rax

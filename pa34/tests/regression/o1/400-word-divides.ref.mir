@@ -116,7 +116,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13 r14
+    preserve rbx r13 r14 r15
 
   block ^entry
     mov rdi, -50
@@ -124,18 +124,18 @@ function @main
     zext.i32 rbx, rax
     mov rdi, 50
     call @by_minus_seven [args=(rdi)]
-    zext.i32 r12, rax
+    zext.i32 r14, rax
     mov rdi, 200000
     call @rest_of [args=(rdi)]
-    zext.i32 r13, rax
+    zext.i32 r15, rax
     mov rdi, -1
     call @unsigned_by_ten [args=(rdi)]
-    zext.i32 r14, rax
+    zext.i32 r13, rax
     mov rdi, -1
     call @unsigned_by_seven [args=(rdi)]
-    add.i32 rbx, r12
-    add.i32 rbx, r13
     add.i32 rbx, r14
+    add.i32 rbx, r15
+    add.i32 rbx, r13
     add.u32 rbx, rax
     sext.i32 rbx
     imul rax, rbx, 1374389535

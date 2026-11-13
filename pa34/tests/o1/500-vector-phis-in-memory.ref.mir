@@ -31,7 +31,7 @@ function @rotate
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12
+    preserve rbx r14
     temp %start0 -> [rbp-352] : v128
     temp %start14 -> [rbp-368] : v128
     temp %start15 -> [rbp-384] : v128
@@ -127,7 +127,7 @@ function @rotate
     fmov.v128 [rbp-432], xmm0
     vector.fromi32 xmm0, r10
     vector.pshufd xmm0, xmm0, 0
-    mov r12, 0
+    mov r14, 0
     zext.i32 rbx, rdi
     fmov.v128 xmm15, [rbp-352]
     fmov.v128 [rbp-32], xmm15
@@ -158,28 +158,12 @@ function @rotate
     vector.pzero xmm0
 
   block ^loop
-    cmp.i32 r12, rbx
-    jl ^body
-
-  block ^loop~done
-    fmov.v128 [rbp-336], xmm0
-
-  block ^done
-    call @tick [args=()]
-    cmp.i32 rbx, 0
-    je ^done~check
-
-  block ^again
-    call @tick [args=()]
-    mov r12, 0
-    mov rbx, 0
-    vector.pzero xmm0
-    cmp.i32 r12, rbx
+    cmp.i32 r14, rbx
     jge ^loop~done
 
   block ^body
     call @tick [args=()]
-    add.i32 r12, 1
+    add.i32 r14, 1
     fmov.v128 xmm0, [rbp-16]
     fmov.v128 xmm14, [rbp-32]
     fmov.v128 xmm15, [rbp-48]
@@ -221,7 +205,23 @@ function @rotate
     fmov.v128 xmm15, [rbp-320]
     fmov.v128 [rbp-304], xmm15
     fmov.v128 [rbp-320], xmm14
-    cmp.i32 r12, rbx
+    cmp.i32 r14, rbx
+    jl ^body
+
+  block ^loop~done
+    fmov.v128 [rbp-336], xmm0
+
+  block ^done
+    call @tick [args=()]
+    cmp.i32 rbx, 0
+    je ^done~check
+
+  block ^again
+    call @tick [args=()]
+    mov r14, 0
+    mov rbx, 0
+    vector.pzero xmm0
+    cmp.i32 r14, rbx
     jge ^loop~done
     jmp ^body
 

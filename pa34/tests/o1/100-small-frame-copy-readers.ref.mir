@@ -54,7 +54,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12
+    preserve rbx r14
 
   block ^entry
     mov rdi, @data
@@ -62,19 +62,19 @@ function @main
     mov rbx, rax
     lea rdi, @data+8
     call @flag [args=(rdi)]
-    mov r12, rax
+    mov r14, rax
     mov rdi, @data
     mov rsi, 4660
     call @mix [args=(rsi,rdi)]
     cmp.i64 rbx, 1
     setne rbx
     movzx rbx, rbx
-    cmp.i64 r12, 0
-    setne r12
-    movzx r12, r12
+    cmp.i64 r14, 0
+    setne r14
+    movzx r14, r14
     cmp.i64 rax, 4669
     setne rax
     movzx rax, rax
-    or.u32 rbx, r12
+    or.u32 rbx, r14
     or.u32 rax, rbx
     ret rax

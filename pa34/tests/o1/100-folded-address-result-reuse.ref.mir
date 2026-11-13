@@ -62,7 +62,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13 r14
+    preserve rbx r13 r14 r15
 
   block ^entry
     mov rbx, @cells
@@ -73,8 +73,8 @@ function @main
     xor rcx, 4
     xor rcx, 37
     cmp.i64 rax, rcx
-    setne r12
-    movzx r12, r12
+    setne r14
+    movzx r14, r14
     mov rdi, rbx
     mov rsi, 16
     call @masked_index [args=(rsi,rdi)]
@@ -82,22 +82,22 @@ function @main
     xor rcx, 16
     xor rcx, 73
     cmp.i64 rax, rcx
-    setne r13
-    movzx r13, r13
+    setne r15
+    movzx r15, r15
     mov rdi, rbx
     mov rsi, 4
     call @live_index [args=(rsi,rdi)]
     cmp.i64 rax, 37
-    setne r14
-    movzx r14, r14
+    setne r13
+    movzx r13, r13
     mov rdi, rbx
     mov rsi, 16
     call @live_index [args=(rsi,rdi)]
     cmp.i64 rax, 65
     setne rax
     movzx rax, rax
-    or.u32 r12, r13
-    or.u32 r14, rax
-    zext.i32 rax, r12
-    or.u32 rax, r14
+    or.u32 r14, r15
+    or.u32 r13, rax
+    zext.i32 rax, r14
+    or.u32 rax, r13
     ret rax

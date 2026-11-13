@@ -136,21 +136,21 @@ function @main
     mov rdi, 5
     mov rsi, 9
     call @either [args=(rsi,rdi)]
-    mov r12, rax
+    mov r14, rax
     mov rdi, 8
     mov rsi, @main
     mov rdx, 0
     call @both [args=(rdx,rsi,rdi)]
-    mov r13, rax
+    mov r15, rax
     mov rdi, 8
     mov rsi, 0
     mov rdx, 0
     call @both [args=(rdx,rsi,rdi)]
-    mov r14, rax
+    mov r13, rax
     mov rdi, 3
     mov rsi, 5
     call @one [args=(rsi,rdi)]
-    mov r15, rax
+    mov r12, rax
     mov rdi, 3
     mov rsi, 4
     call @one [args=(rsi,rdi)]
@@ -164,13 +164,13 @@ function @main
     mov rdi, 0
     mov rsi, 9
     call @wide [args=(rsi,rdi)]
-    add rbx, r12
-    add r13, r14
-    add r15, [rbp-8]
+    add rbx, r14
+    add r15, r13
+    add r12, [rbp-8]
     add rax, [rbp-16]
-    add rbx, r13
-    add r15, rax
     add rbx, r15
+    add r12, rax
+    add rbx, r12
     mov rax, rbx
     mov r11, 367465021388636487
     mul r11

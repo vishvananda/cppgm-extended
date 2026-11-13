@@ -37,10 +37,10 @@ function @wide
     store.i64 [rbp-<off3>], rax
     load.i64 rax, [rsi+<off1>]
     store.i64 [rbp-<off4>], rax
-    load.i64 <gpr4>, [rsi+<off2>]
-    load.i64 <gpr3>, [rsi+<off3>]
-    load.i64 <gpr2>, [rsi+<off4>]
-    load.i64 <gpr1>, [rsi+<off5>]
+    load.i64 <gpr1>, [rsi+<off2>]
+    load.i64 <gpr2>, [rsi+<off3>]
+    load.i64 <gpr4>, [rsi+<off4>]
+    load.i64 <gpr3>, [rsi+<off5>]
     load.i64 <gpr0>, [rsi+<off6>]
     load.i64 rdi, [rsi+<off7>]
     load.i64 rsi, [rsi+<off8>]
@@ -63,10 +63,10 @@ function @wide
   block ^done
     add rdx, [rbp-<off3>]
     add rdx, rax
-    add rdx, <gpr4>
-    add rdx, <gpr3>
-    lea rax, [rdx+<gpr2>]
-    add rax, <gpr1>
+    add rdx, <gpr1>
+    add rdx, <gpr2>
+    lea rax, [rdx+<gpr4>]
+    add rax, <gpr3>
     add rax, <gpr0>
     add rax, rdi
     add rax, rsi
@@ -84,10 +84,10 @@ function @wide
     imul rdx, [rbp-<off5>]
     add rdx, [rbp-<off3>]
     add rdx, rax
+    add rdx, <gpr1>
+    add rdx, <gpr2>
     add rdx, <gpr4>
     add rdx, <gpr3>
-    add rdx, <gpr2>
-    add rdx, <gpr1>
     add rdx, <gpr0>
     add rdx, rdi
     add rdx, rsi
@@ -96,10 +96,10 @@ function @wide
     add rdx, rcx
     xor rdx, [rbp-<off3>]
     xor rdx, rax
+    xor rdx, <gpr1>
+    xor rdx, <gpr2>
     xor rdx, <gpr4>
     xor rdx, <gpr3>
-    xor rdx, <gpr2>
-    xor rdx, <gpr1>
     xor rdx, <gpr0>
     xor rdx, rdi
     xor rdx, rsi

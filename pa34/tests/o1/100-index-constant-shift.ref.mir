@@ -247,26 +247,26 @@ function @main
     mov rsi, 3
     call @byte_scaled [args=(rsi,rdi)]
     cmp.i64 rax, 30
-    setne r12
-    movzx r12, r12
+    setne r14
+    movzx r14, r14
     lea rdi, @table
     mov rsi, 1
     call @shifted_bytes [args=(rsi,rdi)]
     cmp.i64 rax, 40
-    setne r13
-    movzx r13, r13
+    setne r15
+    movzx r15, r15
     lea rdi, @table
     mov rsi, 6
     call @negative_literal [args=(rsi,rdi)]
     cmp.i64 rax, 30
-    setne r14
-    movzx r14, r14
+    setne r13
+    movzx r13, r13
     lea rdi, @table
     mov rsi, 7
     call @literal_first [args=(rsi,rdi)]
     cmp.i64 rax, 30
-    setne r15
-    movzx r15, r15
+    setne r12
+    movzx r12, r12
     lea rdi, @table
     mov rsi, 1
     mov rdx, 1
@@ -329,10 +329,10 @@ function @main
     cmp.i64 rax, 20
     setne rax
     movzx rax, rax
-    or rbx, r12
-    or rbx, r13
     or rbx, r14
     or rbx, r15
+    or rbx, r13
+    or rbx, r12
     or rbx, [rbp-8]
     or rbx, [rbp-16]
     or rbx, [rbp-24]

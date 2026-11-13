@@ -124,18 +124,18 @@ function @main
     zext.i32 <gpr2>, rax
     mov rdi, 50
     call @by_minus_seven [args=(rdi)]
-    zext.i32 <gpr3>, rax
+    zext.i32 <gpr4>, rax
     mov rdi, 200000
     call @rest_of [args=(rdi)]
-    zext.i32 <gpr4>, rax
-    mov rdi, -1
-    call @unsigned_by_ten [args=(rdi)]
     zext.i32 <gpr5>, rax
     mov rdi, -1
+    call @unsigned_by_ten [args=(rdi)]
+    zext.i32 <gpr3>, rax
+    mov rdi, -1
     call @unsigned_by_seven [args=(rdi)]
-    add.i32 <gpr2>, <gpr3>
     add.i32 <gpr2>, <gpr4>
     add.i32 <gpr2>, <gpr5>
+    add.i32 <gpr2>, <gpr3>
     add.u32 <gpr2>, rax
     sext.i32 <gpr2>
     imul rax, <gpr2>, 1374389535

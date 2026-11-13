@@ -116,22 +116,22 @@ function @main
     lea rdi, [rbp-<off0>]
     call @interior [args=(rdi)]
     cmp.i32 rax, 1
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
     lea rdi, [rbp-<off0>]
     call @wide_holes [args=(rdi)]
     cmp.i32 rax, 1
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
     lea rdi, [rbp-<off0>]
     call @word_high [args=(rdi)]
     cmp.i32 rax, 1
-    setne <gpr3>
-    movzx <gpr3>, <gpr3>
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
     store.i64 [rbp-<off0>], 0
     lea rdi, [rbp-<off0>]
     call @high [args=(rdi)]
-    zext.i32 <gpr4>, rax
+    zext.i32 <gpr1>, rax
     lea rdi, [rbp-<off0>]
     call @interior [args=(rdi)]
     zext.i32 <gpr5>, rax
@@ -143,10 +143,10 @@ function @main
     lea rdi, [rbp-<off0>]
     call @word_high [args=(rdi)]
     sext.i32 rax
-    or.u32 <gpr0>, <gpr1>
-    or.u32 <gpr0>, <gpr2>
     or.u32 <gpr0>, <gpr3>
     or.u32 <gpr0>, <gpr4>
+    or.u32 <gpr0>, <gpr2>
+    or.u32 <gpr0>, <gpr1>
     or.i32 <gpr0>, [rbp-<off1>]
     or.i32 <gpr0>, [rbp-<off2>]
     sext.i32 <gpr0>

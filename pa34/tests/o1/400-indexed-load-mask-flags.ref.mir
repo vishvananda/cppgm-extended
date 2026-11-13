@@ -143,9 +143,9 @@ function @main
 
   block ^entry
     lea rbx, [rbp-72]
-    lea r12, [rbp-64]
+    lea r14, [rbp-64]
     store.ptr [rbx], rbx
-    store.ptr [r12], r12
+    store.ptr [r14], r14
     store.u16 [rbp-88], 6
     lea rdi, [rbp-88]
     call @walk [args=(rdi)]
@@ -155,24 +155,24 @@ function @main
     store.u16 [rbp-88], 7
     lea rdi, [rbp-88]
     call @walk [args=(rdi)]
-    cmp.ptr rax, r12
-    sete r12
-    movzx r12, r12
+    cmp.ptr rax, r14
+    sete r14
+    movzx r14, r14
     mov rdi, 3
     lea rsi, [rbp-8]
     call @live_address [args=(rsi,rdi)]
     mov rcx, @offsets+3
     cmp.ptr rax, rcx
+    sete r15
+    movzx r15, r15
+    cmp.i8 [rbp-8], 24
     sete r13
     movzx r13, r13
-    cmp.i8 [rbp-8], 24
-    sete r14
-    movzx r14, r14
     mov rdi, 65535
     call @masked16 [args=(rdi)]
     cmp.i32 rax, 127
-    sete r15
-    movzx r15, r15
+    sete r12
+    movzx r12, r12
     mov rdi, 255
     call @masked8 [args=(rdi)]
     cmp.i32 rax, 63
@@ -214,10 +214,10 @@ function @main
     cmp.i32 rax, 1000
     sete rax
     movzx rax, rax
-    and rbx, r12
-    and rbx, r13
     and rbx, r14
     and rbx, r15
+    and rbx, r13
+    and rbx, r12
     and rbx, [rbp-16]
     and rbx, [rbp-24]
     and rbx, [rbp-32]

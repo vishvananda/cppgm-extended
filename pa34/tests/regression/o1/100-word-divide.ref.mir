@@ -167,19 +167,19 @@ function @main
     mov rdi, -2147483647
     mov rsi, 7
     call @signed_remainder [args=(rsi,rdi)]
-    zext.i32 r12, rax
+    zext.i32 r14, rax
     mov rdi, 4294967289
     mov rsi, 7
     call @unsigned_quotient [args=(rsi,rdi)]
-    zext.i32 r13, rax
+    zext.i32 r15, rax
     mov rdi, 4294967289
     mov rsi, 10
     call @unsigned_remainder [args=(rsi,rdi)]
-    zext.i32 r14, rax
+    zext.i32 r13, rax
     mov rdi, -11
     lea rsi, [rbp-8]
     call @signed_memory [args=(rsi,rdi)]
-    zext.i32 r15, rax
+    zext.i32 r12, rax
     mov rdi, -77
     mov rsi, 7
     call @wide [args=(rsi,rdi)]
@@ -195,18 +195,18 @@ function @main
     cmp.i32 rbx, 306783378
     setne rbx
     movzx rbx, rbx
-    cmp.i32 r12, -1
-    setne r12
-    movzx r12, r12
-    cmp.u32 r13, 613566755
-    setne r13
-    movzx r13, r13
-    cmp.u32 r14, 9
+    cmp.i32 r14, -1
     setne r14
     movzx r14, r14
-    cmp.i32 r15, -2
+    cmp.u32 r15, 613566755
     setne r15
     movzx r15, r15
+    cmp.u32 r13, 9
+    setne r13
+    movzx r13, r13
+    cmp.i32 r12, -2
+    setne r12
+    movzx r12, r12
     cmp.i64 [rbp-16], -11
     setne rcx
     movzx rcx, rcx
@@ -216,10 +216,10 @@ function @main
     cmp.i16 rax, -10922
     setne rax
     movzx rax, rax
-    or.i32 rbx, r12
-    or.i32 rbx, r13
     or.i32 rbx, r14
     or.i32 rbx, r15
+    or.i32 rbx, r13
+    or.i32 rbx, r12
     or.i32 rbx, rcx
     or.i32 rbx, rdx
     or.i32 rax, rbx

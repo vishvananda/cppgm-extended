@@ -50,11 +50,6 @@ function @scan
     cmp.u8 [rax], 0
     je ^done
 
-  block ^loop
-    lea rax, [rax+<off0>]
-    cmp.u8 [rax], 0
-    je ^done
-
   block ^loop~loop
     lea rax, [rax+<off0>]
     cmp.u8 [rax], 0

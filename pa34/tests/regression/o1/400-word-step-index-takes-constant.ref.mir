@@ -1,0 +1,85 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @pair
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u32 rax, [rdi+rsi*4+4]
+    add.i32 rax, [rdi+rsi*4+8]
+    ret rax
+
+function @before
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u32 rax, [rdi+rsi*4-4]
+    ret rax
+
+function @wrapping
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add.u32 rsi, 1
+    sext.i32 rsi
+    load.u32 rax, [rdi+rsi*4]
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r14
+    slot $data -> [rbp-16] : obj<16x4>
+
+  block ^entry
+    store.i32 [rbp-16], 1
+    store.i32 [rbp-12], 2
+    store.i32 [rbp-8], 4
+    store.i32 [rbp-4], 8
+    lea rdi, [rbp-16]
+    mov rsi, 1
+    call @pair [args=(rsi,rdi)]
+    zext.i32 rbx, rax
+    lea rdi, [rbp-16]
+    mov rsi, 1
+    call @before [args=(rsi,rdi)]
+    zext.i32 r14, rax
+    lea rdi, [rbp-16]
+    mov rsi, 0
+    call @wrapping [args=(rsi,rdi)]
+    add.i32 rbx, r14
+    add.i32 rax, rbx
+    ret rax

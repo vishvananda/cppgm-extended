@@ -150,33 +150,33 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13 r14
+    preserve rbx r13 r14 r15
 
   block ^entry
     mov rbx, @storage+256
-    mov r12, 0
+    mov r14, 0
 
   block ^loop
     mov rdi, rbx
-    mov rsi, r12
+    mov rsi, r14
     call @shared_cases [args=(rsi,rdi)]
+    mov r15, rax
+    mov rdi, rbx
+    mov rsi, r14
+    call @distinct_cases [args=(rsi,rdi)]
     mov r13, rax
     mov rdi, rbx
-    mov rsi, r12
-    call @distinct_cases [args=(rsi,rdi)]
-    mov r14, rax
-    mov rdi, rbx
-    mov rsi, r12
+    mov rsi, r14
     call @shared_store_paths [args=(rsi,rdi)]
     load.i64 rcx, [rbx]
-    cmp.i64 r12, 12
+    cmp.i64 r14, 12
     setb rsi
-    mov rax, r12
+    mov rax, r14
     mov r11, -6148914691236517205
     mul r11
     shr rdx, 1
     imul rdx, 3
-    mov rax, r12
+    mov rax, r14
     sub rax, rdx
     lea rdx, [rax+1]
     mov r11, 0
@@ -185,7 +185,7 @@ function @main
     cmp.i64 rcx, rdx
     setne rcx
     imul rax, 8
-    lea rdx, [r12*8]
+    lea rdx, [r14*8]
     mov rdi, -40
     sub rdi, rax
     mov rax, -40
@@ -195,17 +195,17 @@ function @main
     test.u8 rsi, rsi
     cmove rdi, rbx
     cmove rax, rbx
-    cmp.ptr r13, rdi
+    cmp.ptr r15, rdi
+    setne r15
+    cmp.ptr r13, rax
     setne r13
-    cmp.ptr r14, rax
-    setne r14
-    or.u8 r13, r14
-    or.u8 r13, rcx
+    or.u8 r15, r13
+    or.u8 r15, rcx
     jne ^fail
 
   block ^next
-    add r12, 1
-    cmp.i64 r12, 16
+    add r14, 1
+    cmp.i64 r14, 16
     jne ^loop
 
   block ^done

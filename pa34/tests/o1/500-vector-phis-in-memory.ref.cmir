@@ -159,22 +159,6 @@ function @rotate
 
   block ^loop
     cmp.i32 <gpr1>, <gpr0>
-    jl ^body
-
-  block ^loop~done
-    fmov.v128 [rbp-<off26>], xmm0
-
-  block ^done
-    call @tick [args=()]
-    cmp.i32 <gpr0>, 0
-    je ^done~check
-
-  block ^again
-    call @tick [args=()]
-    mov <gpr1>, 0
-    mov <gpr0>, 0
-    vector.pzero xmm0
-    cmp.i32 <gpr1>, <gpr0>
     jge ^loop~done
 
   block ^body
@@ -221,6 +205,22 @@ function @rotate
     fmov.v128 xmm15, [rbp-<off25>]
     fmov.v128 [rbp-<off24>], xmm15
     fmov.v128 [rbp-<off25>], xmm14
+    cmp.i32 <gpr1>, <gpr0>
+    jl ^body
+
+  block ^loop~done
+    fmov.v128 [rbp-<off26>], xmm0
+
+  block ^done
+    call @tick [args=()]
+    cmp.i32 <gpr0>, 0
+    je ^done~check
+
+  block ^again
+    call @tick [args=()]
+    mov <gpr1>, 0
+    mov <gpr0>, 0
+    vector.pzero xmm0
     cmp.i32 <gpr1>, <gpr0>
     jge ^loop~done
     jmp ^body

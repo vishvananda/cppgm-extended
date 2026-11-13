@@ -117,14 +117,14 @@ function @main
     mov <gpr1>, rax
     mov rdi, -1
     call @square [args=(rdi)]
-    mov <gpr2>, rax
+    mov <gpr3>, rax
     mov rdi, -1
     mov rsi, 6
     call @signed [args=(rsi,rdi)]
-    mov <gpr3>, rax
+    mov <gpr4>, rax
     mov rdi, -1
     call @literal [args=(rdi)]
-    mov <gpr4>, rax
+    mov <gpr2>, rax
     mov rdi, -1
     mov rsi, 6
     mov rdx, 10
@@ -133,20 +133,20 @@ function @main
     cmp.i64 <gpr1>, 5
     setne <gpr1>
     movzx <gpr1>, <gpr1>
-    cmp.i64 <gpr2>, -2
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
-    cmp.i64 <gpr3>, -1
+    cmp.i64 <gpr3>, -2
     setne <gpr3>
     movzx <gpr3>, <gpr3>
-    cmp.i64 <gpr4>, -6067343680855748868
+    cmp.i64 <gpr4>, -1
     setne <gpr4>
     movzx <gpr4>, <gpr4>
+    cmp.i64 <gpr2>, -6067343680855748868
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
     cmp.i64 rax, 14
     setne rax
     movzx rax, rax
-    or.u32 <gpr1>, <gpr2>
     or.u32 <gpr1>, <gpr3>
     or.u32 <gpr1>, <gpr4>
+    or.u32 <gpr1>, <gpr2>
     or.u32 rax, <gpr1>
     ret rax

@@ -30,16 +30,16 @@ function @sum
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13
+    preserve rbx r14 r15
     param-slot %limit -> [rbp-16] : f64
     temp %s -> [rbp-24] : f64
     temp %v -> [rbp-8] : f64
 
   block ^entry
-    mov r12, rdi
-    mov r13, rsi
+    mov r14, rdi
+    mov r15, rsi
     fmov.f64 xmm2, xmm0
-    cmp.i64 r13, 0
+    cmp.i64 r15, 0
     jle ^empty
 
   block ^entry~loop
@@ -47,7 +47,7 @@ function @sum
     fmov.f64 xmm1, 0.0
 
   block ^loop
-    fmov.f64 xmm0, [r12+rbx*8]
+    fmov.f64 xmm0, [r14+rbx*8]
     fcmp.f64 xmm0, xmm2
     ja ^next
 
@@ -78,7 +78,7 @@ function @sum
 
   block ^next
     add rbx, 1
-    cmp.i64 rbx, r13
+    cmp.i64 rbx, r15
     jl ^loop
 
   block ^end

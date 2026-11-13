@@ -209,21 +209,21 @@ function @main
     call @magnitude64 [args=(xmm0)]
     fmov.f64 rax, xmm0
     cmp.i64 rax, 0
-    setne r12
-    movzx r12, r12
+    setne r14
+    movzx r14, r14
     fmov.f32 xmm0, @negative_nan32
     call @magnitude32 [args=(xmm0)]
     fmov.f32 rax, xmm0
     cmp.i32 rax, 2143289345
-    setne r13
-    movzx r13, r13
+    setne r15
+    movzx r15, r15
     fmov.f64 xmm0, -2.5
     call @mask_first [args=(xmm0)]
-    fne.f64 r14, xmm0, 2.5
+    fne.f64 r13, xmm0, 2.5
     fmov.f64 [rbp-8], -7.5
     lea rdi, [rbp-8]
     call @from_memory [args=(rdi)]
-    fne.f64 r15, xmm0, 7.5
+    fne.f64 r12, xmm0, 7.5
     fmov.f64 xmm0, -8.0
     call @source_lives_on [args=(xmm0)]
     fne.f64 r10, xmm0, -9.0
@@ -255,16 +255,16 @@ function @main
     cmp.i64 rax, 1069547520
     setne rax
     movzx rax, rax
-    or.u32 rbx, r12
-    or.u32 r13, r14
-    or.u32 r15, [rbp-16]
+    or.u32 rbx, r14
+    or.u32 r15, r13
+    or.u32 r12, [rbp-16]
     load.u32 rcx, [rbp-24]
     or.u32 rcx, [rbp-32]
     load.u32 rdx, [rbp-40]
     or.u32 rdx, [rbp-48]
-    or.u32 rbx, r13
-    or.u32 r15, rcx
     or.u32 rbx, r15
+    or.u32 r12, rcx
+    or.u32 rbx, r12
     or.u32 rbx, rdx
     or.u32 rbx, rax
     sext.i32 rax, rbx

@@ -153,22 +153,22 @@ function @main
     mov rsi, 5
     mov rdx, 10
     call @count_at_least [args=(rdx,rsi,rdi)]
-    zext.i32 <gpr2>, rax
+    zext.i32 <gpr4>, rax
     mov rdi, 5
     mov rsi, 6
     mov rdx, 10
     call @down_below [args=(rdx,rsi,rdi)]
-    zext.i32 <gpr3>, rax
+    zext.i32 <gpr5>, rax
     mov rdi, 6
     mov rsi, 5
     mov rdx, 10
     call @down_at_least [args=(rdx,rsi,rdi)]
-    zext.i32 <gpr4>, rax
+    zext.i32 <gpr3>, rax
     mov rdi, 100
     fmov.f64 xmm0, 2.0
     fmov.f64 xmm1, 1.0
     call @count_float [args=(rdi,xmm0,xmm1)]
-    zext.i32 <gpr5>, rax
+    zext.i32 <gpr2>, rax
     mov rdi, 100
     fmov.f64 xmm0, 1.0
     fmov.f64 xmm1, 2.0
@@ -179,16 +179,16 @@ function @main
     mov rsi, 0
     mov rdx, 7
     call @count_signed [args=(rdx,rsi,rdi)]
-    store.i32 [rbp-<off1>], <gpr5>
-    zext.i32 <gpr5>, rax
+    store.i32 [rbp-<off1>], <gpr2>
+    zext.i32 <gpr2>, rax
     mov rdi, 5
     mov rsi, 6
     mov rdx, 10
     call @count_at_least [args=(rdx,rsi,rdi)]
-    add.u32 <gpr1>, <gpr2>
-    add.u32 <gpr3>, <gpr4>
-    add.u32 rax, <gpr5>
-    add.u32 <gpr1>, <gpr3>
+    add.u32 <gpr1>, <gpr4>
+    add.u32 <gpr5>, <gpr3>
+    add.u32 rax, <gpr2>
+    add.u32 <gpr1>, <gpr5>
     add.u32 rax, <gpr1>
     load.u32 rcx, [rbp-<off1>]
     add.i32 rcx, [rbp-<off0>]

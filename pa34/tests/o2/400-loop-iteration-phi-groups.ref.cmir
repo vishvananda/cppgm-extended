@@ -35,10 +35,10 @@ function @walk
     param-slot %length -> [rbp-<off0>] : i64
 
   block ^entry
-    mov <gpr2>, rdi
-    mov <gpr3>, rsi
+    mov <gpr3>, rdi
+    mov <gpr1>, rsi
     zext.i32 <gpr0>, rcx
-    cmp.ptr <gpr2>, 0
+    cmp.ptr <gpr3>, 0
     setne rax
     cmp.i32 <gpr0>, 0
     setg rcx
@@ -53,7 +53,7 @@ function @walk
     call @touch [args=(rdi)]
     mov r9, rax
     mov rdi, 0
-    mov rcx, <gpr2>
+    mov rcx, <gpr3>
     mov r8, 0
     mov rdx, 0
 
@@ -62,10 +62,10 @@ function @walk
     jae ^finish
 
   block ^byte
-    load.u8 rsi, [<gpr3>+rdi]
+    load.u8 rsi, [<gpr1>+rdi]
 
   block ^step0
-    lea.i32 <gpr1>, [rdx+<off0>]
+    lea.i32 <gpr2>, [rdx+<off0>]
     mov rax, rsi
     shr rax, 7
     and rax, 1
@@ -79,11 +79,11 @@ function @walk
     jne ^leaf0
 
   block ^merge0
-    cmp.i32 <gpr1>, <gpr0>
+    cmp.i32 <gpr2>, <gpr0>
     jge ^step0~tail
 
   block ^step1
-    lea.i32 <gpr1>, [rdx+<off1>]
+    lea.i32 <gpr2>, [rdx+<off1>]
     mov rcx, rsi
     shr rcx, 6
     and rcx, 1
@@ -97,11 +97,11 @@ function @walk
     jne ^leaf1
 
   block ^merge1
-    cmp.i32 <gpr1>, <gpr0>
+    cmp.i32 <gpr2>, <gpr0>
     jge ^tail
 
   block ^step2
-    lea.i32 <gpr1>, [rdx+<off2>]
+    lea.i32 <gpr2>, [rdx+<off2>]
     mov rax, rsi
     shr rax, 5
     and rax, 1
@@ -118,11 +118,11 @@ function @walk
     mov rcx, rax
 
   block ^merge2
-    cmp.i32 <gpr1>, <gpr0>
+    cmp.i32 <gpr2>, <gpr0>
     jge ^tail
 
   block ^step3
-    lea.i32 <gpr1>, [rdx+<off3>]
+    lea.i32 <gpr2>, [rdx+<off3>]
     mov rax, rsi
     shr rax, 4
     and rax, 1
@@ -139,11 +139,11 @@ function @walk
     mov rcx, rax
 
   block ^merge3
-    cmp.i32 <gpr1>, <gpr0>
+    cmp.i32 <gpr2>, <gpr0>
     jge ^tail
 
   block ^step4
-    lea.i32 <gpr1>, [rdx+<off4>]
+    lea.i32 <gpr2>, [rdx+<off4>]
     mov rax, rsi
     shr rax, 3
     and rax, 1
@@ -160,11 +160,11 @@ function @walk
     mov rcx, rax
 
   block ^merge4
-    cmp.i32 <gpr1>, <gpr0>
+    cmp.i32 <gpr2>, <gpr0>
     jge ^tail
 
   block ^step5
-    lea.i32 <gpr1>, [rdx+<off5>]
+    lea.i32 <gpr2>, [rdx+<off5>]
     mov rax, rsi
     shr rax, 2
     and rax, 1
@@ -181,11 +181,11 @@ function @walk
     mov rcx, rax
 
   block ^merge5
-    cmp.i32 <gpr1>, <gpr0>
+    cmp.i32 <gpr2>, <gpr0>
     jge ^tail
 
   block ^step6
-    lea.i32 <gpr1>, [rdx+<off6>]
+    lea.i32 <gpr2>, [rdx+<off6>]
     mov rax, rsi
     shr rax, 1
     and rax, 1
@@ -202,7 +202,7 @@ function @walk
     mov rcx, rax
 
   block ^merge6
-    cmp.i32 <gpr1>, <gpr0>
+    cmp.i32 <gpr2>, <gpr0>
     jge ^tail
 
   block ^step7
@@ -223,10 +223,10 @@ function @walk
     load.u8 rax, [rax+<off1>]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rax, <gpr2>
+    mov rax, <gpr3>
 
   block ^step7~tail
-    zext.i32 <gpr1>, rdx
+    zext.i32 <gpr2>, rdx
     mov rcx, rax
     jmp ^tail
 
@@ -234,49 +234,49 @@ function @walk
     load.u8 rax, [rax+<off1>]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rcx, <gpr2>
+    mov rcx, <gpr3>
     jmp ^merge6
 
   block ^leaf5
     load.u8 rax, [rax+<off1>]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rcx, <gpr2>
+    mov rcx, <gpr3>
     jmp ^merge5
 
   block ^leaf4
     load.u8 rax, [rax+<off1>]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rcx, <gpr2>
+    mov rcx, <gpr3>
     jmp ^merge4
 
   block ^leaf3
     load.u8 rax, [rax+<off1>]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rcx, <gpr2>
+    mov rcx, <gpr3>
     jmp ^merge3
 
   block ^leaf2
     load.u8 rax, [rax+<off1>]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rcx, <gpr2>
+    mov rcx, <gpr3>
     jmp ^merge2
 
   block ^leaf1
     load.u8 rcx, [rcx+<off1>]
     store.u8 [r9+r8], rcx
     add r8, 1
-    mov rcx, <gpr2>
+    mov rcx, <gpr3>
     jmp ^merge1
 
   block ^leaf0
     load.u8 rax, [rax+<off1>]
     store.u8 [r9+r8], rax
     add r8, 1
-    mov rax, <gpr2>
+    mov rax, <gpr3>
     jmp ^merge0
 
   block ^step0~tail
@@ -284,11 +284,11 @@ function @walk
 
   block ^tail
     add rdi, 1
-    cmp.i32 <gpr1>, <gpr0>
+    zext.i32 rdx, <gpr2>
+    cmp.i32 <gpr2>, <gpr0>
     jge ^finish_tail
 
   block ^tail~head
-    zext.i32 rdx, <gpr1>
     cmp.i64 rdi, [rbp-<off0>]
     jb ^byte
 
@@ -310,7 +310,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve <gpr0> <gpr1> <gpr2>
+    preserve <gpr0> <gpr2> <gpr3>
     slot $root -> [rbp-<off1>] : obj<24x8>
     slot $left -> [rbp-<off2>] : obj<24x8>
     slot $right -> [rbp-<off3>] : obj<24x8>
@@ -344,19 +344,12 @@ function @main
     add rcx, rdx
     add rax, 1
     cmp.i64 rax, 13
-    jae ^finish
-
-  block ^sum~sum
-    load.u8 rdx, [rbp+rax-<off0>]
-    add rcx, rdx
-    add rax, 1
-    cmp.i64 rax, 13
-    jb ^sum~sum
+    jb ^sum
 
   block ^finish
     cmp.i64 rcx, 66
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
     lea rdi, [rbp-<off1>]
     lea rsi, [rbp-<off4>]
     mov rdx, 2
@@ -364,8 +357,8 @@ function @main
     lea r8, [rbp-<off5>]
     call @walk [args=(rcx,rdx,rsi,rdi,r8)]
     cmp.i64 rax, 0
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
     store.ptr [rbp-<off7>], 0
     lea rdi, [rbp-<off1>]
     lea rsi, [rbp-<off4>]
@@ -376,7 +369,7 @@ function @main
     cmp.i64 rax, 0
     setne rax
     movzx rax, rax
-    or.u32 <gpr0>, <gpr1>
     or.u32 <gpr0>, <gpr2>
+    or.u32 <gpr0>, <gpr3>
     or.u32 rax, <gpr0>
     ret rax

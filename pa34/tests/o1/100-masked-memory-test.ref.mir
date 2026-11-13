@@ -226,16 +226,16 @@ function @main
     zext.i32 rbx, rax
     lea rdi, [rbp-8]
     call @half_test [args=(rdi)]
-    zext.i32 r12, rax
-    lea rdi, [rbp-8]
-    call @signed_promotion [args=(rdi)]
-    zext.i32 r13, rax
-    lea rdi, [rbp-8]
-    call @volatile_test [args=(rdi)]
     zext.i32 r14, rax
     lea rdi, [rbp-8]
-    call @wide_mask [args=(rdi)]
+    call @signed_promotion [args=(rdi)]
     zext.i32 r15, rax
+    lea rdi, [rbp-8]
+    call @volatile_test [args=(rdi)]
+    zext.i32 r13, rax
+    lea rdi, [rbp-8]
+    call @wide_mask [args=(rdi)]
+    zext.i32 r12, rax
     lea rdi, [rbp-8]
     call @two_readers [args=(rdi)]
     cmp.i32 rax, 32912
@@ -244,8 +244,8 @@ function @main
     store.i64 [rbp-16], r10
     lea rdi, [rbp-8]
     call @before_store [args=(rdi)]
-    store.i32 [rbp-24], r15
-    zext.i32 r15, rax
+    store.i32 [rbp-24], r12
+    zext.i32 r12, rax
     store.i32 [rbp-8], 32912
     lea rdi, [rbp-8]
     call @before_call [args=(rdi)]
@@ -253,17 +253,17 @@ function @main
     store.i32 [rbp-32], r10
     lea rdi, [rbp-8]
     call @byte_test [args=(rdi)]
-    store.i32 [rbp-40], r15
-    sext.i32 r15, rax
+    store.i32 [rbp-40], r12
+    sext.i32 r12, rax
     lea rdi, [rbp-8]
     call @half_test [args=(rdi)]
     sext.i32 rax
-    or r15, rax
-    add.i32 rbx, r12
-    add.i32 r13, r14
+    or r12, rax
+    add.i32 rbx, r14
+    add.i32 r15, r13
     load.u32 rax, [rbp-40]
     add.i32 rax, [rbp-32]
-    add.i32 rbx, r13
+    add.i32 rbx, r15
     add.i32 rbx, rax
     add.i32 rbx, [rbp-24]
     cmp.i32 rbx, 7
@@ -271,5 +271,5 @@ function @main
     movzx rax, rax
     load.i64 r11, [rbp-16]
     or rax, r11
-    or rax, r15
+    or rax, r12
     ret rax

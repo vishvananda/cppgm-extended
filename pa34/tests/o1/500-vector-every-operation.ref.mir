@@ -4811,10 +4811,10 @@ function @check
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12
+    preserve rbx r14
 
   block ^entry
-    mov r12, rdi
+    mov r14, rdi
     mov rbx, rsi
     call @op_addps [args=(rdi)]
     lea rdi, @result
@@ -4828,7 +4828,7 @@ function @check
     ret rax
 
   block ^ok0
-    mov rdi, r12
+    mov rdi, r14
     call @op_addpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+16]
@@ -4837,7 +4837,7 @@ function @check
     je ^bad201
 
   block ^ok1
-    mov rdi, r12
+    mov rdi, r14
     call @op_addss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+32]
@@ -4846,7 +4846,7 @@ function @check
     je ^bad202
 
   block ^ok2
-    mov rdi, r12
+    mov rdi, r14
     call @op_addsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+48]
@@ -4855,7 +4855,7 @@ function @check
     je ^bad203
 
   block ^ok3
-    mov rdi, r12
+    mov rdi, r14
     call @op_subps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+64]
@@ -4864,7 +4864,7 @@ function @check
     je ^bad204
 
   block ^ok4
-    mov rdi, r12
+    mov rdi, r14
     call @op_subpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+80]
@@ -4877,7 +4877,7 @@ function @check
     ret rax
 
   block ^ok5
-    mov rdi, r12
+    mov rdi, r14
     call @op_subss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+96]
@@ -4890,7 +4890,7 @@ function @check
     ret rax
 
   block ^ok6
-    mov rdi, r12
+    mov rdi, r14
     call @op_subsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+112]
@@ -4903,7 +4903,7 @@ function @check
     ret rax
 
   block ^ok7
-    mov rdi, r12
+    mov rdi, r14
     call @op_mulps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+128]
@@ -4916,7 +4916,7 @@ function @check
     ret rax
 
   block ^ok8
-    mov rdi, r12
+    mov rdi, r14
     call @op_mulpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+144]
@@ -4929,7 +4929,7 @@ function @check
     ret rax
 
   block ^ok9
-    mov rdi, r12
+    mov rdi, r14
     call @op_mulss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+160]
@@ -4942,7 +4942,7 @@ function @check
     ret rax
 
   block ^ok10
-    mov rdi, r12
+    mov rdi, r14
     call @op_mulsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+176]
@@ -4951,7 +4951,7 @@ function @check
     je ^bad11
 
   block ^ok11
-    mov rdi, r12
+    mov rdi, r14
     call @op_divps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+192]
@@ -4960,7 +4960,7 @@ function @check
     je ^bad12
 
   block ^ok12
-    mov rdi, r12
+    mov rdi, r14
     call @op_divpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+208]
@@ -4969,7 +4969,7 @@ function @check
     je ^bad13
 
   block ^ok13
-    mov rdi, r12
+    mov rdi, r14
     call @op_divss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+224]
@@ -4978,7 +4978,7 @@ function @check
     je ^bad14
 
   block ^ok14
-    mov rdi, r12
+    mov rdi, r14
     call @op_divsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+240]
@@ -4987,7 +4987,7 @@ function @check
     je ^bad15
 
   block ^ok15
-    mov rdi, r12
+    mov rdi, r14
     call @op_minps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+256]
@@ -4996,7 +4996,7 @@ function @check
     je ^bad16
 
   block ^ok16
-    mov rdi, r12
+    mov rdi, r14
     call @op_minpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+272]
@@ -5005,7 +5005,7 @@ function @check
     je ^bad17
 
   block ^ok17
-    mov rdi, r12
+    mov rdi, r14
     call @op_minss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+288]
@@ -5014,7 +5014,7 @@ function @check
     je ^bad18
 
   block ^ok18
-    mov rdi, r12
+    mov rdi, r14
     call @op_minsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+304]
@@ -5023,7 +5023,7 @@ function @check
     je ^bad19
 
   block ^ok19
-    mov rdi, r12
+    mov rdi, r14
     call @op_maxps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+320]
@@ -5032,7 +5032,7 @@ function @check
     je ^bad20
 
   block ^ok20
-    mov rdi, r12
+    mov rdi, r14
     call @op_maxpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+336]
@@ -5041,7 +5041,7 @@ function @check
     je ^bad21
 
   block ^ok21
-    mov rdi, r12
+    mov rdi, r14
     call @op_maxss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+352]
@@ -5050,7 +5050,7 @@ function @check
     je ^bad22
 
   block ^ok22
-    mov rdi, r12
+    mov rdi, r14
     call @op_maxsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+368]
@@ -5059,7 +5059,7 @@ function @check
     je ^bad23
 
   block ^ok23
-    mov rdi, r12
+    mov rdi, r14
     call @op_andps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+384]
@@ -5068,7 +5068,7 @@ function @check
     je ^bad24
 
   block ^ok24
-    mov rdi, r12
+    mov rdi, r14
     call @op_andpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+400]
@@ -5077,7 +5077,7 @@ function @check
     je ^bad25
 
   block ^ok25
-    mov rdi, r12
+    mov rdi, r14
     call @op_andnps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+416]
@@ -5086,7 +5086,7 @@ function @check
     je ^bad26
 
   block ^ok26
-    mov rdi, r12
+    mov rdi, r14
     call @op_andnpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+432]
@@ -5095,7 +5095,7 @@ function @check
     je ^bad27
 
   block ^ok27
-    mov rdi, r12
+    mov rdi, r14
     call @op_orps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+448]
@@ -5104,7 +5104,7 @@ function @check
     je ^bad28
 
   block ^ok28
-    mov rdi, r12
+    mov rdi, r14
     call @op_orpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+464]
@@ -5113,7 +5113,7 @@ function @check
     je ^bad29
 
   block ^ok29
-    mov rdi, r12
+    mov rdi, r14
     call @op_xorps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+480]
@@ -5122,7 +5122,7 @@ function @check
     je ^bad30
 
   block ^ok30
-    mov rdi, r12
+    mov rdi, r14
     call @op_xorpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+496]
@@ -5131,7 +5131,7 @@ function @check
     je ^bad31
 
   block ^ok31
-    mov rdi, r12
+    mov rdi, r14
     call @op_sqrtss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+512]
@@ -5140,7 +5140,7 @@ function @check
     je ^bad32
 
   block ^ok32
-    mov rdi, r12
+    mov rdi, r14
     call @op_sqrtsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+528]
@@ -5149,7 +5149,7 @@ function @check
     je ^bad33
 
   block ^ok33
-    mov rdi, r12
+    mov rdi, r14
     call @op_rcpss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+544]
@@ -5158,7 +5158,7 @@ function @check
     je ^bad34
 
   block ^ok34
-    mov rdi, r12
+    mov rdi, r14
     call @op_rsqrtss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+560]
@@ -5167,7 +5167,7 @@ function @check
     je ^bad35
 
   block ^ok35
-    mov rdi, r12
+    mov rdi, r14
     call @op_cvtss2sd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+576]
@@ -5176,7 +5176,7 @@ function @check
     je ^bad36
 
   block ^ok36
-    mov rdi, r12
+    mov rdi, r14
     call @op_cvtsd2ss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+592]
@@ -5185,7 +5185,7 @@ function @check
     je ^bad37
 
   block ^ok37
-    mov rdi, r12
+    mov rdi, r14
     call @op_movss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+608]
@@ -5194,7 +5194,7 @@ function @check
     je ^bad38
 
   block ^ok38
-    mov rdi, r12
+    mov rdi, r14
     call @op_movsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+624]
@@ -5203,7 +5203,7 @@ function @check
     je ^bad39
 
   block ^ok39
-    mov rdi, r12
+    mov rdi, r14
     call @op_movhlps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+640]
@@ -5212,7 +5212,7 @@ function @check
     je ^bad40
 
   block ^ok40
-    mov rdi, r12
+    mov rdi, r14
     call @op_movlhps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+656]
@@ -5221,7 +5221,7 @@ function @check
     je ^bad41
 
   block ^ok41
-    mov rdi, r12
+    mov rdi, r14
     call @op_unpcklps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+672]
@@ -5230,7 +5230,7 @@ function @check
     je ^bad42
 
   block ^ok42
-    mov rdi, r12
+    mov rdi, r14
     call @op_unpcklpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+688]
@@ -5239,7 +5239,7 @@ function @check
     je ^bad43
 
   block ^ok43
-    mov rdi, r12
+    mov rdi, r14
     call @op_unpckhps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+704]
@@ -5248,7 +5248,7 @@ function @check
     je ^bad44
 
   block ^ok44
-    mov rdi, r12
+    mov rdi, r14
     call @op_unpckhpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+720]
@@ -5257,7 +5257,7 @@ function @check
     je ^bad45
 
   block ^ok45
-    mov rdi, r12
+    mov rdi, r14
     call @op_addsubps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+736]
@@ -5266,7 +5266,7 @@ function @check
     je ^bad46
 
   block ^ok46
-    mov rdi, r12
+    mov rdi, r14
     call @op_addsubpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+752]
@@ -5275,7 +5275,7 @@ function @check
     je ^bad47
 
   block ^ok47
-    mov rdi, r12
+    mov rdi, r14
     call @op_haddps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+768]
@@ -5284,7 +5284,7 @@ function @check
     je ^bad48
 
   block ^ok48
-    mov rdi, r12
+    mov rdi, r14
     call @op_haddpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+784]
@@ -5293,7 +5293,7 @@ function @check
     je ^bad49
 
   block ^ok49
-    mov rdi, r12
+    mov rdi, r14
     call @op_hsubps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+800]
@@ -5302,7 +5302,7 @@ function @check
     je ^bad50
 
   block ^ok50
-    mov rdi, r12
+    mov rdi, r14
     call @op_hsubpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+816]
@@ -5311,7 +5311,7 @@ function @check
     je ^bad51
 
   block ^ok51
-    mov rdi, r12
+    mov rdi, r14
     call @op_paddb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+832]
@@ -5320,7 +5320,7 @@ function @check
     je ^bad52
 
   block ^ok52
-    mov rdi, r12
+    mov rdi, r14
     call @op_paddw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+848]
@@ -5329,7 +5329,7 @@ function @check
     je ^bad53
 
   block ^ok53
-    mov rdi, r12
+    mov rdi, r14
     call @op_paddd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+864]
@@ -5338,7 +5338,7 @@ function @check
     je ^bad54
 
   block ^ok54
-    mov rdi, r12
+    mov rdi, r14
     call @op_paddq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+880]
@@ -5347,7 +5347,7 @@ function @check
     je ^bad55
 
   block ^ok55
-    mov rdi, r12
+    mov rdi, r14
     call @op_psubb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+896]
@@ -5356,7 +5356,7 @@ function @check
     je ^bad56
 
   block ^ok56
-    mov rdi, r12
+    mov rdi, r14
     call @op_psubw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+912]
@@ -5365,7 +5365,7 @@ function @check
     je ^bad57
 
   block ^ok57
-    mov rdi, r12
+    mov rdi, r14
     call @op_psubd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+928]
@@ -5374,7 +5374,7 @@ function @check
     je ^bad58
 
   block ^ok58
-    mov rdi, r12
+    mov rdi, r14
     call @op_psubq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+944]
@@ -5383,7 +5383,7 @@ function @check
     je ^bad59
 
   block ^ok59
-    mov rdi, r12
+    mov rdi, r14
     call @op_paddsb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+960]
@@ -5392,7 +5392,7 @@ function @check
     je ^bad60
 
   block ^ok60
-    mov rdi, r12
+    mov rdi, r14
     call @op_paddsw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+976]
@@ -5401,7 +5401,7 @@ function @check
     je ^bad61
 
   block ^ok61
-    mov rdi, r12
+    mov rdi, r14
     call @op_paddusb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+992]
@@ -5410,7 +5410,7 @@ function @check
     je ^bad62
 
   block ^ok62
-    mov rdi, r12
+    mov rdi, r14
     call @op_paddusw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1008]
@@ -5419,7 +5419,7 @@ function @check
     je ^bad63
 
   block ^ok63
-    mov rdi, r12
+    mov rdi, r14
     call @op_psubsb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1024]
@@ -5428,7 +5428,7 @@ function @check
     je ^bad64
 
   block ^ok64
-    mov rdi, r12
+    mov rdi, r14
     call @op_psubsw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1040]
@@ -5437,7 +5437,7 @@ function @check
     je ^bad65
 
   block ^ok65
-    mov rdi, r12
+    mov rdi, r14
     call @op_psubusb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1056]
@@ -5446,7 +5446,7 @@ function @check
     je ^bad66
 
   block ^ok66
-    mov rdi, r12
+    mov rdi, r14
     call @op_psubusw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1072]
@@ -5455,7 +5455,7 @@ function @check
     je ^bad67
 
   block ^ok67
-    mov rdi, r12
+    mov rdi, r14
     call @op_pavgb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1088]
@@ -5464,7 +5464,7 @@ function @check
     je ^bad68
 
   block ^ok68
-    mov rdi, r12
+    mov rdi, r14
     call @op_pavgw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1104]
@@ -5473,7 +5473,7 @@ function @check
     je ^bad69
 
   block ^ok69
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmullw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1120]
@@ -5482,7 +5482,7 @@ function @check
     je ^bad70
 
   block ^ok70
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmulld [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1136]
@@ -5491,7 +5491,7 @@ function @check
     je ^bad71
 
   block ^ok71
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmulhw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1152]
@@ -5500,7 +5500,7 @@ function @check
     je ^bad72
 
   block ^ok72
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmulhuw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1168]
@@ -5509,7 +5509,7 @@ function @check
     je ^bad73
 
   block ^ok73
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmulhrsw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1184]
@@ -5518,7 +5518,7 @@ function @check
     je ^bad74
 
   block ^ok74
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmuludq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1200]
@@ -5527,7 +5527,7 @@ function @check
     je ^bad75
 
   block ^ok75
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmuldq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1216]
@@ -5536,7 +5536,7 @@ function @check
     je ^bad76
 
   block ^ok76
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmaddwd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1232]
@@ -5545,7 +5545,7 @@ function @check
     je ^bad77
 
   block ^ok77
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmaddubsw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1248]
@@ -5554,7 +5554,7 @@ function @check
     je ^bad78
 
   block ^ok78
-    mov rdi, r12
+    mov rdi, r14
     call @op_psadbw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1264]
@@ -5563,7 +5563,7 @@ function @check
     je ^bad79
 
   block ^ok79
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmaxsb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1280]
@@ -5572,7 +5572,7 @@ function @check
     je ^bad80
 
   block ^ok80
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmaxsw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1296]
@@ -5581,7 +5581,7 @@ function @check
     je ^bad81
 
   block ^ok81
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmaxsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1312]
@@ -5590,7 +5590,7 @@ function @check
     je ^bad82
 
   block ^ok82
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmaxub [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1328]
@@ -5599,7 +5599,7 @@ function @check
     je ^bad83
 
   block ^ok83
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmaxuw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1344]
@@ -5608,7 +5608,7 @@ function @check
     je ^bad84
 
   block ^ok84
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmaxud [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1360]
@@ -5617,7 +5617,7 @@ function @check
     je ^bad85
 
   block ^ok85
-    mov rdi, r12
+    mov rdi, r14
     call @op_pminsb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1376]
@@ -5626,7 +5626,7 @@ function @check
     je ^bad86
 
   block ^ok86
-    mov rdi, r12
+    mov rdi, r14
     call @op_pminsw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1392]
@@ -5635,7 +5635,7 @@ function @check
     je ^bad87
 
   block ^ok87
-    mov rdi, r12
+    mov rdi, r14
     call @op_pminsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1408]
@@ -5644,7 +5644,7 @@ function @check
     je ^bad88
 
   block ^ok88
-    mov rdi, r12
+    mov rdi, r14
     call @op_pminub [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1424]
@@ -5653,7 +5653,7 @@ function @check
     je ^bad89
 
   block ^ok89
-    mov rdi, r12
+    mov rdi, r14
     call @op_pminuw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1440]
@@ -5662,7 +5662,7 @@ function @check
     je ^bad90
 
   block ^ok90
-    mov rdi, r12
+    mov rdi, r14
     call @op_pminud [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1456]
@@ -5671,7 +5671,7 @@ function @check
     je ^bad91
 
   block ^ok91
-    mov rdi, r12
+    mov rdi, r14
     call @op_pand [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1472]
@@ -5680,7 +5680,7 @@ function @check
     je ^bad92
 
   block ^ok92
-    mov rdi, r12
+    mov rdi, r14
     call @op_pandn [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1488]
@@ -5689,7 +5689,7 @@ function @check
     je ^bad93
 
   block ^ok93
-    mov rdi, r12
+    mov rdi, r14
     call @op_por [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1504]
@@ -5698,7 +5698,7 @@ function @check
     je ^bad94
 
   block ^ok94
-    mov rdi, r12
+    mov rdi, r14
     call @op_pxor [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1520]
@@ -5707,7 +5707,7 @@ function @check
     je ^bad95
 
   block ^ok95
-    mov rdi, r12
+    mov rdi, r14
     call @op_pcmpeqb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1536]
@@ -5716,7 +5716,7 @@ function @check
     je ^bad96
 
   block ^ok96
-    mov rdi, r12
+    mov rdi, r14
     call @op_pcmpeqw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1552]
@@ -5725,7 +5725,7 @@ function @check
     je ^bad97
 
   block ^ok97
-    mov rdi, r12
+    mov rdi, r14
     call @op_pcmpeqd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1568]
@@ -5734,7 +5734,7 @@ function @check
     je ^bad98
 
   block ^ok98
-    mov rdi, r12
+    mov rdi, r14
     call @op_pcmpeqq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1584]
@@ -5743,7 +5743,7 @@ function @check
     je ^bad99
 
   block ^ok99
-    mov rdi, r12
+    mov rdi, r14
     call @op_pcmpgtb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1600]
@@ -5752,7 +5752,7 @@ function @check
     je ^bad100
 
   block ^ok100
-    mov rdi, r12
+    mov rdi, r14
     call @op_pcmpgtw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1616]
@@ -5761,7 +5761,7 @@ function @check
     je ^bad101
 
   block ^ok101
-    mov rdi, r12
+    mov rdi, r14
     call @op_pcmpgtd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1632]
@@ -5770,7 +5770,7 @@ function @check
     je ^bad102
 
   block ^ok102
-    mov rdi, r12
+    mov rdi, r14
     call @op_pcmpgtq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1648]
@@ -5779,7 +5779,7 @@ function @check
     je ^bad103
 
   block ^ok103
-    mov rdi, r12
+    mov rdi, r14
     call @op_psllw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1664]
@@ -5788,7 +5788,7 @@ function @check
     je ^bad104
 
   block ^ok104
-    mov rdi, r12
+    mov rdi, r14
     call @op_pslld [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1680]
@@ -5797,7 +5797,7 @@ function @check
     je ^bad105
 
   block ^ok105
-    mov rdi, r12
+    mov rdi, r14
     call @op_psllq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1696]
@@ -5806,7 +5806,7 @@ function @check
     je ^bad106
 
   block ^ok106
-    mov rdi, r12
+    mov rdi, r14
     call @op_psrlw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1712]
@@ -5815,7 +5815,7 @@ function @check
     je ^bad107
 
   block ^ok107
-    mov rdi, r12
+    mov rdi, r14
     call @op_psrld [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1728]
@@ -5824,7 +5824,7 @@ function @check
     je ^bad108
 
   block ^ok108
-    mov rdi, r12
+    mov rdi, r14
     call @op_psrlq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1744]
@@ -5833,7 +5833,7 @@ function @check
     je ^bad109
 
   block ^ok109
-    mov rdi, r12
+    mov rdi, r14
     call @op_psraw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1760]
@@ -5842,7 +5842,7 @@ function @check
     je ^bad110
 
   block ^ok110
-    mov rdi, r12
+    mov rdi, r14
     call @op_psrad [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1776]
@@ -5851,7 +5851,7 @@ function @check
     je ^bad111
 
   block ^ok111
-    mov rdi, r12
+    mov rdi, r14
     call @op_packsswb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1792]
@@ -5860,7 +5860,7 @@ function @check
     je ^bad112
 
   block ^ok112
-    mov rdi, r12
+    mov rdi, r14
     call @op_packssdw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1808]
@@ -5869,7 +5869,7 @@ function @check
     je ^bad113
 
   block ^ok113
-    mov rdi, r12
+    mov rdi, r14
     call @op_packuswb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1824]
@@ -5878,7 +5878,7 @@ function @check
     je ^bad114
 
   block ^ok114
-    mov rdi, r12
+    mov rdi, r14
     call @op_packusdw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1840]
@@ -5887,7 +5887,7 @@ function @check
     je ^bad115
 
   block ^ok115
-    mov rdi, r12
+    mov rdi, r14
     call @op_punpcklbw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1856]
@@ -5896,7 +5896,7 @@ function @check
     je ^bad116
 
   block ^ok116
-    mov rdi, r12
+    mov rdi, r14
     call @op_punpcklwd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1872]
@@ -5905,7 +5905,7 @@ function @check
     je ^bad117
 
   block ^ok117
-    mov rdi, r12
+    mov rdi, r14
     call @op_punpckldq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1888]
@@ -5914,7 +5914,7 @@ function @check
     je ^bad118
 
   block ^ok118
-    mov rdi, r12
+    mov rdi, r14
     call @op_punpcklqdq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1904]
@@ -5923,7 +5923,7 @@ function @check
     je ^bad119
 
   block ^ok119
-    mov rdi, r12
+    mov rdi, r14
     call @op_punpckhbw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1920]
@@ -5932,7 +5932,7 @@ function @check
     je ^bad120
 
   block ^ok120
-    mov rdi, r12
+    mov rdi, r14
     call @op_punpckhwd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1936]
@@ -5941,7 +5941,7 @@ function @check
     je ^bad121
 
   block ^ok121
-    mov rdi, r12
+    mov rdi, r14
     call @op_punpckhdq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1952]
@@ -5950,7 +5950,7 @@ function @check
     je ^bad122
 
   block ^ok122
-    mov rdi, r12
+    mov rdi, r14
     call @op_punpckhqdq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1968]
@@ -5959,7 +5959,7 @@ function @check
     je ^bad123
 
   block ^ok123
-    mov rdi, r12
+    mov rdi, r14
     call @op_pshufb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+1984]
@@ -5968,7 +5968,7 @@ function @check
     je ^bad124
 
   block ^ok124
-    mov rdi, r12
+    mov rdi, r14
     call @op_psignb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2000]
@@ -5977,7 +5977,7 @@ function @check
     je ^bad125
 
   block ^ok125
-    mov rdi, r12
+    mov rdi, r14
     call @op_psignw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2016]
@@ -5986,7 +5986,7 @@ function @check
     je ^bad126
 
   block ^ok126
-    mov rdi, r12
+    mov rdi, r14
     call @op_psignd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2032]
@@ -5995,7 +5995,7 @@ function @check
     je ^bad127
 
   block ^ok127
-    mov rdi, r12
+    mov rdi, r14
     call @op_phaddw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2048]
@@ -6004,7 +6004,7 @@ function @check
     je ^bad128
 
   block ^ok128
-    mov rdi, r12
+    mov rdi, r14
     call @op_phaddd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2064]
@@ -6013,7 +6013,7 @@ function @check
     je ^bad129
 
   block ^ok129
-    mov rdi, r12
+    mov rdi, r14
     call @op_phaddsw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2080]
@@ -6022,7 +6022,7 @@ function @check
     je ^bad130
 
   block ^ok130
-    mov rdi, r12
+    mov rdi, r14
     call @op_phsubw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2096]
@@ -6031,7 +6031,7 @@ function @check
     je ^bad131
 
   block ^ok131
-    mov rdi, r12
+    mov rdi, r14
     call @op_phsubd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2112]
@@ -6040,7 +6040,7 @@ function @check
     je ^bad132
 
   block ^ok132
-    mov rdi, r12
+    mov rdi, r14
     call @op_phsubsw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2128]
@@ -6049,7 +6049,7 @@ function @check
     je ^bad133
 
   block ^ok133
-    mov rdi, r12
+    mov rdi, r14
     call @op_sqrtps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2144]
@@ -6058,7 +6058,7 @@ function @check
     je ^bad134
 
   block ^ok134
-    mov rdi, r12
+    mov rdi, r14
     call @op_sqrtpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2160]
@@ -6067,7 +6067,7 @@ function @check
     je ^bad135
 
   block ^ok135
-    mov rdi, r12
+    mov rdi, r14
     call @op_rcpps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2176]
@@ -6076,7 +6076,7 @@ function @check
     je ^bad136
 
   block ^ok136
-    mov rdi, r12
+    mov rdi, r14
     call @op_rsqrtps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2192]
@@ -6085,7 +6085,7 @@ function @check
     je ^bad137
 
   block ^ok137
-    mov rdi, r12
+    mov rdi, r14
     call @op_movshdup [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2208]
@@ -6094,7 +6094,7 @@ function @check
     je ^bad138
 
   block ^ok138
-    mov rdi, r12
+    mov rdi, r14
     call @op_movsldup [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2224]
@@ -6103,7 +6103,7 @@ function @check
     je ^bad139
 
   block ^ok139
-    mov rdi, r12
+    mov rdi, r14
     call @op_movddup [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2240]
@@ -6112,7 +6112,7 @@ function @check
     je ^bad140
 
   block ^ok140
-    mov rdi, r12
+    mov rdi, r14
     call @op_pabsb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2256]
@@ -6121,7 +6121,7 @@ function @check
     je ^bad141
 
   block ^ok141
-    mov rdi, r12
+    mov rdi, r14
     call @op_pabsw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2272]
@@ -6130,7 +6130,7 @@ function @check
     je ^bad142
 
   block ^ok142
-    mov rdi, r12
+    mov rdi, r14
     call @op_pabsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2288]
@@ -6139,7 +6139,7 @@ function @check
     je ^bad143
 
   block ^ok143
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovsxbw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2304]
@@ -6148,7 +6148,7 @@ function @check
     je ^bad144
 
   block ^ok144
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovsxbd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2320]
@@ -6157,7 +6157,7 @@ function @check
     je ^bad145
 
   block ^ok145
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovsxbq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2336]
@@ -6166,7 +6166,7 @@ function @check
     je ^bad146
 
   block ^ok146
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovsxwd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2352]
@@ -6175,7 +6175,7 @@ function @check
     je ^bad147
 
   block ^ok147
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovsxwq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2368]
@@ -6184,7 +6184,7 @@ function @check
     je ^bad148
 
   block ^ok148
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovsxdq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2384]
@@ -6193,7 +6193,7 @@ function @check
     je ^bad149
 
   block ^ok149
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovzxbw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2400]
@@ -6202,7 +6202,7 @@ function @check
     je ^bad150
 
   block ^ok150
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovzxbd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2416]
@@ -6211,7 +6211,7 @@ function @check
     je ^bad151
 
   block ^ok151
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovzxbq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2432]
@@ -6220,7 +6220,7 @@ function @check
     je ^bad152
 
   block ^ok152
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovzxwd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2448]
@@ -6229,7 +6229,7 @@ function @check
     je ^bad153
 
   block ^ok153
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovzxwq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2464]
@@ -6238,7 +6238,7 @@ function @check
     je ^bad154
 
   block ^ok154
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovzxdq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2480]
@@ -6247,7 +6247,7 @@ function @check
     je ^bad155
 
   block ^ok155
-    mov rdi, r12
+    mov rdi, r14
     call @op_cvtdq2ps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2496]
@@ -6256,7 +6256,7 @@ function @check
     je ^bad156
 
   block ^ok156
-    mov rdi, r12
+    mov rdi, r14
     call @op_cvtdq2pd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2512]
@@ -6265,7 +6265,7 @@ function @check
     je ^bad157
 
   block ^ok157
-    mov rdi, r12
+    mov rdi, r14
     call @op_cvtps2dq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2528]
@@ -6274,7 +6274,7 @@ function @check
     je ^bad158
 
   block ^ok158
-    mov rdi, r12
+    mov rdi, r14
     call @op_cvttps2dq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2544]
@@ -6283,7 +6283,7 @@ function @check
     je ^bad159
 
   block ^ok159
-    mov rdi, r12
+    mov rdi, r14
     call @op_cvtpd2dq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2560]
@@ -6292,7 +6292,7 @@ function @check
     je ^bad160
 
   block ^ok160
-    mov rdi, r12
+    mov rdi, r14
     call @op_cvttpd2dq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2576]
@@ -6301,7 +6301,7 @@ function @check
     je ^bad161
 
   block ^ok161
-    mov rdi, r12
+    mov rdi, r14
     call @op_cvtps2pd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2592]
@@ -6310,7 +6310,7 @@ function @check
     je ^bad162
 
   block ^ok162
-    mov rdi, r12
+    mov rdi, r14
     call @op_cvtpd2ps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2608]
@@ -6319,7 +6319,7 @@ function @check
     je ^bad163
 
   block ^ok163
-    mov rdi, r12
+    mov rdi, r14
     call @op_cmpps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2624]
@@ -6328,7 +6328,7 @@ function @check
     je ^bad164
 
   block ^ok164
-    mov rdi, r12
+    mov rdi, r14
     call @op_cmppd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2640]
@@ -6337,7 +6337,7 @@ function @check
     je ^bad165
 
   block ^ok165
-    mov rdi, r12
+    mov rdi, r14
     call @op_cmpss [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2656]
@@ -6346,7 +6346,7 @@ function @check
     je ^bad166
 
   block ^ok166
-    mov rdi, r12
+    mov rdi, r14
     call @op_cmpsd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2672]
@@ -6355,7 +6355,7 @@ function @check
     je ^bad167
 
   block ^ok167
-    mov rdi, r12
+    mov rdi, r14
     call @op_shufps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2688]
@@ -6364,7 +6364,7 @@ function @check
     je ^bad168
 
   block ^ok168
-    mov rdi, r12
+    mov rdi, r14
     call @op_shufpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2704]
@@ -6373,7 +6373,7 @@ function @check
     je ^bad169
 
   block ^ok169
-    mov rdi, r12
+    mov rdi, r14
     call @op_palignr [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2720]
@@ -6382,7 +6382,7 @@ function @check
     je ^bad170
 
   block ^ok170
-    mov rdi, r12
+    mov rdi, r14
     call @op_blendps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2736]
@@ -6391,7 +6391,7 @@ function @check
     je ^bad171
 
   block ^ok171
-    mov rdi, r12
+    mov rdi, r14
     call @op_blendpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2752]
@@ -6400,7 +6400,7 @@ function @check
     je ^bad172
 
   block ^ok172
-    mov rdi, r12
+    mov rdi, r14
     call @op_pblendw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2768]
@@ -6409,7 +6409,7 @@ function @check
     je ^bad173
 
   block ^ok173
-    mov rdi, r12
+    mov rdi, r14
     call @op_pshufd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2784]
@@ -6418,7 +6418,7 @@ function @check
     je ^bad174
 
   block ^ok174
-    mov rdi, r12
+    mov rdi, r14
     call @op_pshuflw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2800]
@@ -6427,7 +6427,7 @@ function @check
     je ^bad175
 
   block ^ok175
-    mov rdi, r12
+    mov rdi, r14
     call @op_pshufhw [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2816]
@@ -6436,7 +6436,7 @@ function @check
     je ^bad176
 
   block ^ok176
-    mov rdi, r12
+    mov rdi, r14
     call @op_psllwi [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2832]
@@ -6445,7 +6445,7 @@ function @check
     je ^bad177
 
   block ^ok177
-    mov rdi, r12
+    mov rdi, r14
     call @op_pslldi [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2848]
@@ -6454,7 +6454,7 @@ function @check
     je ^bad178
 
   block ^ok178
-    mov rdi, r12
+    mov rdi, r14
     call @op_psllqi [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2864]
@@ -6463,7 +6463,7 @@ function @check
     je ^bad179
 
   block ^ok179
-    mov rdi, r12
+    mov rdi, r14
     call @op_psrlwi [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2880]
@@ -6472,7 +6472,7 @@ function @check
     je ^bad180
 
   block ^ok180
-    mov rdi, r12
+    mov rdi, r14
     call @op_psrldi [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2896]
@@ -6481,7 +6481,7 @@ function @check
     je ^bad181
 
   block ^ok181
-    mov rdi, r12
+    mov rdi, r14
     call @op_psrlqi [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2912]
@@ -6490,7 +6490,7 @@ function @check
     je ^bad182
 
   block ^ok182
-    mov rdi, r12
+    mov rdi, r14
     call @op_psrawi [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2928]
@@ -6499,7 +6499,7 @@ function @check
     je ^bad183
 
   block ^ok183
-    mov rdi, r12
+    mov rdi, r14
     call @op_psradi [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2944]
@@ -6508,7 +6508,7 @@ function @check
     je ^bad184
 
   block ^ok184
-    mov rdi, r12
+    mov rdi, r14
     call @op_pslldq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2960]
@@ -6517,7 +6517,7 @@ function @check
     je ^bad185
 
   block ^ok185
-    mov rdi, r12
+    mov rdi, r14
     call @op_psrldq [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2976]
@@ -6526,7 +6526,7 @@ function @check
     je ^bad186
 
   block ^ok186
-    mov rdi, r12
+    mov rdi, r14
     call @op_blendvps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+2992]
@@ -6535,7 +6535,7 @@ function @check
     je ^bad187
 
   block ^ok187
-    mov rdi, r12
+    mov rdi, r14
     call @op_blendvpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3008]
@@ -6544,7 +6544,7 @@ function @check
     je ^bad188
 
   block ^ok188
-    mov rdi, r12
+    mov rdi, r14
     call @op_pblendvb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3024]
@@ -6553,7 +6553,7 @@ function @check
     je ^bad189
 
   block ^ok189
-    mov rdi, r12
+    mov rdi, r14
     call @op_movmskps [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3040]
@@ -6562,7 +6562,7 @@ function @check
     je ^bad190
 
   block ^ok190
-    mov rdi, r12
+    mov rdi, r14
     call @op_movmskpd [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3056]
@@ -6571,7 +6571,7 @@ function @check
     je ^bad191
 
   block ^ok191
-    mov rdi, r12
+    mov rdi, r14
     call @op_pmovmskb [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3072]
@@ -6580,7 +6580,7 @@ function @check
     je ^bad192
 
   block ^ok192
-    mov rdi, r12
+    mov rdi, r14
     call @op_ptestz [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3088]
@@ -6589,7 +6589,7 @@ function @check
     je ^bad193
 
   block ^ok193
-    mov rdi, r12
+    mov rdi, r14
     call @op_ptestc [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3104]
@@ -6598,7 +6598,7 @@ function @check
     je ^bad194
 
   block ^ok194
-    mov rdi, r12
+    mov rdi, r14
     call @op_ptestnzc [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3120]
@@ -6607,7 +6607,7 @@ function @check
     je ^bad195
 
   block ^ok195
-    mov rdi, r12
+    mov rdi, r14
     call @op_pzero [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3136]
@@ -6616,7 +6616,7 @@ function @check
     je ^bad196
 
   block ^ok196
-    mov rdi, r12
+    mov rdi, r14
     call @op_fromf32 [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3152]
@@ -6625,7 +6625,7 @@ function @check
     je ^bad197
 
   block ^ok197
-    mov rdi, r12
+    mov rdi, r14
     call @op_fromf64 [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3168]
@@ -6634,7 +6634,7 @@ function @check
     je ^bad198
 
   block ^ok198
-    mov rdi, r12
+    mov rdi, r14
     call @op_fromi32 [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3184]
@@ -6643,7 +6643,7 @@ function @check
     je ^bad199
 
   block ^ok199
-    mov rdi, r12
+    mov rdi, r14
     call @op_fromi64 [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3200]
@@ -6652,7 +6652,7 @@ function @check
     je ^bad200
 
   block ^ok200
-    mov rdi, r12
+    mov rdi, r14
     call @op_tof32 [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3216]
@@ -6661,7 +6661,7 @@ function @check
     je ^bad201
 
   block ^ok201
-    mov rdi, r12
+    mov rdi, r14
     call @op_tof64 [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3232]
@@ -6670,7 +6670,7 @@ function @check
     je ^bad202
 
   block ^ok202
-    mov rdi, r12
+    mov rdi, r14
     call @op_toi32 [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3248]
@@ -6679,7 +6679,7 @@ function @check
     je ^bad203
 
   block ^ok203
-    mov rdi, r12
+    mov rdi, r14
     call @op_toi64 [args=(rdi)]
     lea rdi, @result
     lea rsi, [rbx+3264]

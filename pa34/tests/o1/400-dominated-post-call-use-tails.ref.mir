@@ -90,14 +90,14 @@ function @post_call_tails
     load.i64 r8, [rbp-48]
     load.i64 r9, [rbp-56]
     load.i64 rbx, [rbp-64]
-    load.i64 r12, [rbp-72]
-    add r12, 1
-    load.i64 r13, [rbp-48]
-    add r13, 2
-    load.i64 r14, [rbp-56]
-    add r14, 2
-    load.i64 r15, [rbp-64]
+    load.i64 r14, [rbp-72]
+    add r14, 1
+    load.i64 r15, [rbp-48]
     add r15, 2
+    load.i64 r13, [rbp-56]
+    add r13, 2
+    load.i64 r12, [rbp-64]
+    add r12, 2
     load.i64 r10, [rbp-72]
     add r10, 2
     store.i64 [rbp-80], r10
@@ -105,12 +105,12 @@ function @post_call_tails
     add rdx, rsi
     add rax, rdx
     add rax, rdi
-    lea r8, [r8+r13+1]
-    lea r9, [r9+r14+1]
-    lea rbx, [rbx+r15+1]
-    add r12, [rbp-80]
+    lea r8, [r8+r15+1]
+    lea r9, [r9+r13+1]
+    lea rbx, [rbx+r12+1]
+    add r14, [rbp-80]
     add r8, r9
-    add rbx, r12
+    add rbx, r14
     add r8, rbx
     add rax, r8
     ret rax

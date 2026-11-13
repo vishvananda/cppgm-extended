@@ -21,23 +21,22 @@ function @signed_prefix
     cmp.u32 rdi, 7
     jbe ^case_1
     cmp.u32 rdi, 15
-    jbe ^case_2
-    jmp ^default
+    ja ^default
 
-  block ^case_0
-    mov rax, 11
+  block ^case_2
+    mov rax, 33
     ret rax
 
   block ^default
     mov rax, 99
     ret rax
 
-  block ^case_2
-    mov rax, 33
-    ret rax
-
   block ^case_1
     mov rax, 22
+    ret rax
+
+  block ^case_0
+    mov rax, 11
     ret rax
 
 function @gapped
@@ -56,11 +55,6 @@ function @gapped
     lea <gpr0>, [rdi-<off0>]
     cmp.i64 <gpr0>, 3
     jbe ^case_1
-    jmp ^default
-
-  block ^case_0
-    mov rax, 11
-    ret rax
 
   block ^default
     mov rax, 99
@@ -68,6 +62,10 @@ function @gapped
 
   block ^case_1
     mov rax, 22
+    ret rax
+
+  block ^case_0
+    mov rax, 11
     ret rax
 
 function @signed_cases
@@ -85,19 +83,18 @@ function @signed_cases
     cmp.i64 <gpr0>, 3
     jbe ^case_0
     cmp.i64 rdi, 3
-    jbe ^case_1
-    jmp ^default
+    ja ^default
 
-  block ^case_0
-    mov rax, 11
+  block ^case_1
+    mov rax, 22
     ret rax
 
   block ^default
     mov rax, 99
     ret rax
 
-  block ^case_1
-    mov rax, 22
+  block ^case_0
+    mov rax, 11
     ret rax
 
 function @unsigned_prefix
@@ -114,19 +111,18 @@ function @unsigned_prefix
     cmp.u32 rdi, 3
     jbe ^case_0
     cmp.u32 rdi, 7
-    jbe ^case_1
-    jmp ^default
+    ja ^default
 
-  block ^case_0
-    mov rax, 11
+  block ^case_1
+    mov rax, 22
     ret rax
 
   block ^default
     mov rax, 99
     ret rax
 
-  block ^case_1
-    mov rax, 22
+  block ^case_0
+    mov rax, 11
     ret rax
 
 function @wide_prefix
@@ -143,19 +139,18 @@ function @wide_prefix
     cmp.i64 rdi, 3
     jbe ^case_0
     cmp.i64 rdi, 7
-    jbe ^case_1
-    jmp ^default
+    ja ^default
 
-  block ^case_0
-    mov rax, 11
+  block ^case_1
+    mov rax, 22
     ret rax
 
   block ^default
     mov rax, 99
     ret rax
 
-  block ^case_1
-    mov rax, 22
+  block ^case_0
+    mov rax, 11
     ret rax
 
 function @byte_prefix
@@ -172,19 +167,18 @@ function @byte_prefix
     cmp.u8 rdi, 3
     jbe ^case_0
     cmp.u8 rdi, 7
-    jbe ^case_1
-    jmp ^default
+    ja ^default
 
-  block ^case_0
-    mov rax, 11
+  block ^case_1
+    mov rax, 22
     ret rax
 
   block ^default
     mov rax, 99
     ret rax
 
-  block ^case_1
-    mov rax, 22
+  block ^case_0
+    mov rax, 11
     ret rax
 
 function @main

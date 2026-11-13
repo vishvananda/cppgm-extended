@@ -148,42 +148,42 @@ function @main
     mov <gpr0>, rax
     mov rdi, 30
     call @frameless_call [args=(rdi), unwind=no]
-    mov <gpr1>, rax
+    mov <gpr3>, rax
     call @frame_operand [args=(), unwind=no]
-    mov <gpr2>, rax
+    mov <gpr4>, rax
     mov rdi, 16
     call @dynamic_stack [args=(rdi), unwind=no]
-    mov <gpr3>, rax
+    mov <gpr2>, rax
     call @floating_scratch [args=(), unwind=no]
-    mov <gpr4>, rax
+    mov <gpr1>, rax
     call @host_eh [args=()]
-    store.i64 [rbp-<off0>], <gpr4>
-    mov <gpr4>, rax
+    store.i64 [rbp-<off0>], <gpr1>
+    mov <gpr1>, rax
     mov rdi, 1
     call @direct_returns [args=(rdi), unwind=no]
     cmp.i64 <gpr0>, 29
     setne <gpr0>
     movzx <gpr0>, <gpr0>
-    cmp.i64 <gpr1>, 30
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
-    cmp.i64 <gpr2>, 31
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
-    cmp.i64 <gpr3>, 37
+    cmp.i64 <gpr3>, 30
     setne <gpr3>
     movzx <gpr3>, <gpr3>
-    cmp.i64 <gpr4>, 41
+    cmp.i64 <gpr4>, 31
     setne <gpr4>
     movzx <gpr4>, <gpr4>
+    cmp.i64 <gpr2>, 37
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    cmp.i64 <gpr1>, 41
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    or <gpr0>, <gpr1>
-    or <gpr2>, <gpr3>
-    or <gpr4>, [rbp-<off0>]
-    or <gpr0>, <gpr2>
-    or <gpr4>, rax
+    or <gpr0>, <gpr3>
+    or <gpr4>, <gpr2>
+    or <gpr1>, [rbp-<off0>]
+    or <gpr0>, <gpr4>
+    or <gpr1>, rax
     mov rax, <gpr0>
-    or rax, <gpr4>
+    or rax, <gpr1>
     ret rax

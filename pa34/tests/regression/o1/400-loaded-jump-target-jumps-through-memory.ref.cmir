@@ -1,0 +1,52 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @targets
+  storage data
+  item ptr addr @pick.first
+  item ptr addr @pick.second
+
+function @pick
+  abi
+    param %which -> rdi : i64
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, @targets
+    indirect_jump [rax+rdi*8]
+
+  block ^first
+    mov rax, 3
+    ret rax
+
+  block ^second
+    mov rax, 5
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0>
+
+  block ^entry
+    mov rdi, 0
+    call @pick [args=(rdi)]
+    zext.i32 <gpr0>, rax
+    mov rdi, 1
+    call @pick [args=(rdi)]
+    add.i32 rax, <gpr0>
+    ret rax

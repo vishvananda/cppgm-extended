@@ -38,25 +38,25 @@ function @walk
   block ^entry
     store.ptr [rbp-112], rdi
     store.u32 [rbp-136], rdx
-    zext.i32 r14, rsi
+    zext.i32 r13, rsi
     store.i64 [rbp-104], 0
 
   block ^head
-    cmp.u32 r14, rdx
+    cmp.u32 r13, rdx
     jbe ^done
 
   block ^body
-    lea.i32 rax, [r14-1]
+    lea.i32 rax, [r13-1]
     store.u32 [rbp-128], rax
     mov rax, 0
-    mov r13, 0
+    mov r15, 0
     store.i64 [rbp-56], 1
     store.i64 [rbp-64], 2
     store.i64 [rbp-72], 3
     store.i64 [rbp-80], 4
     store.i64 [rbp-88], 5
     store.i64 [rbp-96], 6
-    mov r12, 7
+    mov r14, 7
     mov rbx, 8
     mov r9, 9
     mov r8, 10
@@ -64,83 +64,83 @@ function @walk
     mov rsi, 12
     mov rdx, 13
     mov rcx, 14
-    store.u32 [rbp-120], r14
+    store.u32 [rbp-120], r13
 
   block ^inner
     load.ptr r10, [rbp-112]
-    load.i64 r14, [r10+rax*8]
-    lea r15, [rax+1]
-    imul r13, r15
-    xor r13, r14
-    store.i64 [rbp-8], r13
-    lea r13, [rax+4]
-    imul r13, [rbp-56]
-    xor r13, r14
-    store.i64 [rbp-16], r13
-    lea r13, [rax+7]
-    imul r13, [rbp-64]
-    xor r13, r14
-    store.i64 [rbp-24], r13
-    lea r13, [rax+10]
-    imul r13, [rbp-72]
-    xor r13, r14
-    store.i64 [rbp-32], r13
-    lea r13, [rax+13]
-    imul r13, [rbp-80]
-    xor r13, r14
-    store.i64 [rbp-40], r13
-    lea r13, [rax+16]
-    imul r13, [rbp-88]
-    xor r13, r14
-    store.i64 [rbp-48], r13
-    lea r13, [rax+19]
-    imul r13, [rbp-96]
-    xor r13, r14
-    lea r15, [rax+22]
-    imul r12, r15
-    xor r12, r14
-    lea r15, [rax+25]
-    imul rbx, r15
-    xor rbx, r14
-    lea r15, [rax+28]
-    imul r9, r15
-    xor r9, r14
-    lea r15, [rax+31]
-    imul r8, r15
-    xor r8, r14
-    lea r15, [rax+34]
-    imul rdi, r15
-    xor rdi, r14
-    lea r15, [rax+37]
-    imul rsi, r15
-    xor rsi, r14
-    lea r15, [rax+40]
-    imul rdx, r15
-    xor rdx, r14
-    lea r15, [rax+43]
-    imul rcx, r15
-    xor rcx, r14
+    load.i64 r13, [r10+rax*8]
+    lea r12, [rax+1]
+    imul r15, r12
+    xor r15, r13
+    store.i64 [rbp-8], r15
+    lea r15, [rax+4]
+    imul r15, [rbp-56]
+    xor r15, r13
+    store.i64 [rbp-16], r15
+    lea r15, [rax+7]
+    imul r15, [rbp-64]
+    xor r15, r13
+    store.i64 [rbp-24], r15
+    lea r15, [rax+10]
+    imul r15, [rbp-72]
+    xor r15, r13
+    store.i64 [rbp-32], r15
+    lea r15, [rax+13]
+    imul r15, [rbp-80]
+    xor r15, r13
+    store.i64 [rbp-40], r15
+    lea r15, [rax+16]
+    imul r15, [rbp-88]
+    xor r15, r13
+    store.i64 [rbp-48], r15
+    lea r15, [rax+19]
+    imul r15, [rbp-96]
+    xor r15, r13
+    lea r12, [rax+22]
+    imul r14, r12
+    xor r14, r13
+    lea r12, [rax+25]
+    imul rbx, r12
+    xor rbx, r13
+    lea r12, [rax+28]
+    imul r9, r12
+    xor r9, r13
+    lea r12, [rax+31]
+    imul r8, r12
+    xor r8, r13
+    lea r12, [rax+34]
+    imul rdi, r12
+    xor rdi, r13
+    lea r12, [rax+37]
+    imul rsi, r12
+    xor rsi, r13
+    lea r12, [rax+40]
+    imul rdx, r12
+    xor rdx, r13
+    lea r12, [rax+43]
+    imul rcx, r12
+    xor rcx, r13
     add rax, 1
-    cmp.i64 r14, 99
+    cmp.i64 r13, 99
     je ^inner~found
 
   block ^next
-    load.i64 r14, [rbp-8]
-    add r14, [rbp-16]
-    add r14, [rbp-24]
-    add r14, [rbp-32]
-    add r14, [rbp-40]
-    add r14, [rbp-48]
-    add r14, r13
-    add r14, r12
-    add r14, rbx
-    add r14, r9
-    add r14, r8
-    add r14, rdi
-    add r14, rsi
-    add r14, rdx
-    add r14, rcx
-    add r14, [rbp-104]
+    load.i64 r13, [rbp-8]
+    add r13, [rbp-16]
+    add r13, [rbp-24]
+    add r13, [rbp-32]
+    add r13, [rbp-40]
+    add r13, [rbp-48]
+    add r13, r15
+    add r13, r14
+    add r13, rbx
+    add r13, r9
+    add r13, r8
+    add r13, rdi
+    add r13, rsi
+    add r13, rdx
+    add r13, rcx
+    add r13, [rbp-104]
     cmp.i64 rax, 4
     jge ^next~head
 
@@ -155,14 +155,14 @@ function @walk
     store.i64 [rbp-80], r11
     load.i64 r11, [rbp-48]
     store.i64 [rbp-88], r11
-    store.i64 [rbp-96], r13
-    load.i64 r13, [rbp-8]
+    store.i64 [rbp-96], r15
+    load.i64 r15, [rbp-8]
     jmp ^inner
 
   block ^next~head
-    store.i64 [rbp-104], r14
-    load.u32 r14, [rbp-128]
-    cmp.u32 r14, [rbp-136]
+    store.i64 [rbp-104], r13
+    load.u32 r13, [rbp-128]
+    cmp.u32 r13, [rbp-136]
     ja ^body
 
   block ^done
@@ -172,10 +172,10 @@ function @walk
     ret rax
 
   block ^inner~found
-    load.u32 r14, [rbp-120]
+    load.u32 r13, [rbp-120]
 
   block ^found
-    lea.i32 rax, [r14+1000]
+    lea.i32 rax, [r13+1000]
     ret rax
 
 function @main

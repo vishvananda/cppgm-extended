@@ -108,7 +108,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13 r14
+    preserve rbx r13 r14 r15
 
   block ^entry
     mov rdi, -1
@@ -117,14 +117,14 @@ function @main
     mov rbx, rax
     mov rdi, -1
     call @square [args=(rdi)]
-    mov r12, rax
+    mov r14, rax
     mov rdi, -1
     mov rsi, 6
     call @signed [args=(rsi,rdi)]
-    mov r13, rax
+    mov r15, rax
     mov rdi, -1
     call @literal [args=(rdi)]
-    mov r14, rax
+    mov r13, rax
     mov rdi, -1
     mov rsi, 6
     mov rdx, 10
@@ -133,20 +133,20 @@ function @main
     cmp.i64 rbx, 5
     setne rbx
     movzx rbx, rbx
-    cmp.i64 r12, -2
-    setne r12
-    movzx r12, r12
-    cmp.i64 r13, -1
-    setne r13
-    movzx r13, r13
-    cmp.i64 r14, -6067343680855748868
+    cmp.i64 r14, -2
     setne r14
     movzx r14, r14
+    cmp.i64 r15, -1
+    setne r15
+    movzx r15, r15
+    cmp.i64 r13, -6067343680855748868
+    setne r13
+    movzx r13, r13
     cmp.i64 rax, 14
     setne rax
     movzx rax, rax
-    or.u32 rbx, r12
-    or.u32 rbx, r13
     or.u32 rbx, r14
+    or.u32 rbx, r15
+    or.u32 rbx, r13
     or.u32 rax, rbx
     ret rax

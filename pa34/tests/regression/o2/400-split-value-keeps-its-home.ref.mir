@@ -48,20 +48,20 @@ function @walk
     param-slot %f -> [rbp-48] : i64
 
   block ^entry
-    mov r13, rdi
-    mov r14, rsi
-    mov r15, rdx
-    mov rax, r13
-    imul rax, r14
-    store.i64 [rbp-8], rax
+    mov r15, rdi
+    mov r13, rsi
+    mov r12, rdx
     mov rax, r15
+    imul rax, r13
+    store.i64 [rbp-8], rax
+    mov rax, r12
     imul rax, rcx
     store.i64 [rbp-16], rax
     mov rax, r8
     imul rax, r9
     store.i64 [rbp-24], rax
     mov rbx, 0
-    mov r12, 0
+    mov r14, 0
     store.i64 [rbp-32], rcx
     store.i64 [rbp-40], r8
     store.i64 [rbp-48], r9
@@ -78,29 +78,29 @@ function @walk
     load.i64 r9, [rbp-48]
 
   block ^latch
-    add r12, r13
-    xor r12, r14
-    add r12, r15
-    xor r12, rcx
-    add r12, r8
-    xor r12, r9
-    add r12, [rbp-8]
-    xor r12, [rbp-16]
-    add r12, [rbp-24]
-    xor r12, r13
-    add r12, r14
-    xor r12, r15
-    add r12, rcx
-    xor r12, r8
-    add r12, r9
-    xor r12, [rbp-8]
-    add r12, [rbp-16]
-    xor r12, [rbp-24]
+    add r14, r15
+    xor r14, r13
+    add r14, r12
+    xor r14, rcx
+    add r14, r8
+    xor r14, r9
+    add r14, [rbp-8]
+    xor r14, [rbp-16]
+    add r14, [rbp-24]
+    xor r14, r15
+    add r14, r13
+    xor r14, r12
+    add r14, rcx
+    xor r14, r8
+    add r14, r9
+    xor r14, [rbp-8]
+    add r14, [rbp-16]
+    xor r14, [rbp-24]
     add rbx, 7
     jmp ^head
 
   block ^done
-    ret r12
+    ret r14
 
 function @main
   abi

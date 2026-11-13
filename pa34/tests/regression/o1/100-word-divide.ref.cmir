@@ -167,19 +167,19 @@ function @main
     mov rdi, -2147483647
     mov rsi, 7
     call @signed_remainder [args=(rsi,rdi)]
-    zext.i32 <gpr2>, rax
+    zext.i32 <gpr4>, rax
     mov rdi, 4294967289
     mov rsi, 7
     call @unsigned_quotient [args=(rsi,rdi)]
-    zext.i32 <gpr3>, rax
+    zext.i32 <gpr5>, rax
     mov rdi, 4294967289
     mov rsi, 10
     call @unsigned_remainder [args=(rsi,rdi)]
-    zext.i32 <gpr4>, rax
+    zext.i32 <gpr3>, rax
     mov rdi, -11
     lea rsi, [rbp-<off0>]
     call @signed_memory [args=(rsi,rdi)]
-    zext.i32 <gpr5>, rax
+    zext.i32 <gpr2>, rax
     mov rdi, -77
     mov rsi, 7
     call @wide [args=(rsi,rdi)]
@@ -195,18 +195,18 @@ function @main
     cmp.i32 <gpr1>, 306783378
     setne <gpr1>
     movzx <gpr1>, <gpr1>
-    cmp.i32 <gpr2>, -1
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
-    cmp.u32 <gpr3>, 613566755
-    setne <gpr3>
-    movzx <gpr3>, <gpr3>
-    cmp.u32 <gpr4>, 9
+    cmp.i32 <gpr4>, -1
     setne <gpr4>
     movzx <gpr4>, <gpr4>
-    cmp.i32 <gpr5>, -2
+    cmp.u32 <gpr5>, 613566755
     setne <gpr5>
     movzx <gpr5>, <gpr5>
+    cmp.u32 <gpr3>, 9
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    cmp.i32 <gpr2>, -2
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
     cmp.i64 [rbp-<off1>], -11
     setne rcx
     movzx rcx, rcx
@@ -216,10 +216,10 @@ function @main
     cmp.i16 rax, -10922
     setne rax
     movzx rax, rax
-    or.i32 <gpr1>, <gpr2>
-    or.i32 <gpr1>, <gpr3>
     or.i32 <gpr1>, <gpr4>
     or.i32 <gpr1>, <gpr5>
+    or.i32 <gpr1>, <gpr3>
+    or.i32 <gpr1>, <gpr2>
     or.i32 <gpr1>, rcx
     or.i32 <gpr1>, rdx
     or.i32 rax, <gpr1>

@@ -105,26 +105,26 @@ function @main
     mov rsi, 4275878552
     call @pair [args=(rsi,rdi)]
     mov <gpr0>, rax
-    mov <gpr1>, rdx
+    mov <gpr3>, rdx
     cmp.i64 <gpr0>, 305419896
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    cmp.i64 <gpr3>, 4275878552
     setne <gpr2>
     movzx <gpr2>, <gpr2>
-    cmp.i64 <gpr1>, 4275878552
-    setne <gpr3>
-    movzx <gpr3>, <gpr3>
     mov rdi, <gpr0>
-    mov rsi, <gpr1>
+    mov rsi, <gpr3>
     call @parts [args=(rsi,rdi)]
-    mov <gpr4>, <gpr0>
-    xor <gpr4>, <gpr1>
+    mov <gpr1>, <gpr0>
+    xor <gpr1>, <gpr3>
     store.i64 [rbp-<off0>], <gpr0>
-    cmp.i64 rax, <gpr4>
+    cmp.i64 rax, <gpr1>
     setne <gpr0>
     movzx <gpr0>, <gpr0>
     sub rsp, 16
     load.i64 <gpr5>, [rbp-<off0>]
     store.i64 [rsp], <gpr5>
-    store.i64 [rsp+<off0>], <gpr1>
+    store.i64 [rsp+<off0>], <gpr3>
     mov rdi, 1
     mov rsi, 2
     mov rdx, 3
@@ -133,15 +133,15 @@ function @main
     mov r9, 6
     call @stack_parts [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    add <gpr4>, 6
-    cmp.i64 rax, <gpr4>
+    add <gpr1>, 6
+    cmp.i64 rax, <gpr1>
     setne rax
     movzx rax, rax
-    or <gpr2>, <gpr3>
+    or <gpr4>, <gpr2>
     or <gpr0>, rax
-    or <gpr2>, <gpr0>
+    or <gpr4>, <gpr0>
     load.i64 rdi, [rbp-<off0>]
-    mov rsi, <gpr1>
+    mov rsi, <gpr3>
     call @low_only [args=(rsi,rdi)]
     cmp.i64 rax, 305419896
     setne <gpr0>
@@ -153,6 +153,6 @@ function @main
     setne rax
     movzx rax, rax
     or <gpr0>, rax
-    mov rax, <gpr2>
+    mov rax, <gpr4>
     or rax, <gpr0>
     ret rax

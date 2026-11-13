@@ -131,16 +131,16 @@ function @main
     mov <gpr0>, rax
     lea rdi, [rbp-<off0>]
     call @right [args=(rdi)]
-    mov <gpr1>, rax
-    lea rdi, [rbp-<off0>]
-    call @wide [args=(rdi)]
-    mov <gpr2>, rax
-    lea rdi, [rbp-<off0>]
-    call @zero [args=(rdi)]
     mov <gpr3>, rax
     lea rdi, [rbp-<off0>]
-    call @identity [args=(rdi)]
+    call @wide [args=(rdi)]
     mov <gpr4>, rax
+    lea rdi, [rbp-<off0>]
+    call @zero [args=(rdi)]
+    mov <gpr2>, rax
+    lea rdi, [rbp-<off0>]
+    call @identity [args=(rdi)]
+    mov <gpr1>, rax
     lea rdi, [rbp-<off0>]
     mov rsi, 0
     call @variable [args=(rsi,rdi)]
@@ -157,18 +157,18 @@ function @main
     cmp.i64 <gpr0>, 12884631572
     setne <gpr0>
     movzx <gpr0>, <gpr0>
-    cmp.i64 <gpr1>, 33554431
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
-    cmp.i64 <gpr2>, -8192
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
-    cmp.i64 <gpr3>, 4294967295
+    cmp.i64 <gpr3>, 33554431
     setne <gpr3>
     movzx <gpr3>, <gpr3>
-    cmp.i64 <gpr4>, 4294967295
+    cmp.i64 <gpr4>, -8192
     setne <gpr4>
     movzx <gpr4>, <gpr4>
+    cmp.i64 <gpr2>, 4294967295
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    cmp.i64 <gpr1>, 4294967295
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
     cmp.i64 [rbp-<off1>], 4294967295
     setne rcx
     movzx rcx, rcx
@@ -178,12 +178,12 @@ function @main
     cmp.i64 rax, 2147483648
     setne rax
     movzx rax, rax
-    or <gpr0>, <gpr1>
-    or <gpr2>, <gpr3>
-    or <gpr4>, rcx
+    or <gpr0>, <gpr3>
+    or <gpr4>, <gpr2>
+    or <gpr1>, rcx
     or rdx, rax
     mov rax, <gpr0>
-    or rax, <gpr2>
-    or <gpr4>, rdx
     or rax, <gpr4>
+    or <gpr1>, rdx
+    or rax, <gpr1>
     ret rax

@@ -90,14 +90,14 @@ function @post_call_tails
     load.i64 r8, [rbp-<off5>]
     load.i64 r9, [rbp-<off6>]
     load.i64 <gpr0>, [rbp-<off7>]
-    load.i64 <gpr1>, [rbp-<off8>]
-    add <gpr1>, 1
-    load.i64 <gpr2>, [rbp-<off5>]
-    add <gpr2>, 2
-    load.i64 <gpr3>, [rbp-<off6>]
-    add <gpr3>, 2
-    load.i64 <gpr4>, [rbp-<off7>]
+    load.i64 <gpr3>, [rbp-<off8>]
+    add <gpr3>, 1
+    load.i64 <gpr4>, [rbp-<off5>]
     add <gpr4>, 2
+    load.i64 <gpr2>, [rbp-<off6>]
+    add <gpr2>, 2
+    load.i64 <gpr1>, [rbp-<off7>]
+    add <gpr1>, 2
     load.i64 <gpr5>, [rbp-<off8>]
     add <gpr5>, 2
     store.i64 [rbp-<off9>], <gpr5>
@@ -105,12 +105,12 @@ function @post_call_tails
     add rdx, rsi
     add rax, rdx
     add rax, rdi
-    lea r8, [r8+<gpr2>+<off0>]
-    lea r9, [r9+<gpr3>+<off0>]
-    lea <gpr0>, [<gpr0>+<gpr4>+<off0>]
-    add <gpr1>, [rbp-<off9>]
+    lea r8, [r8+<gpr4>+<off0>]
+    lea r9, [r9+<gpr2>+<off0>]
+    lea <gpr0>, [<gpr0>+<gpr1>+<off0>]
+    add <gpr3>, [rbp-<off9>]
     add r8, r9
-    add <gpr0>, <gpr1>
+    add <gpr0>, <gpr3>
     add r8, <gpr0>
     add rax, r8
     ret rax

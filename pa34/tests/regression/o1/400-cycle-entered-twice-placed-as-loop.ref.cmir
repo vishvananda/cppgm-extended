@@ -48,8 +48,8 @@ function @tangle
   block ^b
     sub <gpr0>, 1
     cmp.i64 <gpr0>, 0
-    jle ^done
-    jmp ^a
+    jg ^a
+    jmp ^done
 
   block ^a~b
     sub <gpr0>, 1

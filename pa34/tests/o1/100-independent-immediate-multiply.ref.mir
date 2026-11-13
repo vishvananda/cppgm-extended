@@ -138,16 +138,16 @@ function @main
     movzx rbx, rbx
     mov rdi, -7
     call @imul_register [args=(rdi)]
-    mov r12, rax
-    lea rdi, [rbp-8]
-    call @imul_memory [args=(rdi)]
-    mov r13, rax
-    lea rdi, [rbp-8]
-    call @volatile_multiply [args=(rdi)]
     mov r14, rax
     lea rdi, [rbp-8]
-    call @before_store [args=(rdi)]
+    call @imul_memory [args=(rdi)]
     mov r15, rax
+    lea rdi, [rbp-8]
+    call @volatile_multiply [args=(rdi)]
+    mov r13, rax
+    lea rdi, [rbp-8]
+    call @before_store [args=(rdi)]
+    mov r12, rax
     mov rdi, 3
     call @wide_constant [args=(rdi)]
     store.i64 [rbp-16], rbx
@@ -158,32 +158,32 @@ function @main
     store.i64 [rbp-24], r10
     mov rdi, 4294967295
     call @imul_word [args=(rdi)]
-    cmp.i64 r12, -252
-    setne r12
-    movzx r12, r12
-    cmp.i64 r13, 185
-    setne r13
-    movzx r13, r13
-    cmp.u32 rax, 2654435768
-    setne rax
-    movzx rax, rax
-    or r12, r13
-    or rax, r12
-    cmp.i64 r14, 185
+    cmp.i64 r14, -252
     setne r14
     movzx r14, r14
     cmp.i64 r15, 185
     setne r15
     movzx r15, r15
+    cmp.u32 rax, 2654435768
+    setne rax
+    movzx rax, rax
+    or r14, r15
+    or rax, r14
+    cmp.i64 r13, 185
+    setne r13
+    movzx r13, r13
+    cmp.i64 r12, 185
+    setne r12
+    movzx r12, r12
     cmp.i64 rbx, 12884901888
     setne rbx
     movzx rbx, rbx
     cmp.i64 [rbp-24], 0
     setne rcx
     movzx rcx, rcx
-    or r14, r15
+    or r13, r12
     or rbx, rcx
-    or r14, rbx
-    or rax, r14
+    or r13, rbx
+    or rax, r13
     or rax, [rbp-16]
     ret rax

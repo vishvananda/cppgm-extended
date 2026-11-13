@@ -1,0 +1,91 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @kinds
+  storage data
+  item u8 4
+  item u8 7
+  item u8 25
+  item u8 33
+  item u8 9
+  item u8 32
+  item u8 1
+  item u8 4
+
+global @seen
+  storage scalar i64
+  init i64 0
+
+function @count
+  abi
+    param %bytes -> rdi : ptr
+    param %n -> rsi : i64
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, 0
+
+  block ^head
+    cmp.i64 rax, rsi
+    jge ^done
+
+  block ^body
+    load.u8 rcx, [rdi+rax]
+    cmp.u8 rcx, 4
+    je ^four
+    cmp.u8 rcx, 25
+    je ^quarter
+    lea <gpr0>, [rcx-<off0>]
+    cmp.i64 <gpr0>, 1
+    ja ^next
+
+  block ^pair
+    add @seen, 40
+    add rax, 1
+    cmp.i64 rax, rsi
+    jl ^body
+    ret
+
+  block ^quarter
+    add @seen, 10
+    add rax, 1
+    cmp.i64 rax, rsi
+    jl ^body
+    ret
+
+  block ^four
+    add @seen, 1
+
+  block ^next
+    add rax, 1
+    cmp.i64 rax, rsi
+    jl ^body
+    ret
+
+  block ^done
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, @kinds
+    mov rsi, 8
+    call @count [args=(rsi,rdi)]
+    load.u32 rax, @seen
+    ret rax

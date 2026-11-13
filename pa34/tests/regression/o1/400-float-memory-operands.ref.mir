@@ -134,7 +134,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12
+    preserve rbx r14
     slot $a -> [rbp-16] : obj<16x8>
     temp %b -> [rbp-24] : f64
     temp %c -> [rbp-32] : f64
@@ -168,11 +168,11 @@ function @main
     lea rdi, [rbp-16]
     fmov.f64 xmm0, 7.0
     call @less [args=(rdi,xmm0)]
-    zext.i32 r12, rax
+    zext.i32 r14, rax
     lea rdi, [rbp-16]
     fmov.f64 xmm0, 5.0
     call @more [args=(rdi,xmm0)]
-    imul.i32 r12, 10
-    add.i32 rax, r12
+    imul.i32 r14, 10
+    add.i32 rax, r14
     add.i32 rax, rbx
     ret rax

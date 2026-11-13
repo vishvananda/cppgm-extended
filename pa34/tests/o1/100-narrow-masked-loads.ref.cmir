@@ -127,24 +127,24 @@ function @main
     lea rdi, [rbp-<off0>]
     call @half [args=(rdi)]
     cmp.i64 rax, 65535
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
     lea rdi, [rbp-<off0>]
     call @word [args=(rdi)]
     cmp.i64 rax, 4294967295
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
     lea rdi, [rbp-<off0>]
     call @signed_word [args=(rdi)]
     cmp.i64 rax, 4294967295
-    setne <gpr3>
-    movzx <gpr3>, <gpr3>
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
     store.i64 [rbp-<off0>], 255
     lea rdi, [rbp-<off0>]
     call @signed_byte [args=(rdi)]
     cmp.i64 rax, 255
-    setne <gpr4>
-    movzx <gpr4>, <gpr4>
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
     lea rdi, [rbp-<off0>]
     call @no_widen_byte [args=(rdi)]
     cmp.i64 rax, 65535
@@ -157,10 +157,10 @@ function @main
     cmp.i64 rax, 4294967295
     setne rax
     movzx rax, rax
-    or <gpr0>, <gpr1>
-    or <gpr0>, <gpr2>
     or <gpr0>, <gpr3>
     or <gpr0>, <gpr4>
+    or <gpr0>, <gpr2>
+    or <gpr0>, <gpr1>
     or <gpr0>, [rbp-<off1>]
     or rax, <gpr0>
     ret rax

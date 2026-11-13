@@ -15,31 +15,30 @@ function @eh_loop
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13 r14
+    preserve rbx r13 r14 r15
 
   block ^entry
-    mov r14, rdi
-    mov r13, rsi
-    mov r12, 0
+    mov r13, rdi
+    mov r15, rsi
+    mov r14, 0
     mov rbx, 0
 
   block ^for_cond_1
-    cmp.i64 rbx, r14
-    jl ^for_body_2
-
-  block ^for_end_4
-    ret r12
+    cmp.i64 rbx, r13
+    jge ^for_end_4
 
   block ^for_body_2
     mov rdi, rbx
     call @work [args=(rdi)]
     lea rax, [rbx+rax*2]
-    add r12, rax
-    add [r13], 1
+    add r14, rax
+    add [r15], 1
     add rbx, 1
-    cmp.i64 rbx, r14
+    cmp.i64 rbx, r13
     jl ^for_body_2
-    jmp ^for_end_4
+
+  block ^for_end_4
+    ret r14
 
 function @work
   abi

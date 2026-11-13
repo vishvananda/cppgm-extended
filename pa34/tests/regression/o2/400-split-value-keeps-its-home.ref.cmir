@@ -48,20 +48,20 @@ function @walk
     param-slot %f -> [rbp-<off5>] : i64
 
   block ^entry
-    mov <gpr2>, rdi
-    mov <gpr3>, rsi
-    mov <gpr4>, rdx
-    mov rax, <gpr2>
-    imul rax, <gpr3>
-    store.i64 [rbp-<off0>], rax
+    mov <gpr4>, rdi
+    mov <gpr2>, rsi
+    mov <gpr1>, rdx
     mov rax, <gpr4>
+    imul rax, <gpr2>
+    store.i64 [rbp-<off0>], rax
+    mov rax, <gpr1>
     imul rax, rcx
     store.i64 [rbp-<off1>], rax
     mov rax, r8
     imul rax, r9
     store.i64 [rbp-<off2>], rax
     mov <gpr0>, 0
-    mov <gpr1>, 0
+    mov <gpr3>, 0
     store.i64 [rbp-<off3>], rcx
     store.i64 [rbp-<off4>], r8
     store.i64 [rbp-<off5>], r9
@@ -78,29 +78,29 @@ function @walk
     load.i64 r9, [rbp-<off5>]
 
   block ^latch
-    add <gpr1>, <gpr2>
-    xor <gpr1>, <gpr3>
-    add <gpr1>, <gpr4>
-    xor <gpr1>, rcx
-    add <gpr1>, r8
-    xor <gpr1>, r9
-    add <gpr1>, [rbp-<off0>]
-    xor <gpr1>, [rbp-<off1>]
-    add <gpr1>, [rbp-<off2>]
-    xor <gpr1>, <gpr2>
-    add <gpr1>, <gpr3>
-    xor <gpr1>, <gpr4>
-    add <gpr1>, rcx
-    xor <gpr1>, r8
-    add <gpr1>, r9
-    xor <gpr1>, [rbp-<off0>]
-    add <gpr1>, [rbp-<off1>]
-    xor <gpr1>, [rbp-<off2>]
+    add <gpr3>, <gpr4>
+    xor <gpr3>, <gpr2>
+    add <gpr3>, <gpr1>
+    xor <gpr3>, rcx
+    add <gpr3>, r8
+    xor <gpr3>, r9
+    add <gpr3>, [rbp-<off0>]
+    xor <gpr3>, [rbp-<off1>]
+    add <gpr3>, [rbp-<off2>]
+    xor <gpr3>, <gpr4>
+    add <gpr3>, <gpr2>
+    xor <gpr3>, <gpr1>
+    add <gpr3>, rcx
+    xor <gpr3>, r8
+    add <gpr3>, r9
+    xor <gpr3>, [rbp-<off0>]
+    add <gpr3>, [rbp-<off1>]
+    xor <gpr3>, [rbp-<off2>]
     add <gpr0>, 7
     jmp ^head
 
   block ^done
-    ret <gpr1>
+    ret <gpr3>
 
 function @main
   abi

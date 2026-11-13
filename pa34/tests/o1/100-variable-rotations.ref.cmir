@@ -109,7 +109,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve <gpr0> <gpr1> <gpr2> <gpr3>
+    preserve <gpr0> <gpr3> <gpr1> <gpr2>
 
   block ^entry
     mov <gpr0>, 0

@@ -18,28 +18,27 @@ function @eh_loop
     preserve <gpr0> <gpr1> <gpr2> <gpr3>
 
   block ^entry
-    mov <gpr3>, rdi
-    mov <gpr2>, rsi
-    mov <gpr1>, 0
+    mov <gpr1>, rdi
+    mov <gpr3>, rsi
+    mov <gpr2>, 0
     mov <gpr0>, 0
 
   block ^for_cond_1
-    cmp.i64 <gpr0>, <gpr3>
-    jl ^for_body_2
-
-  block ^for_end_4
-    ret <gpr1>
+    cmp.i64 <gpr0>, <gpr1>
+    jge ^for_end_4
 
   block ^for_body_2
     mov rdi, <gpr0>
     call @work [args=(rdi)]
     lea rax, [<gpr0>+rax*2]
-    add <gpr1>, rax
-    add [<gpr2>], 1
+    add <gpr2>, rax
+    add [<gpr3>], 1
     add <gpr0>, 1
-    cmp.i64 <gpr0>, <gpr3>
+    cmp.i64 <gpr0>, <gpr1>
     jl ^for_body_2
-    jmp ^for_end_4
+
+  block ^for_end_4
+    ret <gpr2>
 
 function @work
   abi

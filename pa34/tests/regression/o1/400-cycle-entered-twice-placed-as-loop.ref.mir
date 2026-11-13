@@ -48,8 +48,8 @@ function @tangle
   block ^b
     sub rbx, 1
     cmp.i64 rbx, 0
-    jle ^done
-    jmp ^a
+    jg ^a
+    jmp ^done
 
   block ^a~b
     sub rbx, 1

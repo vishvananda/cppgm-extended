@@ -76,7 +76,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t1 = phi u32 [^entry: 0, ^if_end_44: %t182]
+    %t1 = phi u32 [^entry: 0, ^if_end_44: %t186]
     %t2 = cmp ne u32 %t1, 257
     branch %t2, ^for_body_2, ^for_end_45
 
@@ -121,255 +121,259 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = index i8 [projection=field] %t17, 8
     store i64 %t26, %t27
     %t28 = addr $b
-    %t29 = call i128 @edit12(%t22, %t18)
-    %t30 = convert trunc i64 i128 %t29
-    %t31 = binary ushr i128 %t29, 64
-    %t32 = convert trunc i64 i128 %t31
-    store i64 %t30, %t28
-    %t33 = index i8 [projection=field] %t28, 8
-    store i64 %t32, %t33
-    %t34 = load u8 %t17
-    %t35 = load u8 %t6
-    %t36 = cmp ne u8 %t34, %t35
-    branch %t36, ^if_then_38, ^if_end_6
+    %t29 = convert zext i128 i64 %t4
+    %t30 = convert zext i128 i64 %t5
+    %t31 = binary shl i128 %t30, 64
+    %t32 = binary or i128 %t29, %t31
+    %t33 = call i128 @edit12(%t32, %t18)
+    %t34 = convert trunc i64 i128 %t33
+    %t35 = binary ushr i128 %t33, 64
+    %t36 = convert trunc i64 i128 %t35
+    store i64 %t34, %t28
+    %t37 = index i8 [projection=field] %t28, 8
+    store i64 %t36, %t37
+    %t38 = load u8 %t17
+    %t39 = load u8 %t6
+    %t40 = cmp ne u8 %t38, %t39
+    branch %t40, ^if_then_38, ^if_end_6
 
   block ^if_end_6:
-    %t37 = load u8 %t28
-    %t38 = load u8 %t18
-    %t39 = cmp ne u8 %t37, %t38
-    branch %t39, ^if_then_39, ^if_end_7
+    %t41 = load u8 %t28
+    %t42 = load u8 %t18
+    %t43 = cmp ne u8 %t41, %t42
+    branch %t43, ^if_then_39, ^if_end_7
 
   block ^if_end_7:
-    %t40 = index inbounds u8 [projection=array_element] %t17, 1
-    %t41 = load u8 %t40
-    %t42 = index inbounds u8 [projection=array_element] %t6, 1
-    %t43 = load u8 %t42
-    %t44 = cmp ne u8 %t41, %t43
-    branch %t44, ^if_then_38, ^if_end_8
+    %t44 = index inbounds u8 [projection=array_element] %t17, 1
+    %t45 = load u8 %t44
+    %t46 = index inbounds u8 [projection=array_element] %t6, 1
+    %t47 = load u8 %t46
+    %t48 = cmp ne u8 %t45, %t47
+    branch %t48, ^if_then_38, ^if_end_8
 
   block ^if_end_8:
-    %t45 = index inbounds u8 [projection=array_element] %t28, 1
-    %t46 = load u8 %t45
-    %t47 = index inbounds u8 [projection=array_element] %t18, 1
-    %t48 = load u8 %t47
-    %t49 = cmp ne u8 %t46, %t48
-    branch %t49, ^if_then_39, ^if_end_9
+    %t49 = index inbounds u8 [projection=array_element] %t28, 1
+    %t50 = load u8 %t49
+    %t51 = index inbounds u8 [projection=array_element] %t18, 1
+    %t52 = load u8 %t51
+    %t53 = cmp ne u8 %t50, %t52
+    branch %t53, ^if_then_39, ^if_end_9
 
   block ^if_end_9:
-    %t50 = index inbounds u8 [projection=array_element] %t17, 2
-    %t51 = load u8 %t50
-    %t52 = index inbounds u8 [projection=array_element] %t6, 2
-    %t53 = load u8 %t52
-    %t54 = cmp ne u8 %t51, %t53
-    branch %t54, ^if_then_38, ^if_end_10
+    %t54 = index inbounds u8 [projection=array_element] %t17, 2
+    %t55 = load u8 %t54
+    %t56 = index inbounds u8 [projection=array_element] %t6, 2
+    %t57 = load u8 %t56
+    %t58 = cmp ne u8 %t55, %t57
+    branch %t58, ^if_then_38, ^if_end_10
 
   block ^if_end_10:
-    %t55 = index inbounds u8 [projection=array_element] %t28, 2
-    %t56 = load u8 %t55
-    %t57 = index inbounds u8 [projection=array_element] %t18, 2
-    %t58 = load u8 %t57
-    %t59 = cmp ne u8 %t56, %t58
-    branch %t59, ^if_then_39, ^if_end_11
+    %t59 = index inbounds u8 [projection=array_element] %t28, 2
+    %t60 = load u8 %t59
+    %t61 = index inbounds u8 [projection=array_element] %t18, 2
+    %t62 = load u8 %t61
+    %t63 = cmp ne u8 %t60, %t62
+    branch %t63, ^if_then_39, ^if_end_11
 
   block ^if_end_11:
-    %t60 = index inbounds u8 [projection=array_element] %t17, 3
-    %t61 = load u8 %t60
-    %t62 = index inbounds u8 [projection=array_element] %t6, 3
-    %t63 = load u8 %t62
-    %t64 = cmp ne u8 %t61, %t63
-    branch %t64, ^if_then_38, ^if_end_12
+    %t64 = index inbounds u8 [projection=array_element] %t17, 3
+    %t65 = load u8 %t64
+    %t66 = index inbounds u8 [projection=array_element] %t6, 3
+    %t67 = load u8 %t66
+    %t68 = cmp ne u8 %t65, %t67
+    branch %t68, ^if_then_38, ^if_end_12
 
   block ^if_end_12:
-    %t65 = index inbounds u8 [projection=array_element] %t28, 3
-    %t66 = load u8 %t65
-    %t67 = index inbounds u8 [projection=array_element] %t18, 3
-    %t68 = load u8 %t67
-    %t69 = cmp ne u8 %t66, %t68
-    branch %t69, ^if_then_39, ^if_end_13
+    %t69 = index inbounds u8 [projection=array_element] %t28, 3
+    %t70 = load u8 %t69
+    %t71 = index inbounds u8 [projection=array_element] %t18, 3
+    %t72 = load u8 %t71
+    %t73 = cmp ne u8 %t70, %t72
+    branch %t73, ^if_then_39, ^if_end_13
 
   block ^if_end_13:
-    %t70 = index inbounds u8 [projection=array_element] %t17, 4
-    %t71 = load u8 %t70
-    %t72 = cmp ne u8 %t38, %t71
-    branch %t72, ^if_then_38, ^thread_14
+    %t74 = index inbounds u8 [projection=array_element] %t17, 4
+    %t75 = load u8 %t74
+    %t76 = cmp ne u8 %t42, %t75
+    branch %t76, ^if_then_38, ^thread_14
 
   block ^thread_14:
-    %t73 = index inbounds u8 [projection=array_element] %t28, 4
-    %t74 = load u8 %t73
-    %t75 = index inbounds u8 [projection=array_element] %t18, 4
-    %t76 = load u8 %t75
-    %t77 = cmp ne u8 %t74, %t76
-    branch %t77, ^if_then_39, ^if_end_15
+    %t77 = index inbounds u8 [projection=array_element] %t28, 4
+    %t78 = load u8 %t77
+    %t79 = index inbounds u8 [projection=array_element] %t18, 4
+    %t80 = load u8 %t79
+    %t81 = cmp ne u8 %t78, %t80
+    branch %t81, ^if_then_39, ^if_end_15
 
   block ^if_end_15:
-    %t78 = index inbounds u8 [projection=array_element] %t17, 5
-    %t79 = load u8 %t78
-    %t80 = cmp ne u8 %t48, %t79
-    branch %t80, ^if_then_38, ^thread_16
+    %t82 = index inbounds u8 [projection=array_element] %t17, 5
+    %t83 = load u8 %t82
+    %t84 = cmp ne u8 %t52, %t83
+    branch %t84, ^if_then_38, ^thread_16
 
   block ^thread_16:
-    %t81 = index inbounds u8 [projection=array_element] %t28, 5
-    %t82 = load u8 %t81
-    %t83 = index inbounds u8 [projection=array_element] %t18, 5
-    %t84 = load u8 %t83
-    %t85 = cmp ne u8 %t82, %t84
-    branch %t85, ^if_then_39, ^if_end_17
+    %t85 = index inbounds u8 [projection=array_element] %t28, 5
+    %t86 = load u8 %t85
+    %t87 = index inbounds u8 [projection=array_element] %t18, 5
+    %t88 = load u8 %t87
+    %t89 = cmp ne u8 %t86, %t88
+    branch %t89, ^if_then_39, ^if_end_17
 
   block ^if_end_17:
-    %t86 = index inbounds u8 [projection=array_element] %t17, 6
-    %t87 = load u8 %t86
-    %t88 = cmp ne u8 %t58, %t87
-    branch %t88, ^if_then_38, ^thread_18
+    %t90 = index inbounds u8 [projection=array_element] %t17, 6
+    %t91 = load u8 %t90
+    %t92 = cmp ne u8 %t62, %t91
+    branch %t92, ^if_then_38, ^thread_18
 
   block ^thread_18:
-    %t89 = index inbounds u8 [projection=array_element] %t28, 6
-    %t90 = load u8 %t89
-    %t91 = index inbounds u8 [projection=array_element] %t18, 6
-    %t92 = load u8 %t91
-    %t93 = cmp ne u8 %t90, %t92
-    branch %t93, ^if_then_39, ^if_end_19
+    %t93 = index inbounds u8 [projection=array_element] %t28, 6
+    %t94 = load u8 %t93
+    %t95 = index inbounds u8 [projection=array_element] %t18, 6
+    %t96 = load u8 %t95
+    %t97 = cmp ne u8 %t94, %t96
+    branch %t97, ^if_then_39, ^if_end_19
 
   block ^if_end_19:
-    %t94 = index inbounds u8 [projection=array_element] %t17, 7
-    %t95 = load u8 %t94
-    %t96 = cmp ne u8 %t68, %t95
-    branch %t96, ^if_then_38, ^thread_20
+    %t98 = index inbounds u8 [projection=array_element] %t17, 7
+    %t99 = load u8 %t98
+    %t100 = cmp ne u8 %t72, %t99
+    branch %t100, ^if_then_38, ^thread_20
 
   block ^thread_20:
-    %t97 = index inbounds u8 [projection=array_element] %t28, 7
-    %t98 = load u8 %t97
-    %t99 = index inbounds u8 [projection=array_element] %t18, 7
-    %t100 = load u8 %t99
-    %t101 = cmp ne u8 %t98, %t100
-    branch %t101, ^if_then_39, ^if_end_21
+    %t101 = index inbounds u8 [projection=array_element] %t28, 7
+    %t102 = load u8 %t101
+    %t103 = index inbounds u8 [projection=array_element] %t18, 7
+    %t104 = load u8 %t103
+    %t105 = cmp ne u8 %t102, %t104
+    branch %t105, ^if_then_39, ^if_end_21
 
   block ^if_end_21:
-    %t102 = index inbounds u8 [projection=array_element] %t17, 8
-    %t103 = load u8 %t102
-    %t104 = cmp ne u8 %t76, %t103
-    branch %t104, ^if_then_38, ^thread_22
+    %t106 = index inbounds u8 [projection=array_element] %t17, 8
+    %t107 = load u8 %t106
+    %t108 = cmp ne u8 %t80, %t107
+    branch %t108, ^if_then_38, ^thread_22
 
   block ^thread_22:
-    %t105 = index inbounds u8 [projection=array_element] %t28, 8
-    %t106 = load u8 %t105
-    %t107 = index inbounds u8 [projection=array_element] %t18, 8
-    %t108 = load u8 %t107
-    %t109 = cmp ne u8 %t106, %t108
-    branch %t109, ^if_then_39, ^if_end_23
+    %t109 = index inbounds u8 [projection=array_element] %t28, 8
+    %t110 = load u8 %t109
+    %t111 = index inbounds u8 [projection=array_element] %t18, 8
+    %t112 = load u8 %t111
+    %t113 = cmp ne u8 %t110, %t112
+    branch %t113, ^if_then_39, ^if_end_23
 
   block ^if_end_23:
-    %t110 = index inbounds u8 [projection=array_element] %t17, 9
-    %t111 = load u8 %t110
-    %t112 = cmp ne u8 %t84, %t111
-    branch %t112, ^if_then_38, ^thread_24
+    %t114 = index inbounds u8 [projection=array_element] %t17, 9
+    %t115 = load u8 %t114
+    %t116 = cmp ne u8 %t88, %t115
+    branch %t116, ^if_then_38, ^thread_24
 
   block ^thread_24:
-    %t113 = index inbounds u8 [projection=array_element] %t28, 9
-    %t114 = load u8 %t113
-    %t115 = index inbounds u8 [projection=array_element] %t18, 9
-    %t116 = load u8 %t115
-    %t117 = cmp ne u8 %t114, %t116
-    branch %t117, ^if_then_39, ^if_end_25
+    %t117 = index inbounds u8 [projection=array_element] %t28, 9
+    %t118 = load u8 %t117
+    %t119 = index inbounds u8 [projection=array_element] %t18, 9
+    %t120 = load u8 %t119
+    %t121 = cmp ne u8 %t118, %t120
+    branch %t121, ^if_then_39, ^if_end_25
 
   block ^if_end_25:
-    %t118 = index inbounds u8 [projection=array_element] %t17, 10
-    %t119 = load u8 %t118
-    %t120 = cmp ne u8 %t92, %t119
-    branch %t120, ^if_then_38, ^thread_26
+    %t122 = index inbounds u8 [projection=array_element] %t17, 10
+    %t123 = load u8 %t122
+    %t124 = cmp ne u8 %t96, %t123
+    branch %t124, ^if_then_38, ^thread_26
 
   block ^thread_26:
-    %t121 = index inbounds u8 [projection=array_element] %t28, 10
-    %t122 = load u8 %t121
-    %t123 = index inbounds u8 [projection=array_element] %t18, 10
-    %t124 = load u8 %t123
-    %t125 = cmp ne u8 %t122, %t124
-    branch %t125, ^if_then_39, ^if_end_27
+    %t125 = index inbounds u8 [projection=array_element] %t28, 10
+    %t126 = load u8 %t125
+    %t127 = index inbounds u8 [projection=array_element] %t18, 10
+    %t128 = load u8 %t127
+    %t129 = cmp ne u8 %t126, %t128
+    branch %t129, ^if_then_39, ^if_end_27
 
   block ^if_end_27:
-    %t126 = index inbounds u8 [projection=array_element] %t17, 11
-    %t127 = load u8 %t126
-    %t128 = cmp ne u8 %t100, %t127
-    branch %t128, ^if_then_38, ^thread_28
+    %t130 = index inbounds u8 [projection=array_element] %t17, 11
+    %t131 = load u8 %t130
+    %t132 = cmp ne u8 %t104, %t131
+    branch %t132, ^if_then_38, ^thread_28
 
   block ^thread_28:
-    %t129 = index inbounds u8 [projection=array_element] %t28, 11
-    %t130 = load u8 %t129
-    %t131 = index inbounds u8 [projection=array_element] %t18, 11
-    %t132 = load u8 %t131
-    %t133 = cmp ne u8 %t130, %t132
-    branch %t133, ^if_then_39, ^if_end_29
+    %t133 = index inbounds u8 [projection=array_element] %t28, 11
+    %t134 = load u8 %t133
+    %t135 = index inbounds u8 [projection=array_element] %t18, 11
+    %t136 = load u8 %t135
+    %t137 = cmp ne u8 %t134, %t136
+    branch %t137, ^if_then_39, ^if_end_29
 
   block ^if_end_29:
-    %t134 = index inbounds u8 [projection=array_element] %t17, 12
-    %t135 = load u8 %t134
-    %t136 = index inbounds u8 [projection=array_element] %t6, 12
-    %t137 = load u8 %t136
-    %t138 = cmp ne u8 %t135, %t137
-    branch %t138, ^if_then_38, ^if_end_30
+    %t138 = index inbounds u8 [projection=array_element] %t17, 12
+    %t139 = load u8 %t138
+    %t140 = index inbounds u8 [projection=array_element] %t6, 12
+    %t141 = load u8 %t140
+    %t142 = cmp ne u8 %t139, %t141
+    branch %t142, ^if_then_38, ^if_end_30
 
   block ^if_end_30:
-    %t139 = index inbounds u8 [projection=array_element] %t28, 12
-    %t140 = load u8 %t139
-    %t141 = cmp ne u8 %t137, %t140
-    branch %t141, ^if_then_39, ^if_end_31
+    %t143 = index inbounds u8 [projection=array_element] %t28, 12
+    %t144 = load u8 %t143
+    %t145 = cmp ne u8 %t141, %t144
+    branch %t145, ^if_then_39, ^if_end_31
 
   block ^if_end_31:
-    %t142 = index inbounds u8 [projection=array_element] %t17, 13
-    %t143 = load u8 %t142
-    %t144 = index inbounds u8 [projection=array_element] %t6, 13
-    %t145 = load u8 %t144
-    %t146 = cmp ne u8 %t143, %t145
-    branch %t146, ^if_then_38, ^if_end_32
+    %t146 = index inbounds u8 [projection=array_element] %t17, 13
+    %t147 = load u8 %t146
+    %t148 = index inbounds u8 [projection=array_element] %t6, 13
+    %t149 = load u8 %t148
+    %t150 = cmp ne u8 %t147, %t149
+    branch %t150, ^if_then_38, ^if_end_32
 
   block ^if_end_32:
-    %t147 = index inbounds u8 [projection=array_element] %t28, 13
-    %t148 = load u8 %t147
-    %t149 = cmp ne u8 %t145, %t148
-    branch %t149, ^if_then_39, ^if_end_33
+    %t151 = index inbounds u8 [projection=array_element] %t28, 13
+    %t152 = load u8 %t151
+    %t153 = cmp ne u8 %t149, %t152
+    branch %t153, ^if_then_39, ^if_end_33
 
   block ^if_end_33:
-    %t150 = index inbounds u8 [projection=array_element] %t17, 14
-    %t151 = load u8 %t150
-    %t152 = index inbounds u8 [projection=array_element] %t6, 14
-    %t153 = load u8 %t152
-    %t154 = cmp ne u8 %t151, %t153
-    branch %t154, ^if_then_38, ^if_end_34
+    %t154 = index inbounds u8 [projection=array_element] %t17, 14
+    %t155 = load u8 %t154
+    %t156 = index inbounds u8 [projection=array_element] %t6, 14
+    %t157 = load u8 %t156
+    %t158 = cmp ne u8 %t155, %t157
+    branch %t158, ^if_then_38, ^if_end_34
 
   block ^if_end_34:
-    %t155 = index inbounds u8 [projection=array_element] %t28, 14
-    %t156 = load u8 %t155
-    %t157 = cmp ne u8 %t153, %t156
-    branch %t157, ^if_then_39, ^if_end_35
+    %t159 = index inbounds u8 [projection=array_element] %t28, 14
+    %t160 = load u8 %t159
+    %t161 = cmp ne u8 %t157, %t160
+    branch %t161, ^if_then_39, ^if_end_35
 
   block ^if_end_35:
-    %t158 = index inbounds u8 [projection=array_element] %t17, 15
-    %t159 = load u8 %t158
-    %t160 = index inbounds u8 [projection=array_element] %t6, 15
-    %t161 = load u8 %t160
-    %t162 = cmp ne u8 %t159, %t161
-    branch %t162, ^if_then_38, ^if_end_36
+    %t162 = index inbounds u8 [projection=array_element] %t17, 15
+    %t163 = load u8 %t162
+    %t164 = index inbounds u8 [projection=array_element] %t6, 15
+    %t165 = load u8 %t164
+    %t166 = cmp ne u8 %t163, %t165
+    branch %t166, ^if_then_38, ^if_end_36
 
   block ^if_end_36:
-    %t163 = index inbounds u8 [projection=array_element] %t28, 15
-    %t164 = load u8 %t163
-    %t165 = cmp ne u8 %t161, %t164
-    branch %t165, ^if_then_39, ^if_end_37
+    %t167 = index inbounds u8 [projection=array_element] %t28, 15
+    %t168 = load u8 %t167
+    %t169 = cmp ne u8 %t165, %t168
+    branch %t169, ^if_then_39, ^if_end_37
 
   block ^if_end_37:
-    %t166 = addr $node
-    %t167 = binary mul u32 %t1, 1664525
-    store typed u32 %t167, %t166
-    %t168 = addr $aggregate__1
-    call void @children(%t168, %t166)
-    %t169 = load ptr %t168
-    %t170 = index i8 [projection=field] %t168, 8
-    %t171 = load i64 %t170
-    %t172 = index i8 [projection=field] %t168, 16
+    %t170 = addr $node
+    %t171 = binary mul u32 %t1, 1664525
+    store typed u32 %t171, %t170
+    %t172 = addr $aggregate__1
+    call void @children(%t172, %t170)
     %t173 = load ptr %t172
-    %t174 = index i8 [projection=field] %t168, 24
+    %t174 = index i8 [projection=field] %t172, 8
     %t175 = load i64 %t174
-    %t176 = cmp ne ptr %t166, %t169
-    branch %t176, ^if_then_43, ^lor_rhs_40
+    %t176 = index i8 [projection=field] %t172, 16
+    %t177 = load ptr %t176
+    %t178 = index i8 [projection=field] %t172, 24
+    %t179 = load i64 %t178
+    %t180 = cmp ne ptr %t170, %t173
+    branch %t180, ^if_then_43, ^lor_rhs_40
 
   block ^if_then_38:
     return i32 1
@@ -378,51 +382,51 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^lor_rhs_40:
-    %t177 = cmp ne ptr %t166, %t173
-    branch %t177, ^if_then_43, ^lor_rhs_41
+    %t181 = cmp ne ptr %t170, %t177
+    branch %t181, ^if_then_43, ^lor_rhs_41
 
   block ^lor_rhs_41:
-    %t178 = convert trunc u32 i64 %t171
-    branch %t178, ^if_then_43, ^lor_rhs_42
+    %t182 = convert trunc u32 i64 %t175
+    branch %t182, ^if_then_43, ^lor_rhs_42
 
   block ^lor_rhs_42:
-    %t179 = convert trunc u32 i64 %t175
-    %t180 = call u32 @count(%t166)
-    %t181 = cmp ne u32 %t179, %t180
-    branch %t181, ^if_then_43, ^if_end_44
+    %t183 = convert trunc u32 i64 %t179
+    %t184 = call u32 @count(%t170)
+    %t185 = cmp ne u32 %t183, %t184
+    branch %t185, ^if_then_43, ^if_end_44
 
   block ^if_then_43:
     return i32 3
 
   block ^if_end_44:
-    %t182 = binary add u32 %t1, 1
+    %t186 = binary add u32 %t1, 1
     jump ^for_cond_1
 
   block ^for_end_45:
-    %t183 = addr $aggregate__2
-    call void @children(%t183, 0)
-    %t184 = load ptr %t183
-    %t185 = index i8 [projection=field] %t183, 8
-    %t186 = load i64 %t185
-    %t187 = index i8 [projection=field] %t183, 16
+    %t187 = addr $aggregate__2
+    call void @children(%t187, 0)
     %t188 = load ptr %t187
-    %t189 = index i8 [projection=field] %t183, 24
+    %t189 = index i8 [projection=field] %t187, 8
     %t190 = load i64 %t189
-    branch %t184, ^lor_end_48, ^lor_rhs_46
+    %t191 = index i8 [projection=field] %t187, 16
+    %t192 = load ptr %t191
+    %t193 = index i8 [projection=field] %t187, 24
+    %t194 = load i64 %t193
+    branch %t188, ^lor_end_48, ^lor_rhs_46
 
   block ^lor_rhs_46:
-    %t191 = cmp ne ptr %t188, 0
-    branch %t191, ^lor_end_48, ^lor_rhs_47
+    %t195 = cmp ne ptr %t192, 0
+    branch %t195, ^lor_end_48, ^lor_rhs_47
 
   block ^lor_rhs_47:
-    %t192 = convert trunc u32 i64 %t186
-    %t193 = convert trunc u32 i64 %t190
-    %t194 = cmp ne u32 %t193, 0
-    %t195 = select i64 %t192, 1, %t194
+    %t196 = convert trunc u32 i64 %t190
+    %t197 = convert trunc u32 i64 %t194
+    %t198 = cmp ne u32 %t197, 0
+    %t199 = select i64 %t196, 1, %t198
     jump ^lor_end_48
 
   block ^lor_end_48:
-    %t196 = phi i64 [^for_end_45: 1, ^lor_rhs_46: 1, ^lor_rhs_47: %t195]
-    %t197 = convert trunc i32 i64 %t196
-    return i32 %t197
+    %t200 = phi i64 [^for_end_45: 1, ^lor_rhs_46: 1, ^lor_rhs_47: %t199]
+    %t201 = convert trunc i32 i64 %t200
+    return i32 %t201
 }

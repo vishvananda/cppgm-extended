@@ -467,7 +467,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13
+    preserve rbx r14 r15
     temp %nan32 -> [rbp-16] : f32
     temp %nan -> [rbp-8] : f64
 
@@ -1251,12 +1251,12 @@ function @main
     fmov.f64 xmm0, 1.0
     fmov.f64 xmm1, 2.0
     call @same_register [args=(rdi,xmm0,xmm1)]
-    mov r12, rax
+    mov r14, rax
     mov rdi, 40
     fmov.f64 xmm0, [rbp-8]
     fmov.f64 xmm1, 1.0
     call @same_register [args=(rdi,xmm0,xmm1)]
-    add rbx, r12
+    add rbx, r14
     add rbx, rax
     cmp.i64 rbx, 54
     jne ^fail
@@ -1273,21 +1273,21 @@ function @main
     fmov.f64 xmm0, 2.0
     fmov.f64 xmm1, 1.0
     call @lt_f80 [args=(rsi,rdi,xmm0,xmm1)]
-    mov r12, rax
+    mov r14, rax
     mov rdi, 11
     mov rsi, 22
     fmov.f64 xmm0, [rbp-8]
     fmov.f64 xmm1, 1.0
     call @lt_f80 [args=(rsi,rdi,xmm0,xmm1)]
-    mov r13, rax
+    mov r15, rax
     mov rdi, 11
     mov rsi, 22
     fmov.f64 xmm0, [rbp-8]
     fmov.f64 xmm1, 1.0
     call @ult_f80 [args=(rsi,rdi,xmm0,xmm1)]
-    add rbx, r12
-    add r13, rax
-    add rbx, r13
+    add rbx, r14
+    add r15, rax
+    add rbx, r15
     cmp.i64 rbx, 66
     jne ^fail80
 

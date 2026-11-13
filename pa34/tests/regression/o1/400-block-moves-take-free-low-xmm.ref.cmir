@@ -1,0 +1,130 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @sum
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %c -> <xmm0> : f64
+    param %d -> <xmm1> : f64
+    param %e -> <xmm2> : f64
+    param %f -> <xmm3> : f64
+    param %g -> <xmm4> : f64
+    param %h -> <xmm5> : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fadd.f64 xmm0, xmm0, xmm1
+    fadd.f64 xmm0, xmm0, <xmm0>
+    fadd.f64 xmm0, xmm0, <xmm1>
+    fadd.f64 xmm0, xmm0, <xmm2>
+    fadd.f64 xmm0, xmm0, <xmm3>
+    fadd.f64 xmm0, xmm0, <xmm4>
+    fadd.f64 xmm0, xmm0, <xmm5>
+    ret xmm0
+
+function @forward
+  abi
+    param %from -> rdi : ptr
+    param %to -> rsi : ptr
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %c -> <xmm0> : f64
+    param %d -> <xmm1> : f64
+    param %e -> <xmm2> : f64
+    param %f -> <xmm3> : f64
+    param %g -> <xmm4> : f64
+    param %h -> <xmm5> : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    copy_bytes 32x8, rsi, rdi
+    call @sum [args=(xmm0,xmm1,<xmm0>,<xmm1>,<xmm2>,<xmm3>,<xmm4>,<xmm5>)]
+    ret xmm0
+
+function @copy
+  abi
+    param %from -> rdi : ptr
+    param %to -> rsi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    copy_bytes 32x8, rsi, rdi
+    ret
+
+function @clear
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zero_bytes 32x8, rdi
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $a -> [rbp-<off0>] : obj<32x8>
+    slot $b -> [rbp-<off1>] : obj<32x8>
+    slot $c -> [rbp-<off2>] : obj<32x8>
+    temp %r -> [rbp-<off3>] : f64
+
+  block ^entry
+    store.i64 [rbp-<off0>], 1
+    store.i64 [rbp-<off4>], 2
+    store.i64 [rbp-<off5>], 3
+    store.i64 [rbp-<off6>], 4
+    lea rdi, [rbp-<off0>]
+    lea rsi, [rbp-<off1>]
+    call @copy [args=(rsi,rdi)]
+    lea rdi, [rbp-<off1>]
+    lea rsi, [rbp-<off2>]
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    fmov.f64 <xmm0>, 3.0
+    fmov.f64 <xmm1>, 4.0
+    fmov.f64 <xmm2>, 5.0
+    fmov.f64 <xmm3>, 6.0
+    fmov.f64 <xmm4>, 7.0
+    fmov.f64 <xmm5>, 8.0
+    call @forward [args=(rsi,rdi,xmm0,xmm1,<xmm0>,<xmm1>,<xmm2>,<xmm3>,<xmm4>,<xmm5>)]
+    fmov.f64 xmm14, xmm0
+    fmov.f64 [rbp-<off3>], xmm14
+    lea rdi, [rbp-<off0>]
+    call @clear [args=(rdi)]
+    fptosi.f64.i32 rax, [rbp-<off3>]
+    load.u32 rcx, [rbp-<off2>]
+    add.u32 rcx, [rbp-<off7>]
+    add.u32 rcx, [rbp-<off0>]
+    add.u32 rcx, [rbp-<off6>]
+    add.i32 rax, rcx
+    ret rax

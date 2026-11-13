@@ -23,10 +23,10 @@ function @pressure
 
   block ^entry
     store.i64 [rbp-40], rdi
-    mov r12, 1
-    mov r13, 2
-    mov r14, 3
-    mov r15, 4
+    mov r14, 1
+    mov r15, 2
+    mov r13, 3
+    mov r12, 4
     store.i64 [rbp-8], 5
     store.i64 [rbp-16], 6
     store.i64 [rbp-24], 7
@@ -35,26 +35,16 @@ function @pressure
 
   block ^for_cond_1
     cmp.i64 rbx, rdi
-    jl ^for_body_2
-
-  block ^for_end_4
-    lea rax, [r12+r13]
-    add rax, r14
-    add rax, r15
-    add rax, [rbp-8]
-    add rax, [rbp-16]
-    add rax, [rbp-24]
-    add rax, [rbp-32]
-    ret rax
+    jge ^for_end_4
 
   block ^for_body_2
     mov rdi, rbx
     call @step [args=(rdi)]
-    add r12, rax
-    add r13, r12
-    add r14, r13
+    add r14, rax
     add r15, r14
-    mov rax, r15
+    add r13, r15
+    add r12, r13
+    mov rax, r12
     add rax, [rbp-8]
     mov rcx, rax
     add rcx, [rbp-16]
@@ -69,7 +59,16 @@ function @pressure
     store.i64 [rbp-32], rsi
     cmp.i64 rbx, [rbp-40]
     jl ^for_body_2
-    jmp ^for_end_4
+
+  block ^for_end_4
+    lea rax, [r14+r15]
+    add rax, r13
+    add rax, r12
+    add rax, [rbp-8]
+    add rax, [rbp-16]
+    add rax, [rbp-24]
+    add rax, [rbp-32]
+    ret rax
 
 function @step
   abi

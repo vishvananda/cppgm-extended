@@ -323,29 +323,29 @@ function @main
     mov <gpr1>, rax
     lea rax, [<gpr1>+<gpr1>]
     add rax, 3
-    mov <gpr2>, rax
-    imul <gpr2>, [rbp-<off1>]
+    mov <gpr4>, rax
+    imul <gpr4>, [rbp-<off1>]
     mov rdi, <gpr1>
     load.i64 rsi, [rbp-<off1>]
     call @dense [args=(rsi,rdi)]
-    mov <gpr3>, rax
+    mov <gpr5>, rax
     lea rax, [<gpr1>-<off0>]
     sext.i8 rax
     mov rdi, rax
     load.i64 rsi, [rbp-<off1>]
     call @signed_byte [args=(rsi,rdi)]
-    mov <gpr4>, rax
+    mov <gpr3>, rax
     lea rax, [<gpr1>+<off0>]
     zext.i8 rax
     mov rdi, rax
     load.i64 rsi, [rbp-<off1>]
     call @unsigned_byte [args=(rsi,rdi)]
-    mov <gpr5>, rax
+    mov <gpr2>, rax
     mov rdi, <gpr1>
     load.i64 rsi, [rbp-<off1>]
     call @defined_default [args=(rsi,rdi)]
-    store.i64 [rbp-<off3>], <gpr2>
-    mov <gpr2>, rax
+    store.i64 [rbp-<off3>], <gpr4>
+    mov <gpr4>, rax
     mov rdi, <gpr1>
     load.i64 rsi, [rbp-<off1>]
     call @throwing_default [args=(rsi,rdi)]
@@ -361,18 +361,18 @@ function @main
     mov rdi, 500
     load.i64 rsi, [rbp-<off1>]
     call @all_dead_cases [args=(rsi,rdi)]
-    cmp.i64 <gpr3>, [rbp-<off3>]
-    setne <gpr3>
-    movzx <gpr3>, <gpr3>
-    cmp.i64 <gpr4>, [rbp-<off3>]
-    setne <gpr4>
-    movzx <gpr4>, <gpr4>
     cmp.i64 <gpr5>, [rbp-<off3>]
     setne <gpr5>
     movzx <gpr5>, <gpr5>
+    cmp.i64 <gpr3>, [rbp-<off3>]
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
     cmp.i64 <gpr2>, [rbp-<off3>]
     setne <gpr2>
     movzx <gpr2>, <gpr2>
+    cmp.i64 <gpr4>, [rbp-<off3>]
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
     load.i64 <gpr0>, [rbp-<off4>]
     cmp.i64 <gpr0>, [rbp-<off3>]
     setne rcx
@@ -383,14 +383,14 @@ function @main
     cmp.i64 rax, [rbp-<off5>]
     setne rax
     movzx rax, rax
-    or <gpr3>, <gpr4>
-    or <gpr5>, <gpr2>
+    or <gpr5>, <gpr3>
+    or <gpr2>, <gpr4>
     or rcx, <gpr1>
-    or <gpr3>, <gpr5>
+    or <gpr5>, <gpr2>
     or rcx, rax
-    or <gpr3>, rcx
-    or <gpr3>, [rbp-<off2>]
-    store.i64 [rbp-<off6>], <gpr3>
+    or <gpr5>, rcx
+    or <gpr5>, [rbp-<off2>]
+    store.i64 [rbp-<off6>], <gpr5>
 
   block ^repeat
     mov rax, 6364136223846793005

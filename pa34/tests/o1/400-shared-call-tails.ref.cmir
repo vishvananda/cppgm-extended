@@ -146,33 +146,33 @@ function @main
     preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
 
   block ^entry
-    mov <gpr1>, 0
+    mov <gpr3>, 0
     mov <gpr0>, 781331
-    mov <gpr2>, 0
+    mov <gpr4>, 0
 
   block ^loop
     mov <gpr5>, 6364136223846793005
     imul <gpr0>, <gpr5>
     add <gpr0>, 1
-    mov rax, <gpr1>
+    mov rax, <gpr3>
     mov <gpr5>, -2049638230412172401
     mul <gpr5>
     shr rdx, 3
     imul rdx, 9
-    mov rax, <gpr1>
+    mov rax, <gpr3>
     sub rax, rdx
-    mov <gpr3>, rax
-    zext.i32 rax, <gpr1>
+    mov <gpr2>, rax
+    zext.i32 rax, <gpr3>
     and rax, 63
-    lea <gpr4>, [rax+<off0>]
-    mov rdi, <gpr3>
+    lea <gpr1>, [rax+<off0>]
+    mov rdi, <gpr2>
     mov rsi, <gpr0>
-    mov rdx, <gpr4>
+    mov rdx, <gpr1>
     call @worker [args=(rdx,rsi,rdi)]
     mov rcx, rax
-    cmp.i64 <gpr3>, 6
+    cmp.i64 <gpr2>, 6
     sete rsi
-    cmp.i64 <gpr3>, 8
+    cmp.i64 <gpr2>, 8
     sete rdi
     test.u8 rsi, rsi
     mov <gpr5>, 91
@@ -187,12 +187,12 @@ function @main
     xor r8, <gpr0>
     mov rax, r8
     mov rdx, 0
-    div <gpr4>
+    div <gpr1>
     mov r9, rax
     mov rax, r8
     cqo
-    idiv <gpr4>
-    cmp.i64 <gpr3>, 7
+    idiv <gpr1>
+    cmp.i64 <gpr2>, 7
     cmove r9, rax
     imul r9, 13
     add r9, 29
@@ -211,18 +211,18 @@ function @main
     mov <gpr5>, 0
     test.u8 rdi, rdi
     cmovne rax, <gpr5>
-    add <gpr2>, rax
+    add <gpr4>, rax
     load.i64 rax, @calls
     cmp.i64 rcx, r9
     setne rcx
-    cmp.i64 rax, <gpr2>
+    cmp.i64 rax, <gpr4>
     setne rax
     or.u8 rcx, rax
     jne ^fail
 
   block ^next
-    add <gpr1>, 1
-    cmp.i64 <gpr1>, 4096
+    add <gpr3>, 1
+    cmp.i64 <gpr3>, 4096
     jne ^loop
 
   block ^done

@@ -208,22 +208,22 @@ function @load_with_live_address
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12
+    preserve rbx r14
 
   block ^entry
     eh_push ^handler, 0
     load.ptr rbx, @number_pointer
-    load.i64 r12, [rbx]
+    load.i64 r14, [rbx]
     mov rdi, 13
     call @identity [args=(rdi), unwind=no]
     eh_pop
     cmp.ptr rbx, 0
     sete rax
     movzx rax, rax
-    cmp.i64 r12, 40
-    setne r12
-    movzx r12, r12
-    or rax, r12
+    cmp.i64 r14, 40
+    setne r14
+    movzx r14, r14
+    or rax, r14
     ret rax
 
   block ^handler
@@ -238,7 +238,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13
+    preserve rbx r14 r15
 
   block ^entry
     mov rdi, 40
@@ -247,22 +247,22 @@ function @main
     mov rbx, rax
     mov rdi, 1
     call @call_result_to_edge_home [args=(rdi)]
-    mov r12, rax
+    mov r14, rax
     mov rdi, 1
     call @load_with_dead_address [args=(rdi)]
-    mov r13, rax
+    mov r15, rax
     call @load_with_live_address [args=()]
     cmp.i64 rbx, 41
     setne rbx
     movzx rbx, rbx
-    cmp.i64 r12, 42
-    setne r12
-    movzx r12, r12
-    cmp.i64 r13, 58
-    setne r13
-    movzx r13, r13
-    or rbx, r12
-    or r13, rax
+    cmp.i64 r14, 42
+    setne r14
+    movzx r14, r14
+    cmp.i64 r15, 58
+    setne r15
+    movzx r15, r15
+    or rbx, r14
+    or r15, rax
     mov rax, rbx
-    or rax, r13
+    or rax, r15
     ret rax

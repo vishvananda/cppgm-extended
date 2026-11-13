@@ -39,42 +39,41 @@ function @walk
     preserve <gpr0> <gpr1> <gpr2> <gpr3>
 
   block ^entry
-    mov <gpr1>, rdi
-    mov <gpr3>, rsi
-    mov <gpr2>, rdx
+    mov <gpr2>, rdi
+    mov <gpr1>, rsi
+    mov <gpr3>, rdx
     mov <gpr0>, 0
 
   block ^head
-    cmp.i64 <gpr0>, <gpr1>
+    cmp.i64 <gpr0>, <gpr2>
+    jge ^done
+
+  block ^body
+    lea rdi, [<gpr0>+<gpr3>]
+    call @step [args=(rdi)]
+    add <gpr0>, 1
+    cmp.i64 <gpr0>, <gpr2>
     jl ^body
 
   block ^done
-    mov rax, <gpr3>
+    mov rax, <gpr1>
     add rax, @seen
-    xor rax, <gpr3>
-    add rax, <gpr3>
-    xor rax, <gpr3>
-    add rax, <gpr3>
-    xor rax, <gpr3>
-    add rax, <gpr3>
-    xor rax, <gpr3>
-    add rax, <gpr3>
-    xor rax, <gpr3>
-    add rax, <gpr3>
-    xor rax, <gpr3>
-    add rax, <gpr3>
-    xor rax, <gpr3>
-    add rax, <gpr3>
-    xor rax, <gpr3>
+    xor rax, <gpr1>
+    add rax, <gpr1>
+    xor rax, <gpr1>
+    add rax, <gpr1>
+    xor rax, <gpr1>
+    add rax, <gpr1>
+    xor rax, <gpr1>
+    add rax, <gpr1>
+    xor rax, <gpr1>
+    add rax, <gpr1>
+    xor rax, <gpr1>
+    add rax, <gpr1>
+    xor rax, <gpr1>
+    add rax, <gpr1>
+    xor rax, <gpr1>
     ret rax
-
-  block ^body
-    lea rdi, [<gpr0>+<gpr2>]
-    call @step [args=(rdi)]
-    add <gpr0>, 1
-    cmp.i64 <gpr0>, <gpr1>
-    jl ^body
-    jmp ^done
 
 function @main
   abi

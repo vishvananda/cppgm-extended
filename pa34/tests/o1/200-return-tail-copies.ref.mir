@@ -78,29 +78,29 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13
+    preserve rbx r14 r15
     slot $data -> [rbp-64] : obj<64x8>
 
   block ^entry
     lea rbx, [rbp-64]
     store.ptr [rbx], -2
-    lea r12, [rbx+8]
-    store.ptr [r12], 3
+    lea r14, [rbx+8]
+    store.ptr [r14], 3
     store.ptr [rbx+24], -1
     mov rdi, rbx
     mov rsi, 3
     mov rdx, 7
     call @probe [args=(rdx,rsi,rdi)]
-    mov r13, rax
+    mov r15, rax
     mov rdi, rbx
     mov rsi, 4
     mov rdx, 7
     call @probe [args=(rdx,rsi,rdi)]
-    cmp.ptr r13, r12
-    setne r13
-    movzx r13, r13
+    cmp.ptr r15, r14
+    setne r15
+    movzx r15, r15
     cmp.ptr rax, rbx
     setne rax
     movzx rax, rax
-    or rax, r13
+    or rax, r15
     ret rax

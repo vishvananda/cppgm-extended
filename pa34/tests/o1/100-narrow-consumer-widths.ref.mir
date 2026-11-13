@@ -131,16 +131,16 @@ function @main
     mov rbx, rax
     lea rdi, [rbp-8]
     call @right [args=(rdi)]
-    mov r12, rax
-    lea rdi, [rbp-8]
-    call @wide [args=(rdi)]
-    mov r13, rax
-    lea rdi, [rbp-8]
-    call @zero [args=(rdi)]
     mov r14, rax
     lea rdi, [rbp-8]
-    call @identity [args=(rdi)]
+    call @wide [args=(rdi)]
     mov r15, rax
+    lea rdi, [rbp-8]
+    call @zero [args=(rdi)]
+    mov r13, rax
+    lea rdi, [rbp-8]
+    call @identity [args=(rdi)]
+    mov r12, rax
     lea rdi, [rbp-8]
     mov rsi, 0
     call @variable [args=(rsi,rdi)]
@@ -157,18 +157,18 @@ function @main
     cmp.i64 rbx, 12884631572
     setne rbx
     movzx rbx, rbx
-    cmp.i64 r12, 33554431
-    setne r12
-    movzx r12, r12
-    cmp.i64 r13, -8192
-    setne r13
-    movzx r13, r13
-    cmp.i64 r14, 4294967295
+    cmp.i64 r14, 33554431
     setne r14
     movzx r14, r14
-    cmp.i64 r15, 4294967295
+    cmp.i64 r15, -8192
     setne r15
     movzx r15, r15
+    cmp.i64 r13, 4294967295
+    setne r13
+    movzx r13, r13
+    cmp.i64 r12, 4294967295
+    setne r12
+    movzx r12, r12
     cmp.i64 [rbp-16], 4294967295
     setne rcx
     movzx rcx, rcx
@@ -178,12 +178,12 @@ function @main
     cmp.i64 rax, 2147483648
     setne rax
     movzx rax, rax
-    or rbx, r12
-    or r13, r14
-    or r15, rcx
+    or rbx, r14
+    or r15, r13
+    or r12, rcx
     or rdx, rax
     mov rax, rbx
-    or rax, r13
-    or r15, rdx
     or rax, r15
+    or r12, rdx
+    or rax, r12
     ret rax

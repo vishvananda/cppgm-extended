@@ -37,10 +37,10 @@ function @wide
     store.i64 [rbp-8], rax
     load.i64 rax, [rsi+16]
     store.i64 [rbp-48], rax
-    load.i64 r15, [rsi+24]
-    load.i64 r14, [rsi+32]
-    load.i64 r13, [rsi+40]
-    load.i64 r12, [rsi+48]
+    load.i64 r12, [rsi+24]
+    load.i64 r13, [rsi+32]
+    load.i64 r15, [rsi+40]
+    load.i64 r14, [rsi+48]
     load.i64 rbx, [rsi+56]
     load.i64 rdi, [rsi+64]
     load.i64 rsi, [rsi+72]
@@ -63,10 +63,10 @@ function @wide
   block ^done
     add rdx, [rbp-8]
     add rdx, rax
-    add rdx, r15
-    add rdx, r14
-    lea rax, [rdx+r13]
-    add rax, r12
+    add rdx, r12
+    add rdx, r13
+    lea rax, [rdx+r15]
+    add rax, r14
     add rax, rbx
     add rax, rdi
     add rax, rsi
@@ -84,10 +84,10 @@ function @wide
     imul rdx, [rbp-24]
     add rdx, [rbp-8]
     add rdx, rax
+    add rdx, r12
+    add rdx, r13
     add rdx, r15
     add rdx, r14
-    add rdx, r13
-    add rdx, r12
     add rdx, rbx
     add rdx, rdi
     add rdx, rsi
@@ -96,10 +96,10 @@ function @wide
     add rdx, rcx
     xor rdx, [rbp-8]
     xor rdx, rax
+    xor rdx, r12
+    xor rdx, r13
     xor rdx, r15
     xor rdx, r14
-    xor rdx, r13
-    xor rdx, r12
     xor rdx, rbx
     xor rdx, rdi
     xor rdx, rsi

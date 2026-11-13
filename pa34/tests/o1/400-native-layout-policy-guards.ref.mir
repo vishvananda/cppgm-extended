@@ -148,42 +148,42 @@ function @main
     mov rbx, rax
     mov rdi, 30
     call @frameless_call [args=(rdi), unwind=no]
-    mov r12, rax
+    mov r14, rax
     call @frame_operand [args=(), unwind=no]
-    mov r13, rax
+    mov r15, rax
     mov rdi, 16
     call @dynamic_stack [args=(rdi), unwind=no]
-    mov r14, rax
+    mov r13, rax
     call @floating_scratch [args=(), unwind=no]
-    mov r15, rax
+    mov r12, rax
     call @host_eh [args=()]
-    store.i64 [rbp-8], r15
-    mov r15, rax
+    store.i64 [rbp-8], r12
+    mov r12, rax
     mov rdi, 1
     call @direct_returns [args=(rdi), unwind=no]
     cmp.i64 rbx, 29
     setne rbx
     movzx rbx, rbx
-    cmp.i64 r12, 30
-    setne r12
-    movzx r12, r12
-    cmp.i64 r13, 31
-    setne r13
-    movzx r13, r13
-    cmp.i64 r14, 37
+    cmp.i64 r14, 30
     setne r14
     movzx r14, r14
-    cmp.i64 r15, 41
+    cmp.i64 r15, 31
     setne r15
     movzx r15, r15
+    cmp.i64 r13, 37
+    setne r13
+    movzx r13, r13
+    cmp.i64 r12, 41
+    setne r12
+    movzx r12, r12
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
-    or rbx, r12
-    or r13, r14
-    or r15, [rbp-8]
-    or rbx, r13
-    or r15, rax
+    or rbx, r14
+    or r15, r13
+    or r12, [rbp-8]
+    or rbx, r15
+    or r12, rax
     mov rax, rbx
-    or rax, r15
+    or rax, r12
     ret rax

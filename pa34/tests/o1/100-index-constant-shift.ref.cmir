@@ -247,26 +247,26 @@ function @main
     mov rsi, 3
     call @byte_scaled [args=(rsi,rdi)]
     cmp.i64 rax, 30
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
     lea rdi, @table
     mov rsi, 1
     call @shifted_bytes [args=(rsi,rdi)]
     cmp.i64 rax, 40
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
     lea rdi, @table
     mov rsi, 6
     call @negative_literal [args=(rsi,rdi)]
     cmp.i64 rax, 30
-    setne <gpr3>
-    movzx <gpr3>, <gpr3>
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
     lea rdi, @table
     mov rsi, 7
     call @literal_first [args=(rsi,rdi)]
     cmp.i64 rax, 30
-    setne <gpr4>
-    movzx <gpr4>, <gpr4>
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
     lea rdi, @table
     mov rsi, 1
     mov rdx, 1
@@ -329,10 +329,10 @@ function @main
     cmp.i64 rax, 20
     setne rax
     movzx rax, rax
-    or <gpr0>, <gpr1>
-    or <gpr0>, <gpr2>
     or <gpr0>, <gpr3>
     or <gpr0>, <gpr4>
+    or <gpr0>, <gpr2>
+    or <gpr0>, <gpr1>
     or <gpr0>, [rbp-<off3>]
     or <gpr0>, [rbp-<off2>]
     or <gpr0>, [rbp-<off1>]

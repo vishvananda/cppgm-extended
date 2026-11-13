@@ -107,46 +107,46 @@ function @main
     lea <gpr1>, [rbp-<off0>]
     lea rdi, [rbp-<off2>]
     call @adjust [args=(rdi)]
-    mov <gpr2>, rax
-    mov rdi, 0
-    call @adjust [args=(rdi)]
-    cmp.ptr <gpr2>, <gpr1>
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
-    cmp.ptr rax, 0
-    setne <gpr3>
-    movzx <gpr3>, <gpr3>
-    lea rdi, [rbp-<off2>]
-    call @adjust_predicate_first [args=(rdi)]
     mov <gpr4>, rax
     mov rdi, 0
-    call @adjust_predicate_first [args=(rdi)]
-    mov <gpr5>, rax
-    store.i64 [<gpr1>], 5
-    mov rdi, <gpr1>
-    call @before_store [args=(rdi)]
-    store.i64 [rbp-<off1>], <gpr2>
-    mov <gpr2>, rax
-    store.i64 [<gpr1>], 5
-    mov rdi, <gpr1>
-    call @before_call [args=(rdi)]
+    call @adjust [args=(rdi)]
     cmp.ptr <gpr4>, <gpr1>
     setne <gpr4>
     movzx <gpr4>, <gpr4>
-    cmp.ptr <gpr5>, 0
+    cmp.ptr rax, 0
     setne <gpr5>
     movzx <gpr5>, <gpr5>
-    cmp.i64 <gpr2>, 11
+    lea rdi, [rbp-<off2>]
+    call @adjust_predicate_first [args=(rdi)]
+    mov <gpr3>, rax
+    mov rdi, 0
+    call @adjust_predicate_first [args=(rdi)]
+    mov <gpr2>, rax
+    store.i64 [<gpr1>], 5
+    mov rdi, <gpr1>
+    call @before_store [args=(rdi)]
+    store.i64 [rbp-<off1>], <gpr4>
+    mov <gpr4>, rax
+    store.i64 [<gpr1>], 5
+    mov rdi, <gpr1>
+    call @before_call [args=(rdi)]
+    cmp.ptr <gpr3>, <gpr1>
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    cmp.ptr <gpr2>, 0
     setne <gpr2>
     movzx <gpr2>, <gpr2>
+    cmp.i64 <gpr4>, 11
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
     load.i64 <gpr6>, [rbp-<off1>]
-    or <gpr3>, <gpr6>
-    or <gpr4>, <gpr5>
-    or <gpr2>, rax
-    mov rax, <gpr3>
+    or <gpr5>, <gpr6>
+    or <gpr3>, <gpr2>
+    or <gpr4>, rax
+    mov rax, <gpr5>
+    or rax, <gpr3>
     or rax, <gpr4>
-    or rax, <gpr2>
     ret rax

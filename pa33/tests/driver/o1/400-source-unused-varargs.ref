@@ -14,7 +14,7 @@ function @observe(%value : i32) -> i32 [binding=strong, object=_Z7observei] {
 function @use_first(%value : i32) -> i32 [binding=strong, object=_Z9use_firsti] {
   block ^entry:
     %t1 = load typed i32 @observed
-    %t2 = binary add i32 %t1, 8
+    %t2 = binary add nowrap i32 %t1, 8
     store typed i32 %t2, @observed
     %t3 = binary add nowrap i32 %value, %t2
     return i32 %t3
@@ -22,7 +22,7 @@ function @use_first(%value : i32) -> i32 [binding=strong, object=_Z9use_firsti] 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = load typed i32 @observed
-    %t2 = binary add i32 %t1, 8
+    %t2 = binary add nowrap i32 %t1, 8
     store typed i32 %t2, @observed
     %t3 = select i64 %t1, 1, 0
     %t4 = convert trunc i32 i64 %t3

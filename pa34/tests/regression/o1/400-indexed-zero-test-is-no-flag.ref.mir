@@ -33,16 +33,16 @@ function @count
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13 r14
+    preserve rbx r13 r14 r15
 
   block ^entry
-    mov r13, rdi
-    mov r14, rsi
+    mov r15, rdi
+    mov r13, rsi
     mov rbx, 0
-    mov r12, 0
+    mov r14, 0
 
   block ^head
-    cmp.i64 [r13+rbx*8], 0
+    cmp.i64 [r15+rbx*8], 0
     jne ^nonzero
 
   block ^zero
@@ -51,23 +51,23 @@ function @count
 
   block ^next
     add rbx, 1
-    cmp.i64 rbx, r14
+    cmp.i64 rbx, r13
     jge ^out
 
   block ^next~head
-    cmp.i64 [r13+rbx*8], 0
+    cmp.i64 [r15+rbx*8], 0
     je ^zero
 
   block ^nonzero
     mov rdi, 2
     call @note [args=(rdi)]
-    add r12, 1
+    add r14, 1
     add rbx, 1
-    cmp.i64 rbx, r14
+    cmp.i64 rbx, r13
     jl ^next~head
 
   block ^out
-    ret r12
+    ret r14
 
 function @flag
   abi
@@ -104,7 +104,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12
+    preserve rbx r14
     slot $data -> [rbp-32] : obj<32x8>
 
   block ^entry
@@ -119,9 +119,9 @@ function @main
     mov rdi, rbx
     mov rsi, 4
     call @count [args=(rsi,rdi)]
-    zext.i32 r12, rax
+    zext.i32 r14, rax
     mov rdi, rbx
     call @flag [args=(rdi)]
-    add.u32 r12, @seen
-    add.u32 rax, r12
+    add.u32 r14, @seen
+    add.u32 rax, r14
     ret rax

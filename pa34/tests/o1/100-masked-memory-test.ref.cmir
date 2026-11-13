@@ -226,16 +226,16 @@ function @main
     zext.i32 <gpr0>, rax
     lea rdi, [rbp-<off0>]
     call @half_test [args=(rdi)]
-    zext.i32 <gpr1>, rax
-    lea rdi, [rbp-<off0>]
-    call @signed_promotion [args=(rdi)]
-    zext.i32 <gpr2>, rax
-    lea rdi, [rbp-<off0>]
-    call @volatile_test [args=(rdi)]
     zext.i32 <gpr3>, rax
     lea rdi, [rbp-<off0>]
-    call @wide_mask [args=(rdi)]
+    call @signed_promotion [args=(rdi)]
     zext.i32 <gpr4>, rax
+    lea rdi, [rbp-<off0>]
+    call @volatile_test [args=(rdi)]
+    zext.i32 <gpr2>, rax
+    lea rdi, [rbp-<off0>]
+    call @wide_mask [args=(rdi)]
+    zext.i32 <gpr1>, rax
     lea rdi, [rbp-<off0>]
     call @two_readers [args=(rdi)]
     cmp.i32 rax, 32912
@@ -244,8 +244,8 @@ function @main
     store.i64 [rbp-<off1>], <gpr5>
     lea rdi, [rbp-<off0>]
     call @before_store [args=(rdi)]
-    store.i32 [rbp-<off2>], <gpr4>
-    zext.i32 <gpr4>, rax
+    store.i32 [rbp-<off2>], <gpr1>
+    zext.i32 <gpr1>, rax
     store.i32 [rbp-<off0>], 32912
     lea rdi, [rbp-<off0>]
     call @before_call [args=(rdi)]
@@ -253,17 +253,17 @@ function @main
     store.i32 [rbp-<off3>], <gpr5>
     lea rdi, [rbp-<off0>]
     call @byte_test [args=(rdi)]
-    store.i32 [rbp-<off4>], <gpr4>
-    sext.i32 <gpr4>, rax
+    store.i32 [rbp-<off4>], <gpr1>
+    sext.i32 <gpr1>, rax
     lea rdi, [rbp-<off0>]
     call @half_test [args=(rdi)]
     sext.i32 rax
-    or <gpr4>, rax
-    add.i32 <gpr0>, <gpr1>
-    add.i32 <gpr2>, <gpr3>
+    or <gpr1>, rax
+    add.i32 <gpr0>, <gpr3>
+    add.i32 <gpr4>, <gpr2>
     load.u32 rax, [rbp-<off4>]
     add.i32 rax, [rbp-<off3>]
-    add.i32 <gpr0>, <gpr2>
+    add.i32 <gpr0>, <gpr4>
     add.i32 <gpr0>, rax
     add.i32 <gpr0>, [rbp-<off2>]
     cmp.i32 <gpr0>, 7
@@ -271,5 +271,5 @@ function @main
     movzx rax, rax
     load.i64 <gpr6>, [rbp-<off1>]
     or rax, <gpr6>
-    or rax, <gpr4>
+    or rax, <gpr1>
     ret rax

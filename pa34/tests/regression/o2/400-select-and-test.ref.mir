@@ -69,7 +69,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13 r14
+    preserve rbx r13 r14 r15
 
   block ^entry
     mov rdi, 6
@@ -83,24 +83,24 @@ function @main
     mov rdx, 10
     mov rcx, 20
     call @pick [args=(rcx,rdx,rsi,rdi)]
-    zext.i32 r12, rax
+    zext.i32 r14, rax
     mov rdi, 1024
     mov rsi, 1
     mov rdx, 2
     call @bit [args=(rdx,rsi,rdi)]
-    zext.i32 r13, rax
+    zext.i32 r15, rax
     mov rdi, 1023
     mov rsi, 1
     mov rdx, 2
     call @bit [args=(rdx,rsi,rdi)]
-    zext.i32 r14, rax
+    zext.i32 r13, rax
     mov rdi, 6
     mov rsi, 3
     mov rdx, 100
     call @shared [args=(rdx,rsi,rdi)]
-    add.u32 rbx, r12
+    add.u32 rbx, r14
     add.u32 rax, rbx
-    imul.i32 r13, 10
-    add.i32 r13, r14
-    add.i32 rax, r13
+    imul.i32 r15, 10
+    add.i32 r15, r13
+    add.i32 rax, r15
     ret rax

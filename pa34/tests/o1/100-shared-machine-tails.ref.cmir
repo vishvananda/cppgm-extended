@@ -154,29 +154,29 @@ function @main
 
   block ^entry
     mov <gpr0>, @storage+256
-    mov <gpr1>, 0
+    mov <gpr2>, 0
 
   block ^loop
     mov rdi, <gpr0>
-    mov rsi, <gpr1>
+    mov rsi, <gpr2>
     call @shared_cases [args=(rsi,rdi)]
-    mov <gpr2>, rax
-    mov rdi, <gpr0>
-    mov rsi, <gpr1>
-    call @distinct_cases [args=(rsi,rdi)]
     mov <gpr3>, rax
     mov rdi, <gpr0>
-    mov rsi, <gpr1>
+    mov rsi, <gpr2>
+    call @distinct_cases [args=(rsi,rdi)]
+    mov <gpr1>, rax
+    mov rdi, <gpr0>
+    mov rsi, <gpr2>
     call @shared_store_paths [args=(rsi,rdi)]
     load.i64 rcx, [<gpr0>]
-    cmp.i64 <gpr1>, 12
+    cmp.i64 <gpr2>, 12
     setb rsi
-    mov rax, <gpr1>
+    mov rax, <gpr2>
     mov <gpr4>, -6148914691236517205
     mul <gpr4>
     shr rdx, 1
     imul rdx, 3
-    mov rax, <gpr1>
+    mov rax, <gpr2>
     sub rax, rdx
     lea rdx, [rax+<off0>]
     mov <gpr4>, 0
@@ -185,7 +185,7 @@ function @main
     cmp.i64 rcx, rdx
     setne rcx
     imul rax, 8
-    lea rdx, [<gpr1>*8]
+    lea rdx, [<gpr2>*8]
     mov rdi, -40
     sub rdi, rax
     mov rax, -40
@@ -195,17 +195,17 @@ function @main
     test.u8 rsi, rsi
     cmove rdi, <gpr0>
     cmove rax, <gpr0>
-    cmp.ptr <gpr2>, rdi
-    setne <gpr2>
-    cmp.ptr <gpr3>, rax
+    cmp.ptr <gpr3>, rdi
     setne <gpr3>
-    or.u8 <gpr2>, <gpr3>
-    or.u8 <gpr2>, rcx
+    cmp.ptr <gpr1>, rax
+    setne <gpr1>
+    or.u8 <gpr3>, <gpr1>
+    or.u8 <gpr3>, rcx
     jne ^fail
 
   block ^next
-    add <gpr1>, 1
-    cmp.i64 <gpr1>, 16
+    add <gpr2>, 1
+    cmp.i64 <gpr2>, 16
     jne ^loop
 
   block ^done

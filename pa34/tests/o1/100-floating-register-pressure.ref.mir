@@ -216,7 +216,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve rbx r12 r13 r14
+    preserve rbx r13 r14 r15
     slot $cells -> [rbp-112] : obj<112x8>
 
   block ^entry
@@ -236,21 +236,21 @@ function @main
     fne.f64 rbx, xmm0, 2.0
     lea rdi, [rbp-112]
     call @across_call [args=(rdi)]
-    fne.f64 r12, xmm0, 2.25
+    fne.f64 r14, xmm0, 2.25
     lea rdi, [rbp-112]
     fmov.f64 xmm0, 4.0
     call @in_place [args=(rdi,xmm0)]
-    fne.f64 r13, xmm0, -3.0
+    fne.f64 r15, xmm0, -3.0
     fmov.f64 xmm0, 6.0
     fmov.f64 xmm1, 2.0
     call @keeps_numerator [args=(xmm0,xmm1)]
-    fne.f64 r14, xmm0, 8.0
+    fne.f64 r13, xmm0, 8.0
     fmov.f32 xmm0, 5.0f
     fmov.f32 xmm1, 2.0f
     call @keeps_minuend [args=(xmm0,xmm1)]
     fne.f32 rax, xmm0, 1e+01f
-    or rbx, r12
-    or r13, r14
-    or rbx, r13
+    or rbx, r14
+    or r15, r13
+    or rbx, r15
     or rax, rbx
     ret rax

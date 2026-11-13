@@ -146,33 +146,33 @@ function @main
     preserve rbx r12 r13 r14 r15
 
   block ^entry
-    mov r12, 0
+    mov r14, 0
     mov rbx, 781331
-    mov r13, 0
+    mov r15, 0
 
   block ^loop
     mov r11, 6364136223846793005
     imul rbx, r11
     add rbx, 1
-    mov rax, r12
+    mov rax, r14
     mov r11, -2049638230412172401
     mul r11
     shr rdx, 3
     imul rdx, 9
-    mov rax, r12
+    mov rax, r14
     sub rax, rdx
-    mov r14, rax
-    zext.i32 rax, r12
+    mov r13, rax
+    zext.i32 rax, r14
     and rax, 63
-    lea r15, [rax+1]
-    mov rdi, r14
+    lea r12, [rax+1]
+    mov rdi, r13
     mov rsi, rbx
-    mov rdx, r15
+    mov rdx, r12
     call @worker [args=(rdx,rsi,rdi)]
     mov rcx, rax
-    cmp.i64 r14, 6
+    cmp.i64 r13, 6
     sete rsi
-    cmp.i64 r14, 8
+    cmp.i64 r13, 8
     sete rdi
     test.u8 rsi, rsi
     mov r11, 91
@@ -187,12 +187,12 @@ function @main
     xor r8, rbx
     mov rax, r8
     mov rdx, 0
-    div r15
+    div r12
     mov r9, rax
     mov rax, r8
     cqo
-    idiv r15
-    cmp.i64 r14, 7
+    idiv r12
+    cmp.i64 r13, 7
     cmove r9, rax
     imul r9, 13
     add r9, 29
@@ -211,18 +211,18 @@ function @main
     mov r11, 0
     test.u8 rdi, rdi
     cmovne rax, r11
-    add r13, rax
+    add r15, rax
     load.i64 rax, @calls
     cmp.i64 rcx, r9
     setne rcx
-    cmp.i64 rax, r13
+    cmp.i64 rax, r15
     setne rax
     or.u8 rcx, rax
     jne ^fail
 
   block ^next
-    add r12, 1
-    cmp.i64 r12, 4096
+    add r14, 1
+    cmp.i64 r14, 4096
     jne ^loop
 
   block ^done

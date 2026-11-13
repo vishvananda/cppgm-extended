@@ -107,46 +107,46 @@ function @main
     lea rbx, [rbp-24]
     lea rdi, [rbp-16]
     call @adjust [args=(rdi)]
-    mov r12, rax
-    mov rdi, 0
-    call @adjust [args=(rdi)]
-    cmp.ptr r12, rbx
-    setne r12
-    movzx r12, r12
-    cmp.ptr rax, 0
-    setne r13
-    movzx r13, r13
-    lea rdi, [rbp-16]
-    call @adjust_predicate_first [args=(rdi)]
     mov r14, rax
     mov rdi, 0
-    call @adjust_predicate_first [args=(rdi)]
-    mov r15, rax
-    store.i64 [rbx], 5
-    mov rdi, rbx
-    call @before_store [args=(rdi)]
-    store.i64 [rbp-8], r12
-    mov r12, rax
-    store.i64 [rbx], 5
-    mov rdi, rbx
-    call @before_call [args=(rdi)]
+    call @adjust [args=(rdi)]
     cmp.ptr r14, rbx
     setne r14
     movzx r14, r14
-    cmp.ptr r15, 0
+    cmp.ptr rax, 0
     setne r15
     movzx r15, r15
-    cmp.i64 r12, 11
+    lea rdi, [rbp-16]
+    call @adjust_predicate_first [args=(rdi)]
+    mov r13, rax
+    mov rdi, 0
+    call @adjust_predicate_first [args=(rdi)]
+    mov r12, rax
+    store.i64 [rbx], 5
+    mov rdi, rbx
+    call @before_store [args=(rdi)]
+    store.i64 [rbp-8], r14
+    mov r14, rax
+    store.i64 [rbx], 5
+    mov rdi, rbx
+    call @before_call [args=(rdi)]
+    cmp.ptr r13, rbx
+    setne r13
+    movzx r13, r13
+    cmp.ptr r12, 0
     setne r12
     movzx r12, r12
+    cmp.i64 r14, 11
+    setne r14
+    movzx r14, r14
     cmp.i64 rax, 11
     setne rax
     movzx rax, rax
     load.i64 r10, [rbp-8]
-    or r13, r10
-    or r14, r15
-    or r12, rax
-    mov rax, r13
+    or r15, r10
+    or r13, r12
+    or r14, rax
+    mov rax, r15
+    or rax, r13
     or rax, r14
-    or rax, r12
     ret rax

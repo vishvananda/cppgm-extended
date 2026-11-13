@@ -23,10 +23,10 @@ function @pressure
 
   block ^entry
     store.i64 [rbp-<off0>], rdi
-    mov <gpr1>, 1
-    mov <gpr2>, 2
-    mov <gpr3>, 3
-    mov <gpr4>, 4
+    mov <gpr3>, 1
+    mov <gpr4>, 2
+    mov <gpr2>, 3
+    mov <gpr1>, 4
     store.i64 [rbp-<off1>], 5
     store.i64 [rbp-<off2>], 6
     store.i64 [rbp-<off3>], 7
@@ -35,26 +35,16 @@ function @pressure
 
   block ^for_cond_1
     cmp.i64 <gpr0>, rdi
-    jl ^for_body_2
-
-  block ^for_end_4
-    lea rax, [<gpr1>+<gpr2>]
-    add rax, <gpr3>
-    add rax, <gpr4>
-    add rax, [rbp-<off1>]
-    add rax, [rbp-<off2>]
-    add rax, [rbp-<off3>]
-    add rax, [rbp-<off4>]
-    ret rax
+    jge ^for_end_4
 
   block ^for_body_2
     mov rdi, <gpr0>
     call @step [args=(rdi)]
-    add <gpr1>, rax
-    add <gpr2>, <gpr1>
-    add <gpr3>, <gpr2>
+    add <gpr3>, rax
     add <gpr4>, <gpr3>
-    mov rax, <gpr4>
+    add <gpr2>, <gpr4>
+    add <gpr1>, <gpr2>
+    mov rax, <gpr1>
     add rax, [rbp-<off1>]
     mov rcx, rax
     add rcx, [rbp-<off2>]
@@ -69,7 +59,16 @@ function @pressure
     store.i64 [rbp-<off4>], rsi
     cmp.i64 <gpr0>, [rbp-<off0>]
     jl ^for_body_2
-    jmp ^for_end_4
+
+  block ^for_end_4
+    lea rax, [<gpr3>+<gpr4>]
+    add rax, <gpr2>
+    add rax, <gpr1>
+    add rax, [rbp-<off1>]
+    add rax, [rbp-<off2>]
+    add rax, [rbp-<off3>]
+    add rax, [rbp-<off4>]
+    ret rax
 
 function @step
   abi

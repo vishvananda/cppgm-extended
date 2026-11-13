@@ -81,27 +81,27 @@ function @main
     mov rdi, 2147483647
     mov rsi, -1
     call @negative32 [args=(rsi,rdi)]
-    zext.i32 r12, rax
+    zext.i32 r14, rax
     mov rdi, 9223372036854775807
     mov rsi, 1
     call @nonnegative64 [args=(rsi,rdi)]
-    zext.i32 r13, rax
+    zext.i32 r15, rax
     mov rdi, -9223372036854775808
     mov rsi, -1
     call @nonnegative64 [args=(rsi,rdi)]
-    zext.i32 r14, rax
+    zext.i32 r13, rax
     mov rdi, 2147483647
     mov rsi, 1
     call @mixed_conditions [args=(rsi,rdi)]
-    zext.i32 r15, rax
+    zext.i32 r12, rax
     mov rdi, -2147483648
     mov rsi, -1
     call @mixed_conditions [args=(rsi,rdi)]
-    add.i32 rbx, r12
-    add.i32 r13, r14
-    add.i32 r15, rax
-    add.i32 rbx, r13
+    add.i32 rbx, r14
+    add.i32 r15, r13
+    add.i32 r12, rax
     add.i32 rbx, r15
+    add.i32 rbx, r12
     cmp.i32 rbx, 3
     setne rax
     movzx rax, rax

@@ -1,0 +1,130 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @sum
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %c -> xmm2 : f64
+    param %d -> xmm3 : f64
+    param %e -> xmm4 : f64
+    param %f -> xmm5 : f64
+    param %g -> xmm6 : f64
+    param %h -> xmm7 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fadd.f64 xmm0, xmm0, xmm1
+    fadd.f64 xmm0, xmm0, xmm2
+    fadd.f64 xmm0, xmm0, xmm3
+    fadd.f64 xmm0, xmm0, xmm4
+    fadd.f64 xmm0, xmm0, xmm5
+    fadd.f64 xmm0, xmm0, xmm6
+    fadd.f64 xmm0, xmm0, xmm7
+    ret xmm0
+
+function @forward
+  abi
+    param %from -> rdi : ptr
+    param %to -> rsi : ptr
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %c -> xmm2 : f64
+    param %d -> xmm3 : f64
+    param %e -> xmm4 : f64
+    param %f -> xmm5 : f64
+    param %g -> xmm6 : f64
+    param %h -> xmm7 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    copy_bytes 32x8, rsi, rdi
+    call @sum [args=(xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7)]
+    ret xmm0
+
+function @copy
+  abi
+    param %from -> rdi : ptr
+    param %to -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    copy_bytes 32x8, rsi, rdi
+    ret
+
+function @clear
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zero_bytes 32x8, rdi
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 112
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $a -> [rbp-32] : obj<32x8>
+    slot $b -> [rbp-104] : obj<32x8>
+    slot $c -> [rbp-72] : obj<32x8>
+    temp %r -> [rbp-40] : f64
+
+  block ^entry
+    store.i64 [rbp-32], 1
+    store.i64 [rbp-24], 2
+    store.i64 [rbp-16], 3
+    store.i64 [rbp-8], 4
+    lea rdi, [rbp-32]
+    lea rsi, [rbp-104]
+    call @copy [args=(rsi,rdi)]
+    lea rdi, [rbp-104]
+    lea rsi, [rbp-72]
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    fmov.f64 xmm2, 3.0
+    fmov.f64 xmm3, 4.0
+    fmov.f64 xmm4, 5.0
+    fmov.f64 xmm5, 6.0
+    fmov.f64 xmm6, 7.0
+    fmov.f64 xmm7, 8.0
+    call @forward [args=(rsi,rdi,xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7)]
+    fmov.f64 xmm14, xmm0
+    fmov.f64 [rbp-40], xmm14
+    lea rdi, [rbp-32]
+    call @clear [args=(rdi)]
+    fptosi.f64.i32 rax, [rbp-40]
+    load.u32 rcx, [rbp-72]
+    add.u32 rcx, [rbp-48]
+    add.u32 rcx, [rbp-32]
+    add.u32 rcx, [rbp-8]
+    add.i32 rax, rcx
+    ret rax

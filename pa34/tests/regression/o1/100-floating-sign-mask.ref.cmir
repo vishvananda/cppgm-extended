@@ -209,21 +209,21 @@ function @main
     call @magnitude64 [args=(xmm0)]
     fmov.f64 rax, xmm0
     cmp.i64 rax, 0
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
     fmov.f32 xmm0, @negative_nan32
     call @magnitude32 [args=(xmm0)]
     fmov.f32 rax, xmm0
     cmp.i32 rax, 2143289345
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
     fmov.f64 xmm0, -2.5
     call @mask_first [args=(xmm0)]
-    fne.f64 <gpr3>, xmm0, 2.5
+    fne.f64 <gpr2>, xmm0, 2.5
     fmov.f64 [rbp-<off0>], -7.5
     lea rdi, [rbp-<off0>]
     call @from_memory [args=(rdi)]
-    fne.f64 <gpr4>, xmm0, 7.5
+    fne.f64 <gpr1>, xmm0, 7.5
     fmov.f64 xmm0, -8.0
     call @source_lives_on [args=(xmm0)]
     fne.f64 <gpr5>, xmm0, -9.0
@@ -255,16 +255,16 @@ function @main
     cmp.i64 rax, 1069547520
     setne rax
     movzx rax, rax
-    or.u32 <gpr0>, <gpr1>
-    or.u32 <gpr2>, <gpr3>
-    or.u32 <gpr4>, [rbp-<off1>]
+    or.u32 <gpr0>, <gpr3>
+    or.u32 <gpr4>, <gpr2>
+    or.u32 <gpr1>, [rbp-<off1>]
     load.u32 rcx, [rbp-<off2>]
     or.u32 rcx, [rbp-<off3>]
     load.u32 rdx, [rbp-<off4>]
     or.u32 rdx, [rbp-<off5>]
-    or.u32 <gpr0>, <gpr2>
-    or.u32 <gpr4>, rcx
     or.u32 <gpr0>, <gpr4>
+    or.u32 <gpr1>, rcx
+    or.u32 <gpr0>, <gpr1>
     or.u32 <gpr0>, rdx
     or.u32 <gpr0>, rax
     sext.i32 rax, <gpr0>

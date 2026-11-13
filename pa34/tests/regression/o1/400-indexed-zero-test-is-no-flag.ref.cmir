@@ -36,13 +36,13 @@ function @count
     preserve <gpr0> <gpr1> <gpr2> <gpr3>
 
   block ^entry
-    mov <gpr2>, rdi
-    mov <gpr3>, rsi
+    mov <gpr3>, rdi
+    mov <gpr1>, rsi
     mov <gpr0>, 0
-    mov <gpr1>, 0
+    mov <gpr2>, 0
 
   block ^head
-    cmp.i64 [<gpr2>+<gpr0>*8], 0
+    cmp.i64 [<gpr3>+<gpr0>*8], 0
     jne ^nonzero
 
   block ^zero
@@ -51,23 +51,23 @@ function @count
 
   block ^next
     add <gpr0>, 1
-    cmp.i64 <gpr0>, <gpr3>
+    cmp.i64 <gpr0>, <gpr1>
     jge ^out
 
   block ^next~head
-    cmp.i64 [<gpr2>+<gpr0>*8], 0
+    cmp.i64 [<gpr3>+<gpr0>*8], 0
     je ^zero
 
   block ^nonzero
     mov rdi, 2
     call @note [args=(rdi)]
-    add <gpr1>, 1
+    add <gpr2>, 1
     add <gpr0>, 1
-    cmp.i64 <gpr0>, <gpr3>
+    cmp.i64 <gpr0>, <gpr1>
     jl ^next~head
 
   block ^out
-    ret <gpr1>
+    ret <gpr2>
 
 function @flag
   abi
@@ -104,7 +104,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    preserve <gpr0> <gpr1>
+    preserve <gpr0> <gpr2>
     slot $data -> [rbp-<off0>] : obj<32x8>
 
   block ^entry
@@ -119,9 +119,9 @@ function @main
     mov rdi, <gpr0>
     mov rsi, 4
     call @count [args=(rsi,rdi)]
-    zext.i32 <gpr1>, rax
+    zext.i32 <gpr2>, rax
     mov rdi, <gpr0>
     call @flag [args=(rdi)]
-    add.u32 <gpr1>, @seen
-    add.u32 rax, <gpr1>
+    add.u32 <gpr2>, @seen
+    add.u32 rax, <gpr2>
     ret rax

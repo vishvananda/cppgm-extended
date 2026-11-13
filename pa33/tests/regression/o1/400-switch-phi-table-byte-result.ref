@@ -1,0 +1,39 @@
+global @__switch_results_0 : obj<6x1> [storage=readonly, binding=internal] = {
+  i8 7
+  i8 9
+  i8 12
+  i8 3
+  i8 40
+  i8 41
+}
+
+function @pick(%k : u8, %other : u8) -> u8 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub u8 %k, 2
+    %t2 = cmp ult u8 %t1, 6
+    branch %t2, ^switch_case_2, ^merge
+
+  block ^merge:
+    %result = phi u8 [^entry: %other, ^switch_case_2: %t8]
+    %mixed = binary xor u8 %other, %result
+    return u8 %mixed
+
+  block ^switch_case_2:
+    %t5 = convert zext i64 u8 %k
+    %t6 = binary sub i64 %t5, 2
+    %t7 = index i8 @__switch_results_0, %t6
+    %t8 = load u8 %t7
+    jump ^merge
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call u8 @pick(4, 1)
+    %b = call u8 @pick(7, 2)
+    %c = call u8 @pick(9, 3)
+    %wa = convert zext i32 u8 %a
+    %wb = convert zext i32 u8 %b
+    %wc = convert zext i32 u8 %c
+    %ab = binary add i32 %wa, %wb
+    %sum = binary add i32 %wc, %ab
+    return i32 %sum
+}

@@ -52,12 +52,12 @@ function @probe
     temp %a -> [rbp-16] : i64
 
   block ^entry
-    mov r12, @data
+    mov r14, @data
     load.i64 rax, @a
     store.i64 [rbp-16], rax
-    load.i64 r15, @b
-    load.i64 r14, @c
-    load.i64 r13, @d
+    load.i64 r12, @b
+    load.i64 r13, @c
+    load.i64 r15, @d
     store.i64 [rbp-8], 0
 
   block ^condition
@@ -66,11 +66,11 @@ function @probe
     jae ^done
 
   block ^body
-    store.i64 [r12+rbx*8], rbx
+    store.i64 [r14+rbx*8], rbx
     call @noop [args=(), unwind=no]
-    mov rax, r15
+    mov rax, r12
     add rax, [rbp-16]
-    lea rcx, [r14+r13]
+    lea rcx, [r13+r15]
     lea rax, [rax+rcx+7]
     add rbx, 1
     store.i64 [rbp-8], rbx
@@ -82,7 +82,7 @@ function @probe
     ret rax
 
   block ^done
-    cmp.i64 [r12+8], 1
+    cmp.i64 [r14+8], 1
     setne rax
     movzx rax, rax
     ret rax
