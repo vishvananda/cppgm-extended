@@ -2,7 +2,8 @@
 
 The benchmarks build third-party programs with `cppgm++`, `g++` and `clang++`
 and compare the results. **Public benchmarks** and **Self-build benchmarks**
-run independently on every push, with separate time budgets, reports and artifacts.
+run independently on each push to `main` and each pull request, with separate time
+budgets, reports and artifacts.
 
 ## Files
 
@@ -223,7 +224,7 @@ change the badges or impose a hardware-specific course gate.
 
 ## index-cpp comparison
 
-The **index-cpp benchmarks** workflow runs on every push and pull request.
+The **index-cpp benchmarks** workflow runs on each push to `main` and each pull request.
 It builds the unchanged, pinned upstream C++17 program with cppgm, GCC and
 Clang and requires all 50 checksum workloads to pass. This reference-only
 lane does not add C++17 requirements to student assignments.
