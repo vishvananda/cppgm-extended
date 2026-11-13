@@ -17,7 +17,7 @@ const char* const kBlockStems[] = { "",
 	"discard_cond_then", "discard_cond_else", "discard_cond_end", "basecast_null", "basecast_adjust", "basecast_end",
 	"member_pointer_virtual", "member_pointer_direct", "member_pointer_end", "null_member_cond", "null_member_body",
 	"null_member_end", "dyn_cast_scan", "dyn_cast_found", "dyn_cast_fail", "dyn_cast_end", "typeid_scan", "typeid_fail",
-	"atomic_retry", "atomic_done",
+	"atomic_retry", "atomic_done", "order_weak", "order_seq_cst", "order_end",
 	// Dynamic allocation.
 	"new_init", "new_end", "array_new_length_valid", "array_new_length_invalid", "array_new_ctor_cond",
 	"array_new_ctor_body", "array_new_ctor_end", "array_new_ctor_cleanup", "array_new_ctor_cont",

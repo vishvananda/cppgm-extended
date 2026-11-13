@@ -255,7 +255,8 @@ PA30 has four test directories:
   object emission, compile exit status, and any stdout/reference sidecars used
   by the harness.
 - `tests/lowir/`: the LowIR that `cppgm++ --emit-lowir -O0` writes for
-  hosted builtins, such as the branch predictions of `__builtin_expect`. The
+  hosted builtins, such as the branch predictions of `__builtin_expect` and
+  the order branches of atomic stores and fences. The
   oracle is the relaxed LowIR comparison of the source-to-LowIR assignments
   (`../pa8/lowir.md`, What The Comparison Absorbs And What It Enforces).
 - `tests/run/`: narrow host-link/run compatibility smokes. These tests cover
@@ -600,6 +601,18 @@ instruction sequence is required.
 2 double lanes into the low bits of an int. Read floating representations
 as integer bits, preserving signed zero and NaN signs without floating
 exceptions. Evaluate the input once and leave unused result bits zero.
+
+### Atomic memory orders
+
+A memory order of the `__atomic` and `__c11_atomic` builtins that is not a
+constant is `seq_cst`, as GCC takes it, except at a store or thread fence
+(`__atomic_store_n`, `__atomic_store`, `__atomic_clear`,
+`__atomic_thread_fence`, `__c11_atomic_store` and
+`__c11_atomic_thread_fence`). There the lowering branches on `cmp ult` of
+the order and 5 to two copies of the operation: below 5 the store is
+`release` and the fence `acq_rel`, otherwise both are `seq_cst`. An inlined
+caller's constant order, such as one a `std::atomic` member passes on, then
+decides the branch. `tests/lowir/` checks the rule.
 
 ### Generic GNU atomic runtime operations
 

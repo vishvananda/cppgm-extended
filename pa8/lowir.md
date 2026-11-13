@@ -2421,7 +2421,8 @@ follows them, and so must yours.
   unwind suffixes), PA23 (virtual bases found through one VTT load per
   block, or a static offset for a complete object), PA30 (a branch that
   tests `__builtin_expect` with a literal expectation is predicted, and no
-  other branch is).
+  other branch is; an atomic store or thread fence whose order is not a
+  constant branches on it).
 - Metadata of earlier forms is rejected by the validator rather than
   absorbed: the parameter keys `capture=` and `access=`, the `index`
   projections `base_subobject` and `reference_field`, the symbol key

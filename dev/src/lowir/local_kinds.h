@@ -97,6 +97,9 @@ enum class BlockKind : uint8_t
 	TypeidFail,
 	AtomicRetry,
 	AtomicDone,
+	OrderWeak,
+	OrderSeqCst,
+	OrderEnd,
 	// Dynamic allocation (5.3.4, 5.3.5).
 	NewInit,
 	NewEnd,

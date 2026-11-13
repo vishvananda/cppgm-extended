@@ -1,0 +1,124 @@
+function @store_n(%p : ptr, %v : i32, %order : i32) -> void [binding=strong, object=_Z7store_nPiii] {
+  slot $p : ptr
+  slot $v : i32
+  slot $order : i32
+
+  block ^entry:
+    store typed ptr %p, $p
+    store typed i32 %v, $v
+    store typed i32 %order, $order
+    %t1 = load typed ptr $p
+    %t2 = load typed i32 $v
+    %t3 = load typed i32 $order
+    %t4 = cmp ult i32 %t3, 5
+    branch %t4, ^order_weak_1, ^order_seq_cst_2
+
+  block ^order_weak_1:
+    atomic_store i32 %t2, %t1, 3
+    jump ^order_end_3
+
+  block ^order_seq_cst_2:
+    atomic_store i32 %t2, %t1, 5
+    jump ^order_end_3
+
+  block ^order_end_3:
+    return void
+}
+function @store_generic(%p : ptr, %v : ptr, %order : i32) -> void [binding=strong, object=_Z13store_genericPlS_i] {
+  slot $p : ptr
+  slot $v : ptr
+  slot $order : i32
+
+  block ^entry:
+    store typed ptr %p, $p
+    store typed ptr %v, $v
+    store typed i32 %order, $order
+    %t1 = load typed ptr $p
+    %t2 = load typed ptr $v
+    %t3 = load typed i64 %t2
+    %t4 = load typed i32 $order
+    %t5 = cmp ult i32 %t4, 5
+    branch %t5, ^order_weak_1, ^order_seq_cst_2
+
+  block ^order_weak_1:
+    atomic_store i64 %t3, %t1, 3
+    jump ^order_end_3
+
+  block ^order_seq_cst_2:
+    atomic_store i64 %t3, %t1, 5
+    jump ^order_end_3
+
+  block ^order_end_3:
+    return void
+}
+function @clear(%p : ptr, %order : i32) -> void [binding=strong, object=_Z5clearPbi] {
+  slot $p : ptr
+  slot $order : i32
+
+  block ^entry:
+    store typed ptr %p, $p
+    store typed i32 %order, $order
+    %t1 = load typed ptr $p
+    %t2 = load typed i32 $order
+    %t3 = cmp ult i32 %t2, 5
+    branch %t3, ^order_weak_1, ^order_seq_cst_2
+
+  block ^order_weak_1:
+    atomic_store u8 0, %t1, 3
+    jump ^order_end_3
+
+  block ^order_seq_cst_2:
+    atomic_store u8 0, %t1, 5
+    jump ^order_end_3
+
+  block ^order_end_3:
+    return void
+}
+function @fences(%order : i32) -> void [binding=strong, object=_Z6fencesi] {
+  slot $order : i32
+
+  block ^entry:
+    store typed i32 %order, $order
+    %t1 = load typed i32 $order
+    %t2 = cmp ult i32 %t1, 5
+    branch %t2, ^order_weak_1, ^order_seq_cst_2
+
+  block ^order_weak_1:
+    atomic_thread_fence 4
+    jump ^order_end_3
+
+  block ^order_seq_cst_2:
+    atomic_thread_fence 5
+    jump ^order_end_3
+
+  block ^order_end_3:
+    %t3 = load typed i32 $order
+    atomic_signal_fence 5
+    return void
+}
+function @others(%p : ptr, %v : i32, %order : i32) -> i32 [binding=strong, object=_Z6othersPiii] {
+  slot $p : ptr
+  slot $v : i32
+  slot $order : i32
+  slot $seen : i32
+
+  block ^entry:
+    store typed ptr %p, $p
+    store typed i32 %v, $v
+    store typed i32 %order, $order
+    %t1 = load typed ptr $p
+    %t2 = load typed i32 $v
+    atomic_store i32 %t2, %t1, 3
+    atomic_thread_fence 5
+    %t3 = load typed ptr $p
+    %t4 = load typed i32 $order
+    %t5 = atomic_load i32 %t3, 5
+    store typed i32 %t5, $seen
+    %t6 = load typed i32 $seen
+    %t7 = load typed ptr $p
+    %t8 = load typed i32 $v
+    %t9 = load typed i32 $order
+    %t10 = atomic_exchange i32 %t7, %t8, 5
+    %t11 = binary add nowrap i32 %t6, %t10
+    return i32 %t11
+}

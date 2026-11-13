@@ -1462,7 +1462,8 @@ private:
 	RValue atomic_runtime_call(const syntax::CallExpr& expr, sema::Intrinsic kind);
 	RValue atomic_update(
 		sema::Intrinsic kind, lowir::Type type, lowir::Value target, const RValue& value, lowir::MemoryOrder order);
-	lowir::MemoryOrder memory_order(const syntax::Expr& order);
+	lowir::MemoryOrder memory_order(const syntax::Expr& order, RValue* value = nullptr);
+	void emit_ordered(lowir::Instruction inst, const RValue& order);
 	BitField bit_field(const sema::VariableEntity* variable, uint32_t location);
 	RValue read_bit_field(const BitField& field, const Place& unit, bool typed = true);
 	RValue load_unit(const BitField& field, lowir::Type type, const Place& unit);

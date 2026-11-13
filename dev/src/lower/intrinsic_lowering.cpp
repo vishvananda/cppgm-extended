@@ -510,14 +510,47 @@ RValue FunctionLowering::bit_count(sema::Intrinsic kind, RValue x)
 	return count.type == i32 || lowering_.object_mode() ? count : copy(i32, count);
 }
 
-lowir::MemoryOrder FunctionLowering::memory_order(const syntax::Expr& order)
+lowir::MemoryOrder FunctionLowering::memory_order(const syntax::Expr& order, RValue* value)
 {
 	// A constant order of GCC's encoding (LowIR's); any other is seq_cst,
-	// as GCC takes an order that is no constant.
+	// as GCC takes an order that is no constant. An integer order that is
+	// no constant goes to `value` when it is given (emit_ordered).
 	uint64_t bits = 0;
-	if (is_integer_literal(operand(order, ConversionContext::Argument), bits) && bits < lowir::kMemoryOrderCount)
-		return static_cast<lowir::MemoryOrder>(bits);
+	const RValue lowered = operand(order, ConversionContext::Argument);
+	if (is_integer_literal(lowered, bits))
+		return bits < lowir::kMemoryOrderCount ? static_cast<lowir::MemoryOrder>(bits) : lowir::MemoryOrder::SeqCst;
+	if (value != nullptr && lowered.type.is_integer())
+		*value = lowered;
 	return lowir::MemoryOrder::SeqCst;
+}
+
+void FunctionLowering::emit_ordered(lowir::Instruction inst, const RValue& order)
+{
+	// A store or thread fence whose order is no constant tests it, as their
+	// code differs only between seq_cst and the weaker orders: below seq_cst
+	// the store is release and the fence acq_rel, otherwise both are seq_cst
+	// (lowir.md). A caller's constant order, once the callee is inlined,
+	// decides the test.
+	if (order.value.is(lowir::ValueKind::None))
+	{
+		emit(inst);
+		return;
+	}
+	const lowir::BlockId weak = new_block(lowir::BlockKind::OrderWeak);
+	const lowir::BlockId seq_cst = new_block(lowir::BlockKind::OrderSeqCst);
+	const lowir::BlockId end = new_block(lowir::BlockKind::OrderEnd);
+	branch(compare(lowir::ComparePredicate::Ult, order.type, order,
+			   integer(order.type, static_cast<uint64_t>(lowir::MemoryOrder::SeqCst))),
+		weak, seq_cst);
+	place(weak);
+	inst.order = inst.op == lowir::Opcode::AtomicStore ? lowir::MemoryOrder::Release : lowir::MemoryOrder::AcqRel;
+	emit(inst);
+	jump(end);
+	place(seq_cst);
+	inst.order = lowir::MemoryOrder::SeqCst;
+	emit(inst);
+	jump(end);
+	place(end);
 }
 
 RValue FunctionLowering::atomic_intrinsic(const syntax::CallExpr& expr, sema::Intrinsic kind)
@@ -542,13 +575,19 @@ RValue FunctionLowering::atomic_intrinsic(const syntax::CallExpr& expr, sema::In
 	const auto order_at = [&](uint32_t index) {
 		return implied != 0 ? static_cast<lowir::MemoryOrder>(implied - 1) : memory_order(*arguments[index]);
 	};
+	// A store's or thread fence's, and in `value` an order that is no
+	// constant (emit_ordered).
+	const auto tested_order_at = [&](uint32_t index, RValue& value) {
+		return implied != 0 ? static_cast<lowir::MemoryOrder>(implied - 1) : memory_order(*arguments[index], &value);
+	};
 	if (kind == Intrinsic::AtomicThreadFence || kind == Intrinsic::AtomicSignalFence)
 	{
 		lowir::Instruction inst = lowir::make_instruction(
 			kind == Intrinsic::AtomicThreadFence ? lowir::Opcode::AtomicThreadFence : lowir::Opcode::AtomicSignalFence,
 			void_type);
-		inst.order = order_at(0);
-		emit(inst);
+		RValue order = RValue();
+		inst.order = kind == Intrinsic::AtomicThreadFence ? tested_order_at(0, order) : order_at(0);
+		emit_ordered(inst, order);
 		return RValue();
 	}
 	const bool byte = kind == Intrinsic::AtomicTestAndSet || kind == Intrinsic::AtomicClear;
@@ -647,8 +686,9 @@ RValue FunctionLowering::atomic_intrinsic(const syntax::CallExpr& expr, sema::In
 		lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::AtomicStore, type);
 		inst.ops[0] = value.value;
 		inst.ops[1] = target;
-		inst.order = order_at(arguments.size - 1);
-		emit(inst);
+		RValue order = RValue();
+		inst.order = tested_order_at(arguments.size - 1, order);
+		emit_ordered(inst, order);
 		return RValue();
 	}
 	case Intrinsic::AtomicExchangeN:
