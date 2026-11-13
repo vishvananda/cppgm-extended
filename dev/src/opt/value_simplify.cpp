@@ -2173,6 +2173,25 @@ bool Simplifier::reassociate(Instruction& inst)
 		inst.flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT));
 		return true;
 	}
+	// Two steps by constants that never wrap (`nowrap`) are one such step when
+	// the constants' sum is a value of the type: the outer step's exact result
+	// is x plus that sum. (Words and narrower: the sum fits 64 bits.)
+	bool exact_sum = false;
+	{
+		const unsigned width = lowir::integer_bits(inst.type.kind());
+		const auto step = [](BinaryOp o) { return o == BinaryOp::Add || o == BinaryOp::Sub; };
+		Literal bx, by;
+		if (step(op) && step(inner) && (inst.flags & def->flags & IF_NO_WRAP) != 0 && width != 0 && width <= 32 &&
+			integer_bits(inst.type, cx, bx) && integer_bits(inst.type, cy, by))
+		{
+			const int64_t x = static_cast<int64_t>(bx.low), y = static_cast<int64_t>(by.low);
+			const int64_t sum = (inner == BinaryOp::Sub ? -x : x) + (op == BinaryOp::Sub ? -y : y);
+			const bool is_unsigned = lowir::is_unsigned(inst.type.kind());
+			const int64_t low = is_unsigned ? 0 : -(int64_t(1) << (width - 1));
+			const int64_t high = (int64_t(1) << (is_unsigned ? width : width - 1)) - 1;
+			exact_sum = sum >= low && sum <= high;
+		}
+	}
 	Literal zero = { 0, 0 };
 	Constant zero_c = integer_constant(inst.type, zero), r;
 	// Subtractions of constants are additions of their negations.
@@ -2198,6 +2217,8 @@ bool Simplifier::reassociate(Instruction& inst)
 	inst.ops[0] = def->ops[0];
 	inst.ops[1] = literal(r);
 	inst.flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT)); // a different computation
+	if (exact_sum)
+		inst.flags |= IF_NO_WRAP;
 	return true;
 }
 
@@ -2916,6 +2937,11 @@ void Simplifier::process_block(BlockId block)
 		grow_facts();
 		changed_ = true;
 	}
+	// (Only a block that starts with a phi has one to convert.)
+	const InstId head = body_.blocks[block].first;
+	if (c_.level >= 1 && head != kNoId && body_.instructions[head].op == Opcode::Phi &&
+		convert_matching_phis(c_, block, repl_, uses_))
+		changed_ = true;
 	for (InstId i = body_.blocks[block].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
 		i = body_.instructions[i].next)
 		++phis;
@@ -3041,9 +3067,10 @@ void Simplifier::process_block(BlockId block)
 		if (inst.op == Opcode::Binary && static_cast<BinaryOp>(inst.sub) == BinaryOp::Or &&
 			simplify_field_step(body_, uses_, *this, inst))
 			changed_ = true;
-		if (reassociate(inst) || narrow_truncation(inst) || mask_or(inst) || packed_part(inst) ||
-			unsigned_division(inst) || even_product_halved(inst) || exact_reciprocal(inst) || merge_index(inst) ||
-			narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) || readonly_table_address(inst))
+		if ((inst.op == Opcode::Binary && reassociate(inst)) || narrow_truncation(inst) || mask_or(inst) ||
+			packed_part(inst) || unsigned_division(inst) || even_product_halved(inst) || exact_reciprocal(inst) ||
+			merge_index(inst) || narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) ||
+			readonly_table_address(inst))
 			changed_ = true;
 		Value value;
 		if (inst.result != kNoId && (fold(inst, value) || identity(inst, value)))
@@ -3074,8 +3101,14 @@ void Simplifier::process_block(BlockId block)
 			changed_ = true;
 			continue;
 		}
+		// (An extension to i128 is not shared: a backend keeps a shared one
+		// in memory, while a multiply reads its own from the extended
+		// register.)
+		const bool wide_extension = inst.op == Opcode::Convert && inst.type.kind() == TypeKind::I128 &&
+			(static_cast<ConvertOp>(inst.sub) == ConvertOp::ZExt ||
+				static_cast<ConvertOp>(inst.sub) == ConvertOp::SExt);
 		const bool reusable = inst.result != kNoId && is_pure(inst) && inst.op != Opcode::Phi &&
-			inst.op != Opcode::Const;
+			inst.op != Opcode::Const && !wide_extension;
 		if (reusable)
 		{
 			ExprKey key = expression_key(inst);

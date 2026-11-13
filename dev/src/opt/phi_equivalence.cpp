@@ -238,6 +238,117 @@ bool retype_copy_phis(FunctionContext& c, BlockId block, std::vector<Value>& rep
 	return changed;
 }
 
+// A loop rotated around a narrow counter that may wrap leaves the extended
+// counter a phi of its own: the two hold one count in two registers, and the
+// back edge copies one to the other.
+bool convert_matching_phis(
+	FunctionContext& c, BlockId block, std::vector<Value>& replacements, std::vector<uint32_t>& uses)
+{
+	FunctionBody& body = c.body;
+	const auto resolve = [&](Value v) {
+		while (v.is(ValueKind::Temp) && !replacements[v.index].is(ValueKind::None))
+			v = replacements[v.index];
+		return v;
+	};
+	const auto producer = [&](Value v) -> const Instruction* {
+		return v.is(ValueKind::Temp) && v.index >= body.parameter_count && body.temps[v.index].def != kNoId
+			? &body.instructions[body.temps[v.index].def]
+			: nullptr;
+	};
+	const auto whole = [](Type t) { return t.is_integer() && t.kind() != TypeKind::I1 && t.kind() != TypeKind::I128; };
+	bool changed = false;
+	InstId next = kNoId;
+	for (InstId id = body.blocks[block].first; id != kNoId && body.instructions[id].op == Opcode::Phi; id = next)
+	{
+		const Instruction phi = body.instructions[id];
+		next = phi.next;
+		if (!whole(phi.type) || phi.extra_count == 0 || phi.extra_count > 16)
+			continue;
+		// The one conversion of every input that is not a constant.
+		const Instruction* conversion = nullptr;
+		bool all = true;
+		for (uint32_t k = 1; k < phi.extra_count && all; k += 2)
+		{
+			const Value in = resolve(body.operands[phi.extra_first + k]);
+			const Instruction* def = producer(in);
+			Constant value;
+			if (def != nullptr && def->op == Opcode::Convert && whole(convert_source_type(*def)))
+			{
+				// (A counter that never wraps keeps its extended copy a phi:
+				// the copy steps with it, and counter widening and the
+				// vectorizer read it so.)
+				const Instruction* step = producer(resolve(def->ops[0]));
+				all = static_cast<ConvertOp>(def->sub) <= ConvertOp::Trunc &&
+					(step == nullptr || step->op != Opcode::Binary || (step->flags & IF_NO_WRAP) == 0) &&
+					(conversion == nullptr ||
+						(conversion->sub == def->sub && convert_source_type(*conversion) == convert_source_type(*def)));
+				conversion = def;
+			}
+			else
+				all = literal_constant(body, in, value) && value.kind == ValueKind::Integer;
+		}
+		if (!all || conversion == nullptr)
+			continue;
+		const ConvertOp op = static_cast<ConvertOp>(conversion->sub);
+		const Type from = convert_source_type(*conversion);
+		// A phi of the sources: each predecessor's input is the conversion's
+		// operand, or a constant the conversion takes to this phi's.
+		const auto converts = [&](const Instruction& source) {
+			for (uint32_t k = 0; k < phi.extra_count; k += 2)
+			{
+				Value narrow = Value::none();
+				for (uint32_t j = 0; j < source.extra_count; j += 2)
+					if (body.operands[source.extra_first + j].index == body.operands[phi.extra_first + k].index)
+						narrow = resolve(body.operands[source.extra_first + j + 1]);
+				const Value in = resolve(body.operands[phi.extra_first + k + 1]);
+				const Instruction* def = producer(in);
+				Constant x, y, r;
+				if (def != nullptr && def->op == Opcode::Convert
+						? !(resolve(def->ops[0]) == narrow)
+						: !literal_constant(body, narrow, x) || !literal_constant(body, in, y) ||
+							!fold_convert(op, phi.type, from, x, r) || !same_constant(phi.type, r, y))
+					return false;
+			}
+			return true;
+		};
+		InstId source = kNoId, last = kNoId, prev = kNoId;
+		for (InstId i = body.blocks[block].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
+			i = body.instructions[i].next)
+		{
+			const Instruction& other = body.instructions[i];
+			if (source == kNoId && i != id && other.type == from && other.extra_count == phi.extra_count &&
+				replacements[other.result].is(ValueKind::None) && converts(other))
+				source = i;
+			prev = i == id ? last : prev;
+			last = i;
+		}
+		if (source == kNoId)
+			continue;
+		for (uint32_t k = 1; k < phi.extra_count; k += 2)
+		{
+			const Value old = resolve(body.operands[phi.extra_first + k]);
+			if (old.is(ValueKind::Temp) && uses[old.index] != 0xffffffffu && uses[old.index] != 0)
+				--uses[old.index];
+		}
+		const TempId narrow = body.instructions[source].result;
+		if (uses[narrow] != 0xffffffffu)
+			++uses[narrow];
+		// The phi's instruction becomes the conversion, after the block's
+		// phis.
+		unlink_after(body, block, prev, id);
+		Instruction after = make_instruction(Opcode::Convert, phi.type);
+		after.sub = static_cast<uint8_t>(op);
+		set_convert_source_type(after, from);
+		after.result = phi.result;
+		after.location = phi.location;
+		after.ops[0] = Value::temp(narrow);
+		body.instructions[id] = after;
+		insert_after(body, block, last == id ? prev : last, id);
+		changed = true;
+	}
+	return changed;
+}
+
 bool diamond_at(const FunctionBody& body, const Cfg& cfg, BlockId head, Diamond& d)
 {
 	const InstId t = body.blocks[head].last;

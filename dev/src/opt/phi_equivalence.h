@@ -24,6 +24,12 @@ uint64_t phi_signature(
 // new phis; a new phi precedes the block's other phis.
 bool retype_copy_phis(FunctionContext& context, lowir::BlockId block, std::vector<lowir::Value>& replacements,
 	std::vector<uint32_t>& uses);
+// A phi whose every input is one integer conversion (an extension or a
+// truncation from one type) of the input another phi of the block takes from
+// that predecessor, or a constant that conversion takes that phi's constant
+// to, becomes the conversion of the other phi.
+bool convert_matching_phis(FunctionContext& context, lowir::BlockId block, std::vector<lowir::Value>& replacements,
+	std::vector<uint32_t>& uses);
 // A diamond: `head` branches on c to two arms with it as their one
 // predecessor, which jump to one merge they are the only predecessors of.
 struct Diamond
