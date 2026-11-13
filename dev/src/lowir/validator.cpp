@@ -259,26 +259,6 @@ const OperandRule kOperandRules[] = {
 static_assert(sizeof kOperandRules / sizeof kOperandRules[0] == static_cast<unsigned>(Opcode::Unreachable) + 1,
 	"one operand rule per opcode");
 
-// The type of an instruction's result temporary: a comparison's truth
-// value is i64, an address is ptr, otherwise the instruction's type.
-Type result_type(const Instruction& inst, Type pointer_type)
-{
-	switch (inst.op)
-	{
-	case Opcode::Compare:
-	case Opcode::AtomicCompareExchange:
-	case Opcode::ExceptionSelector:
-		return Type::scalar(TypeKind::I64);
-	case Opcode::Addr:
-	case Opcode::Index:
-	case Opcode::StackAlloc:
-	case Opcode::StackSave:
-		return pointer_type;
-	default:
-		return inst.type;
-	}
-}
-
 class Validator
 {
 public:
@@ -834,7 +814,7 @@ bool Validator::check_operands(InstId id, const Instruction& inst)
 		return inst.result == kNoId || fail("a void instruction has no result");
 	if (inst.result >= body_->temps.size() || body_->temps[inst.result].def != id)
 		return fail("value instruction without its result temporary");
-	const Type type = result_type(inst, program_.pointer_type());
+	const Type type = instruction_result_type(inst, program_.pointer_type());
 	if (type.is_void())
 		return fail("a void instruction has no result");
 	if (body_->temps[inst.result].type != type)

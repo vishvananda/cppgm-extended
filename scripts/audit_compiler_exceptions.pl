@@ -75,7 +75,7 @@ my %explicit_throw_type = (
 # translation-unit location rendered (syntax::SyntaxUnit::locate).
 my $locate_type = 'locate';
 
-# Every generic standard catch is a last-resort executable boundary paired
+# Every generic standard catch is a last-resort executable or C ABI boundary paired
 # with an InternalError catch. Counts make additions and moves explicit.
 my %terminal_allowlist = (
 	'dev/abimangle.cpp' => 1,
@@ -87,6 +87,8 @@ my %terminal_allowlist = (
 	'dev/posttoken.cpp' => 1,
 	'dev/pptoken.cpp' => 1,
 	'dev/preproc.cpp' => 1,
+	# Two foreign boundaries: creation and the guarded C API calls.
+	'dev/lowir_library.cpp' => 2,
 );
 
 # The allocator protocol's std::bad_alloc: the arena and the zeroed

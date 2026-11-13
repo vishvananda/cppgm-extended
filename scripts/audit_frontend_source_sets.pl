@@ -130,7 +130,7 @@ for my $target (@defined_target)
 }
 
 my @set_variable = sort grep {
-	/^FRONTEND_(?:SOURCE_IDS|OBJ_BASENAMES)_/
+	/^FRONTEND_(?:SOURCE_IDS|OBJ_BASENAMES|LIBRARY_SOURCE_IDS)_/
 } keys %value;
 my %owner;
 for my $name (@set_variable)
@@ -158,6 +158,15 @@ for my $target (@target)
 	next if !exists($value{$name});
 	$owner{$_}{$target} = 1 for split / /, $value{$name};
 }
+# Optional library boundaries also own implementation modules, without adding
+# executables to the course tool list. Their sources use the same phase sets.
+for my $library (split / /, $value{'FRONTEND_LIBRARY_SOURCE_SET_TARGETS'} // '')
+{
+	my $key = "FRONTEND_LIBRARY_SOURCE_IDS_$library";
+	push @error, "missing library source set $key" if !exists($value{$key});
+	$owner{$_}{"<library:$library>"} = 1 for split / /, $value{$key} // '';
+}
+
 for my $special (qw(FRONTEND_TEST_RUNNER_SOURCE_ID
 	FRONTEND_BUILTIN_CONFIG_SOURCE_ID))
 {

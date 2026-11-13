@@ -317,6 +317,10 @@ class ExportedDevMakefileTests(unittest.TestCase):
             src = dev / "src"
             src.mkdir(parents=True)
             (dev / "Makefile").write_text(makefile)
+            if "include lowir_library.mk" in makefile:
+                (dev / "lowir_library.mk").write_text(
+                    (REPO_ROOT / "dev/lowir_library.mk").read_text()
+                )
 
             targets = [
                 "abimangle", "pptoken", "posttoken", "ppexpr",

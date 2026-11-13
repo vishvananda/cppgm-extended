@@ -172,3 +172,5 @@ $(DEPDIR)/%.d: ;
 -include $(DEPDIR)/test_runner_enabled.d
 
 .PHONY: all clean FORCE cppgm++-telemetry-off cppgm++-telemetry-off-build
+
+include lowir_library.mk

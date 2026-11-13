@@ -180,4 +180,24 @@ inline void set_convert_source_type(Instruction& inst, Type type)
 	std::memcpy(&inst.immediate, &type, sizeof type);
 }
 
+// The type of an instruction's result temporary: a comparison's truth
+// value is i64, an address is ptr, otherwise the instruction's type.
+inline Type instruction_result_type(const Instruction& inst, Type pointer_type)
+{
+	switch (inst.op)
+	{
+	case Opcode::Compare:
+	case Opcode::AtomicCompareExchange:
+	case Opcode::ExceptionSelector:
+		return Type::scalar(TypeKind::I64);
+	case Opcode::Addr:
+	case Opcode::Index:
+	case Opcode::StackAlloc:
+	case Opcode::StackSave:
+		return pointer_type;
+	default:
+		return inst.type;
+	}
+}
+
 } // namespace lowir

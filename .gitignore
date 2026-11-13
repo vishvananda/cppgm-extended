@@ -47,3 +47,8 @@ obj-ubsan/
 obj-dbg/
 dev/obj-clang/
 dev/obj-clang-libcxx/
+
+# Optional embeddable LowIR backend build products.
+/dev/libcppgm_lowir.a
+/dev/libcppgm_lowir.so
+/dev/libcppgm_lowir.dylib
