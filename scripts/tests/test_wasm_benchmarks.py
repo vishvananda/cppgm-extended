@@ -25,7 +25,7 @@ def document(level='O3'):
                                for metric in ('seconds', 'cpu_seconds', 'setup_seconds')}
                          for mode in ('AA', 'AB')}
     config = dict(id='scalar', phases=phases,
-                  cases=[[k, count, seed, 17] for k in range(4) for count in (1, 3)
+                  cases=[[k, count, seed, 17] for k in range(len(producer.CASES)) for count in (1, 3)
                          for seed in (17, 42, 0x80000000, 0xffffffff)],
                   module_sizes={side: dict(module=2000, code=1000, data=0) for side in ('cppgm', 'clang')},
                   module_sha256={side: 'b'*64 for side in ('cppgm', 'clang')})
@@ -36,7 +36,7 @@ def document(level='O3'):
                     compiler_sha256='c'*64, clang_sha256='d'*64, engine_sha256='e'*64,
                     engine=dict(version='50.0.1'), optimization=level,
                     flags=dict(cppgm=['-'+level], clang=['-'+level, '-msimd128']))
-    return dict(schema=1, status='complete', metadata=metadata,
+    return dict(schema=2, status='complete', metadata=metadata,
                 configurations=[config, other], warnings=[])
 
 
@@ -61,6 +61,11 @@ class WasmBenchmarkTests(unittest.TestCase):
         for invalid in (rows[:-1], [rows[1], rows[0], rows[2], rows[3]]):
             self.assertNotEqual(self.perl(code, json.dumps(invalid)).returncode, 0)
 
+    def test_larger_workloads_have_independent_checked_oracles(self):
+        result = self.perl('print CppgmWasmBenchmark::oracle($_,3,17), "\\n" for 4..7')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), ['3590058341', '137242830', '2861037116', '397094046'])
+
     def test_shared_report_keeps_sizes_setup_and_unavailable_gcc_explicit(self):
         normalized = producer.normalized([document()], 'unit test', 'https://example.org/run',
                                          'https://example.org/report', 'https://example.org/raw')
@@ -72,7 +77,7 @@ class WasmBenchmarkTests(unittest.TestCase):
         self.assertEqual(len(sizes), 6)
         self.assertTrue(all(r['candidate_seconds'] is None for r in sizes))
         self.assertEqual([r['candidate_value'] for r in sizes if r['test'] == 'data-size'], [0, 0])
-        self.assertEqual(len([r for r in normalized['records'] if r['test'].endswith('-input-preparation')]), 16)
+        self.assertEqual(len([r for r in normalized['records'] if r['test'].endswith('-input-preparation')]), 4 * len(producer.CASES))
 
     def test_loader_rejects_mixed_hosts_inputs_and_incomplete_oracles(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -100,7 +105,12 @@ class WasmBenchmarkTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)
             args = argparse.Namespace(target=target, revision='a'*40, platform='github', run_url='https://example.org/run')
-            producer.publish(args, [document('O0'), document('O3')])
+            documents = [document('O0'), document('O3')]
+            for value in documents:
+                for config in value['configurations']:
+                    for name in producer.CASES:
+                        config['phases'][name]['AB']['seconds'].update(speedup=4., ratios=[4.]*3)
+            producer.publish(args, documents)
             self.assertTrue((target / 'wasm/history' / ('a'*40) / 'github-intel/standard/wasm.md').is_file())
             svg = (target / 'wasm/github-intel-simd128-runtime-clang.svg').read_text()
             self.assertIn('1.50', svg)

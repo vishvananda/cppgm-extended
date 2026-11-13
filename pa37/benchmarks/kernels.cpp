@@ -1,7 +1,9 @@
 static unsigned input[2048] __attribute__((aligned(16)));
+#include "applications.h"
 
 extern "C" void prepare(unsigned seed)
 {
+    prepare_applications(seed);
     for (unsigned i = 0; i < 2048; ++i) {
         seed = seed * 1664525u + 1013904223u;
         input[i] = seed;
@@ -69,7 +71,8 @@ extern "C" unsigned run(unsigned kind, unsigned repeats, unsigned seed)
     unsigned result = 17;
     for (unsigned r = 0; r < repeats; ++r) {
         unsigned value = kind == 0 ? hash_words(seed+r) : kind == 1 ? filtered_sum(seed+r)
-            : kind == 2 ? matrix_product(seed+r) : transform_words(seed+r);
+            : kind == 2 ? matrix_product(seed+r) : kind == 3 ? transform_words(seed+r)
+            : run_application(kind, seed+r);
         result = ((result << 5) | (result >> 27)) ^ value;
     }
     return result;

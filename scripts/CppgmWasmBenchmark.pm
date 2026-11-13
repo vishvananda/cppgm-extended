@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Exporter 'import';
 use CppgmWasmModule;
+use CppgmWasmApplications;
 our @EXPORT_OK = qw(oracle module_sizes summarize median);
 
 sub mul32 {
@@ -48,13 +49,13 @@ sub oracle {
                     $value ^= rotate($sum, ($i+$j) & 7);
                 }
             }
-        } else {
+        } elsif ($kind == 3) {
             for my $i (0 .. 2047) {
                 my $x = $input[$i];
                 my $y = ((mul32($x, 3) + $key) & 0xffffffff) ^ (($x >> 5) + 11 + ($i & 3)*6);
                 $value = ($value + $y) & 0xffffffff;
             }
-        }
+        } else { $value = CppgmWasmApplications::value($kind, $seed, $key); }
         $result = rotate($result, 5) ^ $value;
     }
     return $result;

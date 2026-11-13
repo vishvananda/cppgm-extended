@@ -410,6 +410,7 @@ shared_scripts=(
   scripts/CppgmWasmQuality.pm
   scripts/CppgmWasmGlobals.pm
   scripts/CppgmWasmBenchmark.pm
+  scripts/CppgmWasmApplications.pm
   scripts/wasm_benchmarks.pl
   scripts/wasm_benchmark_runner.cpp
   scripts/install_wasm_tools.pl

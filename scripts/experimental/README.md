@@ -441,3 +441,23 @@ at O0/O2/O3. Strict 10,864/10,864, debug info, PA5 selfhost, native inception,
 PA36 smoke, architecture/format/placement audits, harness and student export pass.
 The harness timeout test failed once under load and passed the focused recheck
 and complete harness rerun; all observations remain in the evidence directory.
+
+## Full compiler benchmark
+
+The same CI workflow has a separate full WASI self-build measurement. It builds
+two copies of the compiler at O3, using cppgm and the pinned Clang with identical
+SDK headers, EH libc++, configuration macros and frozen compiler sources. Both
+WASI compilers then rebuild every compiler translation unit and link the result.
+All generated objects and the final module must match the native cppgm producer
+byte for byte. A/A and ABBA observations report compile, link and total CPU and
+wall time. Guest startup and WASI file I/O are included; Wasmtime compilation is
+excluded using precompiled modules. This result is separate from the warmed
+export runtime summary and never averaged into its badges.
+
+For a local full build comparison, after installing the optional inception
+dependencies described in `scripts/experimental/README.md`, run:
+
+```sh
+python3 scripts/wasm_selfbuild_benchmarks.py --tools obj/wasm-tools \
+  --output obj/wasm-selfbuild --jobs 2
+```

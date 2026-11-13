@@ -151,7 +151,7 @@ Badges show **EPYC / Intel / CI Intel**, top to bottom; CI Intel means GitHub ho
 </tbody>
 </table>
 
-‡ Wasm runtime uses warmed exports in the same pinned engine; compilation is CPU time. [Size, startup, O0 and every kernel](pa37/benchmarks/README.md).
+‡ Wasm runtime uses warmed exports in the same pinned engine; compilation is CPU time. [Size, startup, O0 and eight workloads](pa37/benchmarks/README.md); [separate full WASI self-build comparison](scripts/experimental/README.md#full-compiler-benchmark).
 
 cppgm++ runtime measures **codegen performance**: self-built versus GCC-built or Clang-built compiler.
 

@@ -310,6 +310,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_wasm_generators.py \
 	scripts/tests/test_machine_boundary.py \
 	scripts/tests/test_wasm_benchmarks.py \
+	scripts/tests/test_wasm_selfbuild_benchmarks.py \
 	scripts/tests/test_benchmark_report.py \
 	scripts/tests/test_benchmark_freshness.py \
 	scripts/tests/test_benchmark_publication.py \

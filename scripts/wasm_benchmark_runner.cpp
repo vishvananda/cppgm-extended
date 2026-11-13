@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -75,6 +76,7 @@ struct Instance
 	wasmtime_store_t* store;
 	wasmtime_instance_t instance;
 	double seconds;
+	double cpu_seconds;
 	wasmtime_context_t* context() const { return wasmtime_store_context(store); }
 };
 
@@ -85,7 +87,9 @@ Instance instantiate(wasm_engine_t* engine, wasmtime_module_t* module)
 	wasmtime_store_limiter(result.store, 268435456, 100000, 16, 16, 16);
 	wasm_trap_t* trap = nullptr;
 	const auto start = Clock::now();
+	const auto cpu_start = std::clock();
 	wasmtime_error_t* error = wasmtime_instance_new(result.context(), module, nullptr, 0, &result.instance, &trap);
+	result.cpu_seconds = double(std::clock() - cpu_start) / CLOCKS_PER_SEC;
 	result.seconds = elapsed(start);
 	check(error, trap);
 	return result;
@@ -157,23 +161,27 @@ int main(int argc, char** argv)
 	unsigned slot, kind, repeats, seed;
 	while (std::cin >> slot >> kind >> repeats >> seed)
 	{
-		if (slot >= instances.size() || kind > 4)
+		if (slot >= instances.size() || (kind > 7 && kind != UINT32_MAX))
 			return 1;
 		double seconds;
+		double cpu_seconds;
 		double setup_seconds = 0;
 		uint32_t result = 0;
-		if (kind == 4)
+		if (kind == UINT32_MAX)
 		{
 			if (repeats == 0)
 				return 1;
 			seconds = 0;
+			cpu_seconds = 0;
 			for (unsigned i = 0; i < repeats; ++i)
 			{
 				const Instance instance = instantiate(engine, modules[slot]);
 				seconds += instance.seconds;
+				cpu_seconds += instance.cpu_seconds;
 				wasmtime_store_delete(instance.store);
 			}
 			seconds /= repeats;
+			cpu_seconds /= repeats;
 		}
 		else
 		{
@@ -184,12 +192,14 @@ int main(int argc, char** argv)
 			call(instance, "prepare", { seed }, false);
 			setup_seconds = elapsed(setup);
 			const auto start = Clock::now();
+			const auto cpu_start = std::clock();
 			result = call(instance, "run", { kind, repeats, seed }, true);
+			cpu_seconds = double(std::clock() - cpu_start) / CLOCKS_PER_SEC;
 			seconds = elapsed(start);
 		}
 		std::cout << "{\"event\":\"run\",\"slot\":" << slot << ",\"kind\":" << kind << ",\"repeats\":" << repeats
-				  << ",\"seed\":" << seed << ",\"seconds\":" << seconds << ",\"setup_seconds\":" << setup_seconds
-				  << ",\"result\":" << result << "}\n";
+				  << ",\"seed\":" << seed << ",\"seconds\":" << seconds << ",\"cpu_seconds\":" << cpu_seconds
+				  << ",\"setup_seconds\":" << setup_seconds << ",\"result\":" << result << "}\n";
 	}
 	if (!std::cin.eof())
 		return 1;

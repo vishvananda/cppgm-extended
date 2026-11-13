@@ -28,6 +28,61 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  self-build:
+    if: inputs.platform != 'intel'
+    name: Complete WASI self-build comparison
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_STDLIB_FLAGS: ''
+      CPPGM_WARNINGS_AS_ERRORS: '1'
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential ca-certificates curl git perl python3 xz-utils nodejs npm
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Trust the mounted checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Build compiler and install pinned tools
+        run: |
+          make -C dev cppgm++ -j "$(nproc)"
+          perl scripts/install_wasm_tools.pl --prefix obj/wasm-tools
+          npm ci --ignore-scripts --prefix scripts/experimental
+      - name: Measure full compiler rebuilds
+        run: |
+          python3 scripts/wasm_selfbuild_benchmarks.py --tools obj/wasm-tools \
+            --output obj/wasm-selfbuild --jobs 2
+      - name: Report results
+        if: always()
+        run: |
+          if [ -f obj/wasm-selfbuild/summary.md ]; then
+            cat obj/wasm-selfbuild/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Retain measurements and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: wasm-selfbuild-${{ github.sha }}-${{ github.run_id }}
+          path: |
+            obj/wasm-selfbuild/*.json
+            obj/wasm-selfbuild/*.md
+            obj/wasm-selfbuild/*.log
+            obj/wasm-selfbuild/package/manifest.json
+            obj/wasm-selfbuild/package/manifest.sha256
+            obj/wasm-selfbuild/package/inputs/**/*.log
+          if-no-files-found: warn
+          retention-days: 14
+
   benchmarks:
     if: inputs.platform != 'intel'
     name: Wasm compile, size, startup and steady execution

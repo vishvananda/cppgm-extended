@@ -16,7 +16,7 @@ import benchmark_report
 from library_benchmark_badges import HOSTS, geometric, svg
 
 ROOT = Path(__file__).resolve().parents[1]
-CASES = ('hash', 'filter', 'matrix', 'transform')
+CASES = ('hash', 'filter', 'matrix', 'transform', 'sort', 'graph', 'json', 'lzss')
 
 
 def load(artifacts):
@@ -24,7 +24,7 @@ def load(artifacts):
     seen = set()
     for path, document in zip(artifacts, documents):
         metadata = document['metadata']
-        if document['status'] != 'complete' or document['schema'] != 1:
+        if document['status'] != 'complete' or document['schema'] != 2:
             raise ValueError('only complete checked measurements can be reported')
         if json.loads((path / 'metadata.json').read_text()) != metadata:
             raise ValueError('result provenance differs from metadata')
@@ -42,12 +42,19 @@ def load(artifacts):
         if {row['id'] for row in document['configurations']} != {'scalar', 'simd128'}:
             raise ValueError('incomplete Wasm configuration set')
         for config in document['configurations']:
-            expected = {(kind, count, seed) for kind in range(4) for count in (1, 3)
+            if set(config['phases']) != {'compile', 'link', 'startup', *CASES}:
+                raise ValueError('workload or build phase coverage is incomplete')
+            expected = {(kind, count, seed) for kind in range(len(CASES)) for count in (1, 3)
                         for seed in (17, 42, 0x80000000, 0xffffffff)}
-            if len(config['cases']) != 32 or {tuple(row[:3]) for row in config['cases']} != expected:
+            if len(config['cases']) != 8 * len(CASES) or {tuple(row[:3]) for row in config['cases']} != expected:
                 raise ValueError('independent oracle coverage is incomplete')
-            for phase in config['phases'].values():
+            for name, phase in config['phases'].items():
                 for mode in ('AA', 'AB'):
+                    required = {'seconds'} if name == 'startup' else {'seconds', 'cpu_seconds'}
+                    if name in CASES:
+                        required.add('setup_seconds')
+                    if not required <= phase[mode].keys():
+                        raise ValueError('missing timing metric: ' + name)
                     for metric in ('seconds', 'cpu_seconds', 'setup_seconds'):
                         if metric not in phase[mode]:
                             continue
@@ -120,13 +127,19 @@ def normalized(documents, environment, run_url, details_url, raw_url):
                 add(name, 'runtime', 'elapsed_seconds', config['phases'][name]['AB']['seconds'],
                     'Median paired ABBA block ratios for one warmed export call; '
                     'excludes engine compilation, instantiation and input preparation', scope='test', kind=kind)
+                add(name, 'runtime', 'cpu_seconds', config['phases'][name]['AB']['cpu_seconds'],
+                    'Median paired ABBA block ratios; process CPU clock around one warmed export call; '
+                    'parallel engine compilation disabled; excludes input preparation', scope='test', kind=kind)
                 add(name + '-input-preparation', 'startup', 'elapsed_seconds',
                     config['phases'][name]['AB']['setup_seconds'],
                     'Median paired ABBA block ratios for input preparation; excludes warmed workload execution',
                     scope='test', kind=kind)
-            add('checked-kernels', 'runtime', 'elapsed_seconds', dict(candidate=None, reference=None,
+            add('checked-workloads', 'runtime', 'elapsed_seconds', dict(candidate=None, reference=None,
                 speedup=geometric(config['phases'][name]['AB']['seconds']['speedup'] for name in CASES)),
-                'Equal-weight geometric mean of four checked kernel paired speedups; no cross-host aggregation')
+                'Equal-weight geometric mean of eight checked workload paired speedups; no cross-host aggregation')
+            add('checked-workloads', 'runtime', 'cpu_seconds', dict(candidate=None, reference=None,
+                speedup=geometric(config['phases'][name]['AB']['cpu_seconds']['speedup'] for name in CASES)),
+                'Equal-weight geometric mean of eight checked workload paired CPU speedups; no cross-host aggregation')
             cov = coverage()
             validations.append(dict(base, oracle='Independent Perl arithmetic, seeded edge cases and cross-compiler checksums',
                 status='passed', coverage={k: cov[k] for k in ('selected', 'excluded', 'unit', 'case_set_sha256')}))
@@ -180,7 +193,7 @@ def seed(target):
             config = next((c for c in o3['configurations'] if c['id'] == configuration), None) if o3 else None
             for phase in ('compile', 'runtime'):
                 value = None if config is None else (config['phases']['compile']['AB']['cpu_seconds']['speedup']
-                    if phase == 'compile' else geometric(config['phases'][name]['AB']['seconds']['speedup'] for name in CASES))
+                    if phase == 'compile' else geometric(config['phases'][name]['AB']['cpu_seconds']['speedup'] for name in CASES))
                 label = 'Wasm ' + configuration + ' ' + phase + ' vs Clang'
                 if o3:
                     label += '; ' + o3['metadata']['cpu'] + '; revision ' + o3['metadata']['revision']

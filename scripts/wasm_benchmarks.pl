@@ -88,6 +88,7 @@ my $engine = "$tools/wasmtime-c-api";
 die "Missing pinned C API; run install_wasm_tools.pl --benchmark-engine\n" unless -f "$engine/lib/libwasmtime.a";
 my $source = "$output/kernels.cpp";
 copy("$repo_root/pa37/benchmarks/kernels.cpp", $source) or die "Cannot freeze input: $!\n";
+copy("$repo_root/pa37/benchmarks/applications.h", "$output/applications.h") or die "Cannot freeze applications: $!\n";
 my $runner = "$output/runner";
 capture([shellwords($host_cxx), '-std=c++11', '-O2', '-Wall', '-Wextra', '-Werror',
     "-I$engine/include", "$root/scripts/wasm_benchmark_runner.cpp", "$engine/lib/libwasmtime.a",
@@ -98,7 +99,7 @@ my $validator = "$tools/bin/wasm-tools";
 my @flags = ('-std=c++11', "-O$level", '-fno-exceptions', '-fno-strict-aliasing');
 my $metadata = {revision => $revision, dirty => $dirty ? JSON::PP::true : JSON::PP::false,
     cpu => $cpu, architecture => $uname[4], operating_system => join(' ', @uname[0,2,3]), affinity => \@affinity,
-    source_sha256 => digest($source), compiler_sha256 => digest($compiler), clang_sha256 => digest($clang),
+    source_sha256 => sha256_hex(read_file($source) . read_file("$output/applications.h")), compiler_sha256 => digest($compiler), clang_sha256 => digest($clang),
     linker_sha256 => digest($lld), runner_sha256 => digest($runner), engine_sha256 => digest("$engine/lib/libwasmtime.a"),
     tool_manifest_sha256 => digest("$FindBin::Bin/wasm_tools.json"), optimization => "O$level",
     engine => {version => '50.0.1', compiler => 'Cranelift', optimization => 'speed', simd => JSON::PP::true,
@@ -110,10 +111,10 @@ my $metadata = {revision => $revision, dirty => $dirty ? JSON::PP::true : JSON::
     clang_version => capture([$clang, '--version']), flags => {cppgm => \@flags, clang => [@flags, '-msimd128']}};
 $metadata->{host_cxx_version} = capture([shellwords($host_cxx), '--version']);
 save_json("$output/metadata.json", $metadata);
-save_json("$output/results.json", {schema => 1, status => 'partial', metadata => $metadata});
-my @names = qw(hash filter matrix transform);
+save_json("$output/results.json", {schema => 2, status => 'partial', metadata => $metadata});
+my @names = qw(hash filter matrix transform sort graph json lzss);
 my @cases = map {my $kind = $_; map {my $seed = $_; map {
-    [$kind, $_, $seed, oracle($kind, $_, $seed)]} (1,3)} (17,42,0x80000000,0xffffffff)} (0..3);
+    [$kind, $_, $seed, oracle($kind, $_, $seed)]} (1,3)} (17,42,0x80000000,0xffffffff)} (0..$#names);
 my @warnings;
 my @configurations;
 
@@ -173,10 +174,10 @@ for my $simd (0,1) {
         die "Independent oracle mismatch in $configuration case $i\n"
             unless $checked->[$i]{result} == $cases[$i % @cases][3];
     }
-    for my $kind (0 .. 4) {
-        my $name = $kind == 4 ? 'startup' : $names[$kind];
-        my $repeats = $kind == 4 ? 100 : 16;
-        if ($kind != 4) {
+    for my $kind (0 .. $#names, 0xffffffff) {
+        my $name = $kind == 0xffffffff ? 'startup' : $names[$kind];
+        my $repeats = $kind == 0xffffffff ? 100 : 16;
+        if ($kind != 0xffffffff) {
             for my $round (0 .. 8) {
                 my $row = batch(\@modules, [[1,$kind,$repeats,42]], "$configuration-$name-calibrate-$round")->[0];
                 last if $row->{seconds} >= $seconds;
@@ -198,7 +199,8 @@ for my $simd (0,1) {
             die "Runtime checksums differ in $configuration/$name\n"
                 if grep {$_->{result} != $expected_result} @$rows;
             $phases{$name}{$mode} = {seconds => summarize($rows, 'seconds'), repeats => $repeats};
-            $phases{$name}{$mode}{setup_seconds} = summarize($rows, 'setup_seconds') if $kind != 4;
+            $phases{$name}{$mode}{cpu_seconds} = summarize($rows, 'cpu_seconds') if $kind != 0xffffffff;
+            $phases{$name}{$mode}{setup_seconds} = summarize($rows, 'setup_seconds') if $kind != 0xffffffff;
         }
         my $aa = $phases{$name}{AA}{seconds}{speedup};
         push @warnings, "$configuration/$name A/A ratio $aa exceeds 5%" if abs($aa-1) > .05;
@@ -209,14 +211,14 @@ for my $simd (0,1) {
         cases => \@cases, case_set_sha256 => sha256_hex($json->encode(\@cases))};
     print "$configuration: checked " . scalar(@cases) . " independent cases per compiler\n";
 }
-save_json("$output/results.json", {schema => 1, status => 'complete', metadata => $metadata,
+save_json("$output/results.json", {schema => 2, status => 'complete', metadata => $metadata,
     configurations => \@configurations, warnings => \@warnings, blocks => $blocks, aa_blocks => $aa_blocks});
 my $details = "# Wasm32 benchmark\n\nCompiler: `$revision`; $cpu; $metadata->{optimization}.\n\n" .
-    "Reference / cppgm; higher is better. 32 independent oracle cases pass per compiler/configuration.\n\n" .
+    "Reference / cppgm; higher is better. 64 independent oracle cases pass per compiler/configuration.\n\n" .
     "| Configuration | Phase / metric | cppgm | Clang | Ratio |\n|---|---|---:|---:|---:|\n";
 for my $config (@configurations) {
     for my $phase ('compile','link','startup',@names) {
-        for my $metric ($phase eq 'compile' || $phase eq 'link' ? ('cpu_seconds','seconds') : ('seconds')) {
+        for my $metric ($phase eq 'startup' ? ('seconds') : ('cpu_seconds','seconds')) {
             my $v = $config->{phases}{$phase}{AB}{$metric};
             $details .= sprintf("| %s | %s / %s | %.6f | %.6f | %.3fx |\n",
                 $config->{id},$phase,$metric,$v->{candidate},$v->{reference},$v->{speedup});
