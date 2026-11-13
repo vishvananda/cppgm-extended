@@ -1,0 +1,77 @@
+function @estimate(%data : ptr, %count : i64, %size : i64, %k : i64, %block : i64, %skip : i64, %channels : i32, %rot : i32) -> i32 [binding=strong] {
+  slot $sizes : obj<24x8>
+
+  block ^entry:
+    %t119 = addr $sizes
+    jump ^channel_loop
+
+  block ^channel_loop:
+    %t2 = phi i64 [^entry: 0, ^channel_next: %t33]
+    %t3 = phi i64 [^entry: 0, ^channel_next: %t32]
+    %t4 = phi i64 [^entry: 0, ^channel_next: %t34]
+    %t121 = index i64 [projection=array_element] %t119, %t4
+    %t58 = cmp ult i64 %t3, 4
+    branch %t58, ^loop_preheader_2, ^channel_next
+
+  block ^loop_preheader_2:
+    %t7 = phi i64 [^pass_next: %t127, ^channel_loop: %t3]
+    %t8 = phi i64 [^pass_next: %t29, ^channel_loop: %t2]
+    %t79 = cmp ult i64 %t8, %count
+    branch %t79, ^split_3, ^pass_next
+
+  block ^split_3:
+    %t10 = load typed i64 %t121
+    branch 1, ^loop_preheader_4, ^wide_tail_8
+
+  block ^loop_preheader_4:
+    %t11 = binary sub i64 %count, %t8
+    %t12 = binary and i64 %t11, -128
+    branch %t12, ^loop_preheader_5, ^wide_tail_8
+
+  block ^loop_preheader_5:
+    %t13 = binary add i64 %t8, %t12
+    jump ^unrolled_6
+
+  block ^unrolled_6:
+    %t14 = phi i64 [^loop_preheader_5: %t10, ^unrolled_6: %t16]
+    %t15 = phi i64 [^loop_preheader_5: %t8, ^unrolled_6: %t17]
+    %t16 = binary add i64 %t14, 128
+    %t17 = binary add i64 %t15, 128
+    %t18 = cmp ne i64 %t13, %t17
+    branch %t18, ^unrolled_6, ^loop_exit_7
+
+  block ^loop_exit_7:
+    %t19 = cmp ult i64 %t17, %count
+    branch %t19, ^wide_tail_8, ^loop_exit_10
+
+  block ^wide_tail_8:
+    %t20 = phi i64 [^split_3: %t10, ^loop_exit_7: %t16, ^loop_preheader_4: %t10]
+    %t21 = phi i64 [^split_3: %t8, ^loop_exit_7: %t17, ^loop_preheader_4: %t8]
+    jump ^at_body
+
+  block ^at_body:
+    %t122 = phi i64 [^at_body: %t123, ^wide_tail_8: %t20]
+    %t23 = phi i64 [^at_body: %t125, ^wide_tail_8: %t21]
+    %t123 = binary add i64 %t122, 16
+    %t125 = binary add i64 %t23, 16
+    %t26 = cmp ult i64 %t125, %count
+    branch %t26, ^at_body, ^loop_exit_10
+
+  block ^loop_exit_10:
+    %t27 = phi i64 [^at_body: %t123, ^loop_exit_7: %t16]
+    %t28 = phi i64 [^at_body: %t125, ^loop_exit_7: %t17]
+    store typed i64 %t27, %t121
+    jump ^pass_next
+
+  block ^pass_next:
+    %t29 = phi i64 [^loop_preheader_2: %t8, ^loop_exit_10: %t28]
+    %t127 = binary add i64 %t7, 1
+    %t31 = cmp ult i64 %t127, 4
+    branch %t31, ^loop_preheader_2, ^channel_next
+
+  block ^channel_next:
+    %t32 = phi i64 [^channel_loop: %t3, ^pass_next: %t127]
+    %t33 = phi i64 [^channel_loop: %t2, ^pass_next: %t29]
+    %t34 = binary add nowrap i64 %t4, 1
+    jump ^channel_loop
+}

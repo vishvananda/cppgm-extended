@@ -1,0 +1,19 @@
+function @digits(%n : i64, %end : ptr) -> ptr [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %v = phi i64 [^entry: %n, ^body: %t3]
+    %at = phi ptr [^entry: %end, ^body: %before]
+    %t3 = binary udiv i64 %v, 10
+    %t4 = binary mul i64 %t3, 10
+    %r = binary sub i64 %v, %t4
+    %c = binary add i64 %r, 48
+    %b = convert trunc i8 i64 %c
+    %before = index inbounds i8 %at, -1
+    store i8 %b, %before
+    branch %t3, ^body, ^done
+
+  block ^done:
+    return ptr %before
+}

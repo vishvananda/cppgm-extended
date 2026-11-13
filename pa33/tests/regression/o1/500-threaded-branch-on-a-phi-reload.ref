@@ -1,0 +1,39 @@
+function @f(%a : u32, %b : u32, %c : u32, %d : u32, %p : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %or1 = binary or u32 %a, %b
+    %or2 = binary or u32 %c, %or1
+    %or3 = binary or u32 %d, %or2
+    %big = cmp ugt u32 %or3, 16777215
+    branch %big, ^merge, ^rhs
+
+  block ^rhs:
+    %c2 = cmp ugt u32 %c, 65535
+    branch %c2, ^rhs2, ^unrolled_5
+
+  block ^rhs2:
+    %c3 = cmp ugt u32 %d, 65535
+    jump ^merge
+
+  block ^merge:
+    %t7 = phi i64 [^rhs2: %c3, ^entry: 1]
+    branch %t7, ^unrolled_4, ^unrolled_5
+
+  block ^unrolled_4:
+    %t8 = binary ushr u32 %a, 24
+    %t9 = convert trunc u8 u32 %t8
+    store u8 %t9, %p
+    jump ^unrolled_6
+
+  block ^unrolled_5:
+    %t10 = phi i64 [^rhs: 0, ^merge: 0]
+    branch %t10, ^unrolled_6, ^unrolled_7
+
+  block ^unrolled_6:
+    %t11 = binary ushr u32 %a, 24
+    %t12 = convert trunc u8 u32 %t11
+    store u8 %t12, %p
+    jump ^unrolled_7
+
+  block ^unrolled_7:
+    return void
+}
