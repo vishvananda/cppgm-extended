@@ -65,16 +65,6 @@ export CPPGM_BEHAVIOR_CHECK_APP := $(abspath $(CPPGM_DRIVER_APP))
 # optimization through the reference backend; the optimized program must
 # exit and print as the input's does (check_lowir_behavior).
 export CPPGM_LOWIR_BEHAVIOR_APP := $(abspath ../dev/lowir2native-ref)
-# Our own exact references live in the regression lane, outside the course
-# contract (tests/regression; see TESTING_AND_REFERENCES.md).
-REGRESSION_O0_TEST_ROOT ?= tests/regression/o0
-REGRESSION_O1_TEST_ROOT ?= tests/regression/o1
-REGRESSION_O2_TEST_ROOT ?= tests/regression/o2
-REGRESSION_O3_TEST_ROOT ?= tests/regression/o3
-REGRESSION_DRIVER_O1_TEST_ROOT ?= tests/regression/driver/o1
-REGRESSION_DRIVER_O2_TEST_ROOT ?= tests/regression/driver/o2
-REGRESSION_DRIVER_O3_TEST_ROOT ?= tests/regression/driver/o3
-CONTROL_TEST_ROOT ?= tests/regression/controls
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
 TEST_RUNNER_ENTRY_FLAGS = $(TEST_RUNNER_SHARED_FLAGS) $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
 CC_FLAGS = -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS)
@@ -145,46 +135,8 @@ define run_object_roundtrip_bucket
 	fi
 endef
 
-define run_inline_control_bucket
-	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
-		set -e; \
-		perl ../scripts/check_lowir_inline_limit.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_boolean_phi_controls.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_zero_bounded_range.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_addressed_scalar_slots.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_inlined_addressed_store.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_post_inline_promotion.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_historical_contracts.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_late_load_reuse.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_weak_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_o3_group_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_readonly_string_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_o3_loop_priority_inline.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_terminal_phi_returns.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_readonly_strlen.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_copy_elision.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_terminal_object_swap.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_bounded_object_memory.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_fast_path_versioning.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_survivor_properties.pl $(LOWIROPT_APP) "$(1)"; \
-	else \
-		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
-	fi
-endef
-
-define run_survivor_property_bucket
-	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
-		perl ../scripts/check_lowir_survivor_properties.pl \
-			$(LOWIROPT_APP) "$(1)"; \
-	else \
-		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
-	fi
-endef
-
-# The course suite (test-course) judges by contract, outcome and envelope; the
-# regression suite (test-regression) pins the course solution's outputs and
-# its pass-specific controls.
-test: test-course test-regression
+# The course suite (test-course) judges by contract, outcome and envelope.
+test: test-course
 
 test-course: $(TEST_DEPS) test-kernels
 	@CPPGM_APP_ARGS='-O0' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(O0_TEST_ROOT)
@@ -215,18 +167,6 @@ test-improvements: $(TEST_DEPS)
 
 .PHONY: test-kernels test-improvements
 
-test-regression: $(TEST_DEPS)
-	$(call run_text_course_bucket,-O0,$(LOWIROPT_APP),$(REGRESSION_O0_TEST_ROOT))
-	$(call run_text_course_bucket,-O1,$(LOWIROPT_APP),$(REGRESSION_O1_TEST_ROOT))
-	$(call run_text_course_bucket,-O2,$(LOWIROPT_APP),$(REGRESSION_O2_TEST_ROOT))
-	$(call run_text_course_bucket,-O3,$(LOWIROPT_APP),$(REGRESSION_O3_TEST_ROOT))
-	$(call run_text_course_bucket,--emit-lowir -g0 -O1,$(CPPGM_DRIVER_APP),$(REGRESSION_DRIVER_O1_TEST_ROOT))
-	$(call run_text_course_bucket,--emit-lowir -g0 -O2,$(CPPGM_DRIVER_APP),$(REGRESSION_DRIVER_O2_TEST_ROOT))
-	$(call run_text_course_bucket,--emit-lowir -g0 -O3,$(CPPGM_DRIVER_APP),$(REGRESSION_DRIVER_O3_TEST_ROOT))
-	$(call run_inline_control_bucket,$(CONTROL_TEST_ROOT))
-	$(call run_survivor_property_bucket,$(REGRESSION_O1_TEST_ROOT))
-	$(call run_survivor_property_bucket,$(REGRESSION_O2_TEST_ROOT))
-
 test-debuginfo: $(TEST_DEPS)
 	@CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(DEBUGINFO_O1_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(DEBUGINFO_O1_TEST_ROOT)
@@ -254,13 +194,6 @@ else
 	@if [ -d "$(DRIVER_O1_TEST_ROOT)" ]; then CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DRIVER_O1_TEST_ROOT); fi
 	@if [ -d "$(DRIVER_O2_TEST_ROOT)" ]; then CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DRIVER_O2_TEST_ROOT); fi
 	@if [ -d "$(DRIVER_O3_TEST_ROOT)" ]; then CPPGM_APP_ARGS='--emit-lowir -g0 -O3' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DRIVER_O3_TEST_ROOT); fi
-	@if [ -d "$(REGRESSION_O0_TEST_ROOT)" ]; then CPPGM_APP_ARGS='-O0' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(REGRESSION_O0_TEST_ROOT); fi
-	@if [ -d "$(REGRESSION_O1_TEST_ROOT)" ]; then CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(REGRESSION_O1_TEST_ROOT); fi
-	@if [ -d "$(REGRESSION_O2_TEST_ROOT)" ]; then CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(REGRESSION_O2_TEST_ROOT); fi
-	@if [ -d "$(REGRESSION_O3_TEST_ROOT)" ]; then CPPGM_APP_ARGS='-O3' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(REGRESSION_O3_TEST_ROOT); fi
-	@if [ -d "$(REGRESSION_DRIVER_O1_TEST_ROOT)" ]; then CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(REGRESSION_DRIVER_O1_TEST_ROOT); fi
-	@if [ -d "$(REGRESSION_DRIVER_O2_TEST_ROOT)" ]; then CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(REGRESSION_DRIVER_O2_TEST_ROOT); fi
-	@if [ -d "$(REGRESSION_DRIVER_O3_TEST_ROOT)" ]; then CPPGM_APP_ARGS='--emit-lowir -g0 -O3' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(REGRESSION_DRIVER_O3_TEST_ROOT); fi
 endif
 
 ref-test-debuginfo:
@@ -274,15 +207,14 @@ ref-test-debuginfo:
 REF_TEST_RUN = case "$(TEST)" in \
 	$(HOST_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='-O1' perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
 	$(HOST_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='-O2' perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
-	$(CONTROL_TEST_ROOT)/*) echo "$(TEST): structural inline-control predicate has no reference sidecar" ;; \
-	$(O0_TEST_ROOT)/*|$(REGRESSION_O0_TEST_ROOT)/*) CPPGM_APP_ARGS='-O0' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
-	$(O1_TEST_ROOT)/*|$(REGRESSION_O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
-	$(O2_TEST_ROOT)/*|$(REGRESSION_O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
-	$(O3_TEST_ROOT)/*|$(REGRESSION_O3_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*) CPPGM_APP_ARGS='-O3' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
-	$(DRIVER_O0_TEST_ROOT)/*|$(REGRESSION_DRIVER_O0_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O0' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
-	$(DRIVER_O1_TEST_ROOT)/*|$(REGRESSION_DRIVER_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
-	$(DRIVER_O2_TEST_ROOT)/*|$(REGRESSION_DRIVER_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
-	$(DRIVER_O3_TEST_ROOT)/*|$(REGRESSION_DRIVER_O3_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O3' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
+	$(O0_TEST_ROOT)/*) CPPGM_APP_ARGS='-O0' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
+	$(O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
+	$(O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
+	$(O3_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*) CPPGM_APP_ARGS='-O3' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
+	$(DRIVER_O0_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O0' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
+	$(DRIVER_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
+	$(DRIVER_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
+	$(DRIVER_O3_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O3' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
 	$(DEBUGINFO_DRIVER_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
 	$(DEBUGINFO_DRIVER_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
 	$(DEBUGINFO_DRIVER_O3_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O3' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
@@ -292,26 +224,6 @@ esac
 CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 		'$(HOST_O1_TEST_ROOT)/*::CPPGM_APP_ARGS="-O1" perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_DRIVER_APP) check {tests}' \
 		'$(HOST_O2_TEST_ROOT)/*::CPPGM_APP_ARGS="-O2" perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_DRIVER_APP) check {tests}' \
-		'$(CONTROL_TEST_ROOT)/*o3-fast-path-versioning*.t::perl ../scripts/check_lowir_fast_path_versioning.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*o3-bounded-object-memory*.t::perl ../scripts/check_lowir_bounded_object_memory.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*o3-terminal-staged-object-swap*.t::perl ../scripts/check_lowir_terminal_object_swap.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*copy-elision-permission*.t::perl ../scripts/check_lowir_copy_elision.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*loop-local-boolean-phi-branch*.t::perl ../scripts/check_lowir_boolean_phi_controls.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*zero-bounded-signed-range*.t::perl ../scripts/check_lowir_zero_bounded_range.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*inlined-addressed-store*.t::perl ../scripts/check_lowir_inlined_addressed_store.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*post-prune-inline-slot-promotion*.t::perl ../scripts/check_lowir_post_inline_promotion.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*historical-lowir-contracts*.t::perl ../scripts/check_lowir_historical_contracts.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*late-inline-hint-load-reuse*.t::perl ../scripts/check_lowir_late_load_reuse.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*post-inline-memory-gvn*.t::perl ../scripts/check_lowir_late_load_reuse.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*weak-specialization-profitability*.t::perl ../scripts/check_lowir_weak_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*o3-group-specialization*.t::perl ../scripts/check_lowir_o3_group_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*readonly-string-specialization*.t::perl ../scripts/check_lowir_readonly_string_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*o3-loop-priority-inline*.t::perl ../scripts/check_lowir_o3_loop_priority_inline.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*o3-terminal-phi-return*.t::perl ../scripts/check_lowir_terminal_phi_returns.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*readonly-byte-strlen*.t::perl ../scripts/check_lowir_readonly_strlen.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*inline-limit*.t::perl ../scripts/check_lowir_inline_limit.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*nonzero-underflow-value-proof*.t::perl ../scripts/check_lowir_survivor_properties.pl $(LOWIROPT_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*loop-carried-store-forwarding*.t::perl ../scripts/check_lowir_survivor_properties.pl $(LOWIROPT_APP) {tests}' \
 		'$(OBJECT_ROUNDTRIP_TEST_ROOT)/*::scripts/run_object_lowir_roundtrip_tests.pl --app $(CPPGM_DRIVER_APP) --test {tests}' \
 		'$(O0_TEST_ROOT)/*::CPPGM_APP_ARGS=-O0 scripts/run_all_tests.pl $(LOWIROPT_APP) check {tests}' \
 		'$(O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*::CPPGM_APP_ARGS=-O1 scripts/run_all_tests.pl $(LOWIROPT_APP) check {tests}' \
@@ -326,9 +238,11 @@ CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 		'$(DEBUGINFO_DRIVER_O3_TEST_ROOT)/*::CPPGM_APP_ARGS="--emit-lowir -gline-tables-only -O3" scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check {tests}'
 CHECK_COMPARE = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 		'$(HOST_O1_TEST_ROOT)/*|$(HOST_O2_TEST_ROOT)/*::scripts/compare_results.pl ref check {tests}' \
-		'$(CONTROL_TEST_ROOT)/*|$(OBJECT_ROUNDTRIP_TEST_ROOT)/*::true' \
+		'$(OBJECT_ROUNDTRIP_TEST_ROOT)/*::true' \
 		'$(O0_TEST_ROOT)/*|$(O1_TEST_ROOT)/*|$(O2_TEST_ROOT)/*|$(O3_TEST_ROOT)/*|$(DRIVER_O0_TEST_ROOT)/*|$(DRIVER_O1_TEST_ROOT)/*|$(DRIVER_O2_TEST_ROOT)/*|$(DRIVER_O3_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*|$(DEBUGINFO_DRIVER_O1_TEST_ROOT)/*|$(DEBUGINFO_DRIVER_O2_TEST_ROOT)/*|$(DEBUGINFO_DRIVER_O3_TEST_ROOT)/*::scripts/compare_results.pl ref check {tests}'
 include ../scripts/pa_run_check_targets.mk
+
+-include maintainer/Makefile
 
 .PHONY: dev-shared-target ref-test ref-test-debuginfo test-debuginfo
 ../dev/$(TARGET):

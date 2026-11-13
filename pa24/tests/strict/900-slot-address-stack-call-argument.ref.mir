@@ -29,6 +29,45 @@ function @write_seventh
     store.u8 [r10], 1
     ret
 
+function @check_bulk_scalar_uses
+  abi
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $buffer -> [rbp-16] : obj<16x1>
+    slot $copied -> [rbp-32] : obj<16x1>
+
+  block ^entry
+    lea r8, [rbp-16]
+    zero_bytes 16x1, r8
+    lea r9, [r8+10]
+    mov rdi, r9
+    sub rdi, r8
+    mov rsi, r8
+    sub rsi, r9
+    cmp.i64 rdi, 10
+    setne rdi
+    movzx rdi, rdi
+    cmp.i64 rsi, -10
+    setne rsi
+    movzx rsi, rsi
+    or rdi, rsi
+    lea r9, [rbp-32]
+    copy_bytes 16x1, r9, r8
+    lea r8, [rbp-32]
+    cmp.ptr r9, r8
+    setne rsi
+    movzx rsi, rsi
+    cmp.ptr r8, r9
+    setne r8
+    movzx r8, r8
+    or rsi, r8
+    or rdi, rsi
+    ret rdi
+
 function @main
   abi
     return i32 -> rax
@@ -37,6 +76,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
+    preserve rbx
     slot $created -> [rbp-8] : u8
 
   block ^entry
@@ -54,6 +94,9 @@ function @main
     add rsp, 16
     load.u8 r8, [rbp-8]
     cmp.i64 r8, 1
-    setne r8
-    movzx r8, r8
-    ret r8
+    setne rbx
+    movzx rbx, rbx
+    call @check_bulk_scalar_uses [args=()]
+    sext.i32 rax
+    or rbx, rax
+    ret rbx

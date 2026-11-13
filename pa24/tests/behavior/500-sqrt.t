@@ -1,5 +1,5 @@
-# sqrtsd and sqrtss, from a register and from a literal, and the result of a
-# negative input.
+# The square root of an f64 and of an f32, of a parameter and of a literal,
+# and of a negative operand, which is a NaN.
 function @root64(%x : f64) -> f64 [no_inline=yes] {
   block ^entry:
     %r = unary sqrt f64 %x

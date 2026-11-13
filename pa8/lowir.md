@@ -2282,8 +2282,8 @@ declarations and required model data. Its construction exercises compare
 only generated-program outcomes using `lowir2native-ref`. Neither mode
 uses the C++-lowering presentation rules below.
 
-The source-to-LowIR assignments (PA10 through PA23), PA30's LowIR lane,
-PA33's `-O0` driver lane and its regression lane judge an output by
+The source-to-LowIR assignments (PA10 through PA23), PA30's LowIR lane and
+PA33's `-O0` driver lane judge an output by
 comparing it with the course solution's LowIR after a presentation
 canonicalization: the relaxed LowIR
 comparison of `scripts/compare_results_common.pl`. PA8's debug-information

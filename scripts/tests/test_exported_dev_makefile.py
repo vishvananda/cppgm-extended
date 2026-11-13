@@ -177,6 +177,45 @@ class ExportedDevMakefileTests(unittest.TestCase):
                                         capture_output=True, text=True)
                 self.assertNotEqual(result.returncode, 0, target)
 
+    def test_pa24_pa33_export_drops_regression_lanes(self):
+        script = EXPORT_SCRIPT.read_text()
+        start = script.index('prune_student_regression_lanes() {')
+        end = script.index('\n}\n', start) + len('\n}\n')
+        with tempfile.TemporaryDirectory(prefix='exported-pa24-pa33.') as temp:
+            root = Path(temp)
+            for pa in ('pa24', 'pa33', 'pa34'):
+                shutil.copytree(REPO_ROOT / pa, root / pa, symlinks=True,
+                                ignore=shutil.ignore_patterns('*.my*', '*.check*', '*.ref.program'))
+            shutil.copytree(REPO_ROOT / 'scripts', root / 'scripts', symlinks=True)
+            (root / 'dev').mkdir()
+            shutil.copy(REPO_ROOT / 'dev/frontend_source_sets.mk', root / 'dev')
+            shutil.copy(REPO_ROOT / 'Makefile', root / 'Makefile')
+            subprocess.run(['bash', '-euo', 'pipefail', '-c',
+                            script[start:end] + '\ndest="$1"\nprune_student_regression_lanes',
+                            'bash', str(root)], check=True)
+            # A script only the PA33 controls ran goes; one a course lane runs stays.
+            self.assertFalse((root / 'scripts/check_lowir_inline_limit.pl').exists())
+            self.assertTrue((root / 'scripts/check_pa24_native_contracts.pl').is_file())
+            for name in ('pa24', 'pa33'):
+                with self.subTest(pa=name):
+                    pa = root / name
+                    self.assertFalse((pa / 'maintainer').exists())
+                    self.assertFalse((pa / 'tests/regression').exists())
+                    makefile = (pa / 'Makefile').read_text()
+                    self.assertNotIn('maintainer', makefile)
+                    for script_name in re.findall(r'\.\./scripts/[\w.-]+', makefile):
+                        self.assertTrue((pa / script_name).is_file(), script_name)
+                    result = subprocess.run(['make', '-n', '--no-print-directory', '-C', str(pa),
+                                             'test', 'ref-test', 'CPPGM_SKIP_DEV_REBUILD=1'],
+                                            capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertIn('scripts/run_all_tests.pl', result.stdout)
+                    self.assertNotIn('regression', result.stdout)
+                    result = subprocess.run(['make', '-n', '-C', str(pa), 'test-regression',
+                                             'CPPGM_SKIP_DEV_REBUILD=1'],
+                                            capture_output=True, text=True)
+                    self.assertNotEqual(result.returncode, 0, result.stdout)
+
     def test_student_default_excludes_solution_regressions(self):
         script = EXPORT_SCRIPT.read_text()
         start = script.index("sanitize_student_makefile_defaults() {")

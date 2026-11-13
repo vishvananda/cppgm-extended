@@ -182,9 +182,10 @@ optimized or g++-output-compared programs belong to PA25 and later. Controls
 without a stated outcome stay with PA10–PA12's focused checkers.
 
 PA24, PA33 and PA34 also have `tests/regression/`, which pins this solution's
-particular output shapes. Maintainer `make test` runs both `test-course` and
-`test-regression`; student-export `make test` runs the course contract only.
-PA34's export omits its regression fixtures and `maintainer/` tooling entirely.
+particular output shapes. Each one's `maintainer/Makefile` adds
+`test-regression` to `make test`. The export omits the regression fixtures, the
+`maintainer/` directory and the scripts only those lanes run, so student
+`make test` runs the course contract only.
 `pa34/tests/regression/simd/` is one such lane: hosted programs that compile the
 GCC vector intrinsic headers and link with `-lm`, so PA30's required surface does
 not grow. The source-only `pa34/maintainer/Makefile` retains census and Cachegrind
