@@ -52,6 +52,10 @@ bool make_loop_preheader(lowir::FunctionBody& body, const Cfg& cfg, const LoopFo
 // false with nothing marked when one is marked already (`l` waits for the next
 // round). Loops a pass rewrites under this rule do not see each other's changes.
 bool claim_loop(const Cfg& cfg, const Loop& l, std::vector<uint8_t>& touched);
+// Whether claim_loop would refuse `l`. A pass that reads a loop before it
+// claims it asks first: a refused loop may hold what a rewrite in this round
+// added, which the round's facts (the graph, `block_of`) do not cover.
+bool loop_claimed(const Cfg& cfg, const Loop& l, const std::vector<uint8_t>& touched);
 
 // An address as its root (a slot, a global, or the temporary or parameter
 // it steps from) and a constant byte offset when known, through literal

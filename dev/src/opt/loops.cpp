@@ -694,7 +694,11 @@ bool read_before_loop(
 	return false;
 }
 
-bool claim_loop(const Cfg& cfg, const Loop& l, std::vector<uint8_t>& touched)
+namespace {
+
+// The blocks a rewrite of `l` may change: the loop, those it leaves to and
+// those that enter it.
+std::vector<BlockId> near_blocks(const Cfg& cfg, const Loop& l)
 {
 	std::vector<BlockId> near;
 	for (BlockId b : l.blocks)
@@ -705,12 +709,32 @@ bool claim_loop(const Cfg& cfg, const Loop& l, std::vector<uint8_t>& touched)
 	}
 	for (uint32_t k = cfg.pred_first[l.header]; k < cfg.pred_first[l.header + 1]; ++k)
 		near.push_back(cfg.preds[k]);
+	return near;
+}
+
+bool any_touched(const std::vector<BlockId>& near, const std::vector<uint8_t>& touched)
+{
 	for (BlockId b : near)
 		if (touched[b] != 0)
-			return false;
+			return true;
+	return false;
+}
+
+} // namespace
+
+bool claim_loop(const Cfg& cfg, const Loop& l, std::vector<uint8_t>& touched)
+{
+	const std::vector<BlockId> near = near_blocks(cfg, l);
+	if (any_touched(near, touched))
+		return false;
 	for (BlockId b : near)
 		touched[b] = 1;
 	return true;
+}
+
+bool loop_claimed(const Cfg& cfg, const Loop& l, const std::vector<uint8_t>& touched)
+{
+	return any_touched(near_blocks(cfg, l), touched);
 }
 
 } // namespace opt

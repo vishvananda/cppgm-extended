@@ -486,7 +486,9 @@ bool StoreMotion::run()
 		bool one = false;
 		for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
 		{
-			if (!read_accesses(loop))
+			// (A loop near one this round rewrote waits for the next round:
+			// it may hold the new instructions, which block_of does not map.)
+			if (loop_claimed(cfg_, forest_.loops[loop], touched) || !read_accesses(loop))
 				continue;
 			// (A location not stored on every pass, or a loop with calls:
 			// its loads alone.) A loop with calls skips the first search:
