@@ -4,55 +4,55 @@ All original oracles passed for all three compilers. Seconds are child CPU, one 
 
 | Test | Kind | Compile cppgm | GCC | Clang | Test cppgm | GCC | Clang |
 |---|---|---:|---:|---:|---:|---:|---:|
-| function_test.test | RUN | 0.371350 | 1.860721 | 1.533629 | 0.001652 | 0.001814 | 0.001545 |
-| function_test_no_rtti.test | RUN | 0.369623 | 1.845066 | 1.567786 | 0.001630 | 0.001880 | 0.001644 |
-| function_n_test.test | RUN | 0.336884 | 1.518431 | 1.290301 | 0.001727 | 0.001750 | 0.001748 |
-| allocator_test.test | RUN | 0.265862 | 0.852888 | 0.852915 | 0.001855 | 0.001858 | 0.001694 |
-| stateless_test.test | RUN | 0.206093 | 0.456208 | 0.535085 | 0.001742 | 0.001552 | 0.001403 |
-| lambda_test.test | RUN | 0.441321 | 1.121504 | 1.142823 | 0.001810 | 0.001646 | 0.001725 |
-| function_test_fail1.test | COMPILE_FAIL | 0.159618 | 0.304350 | 0.368918 | — | — | — |
-| function_test_fail2.test | COMPILE_FAIL | 0.160211 | 0.308297 | 0.374890 | — | — | — |
-| function_30.test | COMPILE | 0.163131 | 0.329130 | 0.378452 | — | — | — |
-| function_30_repeat.test | COMPILE | 0.163485 | 0.327776 | 0.381007 | — | — | — |
-| function_arith_cxx98.test | RUN | 0.217381 | 0.558012 | 0.592337 | 0.001648 | 0.001480 | 0.001718 |
-| function_arith_portable.test | RUN | 0.200189 | 0.512012 | 0.544625 | 0.001730 | 0.001646 | 0.001637 |
-| sum_avg_cxx98.test | RUN | 0.207165 | 0.448475 | 0.520233 | 0.001582 | 0.001308 | 0.001663 |
-| sum_avg_portable.test | RUN | 0.196283 | 0.405867 | 0.501939 | 0.001790 | 0.001702 | 0.001724 |
-| mem_fun_cxx98.test | RUN | 0.231407 | 0.634132 | 0.642693 | 0.001814 | 0.001540 | 0.001480 |
-| mem_fun_portable.test | RUN | 0.228926 | 0.583899 | 0.619293 | 0.001524 | 0.001538 | 0.001572 |
-| std_bind_cxx98.test | RUN | 0.213379 | 0.528674 | 0.569529 | 0.001562 | 0.001746 | 0.001540 |
-| std_bind_portable.test | RUN | 0.217772 | 0.491228 | 0.527060 | 0.001860 | 0.001714 | 0.001699 |
-| function_ref_cxx98.test | RUN | 0.206242 | 0.448389 | 0.523291 | 0.001661 | 0.001682 | 0.001525 |
-| function_ref_portable.test | RUN | 0.199165 | 0.403617 | 0.470325 | 0.001751 | 0.001570 | 0.001498 |
-| contains_test.test | RUN | 0.245170 | 0.850080 | 0.816100 | 0.001626 | 0.001675 | 0.001521 |
-| contains2_test.test | RUN | 0.224684 | 0.608571 | 0.617522 | 0.001747 | 0.001788 | 0.001472 |
-| nothrow_swap.test | RUN | 0.227171 | 0.569644 | 0.595987 | 0.001500 | 0.001796 | 0.001653 |
-| rvalues_test.test | RUN | 0.253540 | 0.703522 | 0.692931 | 0.001827 | 0.001648 | 0.001647 |
-| function_typeof_test.test | COMPILE | 0.163148 | 0.313073 | 0.356792 | — | — | — |
-| result_arg_types_test.test | RUN | 0.235259 | 0.488895 | 0.626573 | 0.001646 | 0.001718 | 0.001746 |
-| result_arg_n_types_test.test | RUN | 0.247245 | 0.534676 | 0.752848 | 0.001818 | 0.001743 | 0.001572 |
-| test_bad_function_call_shared.test | RUN | 0.209624 | 0.457562 | 0.546110 | 0.001747 | 0.001965 | 0.001635 |
-| test_bad_function_call_static.test | RUN | 0.206393 | 0.449771 | 0.534470 | 0.001461 | 0.001820 | 0.001678 |
-| mixed_cxxstd_shared.test | RUN | 0.220660 | 0.528237 | 0.588065 | 0.001700 | 0.001676 | 0.001812 |
-| mixed_cxxstd_static.test | RUN | 0.216022 | 0.535787 | 0.585675 | 0.001679 | 0.001633 | 0.001709 |
-| mixed_cxxstd_shared_0x.test | RUN | 0.215373 | 0.532582 | 0.601427 | 0.001483 | 0.001969 | 0.001794 |
-| mixed_cxxstd_static_0x.test | RUN | 0.215627 | 0.535464 | 0.596472 | 0.001511 | 0.001733 | 0.002152 |
-| mixed_cxxstd_shared_14.test | RUN | 0.223552 | 0.534547 | 0.600716 | 0.001929 | 0.001680 | 0.001829 |
-| mixed_cxxstd_static_14.test | RUN | 0.220659 | 0.530690 | 0.604969 | 0.001712 | 0.001667 | 0.001767 |
-| return_function_shared.test | RUN | 0.213387 | 0.532406 | 0.583012 | 0.001587 | 0.001908 | 0.001789 |
-| return_function_static.test | RUN | 0.215472 | 0.530883 | 0.574016 | 0.001693 | 0.001567 | 0.001712 |
-| return_function_shared_0x.test | RUN | 0.214785 | 0.542007 | 0.581843 | 0.001610 | 0.001892 | 0.001852 |
-| return_function_static_0x.test | RUN | 0.215469 | 0.547446 | 0.565718 | 0.001808 | 0.001564 | 0.001640 |
-| return_function_shared_14.test | RUN | 0.217329 | 0.549192 | 0.579835 | 0.001765 | 0.001694 | 0.001554 |
-| return_function_static_14.test | RUN | 0.213402 | 0.532353 | 0.587917 | 0.001504 | 0.001850 | 0.001716 |
-| quick.test | RUN | 0.218100 | 0.534344 | 0.565558 | 0.001586 | 0.001714 | 0.001681 |
-| issue_42.test | COMPILE | 0.164683 | 0.338901 | 0.405243 | — | — | — |
-| fn_eq_bind_test.test | RUN | 0.277978 | 0.723956 | 0.861160 | 0.001543 | 0.001748 | 0.001538 |
-| contains_test_no_rtti.test | RUN | 0.247597 | 0.835065 | 0.818008 | 0.001709 | 0.001162 | 0.001342 |
-| contains2_test_no_rtti.test | RUN | 0.227022 | 0.606379 | 0.635533 | 0.001522 | 0.001632 | 0.001760 |
-| contains3_test.test | RUN | 0.216952 | 0.482043 | 0.566367 | 0.001690 | 0.001658 | 0.001498 |
-| contains3_test_no_rtti.test | RUN | 0.141263 | 0.393451 | 0.384070 | 0.001350 | 0.001265 | 0.001218 |
-| issue_53.test | COMPILE | 0.122235 | 0.265578 | 0.280256 | — | — | — |
+| function_test.test | RUN | 0.286510 | 1.538402 | 1.291712 | 0.001260 | 0.001475 | 0.001352 |
+| function_test_no_rtti.test | RUN | 0.280522 | 1.545285 | 1.297072 | 0.001332 | 0.001467 | 0.001235 |
+| function_n_test.test | RUN | 0.255814 | 1.262548 | 1.092159 | 0.001380 | 0.001426 | 0.001383 |
+| allocator_test.test | RUN | 0.207517 | 0.715732 | 0.713082 | 0.001317 | 0.001355 | 0.001391 |
+| stateless_test.test | RUN | 0.158379 | 0.380125 | 0.448955 | 0.001297 | 0.001338 | 0.001270 |
+| lambda_test.test | RUN | 0.326170 | 0.926561 | 0.980657 | 0.001305 | 0.001378 | 0.001346 |
+| function_test_fail1.test | COMPILE_FAIL | 0.117741 | 0.250786 | 0.302372 | — | — | — |
+| function_test_fail2.test | COMPILE_FAIL | 0.118363 | 0.258109 | 0.307410 | — | — | — |
+| function_30.test | COMPILE | 0.119310 | 0.275854 | 0.325158 | — | — | — |
+| function_30_repeat.test | COMPILE | 0.119848 | 0.268415 | 0.325433 | — | — | — |
+| function_arith_cxx98.test | RUN | 0.160115 | 0.464417 | 0.493962 | 0.001328 | 0.001140 | 0.001267 |
+| function_arith_portable.test | RUN | 0.158328 | 0.433202 | 0.466121 | 0.001455 | 0.001360 | 0.001460 |
+| sum_avg_cxx98.test | RUN | 0.152655 | 0.377972 | 0.443692 | 0.001443 | 0.001302 | 0.001354 |
+| sum_avg_portable.test | RUN | 0.150485 | 0.343398 | 0.422591 | 0.001325 | 0.001329 | 0.001383 |
+| mem_fun_cxx98.test | RUN | 0.176147 | 0.535480 | 0.563117 | 0.001692 | 0.001253 | 0.001412 |
+| mem_fun_portable.test | RUN | 0.171114 | 0.486506 | 0.532960 | 0.001236 | 0.001205 | 0.001219 |
+| std_bind_cxx98.test | RUN | 0.162400 | 0.449366 | 0.486550 | 0.001226 | 0.001334 | 0.001357 |
+| std_bind_portable.test | RUN | 0.164138 | 0.412180 | 0.460647 | 0.001197 | 0.001421 | 0.001379 |
+| function_ref_cxx98.test | RUN | 0.153126 | 0.376615 | 0.451026 | 0.001240 | 0.001322 | 0.001250 |
+| function_ref_portable.test | RUN | 0.153088 | 0.339259 | 0.431824 | 0.001332 | 0.001205 | 0.001162 |
+| contains_test.test | RUN | 0.194310 | 0.716820 | 0.688316 | 0.001217 | 0.001404 | 0.001375 |
+| contains2_test.test | RUN | 0.165049 | 0.516223 | 0.535145 | 0.001290 | 0.001318 | 0.001198 |
+| nothrow_swap.test | RUN | 0.162110 | 0.489141 | 0.519933 | 0.001335 | 0.001282 | 0.001197 |
+| rvalues_test.test | RUN | 0.184218 | 0.586490 | 0.598630 | 0.001291 | 0.001306 | 0.001222 |
+| function_typeof_test.test | COMPILE | 0.119719 | 0.265929 | 0.313920 | — | — | — |
+| result_arg_types_test.test | RUN | 0.169979 | 0.404508 | 0.542406 | 0.001168 | 0.001303 | 0.001296 |
+| result_arg_n_types_test.test | RUN | 0.198120 | 0.449780 | 0.634521 | 0.001337 | 0.001392 | 0.001293 |
+| test_bad_function_call_shared.test | RUN | 0.155869 | 0.370697 | 0.442601 | 0.001290 | 0.001399 | 0.001441 |
+| test_bad_function_call_static.test | RUN | 0.157389 | 0.371380 | 0.462358 | 0.001260 | 0.001393 | 0.001278 |
+| mixed_cxxstd_shared.test | RUN | 0.161243 | 0.446457 | 0.520876 | 0.001412 | 0.001627 | 0.001457 |
+| mixed_cxxstd_static.test | RUN | 0.159487 | 0.453055 | 0.527367 | 0.001258 | 0.001289 | 0.001201 |
+| mixed_cxxstd_shared_0x.test | RUN | 0.157996 | 0.446677 | 0.494004 | 0.001368 | 0.001512 | 0.001453 |
+| mixed_cxxstd_static_0x.test | RUN | 0.158488 | 0.444751 | 0.513164 | 0.001196 | 0.001392 | 0.001249 |
+| mixed_cxxstd_shared_14.test | RUN | 0.160314 | 0.449386 | 0.501006 | 0.001419 | 0.001500 | 0.001423 |
+| mixed_cxxstd_static_14.test | RUN | 0.162355 | 0.442153 | 0.498734 | 0.001256 | 0.001327 | 0.001392 |
+| return_function_shared.test | RUN | 0.156699 | 0.453398 | 0.493336 | 0.001378 | 0.001350 | 0.001426 |
+| return_function_static.test | RUN | 0.155555 | 0.443730 | 0.490659 | 0.001268 | 0.001301 | 0.001286 |
+| return_function_shared_0x.test | RUN | 0.156800 | 0.457749 | 0.490565 | 0.001383 | 0.001760 | 0.001543 |
+| return_function_static_0x.test | RUN | 0.156472 | 0.475553 | 0.483553 | 0.001331 | 0.001428 | 0.001356 |
+| return_function_shared_14.test | RUN | 0.154065 | 0.480487 | 0.498713 | 0.001451 | 0.001421 | 0.001272 |
+| return_function_static_14.test | RUN | 0.162061 | 0.451270 | 0.491112 | 0.001309 | 0.001416 | 0.001305 |
+| quick.test | RUN | 0.169315 | 0.452369 | 0.486270 | 0.001256 | 0.001418 | 0.001237 |
+| issue_42.test | COMPILE | 0.126371 | 0.284692 | 0.327647 | — | — | — |
+| fn_eq_bind_test.test | RUN | 0.209778 | 0.599744 | 0.721849 | 0.001294 | 0.001378 | 0.001387 |
+| contains_test_no_rtti.test | RUN | 0.187769 | 0.707103 | 0.698933 | 0.001413 | 0.000940 | 0.001399 |
+| contains2_test_no_rtti.test | RUN | 0.169130 | 0.530554 | 0.539610 | 0.001164 | 0.001345 | 0.000960 |
+| contains3_test.test | RUN | 0.155431 | 0.403713 | 0.473024 | 0.000913 | 0.001439 | 0.001253 |
+| contains3_test_no_rtti.test | RUN | 0.100974 | 0.350821 | 0.320793 | 0.001017 | 0.000968 | 0.000940 |
+| issue_53.test | COMPILE | 0.088284 | 0.235958 | 0.226209 | — | — | — |
 
 ## Native runtime replay
 
@@ -60,56 +60,56 @@ Child CPU of successful native tests, with process startup included; GDB and exp
 
 | Reference | CPU speedup ↑ | Paired blocks | A/A speedup |
 |---|---:|---|---:|
-| gcc | 0.996× | 0.996×, 0.997× | 1.012× |
-| clang | 0.998× | 0.990×, 1.005× | 0.983× |
+| gcc | 0.982× | 0.994×, 0.970× | 1.009× |
+| clang | 0.992× | 0.989×, 0.996× | 1.008× |
 
-† A/A drift or paired-block spread exceeds 5%; small differences are unresolved. 1375 native tests in the full cohort; 1360 have byte-identical output throughout. [Manifest](https://github.com/vishvananda/cppgm-extended/actions/runs/42770605980), [paired observations](https://github.com/vishvananda/cppgm-extended/actions/runs/42770605980) and [per-test summaries](https://github.com/vishvananda/cppgm-extended/actions/runs/42770605980).
+† A/A drift or paired-block spread exceeds 5%; small differences are unresolved. 1375 native tests in the full cohort; 1360 have byte-identical output throughout. [Raw replay evidence in CI artifacts](https://github.com/vishvananda/cppgm-extended/actions/runs/43395345325).
 
 | Test | Repeats | CPU cppgm | GCC | Clang | Output check |
 |---|---:|---:|---:|---:|---|
-| allocator_test.test | 10 | 0.001011s | 0.001046s | 0.001005s | byte equality observed |
-| contains2_test.test | 10 | 0.001053s | 0.001070s | 0.000992s | byte equality observed |
-| contains2_test_no_rtti.test | 10 | 0.001057s | 0.001074s | 0.000981s | byte equality observed |
-| contains3_test.test | 10 | 0.001081s | 0.001078s | 0.001013s | byte equality observed |
-| contains3_test_no_rtti.test | 10 | 0.001065s | 0.001058s | 0.001076s | byte equality observed |
-| contains_test.test | 10 | 0.001050s | 0.001052s | 0.001083s | byte equality observed |
-| contains_test_no_rtti.test | 10 | 0.001072s | 0.001032s | 0.001079s | byte equality observed |
-| fn_eq_bind_test.test | 10 | 0.001101s | 0.001034s | 0.001087s | byte equality observed |
-| function_arith_cxx98.test | 10 | 0.001087s | 0.001053s | 0.001077s | byte equality observed |
-| function_arith_portable.test | 10 | 0.001119s | 0.001063s | 0.001054s | byte equality observed |
-| function_n_test.test | 10 | 0.001089s | 0.001070s | 0.001061s | byte equality observed |
-| function_ref_cxx98.test | 10 | 0.001044s | 0.001031s | 0.001047s | byte equality observed |
-| function_ref_portable.test | 10 | 0.001054s | 0.001029s | 0.001034s | byte equality observed |
-| function_test.test | 10 | 0.001120s | 0.001109s | 0.001098s | byte equality observed |
-| function_test_no_rtti.test | 10 | 0.001101s | 0.001124s | 0.001115s | byte equality observed |
-| lambda_test.test | 10 | 0.001086s | 0.001078s | 0.001078s | byte equality observed |
-| mem_fun_cxx98.test | 10 | 0.001077s | 0.001097s | 0.001076s | byte equality observed |
-| mem_fun_portable.test | 10 | 0.001079s | 0.001036s | 0.001073s | byte equality observed |
-| mixed_cxxstd_shared.test | 10 | 0.001133s | 0.001130s | 0.001151s | byte equality observed |
-| mixed_cxxstd_shared_0x.test | 10 | 0.001142s | 0.001160s | 0.001121s | byte equality observed |
-| mixed_cxxstd_shared_14.test | 10 | 0.001101s | 0.001133s | 0.001141s | byte equality observed |
-| mixed_cxxstd_static.test | 10 | 0.001083s | 0.001080s | 0.001038s | byte equality observed |
-| mixed_cxxstd_static_0x.test | 10 | 0.001079s | 0.001090s | 0.001030s | byte equality observed |
-| mixed_cxxstd_static_14.test | 10 | 0.001071s | 0.001057s | 0.001079s | byte equality observed |
-| nothrow_swap.test | 10 | 0.001062s | 0.001080s | 0.001089s | byte equality observed |
-| quick.test | 10 | 0.001080s | 0.001077s | 0.001031s | byte equality observed |
-| result_arg_n_types_test.test | 10 | 0.001069s | 0.001083s | 0.001076s | byte equality observed |
-| result_arg_types_test.test | 10 | 0.001033s | 0.001046s | 0.001050s | byte equality observed |
-| return_function_shared.test | 10 | 0.001120s | 0.001119s | 0.001139s | byte equality observed |
-| return_function_shared_0x.test | 10 | 0.001121s | 0.001098s | 0.001153s | byte equality observed |
-| return_function_shared_14.test | 10 | 0.001111s | 0.001126s | 0.001112s | byte equality observed |
-| return_function_static.test | 10 | 0.001072s | 0.001033s | 0.001044s | byte equality observed |
-| return_function_static_0x.test | 10 | 0.001031s | 0.001064s | 0.001061s | byte equality observed |
-| return_function_static_14.test | 10 | 0.001075s | 0.001066s | 0.001061s | byte equality observed |
-| rvalues_test.test | 10 | 0.001082s | 0.001060s | 0.001047s | byte equality observed |
-| stateless_test.test | 10 | 0.001048s | 0.001016s | 0.001091s | byte equality observed |
-| std_bind_cxx98.test | 10 | 0.001039s | 0.001043s | 0.001044s | byte equality observed |
-| std_bind_portable.test | 10 | 0.001025s | 0.001015s | 0.001010s | byte equality observed |
-| sum_avg_cxx98.test | 10 | 0.001023s | 0.001003s | 0.001033s | byte equality observed |
-| sum_avg_portable.test | 10 | 0.001011s | 0.001021s | 0.001020s | byte equality observed |
-| test_bad_function_call_shared.test | 10 | 0.001145s | 0.001146s | 0.001193s | byte equality observed |
-| test_bad_function_call_static.test | 10 | 0.001107s | 0.001071s | 0.001059s | byte equality observed |
+| allocator_test.test | 10 | 0.000844s | 0.000838s | 0.000834s | byte equality observed |
+| contains2_test.test | 10 | 0.000847s | 0.000856s | 0.000840s | byte equality observed |
+| contains2_test_no_rtti.test | 10 | 0.000855s | 0.000879s | 0.000832s | byte equality observed |
+| contains3_test.test | 10 | 0.000841s | 0.000868s | 0.000829s | byte equality observed |
+| contains3_test_no_rtti.test | 10 | 0.000861s | 0.000882s | 0.000869s | byte equality observed |
+| contains_test.test | 10 | 0.000877s | 0.000898s | 0.000902s | byte equality observed |
+| contains_test_no_rtti.test | 10 | 0.000883s | 0.000902s | 0.000881s | byte equality observed |
+| fn_eq_bind_test.test | 10 | 0.000912s | 0.000877s | 0.000897s | byte equality observed |
+| function_arith_cxx98.test | 10 | 0.000927s | 0.000884s | 0.000912s | byte equality observed |
+| function_arith_portable.test | 10 | 0.000928s | 0.000915s | 0.000897s | byte equality observed |
+| function_n_test.test | 10 | 0.000910s | 0.000901s | 0.000913s | byte equality observed |
+| function_ref_cxx98.test | 10 | 0.000893s | 0.000869s | 0.000888s | byte equality observed |
+| function_ref_portable.test | 10 | 0.000896s | 0.000864s | 0.000884s | byte equality observed |
+| function_test.test | 10 | 0.000947s | 0.000943s | 0.000940s | byte equality observed |
+| function_test_no_rtti.test | 10 | 0.000954s | 0.000978s | 0.000959s | byte equality observed |
+| lambda_test.test | 10 | 0.000912s | 0.000877s | 0.000927s | byte equality observed |
+| mem_fun_cxx98.test | 10 | 0.000924s | 0.000884s | 0.000886s | byte equality observed |
+| mem_fun_portable.test | 10 | 0.000925s | 0.000881s | 0.000934s | byte equality observed |
+| mixed_cxxstd_shared.test | 10 | 0.000982s | 0.000941s | 0.000962s | byte equality observed |
+| mixed_cxxstd_shared_0x.test | 10 | 0.000967s | 0.000922s | 0.000998s | byte equality observed |
+| mixed_cxxstd_shared_14.test | 10 | 0.000968s | 0.000964s | 0.000966s | byte equality observed |
+| mixed_cxxstd_static.test | 10 | 0.000915s | 0.000911s | 0.000893s | byte equality observed |
+| mixed_cxxstd_static_0x.test | 10 | 0.000909s | 0.000891s | 0.000872s | byte equality observed |
+| mixed_cxxstd_static_14.test | 10 | 0.000904s | 0.000915s | 0.000890s | byte equality observed |
+| nothrow_swap.test | 10 | 0.000900s | 0.000897s | 0.000891s | byte equality observed |
+| quick.test | 10 | 0.000924s | 0.000908s | 0.000893s | byte equality observed |
+| result_arg_n_types_test.test | 10 | 0.000888s | 0.000908s | 0.000888s | byte equality observed |
+| result_arg_types_test.test | 10 | 0.000916s | 0.000932s | 0.000874s | byte equality observed |
+| return_function_shared.test | 10 | 0.000945s | 0.000952s | 0.000957s | byte equality observed |
+| return_function_shared_0x.test | 10 | 0.000973s | 0.000949s | 0.000945s | byte equality observed |
+| return_function_shared_14.test | 10 | 0.000959s | 0.000943s | 0.000957s | byte equality observed |
+| return_function_static.test | 10 | 0.000906s | 0.000888s | 0.000859s | byte equality observed |
+| return_function_static_0x.test | 10 | 0.000907s | 0.000873s | 0.000903s | byte equality observed |
+| return_function_static_14.test | 10 | 0.000939s | 0.000880s | 0.000908s | byte equality observed |
+| rvalues_test.test | 10 | 0.000937s | 0.000915s | 0.000907s | byte equality observed |
+| stateless_test.test | 10 | 0.000920s | 0.000909s | 0.000885s | byte equality observed |
+| std_bind_cxx98.test | 10 | 0.000868s | 0.000862s | 0.000891s | byte equality observed |
+| std_bind_portable.test | 10 | 0.000901s | 0.000880s | 0.000882s | byte equality observed |
+| sum_avg_cxx98.test | 10 | 0.000871s | 0.000891s | 0.000898s | byte equality observed |
+| sum_avg_portable.test | 10 | 0.000888s | 0.000873s | 0.000869s | byte equality observed |
+| test_bad_function_call_shared.test | 10 | 0.000988s | 0.000990s | 0.000989s | byte equality observed |
+| test_bad_function_call_static.test | 10 | 0.000973s | 0.000896s | 0.000951s | byte equality observed |
 
-Compiler command and timing observations: [cppgm](https://github.com/vishvananda/cppgm-extended/actions/runs/42770605980) · [gcc](https://github.com/vishvananda/cppgm-extended/actions/runs/42770605980) · [clang](https://github.com/vishvananda/cppgm-extended/actions/runs/42770605980).
+[Raw outcomes, commands and timing observations in CI artifacts](https://github.com/vishvananda/cppgm-extended/actions/runs/43395345325).
 
-[Reviewed outcomes and per-test records](../results.json) · [Host and toolchains](../metadata.json)
+[Comparison records](../results.json) · [Host and toolchains](../metadata.json)
