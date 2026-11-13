@@ -1,5 +1,5 @@
-<svg data-original-label="Boost runtime CPU vs gcc" data-original-message="0.96×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Boost runtime CPU vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; measured 93343ea0ebdcf068d87b88027a6eca8abf32111f; 283 commits behind main: 0.96×*">
-  <title>Boost runtime CPU vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; measured 93343ea0ebdcf068d87b88027a6eca8abf32111f; 283 commits behind main: 0.96×*</title>
+<svg data-original-label="Boost runtime CPU vs gcc" data-original-message="0.96×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Boost runtime CPU vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; measured 93343ea0ebdcf068d87b88027a6eca8abf32111f; 285 commits behind main: 0.96×*">
+  <title>Boost runtime CPU vs gcc; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; measured 93343ea0ebdcf068d87b88027a6eca8abf32111f; 285 commits behind main: 0.96×*</title>
   <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
   <g clip-path="url(#badge)">
     <rect width="64" height="24" fill="#555"/>
