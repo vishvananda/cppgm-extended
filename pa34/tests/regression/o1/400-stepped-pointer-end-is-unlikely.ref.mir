@@ -1,0 +1,109 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @same
+  abi
+    param %map -> rdi : ptr
+    param %flat -> rsi : ptr
+    param %n -> rdx : i64
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.ptr rax, [rdi]
+    lea rcx, [rax+16]
+    lea rdx, [rsi+rdx*4]
+    cmp.ptr rsi, rdx
+    je ^equal
+
+  block ^check
+    load.u32 r10, [rax]
+    cmp.i32 r10, [rsi]
+    jne ^unequal
+
+  block ^next
+    lea rax, [rax+4]
+    cmp.ptr rax, rcx
+    je ^advance
+
+  block ^step
+    lea rsi, [rsi+4]
+    cmp.ptr rsi, rdx
+    je ^equal
+
+  block ^step~check
+    load.u32 r10, [rax]
+    cmp.i32 r10, [rsi]
+    je ^next
+
+  block ^unequal
+    mov rax, 0
+    ret rax
+
+  block ^advance
+    lea rdi, [rdi+8]
+    load.ptr rax, [rdi]
+    lea rcx, [rax+16]
+    jmp ^step
+
+  block ^equal
+    mov rax, 1
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 144
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
+    slot $data -> [rbp-128] : obj<48x4>
+    slot $flat -> [rbp-48] : obj<48x4>
+    slot $map -> [rbp-80] : obj<32x8>
+
+  block ^entry
+    lea rcx, [rbp-128]
+    mov rax, 0
+
+  block ^fill
+    lea.i32 rdx, [rax+rax*2]
+    store.i32 [rcx+rax*4], rdx
+    store.i32 [rbp+rax*4-48], rdx
+    add rax, 1
+    cmp.i64 rax, 12
+    jb ^fill
+
+  block ^link
+    store.ptr [rbp-80], rcx
+    lea rax, [rcx+16]
+    store.ptr [rbp-72], rax
+    lea rcx, [rcx+32]
+    store.ptr [rbp-64], rcx
+    store.ptr [rbp-56], 0
+    lea rdi, [rbp-80]
+    lea rsi, [rbp-48]
+    mov rdx, 12
+    call @same [args=(rdx,rsi,rdi)]
+    zext.i32 rbx, rax
+    store.i32 [rbp-12], 5
+    lea rdi, [rbp-80]
+    lea rsi, [rbp-48]
+    mov rdx, 12
+    call @same [args=(rdx,rsi,rdi)]
+    imul.i32 rbx, 2
+    add.i32 rbx, rax
+    mov r11, 0
+    cmp.i32 rbx, 2
+    mov rax, 1
+    cmove rax, r11
+    ret rax

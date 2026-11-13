@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "native/select/block_placement.h"
+#include "native/select/mir_facts.h"
 
 // Block placement (O1+, before branch layout): the selector emits blocks
 // in LowIR layout order, so a likely path often jumps over an unlikely arm
@@ -11,17 +12,17 @@
 // comes from its target only leading to a noreturn end or a call of a cold
 // function (cold), from loop back edges and loop exits, from a NaN being
 // rare, from a single-bit test being zero, and from an equality test being
-// the unlikely outcome (one with a nonzero constant more so); an edge weighs
-// that times its source's
-// frequency (the entry's spread along forward edges by those
-// probabilities, 8 times a loop header's inflow; a cycle entered twice is
-// weighed so only where blocks are ordered, see find_loops). Branch layout
-// (branch_layout.cpp) then drops the jumps to the next block. Every block
-// must end in a jump, return or other terminator (none falls through
-// yet); a function where one does not keeps its order. Blocks keep their
-// instructions (a jump to a short test may take a copy of it): only their
-// order and the branch labels change. O(blocks + edges) plus the loops'
-// bodies.
+// the unlikely outcome (one with a nonzero constant more so, and in a loop,
+// one of a register the block steps by a literal as rare as an exit); an
+// edge weighs that times its source's frequency (the entry's spread along
+// forward edges by those probabilities, 8 times a loop header's inflow; a
+// cycle entered twice is weighed so only where blocks are ordered, see
+// find_loops). Branch layout (branch_layout.cpp) then drops the jumps to
+// the next block. Every block must end in a jump, return or other
+// terminator (none falls through yet); a function where one does not keeps
+// its order. Blocks keep their instructions (a jump to a short test may
+// take a copy of it): only their order and the branch labels change.
+// O(blocks + edges) plus the loops' bodies.
 namespace native {
 
 namespace {
@@ -49,6 +50,10 @@ const uint32_t kBitClearTaken = 850;
 // A value compared with a nonzero constant (a kind, an opcode, a character)
 // equals it this often.
 const uint32_t kConstantEqualTaken = 300;
+// In a loop, a counter or pointer stepped by a literal reaches the bound it
+// is tested against (a segment's end, a ring's wrap, a count's limit) as
+// rarely as a loop exits.
+const uint32_t kStepEqualTaken = kLoopExit;
 const uint64_t kLevelFrequency = 8;
 
 bool terminator(const Inst& inst)
@@ -94,6 +99,7 @@ private:
 	void find_cold();
 	void find_loops();
 	uint32_t taken(uint32_t b) const;
+	bool steps(const Block& block, uint32_t at, Reg r) const;
 	bool copyable_test(uint32_t b) const;
 
 	Function& f_;
@@ -305,6 +311,29 @@ void Placement::find_loops()
 	}
 }
 
+// Whether the last write of `r` before instruction `at` in `block` steps it
+// by a literal (`add r, k`, `sub r, k`, `lea r, [r + k]`), with only simple
+// instructions (no implicit register) after it.
+bool Placement::steps(const Block& block, uint32_t at, Reg r) const
+{
+	for (uint32_t i = at; i-- > block.first;)
+	{
+		const Inst& inst = f_.insts[i];
+		if (!simple_inst(inst))
+			return false;
+		const bool writes = inst.op != Op::Cmp && inst.op != Op::Test && inst.op != Op::Bt && inst.op != Op::Store &&
+			inst.op != Op::Nop;
+		if (!writes || !inst.ops[0].is_reg() || inst.ops[0].reg != r)
+			continue;
+		if (inst.op == Op::Add || inst.op == Op::Sub)
+			return inst.ops[1].kind == OperandKind::Imm && inst.ops[1].imm != 0;
+		const Operand& address = inst.ops[1];
+		return inst.op == Op::Lea && address.kind == OperandKind::Mem && address.reg == r && address.index == kNoReg &&
+			address.symbol == lowir::kNoId && address.disp != 0;
+	}
+	return false;
+}
+
 uint32_t Placement::taken(uint32_t b) const
 {
 	const uint32_t k = succ_first_[b];
@@ -362,6 +391,23 @@ uint32_t Placement::taken(uint32_t b) const
 				(test.op == Op::Cmp && test.ops[1].kind == OperandKind::Imm && test.ops[1].imm == 0));
 		if (zero_test)
 			return cond == CC_L || cond == CC_S ? kNegativeTaken : 1000 - kNegativeTaken;
+	}
+	// An equality test of a register the block steps by a literal, against
+	// another value or by the step's own flags.
+	if ((cond == CC_E || cond == CC_NE) && block.count >= 3 && inner_[b] != kNone)
+	{
+		const uint32_t at = block.first + block.count - 3;
+		const Inst& test = f_.insts[at];
+		auto stepped = [&](const Operand& op) { return op.is_reg() && steps(block, at, op.reg); };
+		bool step = false;
+		if (test.op == Op::Cmp)
+			step = stepped(test.ops[0]) || stepped(test.ops[1]);
+		else if (test.op == Op::Test)
+			step = test.ops[0] == test.ops[1] && stepped(test.ops[0]);
+		else if (test.op == Op::Add || test.op == Op::Sub)
+			step = test.ops[0].is_reg() && test.ops[1].kind == OperandKind::Imm && test.ops[1].imm != 0;
+		if (step)
+			return cond == CC_E ? kStepEqualTaken : 1000 - kStepEqualTaken;
 	}
 	// A value compared with zero straight from memory (a flag, an optional
 	// pointer field; not an indexed element, which says nothing) is usually
