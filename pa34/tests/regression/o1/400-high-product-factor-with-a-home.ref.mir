@@ -1,0 +1,139 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @table
+  storage data
+  item zero 104
+
+function @wide
+  abi
+    param %w -> rdi : i64
+    param %p -> rsi : ptr
+    param %f -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 96
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    param-slot %w -> [rbp-16] : i64
+    param-slot %p -> [rbp-32] : ptr
+    param-slot %f -> [rbp-40] : i64
+    temp %v0 -> [rbp-8] : i64
+    temp %v1 -> [rbp-48] : i64
+    temp %b -> [rbp-24] : i64
+    temp %r -> [rbp-56] : i64
+
+  block ^entry
+    store.i64 [rbp-16], rdi
+    store.ptr [rbp-32], rsi
+    store.i64 [rbp-40], rdx
+    load.i64 rax, [rsi+8]
+    store.i64 [rbp-8], rax
+    load.i64 rax, [rsi+16]
+    store.i64 [rbp-48], rax
+    load.i64 r15, [rsi+24]
+    load.i64 r14, [rsi+32]
+    load.i64 r13, [rsi+40]
+    load.i64 r12, [rsi+48]
+    load.i64 rbx, [rsi+56]
+    load.i64 rdi, [rsi+64]
+    load.i64 rsi, [rsi+72]
+    load.ptr r10, [rbp-32]
+    load.i64 r9, [r10+80]
+    load.i64 r8, [r10+88]
+    load.i64 rcx, [r10+96]
+    load.i64 r10, [r10]
+    store.i64 [rbp-24], r10
+    load.i64 rax, [rbp-16]
+    mul [rbp-24]
+    mov rax, rdx
+    cmp.i64 [rbp-40], 0
+    jne ^entry~more
+
+  block ^entry~done
+    mov rdx, rax
+    load.i64 rax, [rbp-48]
+
+  block ^done
+    add rdx, [rbp-8]
+    add rdx, rax
+    add rdx, r15
+    add rdx, r14
+    lea rax, [rdx+r13]
+    add rax, r12
+    add rax, rbx
+    add rax, rdi
+    add rax, rsi
+    add rax, r9
+    add rax, r8
+    add rax, rcx
+    ret rax
+
+  block ^entry~more
+    store.i64 [rbp-56], rax
+    load.i64 rax, [rbp-48]
+
+  block ^more
+    load.i64 rdx, [rbp-16]
+    imul rdx, [rbp-24]
+    add rdx, [rbp-8]
+    add rdx, rax
+    add rdx, r15
+    add rdx, r14
+    add rdx, r13
+    add rdx, r12
+    add rdx, rbx
+    add rdx, rdi
+    add rdx, rsi
+    add rdx, r9
+    add rdx, r8
+    add rdx, rcx
+    xor rdx, [rbp-8]
+    xor rdx, rax
+    xor rdx, r15
+    xor rdx, r14
+    xor rdx, r13
+    xor rdx, r12
+    xor rdx, rbx
+    xor rdx, rdi
+    xor rdx, rsi
+    xor rdx, r9
+    xor rdx, r8
+    xor rdx, rcx
+    add rdx, [rbp-56]
+    jmp ^done
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    store.i64 @table, 6
+    store.i64 @table+8, 13
+    store.i64 @table+16, 20
+    store.i64 @table+24, 27
+    store.i64 @table+32, 34
+    store.i64 @table+40, 41
+    store.i64 @table+48, 48
+    store.i64 @table+56, 55
+    store.i64 @table+64, 62
+    store.i64 @table+72, 69
+    store.i64 @table+80, 76
+    store.i64 @table+88, 83
+    store.i64 @table+96, 90
+    mov rdi, -1
+    lea rsi, @table
+    mov rdx, 1
+    call @wide [args=(rdx,rsi,rdi)]
+    ret rax

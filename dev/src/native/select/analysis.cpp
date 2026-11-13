@@ -2625,8 +2625,13 @@ void FunctionSelector::find_high_products()
 			const Value source = resolve(body.instructions[ext].ops[0]);
 			if (source.kind != ValueKind::Temp)
 				continue;
+			// The source is read at the truncation, after the other factor
+			// is loaded into rax: its interval reaches there, so its mask
+			// excludes rax and rdx. That includes a source with a frame home
+			// (TF_GLOBAL), whose register holds it until its in-block last
+			// use (extend_lifetimes).
 			TempInfo& c = temps_[source.index];
-			if (c.block == b && !(c.flags & TF_GLOBAL) && c.last < pos_[id])
+			if (c.block == b && c.last < pos_[id])
 				c.last = pos_[id];
 		}
 	});
