@@ -123,6 +123,36 @@ unsigned FunctionEmitter::copy_chunk_limit(const Operand& src, uint32_t bytes) c
 	return limit;
 }
 
+// The XMM register block copies and zeroing go through. One of xmm7 down
+// to xmm2 that no instruction of the function names and no call takes an
+// argument in holds nothing here (xmm0 and xmm1 also carry results), and a
+// move through it needs no REX prefix, a byte less than through xmm15.
+// Assembly may name any register: a function with assembly keeps xmm15.
+Reg FunctionEmitter::bulk_register()
+{
+	if (bulk_ != kNoReg)
+		return bulk_;
+	bulk_ = kX15;
+	if (function_->assembly)
+		return bulk_;
+	uint32_t named = 0;
+	for (const Inst& inst : function_->insts)
+	{
+		if (inst.op == Op::Call || inst.op == Op::TailJump)
+			named |= inst.aux;
+		for (unsigned k = 0; k < inst.nops; ++k)
+			if (inst.ops[k].kind == OperandKind::Reg && is_xmm(inst.ops[k].reg))
+				named |= 1u << inst.ops[k].reg;
+	}
+	for (unsigned r = 7; r >= 2; --r)
+		if (!(named & (1u << (XMM0 + r))))
+		{
+			bulk_ = static_cast<Reg>(XMM0 + r);
+			break;
+		}
+	return bulk_;
+}
+
 void FunctionEmitter::copy_bytes(const Inst& inst)
 {
 	if (inst.flags & MF_COPY_DYNAMIC)
@@ -143,11 +173,12 @@ void FunctionEmitter::copy_bytes(const Inst& inst)
 		RM from = location(src);
 		uint32_t offset = 0;
 		const unsigned limit = function_->wide_bulk ? copy_chunk_limit(src, bytes) : 16;
+		const Reg x = bulk_register();
 		while (limit >= 16 && bytes - offset >= 16)
 		{
 			// (movups: a byte shorter than movdqu, the same move.)
-			asm_.sse(0, 0x10, kX15, from.displaced(static_cast<int32_t>(offset)));
-			asm_.sse_store(0, 0x11, to.displaced(static_cast<int32_t>(offset)), kX15);
+			asm_.sse(0, 0x10, x, from.displaced(static_cast<int32_t>(offset)));
+			asm_.sse_store(0, 0x11, to.displaced(static_cast<int32_t>(offset)), x);
 			offset += 16;
 		}
 		if (offset == bytes)
@@ -219,11 +250,12 @@ void FunctionEmitter::zero_bytes(const Inst& inst)
 	const RM to = dst.kind == OperandKind::Reg ? RM::m(dst.reg, 0) : rm(dst);
 	if (bytes == 16 || (function_->wide_bulk && bytes > 16 && bytes <= 256))
 	{
-		// 16-byte chunks of a cleared xmm15, then scalar stores.
-		asm_.sse(0, 0x57, kX15, RM::r(kX15)); // xorps xmm15, xmm15
+		// 16-byte chunks of a cleared XMM register, then scalar stores.
+		const Reg x = bulk_register();
+		asm_.sse(0, 0x57, x, RM::r(x)); // xorps x, x
 		uint32_t offset = 0;
 		for (; bytes - offset >= 16; offset += 16)
-			asm_.sse_store(0, 0x11, to.displaced(static_cast<int32_t>(offset)), kX15); // movups
+			asm_.sse_store(0, 0x11, to.displaced(static_cast<int32_t>(offset)), x); // movups
 		const unsigned widths[4] = { 8, 4, 2, 1 };
 		for (unsigned k = 0; k < 4; ++k)
 			for (; bytes - offset >= widths[k]; offset += widths[k])

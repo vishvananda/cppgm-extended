@@ -348,6 +348,7 @@ void FunctionEmitter::relax_branches(const Function& function)
 void FunctionEmitter::emit(const Function& function)
 {
 	function_ = &function;
+	bulk_ = kNoReg;
 	calls_out_ = function.omit_frame_pointer && calls_out(function, image_.target);
 	std::vector<uint8_t>& text = image_.text();
 	uint32_t assembly_alignment = 1;

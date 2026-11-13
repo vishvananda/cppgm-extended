@@ -172,6 +172,7 @@ private:
 	void convert(const Inst& inst);
 	void x87_load(const Operand& op, lowir::TypeKind type);
 	void x87_result(const Inst& inst);
+	Reg bulk_register();
 	void copy_bytes(const Inst& inst);
 	unsigned copy_chunk_limit(const Operand& src, uint32_t bytes) const;
 	void zero_bytes(const Inst& inst);
@@ -245,6 +246,7 @@ private:
 	std::vector<int32_t> loop_bytes_;    // per loop head: an innermost short loop's bytes, else 0
 	uint32_t code_window_ = 1;           // code phase required by the chosen layout
 	uint32_t current_ = 0;
+	Reg bulk_ = kNoReg;        // bulk_register()'s answer for the function being encoded
 	uint32_t block_first_ = 0; // the block being encoded: its first instruction
 	uint32_t inst_index_ = 0;  // and the instruction being encoded
 	// Carried reloads: compiler-created frame homes whose value a register
