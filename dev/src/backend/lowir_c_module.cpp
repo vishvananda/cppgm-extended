@@ -1,6 +1,7 @@
 #include "backend/lowir_c_module.h"
 #include "backend/lowir_c_vocabulary.h"
 
+#include <algorithm>
 #include <cstring>
 #include <mutex>
 
@@ -167,6 +168,8 @@ bool CppgmLowir::validate()
 		return fail("module has already been consumed");
 	if (validated)
 		return true;
+	if (std::find(direct_bodies.begin(), direct_bodies.end(), 1) != direct_bodies.end())
+		return fail("uncommitted direct function body");
 	lowir::apply_legacy_roles(program);
 	lowir::Diagnostic diagnostic;
 	if (!lowir::validate_constructed_program(program, diagnostic, false))

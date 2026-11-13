@@ -86,4 +86,4 @@ FRONTEND_OBJ_BASENAMES_cppgm++ += $(FRONTEND_PHASE_BASENAMES_wasm)
 # Optional foreign producer library: typed LowIR -> optimizer -> native object.
 # No source frontend, text reader, command-line driver, or test batch runner.
 FRONTEND_LIBRARY_SOURCE_SET_TARGETS := lowir_library
-FRONTEND_LIBRARY_SOURCE_IDS_lowir_library := $(FRONTEND_PHASE_BASENAMES_lowir) $(FRONTEND_PHASE_BASENAMES_native) $(FRONTEND_PHASE_BASENAMES_object) $(FRONTEND_PHASE_BASENAMES_opt) lowir/text_writer lowir/assembly_writer lowir/local_names native/mir/mir_writer support/unicode/utf8 backend/lowir_c_module backend/lowir_c_body
+FRONTEND_LIBRARY_SOURCE_IDS_lowir_library := $(FRONTEND_PHASE_BASENAMES_lowir) $(FRONTEND_PHASE_BASENAMES_native) $(FRONTEND_PHASE_BASENAMES_object) $(FRONTEND_PHASE_BASENAMES_opt) lowir/text_writer lowir/assembly_writer lowir/local_names native/mir/mir_writer support/unicode/utf8 backend/lowir_c_module backend/lowir_c_body backend/lowir_c_direct

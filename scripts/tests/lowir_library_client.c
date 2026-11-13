@@ -1,6 +1,7 @@
 #include "backend/lowir_c.h"
 
 #include <pthread.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +49,52 @@ static int finish(CppgmLowir* module, char** argv)
 	cppgm_lowir_destroy(module);
 	cppgm_lowir_destroy(NULL);
 	return 0;
+}
+
+static int direct_body(CppgmLowir* module, uint32_t symbol, const CppgmBody* input)
+{
+	CppgmBodyBuffers buffers;
+	CppgmBodyCounts minimum = { 1, 1, 1, 0, 1 };
+	check(module, cppgm_lowir_body_reserve(module, symbol, &minimum, &buffers));
+	CppgmLiteral sentinel = { 0x123456789abcdef0ull, 0xdeadbeefull };
+	memcpy(buffers.literals, &sentinel, sizeof sentinel);
+	CppgmBodyCounts counts = { input->instruction_count, input->operand_count, input->literal_count, input->slot_count,
+		input->block_count };
+	check(module, cppgm_lowir_body_reserve(module, symbol, &counts, &buffers));
+	CppgmLiteral preserved;
+	memcpy(&preserved, buffers.literals, sizeof preserved);
+	check(module, preserved.low == sentinel.low && preserved.high == sentinel.high);
+	for (uint32_t i = 0; i < input->instruction_count; ++i)
+	{
+		const CppgmInstruction* old = &input->instructions[i];
+		CppgmDirectInstruction record = { 0 };
+		record.op = old->op;
+		record.sub = old->sub;
+		record.flags = old->flags;
+		record.order = old->order;
+		record.result = old->result;
+		record.location = old->block;
+		record.type = old->type;
+		record.extra_first = old->extra_first;
+		record.extra_count = old->extra_count;
+		record.immediate = old->immediate;
+		for (uint32_t j = 0; j < 3; ++j)
+		{
+			record.operands[j].kind = old->operands[j].kind & 255;
+			record.operands[j].float_kind = old->operands[j].kind >> 8;
+			record.operands[j].index = old->operands[j].index;
+		}
+		memcpy((char*)buffers.instructions + i * sizeof record, &record, sizeof record);
+	}
+	for (uint32_t i = 0; i < input->operand_count; ++i)
+	{
+		CppgmDirectValue value = { input->operands[i].kind & 255, input->operands[i].kind >> 8, 0,
+			input->operands[i].index };
+		memcpy((char*)buffers.operands + i * sizeof value, &value, sizeof value);
+	}
+	memcpy(buffers.literals, input->literals, input->literal_count * sizeof(CppgmLiteral));
+	memcpy(buffers.layout, input->layout, input->block_count * sizeof(uint32_t));
+	return cppgm_lowir_body_commit(module, symbol, &counts, input->temp_count);
 }
 
 static int compile_case(int argc, char** argv)
@@ -134,7 +181,7 @@ static int compile_case(int argc, char** argv)
 		code[9].extra_count = UINT32_MAX;
 	else if (strcmp(argv[4], "bad-type") == 0)
 		code[0].type = 255;
-	else if (strcmp(argv[4], "bad-kind") == 0)
+	else if (strcmp(argv[4], "bad-kind") == 0 || strcmp(argv[4], "bad-direct-kind") == 0)
 		code[10].operands[0].kind = 255;
 	else if (strcmp(argv[4], "bad-float-kind") == 0)
 		code[10].operands[0].kind = CPPGM_VALUE_FLOAT | (255u << 8);
@@ -143,7 +190,8 @@ static int compile_case(int argc, char** argv)
 		code[0].op = CPPGM_OP_CONVERT;
 		code[0].immediate = 255;
 	}
-	int result = cppgm_lowir_body(module, compute, &body);
+	int result = strstr(argv[4], "direct") != NULL ? direct_body(module, compute, &body)
+												   : cppgm_lowir_body(module, compute, &body);
 	if (result)
 		result = cppgm_lowir_validate(module);
 	if (strncmp(argv[4], "bad-", 4) == 0)
@@ -167,7 +215,7 @@ struct Worker
 static void* worker(void* opaque)
 {
 	struct Worker* work = (struct Worker*)opaque;
-	char* args[] = { "client", work->object, work->text, "3", "valid" };
+	char* args[] = { "client", work->object, work->text, "3", "direct" };
 	work->status = compile_case(5, args);
 	return NULL;
 }

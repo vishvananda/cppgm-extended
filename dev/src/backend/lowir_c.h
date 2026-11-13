@@ -222,6 +222,62 @@ typedef struct CppgmDataItem
 	uint32_t kind; /* scalar=0, address=1, zero=2; float uses type.kind */
 } CppgmDataItem;
 
+/* Direct construction: these are byte records in library-owned storage.
+ * Write records through memcpy (C/C++), or matching FFI stores. No pointers
+ * may survive another reserve on the same function. Counts passed to commit
+ * select the initialized prefixes. Reserve grows geometrically; known counts
+ * can be reserved once. Nothing is copied at commit.
+ *
+ * location carries the insertion block ID during construction; commit builds
+ * block links and clears location. next is ignored until commit.
+ * Slot name/kind/reserved fields are zero for this producer interface.
+ * Parameters occupy the first temporary IDs; allocate other IDs only when
+ * their definitions are emitted. layout is a permutation of block IDs. */
+typedef struct CppgmDirectValue
+{
+	uint8_t kind, float_kind;
+	uint16_t reserved;
+	uint32_t index;
+} CppgmDirectValue;
+
+typedef struct CppgmDirectInstruction
+{
+	uint8_t op, sub, flags, order;
+	uint32_t result, next, location;
+	CppgmType type;
+	CppgmDirectValue operands[3];
+	uint32_t extra_first, extra_count;
+	int64_t immediate;
+} CppgmDirectInstruction;
+
+typedef struct CppgmDirectSlot
+{
+	uint32_t name;
+	uint8_t kind, reserved;
+	uint16_t index;
+	CppgmType type;
+} CppgmDirectSlot;
+
+typedef struct CppgmBodyCounts
+{
+	uint32_t instructions, operands, literals, slots, blocks;
+} CppgmBodyCounts;
+
+typedef struct CppgmBodyBuffers
+{
+	void* instructions;
+	void* operands;
+	void* literals;
+	void* slots;
+	void* layout;
+	CppgmBodyCounts capacity;
+} CppgmBodyBuffers;
+
+CPPGM_LOWIR_API int cppgm_lowir_body_reserve(
+	CppgmLowir* module, uint32_t symbol, const CppgmBodyCounts* minimum, CppgmBodyBuffers* buffers);
+CPPGM_LOWIR_API int cppgm_lowir_body_commit(
+	CppgmLowir* module, uint32_t symbol, const CppgmBodyCounts* counts, uint32_t temp_count);
+
 CPPGM_LOWIR_API CppgmLowir* cppgm_lowir_create(uint32_t abi_version, uint32_t target);
 CPPGM_LOWIR_API void cppgm_lowir_destroy(CppgmLowir* module);
 CPPGM_LOWIR_API const char* cppgm_lowir_error(const CppgmLowir* module);

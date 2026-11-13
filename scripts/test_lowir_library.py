@@ -23,7 +23,7 @@ def main():
             exe = out / form
             library = ["-Ldev", "-lcppgm_lowir", f"-Wl,-rpath,{ROOT / 'dev'}"] if form == "shared" else ["dev/libcppgm_lowir.a"]
             run([cxx, out / "client.o", *library, "-pthread", "-o", exe])
-            for case in ("bad-operand", "bad-layout", "bad-result", "bad-extra", "bad-type", "bad-kind", "bad-float-kind", "bad-conversion"):
+            for case in ("bad-operand", "bad-layout", "bad-result", "bad-extra", "bad-type", "bad-kind", "bad-float-kind", "bad-conversion", "bad-direct-kind"):
                 run([exe, out / "unused.o", out / "unused.lowir", "0", case])
             for level in range(4):
                 obj = out / f"{form}-{level}.o"
@@ -33,6 +33,10 @@ def main():
                 run(["dev/cppgm++", f"-O{level}", "-c", text, "-o", comparison])
                 if obj.read_bytes() != comparison.read_bytes():
                     raise AssertionError(f"{form} -O{level}: direct and text objects differ")
+                direct = out / f"{form}-{level}-direct.o"
+                run([exe, direct, out / "direct.lowir", level, "direct"])
+                if obj.read_bytes() != direct.read_bytes():
+                    raise AssertionError(f"{form} -O{level}: direct buffers changed object bytes")
                 host = out / "host.c"
                 host.write_text("extern long compute(long); long host_adjust(long x) { return x * 3; }\n"
                                 "int main(void) { return compute(0) != 21 || compute(10) != 156 || compute(100) != 14871; }\n")

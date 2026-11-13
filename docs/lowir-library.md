@@ -38,21 +38,39 @@ g++ producer.o dev/libcppgm_lowir.a -pthread -o producer
    declare unresolved externals before compilation. A declaration can also be
    upgraded to a definition with the same signature ID. Functions use C language
    linkage. Conventional entry/init/fini roles are applied as by the text reader.
-3. Supply structured global initializers and one batch per function body.
-   A body contains dense local IDs, slots, a block-layout permutation, literal
-   bits, extra operands and fixed-size instruction records. Parameter temporaries
-   come first. Each instruction states its insertion block and result ID.
+3. Supply structured global initializers. For each function, reserve writable
+   instruction, operand, literal, slot and layout buffers with
+   `cppgm_lowir_body_reserve`. Write records directly into those library-owned
+   pools. Allocate dense temporary IDs only when emitting definitions; parameters
+   come first. An instruction's construction-time `location` carries its block
+   ID. Supply the block-layout permutation and commit the initialized counts with
+   `cppgm_lowir_body_commit`. Commit binds definition metadata and block links
+   in place; it neither copies records nor remaps IDs.
 4. Compile at O0–O3. The library validates construction once, runs the ordinary
    optimizer, selects and encodes functions, and releases their bodies.
 5. Read the module-owned object byte buffer. Write or link those bytes using
    the embedding application's existing object/link workflow, then destroy the
    module. There are no subprocesses or temporary files inside the library.
 
-Types and values have explicit encodings described in the header; no C++
-bitfields, containers or class layouts cross the ABI. Arrays are borrowed only
-for their call, and copied into the ordinary typed program. The instruction
-path performs no name interning or textual number/opcode parsing. Batching
-amortizes FFI transitions across a complete body.
+Types and values have explicit encodings described in the header. Direct
+records are a versioned C POD interface; compile-time size/offset checks and a
+runtime type-encoding check protect their correspondence to the internal
+records. No C++ containers, allocators, strings or exceptions cross the ABI.
+C/C++ producers write the records' byte representations with `memcpy`; foreign
+FFI producers use matching stores. Pointers remain valid until the next reserve
+on that function, its compilation, or module destruction. Keep IDs across calls
+and reacquire pointers after growth.
+
+Provide known capacity hints to reserve once. Otherwise pools grow geometrically,
+which may relocate their allocations. There is no second retained instruction
+or operand representation and no instruction interning, parsing, flattening or
+ID-remapping pass. Commit performs one metadata-binding pass, followed by the
+shared structural validator before compilation.
+
+`cppgm_lowir_body` remains available as a copying adapter for producers that
+already own arrays. Global initializer arrays also use a copying adapter. The
+in-memory object is subsequently encoded into its final file bytes; that
+encoding and the caller's eventual file write remain necessary work.
 
 `cppgm_lowir_write` is an optional diagnostic view through the existing writer.
 It uses the same program as compilation and must run before compilation consumes
