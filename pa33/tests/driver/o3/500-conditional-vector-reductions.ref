@@ -25,7 +25,7 @@ function @sum_less(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=strong
     branch %n, ^loop_preheader_1, ^for_end_7
 
   block ^loop_preheader_1:
-    %t1 = cmp ugt u32 %n, 4
+    %t1 = cmp uge u32 %n, 4
     %t2 = convert zext i64 u32 %n
     %t3 = addr @data
     branch %t1, ^loop_preheader_2, ^loop_preheader_5
@@ -60,7 +60,7 @@ function @sum_less(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=strong
     %t27 = vector pand %t26, %t24
     %t28 = vector paddd %t15, %t27
     %t29 = binary add nowrap i64 %t16, 4
-    %t30 = cmp ult i64 %t29, %t4
+    %t30 = cmp ule i64 %t29, %t4
     branch %t30, ^wide_loop_3, ^loop_exit_4
 
   block ^loop_exit_4:
@@ -70,36 +70,37 @@ function @sum_less(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=strong
     %t34 = vector paddd %t32, %t33
     %t35 = vector toi32 %t34
     %t36 = copy u32 %t35
-    jump ^loop_preheader_5
+    %t37 = cmp ult i64 %t29, %t2
+    branch %t37, ^loop_preheader_5, ^for_end_7
 
   block ^loop_preheader_5:
-    %t37 = phi u32 [^loop_preheader_1: 9, ^loop_exit_4: %t36]
-    %t38 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t29]
+    %t38 = phi u32 [^loop_preheader_1: 9, ^loop_exit_4: %t36]
+    %t39 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t29]
     jump ^for_body_6
 
   block ^for_body_6:
-    %t39 = phi u32 [^for_body_6: %t46, ^loop_preheader_5: %t37]
-    %t40 = phi i64 [^for_body_6: %t47, ^loop_preheader_5: %t38]
-    %t41 = index inbounds u32 [projection=array_element] %t3, %t40
-    %t42 = load typed u32 %t41
-    %t43 = binary mul u32 %t42, 7
-    %t44 = binary add u32 %t43, %t39
-    %t45 = cmp ult u32 %t42, %threshold
-    %t46 = select u32 %t45, %t44, %t39
-    %t47 = binary add i64 %t40, 1
-    %t48 = cmp ult i64 %t47, %t2
-    branch %t48, ^for_body_6, ^for_end_7
+    %t40 = phi u32 [^for_body_6: %t47, ^loop_preheader_5: %t38]
+    %t41 = phi i64 [^for_body_6: %t48, ^loop_preheader_5: %t39]
+    %t42 = index inbounds u32 [projection=array_element] %t3, %t41
+    %t43 = load typed u32 %t42
+    %t44 = binary mul u32 %t43, 7
+    %t45 = binary add u32 %t44, %t40
+    %t46 = cmp ult u32 %t43, %threshold
+    %t47 = select u32 %t46, %t45, %t40
+    %t48 = binary add i64 %t41, 1
+    %t49 = cmp ult i64 %t48, %t2
+    branch %t49, ^for_body_6, ^for_end_7
 
   block ^for_end_7:
-    %t49 = phi u32 [^entry: 9, ^for_body_6: %t46]
-    return u32 %t49
+    %t50 = phi u32 [^entry: 9, ^for_body_6: %t47, ^loop_exit_4: %t36]
+    return u32 %t50
 }
 function @sum_le(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     branch %n, ^loop_preheader_1, ^for_end_7
 
   block ^loop_preheader_1:
-    %t1 = cmp ugt u32 %n, 4
+    %t1 = cmp uge u32 %n, 4
     %t2 = convert zext i64 u32 %n
     %t3 = addr @data
     branch %t1, ^loop_preheader_2, ^loop_preheader_5
@@ -128,7 +129,7 @@ function @sum_le(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=strong, 
     %t21 = vector pandn %t20, %t18
     %t22 = vector psubd %t14, %t21
     %t23 = binary add nowrap i64 %t15, 4
-    %t24 = cmp ult i64 %t23, %t4
+    %t24 = cmp ule i64 %t23, %t4
     branch %t24, ^wide_loop_3, ^loop_exit_4
 
   block ^loop_exit_4:
@@ -138,36 +139,37 @@ function @sum_le(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=strong, 
     %t28 = vector paddd %t26, %t27
     %t29 = vector toi32 %t28
     %t30 = copy u32 %t29
-    jump ^loop_preheader_5
+    %t31 = cmp ult i64 %t23, %t2
+    branch %t31, ^loop_preheader_5, ^for_end_7
 
   block ^loop_preheader_5:
-    %t31 = phi u32 [^loop_preheader_1: 9, ^loop_exit_4: %t30]
-    %t32 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t23]
+    %t32 = phi u32 [^loop_preheader_1: 9, ^loop_exit_4: %t30]
+    %t33 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t23]
     jump ^for_body_6
 
   block ^for_body_6:
-    %t33 = phi u32 [^for_body_6: %t40, ^loop_preheader_5: %t31]
-    %t34 = phi i64 [^for_body_6: %t41, ^loop_preheader_5: %t32]
-    %t35 = index inbounds u32 [projection=array_element] %t3, %t34
-    %t36 = load typed u32 %t35
-    %t37 = binary xor u32 %t36, 31
-    %t38 = binary sub u32 %t33, %t37
-    %t39 = cmp ule u32 %t36, %threshold
-    %t40 = select u32 %t39, %t38, %t33
-    %t41 = binary add i64 %t34, 1
-    %t42 = cmp ult i64 %t41, %t2
-    branch %t42, ^for_body_6, ^for_end_7
+    %t34 = phi u32 [^for_body_6: %t41, ^loop_preheader_5: %t32]
+    %t35 = phi i64 [^for_body_6: %t42, ^loop_preheader_5: %t33]
+    %t36 = index inbounds u32 [projection=array_element] %t3, %t35
+    %t37 = load typed u32 %t36
+    %t38 = binary xor u32 %t37, 31
+    %t39 = binary sub u32 %t34, %t38
+    %t40 = cmp ule u32 %t37, %threshold
+    %t41 = select u32 %t40, %t39, %t34
+    %t42 = binary add i64 %t35, 1
+    %t43 = cmp ult i64 %t42, %t2
+    branch %t43, ^for_body_6, ^for_end_7
 
   block ^for_end_7:
-    %t43 = phi u32 [^entry: 9, ^for_body_6: %t40]
-    return u32 %t43
+    %t44 = phi u32 [^entry: 9, ^for_body_6: %t41, ^loop_exit_4: %t30]
+    return u32 %t44
 }
 function @sum_greater(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     branch %n, ^loop_preheader_1, ^for_end_7
 
   block ^loop_preheader_1:
-    %t1 = cmp ugt u32 %n, 4
+    %t1 = cmp uge u32 %n, 4
     %t2 = convert zext i64 u32 %n
     %t3 = addr @data
     branch %t1, ^loop_preheader_2, ^loop_preheader_5
@@ -196,7 +198,7 @@ function @sum_greater(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=str
     %t21 = vector pand %t20, %t18
     %t22 = vector pxor %t14, %t21
     %t23 = binary add nowrap i64 %t15, 4
-    %t24 = cmp ult i64 %t23, %t4
+    %t24 = cmp ule i64 %t23, %t4
     branch %t24, ^wide_loop_3, ^loop_exit_4
 
   block ^loop_exit_4:
@@ -206,36 +208,37 @@ function @sum_greater(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=str
     %t28 = vector pxor %t26, %t27
     %t29 = vector toi32 %t28
     %t30 = copy u32 %t29
-    jump ^loop_preheader_5
+    %t31 = cmp ult i64 %t23, %t2
+    branch %t31, ^loop_preheader_5, ^for_end_7
 
   block ^loop_preheader_5:
-    %t31 = phi u32 [^loop_preheader_1: 305419896, ^loop_exit_4: %t30]
-    %t32 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t23]
+    %t32 = phi u32 [^loop_preheader_1: 305419896, ^loop_exit_4: %t30]
+    %t33 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t23]
     jump ^for_body_6
 
   block ^for_body_6:
-    %t33 = phi u32 [^for_body_6: %t40, ^loop_preheader_5: %t31]
-    %t34 = phi i64 [^for_body_6: %t41, ^loop_preheader_5: %t32]
-    %t35 = index inbounds u32 [projection=array_element] %t3, %t34
-    %t36 = load typed u32 %t35
-    %t37 = binary add u32 %t36, 17
-    %t38 = binary xor u32 %t37, %t33
-    %t39 = cmp ugt u32 %t36, %threshold
-    %t40 = select u32 %t39, %t38, %t33
-    %t41 = binary add i64 %t34, 1
-    %t42 = cmp ult i64 %t41, %t2
-    branch %t42, ^for_body_6, ^for_end_7
+    %t34 = phi u32 [^for_body_6: %t41, ^loop_preheader_5: %t32]
+    %t35 = phi i64 [^for_body_6: %t42, ^loop_preheader_5: %t33]
+    %t36 = index inbounds u32 [projection=array_element] %t3, %t35
+    %t37 = load typed u32 %t36
+    %t38 = binary add u32 %t37, 17
+    %t39 = binary xor u32 %t38, %t34
+    %t40 = cmp ugt u32 %t37, %threshold
+    %t41 = select u32 %t40, %t39, %t34
+    %t42 = binary add i64 %t35, 1
+    %t43 = cmp ult i64 %t42, %t2
+    branch %t43, ^for_body_6, ^for_end_7
 
   block ^for_end_7:
-    %t43 = phi u32 [^entry: 305419896, ^for_body_6: %t40]
-    return u32 %t43
+    %t44 = phi u32 [^entry: 305419896, ^for_body_6: %t41, ^loop_exit_4: %t30]
+    return u32 %t44
 }
 function @sum_ge(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
     branch %n, ^loop_preheader_1, ^for_end_7
 
   block ^loop_preheader_1:
-    %t1 = cmp ugt u32 %n, 4
+    %t1 = cmp uge u32 %n, 4
     %t2 = convert zext i64 u32 %n
     %t3 = addr @data
     branch %t1, ^loop_preheader_2, ^loop_preheader_5
@@ -265,7 +268,7 @@ function @sum_ge(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=strong, 
     %t22 = vector por %t19, %t21
     %t23 = vector pand %t15, %t22
     %t24 = binary add nowrap i64 %t16, 4
-    %t25 = cmp ult i64 %t24, %t4
+    %t25 = cmp ule i64 %t24, %t4
     branch %t25, ^wide_loop_3, ^loop_exit_4
 
   block ^loop_exit_4:
@@ -275,29 +278,30 @@ function @sum_ge(%n : u32, %threshold : u32) -> u32 [linkage=c, binding=strong, 
     %t29 = vector pand %t27, %t28
     %t30 = vector toi32 %t29
     %t31 = copy u32 %t30
-    jump ^loop_preheader_5
+    %t32 = cmp ult i64 %t24, %t2
+    branch %t32, ^loop_preheader_5, ^for_end_7
 
   block ^loop_preheader_5:
-    %t32 = phi u32 [^loop_preheader_1: 4294967295, ^loop_exit_4: %t31]
-    %t33 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t24]
+    %t33 = phi u32 [^loop_preheader_1: 4294967295, ^loop_exit_4: %t31]
+    %t34 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t24]
     jump ^for_body_6
 
   block ^for_body_6:
-    %t34 = phi u32 [^for_body_6: %t41, ^loop_preheader_5: %t32]
-    %t35 = phi i64 [^for_body_6: %t42, ^loop_preheader_5: %t33]
-    %t36 = index inbounds u32 [projection=array_element] %t3, %t35
-    %t37 = load typed u32 %t36
-    %t38 = binary or u32 %t37, 255
-    %t39 = binary and u32 %t38, %t34
-    %t40 = cmp uge u32 %t37, %threshold
-    %t41 = select u32 %t40, %t39, %t34
-    %t42 = binary add i64 %t35, 1
-    %t43 = cmp ult i64 %t42, %t2
-    branch %t43, ^for_body_6, ^for_end_7
+    %t35 = phi u32 [^for_body_6: %t42, ^loop_preheader_5: %t33]
+    %t36 = phi i64 [^for_body_6: %t43, ^loop_preheader_5: %t34]
+    %t37 = index inbounds u32 [projection=array_element] %t3, %t36
+    %t38 = load typed u32 %t37
+    %t39 = binary or u32 %t38, 255
+    %t40 = binary and u32 %t39, %t35
+    %t41 = cmp uge u32 %t38, %threshold
+    %t42 = select u32 %t41, %t40, %t35
+    %t43 = binary add i64 %t36, 1
+    %t44 = cmp ult i64 %t43, %t2
+    branch %t44, ^for_body_6, ^for_end_7
 
   block ^for_end_7:
-    %t44 = phi u32 [^entry: 4294967295, ^for_body_6: %t41]
-    return u32 %t44
+    %t45 = phi u32 [^entry: 4294967295, ^for_body_6: %t42, ^loop_exit_4: %t31]
+    return u32 %t45
 }
 function @dependent(%n : u32) -> u32 [linkage=c, binding=strong, no_inline=yes] {
   block ^entry:
