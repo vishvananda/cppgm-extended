@@ -1218,7 +1218,10 @@ bool JumpThreading::known_compares()
 			if (copied != 0)
 				first = tail;
 			const bool alone = first == last && def != last;
-			const bool paired = first == def && body_.instructions[first].next == last && c_.uses[cmp.result] == 1;
+			// (A temporary an earlier step of this run made has no count: it
+			// pairs with nothing.)
+			const bool paired = first == def && body_.instructions[first].next == last && cmp.result < c_.uses.size() &&
+				c_.uses[cmp.result] == 1;
 			// A branch alone on a value other than a compare tests `ne x, 0`.
 			const Type tested_type = body_.temps[term.ops[0].index].type;
 			const bool bare = alone && cmp.op != Opcode::Compare &&
