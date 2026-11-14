@@ -1,0 +1,157 @@
+declare function @allocate(%n : i64) -> ptr [role=allocate_memory]
+declare function @note(%n : i64) -> void [linkage=c, binding=strong, object=note]
+
+function @push(%v : ptr, %x : i64) -> void {
+  block ^entry:
+    %data = load typed ptr %v
+    %sf = index i8 %v, 8
+    %size = load typed i64 %sf
+    %cf = index i8 %v, 16
+    %cap = load typed i64 %cf
+    %full = cmp eq i64 %size, %cap
+    branch %full, ^grow, ^store
+
+  block ^store:
+    %t7 = index i8 %v, 8
+    %at = index i64 %data, %size
+    store typed i64 %x, %at
+    %n = binary add i64 %size, 1
+    store typed i64 %n, %t7
+    %lf = index i8 %v, 24
+    %last = load typed i64 %lf
+    %more = cmp gt i64 %x, %last
+    %top = select i64 %more, %x, %last
+    store typed i64 %top, %lf
+    %tf = index i8 %v, 32
+    %total = load typed i64 %tf
+    %sum = binary add i64 %x, %total
+    store typed i64 %sum, %tf
+    return void
+
+  block ^grow:
+    %t17 = index i8 %v, 16
+    %t18 = index i8 %v, 8
+    %twice = binary shl i64 %cap, 4
+    %bytes = binary add i64 %twice, 64
+    %fresh = call ptr @allocate(%bytes)
+    store typed ptr %fresh, %v
+    %wider = binary shl i64 %cap, 1
+    %room = binary add i64 %wider, 8
+    store typed i64 %room, %t17
+    store typed i64 0, %t18
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    call void @note(%cap)
+    return void
+}
+function @three(%v : ptr, %x : i64) -> void {
+  block ^entry:
+    %data_1 = load typed ptr %v
+    %sf_2 = index i8 %v, 8
+    %size_3 = load typed i64 %sf_2
+    %cf_4 = index i8 %v, 16
+    %cap_5 = load typed i64 %cf_4
+    %full_6 = cmp eq i64 %size_3, %cap_5
+    branch %full_6, ^grow_2, ^store_1
+
+  block ^store_1:
+    %at_7 = index i64 %data_1, %size_3
+    store typed i64 %x, %at_7
+    %n_8 = binary add i64 %size_3, 1
+    store typed i64 %n_8, %sf_2
+    %lf_9 = index i8 %v, 24
+    %last_10 = load typed i64 %lf_9
+    %more_11 = cmp gt i64 %x, %last_10
+    %top_12 = select i64 %more_11, %x, %last_10
+    store typed i64 %top_12, %lf_9
+    %tf_13 = index i8 %v, 32
+    %total_14 = load typed i64 %tf_13
+    %sum_15 = binary add i64 %x, %total_14
+    store typed i64 %sum_15, %tf_13
+    jump ^inline_cont_3
+
+  block ^grow_2:
+    call void @push(%v, %x)
+    %t16 = load typed ptr %v
+    %t17 = load typed i64 %sf_2
+    jump ^inline_cont_3
+
+  block ^inline_cont_3:
+    %size_18 = phi i64 [^store_1: %n_8, ^grow_2: %t17]
+    %data_19 = phi ptr [^store_1: %data_1, ^grow_2: %t16]
+    %t20 = index i8 %v, 16
+    %y = binary add i64 %x, 1
+    %cap_22 = load typed i64 %t20
+    %full_23 = cmp eq i64 %size_18, %cap_22
+    branch %full_23, ^grow_5, ^store_4
+
+  block ^store_4:
+    %at_24 = index i64 %data_19, %size_18
+    store typed i64 %y, %at_24
+    %n_25 = binary add i64 %size_18, 1
+    store typed i64 %n_25, %sf_2
+    %lf_26 = index i8 %v, 24
+    %last_27 = load typed i64 %lf_26
+    %more_28 = cmp gt i64 %y, %last_27
+    %top_29 = select i64 %more_28, %y, %last_27
+    store typed i64 %top_29, %lf_26
+    %tf_30 = index i8 %v, 32
+    %total_31 = load typed i64 %tf_30
+    %sum_32 = binary add i64 %y, %total_31
+    store typed i64 %sum_32, %tf_30
+    jump ^inline_cont_6
+
+  block ^grow_5:
+    call void @push(%v, %y)
+    %t33 = load typed i64 %sf_2
+    jump ^inline_cont_6
+
+  block ^inline_cont_6:
+    %size_34 = phi i64 [^store_4: %n_25, ^grow_5: %t33]
+    %t35 = index i8 %v, 16
+    %z = binary add i64 %x, 2
+    %data_37 = load typed ptr %v
+    %cap_38 = load typed i64 %t35
+    %full_39 = cmp eq i64 %size_34, %cap_38
+    branch %full_39, ^grow_8, ^store_7
+
+  block ^store_7:
+    %at_40 = index i64 %data_37, %size_34
+    store typed i64 %z, %at_40
+    %n_41 = binary add i64 %size_34, 1
+    store typed i64 %n_41, %sf_2
+    %lf_42 = index i8 %v, 24
+    %last_43 = load typed i64 %lf_42
+    %more_44 = cmp gt i64 %z, %last_43
+    %top_45 = select i64 %more_44, %z, %last_43
+    store typed i64 %top_45, %lf_42
+    %tf_46 = index i8 %v, 32
+    %total_47 = load typed i64 %tf_46
+    %sum_48 = binary add i64 %z, %total_47
+    store typed i64 %sum_48, %tf_46
+    jump ^inline_cont_9
+
+  block ^grow_8:
+    call void @push(%v, %z)
+    jump ^inline_cont_9
+
+  block ^inline_cont_9:
+    return void
+}

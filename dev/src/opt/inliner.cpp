@@ -58,9 +58,10 @@ const uint32_t kPartialCap = 24;
 const uint32_t kPartialHintCap = 40;
 // A partial copy of a callee with at most two callers.
 const uint32_t kPartialFewCap = 48;
-// A callee whose hot code allocates (a growth path) gets only a partial
-// copy this small: a test or two in front of the work.
-const uint32_t kPartialAllocatingCap = 8;
+// A callee whose hot code allocates (a growth path) gets a partial copy of at
+// most this size, at a loop site too: the copy is the path that does not
+// allocate, a test of the capacity and the store in front of the growth.
+const uint32_t kPartialAllocatingCap = 40;
 // So does a callee on a call cycle (not the caller itself): its early
 // return (`if (p == nullptr) return nullptr;` in front of a tree walk)
 // goes inline at each site of the cycle at the cost of a few instructions.
