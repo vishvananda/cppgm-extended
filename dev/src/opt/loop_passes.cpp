@@ -2779,6 +2779,12 @@ bool LoopPass::run(bool fresh)
 	// Innermost loops first (later in the list); one rewrite per run,
 	// since a bypass changes the CFG the other loops were found in.
 	for (uint32_t k = n; k-- > 0;)
+		if (straighten_single_pass_loop(c_, forest_, k))
+		{
+			++c_.stats.loops_removed;
+			return true;
+		}
+	for (uint32_t k = n; k-- > 0;)
 		if (others[k] == 0 && stores[k] != 0 && count_to_pointer(k))
 			return true;
 	for (uint32_t k = n; k-- > 0;)

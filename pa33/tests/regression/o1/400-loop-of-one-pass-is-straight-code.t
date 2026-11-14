@@ -1,0 +1,153 @@
+# A counted loop whose header test continues with the entering value and
+# leaves with the latch's runs one pass: `for (i = 0; i < 1; ++i)`, as a loop
+# over a parameter pack of one is. `@once` keeps its body's blocks, with the
+# early return, and no back edge; the counter read after the loop is 1.
+# `@twice` runs two passes and stays a loop. In `@joined` the early exit
+# joins the header's exit before the counter is read there: it has no one
+# value, and the loop stays.
+global @seen : i64 = 0
+
+function @note(%v : i64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %old = load i64 @seen
+    %new = binary add i64 %old, %v
+    store i64 %new, @seen
+    return void
+}
+
+function @once(%p : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^next: %step]
+    %more = cmp lt i64 %i, 1
+    branch %more, ^body, ^done
+
+  block ^body:
+    %has = cmp gt i64 %n, %i
+    branch %has, ^given, ^missing
+
+  block ^given:
+    %at = index i64 %p, %i
+    %v = load i64 %at
+    call void @note(%v)
+    jump ^next
+
+  block ^missing:
+    %bad = cmp lt i64 %n, -5
+    branch %bad, ^fail, ^default
+
+  block ^fail:
+    return i64 -1
+
+  block ^default:
+    call void @note(100)
+    jump ^next
+
+  block ^next:
+    %step = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %i
+}
+
+function @twice(%p : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^next: %step]
+    %more = cmp lt i64 %i, 2
+    branch %more, ^body, ^done
+
+  block ^body:
+    %has = cmp gt i64 %n, %i
+    branch %has, ^given, ^missing
+
+  block ^given:
+    %at = index i64 %p, %i
+    %v = load i64 %at
+    call void @note(%v)
+    jump ^next
+
+  block ^missing:
+    %bad = cmp lt i64 %n, -5
+    branch %bad, ^fail, ^default
+
+  block ^fail:
+    return i64 -1
+
+  block ^default:
+    call void @note(100)
+    jump ^next
+
+  block ^next:
+    %step = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %i
+}
+
+function @joined(%p : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^next: %step]
+    %more = cmp lt i64 %i, 1
+    branch %more, ^body, ^done
+
+  block ^body:
+    %has = cmp gt i64 %n, %i
+    branch %has, ^given, ^done
+
+  block ^given:
+    %at = index i64 %p, %i
+    %v = load i64 %at
+    call void @note(%v)
+    jump ^next
+
+  block ^next:
+    %step = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    %r = binary add i64 %i, 10
+    return i64 %r
+}
+
+function @main() -> i32 [role=entry] {
+  slot $a : obj<16x8>
+
+  block ^entry:
+    %p = addr $a
+    store i64 7, %p
+    %q = index i64 %p, 1
+    store i64 8, %q
+    %r0 = call i64 @once(%p, 1)
+    %r1 = call i64 @once(%p, 0)
+    %r2 = call i64 @once(%p, -9)
+    %r3 = call i64 @twice(%p, 2)
+    %r4 = call i64 @joined(%p, 1)
+    %r5 = call i64 @joined(%p, 0)
+    %seen = load i64 @seen
+    %ok0 = cmp eq i64 %r0, 1
+    %ok1 = cmp eq i64 %r1, 1
+    %ok2 = cmp eq i64 %r2, -1
+    %ok3 = cmp eq i64 %r3, 2
+    %ok4 = cmp eq i64 %r4, 11
+    %ok5 = cmp eq i64 %r5, 10
+    %ok6 = cmp eq i64 %seen, 129
+    %a0 = binary and i64 %ok0, %ok1
+    %a1 = binary and i64 %a0, %ok2
+    %a2 = binary and i64 %a1, %ok3
+    %a3 = binary and i64 %a2, %ok4
+    %a4 = binary and i64 %a3, %ok5
+    %a5 = binary and i64 %a4, %ok6
+    %r = convert trunc i32 i64 %a5
+    %code = binary sub i32 1, %r
+    return i32 %code
+}

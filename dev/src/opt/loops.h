@@ -11,6 +11,8 @@
 // O(blocks + edges + reported memberships).
 namespace opt {
 
+struct FunctionContext;
+
 struct Loop
 {
 	lowir::BlockId header;
@@ -111,6 +113,12 @@ lowir::Value read_in_preheader(const lowir::Program& program, const lowir::Funct
 // Replaces each phi of `header` that `v` enters from every edge (or that
 // reads only itself otherwise) with `v`, moving its counts in `uses`.
 void fold_header_phis(lowir::FunctionBody& body, lowir::BlockId header, lowir::Value v, std::vector<uint32_t>& uses);
+
+// A loop of one pass becomes straight code: its header's test, of literals
+// and the header's phis alone, continues with the entering values and
+// leaves with the latch's (opt/loop_unrolling.cpp). `context.block_of` maps
+// the instructions.
+bool straighten_single_pass_loop(FunctionContext& context, const LoopForest& forest, uint32_t loop);
 
 // The test number (0-based) at which a counted loop leaves: the induction
 // starts at a literal and steps by a literal, the bound is a literal, and

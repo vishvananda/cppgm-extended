@@ -746,4 +746,214 @@ bool unroll_short_loops(FunctionContext& context)
 	return ShortLoopUnrolling(context).run();
 }
 
+namespace {
+
+// The operations pass_constant reads through, and the instructions the
+// header of a loop of one pass may hold beside its phis and its test.
+const unsigned kPassDepth = 8;
+const unsigned kFinalInstructions = 8;
+
+// The constant `v` is on pass `pass` of the loop (0: the first, 1: the
+// second), from literals and the header's phis alone: a phi is its entering
+// literal on the first pass and its latch value of the first pass on the
+// second.
+bool pass_constant(const FunctionContext& c, const LoopForest& forest, uint32_t loop, Value v, unsigned pass,
+	unsigned depth, Constant& out)
+{
+	const FunctionBody& body = c.body;
+	if (literal_constant(body, v, out))
+		return true;
+	if (!v.is(ValueKind::Temp) || v.index < body.parameter_count || depth == 0)
+		return false;
+	const InstId def = body.temps[v.index].def;
+	if (def == kNoId || def >= c.block_of.size() || c.block_of[def] == kNoId || !in_loop(forest, loop, c.block_of[def]))
+		return false;
+	const Loop& l = forest.loops[loop];
+	const Instruction& inst = body.instructions[def];
+	if (inst.op == Opcode::Phi)
+	{
+		if (c.block_of[def] != l.header || inst.extra_count != 4)
+			return false;
+		const Value input = phi_incoming(body, inst, l.latches[0]);
+		for (uint32_t k = 0; k < 4 && pass == 0; k += 2)
+			if (body.operands[inst.extra_first + k].index != l.latches[0])
+				return literal_constant(body, body.operands[inst.extra_first + k + 1], out);
+		return pass == 1 && !input.is(ValueKind::None) && pass_constant(c, forest, loop, input, 0, depth - 1, out);
+	}
+	Constant a, b;
+	const bool unary = inst.op == Opcode::Unary || inst.op == Opcode::Convert || inst.op == Opcode::Copy;
+	if (!(unary || inst.op == Opcode::Compare || inst.op == Opcode::Binary) ||
+		!pass_constant(c, forest, loop, inst.ops[0], pass, depth - 1, a) ||
+		(!unary && !pass_constant(c, forest, loop, inst.ops[1], pass, depth - 1, b)))
+		return false;
+	switch (inst.op)
+	{
+	case Opcode::Compare:
+		return fold_compare(static_cast<ComparePredicate>(inst.sub), inst.type, a, b, out);
+	case Opcode::Binary:
+		return fold_binary(static_cast<BinaryOp>(inst.sub), inst.type, a, b, out);
+	case Opcode::Unary:
+		return fold_unary(static_cast<UnaryOp>(inst.sub), inst.type, a, out);
+	case Opcode::Convert:
+		return fold_convert(static_cast<ConvertOp>(inst.sub), inst.type, convert_source_type(inst), a, out);
+	default:
+		return fold_copy(inst.type, a, out);
+	}
+}
+
+// Whether the header's test of the loop continues (`stay`) on `pass`; false
+// when the test is no constant there.
+bool pass_stays(const FunctionContext& c, const LoopForest& forest, uint32_t loop, unsigned pass, bool& stay)
+{
+	const Instruction& test = c.body.instructions[c.body.blocks[forest.loops[loop].header].last];
+	Constant value;
+	if (!pass_constant(c, forest, loop, test.ops[0], pass, kPassDepth, value) || value.kind != ValueKind::Integer)
+		return false;
+	stay = ((value.bits.low | value.bits.high) != 0) == in_loop(forest, loop, test.ops[1].index);
+	return true;
+}
+
+} // namespace
+
+// A loop of one pass is no loop: its header's test, of literals and the
+// header's phis alone, continues with the entering values and leaves with
+// the values the latch gives (`for (i = 0; i < 1; ++i)`, a loop over a
+// parameter pack of one). The body's blocks stay as they are, with any
+// exits. The header runs with the entering values and falls into the body;
+// the latch jumps to a new block that holds the header's instructions once
+// more, reading the latch values, and leaves. A reader of a header value
+// after the loop reads that block's. It is found by the exit block, the
+// header's alone, dominating it; a reader the exit only reaches (it joins a
+// path that left the body) has no one value, and the loop stays.
+bool straighten_single_pass_loop(FunctionContext& c, const LoopForest& forest, uint32_t loop)
+{
+	FunctionBody& body = c.body;
+	const Cfg& cfg = c.cfg;
+	const Loop& l = forest.loops[loop];
+	const BlockId header = l.header;
+	const InstId test = body.blocks[header].last;
+	if (l.latches.size() != 1 || l.latches[0] == header || cfg.pred_count(header) != 2 ||
+		(cfg.flags[header] & (BF_HANDLER | BF_EH)) != 0 || body.instructions[test].op != Opcode::Branch)
+		return false;
+	const BlockId latch = l.latches[0];
+	const bool first_stays = in_loop(forest, loop, body.instructions[test].ops[1].index);
+	bool stay = false;
+	if (first_stays == in_loop(forest, loop, body.instructions[test].ops[2].index) ||
+		!pass_stays(c, forest, loop, 0, stay) || !stay || !pass_stays(c, forest, loop, 1, stay) || stay)
+		return false;
+	const BlockId inside = body.instructions[test].ops[first_stays ? 1 : 2].index;
+	const BlockId exit = body.instructions[test].ops[first_stays ? 2 : 1].index;
+	// The header's values: a phi's on the second pass is its latch input.
+	std::vector<Value> final_value(body.temps.size(), Value::none());
+	unsigned count = 0;
+	for (InstId i = body.blocks[header].first; i != test; i = body.instructions[i].next)
+	{
+		const Instruction& inst = body.instructions[i];
+		if (inst.op == Opcode::Phi)
+			final_value[inst.result] = phi_incoming(body, inst, latch);
+		else if (++count > kFinalInstructions || inst.result == kNoId || !is_pure(inst))
+			return false;
+		else
+			final_value[inst.result] = Value::temp(inst.result); // (its copy, once made)
+	}
+	// The blocks the exit reaches, for a reader it does not dominate.
+	const bool alone = cfg.pred_count(exit) == 1;
+	std::vector<uint8_t> reached(body.blocks.size(), 0);
+	std::vector<BlockId> work(1, exit);
+	reached[exit] = 1;
+	while (!work.empty())
+	{
+		const BlockId b = work.back();
+		work.pop_back();
+		for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
+			if (!reached[cfg.succs[k]])
+			{
+				reached[cfg.succs[k]] = 1;
+				work.push_back(cfg.succs[k]);
+			}
+	}
+	// Readers outside the loop: 1 reads the final value, 0 the first pass's,
+	// 2 has no one value. `at` is the reader's block, or the predecessor a
+	// phi reads over.
+	auto reads = [&](BlockId at) -> unsigned {
+		if (at == header || (alone && cfg.reachable(at) && cfg.dominates(exit, at)))
+			return 1;
+		return in_loop(forest, loop, at) || !reached[at] ? 0 : 2;
+	};
+	auto visit = [&](bool apply) {
+		for (BlockId b : body.layout)
+			for (InstId i = in_loop(forest, loop, b) ? kNoId : body.blocks[b].first; i != kNoId;
+				i = body.instructions[i].next)
+			{
+				Instruction& inst = body.instructions[i];
+				bool mixed = false;
+				for (uint32_t k = 1; k < inst.extra_count && inst.op == Opcode::Phi; k += 2)
+				{
+					Value& v = body.operands[inst.extra_first + k];
+					if (!v.is(ValueKind::Temp) || final_value[v.index].is(ValueKind::None))
+						continue;
+					const unsigned kind = reads(body.operands[inst.extra_first + k - 1].index);
+					mixed = mixed || kind == 2;
+					if (apply && kind == 1)
+						v = final_value[v.index];
+				}
+				if (inst.op != Opcode::Phi)
+					for_each_operand(body, inst, [&](Value& v) {
+						if (!v.is(ValueKind::Temp) || final_value[v.index].is(ValueKind::None))
+							return;
+						mixed = mixed || reads(b) == 2;
+						if (apply && reads(b) == 1)
+							v = final_value[v.index];
+					});
+				if (mixed)
+					return false;
+			}
+		return true;
+	};
+	if (!visit(false))
+		return false;
+	// The header's second run: its instructions once more, after the latch.
+	const BlockId final_block = append_block(body, BlockKind::Plain);
+	for (InstId i = body.blocks[header].first; i != test; i = body.instructions[i].next)
+	{
+		Instruction inst = body.instructions[i];
+		if (inst.op == Opcode::Phi)
+			continue;
+		for (Value& v : inst.ops)
+			if (v.is(ValueKind::Temp) && !final_value[v.index].is(ValueKind::None))
+				v = final_value[v.index];
+		const TempId result = inst.result;
+		const InstId id = append_copy(body, body, i, inst);
+		const TempId fresh = append_temp(body, body.temps[result].type, id);
+		body.instructions[id].result = fresh;
+		final_value.resize(body.temps.size(), Value::none());
+		final_value[result] = Value::temp(fresh);
+		insert_after(body, final_block, body.blocks[final_block].last, id);
+	}
+	Instruction leave = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+	leave.ops[0] = Value::block(exit);
+	insert_after(body, final_block, body.blocks[final_block].last, append_instruction(body, leave));
+	visit(true);
+	rename_phi_incoming(body, exit, header, final_block);
+	for_each_successor(body, body.instructions[body.blocks[latch].last], [&](BlockId& s) {
+		if (s == header)
+			s = final_block;
+	});
+	remove_phi_incoming(body, header, latch);
+	Instruction& branch = body.instructions[test];
+	branch.op = Opcode::Jump;
+	branch.sub = 0;
+	branch.flags = 0;
+	branch.type = Type::scalar(TypeKind::Void);
+	branch.ops[0] = Value::block(inside);
+	branch.ops[1] = branch.ops[2] = Value::none();
+	for (size_t k = 0; k < body.layout.size(); ++k)
+		if (body.layout[k] == latch)
+		{
+			body.layout.insert(body.layout.begin() + static_cast<std::ptrdiff_t>(k) + 1, final_block);
+			break;
+		}
+	return true;
+}
+
 } // namespace opt
