@@ -955,7 +955,8 @@ bool straighten_single_pass_loop(FunctionContext& c, const LoopForest& forest, u
 		const Instruction& inst = body.instructions[i];
 		if (inst.op == Opcode::Phi)
 			final_value[inst.result] = phi_incoming(body, inst, latch);
-		else if (++count > kFinalInstructions || inst.result == kNoId || !is_pure(inst))
+		// (The copy reads other values in its fixed operands only.)
+		else if (++count > kFinalInstructions || inst.result == kNoId || !is_pure(inst) || inst.extra_count != 0)
 			return false;
 		else
 			final_value[inst.result] = Value::temp(inst.result); // (its copy, once made)
@@ -1057,6 +1058,17 @@ bool straighten_single_pass_loop(FunctionContext& c, const LoopForest& forest, u
 			body.layout.insert(body.layout.begin() + static_cast<std::ptrdiff_t>(k) + 1, final_block);
 			break;
 		}
+	// The header has one entry left: each of its phis is the value that
+	// enters (a pass that copies the block reads no phi of one entry).
+	for (InstId i = body.blocks[header].first; i != kNoId && body.instructions[i].op == Opcode::Phi;)
+	{
+		const InstId next = body.instructions[i].next;
+		const TempId result = body.instructions[i].result;
+		const Value entering = body.operands[body.instructions[i].extra_first + 1];
+		unlink_after(body, header, kNoId, i);
+		replace_all_uses(body, result, entering);
+		i = next;
+	}
 	return true;
 }
 
