@@ -1526,6 +1526,17 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	case Op::LockCmpxchg16b:
 		cmpxchg16b(inst);
 		break;
+	case Op::LockAdd:
+		// (The selector passes a register or an immediate the instruction
+		// holds: nothing may come between the prefix and the add.)
+		if (b.kind == OperandKind::Imm && register_bytes(inst.type) == 8 && !fits_i32(b.imm))
+			throw InternalError("lock_add immediate needs a register");
+		asm_.byte(0xf0);
+		if (b.kind == OperandKind::Imm && (b.imm == 1 || b.imm == -1))
+			asm_.step(rm(a), b.imm == -1, register_bytes(inst.type));
+		else
+			alu(0, inst);
+		break;
 	case Op::Mfence:
 		asm_.byte(0x0f);
 		asm_.byte(0xae);

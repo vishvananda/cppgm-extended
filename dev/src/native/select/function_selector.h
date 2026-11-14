@@ -75,6 +75,9 @@ public:
 	bool low_read(uint32_t temp) const { return temp < low_read_.size() && low_read_[temp] != 0; }
 	void normalize_result(const lowir::Instruction& inst, Reg reg, lowir::TypeKind type);
 	bool sunk_compare(uint32_t inst) const;
+	void fuse_atomic(uint32_t inst);
+	bool flag_result(const lowir::Instruction& inst) const;
+	bool expected_literal(const lowir::Instruction& inst, Operand& value) const;
 	int32_t read_pos(uint32_t inst) const;
 	bool live(uint32_t inst) const { return (marks_[inst] & (IM_DEAD | IM_REACHABLE)) == IM_REACHABLE; }
 	template<typename F>

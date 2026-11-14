@@ -972,6 +972,22 @@ void FunctionSelector::emit_compare_jump(const Instruction& compare, uint32_t on
 		j.sub = cond;
 		emit1(Op::Jmp, TypeKind::Void, Operand::make_label(on_false));
 	};
+	// An atomic operation's own flags (fuse_atomic) say its result is not
+	// zero: a compare-exchange took place, an add's sum is nonzero.
+	auto atomic = [](const Instruction& inst) {
+		return inst.op == Opcode::AtomicCompareExchange || inst.op == Opcode::AtomicAddFetch;
+	};
+	auto emit_flag_jump = [&](const Instruction& operation, bool set) {
+		const Cond nonzero = operation.op == Opcode::AtomicCompareExchange ? CC_E : CC_NE;
+		Inst& j = emit1(Op::Jcc, TypeKind::Void, Operand::make_label(on_true));
+		j.sub = set ? nonzero : invert(nonzero);
+		emit1(Op::Jmp, TypeKind::Void, Operand::make_label(on_false));
+	};
+	if (atomic(compare))
+	{
+		emit_flag_jump(compare, true);
+		return;
+	}
 	// A tested `and` the branch reads directly, or through a compare with zero.
 	if (compare.op == Opcode::Binary)
 	{
@@ -979,6 +995,13 @@ void FunctionSelector::emit_compare_jump(const Instruction& compare, uint32_t on
 		return;
 	}
 	const Value tested = compare.op == Opcode::Compare ? resolve(compare.ops[0]) : Value::none();
+	if (tested.kind == ValueKind::Temp && (temps_[tested.index].flags & TF_TESTED) &&
+		atomic(body_->instructions[body_->temps[tested.index].def]))
+	{
+		emit_flag_jump(body_->instructions[body_->temps[tested.index].def],
+			static_cast<ComparePredicate>(compare.sub) == ComparePredicate::Ne);
+		return;
+	}
 	if (tested.kind == ValueKind::Temp && (temps_[tested.index].flags & TF_TESTED))
 	{
 		emit_test_jump(body_->instructions[body_->temps[tested.index].def],

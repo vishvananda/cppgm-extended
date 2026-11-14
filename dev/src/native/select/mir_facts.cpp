@@ -39,6 +39,9 @@ bool flags_dead_after(const std::vector<Inst>& insts, uint32_t i, uint32_t end)
 		case Op::MulWide:
 		case Op::ImulWide:
 		case Op::FCmp:
+		case Op::LockXadd:
+		case Op::LockAdd:
+		case Op::LockCmpxchg:
 		case Op::Call:
 		case Op::Ret:
 		case Op::Jmp:

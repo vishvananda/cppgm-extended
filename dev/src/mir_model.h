@@ -95,6 +95,7 @@ enum class Op : std::uint8_t
 	WideCmpBranch, // cmp_branch.<predicate>.i128 a, b, ^true, ^false
 	// Atomics.
 	LockXadd,
+	LockAdd, // lock_add.T [mem], src: the flags are the sum's
 	Xchg,
 	LockCmpxchg,
 	LockCmpxchg16b,
@@ -142,11 +143,11 @@ inline const char* spelling(Op op)
 		"sbb", "imul", "neg", "not", "bswap", "bsf", "bsr", "popcnt", "shl", "shr", "sar", "rol", "ror", "cmp", "test",
 		"bt", "set", "cmov", "movzx", "sext", "zext", "cqo", "idiv", "div", "j", "jmp", "call", "tail_jump",
 		"copy_bytes", "zero_bytes", "ret", "fmov", "fadd", "fsub", "fmul", "fdiv", "fneg", "fabs", "vector", "fcmp",
-		"f", "", "fret", "fstp", "", "set", "cmp_branch", "lock_xadd", "xchg", "lock_cmpxchg", "lock_cmpxchg16b",
-		"mfence", "va_start", "va_arg", "stack_alloc", "stack_save", "read_mxcsr", "write_mxcsr", "stack_restore",
-		"eh_push", "eh_pop", "throw", "resume", "load_exception", "eh_mark", "eh_catch", "load_selector", "landing",
-		"eh_select", "catch_all", "tls_addr", "exit", "trap", "jump_table", "mul", "imul", "asm", "prologue",
-		"indirect_jump", "" };
+		"f", "", "fret", "fstp", "", "set", "cmp_branch", "lock_xadd", "lock_add", "xchg", "lock_cmpxchg",
+		"lock_cmpxchg16b", "mfence", "va_start", "va_arg", "stack_alloc", "stack_save", "read_mxcsr", "write_mxcsr",
+		"stack_restore", "eh_push", "eh_pop", "throw", "resume", "load_exception", "eh_mark", "eh_catch",
+		"load_selector", "landing", "eh_select", "catch_all", "tls_addr", "exit", "trap", "jump_table", "mul", "imul",
+		"asm", "prologue", "indirect_jump", "" };
 	return kOps[static_cast<unsigned>(op)];
 }
 

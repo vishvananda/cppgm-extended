@@ -284,9 +284,12 @@ void FunctionSelector::emit_inst(uint32_t id)
 	location_ = inst.location;
 	if (!live(id))
 		return;
+	// (An atomic operation the branch tests runs where it stands: only its
+	// result register goes, fuse_atomic.)
 	if (inst.result != kNoId &&
 		(temps_[inst.result].flags &
-			(TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED | TF_RMW)))
+			(TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED | TF_RMW)) &&
+		inst.op != Opcode::AtomicCompareExchange && inst.op != Opcode::AtomicAddFetch)
 		return;
 	switch (inst.op)
 	{

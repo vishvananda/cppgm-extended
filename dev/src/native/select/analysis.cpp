@@ -2083,6 +2083,11 @@ void FunctionSelector::find_folds()
 		if ((t.flags & (TF_ALIAS | TF_GLOBAL)) || t.uses != 1 || t.user == kNoId)
 			return;
 		const uint32_t user_id = t.user;
+		if (inst.op == Opcode::AtomicCompareExchange || inst.op == Opcode::AtomicAddFetch)
+		{
+			fuse_atomic(id);
+			return;
+		}
 		if (sunk_compare(id))
 		{
 			// Fused into the branch ending the block past other instructions:
@@ -2746,6 +2751,58 @@ bool FunctionSelector::sunk_compare(uint32_t id) const
 	return (user.op == Opcode::Branch ||
 			   (user.op == Opcode::Select && !(resolve(user.ops[1]) == self) && !(resolve(user.ops[2]) == self))) &&
 		inst_block_[t.user] == inst_block_[id] && pos_[t.user] > pos_[id] + 1 && resolve(user.ops[0]) == self;
+}
+
+// O1+: an atomic operation whose result only the branch ending its block
+// tests leaves it in the flags, with no result register: a compare-exchange
+// sets the zero flag when it took place (lock cmpxchg; je), an add sets it
+// for its sum (lock add; je). The branch reads the result itself, or one
+// compare of it with zero (at the sum's own width). Nothing that emits code
+// lies between: aliases, and that compare, which the branch fuses.
+void FunctionSelector::fuse_atomic(uint32_t id)
+{
+	const lowir::FunctionBody& body = *body_;
+	const Instruction& inst = body.instructions[id];
+	TempInfo& t = temps_[inst.result];
+	if (level_ < 1 || inst.type.kind() == TypeKind::I128)
+		return;
+	// The next instruction from `next` on that emits code.
+	auto next_work = [&](uint32_t next) {
+		while (next != kNoId)
+		{
+			const Instruction& step = body.instructions[next];
+			if (!(marks_[next] & IM_DEAD) && (step.result == kNoId || !(temps_[step.result].flags & TF_ALIAS)))
+				break;
+			next = step.next;
+		}
+		return next;
+	};
+	const uint32_t reader = next_work(inst.next);
+	if (reader == kNoId || reader != t.user)
+		return;
+	const Instruction& user = body.instructions[reader];
+	const Value self = Value::temp(inst.result);
+	if (user.op == Opcode::Branch)
+	{
+		if (resolve(user.ops[0]) == self)
+			t.flags |= TF_FUSED;
+		return;
+	}
+	const lowir::ComparePredicate pred = static_cast<lowir::ComparePredicate>(user.sub);
+	if (user.op != Opcode::Compare || user.result == kNoId ||
+		(pred != lowir::ComparePredicate::Eq && pred != lowir::ComparePredicate::Ne) ||
+		!(resolve(user.ops[0]) == self) || (inst.op == Opcode::AtomicAddFetch && user.type != inst.type))
+		return;
+	const Value zero = resolve(user.ops[1]);
+	const TempInfo& c = temps_[user.result];
+	if (zero.kind != ValueKind::Integer || (literal(zero).low | literal(zero).high) != 0 ||
+		(c.flags & (TF_ALIAS | TF_GLOBAL)) || c.uses != 1 || c.user == kNoId || next_work(user.next) != c.user)
+		return;
+	const Instruction& branch = body.instructions[c.user];
+	if (branch.op != Opcode::Branch || !(resolve(branch.ops[0]) == Value::temp(user.result)))
+		return;
+	t.flags |= TF_TESTED;
+	temps_[user.result].flags |= TF_FUSED;
 }
 
 // Where an instruction reads its operands: a folded load at its consumer,

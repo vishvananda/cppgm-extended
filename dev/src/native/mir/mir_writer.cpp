@@ -59,6 +59,7 @@ bool typed(Op op)
 	case Op::FRet:
 	case Op::FStp:
 	case Op::LockXadd:
+	case Op::LockAdd:
 	case Op::Xchg:
 	case Op::LockCmpxchg:
 	case Op::LockCmpxchg16b:

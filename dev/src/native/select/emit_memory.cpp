@@ -97,6 +97,19 @@ void FunctionSelector::emit_atomic(const Instruction& inst)
 			load_into(kEmitScratch, value, kind == TypeKind::Ptr ? TypeKind::Ptr : kind);
 			value = Operand::make_reg(kEmitScratch);
 		}
+		// A sum nothing reads, or only the block's branch compares with zero
+		// (fuse_atomic): the add in memory, whose flags are the sum's.
+		if (inst.op == Opcode::AtomicAddFetch && flag_result(inst))
+		{
+			if (value.kind == OperandKind::Imm && register_bytes(kind) == 8 &&
+				value.imm != static_cast<int32_t>(value.imm))
+			{
+				load_into(kEmitScratch, value, kind);
+				value = Operand::make_reg(kEmitScratch);
+			}
+			emit2(Op::LockAdd, kind, mem, value);
+			return;
+		}
 		const Reg d = result_reg(inst, kNoReg, kNoReg, operand_regs(mem) | operand_regs(value));
 		load_into(d, value, TypeKind::I64);
 		const Operand dst = Operand::make_reg(d);
@@ -189,11 +202,18 @@ void FunctionSelector::emit_atomic(const Instruction& inst)
 				load_into(r, desired, kind == TypeKind::Ptr ? TypeKind::Ptr : kind);
 			desired = Operand::make_reg(r);
 		}
-		emit2(Op::Load, kind, Operand::make_reg(RAX), expected);
+		Operand known = Operand::make_imm(0);
+		if (expected_literal(inst, known))
+			emit2(Op::Mov, TypeKind::Void, Operand::make_reg(RAX), known);
+		else
+			emit2(Op::Load, kind, Operand::make_reg(RAX), expected);
 		emit2(Op::LockCmpxchg, kind, target, desired);
 		emit2(Op::Store, kind, expected, Operand::make_reg(RAX));
 		if (borrowed != kNoReg)
 			emit2(Op::Load, TypeKind::I64, Operand::make_reg(borrowed), Operand::make_frame(borrowed_home));
+		// The branch takes the exchange's zero flag (the two moves keep it).
+		if (flag_result(inst))
+			return;
 		const Reg d = result_reg(inst);
 		Inst& set = emit1(Op::Setcc, TypeKind::Void, Operand::make_reg(d));
 		set.sub = CC_E;
@@ -204,6 +224,61 @@ void FunctionSelector::emit_atomic(const Instruction& inst)
 	default:
 		throw InternalError("unsupported atomic operation");
 	}
+}
+
+// Whether an atomic operation leaves its result in the flags alone: the
+// branch reads them (fuse_atomic), or nothing reads an add's sum.
+bool FunctionSelector::flag_result(const Instruction& inst) const
+{
+	const TempInfo& t = temps_[inst.result];
+	return (t.flags & (TF_FUSED | TF_TESTED)) != 0 ||
+		(level_ >= 1 && inst.op == Opcode::AtomicAddFetch && t.uses == 0 && inst.type.kind() != TypeKind::I128);
+}
+
+// The literal the store before compare-exchange `inst` writes to the slot
+// holding its expected value (`bool expected = false;` before each attempt):
+// the exchange compares with it, not with a load of the slot.
+bool FunctionSelector::expected_literal(const Instruction& inst, Operand& value) const
+{
+	const lowir::FunctionBody& body = *body_;
+	if (level_ < 1)
+		return false;
+	auto slot_of = [&](Value v) {
+		v = resolve(v);
+		if (v.kind == ValueKind::Slot)
+			return v.index;
+		if (v.kind != ValueKind::Temp || body.temps[v.index].def == kNoId)
+			return kNoId;
+		const Instruction& address = body.instructions[body.temps[v.index].def];
+		return address.op == Opcode::Addr && address.ops[0].kind == ValueKind::Slot ? address.ops[0].index : kNoId;
+	};
+	const uint32_t slot = slot_of(inst.ops[1]);
+	if (slot == kNoId)
+		return false;
+	// The last store before the exchange, with only value computations after
+	// it (the slot's address among them).
+	const lowir::InstId self = body.temps[inst.result].def;
+	const Instruction* prior = nullptr;
+	for (lowir::InstId i = body.blocks[blocks_[block_].id].first; i != kNoId && i != self;
+		i = body.instructions[i].next)
+	{
+		const Instruction& step = body.instructions[i];
+		const bool value = step.op == Opcode::Addr || step.op == Opcode::Index || step.op == Opcode::Copy ||
+			step.op == Opcode::Const || step.op == Opcode::Convert || step.op == Opcode::Binary ||
+			step.op == Opcode::Unary || step.op == Opcode::Compare || step.op == Opcode::Select;
+		if (step.op == Opcode::Store)
+			prior = &step;
+		else if (!value || step.type.is_object())
+			prior = nullptr;
+	}
+	if (prior == nullptr || (prior->flags & lowir::IF_VOLATILE) != 0 || !prior->type.is_integer() ||
+		value_bytes(prior->type) != value_bytes(inst.type) || slot_of(prior->ops[1]) != slot)
+		return false;
+	const Value stored = resolve(prior->ops[0]);
+	if (stored.kind != ValueKind::Integer)
+		return false;
+	value = imm_for(stored, prior->type);
+	return value.kind == OperandKind::Imm;
 }
 
 void FunctionSelector::emit_bulk(const Instruction& inst)
