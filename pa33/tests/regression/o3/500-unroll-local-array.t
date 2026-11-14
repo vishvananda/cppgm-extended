@@ -64,7 +64,25 @@ function @local(%m : i64) -> i64 [no_inline=yes] {
     %x41 = binary add i64 %x40, %k
     %x42 = binary add i64 %x41, %k
     %x43 = binary add i64 %x42, %k
-    store typed i64 %x43, %p
+    %x44 = binary add i64 %x43, %k
+    %x45 = binary add i64 %x44, %k
+    %x46 = binary add i64 %x45, %k
+    %x47 = binary add i64 %x46, %k
+    %x48 = binary add i64 %x47, %k
+    %x49 = binary add i64 %x48, %k
+    %x50 = binary add i64 %x49, %k
+    %x51 = binary add i64 %x50, %k
+    %x52 = binary add i64 %x51, %k
+    %x53 = binary add i64 %x52, %k
+    %x54 = binary add i64 %x53, %k
+    %x55 = binary add i64 %x54, %k
+    %x56 = binary add i64 %x55, %k
+    %x57 = binary add i64 %x56, %k
+    %x58 = binary add i64 %x57, %k
+    %x59 = binary add i64 %x58, %k
+    %x60 = binary add i64 %x59, %k
+    %x61 = binary add i64 %x60, %k
+    store typed i64 %x61, %p
     jump ^tail
   block ^tail:
     %next = binary add i64 %k, 1
@@ -133,7 +151,25 @@ function @elsewhere(%base : ptr) -> i64 [no_inline=yes] {
     %x41 = binary add i64 %x40, %k
     %x42 = binary add i64 %x41, %k
     %x43 = binary add i64 %x42, %k
-    store typed i64 %x43, %p
+    %x44 = binary add i64 %x43, %k
+    %x45 = binary add i64 %x44, %k
+    %x46 = binary add i64 %x45, %k
+    %x47 = binary add i64 %x46, %k
+    %x48 = binary add i64 %x47, %k
+    %x49 = binary add i64 %x48, %k
+    %x50 = binary add i64 %x49, %k
+    %x51 = binary add i64 %x50, %k
+    %x52 = binary add i64 %x51, %k
+    %x53 = binary add i64 %x52, %k
+    %x54 = binary add i64 %x53, %k
+    %x55 = binary add i64 %x54, %k
+    %x56 = binary add i64 %x55, %k
+    %x57 = binary add i64 %x56, %k
+    %x58 = binary add i64 %x57, %k
+    %x59 = binary add i64 %x58, %k
+    %x60 = binary add i64 %x59, %k
+    %x61 = binary add i64 %x60, %k
+    store typed i64 %x61, %p
     jump ^tail
   block ^tail:
     %next = binary add i64 %k, 1

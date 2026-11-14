@@ -739,7 +739,123 @@ bool ShortLoopUnrolling::run()
 	return true;
 }
 
+// The operations a literal induction folds through.
+const unsigned kFoldDepth = 6;
+
+// The constant an instruction of constant operands computes.
+bool fold_instruction(const Instruction& inst, const Constant& a, const Constant& b, Constant& out)
+{
+	switch (inst.op)
+	{
+	case Opcode::Compare:
+		return fold_compare(static_cast<ComparePredicate>(inst.sub), inst.type, a, b, out);
+	case Opcode::Binary:
+		return fold_binary(static_cast<BinaryOp>(inst.sub), inst.type, a, b, out);
+	case Opcode::Unary:
+		return fold_unary(static_cast<UnaryOp>(inst.sub), inst.type, a, out);
+	case Opcode::Convert:
+		return fold_convert(static_cast<ConvertOp>(inst.sub), inst.type, convert_source_type(inst), a, out);
+	default:
+		return fold_copy(inst.type, a, out);
+	}
+}
+
+// The constant `v` is where the induction `iv` is `at`: computed from
+// literals and `iv` alone by the loop's own (`member`) instructions.
+bool induction_constant(const FunctionContext& c, const std::vector<uint8_t>& member, TempId iv, const Constant& at,
+	Value v, unsigned depth, Constant& out)
+{
+	const FunctionBody& body = c.body;
+	if (literal_constant(body, v, out))
+		return true;
+	if (!v.is(ValueKind::Temp) || depth == 0)
+		return false;
+	if (v.index == iv)
+	{
+		out = at;
+		return true;
+	}
+	const InstId def = v.index >= body.parameter_count ? body.temps[v.index].def : kNoId;
+	if (def == kNoId || def >= c.block_of.size() || c.block_of[def] == kNoId || !member[c.block_of[def]])
+		return false;
+	const Instruction& inst = body.instructions[def];
+	const bool unary = inst.op == Opcode::Unary || inst.op == Opcode::Convert || inst.op == Opcode::Copy;
+	Constant a, b;
+	return (unary || inst.op == Opcode::Compare || inst.op == Opcode::Binary) &&
+		induction_constant(c, member, iv, at, inst.ops[0], depth - 1, a) &&
+		(unary || induction_constant(c, member, iv, at, inst.ops[1], depth - 1, b)) &&
+		fold_instruction(inst, a, b, out);
+}
+
 } // namespace
+
+// What the copies of a counted loop keep (loops.h).
+uint64_t unrolled_size(const FunctionContext& c, const Cfg& cfg, const Loop& l, const std::vector<uint8_t>& member,
+	const std::vector<uint8_t>& owned, TempId iv, int64_t trips)
+{
+	const FunctionBody& body = c.body;
+	const uint64_t unknown = ~static_cast<uint64_t>(0);
+	const InstId def = iv != kNoId && iv >= body.parameter_count ? body.temps[iv].def : kNoId;
+	if (def == kNoId || body.instructions[def].op != Opcode::Phi || body.instructions[def].extra_count != 4)
+		return unknown;
+	const Instruction& phi = body.instructions[def];
+	Constant at;
+	Value back = Value::none();
+	for (uint32_t k = 0; k < 4; k += 2)
+		if (body.operands[phi.extra_first + k].index == l.latches[0])
+			back = body.operands[phi.extra_first + k + 1];
+		else if (!literal_constant(body, body.operands[phi.extra_first + k + 1], at))
+			return unknown;
+	if (back.is(ValueKind::None))
+		return unknown;
+	uint64_t size = 0;
+	std::vector<int64_t> seen(body.blocks.size(), -1);
+	std::vector<BlockId> stack;
+	for (int64_t pass = 0; pass <= trips; ++pass)
+	{
+		stack.assign(1, l.header);
+		seen[l.header] = pass;
+		while (!stack.empty())
+		{
+			const BlockId b = stack.back();
+			stack.pop_back();
+			Constant value;
+			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+			{
+				const Instruction& inst = body.instructions[i];
+				if (inst.op == Opcode::Phi || is_terminator(inst.op))
+					continue;
+				size += inst.result != kNoId && member[b] &&
+						induction_constant(c, member, iv, at, Value::temp(inst.result), kFoldDepth, value)
+					? 0
+					: 1;
+			}
+			// The last copy is the header's test: it leaves.
+			if (pass == trips)
+				continue;
+			const Instruction& term = body.instructions[body.blocks[b].last];
+			const bool known = term.op == Opcode::Branch && member[b] &&
+				induction_constant(c, member, iv, at, term.ops[0], kFoldDepth, value) &&
+				value.kind == ValueKind::Integer;
+			const BlockId taken = known ? term.ops[(value.bits.low | value.bits.high) != 0 ? 1 : 2].index : kNoId;
+			for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
+			{
+				const BlockId t = cfg.succs[k];
+				if ((known && t != taken) || t == l.header || !(member[t] || owned[t]) || seen[t] == pass)
+					continue;
+				seen[t] = pass;
+				stack.push_back(t);
+			}
+		}
+		Constant next;
+		if (pass == trips)
+			break;
+		if (!induction_constant(c, member, iv, at, back, kFoldDepth, next))
+			return unknown;
+		at = next;
+	}
+	return size;
+}
 
 bool unroll_short_loops(FunctionContext& context)
 {
@@ -786,19 +902,7 @@ bool pass_constant(const FunctionContext& c, const LoopForest& forest, uint32_t 
 		!pass_constant(c, forest, loop, inst.ops[0], pass, depth - 1, a) ||
 		(!unary && !pass_constant(c, forest, loop, inst.ops[1], pass, depth - 1, b)))
 		return false;
-	switch (inst.op)
-	{
-	case Opcode::Compare:
-		return fold_compare(static_cast<ComparePredicate>(inst.sub), inst.type, a, b, out);
-	case Opcode::Binary:
-		return fold_binary(static_cast<BinaryOp>(inst.sub), inst.type, a, b, out);
-	case Opcode::Unary:
-		return fold_unary(static_cast<UnaryOp>(inst.sub), inst.type, a, out);
-	case Opcode::Convert:
-		return fold_convert(static_cast<ConvertOp>(inst.sub), inst.type, convert_source_type(inst), a, out);
-	default:
-		return fold_copy(inst.type, a, out);
-	}
+	return fold_instruction(inst, a, b, out);
 }
 
 // Whether the header's test of the loop continues (`stay`) on `pass`; false

@@ -120,6 +120,15 @@ void fold_header_phis(lowir::FunctionBody& body, lowir::BlockId header, lowir::V
 // the instructions.
 bool straighten_single_pass_loop(FunctionContext& context, const LoopForest& forest, uint32_t loop);
 
+// The instructions the copies of a counted loop keep when each pass has the
+// induction `iv` (a header phi entered with a literal) as a literal: per
+// pass, the blocks its folded tests reach, less the instructions that are
+// constants there; then the header once more. `trips` passes; `member` and
+// `owned` are the loop's blocks and its private exits. UINT64_MAX when the
+// induction has no literal on some pass (opt/loop_unrolling.cpp).
+uint64_t unrolled_size(const FunctionContext& context, const Cfg& cfg, const Loop& loop,
+	const std::vector<uint8_t>& member, const std::vector<uint8_t>& owned, lowir::TempId iv, int64_t trips);
+
 // The test number (0-based) at which a counted loop leaves: the induction
 // starts at a literal and steps by a literal, the bound is a literal, and
 // the tested values move from continuing to leaving without leaving the

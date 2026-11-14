@@ -27,6 +27,8 @@ const unsigned kScalarRounds = 4;
 // Select formation rounds per function (nested merges convert inside out).
 const unsigned kHoistRounds = 4;
 const unsigned kSelectRounds = 3;
+// Unroll runs per function: a run takes one level of a loop nest.
+const unsigned kUnrollNest = 4;
 
 void count_program(const Program& program, uint64_t& instructions, uint64_t& blocks)
 {
@@ -351,8 +353,15 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 	if (level >= 2 && RUN_PASS(eliminate_tail_recursion))
 		scalar_rounds(context);
 	again = RUN_PASS(remove_loops);
-	if (copies_code(context) && RUN_PASS(unroll_loops))
+	// Each run unrolls one level of a nest; the copies fold before the next.
+	for (unsigned nest = 0; nest < kUnrollNest && copies_code(context) && RUN_PASS(unroll_loops); ++nest)
+	{
 		again = true;
+		if (nest + 1 == kUnrollNest)
+			break;
+		scalar_rounds(context);
+		again = false;
+	}
 	if (RUN_PASS(form_switches))
 		again = true;
 	if (again)

@@ -1917,6 +1917,9 @@ const int64_t kSearchTrips = 16;
 // again after the previous change.
 const unsigned kUnrollRounds = 16;
 const uint32_t kSearchBody = 256;
+// The instructions copied for a loop sized by what its copies keep once
+// their tests of the induction fold (unrolled_size).
+const uint32_t kUnrollCopies = 2048;
 const uint32_t kUnrollBranchBody = 160;
 // A pass that reaches a local array at the induction names one element in
 // each copy, so the array's elements then fold into registers.
@@ -2085,6 +2088,7 @@ bool LoopPass::unroll_search_shape(uint32_t loop, int64_t trips, TempId iv, std:
 		return def != kNoId && def < c_.block_of.size() && c_.block_of[def] != kNoId && member[c_.block_of[def]];
 	};
 	bool live_through = false;
+	std::vector<uint8_t> reader(body_.blocks.size(), 0);
 	for (BlockId b : body_.layout)
 	{
 		if (member[b])
@@ -2105,6 +2109,7 @@ bool LoopPass::unroll_search_shape(uint32_t loop, int64_t trips, TempId iv, std:
 		}
 		if (!reads && !phi_reads)
 			continue;
+		reader[b] = 1;
 		const InstId last = body_.blocks[b].last;
 		const InstId first = body_.blocks[b].first;
 		if (reads && cfg_.pred_count(b) == 1 && member[cfg_.preds[cfg_.pred_first[b]]] && cfg_.succ_count(b) == 0 &&
@@ -2124,7 +2129,9 @@ bool LoopPass::unroll_search_shape(uint32_t loop, int64_t trips, TempId iv, std:
 			for (uint32_t k = cfg_.succ_first[b]; k < cfg_.succ_first[b + 1]; ++k)
 			{
 				const BlockId s = cfg_.succs[k];
-				if (member[s] || owned[s])
+				// (A block that ends the function and reads no loop value,
+				// a failed assertion's, leads to no reader.)
+				if (member[s] || owned[s] || (cfg_.succ_count(s) == 0 && !reader[s]))
 					continue;
 				if (through != kNoId && through != s)
 					return false;
@@ -2136,7 +2143,10 @@ bool LoopPass::unroll_search_shape(uint32_t loop, int64_t trips, TempId iv, std:
 	uint32_t header_size = 0;
 	for (InstId i = body_.blocks[l.header].first; i != kNoId; i = body_.instructions[i].next)
 		header_size += body_.instructions[i].op == Opcode::Phi || is_terminator(body_.instructions[i].op) ? 0 : 1;
-	const uint64_t cloned = static_cast<uint64_t>(size) * static_cast<uint64_t>(trips) + (table ? size : header_size);
+	uint64_t cloned = static_cast<uint64_t>(size) * static_cast<uint64_t>(trips) + (table ? size : header_size);
+	// Tests of the induction fold in each copy: what the copies keep counts.
+	if (table && cloned > kSearchBody && cloned <= kUnrollCopies)
+		cloned = std::min(cloned, unrolled_size(c_, cfg_, l, member, owned, iv, trips));
 	if (cloned > (indexes_local_array(loop, iv) ? kUnrollArrayBody : long_pass ? kSearchBody : kUnrollBranchBody))
 		return false;
 	for (BlockId b : l.blocks)
@@ -2489,11 +2499,19 @@ bool LoopPass::unroll()
 	find_loops(body_, cfg_, forest_);
 	c_.entry_block_of(unroll_loops);
 	bool any = false;
+	// A loop around this run's copies waits for the next run: the copies
+	// fold first (optimizer.cpp, kUnrollNest).
+	const size_t first_copy = body_.blocks.size();
 	for (unsigned round = 0; round < kUnrollRounds; ++round)
 	{
 		bool one = false;
 		for (uint32_t k = static_cast<uint32_t>(forest_.loops.size()); k-- > 0 && !one;)
-			one = try_unroll(k) || try_unroll_search(k);
+		{
+			bool copies = false;
+			for (BlockId b : forest_.loops[k].blocks)
+				copies = copies || b >= first_copy;
+			one = !copies && (try_unroll(k) || try_unroll_search(k));
+		}
 		if (!one)
 			break;
 		any = true;
