@@ -328,6 +328,9 @@ private:
 	std::vector<Value> inputs_;
 	std::vector<uint32_t> mark_, phi_pos_; // apply_moves' scratch (marks by epoch)
 	std::vector<BlockId> use_dom_;         // find_use_dominators' result (empty until needed)
+	// With it, per temp: a use outside its block that is not an input of a
+	// successor's phi along the block's own edge.
+	std::vector<uint8_t> read_past_;
 	// accessed_entering's pairs (block, pointer its loads and stores go
 	// through), sorted; built at the first query.
 	std::vector<std::pair<BlockId, TempId>> accessed_;
@@ -637,10 +640,16 @@ bool JumpThreading::evaluate(BlockId block, const Value* inputs, BlockId& target
 }
 
 // Per temp: the nearest common dominator of its uses outside its
-// defining block (a phi's at its predecessor's end), kNoId when none.
+// defining block (a phi's at its predecessor's end), kNoId when none; and
+// whether one of them is other than another block's phi reading it along an
+// edge from its block (read_past_).
 void JumpThreading::find_use_dominators()
 {
 	use_dom_.assign(body_.temps.size(), kNoId);
+	read_past_.assign(body_.temps.size(), 0);
+	auto defined_in = [&](const Value& v) {
+		return body_.temps[v.index].def == kNoId ? kNoId : c_.block_of[body_.temps[v.index].def];
+	};
 	auto note = [&](const Value& v, BlockId at) {
 		if (!v.is(ValueKind::Temp) || v.index >= use_dom_.size())
 			return;
@@ -669,14 +678,24 @@ void JumpThreading::find_use_dominators()
 			if (inst.op == Opcode::Phi)
 			{
 				for (uint32_t k = 0; k + 1 < inst.extra_count; k += 2)
-					if (cfg_.reachable(body_.operands[inst.extra_first + k].index))
-						note(body_.operands[inst.extra_first + k + 1], body_.operands[inst.extra_first + k].index);
+				{
+					const BlockId from = body_.operands[inst.extra_first + k].index;
+					const Value& v = body_.operands[inst.extra_first + k + 1];
+					if (!cfg_.reachable(from))
+						continue;
+					note(v, from);
+					if (v.is(ValueKind::Temp) && v.index < read_past_.size() && (from == b || defined_in(v) != from))
+						read_past_[v.index] = 1;
+				}
 				continue;
 			}
 			for_each_operand(body_, inst, [&](const Value& v) {
-				if (v.is(ValueKind::Temp) &&
-					(body_.temps[v.index].def == kNoId || c_.block_of[body_.temps[v.index].def] != b))
+				if (v.is(ValueKind::Temp) && defined_in(v) != b)
+				{
 					note(v, b);
+					if (v.index < read_past_.size())
+						read_past_[v.index] = 1;
+				}
 			});
 		}
 	}
@@ -698,7 +717,10 @@ BlockId JumpThreading::successor_holding(BlockId m, TempId t) const
 // such use under one successor entered from the block alone, which no
 // predecessor then enters directly (the block still dominates those
 // uses); a predecessor takes over the block's branch only when its values
-// are used in it alone.
+// are used in it alone. A phi that only the successors' phis read past the
+// block, along its edges, stays: a moved predecessor's input takes its place
+// there (a value merged with the flag that says whether it holds, as an
+// inlined callee returns the two).
 bool JumpThreading::constant_phis(bool counted)
 {
 	std::vector<uint32_t> own;
@@ -742,7 +764,7 @@ bool JumpThreading::constant_phis(bool counted)
 		// (the phis by its own computations, those by the branch); a use by
 		// one of its phis, from a back edge, is a use outside the threaded
 		// path. In-block use counts, less those at or before each value.
-		bool private_values = true, repair_phis = false;
+		bool private_values = true, repair_phis = false, passed_on = false;
 		BlockId kept[2] = { kNoId, kNoId }; // successors holding uses past the block
 		for (InstId i = body_.blocks[m].first; i != kNoId; i = body_.instructions[i].next)
 			for_each_operand(body_, body_.instructions[i], [&](const Value& v) {
@@ -772,6 +794,11 @@ bool JumpThreading::constant_phis(bool counted)
 				continue;
 			if (use_dom_.empty())
 				find_use_dominators();
+			if (inst.op == Opcode::Phi && !read_past_[inst.result])
+			{
+				passed_on = true;
+				continue;
+			}
 			const BlockId holder = successor_holding(m, inst.result);
 			if (holder == kNoId && inst.op == Opcode::Phi &&
 				(inst.type.is_pointer() || (inst.type.is_integer() && inst.type.kind() != TypeKind::I128)) &&
@@ -789,7 +816,7 @@ bool JumpThreading::constant_phis(bool counted)
 		}
 		if (!private_values)
 			continue;
-		copyable = copyable && kept[0] == kNoId && !repair_phis;
+		copyable = copyable && kept[0] == kNoId && !repair_phis && !passed_on;
 		// The phis' inputs per predecessor, in one pass over their lists.
 		const uint32_t first_pred = cfg_.pred_first[m], count = cfg_.pred_count(m);
 		uint32_t phis = 0;

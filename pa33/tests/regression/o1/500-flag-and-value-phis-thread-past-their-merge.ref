@@ -1,0 +1,76 @@
+global @seen : i64 = 0
+
+function @note(%v : i64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %old = load i64 @seen
+    %new = binary add i64 %v, %old
+    store i64 %new, @seen
+    return void
+}
+function @walk(%start : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %at = phi i64 [^entry: %start, ^halve: %half, ^drop: %less]
+    %low = binary and i64 %at, 3
+    %two = cmp eq i64 %low, 2
+    branch %two, ^halve, ^other
+
+  block ^halve:
+    %half = binary ushr i64 %at, 1
+    jump ^head
+
+  block ^other:
+    %none = cmp eq i64 %low, 0
+    branch %none, ^done, ^drop
+
+  block ^drop:
+    %less = binary sub i64 %at, 1
+    jump ^head
+
+  block ^done:
+    return i64 %at
+}
+function @pair(%x : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %odd = binary and i64 %x, 1
+    branch %odd, ^first, ^even
+
+  block ^first:
+    %up = binary add i64 %x, 5
+    jump ^join
+
+  block ^even:
+    %big = cmp gt i64 %x, 100
+    branch %big, ^second, ^missing
+
+  block ^second:
+    %down = binary sub i64 %x, 100
+    jump ^join
+
+  block ^missing:
+    call void @note(9)
+    jump ^join
+
+  block ^join:
+    %result = phi i64 [^missing: 7, ^first: %up, ^second: %down]
+    return i64 %result
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call i64 @walk(27)
+    %b = call i64 @walk(6)
+    %c = call i64 @pair(3)
+    %d = call i64 @pair(250)
+    %e = call i64 @pair(4)
+    %s1 = binary add i64 %a, %b
+    %s2 = binary add i64 %c, %s1
+    %s3 = binary add i64 %d, %s2
+    %s4 = binary add i64 %e, %s3
+    %seen = load i64 @seen
+    %s5 = binary add i64 %s4, %seen
+    %r = binary umod i64 %s5, 251
+    %t = convert trunc i32 i64 %r
+    return i32 %t
+}
