@@ -120,7 +120,8 @@ def prepare(args):
     sysroot = args.sdk / "share/wasi-sysroot"
     copy_tree(sysroot / "include/wasm32-wasip1", inputs / "sysroot/include/wasm32-wasip1",
               exclude=("noeh",))
-    for name in ["crt1-command.o", "libc.a", "eh/libc++.a", "eh/libc++abi.a", "eh/libunwind.a"]:
+    for name in ["crt1-command.o", "libc.a", "libc-printscan-long-double.a",
+                 "eh/libc++.a", "eh/libc++abi.a", "eh/libunwind.a"]:
         dest = inputs / "sysroot/lib/wasm32-wasip1" / name
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(sysroot / "lib/wasm32-wasip1" / name, dest)
@@ -158,7 +159,7 @@ def prepare(args):
     for name in runners:
         shutil.copyfile(HERE / name, package / name)
     manifest = {"schema": 1, "sources": sources, "flags": flags,
-                "link_flags": ["-Wl,-z,stack-size=8388608"], "files": files,
+                "link_flags": ["-Wl,-z,stack-size=8388608", "-lc-printscan-long-double"], "files": files,
                 "x86_flags": ["--target=x86_64-linux-gnu", "-std=c++11", "-D_GNU_SOURCE",
                               "-DCPPGM_TELEMETRY_ENABLED=0", "-nostdinc", "-Idev/src", "-Igenerated"]
                              + [flag for name in x86_paths for flag in ["-isystem", name]],

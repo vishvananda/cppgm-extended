@@ -84,6 +84,17 @@ def export(args):
     run('abimangle', '-o', 'reference-wasm/abi.names', 'reference-wasm/abi.facts')
     if (output / 'abi.names').read_text().strip() != 'puts':
         raise RuntimeError('WASI ABI tool emitted an unexpected C-linkage name')
+    # LowIR text uses long-double formatting even for binary32/binary64 values.
+    # wasi-libc's default formatting stub traps unless its optional library is linked.
+    (output / 'text.cpp').write_text('float f = 1.25f; double g(double x) { return x + 0.1; }\n')
+    for target, flags in [('wasm', manifest['flags']), ('x86', manifest['x86_flags'])]:
+        reference = output / ('text.' + target + '.native.lowir')
+        actual = output / ('text.' + target + '.wasi.lowir')
+        subprocess.run([str(package / 'native-compiler'), *flags, '--emit-lowir',
+                        'reference-wasm/text.cpp', '-o', str(reference)], cwd=inputs, check=True)
+        run('cppgm++', *flags, '--emit-lowir', 'reference-wasm/text.cpp', '-o', str(actual.relative_to(inputs)))
+        frozen.compare(reference, actual)
+        run('lowiropt', '-O0', str(actual.relative_to(inputs)), '-o', 'reference-wasm/text.optimized.lowir')
     # The full compiler package's floating cases exercise the wide constant evaluator.
     for target, flags in [('wasm', manifest['flags']), ('x86', manifest['x86_flags'])]:
         reference = output / ('floating.' + target + '.native.o')
