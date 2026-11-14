@@ -1,3 +1,4 @@
+#include "opt/integer_patterns.h"
 #include "opt/loops.h"
 #include "opt/passes.h"
 
@@ -231,6 +232,10 @@ bool CodeSinking::run()
 		insert(first, last);
 		first = last;
 	}
+	// (A signed division by a power of two that now stands under a test of
+	// its operand's sign is a shift.)
+	for (const Move& move : moves_)
+		unsign_tested_division(c_, move.to, body_.instructions[move.inst]);
 	c_.invalidate_block_of();
 	restore_definition_order(c_);
 	return true;

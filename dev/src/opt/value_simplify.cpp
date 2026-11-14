@@ -1893,7 +1893,9 @@ bool Simplifier::unsigned_division(Instruction& inst)
 		!integer_bits(inst.type, c, bits) || bits.high != 0 || bits.low < 2 || (bits.low & (bits.low - 1)) != 0)
 		return false;
 	const uint64_t sign = static_cast<uint64_t>(1) << (8 * storage_bytes(inst.type) - 1);
-	if (bits.low >= sign || (possible_bits(inst.ops[0], inst.type) & sign) != 0)
+	if (bits.low >= sign ||
+		((possible_bits(inst.ops[0], inst.type) & sign) != 0 &&
+			!tested_not_negative(c_, current_block_, resolve(inst.ops[0]))))
 		return false;
 	unsigned shift = 0;
 	while ((static_cast<uint64_t>(1) << shift) != bits.low)

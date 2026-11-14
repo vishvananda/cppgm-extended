@@ -31,6 +31,15 @@ bool simplify_field_step(lowir::FunctionBody& body, const std::vector<uint32_t>&
 	lowir::Instruction& instruction);
 bool simplify_pointer_distance(lowir::FunctionBody& body, IntegerPatternFacts& facts, lowir::BlockId block,
 	lowir::InstId& previous, lowir::InstId instruction);
+// Whether the test of a branch edge that every path into `block` takes shows
+// the signed value `v` at least zero: v itself above a literal of at least
+// -1, or the value v is one less than above a literal of at least zero (a
+// bounded walk up the dominator tree, which the context's graph must hold).
+bool tested_not_negative(const FunctionContext& context, lowir::BlockId block, lowir::Value v);
+// A signed division or remainder by a literal power of two whose operand
+// tested_not_negative shows at least zero in `block`: rewritten in place as
+// the shift or the mask.
+bool unsign_tested_division(FunctionContext& context, lowir::BlockId block, lowir::Instruction& instruction);
 // The caller has identified a truncation or right shift of an i128 pack.
 bool simplify_packed_wide_part(lowir::FunctionBody& body, lowir::Instruction& instruction, bool truncation);
 } // namespace opt
