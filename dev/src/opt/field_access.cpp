@@ -1,3 +1,4 @@
+#include <map>
 #include <vector>
 
 #include "lowir/builder.h"
@@ -27,6 +28,8 @@ private:
 	FunctionBody& body_;
 	std::vector<BlockId> block_of_;
 	std::vector<uint32_t> uses_; // per temp, as the pass began
+	// The field loads made, by the word's load, the field's bit and its width.
+	std::map<uint64_t, Value> fields_;
 
 	const Instruction* producer(Value v) const
 	{
@@ -153,7 +156,7 @@ uint64_t FieldAccess::possible_ones(Value v, Type type, unsigned depth) const
 
 // `and (shr (load word p), 8 * b), ones(8 | 16 | 32)`, the shift optional:
 // the field's own load, zero-extended. The load goes where the word's is,
-// which reads the same memory.
+// which reads the same memory, and every reader of the field takes it.
 bool FieldAccess::field_load(InstId id)
 {
 	const Instruction conj = body_.instructions[id];
@@ -171,14 +174,21 @@ bool FieldAccess::field_load(InstId id)
 	if (loaded == nullptr || count % 8 != 0 || count + width > bits || width >= bits)
 		return false;
 	const InstId at = body_.temps[word.index].def;
-	const Value address = loaded->ops[0];
-	const uint32_t location = loaded->location;
-	const BlockId block = block_of_[at];
-	InstId prev = at;
-	Instruction load = make_instruction(Opcode::Load, field_type(width));
-	load.ops[0] = displaced(block, prev, address, count / 8, location);
-	load.location = location;
-	const Value narrow = Value::temp(body_.instructions[emit(block, prev, load)].result);
+	const uint64_t key = (uint64_t(at) << 16) | (count << 8) | width;
+	auto made = fields_.find(key);
+	if (made == fields_.end())
+	{
+		const Value address = loaded->ops[0];
+		const uint32_t location = loaded->location;
+		const BlockId block = block_of_[at];
+		InstId prev = at;
+		Instruction load = make_instruction(Opcode::Load, field_type(width));
+		load.ops[0] = displaced(block, prev, address, count / 8, location);
+		load.location = location;
+		const Value narrow = Value::temp(body_.instructions[emit(block, prev, load)].result);
+		made = fields_.emplace(key, narrow).first;
+	}
+	const Value narrow = made->second;
 	Instruction& out = body_.instructions[id];
 	out.op = Opcode::Convert;
 	out.sub = static_cast<uint8_t>(ConvertOp::ZExt);
