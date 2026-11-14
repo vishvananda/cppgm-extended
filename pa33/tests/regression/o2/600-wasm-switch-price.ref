@@ -1,0 +1,149 @@
+target wasm32 1
+
+function @field(%p : ptr, %k : i64) -> i64 {
+  block ^entry:
+    switch %k, ^other, 0:^b0, 1:^b0, 2:^b0, 3:^b0, 4:^b0, 5:^b1, 6:^b1, 7:^b1, 8:^b1, 9:^b1, 10:^b2, 11:^b2, 12:^b2, 13:^b2, 14:^b2, 15:^b3, 16:^b3, 17:^b3, 18:^b3, 19:^b3, 20:^b4, 21:^b4, 22:^b4, 23:^b4, 24:^b4, 25:^b5, 26:^b5, 27:^b5, 28:^b5, 29:^b5, 30:^b6, 31:^b6, 32:^b6, 33:^b6, 34:^b6, 35:^b7, 36:^b7, 37:^b7, 38:^b7, 39:^b7
+
+  block ^b0:
+    %f0 = index i8 %p, 8
+    %v0 = load typed i64 %f0
+    return i64 %v0
+
+  block ^b1:
+    %f1 = index i8 %p, 16
+    %v1 = load typed i64 %f1
+    return i64 %v1
+
+  block ^b2:
+    %f2 = index i8 %p, 40
+    %v2 = load typed i64 %f2
+    return i64 %v2
+
+  block ^b3:
+    %f3 = index i8 %p, 80
+    %v3 = load typed i64 %f3
+    return i64 %v3
+
+  block ^b4:
+    %f4 = index i8 %p, 136
+    %v4 = load typed i64 %f4
+    return i64 %v4
+
+  block ^b5:
+    %f5 = index i8 %p, 208
+    %v5 = load typed i64 %f5
+    return i64 %v5
+
+  block ^b6:
+    %f6 = index i8 %p, 296
+    %v6 = load typed i64 %f6
+    return i64 %v6
+
+  block ^b7:
+    %f7 = index i8 %p, 400
+    %v7 = load typed i64 %f7
+    return i64 %v7
+
+  block ^other:
+    return i64 0
+}
+function @first(%p : ptr, %q : ptr) -> i64 {
+  block ^entry:
+    %k = load typed i64 %q
+    switch %k, ^inline_cont_9, 0:^b0_1, 1:^b0_1, 2:^b0_1, 3:^b0_1, 4:^b0_1, 5:^b1_2, 6:^b1_2, 7:^b1_2, 8:^b1_2, 9:^b1_2, 10:^b2_3, 11:^b2_3, 12:^b2_3, 13:^b2_3, 14:^b2_3, 15:^b3_4, 16:^b3_4, 17:^b3_4, 18:^b3_4, 19:^b3_4, 20:^b4_5, 21:^b4_5, 22:^b4_5, 23:^b4_5, 24:^b4_5, 25:^b5_6, 26:^b5_6, 27:^b5_6, 28:^b5_6, 29:^b5_6, 30:^b6_7, 31:^b6_7, 32:^b6_7, 33:^b6_7, 34:^b6_7, 35:^b7_8, 36:^b7_8, 37:^b7_8, 38:^b7_8, 39:^b7_8
+
+  block ^b0_1:
+    %f0_2 = index i8 %p, 8
+    %v0_3 = load typed i64 %f0_2
+    jump ^inline_cont_9
+
+  block ^b1_2:
+    %f1_4 = index i8 %p, 16
+    %v1_5 = load typed i64 %f1_4
+    jump ^inline_cont_9
+
+  block ^b2_3:
+    %f2_6 = index i8 %p, 40
+    %v2_7 = load typed i64 %f2_6
+    jump ^inline_cont_9
+
+  block ^b3_4:
+    %f3_8 = index i8 %p, 80
+    %v3_9 = load typed i64 %f3_8
+    jump ^inline_cont_9
+
+  block ^b4_5:
+    %f4_10 = index i8 %p, 136
+    %v4_11 = load typed i64 %f4_10
+    jump ^inline_cont_9
+
+  block ^b5_6:
+    %f5_12 = index i8 %p, 208
+    %v5_13 = load typed i64 %f5_12
+    jump ^inline_cont_9
+
+  block ^b6_7:
+    %f6_14 = index i8 %p, 296
+    %v6_15 = load typed i64 %f6_14
+    jump ^inline_cont_9
+
+  block ^b7_8:
+    %f7_16 = index i8 %p, 400
+    %v7_17 = load typed i64 %f7_16
+    jump ^inline_cont_9
+
+  block ^inline_cont_9:
+    %r = phi i64 [^b0_1: %v0_3, ^b1_2: %v1_5, ^b2_3: %v2_7, ^b3_4: %v3_9, ^b4_5: %v4_11, ^b5_6: %v5_13, ^b6_7: %v6_15, ^b7_8: %v7_17, ^entry: 0]
+    %t = binary add i64 %r, 1
+    return i64 %t
+}
+function @second(%p : ptr, %q : ptr) -> i64 {
+  block ^entry:
+    %k = load typed i64 %q
+    switch %k, ^inline_cont_9, 0:^b0_1, 1:^b0_1, 2:^b0_1, 3:^b0_1, 4:^b0_1, 5:^b1_2, 6:^b1_2, 7:^b1_2, 8:^b1_2, 9:^b1_2, 10:^b2_3, 11:^b2_3, 12:^b2_3, 13:^b2_3, 14:^b2_3, 15:^b3_4, 16:^b3_4, 17:^b3_4, 18:^b3_4, 19:^b3_4, 20:^b4_5, 21:^b4_5, 22:^b4_5, 23:^b4_5, 24:^b4_5, 25:^b5_6, 26:^b5_6, 27:^b5_6, 28:^b5_6, 29:^b5_6, 30:^b6_7, 31:^b6_7, 32:^b6_7, 33:^b6_7, 34:^b6_7, 35:^b7_8, 36:^b7_8, 37:^b7_8, 38:^b7_8, 39:^b7_8
+
+  block ^b0_1:
+    %f0_2 = index i8 %p, 8
+    %v0_3 = load typed i64 %f0_2
+    jump ^inline_cont_9
+
+  block ^b1_2:
+    %f1_4 = index i8 %p, 16
+    %v1_5 = load typed i64 %f1_4
+    jump ^inline_cont_9
+
+  block ^b2_3:
+    %f2_6 = index i8 %p, 40
+    %v2_7 = load typed i64 %f2_6
+    jump ^inline_cont_9
+
+  block ^b3_4:
+    %f3_8 = index i8 %p, 80
+    %v3_9 = load typed i64 %f3_8
+    jump ^inline_cont_9
+
+  block ^b4_5:
+    %f4_10 = index i8 %p, 136
+    %v4_11 = load typed i64 %f4_10
+    jump ^inline_cont_9
+
+  block ^b5_6:
+    %f5_12 = index i8 %p, 208
+    %v5_13 = load typed i64 %f5_12
+    jump ^inline_cont_9
+
+  block ^b6_7:
+    %f6_14 = index i8 %p, 296
+    %v6_15 = load typed i64 %f6_14
+    jump ^inline_cont_9
+
+  block ^b7_8:
+    %f7_16 = index i8 %p, 400
+    %v7_17 = load typed i64 %f7_16
+    jump ^inline_cont_9
+
+  block ^inline_cont_9:
+    %r = phi i64 [^b0_1: %v0_3, ^b1_2: %v1_5, ^b2_3: %v2_7, ^b3_4: %v3_9, ^b4_5: %v4_11, ^b5_6: %v5_13, ^b6_7: %v6_15, ^b7_8: %v7_17, ^entry: 0]
+    %t = binary xor i64 %r, 5
+    return i64 %t
+}

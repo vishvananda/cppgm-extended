@@ -52,6 +52,13 @@ const uint32_t kWrapperCap = 32;
 // callee's larger).
 const uint32_t kAllowance = 45;
 const uint32_t kHintAllowance = 65;
+// On Wasm a callee without the hint may cost more: a call there costs more
+// than its instructions (the engine keeps no value in a register across a
+// call, so the caller saves each live value before it and reads it back
+// after, and a callee with a frame tests the stack). A hinted callee keeps
+// its allowance: a larger copy at each of its many sites made a module
+// larger and no faster.
+const uint32_t kWasmAllowance = 115;
 // Partial inlining (O2+, late wave): the copy's caps (a hinted callee's
 // larger), doubled at a loop site.
 const uint32_t kPartialCap = 24;
@@ -1844,7 +1851,8 @@ bool InlineWaveRunner::admit(
 		const uint32_t hinted = wave_ == InlineWave::Late && options_.limits.hint_late_cap != 0
 			? options_.limits.hint_late_cap
 			: kHintAllowance;
-		const uint32_t allowance = (hint ? hinted : kAllowance) * (options_.level >= 3 ? 5 : 4) / 4;
+		const uint32_t plain = target_model::is_wasm(program_.target) ? kWasmAllowance : kAllowance;
+		const uint32_t allowance = (hint ? hinted : plain) * (options_.level >= 3 ? 5 : 4) / 4;
 		uint32_t hot, unpriced;
 		const FunctionBody& caller_body = *program_.functions[program_.symbols[graph_.functions[caller_]].detail].body;
 		call_cost_after_constants(shape, caller_body, call, hot, unpriced);

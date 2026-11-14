@@ -102,7 +102,7 @@ uint32_t wasm_inline_instruction_cost(const Instruction& inst)
 	case Opcode::Index:
 		return 2; // explicit scale multiply and pointer addition
 	case Opcode::Switch:
-		return 2 + 2 * inst.extra_count;
+		return 2 + inst.extra_count;
 	case Opcode::Vector:
 		return vector_cost(static_cast<VectorOp>(inst.sub));
 	case Opcode::CopyObject:

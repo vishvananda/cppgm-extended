@@ -943,7 +943,7 @@ sub source_is_lowir
 	for my $line (split(/\n/, $data))
 	{
 		next if $line =~ /^\s*$/ || $line =~ /^\s*#/;
-		return $line =~ /^(?:declare|global|function|machine_ir)\b/ ? 1 : 0;
+		return $line =~ /^(?:target|declare|global|function|machine_ir)\b/ ? 1 : 0;
 	}
 	return 1;
 }
