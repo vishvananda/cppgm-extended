@@ -108,6 +108,10 @@ struct FunctionContext
 	bool (*running)(FunctionContext&) = nullptr;
 	// A version whose body restore_definition_order found in order.
 	uint32_t ordered_version = ~0u;
+	// form_selects made a lane max of a value and its negation: a test of
+	// that magnitude below zero is false now, which the driver has
+	// simplify_values fold (scalar_fold.h, magnitude_below_zero).
+	bool magnitude_formed = false;
 	// Scratch shared by passes (sized on demand).
 	std::vector<uint32_t> passed; // restore_definition_order's per-instruction stamps
 	uint32_t passed_stamp = 0;

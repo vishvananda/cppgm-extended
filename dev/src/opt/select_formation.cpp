@@ -33,7 +33,14 @@ bool selectable(Type type)
 // not lead (its result unused there).
 bool speculatable(const FunctionBody& body, const Instruction& inst)
 {
-	if (inst.result == kNoId || !selectable(body.temps[inst.result].type))
+	if (inst.result == kNoId)
+		return false;
+	// A floating negation flips a sign bit and raises nothing: the arm of a
+	// conditional magnitude (min_or_max).
+	if (inst.op == Opcode::Unary && static_cast<UnaryOp>(inst.sub) == UnaryOp::Neg &&
+		(inst.type.kind() == TypeKind::F32 || inst.type.kind() == TypeKind::F64))
+		return true;
+	if (!selectable(body.temps[inst.result].type))
 		return false;
 	switch (inst.op)
 	{
@@ -439,7 +446,22 @@ bool SelectFormation::min_or_max(Value cond, Value a, Value b, MinMax& out) cons
 		return false;
 	if (!strict && !nonzero_literal(test.ops[0]) && !nonzero_literal(test.ops[1]))
 		return false;
-	const Value x = test.ops[0], y = test.ops[1];
+	Value x = test.ops[0], y = test.ops[1];
+	// A strict test of v against zero orders v and -v alike (v < 0 exactly
+	// when v < -v, for the zeros and an unordered v too): a choice between
+	// the two is their min or max (`v < 0 ? -v : v` is max(-v, v)).
+	const auto zero = [&](Value v) { return v.is(ValueKind::Float) && !nonzero_literal(v); };
+	const auto negated = [&](Value v, Value of) {
+		if (!v.is(ValueKind::Temp) || v.index < body_.parameter_count)
+			return false;
+		const Instruction& def = body_.instructions[body_.temps[v.index].def];
+		return def.op == Opcode::Unary && static_cast<UnaryOp>(def.sub) == UnaryOp::Neg && def.type == test.type &&
+			def.ops[0] == of;
+	};
+	if (strict && zero(y) && (negated(a, x) || negated(b, x)))
+		y = negated(a, x) ? a : b;
+	else if (strict && zero(x) && (negated(a, y) || negated(b, y)))
+		x = negated(a, y) ? a : b;
 	// (Each mention of a literal has its own index.)
 	const auto same = [&](Value p, Value q) {
 		return p == q ||
@@ -472,6 +494,15 @@ Value SelectFormation::emit_min_max(BlockId e, InstId& at, const MinMax& m, Type
 		at = id;
 		return Value::temp(body_.instructions[id].result);
 	};
+	const auto negates = [&](Value v, Value of) {
+		const Instruction* def = v.is(ValueKind::Temp) && v.index >= body_.parameter_count
+			? &body_.instructions[body_.temps[v.index].def]
+			: nullptr;
+		return def != nullptr && def->op == Opcode::Unary && static_cast<UnaryOp>(def->sub) == UnaryOp::Neg &&
+			def->ops[0] == of;
+	};
+	if (m.max && (negates(m.first, m.second) || negates(m.second, m.first)))
+		c_.magnitude_formed = true;
 	const VectorOp from = wide ? VectorOp::Fromf64 : VectorOp::Fromf32;
 	const Value first = vector(from, v128, m.first, Value::none());
 	const Value second = vector(from, v128, m.second, Value::none());

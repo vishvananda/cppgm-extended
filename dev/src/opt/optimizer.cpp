@@ -634,6 +634,14 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		RUN_PASS(cleanup_cfg);
 		changed = true;
 	}
+	// A magnitude just formed is never below zero: the tests that ask go.
+	if (context.magnitude_formed)
+	{
+		context.magnitude_formed = false;
+		RUN_PASS(simplify_values);
+		RUN_PASS(cleanup_cfg);
+		RUN_PASS(remove_dead_code);
+	}
 	// Two tests of one value as one, those of the selects just formed too,
 	// and the bits a select moved under one mask.
 	for (unsigned round = 0; round < kSelectRounds && options.level >= 2 && RUN_PASS(merge_value_tests); ++round)

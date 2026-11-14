@@ -650,4 +650,39 @@ ComparePredicate invert_float_predicate(ComparePredicate predicate)
 	}
 }
 
+bool magnitude_below_zero(const FunctionBody& body, const Instruction& compare)
+{
+	const ComparePredicate pred = static_cast<ComparePredicate>(compare.sub);
+	const TypeKind kind = compare.type.kind();
+	if (compare.op != Opcode::Compare || (kind != TypeKind::F32 && kind != TypeKind::F64) ||
+		(pred != ComparePredicate::Lt && pred != ComparePredicate::Gt))
+		return false;
+	const bool wide = kind == TypeKind::F64;
+	const Value magnitude = compare.ops[pred == ComparePredicate::Lt ? 0 : 1];
+	const Value zero = compare.ops[pred == ComparePredicate::Lt ? 1 : 0];
+	if (!zero.is(ValueKind::Float) || (body.literals[zero.index].low & ~(wide ? 1ull << 63 : 1ull << 31)) != 0)
+		return false;
+	const auto producer = [&](Value v, Opcode op, unsigned sub) -> const Instruction* {
+		if (!v.is(ValueKind::Temp) || v.index < body.parameter_count || body.temps[v.index].def == kNoId)
+			return nullptr;
+		const Instruction& def = body.instructions[body.temps[v.index].def];
+		return def.op == op && def.sub == sub ? &def : nullptr;
+	};
+	const auto vector = [&](Value v, VectorOp op) { return producer(v, Opcode::Vector, static_cast<unsigned>(op)); };
+	const Instruction* scalar = vector(magnitude, wide ? VectorOp::Tof64 : VectorOp::Tof32);
+	const Instruction* lanes = scalar == nullptr ? nullptr
+												 : vector(scalar->ops[0], wide ? VectorOp::Maxpd : VectorOp::Maxps);
+	if (lanes == nullptr)
+		return false;
+	const VectorOp from = wide ? VectorOp::Fromf64 : VectorOp::Fromf32;
+	const Instruction* first = vector(lanes->ops[0], from);
+	const Instruction* second = vector(lanes->ops[1], from);
+	const auto negates = [&](Value v, Value of) {
+		const Instruction* def = producer(v, Opcode::Unary, static_cast<unsigned>(UnaryOp::Neg));
+		return def != nullptr && def->type == compare.type && def->ops[0] == of;
+	};
+	return first != nullptr && second != nullptr &&
+		(negates(first->ops[0], second->ops[0]) || negates(second->ops[0], first->ops[0]));
+}
+
 } // namespace opt

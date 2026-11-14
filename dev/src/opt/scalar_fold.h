@@ -64,5 +64,10 @@ bool is_integer(lowir::Type type, const lowir::Constant& c, int64_t value);
 bool integer_bits(lowir::Type type, const lowir::Constant& c, lowir::Literal& bits);
 // Whether the integer constant is all ones at `type`'s width.
 bool is_all_ones(lowir::Type type, const lowir::Constant& c);
+// Whether `compare` asks if a magnitude is below zero, which it never is:
+// `m < 0` or `0 > m`, with m the lane max of a value and its negation in
+// either order (what select formation makes of `v < 0 ? -v : v`). A zero of
+// either sign and an unordered value give no value below zero.
+bool magnitude_below_zero(const lowir::FunctionBody& body, const lowir::Instruction& compare);
 
 } // namespace opt

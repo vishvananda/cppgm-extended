@@ -1379,6 +1379,11 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 			inst.ops[0] = x;
 			changed_ = true;
 		}
+	if (type.is_float() && magnitude_below_zero(body_, inst))
+	{
+		out = literal(truth_constant(false));
+		return true;
+	}
 	// A value proved nonzero: x != 0, x == 0, and x - 1 against x
 	// (unsigned: it cannot wrap below zero).
 	Constant compared_zero;
