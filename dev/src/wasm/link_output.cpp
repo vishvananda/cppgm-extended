@@ -101,7 +101,7 @@ void Linker::emit(Bytes& output)
 	Bytes memory;
 	memory.unsigned_leb(1);
 	memory.byte(0);
-	memory.unsigned_leb((stack_top_ + 65535) / 65536);
+	memory.unsigned_leb((heap_base_ + 65535) / 65536);
 	output.section(5, memory);
 	tag_section(output);
 	global_section(output);

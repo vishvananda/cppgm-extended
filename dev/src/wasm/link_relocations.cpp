@@ -4,16 +4,18 @@ namespace wasm {
 
 bool Linker::synthetic_data(const std::string& name, uint32_t& value) const
 {
-	if (name == "__stack_low" || name == "__data_end")
-		value = stack_floor_;
-	else if (name == "__stack_high" || name == "__heap_base")
+	if (name == "__stack_low")
+		value = 0;
+	else if (name == "__stack_high")
 		value = stack_top_;
+	else if (name == "__data_end" || name == "__heap_base")
+		value = heap_base_;
 	else if (name == "__wasm_first_page_end")
 		value = 65536;
 	else if (name == "__global_base" || name == "__dso_handle")
-		value = 1024;
+		value = data_base_;
 	else if (name == "__heap_end")
-		value = (stack_top_ + 65535) & ~uint32_t(65535);
+		value = (heap_base_ + 65535) & ~uint32_t(65535);
 	else
 		return false;
 	return true;

@@ -64,7 +64,9 @@ private:
 	uint32_t imported_tags_ = 0;
 	uint32_t ctor_index_ = kAbsent;
 	bool needs_ctors_ = false;
-	uint32_t stack_floor_ = 0, stack_top_ = 0;
+	// Memory holds the stack from address 0 to stack_top_, then the data from
+	// data_base_; the heap begins at heap_base_.
+	uint32_t stack_top_ = 0, data_base_ = 0, heap_base_ = 0;
 };
 
 } // namespace wasm

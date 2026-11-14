@@ -322,7 +322,14 @@ void Linker::collect()
 		tags_[ordered_tags_[i]] = i;
 		imported_tags_ += objects_[ordered_tags_[i].first].tags[ordered_tags_[i].second].imported;
 	}
-	uint64_t end = 1024;
+	// The stack takes the low end of memory and data follows it: the stack's
+	// low end is address 0, so a frame's test of its room is one compare of
+	// the stack pointer, and a frame below the low end is outside memory.
+	if (options_.wasm_stack_size > 0x40000000u)
+		throw WasmError("Wasm linked data and stack exceed the supported memory range");
+	stack_top_ = (options_.wasm_stack_size + 15) & ~uint32_t(15);
+	data_base_ = std::max<uint32_t>(1024, stack_top_);
+	uint64_t end = data_base_;
 	for (ObjectRef ref : ordered_data_)
 	{
 		const ObjectData& data = objects_[ref.first].data[ref.second];
@@ -333,10 +340,7 @@ void Linker::collect()
 		data_[ref] = static_cast<uint32_t>(end);
 		end += data.contents.bytes.data.size();
 	}
-	stack_floor_ = static_cast<uint32_t>((end + 15) & ~uint64_t(15));
-	if (uint64_t(stack_floor_) + options_.wasm_stack_size > 0x80000000ull)
-		throw WasmError("Wasm linked data and stack exceed the supported memory range");
-	stack_top_ = stack_floor_ + options_.wasm_stack_size;
+	heap_base_ = static_cast<uint32_t>((end + 15) & ~uint64_t(15));
 	if (needs_ctors_ || !initializers_.empty())
 		ctor_index_ = static_cast<uint32_t>(ordered_functions_.size());
 }
