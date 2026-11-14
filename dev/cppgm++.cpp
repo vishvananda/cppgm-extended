@@ -215,6 +215,7 @@ struct SourceOutputInvocation
 	unsigned pie_level = 0;
 	bool strict_aliasing = true;
 	bool exceptions = true;
+	bool rtti = true;
 	vector<string> include_paths;
 	vector<string> system_include_paths;
 	string command_line;
@@ -354,6 +355,11 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 		if (args[i] == "-fno-exceptions" || args[i] == "-fexceptions")
 		{
 			invocation.exceptions = args[i] == "-fexceptions";
+			continue;
+		}
+		if (args[i] == "-fno-rtti" || args[i] == "-frtti")
+		{
+			invocation.rtti = args[i] == "-frtti";
 			continue;
 		}
 		if (args[i] == "-fno-strict-aliasing" || args[i] == "-fstrict-aliasing")
@@ -735,6 +741,7 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 	options.plain_char_unsigned = invocation.plain_char_unsigned;
 	options.popcnt = invocation.popcnt;
 	options.modes.exceptions = invocation.exceptions;
+	options.modes.rtti = invocation.rtti;
 	options.sse_level = invocation.sse_level;
 	if (invocation.hosted)
 		driver::add_host_environment(options, invocation.nostdinc || invocation.target != native::host_target());

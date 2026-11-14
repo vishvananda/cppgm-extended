@@ -202,10 +202,12 @@ endif
 	@scripts/compare_results_link.pl ref my $(RUN_TEST_ROOT)
 	@$(MAKE) test-source-views CPPGM_SKIP_DEV_REBUILD=1
 
-# Source views must keep the same forced headers and include policy as -c.
+# Source views must keep the same header controls and language modes as -c.
 .PHONY: test-source-views
 test-source-views: $(TEST_DEPS)
-	@perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_TEST_APP) tests/run/800-source-view-header-controls.t $(LOWIR2NATIVE_APP)
+	@set -e; for test in tests/run/800-source-view-*.t; do \
+		perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_TEST_APP) "$$test" $(LOWIR2NATIVE_APP); \
+	done
 
 # Optional CPU capabilities do not change the baseline C++11 report.
 test-target-features: $(TEST_DEPS)
