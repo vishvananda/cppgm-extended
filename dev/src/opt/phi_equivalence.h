@@ -30,6 +30,15 @@ bool retype_copy_phis(FunctionContext& context, lowir::BlockId block, std::vecto
 // to, becomes the conversion of the other phi.
 bool convert_matching_phis(FunctionContext& context, lowir::BlockId block, std::vector<lowir::Value>& replacements,
 	std::vector<uint32_t>& uses);
+// A phi whose every input is one chain of integer operations with literals
+// (a few steps) on the input another phi of the block takes from that
+// predecessor, or the constant the chain takes that phi's constant to,
+// becomes the chain on the other phi: a value kept one step behind another
+// (a heap's hole behind its parent) then needs no register of its own that
+// the back edge would trade with the other's. New temps grow `replacements`
+// and `uses`.
+bool derive_matching_phis(FunctionContext& context, lowir::BlockId block, std::vector<lowir::Value>& replacements,
+	std::vector<uint32_t>& uses);
 // A diamond: `head` branches on c to two arms with it as their one
 // predecessor, which jump to one merge they are the only predecessors of.
 struct Diamond

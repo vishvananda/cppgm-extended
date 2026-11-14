@@ -2970,6 +2970,12 @@ void Simplifier::process_block(BlockId block)
 	if (c_.level >= 1 && head != kNoId && body_.instructions[head].op == Opcode::Phi &&
 		convert_matching_phis(c_, block, repl_, uses_))
 		changed_ = true;
+	if (c_.level >= 1 && head != kNoId && body_.instructions[head].op == Opcode::Phi &&
+		derive_matching_phis(c_, block, repl_, uses_))
+	{
+		grow_facts();
+		changed_ = true;
+	}
 	for (InstId i = body_.blocks[block].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
 		i = body_.instructions[i].next)
 		++phis;
