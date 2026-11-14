@@ -1314,7 +1314,12 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 		if (where->kind == ScopeKind::Namespace && !qualified && variable->c_linkage != c_language_)
 			agree_language_linkage(variable->c_linkage, location);
 		if (definition && variable->defined)
-			error(location, "redefinition of a variable");
+		{
+			if (!c_source_ || where->kind != ScopeKind::Namespace || (initializer != nullptr && !variable->c_tentative))
+				error(location, "redefinition of a variable");
+			if (initializer == nullptr)
+				definition = false;
+		}
 		if (variable->type->kind == TypeKind::Array && variable->type->bound == 0)
 			variable->type = type;
 		// 8.3.4p3: an omitted bound is the bound an earlier declaration
@@ -1362,6 +1367,8 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 		facts->location = location;
 		facts->definition_ordinal = definition_point();
 	}
+	if (c_source_ && where->kind == ScopeKind::Namespace && definition)
+		variable->c_tentative = initializer == nullptr;
 	variable->defined = variable->defined || definition;
 	variable->is_constexpr = variable->is_constexpr || specifiers.is_constexpr;
 	variable->inline_member_definition = variable->inline_member_definition || inline_member;
@@ -1713,7 +1720,7 @@ VariableEntity* Analyzer::new_variable(const Specifiers& specifiers, const char*
 		// for functions; Clang's reading).
 		variable->internal_linkage = specifiers.is_static ||
 			(static_cast<const NamespaceEntity*>(where->entity)->internal && !c_language_) ||
-			((object->cv & kConst) != 0 && !is_extern && !type->is_reference() && !variable->is_inline);
+			(!c_source_ && (object->cv & kConst) != 0 && !is_extern && !type->is_reference() && !variable->is_inline);
 		variable->c_linkage = c_language_;
 		agree_block_linkage(variable, variable->c_linkage, variable->internal_linkage, location);
 	}

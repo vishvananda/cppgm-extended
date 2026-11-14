@@ -11,6 +11,7 @@
 
 struct PPLexerOptions
 {
+	bool c_source = false;
 	// Added to token offsets: the buffer's base in a translation unit's
 	// location space. SourceError offsets stay buffer offsets.
 	uint32_t location_base = 0;
@@ -177,6 +178,7 @@ private:
 	uint32_t base_;
 	bool dirty_;
 	bool header_names_on_request_;
+	bool c_source_;
 	bool binary_exponents_;
 	bool digit_separators_;
 	bool legacy_comment_bytes_;

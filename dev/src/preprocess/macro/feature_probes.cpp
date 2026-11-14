@@ -56,6 +56,8 @@ bool IsProvidedFeature(const char* spelling, uint32_t length, const FeatureModes
 		spelling += 2;
 		length -= 4;
 	}
+	if (modes.language == 0 && length >= 4 && std::memcmp(spelling, "cxx_", 4) == 0)
+		return false;
 	if (Equals("cxx_exceptions", spelling, length))
 		return modes.exceptions;
 	if (Equals("cxx_rtti", spelling, length))

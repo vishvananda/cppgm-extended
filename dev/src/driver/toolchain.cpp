@@ -41,9 +41,29 @@ namespace driver {
 // Source dialect and feature gates share the token tools' standard names.
 void language_standard(const std::string& standard, PreprocessorOptions& options)
 {
+	if (standard == "c17" || standard == "gnu17")
+	{
+		options.language = SourceLanguage::C;
+		options.cplusplus.clear();
+		options.strict = standard == "c17";
+		return;
+	}
+	options.language = SourceLanguage::Cxx;
 	const LanguageMode mode = ReadLanguageMode(standard);
 	options.cplusplus = mode.cplusplus;
 	options.strict = mode.strict;
+}
+
+void configure_source_language(const std::string& language, const std::string& standard, PreprocessorOptions& options)
+{
+	if (!standard.empty())
+		language_standard(standard, options);
+	else if (language == "c")
+		language_standard("gnu17", options);
+	if (!language.empty() && language != "c" && language != "c++")
+		throw InvocationError("unsupported language: " + language);
+	if (!language.empty() && (language == "c") != (options.language == SourceLanguage::C))
+		throw InvocationError("language standard does not match -x " + language);
 }
 
 bool sse_option(const std::string& option, uint8_t& level)
@@ -82,6 +102,8 @@ struct Input
 
 struct Invocation
 {
+	std::string source_language;
+	std::string standard;
 	native::Target target = native::host_target();
 	bool compile_only = false;
 	bool position_independent = false;
@@ -361,7 +383,7 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 			forced_includes += "#include \"" + args[++i] + "\"\n";
 		}
 		else if (starts_with(arg, "-std="))
-			language_standard(arg.substr(5), invocation.preprocessor);
+			invocation.standard = arg.substr(5);
 		else if (starts_with(arg, "-stdlib="))
 		{
 			if (!host_stdlib_selected(arg.substr(8)))
@@ -371,8 +393,7 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 		{
 			if (i + 1 >= args.size())
 				throw InvocationError("missing language after -x");
-			if (args[++i] != "c++")
-				throw InvocationError("unsupported language: " + args[i]);
+			invocation.source_language = args[++i];
 		}
 		else if (arg == "-fno-exceptions" || arg == "-fexceptions")
 			invocation.preprocessor.modes.exceptions = arg == "-fexceptions";
@@ -511,6 +532,7 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 	// Preprocessing still observes GCC's __OPTIMIZE__ for -Og.
 	if (invocation.debug_optimization && invocation.debug_types)
 		invocation.optimizer.level = 0;
+	configure_source_language(invocation.source_language, invocation.standard, invocation.preprocessor);
 	add_host_environment(invocation.preprocessor, nostdinc || invocation.target != native::host_target());
 	configure_target_runtime(invocation, nostdinc);
 	invocation.optimizer.has_gnu_sincos = target_model::has_gnu_sincos(invocation.target);
@@ -606,8 +628,10 @@ bool lower_source(const std::string& path, const Invocation& invocation, lower::
 		sema::SemanticGraph graph(invocation.preprocessor.plain_char_unsigned, invocation.target);
 		graph.names.reserve(unit.counters().bindings);
 		sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
+		analyzer.set_source_language(invocation.preprocessor.language);
 		analyzer.set_hosted(invocation.preprocessor.hosted);
-		analyzer.set_cxx14(invocation.preprocessor.cplusplus != "201103L");
+		analyzer.set_cxx14(
+			invocation.preprocessor.language != SourceLanguage::C && invocation.preprocessor.cplusplus != "201103L");
 		analyzer.set_cxx17(invocation.preprocessor.cplusplus == "201703L");
 		analyzer.set_exceptions(invocation.preprocessor.modes.exceptions);
 		analyzer.set_ignore_narrowing(invocation.ignore_narrowing);

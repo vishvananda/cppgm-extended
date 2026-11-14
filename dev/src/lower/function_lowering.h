@@ -1918,6 +1918,7 @@ private:
 	RValue truth_operand(const syntax::Expr& expr);
 	RValue normalized_truth(const syntax::Expr& expr);
 	RValue logical_value(const syntax::BinaryExpr& expr);
+	RValue logical_result(const RValue& value, const sema::Type* type);
 	RValue logical_step(const syntax::BinaryExpr& expr, const RValue* left_truth, bool local);
 	// Rejects nesting beyond the shared stack budget (support/stack_budget.h).
 	void check_stack(uint32_t location) const;

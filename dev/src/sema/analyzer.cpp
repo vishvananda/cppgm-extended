@@ -63,11 +63,12 @@ Analyzer::Analyzer(SemanticGraph& graph, IdentifierTable& identifiers, AnalysisM
 	  arena_(graph.arena), class_depth_(0), template_depth_(0), anonymous_enums_(0), suppress_implicit_(false),
 	  current_access_(TokenKind::KW_PUBLIC), member_scope_(nullptr), expression_scope_(nullptr), naming_class_(nullptr),
 	  last_prefix_(NamePrefix{ nullptr, nullptr }), declaration_class_(nullptr), redeclared_(false),
-	  lone_class_attributes_(nullptr), access_deferral_(nullptr), base_object_(nullptr), c_language_(false),
-	  linkage_extern_(false), linkage_specified_(false), stack_base_(0), stack_budget_(stack_budget_bytes()),
-	  empty_count_(0), max_empty_offset_(0), empty_record_limit_(0), empty_record_tail_(0), layout_budget_(0),
-	  conflict_root_(nullptr), conflict_hint_(EmptySubobject{ nullptr, 0, false }), conversions_(graph.types),
-	  body_(nullptr), demanding_(nullptr), demand_epoch_(0), root_epoch_(0), current_epoch_(0), unevaluated_(0),
+	  lone_class_attributes_(nullptr), access_deferral_(nullptr), base_object_(nullptr), c_source_(false),
+	  c_language_(false), linkage_extern_(false), linkage_specified_(false), stack_base_(0),
+	  stack_budget_(stack_budget_bytes()), empty_count_(0), max_empty_offset_(0), empty_record_limit_(0),
+	  empty_record_tail_(0), layout_budget_(0), conflict_root_(nullptr),
+	  conflict_hint_(EmptySubobject{ nullptr, 0, false }), conversions_(graph.types), body_(nullptr),
+	  demanding_(nullptr), demand_epoch_(0), root_epoch_(0), current_epoch_(0), unevaluated_(0),
 	  potentially_throwing_(0), candidate_epoch_(0), association_epoch_(0), empty_list_epoch_(0), conversion_count_(0)
 {
 	constructor_key_ = special_key("<constructor>");
@@ -116,11 +117,15 @@ void Analyzer::analyze(const syntax::TranslationUnit& unit)
 	graph_.global = scope;
 	// The course grammar's fundamental type name `nullptr_t` (std::nullptr_t
 	// in a hosted library) is predeclared, without a line of its own.
-	Entity* predeclared = new_entity<Entity>(
-		EntityKind::Typedef, nullptr_t_, scope, types_.fundamental(FundamentalType::NullptrT));
-	Binding* binding = new_binding(BindingKind::TypeAlias, nullptr_t_, predeclared, predeclared->type);
-	binding->hidden = true;
-	declare_in(scope, binding);
+	if (!c_source_)
+	{
+		Entity* predeclared = new_entity<Entity>(
+			EntityKind::Typedef, nullptr_t_, scope, types_.fundamental(FundamentalType::NullptrT));
+		Binding* binding = new_binding(BindingKind::TypeAlias, nullptr_t_, predeclared, predeclared->type);
+		binding->hidden = true;
+		declare_in(scope, binding);
+	}
+
 	// GCC's 128-bit integer types by their predeclared names: `__int128`
 	// (a keyword there, a type name here) and the typedef names __int128_t
 	// and __uint128_t; its extended floating types' keywords alike, and

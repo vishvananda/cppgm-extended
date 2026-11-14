@@ -31,14 +31,14 @@ void AppendQuoted(std::string& text, const std::string& contents)
 // describe the target, as the course reference defines them.
 std::string PredefinedText(const PreprocessorOptions& options)
 {
-	std::string text = "#define __CPPGM__ 201303L\n"
-					   "#define __cplusplus " +
-		options.cplusplus +
-		"\n"
-		"#define __STDC_HOSTED__ " +
-		(options.target == target_model::Target::Wasm32 ? "0\n" : "1\n") +
-		"#define __x86_64__ 1\n"
-		"#define __linux__ 1\n";
+	std::string text = "#define __CPPGM__ 201303L\n";
+	if (options.language == SourceLanguage::C)
+		text += "#define __STDC__ 1\n#define __STDC_VERSION__ 201710L\n"
+				"#define __STDC_NO_VLA__ 1\n#define __STDC_NO_THREADS__ 1\n";
+	else
+		text += "#define __cplusplus " + options.cplusplus + "\n";
+	text += std::string("#define __STDC_HOSTED__ ") + (options.target == target_model::Target::Wasm32 ? "0\n" : "1\n") +
+		"#define __x86_64__ 1\n#define __linux__ 1\n";
 	text += "#define __CPPGM_AUTHOR__ ";
 	AppendQuoted(text, options.author);
 	text += "\n#define __DATE__ ";
@@ -46,7 +46,8 @@ std::string PredefinedText(const PreprocessorOptions& options)
 	text += "\n#define __TIME__ ";
 	AppendQuoted(text, options.time);
 	text += "\n";
-	text += LanguageFeatureMacros(options.cplusplus == "201703L" ? 17 : options.cplusplus == "201402L" ? 14 : 11);
+	if (options.language != SourceLanguage::C)
+		text += LanguageFeatureMacros(options.cplusplus == "201703L" ? 17 : options.cplusplus == "201402L" ? 14 : 11);
 	if (options.plain_char_unsigned)
 		text += "#define __CHAR_UNSIGNED__ 1\n";
 	if (options.popcnt)
@@ -98,7 +99,8 @@ bool Preprocessor::MacroQuery::is_defined(const char* spelling, uint32_t length)
 }
 
 Preprocessor::Preprocessor(const PreprocessorOptions& options, const std::string& path)
-	: identifiers_(arena_), names_(identifiers_), source_(files_, identifiers_, arena_, names_, *this),
+	: identifiers_(arena_, options.language), names_(identifiers_),
+	  source_(files_, identifiers_, arena_, names_, *this),
 	  expander_(arena_, identifiers_, names_, *this, macro_state_), directive_expander_(&expander_),
 	  macro_query_(identifiers_), evaluator_(macro_query_, options.literals, options.plain_char_unsigned),
 	  definition_parser_(arena_, names_.va_args, options.hosted), predefined_(nullptr), command_line_begin_(0),
@@ -106,7 +108,10 @@ Preprocessor::Preprocessor(const PreprocessorOptions& options, const std::string
 	  hosted_(options.hosted), modes_(options.modes), wasm_attributes_(target_model::is_wasm(options.target)),
 	  directives_(0), skipped_directives_(0), includes_(0), guarded_skips_(0), finished_(false), pack_(0)
 {
-	modes_.language = options.cplusplus == "201703L" ? 17 : options.cplusplus == "201402L" ? 14 : 11;
+	modes_.language = options.language == SourceLanguage::C ? 0
+		: options.cplusplus == "201703L"                    ? 17
+		: options.cplusplus == "201402L"                    ? 14
+															: 11;
 	expander_.set_input(&source_);
 	source_.set_hosted(hosted_);
 	const bool separators = hosted_ || options.literals != NumberDialect::Cxx11;

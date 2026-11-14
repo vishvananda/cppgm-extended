@@ -140,6 +140,8 @@ bool Parser::ptr_operator_ahead(uint32_t ahead)
 
 bool Parser::parse_ptr_operator(ListFrame<PtrOperator>& pointers)
 {
+	if (c_source_ && (at(TokenKind::OP_AMP) || at(TokenKind::OP_LAND) || member_pointer_ahead(0)))
+		return fail();
 	PtrOperator pointer = PtrOperator();
 	// `^` is Clang's block pointer (hosted compilations).
 	if (at(TokenKind::OP_STAR) || at(TokenKind::OP_AMP) || at(TokenKind::OP_LAND) || at(TokenKind::OP_XOR))
@@ -524,6 +526,11 @@ ParameterDeclaration* Parser::parse_parameter_declaration(bool definite)
 		return nullptr;
 	if (accept(TokenKind::OP_ASS))
 	{
+		if (c_source_)
+		{
+			fail();
+			return nullptr;
+		}
 		Initializer* initializer = make<Initializer>();
 		*initializer = Initializer();
 		initializer->kind = InitializerKind::Assign;

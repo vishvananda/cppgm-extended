@@ -759,6 +759,7 @@ pa_ref_pairs=(
   pa32:cppgm++
   pa33:lowiropt
   pa34:lowir2native
+  pa38:cppgm++
 )
 
 source_sha=$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || echo unknown)
@@ -825,6 +826,11 @@ done
 
 echo "==> Regenerating reference outputs"
 CPPGM_KEEP_FAILED_REFERENCE_STDOUT=1 make -s -C "$dest" ref-test \
+  CXX="${CXX:-g++}" \
+  CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
+  CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
+  CPPGM_TEST_RUNNER=1
+CPPGM_KEEP_FAILED_REFERENCE_STDOUT=1 make -s -C "$dest/pa38" ref-test \
   CXX="${CXX:-g++}" \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \

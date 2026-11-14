@@ -435,7 +435,7 @@ bool ConversionRules::value_conversion(
 		return true;
 	}
 	// 4.7, 4.8, 4.9.
-	if (IsIntegralType(goal) && IsIntegralOrUnscopedEnum(source))
+	if ((IsIntegralType(goal) || (c_source_ && goal->kind == TypeKind::Enum)) && IsIntegralOrUnscopedEnum(source))
 	{
 		out.second = ValueConversion::IntegralConversion;
 		return true;
@@ -485,6 +485,12 @@ bool ConversionRules::value_conversion(
 	// 4.10p2: pointer to cv T (an object type) to pointer to cv void, then
 	// a qualification adjustment.
 	const Type* pointee = source->element;
+	if (c_source_ && IsVoid(pointee) && goal->element->kind != TypeKind::Function &&
+		(CvOf(pointee) & ~CvOf(goal->element)) == 0)
+	{
+		out.second = ValueConversion::PointerToVoid;
+		return true;
+	}
 	if (IsVoid(goal->element) && pointee->kind != TypeKind::Function && !IsVoid(pointee))
 	{
 		const Type* adjusted = types_.pointer(

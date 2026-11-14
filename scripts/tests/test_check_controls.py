@@ -85,6 +85,15 @@ class CheckControlsTests(unittest.TestCase):
     def run_checker(self, target):
         return self.check(self.frontend, self.backend, target)
 
+    def test_assignment_source_mode_reaches_control_frontend(self):
+        fixture = self.control("100-c-mode.t", "// expect exit 0\nint main(void) { return 0; }\n")
+        self.frontend.write_text(FRONTEND.replace(
+            "assert args[:2] == ['--emit-lowir', '-O0'], args",
+            "assert args[:3] == ['-x', 'c', '-std=c17'], args"))
+        with patch.dict(os.environ, {'CPPGM_APP_ARGS': '-x c -std=c17'}):
+            result = self.run_checker(fixture)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_optional_assembly_sidecar_owns_a_section_named_fixture(self):
         ordinary = self.control("200-section-token-safe.t", "int main() { return 0; }")
         optional = self.control("100-module-empty-section-stack.t", 'asm(".popsection");')

@@ -260,7 +260,7 @@ RValue FunctionLowering::logical_value(const syntax::BinaryExpr& expr)
 	spine_.resize(base);
 	if (guards)
 		--guard_scopes_;
-	return value;
+	return logical_result(value, expr.facts->type);
 }
 
 RValue FunctionLowering::logical_step(const syntax::BinaryExpr& expr, const RValue* left_truth, bool local)

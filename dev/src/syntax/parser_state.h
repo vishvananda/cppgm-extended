@@ -50,7 +50,7 @@ public:
 	// `hosted`: a hosted compilation's contextual coroutine operators.
 	// `cxx14`/`cxx17`: standard syntax in the selected language mode.
 	ParserState(ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted = false,
-		bool cxx14 = false, bool cxx17 = false);
+		bool cxx14 = false, bool cxx17 = false, bool c_source = false);
 
 	// The furthest location where a parse failed (for the diagnostic).
 	uint32_t error_location() const { return error_location_; }
@@ -387,6 +387,7 @@ protected:
 	telemetry::Counter checkpoints_;
 	telemetry::Counter rewinds_;
 	telemetry::Counter deferred_count_;
+	const bool c_source_;
 	const bool hosted_;
 	const bool cxx14_;
 	const bool cxx17_;

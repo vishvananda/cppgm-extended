@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "lex/identifier_table.h"
+#include "lex/source_language.h"
 #include "preprocess/expr/controlling_expression.h"
 #include "preprocess/macro/feature_probes.h"
 #include "preprocess/macro/macro_definition.h"
@@ -23,6 +24,7 @@
 // unit ([cpp.predefined] 16.8, directives.md).
 struct PreprocessorOptions
 {
+	SourceLanguage language = SourceLanguage::Cxx;
 	target_model::Target target = target_model::Target::Linux;
 	// __CPPGM_AUTHOR__'s string contents.
 	std::string author;

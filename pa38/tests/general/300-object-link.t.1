@@ -1,0 +1,8 @@
+#include "300-object-link.h"
+static int triple(int value) { return value * 3; }
+int main(void) {
+  struct Pair input = { 7, 2.25 };
+  struct Pair output = c_transform(input, triple);
+  return !(c_constant == 37 && output.left == 21 && output.right == 41.5 &&
+           c_variadic(3, (char)2, (short)3, 4) == 9);
+}

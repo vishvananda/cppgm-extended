@@ -36,8 +36,8 @@ bool OwnMacro(const char* name, size_t length)
 	if (IsLanguageFeatureMacro(name, static_cast<uint32_t>(length)))
 		return true;
 	static const char* const kOwn[] = { "__cplusplus", "__STDC_HOSTED__", "__DATE__", "__TIME__", "__FILE__",
-		"__LINE__", "__CPPGM__", "__CPPGM_AUTHOR__", "__STDC__", "__CHAR_UNSIGNED__", "__POPCNT__", "__OPTIMIZE__",
-		"__OPTIMIZE_SIZE__", "__NO_INLINE__", "__PIC__", "__pic__", "__PIE__", "__pie__", "__CET__",
+		"__LINE__", "__CPPGM__", "__CPPGM_AUTHOR__", "__STDC__", "__STDC_VERSION__", "__CHAR_UNSIGNED__", "__POPCNT__",
+		"__OPTIMIZE__", "__OPTIMIZE_SIZE__", "__NO_INLINE__", "__PIC__", "__pic__", "__PIE__", "__pie__", "__CET__",
 		"__STDCPP_DEFAULT_NEW_ALIGNMENT__", "__cpp_aligned_new", "__cpp_deduction_guides", "__SSE__", "__SSE2__",
 		"__SSE3__", "__SSSE3__", "__SSE4_1__", "__SSE4_2__" };
 	for (const char* own : kOwn)
@@ -83,6 +83,11 @@ bool Named(const char* name, size_t length, const char* spelling)
 // The host macros of a mode turned off: exceptions, RTTI.
 bool ModeMacro(const char* name, size_t length, const FeatureModes& modes)
 {
+	if (modes.language == 0 &&
+		(Named(name, length, "__GNUG__") || Named(name, length, "__EXCEPTIONS") ||
+			(length >= 5 && std::memcmp(name, "__GXX", 5) == 0) ||
+			(length >= 6 && std::memcmp(name, "__cpp_", 6) == 0)))
+		return true;
 	if (!modes.exceptions && (Named(name, length, "__EXCEPTIONS") || Named(name, length, "__cpp_exceptions")))
 		return true;
 	return !modes.rtti && (Named(name, length, "__GXX_RTTI") || Named(name, length, "__cpp_rtti"));
@@ -165,10 +170,16 @@ const char* builtin_template_declarations()
 
 void add_host_environment(PreprocessorOptions& options, bool nostdinc)
 {
+	options.modes.language = options.language == SourceLanguage::C ? 0 : options.modes.language;
 	options.hosted = true;
 	options.host_predefines = HostMacroText(options.modes, options.strict);
 	options.builtin_declarations = kBuiltinDeclarations;
-	options.builtin_declarations += builtin_template_declarations();
+	if (options.language == SourceLanguage::C)
+		options.builtin_declarations =
+			"struct __va_list_tag { unsigned int gp_offset; unsigned int fp_offset; "
+			"void* overflow_arg_area; void* reg_save_area; }; typedef struct __va_list_tag __builtin_va_list[1];\n";
+	else
+		options.builtin_declarations += builtin_template_declarations();
 	if (nostdinc)
 		return;
 	for (const char* const* path = cppgm_builtin_host_config::kStandardIncludePaths; *path != nullptr; ++path)

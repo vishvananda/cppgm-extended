@@ -1138,7 +1138,7 @@ Expr* Parser::parse_primary_expression()
 	case TokenKind::KW_TYPENAME:
 		return parse_id_expression_or_cast();
 	default:
-		if (IsSimpleTypeKeyword(token.simple))
+		if (!c_source_ && IsSimpleTypeKeyword(token.simple))
 			return parse_keyword_functional_cast();
 		fail();
 		return nullptr;

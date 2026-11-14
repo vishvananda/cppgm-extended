@@ -409,6 +409,8 @@ struct VariableEntity : Entity
 	// then a constant expression reads its provisional value (see
 	// ConstantInterpreter::provisional_value).
 	bool constant_deferred : 1;
+	// A C file-scope definition without an initializer, awaiting a full definition.
+	bool c_tentative : 1;
 	// A GNU zero-length array member `T m[0]` (hosted compilations): its
 	// type is a flexible array member's, but no element initializes it
 	// (GCC and Clang; see Analyzer::aggregate_members).

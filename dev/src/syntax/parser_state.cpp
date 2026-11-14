@@ -9,8 +9,8 @@
 
 namespace syntax {
 
-ParserState::ParserState(
-	ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted, bool cxx14, bool cxx17)
+ParserState::ParserState(ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted, bool cxx14,
+	bool cxx17, bool c_source)
 	: tokens_(tokens), identifiers_(identifiers), arena_(arena), scopes_(arena), deferred_lambdas_(0),
 	  deferred_tokens_(0), peak_run_bytes_(0), function_scope_(nullptr), parameter_scope_(nullptr),
 	  declarator_member_of_(nullptr), type_id_scope_(nullptr), angle_(false), definite_type_(false),
@@ -19,8 +19,11 @@ ParserState::ParserState(
 	  leading_attributes_(nullptr), tentative_depth_(0), speculation_(0), open_lists_base_(0), abandoning_lists_(false),
 	  abandoned_error_position_(0), abandoned_error_location_(0), nesting_(0), peak_nesting_(0), stack_base_(0),
 	  stack_budget_(stack_budget_bytes()), error_position_(0), error_location_(0), checkpoints_(0), rewinds_(0),
-	  deferred_count_(0), hosted_(hosted), cxx14_(cxx14 || cxx17), cxx17_(cxx17), gnu_names_(identifiers)
+	  deferred_count_(0), c_source_(c_source), hosted_(hosted), cxx14_(cxx14 || cxx17), cxx17_(cxx17),
+	  gnu_names_(identifiers)
 {
+	if (c_source_)
+		tokens_.ignore(identifiers.intern("restrict", 8));
 	final_ = identifiers.intern("final", 5);
 	coroutine_keywords_[0] = identifiers.intern("co_await", 8);
 	coroutine_keywords_[1] = identifiers.intern("co_yield", 8);
@@ -29,8 +32,9 @@ ParserState::ParserState(
 	// Unnamed namespaces are bound under a spelling no identifier has.
 	unnamed_namespace_ = identifiers.intern(" unnamed", 8);
 	// The course treats std::nullptr_t's unqualified name as predeclared.
-	scopes_.declare(
-		scopes_.global(), identifiers.intern("nullptr_t", 9), NameBinding{ NameCategory::Type, false, nullptr });
+	if (!c_source_)
+		scopes_.declare(
+			scopes_.global(), identifiers.intern("nullptr_t", 9), NameBinding{ NameCategory::Type, false, nullptr });
 	// GNU alternative keyword spellings (lex/gnu_builtins.h).
 	for (unsigned i = 0; i < kGnuKeywordCount; ++i)
 	{
