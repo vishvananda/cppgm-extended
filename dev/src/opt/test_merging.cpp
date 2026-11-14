@@ -900,6 +900,8 @@ bool TestMerging::join_branches(BlockId e, unsigned side, BlockId next, BlockId 
 		const InstId following = body_.instructions[i].next;
 		unlink_after(body_, next, kNoId, i);
 		insert_after(body_, e, at, i);
+		// Run where the first test did not lead: its facts may not hold there.
+		body_.instructions[i].flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT));
 		if (i < block_of_.size())
 			block_of_[i] = e;
 		at = i;
