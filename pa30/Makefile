@@ -200,6 +200,12 @@ endif
 	@perl ../scripts/compare_results_common.pl lowir_t ref my $(LOWIR_TEST_ROOT)
 	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(RUN_TEST_ROOT)
 	@scripts/compare_results_link.pl ref my $(RUN_TEST_ROOT)
+	@$(MAKE) test-source-views CPPGM_SKIP_DEV_REBUILD=1
+
+# Source views must keep the same forced headers and include policy as -c.
+.PHONY: test-source-views
+test-source-views: $(TEST_DEPS)
+	@perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_TEST_APP) tests/run/800-source-view-header-controls.t $(LOWIR2NATIVE_APP)
 
 # Optional CPU capabilities do not change the baseline C++11 report.
 test-target-features: $(TEST_DEPS)
@@ -216,6 +222,7 @@ test-batch: $(TEST_DEPS)
 	@perl ../scripts/compare_results_common.pl lowir_t ref my $(LOWIR_TEST_ROOT)
 	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(RUN_TEST_ROOT)
 	@scripts/compare_results_link.pl ref my $(RUN_TEST_ROOT)
+	@$(MAKE) test-source-views CPPGM_SKIP_DEV_REBUILD=1
 
 ref-test:
 ifneq ($(strip $(TEST)),)
@@ -257,7 +264,7 @@ include ../scripts/pa_run_check_targets.mk
 	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX)
 
 dev-shared-target:
-	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ]; then true; else $(MAKE) -C ../dev $(TARGET) CXX=$(CXX); fi
+	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ]; then true; else $(MAKE) -C ../dev $(TARGET) lowir2native CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX); fi
 
 clean:
 	-rm -f "$(TARGET)" "$(TARGET)-debug" $(OBJ)/release/*.o $(OBJ)/debug/*.o

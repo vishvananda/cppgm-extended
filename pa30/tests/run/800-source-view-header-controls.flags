@@ -1,0 +1,1 @@
+-include tests/run/800-source-view-header-controls.first.h -include tests/run/800-source-view-header-controls.second.h -nostdinc -DHEADER_VALUE=37 -DREMOVED_VALUE=1 -UREMOVED_VALUE
