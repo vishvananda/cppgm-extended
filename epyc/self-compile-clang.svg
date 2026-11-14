@@ -1,5 +1,5 @@
-<svg data-original-label="self compile speed vs clang" data-original-message="4.4×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="self compile speed vs clang; AMD EPYC 7763 64-Core Processor; measured 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; 0 commits behind main: 4.4×">
-  <title>self compile speed vs clang; AMD EPYC 7763 64-Core Processor; measured 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; 0 commits behind main: 4.4×</title>
+<svg data-original-label="self compile speed vs clang" data-original-message="4.4×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="self compile speed vs clang; AMD EPYC 7763 64-Core Processor; measured 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; 4 commits behind main: 4.4×">
+  <title>self compile speed vs clang; AMD EPYC 7763 64-Core Processor; measured 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; 4 commits behind main: 4.4×</title>
   <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
   <g clip-path="url(#badge)">
     <rect width="64" height="24" fill="#555"/>
