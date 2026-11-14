@@ -169,8 +169,40 @@ function @keep_variant_test(%p : ptr, %n : i64) -> void [no_inline=yes] {
     return void
 }
 
-# A call that may throw: the loop stays.
+# A call that may throw, in a function with a handler: the loop stays.
 function @keep_unwinding_call(%flag : i64, %n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    eh_try ^dispatch
+    jump ^header
+
+  block ^header:
+    %i = phi i64 [^entry: 0, ^latch: %next]
+    %more = cmp lt i64 %i, %n
+    branch %more, ^body, ^exit
+
+  block ^body:
+    branch %flag, ^left, ^latch
+
+  block ^left:
+    call void @thrower(%i)
+    jump ^latch
+
+  block ^latch:
+    %next = binary add i64 %i, 1
+    jump ^header
+
+  block ^exit:
+    eh_end
+    return void
+
+  block ^dispatch:
+    call void @touch(0)
+    resume
+}
+
+# A call that may throw, in a function without a handler: the path with the
+# call is a loop of its own.
+function @on_unwinding_call(%flag : i64, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     jump ^header
 

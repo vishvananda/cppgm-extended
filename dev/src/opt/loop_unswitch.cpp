@@ -15,10 +15,14 @@ namespace {
 // makes the test once, and each copy keeps its own path; what the test guarded
 // then reads as straight code, for the passes that hoist and run in lanes. Only
 // a branch with both sides in the loop: one that leaves the loop already runs
-// at most once. At most kUnswitchBody instructions; each loop's copies are not
-// taken up again. The values read past the loop go through slots, promoted
+// at most once. The two copies together hold at most kUnswitchBody
+// instructions more than the loop (each drops what only the other path
+// reaches), of a loop of at most kUnswitchLoop; each loop's copies are not
+// taken up again. A loop with a call that may unwind stays when the function
+// has a handler. The values read past the loop go through slots, promoted
 // again by the caller.
 const uint32_t kUnswitchBody = 64;
+const uint32_t kUnswitchLoop = 256;
 const uint32_t kUnswitchRounds = 8;
 
 class LoopUnswitch
@@ -46,6 +50,7 @@ private:
 
 	bool invariant(uint32_t loop, Value v) const;
 	InstId test_of(uint32_t loop) const;
+	uint32_t kept(uint32_t loop, InstId branch, unsigned side) const;
 	bool wanted(uint32_t loop) const;
 	void select_loop(uint32_t loop);
 	void read_uses();
@@ -98,6 +103,38 @@ InstId LoopUnswitch::test_of(uint32_t loop) const
 	return kNoId;
 }
 
+// The instructions of the loop's copy in which `branch` always takes its
+// target `side` (1 or 2): those of the blocks the header still reaches.
+uint32_t LoopUnswitch::kept(uint32_t loop, InstId branch, unsigned side) const
+{
+	const Loop& l = forest_.loops[loop];
+	const BlockId dropped = body_.instructions[branch].ops[3 - side].index;
+	BlockId test = kNoId;
+	for (BlockId b : l.blocks)
+		if (body_.blocks[b].last == branch)
+			test = b;
+	std::vector<BlockId> stack(1, l.header);
+	std::vector<uint8_t> seen(body_.blocks.size(), 0);
+	seen[l.header] = 1;
+	uint32_t size = 0;
+	while (!stack.empty())
+	{
+		const BlockId b = stack.back();
+		stack.pop_back();
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			++size;
+		for (uint32_t k = cfg_.succ_first[b]; k < cfg_.succ_first[b + 1]; ++k)
+		{
+			const BlockId s = cfg_.succs[k];
+			if ((b == test && s == dropped) || seen[s] != 0 || !in_loop(forest_, loop, s))
+				continue;
+			seen[s] = 1;
+			stack.push_back(s);
+		}
+	}
+	return size;
+}
+
 // An innermost loop not copied before, small enough, with nothing the copy
 // cannot repeat and a test to take out.
 bool LoopUnswitch::wanted(uint32_t loop) const
@@ -110,11 +147,15 @@ bool LoopUnswitch::wanted(uint32_t loop) const
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
 			const Instruction& inst = body_.instructions[i];
-			if (++size > kUnswitchBody || inst.op == Opcode::Switch || may_unwind(c_.program, inst) ||
+			// (A call that unwinds leaves a function without handlers.)
+			if (++size > kUnswitchLoop || inst.op == Opcode::Switch ||
+				(!cfg_.handlers.empty() && may_unwind(c_.program, inst)) || is_eh_instruction(inst.op) ||
 				is_stack_instruction(inst.op) || (inst.op == Opcode::Load && inst.type.is_object()))
 				return false;
 		}
-	return test_of(loop) != kNoId;
+	const InstId branch = test_of(loop);
+	return branch != kNoId &&
+		(size <= kUnswitchBody || kept(loop, branch, 1) + kept(loop, branch, 2) <= size + kUnswitchBody);
 }
 
 void LoopUnswitch::select_loop(uint32_t loop)
