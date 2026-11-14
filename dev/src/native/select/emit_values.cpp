@@ -1191,8 +1191,12 @@ void FunctionSelector::emit_compare(const Instruction& inst)
 	const Type type = inst.type;
 	const TypeKind kind = type.kind();
 	ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
-	Operand a = rm_operand(inst.ops[0], type, kSelectScratch);
-	Operand b = rm_operand(inst.ops[1], type, kEmitScratch);
+	// A compare with zero of a tested `x & y` (find_folds): the test sets the
+	// flags and the result takes its condition.
+	const Value conj = resolve(inst.ops[0]);
+	const bool tested = conj.kind == ValueKind::Temp && (temps_[conj.index].flags & TF_TESTED) != 0;
+	Operand a = tested ? Operand::make_reg(kSelectScratch) : rm_operand(inst.ops[0], type, kSelectScratch);
+	Operand b = tested ? Operand::make_imm(0) : rm_operand(inst.ops[1], type, kEmitScratch);
 	if (kind == TypeKind::I128)
 	{
 		const Reg d = result_reg(inst);
@@ -1234,11 +1238,16 @@ void FunctionSelector::emit_compare(const Instruction& inst)
 	const bool byte_return = level_ == 0 && user != nullptr && user->op == Opcode::Return &&
 		register_bytes(user->type.kind()) == 1 && resolve(user->ops[0]) == Value::temp(inst.result) &&
 		inst_block_[t.user] == block_ && pos_[t.user] == position_ + 1;
-	const Reg d = result_reg(inst, byte_return ? RAX : dying_reg(inst.ops[0]),
-		byte_return ? dying_reg(inst.ops[0]) : dying_reg(inst.ops[1]));
-	emit2(Op::Cmp, compare_width(inst, a), a, b);
+	const Reg d = tested ? result_reg(inst)
+						 : result_reg(inst, byte_return ? RAX : dying_reg(inst.ops[0]),
+							   byte_return ? dying_reg(inst.ops[0]) : dying_reg(inst.ops[1]));
+	Cond cond = int_cond(pred);
+	if (tested)
+		cond = emit_and_test(body_->instructions[body_->temps[conj.index].def], pred == ComparePredicate::Ne);
+	else
+		emit2(Op::Cmp, compare_width(inst, a), a, b);
 	Inst& set = emit1(Op::Setcc, TypeKind::Void, Operand::make_reg(d));
-	set.sub = int_cond(pred);
+	set.sub = cond;
 	// O1+: a result whose one reader stores its byte needs no extension.
 	const bool byte_stored = level_ >= 1 && user != nullptr && user->op == Opcode::Store &&
 		register_bytes(user->type.kind()) == 1 && resolve(user->ops[0]) == Value::temp(inst.result) &&
@@ -1340,6 +1349,18 @@ void FunctionSelector::emit_select(const Instruction& inst)
 	// A known condition copies its operand.
 	if (known)
 		t = f = taken ? t : f;
+	// The choice of the literals 1 and 0 is the condition's truth.
+	if (!known && inst.type.is_integer() && kind != TypeKind::I128 && t.kind == ValueKind::Integer &&
+		f.kind == ValueKind::Integer && (literal(t).high | literal(f).high) == 0 &&
+		(literal(t).low | literal(f).low) == 1 && literal(t).low != literal(f).low)
+	{
+		const Reg d = result_reg(inst);
+		Inst& set = emit1(Op::Setcc, TypeKind::Void, Operand::make_reg(d));
+		set.sub = literal(t).low == 1 ? cc : invert(cc);
+		emit2(Op::Movzx, TypeKind::Void, Operand::make_reg(d), Operand::make_reg(d));
+		finish_result(inst, d);
+		return;
+	}
 	// Into a register for cmov's source: its own, or r11.
 	auto source = [&](Value v) {
 		const Operand from = rm_operand(v, inst.type, kEmitScratch);

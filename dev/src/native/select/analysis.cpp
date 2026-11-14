@@ -991,10 +991,53 @@ void FunctionSelector::resolve_aliases()
 		}
 		return reads[temp] == 1;
 	};
+	// O1+: the machine's shifts and bit tests take a count's low six bits (or
+	// five). A mask of the count that keeps them, or its unsigned remainder
+	// by a power of two from 64, read once and only as that count (through
+	// at most one integer conversion read once), stands for what it masks:
+	// `x >> (n % 64)` shifts by n.
+	auto unmask_count = [&](const Instruction& shift) {
+		Value c = shift.ops[1];
+		for (unsigned step = 0; step < 2; ++step)
+		{
+			if (c.kind != ValueKind::Temp || c.index < body.parameter_count || body.temps[c.index].def == kNoId)
+				return;
+			const lowir::InstId def = body.temps[c.index].def;
+			const Instruction& d = body.instructions[def];
+			if ((marks_[def] & IM_DEAD) || !d.type.is_integer() || d.type.kind() == TypeKind::I128 ||
+				d.type.kind() == TypeKind::I1 || !read_once(c.index))
+				return;
+			const Type from = d.op == Opcode::Convert ? lowir::convert_source_type(d) : d.type;
+			if (d.op == Opcode::Convert && step == 0 && from.is_integer() && from.kind() != TypeKind::I128 &&
+				from.kind() != TypeKind::I1)
+			{
+				c = d.ops[0];
+				continue;
+			}
+			if (d.op != Opcode::Binary || (temps_[c.index].flags & TF_ALIAS))
+				return;
+			const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(d.sub);
+			const Value k = resolve(d.ops[1]), masked = resolve(d.ops[0]);
+			if (k.kind != ValueKind::Integer || literal(k).high != 0 || masked.kind != ValueKind::Temp)
+				return;
+			const uint64_t bits = literal(k).low;
+			if (!(op == lowir::BinaryOp::And && (bits & 63) == 63) &&
+				!(op == lowir::BinaryOp::UMod && bits >= 64 && (bits & (bits - 1)) == 0))
+				return;
+			alias_[c.index] = masked;
+			temps_[c.index].flags |= TF_ALIAS;
+			return;
+		}
+	};
 	for_each_inst([&](uint32_t id, uint32_t) {
 		const Instruction& inst = body.instructions[id];
 		if ((marks_[id] & IM_DEAD) || inst.result == kNoId)
 			return;
+		if (level_ >= 1 && inst.op == Opcode::Binary && inst.type.is_integer() && inst.type.kind() != TypeKind::I128 &&
+			(static_cast<lowir::BinaryOp>(inst.sub) == lowir::BinaryOp::Shl ||
+				static_cast<lowir::BinaryOp>(inst.sub) == lowir::BinaryOp::Shr ||
+				static_cast<lowir::BinaryOp>(inst.sub) == lowir::BinaryOp::UShr))
+			unmask_count(inst);
 		const uint32_t r = inst.result;
 		Value to = Value::none();
 		if (inst.op == Opcode::Const)
@@ -1962,11 +2005,28 @@ void FunctionSelector::find_folds()
 		const bool adjacent = next == branch_id ||
 			(next != kNoId && body.instructions[next].op == Opcode::Compare &&
 				next_work(body.instructions[next].next) == branch_id);
+		// `1 << k` read only here, in a type bt tests.
+		auto one_bit = [&](Value v) -> const Instruction* {
+			const Instruction* bit = type.is_integer() && value_bytes(type) >= 4 ? single(v, lowir::BinaryOp::Shl)
+																				 : nullptr;
+			const Value one = bit != nullptr ? resolve(bit->ops[0]) : Value::none();
+			return one.kind == ValueKind::Integer && literal(one).low == 1 && literal(one).high == 0 ? bit : nullptr;
+		};
 		for (unsigned k = 0; k < 2; ++k)
 		{
 			const Value v = resolve(conj->ops[k]);
 			if (v.kind != ValueKind::Temp)
 				continue;
+			// (bt reads the tested value in a register: its load, folded into
+			// the `and`, is a load again.)
+			if ((temps_[v.index].flags & TF_FOLDED) && body.temps[v.index].def != kNoId &&
+				body.instructions[body.temps[v.index].def].op == Opcode::Load &&
+				one_bit(resolve(conj->ops[1 - k])) != nullptr)
+			{
+				temps_[v.index].flags &= static_cast<uint16_t>(~TF_FOLDED);
+				--stats_.folded_loads;
+				continue;
+			}
 			const bool folded = (temps_[v.index].flags & TF_FOLDED) != 0;
 			if (!adjacent)
 			{
@@ -2002,10 +2062,8 @@ void FunctionSelector::find_folds()
 		for (unsigned k = 0; k < 2; ++k)
 		{
 			const Value v = resolve(conj->ops[k]);
-			const Instruction* bit = type.is_integer() && value_bytes(type) >= 4 ? single(v, lowir::BinaryOp::Shl)
-																				 : nullptr;
-			const Value one = bit != nullptr ? resolve(bit->ops[0]) : Value::none();
-			if (bit != nullptr && one.kind == ValueKind::Integer && literal(one).low == 1 && literal(one).high == 0)
+			const Instruction* bit = one_bit(v);
+			if (bit != nullptr)
 			{
 				temps_[v.index].flags |= TF_TESTED;
 				extend(bit->ops[1]);
@@ -2041,6 +2099,24 @@ void FunctionSelector::find_folds()
 					c.last = pos_[user_id];
 			}
 			return;
+		}
+		// O1+: a compare with zero whose result is a value (no branch or select
+		// of its block takes its flags): a tested `and` gives it the condition
+		// (test x, y or bt x, k before the set).
+		if (level_ >= 1 && inst.op == Opcode::Compare && inst.type.is_integer() && inst.type.kind() != TypeKind::I128)
+		{
+			const Instruction& reader = body.instructions[user_id];
+			const lowir::ComparePredicate pred = static_cast<lowir::ComparePredicate>(inst.sub);
+			const Value zero = resolve(inst.ops[1]);
+			const bool flags_read = inst_block_[user_id] == b &&
+				(reader.op == Opcode::Branch || reader.op == Opcode::Select) &&
+				resolve(reader.ops[0]) == Value::temp(inst.result);
+			if (!flags_read && (pred == lowir::ComparePredicate::Eq || pred == lowir::ComparePredicate::Ne) &&
+				zero.kind == ValueKind::Integer && (literal(zero).low | literal(zero).high) == 0)
+			{
+				test_fold(resolve(inst.ops[0]), id);
+				return;
+			}
 		}
 		if (inst_block_[user_id] != b || pos_[user_id] <= pos_[id])
 			return;
@@ -2194,8 +2270,9 @@ void FunctionSelector::find_folds()
 			return;
 		}
 		// A load only the next instruction's branch tests compares in
-		// memory (cmp byte [m], 0).
-		const bool branch_test = user.op == Opcode::Branch && left;
+		// memory (cmp byte [m], 0); O1+: likewise one only a select tests.
+		const bool branch_test = (user.op == Opcode::Branch && left) ||
+			(level_ >= 1 && user.op == Opcode::Select && left && !(resolve(user.ops[2]) == self));
 		// (O1+: a pointer read as an i64 through a retyping copy, the copy
 		// an alias, reads the same eight bytes.)
 		const bool retyped = level_ >= 1 &&
