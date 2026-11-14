@@ -1,5 +1,5 @@
-<svg data-original-label="Boost compile CPU vs clang" data-original-message="4.10×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Boost compile CPU vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; measured 93343ea0ebdcf068d87b88027a6eca8abf32111f; 306 commits behind main: 4.10×*">
-  <title>Boost compile CPU vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; measured 93343ea0ebdcf068d87b88027a6eca8abf32111f; 306 commits behind main: 4.10×*</title>
+<svg data-original-label="Boost compile CPU vs clang" data-original-message="4.10×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Boost compile CPU vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; measured 93343ea0ebdcf068d87b88027a6eca8abf32111f; 307 commits behind main: 4.10×*">
+  <title>Boost compile CPU vs clang; Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz; measured 93343ea0ebdcf068d87b88027a6eca8abf32111f; 307 commits behind main: 4.10×*</title>
   <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
   <g clip-path="url(#badge)">
     <rect width="64" height="24" fill="#555"/>
