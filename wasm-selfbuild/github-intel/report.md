@@ -4,11 +4,11 @@ cppgm and Clang each build `cppgm++` for WASI. Both WASI compilers then rebuild 
 
 | Measurement | cppgm | Clang | Speedup |
 |---|---:|---:|---:|
-| Build the WASI compiler, CPU | 138.6 s | 791.6 s | 5.71× |
-| Build the WASI compiler, elapsed | 75.3 s | 403.0 s | 5.35× |
-| Rebuild with the WASI compiler, CPU | 204.0 s | 206.0 s | 1.010× |
-| Rebuild with the WASI compiler, elapsed | 108.6 s | 109.6 s | 1.009× |
+| Build the WASI compiler, CPU | 138.4 s | 796.0 s | 5.75× |
+| Build the WASI compiler, elapsed | 75.3 s | 405.1 s | 5.38× |
+| Rebuild with the WASI compiler, CPU | 208.0 s | 211.3 s | 1.017× |
+| Rebuild with the WASI compiler, elapsed | 110.8 s | 112.1 s | 1.012× |
 
 The build is one observation. The rebuild is the median of 3 paired ABBA blocks.
 
-CPU: INTEL(R) XEON(R) PLATINUM 8573C. [Raw CI observations](https://github.com/vishvananda/cppgm-extended/actions/runs/43572026880).
+CPU: INTEL(R) XEON(R) PLATINUM 8573C. [Raw CI observations](https://github.com/vishvananda/cppgm-extended/actions/runs/43601267019).
