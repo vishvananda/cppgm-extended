@@ -1,0 +1,75 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @nodes
+  storage data
+  item zero 72
+
+function @marked_sum
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, 0
+    mov rcx, 0
+
+  block ^head
+    cmp.i64 rax, rsi
+    jge ^done
+
+  block ^body
+    load.ptr rdi, [rdi+8]
+    cmp.u8 [rdi+16], 0
+    jne ^marked
+
+  block ^latch
+    add rax, 1
+    cmp.i64 rax, rsi
+    jl ^body
+    ret rcx
+
+  block ^done
+    ret rcx
+
+  block ^marked
+    add rcx, [rdi]
+    jmp ^latch
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, @nodes
+    lea rax, [rdi+24]
+    lea rcx, [rdi+48]
+    store.i64 [rdi], 5
+    store.i64 [rax], 7
+    store.i64 [rcx], 11
+    store.ptr [rdi+8], rax
+    store.ptr [rax+8], rcx
+    store.ptr [rcx+8], rdi
+    store.u8 [rax+16], 1
+    store.u8 [rcx+16], 1
+    mov rsi, 4
+    call @marked_sum [args=(rsi,rdi)]
+    cmp.i64 rax, 25
+    setne rax
+    movzx rax, rax
+    ret rax

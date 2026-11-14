@@ -849,7 +849,9 @@ void FunctionSelector::collect_uses(const std::vector<int32_t>& index)
 	const lowir::FunctionBody& body = *body_;
 	std::vector<std::pair<uint32_t, int32_t>> uses;
 	std::vector<uint32_t> owner;
-	auto record = [&](Value v, uint32_t b, int32_t early, int32_t late, bool tied) {
+	// (`whole`: the instruction reads every part of a lazy address before it
+	// writes.)
+	auto record = [&](Value v, uint32_t b, int32_t early, int32_t late, bool tied, bool whole = false) {
 		v = resolve(v);
 		if (v.kind != ValueKind::Temp)
 			return;
@@ -861,13 +863,13 @@ void FunctionSelector::collect_uses(const std::vector<int32_t>& index)
 			parts[0] = kNoId;
 			parts[1] = expr.kind == AddrExpr::Temp ? expr.base : kNoId;
 			parts[2] = expr.index;
-			tied = false;
+			tied = whole;
 		}
 		for (unsigned k = 0; k < 3; ++k)
 		{
 			if (parts[k] == kNoId || index[parts[k]] < 0)
 				continue;
-			uses.push_back(std::make_pair(b, tied && k == 0 ? early : late));
+			uses.push_back(std::make_pair(b, tied && (k == 0 || whole) ? early : late));
 			owner.push_back(static_cast<uint32_t>(index[parts[k]]));
 		}
 	};
@@ -902,6 +904,16 @@ void FunctionSelector::collect_uses(const std::vector<int32_t>& index)
 		{
 			record(inst.ops[0], b, early, late, true);
 			record(inst.ops[1], b, early, late, true);
+			return;
+		}
+		// One load into a general register reads its address before it
+		// writes: a pointer read through itself stays in its register. (A
+		// load folded into its consumer is read there, with that one's
+		// operands.)
+		if (inst.op == Opcode::Load && inst.result != kNoId && temps_[inst.result].cls == VClass::Gpr &&
+			pos == pos_[id])
+		{
+			record(inst.ops[0], b, early, late, true, true);
 			return;
 		}
 		// A cmov keeps either arm in place: an arm dying there may be the
