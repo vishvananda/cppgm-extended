@@ -22,7 +22,7 @@ sub function_metrics {
     my ($data) = @_;
     my $r = {data => $data, offset => 0};
     my %metrics = (code_bytes => length($data), locals => 0, instructions => 0,
-        memory_ops => 0, zero_offset_memory_ops => 0, control_depth => 0);
+        memory_ops => 0, zero_offset_memory_ops => 0, bulk_memory_ops => 0, control_depth => 0);
     for (1 .. number($r)) {
         $metrics{locals} += number($r);
         byte($r);
@@ -67,7 +67,10 @@ sub function_metrics {
         } elsif ($op == 0xfc) {
             my $sub = number($r);
             die "Unsupported bulk operation in quality measurement\n" if $sub > 17;
-            ++$metrics{memory_ops} if $sub == 8 || $sub == 10 || $sub == 11;
+            if ($sub == 8 || $sub == 10 || $sub == 11) {
+                ++$metrics{memory_ops};
+                ++$metrics{bulk_memory_ops};
+            }
             number($r) if $sub >= 8;
             number($r) if $sub == 8 || $sub == 10 || $sub == 12 || $sub == 14;
         } elsif ($op == 0xfd) {
