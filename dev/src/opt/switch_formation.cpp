@@ -77,6 +77,13 @@ uint64_t count(const Ranges& s)
 	return n;
 }
 
+// Pointer tests use an integer of the same target width, including sentinel
+// addresses whose high bit is set.
+Type test_integer_type(Type type)
+{
+	return type.is_pointer() ? Type::scalar(type.pointer_bytes() == 4 ? TypeKind::I32 : TypeKind::I64) : type;
+}
+
 bool bounds_of(TypeKind kind, int64_t& lo, int64_t& hi)
 {
 	switch (kind)
@@ -301,7 +308,7 @@ bool SwitchFormer::root_of(TempId x, TempId& root, std::vector<Piece>& pieces, s
 	}
 	int64_t lo = 0, hi = 0;
 	const Type type = body_.temps[root].type;
-	if (!bounds_of(type.is_pointer() ? TypeKind::I64 : type.kind(), lo, hi))
+	if (!bounds_of(test_integer_type(type).kind(), lo, hi))
 		return false;
 	pieces.assign(1, Piece{ lo, hi, 0 });
 	for (size_t k = links.size(); k-- > 0;)
@@ -379,7 +386,7 @@ bool SwitchFormer::test_of(BlockId block, bool head, Test& test) const
 	if (!x.is(ValueKind::Temp) || !literal_constant(body_, k, literal) || body_.temps[x.index].type != cmp.type)
 		return false;
 	const bool pointer = cmp.type.is_pointer();
-	const Type type = pointer ? Type::scalar(TypeKind::I64) : cmp.type;
+	const Type type = test_integer_type(cmp.type);
 	int64_t lo = 0, hi = 0;
 	if (!bounds_of(type.kind(), lo, hi) || (pointer && pred != ComparePredicate::Eq && pred != ComparePredicate::Ne))
 		return false;

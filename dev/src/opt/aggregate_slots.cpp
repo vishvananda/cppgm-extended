@@ -891,8 +891,9 @@ void AggregateSlots::load_packed(BlockId block, InstId& prev, InstId id, SlotId 
 		prev = emit(block, prev, shift, wide);
 		bits = Value::temp(body_.instructions[prev].result);
 	}
-	const bool floating = original.type.kind() == TypeKind::F32 || original.type.kind() == TypeKind::F64;
-	if (floating && storage_bytes(original.type) < storage_bytes(wide))
+	const bool bit_view = original.type.is_pointer() || original.type.kind() == TypeKind::F32 ||
+		original.type.kind() == TypeKind::F64;
+	if (bit_view && storage_bytes(original.type) < storage_bytes(wide))
 	{
 		const Type word = filler_type(storage_bytes(original.type));
 		Instruction trunc = make_instruction(Opcode::Convert, word);
@@ -907,7 +908,7 @@ void AggregateSlots::load_packed(BlockId block, InstId& prev, InstId id, SlotId 
 	narrow.sub = static_cast<uint8_t>(ConvertOp::Trunc);
 	narrow.ops[0] = bits;
 	set_convert_source_type(narrow, wide);
-	if (floating || storage_bytes(original.type) == storage_bytes(wide))
+	if (bit_view || storage_bytes(original.type) == storage_bytes(wide))
 	{
 		narrow.op = Opcode::Copy;
 		narrow.sub = 0;
@@ -973,7 +974,8 @@ void AggregateSlots::store_packed(BlockId block, InstId& prev, InstId id, SlotId
 	{
 		Value bits_value = v;
 		Type bits_type = original.type;
-		if (original.type.kind() == TypeKind::F32 || original.type.kind() == TypeKind::F64)
+		if (original.type.is_pointer() || original.type.kind() == TypeKind::F32 ||
+			original.type.kind() == TypeKind::F64)
 		{
 			bits_type = filler_type(storage_bytes(original.type));
 			Instruction bits_copy = make_instruction(Opcode::Copy, bits_type);
