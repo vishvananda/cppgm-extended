@@ -108,10 +108,12 @@ void Linker::emit(Bytes& output)
 	std::map<std::string, std::pair<uint8_t, uint32_t>> exported;
 	const auto add_export = [&](const std::string& name, ObjectRef ref) {
 		const uint8_t kind = symbol(ref).kind;
-		if ((kind != 0 && kind != 2 && kind != 4) || name == "memory")
+		if ((kind != 0 && kind != 2 && kind != 4 && kind != 5) || name == "memory")
 			throw WasmError("Wasm export is not a function/tag or conflicts with memory: " + name);
-		const auto entry = std::make_pair(
-			kind == 2 ? uint8_t(3) : kind, kind == 0 ? function_index(ref) : symbol_value(ref));
+		const auto entry = std::make_pair(kind == 5 ? uint8_t(1)
+				: kind == 2                         ? uint8_t(3)
+													: kind,
+			kind == 0 ? function_index(ref) : symbol_value(ref));
 		const auto inserted = exported.emplace(name, entry);
 		if (!inserted.second && inserted.first->second != entry)
 			throw WasmError("conflicting Wasm export: " + name);
@@ -125,7 +127,11 @@ void Linker::emit(Bytes& output)
 		if (active_[index])
 			for (const ObjectExport& entry : objects_[index].exports)
 			{
-				const ObjectRef ref = indexed_symbol(index, entry.kind == 3 ? 2 : entry.kind, entry.index);
+				const ObjectRef ref = indexed_symbol(index,
+					entry.kind == 1       ? 5
+						: entry.kind == 3 ? 2
+										  : entry.kind,
+					entry.index);
 				add_export(entry.name, ref);
 				explicitly_named.insert(selected(ref));
 			}
@@ -137,6 +143,16 @@ void Linker::emit(Bytes& output)
 				if ((symbol(ref).flags & 0x20) != 0 && !explicitly_named.count(selected(ref)))
 					add_export(symbol(ref).name, ref);
 			}
+	const auto synthetic_export = [&](const std::string& name, uint8_t kind, uint32_t index) {
+		const auto entry = std::make_pair(kind, index);
+		const auto inserted = exported.emplace(name, entry);
+		if (!inserted.second && inserted.first->second != entry)
+			throw WasmError("conflicting Wasm runtime export: " + name);
+	};
+	if (options_.wasm_link.export_table)
+		synthetic_export("__indirect_function_table", 1, 0);
+	if (options_.wasm_link.export_constructors)
+		synthetic_export("__wasm_call_ctors", 0, ctor_index_);
 	Bytes exports;
 	exports.unsigned_leb(exported.size() + 1);
 	exports.string("memory");
@@ -149,7 +165,8 @@ void Linker::emit(Bytes& output)
 		exports.unsigned_leb(entry.second.second);
 	}
 	output.section(7, exports);
-	if (ctor_index_ != kAbsent && options_.target == target_model::Target::Wasm32)
+	if (ctor_index_ != kAbsent && options_.target == target_model::Target::Wasm32 &&
+		!options_.wasm_link.export_constructors)
 	{
 		Bytes start;
 		start.unsigned_leb(ctor_index_);

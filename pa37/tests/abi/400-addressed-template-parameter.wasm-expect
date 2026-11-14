@@ -1,0 +1,1 @@
+{"source":true,"units":["400-addressed-template-parameter.t.1"],"llvm_interop":true,"calls":[{"export":"observe","result":"17"},{"export":"invoke","result":"17"}]}

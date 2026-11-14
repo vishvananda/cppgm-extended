@@ -4,6 +4,7 @@
 #include "lowir/program.h"
 #include "lowir/text_reader.h"
 #include "backend/compile.h"
+#include "driver/wasm_link_options.h"
 #include "native/backend.h"
 #include "native/link/linker.h"
 #include "native/object/object_compiler.h"
@@ -38,6 +39,9 @@ struct LowIR2NativeInvocation
 	string resource_directory;
 	bool no_standard_libraries = false;
 	bool no_startfiles = false;
+	bool wasm_atomics = true;
+	bool wasm_atomics_explicit = false;
+	backend::WasmLinkOptions wasm_link;
 };
 
 vector<string> collect_args(int argc, char** argv)
@@ -119,6 +123,14 @@ LowIR2NativeInvocation parse_lowir2native_invocation(const vector<string>& args)
 			invocation.stats = true;
 			continue;
 		}
+		if (args[i] == "-matomics" || args[i] == "-mno-atomics")
+		{
+			invocation.wasm_atomics = args[i] == "-matomics";
+			invocation.wasm_atomics_explicit = true;
+			continue;
+		}
+		if (driver::parse_wasm_link_option(args, i, invocation.wasm_link))
+			continue;
 		if (args[i] == "--sysroot" || args[i].compare(0, 10, "--sysroot=") == 0 || args[i] == "-resource-dir" ||
 			args[i].compare(0, 14, "-resource-dir=") == 0)
 		{
@@ -261,12 +273,18 @@ int run_lowir2native_mode(const vector<string>& args)
 	options.target = invocation.target;
 	if (invocation.output_target.empty() && program.explicit_target)
 		options.target = program.target;
+	if (invocation.wasm_atomics_explicit && invocation.wasm_atomics && !target_model::is_wasm(options.target))
+		throw InvocationError("-matomics requires a Wasm target");
+	if (invocation.wasm_link.requested() && !target_model::is_wasm(options.target))
+		throw InvocationError("Wasm link options require a Wasm target");
 	options.exports = invocation.exports;
 	options.link_inputs = invocation.link_inputs;
 	options.sysroot = invocation.sysroot;
 	options.resource_directory = invocation.resource_directory;
 	options.no_standard_libraries = invocation.no_standard_libraries;
 	options.no_startfiles = invocation.no_startfiles;
+	options.wasm_atomics = invocation.wasm_atomics;
+	options.wasm_link = invocation.wasm_link;
 	options.output = invocation.outfile;
 	options.machine_ir = invocation.machine_ir_file;
 	options.optimization_level = invocation.optimization_level;

@@ -6,6 +6,9 @@ uint16_t effects(Op op)
 {
 	using namespace machine_model;
 	const unsigned code = static_cast<unsigned>(op);
+	if ((code >> 8) == 0xfe)
+		return ReadMemory | WriteMemory |
+			(wasm_model::atomic_info(op).form == wasm_model::AtomicForm::Fence ? 0 : MayTrap);
 	if (code >= 0x28 && code <= 0x3e)
 		return (code >= 0x36 ? WriteMemory : ReadMemory) | MayTrap;
 	const SimdForm simd = simd_info(op).form;

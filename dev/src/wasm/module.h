@@ -34,6 +34,7 @@ struct Module
 	uint32_t stack_floor = 0;
 	uint32_t initializer = lowir::kNoId;
 	bool relocatable = false;
+	bool atomics = false;
 	uint32_t stack_symbol = lowir::kNoId;
 	uint32_t stack_low_symbol = lowir::kNoId;
 	uint32_t table_symbol = lowir::kNoId;

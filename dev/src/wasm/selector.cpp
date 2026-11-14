@@ -25,6 +25,8 @@ uint32_t Selector::add_local(ValueType type)
 
 Type Selector::operand_type(Value operand, Type fallback) const
 {
+	if (operand.is(ValueKind::Symbol))
+		return program_.pointer_type();
 	if (operand.is(ValueKind::Slot))
 		return body_.slots[operand.index].type;
 	return operand.is(ValueKind::Temp) ? body_.temps[operand.index].type : fallback;

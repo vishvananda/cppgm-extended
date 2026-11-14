@@ -25,6 +25,7 @@ private:
 	void collect();
 	void visit(ObjectRef symbol);
 	void dependencies(uint32_t object, const ObjectChunk& chunk);
+	void require_function_type(ObjectRef symbol);
 	ObjectRef selected(ObjectRef ref) const;
 	bool host_import(ObjectRef ref) const;
 	const ObjectSymbol& symbol(ObjectRef ref) const { return objects_[ref.first].symbols[ref.second]; }
@@ -47,6 +48,7 @@ private:
 	std::map<std::string, ObjectRef> definitions_, archive_index_;
 	std::set<std::string> groups_;
 	std::vector<bool> active_;
+	std::vector<std::vector<uint8_t>> typed_function_uses_;
 	std::vector<uint32_t> pending_objects_;
 	size_t next_pending_ = 0;
 	std::vector<ObjectRef> roots_;

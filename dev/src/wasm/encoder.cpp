@@ -87,7 +87,7 @@ static void encode_body(const Function& function, Bytes& output, std::vector<Rel
 			else if (form == Immediate::Float32 || form == Immediate::Float64)
 				body.fixed(value, form == Immediate::Float32 ? 4 : 8);
 			else if (form == Immediate::Bytes16 || form == Immediate::Shuffle || form == Immediate::Lane ||
-				(form == Immediate::MemoryLane && i == 2))
+				form == Immediate::Byte || (form == Immediate::MemoryLane && i == 2))
 				body.byte(static_cast<uint8_t>(value));
 			else
 				body.unsigned_leb(value);

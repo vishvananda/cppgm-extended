@@ -1,0 +1,1 @@
+{"source":true,"flags":["-mno-atomics"],"link_flags":["-mno-atomics"],"reference_flags":["-mno-atomics"],"llvm_interop":true,"calls":[{"export":"observe","result":"17"}]}

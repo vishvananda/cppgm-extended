@@ -77,30 +77,44 @@ void prepare_module(const lowir::Program& program, Module& module)
 		module.exception_pair_type = static_cast<uint32_t>(module.signatures.size());
 		module.signatures.push_back(std::move(pair));
 	}
-	std::map<lowir::NameId, lowir::SymbolId> declarations;
+	// Address-only imports carry a placeholder type until a real definition
+	// supplies the ABI. A direct call's typed boundary is materialized earlier.
+	uint32_t address_type = lowir::kNoId;
+	std::map<lowir::NameId, std::pair<lowir::SymbolId, lowir::SignatureId>> declarations;
 	for (lowir::SymbolId id : program.order)
 	{
 		const auto& symbol = program.symbols[id];
 		if (symbol.kind != lowir::SymbolKind::FunctionDeclaration)
 			continue;
+		const auto signature = program.functions[symbol.detail].signature;
 		// Source builtins and optimizer-created declarations can denote the
 		// same object function. They share one import and linking identity.
 		if (symbol.metadata.binding != ir_model::SBM_INTERNAL)
 		{
 			const auto name = symbol.metadata.object != 0 ? symbol.metadata.object : symbol.name;
-			const auto inserted = declarations.emplace(name, id);
+			const auto inserted = declarations.emplace(name, std::make_pair(id, signature));
 			if (!inserted.second)
 			{
-				const auto other = program.symbols[inserted.first->second].detail;
-				if (module.signature_types[program.functions[symbol.detail].signature] !=
-					module.signature_types[program.functions[other].signature])
+				auto& prior = inserted.first->second;
+				if (signature != lowir::kNoId && prior.second != lowir::kNoId &&
+					module.signature_types[signature] != module.signature_types[prior.second])
 					throw WasmError("incompatible Wasm declarations for one object function");
-				module.function_indices[id] = module.function_indices[inserted.first->second];
+				module.function_indices[id] = module.function_indices[prior.first];
+				if (prior.second == lowir::kNoId && signature != lowir::kNoId)
+				{
+					module.definition_types[module.function_indices[id]] = module.signature_types[signature];
+					prior.second = signature;
+				}
 				continue;
 			}
 		}
 		module.function_indices[id] = static_cast<uint32_t>(module.definition_types.size());
-		module.definition_types.push_back(module.signature_types[program.functions[symbol.detail].signature]);
+		if (signature == lowir::kNoId && address_type == lowir::kNoId)
+		{
+			address_type = static_cast<uint32_t>(module.signatures.size());
+			module.signatures.push_back(Signature{});
+		}
+		module.definition_types.push_back(signature == lowir::kNoId ? address_type : module.signature_types[signature]);
 	}
 	for (lowir::SymbolId id : program.order)
 	{

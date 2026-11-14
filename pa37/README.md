@@ -74,6 +74,9 @@ Implement the following at `-O0`, `-O1`, `-O2` and `-O3`:
   rethrow using modern Wasm exception handling.
 - Portable vector operations through SIMD128 or equivalent correct lowering,
   with the published quality bounds at optimizing levels.
+- Scalar atomic loads, stores, add-and-fetch, exchange, compare-exchange and
+  fences, for integer and pointer widths through 64 bits. Preserve the memory
+  ordering and compare-exchange expected-value update semantics.
 - WASIp1 command startup, arguments, the supported I/O services and exit status;
   freestanding initialization and repeated calls within one module instance.
 
@@ -81,14 +84,20 @@ The first target profile is single-threaded and little-endian, with one
 32-bit linear memory and one indirect-function table. Its allowed features
 are mutable globals, sign extension, nontrapping float-to-int conversion,
 bulk memory, extended constant expressions, multi-value, reference types,
-SIMD128 and modern exception
+SIMD128, atomics and modern exception
 handling. Match the supplied profile and feature metadata. The public C ABI
 retains its specified return/argument convention even when multi-value is
 available internally. Optimization levels must not change public function
 parameter/result types, even when a native register convention permits a
 representation change.
 
-Threads/shared memory, atomics, TLS, Emscripten glue, components, dynamic
+Atomic instructions can operate on the profile's unshared memory. Memory orders
+may use stronger ordering when the target requires it. Emit matching `atomics`
+feature metadata. `-mno-atomics` disables this instruction extension and must
+diagnose operations that require it; unsupported atomic widths must also be
+diagnosed.
+
+Threads/shared memory, TLS, Emscripten glue, components, dynamic
 linking and wasm64 are outside this profile. Diagnose these and unsupported
 architecture-specific operations, including x86 assembly, CPUID, MXCSR and
 hardware frame introspection. Ordinary portable operations must not fail

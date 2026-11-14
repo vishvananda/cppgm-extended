@@ -107,6 +107,7 @@ void configure_wasm_environment(PreprocessorOptions& options)
 					   "#define __ATOMIC_RELAXED 0\n#define __ATOMIC_CONSUME 1\n#define __ATOMIC_ACQUIRE 2\n"
 					   "#define __ATOMIC_RELEASE 3\n#define __ATOMIC_ACQ_REL 4\n#define __ATOMIC_SEQ_CST 5\n"
 					   "#define __LONG_MAX__ 2147483647L\n#define __SIZE_MAX__ 4294967295UL\n"
+					   "#define __INTPTR_MAX__ 2147483647L\n#define __UINTPTR_MAX__ 4294967295UL\n"
 					   "#define __PTRDIFF_MAX__ 2147483647L\n"
 					   "#define __ORDER_LITTLE_ENDIAN__ 1234\n#define __ORDER_BIG_ENDIAN__ 4321\n"
 					   "#define __BYTE_ORDER__ __ORDER_LITTLE_ENDIAN__\n";

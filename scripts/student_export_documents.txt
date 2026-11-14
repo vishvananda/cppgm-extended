@@ -211,6 +211,10 @@ doc/wasm/document-LICENSE
 doc/wasm/manifest.json
 doc/wasm/reference-limitations.json
 doc/wasm/spec-LICENSE
+doc/wasm/threads-binary-instructions.rst
+doc/wasm/threads-document-LICENSE
+doc/wasm/threads-execution-instructions.rst
+doc/wasm/threads-validation-instructions.rst
 doc/wasm/validation-instructions.rst
 doc/wasm/validation-modules.rst
 pa1/README.md

@@ -41,9 +41,9 @@ ObjectSymbol imported_symbol(uint8_t kind, uint32_t index, const char* name)
 	return symbol;
 }
 
-// A constant's declaration can survive after all its uses folded. Wasm
-// linking cannot encode an undefined local symbol; omit it when no typed
-// reference remains, while retaining a referenced one for the diagnostic.
+// Folded constants and address-only function declarations can survive after
+// their uses disappear. Drop the unused declarations; a typed direct call
+// supplies its missing declaration boundary without reparsing source.
 void discard_unused_local_declarations(lowir::Program& program)
 {
 	using namespace lowir;
@@ -53,7 +53,8 @@ void discard_unused_local_declarations(lowir::Program& program)
 		const Symbol& s = program.symbols[id];
 		any = any ||
 			(s.metadata.binding == ir_model::SBM_INTERNAL &&
-				(s.kind == SymbolKind::FunctionDeclaration || s.kind == SymbolKind::GlobalDeclaration));
+				(s.kind == SymbolKind::FunctionDeclaration || s.kind == SymbolKind::GlobalDeclaration)) ||
+			(s.kind == SymbolKind::FunctionDeclaration && program.functions[s.detail].signature == kNoId);
 	}
 	if (!any)
 		return;
@@ -72,6 +73,18 @@ void discard_unused_local_declarations(lowir::Program& program)
 				for (InstId i = body.blocks[block].first; i != kNoId; i = body.instructions[i].next)
 				{
 					const lowir::Instruction& inst = body.instructions[i];
+					if (inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol))
+					{
+						const Symbol& callee = program.symbols[inst.ops[0].index];
+						if (callee.kind == SymbolKind::FunctionDeclaration &&
+							program.functions[callee.detail].signature == kNoId)
+						{
+							const auto* boundary = program.call_boundary(inst);
+							if (boundary != nullptr)
+								program.functions[callee.detail].signature = static_cast<SignatureId>(
+									boundary - program.signatures.data());
+						}
+					}
 					for (Value value : inst.ops)
 						mark(value);
 					for (uint32_t j = 0; j < inst.extra_count; ++j)
@@ -99,6 +112,11 @@ void discard_unused_local_declarations(lowir::Program& program)
 	for (SymbolId id : program.order)
 	{
 		const Symbol& s = program.symbols[id];
+		if (s.kind == SymbolKind::FunctionDeclaration && program.functions[s.detail].signature == kNoId)
+		{
+			if (!used[id])
+				continue;
+		}
 		if (used[id] || s.metadata.binding != ir_model::SBM_INTERNAL ||
 			(s.kind != SymbolKind::FunctionDeclaration && s.kind != SymbolKind::GlobalDeclaration))
 			program.order[count++] = id;
@@ -114,6 +132,7 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 	bool uses_table = false;
 	Module module;
 	module.relocatable = true;
+	module.atomics = options.wasm_atomics;
 	prepare_exception_runtime(program, module);
 	prepare_module(program, module);
 	if (!options.machine_ir.empty())
@@ -167,10 +186,10 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 				symbol.flags |= 0x10;
 			else
 			{
-				if (source.metadata.storage == ir_model::GSM_THREAD_LOCAL)
-					throw WasmError("thread-local data is not supported by the Wasm profile");
+				// In this unshared-memory profile each instance has one guest
+				// thread. Ordinary instance data also supplies its TLS storage.
 				ObjectData data;
-				data.name = symbol.name;
+				data.name = source.metadata.section != 0 ? program.spelling(source.metadata.section) : symbol.name;
 				uint32_t alignment = 1;
 				symbol.size = machine::global_size(program, program.globals[source.detail], alignment);
 				while ((uint32_t(1) << data.alignment) < alignment)
@@ -304,6 +323,8 @@ void make_object(lowir::Program& program, const backend::Options& options, Objec
 		{ '+', "nontrapping-fptoint" }, { '+', "reference-types" } };
 	if (uses_simd)
 		object.features.push_back({ '+', "simd128" });
+	if (module.atomics)
+		object.features.push_back({ '+', "atomics" });
 	if (!module.tag_types.empty())
 	{
 		object.features.push_back({ '+', "exception-handling" });

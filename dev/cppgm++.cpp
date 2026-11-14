@@ -2,6 +2,7 @@
 
 #include "driver/host_environment.h"
 #include "driver/wasm_environment.h"
+#include "driver/wasm_link_options.h"
 #include "driver/toolchain.h"
 #include "lower/program_lowering.h"
 #include "lowir/text_writer.h"
@@ -215,6 +216,8 @@ struct SourceOutputInvocation
 	vector<string> include_paths;
 	vector<string> system_include_paths;
 	string command_line;
+	bool wasm_atomics = true;
+	bool wasm_atomics_explicit = false;
 	// --emit-lowir -O<n>: the optimizer's level and limits.
 	opt::OptimizerOptions optimizer;
 	// A debug-information level (-g0, -gline-tables-only, ...) was stated,
@@ -295,6 +298,12 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 			}
 			else
 				invocation.standard = args[i].substr(5);
+			continue;
+		}
+		if (args[i] == "-matomics" || args[i] == "-mno-atomics")
+		{
+			invocation.wasm_atomics = args[i] == "-matomics";
+			invocation.wasm_atomics_explicit = true;
 			continue;
 		}
 		if (args[i] == "--hosted")
@@ -529,13 +538,17 @@ bool consume_dependency_option(const vector<string>& args, size_t& i)
 
 bool consume_toolchain_option(const vector<string>& args, size_t& i)
 {
+	backend::WasmLinkOptions link_options;
+	if (driver::parse_wasm_link_option(args, i, link_options))
+		return true;
 	if (args[i] == "--sysroot" || args[i] == "-resource-dir")
 	{
 		consume_required_option_argument(args, i, args[i], "directory");
 		return true;
 	}
 	if (starts_with(args[i], "--sysroot=") || starts_with(args[i], "-resource-dir=") || args[i] == "-nostdlib" ||
-		args[i] == "-nodefaultlibs" || args[i] == "-nostartfiles")
+		args[i] == "-nodefaultlibs" || args[i] == "-nostartfiles" || args[i] == "-matomics" ||
+		args[i] == "-mno-atomics")
 		return true;
 	if (args[i] == "--export")
 	{
@@ -703,6 +716,12 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 	if (invocation.hosted)
 		driver::add_host_environment(options, invocation.target != native::host_target());
 	driver::configure_target_environment(options, invocation.target);
+	if (invocation.wasm_atomics && target_model::is_wasm(invocation.target))
+	{
+		options.command_line.insert(0, "#define __wasm_atomics__ 1\n");
+	}
+	else if (invocation.wasm_atomics_explicit && invocation.wasm_atomics)
+		throw InvocationError("-matomics requires a Wasm target");
 	if (target_model::is_wasm(invocation.target))
 		driver::add_wasm_headers(options, invocation.sysroot, invocation.resource_directory);
 	else if (!invocation.sysroot.empty() || !invocation.resource_directory.empty())

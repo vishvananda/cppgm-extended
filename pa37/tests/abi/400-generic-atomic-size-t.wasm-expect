@@ -1,0 +1,1 @@
+{"source":true,"reference_sources":["400-generic-atomic-size-t.oracle.cpp"],"calls":[{"export":"observe","result":"17"}]}

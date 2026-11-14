@@ -142,6 +142,11 @@ An unused member must not introduce duplicate definitions, unresolved-symbol
 errors or constructor execution. Resolve weak and strong definitions according
 to the linking conventions and reject incompatible function signatures.
 
+An address-only function declaration can carry a placeholder signature in
+LLVM objects. If no direct call or typed function reference uses that
+declaration, the selected definition supplies its signature. This does not
+relax signature checks for direct calls, host imports or explicit exports.
+
 An absent weak function has a null function-pointer value. It must not extract
 an archive member solely to satisfy that weak reference. Accept LLVM objects
 with guarded direct calls to such functions: a call that is reached must trap,

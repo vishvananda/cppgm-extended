@@ -10,6 +10,7 @@ subset; the core specification also describes features outside that profile.
 | [Object linking](Linking.md) | linking metadata, relocations, symbols and target features |
 | [Binary values](binary-values.rst), [types](binary-types.rst), [instructions](binary-instructions.rst), [modules](binary-modules.rst) | core encoding and section structure |
 | [Instruction validation](validation-instructions.rst), [module validation](validation-modules.rst) | operand/control stacks, constant expressions and definition order |
+| Threads extension: [binary instructions](threads-binary-instructions.rst), [validation](threads-validation-instructions.rst), [execution](threads-execution-instructions.rst) | scalar atomic instructions and fences required by PA37 |
 
 The core files retain their upstream reStructuredText notation and cross
 references. The [rendered core specification](https://webassembly.github.io/spec/core/)
@@ -21,6 +22,11 @@ The ABI/linking documents retain their upstream
 [W3C Software and Document Notice and License](document-LICENSE); the
 [repository license index](spec-LICENSE) identifies its scope. Original
 authorship and copyright remain with their upstream contributors.
+
+The threads-extension excerpts retain their own upstream
+[W3C Software and Document Notice and License](threads-document-LICENSE).
+PA37 requires scalar atomics on unshared memory; the shared-memory and
+threading facilities described in these documents are outside that profile.
 
 The runtime, validator and WASI SDK versions/checksums are pinned separately in
 `scripts/wasm_tools.json`. They are test tools, not compiler backend
