@@ -16,11 +16,11 @@ function @fill(%t : ptr, %from : ptr) -> void [binding=strong, object=_Z4fillP5T
     %t8 = index inbounds i8 [projection=array_element] %t6, %t7
     %t9 = index inbounds i8 [projection=array_element] %from, %t7
     %t10 = load typed f64 %t9
-    store typed f64 %t10, %t8
     %t11 = index inbounds i8 [projection=field] %t9, 8
-    %t12 = index inbounds i8 [projection=field] %t8, 8
-    %t13 = load typed f64 %t11
-    store typed f64 %t13, %t12
+    %t12 = load typed f64 %t11
+    store typed f64 %t10, %t8
+    %t13 = index inbounds i8 [projection=field] %t8, 8
+    store typed f64 %t12, %t13
     %t14 = binary add nowrap i64 %t4, 1
     %t15 = binary add i64 %t3, 16
     jump ^for_cond_1
