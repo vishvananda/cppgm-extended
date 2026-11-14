@@ -1180,6 +1180,11 @@ bool SelectFormation::same_expression(Value a, Value b, unsigned depth) const
 {
 	if (a == b)
 		return true;
+	// (Each literal operand has its own entry.)
+	Constant x, y;
+	if (literal_constant(body_, a, x) || literal_constant(body_, b, y))
+		return literal_constant(body_, a, x) && literal_constant(body_, b, y) && x.kind == y.kind &&
+			x.float_kind == y.float_kind && x.bits.low == y.bits.low && x.bits.high == y.bits.high;
 	if (depth == 4)
 		return false;
 	const Instruction* left = producer(a);

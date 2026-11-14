@@ -664,8 +664,14 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		changed = true;
 	}
 	const bool had_loops = has_loop(context);
-	if (had_loops)
-		changed = finish_loops(context, options.level) || changed;
+	if (had_loops && finish_loops(context, options.level))
+	{
+		// A load the loop passes took out of an arm leaves the arm to compute
+		// only: the branch to it may now be a choice of values.
+		for (unsigned round = 0; round < kSelectRounds && RUN_PASS(form_selects); ++round)
+			RUN_PASS(cleanup_cfg);
+		changed = true;
+	}
 	if (options.level >= 3 && RUN_PASS(fold_bit_recurrences))
 	{
 		nounwind.resize(program.symbols.size(), 0);
