@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "lowir/program.h"
@@ -54,6 +55,10 @@ struct SelectorState
 	std::vector<lowir::Value> slot_value_;
 	std::vector<uint32_t> slot_store_;
 	std::vector<int32_t> slot_offset_;
+	// O1+, for share_frame_slots: each slot with the blocks that name it, and
+	// each block with its instructions that have a host landing site.
+	std::vector<std::pair<uint32_t, uint32_t>> slot_blocks_;
+	std::vector<std::pair<uint32_t, uint32_t>> landing_sites_;
 	std::vector<lowir::Literal> extra_literals_;
 	std::vector<uint32_t> block_insts_; // scratch: one block's instructions
 	CallLayout entry_layout_;

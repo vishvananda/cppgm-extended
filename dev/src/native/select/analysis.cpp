@@ -61,6 +61,8 @@ void FunctionSelector::reset(lowir::SymbolId symbol, Function& out)
 	slot_state_.assign(body.slots.size(), SS_UNUSED);
 	slot_value_.assign(body.slots.size(), Value::none());
 	slot_store_.assign(body.slots.size(), kNoId);
+	slot_blocks_.clear();
+	landing_sites_.clear();
 	slot_offset_.assign(body.slots.size(), 0);
 	extra_literals_.clear();
 	for (unsigned i = 0; i < 32; ++i)
@@ -244,12 +246,25 @@ void FunctionSelector::analyze_slots()
 	std::vector<uint8_t> escaped(count, 0);
 	std::vector<uint8_t> stored_in_entry(count, 0);
 	const bool entry_has_preds = blocks_.empty() || blocks_[0].preds != 0;
+	// (For share_frame_slots: a slot's blocks once each, a block's sites.)
+	std::vector<uint32_t> named_in(level_ >= 1 ? count : 0, kNoId);
+	auto name = [&](uint32_t s, uint32_t b) {
+		if (level_ >= 1 && named_in[s] != b)
+		{
+			named_in[s] = b;
+			slot_blocks_.push_back(std::make_pair(s, b));
+		}
+	};
+	const bool sites = level_ >= 1 && eh_model_ == EhModel::Host && !eh_.eh_sites_.empty();
 	for_each_inst([&](uint32_t id, uint32_t b) {
 		const Instruction& inst = body.instructions[id];
 		const bool is_volatile = (inst.flags & lowir::IF_VOLATILE) != 0;
+		if (sites && eh_.eh_sites_[id] != 0)
+			landing_sites_.push_back(std::make_pair(b, id));
 		if (inst.op == Opcode::Load && inst.ops[0].kind == ValueKind::Slot)
 		{
 			const uint32_t s = inst.ops[0].index;
+			name(s, b);
 			slot_state_[s] = SS_NORMAL;
 			++loads[s];
 			if (is_volatile || inst.type != body.slots[s].type || (b == 0 && !stored_in_entry[s]))
@@ -259,6 +274,7 @@ void FunctionSelector::analyze_slots()
 		if (inst.op == Opcode::Store && inst.ops[1].kind == ValueKind::Slot)
 		{
 			const uint32_t s = inst.ops[1].index;
+			name(s, b);
 			slot_state_[s] = SS_NORMAL;
 			++stores[s];
 			if (b == 0)
@@ -270,12 +286,16 @@ void FunctionSelector::analyze_slots()
 			if (is_volatile || inst.type != body.slots[s].type)
 				escaped[s] = 2;
 			if (inst.ops[0].kind == ValueKind::Slot)
+			{
+				name(inst.ops[0].index, b);
 				escaped[inst.ops[0].index] = 1;
+			}
 			return;
 		}
 		native::for_each_operand(body, inst, [&](Value v, OperandRole) {
 			if (v.kind == ValueKind::Slot)
 			{
+				name(v.index, b);
 				slot_state_[v.index] = SS_NORMAL;
 				escaped[v.index] = 1;
 			}

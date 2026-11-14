@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <climits>
 #include <string>
+#include <utility>
 
 #include "native/backend_error.h"
 #include "native/select/bulk_policy.h"
@@ -102,22 +103,62 @@ uint32_t slot_align(Type type)
 	return type.is_object() && align < 8 ? 8 : align;
 }
 
-// O1+, without EH (its landings are edges this graph lacks): slots that no
+// The edges into host landings, as (from, to) pairs ordered by `from`: a
+// call with a landing may enter it, and a resume its next landing
+// (FunctionSelector::exceptional_edges).
+std::vector<std::pair<uint32_t, uint32_t>> landing_edges(const SelectorState& state)
+{
+	const lowir::FunctionBody& body = *state.body_;
+	std::vector<std::pair<uint32_t, uint32_t>> edges;
+	std::vector<uint32_t> landing_block;
+	for (uint32_t b = 0; b < state.eh_.eh_landing_index_.size(); ++b)
+	{
+		const uint32_t index = state.eh_.eh_landing_index_[b];
+		if (index == lowir::kNoId)
+			continue;
+		if (landing_block.size() <= index)
+			landing_block.resize(index + 1, lowir::kNoId);
+		landing_block[index] = b;
+	}
+	for (const std::pair<uint32_t, uint32_t>& at : state.landing_sites_)
+	{
+		const uint32_t site = state.eh_.eh_sites_[at.second];
+		const Opcode op = body.instructions[at.second].op;
+		uint32_t to = lowir::kNoId;
+		if (op == Opcode::Call && site - 1 < landing_block.size())
+			to = landing_block[site - 1];
+		else if ((op == Opcode::Resume || op == Opcode::Jump) && site != kResumeTerminal)
+			to = site - 1;
+		if (to != lowir::kNoId && (edges.empty() || edges.back() != std::make_pair(at.first, to)))
+			edges.push_back(std::make_pair(at.first, to));
+	}
+	return edges;
+}
+
+// O1+, without course EH regions (their landings are edges this graph
+// lacks; host landings are entered along landing_edges): slots that no
 // execution uses both of share storage (`owner`: per slot the first slot of
 // its group, whose storage it takes; `bytes` and `align`: per first slot,
 // what its group needs; left empty when none share). Two interfere when a
 // block naming one reaches (or is) a block naming the other; slots live for
 // the whole call, so without such a path no value of one survives into a
-// use of the other. The largest slots choose first, each the first group
-// none of whose members interferes with it. One set of slots per block,
-// carried forward along the edges to a fixed point.
-void share_frame_slots(const SelectorState& state, std::vector<uint32_t>& owner, std::vector<uint64_t>& bytes,
-	std::vector<uint32_t>& align)
+// use of the other. A slot the entry block names meets every other and is
+// left out. The largest slots choose first, each the first group none of
+// whose members interferes with it. One set of slots per block, carried
+// forward along the edges to a fixed point.
+void share_frame_slots(const SelectorState& state, bool landings, std::vector<uint32_t>& owner,
+	std::vector<uint64_t>& bytes, std::vector<uint32_t>& align)
 {
 	const lowir::FunctionBody& body = *state.body_;
+	if (state.blocks_.size() < 3)
+		return;
+	std::vector<uint32_t> position(body.slots.size(), lowir::kNoId);
+	for (const std::pair<uint32_t, uint32_t>& named : state.slot_blocks_)
+		if (named.second == 0)
+			position[named.first] = 0;
 	std::vector<uint32_t> candidates;
 	for (uint32_t s = 0; s < body.slots.size(); ++s)
-		if (state.slot_state_[s] == SS_NORMAL && value_align(body.slots[s].type) <= 16)
+		if (state.slot_state_[s] == SS_NORMAL && position[s] == lowir::kNoId && value_align(body.slots[s].type) <= 16)
 			candidates.push_back(s);
 	if (candidates.size() < 2)
 		return;
@@ -127,55 +168,58 @@ void share_frame_slots(const SelectorState& state, std::vector<uint32_t>& owner,
 		candidates.resize(kSharedSlots);
 	const uint32_t count = static_cast<uint32_t>(candidates.size());
 	const uint32_t words = (count + 63) / 64;
-	std::vector<uint32_t> position(body.slots.size(), lowir::kNoId);
+	position.assign(body.slots.size(), lowir::kNoId);
 	for (uint32_t c = 0; c < count; ++c)
 		position[candidates[c]] = c;
 	// Per block: the slots it names, then those named on a path to its end.
 	const uint32_t blocks = static_cast<uint32_t>(state.blocks_.size());
 	std::vector<uint64_t> named(static_cast<size_t>(blocks) * words, 0);
-	std::vector<uint32_t> work;
-	std::vector<uint8_t> queued(blocks, 0);
-	for (uint32_t b = 0; b < blocks; ++b)
+	std::vector<uint8_t> pending(blocks, 0);
+	for (const std::pair<uint32_t, uint32_t>& at : state.slot_blocks_)
 	{
-		if (!state.blocks_[b].reachable)
+		const uint32_t c = position[at.first];
+		if (c == lowir::kNoId)
 			continue;
-		uint64_t* set = &named[static_cast<size_t>(b) * words];
-		bool any = false;
-		auto name = [&](const lowir::Value& value) {
-			if (!value.is(lowir::ValueKind::Slot) || position[value.index] == lowir::kNoId)
-				return;
-			set[position[value.index] / 64] |= uint64_t(1) << (position[value.index] % 64);
-			any = true;
-		};
-		for (lowir::InstId i = body.blocks[state.blocks_[b].id].first; i != lowir::kNoId; i = body.instructions[i].next)
-		{
-			const lowir::Instruction& inst = body.instructions[i];
-			for (unsigned k = 0; k < 3; ++k)
-				name(inst.ops[k]);
-			for (uint32_t k = 0; k < inst.extra_count; ++k)
-				name(body.operands[inst.extra_first + k]);
-		}
-		if (any)
-			queued[b] = 1, work.push_back(b);
+		named[static_cast<size_t>(at.second) * words + c / 64] |= uint64_t(1) << (c % 64);
+		pending[at.second] = 1;
 	}
 	std::vector<uint64_t> reach(named);
-	while (!work.empty())
-	{
-		const uint32_t b = work.back();
-		work.pop_back();
-		queued[b] = 0;
+	std::vector<std::pair<uint32_t, uint32_t>> entered;
+	if (landings)
+		entered = landing_edges(state);
+	// Sweeps in block order: a set that grew at an earlier block (a back
+	// edge) takes another sweep.
+	bool again = true;
+	auto carry = [&](uint32_t b, uint32_t target) {
 		const uint64_t* from = &reach[static_cast<size_t>(b) * words];
-		for (uint32_t k = state.succ_first_[b]; k < state.succ_first_[b + 1]; ++k)
+		uint64_t* to = &reach[static_cast<size_t>(target) * words];
+		bool grew = false;
+		for (uint32_t w = 0; w < words; ++w)
 		{
-			uint64_t* to = &reach[static_cast<size_t>(state.succs_[k]) * words];
-			bool grew = false;
-			for (uint32_t w = 0; w < words; ++w)
-			{
-				grew = grew || (from[w] & ~to[w]) != 0;
-				to[w] |= from[w];
-			}
-			if (grew && !queued[state.succs_[k]])
-				queued[state.succs_[k]] = 1, work.push_back(state.succs_[k]);
+			grew = grew || (from[w] & ~to[w]) != 0;
+			to[w] |= from[w];
+		}
+		if (grew)
+		{
+			pending[target] = 1;
+			again = again || target <= b;
+		}
+	};
+	while (again)
+	{
+		again = false;
+		auto edge = entered.begin();
+		for (uint32_t b = 0; b < blocks; ++b)
+		{
+			while (edge != entered.end() && edge->first < b)
+				++edge;
+			if (!pending[b])
+				continue;
+			pending[b] = 0;
+			for (uint32_t k = state.succ_first_[b]; k < state.succ_first_[b + 1]; ++k)
+				carry(b, state.succs_[k]);
+			for (; edge != entered.end() && edge->first == b; ++edge)
+				carry(b, edge->second);
 		}
 	}
 	// Per slot: the slots named where it is, or before on some path; then
@@ -225,7 +269,9 @@ void share_frame_slots(const SelectorState& state, std::vector<uint32_t>& owner,
 	std::vector<uint32_t> first(groups, lowir::kNoId);
 	for (uint32_t c = 0; c < count; ++c)
 		first[joined[c]] = std::min(first[joined[c]], candidates[c]);
-	owner.assign(body.slots.size(), lowir::kNoId);
+	owner.resize(body.slots.size());
+	for (uint32_t s = 0; s < owner.size(); ++s)
+		owner[s] = s;
 	bytes.assign(body.slots.size(), 0);
 	align.assign(body.slots.size(), 0);
 	for (uint32_t c = 0; c < count; ++c)
@@ -652,8 +698,8 @@ void FunctionSelector::layout_slots()
 	const lowir::FunctionBody& body = *body_;
 	std::vector<uint32_t> owner, shared_align;
 	std::vector<uint64_t> shared_bytes;
-	if (level_ >= 1 && !has_eh_)
-		share_frame_slots(*this, owner, shared_bytes, shared_align);
+	if (level_ >= 1 && (!has_eh_ || eh_model_ == EhModel::Host))
+		share_frame_slots(*this, has_eh_, owner, shared_bytes, shared_align);
 	if (level_ >= 1 && !has_eh_)
 	{
 		const auto copies = machine::sequential_copy_slots(program_, body);
