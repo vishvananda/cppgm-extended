@@ -27,36 +27,36 @@ function @rotate
     param %rounds -> rdi : i32
     return i32 -> rax
   frame
-    stack_size 448
+    stack_size 352
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
     preserve rbx r14
-    temp %start0 -> [rbp-352] : v128
-    temp %start14 -> [rbp-368] : v128
-    temp %start15 -> [rbp-384] : v128
-    temp %start16 -> [rbp-400] : v128
-    temp %start17 -> [rbp-416] : v128
-    temp %start18 -> [rbp-432] : v128
+    temp %start0 -> [rbp-32] : v128
+    temp %start14 -> [rbp-48] : v128
+    temp %start15 -> [rbp-64] : v128
+    temp %start16 -> [rbp-80] : v128
+    temp %start17 -> [rbp-96] : v128
+    temp %start18 -> [rbp-112] : v128
     temp %v0 -> [rbp-32] : v128
-    temp %v1 -> [rbp-48] : v128
-    temp %v2 -> [rbp-64] : v128
+    temp %v1 -> [rbp-128] : v128
+    temp %v2 -> [rbp-144] : v128
     temp %v3 -> [rbp-16] : v128
-    temp %v4 -> [rbp-80] : v128
-    temp %v5 -> [rbp-96] : v128
-    temp %v6 -> [rbp-112] : v128
-    temp %v7 -> [rbp-128] : v128
-    temp %v8 -> [rbp-144] : v128
-    temp %v9 -> [rbp-160] : v128
-    temp %v10 -> [rbp-176] : v128
-    temp %v11 -> [rbp-192] : v128
-    temp %v12 -> [rbp-208] : v128
-    temp %v13 -> [rbp-224] : v128
-    temp %v14 -> [rbp-240] : v128
-    temp %v15 -> [rbp-256] : v128
-    temp %v16 -> [rbp-272] : v128
-    temp %v17 -> [rbp-288] : v128
-    temp %v18 -> [rbp-304] : v128
+    temp %v4 -> [rbp-160] : v128
+    temp %v5 -> [rbp-176] : v128
+    temp %v6 -> [rbp-192] : v128
+    temp %v7 -> [rbp-208] : v128
+    temp %v8 -> [rbp-224] : v128
+    temp %v9 -> [rbp-240] : v128
+    temp %v10 -> [rbp-256] : v128
+    temp %v11 -> [rbp-272] : v128
+    temp %v12 -> [rbp-288] : v128
+    temp %v13 -> [rbp-304] : v128
+    temp %v14 -> [rbp-48] : v128
+    temp %v15 -> [rbp-64] : v128
+    temp %v16 -> [rbp-80] : v128
+    temp %v17 -> [rbp-96] : v128
+    temp %v18 -> [rbp-112] : v128
     temp %v19 -> [rbp-320] : v128
     temp %zero -> [rbp-336] : v128
 
@@ -104,56 +104,56 @@ function @rotate
     vector.fromi32 xmm13, r10
     vector.pshufd xmm13, xmm13, 0
     mov r10, 15
-    fmov.v128 [rbp-352], xmm0
+    fmov.v128 [rbp-32], xmm0
     vector.fromi32 xmm0, r10
     vector.pshufd xmm0, xmm0, 0
     mov r10, 16
-    fmov.v128 [rbp-368], xmm0
+    fmov.v128 [rbp-48], xmm0
     vector.fromi32 xmm0, r10
     vector.pshufd xmm0, xmm0, 0
     mov r10, 17
-    fmov.v128 [rbp-384], xmm0
+    fmov.v128 [rbp-64], xmm0
     vector.fromi32 xmm0, r10
     vector.pshufd xmm0, xmm0, 0
     mov r10, 18
-    fmov.v128 [rbp-400], xmm0
+    fmov.v128 [rbp-80], xmm0
     vector.fromi32 xmm0, r10
     vector.pshufd xmm0, xmm0, 0
     mov r10, 19
-    fmov.v128 [rbp-416], xmm0
+    fmov.v128 [rbp-96], xmm0
     vector.fromi32 xmm0, r10
     vector.pshufd xmm0, xmm0, 0
     mov r10, 20
-    fmov.v128 [rbp-432], xmm0
+    fmov.v128 [rbp-112], xmm0
     vector.fromi32 xmm0, r10
     vector.pshufd xmm0, xmm0, 0
     mov r14, 0
     zext.i32 rbx, rdi
-    fmov.v128 xmm15, [rbp-352]
+    fmov.v128 xmm15, [rbp-32]
     fmov.v128 [rbp-32], xmm15
-    fmov.v128 [rbp-48], xmm1
-    fmov.v128 [rbp-64], xmm2
+    fmov.v128 [rbp-128], xmm1
+    fmov.v128 [rbp-144], xmm2
     fmov.v128 [rbp-16], xmm3
-    fmov.v128 [rbp-80], xmm4
-    fmov.v128 [rbp-96], xmm5
-    fmov.v128 [rbp-112], xmm6
-    fmov.v128 [rbp-128], xmm7
-    fmov.v128 [rbp-144], xmm8
-    fmov.v128 [rbp-160], xmm9
-    fmov.v128 [rbp-176], xmm10
-    fmov.v128 [rbp-192], xmm11
-    fmov.v128 [rbp-208], xmm12
-    fmov.v128 [rbp-224], xmm13
-    fmov.v128 xmm15, [rbp-368]
-    fmov.v128 [rbp-240], xmm15
-    fmov.v128 xmm15, [rbp-384]
-    fmov.v128 [rbp-256], xmm15
-    fmov.v128 xmm15, [rbp-400]
-    fmov.v128 [rbp-272], xmm15
-    fmov.v128 xmm15, [rbp-416]
-    fmov.v128 [rbp-288], xmm15
-    fmov.v128 xmm15, [rbp-432]
-    fmov.v128 [rbp-304], xmm15
+    fmov.v128 [rbp-160], xmm4
+    fmov.v128 [rbp-176], xmm5
+    fmov.v128 [rbp-192], xmm6
+    fmov.v128 [rbp-208], xmm7
+    fmov.v128 [rbp-224], xmm8
+    fmov.v128 [rbp-240], xmm9
+    fmov.v128 [rbp-256], xmm10
+    fmov.v128 [rbp-272], xmm11
+    fmov.v128 [rbp-288], xmm12
+    fmov.v128 [rbp-304], xmm13
+    fmov.v128 xmm15, [rbp-48]
+    fmov.v128 [rbp-48], xmm15
+    fmov.v128 xmm15, [rbp-64]
+    fmov.v128 [rbp-64], xmm15
+    fmov.v128 xmm15, [rbp-80]
+    fmov.v128 [rbp-80], xmm15
+    fmov.v128 xmm15, [rbp-96]
+    fmov.v128 [rbp-96], xmm15
+    fmov.v128 xmm15, [rbp-112]
+    fmov.v128 [rbp-112], xmm15
     fmov.v128 [rbp-320], xmm0
     vector.pzero xmm0
 
@@ -166,24 +166,14 @@ function @rotate
     add.i32 r14, 1
     fmov.v128 xmm0, [rbp-16]
     fmov.v128 xmm14, [rbp-32]
-    fmov.v128 xmm15, [rbp-48]
-    fmov.v128 [rbp-32], xmm15
-    fmov.v128 xmm15, [rbp-64]
-    fmov.v128 [rbp-48], xmm15
-    fmov.v128 xmm15, [rbp-16]
-    fmov.v128 [rbp-64], xmm15
-    fmov.v128 xmm15, [rbp-80]
-    fmov.v128 [rbp-16], xmm15
-    fmov.v128 xmm15, [rbp-96]
-    fmov.v128 [rbp-80], xmm15
-    fmov.v128 xmm15, [rbp-112]
-    fmov.v128 [rbp-96], xmm15
     fmov.v128 xmm15, [rbp-128]
-    fmov.v128 [rbp-112], xmm15
+    fmov.v128 [rbp-32], xmm15
     fmov.v128 xmm15, [rbp-144]
     fmov.v128 [rbp-128], xmm15
-    fmov.v128 xmm15, [rbp-160]
+    fmov.v128 xmm15, [rbp-16]
     fmov.v128 [rbp-144], xmm15
+    fmov.v128 xmm15, [rbp-160]
+    fmov.v128 [rbp-16], xmm15
     fmov.v128 xmm15, [rbp-176]
     fmov.v128 [rbp-160], xmm15
     fmov.v128 xmm15, [rbp-192]
@@ -202,8 +192,18 @@ function @rotate
     fmov.v128 [rbp-272], xmm15
     fmov.v128 xmm15, [rbp-304]
     fmov.v128 [rbp-288], xmm15
-    fmov.v128 xmm15, [rbp-320]
+    fmov.v128 xmm15, [rbp-48]
     fmov.v128 [rbp-304], xmm15
+    fmov.v128 xmm15, [rbp-64]
+    fmov.v128 [rbp-48], xmm15
+    fmov.v128 xmm15, [rbp-80]
+    fmov.v128 [rbp-64], xmm15
+    fmov.v128 xmm15, [rbp-96]
+    fmov.v128 [rbp-80], xmm15
+    fmov.v128 xmm15, [rbp-112]
+    fmov.v128 [rbp-96], xmm15
+    fmov.v128 xmm15, [rbp-320]
+    fmov.v128 [rbp-112], xmm15
     fmov.v128 [rbp-320], xmm14
     cmp.i32 r14, rbx
     jl ^body
@@ -245,10 +245,10 @@ function @rotate
     imul.i32 rcx, 1
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-48]
+    fmov.v128 xmm15, [rbp-128]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-48]
+    fmov.v128 xmm15, [rbp-128]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -256,10 +256,10 @@ function @rotate
     imul.i32 rcx, 2
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-64]
+    fmov.v128 xmm15, [rbp-144]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-64]
+    fmov.v128 xmm15, [rbp-144]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -278,10 +278,10 @@ function @rotate
     imul.i32 rcx, 4
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-80]
+    fmov.v128 xmm15, [rbp-160]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-80]
+    fmov.v128 xmm15, [rbp-160]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -289,10 +289,10 @@ function @rotate
     imul.i32 rcx, 5
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-96]
+    fmov.v128 xmm15, [rbp-176]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-96]
+    fmov.v128 xmm15, [rbp-176]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -300,10 +300,10 @@ function @rotate
     imul.i32 rcx, 6
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-112]
+    fmov.v128 xmm15, [rbp-192]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-112]
+    fmov.v128 xmm15, [rbp-192]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -311,10 +311,10 @@ function @rotate
     imul.i32 rcx, 7
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-128]
+    fmov.v128 xmm15, [rbp-208]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-128]
+    fmov.v128 xmm15, [rbp-208]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -322,10 +322,10 @@ function @rotate
     imul.i32 rcx, 8
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-144]
+    fmov.v128 xmm15, [rbp-224]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-144]
+    fmov.v128 xmm15, [rbp-224]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -333,10 +333,10 @@ function @rotate
     imul.i32 rcx, 9
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-160]
+    fmov.v128 xmm15, [rbp-240]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-160]
+    fmov.v128 xmm15, [rbp-240]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -344,10 +344,10 @@ function @rotate
     imul.i32 rcx, 10
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-176]
+    fmov.v128 xmm15, [rbp-256]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-176]
+    fmov.v128 xmm15, [rbp-256]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -355,10 +355,10 @@ function @rotate
     imul.i32 rcx, 11
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-192]
+    fmov.v128 xmm15, [rbp-272]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-192]
+    fmov.v128 xmm15, [rbp-272]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -366,10 +366,10 @@ function @rotate
     imul.i32 rcx, 12
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-208]
+    fmov.v128 xmm15, [rbp-288]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-208]
+    fmov.v128 xmm15, [rbp-288]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -377,10 +377,10 @@ function @rotate
     imul.i32 rcx, 13
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-224]
+    fmov.v128 xmm15, [rbp-304]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-224]
+    fmov.v128 xmm15, [rbp-304]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -388,10 +388,10 @@ function @rotate
     imul.i32 rcx, 14
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-240]
+    fmov.v128 xmm15, [rbp-48]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-240]
+    fmov.v128 xmm15, [rbp-48]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -399,10 +399,10 @@ function @rotate
     imul.i32 rcx, 15
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-256]
+    fmov.v128 xmm15, [rbp-64]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-256]
+    fmov.v128 xmm15, [rbp-64]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -410,10 +410,10 @@ function @rotate
     imul.i32 rcx, 16
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-272]
+    fmov.v128 xmm15, [rbp-80]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-272]
+    fmov.v128 xmm15, [rbp-80]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -421,10 +421,10 @@ function @rotate
     imul.i32 rcx, 17
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-288]
+    fmov.v128 xmm15, [rbp-96]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-288]
+    fmov.v128 xmm15, [rbp-96]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx
@@ -432,10 +432,10 @@ function @rotate
     imul.i32 rcx, 18
     add.i32 rax, rcx
     add.i32 rax, rsi
-    fmov.v128 xmm15, [rbp-304]
+    fmov.v128 xmm15, [rbp-112]
     vector.pshufd xmm0, xmm15, 3
     vector.toi32 rcx, xmm0
-    fmov.v128 xmm15, [rbp-304]
+    fmov.v128 xmm15, [rbp-112]
     vector.toi32 rdx, xmm15
     sext.i32 rdx
     zext.i32 rsi, rcx

@@ -39,25 +39,29 @@ uint32_t align_up(uint32_t value, uint32_t align)
 	return (value + align - 1) & ~(align - 1);
 }
 
-// A block's successors (branch labels, jump table entries).
+// The blocks an instruction may branch to (branch labels, jump table
+// entries), appended.
+void add_successors(const Function& f, const Inst& inst, std::vector<uint32_t>& out)
+{
+	if ((inst.op == Op::Jcc || inst.op == Op::Jmp) && inst.ops[0].kind == OperandKind::Label)
+		out.push_back(inst.ops[0].symbol);
+	else if (inst.op == Op::WideCmpBranch)
+	{
+		out.push_back(inst.ops[2].symbol);
+		out.push_back(inst.aux);
+	}
+	else if (inst.op == Op::JumpTable)
+		for (uint32_t k = inst.aux; k < inst.aux + inst.aux2; ++k)
+			out.push_back(f.jump_targets[k]);
+}
+
+// A block's successors.
 void successors(const Function& f, uint32_t b, std::vector<uint32_t>& out)
 {
 	out.clear();
 	const Block& block = f.blocks[b];
 	for (uint32_t i = block.first; i < block.first + block.count; ++i)
-	{
-		const Inst& inst = f.insts[i];
-		if ((inst.op == Op::Jcc || inst.op == Op::Jmp) && inst.ops[0].kind == OperandKind::Label)
-			out.push_back(inst.ops[0].symbol);
-		else if (inst.op == Op::WideCmpBranch)
-		{
-			out.push_back(inst.ops[2].symbol);
-			out.push_back(inst.aux);
-		}
-		else if (inst.op == Op::JumpTable)
-			for (uint32_t k = inst.aux; k < inst.aux + inst.aux2; ++k)
-				out.push_back(f.jump_targets[k]);
-	}
+		add_successors(f, f.insts[i], out);
 }
 
 } // namespace
@@ -280,9 +284,293 @@ uint32_t drop_dead_frame_stores(Function& f, const std::vector<FrameObject>& obj
 	return dropped;
 }
 
-bool order_frame(Function& f, const std::vector<FrameObject>& objects)
+namespace {
+
+// Objects share_frame_objects takes in one function, and the sweeps its
+// liveness may need.
+const uint32_t kSharedObjects = 2048;
+const unsigned kSharingSweeps = 24;
+
+// One frame access, in instruction order: a read of an object, a write of
+// all of it or of a part, or a host landing a throwing instruction may
+// leave to.
+struct FrameAccess
+{
+	enum Kind : uint8_t
+	{
+		Read,
+		Write,
+		PartWrite,
+		Landing
+	};
+	Kind kind;
+	uint32_t index; // the object; a landing: its pad's block
+	uint32_t bytes;
+};
+
+// One scan of the function for share_frame_objects: the accesses of the
+// whole-value objects per block (`first`: each block's range, `whole`: per
+// object, tracked as tracked_frame_objects has it and every access at its
+// first byte; `extent`: the most bytes an access covers) and the blocks'
+// successors (`next_first`: each block's range of `next`). False: a
+// landing names no block.
+struct FrameScan
+{
+	std::vector<uint8_t> whole;
+	std::vector<uint32_t> extent, first, next, next_first;
+	std::vector<FrameAccess> accesses;
+};
+
+bool scan_frame(const Function& f, const FrameObjectIndex& index, FrameScan& scan)
+{
+	const std::vector<FrameObject>& objects = index.objects();
+	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
+	std::vector<uint8_t>& whole = scan.whole;
+	auto end_of = [&](uint32_t o) { return static_cast<int64_t>(objects[o].offset) + objects[o].bytes; };
+	auto leave = [&](int32_t disp) {
+		const uint32_t o = index.find(disp);
+		if (o != lowir::kNoId)
+			whole[o] = 0;
+	};
+	if (f.scratch_bytes != 0)
+		leave(f.scratch_offset);
+	if (f.eh.slot < 0)
+		leave(f.eh.slot);
+	// (A local a debugger reads keeps its own storage.)
+	for (const DebugSlot& local : f.debug_slots)
+		if (local.offset < 0)
+			leave(local.offset);
+	for (uint32_t b = 0; b < blocks; ++b)
+	{
+		scan.first[b] = static_cast<uint32_t>(scan.accesses.size());
+		scan.next_first[b] = static_cast<uint32_t>(scan.next.size());
+		const Block& block = f.blocks[b];
+		for (uint32_t i = block.first; i < block.first + block.count; ++i)
+		{
+			const Inst& inst = f.insts[i];
+			if (inst.op == Op::Nop)
+				continue;
+			add_successors(f, inst, scan.next);
+			const bool plain = inst.op == Op::Load || inst.op == Op::Store || inst.op == Op::Cmp ||
+				inst.op == Op::Test || inst.op == Op::FMov ||
+				((inst.op == Op::CopyBytes || inst.op == Op::ZeroBytes) && !(inst.flags & MF_COPY_DYNAMIC));
+			const bool writes = inst.op != Op::Cmp && inst.op != Op::Test && inst.op != Op::Load;
+			// (Backward, a write comes before the reads of its instruction.)
+			for (unsigned k = inst.nops; k-- > 0;)
+			{
+				const Operand& op = inst.ops[k];
+				if (!frame_operand(op))
+					continue;
+				const bool direct = op.index == kNoReg && op.reg == kFrame;
+				const uint32_t o = index.find(op.disp);
+				const uint32_t bytes = access_bytes(inst);
+				if (o == lowir::kNoId || !direct || !plain)
+				{
+					leave(op.disp);
+					// (An address at a boundary: tracked_frame_objects.)
+					if ((!direct || inst.op == Op::Lea) && op.disp > INT32_MIN)
+						leave(op.disp - 1);
+					continue;
+				}
+				// An access running past its object (a merged store) writes the
+				// objects after it too.
+				for (int64_t at = end_of(o); at < static_cast<int64_t>(op.disp) + bytes;)
+				{
+					const uint32_t past = index.find(static_cast<int32_t>(at));
+					whole[o] = 0;
+					if (past == lowir::kNoId)
+					{
+						++at;
+						continue;
+					}
+					whole[past] = 0;
+					at = end_of(past);
+				}
+				if (op.disp != objects[o].offset || (inst.flags & MF_VOLATILE))
+					whole[o] = 0;
+				if (!whole[o])
+					continue;
+				scan.extent[o] = std::max(scan.extent[o], bytes);
+				scan.accesses.push_back(
+					FrameAccess{ writes && k == 0 ? FrameAccess::Write : FrameAccess::Read, o, bytes });
+			}
+			if (inst.eh != 0)
+			{
+				if (inst.eh > f.eh.landings.size() || f.eh.landings[inst.eh - 1].pad >= blocks)
+					return false;
+				scan.accesses.push_back(FrameAccess{ FrameAccess::Landing, f.eh.landings[inst.eh - 1].pad, 0 });
+			}
+		}
+	}
+	scan.first[blocks] = static_cast<uint32_t>(scan.accesses.size());
+	scan.next_first[blocks] = static_cast<uint32_t>(scan.next.size());
+	return true;
+}
+
+} // namespace
+
+uint32_t share_frame_objects(Function& f, std::vector<FrameObject>& objects)
 {
 	if (objects.size() < 2 || f.stack_size == 0 || f.variadic || f.eh_records_pushed)
+		return 0;
+	const uint32_t n = static_cast<uint32_t>(objects.size());
+	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
+	const FrameObjectIndex index(objects);
+	FrameScan scan;
+	scan.whole.assign(n, 1);
+	scan.extent.assign(n, 0);
+	scan.first.assign(blocks + 1, 0);
+	scan.next_first.assign(blocks + 1, 0);
+	if (!scan_frame(f, index, scan))
+		return 0;
+	std::vector<FrameAccess>& accesses = scan.accesses;
+	std::vector<uint32_t>& first = scan.first;
+	// The objects that take part, numbered; their accesses alone stay.
+	std::vector<uint32_t> number(n, lowir::kNoId), members;
+	for (uint32_t k = 0; k < n; ++k)
+		if (scan.whole[k])
+		{
+			number[k] = static_cast<uint32_t>(members.size());
+			members.push_back(k);
+		}
+	const uint32_t count = static_cast<uint32_t>(members.size());
+	const uint32_t words = (count + 63) / 64;
+	if (count < 2 || count > kSharedObjects || static_cast<uint64_t>(blocks) * words > (1u << 20))
+		return 0;
+	uint32_t kept = 0;
+	for (uint32_t b = 0, k = 0; b < blocks; ++b)
+	{
+		const uint32_t end = first[b + 1];
+		first[b] = kept;
+		for (; k < end; ++k)
+		{
+			FrameAccess a = accesses[k];
+			if (a.kind != FrameAccess::Landing)
+			{
+				if (!scan.whole[a.index])
+					continue;
+				if (a.kind == FrameAccess::Write && a.bytes < scan.extent[a.index])
+					a.kind = FrameAccess::PartWrite;
+				a.index = number[a.index];
+			}
+			accesses[kept++] = a;
+		}
+	}
+	first[blocks] = kept;
+	// Backward through a block's accesses from what its successors read:
+	// a read makes its object live, a write of all of it ends that. With
+	// `meet`, each write notes the objects live past it.
+	std::vector<uint64_t> live_in(static_cast<size_t>(blocks) * words, 0), live(words, 0);
+	std::vector<uint64_t> meets(static_cast<size_t>(count) * words, 0);
+	auto walk = [&](uint32_t b, bool meet) {
+		std::fill(live.begin(), live.end(), 0);
+		for (uint32_t k = scan.next_first[b]; k < scan.next_first[b + 1]; ++k)
+			if (scan.next[k] < blocks)
+				for (uint32_t w = 0; w < words; ++w)
+					live[w] |= live_in[static_cast<size_t>(scan.next[k]) * words + w];
+		for (uint32_t k = first[b + 1]; k-- > first[b];)
+		{
+			const FrameAccess& a = accesses[k];
+			if (a.kind == FrameAccess::Landing)
+			{
+				for (uint32_t w = 0; w < words; ++w)
+					live[w] |= live_in[static_cast<size_t>(a.index) * words + w];
+				continue;
+			}
+			const uint64_t bit = 1ull << (a.index % 64);
+			if (a.kind == FrameAccess::Read)
+			{
+				live[a.index / 64] |= bit;
+				continue;
+			}
+			if (meet)
+				for (uint32_t w = 0; w < words; ++w)
+					meets[static_cast<size_t>(a.index) * words + w] |= live[w];
+			if (a.kind == FrameAccess::Write)
+				live[a.index / 64] &= ~bit;
+		}
+	};
+	unsigned sweeps = 0;
+	for (bool changed = true; changed; ++sweeps)
+	{
+		if (sweeps == kSharingSweeps)
+			return 0;
+		changed = false;
+		for (uint32_t b = blocks; b-- > 0;)
+		{
+			walk(b, false);
+			if (!std::equal(live.begin(), live.end(), live_in.begin() + static_cast<size_t>(b) * words))
+			{
+				std::copy(live.begin(), live.end(), live_in.begin() + static_cast<size_t>(b) * words);
+				changed = true;
+			}
+		}
+	}
+	for (uint32_t b = 0; b < blocks; ++b)
+		walk(b, true);
+	// (Either way round: the object written, and the one live.)
+	for (uint32_t x = 0; x < count; ++x)
+		for (uint32_t w = 0; w < words; ++w)
+			for (uint64_t rest = meets[static_cast<size_t>(x) * words + w]; rest != 0; rest &= rest - 1)
+			{
+				const uint32_t y = 64 * w + static_cast<uint32_t>(__builtin_ctzll(rest));
+				meets[static_cast<size_t>(y) * words + x / 64] |= 1ull << (x % 64);
+			}
+	// The largest first: each object joins the first group none of whose
+	// members it meets, at that group's first (largest) object.
+	std::vector<uint32_t> order(count), leaders;
+	for (uint32_t x = 0; x < count; ++x)
+		order[x] = x;
+	std::stable_sort(order.begin(), order.end(),
+		[&](uint32_t x, uint32_t y) { return objects[members[x]].bytes > objects[members[y]].bytes; });
+	std::vector<uint64_t> held; // per group, what its members meet
+	std::vector<uint32_t> into(n, lowir::kNoId);
+	uint32_t shared = 0;
+	for (uint32_t x : order)
+	{
+		const FrameObject& object = objects[members[x]];
+		uint32_t g = 0;
+		for (; g < leaders.size(); ++g)
+			if (!((held[static_cast<size_t>(g) * words + x / 64] >> (x % 64)) & 1u) &&
+				objects[leaders[g]].align >= object.align)
+				break;
+		if (g == leaders.size())
+		{
+			leaders.push_back(members[x]);
+			held.insert(held.end(), meets.begin() + static_cast<size_t>(x) * words,
+				meets.begin() + static_cast<size_t>(x + 1) * words);
+			continue;
+		}
+		for (uint32_t w = 0; w < words; ++w)
+			held[static_cast<size_t>(g) * words + w] |= meets[static_cast<size_t>(x) * words + w];
+		into[members[x]] = leaders[g];
+		++shared;
+	}
+	if (shared == 0)
+		return 0;
+	auto relocate = [&](int32_t& disp) {
+		const uint32_t o = index.find(disp);
+		if (o != lowir::kNoId && into[o] != lowir::kNoId)
+			disp += objects[into[o]].offset - objects[o].offset;
+	};
+	for (Inst& inst : f.insts)
+		for (unsigned k = 0; k < inst.nops && inst.op != Op::Nop; ++k)
+			if (frame_operand(inst.ops[k]))
+				relocate(inst.ops[k].disp);
+	for (FrameBinding& binding : f.bindings)
+		if (binding.offset < 0)
+			relocate(binding.offset);
+	uint32_t left = 0;
+	for (uint32_t k = 0; k < n; ++k)
+		if (into[k] == lowir::kNoId)
+			objects[left++] = objects[k];
+	objects.resize(left);
+	return shared;
+}
+
+bool order_frame(Function& f, const std::vector<FrameObject>& objects, bool fewer)
+{
+	if (objects.size() < (fewer ? 1 : 2) || f.stack_size == 0 || f.variadic || f.eh_records_pushed)
 		return false;
 	// The objects by offset, each access's object found by binary search.
 	const uint32_t n = static_cast<uint32_t>(objects.size());
@@ -398,7 +686,12 @@ bool order_frame(Function& f, const std::vector<FrameObject>& objects)
 			changed = changed || moved[k] != objects[k].offset;
 		}
 	}
-	if (!changed)
+	// The preserve area stays below the objects (finish_frame's rule).
+	const uint32_t saved = static_cast<uint32_t>(__builtin_popcount(f.preserve_mask));
+	if (saved != 0)
+		size = align_up(size + 8 * saved, 16);
+	// (A frame some objects left is smaller, though none of the rest moves.)
+	if (!changed && align_up(size, 16) == f.stack_size)
 		return false;
 	auto relocate = [&](int32_t& disp) {
 		const uint32_t o = find(disp);
@@ -419,13 +712,8 @@ bool order_frame(Function& f, const std::vector<FrameObject>& objects)
 		relocate(f.scratch_offset);
 	if (f.eh.slot < 0)
 		relocate(f.eh.slot);
-	// The preserve area stays below the objects (finish_frame's rule).
-	const uint32_t saved = static_cast<uint32_t>(__builtin_popcount(f.preserve_mask));
 	if (saved != 0)
-	{
-		size = align_up(size + 8 * saved, 16);
 		f.preserve_offset = -static_cast<int32_t>(size);
-	}
 	f.stack_size = align_up(size, 16);
 	return true;
 }

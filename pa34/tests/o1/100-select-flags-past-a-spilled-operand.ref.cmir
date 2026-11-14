@@ -38,12 +38,12 @@ function @clamp
     temp %y13 -> [rbp-<off18>] : i32
     temp %x14 -> [rbp-<off19>] : i32
     temp %y14 -> [rbp-<off20>] : i32
-    temp %c8 -> [rbp-<off21>] : i32
-    temp %c9 -> [rbp-<off22>] : i32
-    temp %c10 -> [rbp-<off23>] : i32
-    temp %c11 -> [rbp-<off24>] : i32
-    temp %c12 -> [rbp-<off25>] : i32
-    temp %c13 -> [rbp-<off26>] : i32
+    temp %c8 -> [rbp-<off1>] : i32
+    temp %c9 -> [rbp-<off3>] : i32
+    temp %c10 -> [rbp-<off5>] : i32
+    temp %c11 -> [rbp-<off7>] : i32
+    temp %c12 -> [rbp-<off9>] : i32
+    temp %c13 -> [rbp-<off11>] : i32
 
   block ^entry
     load.u32 rax, [rdi]
@@ -166,7 +166,7 @@ function @clamp
     cmp.i32 <gpr2>, 255
     mov <gpr6>, 255
     cmovg <gpr2>, <gpr6>
-    store.i32 [rbp-<off21>], <gpr2>
+    store.i32 [rbp-<off1>], <gpr2>
     load.u32 <gpr2>, [rbp-<off9>]
     sub.i32 <gpr2>, [rbp-<off10>]
     mov <gpr6>, 0
@@ -175,7 +175,7 @@ function @clamp
     cmp.i32 <gpr2>, 255
     mov <gpr6>, 255
     cmovg <gpr2>, <gpr6>
-    store.i32 [rbp-<off22>], <gpr2>
+    store.i32 [rbp-<off3>], <gpr2>
     load.u32 <gpr2>, [rbp-<off11>]
     sub.i32 <gpr2>, [rbp-<off12>]
     mov <gpr6>, 0
@@ -184,7 +184,7 @@ function @clamp
     cmp.i32 <gpr2>, 255
     mov <gpr6>, 255
     cmovg <gpr2>, <gpr6>
-    store.i32 [rbp-<off23>], <gpr2>
+    store.i32 [rbp-<off5>], <gpr2>
     load.u32 <gpr2>, [rbp-<off13>]
     sub.i32 <gpr2>, [rbp-<off14>]
     mov <gpr6>, 0
@@ -193,7 +193,7 @@ function @clamp
     cmp.i32 <gpr2>, 255
     mov <gpr6>, 255
     cmovg <gpr2>, <gpr6>
-    store.i32 [rbp-<off24>], <gpr2>
+    store.i32 [rbp-<off7>], <gpr2>
     load.u32 <gpr2>, [rbp-<off15>]
     sub.i32 <gpr2>, [rbp-<off16>]
     mov <gpr6>, 0
@@ -202,7 +202,7 @@ function @clamp
     cmp.i32 <gpr2>, 255
     mov <gpr6>, 255
     cmovg <gpr2>, <gpr6>
-    store.i32 [rbp-<off25>], <gpr2>
+    store.i32 [rbp-<off9>], <gpr2>
     load.u32 <gpr2>, [rbp-<off17>]
     sub.i32 <gpr2>, [rbp-<off18>]
     mov <gpr6>, 0
@@ -211,7 +211,7 @@ function @clamp
     cmp.i32 <gpr2>, 255
     mov <gpr6>, 255
     cmovg <gpr2>, <gpr6>
-    store.i32 [rbp-<off26>], <gpr2>
+    store.i32 [rbp-<off11>], <gpr2>
     load.u32 <gpr2>, [rbp-<off19>]
     sub.i32 <gpr2>, [rbp-<off20>]
     mov <gpr6>, 0
@@ -235,17 +235,17 @@ function @clamp
     store.i32 [rdx+<off4>], rcx
     store.i32 [rdx+<off5>], r9
     store.i32 [rdx+<off6>], <gpr3>
-    load.u32 <gpr6>, [rbp-<off21>]
+    load.u32 <gpr6>, [rbp-<off1>]
     store.i32 [rdx+<off7>], <gpr6>
-    load.u32 <gpr6>, [rbp-<off22>]
+    load.u32 <gpr6>, [rbp-<off3>]
     store.i32 [rdx+<off8>], <gpr6>
-    load.u32 <gpr6>, [rbp-<off23>]
+    load.u32 <gpr6>, [rbp-<off5>]
     store.i32 [rdx+<off9>], <gpr6>
-    load.u32 <gpr6>, [rbp-<off24>]
+    load.u32 <gpr6>, [rbp-<off7>]
     store.i32 [rdx+<off10>], <gpr6>
-    load.u32 <gpr6>, [rbp-<off25>]
+    load.u32 <gpr6>, [rbp-<off9>]
     store.i32 [rdx+<off11>], <gpr6>
-    load.u32 <gpr6>, [rbp-<off26>]
+    load.u32 <gpr6>, [rbp-<off11>]
     store.i32 [rdx+<off12>], <gpr6>
     store.i32 [rdx+<off13>], <gpr2>
     store.i32 [rdx+<off14>], rdi
@@ -281,27 +281,27 @@ function @clamp
     setne <gpr3>
     movzx <gpr3>, <gpr3>
     add.i32 rax, <gpr3>
-    cmp.i32 [rbp-<off21>], 0
+    cmp.i32 [rbp-<off1>], 0
     setne rcx
     movzx rcx, rcx
     add.i32 rax, rcx
-    cmp.i32 [rbp-<off22>], 0
+    cmp.i32 [rbp-<off3>], 0
     setne rcx
     movzx rcx, rcx
     add.i32 rax, rcx
-    cmp.i32 [rbp-<off23>], 0
+    cmp.i32 [rbp-<off5>], 0
     setne rcx
     movzx rcx, rcx
     add.i32 rax, rcx
-    cmp.i32 [rbp-<off24>], 0
+    cmp.i32 [rbp-<off7>], 0
     setne rcx
     movzx rcx, rcx
     add.i32 rax, rcx
-    cmp.i32 [rbp-<off25>], 0
+    cmp.i32 [rbp-<off9>], 0
     setne rcx
     movzx rcx, rcx
     add.i32 rax, rcx
-    cmp.i32 [rbp-<off26>], 0
+    cmp.i32 [rbp-<off11>], 0
     setne rcx
     movzx rcx, rcx
     add.i32 rax, rcx
@@ -323,45 +323,45 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    slot $a -> [rbp-<off1>] : obj<64x4>
-    slot $b -> [rbp-<off9>] : obj<64x4>
-    slot $out -> [rbp-<off17>] : obj<64x4>
+    slot $a -> [rbp-<off2>] : obj<64x4>
+    slot $b -> [rbp-<off15>] : obj<64x4>
+    slot $out -> [rbp-<off21>] : obj<64x4>
 
   block ^entry
-    store.i32 [rbp-<off1>], 1
-    store.i32 [rbp-<off9>], 100
-    store.i32 [rbp-<off27>], 2
-    store.i32 [rbp-<off28>], 103
+    store.i32 [rbp-<off2>], 1
+    store.i32 [rbp-<off15>], 100
+    store.i32 [rbp-<off22>], 2
+    store.i32 [rbp-<off23>], 103
     store.i32 [rbp-<off0>], 3
-    store.i32 [rbp-<off8>], 106
-    store.i32 [rbp-<off29>], 4
-    store.i32 [rbp-<off30>], 109
-    store.i32 [rbp-<off26>], 5
-    store.i32 [rbp-<off7>], 112
-    store.i32 [rbp-<off31>], 6
-    store.i32 [rbp-<off32>], 115
-    store.i32 [rbp-<off25>], 7
-    store.i32 [rbp-<off6>], 118
-    store.i32 [rbp-<off33>], 8
-    store.i32 [rbp-<off34>], 121
-    store.i32 [rbp-<off24>], 9
-    store.i32 [rbp-<off5>], 124
-    store.i32 [rbp-<off35>], 10
-    store.i32 [rbp-<off36>], 127
-    store.i32 [rbp-<off23>], 11
-    store.i32 [rbp-<off4>], 130
-    store.i32 [rbp-<off37>], 12
-    store.i32 [rbp-<off38>], 133
-    store.i32 [rbp-<off22>], 13
-    store.i32 [rbp-<off3>], 136
-    store.i32 [rbp-<off39>], 14
-    store.i32 [rbp-<off40>], 139
-    store.i32 [rbp-<off21>], 15
-    store.i32 [rbp-<off2>], 142
-    store.i32 [rbp-<off41>], 16
-    store.i32 [rbp-<off42>], 145
-    lea rdi, [rbp-<off1>]
-    lea rsi, [rbp-<off9>]
-    lea rdx, [rbp-<off17>]
+    store.i32 [rbp-<off14>], 106
+    store.i32 [rbp-<off24>], 4
+    store.i32 [rbp-<off25>], 109
+    store.i32 [rbp-<off11>], 5
+    store.i32 [rbp-<off13>], 112
+    store.i32 [rbp-<off26>], 6
+    store.i32 [rbp-<off27>], 115
+    store.i32 [rbp-<off9>], 7
+    store.i32 [rbp-<off12>], 118
+    store.i32 [rbp-<off28>], 8
+    store.i32 [rbp-<off29>], 121
+    store.i32 [rbp-<off7>], 9
+    store.i32 [rbp-<off10>], 124
+    store.i32 [rbp-<off30>], 10
+    store.i32 [rbp-<off31>], 127
+    store.i32 [rbp-<off5>], 11
+    store.i32 [rbp-<off8>], 130
+    store.i32 [rbp-<off32>], 12
+    store.i32 [rbp-<off33>], 133
+    store.i32 [rbp-<off3>], 13
+    store.i32 [rbp-<off6>], 136
+    store.i32 [rbp-<off34>], 14
+    store.i32 [rbp-<off35>], 139
+    store.i32 [rbp-<off1>], 15
+    store.i32 [rbp-<off4>], 142
+    store.i32 [rbp-<off36>], 16
+    store.i32 [rbp-<off37>], 145
+    lea rdi, [rbp-<off2>]
+    lea rsi, [rbp-<off15>]
+    lea rdx, [rbp-<off21>]
     call @clamp [args=(rdx,rsi,rdi)]
     ret rax

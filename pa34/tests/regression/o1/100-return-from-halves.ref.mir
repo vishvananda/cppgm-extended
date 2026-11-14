@@ -53,7 +53,7 @@ function @main
     frame_pointer keep
     epilogues duplicated
     slot $x -> [rbp-8] : obj<8x4>
-    slot $y -> [rbp-32] : obj<8x4>
+    slot $y -> [rbp-24] : obj<8x4>
     temp %vx -> [rbp-24] : obj<8x4>
     temp %vy -> [rbp-16] : obj<8x4>
 

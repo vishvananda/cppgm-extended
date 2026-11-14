@@ -86,6 +86,7 @@ struct SelectorState
 	uint32_t frame_size_ = 0;
 	std::vector<FrameObject> frame_objects_; // frame_alloc's, for order_frame
 	bool frame_pinned_ = false;              // an address formed outside its frame object
+	bool returns_twice_ = false;             // a call of a routine that returns twice (setjmp)
 	uint32_t block_ = 0;
 	int32_t position_ = 0;
 	uint32_t location_ = 0;

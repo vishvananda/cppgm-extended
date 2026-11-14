@@ -130,9 +130,10 @@ bottom. From `-O1`:
 
 - course handler records are pushed below the frame by `eh_push`, one per
   open region, except in functions with `stack_alloc`;
-- object slots of one type share storage when no block naming one reaches
-  a block naming the other (functions without exception regions; at most
-  64 candidates);
+- slots of any type share storage when no block naming one reaches a
+  block naming the other (functions without course exception regions; the
+  edges to host landings count; at most 512 candidates, none named in the
+  entry block);
 - an object parameter whose only reader copies it whole into a slot at
   entry lives in that slot;
 - after the cleanups, stores that no path reads are dropped from frame
@@ -142,8 +143,16 @@ bottom. From `-O1`:
   with pushed handler records. Dead stores also stay with host landings;
   the order also stays with any `eh_push`, an address that may reach
   outside its object, or over-aligned locals;
-- frame space is not reclaimed after the cleanups, so a binding may name
-  an object that no instruction touches any more;
+- between those two steps, whole-value objects (every access direct and at
+  the object's first byte: the homes of spilled values, scalar slots) whose
+  values no execution holds together take one object's storage
+  (`shared_frame_objects`). An object is live from a write to its last
+  read; two objects stay apart when one is written while the other is
+  live. A function that calls `setjmp` or another routine that returns
+  twice shares none, and a local with debug information keeps its storage.
+  The step runs where the order may change;
+- other frame space is not reclaimed after the cleanups, so a binding may
+  name an object that no instruction touches any more;
 - every return has its own epilogue (`epilogues duplicated`);
 - *host*: in a non-variadic function where RSP never moves after the
   prologue (no `stack_alloc`, `va_arg`, i128 conversion, stack argument
@@ -222,8 +231,9 @@ removed instructions or whether handler records are pushed; a smaller
 `lowir2native --stats` (telemetry builds) prints one `lowir2native_stats`
 line on standard error, summed over the functions. `loop_splits`,
 `home_splits`, `jump_tables`, `rotated_loops`, `threaded_blocks`,
-`layout_branches`, `ordered_frames`, `dead_frame_stores` and
-`strlen_prefixes` count the steps above and stay zero at `-O0`.
+`layout_branches`, `ordered_frames`, `dead_frame_stores`,
+`shared_frame_objects` and `strlen_prefixes` count the steps above and stay
+zero at `-O0`.
 `global_registers` counts cross-block values given a register by either
 allocator, `homes` the frame homes made, `spills` the block-local values
 that found no register, and `hull_fallbacks` the values left in homes by

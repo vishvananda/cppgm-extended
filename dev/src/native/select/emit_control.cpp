@@ -2,6 +2,7 @@
 #include "native/select/for_each_inst.h"
 
 #include <algorithm>
+#include <cstring>
 
 #include "native/backend_error.h"
 #include "native/runtime/eh_record.h"
@@ -32,6 +33,21 @@ namespace {
 bool conditional(const Instruction& term)
 {
 	return term.op == Opcode::Branch || term.op == Opcode::Switch;
+}
+
+// Whether a call of `callee` may return a second time (C 7.13: setjmp and
+// its kin): what the frame held at the jump is read after that return,
+// whatever the paths from the first return say.
+bool returns_twice(const lowir::Program& program, Value callee)
+{
+	if (callee.kind != ValueKind::Symbol || program.symbols[callee.index].metadata.linkage != ir_model::LLM_C)
+		return false;
+	const lowir::Symbol& symbol = program.symbols[callee.index];
+	const char* name = program.spelling(symbol.metadata.object != 0 ? symbol.metadata.object : symbol.name);
+	for (const char* twice : { "setjmp", "_setjmp", "sigsetjmp", "__sigsetjmp", "savectx", "getcontext", "vfork" })
+		if (std::strcmp(name, twice) == 0)
+			return true;
+	return false;
 }
 
 } // namespace
@@ -82,27 +98,33 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 	excluded_ |= reserved_gprs(out);
 	rbp_free_ = level_ >= 1 && eh_model_ == EhModel::Host && signature_->boundary.arity != ir_model::CAM_VARIADIC &&
 		out.aligned_base == 0 && !frame_addressed_;
-	for_each_inst([&](uint32_t id, uint32_t) {
-		const lowir::Instruction& inst = body_->instructions[id];
-		if (!rbp_free_ || (marks_[id] & IM_DEAD))
-			return;
-		if (lowir::is_stack_instruction(inst.op) || inst.op == Opcode::VaStart || inst.op == Opcode::VaArg)
-			rbp_free_ = false;
-		else if (inst.op == Opcode::Convert &&
-			(inst.type.kind() == TypeKind::I128 || lowir::convert_source_type(inst).kind() == TypeKind::I128) &&
-			static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::SExt &&
-			static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::ZExt &&
-			static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::Trunc)
-			rbp_free_ = false;
-		else if (inst.op == Opcode::Call)
-		{
-			const lowir::Signature* sig = program_.call_boundary(inst);
-			if (sig == nullptr)
+	// (Neither question arises at O0.)
+	if (level_ >= 1)
+		for_each_inst([&](uint32_t id, uint32_t) {
+			const lowir::Instruction& inst = body_->instructions[id];
+			if (marks_[id] & IM_DEAD)
 				return;
-			const CallLayout& layout = emission_layout(id, sig, false);
-			rbp_free_ = layout.stack_align <= 16;
-		}
-	});
+			if (inst.op == Opcode::Call && returns_twice(program_, resolve(inst.ops[0])))
+				returns_twice_ = true;
+			if (!rbp_free_)
+				return;
+			if (lowir::is_stack_instruction(inst.op) || inst.op == Opcode::VaStart || inst.op == Opcode::VaArg)
+				rbp_free_ = false;
+			else if (inst.op == Opcode::Convert &&
+				(inst.type.kind() == TypeKind::I128 || lowir::convert_source_type(inst).kind() == TypeKind::I128) &&
+				static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::SExt &&
+				static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::ZExt &&
+				static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::Trunc)
+				rbp_free_ = false;
+			else if (inst.op == Opcode::Call)
+			{
+				const lowir::Signature* sig = program_.call_boundary(inst);
+				if (sig == nullptr)
+					return;
+				const CallLayout& layout = emission_layout(id, sig, false);
+				rbp_free_ = layout.stack_align <= 16;
+			}
+		});
 	allocate_globals();
 	layout_slots();
 	emit_blocks();
@@ -130,7 +152,11 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 		stats_.dead_frame_stores += drop_dead_frame_stores(out, frame_objects_);
 		drop_unused_frame(out);
 		if (!frame_pinned_)
-			stats_.ordered_frames += order_frame(out, frame_objects_) ? 1 : 0;
+		{
+			const uint32_t shared = returns_twice_ ? 0 : share_frame_objects(out, frame_objects_);
+			stats_.shared_frame_objects += shared;
+			stats_.ordered_frames += order_frame(out, frame_objects_, shared != 0) ? 1 : 0;
+		}
 	}
 	if (level_ >= 1 && !body_->code_labels.empty())
 	{

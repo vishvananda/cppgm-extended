@@ -71,6 +71,7 @@ void FunctionSelector::reset(lowir::SymbolId symbol, Function& out)
 	frame_size_ = 0;
 	frame_objects_.clear();
 	frame_pinned_ = false;
+	returns_twice_ = false;
 	frame_addressed_ = false;
 	block_ = 0;
 	position_ = 0;

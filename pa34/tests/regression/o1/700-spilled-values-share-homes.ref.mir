@@ -1,0 +1,156 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @table
+  storage data
+  item i64 1
+  item i64 2
+  item i64 3
+  item i64 4
+  item i64 5
+  item i64 6
+  item i64 7
+  item i64 8
+  item i64 9
+  item i64 10
+  item i64 11
+  item i64 12
+  item i64 13
+  item i64 14
+  item i64 15
+  item i64 16
+  item i64 17
+  item i64 18
+  item i64 19
+  item i64 20
+
+global @seen
+  storage scalar i64
+  init i64 0
+
+function @note
+  abi
+    param %v -> rdi : i64
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add @seen, rdi
+    ret
+
+function @twice
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 80
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    temp %a5 -> [rbp-8] : i64
+    temp %a6 -> [rbp-16] : i64
+    temp %a7 -> [rbp-24] : i64
+    temp %a8 -> [rbp-32] : i64
+    temp %a9 -> [rbp-40] : i64
+    temp %b5 -> [rbp-8] : i64
+    temp %b6 -> [rbp-16] : i64
+    temp %b7 -> [rbp-24] : i64
+    temp %b8 -> [rbp-32] : i64
+
+  block ^entry
+    mov rbx, rdi
+    load.i64 rdi, [rbx]
+    load.i64 r14, [rbx+8]
+    load.i64 r15, [rbx+16]
+    load.i64 r13, [rbx+24]
+    load.i64 r12, [rbx+32]
+    load.i64 r10, [rbx+40]
+    store.i64 [rbp-8], r10
+    load.i64 r10, [rbx+48]
+    store.i64 [rbp-16], r10
+    load.i64 r10, [rbx+56]
+    store.i64 [rbp-24], r10
+    load.i64 r10, [rbx+64]
+    store.i64 [rbp-32], r10
+    load.i64 r10, [rbx+72]
+    store.i64 [rbp-40], r10
+    call @note [args=(rdi), unwind=no]
+    mov rdi, r14
+    call @note [args=(rdi), unwind=no]
+    mov rdi, r15
+    call @note [args=(rdi), unwind=no]
+    mov rdi, r13
+    call @note [args=(rdi), unwind=no]
+    mov rdi, r12
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-8]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-16]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-24]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-32]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-40]
+    call @note [args=(rdi), unwind=no]
+
+  block ^later
+    load.i64 rdi, [rbx+80]
+    load.i64 r14, [rbx+88]
+    load.i64 r15, [rbx+96]
+    load.i64 r13, [rbx+104]
+    load.i64 r12, [rbx+112]
+    load.i64 r10, [rbx+120]
+    store.i64 [rbp-8], r10
+    load.i64 r10, [rbx+128]
+    store.i64 [rbp-16], r10
+    load.i64 r10, [rbx+136]
+    store.i64 [rbp-24], r10
+    load.i64 r10, [rbx+144]
+    store.i64 [rbp-32], r10
+    load.i64 rbx, [rbx+152]
+    call @note [args=(rdi), unwind=no]
+    mov rdi, r14
+    call @note [args=(rdi), unwind=no]
+    mov rdi, r15
+    call @note [args=(rdi), unwind=no]
+    mov rdi, r13
+    call @note [args=(rdi), unwind=no]
+    mov rdi, r12
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-8]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-16]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-24]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-32]
+    call @note [args=(rdi), unwind=no]
+    mov rdi, rbx
+    call @note [args=(rdi), unwind=no]
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, @table
+    call @twice [args=(rdi), unwind=no]
+    load.i64 rax, @seen
+    sub rax, 210
+    ret rax

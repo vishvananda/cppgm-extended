@@ -54,20 +54,20 @@ function @main
     epilogues duplicated
     slot $x -> [rbp-<off0>] : obj<8x4>
     slot $y -> [rbp-<off1>] : obj<8x4>
-    temp %vx -> [rbp-<off2>] : obj<8x4>
-    temp %vy -> [rbp-<off3>] : obj<8x4>
+    temp %vx -> [rbp-<off1>] : obj<8x4>
+    temp %vy -> [rbp-<off2>] : obj<8x4>
 
   block ^entry
     mov rdi, 1
     mov rsi, 2
     call @both [args=(rsi,rdi)]
-    store.i64 [rbp-<off2>], rax
-    copy_bytes 8x4, [rbp-<off0>], [rbp-<off2>]
+    store.i64 [rbp-<off1>], rax
+    copy_bytes 8x4, [rbp-<off0>], [rbp-<off1>]
     mov rdi, 3
     call @constant_high [args=(rdi)]
-    store.i64 [rbp-<off3>], rax
+    store.i64 [rbp-<off2>], rax
     load.u32 rax, [rbp-<off0>]
-    add.i32 rax, [rbp-<off4>]
     add.i32 rax, [rbp-<off3>]
-    add.i32 rax, [rbp-<off5>]
+    add.i32 rax, [rbp-<off2>]
+    add.i32 rax, [rbp-<off4>]
     ret rax

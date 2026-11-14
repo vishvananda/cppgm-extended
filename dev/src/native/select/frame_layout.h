@@ -23,8 +23,9 @@ struct FrameObject
 // as one. A function with operands carrying frame offsets elsewhere
 // (va_start, course EH records), or with an address formed outside its
 // object (the selector's frame_pinned_), keeps its layout. Returns whether
-// it moved any.
-bool order_frame(Function& function, const std::vector<FrameObject>& objects);
+// it moved any. `fewer`: some objects left the frame (share_frame_objects),
+// which is laid out again though none of the rest moves.
+bool order_frame(Function& function, const std::vector<FrameObject>& objects, bool fewer);
 
 // O1+, after the MIR cleanups: stores (and bulk copies or zeroing) into
 // frame objects whose bytes no path reads before they are overwritten or
@@ -37,6 +38,18 @@ bool order_frame(Function& function, const std::vector<FrameObject>& objects);
 // point within bounded scratch/work; exhaustion keeps all stores.
 // Returns the stores dropped.
 uint32_t drop_dead_frame_stores(Function& function, const std::vector<FrameObject>& objects);
+
+// O1+, after the dead frame stores go: whole-value objects (tracked, every
+// access at the object's first byte: a spilled value's home, a scalar
+// slot) whose values no execution holds together take one object's
+// storage, the largest first. An object is live from a write of it to its
+// last read on any path (through host landings too); two objects stay
+// apart when one is written while the other is live. The objects that
+// moved leave `objects`, so order_frame lays out a frame without them.
+// The caller keeps a function that calls a routine returning twice
+// (setjmp) out: its objects hold their values across the second return.
+// Returns the objects that took another's storage.
+uint32_t share_frame_objects(Function& function, std::vector<FrameObject>& objects);
 
 // The frame object holding a frame offset (lowir::kNoId: none).
 class FrameObjectIndex

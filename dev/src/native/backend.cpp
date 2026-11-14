@@ -283,9 +283,9 @@ bool compile_program(
 			 << " rotated_loops=" << s.rotated_loops << " dispatch_tails=" << s.dispatch_tails
 			 << " loop_splits=" << s.loop_splits << " home_splits=" << s.home_splits
 			 << " ordered_frames=" << s.ordered_frames << " dead_frame_stores=" << s.dead_frame_stores
-			 << " native_returns=" << emit_stats.returns << " short_branches=" << emit_stats.short_branches
-			 << " long_branches=" << emit_stats.long_branches << " fixups=" << emit_stats.fixups
-			 << " scratch_carried_reloads=" << emit_stats.scratch_carried_reloads
+			 << " shared_frame_objects=" << s.shared_frame_objects << " native_returns=" << emit_stats.returns
+			 << " short_branches=" << emit_stats.short_branches << " long_branches=" << emit_stats.long_branches
+			 << " fixups=" << emit_stats.fixups << " scratch_carried_reloads=" << emit_stats.scratch_carried_reloads
 			 << " code_bytes=" << emit_stats.code_bytes << " select_ms=" << select_ms << " encode_ms=" << encode_ms
 			 << " total_ms=" << milliseconds_since(start) << " peak_rss_kb=" << usage.ru_maxrss;
 		*stats_line = line.str();

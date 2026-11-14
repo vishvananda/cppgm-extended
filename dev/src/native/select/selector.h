@@ -28,19 +28,20 @@ struct SelectStats
 	telemetry::Counter liveness_steps = 0; // uses and predecessor edges the hull walks visit
 	telemetry::Counter hull_fallbacks = 0; // cross-block values left in frame homes by the walk budget
 	telemetry::Counter edge_blocks = 0;
-	telemetry::Counter eh_walks = 0;          // host EH: block walks to the states' fixed point
-	telemetry::Counter eh_states = 0;         // host EH: interned record stacks
-	telemetry::Counter threaded_blocks = 0;   // O1+: jump-only MIR blocks removed
-	telemetry::Counter layout_branches = 0;   // O1+: fall-through jumps and branches removed
-	telemetry::Counter strlen_prefixes = 0;   // O1+: strlen calls given the inline probe
-	telemetry::Counter dynamic_copies = 0;    // unused-result builtin memcpy calls copied in place
-	telemetry::Counter jump_tables = 0;       // O1+: switches dispatched through a jump table
-	telemetry::Counter rotated_loops = 0;     // O1+: back edges given a copy of their loop test
-	telemetry::Counter dispatch_tails = 0;    // O1+: terminal dispatches copied into incoming jumps
-	telemetry::Counter loop_splits = 0;       // O1+: values given a register outside loops they skip
-	telemetry::Counter home_splits = 0;       // O1+: values given a register outside the blocks clobbering it
-	telemetry::Counter ordered_frames = 0;    // O1+: frames whose objects order_frame moved
-	telemetry::Counter dead_frame_stores = 0; // O1+: frame stores no path reads (drop_dead_frame_stores)
+	telemetry::Counter eh_walks = 0;             // host EH: block walks to the states' fixed point
+	telemetry::Counter eh_states = 0;            // host EH: interned record stacks
+	telemetry::Counter threaded_blocks = 0;      // O1+: jump-only MIR blocks removed
+	telemetry::Counter layout_branches = 0;      // O1+: fall-through jumps and branches removed
+	telemetry::Counter strlen_prefixes = 0;      // O1+: strlen calls given the inline probe
+	telemetry::Counter dynamic_copies = 0;       // unused-result builtin memcpy calls copied in place
+	telemetry::Counter jump_tables = 0;          // O1+: switches dispatched through a jump table
+	telemetry::Counter rotated_loops = 0;        // O1+: back edges given a copy of their loop test
+	telemetry::Counter dispatch_tails = 0;       // O1+: terminal dispatches copied into incoming jumps
+	telemetry::Counter loop_splits = 0;          // O1+: values given a register outside loops they skip
+	telemetry::Counter home_splits = 0;          // O1+: values given a register outside the blocks clobbering it
+	telemetry::Counter ordered_frames = 0;       // O1+: frames whose objects order_frame moved
+	telemetry::Counter dead_frame_stores = 0;    // O1+: frame stores no path reads (drop_dead_frame_stores)
+	telemetry::Counter shared_frame_objects = 0; // O1+: frame objects in another's storage (share_frame_objects)
 	// The block-local allocator (allocation.cpp): registers bound to values
 	// and freed, and allocations that found every register of the class
 	// held (by a parameter's value among them, or by other values only).

@@ -1,0 +1,156 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @table
+  storage data
+  item i64 1
+  item i64 2
+  item i64 3
+  item i64 4
+  item i64 5
+  item i64 6
+  item i64 7
+  item i64 8
+  item i64 9
+  item i64 10
+  item i64 11
+  item i64 12
+  item i64 13
+  item i64 14
+  item i64 15
+  item i64 16
+  item i64 17
+  item i64 18
+  item i64 19
+  item i64 20
+
+global @seen
+  storage scalar i64
+  init i64 0
+
+function @note
+  abi
+    param %v -> rdi : i64
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add @seen, rdi
+    ret
+
+function @twice
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    temp %a5 -> [rbp-<off0>] : i64
+    temp %a6 -> [rbp-<off1>] : i64
+    temp %a7 -> [rbp-<off2>] : i64
+    temp %a8 -> [rbp-<off3>] : i64
+    temp %a9 -> [rbp-<off4>] : i64
+    temp %b5 -> [rbp-<off0>] : i64
+    temp %b6 -> [rbp-<off1>] : i64
+    temp %b7 -> [rbp-<off2>] : i64
+    temp %b8 -> [rbp-<off3>] : i64
+
+  block ^entry
+    mov <gpr0>, rdi
+    load.i64 rdi, [<gpr0>]
+    load.i64 <gpr3>, [<gpr0>+<off0>]
+    load.i64 <gpr4>, [<gpr0>+<off1>]
+    load.i64 <gpr2>, [<gpr0>+<off2>]
+    load.i64 <gpr1>, [<gpr0>+<off3>]
+    load.i64 <gpr5>, [<gpr0>+<off4>]
+    store.i64 [rbp-<off0>], <gpr5>
+    load.i64 <gpr5>, [<gpr0>+<off5>]
+    store.i64 [rbp-<off1>], <gpr5>
+    load.i64 <gpr5>, [<gpr0>+<off6>]
+    store.i64 [rbp-<off2>], <gpr5>
+    load.i64 <gpr5>, [<gpr0>+<off7>]
+    store.i64 [rbp-<off3>], <gpr5>
+    load.i64 <gpr5>, [<gpr0>+<off8>]
+    store.i64 [rbp-<off4>], <gpr5>
+    call @note [args=(rdi), unwind=no]
+    mov rdi, <gpr3>
+    call @note [args=(rdi), unwind=no]
+    mov rdi, <gpr4>
+    call @note [args=(rdi), unwind=no]
+    mov rdi, <gpr2>
+    call @note [args=(rdi), unwind=no]
+    mov rdi, <gpr1>
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-<off0>]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-<off1>]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-<off2>]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-<off3>]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-<off4>]
+    call @note [args=(rdi), unwind=no]
+
+  block ^later
+    load.i64 rdi, [<gpr0>+<off9>]
+    load.i64 <gpr3>, [<gpr0>+<off10>]
+    load.i64 <gpr4>, [<gpr0>+<off11>]
+    load.i64 <gpr2>, [<gpr0>+<off12>]
+    load.i64 <gpr1>, [<gpr0>+<off13>]
+    load.i64 <gpr5>, [<gpr0>+<off14>]
+    store.i64 [rbp-<off0>], <gpr5>
+    load.i64 <gpr5>, [<gpr0>+<off15>]
+    store.i64 [rbp-<off1>], <gpr5>
+    load.i64 <gpr5>, [<gpr0>+<off16>]
+    store.i64 [rbp-<off2>], <gpr5>
+    load.i64 <gpr5>, [<gpr0>+<off17>]
+    store.i64 [rbp-<off3>], <gpr5>
+    load.i64 <gpr0>, [<gpr0>+<off18>]
+    call @note [args=(rdi), unwind=no]
+    mov rdi, <gpr3>
+    call @note [args=(rdi), unwind=no]
+    mov rdi, <gpr4>
+    call @note [args=(rdi), unwind=no]
+    mov rdi, <gpr2>
+    call @note [args=(rdi), unwind=no]
+    mov rdi, <gpr1>
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-<off0>]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-<off1>]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-<off2>]
+    call @note [args=(rdi), unwind=no]
+    load.i64 rdi, [rbp-<off3>]
+    call @note [args=(rdi), unwind=no]
+    mov rdi, <gpr0>
+    call @note [args=(rdi), unwind=no]
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, @table
+    call @twice [args=(rdi), unwind=no]
+    load.i64 rax, @seen
+    sub rax, 210
+    ret rax
