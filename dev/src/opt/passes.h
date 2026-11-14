@@ -60,7 +60,7 @@ struct FunctionContext
 			if (cfg_light)
 				complete_cfg(cfg);
 			else
-				build_cfg(program, body, cfg);
+				build_cfg(program, body, cfg, no_eh());
 			cfg_valid = true;
 			cfg_light = false;
 		}
@@ -73,7 +73,7 @@ struct FunctionContext
 	{
 		if (!cfg_valid && !cfg_light)
 		{
-			build_cfg_light(program, body, cfg);
+			build_cfg_light(program, body, cfg, no_eh());
 			cfg_light = true;
 		}
 		return cfg;
@@ -81,6 +81,25 @@ struct FunctionContext
 	// The dominator tree (built with the CFG's dominance intervals).
 	const DomChildren& ensure_dom() { return ensure_cfg().tree; }
 	void invalidate_cfg() { cfg_valid = cfg_light = false; }
+	// Whether the body has no EH instruction, linked or not: its
+	// instructions are read once, and then those appended since (a pass
+	// makes an EH instruction only as a new instruction, never of another
+	// one in place, and a body is compacted when its context is done).
+	// The CFG of such a body has no handler edge and no EH block, which its
+	// builder then reads no block to learn.
+	uint32_t eh_read = 0;
+	bool eh_found = false;
+	bool no_eh()
+	{
+		if (body.instructions.size() < eh_read)
+		{
+			eh_read = 0;
+			eh_found = false;
+		}
+		for (; !eh_found && eh_read < body.instructions.size(); ++eh_read)
+			eh_found = is_eh_instruction(body.instructions[eh_read].op);
+		return !eh_found;
+	}
 	// Per symbol: a definition this optimization proved cannot unwind
 	// (internal fact, re-derived from the same LowIR by any consumer).
 	const std::vector<uint8_t>* nounwind = nullptr;

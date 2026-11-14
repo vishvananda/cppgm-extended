@@ -317,7 +317,9 @@ struct Cfg
 	}
 };
 
-void build_cfg(const lowir::Program& program, const lowir::FunctionBody& body, Cfg& cfg);
+// `no_eh`: the caller knows that the body has no EH instruction (no block
+// is then read for one).
+void build_cfg(const lowir::Program& program, const lowir::FunctionBody& body, Cfg& cfg, bool no_eh = false);
 // A control view with explicit edges (for example, calls' exceptional exits).
 // These are ordinary control edges for structuring, not optimizer EH regions.
 void build_cfg_edges(const lowir::FunctionBody& body, const std::vector<lowir::BlockId>& placed,
@@ -325,7 +327,7 @@ void build_cfg_edges(const lowir::FunctionBody& body, const std::vector<lowir::B
 // The edges, flags and reverse postorder alone (no dominators: idom,
 // dom_in and dom_out stay as they were), and the rest of build_cfg for a
 // CFG built so.
-void build_cfg_light(const lowir::Program& program, const lowir::FunctionBody& body, Cfg& cfg);
+void build_cfg_light(const lowir::Program& program, const lowir::FunctionBody& body, Cfg& cfg, bool no_eh = false);
 void complete_cfg(Cfg& cfg);
 
 void build_dom_children(const Cfg& cfg, DomChildren& out);

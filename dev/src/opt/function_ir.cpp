@@ -252,7 +252,7 @@ bool comes_before(const Program& program, const FunctionBody& body, Value v, Val
 
 namespace {
 
-void build_edges(const Program& program, const FunctionBody& body, Cfg& cfg)
+void build_edges(const Program& program, const FunctionBody& body, Cfg& cfg, bool no_eh)
 {
 	const uint32_t n = cfg.block_count;
 	std::vector<uint32_t>& mark = cfg.scratch;
@@ -265,7 +265,7 @@ void build_edges(const Program& program, const FunctionBody& body, Cfg& cfg)
 		cfg.handler_first[b] = static_cast<uint32_t>(cfg.handlers.size());
 		if ((cfg.flags[b] & BF_PLACED) == 0 || body.blocks[b].last == kNoId)
 			continue;
-		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		for (InstId i = no_eh ? kNoId : body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
 		{
 			const Instruction& inst = body.instructions[i];
 			if (is_eh_instruction(inst.op))
@@ -546,7 +546,7 @@ void build_intervals(Cfg& cfg)
 
 } // namespace
 
-void build_cfg_light(const Program& program, const FunctionBody& body, Cfg& cfg)
+void build_cfg_light(const Program& program, const FunctionBody& body, Cfg& cfg, bool no_eh)
 {
 	const uint32_t n = static_cast<uint32_t>(body.blocks.size());
 	cfg.block_count = n;
@@ -559,7 +559,7 @@ void build_cfg_light(const Program& program, const FunctionBody& body, Cfg& cfg)
 	for (const CodeLabel& label : body.code_labels)
 		cfg.flags[label.block] |= BF_ADDRESS;
 	cfg.rpo.clear();
-	build_edges(program, body, cfg);
+	build_edges(program, body, cfg, no_eh);
 	build_order(body, cfg);
 }
 
@@ -569,9 +569,9 @@ void complete_cfg(Cfg& cfg)
 	build_intervals(cfg);
 }
 
-void build_cfg(const Program& program, const FunctionBody& body, Cfg& cfg)
+void build_cfg(const Program& program, const FunctionBody& body, Cfg& cfg, bool no_eh)
 {
-	build_cfg_light(program, body, cfg);
+	build_cfg_light(program, body, cfg, no_eh);
 	complete_cfg(cfg);
 }
 

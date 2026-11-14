@@ -176,9 +176,16 @@ void verify_kept_analyses(const FunctionContext& context, const char* pass)
 		count_uses(body, fresh);
 		stale = stale || fresh != context.uses;
 	}
-	if (!stale)
+	// (An EH instruction the context's reading of the body did not meet.)
+	bool missed = false;
+	if (!context.eh_found)
+		for (BlockId block : body.layout)
+			for (InstId i = body.blocks[block].first; i != kNoId && !missed; i = body.instructions[i].next)
+				missed = i < context.eh_read && is_eh_instruction(body.instructions[i].op);
+	if (!stale && !missed)
 		return;
-	std::fprintf(stderr, "lowiropt verify: stale block map or use counts after %s in @%s\n", pass,
+	std::fprintf(stderr, "lowiropt verify: stale %s after %s in @%s\n",
+		missed ? "EH reading" : "block map or use counts", pass,
 		context.program.spelling(context.program.symbols[context.symbol].name));
 	std::exit(3);
 }
