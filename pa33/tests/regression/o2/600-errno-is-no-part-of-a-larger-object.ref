@@ -1,0 +1,82 @@
+declare function @sqrt(%x : f64) -> f64 [linkage=c, binding=strong, object=sqrt]
+declare function @malloc(%bytes : i64) -> ptr [unwind=no, linkage=c, binding=strong, object=malloc]
+
+function @field_in_loop(%box : ptr [object_bytes=16], %p : ptr, %n : i64) -> f64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %field = index inbounds i8 [projection=field] %box, 8
+    %scale = load typed i32 %field
+    %factor = convert sitofp f64 i32 %scale
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^split_2: %next]
+    %sum = phi f64 [^entry: 0, ^split_2: %more]
+    %at = index f64 %p, %i
+    %v = load typed f64 %at
+    %m = binary mul f64 %factor, %v
+    %t9 = unary sqrt f64 %m
+    %t10 = cmp lt f64 %m, 0
+    branch %t10, ^split_4, ^split_2
+
+  block ^split_2:
+    %r = phi f64 [^loop: %t9, ^split_4: %t15]
+    %more = binary add f64 %sum, %r
+    %next = binary add nowrap i64 %i, 1
+    %again = cmp lt i64 %next, %n
+    branch %again, ^loop, ^done
+
+  block ^done:
+    return f64 %more
+
+  block ^split_4:
+    %t15 = call f64 @sqrt(%m)
+    jump ^split_2
+}
+function @int_in_loop(%cell : ptr [object_bytes=4], %p : ptr, %n : i64) -> f64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^split_2: %next]
+    %sum = phi f64 [^entry: 0, ^split_2: %more]
+    %scale = load typed i32 %cell
+    %factor = convert sitofp f64 i32 %scale
+    %at = index f64 %p, %i
+    %v = load typed f64 %at
+    %m = binary mul f64 %factor, %v
+    %t8 = unary sqrt f64 %m
+    %t9 = cmp lt f64 %m, 0
+    branch %t9, ^split_4, ^split_2
+
+  block ^split_2:
+    %r = phi f64 [^loop: %t8, ^split_4: %t14]
+    %more = binary add f64 %sum, %r
+    %next = binary add nowrap i64 %i, 1
+    %again = cmp lt i64 %next, %n
+    branch %again, ^loop, ^done
+
+  block ^done:
+    return f64 %more
+
+  block ^split_4:
+    %t14 = call f64 @sqrt(%m)
+    jump ^split_2
+}
+function @field_past_allocation(%box : ptr [object_bytes=16], %out : ptr) -> i32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %field = index inbounds i8 [projection=field] %box, 8
+    %before = load typed i32 %field
+    %fresh = call ptr @malloc(8)
+    store typed ptr %fresh, %out
+    %sum = binary add i32 %before, %before
+    return i32 %sum
+}
+function @int_past_allocation(%cell : ptr [object_bytes=4], %out : ptr) -> i32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %before = load typed i32 %cell
+    %fresh = call ptr @malloc(8)
+    store typed ptr %fresh, %out
+    %after = load typed i32 %cell
+    %sum = binary add i32 %before, %after
+    return i32 %sum
+}

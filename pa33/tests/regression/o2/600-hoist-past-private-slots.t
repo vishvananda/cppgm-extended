@@ -25,13 +25,15 @@ function @private_slot(%p : ptr, %q : ptr, %n : i64) -> i64 [no_inline=yes] {
     return i64 %r
 }
 
-# Here the slot's address is stored, so %p may name the slot.
-function @escaped_slot(%p : ptr, %q : ptr, %n : i64, %out : ptr) -> i64 [no_inline=yes] {
+# Here the slot's address is stored, so a pointer read from memory may name
+# the slot. (A parameter may not: it held its value before the frame existed.)
+function @escaped_slot(%holder : ptr, %q : ptr, %n : i64, %out : ptr) -> i64 [no_inline=yes] {
   slot $s : obj<16x8>
 
   block ^entry:
     %a = addr $s
     store typed ptr %a, %out
+    %p = load typed ptr %holder
     %has = cmp gt i64 %n, 0
     branch %has, ^loop, ^done
 

@@ -2842,7 +2842,8 @@ namespace {
 // loop's live-in values and header phis count against it.
 const uint32_t kLoopRegisters = 10;
 
-// A write of the loop: its location and access.
+// A write of the loop: its location and access. A library call's write of
+// `errno` is at no known place.
 struct LoopWrite
 {
 	Located at;
@@ -2850,6 +2851,7 @@ struct LoopWrite
 	Type type;
 	bool typed;
 	Strided fields;
+	bool error_number;
 };
 
 } // namespace
@@ -2953,6 +2955,11 @@ static bool may_overlap(const Program& program, const FunctionBody& body, const 
 				at.offset < w.at.offset + static_cast<int64_t>(w.bytes));
 	if (named_a && named_b)
 		return false; // distinct slots and globals
+	// A parameter held its value before this frame existed: it points into
+	// no slot, escaped or not.
+	const auto incoming = [&](Value root) { return root.is(ValueKind::Temp) && root.index < body.parameter_count; };
+	if ((w.at.root.is(ValueKind::Slot) && incoming(at.root)) || (at.root.is(ValueKind::Slot) && incoming(w.at.root)))
+		return false;
 	if (((w.at.root.is(ValueKind::Slot) && !escaped[w.at.root.index]) ||
 			(at.root.is(ValueKind::Slot) && !escaped[at.root.index])) &&
 		!step_root(body, w.at.root) && !step_root(body, at.root))
@@ -2989,25 +2996,24 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 			{
 				writes.push_back(LoopWrite{ locate(body_, inst.ops[1]), storage_bytes(inst.type), inst.type,
 					(inst.flags & IF_TYPED) != 0 && (inst.flags & IF_VOLATILE) == 0,
-					strided_address(body_, inst.ops[1]) });
+					strided_address(body_, inst.ops[1]), false });
 			}
 			else if (inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit)
 				writes.push_back(LoopWrite{ locate(body_, inst.op == Opcode::CopyObject ? inst.ops[1] : inst.ops[0]),
-					static_cast<uint64_t>(inst.immediate), Type::scalar(TypeKind::Void), false, Strided() });
-			else if (inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) &&
-				c_.program.math_function(inst.ops[0].index) == MathFunction::Sqrt)
+					static_cast<uint64_t>(inst.immediate), Type::scalar(TypeKind::Void), false, Strided(), false });
+			else if (errno_only_call(c_.program, inst))
 			{
 				// Of all memory, it writes `errno`, an `int`.
 				Located unknown;
 				unknown.root = Value::none();
 				unknown.known = false;
-				writes.push_back(LoopWrite{ unknown, 4, Type::scalar(TypeKind::I32), true, Strided() });
+				writes.push_back(LoopWrite{ unknown, 4, Type::scalar(TypeKind::I32), true, Strided(), true });
 			}
 			else if (const FunctionWrites* summary = bounded_call_writes(c_.program, inst))
 			{
 				const Value address = body_.operands[inst.extra_first + summary->parameter];
 				writes.push_back(LoopWrite{ locate(body_, address), summary->bytes, Type::scalar(TypeKind::Void), false,
-					strided_address(body_, address) });
+					strided_address(body_, address), false });
 			}
 			else if (may_write_memory(c_.program, inst) || (inst.op == Opcode::Load && (inst.flags & IF_VOLATILE) != 0))
 				return false; // a call, an atomic, a volatile access: memory may change anywhere
@@ -3141,11 +3147,16 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 				const uint64_t bytes = storage_bytes(inst.type);
 				const bool typed = (inst.flags & IF_TYPED) != 0;
 				const Strided fields = strided_address(body_, inst.ops[0]);
+				// (`errno` is no part of a parameter's larger object.)
+				const bool in_object = at.known && at.root.is(ValueKind::Temp) &&
+					at.root.index < body_.parameter_count &&
+					inside_larger_object(c_.program, c_.symbol, at.root.index, at.offset, bytes);
 				bool clobbered = false;
 				for (const LoopWrite& w : writes)
 					clobbered = clobbered ||
-						may_overlap(c_.program, body_, w, at, fields, bytes, inst.type, typed, hoist_escaped_,
-							result_bytes, *origins_);
+						(!(w.error_number && in_object) &&
+							may_overlap(c_.program, body_, w, at, fields, bytes, inst.type, typed, hoist_escaped_,
+								result_bytes, *origins_));
 				// Run on every entry, the load keeps its facts; moved only
 				// because its memory may always be read, it runs where it did
 				// not, and `typed` may not hold there (lowir.md "Instruction Facts").

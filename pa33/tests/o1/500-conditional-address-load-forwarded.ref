@@ -14,7 +14,7 @@ function @min_kept_after_store(%a : i64, %b : i64, %out : ptr) -> i64 {
     jump ^end
 
   block ^end:
-    %v = phi i64 [^entry: %a, ^then: %b]
+    %v = phi i64 [^then: %b, ^entry: %a]
     return i64 %v
 }
 function @min_of_fields(%q : ptr) -> i64 {

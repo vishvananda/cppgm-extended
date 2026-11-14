@@ -144,6 +144,28 @@ inline bool allocation_apart(
 	return (allocated(program, body, a) && comes_before(program, body, b, a)) ||
 		(allocated(program, body, b) && comes_before(program, body, a, b));
 }
+// A call of a C library mathematics function, declared and not defined
+// here: of all the memory the program reaches it writes only `errno`.
+inline bool errno_only_call(const lowir::Program& program, const lowir::Instruction& inst)
+{
+	return inst.op == lowir::Opcode::Call && (inst.flags & lowir::IF_SIGNATURE) == 0 &&
+		inst.ops[0].is(lowir::ValueKind::Symbol) &&
+		program.math_function(inst.ops[0].index) != lowir::MathFunction::None;
+}
+// Whether `bytes` at `offset` from pointer parameter `parameter` of
+// `function` lie in the parameter's object, and the object is larger than
+// an `int`. Such an access is not `errno`, which is an object of its own
+// and no part of a larger one.
+inline bool inside_larger_object(
+	const lowir::Program& program, lowir::SymbolId function, uint32_t parameter, int64_t offset, uint64_t bytes)
+{
+	const lowir::Signature& signature =
+		program.signatures[program.functions[program.symbols[function].detail].signature];
+	if (parameter >= signature.parameter_count || offset < 0)
+		return false;
+	const uint64_t object = program.parameters_of(signature)[parameter].object_bytes;
+	return object > 4 && static_cast<uint64_t>(offset) + bytes <= object;
+}
 // An explicitly exclusive, bounded indirect result is the first parameter.
 // The pass mode by itself makes no alias promise.
 inline uint64_t exclusive_result_bytes(const lowir::Program& program, lowir::SymbolId function)

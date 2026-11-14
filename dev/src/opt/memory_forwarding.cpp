@@ -402,6 +402,11 @@ bool MemoryForwarding::pointer_may_alias(
 {
 	if ((a.base == ValueKind::Slot && !escaped_[a.index]) || (b.base == ValueKind::Slot && !escaped_[b.index]))
 		return false;
+	// A parameter held its value before this frame existed: it points into
+	// no slot, escaped or not.
+	if ((a.base == ValueKind::Slot && b.base == ValueKind::Temp && b.index < body_.parameter_count) ||
+		(b.base == ValueKind::Slot && a.base == ValueKind::Temp && a.index < body_.parameter_count))
+		return false;
 	// Explicit result storage is disjoint from other incoming objects.
 	// Unknown loaded/call-produced pointers may be derived from it.
 	if (result_apart(a, a_bytes, b) || result_apart(b, b_bytes, a))
@@ -420,8 +425,9 @@ bool MemoryForwarding::pointer_may_alias(
 	return other.base == ValueKind::Temp && other.index >= body_.parameter_count && allocation_left_[fresh] != 0;
 }
 
-// At an allocation call nothing the program reaches changes but errno, an
-// `int` behind a pointer.
+// At an allocation call or a library mathematics call nothing the program
+// reaches changes but errno, an `int` behind a pointer. It is an object of
+// its own: a cell inside a parameter's larger object is not it.
 void MemoryForwarding::forget_int_cells()
 {
 	size_t kept = 0;
@@ -431,7 +437,9 @@ void MemoryForwarding::forget_int_cells()
 		if (found.generation != generation_)
 			continue;
 		if (found.at.base == ValueKind::Temp && allocation_of(found.at) == kNoId && found.bytes == 4 &&
-			found.type.kind() == TypeKind::I32)
+			found.type.kind() == TypeKind::I32 &&
+			!(found.at.index < body_.parameter_count &&
+				inside_larger_object(c_.program, c_.symbol, found.at.index, found.at.offset, 4)))
 		{
 			undo_.push_back(std::make_pair(live_[k], found));
 			found.generation = 0;
@@ -1005,7 +1013,7 @@ void MemoryForwarding::process(BlockId block)
 			invalidate(inst.ops[0], static_cast<uint64_t>(inst.immediate));
 			note_zero(inst.ops[0], static_cast<uint64_t>(inst.immediate));
 		}
-		else if (inst.op == Opcode::Call && allocation_call(c_.program, inst))
+		else if (inst.op == Opcode::Call && (allocation_call(c_.program, inst) || errno_only_call(c_.program, inst)))
 			forget_int_cells();
 		else if (may_write_memory(c_.program, inst) && !region_marker(inst.op))
 		{

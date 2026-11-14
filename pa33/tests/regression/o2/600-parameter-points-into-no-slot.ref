@@ -1,0 +1,89 @@
+declare function @observe(%address : ptr) -> void [linkage=c, binding=strong]
+
+function @read_twice(%p : ptr) -> i64 [binding=strong, no_inline=yes] {
+  slot $buffer : obj<16x8>
+
+  block ^entry:
+    %b = addr $buffer
+    store i64 1, %b
+    call void @observe(%b)
+    %first = load i64 %p
+    store i64 %first, %b
+    %sum = binary add i64 %first, %first
+    call void @observe(%b)
+    return i64 %sum
+}
+function @loaded_pointer(%holder : ptr) -> i64 [binding=strong, no_inline=yes] {
+  slot $buffer : obj<16x8>
+
+  block ^entry:
+    %b = addr $buffer
+    store i64 1, %b
+    call void @observe(%b)
+    %q = load ptr %holder
+    %first = load i64 %q
+    store i64 %first, %b
+    %second = load i64 %q
+    %sum = binary add i64 %first, %second
+    call void @observe(%b)
+    return i64 %sum
+}
+function @in_loop(%p : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
+  slot $buffer : obj<16x8>
+
+  block ^entry:
+    %b = addr $buffer
+    store i64 0, %b
+    call void @observe(%b)
+    %t2 = load i64 %p
+    %t3 = load i64 %b
+    %t4 = binary and i64 %n, -8
+    %t5 = cmp gt i64 %t4, 0
+    branch %t5, ^unrolled_1, ^wide_tail_3
+
+  block ^unrolled_1:
+    %t6 = phi i64 [^unrolled_1: %t15, ^entry: %t3]
+    %t7 = phi i64 [^unrolled_1: %t16, ^entry: 0]
+    %t8 = binary add i64 %t2, %t6
+    store i64 %t8, %b
+    %t9 = binary add i64 %t2, %t8
+    store i64 %t9, %b
+    %t10 = binary add i64 %t2, %t9
+    store i64 %t10, %b
+    %t11 = binary add i64 %t2, %t10
+    store i64 %t11, %b
+    %t12 = binary add i64 %t2, %t11
+    store i64 %t12, %b
+    %t13 = binary add i64 %t2, %t12
+    store i64 %t13, %b
+    %t14 = binary add i64 %t2, %t13
+    store i64 %t14, %b
+    %t15 = binary add i64 %t2, %t14
+    store i64 %t15, %b
+    %t16 = binary add nowrap i64 %t7, 8
+    %t17 = cmp ne i64 %t4, %t16
+    branch %t17, ^unrolled_1, ^loop_exit_2
+
+  block ^loop_exit_2:
+    %t18 = cmp lt i64 %t16, %n
+    branch %t18, ^wide_tail_3, ^done
+
+  block ^wide_tail_3:
+    %t19 = phi i64 [^entry: %t3, ^loop_exit_2: %t15]
+    %t20 = phi i64 [^entry: 0, ^loop_exit_2: %t16]
+    jump ^loop
+
+  block ^loop:
+    %old = phi i64 [^wide_tail_3: %t19, ^loop: %new]
+    %i = phi i64 [^wide_tail_3: %t20, ^loop: %next]
+    %new = binary add i64 %t2, %old
+    store i64 %new, %b
+    %next = binary add nowrap i64 %i, 1
+    %again = cmp lt i64 %next, %n
+    branch %again, ^loop, ^done
+
+  block ^done:
+    call void @observe(%b)
+    %r = load i64 %b
+    return i64 %r
+}
