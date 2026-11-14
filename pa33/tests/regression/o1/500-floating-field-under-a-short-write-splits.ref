@@ -1,0 +1,26 @@
+function @clear_low(%x : f64, %short : i64) -> f64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = copy i64 %x
+    branch %short, ^clear, ^done
+
+  block ^clear:
+    %t2 = binary and i64 %t1, -256
+    %t3 = copy f64 %t2
+    jump ^done
+
+  block ^done:
+    %v = phi f64 [^entry: %x, ^clear: %t3]
+    return f64 %v
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %cleared = call f64 @clear_low(1.0000000000000566214, 1)
+    %kept = call f64 @clear_low(1.0000000000000566214, 0)
+    %one = cmp eq f64 %cleared, 1
+    %same = cmp eq f64 %kept, 1.0000000000000566214
+    %a = convert zext i32 i1 %one
+    %b = convert zext i32 i1 %same
+    %b2 = binary shl i32 %b, 1
+    %r = binary or i32 %a, %b2
+    return i32 %r
+}

@@ -33,12 +33,9 @@ function @literal_float() -> f32 [binding=strong, no_inline=yes] {
     return f32 1f
 }
 function @half_of_bits(%x : f32) -> u16 [binding=strong, no_inline=yes] {
-  slot $s : obj<4x4>
-
   block ^entry:
-    %a = addr $s
-    store f32 %x, %a
-    %low = load u16 %a
+    %t1 = copy u32 %x
+    %low = convert trunc u16 u32 %t1
     return u16 %low
 }
 function @main() -> i32 [role=entry] {

@@ -446,10 +446,12 @@ Type AggregateSlots::hinted_filler(SlotId slot, uint64_t gap, uint64_t end) cons
 	return Type::scalar(TypeKind::Void);
 }
 
-// Overlapping integer accesses share one carrier per eightbyte. This is
-// representation traffic, so the original loads and stores become extracts
-// and inserts before ordinary scalar promotion. Copies crossing a carrier's
-// edge, noninteger fields and indexed storage retain their memory.
+// Overlapping accesses share one integer carrier per eightbyte: integers,
+// pointers, and floating values as their bits (a value that a short write
+// also reaches). This is representation traffic, so the original loads and
+// stores become extracts and inserts before ordinary scalar promotion.
+// Copies crossing a carrier's edge, vector and wider fields and indexed
+// storage retain their memory.
 bool widen_integer_fields(SlotFacts& facts, uint64_t size)
 {
 	uint64_t needed = 0;
@@ -481,8 +483,9 @@ bool widen_integer_fields(SlotFacts& facts, uint64_t size)
 			return false;
 		for (const Field& f : facts.fields)
 			if (f.offset < end && f.offset + storage_bytes(f.type) > start &&
-				(!(f.type.is_integer() || f.type.is_pointer()) || f.offset < start ||
-					f.offset + storage_bytes(f.type) > end))
+				(!(f.type.is_integer() || f.type.is_pointer() || f.type.kind() == TypeKind::F32 ||
+					 f.type.kind() == TypeKind::F64) ||
+					f.offset < start || f.offset + storage_bytes(f.type) > end))
 				return false;
 		for (const auto& span : facts.spans)
 			if (span.first < end && span.second > start && !(span.first <= start && span.second >= end))
