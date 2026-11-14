@@ -1,9 +1,9 @@
-<svg data-original-label="Boost runtime CPU vs gcc" data-original-message="0.96×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Boost runtime CPU vs gcc; AMD EPYC 9V74 80-Core Processor; measured 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; 4 commits behind main: 0.96×">
-  <title>Boost runtime CPU vs gcc; AMD EPYC 9V74 80-Core Processor; measured 9ed2f1eea641727dd56efede0b4ca09c045e9f7f; 4 commits behind main: 0.96×</title>
+<svg data-original-label="Boost runtime CPU vs gcc" data-original-message="0.96×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="Boost runtime CPU vs gcc; AMD EPYC 7763 64-Core Processor; measured a649ddb21dd810338ac87d93e7d2e713d0f98ab1; 0 commits behind main: 0.96×">
+  <title>Boost runtime CPU vs gcc; AMD EPYC 7763 64-Core Processor; measured a649ddb21dd810338ac87d93e7d2e713d0f98ab1; 0 commits behind main: 0.96×</title>
   <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
   <g clip-path="url(#badge)">
     <rect width="64" height="24" fill="#555"/>
-    <rect x="64" width="56" height="24" fill="#4c6c23"/>
+    <rect x="64" width="56" height="24" fill="#516e22"/>
   </g>
   <text x="32" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" textLength="31" lengthAdjust="spacingAndGlyphs">EPYC</text>
   <text x="92" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">0.96×</text>
