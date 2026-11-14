@@ -28,15 +28,15 @@ Availability describes the supplied records; measurements from other reports may
 
 | Workload / configuration | Oracle | CPU / environment | Opt | Passed / executed / selected | Excluded | Status | Revision |
 |---|---|---|---|---|---|---|---|
-| [godot/headless-release](godot.md) | Independent Python checksums for cppgm, GCC and Clang; full builds succeed | Intel(R) Xeon(R) 6975P-C / GitHub hosted; Ubuntu 26.04 container | O3 | 5 / 5 / 5 checked workloads per compiler | 0 | passed | b858d4082 |
+| [godot/headless-release](godot.md) | Independent Python checksums for cppgm, GCC and Clang; full builds succeed | INTEL(R) XEON(R) PLATINUM 8573C / GitHub hosted; Ubuntu 26.04 container | O3 | 5 / 5 / 5 checked workloads per compiler | 0 | passed | 411e9fbf3 |
 
-## Intel(R) Xeon(R) 6975P-C — GitHub hosted; Ubuntu 26.04 container
+## INTEL(R) XEON(R) PLATINUM 8573C — GitHub hosted; Ubuntu 26.04 container
 
-Architecture: x86_64; host profile `godot-e7624843ee4807fc`.
+Architecture: x86_64; host profile `godot-9a0abc471859e4e5`.
 
 | Workload / configuration / test | Opt | Phase / metric | vs GCC | vs Clang | Validation | Case set | Revision |
 |---|---|---|---:|---:|---|---|---|
-| [godot/headless-release/checked-workloads](godot.md) | O3 | runtime / cpu_seconds | 0.944× | 0.915× | clang: 5/5 cppgm, 5/5 reference; gcc: 5/5 cppgm, 5/5 reference | 5 checked workloads; set 98039760 | `b858d4082` |
-| [godot/headless-release/checked-workloads](godot.md) | O3 | runtime / elapsed_seconds | 0.937× | 0.912× | clang: 5/5 cppgm, 5/5 reference; gcc: 5/5 cppgm, 5/5 reference | 5 checked workloads; set 98039760 | `b858d4082` |
-| [godot/headless-release/full-build](godot.md) | O3 | build / cpu_seconds | 4.161× | 3.395× | clang: 1/1 cppgm, 1/1 reference; gcc: 1/1 cppgm, 1/1 reference | 1 full builds; set 68c69d14 | `b858d4082` |
-| [godot/headless-release/full-build](godot.md) | O3 | build / elapsed_seconds | 4.084× | 3.382× | clang: 1/1 cppgm, 1/1 reference; gcc: 1/1 cppgm, 1/1 reference | 1 full builds; set 68c69d14 | `b858d4082` |
+| [godot/headless-release/checked-workloads](godot.md) | O3 | runtime / cpu_seconds | 0.984× | 0.948× | clang: 5/5 cppgm, 5/5 reference; gcc: 5/5 cppgm, 5/5 reference | 5 checked workloads; set 98039760 | `411e9fbf3` |
+| [godot/headless-release/checked-workloads](godot.md) | O3 | runtime / elapsed_seconds | 0.985× | 0.947× | clang: 5/5 cppgm, 5/5 reference; gcc: 5/5 cppgm, 5/5 reference | 5 checked workloads; set 98039760 | `411e9fbf3` |
+| [godot/headless-release/full-build](godot.md) | O3 | build / cpu_seconds | 4.207× | 3.347× | clang: 1/1 cppgm, 1/1 reference; gcc: 1/1 cppgm, 1/1 reference | 1 full builds; set 68c69d14 | `411e9fbf3` |
+| [godot/headless-release/full-build](godot.md) | O3 | build / elapsed_seconds | 4.136× | 3.327× | clang: 1/1 cppgm, 1/1 reference; gcc: 1/1 cppgm, 1/1 reference | 1 full builds; set 68c69d14 | `411e9fbf3` |
