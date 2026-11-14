@@ -151,110 +151,168 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^split_1
 
   block ^split_1:
-    %t1 = phi i32 [^for_end_23: %t33, ^entry: 0]
+    %t1 = phi i32 [^for_end_32: %t50, ^entry: 0]
     %t2 = cmp ge i32 %t1, -1
-    branch %t2, ^split_2, ^for_end_23
+    branch %t2, ^loop_preheader_2, ^for_end_32
 
-  block ^split_2:
-    %t3 = phi i32 [^if_end_22: %t31, ^split_1: -1]
-    %t4 = cmp gt i32 %t1, 0
-    branch %t4, ^loop_preheader_3, ^for_end_6
+  block ^loop_preheader_2:
+    %t3 = cmp gt i32 %t1, 0
+    branch %t3, ^split_16, ^loop_preheader_3
 
   block ^loop_preheader_3:
-    jump ^for_body_4
-
-  block ^for_body_4:
-    %t5 = phi i32 [^if_else_5: %t11, ^loop_preheader_3: 3]
-    %t6 = phi i32 [^if_else_5: %t13, ^loop_preheader_3: 0]
-    %t7 = binary mul nowrap i32 %t5, 3
-    %t8 = binary add nowrap i32 %t7, %t6
-    %t9 = binary and i32 %t6, 1
-    %t10 = binary add i32 %t8, 7
-    %t11 = select i32 %t9, %t10, %t8
-    %t12 = cmp eq i32 %t6, %t3
-    branch %t12, ^for_end_6, ^if_else_5
-
-  block ^if_else_5:
-    %t13 = binary add nowrap i32 %t6, 1
-    %t14 = cmp lt i32 %t13, %t1
-    branch %t14, ^for_body_4, ^for_end_6
-
-  block ^for_end_6:
-    %t15 = phi i32 [^split_2: 3, ^for_body_4: %t11, ^if_else_5: %t11]
-    %t16 = cmp lt i32 %t3, %t1
-    %t17 = cmp ge i32 %t3, 0
-    %t18 = select i64 %t17, %t16, 0
+    %t4 = phi i32 [^loop_preheader_15: %t20, ^loop_preheader_2: -1]
+    %t5 = cmp lt i32 %t4, %t1
+    %t6 = cmp ge i32 %t4, 0
+    %t7 = select i64 %t6, %t5, 0
     store volatile i32 0, @observed
-    %t19 = call i32 @overwritten(%t1, %t3)
-    branch %t18, ^cond_then_7, ^cond_end_8
+    %t8 = call i32 @overwritten(%t1, %t4)
+    branch %t7, ^loop_preheader_5, ^loop_preheader_4
 
-  block ^cond_then_7:
-    %t20 = binary add nowrap i32 %t3, 17
-    %t21 = cmp ne i32 %t19, %t20
-    branch %t21, ^if_then_9, ^if_end_10
+  block ^loop_preheader_4:
+    %t9 = cmp ne i32 %t8, 3
+    branch %t9, ^if_then_37, ^loop_preheader_6
 
-  block ^cond_end_8:
-    %t22 = cmp ne i32 %t15, %t19
-    branch %t22, ^if_then_9, ^if_end_10
+  block ^loop_preheader_5:
+    %t10 = binary add nowrap i32 %t4, 17
+    %t11 = cmp ne i32 %t10, %t8
+    branch %t11, ^if_then_37, ^loop_preheader_6
 
-  block ^if_then_9:
-    return i32 1
+  block ^loop_preheader_6:
+    %t12 = load volatile i32 @observed
+    branch %t7, ^loop_preheader_8, ^loop_preheader_7
 
-  block ^if_end_10:
-    %t23 = load volatile i32 @observed
-    branch %t18, ^cond_end_12, ^cond_else_11
+  block ^loop_preheader_7:
+    branch %t12, ^if_then_36, ^loop_preheader_9
 
-  block ^cond_else_11:
-    branch %t23, ^if_then_13, ^if_end_14
+  block ^loop_preheader_8:
+    %t13 = cmp ne i32 %t12, 17
+    branch %t13, ^if_then_36, ^loop_preheader_9
 
-  block ^cond_end_12:
-    %t24 = cmp ne i32 %t23, 17
-    branch %t24, ^if_then_13, ^if_end_14
-
-  block ^if_then_13:
-    return i32 2
-
-  block ^if_end_14:
+  block ^loop_preheader_9:
     store volatile i32 0, @observed
-    %t25 = call i32 @visible(%t1, %t3)
-    branch %t18, ^cond_end_16, ^cond_else_15
+    %t14 = call i32 @visible(%t1, %t4)
+    branch %t7, ^loop_preheader_11, ^loop_preheader_10
 
-  block ^cond_else_15:
-    %t26 = cmp ne i32 %t15, %t25
-    branch %t26, ^if_then_17, ^if_end_18
+  block ^loop_preheader_10:
+    %t15 = cmp ne i32 %t14, 3
+    branch %t15, ^if_then_35, ^loop_preheader_12
 
-  block ^cond_end_16:
-    %t27 = binary add nowrap i32 %t15, %t3
-    %t28 = cmp ne i32 %t25, %t27
-    branch %t28, ^if_then_17, ^if_end_18
+  block ^loop_preheader_11:
+    %t16 = binary add nowrap i32 %t4, 3
+    %t17 = cmp ne i32 %t16, %t14
+    branch %t17, ^if_then_35, ^loop_preheader_12
 
-  block ^if_then_17:
-    return i32 3
+  block ^loop_preheader_12:
+    %t18 = load volatile i32 @observed
+    branch %t7, ^loop_preheader_14, ^loop_preheader_13
 
-  block ^if_end_18:
-    %t29 = load volatile i32 @observed
-    branch %t18, ^cond_end_20, ^cond_else_19
+  block ^loop_preheader_13:
+    branch %t18, ^if_then_34, ^loop_preheader_15
 
-  block ^cond_else_19:
-    branch %t29, ^if_then_21, ^if_end_22
+  block ^loop_preheader_14:
+    %t19 = cmp ne i32 %t18, 3
+    branch %t19, ^if_then_34, ^loop_preheader_15
+
+  block ^loop_preheader_15:
+    %t20 = binary add nowrap i32 %t4, 1
+    %t21 = cmp le i32 %t20, %t1
+    branch %t21, ^loop_preheader_3, ^for_end_32
+
+  block ^split_16:
+    %t22 = phi i32 [^if_end_31: %t48, ^loop_preheader_2: -1]
+    jump ^for_body_17
+
+  block ^for_body_17:
+    %t23 = phi i32 [^if_else_18: %t29, ^split_16: 3]
+    %t24 = phi i32 [^if_else_18: %t31, ^split_16: 0]
+    %t25 = binary mul nowrap i32 %t23, 3
+    %t26 = binary add nowrap i32 %t25, %t24
+    %t27 = binary and i32 %t24, 1
+    %t28 = binary add i32 %t26, 7
+    %t29 = select i32 %t27, %t28, %t26
+    %t30 = cmp eq i32 %t24, %t22
+    branch %t30, ^for_end_19, ^if_else_18
+
+  block ^if_else_18:
+    %t31 = binary add nowrap i32 %t24, 1
+    %t32 = cmp lt i32 %t31, %t1
+    branch %t32, ^for_body_17, ^for_end_19
+
+  block ^for_end_19:
+    %t33 = cmp lt i32 %t22, %t1
+    %t34 = cmp ge i32 %t22, 0
+    %t35 = select i64 %t34, %t33, 0
+    store volatile i32 0, @observed
+    %t36 = call i32 @overwritten(%t1, %t22)
+    branch %t35, ^cond_then_21, ^cond_end_20
 
   block ^cond_end_20:
-    %t30 = cmp ne i32 %t15, %t29
-    branch %t30, ^if_then_21, ^if_end_22
+    %t37 = cmp ne i32 %t36, %t29
+    branch %t37, ^if_then_37, ^if_end_22
 
-  block ^if_then_21:
-    return i32 4
+  block ^cond_then_21:
+    %t38 = binary add nowrap i32 %t22, 17
+    %t39 = cmp ne i32 %t36, %t38
+    branch %t39, ^if_then_37, ^if_end_22
 
   block ^if_end_22:
-    %t31 = binary add nowrap i32 %t3, 1
-    %t32 = cmp le i32 %t31, %t1
-    branch %t32, ^split_2, ^for_end_23
+    %t40 = load volatile i32 @observed
+    branch %t35, ^cond_end_24, ^cond_else_23
 
-  block ^for_end_23:
-    %t33 = binary add nowrap i32 %t1, 1
-    %t34 = cmp le i32 %t33, 8
-    branch %t34, ^split_1, ^for_end_24
+  block ^cond_else_23:
+    branch %t40, ^if_then_36, ^if_end_25
 
-  block ^for_end_24:
+  block ^cond_end_24:
+    %t41 = cmp ne i32 %t40, 17
+    branch %t41, ^if_then_36, ^if_end_25
+
+  block ^if_end_25:
+    store volatile i32 0, @observed
+    %t42 = call i32 @visible(%t1, %t22)
+    branch %t35, ^cond_end_27, ^cond_else_26
+
+  block ^cond_else_26:
+    %t43 = cmp ne i32 %t42, %t29
+    branch %t43, ^if_then_35, ^if_end_28
+
+  block ^cond_end_27:
+    %t44 = binary add nowrap i32 %t29, %t22
+    %t45 = cmp ne i32 %t42, %t44
+    branch %t45, ^if_then_35, ^if_end_28
+
+  block ^if_end_28:
+    %t46 = load volatile i32 @observed
+    branch %t35, ^cond_end_30, ^cond_else_29
+
+  block ^cond_else_29:
+    branch %t46, ^if_then_34, ^if_end_31
+
+  block ^cond_end_30:
+    %t47 = cmp ne i32 %t46, %t29
+    branch %t47, ^if_then_34, ^if_end_31
+
+  block ^if_end_31:
+    %t48 = binary add nowrap i32 %t22, 1
+    %t49 = cmp le i32 %t48, %t1
+    branch %t49, ^split_16, ^for_end_32
+
+  block ^for_end_32:
+    %t50 = binary add nowrap i32 %t1, 1
+    %t51 = cmp le i32 %t50, 8
+    branch %t51, ^split_1, ^for_end_33
+
+  block ^for_end_33:
     return i32 0
+
+  block ^if_then_34:
+    return i32 4
+
+  block ^if_then_35:
+    return i32 3
+
+  block ^if_then_36:
+    return i32 2
+
+  block ^if_then_37:
+    return i32 1
 }

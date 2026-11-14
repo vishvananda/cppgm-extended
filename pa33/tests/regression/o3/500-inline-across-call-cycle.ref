@@ -40,42 +40,50 @@ function @route(%node : ptr, %depth : i64) -> i64 [binding=strong] {
 function @walk(%first : ptr, %depth : i64) -> i64 [binding=strong] {
   block ^entry:
     %live = cmp ne ptr %first, 0
-    branch %live, ^inline_entry_1, ^done
+    branch %live, ^loop_preheader_1, ^done
 
-  block ^inline_entry_1:
-    %t2 = phi i64 [^inline_cont_5: %more, ^entry: 0]
-    %t3 = phi ptr [^inline_cont_5: %next, ^entry: %first]
+  block ^loop_preheader_1:
+    branch %depth, ^inline_entry_2, ^loop_preheader_4
+
+  block ^inline_entry_2:
+    %t2 = phi i64 [^inline_cont_5: %more, ^loop_preheader_1: 0]
+    %t3 = phi ptr [^inline_cont_5: %next, ^loop_preheader_1: %first]
     %kind_4 = load i64 %t3
     %at_5 = index i8 %t3, 8
     %value_6 = load i64 %at_5
-    branch %kind_4, ^inline_entry_2, ^inline_cont_5
+    branch %kind_4, ^inline_entry_3, ^inline_cont_5
 
-  block ^inline_entry_2:
-    branch %depth, ^inline_copy_3, ^inline_cont_4
-
-  block ^inline_copy_3:
+  block ^inline_entry_3:
     %link_7 = index i8 %t3, 16
     %child_8 = load ptr %link_7
     %less_9 = binary sub i64 %depth, 1
     %r_10 = call i64 @gate(%child_8, %less_9)
-    jump ^inline_cont_4
-
-  block ^inline_cont_4:
-    %below_11 = phi i64 [^inline_copy_3: %r_10, ^inline_entry_2: 0]
-    %sum_12 = binary add i64 %value_6, %below_11
+    %sum_11 = binary add i64 %value_6, %r_10
     jump ^inline_cont_5
 
+  block ^loop_preheader_4:
+    %t12 = phi i64 [^loop_preheader_4: %t17, ^loop_preheader_1: 0]
+    %t13 = phi ptr [^loop_preheader_4: %t19, ^loop_preheader_1: %first]
+    %t14 = load i64 %t13
+    %t15 = index i8 %t13, 8
+    %t16 = load i64 %t15
+    %t17 = binary add i64 %t12, %t16
+    %t18 = index i8 %t13, 24
+    %t19 = load ptr %t18
+    %t20 = cmp ne ptr %t19, 0
+    branch %t20, ^loop_preheader_4, ^done
+
   block ^inline_cont_5:
-    %one = phi i64 [^inline_cont_4: %sum_12, ^inline_entry_1: %value_6]
+    %one = phi i64 [^inline_entry_3: %sum_11, ^inline_entry_2: %value_6]
     %more = binary add i64 %one, %t2
     %link = index i8 %t3, 24
     %next = load ptr %link
-    %t17 = cmp ne ptr %next, 0
-    branch %t17, ^inline_entry_1, ^done
+    %t25 = cmp ne ptr %next, 0
+    branch %t25, ^inline_entry_2, ^done
 
   block ^done:
-    %t18 = phi i64 [^entry: 0, ^inline_cont_5: %more]
-    return i64 %t18
+    %t26 = phi i64 [^entry: 0, ^inline_cont_5: %more, ^loop_preheader_4: %t17]
+    return i64 %t26
 }
 function @gate(%node : ptr, %depth : i64) -> i64 [binding=strong, no_inline=yes] {
   block ^entry:

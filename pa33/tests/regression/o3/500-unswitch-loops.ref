@@ -251,6 +251,7 @@ function @keep_variant_test(%p : ptr, %n : i64) -> void [no_inline=yes] {
 }
 function @keep_unwinding_call(%flag : i64, %n : i64) -> void [no_inline=yes] {
   block ^entry:
+    eh_try ^dispatch
     %more = cmp gt i64 %n, 0
     branch %more, ^body, ^exit
 
@@ -266,6 +267,57 @@ function @keep_unwinding_call(%flag : i64, %n : i64) -> void [no_inline=yes] {
     %next = binary add nowrap i64 %t2, 1
     %t4 = cmp lt i64 %next, %n
     branch %t4, ^body, ^exit
+
+  block ^exit:
+    eh_end
+    return void
+
+  block ^dispatch:
+    call void @touch(0)
+    resume
+}
+function @on_unwinding_call(%flag : i64, %n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    %more = cmp gt i64 %n, 0
+    branch %more, ^loop_preheader_1, ^exit
+
+  block ^loop_preheader_1:
+    branch %flag, ^body, ^loop_preheader_3
+
+  block ^body:
+    %t2 = phi i64 [^body: %next, ^loop_preheader_1: 0]
+    call void @thrower(%t2)
+    %next = binary add nowrap i64 %t2, 1
+    %t4 = cmp lt i64 %next, %n
+    branch %t4, ^body, ^exit
+
+  block ^loop_preheader_3:
+    %t5 = binary and i64 %n, -8
+    %t6 = cmp gt i64 %t5, 0
+    branch %t6, ^loop_preheader_4, ^wide_tail_7
+
+  block ^loop_preheader_4:
+    jump ^unrolled_5
+
+  block ^unrolled_5:
+    %t7 = phi i64 [^loop_preheader_4: 0, ^unrolled_5: %t8]
+    %t8 = binary add nowrap i64 %t7, 8
+    %t9 = cmp ne i64 %t5, %t8
+    branch %t9, ^unrolled_5, ^loop_exit_6
+
+  block ^loop_exit_6:
+    %t10 = cmp lt i64 %t8, %n
+    branch %t10, ^wide_tail_7, ^exit
+
+  block ^wide_tail_7:
+    %t11 = phi i64 [^loop_preheader_3: 0, ^loop_exit_6: %t8]
+    jump ^loop_preheader_8
+
+  block ^loop_preheader_8:
+    %t12 = phi i64 [^loop_preheader_8: %t13, ^wide_tail_7: %t11]
+    %t13 = binary add nowrap i64 %t12, 1
+    %t14 = cmp lt i64 %t13, %n
+    branch %t14, ^loop_preheader_8, ^exit
 
   block ^exit:
     return void

@@ -547,99 +547,134 @@ function @observe(%seed : u32, %n : u32) -> u32 [linkage=c, binding=strong] {
     %t75 = binary add u32 %t68, %t74
     %t76 = call u32 @packed_sum(%t1, %t42)
     %t77 = cmp ne u32 %t75, %t76
-    branch %t77, ^if_then_7, ^for_body_8
+    branch %t77, ^if_then_26, ^loop_preheader_7
 
-  block ^if_then_7:
-    return u32 0
+  block ^loop_preheader_7:
+    branch %n, ^for_body_15, ^loop_preheader_8
 
-  block ^for_body_8:
-    %t78 = phi u32 [^if_end_17: %t132, ^for_end_6: 0]
+  block ^loop_preheader_8:
+    %t78 = phi u32 [^loop_preheader_14: %t93, ^loop_preheader_7: 0]
     %t79 = index inbounds u32 [projection=array_element] %t43, %t78
     %t80 = load typed u32 %t79
-    branch %n, ^for_body_9, ^for_end_10
+    %t81 = call u32 @sum_less(%n, %t80)
+    %t82 = cmp ne u32 %t81, 9
+    branch %t82, ^if_then_25, ^loop_preheader_9
 
-  block ^for_body_9:
-    %t81 = phi u32 [^for_body_9: %t112, ^for_body_8: 0]
-    %t82 = phi u32 [^for_body_9: %t93, ^for_body_8: 9]
-    %t83 = phi u32 [^for_body_9: %t97, ^for_body_8: 9]
-    %t84 = phi u32 [^for_body_9: %t101, ^for_body_8: 305419896]
-    %t85 = phi u32 [^for_body_9: %t105, ^for_body_8: 4294967295]
-    %t86 = phi u32 [^for_body_9: %t108, ^for_body_8: 9]
-    %t87 = phi u32 [^for_body_9: %t111, ^for_body_8: 9]
-    %t88 = index inbounds u32 [projection=array_element] %t1, %t81
-    %t89 = load volatile u32 %t88
-    %t90 = binary mul u32 %t89, 7
-    %t91 = binary add u32 %t90, %t82
-    %t92 = cmp ult u32 %t89, %t80
-    %t93 = select u32 %t92, %t91, %t82
-    %t94 = binary xor u32 %t89, 31
-    %t95 = binary sub u32 %t83, %t94
-    %t96 = cmp ule u32 %t89, %t80
-    %t97 = select u32 %t96, %t95, %t83
-    %t98 = binary add u32 %t89, 17
-    %t99 = binary xor u32 %t98, %t84
-    %t100 = cmp ugt u32 %t89, %t80
-    %t101 = select u32 %t100, %t99, %t84
-    %t102 = binary or u32 %t89, 255
-    %t103 = binary and u32 %t102, %t85
-    %t104 = cmp uge u32 %t89, %t80
-    %t105 = select u32 %t104, %t103, %t85
-    %t106 = binary add u32 %t89, %t86
-    %t107 = cmp ult u32 %t89, %t86
-    %t108 = select u32 %t107, %t106, %t86
-    %t109 = binary add u32 %t89, %t87
-    %t110 = cmp ult u32 %t109, %t80
-    %t111 = select u32 %t110, %t109, %t87
-    %t112 = binary add u32 %t81, 1
-    %t113 = cmp ult u32 %t112, %n
-    branch %t113, ^for_body_9, ^for_end_10
+  block ^loop_preheader_9:
+    %t83 = call u32 @sum_le(%n, %t80)
+    %t84 = cmp ne u32 %t83, 9
+    branch %t84, ^if_then_25, ^loop_preheader_10
 
-  block ^for_end_10:
-    %t114 = phi u32 [^for_body_8: 9, ^for_body_9: %t93]
-    %t115 = phi u32 [^for_body_8: 9, ^for_body_9: %t97]
-    %t116 = phi u32 [^for_body_8: 305419896, ^for_body_9: %t101]
-    %t117 = phi u32 [^for_body_8: 4294967295, ^for_body_9: %t105]
-    %t118 = phi u32 [^for_body_8: 9, ^for_body_9: %t108]
-    %t119 = phi u32 [^for_body_8: 9, ^for_body_9: %t111]
-    %t120 = call u32 @sum_less(%n, %t80)
-    %t121 = cmp ne u32 %t120, %t114
-    branch %t121, ^if_then_16, ^lor_rhs_11
+  block ^loop_preheader_10:
+    %t85 = call u32 @sum_greater(%n, %t80)
+    %t86 = cmp ne u32 %t85, 305419896
+    branch %t86, ^if_then_25, ^loop_preheader_11
 
-  block ^lor_rhs_11:
-    %t122 = call u32 @sum_le(%n, %t80)
-    %t123 = cmp ne u32 %t122, %t115
-    branch %t123, ^if_then_16, ^lor_rhs_12
+  block ^loop_preheader_11:
+    %t87 = call u32 @sum_ge(%n, %t80)
+    %t88 = cmp ne u32 %t87, 4294967295
+    branch %t88, ^if_then_25, ^loop_preheader_12
 
-  block ^lor_rhs_12:
-    %t124 = call u32 @sum_greater(%n, %t80)
-    %t125 = cmp ne u32 %t124, %t116
-    branch %t125, ^if_then_16, ^lor_rhs_13
+  block ^loop_preheader_12:
+    %t89 = call u32 @dependent(%n)
+    %t90 = cmp ne u32 %t89, 9
+    branch %t90, ^if_then_25, ^loop_preheader_13
 
-  block ^lor_rhs_13:
-    %t126 = call u32 @sum_ge(%n, %t80)
-    %t127 = cmp ne u32 %t126, %t117
-    branch %t127, ^if_then_16, ^lor_rhs_14
+  block ^loop_preheader_13:
+    %t91 = call u32 @updated_condition(%n, %t80)
+    %t92 = cmp ne u32 %t91, 9
+    branch %t92, ^if_then_25, ^loop_preheader_14
 
-  block ^lor_rhs_14:
-    %t128 = call u32 @dependent(%n)
-    %t129 = cmp ne u32 %t128, %t118
-    branch %t129, ^if_then_16, ^lor_rhs_15
+  block ^loop_preheader_14:
+    %t93 = binary add u32 %t78, 1
+    %t94 = cmp ult u32 %t93, 6
+    branch %t94, ^loop_preheader_8, ^for_end_24
 
-  block ^lor_rhs_15:
-    %t130 = call u32 @updated_condition(%n, %t80)
-    %t131 = cmp ne u32 %t130, %t119
-    branch %t131, ^if_then_16, ^if_end_17
+  block ^for_body_15:
+    %t95 = phi u32 [^if_end_23: %t143, ^loop_preheader_7: 0]
+    %t96 = index inbounds u32 [projection=array_element] %t43, %t95
+    %t97 = load typed u32 %t96
+    jump ^for_body_16
 
-  block ^if_then_16:
+  block ^for_body_16:
+    %t98 = phi u32 [^for_body_16: %t129, ^for_body_15: 0]
+    %t99 = phi u32 [^for_body_16: %t110, ^for_body_15: 9]
+    %t100 = phi u32 [^for_body_16: %t114, ^for_body_15: 9]
+    %t101 = phi u32 [^for_body_16: %t118, ^for_body_15: 305419896]
+    %t102 = phi u32 [^for_body_16: %t122, ^for_body_15: 4294967295]
+    %t103 = phi u32 [^for_body_16: %t125, ^for_body_15: 9]
+    %t104 = phi u32 [^for_body_16: %t128, ^for_body_15: 9]
+    %t105 = index inbounds u32 [projection=array_element] %t1, %t98
+    %t106 = load volatile u32 %t105
+    %t107 = binary mul u32 %t106, 7
+    %t108 = binary add u32 %t107, %t99
+    %t109 = cmp ult u32 %t106, %t97
+    %t110 = select u32 %t109, %t108, %t99
+    %t111 = binary xor u32 %t106, 31
+    %t112 = binary sub u32 %t100, %t111
+    %t113 = cmp ule u32 %t106, %t97
+    %t114 = select u32 %t113, %t112, %t100
+    %t115 = binary add u32 %t106, 17
+    %t116 = binary xor u32 %t115, %t101
+    %t117 = cmp ugt u32 %t106, %t97
+    %t118 = select u32 %t117, %t116, %t101
+    %t119 = binary or u32 %t106, 255
+    %t120 = binary and u32 %t119, %t102
+    %t121 = cmp uge u32 %t106, %t97
+    %t122 = select u32 %t121, %t120, %t102
+    %t123 = binary add u32 %t106, %t103
+    %t124 = cmp ult u32 %t106, %t103
+    %t125 = select u32 %t124, %t123, %t103
+    %t126 = binary add u32 %t106, %t104
+    %t127 = cmp ult u32 %t126, %t97
+    %t128 = select u32 %t127, %t126, %t104
+    %t129 = binary add u32 %t98, 1
+    %t130 = cmp ult u32 %t129, %n
+    branch %t130, ^for_body_16, ^for_end_17
+
+  block ^for_end_17:
+    %t131 = call u32 @sum_less(%n, %t97)
+    %t132 = cmp ne u32 %t131, %t110
+    branch %t132, ^if_then_25, ^lor_rhs_18
+
+  block ^lor_rhs_18:
+    %t133 = call u32 @sum_le(%n, %t97)
+    %t134 = cmp ne u32 %t133, %t114
+    branch %t134, ^if_then_25, ^lor_rhs_19
+
+  block ^lor_rhs_19:
+    %t135 = call u32 @sum_greater(%n, %t97)
+    %t136 = cmp ne u32 %t135, %t118
+    branch %t136, ^if_then_25, ^lor_rhs_20
+
+  block ^lor_rhs_20:
+    %t137 = call u32 @sum_ge(%n, %t97)
+    %t138 = cmp ne u32 %t137, %t122
+    branch %t138, ^if_then_25, ^lor_rhs_21
+
+  block ^lor_rhs_21:
+    %t139 = call u32 @dependent(%n)
+    %t140 = cmp ne u32 %t139, %t125
+    branch %t140, ^if_then_25, ^lor_rhs_22
+
+  block ^lor_rhs_22:
+    %t141 = call u32 @updated_condition(%n, %t97)
+    %t142 = cmp ne u32 %t141, %t128
+    branch %t142, ^if_then_25, ^if_end_23
+
+  block ^if_end_23:
+    %t143 = binary add u32 %t95, 1
+    %t144 = cmp ult u32 %t143, 6
+    branch %t144, ^for_body_15, ^for_end_24
+
+  block ^for_end_24:
+    return u32 17
+
+  block ^if_then_25:
     return u32 0
 
-  block ^if_end_17:
-    %t132 = binary add u32 %t78, 1
-    %t133 = cmp ult u32 %t132, 6
-    branch %t133, ^for_body_8, ^for_end_18
-
-  block ^for_end_18:
-    return u32 17
+  block ^if_then_26:
+    return u32 0
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
