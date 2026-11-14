@@ -16,6 +16,11 @@ namespace {
 // branch is cheaper than computing both sides.
 const unsigned kArmCap = 2;
 const unsigned kSelectCap = 2;
+// Copies an arm may hold besides (a copy renames a value: no instruction).
+const unsigned kArmCopies = 2;
+// The instructions of a block that a test only skips where they compute
+// what the other path gives: the block runs on both paths, the test goes.
+const unsigned kSkippedCap = 4;
 // The values the walk from a condition back to its merge visits.
 const unsigned kCycleWalkCap = 48;
 
@@ -98,6 +103,14 @@ private:
 	bool arm(BlockId a, BlockId from, BlockId& to) const;
 	bool loads_through_merge(Value cond, BlockId join) const;
 	bool form(BlockId e);
+	bool returning(BlockId a, BlockId from, bool& computes) const;
+	bool truth_value(BlockId e, InstId& at, Value cond, Type type, Value a, Value b, uint32_t location, Value& out);
+	bool form_return(BlockId e);
+	typedef std::vector<std::pair<TempId, Constant>> Known;
+	bool known_value(Value v, const Known& known, Constant& out) const;
+	bool evaluate(const Instruction& inst, const Known& known, Constant& out) const;
+	bool form_skipped(BlockId e);
+	bool same_target(BlockId a, BlockId b) const;
 	bool form_store(BlockId e);
 	InstId store_arm(BlockId arm, BlockId from) const;
 	bool same_expression(Value a, Value b, unsigned depth = 0) const;
@@ -308,7 +321,7 @@ Value SelectFormation::emit_indexed(BlockId e, InstId& at, const IndexedChoice& 
 }
 
 // A block reached only from `from` that computes at most kArmCap
-// speculatable values and jumps on (to `to`).
+// speculatable values (and kArmCopies copies) and jumps on (to `to`).
 bool SelectFormation::arm(BlockId a, BlockId from, BlockId& to) const
 {
 	const Cfg& cfg = c_.cfg;
@@ -318,9 +331,10 @@ bool SelectFormation::arm(BlockId a, BlockId from, BlockId& to) const
 	const InstId last = body_.blocks[a].last;
 	if (last == kNoId || body_.instructions[last].op != Opcode::Jump)
 		return false;
-	unsigned count = 0;
+	unsigned count = 0, copies = 0;
 	for (InstId i = body_.blocks[a].first; i != last; i = body_.instructions[i].next)
-		if (++count > kArmCap || !speculatable(body_, body_.instructions[i]))
+		if ((body_.instructions[i].op == Opcode::Copy ? ++copies > kArmCopies : ++count > kArmCap) ||
+			!speculatable(body_, body_.instructions[i]))
 			return false;
 	to = body_.instructions[last].ops[0].index;
 	return true;
@@ -677,6 +691,336 @@ bool SelectFormation::form_load(BlockId e)
 	return true;
 }
 
+// A block that returns a selectable value: only that, or, reached only from
+// `from`, after an arm's instructions (`computes`).
+bool SelectFormation::returning(BlockId a, BlockId from, bool& computes) const
+{
+	const Cfg& cfg = c_.cfg;
+	const InstId last = body_.blocks[a].last;
+	if (a == from || touched_[a] || last == kNoId || body_.instructions[last].op != Opcode::Return ||
+		(cfg.flags[a] & (BF_HANDLER | BF_EH)))
+		return false;
+	const Instruction& ret = body_.instructions[last];
+	if (!selectable(ret.type) || ret.extra_count != 0 || ret.ops[0].is(ValueKind::None) ||
+		ret.ops[0].is(ValueKind::Slot))
+		return false;
+	computes = body_.blocks[a].first != last;
+	if (!computes)
+		return true;
+	if (cfg.pred_count(a) != 1 || cfg.preds[cfg.pred_first[a]] != from)
+		return false;
+	unsigned count = 0, copies = 0;
+	for (InstId i = body_.blocks[a].first; i != last; i = body_.instructions[i].next)
+		if ((body_.instructions[i].op == Opcode::Copy ? ++copies > kArmCopies : ++count > kArmCap) ||
+			!speculatable(body_, body_.instructions[i]))
+			return false;
+	return true;
+}
+
+// The choice of the literals 1 and 0 (or 0 and 1) by a compare's result is
+// that result (or its opposite) at the chosen type's width: no select.
+bool SelectFormation::truth_value(
+	BlockId e, InstId& at, Value cond, Type type, Value a, Value b, uint32_t location, Value& out)
+{
+	const Instruction* test = producer(cond);
+	Constant ca, cb;
+	if (test == nullptr || test->op != Opcode::Compare || !type.is_integer() || !literal_constant(body_, a, ca) ||
+		!literal_constant(body_, b, cb))
+		return false;
+	const bool inverted = is_integer(type, ca, 0) && is_integer(type, cb, 1);
+	if (!inverted && !(is_integer(type, ca, 1) && is_integer(type, cb, 0)))
+		return false;
+	const Type truth = Type::scalar(TypeKind::I64);
+	auto emit = [&](Instruction inst, Type result) {
+		inst.location = location;
+		const InstId n = append_instruction(body_, inst);
+		body_.instructions[n].result = append_temp(body_, result, n);
+		insert_after(body_, e, at, n);
+		at = n;
+		return Value::temp(body_.instructions[n].result);
+	};
+	out = cond;
+	if (inverted)
+	{
+		Instruction opposite = make_instruction(Opcode::Compare, truth);
+		opposite.sub = static_cast<uint8_t>(ComparePredicate::Eq);
+		opposite.ops[0] = cond;
+		opposite.ops[1] = integer_value(body_, Literal{ 0, 0 });
+		out = emit(opposite, truth);
+	}
+	if (type == truth)
+		return true;
+	Instruction narrow = make_instruction(storage_bytes(type) == 8 ? Opcode::Copy : Opcode::Convert, type);
+	if (narrow.op == Opcode::Convert)
+	{
+		narrow.sub = static_cast<uint8_t>(ConvertOp::Trunc);
+		set_convert_source_type(narrow, truth);
+	}
+	narrow.ops[0] = out;
+	out = emit(narrow, type);
+	return true;
+}
+
+// `e` branches to two blocks that return, at most one of them after an
+// arm's instructions: the branch only chooses the value. `e` computes the
+// arm's and returns the one its condition selects (LLVM folds such a branch
+// to a select as well). A value a block that only returns names is defined
+// above every block that reaches it, so above `e`.
+bool SelectFormation::form_return(BlockId e)
+{
+	const InstId term = body_.blocks[e].last;
+	if (term == kNoId || body_.instructions[term].op != Opcode::Branch)
+		return false;
+	const Instruction br = body_.instructions[term];
+	const Value cond = br.ops[0];
+	const BlockId t = br.ops[1].index, f = br.ops[2].index;
+	bool t_computes = false, f_computes = false;
+	if (!cond.is(ValueKind::Temp) || !selectable(body_.temps[cond.index].type) || t == f ||
+		!returning(t, e, t_computes) || !returning(f, e, f_computes) || (t_computes && f_computes))
+		return false;
+	// A stated expectation seldom runs the other side's instructions.
+	if ((t_computes || f_computes) && br.sub != static_cast<uint8_t>(BranchPrediction::None))
+		return false;
+	const Instruction rt = body_.instructions[body_.blocks[t].last], rf = body_.instructions[body_.blocks[f].last];
+	if (!(rt.type == rf.type))
+		return false;
+	InstId at = previous_in_block(body_, e, term);
+	if (t_computes)
+		at = hoist(t, e, at);
+	if (f_computes)
+		at = hoist(f, e, at);
+	Value merged = rt.ops[0];
+	if (!(rt.ops[0] == rf.ops[0]) && !same_literal(body_, rt.type, rt.ops[0], rf.ops[0]) &&
+		!truth_value(e, at, cond, rt.type, rt.ops[0], rf.ops[0], br.location, merged))
+	{
+		Instruction sel = make_instruction(Opcode::Select, rt.type);
+		sel.ops[0] = cond;
+		sel.ops[1] = rt.ops[0];
+		sel.ops[2] = rf.ops[0];
+		sel.location = br.location;
+		const InstId s = append_instruction(body_, sel);
+		body_.instructions[s].result = append_temp(body_, rt.type, s);
+		insert_after(body_, e, at, s);
+		merged = Value::temp(body_.instructions[s].result);
+	}
+	// The emptied arm ends unreachable (the cleanup drops it); a block that
+	// only returns stays for its other predecessors.
+	const BlockId arms[2] = { t_computes ? t : kNoId, f_computes ? f : kNoId };
+	for (BlockId a : arms)
+	{
+		if (a == kNoId)
+			continue;
+		Instruction& end = body_.instructions[body_.blocks[a].last];
+		end.op = Opcode::Unreachable;
+		end.type = Type::scalar(TypeKind::Void);
+		end.ops[0] = Value::none();
+	}
+	Instruction ret = make_instruction(Opcode::Return, rt.type);
+	ret.ops[0] = merged;
+	ret.location = br.location;
+	body_.instructions[term] = ret;
+	touched_[e] = touched_[t] = touched_[f] = 1;
+	++c_.stats.branches_folded;
+	return true;
+}
+
+bool SelectFormation::known_value(Value v, const Known& known, Constant& out) const
+{
+	if (literal_constant(body_, v, out))
+		return true;
+	if (!v.is(ValueKind::Temp))
+		return false;
+	for (const std::pair<TempId, Constant>& k : known)
+		if (k.first == v.index)
+		{
+			out = k.second;
+			return true;
+		}
+	return false;
+}
+
+// What `inst` computes where the temporaries of `known` have their values,
+// when those decide it.
+bool SelectFormation::evaluate(const Instruction& inst, const Known& known, Constant& out) const
+{
+	Constant a, b;
+	const bool ka = known_value(inst.ops[0], known, a), kb = known_value(inst.ops[1], known, b);
+	const auto zero = [](const Constant& c) {
+		return c.kind == ValueKind::Integer && c.bits.low == 0 && c.bits.high == 0;
+	};
+	switch (inst.op)
+	{
+	case Opcode::Copy:
+		return ka && fold_copy(inst.type, a, out);
+	case Opcode::Unary:
+		return ka && fold_unary(static_cast<UnaryOp>(inst.sub), inst.type, a, out);
+	case Opcode::Binary:
+	{
+		const BinaryOp op = static_cast<BinaryOp>(inst.sub);
+		if (ka && kb)
+			return fold_binary(op, inst.type, a, b, out);
+		// Zero under `and` and `mul`, whatever the other operand.
+		if ((op != BinaryOp::And && op != BinaryOp::Mul) || !inst.type.is_integer() ||
+			!((ka && zero(a)) || (kb && zero(b))))
+			return false;
+		out = integer_constant(inst.type, Literal{ 0, 0 });
+		return true;
+	}
+	case Opcode::Compare:
+		return ka && kb && !inst.type.is_float() &&
+			fold_compare(static_cast<ComparePredicate>(inst.sub), inst.type, a, b, out);
+	case Opcode::Convert:
+		return ka && fold_convert(static_cast<ConvertOp>(inst.sub), inst.type, convert_source_type(inst), a, out);
+	case Opcode::Select:
+		return ka && a.kind == ValueKind::Integer && known_value(inst.ops[zero(a) ? 2 : 1], known, out);
+	default:
+		return false;
+	}
+}
+
+// `e` tests a value against a literal and where they are equal goes straight
+// to a merge, else through a block of its own that only computes (at most
+// kSkippedCap speculatable instructions). Where each phi's value from that
+// block, computed from the literal, is the constant the phi takes from `e`,
+// the block's values serve both paths: `e` runs into it and the test goes.
+// (`p ? p & ~7 : 0` is `p & ~7`; a pointer union's `dyn_cast` after its null
+// test is such a block.) Likewise where the block returns its value and the
+// equal side only returns the literal the block computes from the tested one.
+bool SelectFormation::form_skipped(BlockId e)
+{
+	const InstId term = body_.blocks[e].last;
+	if (term == kNoId || body_.instructions[term].op != Opcode::Branch)
+		return false;
+	const Instruction br = body_.instructions[term];
+	const Value cond = br.ops[0];
+	if (!cond.is(ValueKind::Temp) || br.ops[1].index == br.ops[2].index)
+		return false;
+	// The side taken where the tested value is the literal: `x == K`'s true
+	// side, the false side of `x != K` and of a branch on `x` itself (K 0).
+	Known known;
+	unsigned equal_side = 2;
+	const Instruction* test = producer(cond);
+	const ComparePredicate predicate = test != nullptr && test->op == Opcode::Compare
+		? static_cast<ComparePredicate>(test->sub)
+		: ComparePredicate::Lt;
+	if (predicate == ComparePredicate::Eq || predicate == ComparePredicate::Ne)
+	{
+		Constant k;
+		const unsigned literal = literal_constant(body_, test->ops[1], k) ? 1
+			: literal_constant(body_, test->ops[0], k)                    ? 0
+																		  : 2;
+		Literal bits;
+		if (literal == 2 || !test->ops[1 - literal].is(ValueKind::Temp) || !test->type.is_integer() ||
+			!integer_of(test->type, k, bits))
+			return false;
+		known.push_back(std::make_pair(test->ops[1 - literal].index, integer_constant(test->type, bits)));
+		known.push_back(std::make_pair(cond.index, truth_constant(predicate == ComparePredicate::Eq)));
+		equal_side = predicate == ComparePredicate::Eq ? 1 : 2;
+	}
+	else if (body_.temps[cond.index].type.is_integer() && selectable(body_.temps[cond.index].type))
+		known.push_back(std::make_pair(cond.index, integer_constant(body_.temps[cond.index].type, Literal{ 0, 0 })));
+	else
+		return false;
+	const BlockId join = br.ops[equal_side].index, a = br.ops[3 - equal_side].index;
+	const Cfg& cfg = c_.cfg;
+	if (a == e || join == e || touched_[a] || touched_[join] || (cfg.flags[a] & (BF_HANDLER | BF_EH)) ||
+		(cfg.flags[join] & BF_HANDLER) || cfg.pred_count(a) != 1 || cfg.preds[cfg.pred_first[a]] != e)
+		return false;
+	const InstId last = body_.blocks[a].last;
+	if (last == kNoId || body_.blocks[a].first == last)
+		return false;
+	const Instruction end_a = body_.instructions[last];
+	const bool returns = end_a.op == Opcode::Return;
+	if (!returns && (end_a.op != Opcode::Jump || end_a.ops[0].index != join))
+		return false;
+	// (The equal side of a returning block: only the return of a literal.)
+	const InstId only = body_.blocks[join].last;
+	if (returns &&
+		(end_a.extra_count != 0 || !selectable(end_a.type) || only == kNoId || body_.blocks[join].first != only ||
+			body_.instructions[only].op != Opcode::Return || body_.instructions[only].extra_count != 0 ||
+			!(body_.instructions[only].type == end_a.type)))
+		return false;
+	unsigned count = 0;
+	for (InstId i = body_.blocks[a].first; i != last; i = body_.instructions[i].next)
+	{
+		const Instruction& inst = body_.instructions[i];
+		if (++count > kSkippedCap || !speculatable(body_, inst))
+			return false;
+		Constant r;
+		if (evaluate(inst, known, r))
+			known.push_back(std::make_pair(inst.result, r));
+	}
+	if (returns)
+	{
+		Constant c, r;
+		if (!literal_constant(body_, body_.instructions[only].ops[0], c) || !known_value(end_a.ops[0], known, r) ||
+			c.kind != r.kind || !same_constant(end_a.type, c, r))
+			return false;
+		hoist(a, e, previous_in_block(body_, e, term));
+		Instruction ret = make_instruction(Opcode::Return, end_a.type);
+		ret.ops[0] = end_a.ops[0];
+		ret.location = end_a.location;
+		body_.instructions[term] = ret;
+		Instruction& end = body_.instructions[body_.blocks[a].last];
+		end.op = Opcode::Unreachable;
+		end.type = Type::scalar(TypeKind::Void);
+		end.ops[0] = Value::none();
+		touched_[e] = touched_[a] = touched_[join] = 1;
+		++c_.stats.branches_folded;
+		return true;
+	}
+	for (InstId i = body_.blocks[join].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
+		i = body_.instructions[i].next)
+	{
+		const Instruction& phi = body_.instructions[i];
+		const Value direct = phi_incoming(body_, phi, e), computed = phi_incoming(body_, phi, a);
+		Constant c, r;
+		if (!(direct == computed) &&
+			(!literal_constant(body_, direct, c) || !known_value(computed, known, r) || !same_constant(phi.type, c, r)))
+			return false;
+	}
+	hoist(a, e, previous_in_block(body_, e, term));
+	for (InstId i = body_.blocks[join].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
+		i = body_.instructions[i].next)
+	{
+		const Instruction& phi = body_.instructions[i];
+		const Value computed = phi_incoming(body_, phi, a);
+		for (uint32_t k = 0; k < phi.extra_count; k += 2)
+			if (body_.operands[phi.extra_first + k].index == e)
+				body_.operands[phi.extra_first + k + 1] = computed;
+	}
+	remove_phi_incoming(body_, join, a);
+	Instruction& end = body_.instructions[body_.blocks[a].last];
+	end.op = Opcode::Unreachable;
+	end.ops[0] = Value::none();
+	Instruction& jump = body_.instructions[term];
+	jump.op = Opcode::Jump;
+	jump.sub = 0;
+	jump.flags = 0;
+	jump.type = Type::scalar(TypeKind::Void);
+	jump.ops[0] = Value::block(join);
+	jump.ops[1] = jump.ops[2] = Value::none();
+	jump.extra_count = 0;
+	touched_[e] = touched_[a] = touched_[join] = 1;
+	++c_.stats.branches_folded;
+	return true;
+}
+
+// Whether a switch reaches the same code at `a` as at `b`: one block, or two
+// that only return one literal (`case A: return true; case B: return true;`).
+bool SelectFormation::same_target(BlockId a, BlockId b) const
+{
+	if (a == b)
+		return true;
+	const InstId la = body_.blocks[a].last, lb = body_.blocks[b].last;
+	if (la == kNoId || lb == kNoId || body_.blocks[a].first != la || body_.blocks[b].first != lb)
+		return false;
+	const Instruction& ra = body_.instructions[la];
+	const Instruction& rb = body_.instructions[lb];
+	return ra.op == Opcode::Return && rb.op == Opcode::Return && ra.type == rb.type && ra.extra_count == 0 &&
+		rb.extra_count == 0 && same_literal(body_, ra.type, ra.ops[0], rb.ops[0]);
+}
+
 bool SelectFormation::range_switch(BlockId block, InstId id)
 {
 	const Instruction term = body_.instructions[id];
@@ -696,10 +1040,10 @@ bool SelectFormation::range_switch(BlockId block, InstId id)
 	if (!type.is_integer() || type.kind() == TypeKind::I128)
 		return false;
 	const BlockId target = body_.operands[term.extra_first + 1].index;
-	if (target == term.ops[1].index)
+	if (same_target(target, term.ops[1].index))
 		return false;
 	for (uint32_t k = 1; k < term.extra_count; k += 2)
-		if (body_.operands[term.extra_first + k].index != target)
+		if (!same_target(body_.operands[term.extra_first + k].index, target))
 			return false;
 	const unsigned bits = static_cast<unsigned>(storage_bytes(type) * 8);
 	const uint64_t mask = bits == 64 ? UINT64_MAX : (uint64_t(1) << bits) - 1;
@@ -960,13 +1304,16 @@ bool SelectFormation::run()
 	bool changed = false;
 	for (BlockId b : body_.layout)
 	{
-		// Range normalization preserves the unique successors: reuse the CFG
-		// and this walk, rather than rebuilding it after a separate scan.
+		// Range normalization keeps the successors, or leaves blocks that only
+		// return a literal without their one predecessor (no form reads those
+		// blocks' predecessors): reuse the CFG and this walk, rather than
+		// rebuilding it after a separate scan.
 		const InstId id = body_.blocks[b].last;
 		if (id != kNoId && body_.instructions[id].op == Opcode::Switch)
 			changed = range_switch(b, id) || changed;
 		if (c_.cfg.reachable(b) && !touched_[b] && !(c_.cfg.flags[b] & BF_EH))
-			changed = form(b) || form_load(b) || (c_.level >= 2 && form_store(b)) || changed;
+			changed = form_skipped(b) || form(b) || form_return(b) || form_load(b) ||
+				(c_.level >= 2 && form_store(b)) || changed;
 	}
 	if (changed)
 		c_.invalidate_cfg();

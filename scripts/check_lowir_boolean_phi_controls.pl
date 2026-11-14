@@ -117,7 +117,11 @@ sub truncated_branch_count
 	my ($body) = @_;
 	my @narrow = $body =~
 		/^\s+%([A-Za-z0-9_]+) = convert trunc u8 i64 %[A-Za-z0-9_]+$/mg;
-	return scalar(grep { $body =~ /^\s+branch %\Q$_\E, /m } @narrow);
+	# (A select between the two results tests the decision as a branch does.)
+	return scalar(grep {
+		$body =~ /^\s+branch %\Q$_\E, /m ||
+		$body =~ /= select \S+ %\Q$_\E, /m
+	} @narrow);
 }
 
 if (scalar(@ARGV) != 3)
@@ -182,8 +186,10 @@ for my $test (@tests)
 			if forwarded_boolean_phi_count($forwarded) != 0;
 		die "$test: $level discarded incoming-edge work while threading the decision\n"
 			if $forwarded !~ /\bcall void \@observe\(73\)/;
+		# (The decision returns 1 or 0: the result may be the comparison's own.)
 		die "$test: $level did not branch on the incoming comparison result\n"
-			if $forwarded !~ /branch %positive, \^hit, \^miss/;
+			if $forwarded !~ /branch %positive, \^hit, \^miss/
+			&& $forwarded !~ /return i64 %positive/;
 
 		my $shared_forwarded = function_body($test, $output,
 			'retain_shared_forwarded_boolean');

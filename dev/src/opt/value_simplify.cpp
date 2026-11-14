@@ -716,7 +716,7 @@ bool Simplifier::identity(Instruction& inst, Value& out)
 			return true;
 		}
 		select_equal_arm(inst);
-		if (inst.ops[1] == inst.ops[2])
+		if (inst.ops[1] == inst.ops[2] || same_literal(body_, inst.type, inst.ops[1], inst.ops[2]))
 		{
 			out = inst.ops[1];
 			return true;

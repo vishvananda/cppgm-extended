@@ -48,6 +48,15 @@ bool fold_copy(lowir::Type type, const lowir::Constant& a, lowir::Constant& out)
 
 // Whether two constants are the same value of `type`.
 bool same_constant(lowir::Type type, const lowir::Constant& a, const lowir::Constant& b);
+
+// Whether two operands are literals of one constant of `type` (each literal
+// operand has its own entry, so equal operands may still differ as operands).
+inline bool same_literal(const lowir::FunctionBody& body, lowir::Type type, lowir::Value a, lowir::Value b)
+{
+	lowir::Constant x, y;
+	return literal_constant(body, a, x) && literal_constant(body, b, y) && x.kind == y.kind &&
+		same_constant(type, x, y);
+}
 // Whether a constant is the integer `value` when read as `type`.
 bool is_integer(lowir::Type type, const lowir::Constant& c, int64_t value);
 // The bits is_integer compares (c as an integer of `type`, normalized);

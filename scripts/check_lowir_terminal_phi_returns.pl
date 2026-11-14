@@ -107,6 +107,9 @@ for my $test (@tests)
 		my $body = function_body($test, $lowir, $positive);
 		die "$test: $level retained the eligible phi in $positive\n"
 			if phi_count($body) != 0;
+		# (Selects may choose the returned value: then no branch is left to
+		# distribute.)
+		next if instruction_count($body, 'branch') == 0 && $body =~ /= select /;
 		die "$test: $level did not distribute $positive onto return paths\n"
 			if instruction_count($body, 'return') < 2;
 		my %return_only;

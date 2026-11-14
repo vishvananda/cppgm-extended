@@ -96,8 +96,21 @@ sub has_range_decision
 		my ($taken, $other) = $accept_when_true{$key}
 			? ('accept', 'reject') : ('reject', 'accept');
 		return 1 if $body =~ /^\s+branch \Q$condition\E, \^\Q$taken\E, \^\Q$other\E$/m;
+		# (accept returns 1 and reject 0: the decision may be the compare's
+		# own result.)
+		return 1 if $accept_when_true{$key} && returns_condition($body, $condition);
 	}
 	return 0;
+}
+
+# Whether the function returns the compare's result, as it is or truncated
+# to the return type.
+sub returns_condition
+{
+	my ($body, $condition) = @_;
+	return 1 if $body =~ /^\s+return i32 \Q$condition\E$/m;
+	return $body =~ /^\s+(%\w+) = convert trunc i32 i64 \Q$condition\E$/m
+		&& $body =~ /^\s+return i32 \Q$1\E$/m;
 }
 
 if (scalar(@ARGV) != 3)
@@ -144,11 +157,12 @@ for my $test (@tests)
 			'retain_shared_upper', 'retain_rejection_phi')
 		{
 			my $body = function_body($test, $outputs{$level}, $name);
+			# (The upper bound may be returned as its opposite test.)
 			die "$test: $level combined unsafe bounds in $name\n"
 				if has_switch($body) ||
 				   $body =~ /^\s+%\w+ = cmp ugt i32 /m ||
 				   $body !~ /^\s+%\w+ = cmp lt i32 /m ||
-				   $body !~ /^\s+%\w+ = cmp gt i32 /m;
+				   $body !~ /^\s+%\w+ = cmp (?:gt|le) i32 /m;
 		}
 	}
 

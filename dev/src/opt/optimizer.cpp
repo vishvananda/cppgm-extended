@@ -700,6 +700,9 @@ bool narrow_fields(FunctionContext& context)
 	{
 		RUN_PASS(simplify_values);
 		RUN_PASS(remove_dead_code);
+		// A block left with a field's shorter read may fit a select's arm.
+		if (context.body.layout.size() > 1 && RUN_PASS(form_selects))
+			RUN_PASS(cleanup_cfg);
 	}
 	return changed;
 }

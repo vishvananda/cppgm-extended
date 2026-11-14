@@ -1632,9 +1632,9 @@ function @main() -> i64 {
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("1 with its driver sidecar", result.stdout)
         for before, after, status in (("i64 7", "i64 8", 1),
-                                      ("i64 3", "i64 4", 2),
-                                      ("i64 11", "i64 12", 3)):
-            with self.subTest(result=before):
+                                      ("11, 3", "11, 4", 2),
+                                      ("11, 3", "12, 3", 3)):
+            with self.subTest(result=after):
                 changed = reference.replace(before, after)
                 self.assertNotEqual(changed, reference)
                 result = self.compare(source, reference, changed, driver=driver)
