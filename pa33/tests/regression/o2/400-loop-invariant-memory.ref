@@ -9,13 +9,10 @@ function @hoist_disjoint_global(%limit : i64) -> i64 [no_inline=yes] {
     %value = load i64 @stable
     %t2 = binary and i64 %limit, -8
     %t3 = cmp gt i64 %t2, 0
-    branch %t3, ^loop_preheader_1, ^wide_tail_3
+    branch %t3, ^unrolled_1, ^wide_tail_2
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t5]
+  block ^unrolled_1:
+    %t4 = phi i64 [^unrolled_1: %t5, ^entry: 0]
     store i64 %value, @other
     store i64 %value, @other
     store i64 %value, @other
@@ -26,14 +23,14 @@ function @hoist_disjoint_global(%limit : i64) -> i64 [no_inline=yes] {
     store i64 %value, @other
     %t5 = binary add nowrap i64 %t4, 8
     %t6 = cmp ne i64 %t2, %t5
-    branch %t6, ^unrolled_2, ^wide_tail_3
+    branch %t6, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t7 = phi i64 [^entry: 0, ^unrolled_2: %t5]
+  block ^wide_tail_2:
+    %t7 = phi i64 [^entry: 0, ^unrolled_1: %t5]
     jump ^header
 
   block ^header:
-    %i = phi i64 [^wide_tail_3: %t7, ^body: %next]
+    %i = phi i64 [^wide_tail_2: %t7, ^body: %next]
     %more = cmp lt i64 %i, %limit
     branch %more, ^body, ^exit
 

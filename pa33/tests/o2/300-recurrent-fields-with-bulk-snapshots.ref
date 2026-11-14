@@ -10,14 +10,11 @@ function @scan(%n : i32, %bias : i32) -> i32 [no_inline=yes] {
     store i32 23, %payload
     %t4 = binary and i32 %n, -4
     %t5 = cmp gt i32 %t4, 0
-    branch %t5, ^loop_preheader_1, ^wide_tail_3
+    branch %t5, ^unrolled_1, ^wide_tail_2
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t6 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t20]
-    %t7 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t23]
+  block ^unrolled_1:
+    %t6 = phi i32 [^unrolled_1: %t20, ^entry: 0]
+    %t7 = phi i32 [^unrolled_1: %t23, ^entry: 0]
     %t8 = binary add i32 %bias, %t6
     %t9 = binary and i32 %t7, 127
     %t10 = index i32 %payload, %t9
@@ -39,16 +36,16 @@ function @scan(%n : i32, %bias : i32) -> i32 [no_inline=yes] {
     store i32 %t19, %t22
     %t23 = binary add nowrap i32 %t7, 4
     %t24 = cmp ne i32 %t4, %t23
-    branch %t24, ^unrolled_2, ^wide_tail_3
+    branch %t24, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t25 = phi i32 [^entry: 0, ^unrolled_2: %t20]
-    %t26 = phi i32 [^entry: 0, ^unrolled_2: %t23]
+  block ^wide_tail_2:
+    %t25 = phi i32 [^entry: 0, ^unrolled_1: %t20]
+    %t26 = phi i32 [^entry: 0, ^unrolled_1: %t23]
     jump ^test
 
   block ^test:
-    %t27 = phi i32 [^wide_tail_3: %t25, ^body: %sum]
-    %i = phi i32 [^wide_tail_3: %t26, ^body: %next]
+    %t27 = phi i32 [^wide_tail_2: %t25, ^body: %sum]
+    %i = phi i32 [^wide_tail_2: %t26, ^body: %next]
     %more = cmp lt i32 %i, %n
     branch %more, ^body, ^done
 

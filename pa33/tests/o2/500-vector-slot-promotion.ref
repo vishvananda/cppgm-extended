@@ -14,22 +14,44 @@ function @sum_of_lanes(%count : i32) -> f64 {
     %start = vector pzero
     %one = vector fromf64 1.5
     %step = vector unpcklpd %one, %one
+    %t4 = binary and i32 %count, -8
+    %t5 = cmp gt i32 %t4, 0
+    branch %t5, ^unrolled_1, ^wide_tail_2
+
+  block ^unrolled_1:
+    %t6 = phi v128 [^unrolled_1: %t15, ^entry: %start]
+    %t7 = phi i32 [^unrolled_1: %t16, ^entry: 0]
+    %t8 = vector addpd %t6, %step
+    %t9 = vector addpd %t8, %step
+    %t10 = vector addpd %t9, %step
+    %t11 = vector addpd %t10, %step
+    %t12 = vector addpd %t11, %step
+    %t13 = vector addpd %t12, %step
+    %t14 = vector addpd %t13, %step
+    %t15 = vector addpd %t14, %step
+    %t16 = binary add nowrap i32 %t7, 8
+    %t17 = cmp ne i32 %t4, %t16
+    branch %t17, ^unrolled_1, ^wide_tail_2
+
+  block ^wide_tail_2:
+    %t18 = phi v128 [^entry: %start, ^unrolled_1: %t15]
+    %t19 = phi i32 [^entry: 0, ^unrolled_1: %t16]
     jump ^loop
 
   block ^loop:
-    %t4 = phi v128 [^entry: %start, ^body: %new]
-    %i = phi i32 [^entry: 0, ^body: %next]
+    %t20 = phi v128 [^wide_tail_2: %t18, ^body: %new]
+    %i = phi i32 [^wide_tail_2: %t19, ^body: %next]
     %more = cmp lt i32 %i, %count
     branch %more, ^body, ^done
 
   block ^body:
-    %new = vector addpd %t4, %step
+    %new = vector addpd %t20, %step
     %next = binary add nowrap i32 %i, 1
     jump ^loop
 
   block ^done:
-    %high = vector unpckhpd %t4, %t4
-    %low = vector addsd %t4, %high
+    %high = vector unpckhpd %t20, %t20
+    %low = vector addsd %t20, %high
     %result = vector tof64 %low
     return f64 %result
 }

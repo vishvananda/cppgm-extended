@@ -75,21 +75,18 @@ function @signed_range(%first : i64, %bound : i64) -> i64 [no_inline=yes] {
     branch %more, ^loop_preheader_1, ^done
 
   block ^loop_preheader_1:
-    branch 1, ^loop_preheader_2, ^wide_tail_6
-
-  block ^loop_preheader_2:
     %t2 = binary sub i64 %bound, %first
     %t3 = binary and i64 %t2, -4
     %t4 = cmp gt i64 %t3, 0
-    branch %t4, ^loop_preheader_3, ^wide_tail_6
+    branch %t4, ^loop_preheader_2, ^wide_tail_5
 
-  block ^loop_preheader_3:
+  block ^loop_preheader_2:
     %t5 = binary add i64 %first, %t3
-    jump ^unrolled_4
+    jump ^unrolled_3
 
-  block ^unrolled_4:
-    %t6 = phi i64 [^loop_preheader_3: 0, ^unrolled_4: %t26]
-    %t7 = phi i64 [^loop_preheader_3: %first, ^unrolled_4: %t27]
+  block ^unrolled_3:
+    %t6 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t26]
+    %t7 = phi i64 [^loop_preheader_2: %first, ^unrolled_3: %t27]
     %t8 = binary mod i64 %t7, 8
     %t9 = binary div i64 %t7, 4
     %t10 = binary add i64 %t8, %t9
@@ -111,20 +108,20 @@ function @signed_range(%first : i64, %bound : i64) -> i64 [no_inline=yes] {
     %t26 = binary add i64 %t21, %t25
     %t27 = binary add nowrap i64 %t7, 4
     %t28 = cmp ne i64 %t5, %t27
-    branch %t28, ^unrolled_4, ^loop_exit_5
+    branch %t28, ^unrolled_3, ^loop_exit_4
 
-  block ^loop_exit_5:
+  block ^loop_exit_4:
     %t29 = cmp lt i64 %t27, %bound
-    branch %t29, ^wide_tail_6, ^done
+    branch %t29, ^wide_tail_5, ^done
 
-  block ^wide_tail_6:
-    %t30 = phi i64 [^loop_preheader_1: 0, ^loop_exit_5: %t26, ^loop_preheader_2: 0]
-    %t31 = phi i64 [^loop_preheader_1: %first, ^loop_exit_5: %t27, ^loop_preheader_2: %first]
+  block ^wide_tail_5:
+    %t30 = phi i64 [^loop_exit_4: %t26, ^loop_preheader_1: 0]
+    %t31 = phi i64 [^loop_exit_4: %t27, ^loop_preheader_1: %first]
     jump ^body
 
   block ^body:
-    %t32 = phi i64 [^body: %total, ^wide_tail_6: %t30]
-    %t33 = phi i64 [^body: %next, ^wide_tail_6: %t31]
+    %t32 = phi i64 [^body: %total, ^wide_tail_5: %t30]
+    %t33 = phi i64 [^body: %next, ^wide_tail_5: %t31]
     %rem = binary mod i64 %t33, 8
     %quot = binary div i64 %t33, 4
     %part = binary add i64 %rem, %quot
@@ -134,7 +131,7 @@ function @signed_range(%first : i64, %bound : i64) -> i64 [no_inline=yes] {
     branch %t39, ^body, ^done
 
   block ^done:
-    %t40 = phi i64 [^entry: 0, ^body: %total, ^loop_exit_5: %t26]
+    %t40 = phi i64 [^entry: 0, ^body: %total, ^loop_exit_4: %t26]
     return i64 %t40
 }
 function @wrapping_counter() -> i64 [no_inline=yes] {

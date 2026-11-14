@@ -572,7 +572,10 @@ bool finish_loops(FunctionContext& context, int level)
 	// loop's shape (its counters then widen with the loop's own).
 	if (copies && RUN_PASS(unroll_short_loops))
 	{
-		RUN_PASS(simplify_values);
+		// (With a literal range the group loop is entered always and the
+		// loop for the passes left is not reached.)
+		if (RUN_PASS(simplify_values))
+			RUN_PASS(cleanup_cfg);
 		RUN_PASS(remove_dead_code);
 		changed = true;
 	}

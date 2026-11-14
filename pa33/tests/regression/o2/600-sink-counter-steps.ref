@@ -2,45 +2,39 @@ function @reader_after_step(%p : ptr, %n : i64) -> i64 [binding=strong, no_inlin
   block ^entry:
     %t1 = binary and i64 %n, -4
     %t2 = cmp gt i64 %t1, 0
-    branch %t2, ^loop_preheader_1, ^wide_tail_4
+    branch %t2, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t17]
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t20]
-    %t5 = binary add nowrap i64 %t3, 1
-    %t6 = index i64 %p, %t3
-    %t7 = load i64 %t6
-    %t8 = binary add i64 %t4, %t7
-    %t9 = binary add nowrap i64 %t3, 2
-    %t10 = index i64 %p, %t5
-    %t11 = load i64 %t10
-    %t12 = binary add i64 %t8, %t11
-    %t13 = binary add nowrap i64 %t3, 3
-    %t14 = index i64 %p, %t9
+  block ^unrolled_1:
+    %t3 = phi i64 [^unrolled_1: %t17, ^entry: 0]
+    %t4 = phi i64 [^unrolled_1: %t16, ^entry: 0]
+    %t5 = index i64 %p, %t3
+    %t6 = load i64 %t5
+    %t7 = binary add i64 %t4, %t6
+    %t8 = index i64 %t5, 1
+    %t9 = load i64 %t8
+    %t10 = binary add i64 %t7, %t9
+    %t11 = index i64 %t5, 2
+    %t12 = load i64 %t11
+    %t13 = binary add i64 %t10, %t12
+    %t14 = index i64 %t5, 3
     %t15 = load i64 %t14
-    %t16 = binary add i64 %t12, %t15
+    %t16 = binary add i64 %t13, %t15
     %t17 = binary add nowrap i64 %t3, 4
-    %t18 = index i64 %p, %t13
-    %t19 = load i64 %t18
-    %t20 = binary add i64 %t16, %t19
-    %t21 = cmp ne i64 %t1, %t17
-    branch %t21, ^unrolled_2, ^loop_exit_3
+    %t18 = cmp ne i64 %t1, %t17
+    branch %t18, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
-    %t22 = cmp lt i64 %t17, %n
-    branch %t22, ^wide_tail_4, ^done
+  block ^loop_exit_2:
+    %t19 = cmp lt i64 %t17, %n
+    branch %t19, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t23 = phi i64 [^entry: 0, ^loop_exit_3: %t17]
-    %t24 = phi i64 [^entry: 0, ^loop_exit_3: %t20]
+  block ^wide_tail_3:
+    %t20 = phi i64 [^entry: 0, ^loop_exit_2: %t17]
+    %t21 = phi i64 [^entry: 0, ^loop_exit_2: %t16]
     jump ^loop
 
   block ^loop:
-    %i = phi i64 [^wide_tail_4: %t23, ^loop: %next]
-    %sum = phi i64 [^wide_tail_4: %t24, ^loop: %total]
+    %i = phi i64 [^wide_tail_3: %t20, ^loop: %next]
+    %sum = phi i64 [^wide_tail_3: %t21, ^loop: %total]
     %q = index i64 %p, %i
     %v = load i64 %q
     %total = binary add i64 %sum, %v
@@ -49,8 +43,8 @@ function @reader_after_step(%p : ptr, %n : i64) -> i64 [binding=strong, no_inlin
     branch %more, ^loop, ^done
 
   block ^done:
-    %t32 = phi i64 [^loop: %total, ^loop_exit_3: %t20]
-    return i64 %t32
+    %t29 = phi i64 [^loop: %total, ^loop_exit_2: %t16]
+    return i64 %t29
 }
 function @compare_read_twice(%p : ptr, %n : i64) -> i1 [binding=strong, no_inline=yes] {
   block ^entry:
@@ -72,13 +66,10 @@ function @step_read_early(%p : ptr, %n : i64) -> void [binding=strong, no_inline
   block ^entry:
     %t1 = binary and i64 %n, -8
     %t2 = cmp gt i64 %t1, 0
-    branch %t2, ^loop_preheader_1, ^wide_tail_4
+    branch %t2, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t18]
+  block ^unrolled_1:
+    %t3 = phi i64 [^unrolled_1: %t18, ^entry: 0]
     %t4 = binary add nowrap i64 %t3, 1
     %t5 = index i64 %p, %t4
     store i64 %t3, %t5
@@ -104,18 +95,18 @@ function @step_read_early(%p : ptr, %n : i64) -> void [binding=strong, no_inline
     %t19 = index i64 %p, %t18
     store i64 %t16, %t19
     %t20 = cmp ne i64 %t1, %t18
-    branch %t20, ^unrolled_2, ^loop_exit_3
+    branch %t20, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
+  block ^loop_exit_2:
     %t21 = cmp lt i64 %t18, %n
-    branch %t21, ^wide_tail_4, ^done
+    branch %t21, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t22 = phi i64 [^entry: 0, ^loop_exit_3: %t18]
+  block ^wide_tail_3:
+    %t22 = phi i64 [^entry: 0, ^loop_exit_2: %t18]
     jump ^loop
 
   block ^loop:
-    %i = phi i64 [^wide_tail_4: %t22, ^loop: %next]
+    %i = phi i64 [^wide_tail_3: %t22, ^loop: %next]
     %next = binary add nowrap i64 %i, 1
     %q = index i64 %p, %next
     store i64 %i, %q

@@ -2,14 +2,11 @@ function @first_or(%p : ptr, %n : i32, %r : i32) -> i32 [binding=strong, object=
   block ^entry:
     %t1 = binary and i32 %n, -4
     %t2 = cmp gt i32 %t1, 0
-    branch %t2, ^loop_preheader_1, ^wide_tail_3
+    branch %t2, ^unrolled_1, ^wide_tail_2
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t3 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t20]
-    %t4 = phi i32 [^loop_preheader_1: %r, ^unrolled_2: %t19]
+  block ^unrolled_1:
+    %t3 = phi i32 [^unrolled_1: %t20, ^entry: 0]
+    %t4 = phi i32 [^unrolled_1: %t19, ^entry: %r]
     %t5 = load typed i32 %p
     %t6 = binary add nowrap i32 %t3, %t5
     %t7 = binary add nowrap i32 %t4, %t6
@@ -27,27 +24,27 @@ function @first_or(%p : ptr, %n : i32, %r : i32) -> i32 [binding=strong, object=
     %t19 = binary add nowrap i32 %t15, %t18
     %t20 = binary add nowrap i32 %t3, 4
     %t21 = cmp ne i32 %t1, %t20
-    branch %t21, ^unrolled_2, ^wide_tail_3
+    branch %t21, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t22 = phi i32 [^entry: 0, ^unrolled_2: %t20]
-    %t23 = phi i32 [^entry: %r, ^unrolled_2: %t19]
-    jump ^for_cond_4
+  block ^wide_tail_2:
+    %t22 = phi i32 [^entry: 0, ^unrolled_1: %t20]
+    %t23 = phi i32 [^entry: %r, ^unrolled_1: %t19]
+    jump ^for_cond_3
 
-  block ^for_cond_4:
-    %t24 = phi i32 [^wide_tail_3: %t22, ^for_body_5: %t30]
-    %t25 = phi i32 [^wide_tail_3: %t23, ^for_body_5: %t29]
+  block ^for_cond_3:
+    %t24 = phi i32 [^wide_tail_2: %t22, ^for_body_4: %t30]
+    %t25 = phi i32 [^wide_tail_2: %t23, ^for_body_4: %t29]
     %t26 = cmp lt i32 %t24, %n
-    branch %t26, ^for_body_5, ^for_end_6
+    branch %t26, ^for_body_4, ^for_end_5
 
-  block ^for_body_5:
+  block ^for_body_4:
     %t27 = load typed i32 %p
     %t28 = binary add nowrap i32 %t24, %t27
     %t29 = binary add nowrap i32 %t25, %t28
     %t30 = binary add nowrap i32 %t24, 1
-    jump ^for_cond_4
+    jump ^for_cond_3
 
-  block ^for_end_6:
+  block ^for_end_5:
     return i32 %t25
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

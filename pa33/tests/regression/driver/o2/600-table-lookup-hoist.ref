@@ -54,13 +54,10 @@ function @encode(%data : ptr, %n : i64) -> i64 [binding=strong, object=_Z6encode
     %t1 = call ptr @malloc(%n)
     %t2 = addr $code
     %t3 = addr $length
-    branch 1, ^loop_preheader_1, ^wide_tail_3
+    jump ^unrolled_1
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t24]
+  block ^unrolled_1:
+    %t4 = phi i64 [^unrolled_1: %t24, ^entry: 0]
     %t5 = convert trunc exact i32 i64 %t4
     %t6 = copy i64 %t4
     %t7 = binary mul i64 %t6, 5
@@ -87,20 +84,20 @@ function @encode(%data : ptr, %n : i64) -> i64 [binding=strong, object=_Z6encode
     %t24 = binary add nowrap i64 %t4, 2
     %t25 = convert trunc exact i32 i64 %t24
     %t26 = cmp ne i32 %t25, 256
-    branch %t26, ^unrolled_2, ^wide_tail_3
+    branch %t26, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t27 = phi i32 [^entry: 0, ^unrolled_2: %t25]
+  block ^wide_tail_2:
+    %t27 = phi i32 [^unrolled_1: %t25]
     %t28 = convert sext i64 i32 %t27
-    jump ^for_cond_4
+    jump ^for_cond_3
 
-  block ^for_cond_4:
-    %t29 = phi i64 [^wide_tail_3: %t28, ^for_body_5: %t39]
+  block ^for_cond_3:
+    %t29 = phi i64 [^wide_tail_2: %t28, ^for_body_4: %t39]
     %t30 = convert trunc exact i32 i64 %t29
     %t31 = cmp lt i32 %t30, 256
-    branch %t31, ^for_body_5, ^loop_preheader_6
+    branch %t31, ^for_body_4, ^for_cond_5
 
-  block ^for_body_5:
+  block ^for_body_4:
     %t32 = copy i64 %t29
     %t33 = binary mul i64 %t32, 5
     %t34 = index inbounds i64 [projection=array_element] %t2, %t29
@@ -111,21 +108,18 @@ function @encode(%data : ptr, %n : i64) -> i64 [binding=strong, object=_Z6encode
     %t38 = index inbounds u8 [projection=array_element] %t3, %t29
     store u8 %t37, %t38
     %t39 = binary add nowrap i64 %t29, 1
-    jump ^for_cond_4
+    jump ^for_cond_3
 
-  block ^loop_preheader_6:
-    jump ^for_cond_7
-
-  block ^for_cond_7:
-    %t40 = phi i32 [^for_end_15: %t56, ^loop_preheader_6: -1]
-    %t41 = phi u8 [^for_end_15: %t57, ^loop_preheader_6: 0]
-    %t42 = phi i64 [^for_end_15: %t58, ^loop_preheader_6: 0]
-    %t43 = phi ptr [^for_end_15: %t78, ^loop_preheader_6: %data]
-    %t44 = phi i64 [^for_end_15: %t79, ^loop_preheader_6: 0]
+  block ^for_cond_5:
+    %t40 = phi i32 [^for_end_13: %t56, ^for_cond_3: -1]
+    %t41 = phi u8 [^for_end_13: %t57, ^for_cond_3: 0]
+    %t42 = phi i64 [^for_end_13: %t58, ^for_cond_3: 0]
+    %t43 = phi ptr [^for_end_13: %t78, ^for_cond_3: %data]
+    %t44 = phi i64 [^for_end_13: %t79, ^for_cond_3: 0]
     %t45 = cmp ult i64 %t44, %n
-    branch %t45, ^for_body_8, ^loop_preheader_16
+    branch %t45, ^for_body_6, ^loop_preheader_14
 
-  block ^for_body_8:
+  block ^for_body_6:
     %t46 = load u8 %t43
     %t47 = index inbounds u8 [projection=array_element] %t3, %t46
     %t48 = load u8 %t47
@@ -135,114 +129,108 @@ function @encode(%data : ptr, %n : i64) -> i64 [binding=strong, object=_Z6encode
     %t52 = binary shl i64 1, %t51
     %t53 = index i64 [projection=array_element] %t2, %t46
     %t54 = load i64 %t53
-    jump ^for_cond_9
+    jump ^for_cond_7
 
-  block ^for_cond_9:
-    %t55 = phi i64 [^for_body_8: %t52, ^if_end_14: %t76]
-    %t56 = phi i32 [^for_body_8: %t40, ^if_end_14: %t70]
-    %t57 = phi u8 [^for_body_8: %t41, ^if_end_14: %t75]
-    %t58 = phi i64 [^for_body_8: %t42, ^if_end_14: %t72]
-    %t59 = phi i32 [^for_body_8: 0, ^if_end_14: %t77]
+  block ^for_cond_7:
+    %t55 = phi i64 [^for_body_6: %t52, ^if_end_12: %t76]
+    %t56 = phi i32 [^for_body_6: %t40, ^if_end_12: %t70]
+    %t57 = phi u8 [^for_body_6: %t41, ^if_end_12: %t75]
+    %t58 = phi i64 [^for_body_6: %t42, ^if_end_12: %t72]
+    %t59 = phi i32 [^for_body_6: 0, ^if_end_12: %t77]
     %t60 = cmp lt i32 %t59, %t49
-    branch %t60, ^for_body_10, ^for_end_15
+    branch %t60, ^for_body_8, ^for_end_13
 
-  block ^for_body_10:
+  block ^for_body_8:
     %t61 = cmp eq i32 %t56, 7
-    branch %t61, ^if_then_11, ^if_else_13
+    branch %t61, ^if_then_9, ^if_else_11
 
-  block ^if_then_11:
+  block ^if_then_9:
     %t62 = index inbounds u8 [projection=array_element] %t1, %t58
     store u8 %t57, %t62
     %t63 = binary add i64 %t58, 1
     %t64 = cmp eq i64 %n, %t63
-    branch %t64, ^if_then_12, ^if_end_14
+    branch %t64, ^if_then_10, ^if_end_12
 
-  block ^if_then_12:
+  block ^if_then_10:
     %t65 = addr @__strlit__1
     %t66 = load typed ptr @stderr
     %t67 = call i32 @fputs(%t65, %t66)
     call void @exit(1)
     unreachable
 
-  block ^if_else_13:
+  block ^if_else_11:
     %t68 = binary add nowrap i32 %t56, 1
     %t69 = binary shl u8 %t57, 1
-    jump ^if_end_14
+    jump ^if_end_12
 
-  block ^if_end_14:
-    %t70 = phi i32 [^if_else_13: %t68, ^if_then_11: 0]
-    %t71 = phi u8 [^if_else_13: %t69, ^if_then_11: 0]
-    %t72 = phi i64 [^if_else_13: %t58, ^if_then_11: %t63]
+  block ^if_end_12:
+    %t70 = phi i32 [^if_else_11: %t68, ^if_then_9: 0]
+    %t71 = phi u8 [^if_else_11: %t69, ^if_then_9: 0]
+    %t72 = phi i64 [^if_else_11: %t58, ^if_then_9: %t63]
     %t73 = binary and i64 %t55, %t54
     %t74 = binary or u8 %t71, 1
     %t75 = select u8 %t73, %t74, %t71
     %t76 = binary ushr i64 %t55, 1
     %t77 = binary add nowrap i32 %t59, 1
-    jump ^for_cond_9
-
-  block ^for_end_15:
-    %t78 = index inbounds i8 %t43, 1
-    %t79 = binary add i64 %t44, 1
     jump ^for_cond_7
 
-  block ^loop_preheader_16:
+  block ^for_end_13:
+    %t78 = index inbounds i8 %t43, 1
+    %t79 = binary add i64 %t44, 1
+    jump ^for_cond_5
+
+  block ^loop_preheader_14:
     %t80 = binary and i64 %t42, -4
-    branch %t80, ^loop_preheader_17, ^wide_tail_19
+    branch %t80, ^unrolled_15, ^wide_tail_16
 
-  block ^loop_preheader_17:
-    jump ^unrolled_18
-
-  block ^unrolled_18:
-    %t81 = phi i64 [^loop_preheader_17: 0, ^unrolled_18: %t101]
-    %t82 = phi i64 [^loop_preheader_17: 0, ^unrolled_18: %t102]
+  block ^unrolled_15:
+    %t81 = phi i64 [^unrolled_15: %t98, ^loop_preheader_14: 0]
+    %t82 = phi i64 [^unrolled_15: %t99, ^loop_preheader_14: 0]
     %t83 = index inbounds u8 [projection=array_element] %t1, %t82
     %t84 = load u8 %t83
     %t85 = convert zext i64 u8 %t84
     %t86 = binary add i64 %t81, %t85
-    %t87 = binary add i64 %t82, 1
-    %t88 = index inbounds u8 [projection=array_element] %t1, %t87
-    %t89 = load u8 %t88
-    %t90 = convert zext i64 u8 %t89
-    %t91 = binary add i64 %t86, %t90
-    %t92 = binary add i64 %t82, 2
-    %t93 = index inbounds u8 [projection=array_element] %t1, %t92
-    %t94 = load u8 %t93
-    %t95 = convert zext i64 u8 %t94
-    %t96 = binary add i64 %t91, %t95
-    %t97 = binary add i64 %t82, 3
-    %t98 = index inbounds u8 [projection=array_element] %t1, %t97
-    %t99 = load u8 %t98
-    %t100 = convert zext i64 u8 %t99
-    %t101 = binary add i64 %t96, %t100
-    %t102 = binary add i64 %t82, 4
-    %t103 = cmp ne i64 %t80, %t102
-    branch %t103, ^unrolled_18, ^wide_tail_19
+    %t87 = index inbounds u8 [projection=array_element] %t83, 1
+    %t88 = load u8 %t87
+    %t89 = convert zext i64 u8 %t88
+    %t90 = binary add i64 %t86, %t89
+    %t91 = index inbounds u8 [projection=array_element] %t83, 2
+    %t92 = load u8 %t91
+    %t93 = convert zext i64 u8 %t92
+    %t94 = binary add i64 %t90, %t93
+    %t95 = index inbounds u8 [projection=array_element] %t83, 3
+    %t96 = load u8 %t95
+    %t97 = convert zext i64 u8 %t96
+    %t98 = binary add i64 %t94, %t97
+    %t99 = binary add i64 %t82, 4
+    %t100 = cmp ne i64 %t80, %t99
+    branch %t100, ^unrolled_15, ^wide_tail_16
 
-  block ^wide_tail_19:
-    %t104 = phi i64 [^loop_preheader_16: 0, ^unrolled_18: %t101]
-    %t105 = phi i64 [^loop_preheader_16: 0, ^unrolled_18: %t102]
-    jump ^for_cond_20
+  block ^wide_tail_16:
+    %t101 = phi i64 [^loop_preheader_14: 0, ^unrolled_15: %t98]
+    %t102 = phi i64 [^loop_preheader_14: 0, ^unrolled_15: %t99]
+    jump ^for_cond_17
 
-  block ^for_cond_20:
-    %t106 = phi i64 [^for_body_21: %t112, ^wide_tail_19: %t104]
-    %t107 = phi i64 [^for_body_21: %t113, ^wide_tail_19: %t105]
-    %t108 = cmp ult i64 %t107, %t42
-    branch %t108, ^for_body_21, ^for_end_22
+  block ^for_cond_17:
+    %t103 = phi i64 [^for_body_18: %t109, ^wide_tail_16: %t101]
+    %t104 = phi i64 [^for_body_18: %t110, ^wide_tail_16: %t102]
+    %t105 = cmp ult i64 %t104, %t42
+    branch %t105, ^for_body_18, ^for_end_19
 
-  block ^for_body_21:
-    %t109 = index inbounds u8 [projection=array_element] %t1, %t107
-    %t110 = load u8 %t109
-    %t111 = convert zext i64 u8 %t110
-    %t112 = binary add i64 %t106, %t111
-    %t113 = binary add i64 %t107, 1
-    jump ^for_cond_20
+  block ^for_body_18:
+    %t106 = index inbounds u8 [projection=array_element] %t1, %t104
+    %t107 = load u8 %t106
+    %t108 = convert zext i64 u8 %t107
+    %t109 = binary add i64 %t103, %t108
+    %t110 = binary add i64 %t104, 1
+    jump ^for_cond_17
 
-  block ^for_end_22:
+  block ^for_end_19:
     call void @free(%t1)
-    %t114 = binary mul i64 %t42, 1000
-    %t115 = binary umod i64 %t106, 1000
-    %t116 = binary add i64 %t114, %t115
-    return i64 %t116
+    %t111 = binary mul i64 %t42, 1000
+    %t112 = binary umod i64 %t103, 1000
+    %t113 = binary add i64 %t111, %t112
+    return i64 %t113
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $text : obj<12x1>

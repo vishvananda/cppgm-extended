@@ -30,27 +30,24 @@ function @nested(%rounds : i64, %repeats : i64) -> i64 {
 
   block ^loop_preheader_6:
     %t9 = binary and i64 %repeats, -8
-    branch %t9, ^loop_preheader_7, ^wide_tail_10
+    branch %t9, ^unrolled_7, ^wide_tail_9
 
-  block ^loop_preheader_7:
-    jump ^unrolled_8
-
-  block ^unrolled_8:
-    %t10 = phi i64 [^loop_preheader_7: 0, ^unrolled_8: %t11]
+  block ^unrolled_7:
+    %t10 = phi i64 [^unrolled_7: %t11, ^loop_preheader_6: 0]
     %t11 = binary add i64 %t10, 8
     %t12 = cmp ne i64 %t9, %t11
-    branch %t12, ^unrolled_8, ^loop_exit_9
+    branch %t12, ^unrolled_7, ^loop_exit_8
 
-  block ^loop_exit_9:
+  block ^loop_exit_8:
     %t13 = cmp ult i64 %t11, %repeats
-    branch %t13, ^wide_tail_10, ^repeat_latch
+    branch %t13, ^wide_tail_9, ^repeat_latch
 
-  block ^wide_tail_10:
-    %t14 = phi i64 [^loop_preheader_6: 0, ^loop_exit_9: %t11]
+  block ^wide_tail_9:
+    %t14 = phi i64 [^loop_preheader_6: 0, ^loop_exit_8: %t11]
     jump ^other_loop
 
   block ^other_loop:
-    %alt = phi i64 [^wide_tail_10: %t14, ^other_loop: %alt_next]
+    %alt = phi i64 [^wide_tail_9: %t14, ^other_loop: %alt_next]
     %alt_next = binary add i64 %alt, 1
     %alt_more = cmp ult i64 %alt_next, %repeats
     branch %alt_more, ^other_loop, ^repeat_latch
@@ -61,32 +58,29 @@ function @nested(%rounds : i64, %repeats : i64) -> i64 {
   block ^inner_entry:
     %saved = load typed i64 %address
     %t19 = binary and i64 %repeats, -8
-    branch %t19, ^loop_preheader_14, ^wide_tail_17
+    branch %t19, ^unrolled_13, ^wide_tail_15
 
-  block ^loop_preheader_14:
-    jump ^unrolled_15
-
-  block ^unrolled_15:
-    %t20 = phi i64 [^loop_preheader_14: 0, ^unrolled_15: %t21]
+  block ^unrolled_13:
+    %t20 = phi i64 [^unrolled_13: %t21, ^inner_entry: 0]
     %t21 = binary add i64 %t20, 8
     %t22 = cmp ne i64 %t19, %t21
-    branch %t22, ^unrolled_15, ^loop_exit_16
+    branch %t22, ^unrolled_13, ^loop_exit_14
 
-  block ^loop_exit_16:
+  block ^loop_exit_14:
     %t23 = cmp ult i64 %t21, %repeats
-    branch %t23, ^wide_tail_17, ^loop_exit_19
+    branch %t23, ^wide_tail_15, ^loop_exit_17
 
-  block ^wide_tail_17:
-    %t24 = phi i64 [^inner_entry: 0, ^loop_exit_16: %t21]
+  block ^wide_tail_15:
+    %t24 = phi i64 [^inner_entry: 0, ^loop_exit_14: %t21]
     jump ^inner_loop
 
   block ^inner_loop:
-    %k = phi i64 [^wide_tail_17: %t24, ^inner_loop: %next_k]
+    %k = phi i64 [^wide_tail_15: %t24, ^inner_loop: %next_k]
     %next_k = binary add i64 %k, 1
     %more_inner = cmp ult i64 %next_k, %repeats
-    branch %more_inner, ^inner_loop, ^loop_exit_19
+    branch %more_inner, ^inner_loop, ^loop_exit_17
 
-  block ^loop_exit_19:
+  block ^loop_exit_17:
     %update = binary add i64 %saved, 1
     store typed i64 %update, %address
     jump ^repeat_latch

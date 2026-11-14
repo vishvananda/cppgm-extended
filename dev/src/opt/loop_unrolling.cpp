@@ -70,6 +70,7 @@ private:
 	}
 	bool wanted(uint32_t loop) const;
 	bool chain(uint32_t loop, Shape& s) const;
+	Value literal_limit(Type type, ComparePredicate& stays, Value init, Value bound, uint64_t step) const;
 	bool tested(uint32_t loop, Shape& s) const;
 	bool sized(Shape& s) const;
 	void rewrite(const Shape& s);
@@ -181,6 +182,36 @@ bool ShortLoopUnrolling::chain(uint32_t loop, Shape& s) const
 	return true;
 }
 
+// An induction that steps up by `step` and stays while it is at or before a
+// literal stays while it is before a later literal: `stays` becomes that
+// order and the result that literal, else `bound`. From a literal first value
+// the literal is the first one past the bound that the induction can take, so
+// the distance is whole steps.
+Value ShortLoopUnrolling::literal_limit(
+	Type type, ComparePredicate& stays, Value init, Value bound, uint64_t step) const
+{
+	const bool is_unsigned = stays == ComparePredicate::Ule;
+	if ((stays != ComparePredicate::Le && !is_unsigned) || !bound.is(ValueKind::Integer) || !type.is_integer() ||
+		lowir::integer_bits(type.kind()) > 64)
+		return bound;
+	const unsigned bits = lowir::integer_bits(type.kind());
+	const uint64_t mask = bits == 64 ? ~uint64_t(0) : (uint64_t(1) << bits) - 1;
+	const uint64_t last = is_unsigned ? mask : mask >> 1;
+	const uint64_t at = body_.literals[bound.index].low & mask;
+	// (A negative bound of a signed order is left as it is.)
+	if (at >= last)
+		return bound;
+	uint64_t past = at + 1;
+	if (init.is(ValueKind::Integer))
+	{
+		const uint64_t first = body_.literals[init.index].low & mask;
+		if (first <= at && step - (at - first) % step <= last - at)
+			past = at + step - (at - first) % step;
+	}
+	stays = is_unsigned ? ComparePredicate::Ult : ComparePredicate::Lt;
+	return integer_value(body_, normalize_integer(type, Literal{ past, 0 }));
+}
+
 // The test's induction: a header phi from the preheader's value, stepped once
 // per pass by a power of two, compared with a value of outside the loop. A
 // header tests the phi; a latch the stepped value, or the phi for difference.
@@ -253,6 +284,8 @@ bool ShortLoopUnrolling::tested(uint32_t loop, Shape& s) const
 		ComparePredicate stays = static_cast<ComparePredicate>(cmp.sub);
 		stays = s.stays_true ? stays : inverted(stays);
 		stays = side == 0 ? stays : swapped(stays);
+		const Value init = phi_incoming(body_, phi, s.pre);
+		const Value limit = by > 0 ? literal_limit(cmp.type, stays, init, bound, static_cast<uint64_t>(by)) : bound;
 		const bool before = by > 0 ? stays == ComparePredicate::Lt || stays == ComparePredicate::Ult
 								   : stays == ComparePredicate::Gt || stays == ComparePredicate::Ugt;
 		if (stays != ComparePredicate::Ne && !(before && (stepped || !s.bottom)))
@@ -262,8 +295,8 @@ bool ShortLoopUnrolling::tested(uint32_t loop, Shape& s) const
 		s.narrowed = narrowed;
 		s.narrow = cmp.type;
 		s.iv = phi.result;
-		s.init = phi_incoming(body_, phi, s.pre);
-		s.bound = bound;
+		s.init = init;
+		s.bound = limit;
 		s.next = next;
 		s.step = by;
 		return true;
@@ -319,6 +352,7 @@ bool ShortLoopUnrolling::sized(Shape& s) const
 			case Opcode::Unary:
 			case Opcode::Compare:
 			case Opcode::Select:
+			case Opcode::Vector:
 				++size;
 				break;
 			default:
@@ -488,7 +522,52 @@ void ShortLoopUnrolling::rewrite(const Shape& s)
 	const bool held = !pointer && !s.narrowed &&
 		(guarded ? same_order
 				 : zero && (is_signed ? s.stays == ComparePredicate::Lt : s.stays != ComparePredicate::Lt));
-	std::vector<Value> stepped(phis.size());
+	// An address a pass takes from a base of outside the loop by a 64-bit
+	// induction, or by the tested induction extended as its type orders it
+	// when its steps stay in that type, either one times a literal: `by` is
+	// the step of the address's index.
+	auto by_induction = [&](const Instruction& inst, int64_t& by) {
+		auto made_here = [&](Value v) {
+			const InstId def = v.is(ValueKind::Temp) && v.index >= body_.parameter_count ? body_.temps[v.index].def
+																						 : kNoId;
+			return def != kNoId && def < block_of_.size() && member_[block_of_[def]] ? def : kNoId;
+		};
+		if (inst.op != Opcode::Index || made_here(inst.ops[0]) != kNoId || made_here(inst.ops[1]) == kNoId)
+			return false;
+		Value counter = inst.ops[1];
+		const Instruction* def = &body_.instructions[made_here(counter)];
+		int64_t scale = 1;
+		if (def->op == Opcode::Binary && def->type.is_integer() && lowir::integer_bits(def->type.kind()) == 64 &&
+			def->ops[1].is(ValueKind::Integer) && made_here(def->ops[0]) != kNoId)
+		{
+			const uint64_t literal = body_.literals[def->ops[1].index].low;
+			const BinaryOp op = static_cast<BinaryOp>(def->sub);
+			if (!(op == BinaryOp::Mul && literal != 0 && literal <= 4096) && !(op == BinaryOp::Shl && literal <= 12))
+				return false;
+			scale = static_cast<int64_t>(op == BinaryOp::Mul ? literal : uint64_t(1) << literal);
+			counter = def->ops[0];
+			def = &body_.instructions[made_here(counter)];
+		}
+		const bool extended = def->op == Opcode::Convert && def->type.kind() == TypeKind::I64 &&
+			static_cast<ConvertOp>(def->sub) == (is_signed ? ConvertOp::SExt : ConvertOp::ZExt);
+		if (extended)
+			counter = def->ops[0];
+		for (size_t k = 0; k < phis.size(); ++k)
+		{
+			const Instruction& phi = body_.instructions[phis[k]];
+			if (!counter.is(ValueKind::Temp) || phi.result != counter.index || step_of[k] == kNoId)
+				continue;
+			const Instruction& step = body_.instructions[step_of[k]];
+			const unsigned bits = phi.type.is_integer() ? lowir::integer_bits(phi.type.kind()) : 0;
+			if (step.op != Opcode::Binary || (extended ? !held || phi.result != s.iv || bits < 32 : bits != 64))
+				return false;
+			by = static_cast<int64_t>(body_.literals[step.ops[1].index].low << (64 - bits)) >> (64 - bits);
+			by = (static_cast<BinaryOp>(step.sub) == BinaryOp::Sub ? -by : by) * scale;
+			return true;
+		}
+		return false;
+	};
+	std::vector<Value> stepped(phis.size()), address(body_.temps.size());
 	for (unsigned pass = 0; pass < s.passes; ++pass)
 	{
 		if (pass != 0)
@@ -502,6 +581,7 @@ void ShortLoopUnrolling::rewrite(const Shape& s)
 				if (inst.op == Opcode::Phi || i == s.compare || i == body_.blocks[b].last)
 					continue;
 				size_t k = 0;
+				int64_t by = 0;
 				while (k < phis.size() && step_of[k] != i)
 					++k;
 				if (k < phis.size())
@@ -515,6 +595,12 @@ void ShortLoopUnrolling::rewrite(const Shape& s)
 					if (held && inst.result == s.next.index)
 						inst.flags |= IF_NO_WRAP;
 				}
+				else if (pass != 0 && by_induction(inst, by))
+				{
+					// (The first pass's address, displaced by the steps so far.)
+					inst.ops[0] = address[inst.result];
+					inst.ops[1] = integer_value(body_, normalize_integer(i64, integer_literal(by * pass)));
+				}
 				else
 					for (unsigned o = 0; o < 3; ++o)
 						inst.ops[o] = mapped(inst.ops[o]);
@@ -522,6 +608,8 @@ void ShortLoopUnrolling::rewrite(const Shape& s)
 				const Value copy = emit(group, g, inst, result == kNoId ? none : body_.temps[result].type, true);
 				if (result != kNoId)
 					map_[result] = copy;
+				if (pass == 0 && inst.op == Opcode::Index)
+					address[result] = copy;
 			}
 		for (size_t k = 0; k < phis.size(); ++k)
 			stepped[k] = mapped(phi_incoming(body_, body_.instructions[phis[k]], s.latch));

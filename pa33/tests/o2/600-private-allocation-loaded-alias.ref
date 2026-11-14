@@ -32,14 +32,11 @@ function @published_scan(%holder : ptr, %n : i32) -> i32 [no_inline=yes] {
     %t2 = load ptr %holder
     %t3 = binary and i32 %n, -4
     %t4 = cmp gt i32 %t3, 0
-    branch %t4, ^loop_preheader_1, ^wide_tail_4
+    branch %t4, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t5 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t18]
-    %t6 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t17]
+  block ^unrolled_1:
+    %t5 = phi i32 [^unrolled_1: %t18, ^entry: 0]
+    %t6 = phi i32 [^unrolled_1: %t17, ^entry: 0]
     %t7 = load i32 %t2
     store i32 %t5, %buffer
     %t8 = binary add i32 %t6, %t7
@@ -57,20 +54,20 @@ function @published_scan(%holder : ptr, %n : i32) -> i32 [no_inline=yes] {
     %t17 = binary add i32 %t14, %t16
     %t18 = binary add nowrap i32 %t5, 4
     %t19 = cmp ne i32 %t3, %t18
-    branch %t19, ^unrolled_2, ^loop_exit_3
+    branch %t19, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
+  block ^loop_exit_2:
     %t20 = cmp lt i32 %t18, %n
-    branch %t20, ^wide_tail_4, ^done
+    branch %t20, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t21 = phi i32 [^entry: 0, ^loop_exit_3: %t18]
-    %t22 = phi i32 [^entry: 0, ^loop_exit_3: %t17]
+  block ^wide_tail_3:
+    %t21 = phi i32 [^entry: 0, ^loop_exit_2: %t18]
+    %t22 = phi i32 [^entry: 0, ^loop_exit_2: %t17]
     jump ^loop
 
   block ^loop:
-    %i = phi i32 [^wide_tail_4: %t21, ^loop: %next]
-    %sum = phi i32 [^wide_tail_4: %t22, ^loop: %total]
+    %i = phi i32 [^wide_tail_3: %t21, ^loop: %next]
+    %sum = phi i32 [^wide_tail_3: %t22, ^loop: %total]
     %value = load i32 %t2
     store i32 %i, %buffer
     %total = binary add i32 %sum, %value
@@ -79,7 +76,7 @@ function @published_scan(%holder : ptr, %n : i32) -> i32 [no_inline=yes] {
     branch %more, ^loop, ^done
 
   block ^done:
-    %t29 = phi i32 [^loop: %total, ^loop_exit_3: %t17]
+    %t29 = phi i32 [^loop: %total, ^loop_exit_2: %t17]
     call void @free(%buffer)
     return i32 %t29
 }
@@ -91,14 +88,11 @@ function @captured_scan(%holder : ptr, %n : i32) -> i32 [no_inline=yes] {
     %t2 = load ptr %holder
     %t3 = binary and i32 %n, -4
     %t4 = cmp gt i32 %t3, 0
-    branch %t4, ^loop_preheader_1, ^wide_tail_4
+    branch %t4, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t5 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t18]
-    %t6 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t17]
+  block ^unrolled_1:
+    %t5 = phi i32 [^unrolled_1: %t18, ^entry: 0]
+    %t6 = phi i32 [^unrolled_1: %t17, ^entry: 0]
     %t7 = load i32 %t2
     store i32 %t5, %buffer
     %t8 = binary add i32 %t6, %t7
@@ -116,20 +110,20 @@ function @captured_scan(%holder : ptr, %n : i32) -> i32 [no_inline=yes] {
     %t17 = binary add i32 %t14, %t16
     %t18 = binary add nowrap i32 %t5, 4
     %t19 = cmp ne i32 %t3, %t18
-    branch %t19, ^unrolled_2, ^loop_exit_3
+    branch %t19, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
+  block ^loop_exit_2:
     %t20 = cmp lt i32 %t18, %n
-    branch %t20, ^wide_tail_4, ^done
+    branch %t20, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t21 = phi i32 [^entry: 0, ^loop_exit_3: %t18]
-    %t22 = phi i32 [^entry: 0, ^loop_exit_3: %t17]
+  block ^wide_tail_3:
+    %t21 = phi i32 [^entry: 0, ^loop_exit_2: %t18]
+    %t22 = phi i32 [^entry: 0, ^loop_exit_2: %t17]
     jump ^loop
 
   block ^loop:
-    %i = phi i32 [^wide_tail_4: %t21, ^loop: %next]
-    %sum = phi i32 [^wide_tail_4: %t22, ^loop: %total]
+    %i = phi i32 [^wide_tail_3: %t21, ^loop: %next]
+    %sum = phi i32 [^wide_tail_3: %t22, ^loop: %total]
     %value = load i32 %t2
     store i32 %i, %buffer
     %total = binary add i32 %sum, %value
@@ -138,7 +132,7 @@ function @captured_scan(%holder : ptr, %n : i32) -> i32 [no_inline=yes] {
     branch %more, ^loop, ^done
 
   block ^done:
-    %t29 = phi i32 [^loop: %total, ^loop_exit_3: %t17]
+    %t29 = phi i32 [^loop: %total, ^loop_exit_2: %t17]
     call void @free(%buffer)
     return i32 %t29
 }

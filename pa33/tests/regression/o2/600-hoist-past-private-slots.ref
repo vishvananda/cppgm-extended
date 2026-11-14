@@ -9,14 +9,11 @@ function @private_slot(%p : ptr, %q : ptr, %n : i64) -> i64 [no_inline=yes] {
     %c = binary add i64 %t2, %t3
     %t5 = binary and i64 %n, -8
     %t6 = cmp gt i64 %t5, 0
-    branch %t6, ^loop_preheader_2, ^wide_tail_5
+    branch %t6, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t7 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t17]
-    %t8 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t16]
+  block ^unrolled_2:
+    %t7 = phi i64 [^unrolled_2: %t17, ^split_1: 0]
+    %t8 = phi i64 [^unrolled_2: %t16, ^split_1: 0]
     %t9 = binary add i64 %c, %t8
     %t10 = binary add i64 %c, %t9
     %t11 = binary add i64 %c, %t10
@@ -27,27 +24,27 @@ function @private_slot(%p : ptr, %q : ptr, %n : i64) -> i64 [no_inline=yes] {
     %t16 = binary add i64 %c, %t15
     %t17 = binary add nowrap i64 %t7, 8
     %t18 = cmp ne i64 %t5, %t17
-    branch %t18, ^unrolled_3, ^loop_exit_4
+    branch %t18, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
+  block ^loop_exit_3:
     %t19 = cmp lt i64 %t17, %n
-    branch %t19, ^wide_tail_5, ^done
+    branch %t19, ^wide_tail_4, ^done
 
-  block ^wide_tail_5:
-    %t20 = phi i64 [^split_1: 0, ^loop_exit_4: %t17]
-    %t21 = phi i64 [^split_1: 0, ^loop_exit_4: %t16]
+  block ^wide_tail_4:
+    %t20 = phi i64 [^split_1: 0, ^loop_exit_3: %t17]
+    %t21 = phi i64 [^split_1: 0, ^loop_exit_3: %t16]
     jump ^loop
 
   block ^loop:
-    %i = phi i64 [^wide_tail_5: %t20, ^loop: %next]
-    %sum = phi i64 [^wide_tail_5: %t21, ^loop: %more]
+    %i = phi i64 [^wide_tail_4: %t20, ^loop: %next]
+    %sum = phi i64 [^wide_tail_4: %t21, ^loop: %more]
     %more = binary add i64 %sum, %c
     %next = binary add nowrap i64 %i, 1
     %again = cmp lt i64 %next, %n
     branch %again, ^loop, ^done
 
   block ^done:
-    %r = phi i64 [^entry: 0, ^loop: %more, ^loop_exit_4: %t16]
+    %r = phi i64 [^entry: 0, ^loop: %more, ^loop_exit_3: %t16]
     return i64 %r
 }
 function @escaped_slot(%p : ptr, %q : ptr, %n : i64, %out : ptr) -> i64 [no_inline=yes] {
@@ -62,14 +59,11 @@ function @escaped_slot(%p : ptr, %q : ptr, %n : i64, %out : ptr) -> i64 [no_inli
   block ^loop_preheader_1:
     %t3 = binary and i64 %n, -2
     %t4 = cmp gt i64 %t3, 0
-    branch %t4, ^loop_preheader_2, ^wide_tail_5
+    branch %t4, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t5 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t11]
-    %t6 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t10]
+  block ^unrolled_2:
+    %t5 = phi i64 [^unrolled_2: %t11, ^loop_preheader_1: 0]
+    %t6 = phi i64 [^unrolled_2: %t10, ^loop_preheader_1: 0]
     copyobj 16x8 %q, $s
     %t7 = load typed i64 %p
     %t8 = binary add i64 %t6, %t7
@@ -78,20 +72,20 @@ function @escaped_slot(%p : ptr, %q : ptr, %n : i64, %out : ptr) -> i64 [no_inli
     %t10 = binary add i64 %t8, %t9
     %t11 = binary add nowrap i64 %t5, 2
     %t12 = cmp ne i64 %t3, %t11
-    branch %t12, ^unrolled_3, ^loop_exit_4
+    branch %t12, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
+  block ^loop_exit_3:
     %t13 = cmp lt i64 %t11, %n
-    branch %t13, ^wide_tail_5, ^done
+    branch %t13, ^wide_tail_4, ^done
 
-  block ^wide_tail_5:
-    %t14 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t11]
-    %t15 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t10]
+  block ^wide_tail_4:
+    %t14 = phi i64 [^loop_preheader_1: 0, ^loop_exit_3: %t11]
+    %t15 = phi i64 [^loop_preheader_1: 0, ^loop_exit_3: %t10]
     jump ^loop
 
   block ^loop:
-    %i = phi i64 [^wide_tail_5: %t14, ^loop: %next]
-    %sum = phi i64 [^wide_tail_5: %t15, ^loop: %more]
+    %i = phi i64 [^wide_tail_4: %t14, ^loop: %next]
+    %sum = phi i64 [^wide_tail_4: %t15, ^loop: %more]
     copyobj 16x8 %q, $s
     %limit = load typed i64 %p
     %more = binary add i64 %sum, %limit
@@ -100,6 +94,6 @@ function @escaped_slot(%p : ptr, %q : ptr, %n : i64, %out : ptr) -> i64 [no_inli
     branch %again, ^loop, ^done
 
   block ^done:
-    %r = phi i64 [^entry: 0, ^loop: %more, ^loop_exit_4: %t10]
+    %r = phi i64 [^entry: 0, ^loop: %more, ^loop_exit_3: %t10]
     return i64 %r
 }

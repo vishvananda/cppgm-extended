@@ -294,30 +294,27 @@ function @on_unwinding_call(%flag : i64, %n : i64) -> void [no_inline=yes] {
   block ^loop_preheader_3:
     %t5 = binary and i64 %n, -8
     %t6 = cmp gt i64 %t5, 0
-    branch %t6, ^loop_preheader_4, ^wide_tail_7
+    branch %t6, ^unrolled_4, ^wide_tail_6
 
-  block ^loop_preheader_4:
-    jump ^unrolled_5
-
-  block ^unrolled_5:
-    %t7 = phi i64 [^loop_preheader_4: 0, ^unrolled_5: %t8]
+  block ^unrolled_4:
+    %t7 = phi i64 [^unrolled_4: %t8, ^loop_preheader_3: 0]
     %t8 = binary add nowrap i64 %t7, 8
     %t9 = cmp ne i64 %t5, %t8
-    branch %t9, ^unrolled_5, ^loop_exit_6
+    branch %t9, ^unrolled_4, ^loop_exit_5
 
-  block ^loop_exit_6:
+  block ^loop_exit_5:
     %t10 = cmp lt i64 %t8, %n
-    branch %t10, ^wide_tail_7, ^exit
+    branch %t10, ^wide_tail_6, ^exit
 
-  block ^wide_tail_7:
-    %t11 = phi i64 [^loop_preheader_3: 0, ^loop_exit_6: %t8]
-    jump ^loop_preheader_8
+  block ^wide_tail_6:
+    %t11 = phi i64 [^loop_preheader_3: 0, ^loop_exit_5: %t8]
+    jump ^loop_preheader_7
 
-  block ^loop_preheader_8:
-    %t12 = phi i64 [^loop_preheader_8: %t13, ^wide_tail_7: %t11]
+  block ^loop_preheader_7:
+    %t12 = phi i64 [^loop_preheader_7: %t13, ^wide_tail_6: %t11]
     %t13 = binary add nowrap i64 %t12, 1
     %t14 = cmp lt i64 %t13, %n
-    branch %t14, ^loop_preheader_8, ^exit
+    branch %t14, ^loop_preheader_7, ^exit
 
   block ^exit:
     return void

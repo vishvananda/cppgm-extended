@@ -108,15 +108,12 @@ function @coupled_quotient(%count : i64) -> i32 [no_inline=yes] {
   block ^loop_preheader_1:
     %t2 = binary and i64 %count, -4
     %t3 = cmp gt i64 %t2, 0
-    branch %t3, ^loop_preheader_2, ^wide_tail_5
+    branch %t3, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t4 = phi i32 [^loop_preheader_2: 8, ^unrolled_3: %t14]
-    %t5 = phi i32 [^loop_preheader_2: 40, ^unrolled_3: %t12]
-    %t6 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t15]
+  block ^unrolled_2:
+    %t4 = phi i32 [^unrolled_2: %t14, ^loop_preheader_1: 8]
+    %t5 = phi i32 [^unrolled_2: %t12, ^loop_preheader_1: 40]
+    %t6 = phi i64 [^unrolled_2: %t15, ^loop_preheader_1: 0]
     %t7 = binary add i32 %t4, %t5
     %t8 = binary ushr i32 %t7, 1
     %t9 = binary add i32 %t4, %t8
@@ -127,24 +124,24 @@ function @coupled_quotient(%count : i64) -> i32 [no_inline=yes] {
     %t14 = binary ushr i32 %t13, 1
     %t15 = binary add nowrap i64 %t6, 4
     %t16 = cmp ne i64 %t2, %t15
-    branch %t16, ^unrolled_3, ^loop_exit_4
+    branch %t16, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
+  block ^loop_exit_3:
     %t17 = cmp lt i64 %t15, %count
     %t18 = binary and i32 %t13, 7
     %t19 = binary add i32 %t14, %t18
-    branch %t17, ^wide_tail_5, ^done
+    branch %t17, ^wide_tail_4, ^done
 
-  block ^wide_tail_5:
-    %t20 = phi i32 [^loop_preheader_1: 8, ^loop_exit_4: %t14]
-    %t21 = phi i32 [^loop_preheader_1: 40, ^loop_exit_4: %t12]
-    %t22 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t15]
+  block ^wide_tail_4:
+    %t20 = phi i32 [^loop_preheader_1: 8, ^loop_exit_3: %t14]
+    %t21 = phi i32 [^loop_preheader_1: 40, ^loop_exit_3: %t12]
+    %t22 = phi i64 [^loop_preheader_1: 0, ^loop_exit_3: %t15]
     jump ^body
 
   block ^body:
-    %a = phi i32 [^wide_tail_5: %t20, ^body: %mid]
-    %b = phi i32 [^wide_tail_5: %t21, ^body: %a]
-    %i = phi i64 [^wide_tail_5: %t22, ^body: %inext]
+    %a = phi i32 [^wide_tail_4: %t20, ^body: %mid]
+    %b = phi i32 [^wide_tail_4: %t21, ^body: %a]
+    %i = phi i64 [^wide_tail_4: %t22, ^body: %inext]
     %sum = binary add i32 %a, %b
     %mid = binary ushr i32 %sum, 1
     %rem = binary and i32 %sum, 7
@@ -154,7 +151,7 @@ function @coupled_quotient(%count : i64) -> i32 [no_inline=yes] {
     branch %more, ^body, ^done
 
   block ^done:
-    %t32 = phi i32 [^body: %answer, ^loop_exit_4: %t19]
+    %t32 = phi i32 [^body: %answer, ^loop_exit_3: %t19]
     return i32 %t32
 
   block ^empty:
@@ -168,15 +165,12 @@ function @negative_mean(%count : i64) -> i32 [no_inline=yes] {
   block ^loop_preheader_1:
     %t2 = binary and i64 %count, -8
     %t3 = cmp gt i64 %t2, 0
-    branch %t3, ^loop_preheader_2, ^wide_tail_5
+    branch %t3, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t4 = phi i32 [^loop_preheader_2: -31, ^unrolled_3: %t22]
-    %t5 = phi i32 [^loop_preheader_2: 9, ^unrolled_3: %t20]
-    %t6 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t23]
+  block ^unrolled_2:
+    %t4 = phi i32 [^unrolled_2: %t22, ^loop_preheader_1: -31]
+    %t5 = phi i32 [^unrolled_2: %t20, ^loop_preheader_1: 9]
+    %t6 = phi i64 [^unrolled_2: %t23, ^loop_preheader_1: 0]
     %t7 = binary add i32 %t4, %t5
     %t8 = binary div i32 %t7, 2
     %t9 = binary add i32 %t4, %t8
@@ -195,22 +189,22 @@ function @negative_mean(%count : i64) -> i32 [no_inline=yes] {
     %t22 = binary div i32 %t21, 2
     %t23 = binary add nowrap i64 %t6, 8
     %t24 = cmp ne i64 %t2, %t23
-    branch %t24, ^unrolled_3, ^loop_exit_4
+    branch %t24, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
+  block ^loop_exit_3:
     %t25 = cmp lt i64 %t23, %count
-    branch %t25, ^wide_tail_5, ^done
+    branch %t25, ^wide_tail_4, ^done
 
-  block ^wide_tail_5:
-    %t26 = phi i32 [^loop_preheader_1: -31, ^loop_exit_4: %t22]
-    %t27 = phi i32 [^loop_preheader_1: 9, ^loop_exit_4: %t20]
-    %t28 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t23]
+  block ^wide_tail_4:
+    %t26 = phi i32 [^loop_preheader_1: -31, ^loop_exit_3: %t22]
+    %t27 = phi i32 [^loop_preheader_1: 9, ^loop_exit_3: %t20]
+    %t28 = phi i64 [^loop_preheader_1: 0, ^loop_exit_3: %t23]
     jump ^body
 
   block ^body:
-    %a = phi i32 [^wide_tail_5: %t26, ^body: %mid]
-    %b = phi i32 [^wide_tail_5: %t27, ^body: %a]
-    %i = phi i64 [^wide_tail_5: %t28, ^body: %inext]
+    %a = phi i32 [^wide_tail_4: %t26, ^body: %mid]
+    %b = phi i32 [^wide_tail_4: %t27, ^body: %a]
+    %i = phi i64 [^wide_tail_4: %t28, ^body: %inext]
     %sum = binary add i32 %a, %b
     %mid = binary div i32 %sum, 2
     %inext = binary add nowrap i64 %i, 1
@@ -218,7 +212,7 @@ function @negative_mean(%count : i64) -> i32 [no_inline=yes] {
     branch %more, ^body, ^done
 
   block ^done:
-    %t36 = phi i32 [^body: %mid, ^loop_exit_4: %t22]
+    %t36 = phi i32 [^body: %mid, ^loop_exit_3: %t22]
     return i32 %t36
 
   block ^empty:
@@ -232,15 +226,12 @@ function @wrapping_mean(%count : i64) -> i8 [no_inline=yes] {
   block ^loop_preheader_1:
     %t2 = binary and i64 %count, -8
     %t3 = cmp gt i64 %t2, 0
-    branch %t3, ^loop_preheader_2, ^wide_tail_5
+    branch %t3, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t4 = phi i8 [^loop_preheader_2: 100, ^unrolled_3: %t22]
-    %t5 = phi i8 [^loop_preheader_2: 120, ^unrolled_3: %t20]
-    %t6 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t23]
+  block ^unrolled_2:
+    %t4 = phi i8 [^unrolled_2: %t22, ^loop_preheader_1: 100]
+    %t5 = phi i8 [^unrolled_2: %t20, ^loop_preheader_1: 120]
+    %t6 = phi i64 [^unrolled_2: %t23, ^loop_preheader_1: 0]
     %t7 = binary add i8 %t4, %t5
     %t8 = binary div i8 %t7, 2
     %t9 = binary add i8 %t4, %t8
@@ -259,22 +250,22 @@ function @wrapping_mean(%count : i64) -> i8 [no_inline=yes] {
     %t22 = binary div i8 %t21, 2
     %t23 = binary add nowrap i64 %t6, 8
     %t24 = cmp ne i64 %t2, %t23
-    branch %t24, ^unrolled_3, ^loop_exit_4
+    branch %t24, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
+  block ^loop_exit_3:
     %t25 = cmp lt i64 %t23, %count
-    branch %t25, ^wide_tail_5, ^done
+    branch %t25, ^wide_tail_4, ^done
 
-  block ^wide_tail_5:
-    %t26 = phi i8 [^loop_preheader_1: 100, ^loop_exit_4: %t22]
-    %t27 = phi i8 [^loop_preheader_1: 120, ^loop_exit_4: %t20]
-    %t28 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t23]
+  block ^wide_tail_4:
+    %t26 = phi i8 [^loop_preheader_1: 100, ^loop_exit_3: %t22]
+    %t27 = phi i8 [^loop_preheader_1: 120, ^loop_exit_3: %t20]
+    %t28 = phi i64 [^loop_preheader_1: 0, ^loop_exit_3: %t23]
     jump ^body
 
   block ^body:
-    %a = phi i8 [^wide_tail_5: %t26, ^body: %mid]
-    %b = phi i8 [^wide_tail_5: %t27, ^body: %a]
-    %i = phi i64 [^wide_tail_5: %t28, ^body: %inext]
+    %a = phi i8 [^wide_tail_4: %t26, ^body: %mid]
+    %b = phi i8 [^wide_tail_4: %t27, ^body: %a]
+    %i = phi i64 [^wide_tail_4: %t28, ^body: %inext]
     %sum = binary add i8 %a, %b
     %mid = binary div i8 %sum, 2
     %inext = binary add nowrap i64 %i, 1
@@ -282,7 +273,7 @@ function @wrapping_mean(%count : i64) -> i8 [no_inline=yes] {
     branch %more, ^body, ^done
 
   block ^done:
-    %t36 = phi i8 [^body: %mid, ^loop_exit_4: %t22]
+    %t36 = phi i8 [^body: %mid, ^loop_exit_3: %t22]
     return i8 %t36
 
   block ^empty:
@@ -296,15 +287,12 @@ function @unknown_seed(%seed : i32, %count : i64) -> i32 [no_inline=yes] {
   block ^loop_preheader_1:
     %t2 = binary and i64 %count, -8
     %t3 = cmp gt i64 %t2, 0
-    branch %t3, ^loop_preheader_2, ^wide_tail_5
+    branch %t3, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t4 = phi i32 [^loop_preheader_2: %seed, ^unrolled_3: %t22]
-    %t5 = phi i32 [^loop_preheader_2: 40, ^unrolled_3: %t20]
-    %t6 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t23]
+  block ^unrolled_2:
+    %t4 = phi i32 [^unrolled_2: %t22, ^loop_preheader_1: %seed]
+    %t5 = phi i32 [^unrolled_2: %t20, ^loop_preheader_1: 40]
+    %t6 = phi i64 [^unrolled_2: %t23, ^loop_preheader_1: 0]
     %t7 = binary add i32 %t4, %t5
     %t8 = binary div i32 %t7, 2
     %t9 = binary add i32 %t4, %t8
@@ -323,22 +311,22 @@ function @unknown_seed(%seed : i32, %count : i64) -> i32 [no_inline=yes] {
     %t22 = binary div i32 %t21, 2
     %t23 = binary add nowrap i64 %t6, 8
     %t24 = cmp ne i64 %t2, %t23
-    branch %t24, ^unrolled_3, ^loop_exit_4
+    branch %t24, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
+  block ^loop_exit_3:
     %t25 = cmp lt i64 %t23, %count
-    branch %t25, ^wide_tail_5, ^done
+    branch %t25, ^wide_tail_4, ^done
 
-  block ^wide_tail_5:
-    %t26 = phi i32 [^loop_preheader_1: %seed, ^loop_exit_4: %t22]
-    %t27 = phi i32 [^loop_preheader_1: 40, ^loop_exit_4: %t20]
-    %t28 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t23]
+  block ^wide_tail_4:
+    %t26 = phi i32 [^loop_preheader_1: %seed, ^loop_exit_3: %t22]
+    %t27 = phi i32 [^loop_preheader_1: 40, ^loop_exit_3: %t20]
+    %t28 = phi i64 [^loop_preheader_1: 0, ^loop_exit_3: %t23]
     jump ^body
 
   block ^body:
-    %a = phi i32 [^wide_tail_5: %t26, ^body: %mid]
-    %b = phi i32 [^wide_tail_5: %t27, ^body: %a]
-    %i = phi i64 [^wide_tail_5: %t28, ^body: %inext]
+    %a = phi i32 [^wide_tail_4: %t26, ^body: %mid]
+    %b = phi i32 [^wide_tail_4: %t27, ^body: %a]
+    %i = phi i64 [^wide_tail_4: %t28, ^body: %inext]
     %sum = binary add i32 %a, %b
     %mid = binary div i32 %sum, 2
     %inext = binary add nowrap i64 %i, 1
@@ -346,7 +334,7 @@ function @unknown_seed(%seed : i32, %count : i64) -> i32 [no_inline=yes] {
     branch %more, ^body, ^done
 
   block ^done:
-    %t36 = phi i32 [^body: %mid, ^loop_exit_4: %t22]
+    %t36 = phi i32 [^body: %mid, ^loop_exit_3: %t22]
     return i32 %t36
 
   block ^empty:
@@ -360,15 +348,12 @@ function @decreasing(%count : i64) -> i32 [no_inline=yes] {
   block ^loop_preheader_1:
     %t2 = binary and i64 %count, -4
     %t3 = cmp gt i64 %t2, 0
-    branch %t3, ^loop_preheader_2, ^wide_tail_5
+    branch %t3, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t4 = phi i32 [^loop_preheader_2: 0, ^unrolled_3: %t18]
-    %t5 = phi i32 [^loop_preheader_2: 16, ^unrolled_3: %t17]
-    %t6 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t19]
+  block ^unrolled_2:
+    %t4 = phi i32 [^unrolled_2: %t18, ^loop_preheader_1: 0]
+    %t5 = phi i32 [^unrolled_2: %t17, ^loop_preheader_1: 16]
+    %t6 = phi i64 [^unrolled_2: %t19, ^loop_preheader_1: 0]
     %t7 = binary add i32 %t4, %t5
     %t8 = binary div i32 %t7, 2
     %t9 = binary sub i32 %t4, 1
@@ -383,22 +368,22 @@ function @decreasing(%count : i64) -> i32 [no_inline=yes] {
     %t18 = binary sub i32 %t4, 4
     %t19 = binary add nowrap i64 %t6, 4
     %t20 = cmp ne i64 %t2, %t19
-    branch %t20, ^unrolled_3, ^loop_exit_4
+    branch %t20, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
+  block ^loop_exit_3:
     %t21 = cmp lt i64 %t19, %count
-    branch %t21, ^wide_tail_5, ^done
+    branch %t21, ^wide_tail_4, ^done
 
-  block ^wide_tail_5:
-    %t22 = phi i32 [^loop_preheader_1: 0, ^loop_exit_4: %t18]
-    %t23 = phi i32 [^loop_preheader_1: 16, ^loop_exit_4: %t17]
-    %t24 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t19]
+  block ^wide_tail_4:
+    %t22 = phi i32 [^loop_preheader_1: 0, ^loop_exit_3: %t18]
+    %t23 = phi i32 [^loop_preheader_1: 16, ^loop_exit_3: %t17]
+    %t24 = phi i64 [^loop_preheader_1: 0, ^loop_exit_3: %t19]
     jump ^body
 
   block ^body:
-    %a = phi i32 [^wide_tail_5: %t22, ^body: %nexta]
-    %b = phi i32 [^wide_tail_5: %t23, ^body: %mid]
-    %i = phi i64 [^wide_tail_5: %t24, ^body: %inext]
+    %a = phi i32 [^wide_tail_4: %t22, ^body: %nexta]
+    %b = phi i32 [^wide_tail_4: %t23, ^body: %mid]
+    %i = phi i64 [^wide_tail_4: %t24, ^body: %inext]
     %sum = binary add i32 %a, %b
     %mid = binary div i32 %sum, 2
     %nexta = binary sub i32 %a, 1
@@ -407,7 +392,7 @@ function @decreasing(%count : i64) -> i32 [no_inline=yes] {
     branch %more, ^body, ^done
 
   block ^done:
-    %t33 = phi i32 [^body: %mid, ^loop_exit_4: %t17]
+    %t33 = phi i32 [^body: %mid, ^loop_exit_3: %t17]
     return i32 %t33
 
   block ^empty:

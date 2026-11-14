@@ -31,7 +31,7 @@ function @counts(%text : ptr, %n : i32) -> i32 [binding=strong, object=_Z6counts
     jump ^unrolled_2
 
   block ^unrolled_2:
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t16]
+    %t4 = phi i64 [^unrolled_2: %t16, ^loop_preheader_1: 0]
     %t5 = index inbounds u8 [projection=array_element] %text, %t4
     %t6 = load u8 %t5
     %t7 = index inbounds i32 [projection=array_element] %t1, %t6
@@ -74,14 +74,11 @@ function @counts(%text : ptr, %n : i32) -> i32 [binding=strong, object=_Z6counts
   block ^for_end_6:
     %t30 = addr $saved
     copyobj 1024x1 %t1, %t30
-    branch 1, ^loop_preheader_7, ^wide_tail_9
+    jump ^unrolled_7
 
-  block ^loop_preheader_7:
-    jump ^unrolled_8
-
-  block ^unrolled_8:
-    %t31 = phi i32 [^loop_preheader_7: 0, ^unrolled_8: %t55]
-    %t32 = phi i64 [^loop_preheader_7: 0, ^unrolled_8: %t56]
+  block ^unrolled_7:
+    %t31 = phi i32 [^unrolled_7: %t55, ^for_end_6: 0]
+    %t32 = phi i64 [^unrolled_7: %t56, ^for_end_6: 0]
     %t33 = index inbounds i32 [projection=array_element] %t30, %t32
     %t34 = load typed i32 %t33
     %t35 = cmp ne i32 %t34, 0
@@ -108,31 +105,31 @@ function @counts(%text : ptr, %n : i32) -> i32 [binding=strong, object=_Z6counts
     %t56 = binary add nowrap i64 %t32, 4
     %t57 = convert trunc exact i32 i64 %t56
     %t58 = cmp ne i32 %t57, 256
-    branch %t58, ^unrolled_8, ^wide_tail_9
+    branch %t58, ^unrolled_7, ^wide_tail_8
 
-  block ^wide_tail_9:
-    %t59 = phi i32 [^for_end_6: 0, ^unrolled_8: %t55]
-    %t60 = phi i32 [^for_end_6: 0, ^unrolled_8: %t57]
+  block ^wide_tail_8:
+    %t59 = phi i32 [^unrolled_7: %t55]
+    %t60 = phi i32 [^unrolled_7: %t57]
     %t61 = convert sext i64 i32 %t60
-    jump ^for_cond_10
+    jump ^for_cond_9
 
-  block ^for_cond_10:
-    %t62 = phi i32 [^wide_tail_9: %t59, ^for_body_11: %t70]
-    %t63 = phi i64 [^wide_tail_9: %t61, ^for_body_11: %t71]
+  block ^for_cond_9:
+    %t62 = phi i32 [^wide_tail_8: %t59, ^for_body_10: %t70]
+    %t63 = phi i64 [^wide_tail_8: %t61, ^for_body_10: %t71]
     %t64 = convert trunc exact i32 i64 %t63
     %t65 = cmp lt i32 %t64, 256
-    branch %t65, ^for_body_11, ^for_end_12
+    branch %t65, ^for_body_10, ^for_end_11
 
-  block ^for_body_11:
+  block ^for_body_10:
     %t66 = index inbounds i32 [projection=array_element] %t30, %t63
     %t67 = load typed i32 %t66
     %t68 = cmp ne i32 %t67, 0
     %t69 = convert trunc i32 i64 %t68
     %t70 = binary add nowrap i32 %t62, %t69
     %t71 = binary add nowrap i64 %t63, 1
-    jump ^for_cond_10
+    jump ^for_cond_9
 
-  block ^for_end_12:
+  block ^for_end_11:
     return i32 %t62
 }
 function @fill(%out : ptr) -> void [binding=strong, object=_Z4fillPi] {
@@ -140,13 +137,10 @@ function @fill(%out : ptr) -> void [binding=strong, object=_Z4fillPi] {
 
   block ^entry:
     %t1 = addr $table
-    branch 1, ^loop_preheader_1, ^wide_tail_3
+    jump ^unrolled_1
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t18]
+  block ^unrolled_1:
+    %t2 = phi i64 [^unrolled_1: %t18, ^entry: 0]
     %t3 = convert trunc exact i32 i64 %t2
     %t4 = binary mul nowrap i32 %t3, 3
     %t5 = index inbounds i32 [projection=array_element] %t1, %t2
@@ -169,27 +163,27 @@ function @fill(%out : ptr) -> void [binding=strong, object=_Z4fillPi] {
     %t18 = binary add nowrap i64 %t2, 4
     %t19 = convert trunc exact i32 i64 %t18
     %t20 = cmp ne i32 %t19, 64
-    branch %t20, ^unrolled_2, ^wide_tail_3
+    branch %t20, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t21 = phi i32 [^entry: 0, ^unrolled_2: %t19]
+  block ^wide_tail_2:
+    %t21 = phi i32 [^unrolled_1: %t19]
     %t22 = convert sext i64 i32 %t21
-    jump ^for_cond_4
+    jump ^for_cond_3
 
-  block ^for_cond_4:
-    %t23 = phi i64 [^wide_tail_3: %t22, ^for_body_5: %t28]
+  block ^for_cond_3:
+    %t23 = phi i64 [^wide_tail_2: %t22, ^for_body_4: %t28]
     %t24 = convert trunc exact i32 i64 %t23
     %t25 = cmp lt i32 %t24, 64
-    branch %t25, ^for_body_5, ^for_end_6
+    branch %t25, ^for_body_4, ^for_end_5
 
-  block ^for_body_5:
+  block ^for_body_4:
     %t26 = binary mul nowrap i32 %t24, 3
     %t27 = index inbounds i32 [projection=array_element] %t1, %t23
     store typed i32 %t26, %t27
     %t28 = binary add nowrap i64 %t23, 1
-    jump ^for_cond_4
+    jump ^for_cond_3
 
-  block ^for_end_6:
+  block ^for_end_5:
     %t29 = call ptr @memcpy(%out, %t1, 256)
     return void
 }
@@ -201,13 +195,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $table__1
-    branch 1, ^loop_preheader_1, ^wide_tail_3
+    jump ^unrolled_1
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t18]
+  block ^unrolled_1:
+    %t2 = phi i64 [^unrolled_1: %t18, ^entry: 0]
     %t3 = convert trunc exact i32 i64 %t2
     %t4 = binary mul nowrap i32 %t3, 3
     %t5 = index inbounds i32 [projection=array_element] %t1, %t2
@@ -230,27 +221,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = binary add nowrap i64 %t2, 4
     %t19 = convert trunc exact i32 i64 %t18
     %t20 = cmp ne i32 %t19, 64
-    branch %t20, ^unrolled_2, ^wide_tail_3
+    branch %t20, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t21 = phi i32 [^entry: 0, ^unrolled_2: %t19]
+  block ^wide_tail_2:
+    %t21 = phi i32 [^unrolled_1: %t19]
     %t22 = convert sext i64 i32 %t21
-    jump ^for_cond_4
+    jump ^for_cond_3
 
-  block ^for_cond_4:
-    %t23 = phi i64 [^for_body_5: %t28, ^wide_tail_3: %t22]
+  block ^for_cond_3:
+    %t23 = phi i64 [^for_body_4: %t28, ^wide_tail_2: %t22]
     %t24 = convert trunc exact i32 i64 %t23
     %t25 = cmp lt i32 %t24, 64
-    branch %t25, ^for_body_5, ^for_end_6
+    branch %t25, ^for_body_4, ^for_end_5
 
-  block ^for_body_5:
+  block ^for_body_4:
     %t26 = binary mul nowrap i32 %t24, 3
     %t27 = index inbounds i32 [projection=array_element] %t1, %t23
     store typed i32 %t26, %t27
     %t28 = binary add nowrap i64 %t23, 1
-    jump ^for_cond_4
+    jump ^for_cond_3
 
-  block ^for_end_6:
+  block ^for_end_5:
     %t29 = addr $out
     copyobj 256x1 %t1, %t29
     %t30 = addr $seen__2
@@ -267,14 +258,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 5, %t31
     %t36 = addr $saved__3
     copyobj 1024x1 %t30, %t36
-    branch 1, ^loop_preheader_7, ^wide_tail_9
+    jump ^unrolled_6
 
-  block ^loop_preheader_7:
-    jump ^unrolled_8
-
-  block ^unrolled_8:
-    %t37 = phi i32 [^loop_preheader_7: 0, ^unrolled_8: %t61]
-    %t38 = phi i64 [^loop_preheader_7: 0, ^unrolled_8: %t62]
+  block ^unrolled_6:
+    %t37 = phi i32 [^unrolled_6: %t61, ^for_end_5: 0]
+    %t38 = phi i64 [^unrolled_6: %t62, ^for_end_5: 0]
     %t39 = index inbounds i32 [projection=array_element] %t36, %t38
     %t40 = load typed i32 %t39
     %t41 = cmp ne i32 %t40, 0
@@ -301,31 +289,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t62 = binary add nowrap i64 %t38, 4
     %t63 = convert trunc exact i32 i64 %t62
     %t64 = cmp ne i32 %t63, 256
-    branch %t64, ^unrolled_8, ^wide_tail_9
+    branch %t64, ^unrolled_6, ^wide_tail_7
 
-  block ^wide_tail_9:
-    %t65 = phi i32 [^for_end_6: 0, ^unrolled_8: %t61]
-    %t66 = phi i32 [^for_end_6: 0, ^unrolled_8: %t63]
+  block ^wide_tail_7:
+    %t65 = phi i32 [^unrolled_6: %t61]
+    %t66 = phi i32 [^unrolled_6: %t63]
     %t67 = convert sext i64 i32 %t66
-    jump ^for_cond_10
+    jump ^for_cond_8
 
-  block ^for_cond_10:
-    %t68 = phi i32 [^wide_tail_9: %t65, ^for_body_11: %t76]
-    %t69 = phi i64 [^wide_tail_9: %t67, ^for_body_11: %t77]
+  block ^for_cond_8:
+    %t68 = phi i32 [^wide_tail_7: %t65, ^for_body_9: %t76]
+    %t69 = phi i64 [^wide_tail_7: %t67, ^for_body_9: %t77]
     %t70 = convert trunc exact i32 i64 %t69
     %t71 = cmp lt i32 %t70, 256
-    branch %t71, ^for_body_11, ^inline_cont_12
+    branch %t71, ^for_body_9, ^inline_cont_10
 
-  block ^for_body_11:
+  block ^for_body_9:
     %t72 = index inbounds i32 [projection=array_element] %t36, %t69
     %t73 = load typed i32 %t72
     %t74 = cmp ne i32 %t73, 0
     %t75 = convert trunc i32 i64 %t74
     %t76 = binary add nowrap i32 %t68, %t75
     %t77 = binary add nowrap i64 %t69, 1
-    jump ^for_cond_10
+    jump ^for_cond_8
 
-  block ^inline_cont_12:
+  block ^inline_cont_10:
     %t78 = binary sub nowrap i32 %t68, 5
     %t79 = index inbounds i32 [projection=array_element] %t29, 63
     %t80 = load typed i32 %t79

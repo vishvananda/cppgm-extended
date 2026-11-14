@@ -85,50 +85,40 @@ function @extent_leaves_loop(%p : ptr, %q : ptr, %v : f64) -> void [no_inline=ye
   block ^entry:
     %t1 = load typed i64 %p
     %t2 = binary and i64 %t1, -8
-    branch %t2, ^loop_preheader_1, ^wide_tail_4
+    branch %t2, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t19]
+  block ^unrolled_1:
+    %t3 = phi i64 [^unrolled_1: %t12, ^entry: 0]
     %t4 = index i64 %q, %t3
     store typed f64 %v, %t4
-    %t5 = binary add i64 %t3, 1
-    %t6 = index i64 %q, %t5
+    %t5 = index i64 %t4, 1
+    store typed f64 %v, %t5
+    %t6 = index i64 %t4, 2
     store typed f64 %v, %t6
-    %t7 = binary add i64 %t3, 2
-    %t8 = index i64 %q, %t7
+    %t7 = index i64 %t4, 3
+    store typed f64 %v, %t7
+    %t8 = index i64 %t4, 4
     store typed f64 %v, %t8
-    %t9 = binary add i64 %t3, 3
-    %t10 = index i64 %q, %t9
+    %t9 = index i64 %t4, 5
+    store typed f64 %v, %t9
+    %t10 = index i64 %t4, 6
     store typed f64 %v, %t10
-    %t11 = binary add i64 %t3, 4
-    %t12 = index i64 %q, %t11
-    store typed f64 %v, %t12
-    %t13 = binary add i64 %t3, 5
-    %t14 = index i64 %q, %t13
-    store typed f64 %v, %t14
-    %t15 = binary add i64 %t3, 6
-    %t16 = index i64 %q, %t15
-    store typed f64 %v, %t16
-    %t17 = binary add i64 %t3, 7
-    %t18 = index i64 %q, %t17
-    store typed f64 %v, %t18
-    %t19 = binary add i64 %t3, 8
-    %t20 = cmp ne i64 %t2, %t19
-    branch %t20, ^unrolled_2, ^loop_exit_3
+    %t11 = index i64 %t4, 7
+    store typed f64 %v, %t11
+    %t12 = binary add i64 %t3, 8
+    %t13 = cmp ne i64 %t2, %t12
+    branch %t13, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
-    %t21 = cmp ult i64 %t19, %t1
-    branch %t21, ^wide_tail_4, ^done
+  block ^loop_exit_2:
+    %t14 = cmp ult i64 %t12, %t1
+    branch %t14, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t22 = phi i64 [^entry: 0, ^loop_exit_3: %t19]
+  block ^wide_tail_3:
+    %t15 = phi i64 [^entry: 0, ^loop_exit_2: %t12]
     jump ^head
 
   block ^head:
-    %i = phi i64 [^wide_tail_4: %t22, ^head: %next]
+    %i = phi i64 [^wide_tail_3: %t15, ^head: %next]
     %at = index i64 %q, %i
     store typed f64 %v, %at
     %next = binary add i64 %i, 1

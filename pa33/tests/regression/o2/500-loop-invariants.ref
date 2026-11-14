@@ -14,14 +14,11 @@ function @chain(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
     %m = binary mul i64 %a, %b
     %q = binary add i64 %m, 7
     %t3 = binary and i64 %n, -8
-    branch %t3, ^loop_preheader_1, ^wide_tail_3
+    branch %t3, ^unrolled_1, ^wide_tail_2
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t14]
-    %t5 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t13]
+  block ^unrolled_1:
+    %t4 = phi i64 [^unrolled_1: %t14, ^entry: 0]
+    %t5 = phi i64 [^unrolled_1: %t13, ^entry: 0]
     %t6 = binary add i64 %q, %t5
     %t7 = binary add i64 %q, %t6
     %t8 = binary add i64 %q, %t7
@@ -32,16 +29,16 @@ function @chain(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
     %t13 = binary add i64 %q, %t12
     %t14 = binary add i64 %t4, 8
     %t15 = cmp ne i64 %t3, %t14
-    branch %t15, ^unrolled_2, ^wide_tail_3
+    branch %t15, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t16 = phi i64 [^entry: 0, ^unrolled_2: %t14]
-    %t17 = phi i64 [^entry: 0, ^unrolled_2: %t13]
+  block ^wide_tail_2:
+    %t16 = phi i64 [^entry: 0, ^unrolled_1: %t14]
+    %t17 = phi i64 [^entry: 0, ^unrolled_1: %t13]
     jump ^head
 
   block ^head:
-    %i = phi i64 [^wide_tail_3: %t16, ^body: %next]
-    %s = phi i64 [^wide_tail_3: %t17, ^body: %t]
+    %i = phi i64 [^wide_tail_2: %t16, ^body: %next]
+    %s = phi i64 [^wide_tail_2: %t17, ^body: %t]
     %c = cmp ult i64 %i, %n
     branch %c, ^body, ^done
 
@@ -56,15 +53,12 @@ function @chain(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
 function @varying(%n : i64, %a : i64) -> i64 [no_inline=yes] {
   block ^entry:
     %t1 = binary and i64 %n, -8
-    branch %t1, ^loop_preheader_1, ^wide_tail_3
+    branch %t1, ^unrolled_1, ^wide_tail_2
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t21]
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t20]
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t19]
+  block ^unrolled_1:
+    %t2 = phi i64 [^unrolled_1: %t21, ^entry: 0]
+    %t3 = phi i64 [^unrolled_1: %t20, ^entry: 0]
+    %t4 = phi i64 [^unrolled_1: %t19, ^entry: 0]
     %t5 = binary add i64 %t2, %t4
     %t6 = binary add i64 %a, %t2
     %t7 = binary add i64 %t5, %t6
@@ -83,18 +77,18 @@ function @varying(%n : i64, %a : i64) -> i64 [no_inline=yes] {
     %t20 = binary add i64 %t3, 8
     %t21 = binary add i64 %a, %t18
     %t22 = cmp ne i64 %t1, %t20
-    branch %t22, ^unrolled_2, ^wide_tail_3
+    branch %t22, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t23 = phi i64 [^entry: 0, ^unrolled_2: %t21]
-    %t24 = phi i64 [^entry: 0, ^unrolled_2: %t20]
-    %t25 = phi i64 [^entry: 0, ^unrolled_2: %t19]
+  block ^wide_tail_2:
+    %t23 = phi i64 [^entry: 0, ^unrolled_1: %t21]
+    %t24 = phi i64 [^entry: 0, ^unrolled_1: %t20]
+    %t25 = phi i64 [^entry: 0, ^unrolled_1: %t19]
     jump ^head
 
   block ^head:
-    %t26 = phi i64 [^wide_tail_3: %t23, ^tail: %t32]
-    %i = phi i64 [^wide_tail_3: %t24, ^tail: %next]
-    %s = phi i64 [^wide_tail_3: %t25, ^tail: %t]
+    %t26 = phi i64 [^wide_tail_2: %t23, ^tail: %t32]
+    %i = phi i64 [^wide_tail_2: %t24, ^tail: %next]
+    %s = phi i64 [^wide_tail_2: %t25, ^tail: %t]
     %c = cmp ult i64 %i, %n
     branch %c, ^tail, ^done
 
@@ -120,14 +114,11 @@ function @nested(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
 
   block ^loop_preheader_2:
     %t5 = binary and i64 %i, -8
-    branch %t5, ^loop_preheader_3, ^wide_tail_5
+    branch %t5, ^unrolled_3, ^wide_tail_4
 
-  block ^loop_preheader_3:
-    jump ^unrolled_4
-
-  block ^unrolled_4:
-    %t6 = phi i64 [^loop_preheader_3: 0, ^unrolled_4: %t16]
-    %t7 = phi i64 [^loop_preheader_3: %s, ^unrolled_4: %t15]
+  block ^unrolled_3:
+    %t6 = phi i64 [^unrolled_3: %t16, ^loop_preheader_2: 0]
+    %t7 = phi i64 [^unrolled_3: %t15, ^loop_preheader_2: %s]
     %t8 = binary add i64 %m, %t7
     %t9 = binary add i64 %m, %t8
     %t10 = binary add i64 %m, %t9
@@ -138,16 +129,16 @@ function @nested(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
     %t15 = binary add i64 %m, %t14
     %t16 = binary add i64 %t6, 8
     %t17 = cmp ne i64 %t5, %t16
-    branch %t17, ^unrolled_4, ^wide_tail_5
+    branch %t17, ^unrolled_3, ^wide_tail_4
 
-  block ^wide_tail_5:
-    %t18 = phi i64 [^loop_preheader_2: 0, ^unrolled_4: %t16]
-    %t19 = phi i64 [^loop_preheader_2: %s, ^unrolled_4: %t15]
+  block ^wide_tail_4:
+    %t18 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t16]
+    %t19 = phi i64 [^loop_preheader_2: %s, ^unrolled_3: %t15]
     jump ^inner
 
   block ^inner:
-    %j = phi i64 [^inner_tail: %j_next, ^wide_tail_5: %t18]
-    %u = phi i64 [^inner_tail: %v, ^wide_tail_5: %t19]
+    %j = phi i64 [^inner_tail: %j_next, ^wide_tail_4: %t18]
+    %u = phi i64 [^inner_tail: %v, ^wide_tail_4: %t19]
     %d = cmp ult i64 %j, %i
     branch %d, ^inner_tail, ^outer_tail
 
@@ -234,14 +225,11 @@ function @nested_certain_division(%n : i64, %a : i64, %b : i64) -> i64 [no_inlin
     %i = phi i64 [^entry: 0, ^latch: %i_next]
     %s = phi i64 [^entry: 0, ^latch: %t25]
     %t4 = binary and i64 %i, -8
-    branch %t4, ^loop_preheader_2, ^wide_tail_5
+    branch %t4, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t5 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t15]
-    %t6 = phi i64 [^loop_preheader_2: %s, ^unrolled_3: %t14]
+  block ^unrolled_2:
+    %t5 = phi i64 [^unrolled_2: %t15, ^outer: 0]
+    %t6 = phi i64 [^unrolled_2: %t14, ^outer: %s]
     %t7 = binary add i64 %q, %t6
     %t8 = binary add i64 %q, %t7
     %t9 = binary add i64 %q, %t8
@@ -252,27 +240,27 @@ function @nested_certain_division(%n : i64, %a : i64, %b : i64) -> i64 [no_inlin
     %t14 = binary add i64 %q, %t13
     %t15 = binary add i64 %t5, 8
     %t16 = cmp ne i64 %t4, %t15
-    branch %t16, ^unrolled_3, ^loop_exit_4
+    branch %t16, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
+  block ^loop_exit_3:
     %t17 = cmp ult i64 %t15, %i
-    branch %t17, ^wide_tail_5, ^latch
+    branch %t17, ^wide_tail_4, ^latch
 
-  block ^wide_tail_5:
-    %t18 = phi i64 [^outer: 0, ^loop_exit_4: %t15]
-    %t19 = phi i64 [^outer: %s, ^loop_exit_4: %t14]
+  block ^wide_tail_4:
+    %t18 = phi i64 [^outer: 0, ^loop_exit_3: %t15]
+    %t19 = phi i64 [^outer: %s, ^loop_exit_3: %t14]
     jump ^inner
 
   block ^inner:
-    %j = phi i64 [^wide_tail_5: %t18, ^inner: %j_next]
-    %u = phi i64 [^wide_tail_5: %t19, ^inner: %t]
+    %j = phi i64 [^wide_tail_4: %t18, ^inner: %j_next]
+    %u = phi i64 [^wide_tail_4: %t19, ^inner: %t]
     %t = binary add i64 %u, %q
     %j_next = binary add i64 %j, 1
     %d = cmp ult i64 %j_next, %i
     branch %d, ^inner, ^latch
 
   block ^latch:
-    %t25 = phi i64 [^inner: %t, ^loop_exit_4: %t14]
+    %t25 = phi i64 [^inner: %t, ^loop_exit_3: %t14]
     %i_next = binary add i64 %i, 1
     %c = cmp ult i64 %i_next, %n
     branch %c, ^outer, ^done
@@ -327,14 +315,11 @@ function @certain_division(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] 
   block ^entry:
     %q = binary div i64 %a, %b
     %t2 = binary and i64 %n, -8
-    branch %t2, ^loop_preheader_1, ^wide_tail_4
+    branch %t2, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t13]
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t12]
+  block ^unrolled_1:
+    %t3 = phi i64 [^unrolled_1: %t13, ^entry: 0]
+    %t4 = phi i64 [^unrolled_1: %t12, ^entry: 0]
     %t5 = binary add i64 %q, %t4
     %t6 = binary add i64 %q, %t5
     %t7 = binary add i64 %q, %t6
@@ -345,27 +330,27 @@ function @certain_division(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] 
     %t12 = binary add i64 %q, %t11
     %t13 = binary add i64 %t3, 8
     %t14 = cmp ne i64 %t2, %t13
-    branch %t14, ^unrolled_2, ^loop_exit_3
+    branch %t14, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
+  block ^loop_exit_2:
     %t15 = cmp ult i64 %t13, %n
-    branch %t15, ^wide_tail_4, ^done
+    branch %t15, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t16 = phi i64 [^entry: 0, ^loop_exit_3: %t13]
-    %t17 = phi i64 [^entry: 0, ^loop_exit_3: %t12]
+  block ^wide_tail_3:
+    %t16 = phi i64 [^entry: 0, ^loop_exit_2: %t13]
+    %t17 = phi i64 [^entry: 0, ^loop_exit_2: %t12]
     jump ^head
 
   block ^head:
-    %i = phi i64 [^wide_tail_4: %t16, ^head: %next]
-    %s = phi i64 [^wide_tail_4: %t17, ^head: %t]
+    %i = phi i64 [^wide_tail_3: %t16, ^head: %next]
+    %s = phi i64 [^wide_tail_3: %t17, ^head: %t]
     %t = binary add i64 %s, %q
     %next = binary add i64 %i, 1
     %c = cmp ult i64 %next, %n
     branch %c, ^head, ^done
 
   block ^done:
-    %t23 = phi i64 [^head: %t, ^loop_exit_3: %t12]
+    %t23 = phi i64 [^head: %t, ^loop_exit_2: %t12]
     return i64 %t23
 }
 function @division_after_call(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
@@ -413,14 +398,11 @@ function @addresses(%n : i64, %p : ptr, %k : i64) -> i64 [no_inline=yes] {
   block ^entry:
     %q = index i8 %p, %k
     %t2 = binary and i64 %n, -4
-    branch %t2, ^loop_preheader_1, ^wide_tail_3
+    branch %t2, ^unrolled_1, ^wide_tail_2
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t17]
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t16]
+  block ^unrolled_1:
+    %t3 = phi i64 [^unrolled_1: %t17, ^entry: 0]
+    %t4 = phi i64 [^unrolled_1: %t16, ^entry: 0]
     %t5 = index i8 @table, 8
     store i64 %t3, %t5
     %t6 = load i64 %q
@@ -439,16 +421,16 @@ function @addresses(%n : i64, %p : ptr, %k : i64) -> i64 [no_inline=yes] {
     %t16 = binary add i64 %t13, %t15
     %t17 = binary add i64 %t3, 4
     %t18 = cmp ne i64 %t2, %t17
-    branch %t18, ^unrolled_2, ^wide_tail_3
+    branch %t18, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t19 = phi i64 [^entry: 0, ^unrolled_2: %t17]
-    %t20 = phi i64 [^entry: 0, ^unrolled_2: %t16]
+  block ^wide_tail_2:
+    %t19 = phi i64 [^entry: 0, ^unrolled_1: %t17]
+    %t20 = phi i64 [^entry: 0, ^unrolled_1: %t16]
     jump ^head
 
   block ^head:
-    %i = phi i64 [^wide_tail_3: %t19, ^tail: %next]
-    %s = phi i64 [^wide_tail_3: %t20, ^tail: %t]
+    %i = phi i64 [^wide_tail_2: %t19, ^tail: %next]
+    %s = phi i64 [^wide_tail_2: %t20, ^tail: %t]
     %c = cmp ult i64 %i, %n
     branch %c, ^tail, ^done
 
@@ -473,13 +455,10 @@ function @slot_addresses(%n : i64) -> i64 [no_inline=yes] {
     %r = addr $w
     %f = index i8 %r, 8
     %t4 = binary and i64 %n, -2
-    branch %t4, ^loop_preheader_1, ^wide_tail_3
+    branch %t4, ^unrolled_1, ^wide_tail_2
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t5 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t16]
+  block ^unrolled_1:
+    %t5 = phi i64 [^unrolled_1: %t16, ^entry: 0]
     %t6 = addr $s
     store volatile i64 %t5, %t6
     %t7 = binary and i64 %t5, 7
@@ -498,14 +477,14 @@ function @slot_addresses(%n : i64) -> i64 [no_inline=yes] {
     store volatile i64 %t11, %t15
     %t16 = binary add i64 %t5, 2
     %t17 = cmp ne i64 %t4, %t16
-    branch %t17, ^unrolled_2, ^wide_tail_3
+    branch %t17, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t18 = phi i64 [^entry: 0, ^unrolled_2: %t16]
+  block ^wide_tail_2:
+    %t18 = phi i64 [^entry: 0, ^unrolled_1: %t16]
     jump ^head
 
   block ^head:
-    %i = phi i64 [^wide_tail_3: %t18, ^tail: %next]
+    %i = phi i64 [^wide_tail_2: %t18, ^tail: %next]
     %c = cmp ult i64 %i, %n
     branch %c, ^tail, ^done
 
@@ -529,14 +508,11 @@ function @extended(%n : i64, %a : f64, %b : f64) -> f64 [no_inline=yes] {
     %x = convert fpext f80 f64 %a
     %y = convert fpext f80 f64 %b
     %t3 = binary and i64 %n, -4
-    branch %t3, ^loop_preheader_1, ^wide_tail_3
+    branch %t3, ^unrolled_1, ^wide_tail_2
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t12]
-    %t5 = phi f64 [^loop_preheader_1: 0, ^unrolled_2: %t11]
+  block ^unrolled_1:
+    %t4 = phi i64 [^unrolled_1: %t12, ^entry: 0]
+    %t5 = phi f64 [^unrolled_1: %t11, ^entry: 0]
     %t6 = binary mul f80 %x, %y
     %t7 = convert fptrunc f64 f80 %t6
     %t8 = binary add f64 %t5, %t7
@@ -545,16 +521,16 @@ function @extended(%n : i64, %a : f64, %b : f64) -> f64 [no_inline=yes] {
     %t11 = binary add f64 %t7, %t10
     %t12 = binary add i64 %t4, 4
     %t13 = cmp ne i64 %t3, %t12
-    branch %t13, ^unrolled_2, ^wide_tail_3
+    branch %t13, ^unrolled_1, ^wide_tail_2
 
-  block ^wide_tail_3:
-    %t14 = phi i64 [^entry: 0, ^unrolled_2: %t12]
-    %t15 = phi f64 [^entry: 0, ^unrolled_2: %t11]
+  block ^wide_tail_2:
+    %t14 = phi i64 [^entry: 0, ^unrolled_1: %t12]
+    %t15 = phi f64 [^entry: 0, ^unrolled_1: %t11]
     jump ^head
 
   block ^head:
-    %i = phi i64 [^wide_tail_3: %t14, ^tail: %next]
-    %s = phi f64 [^wide_tail_3: %t15, ^tail: %t]
+    %i = phi i64 [^wide_tail_2: %t14, ^tail: %next]
+    %s = phi f64 [^wide_tail_2: %t15, ^tail: %t]
     %c = cmp ult i64 %i, %n
     branch %c, ^tail, ^done
 

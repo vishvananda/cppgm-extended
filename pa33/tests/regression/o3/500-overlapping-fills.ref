@@ -8,52 +8,39 @@ global @other : obj<320x8> = {
 function @same_object() -> void [no_inline=yes] {
   block ^entry:
     %second = index i64 @table, 1
-    branch 1, ^loop_preheader_1, ^wide_tail_4
+    jump ^unrolled_1
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t2 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t14]
+  block ^unrolled_1:
+    %t2 = phi i64 [^unrolled_1: %t11, ^entry: 0]
     %t3 = index i64 @table, %t2
     store i64 1, %t3
     %t4 = index i64 %second, %t2
     store i64 2, %t4
-    %t5 = binary add nowrap i64 %t2, 1
-    %t6 = index i64 @table, %t5
-    store i64 1, %t6
-    %t7 = index i64 %second, %t5
-    store i64 2, %t7
-    %t8 = binary add nowrap i64 %t2, 2
-    %t9 = index i64 @table, %t8
+    %t5 = index i64 %t3, 1
+    store i64 1, %t5
+    %t6 = index i64 %t4, 1
+    store i64 2, %t6
+    %t7 = index i64 %t3, 2
+    store i64 1, %t7
+    %t8 = index i64 %t4, 2
+    store i64 2, %t8
+    %t9 = index i64 %t3, 3
     store i64 1, %t9
-    %t10 = index i64 %second, %t8
+    %t10 = index i64 %t4, 3
     store i64 2, %t10
-    %t11 = binary add nowrap i64 %t2, 3
-    %t12 = index i64 @table, %t11
-    store i64 1, %t12
-    %t13 = index i64 %second, %t11
-    store i64 2, %t13
-    %t14 = binary add nowrap i64 %t2, 4
-    %t15 = cmp ne i64 %t14, 28
-    branch %t15, ^unrolled_2, ^loop_exit_3
-
-  block ^loop_exit_3:
-    branch 1, ^wide_tail_4, ^done
-
-  block ^wide_tail_4:
-    %t16 = phi i64 [^entry: 0, ^loop_exit_3: %t14]
-    jump ^body
+    %t11 = binary add nowrap i64 %t2, 4
+    %t12 = cmp ne i64 %t11, 28
+    branch %t12, ^unrolled_1, ^body
 
   block ^body:
-    %t17 = phi i64 [^body: %next, ^wide_tail_4: %t16]
-    %p = index i64 @table, %t17
+    %t13 = phi i64 [^body: %next, ^unrolled_1: %t11]
+    %p = index i64 @table, %t13
     store i64 1, %p
-    %q = index i64 %second, %t17
+    %q = index i64 %second, %t13
     store i64 2, %q
-    %next = binary add nowrap i64 %t17, 1
-    %t21 = cmp lt i64 %next, 30
-    branch %t21, ^body, ^done
+    %next = binary add nowrap i64 %t13, 1
+    %t17 = cmp lt i64 %next, 30
+    branch %t17, ^body, ^done
 
   block ^done:
     return void
@@ -65,72 +52,82 @@ function @two_pointers(%a : ptr, %b : ptr) -> void [no_inline=yes] {
     %t3 = cmp ule ptr %t1, %b
     %t4 = cmp ule ptr %t2, %a
     %t5 = binary or i64 %t3, %t4
-    branch %t5, ^loop_preheader_1, ^loop_preheader_3
+    branch %t5, ^loop_preheader_1, ^unrolled_4
 
   block ^loop_preheader_1:
     %t6 = vector fromi64 1
     %t7 = vector pshufd %t6, 68
     %t8 = vector fromi64 2
     %t9 = vector pshufd %t8, 68
-    jump ^wide_loop_2
+    jump ^unrolled_2
 
-  block ^wide_loop_2:
-    %t10 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t13]
+  block ^unrolled_2:
+    %t10 = phi i64 [^unrolled_2: %t19, ^loop_preheader_1: 0]
     %t11 = index i64 %a, %t10
     store v128 %t7, %t11
     %t12 = index i64 %b, %t10
     store v128 %t9, %t12
-    %t13 = binary add nowrap i64 %t10, 2
-    %t14 = cmp le i64 %t13, 28
-    branch %t14, ^wide_loop_2, ^done
+    %t13 = index i64 %t11, 2
+    store v128 %t7, %t13
+    %t14 = index i64 %t12, 2
+    store v128 %t9, %t14
+    %t15 = index i64 %t11, 4
+    store v128 %t7, %t15
+    %t16 = index i64 %t12, 4
+    store v128 %t9, %t16
+    %t17 = index i64 %t11, 6
+    store v128 %t7, %t17
+    %t18 = index i64 %t12, 6
+    store v128 %t9, %t18
+    %t19 = binary add nowrap i64 %t10, 8
+    %t20 = cmp ne i64 %t19, 24
+    branch %t20, ^unrolled_2, ^wide_loop_3
 
-  block ^loop_preheader_3:
-    branch 1, ^loop_preheader_4, ^wide_tail_7
-
-  block ^loop_preheader_4:
-    jump ^unrolled_5
-
-  block ^unrolled_5:
-    %t15 = phi i64 [^loop_preheader_4: 0, ^unrolled_5: %t27]
-    %t16 = index i64 %a, %t15
-    store i64 1, %t16
-    %t17 = index i64 %b, %t15
-    store i64 2, %t17
-    %t18 = binary add nowrap i64 %t15, 1
-    %t19 = index i64 %a, %t18
-    store i64 1, %t19
-    %t20 = index i64 %b, %t18
-    store i64 2, %t20
-    %t21 = binary add nowrap i64 %t15, 2
+  block ^wide_loop_3:
+    %t21 = phi i64 [^wide_loop_3: %t24, ^unrolled_2: %t19]
     %t22 = index i64 %a, %t21
-    store i64 1, %t22
+    store v128 %t7, %t22
     %t23 = index i64 %b, %t21
-    store i64 2, %t23
-    %t24 = binary add nowrap i64 %t15, 3
-    %t25 = index i64 %a, %t24
-    store i64 1, %t25
-    %t26 = index i64 %b, %t24
-    store i64 2, %t26
-    %t27 = binary add nowrap i64 %t15, 4
-    %t28 = cmp ne i64 %t27, 28
-    branch %t28, ^unrolled_5, ^loop_exit_6
+    store v128 %t9, %t23
+    %t24 = binary add nowrap i64 %t21, 2
+    %t25 = cmp le i64 %t24, 28
+    branch %t25, ^wide_loop_3, ^done
 
-  block ^loop_exit_6:
-    branch 1, ^wide_tail_7, ^done
+  block ^unrolled_4:
+    %t26 = phi i64 [^unrolled_4: %t35, ^entry: 0]
+    %t27 = index i64 %a, %t26
+    store i64 1, %t27
+    %t28 = index i64 %b, %t26
+    store i64 2, %t28
+    %t29 = index i64 %t27, 1
+    store i64 1, %t29
+    %t30 = index i64 %t28, 1
+    store i64 2, %t30
+    %t31 = index i64 %t27, 2
+    store i64 1, %t31
+    %t32 = index i64 %t28, 2
+    store i64 2, %t32
+    %t33 = index i64 %t27, 3
+    store i64 1, %t33
+    %t34 = index i64 %t28, 3
+    store i64 2, %t34
+    %t35 = binary add nowrap i64 %t26, 4
+    %t36 = cmp ne i64 %t35, 28
+    branch %t36, ^unrolled_4, ^wide_tail_5
 
-  block ^wide_tail_7:
-    %t29 = phi i64 [^loop_preheader_3: 0, ^loop_exit_6: %t27]
+  block ^wide_tail_5:
+    %t37 = phi i64 [^unrolled_4: %t35]
     jump ^body
 
   block ^body:
-    %t30 = phi i64 [^body: %next, ^wide_tail_7: %t29]
-    %p = index i64 %a, %t30
+    %t38 = phi i64 [^body: %next, ^wide_tail_5: %t37]
+    %p = index i64 %a, %t38
     store i64 1, %p
-    %q = index i64 %b, %t30
+    %q = index i64 %b, %t38
     store i64 2, %q
-    %next = binary add nowrap i64 %t30, 1
-    %t34 = cmp lt i64 %next, 30
-    branch %t34, ^body, ^done
+    %next = binary add nowrap i64 %t38, 1
+    %t42 = cmp lt i64 %next, 30
+    branch %t42, ^body, ^done
 
   block ^done:
     return void

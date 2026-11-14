@@ -195,53 +195,47 @@ function @refused(%out : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t1 = load typed i32 %out
     %t2 = binary and i64 %n, -4
     %t3 = cmp gt i64 %t2, 0
-    branch %t3, ^loop_preheader_1, ^wide_tail_4
+    branch %t3, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t4 = phi i32 [^loop_preheader_1: %t1, ^unrolled_2: %t24]
-    %t5 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t25]
+  block ^unrolled_1:
+    %t4 = phi i32 [^unrolled_1: %t21, ^entry: %t1]
+    %t5 = phi i64 [^unrolled_1: %t22, ^entry: 0]
     %t6 = index i32 %x, %t5
     %t7 = load typed i32 %t6
     %t8 = binary add i32 %t4, %t7
     %t9 = binary add i32 %t8, %t8
     store typed i32 %t9, %out
-    %t10 = binary add nowrap i64 %t5, 1
-    %t11 = index i32 %x, %t10
-    %t12 = load typed i32 %t11
-    %t13 = binary add i32 %t9, %t12
-    %t14 = binary add i32 %t13, %t13
-    store typed i32 %t14, %out
-    %t15 = binary add nowrap i64 %t5, 2
-    %t16 = index i32 %x, %t15
-    %t17 = load typed i32 %t16
-    %t18 = binary add i32 %t14, %t17
-    %t19 = binary add i32 %t18, %t18
-    store typed i32 %t19, %out
-    %t20 = binary add nowrap i64 %t5, 3
-    %t21 = index i32 %x, %t20
-    %t22 = load typed i32 %t21
-    %t23 = binary add i32 %t19, %t22
-    %t24 = binary add i32 %t23, %t23
-    store typed i32 %t24, %out
-    %t25 = binary add nowrap i64 %t5, 4
-    %t26 = cmp ne i64 %t2, %t25
-    branch %t26, ^unrolled_2, ^loop_exit_3
+    %t10 = index i32 %t6, 1
+    %t11 = load typed i32 %t10
+    %t12 = binary add i32 %t9, %t11
+    %t13 = binary add i32 %t12, %t12
+    store typed i32 %t13, %out
+    %t14 = index i32 %t6, 2
+    %t15 = load typed i32 %t14
+    %t16 = binary add i32 %t13, %t15
+    %t17 = binary add i32 %t16, %t16
+    store typed i32 %t17, %out
+    %t18 = index i32 %t6, 3
+    %t19 = load typed i32 %t18
+    %t20 = binary add i32 %t17, %t19
+    %t21 = binary add i32 %t20, %t20
+    store typed i32 %t21, %out
+    %t22 = binary add nowrap i64 %t5, 4
+    %t23 = cmp ne i64 %t2, %t22
+    branch %t23, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
-    %t27 = cmp lt i64 %t25, %n
-    branch %t27, ^wide_tail_4, ^done
+  block ^loop_exit_2:
+    %t24 = cmp lt i64 %t22, %n
+    branch %t24, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t28 = phi i32 [^entry: %t1, ^loop_exit_3: %t24]
-    %t29 = phi i64 [^entry: 0, ^loop_exit_3: %t25]
+  block ^wide_tail_3:
+    %t25 = phi i32 [^entry: %t1, ^loop_exit_2: %t21]
+    %t26 = phi i64 [^entry: 0, ^loop_exit_2: %t22]
     jump ^body
 
   block ^body:
-    %old = phi i32 [^wide_tail_4: %t28, ^body: %twice]
-    %i = phi i64 [^wide_tail_4: %t29, ^body: %next]
+    %old = phi i32 [^wide_tail_3: %t25, ^body: %twice]
+    %i = phi i64 [^wide_tail_3: %t26, ^body: %next]
     %p = index i32 %x, %i
     %v = load typed i32 %p
     %sum = binary add i32 %old, %v

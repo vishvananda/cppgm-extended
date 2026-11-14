@@ -199,14 +199,11 @@ function @hot_loop(%n : i64, %x : i64) -> i64 [unwind=no, binding=strong, no_inl
     %w46_48 = binary mul i64 %w45_47, 95
     %w47_49 = binary xor i64 %w46_48, 97
     %t50 = binary and i64 %n, -8
-    branch %t50, ^loop_preheader_2, ^wide_tail_5
+    branch %t50, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t51 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t61]
-    %t52 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t60]
+  block ^unrolled_2:
+    %t51 = phi i64 [^unrolled_2: %t61, ^loop_preheader_1: 0]
+    %t52 = phi i64 [^unrolled_2: %t60, ^loop_preheader_1: 0]
     %t53 = binary add i64 %w47_49, %t52
     %t54 = binary add i64 %w47_49, %t53
     %t55 = binary add i64 %w47_49, %t54
@@ -217,27 +214,27 @@ function @hot_loop(%n : i64, %x : i64) -> i64 [unwind=no, binding=strong, no_inl
     %t60 = binary add i64 %w47_49, %t59
     %t61 = binary add i64 %t51, 8
     %t62 = cmp ne i64 %t50, %t61
-    branch %t62, ^unrolled_3, ^loop_exit_4
+    branch %t62, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
+  block ^loop_exit_3:
     %t63 = cmp ne i64 %n, %t61
-    branch %t63, ^wide_tail_5, ^done
+    branch %t63, ^wide_tail_4, ^done
 
-  block ^wide_tail_5:
-    %t64 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t61]
-    %t65 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t60]
+  block ^wide_tail_4:
+    %t64 = phi i64 [^loop_preheader_1: 0, ^loop_exit_3: %t61]
+    %t65 = phi i64 [^loop_preheader_1: 0, ^loop_exit_3: %t60]
     jump ^loop
 
   block ^loop:
-    %i = phi i64 [^wide_tail_5: %t64, ^loop: %next]
-    %sum = phi i64 [^wide_tail_5: %t65, ^loop: %added]
+    %i = phi i64 [^wide_tail_4: %t64, ^loop: %next]
+    %sum = phi i64 [^wide_tail_4: %t65, ^loop: %added]
     %added = binary add i64 %sum, %w47_49
     %next = binary add i64 %i, 1
     %more = cmp ne i64 %n, %next
     branch %more, ^loop, ^done
 
   block ^done:
-    %result = phi i64 [^entry: 0, ^loop: %added, ^loop_exit_4: %t60]
+    %result = phi i64 [^entry: 0, ^loop: %added, ^loop_exit_3: %t60]
     return i64 %result
 }
 function @main() -> i32 [role=entry] {

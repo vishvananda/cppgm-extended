@@ -21,50 +21,47 @@ function @estimate(%data : ptr, %count : i64, %size : i64, %k : i64, %block : i6
 
   block ^split_3:
     %t10 = load typed i64 %t121
-    branch 1, ^loop_preheader_4, ^wide_tail_8
-
-  block ^loop_preheader_4:
     %t11 = binary sub i64 %count, %t8
     %t12 = binary and i64 %t11, -128
-    branch %t12, ^loop_preheader_5, ^wide_tail_8
+    branch %t12, ^loop_preheader_4, ^wide_tail_7
 
-  block ^loop_preheader_5:
+  block ^loop_preheader_4:
     %t13 = binary add i64 %t8, %t12
-    jump ^unrolled_6
+    jump ^unrolled_5
 
-  block ^unrolled_6:
-    %t14 = phi i64 [^loop_preheader_5: %t10, ^unrolled_6: %t16]
-    %t15 = phi i64 [^loop_preheader_5: %t8, ^unrolled_6: %t17]
+  block ^unrolled_5:
+    %t14 = phi i64 [^loop_preheader_4: %t10, ^unrolled_5: %t16]
+    %t15 = phi i64 [^loop_preheader_4: %t8, ^unrolled_5: %t17]
     %t16 = binary add i64 %t14, 128
     %t17 = binary add i64 %t15, 128
     %t18 = cmp ne i64 %t13, %t17
-    branch %t18, ^unrolled_6, ^loop_exit_7
+    branch %t18, ^unrolled_5, ^loop_exit_6
 
-  block ^loop_exit_7:
+  block ^loop_exit_6:
     %t19 = cmp ult i64 %t17, %count
-    branch %t19, ^wide_tail_8, ^loop_exit_10
+    branch %t19, ^wide_tail_7, ^loop_exit_9
 
-  block ^wide_tail_8:
-    %t20 = phi i64 [^split_3: %t10, ^loop_exit_7: %t16, ^loop_preheader_4: %t10]
-    %t21 = phi i64 [^split_3: %t8, ^loop_exit_7: %t17, ^loop_preheader_4: %t8]
+  block ^wide_tail_7:
+    %t20 = phi i64 [^loop_exit_6: %t16, ^split_3: %t10]
+    %t21 = phi i64 [^loop_exit_6: %t17, ^split_3: %t8]
     jump ^at_body
 
   block ^at_body:
-    %t122 = phi i64 [^at_body: %t123, ^wide_tail_8: %t20]
-    %t23 = phi i64 [^at_body: %t125, ^wide_tail_8: %t21]
+    %t122 = phi i64 [^at_body: %t123, ^wide_tail_7: %t20]
+    %t23 = phi i64 [^at_body: %t125, ^wide_tail_7: %t21]
     %t123 = binary add i64 %t122, 16
     %t125 = binary add i64 %t23, 16
     %t26 = cmp ult i64 %t125, %count
-    branch %t26, ^at_body, ^loop_exit_10
+    branch %t26, ^at_body, ^loop_exit_9
 
-  block ^loop_exit_10:
-    %t27 = phi i64 [^at_body: %t123, ^loop_exit_7: %t16]
-    %t28 = phi i64 [^at_body: %t125, ^loop_exit_7: %t17]
+  block ^loop_exit_9:
+    %t27 = phi i64 [^at_body: %t123, ^loop_exit_6: %t16]
+    %t28 = phi i64 [^at_body: %t125, ^loop_exit_6: %t17]
     store typed i64 %t27, %t121
     jump ^pass_next
 
   block ^pass_next:
-    %t29 = phi i64 [^loop_preheader_2: %t8, ^loop_exit_10: %t28]
+    %t29 = phi i64 [^loop_preheader_2: %t8, ^loop_exit_9: %t28]
     %t127 = binary add i64 %t7, 1
     %t31 = cmp ult i64 %t127, 4
     branch %t31, ^loop_preheader_2, ^channel_next

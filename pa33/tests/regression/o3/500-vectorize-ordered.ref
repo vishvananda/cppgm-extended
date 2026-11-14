@@ -238,45 +238,39 @@ function @plain(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
   block ^entry:
     %t1 = binary and i64 %n, -4
     %t2 = cmp gt i64 %t1, 0
-    branch %t2, ^loop_preheader_1, ^wide_tail_4
+    branch %t2, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t20]
-    %t4 = phi f64 [^loop_preheader_1: 0, ^unrolled_2: %t19]
+  block ^unrolled_1:
+    %t3 = phi i64 [^unrolled_1: %t17, ^entry: 0]
+    %t4 = phi f64 [^unrolled_1: %t16, ^entry: 0]
     %t5 = index f64 %x, %t3
     %t6 = load typed f64 %t5
     %t7 = binary add f64 %t4, %t6
-    %t8 = binary add nowrap i64 %t3, 1
-    %t9 = index f64 %x, %t8
-    %t10 = load typed f64 %t9
-    %t11 = binary add f64 %t7, %t10
-    %t12 = binary add nowrap i64 %t3, 2
-    %t13 = index f64 %x, %t12
-    %t14 = load typed f64 %t13
-    %t15 = binary add f64 %t11, %t14
-    %t16 = binary add nowrap i64 %t3, 3
-    %t17 = index f64 %x, %t16
-    %t18 = load typed f64 %t17
-    %t19 = binary add f64 %t15, %t18
-    %t20 = binary add nowrap i64 %t3, 4
-    %t21 = cmp ne i64 %t1, %t20
-    branch %t21, ^unrolled_2, ^loop_exit_3
+    %t8 = index f64 %t5, 1
+    %t9 = load typed f64 %t8
+    %t10 = binary add f64 %t7, %t9
+    %t11 = index f64 %t5, 2
+    %t12 = load typed f64 %t11
+    %t13 = binary add f64 %t10, %t12
+    %t14 = index f64 %t5, 3
+    %t15 = load typed f64 %t14
+    %t16 = binary add f64 %t13, %t15
+    %t17 = binary add nowrap i64 %t3, 4
+    %t18 = cmp ne i64 %t1, %t17
+    branch %t18, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
-    %t22 = cmp lt i64 %t20, %n
-    branch %t22, ^wide_tail_4, ^done
+  block ^loop_exit_2:
+    %t19 = cmp lt i64 %t17, %n
+    branch %t19, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t23 = phi i64 [^entry: 0, ^loop_exit_3: %t20]
-    %t24 = phi f64 [^entry: 0, ^loop_exit_3: %t19]
+  block ^wide_tail_3:
+    %t20 = phi i64 [^entry: 0, ^loop_exit_2: %t17]
+    %t21 = phi f64 [^entry: 0, ^loop_exit_2: %t16]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^wide_tail_4: %t23, ^body: %next]
-    %s = phi f64 [^wide_tail_4: %t24, ^body: %sum]
+    %i = phi i64 [^wide_tail_3: %t20, ^body: %next]
+    %s = phi f64 [^wide_tail_3: %t21, ^body: %sum]
     %p = index f64 %x, %i
     %v = load typed f64 %p
     %sum = binary add f64 %s, %v
@@ -285,56 +279,50 @@ function @plain(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
     branch %c, ^body, ^done
 
   block ^done:
-    %t32 = phi f64 [^body: %sum, ^loop_exit_3: %t19]
-    return f64 %t32
+    %t29 = phi f64 [^body: %sum, ^loop_exit_2: %t16]
+    return f64 %t29
 }
 function @running(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
   block ^entry:
     %t1 = binary and i64 %n, -4
     %t2 = cmp gt i64 %t1, 0
-    branch %t2, ^loop_preheader_1, ^wide_tail_4
+    branch %t2, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t24]
-    %t4 = phi f64 [^loop_preheader_1: 0, ^unrolled_2: %t23]
+  block ^unrolled_1:
+    %t3 = phi i64 [^unrolled_1: %t21, ^entry: 0]
+    %t4 = phi f64 [^unrolled_1: %t20, ^entry: 0]
     %t5 = index f64 %x, %t3
     %t6 = load typed f64 %t5
     %t7 = binary mul f64 %t4, %t6
     %t8 = binary add f64 %t4, %t7
-    %t9 = binary add nowrap i64 %t3, 1
-    %t10 = index f64 %x, %t9
-    %t11 = load typed f64 %t10
-    %t12 = binary mul f64 %t8, %t11
-    %t13 = binary add f64 %t8, %t12
-    %t14 = binary add nowrap i64 %t3, 2
-    %t15 = index f64 %x, %t14
-    %t16 = load typed f64 %t15
-    %t17 = binary mul f64 %t13, %t16
-    %t18 = binary add f64 %t13, %t17
-    %t19 = binary add nowrap i64 %t3, 3
-    %t20 = index f64 %x, %t19
-    %t21 = load typed f64 %t20
-    %t22 = binary mul f64 %t18, %t21
-    %t23 = binary add f64 %t18, %t22
-    %t24 = binary add nowrap i64 %t3, 4
-    %t25 = cmp ne i64 %t1, %t24
-    branch %t25, ^unrolled_2, ^loop_exit_3
+    %t9 = index f64 %t5, 1
+    %t10 = load typed f64 %t9
+    %t11 = binary mul f64 %t8, %t10
+    %t12 = binary add f64 %t8, %t11
+    %t13 = index f64 %t5, 2
+    %t14 = load typed f64 %t13
+    %t15 = binary mul f64 %t12, %t14
+    %t16 = binary add f64 %t12, %t15
+    %t17 = index f64 %t5, 3
+    %t18 = load typed f64 %t17
+    %t19 = binary mul f64 %t16, %t18
+    %t20 = binary add f64 %t16, %t19
+    %t21 = binary add nowrap i64 %t3, 4
+    %t22 = cmp ne i64 %t1, %t21
+    branch %t22, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
-    %t26 = cmp lt i64 %t24, %n
-    branch %t26, ^wide_tail_4, ^done
+  block ^loop_exit_2:
+    %t23 = cmp lt i64 %t21, %n
+    branch %t23, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t27 = phi i64 [^entry: 0, ^loop_exit_3: %t24]
-    %t28 = phi f64 [^entry: 0, ^loop_exit_3: %t23]
+  block ^wide_tail_3:
+    %t24 = phi i64 [^entry: 0, ^loop_exit_2: %t21]
+    %t25 = phi f64 [^entry: 0, ^loop_exit_2: %t20]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^wide_tail_4: %t27, ^body: %next]
-    %s = phi f64 [^wide_tail_4: %t28, ^body: %sum]
+    %i = phi i64 [^wide_tail_3: %t24, ^body: %next]
+    %s = phi f64 [^wide_tail_3: %t25, ^body: %sum]
     %p = index f64 %x, %i
     %v = load typed f64 %p
     %m = binary mul f64 %s, %v
@@ -344,56 +332,50 @@ function @running(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
     branch %c, ^body, ^done
 
   block ^done:
-    %t37 = phi f64 [^body: %sum, ^loop_exit_3: %t23]
-    return f64 %t37
+    %t34 = phi f64 [^body: %sum, ^loop_exit_2: %t20]
+    return f64 %t34
 }
 function @thirds(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
   block ^entry:
     %t1 = binary and i64 %n, -4
     %t2 = cmp gt i64 %t1, 0
-    branch %t2, ^loop_preheader_1, ^wide_tail_4
+    branch %t2, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t24]
-    %t4 = phi i32 [^loop_preheader_1: 0, ^unrolled_2: %t23]
+  block ^unrolled_1:
+    %t3 = phi i64 [^unrolled_1: %t21, ^entry: 0]
+    %t4 = phi i32 [^unrolled_1: %t20, ^entry: 0]
     %t5 = index i32 %x, %t3
     %t6 = load typed i32 %t5
     %t7 = binary div i32 %t6, 3
     %t8 = binary add i32 %t4, %t7
-    %t9 = binary add nowrap i64 %t3, 1
-    %t10 = index i32 %x, %t9
-    %t11 = load typed i32 %t10
-    %t12 = binary div i32 %t11, 3
-    %t13 = binary add i32 %t8, %t12
-    %t14 = binary add nowrap i64 %t3, 2
-    %t15 = index i32 %x, %t14
-    %t16 = load typed i32 %t15
-    %t17 = binary div i32 %t16, 3
-    %t18 = binary add i32 %t13, %t17
-    %t19 = binary add nowrap i64 %t3, 3
-    %t20 = index i32 %x, %t19
-    %t21 = load typed i32 %t20
-    %t22 = binary div i32 %t21, 3
-    %t23 = binary add i32 %t18, %t22
-    %t24 = binary add nowrap i64 %t3, 4
-    %t25 = cmp ne i64 %t1, %t24
-    branch %t25, ^unrolled_2, ^loop_exit_3
+    %t9 = index i32 %t5, 1
+    %t10 = load typed i32 %t9
+    %t11 = binary div i32 %t10, 3
+    %t12 = binary add i32 %t8, %t11
+    %t13 = index i32 %t5, 2
+    %t14 = load typed i32 %t13
+    %t15 = binary div i32 %t14, 3
+    %t16 = binary add i32 %t12, %t15
+    %t17 = index i32 %t5, 3
+    %t18 = load typed i32 %t17
+    %t19 = binary div i32 %t18, 3
+    %t20 = binary add i32 %t16, %t19
+    %t21 = binary add nowrap i64 %t3, 4
+    %t22 = cmp ne i64 %t1, %t21
+    branch %t22, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
-    %t26 = cmp lt i64 %t24, %n
-    branch %t26, ^wide_tail_4, ^done
+  block ^loop_exit_2:
+    %t23 = cmp lt i64 %t21, %n
+    branch %t23, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t27 = phi i64 [^entry: 0, ^loop_exit_3: %t24]
-    %t28 = phi i32 [^entry: 0, ^loop_exit_3: %t23]
+  block ^wide_tail_3:
+    %t24 = phi i64 [^entry: 0, ^loop_exit_2: %t21]
+    %t25 = phi i32 [^entry: 0, ^loop_exit_2: %t20]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^wide_tail_4: %t27, ^body: %next]
-    %s = phi i32 [^wide_tail_4: %t28, ^body: %sum]
+    %i = phi i64 [^wide_tail_3: %t24, ^body: %next]
+    %s = phi i32 [^wide_tail_3: %t25, ^body: %sum]
     %p = index i32 %x, %i
     %v = load typed i32 %p
     %h = binary div i32 %v, 3
@@ -403,6 +385,6 @@ function @thirds(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     branch %c, ^body, ^done
 
   block ^done:
-    %t37 = phi i32 [^body: %sum, ^loop_exit_3: %t23]
-    return i32 %t37
+    %t34 = phi i32 [^body: %sum, ^loop_exit_2: %t20]
+    return i32 %t34
 }

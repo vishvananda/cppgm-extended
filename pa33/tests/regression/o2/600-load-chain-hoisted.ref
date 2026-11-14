@@ -12,14 +12,11 @@ function @chain(%this : ptr, %out : ptr, %n : i64) -> void [binding=strong] {
     %wide = convert sext i64 i32 %stride
     %t9 = binary and i64 %n, -4
     %t10 = cmp gt i64 %t9, 0
-    branch %t10, ^loop_preheader_1, ^wide_tail_4
+    branch %t10, ^unrolled_1, ^wide_tail_3
 
-  block ^loop_preheader_1:
-    jump ^unrolled_2
-
-  block ^unrolled_2:
-    %t11 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t21]
-    %t12 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t20]
+  block ^unrolled_1:
+    %t11 = phi i64 [^unrolled_1: %t21, ^entry: 0]
+    %t12 = phi i64 [^unrolled_1: %t20, ^entry: 0]
     %t13 = index f64 %out, %t11
     store typed f64 1, %t13
     %t14 = binary add i64 %wide, %t11
@@ -34,20 +31,20 @@ function @chain(%this : ptr, %out : ptr, %n : i64) -> void [binding=strong] {
     %t20 = binary add nowrap i64 %t12, 4
     %t21 = binary add i64 %wide, %t18
     %t22 = cmp ne i64 %t9, %t20
-    branch %t22, ^unrolled_2, ^loop_exit_3
+    branch %t22, ^unrolled_1, ^loop_exit_2
 
-  block ^loop_exit_3:
+  block ^loop_exit_2:
     %t23 = cmp lt i64 %t20, %n
-    branch %t23, ^wide_tail_4, ^done
+    branch %t23, ^wide_tail_3, ^done
 
-  block ^wide_tail_4:
-    %t24 = phi i64 [^entry: 0, ^loop_exit_3: %t21]
-    %t25 = phi i64 [^entry: 0, ^loop_exit_3: %t20]
+  block ^wide_tail_3:
+    %t24 = phi i64 [^entry: 0, ^loop_exit_2: %t21]
+    %t25 = phi i64 [^entry: 0, ^loop_exit_2: %t20]
     jump ^body
 
   block ^body:
-    %t26 = phi i64 [^wide_tail_4: %t24, ^body: %t30]
-    %i = phi i64 [^wide_tail_4: %t25, ^body: %next]
+    %t26 = phi i64 [^wide_tail_3: %t24, ^body: %t30]
+    %i = phi i64 [^wide_tail_3: %t25, ^body: %next]
     %slot = index f64 %out, %t26
     store typed f64 1, %slot
     %next = binary add nowrap i64 %i, 1

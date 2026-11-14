@@ -6,65 +6,59 @@ function @sum_and_store(%x : ptr, %d : ptr, %n : i64) -> f64 [no_inline=yes] {
   block ^loop_preheader_1:
     %t2 = binary and i64 %n, -4
     %t3 = cmp gt i64 %t2, 0
-    branch %t3, ^loop_preheader_2, ^wide_tail_5
+    branch %t3, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t4 = phi f64 [^loop_preheader_2: 0, ^unrolled_3: %t24]
-    %t5 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t25]
+  block ^unrolled_2:
+    %t4 = phi f64 [^unrolled_2: %t21, ^loop_preheader_1: 0]
+    %t5 = phi i64 [^unrolled_2: %t22, ^loop_preheader_1: 0]
     %t6 = index f64 %x, %t5
     %t7 = load typed f64 %t6
     %t8 = index f64 %d, %t5
     store typed f64 0.25, %t8
     %t9 = binary add f64 %t4, %t7
-    %t10 = binary add nowrap i64 %t5, 1
-    %t11 = index f64 %x, %t10
-    %t12 = load typed f64 %t11
-    %t13 = index f64 %d, %t10
-    store typed f64 0.25, %t13
-    %t14 = binary add f64 %t9, %t12
-    %t15 = binary add nowrap i64 %t5, 2
-    %t16 = index f64 %x, %t15
-    %t17 = load typed f64 %t16
-    %t18 = index f64 %d, %t15
-    store typed f64 0.25, %t18
-    %t19 = binary add f64 %t14, %t17
-    %t20 = binary add nowrap i64 %t5, 3
-    %t21 = index f64 %x, %t20
-    %t22 = load typed f64 %t21
-    %t23 = index f64 %d, %t20
-    store typed f64 0.25, %t23
-    %t24 = binary add f64 %t19, %t22
-    %t25 = binary add nowrap i64 %t5, 4
-    %t26 = cmp ne i64 %t2, %t25
-    branch %t26, ^unrolled_3, ^loop_exit_4
+    %t10 = index f64 %t6, 1
+    %t11 = load typed f64 %t10
+    %t12 = index f64 %t8, 1
+    store typed f64 0.25, %t12
+    %t13 = binary add f64 %t9, %t11
+    %t14 = index f64 %t6, 2
+    %t15 = load typed f64 %t14
+    %t16 = index f64 %t8, 2
+    store typed f64 0.25, %t16
+    %t17 = binary add f64 %t13, %t15
+    %t18 = index f64 %t6, 3
+    %t19 = load typed f64 %t18
+    %t20 = index f64 %t8, 3
+    store typed f64 0.25, %t20
+    %t21 = binary add f64 %t17, %t19
+    %t22 = binary add nowrap i64 %t5, 4
+    %t23 = cmp ne i64 %t2, %t22
+    branch %t23, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
-    %t27 = cmp lt i64 %t25, %n
-    branch %t27, ^wide_tail_5, ^exit
+  block ^loop_exit_3:
+    %t24 = cmp lt i64 %t22, %n
+    branch %t24, ^wide_tail_4, ^exit
 
-  block ^wide_tail_5:
-    %t28 = phi f64 [^loop_preheader_1: 0, ^loop_exit_4: %t24]
-    %t29 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t25]
+  block ^wide_tail_4:
+    %t25 = phi f64 [^loop_preheader_1: 0, ^loop_exit_3: %t21]
+    %t26 = phi i64 [^loop_preheader_1: 0, ^loop_exit_3: %t22]
     jump ^latch
 
   block ^latch:
-    %t30 = phi f64 [^latch: %sum, ^wide_tail_5: %t28]
-    %t31 = phi i64 [^latch: %next, ^wide_tail_5: %t29]
-    %at = index f64 %x, %t31
+    %t27 = phi f64 [^latch: %sum, ^wide_tail_4: %t25]
+    %t28 = phi i64 [^latch: %next, ^wide_tail_4: %t26]
+    %at = index f64 %x, %t28
     %v = load typed f64 %at
-    %to = index f64 %d, %t31
+    %to = index f64 %d, %t28
     store typed f64 0.25, %to
-    %sum = binary add f64 %v, %t30
-    %next = binary add nowrap i64 %t31, 1
-    %t37 = cmp lt i64 %next, %n
-    branch %t37, ^latch, ^exit
+    %sum = binary add f64 %v, %t27
+    %next = binary add nowrap i64 %t28, 1
+    %t34 = cmp lt i64 %next, %n
+    branch %t34, ^latch, ^exit
 
   block ^exit:
-    %t38 = phi f64 [^entry: 0, ^latch: %sum, ^loop_exit_4: %t24]
-    return f64 %t38
+    %t35 = phi f64 [^entry: 0, ^latch: %sum, ^loop_exit_3: %t21]
+    return f64 %t35
 }
 function @main() -> i32 [role=entry] {
   block ^entry:

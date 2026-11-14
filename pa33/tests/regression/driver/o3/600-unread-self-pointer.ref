@@ -15,83 +15,79 @@ function @square_steps(%start : ptr, %steps : i32) -> f64 [binding=strong, objec
     %t6 = index inbounds f64 [projection=array_element] %start, 3
     %t7 = load typed f64 %t6
     %t8 = cmp gt i32 %steps, 0
-    branch %t8, ^loop_preheader_1, ^for_end_7
+    branch %t8, ^loop_preheader_1, ^for_end_6
 
   block ^loop_preheader_1:
     %t9 = binary and i32 %steps, -2
     %t10 = cmp gt i32 %t9, 0
-    branch %t10, ^loop_preheader_2, ^wide_tail_5
+    branch %t10, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    %t11 = copy f64 1
-    jump ^unrolled_3
+  block ^unrolled_2:
+    %t11 = phi i32 [^unrolled_2: %t32, ^loop_preheader_1: 0]
+    %t12 = phi f64 [^unrolled_2: %t25, ^loop_preheader_1: %t1]
+    %t13 = phi f64 [^unrolled_2: %t27, ^loop_preheader_1: %t3]
+    %t14 = phi f64 [^unrolled_2: %t29, ^loop_preheader_1: %t5]
+    %t15 = phi f64 [^unrolled_2: %t31, ^loop_preheader_1: %t7]
+    %t16 = binary mul f64 %t12, %t12
+    %t17 = binary sub f64 %t16, 1
+    %t18 = binary mul f64 %t13, %t13
+    %t19 = binary sub f64 %t18, 1
+    %t20 = binary mul f64 %t14, %t14
+    %t21 = binary sub f64 %t20, 1
+    %t22 = binary mul f64 %t15, %t15
+    %t23 = binary sub f64 %t22, 1
+    %t24 = binary mul f64 %t17, %t17
+    %t25 = binary sub f64 %t24, 1
+    %t26 = binary mul f64 %t19, %t19
+    %t27 = binary sub f64 %t26, 1
+    %t28 = binary mul f64 %t21, %t21
+    %t29 = binary sub f64 %t28, 1
+    %t30 = binary mul f64 %t23, %t23
+    %t31 = binary sub f64 %t30, 1
+    %t32 = binary add nowrap i32 %t11, 2
+    %t33 = cmp ne i32 %t9, %t32
+    branch %t33, ^unrolled_2, ^loop_exit_3
 
-  block ^unrolled_3:
-    %t12 = phi i32 [^loop_preheader_2: 0, ^unrolled_3: %t33]
-    %t13 = phi f64 [^loop_preheader_2: %t1, ^unrolled_3: %t26]
-    %t14 = phi f64 [^loop_preheader_2: %t3, ^unrolled_3: %t28]
-    %t15 = phi f64 [^loop_preheader_2: %t5, ^unrolled_3: %t30]
-    %t16 = phi f64 [^loop_preheader_2: %t7, ^unrolled_3: %t32]
-    %t17 = binary mul f64 %t13, %t13
-    %t18 = binary sub f64 %t17, %t11
-    %t19 = binary mul f64 %t14, %t14
-    %t20 = binary sub f64 %t19, %t11
-    %t21 = binary mul f64 %t15, %t15
-    %t22 = binary sub f64 %t21, %t11
-    %t23 = binary mul f64 %t16, %t16
-    %t24 = binary sub f64 %t23, %t11
-    %t25 = binary mul f64 %t18, %t18
-    %t26 = binary sub f64 %t25, %t11
-    %t27 = binary mul f64 %t20, %t20
-    %t28 = binary sub f64 %t27, %t11
-    %t29 = binary mul f64 %t22, %t22
-    %t30 = binary sub f64 %t29, %t11
-    %t31 = binary mul f64 %t24, %t24
-    %t32 = binary sub f64 %t31, %t11
-    %t33 = binary add nowrap i32 %t12, 2
-    %t34 = cmp ne i32 %t9, %t33
-    branch %t34, ^unrolled_3, ^loop_exit_4
+  block ^loop_exit_3:
+    %t34 = cmp lt i32 %t32, %steps
+    branch %t34, ^wide_tail_4, ^for_end_6
 
-  block ^loop_exit_4:
-    %t35 = cmp lt i32 %t33, %steps
-    branch %t35, ^wide_tail_5, ^for_end_7
+  block ^wide_tail_4:
+    %t35 = phi i32 [^loop_preheader_1: 0, ^loop_exit_3: %t32]
+    %t36 = phi f64 [^loop_preheader_1: %t1, ^loop_exit_3: %t25]
+    %t37 = phi f64 [^loop_preheader_1: %t3, ^loop_exit_3: %t27]
+    %t38 = phi f64 [^loop_preheader_1: %t5, ^loop_exit_3: %t29]
+    %t39 = phi f64 [^loop_preheader_1: %t7, ^loop_exit_3: %t31]
+    %t40 = copy f64 1
+    jump ^for_body_5
 
-  block ^wide_tail_5:
-    %t36 = phi i32 [^loop_preheader_1: 0, ^loop_exit_4: %t33]
-    %t37 = phi f64 [^loop_preheader_1: %t1, ^loop_exit_4: %t26]
-    %t38 = phi f64 [^loop_preheader_1: %t3, ^loop_exit_4: %t28]
-    %t39 = phi f64 [^loop_preheader_1: %t5, ^loop_exit_4: %t30]
-    %t40 = phi f64 [^loop_preheader_1: %t7, ^loop_exit_4: %t32]
-    %t41 = copy f64 1
-    jump ^for_body_6
+  block ^for_body_5:
+    %t41 = phi i32 [^for_body_5: %t54, ^wide_tail_4: %t35]
+    %t42 = phi f64 [^for_body_5: %t47, ^wide_tail_4: %t36]
+    %t43 = phi f64 [^for_body_5: %t49, ^wide_tail_4: %t37]
+    %t44 = phi f64 [^for_body_5: %t51, ^wide_tail_4: %t38]
+    %t45 = phi f64 [^for_body_5: %t53, ^wide_tail_4: %t39]
+    %t46 = binary mul f64 %t42, %t42
+    %t47 = binary sub f64 %t46, %t40
+    %t48 = binary mul f64 %t43, %t43
+    %t49 = binary sub f64 %t48, %t40
+    %t50 = binary mul f64 %t44, %t44
+    %t51 = binary sub f64 %t50, %t40
+    %t52 = binary mul f64 %t45, %t45
+    %t53 = binary sub f64 %t52, %t40
+    %t54 = binary add nowrap i32 %t41, 1
+    %t55 = cmp lt i32 %t54, %steps
+    branch %t55, ^for_body_5, ^for_end_6
 
-  block ^for_body_6:
-    %t42 = phi i32 [^for_body_6: %t55, ^wide_tail_5: %t36]
-    %t43 = phi f64 [^for_body_6: %t48, ^wide_tail_5: %t37]
-    %t44 = phi f64 [^for_body_6: %t50, ^wide_tail_5: %t38]
-    %t45 = phi f64 [^for_body_6: %t52, ^wide_tail_5: %t39]
-    %t46 = phi f64 [^for_body_6: %t54, ^wide_tail_5: %t40]
-    %t47 = binary mul f64 %t43, %t43
-    %t48 = binary sub f64 %t47, %t41
-    %t49 = binary mul f64 %t44, %t44
-    %t50 = binary sub f64 %t49, %t41
-    %t51 = binary mul f64 %t45, %t45
-    %t52 = binary sub f64 %t51, %t41
-    %t53 = binary mul f64 %t46, %t46
-    %t54 = binary sub f64 %t53, %t41
-    %t55 = binary add nowrap i32 %t42, 1
-    %t56 = cmp lt i32 %t55, %steps
-    branch %t56, ^for_body_6, ^for_end_7
-
-  block ^for_end_7:
-    %t57 = phi f64 [^entry: %t1, ^for_body_6: %t48, ^loop_exit_4: %t26]
-    %t58 = phi f64 [^entry: %t3, ^for_body_6: %t50, ^loop_exit_4: %t28]
-    %t59 = phi f64 [^entry: %t5, ^for_body_6: %t52, ^loop_exit_4: %t30]
-    %t60 = phi f64 [^entry: %t7, ^for_body_6: %t54, ^loop_exit_4: %t32]
-    %t61 = binary add f64 %t58, %t57
+  block ^for_end_6:
+    %t56 = phi f64 [^entry: %t1, ^for_body_5: %t47, ^loop_exit_3: %t25]
+    %t57 = phi f64 [^entry: %t3, ^for_body_5: %t49, ^loop_exit_3: %t27]
+    %t58 = phi f64 [^entry: %t5, ^for_body_5: %t51, ^loop_exit_3: %t29]
+    %t59 = phi f64 [^entry: %t7, ^for_body_5: %t53, ^loop_exit_3: %t31]
+    %t60 = binary add f64 %t57, %t56
+    %t61 = binary add f64 %t60, %t58
     %t62 = binary add f64 %t61, %t59
-    %t63 = binary add f64 %t62, %t60
-    return f64 %t63
+    return f64 %t62
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

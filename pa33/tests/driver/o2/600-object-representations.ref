@@ -106,13 +106,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^loop_preheader_7:
     %t17 = addr $source
-    branch 1, ^loop_preheader_8, ^wide_tail_10
+    jump ^unrolled_8
 
-  block ^loop_preheader_8:
-    jump ^unrolled_9
-
-  block ^unrolled_9:
-    %t18 = phi i64 [^loop_preheader_8: 0, ^unrolled_9: %t46]
+  block ^unrolled_8:
+    %t18 = phi i64 [^unrolled_8: %t46, ^loop_preheader_7: 0]
     %t19 = convert trunc exact u32 i64 %t18
     %t20 = load volatile i32 $n
     %t21 = copy u32 %t20
@@ -147,18 +144,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t46 = binary add nowrap i64 %t18, 4
     %t47 = convert trunc exact u32 i64 %t46
     %t48 = cmp ne u32 %t47, 24
-    branch %t48, ^unrolled_9, ^wide_tail_10
+    branch %t48, ^unrolled_8, ^wide_tail_9
 
-  block ^wide_tail_10:
-    %t49 = phi u32 [^loop_preheader_7: 0, ^unrolled_9: %t47]
-    jump ^for_cond_11
+  block ^wide_tail_9:
+    %t49 = phi u32 [^unrolled_8: %t47]
+    jump ^for_cond_10
 
-  block ^for_cond_11:
-    %t50 = phi u32 [^for_body_12: %t57, ^wide_tail_10: %t49]
+  block ^for_cond_10:
+    %t50 = phi u32 [^for_body_11: %t57, ^wide_tail_9: %t49]
     %t51 = cmp ult u32 %t50, 24
-    branch %t51, ^for_body_12, ^for_end_13
+    branch %t51, ^for_body_11, ^for_end_12
 
-  block ^for_body_12:
+  block ^for_body_11:
     %t52 = load volatile i32 $n
     %t53 = copy u32 %t52
     %t54 = binary add u32 %t50, %t53
@@ -166,55 +163,55 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t56 = index inbounds u8 [projection=array_element] %t17, %t50
     store u8 %t55, %t56
     %t57 = binary add u32 %t50, 1
-    jump ^for_cond_11
+    jump ^for_cond_10
 
-  block ^for_end_13:
+  block ^for_end_12:
     %t58 = addr $dest
     copyobj 24x1 %t17, %t58
     %t59 = index inbounds i8 %t58, 2
     %t60 = call ptr @__builtin_memmove(%t59, %t58, 20)
-    jump ^for_cond_14
+    jump ^for_cond_13
 
-  block ^for_cond_14:
-    %t61 = phi u32 [^for_end_13: 2, ^if_end_17: %t69]
+  block ^for_cond_13:
+    %t61 = phi u32 [^for_end_12: 2, ^if_end_16: %t69]
     %t62 = cmp ult u32 %t61, 22
-    branch %t62, ^for_body_15, ^for_end_18
+    branch %t62, ^for_body_14, ^for_end_17
 
-  block ^for_body_15:
+  block ^for_body_14:
     %t63 = index inbounds u8 [projection=array_element] %t58, %t61
     %t64 = load u8 %t63
     %t65 = binary sub u32 %t61, 2
     %t66 = index inbounds u8 [projection=array_element] %t17, %t65
     %t67 = load u8 %t66
     %t68 = cmp ne u8 %t64, %t67
-    branch %t68, ^if_then_16, ^if_end_17
+    branch %t68, ^if_then_15, ^if_end_16
 
-  block ^if_then_16:
+  block ^if_then_15:
     return i32 3
 
-  block ^if_end_17:
+  block ^if_end_16:
     %t69 = binary add u32 %t61, 1
-    jump ^for_cond_14
+    jump ^for_cond_13
 
-  block ^for_end_18:
+  block ^for_end_17:
     %t70 = call f64 @carrier(-9223372036854775808)
     %t71 = copy i64 %t70
     %t72 = cmp ne i64 %t71, -9223372036854775808
-    branch %t72, ^if_then_19, ^if_end_20
+    branch %t72, ^if_then_18, ^if_end_19
 
-  block ^if_then_19:
+  block ^if_then_18:
     return i32 4
 
-  block ^if_end_20:
+  block ^if_end_19:
     %t73 = call f64 @carrier(9221120237041090578)
     %t74 = copy i64 %t73
     %t75 = cmp ne i64 %t74, 9221120237041090578
-    branch %t75, ^if_then_21, ^if_else_22
+    branch %t75, ^if_then_20, ^if_else_21
 
-  block ^if_then_21:
+  block ^if_then_20:
     return i32 5
 
-  block ^if_else_22:
+  block ^if_else_21:
     %t76 = addr $aligned
     store typed i64 1, %t76
     %t77 = index i64 [projection=array_element] %t76, 1
@@ -225,12 +222,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i64 4, %t79
     %t80 = copy i64 %t76
     %t81 = binary and i64 %t80, 31
-    branch %t81, ^if_then_23, ^if_end_24
+    branch %t81, ^if_then_22, ^if_end_23
 
-  block ^if_then_23:
+  block ^if_then_22:
     return i32 6
 
-  block ^if_end_24:
+  block ^if_end_23:
     %t82 = addr $self
     %t83 = load volatile i32 $n
     %t84 = index inbounds i8 [projection=field] %t82, 8
@@ -238,31 +235,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 %t83, %t84
     %t85 = call i32 @publish(%t82)
     %t86 = cmp ne i32 %t85, 11
-    branch %t86, ^if_then_26, ^lor_rhs_25
+    branch %t86, ^if_then_25, ^lor_rhs_24
 
-  block ^lor_rhs_25:
+  block ^lor_rhs_24:
     %t87 = load typed ptr %t82
     %t88 = cmp ne ptr %t84, %t87
-    branch %t88, ^if_then_26, ^if_end_27
+    branch %t88, ^if_then_25, ^if_end_26
 
-  block ^if_then_26:
+  block ^if_then_25:
     return i32 7
 
-  block ^if_end_27:
+  block ^if_end_26:
     %t89 = load volatile i32 $n
     %t90 = copy u32 %t89
     %t91 = call i64 @clear(%t90)
     %t92 = cmp ne i64 %t91, 17
-    branch %t92, ^if_then_29, ^lor_rhs_28
+    branch %t92, ^if_then_28, ^lor_rhs_27
 
-  block ^lor_rhs_28:
+  block ^lor_rhs_27:
     %t93 = index i64 [projection=array_element] %t76, 3
     %t94 = load typed i64 %t93
     %t95 = cmp ne i64 %t94, 4
     %t96 = select i32 %t95, 8, 0
     return i32 %t96
 
-  block ^if_then_29:
+  block ^if_then_28:
     return i32 8
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {

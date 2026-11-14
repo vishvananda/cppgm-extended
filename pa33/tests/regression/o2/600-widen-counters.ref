@@ -12,8 +12,8 @@ function @direct(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
     jump ^unrolled_3
 
   block ^unrolled_3:
-    %t4 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t21]
-    %t5 = phi i64 [^loop_preheader_2: 0, ^unrolled_3: %t20]
+    %t4 = phi i64 [^unrolled_3: %t21, ^loop_preheader_2: 0]
+    %t5 = phi i64 [^unrolled_3: %t20, ^loop_preheader_2: 0]
     %t6 = index i64 %p, %t4
     %t7 = load typed i64 %t6
     %t8 = binary add i64 %t5, %t7
@@ -102,8 +102,8 @@ function @next_value(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
     jump ^unrolled_2
 
   block ^unrolled_2:
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t18]
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t17]
+    %t3 = phi i64 [^unrolled_2: %t18, ^loop_preheader_1: 0]
+    %t4 = phi i64 [^unrolled_2: %t17, ^loop_preheader_1: 0]
     %t5 = index i64 %p, %t3
     %t6 = index i64 %t5, 1
     %t7 = load typed i64 %t6
@@ -163,9 +163,9 @@ function @moving_base(%p : ptr, %k : i32, %n : i32) -> i64 [no_inline=yes] {
     jump ^unrolled_2
 
   block ^unrolled_2:
-    %t5 = phi ptr [^loop_preheader_1: %t1, ^unrolled_2: %t24]
-    %t6 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t27]
-    %t7 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t26]
+    %t5 = phi ptr [^unrolled_2: %t24, ^loop_preheader_1: %t1]
+    %t6 = phi i64 [^unrolled_2: %t27, ^loop_preheader_1: 0]
+    %t7 = phi i64 [^unrolled_2: %t26, ^loop_preheader_1: 0]
     %t8 = binary add i64 %t6, %t4
     %t9 = index i64 %t5, %t8
     %t10 = load typed i64 %t9
@@ -315,8 +315,8 @@ function @also_narrow(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
     jump ^unrolled_2
 
   block ^unrolled_2:
-    %t3 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t20]
-    %t4 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t19]
+    %t3 = phi i64 [^unrolled_2: %t20, ^loop_preheader_1: 0]
+    %t4 = phi i64 [^unrolled_2: %t19, ^loop_preheader_1: 0]
     %t5 = convert trunc exact i32 i64 %t3
     %t6 = index i64 %p, %t3
     %t7 = load typed i64 %t6

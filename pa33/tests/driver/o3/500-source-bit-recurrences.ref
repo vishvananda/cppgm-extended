@@ -318,18 +318,15 @@ function @update_nibble(%value : u32) -> u32 [linkage=c, binding=strong] {
 }
 function @oracle(%value : u32, %polynomial : u32, %steps : u32) -> u32 [binding=strong, object=_Z6oraclejjj, no_inline=yes] {
   block ^entry:
-    branch %steps, ^loop_preheader_1, ^for_end_7
+    branch %steps, ^loop_preheader_1, ^for_end_6
 
   block ^loop_preheader_1:
     %t1 = binary and u32 %steps, 4294967292
-    branch %t1, ^loop_preheader_2, ^wide_tail_5
+    branch %t1, ^unrolled_2, ^wide_tail_4
 
-  block ^loop_preheader_2:
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t2 = phi u32 [^loop_preheader_2: %value, ^unrolled_3: %t23]
-    %t3 = phi u32 [^loop_preheader_2: 0, ^unrolled_3: %t24]
+  block ^unrolled_2:
+    %t2 = phi u32 [^unrolled_2: %t23, ^loop_preheader_1: %value]
+    %t3 = phi u32 [^unrolled_2: %t24, ^loop_preheader_1: 0]
     %t4 = binary ushr u32 %t2, 1
     %t5 = binary and u32 %t2, 1
     %t6 = binary sub u32 0, %t5
@@ -352,20 +349,20 @@ function @oracle(%value : u32, %polynomial : u32, %steps : u32) -> u32 [binding=
     %t23 = binary xor u32 %t19, %t22
     %t24 = binary add nowrap u32 %t3, 4
     %t25 = cmp ne u32 %t1, %t24
-    branch %t25, ^unrolled_3, ^loop_exit_4
+    branch %t25, ^unrolled_2, ^loop_exit_3
 
-  block ^loop_exit_4:
+  block ^loop_exit_3:
     %t26 = cmp ult u32 %t24, %steps
-    branch %t26, ^wide_tail_5, ^for_end_7
+    branch %t26, ^wide_tail_4, ^for_end_6
 
-  block ^wide_tail_5:
-    %t27 = phi u32 [^loop_preheader_1: %value, ^loop_exit_4: %t23]
-    %t28 = phi u32 [^loop_preheader_1: 0, ^loop_exit_4: %t24]
-    jump ^for_body_6
+  block ^wide_tail_4:
+    %t27 = phi u32 [^loop_preheader_1: %value, ^loop_exit_3: %t23]
+    %t28 = phi u32 [^loop_preheader_1: 0, ^loop_exit_3: %t24]
+    jump ^for_body_5
 
-  block ^for_body_6:
-    %t29 = phi u32 [^for_body_6: %t35, ^wide_tail_5: %t27]
-    %t30 = phi u32 [^for_body_6: %t36, ^wide_tail_5: %t28]
+  block ^for_body_5:
+    %t29 = phi u32 [^for_body_5: %t35, ^wide_tail_4: %t27]
+    %t30 = phi u32 [^for_body_5: %t36, ^wide_tail_4: %t28]
     %t31 = binary ushr u32 %t29, 1
     %t32 = binary and u32 %t29, 1
     %t33 = binary sub u32 0, %t32
@@ -373,10 +370,10 @@ function @oracle(%value : u32, %polynomial : u32, %steps : u32) -> u32 [binding=
     %t35 = binary xor u32 %t31, %t34
     %t36 = binary add u32 %t30, 1
     %t37 = cmp ult u32 %t36, %steps
-    branch %t37, ^for_body_6, ^for_end_7
+    branch %t37, ^for_body_5, ^for_end_6
 
-  block ^for_end_7:
-    %t38 = phi u32 [^entry: %value, ^for_body_6: %t35, ^loop_exit_4: %t23]
+  block ^for_end_6:
+    %t38 = phi u32 [^entry: %value, ^for_body_5: %t35, ^loop_exit_3: %t23]
     return u32 %t38
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
