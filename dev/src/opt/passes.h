@@ -296,6 +296,11 @@ bool join_field_moves(FunctionContext& context);
 // trapping operations.
 // O(instructions + operands), with stable buckets for the new order.
 bool schedule_integer_values(FunctionContext& context);
+// After it: a counter's step `y = x + literal` stands after the last read
+// of x in its block (x itself, or an address formed from it by literal
+// offsets) when x is live nowhere after the block, so that y takes x's
+// register. O(instructions), with a bounded walk of blocks per step.
+bool place_steps(FunctionContext& context);
 // O2+: a loop without calls reads its floating literals from registers
 // (opt/loop_literals.cpp).
 bool hold_loop_literals(FunctionContext& context);

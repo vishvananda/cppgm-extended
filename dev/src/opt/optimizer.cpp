@@ -692,6 +692,7 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	}
 	changed = RUN_PASS(sink_values) || changed;
 	changed = RUN_PASS(schedule_integer_values) || changed;
+	changed = RUN_PASS(place_steps) || changed;
 	changed = RUN_PASS(hold_loop_literals) || changed;
 	changed = RUN_PASS(issue_long_latency) || changed;
 	changed = RUN_PASS(sink_addresses) || changed;

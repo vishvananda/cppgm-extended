@@ -1,0 +1,154 @@
+# -O2: a counter's step stands after the last read of the counter in its
+# block, the reads of addresses formed from the counter by literal offsets
+# among them, when the counter is live nowhere after the block: @pack's step
+# follows the store that reads `%k`, and @quad's the four stores. In @both the
+# counter has two steps, in @kept the old count is read after the block, and
+# in @read_first the block reads the step before its last read of the
+# counter: these steps keep their places.
+global @cells : obj<64x8> = { zero 64 }
+
+function @pack(%out : ptr, %in : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^latch: %i1]
+    %k = phi i64 [^entry: 0, ^latch: %k2]
+    %more = cmp ult i64 %i, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %from = index i8 %in, %i
+    %byte = load u8 %from
+    branch %byte, ^keep, ^latch
+
+  block ^keep:
+    %next = binary add i64 %k, 1
+    %to = index i8 %out, %k
+    store u8 %byte, %to
+    jump ^latch
+
+  block ^latch:
+    %k2 = phi i64 [^keep: %next, ^body: %k]
+    %i1 = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %k
+}
+
+function @quad(%out : ptr, %in : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %any = cmp ne i64 %n, 0
+    branch %any, ^loop, ^done
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^loop: %i1]
+    %k = phi i64 [^entry: 0, ^loop: %k4]
+    %from = index i8 %in, %i
+    %byte = load u8 %from
+    %k4 = binary add i64 %k, 4
+    %to0 = index i8 %out, %k
+    store u8 %byte, %to0
+    %k1 = binary add i64 %k, 1
+    %to1 = index i8 %out, %k1
+    %twice = binary add u8 %byte, %byte
+    store u8 %twice, %to1
+    %k2 = binary add i64 %k, 2
+    %to2 = index i8 %out, %k2
+    %low = binary and u8 %byte, 15
+    store u8 %low, %to2
+    %k3 = binary add i64 %k, 3
+    %to3 = index i8 %out, %k3
+    %high = binary ushr u8 %byte, 4
+    store u8 %high, %to3
+    %i1 = binary add i64 %i, 1
+    %more = cmp ult i64 %i1, %n
+    branch %more, ^loop, ^done
+
+  block ^done:
+    %count = phi i64 [^entry: 0, ^loop: %k4]
+    return i64 %count
+}
+
+function @both(%out : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %any = cmp ugt i64 %n, 2
+    branch %any, ^loop, ^done
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^loop: %i3]
+    %ahead = phi i64 [^entry: 2, ^loop: %i5]
+    %i5 = binary add i64 %i, 5
+    %to = index i8 %out, %i
+    %byte = convert trunc u8 i64 %ahead
+    store u8 %byte, %to
+    %i3 = binary add i64 %i, 3
+    %more = cmp ult i64 %i5, %n
+    branch %more, ^loop, ^done
+
+  block ^done:
+    %last = phi i64 [^entry: 0, ^loop: %i3]
+    return i64 %last
+}
+
+function @kept(%out : ptr, %k : i64, %flag : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %next = binary add i64 %k, 1
+    %to = index i8 %out, %k
+    store u8 7, %to
+    branch %flag, ^old, ^new
+
+  block ^old:
+    store u8 1, %out
+    %sum = binary add i64 %k, %next
+    return i64 %sum
+
+  block ^new:
+    return i64 %next
+}
+
+function @read_first(%out : ptr, %k : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %next = binary add i64 %k, 1
+    %twice = binary mul i64 %next, 2
+    %to = index i8 %out, %k
+    %byte = convert trunc u8 i64 %twice
+    store u8 %byte, %to
+    return i64 %next
+}
+
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %cells = addr @cells
+    %in = index i8 %cells, 32
+    store i64 216172786408751363, %in
+    %a = call i64 @pack(%cells, %in, 8)
+    %a_bad = cmp ne i64 %a, 4
+    %packed = load i32 %cells
+    %packed_bad = cmp ne i32 %packed, 50397443
+    %b = call i64 @quad(%cells, %in, 2)
+    %b_bad = cmp ne i64 %b, 8
+    %quads = load i64 %cells
+    %quads_bad = cmp ne i64 %quads, 283678295131651
+    %c = call i64 @both(%cells, 9)
+    %c_bad = cmp ne i64 %c, 9
+    %d = call i64 @kept(%cells, 5, 1)
+    %d_bad = cmp ne i64 %d, 11
+    %e = call i64 @kept(%cells, 5, 0)
+    %e_bad = cmp ne i64 %e, 6
+    %f = call i64 @read_first(%cells, 6)
+    %f_bad = cmp ne i64 %f, 7
+    %tail_at = index i8 %cells, 5
+    %tail = load u16 %tail_at
+    %tail_bad = cmp ne u16 %tail, 3591
+    %bad0 = binary or i64 %a_bad, %packed_bad
+    %bad1 = binary or i64 %b_bad, %quads_bad
+    %bad2 = binary or i64 %c_bad, %d_bad
+    %bad3 = binary or i64 %e_bad, %f_bad
+    %bad4 = binary or i64 %bad0, %bad1
+    %bad5 = binary or i64 %bad2, %bad3
+    %bad6 = binary or i64 %bad4, %bad5
+    %bad = binary or i64 %bad6, %tail_bad
+    return i64 %bad
+}
