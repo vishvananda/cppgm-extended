@@ -3,7 +3,7 @@ global @at : ptr [binding=internal] = addr @x
 
 function @poke(%v : f64) -> void [no_inline=yes] {
   block ^entry:
-    %p = load ptr @at
+    %p = addr @x
     store f64 %v, %p
     return void
 }

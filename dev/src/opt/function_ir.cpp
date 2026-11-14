@@ -1192,6 +1192,16 @@ bool read_readonly_address(const Program& program, SymbolId symbol, int64_t offs
 	if (!constant_contents(program, symbol, unwritten) || offset < 0)
 		return false;
 	const Global& g = program.globals[program.symbols[symbol].detail];
+	// A pointer object that holds one address.
+	if (g.init == GlobalInit::Address)
+	{
+		if (offset != 0 || (g.addend != 0 && addend == nullptr) || g.address >= program.symbols.size())
+			return false;
+		target = g.address;
+		if (addend != nullptr)
+			*addend = g.addend;
+		return true;
+	}
 	if (g.init != GlobalInit::Data || g.item_count > 4096)
 		return false;
 	const uint64_t want = static_cast<uint64_t>(offset);

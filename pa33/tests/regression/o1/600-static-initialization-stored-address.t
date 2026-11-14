@@ -1,7 +1,8 @@
 # The init function stores @x's address into @at and then a constant into
 # @x. @poke writes @x through the pointer it loads from @at, so @x stays
 # dynamic and main's load of @x after the call is not folded; @at, whose
-# only writer is the init function, becomes data holding the address.
+# only writer is the init function, becomes data holding the address, and
+# @poke's load of it is then that address.
 global @x : f64 [binding=internal] = zero
 global @at : ptr [binding=internal] = zero
 

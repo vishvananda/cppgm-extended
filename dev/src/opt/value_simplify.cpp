@@ -150,6 +150,7 @@ private:
 	bool known_strlen(const Instruction& inst, Value& out);
 	bool merge_index(Instruction& inst);
 	bool readonly_table_address(Instruction& inst);
+	bool readonly_global_address(Instruction& inst, SymbolId target);
 	bool readonly_base(Value address, Value& base, int64_t& offset);
 	bool binary_identity(Instruction& inst, Value& out);
 	bool float_identity(Instruction& inst, Value& out);
@@ -836,8 +837,10 @@ bool Simplifier::readonly_table_address(Instruction& inst)
 	SymbolId target = kNoId;
 	int64_t addend = 0;
 	if (!readonly_base(inst.ops[0], base, offset) ||
-		!read_readonly_address(c_.program, base.index, offset, c_.unwritten, target, &addend) || addend == 0)
+		!read_readonly_address(c_.program, base.index, offset, c_.unwritten, target, &addend))
 		return false;
+	if (addend == 0)
+		return readonly_global_address(inst, target);
 	inst.op = Opcode::Index;
 	inst.type = Type::scalar(TypeKind::I8);
 	inst.sub = ir_model::IPK_NONE;
@@ -845,6 +848,23 @@ bool Simplifier::readonly_table_address(Instruction& inst)
 	inst.set_index_bounds(IndexBounds::None);
 	inst.ops[0] = Value::symbol(target);
 	inst.ops[1] = integer_value(body_, Literal{ static_cast<uint64_t>(addend), addend < 0 ? ~0ull : 0 });
+	return true;
+}
+
+// A pointer load that reads a global's address with no addend from readonly
+// data: `addr @global`, which value numbering and loop motion share as they
+// share the address of an array. (A function's address stays a symbol, which
+// a call reads as its callee.)
+bool Simplifier::readonly_global_address(Instruction& inst, SymbolId target)
+{
+	if (!is_global_kind(c_.program.symbols[target].kind))
+		return false;
+	Instruction addr = make_instruction(Opcode::Addr, body_.pointer_type());
+	addr.ops[0] = Value::symbol(target);
+	addr.result = inst.result;
+	addr.next = inst.next;
+	addr.location = inst.location;
+	inst = addr;
 	return true;
 }
 

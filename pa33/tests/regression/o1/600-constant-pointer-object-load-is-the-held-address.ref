@@ -1,0 +1,32 @@
+global @letters [storage=readonly, binding=internal] = {
+  i8 97
+  i8 98
+  i8 99
+  i8 0
+}
+global @table : ptr [storage=readonly, binding=internal] = addr @letters
+global @cursor : ptr = addr @letters
+
+function @letter(%i : i64) -> i8 [no_inline=yes] {
+  block ^entry:
+    %p = addr @letters
+    %e = index i8 %p, %i
+    %v = load i8 %e
+    return i8 %v
+}
+function @current() -> i8 [no_inline=yes] {
+  block ^entry:
+    %p = load ptr @cursor
+    %v = load i8 %p
+    return i8 %v
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call i8 @letter(1)
+    %b = call i8 @current()
+    %x = cmp ne i8 %a, 98
+    %y = cmp ne i8 %b, 97
+    %bad = binary or i1 %x, %y
+    %r = convert zext i32 i1 %bad
+    return i32 %r
+}
