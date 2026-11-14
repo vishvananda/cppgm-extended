@@ -6,7 +6,6 @@
 #include <cstdio>
 #include <cstring>
 #include <sstream>
-#include <sys/resource.h>
 
 #include "native/backend_error.h"
 #include "native/image/global_data.h"
@@ -20,6 +19,10 @@
 #include "native/x86/emitter.h"
 #include "support/file_handle.h"
 #include "support/telemetry.h"
+
+#if CPPGM_TELEMETRY_ENABLED
+#include <sys/resource.h>
+#endif
 
 namespace native {
 
@@ -128,12 +131,14 @@ bool compile_program(
 			!link_executable(
 				objects, options.output, error, stats_line != nullptr ? &link_stats : nullptr, options.target))
 			return false;
+#if CPPGM_TELEMETRY_ENABLED
 		if (stats_line != nullptr)
 		{
 			std::ostringstream line;
 			line << "native assembly_items=1 sections=" << object_stats.sections << " symbols=" << object_stats.symbols;
 			*stats_line = line.str();
 		}
+#endif
 		return true;
 	}
 	const std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();

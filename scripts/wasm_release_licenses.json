@@ -1,0 +1,58 @@
+{
+  "wasi-libc-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/WebAssembly/wasi-libc/2e6fb9d8ee0c/LICENSE",
+    "sha256": "2711a8b5a5cdfef0e639f96c1aca12ae23d7d64a02d0507f1bdf14d2b27bbc3a"
+  },
+  "wasi-libc-LICENSE-APACHE.txt": {
+    "source": "https://raw.githubusercontent.com/WebAssembly/wasi-libc/2e6fb9d8ee0c/LICENSE-APACHE",
+    "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+  },
+  "wasi-libc-LICENSE-APACHE-LLVM.txt": {
+    "source": "https://raw.githubusercontent.com/WebAssembly/wasi-libc/2e6fb9d8ee0c/LICENSE-APACHE-LLVM",
+    "sha256": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5"
+  },
+  "wasi-libc-LICENSE-MIT.txt": {
+    "source": "https://raw.githubusercontent.com/WebAssembly/wasi-libc/2e6fb9d8ee0c/LICENSE-MIT",
+    "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+  },
+  "wasi-libc-libc-bottom-half-cloudlibc-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/WebAssembly/wasi-libc/2e6fb9d8ee0c/libc-bottom-half/cloudlibc/LICENSE",
+    "sha256": "c8b789cf5a746611e6300a0cc7750dbf92b61912a709d04e639245f7290656d0"
+  },
+  "wasi-libc-libc-top-half-musl-COPYRIGHT.txt": {
+    "source": "https://raw.githubusercontent.com/WebAssembly/wasi-libc/2e6fb9d8ee0c/libc-top-half/musl/COPYRIGHT",
+    "sha256": "b870108ec5e7790e9f9919064f1b9421d62d5f9b0e6c230c6adf7ea2da62e97b"
+  },
+  "wasi-libc-fts-musl-fts-COPYING.txt": {
+    "source": "https://raw.githubusercontent.com/WebAssembly/wasi-libc/2e6fb9d8ee0c/fts/musl-fts/COPYING",
+    "sha256": "55af87e4017668f54467a3380e7ebbac5e672d8c763bfe95e6fc882a6fdc4046"
+  },
+  "llvm23-llvm-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/llvm/llvm-project/895aa2c896ad/llvm/LICENSE.TXT",
+    "sha256": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee"
+  },
+  "llvm23-libcxx-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/llvm/llvm-project/895aa2c896ad/libcxx/LICENSE.TXT",
+    "sha256": "539dd7aed86e8a4f12cbdd0e6c50c189c7d74847e4fecc64ce2c6ee3a01da38b"
+  },
+  "llvm23-libcxxabi-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/llvm/llvm-project/895aa2c896ad/libcxxabi/LICENSE.TXT",
+    "sha256": "e2b35be49f7284a45b7baca8fc7b3ab7440e7902392b2528a457816b5bb2a15c"
+  },
+  "llvm23-libunwind-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/llvm/llvm-project/895aa2c896ad/libunwind/LICENSE.TXT",
+    "sha256": "b5efebcaca80879234098e52d1725e6d9eb8fb96a19fce625d39184b705f7b6d"
+  },
+  "llvm23-compiler-rt-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/llvm/llvm-project/895aa2c896ad/compiler-rt/LICENSE.TXT",
+    "sha256": "1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d"
+  },
+  "GCC-RUNTIME-EXCEPTION.txt": {
+    "source": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-13.3.0/COPYING.RUNTIME",
+    "sha256": "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74"
+  },
+  "GCC-GPL-3.txt": {
+    "source": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-13.3.0/COPYING3",
+    "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+  }
+}

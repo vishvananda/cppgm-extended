@@ -1,0 +1,61 @@
+name: Build WASI reference export
+
+on:
+  workflow_call:
+    inputs:
+      revision:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+      - name: Install host dependencies and pinned SDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential curl xz-utils
+          perl scripts/install_wasm_tools.pl --prefix "$RUNNER_TEMP/wasm-tools"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Install pinned WASI adapter
+        run: npm ci --ignore-scripts --prefix scripts/experimental
+      - name: Build the host compiler
+        run: make -C dev cppgm++ CXX=g++ CPPGM_HOST_CXX=g++
+      - name: Build and validate all nine WASI reference tools
+        run: |
+          short_sha=$(git rev-parse --short=12 HEAD)
+          mkdir -p "$RUNNER_TEMP/upload"
+          python3 scripts/export_wasm_reference_binaries.py \
+            --directory "$RUNNER_TEMP/reference-wasm" \
+            --sdk "$RUNNER_TEMP/wasm-tools/wasi-sdk" \
+            --wasmtime "$RUNNER_TEMP/wasm-tools/bin/wasmtime" \
+            --compiler "$PWD/dev/cppgm++" \
+            --shim "$PWD/scripts/experimental/node_modules/@bjorn3/browser_wasi_shim" \
+            --jobs 2 \
+            --bundle "$RUNNER_TEMP/upload/cppgm-reference-binaries-wasm32-wasip1-${short_sha}.tar.gz"
+          cp "$RUNNER_TEMP/reference-wasm/wasm-reference-provenance.json" "$RUNNER_TEMP/upload/"
+          cd "$RUNNER_TEMP/upload"
+          sha256sum *.tar.gz *.json > SHA256SUMS
+      - uses: actions/upload-artifact@v6
+        with:
+          name: reference-binaries-wasi
+          path: ${{ runner.temp }}/upload/
+          if-no-files-found: error
+      - name: Retain failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: reference-binaries-wasi-failure
+          path: |
+            ${{ runner.temp }}/reference-wasm/manifest.json
+            ${{ runner.temp }}/reference-wasm/inputs/reference-wasm/*.log

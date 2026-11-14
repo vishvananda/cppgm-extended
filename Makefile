@@ -306,6 +306,8 @@ test-cells:
 # The harness unit tests: the comparison, the workers, the audits and the
 # export, each a self-contained python unittest file under scripts/tests.
 HARNESS_TESTS = \
+	scripts/tests/test_wasi_export.py \
+	scripts/tests/test_release_source.py \
 	scripts/tests/test_wasm_check_cache.py \
 	scripts/tests/test_wasm_checker.py \
 	scripts/tests/test_wasm_module.py \
