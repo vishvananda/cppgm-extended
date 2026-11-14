@@ -41,6 +41,22 @@ class PublicationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'CI artifacts'):
                 publication.check(root)
 
+    def test_prepare_keeps_the_newest_history_and_what_current_reports_show(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            revisions = ['%040x' % number for number in range(publication.MAX_HISTORY_REVISIONS + 3)]
+            for run, revision in enumerate(revisions, 100):
+                entry = root / 'boost/o3/history' / revision / 'epyc'
+                entry.mkdir(parents=True)
+                (entry / 'report.md').write_text(f'[run](https://github.com/example/project/actions/runs/{run})\n')
+                (entry / 'metadata.json').write_text(json.dumps(dict(revision=revision)))
+            current = root / 'boost/o3/intel'
+            current.mkdir()
+            (current / 'metadata.json').write_text(json.dumps(dict(revision=revisions[0])))
+            publication.prepare(root)
+            kept = sorted(path.name for path in (root / 'boost/o3/history').iterdir())
+            self.assertEqual(kept, [revisions[0]] + revisions[3:])
+
     def test_migration_preserves_badges_reports_and_provenance_without_raw_checkout(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

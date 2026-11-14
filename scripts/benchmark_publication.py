@@ -6,10 +6,13 @@ import json
 from pathlib import Path, PurePosixPath
 import posixpath
 import re
+import shutil
 import subprocess
 
 MAX_FILE_BYTES = 2 * 1024 * 1024
 MAX_TREE_BYTES = 64 * 1024 * 1024
+MAX_HISTORY_REVISIONS = 10
+REVISION = re.compile(r'[0-9a-f]{40}')
 BOOST_SNAPSHOT = re.compile(r'(boost/(?:o3/)?(?:history/[0-9a-f]{40}/)?(?:epyc|intel|github-intel))/')
 RUN_URL = re.compile(r'https://github.com/[^/\s)]+/[^/\s)]+/actions/runs/[0-9]+')
 
@@ -44,7 +47,33 @@ def check(directory):
     return dict(files=count, bytes=total)
 
 
+def prune_history(directory):
+    """Keep each workload's newest history revisions and those its current reports show.
+
+    A workload's history gains one directory per measured revision. Their
+    reports name the publishing workflow run, and run numbers grow with time.
+    """
+    removed = []
+    for history in sorted(directory.rglob('history')):
+        if '.git' in history.relative_to(directory).parts or not history.is_dir():
+            continue
+        shown = {json.loads(path.read_text()).get('revision') for path in history.parent.glob('*/metadata.json')}
+
+        def run(entry):
+            return max((int(url.rsplit('/', 1)[1]) for report in entry.glob('*/report.md')
+                        for url in RUN_URL.findall(report.read_text())), default=0)
+
+        entries = sorted((entry for entry in history.iterdir() if entry.is_dir() and REVISION.fullmatch(entry.name)),
+                         key=lambda entry: (run(entry), entry.name), reverse=True)
+        for entry in entries[MAX_HISTORY_REVISIONS:]:
+            if entry.name not in shown:
+                shutil.rmtree(entry)
+                removed.append(entry.relative_to(directory).as_posix())
+    return removed
+
+
 def prepare(directory):
+    prune_history(directory)
     # Whitespace is useful in the rendered tables, not in repeated machine
     # records. Keep the JSON schema and every value, with one canonical encoding.
     for path in directory.rglob('*.json'):
