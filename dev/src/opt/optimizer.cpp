@@ -685,6 +685,11 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		changed = true;
 	}
 	changed = narrow_fields(context) || changed;
+	if (options.level >= 2 && RUN_PASS(join_field_moves))
+	{
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
 	changed = RUN_PASS(sink_values) || changed;
 	changed = RUN_PASS(schedule_integer_values) || changed;
 	changed = RUN_PASS(hold_loop_literals) || changed;

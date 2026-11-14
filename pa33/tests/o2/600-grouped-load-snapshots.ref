@@ -2,12 +2,10 @@ function @swap(%a : ptr [alias=noalias], %b : ptr [alias=noalias]) -> void [no_i
   block ^entry:
     %a1 = index i8 %a, 4
     %b1 = index i8 %b, 4
-    %v0 = load i32 %b
-    %v1 = load i32 %b1
     %v2 = load i32 %a
     %v3 = load i32 %a1
-    store i32 %v0, %a
-    store i32 %v1, %a1
+    %t5 = load i64 %b
+    store i64 %t5, %a
     store i32 %v2, %b
     store i32 %v3, %b1
     return void
