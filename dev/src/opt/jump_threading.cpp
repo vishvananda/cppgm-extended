@@ -542,7 +542,8 @@ bool JumpThreading::known_edges()
 }
 
 // The target `block`'s terminator takes when entered with its phis'
-// `inputs` (in phi order): every other instruction must fold.
+// `inputs` (in phi order). An instruction that does not fold must be
+// removable; its value stays unknown, and the terminator may not need it.
 bool JumpThreading::evaluate(BlockId block, const Value* inputs, BlockId& target)
 {
 	auto value = [&](Value v) {
@@ -633,6 +634,8 @@ bool JumpThreading::evaluate(BlockId block, const Value* inputs, BlockId& target
 			scratch_[inst.result] = literal_value(body_, r.kind, r.float_kind, r.bits);
 			touched.push_back(inst.result);
 		}
+		else
+			ok = is_pure(inst) || (inst.op == Opcode::Load && (inst.flags & IF_VOLATILE) == 0);
 	}
 	for (TempId t : touched)
 		scratch_[t] = Value::none();
@@ -642,7 +645,8 @@ bool JumpThreading::evaluate(BlockId block, const Value* inputs, BlockId& target
 // Per temp: the nearest common dominator of its uses outside its
 // defining block (a phi's at its predecessor's end), kNoId when none; and
 // whether one of them is other than another block's phi reading it along an
-// edge from its block (read_past_).
+// edge from its block (read_past_). Such a read of a phi is not a use here:
+// a predecessor that moves to the reader brings its own input.
 void JumpThreading::find_use_dominators()
 {
 	use_dom_.assign(body_.temps.size(), kNoId);
@@ -683,8 +687,10 @@ void JumpThreading::find_use_dominators()
 					const Value& v = body_.operands[inst.extra_first + k + 1];
 					if (!cfg_.reachable(from))
 						continue;
-					note(v, from);
-					if (v.is(ValueKind::Temp) && v.index < read_past_.size() && (from == b || defined_in(v) != from))
+					const bool passed = v.is(ValueKind::Temp) && from != b && defined_in(v) == from;
+					if (!passed || body_.instructions[body_.temps[v.index].def].op != Opcode::Phi)
+						note(v, from);
+					if (v.is(ValueKind::Temp) && v.index < read_past_.size() && !passed)
 						read_past_[v.index] = 1;
 				}
 				continue;

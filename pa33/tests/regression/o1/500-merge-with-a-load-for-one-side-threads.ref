@@ -1,0 +1,51 @@
+global @cell : i64 = 40
+global @seen : i64 = 0
+
+function @note(%v : i64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %old = load i64 @seen
+    %new = binary add i64 %v, %old
+    store i64 %new, @seen
+    return void
+}
+function @choose(%x : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %low = binary and i64 %x, 3
+    %zero = cmp eq i64 %low, 0
+    branch %zero, ^holds, ^other
+
+  block ^holds:
+    call void @note(1)
+    %p = addr @cell
+    %value = load i64 %p
+    %sum = binary add i64 %x, %value
+    jump ^done
+
+  block ^other:
+    %one = cmp eq i64 %low, 1
+    branch %one, ^first, ^second
+
+  block ^first:
+    call void @note(2)
+    jump ^done
+
+  block ^second:
+    call void @note(4)
+    jump ^done
+
+  block ^done:
+    %r = phi i64 [^holds: %sum, ^first: 7, ^second: 7]
+    return i64 %r
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call i64 @choose(8)
+    %b = call i64 @choose(5)
+    %c = call i64 @choose(6)
+    %s1 = binary add i64 %a, %b
+    %s2 = binary add i64 %c, %s1
+    %seen = load i64 @seen
+    %s3 = binary add i64 %s2, %seen
+    %t = convert trunc i32 i64 %s3
+    return i32 %t
+}

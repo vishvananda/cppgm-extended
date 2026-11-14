@@ -1,0 +1,48 @@
+global @data : obj<48x8> = {
+  i64 8
+  i64 4
+  i64 6
+  i64 7
+  i64 2
+  i64 9
+}
+
+function @scan(%from : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: %from, ^skip: %i1]
+    %last = phi i64 [^entry: 100, ^skip: %sum]
+    %more = cmp lt i64 %i, 6
+    branch %more, ^body, ^done
+
+  block ^body:
+    %base = addr @data
+    %at = index inbounds i64 [projection=array_element] %base, %i
+    %x = load i64 %at
+    %odd = binary and i64 %x, 1
+    branch %odd, ^found, ^skip
+
+  block ^found:
+    %hit = binary add i64 %last, %x
+    jump ^done
+
+  block ^skip:
+    %sum = binary add i64 %last, %x
+    %i1 = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    %r = phi i64 [^head: 0, ^found: %hit]
+    return i64 %r
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call i64 @scan(0)
+    %b = call i64 @scan(4)
+    %s = binary add i64 %a, %b
+    %m = binary umod i64 %s, 251
+    %t = convert trunc i32 i64 %m
+    return i32 %t
+}
