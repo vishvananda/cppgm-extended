@@ -46,6 +46,10 @@ void Selector::instruction(const lowir::Instruction& inst)
 		return;
 	switch (inst.op)
 	{
+	case Opcode::Asm:
+		// Nonempty templates and operand/register effects are rejected before
+		// selection. Empty compiler barriers retain their LowIR memory effects.
+		return;
 	case Opcode::Const:
 	case Opcode::Copy:
 	{
@@ -77,6 +81,15 @@ void Selector::instruction(const lowir::Instruction& inst)
 		return;
 	case Opcode::Vector:
 		vector_instruction(inst);
+		return;
+	case Opcode::AtomicLoad:
+	case Opcode::AtomicStore:
+	case Opcode::AtomicAddFetch:
+	case Opcode::AtomicExchange:
+	case Opcode::AtomicCompareExchange:
+	case Opcode::AtomicThreadFence:
+	case Opcode::AtomicSignalFence:
+		atomic_instruction(inst);
 		return;
 	case Opcode::Addr:
 		address(inst.ops[0]);

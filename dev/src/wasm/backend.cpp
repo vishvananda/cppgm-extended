@@ -2,12 +2,27 @@
 
 #include <cstdio>
 
+#include "lowir/assembly.h"
 #include "opt/optimizer.h"
 #include "wasm/object_reader.h"
 
 namespace wasm {
 
 namespace {
+
+bool only_empty_assembly(const lowir::Program& program)
+{
+	if (!program.assembly)
+		return true;
+	const auto& assembly = *program.assembly;
+	if (!assembly.functions.empty() || !assembly.globals.empty())
+		return false;
+	for (const auto& definition : assembly.templates)
+		if (definition.operand_count != 0 || definition.argument_count != 0 || definition.clobber_count != 0 ||
+			definition.piece_count != 0)
+			return false;
+	return true;
+}
 
 bool write_file(const std::string& path, const void* data, size_t size, std::string& error)
 {
@@ -38,7 +53,7 @@ bool compile_object(
 		error = "Wasm compilation requires a matching explicit LowIR target profile";
 		return false;
 	}
-	if (program.assembly)
+	if (!only_empty_assembly(program))
 	{
 		error = "assembly is not supported by this Wasm profile";
 		return false;

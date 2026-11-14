@@ -32,12 +32,13 @@ bool Linker::host_import(ObjectRef ref) const
 	if (source.kind == 4)
 		return objects_[ref.first].tags[source.index].module != "env" || (source.flags & 0x40) != 0;
 	const ObjectFunction& function = objects_[ref.first].functions[source.index];
-	return function.module != "env" || (source.flags & 0x40) != 0;
+	return function.module != "env" || (source.flags & 0x40) != 0 || options_.wasm_link.imports.count(source.name) != 0;
 }
 
 void Linker::resolve()
 {
 	active_.resize(objects_.size(), false);
+	typed_function_uses_.resize(objects_.size());
 	for (uint32_t i = 0; i < objects_.size(); ++i)
 		if (objects_[i].archive_member)
 			for (uint32_t j = 0; j < objects_[i].symbols.size(); ++j)
@@ -131,7 +132,20 @@ void Linker::activate(uint32_t i)
 		}
 	}
 	for (const ObjectExport& entry : object.exports)
-		roots_.push_back(indexed_symbol(i, entry.kind == 3 ? 2 : entry.kind, entry.index));
+	{
+		const ObjectRef ref = indexed_symbol(i, entry.kind == 1 ? 5 : entry.kind == 3 ? 2 : entry.kind, entry.index);
+		roots_.push_back(ref);
+		if (entry.kind == 0)
+			require_function_type(ref);
+	}
+}
+
+void Linker::require_function_type(ObjectRef ref)
+{
+	auto& uses = typed_function_uses_[ref.first];
+	if (uses.empty())
+		uses.resize(objects_[ref.first].symbols.size(), 0);
+	uses[ref.second] = 1;
 }
 
 void Linker::validate_symbols() const
@@ -145,10 +159,17 @@ void Linker::validate_symbols() const
 				const ObjectSymbol& target = symbol(definition);
 				if (source.kind != target.kind)
 					throw WasmError("Wasm symbol kind mismatch: " + source.name);
-				if (source.kind == 0 &&
-					!(objects_[i].types[objects_[i].functions[source.index].type] ==
-						objects_[definition.first].types[objects_[definition.first].functions[target.index].type]))
-					throw WasmError("Wasm function signature mismatch: " + source.name);
+				if (source.kind == 0)
+				{
+					// Address-only LLVM imports may use a void() placeholder. A
+					// selected definition supplies their type; direct calls stay strict.
+					const bool typed = !source.undefined() || host_import(ref) || (source.flags & 0x20) != 0 ||
+						(!typed_function_uses_[i].empty() && typed_function_uses_[i][j]);
+					if (typed &&
+						!(objects_[i].types[objects_[i].functions[source.index].type] ==
+							objects_[definition.first].types[objects_[definition.first].functions[target.index].type]))
+						throw WasmError("Wasm function signature mismatch: " + source.name);
+				}
 				if (source.kind == 2 &&
 					(global_type(objects_[i], source.index) != global_type(objects_[definition.first], target.index) ||
 						mutable_global(objects_[i], source.index) !=
@@ -179,7 +200,11 @@ void Linker::dependencies(uint32_t object, const ObjectChunk& chunk)
 {
 	for (const Relocation& relocation : chunk.relocations)
 		if (relocation.kind != RelocationKind::TypeIndex)
+		{
+			if (relocation.kind == RelocationKind::FunctionIndex)
+				require_function_type({ object, relocation.index });
 			visit({ object, relocation.index });
+		}
 }
 
 void Linker::visit(ObjectRef ref)
@@ -337,7 +362,7 @@ void Linker::collect()
 	if (uint64_t(stack_floor_) + options_.wasm_stack_size > 0x80000000ull)
 		throw WasmError("Wasm linked data and stack exceed the supported memory range");
 	stack_top_ = stack_floor_ + options_.wasm_stack_size;
-	if (needs_ctors_ || !initializers_.empty())
+	if (needs_ctors_ || !initializers_.empty() || options_.wasm_link.export_constructors)
 		ctor_index_ = static_cast<uint32_t>(ordered_functions_.size());
 }
 
@@ -346,6 +371,12 @@ void Linker::run(Bytes& output)
 	resolve();
 	collect();
 	validate_symbols();
+	if (!options_.wasm_atomics)
+		for (uint32_t i = 0; i < objects_.size(); ++i)
+			if (active_[i])
+				for (const auto& feature : objects_[i].features)
+					if (feature.first == '+' && feature.second == "atomics")
+						throw WasmError("Wasm atomic objects require -matomics");
 	validate_link_features(objects_, active_);
 	prepare_address_globals();
 	prepare_globals();

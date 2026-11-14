@@ -63,6 +63,7 @@ private:
 	void call(const Signature& signature);
 	void instruction(const Instruction& inst);
 	bool numeric(Op op);
+	bool atomic(const Instruction& inst);
 	bool simd(const Instruction& inst);
 	Types branch_types(uint64_t depth) const;
 	uint64_t operand(const Instruction& inst, uint32_t index = 0) const;
@@ -440,9 +441,35 @@ bool Validator::simd(const Instruction& inst)
 	return true;
 }
 
+bool Validator::atomic(const Instruction& inst)
+{
+	const wasm_model::AtomicInfo info = wasm_model::atomic_info(inst.op);
+	using wasm_model::AtomicForm;
+	if (info.form == AtomicForm::None)
+		return false;
+	if (info.form == AtomicForm::Fence)
+	{
+		if (operand(inst) != 0)
+			throw WasmError("invalid Wasm atomic fence flags");
+		return true;
+	}
+	if (module_.memory_count != 1 || operand(inst) != info.alignment || operand(inst, 1) > UINT32_MAX)
+		throw WasmError("invalid Wasm atomic memory operand or alignment");
+	if (info.form != AtomicForm::Load)
+		pop(info.type);
+	if (info.form == AtomicForm::CmpXchg)
+		pop(info.type);
+	pop(ValueType::I32);
+	if (info.form != AtomicForm::Store)
+		push(info.type);
+	return true;
+}
+
 void Validator::instruction(const Instruction& inst)
 {
 	if (simd(inst) || numeric(inst.op))
+		return;
+	if ((static_cast<unsigned>(inst.op) >> 8) == 0xfe && atomic(inst))
 		return;
 	switch (inst.op)
 	{

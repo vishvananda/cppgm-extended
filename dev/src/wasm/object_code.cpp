@@ -67,7 +67,7 @@ void decode_object_chunk(const ObjectChunk& chunk, const Signature& signature, c
 	while (!input.empty())
 	{
 		unsigned opcode = input.byte();
-		if (opcode == 0xfc || opcode == 0xfd)
+		if (opcode == 0xfc || opcode == 0xfd || opcode == 0xfe)
 		{
 			const uint32_t suffix = input.u32();
 			if (suffix > 255)
@@ -75,6 +75,10 @@ void decode_object_chunk(const ObjectChunk& chunk, const Signature& signature, c
 			opcode = (opcode << 8) | suffix;
 		}
 		const Op op = static_cast<Op>(opcode);
+		if ((opcode >> 8) == 0xfe &&
+			std::find(object.features.begin(), object.features.end(), std::make_pair('+', std::string("atomics"))) ==
+				object.features.end())
+			throw WasmError("Wasm atomic instructions require the atomics target feature");
 		const Immediate form = immediate_form(op);
 		if (form == Immediate::Invalid)
 			throw WasmError("unsupported opcode " + std::to_string(opcode) + " in Wasm object function");
@@ -130,7 +134,7 @@ void decode_object_chunk(const ObjectChunk& chunk, const Signature& signature, c
 			else if (form == Immediate::BlockType)
 				value = static_cast<uint64_t>(input.signed_leb(33));
 			else if (form == Immediate::Types || form == Immediate::Bytes16 || form == Immediate::Shuffle ||
-				form == Immediate::Lane || (form == Immediate::MemoryLane && i == 2))
+				form == Immediate::Lane || form == Immediate::Byte || (form == Immediate::MemoryLane && i == 2))
 				value = input.byte();
 			else
 				value = input.u32();

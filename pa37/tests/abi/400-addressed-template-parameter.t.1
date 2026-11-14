@@ -1,0 +1,9 @@
+template<class T> struct Parameter { T value; };
+struct Box { int get(Parameter<int>); };
+extern int (Box::*method)(Parameter<int>);
+int Box::get(Parameter<int> parameter) { return parameter.value; }
+extern "C" int invoke() {
+  Box box;
+  Parameter<int> parameter={17};
+  return (box.*method)(parameter);
+}

@@ -66,7 +66,7 @@ void validate_object(const Object& object)
 {
 	const std::set<std::string> supported{ "mutable-globals", "sign-ext", "nontrapping-fptoint", "bulk-memory",
 		"bulk-memory-opt", "extended-const", "multivalue", "reference-types", "call-indirect-overlong", "simd128",
-		"exception-handling" };
+		"exception-handling", "atomics" };
 	std::set<std::string> feature_names;
 	for (const auto& feature : object.features)
 		if (!feature_names.insert(feature.second).second || (feature.first != '+' && feature.first != '-') ||

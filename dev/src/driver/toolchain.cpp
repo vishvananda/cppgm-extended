@@ -13,6 +13,7 @@
 #include "abi/itanium/abi_encoding_error.h"
 #include "driver/host_environment.h"
 #include "driver/wasm_environment.h"
+#include "driver/wasm_link_options.h"
 #include "lex/post_token_writer.h"
 #include "lex/language_mode.h"
 #include "lex/post_tokenizer.h"
@@ -108,6 +109,9 @@ struct Invocation
 	bool no_standard_libraries = false;
 	bool no_startfiles = false;
 	uint32_t wasm_stack_size = 0;
+	bool wasm_atomics = true;
+	bool wasm_atomics_explicit = false;
+	backend::WasmLinkOptions wasm_link;
 	std::vector<Input> inputs;
 	std::vector<std::string> library_paths;
 	std::vector<std::string> exports;
@@ -253,6 +257,24 @@ void prune_include_paths(PreprocessorOptions& options)
 	options.include_paths.swap(user);
 }
 
+void configure_target_runtime(Invocation& invocation, bool nostdinc)
+{
+	configure_target_environment(invocation.preprocessor, invocation.target);
+	if (target_model::is_wasm(invocation.target))
+	{
+		if (invocation.wasm_atomics)
+			invocation.preprocessor.command_line.insert(0, "#define __wasm_atomics__ 1\n");
+		if (!nostdinc)
+			add_wasm_headers(invocation.preprocessor, invocation.sysroot, invocation.resource_directory);
+		if (!invocation.sysroot.empty())
+			invocation.library_paths.push_back(invocation.sysroot + "/lib/wasm32-wasip1");
+	}
+	else if (!invocation.sysroot.empty() || !invocation.resource_directory.empty() ||
+		invocation.no_standard_libraries || invocation.no_startfiles || invocation.wasm_stack_size != 0 ||
+		(invocation.wasm_atomics_explicit && invocation.wasm_atomics) || invocation.wasm_link.requested())
+		throw InvocationError("target runtime directory/options currently require a Wasm target");
+}
+
 Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions& base)
 {
 	Invocation invocation;
@@ -286,6 +308,13 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 			invocation.function_sections = arg == "-ffunction-sections";
 		else if (arg == "-pthread")
 			pthread = true;
+		else if (parse_wasm_link_option(args, i, invocation.wasm_link))
+			continue;
+		else if (arg == "-matomics" || arg == "-mno-atomics")
+		{
+			invocation.wasm_atomics = arg == "-matomics";
+			invocation.wasm_atomics_explicit = true;
+		}
 		else if (arg == "-E")
 			invocation.preprocess_only = true;
 		else if (arg == "-nostdinc")
@@ -483,17 +512,7 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 	if (invocation.debug_optimization && invocation.debug_types)
 		invocation.optimizer.level = 0;
 	add_host_environment(invocation.preprocessor, nostdinc || invocation.target != native::host_target());
-	configure_target_environment(invocation.preprocessor, invocation.target);
-	if (target_model::is_wasm(invocation.target))
-	{
-		if (!nostdinc)
-			add_wasm_headers(invocation.preprocessor, invocation.sysroot, invocation.resource_directory);
-		if (!invocation.sysroot.empty())
-			invocation.library_paths.push_back(invocation.sysroot + "/lib/wasm32-wasip1");
-	}
-	else if (!invocation.sysroot.empty() || !invocation.resource_directory.empty() ||
-		invocation.no_standard_libraries || invocation.no_startfiles || invocation.wasm_stack_size != 0)
-		throw InvocationError("target runtime directory/options currently require a Wasm target");
+	configure_target_runtime(invocation, nostdinc);
 	invocation.optimizer.has_gnu_sincos = target_model::has_gnu_sincos(invocation.target);
 	// Darwin objects are position independent even without an explicit -fPIC.
 	if (invocation.target == native::Target::MacOS)
@@ -934,6 +953,8 @@ int wasm_mode(const Invocation& invocation)
 	options.exceptions = invocation.preprocessor.modes.exceptions;
 	options.no_standard_libraries = invocation.no_standard_libraries;
 	options.no_startfiles = invocation.no_startfiles;
+	options.wasm_atomics = invocation.wasm_atomics;
+	options.wasm_link = invocation.wasm_link;
 	if (invocation.wasm_stack_size != 0)
 		options.wasm_stack_size = invocation.wasm_stack_size;
 	options.optimizer = &invocation.optimizer;

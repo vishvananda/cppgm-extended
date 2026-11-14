@@ -28,6 +28,7 @@ enum class Immediate : std::uint8_t
 {
 	None,
 	Index,
+	Byte,
 	Signed,
 	Float32,
 	Float64,
@@ -559,13 +560,98 @@ struct SimdInfo
  X(F64x2ConvertLowI32x4U, 0xfdff, None, "f64x2.convert_low_i32x4_u", Unary, 0, 0)
 // clang-format on
 
+enum class AtomicForm : std::uint8_t
+{
+	None,
+	Fence,
+	Load,
+	Store,
+	Rmw,
+	CmpXchg
+};
+struct AtomicInfo
+{
+	AtomicForm form;
+	ValueType type;
+	std::uint8_t alignment;
+};
+
+#define CPPGM_WASM_ATOMIC_OPERATIONS(X) \
+	X(AtomicFence, 0xfe03, Byte, "atomic.fence", Fence, Void, 0) \
+	X(I32AtomicLoad, 0xfe10, Memory, "i32.atomic.load", Load, I32, 2) \
+	X(I64AtomicLoad, 0xfe11, Memory, "i64.atomic.load", Load, I64, 3) \
+	X(I32AtomicLoad8U, 0xfe12, Memory, "i32.atomic.load8_u", Load, I32, 0) \
+	X(I32AtomicLoad16U, 0xfe13, Memory, "i32.atomic.load16_u", Load, I32, 1) \
+	X(I64AtomicLoad8U, 0xfe14, Memory, "i64.atomic.load8_u", Load, I64, 0) \
+	X(I64AtomicLoad16U, 0xfe15, Memory, "i64.atomic.load16_u", Load, I64, 1) \
+	X(I64AtomicLoad32U, 0xfe16, Memory, "i64.atomic.load32_u", Load, I64, 2) \
+	X(I32AtomicStore, 0xfe17, Memory, "i32.atomic.store", Store, I32, 2) \
+	X(I64AtomicStore, 0xfe18, Memory, "i64.atomic.store", Store, I64, 3) \
+	X(I32AtomicStore8, 0xfe19, Memory, "i32.atomic.store8", Store, I32, 0) \
+	X(I32AtomicStore16, 0xfe1a, Memory, "i32.atomic.store16", Store, I32, 1) \
+	X(I64AtomicStore8, 0xfe1b, Memory, "i64.atomic.store8", Store, I64, 0) \
+	X(I64AtomicStore16, 0xfe1c, Memory, "i64.atomic.store16", Store, I64, 1) \
+	X(I64AtomicStore32, 0xfe1d, Memory, "i64.atomic.store32", Store, I64, 2) \
+	X(I32AtomicRmwAdd, 0xfe1e, Memory, "i32.atomic.rmw.add", Rmw, I32, 2) \
+	X(I64AtomicRmwAdd, 0xfe1f, Memory, "i64.atomic.rmw.add", Rmw, I64, 3) \
+	X(I32AtomicRmw8AddU, 0xfe20, Memory, "i32.atomic.rmw8.add_u", Rmw, I32, 0) \
+	X(I32AtomicRmw16AddU, 0xfe21, Memory, "i32.atomic.rmw16.add_u", Rmw, I32, 1) \
+	X(I64AtomicRmw8AddU, 0xfe22, Memory, "i64.atomic.rmw8.add_u", Rmw, I64, 0) \
+	X(I64AtomicRmw16AddU, 0xfe23, Memory, "i64.atomic.rmw16.add_u", Rmw, I64, 1) \
+	X(I64AtomicRmw32AddU, 0xfe24, Memory, "i64.atomic.rmw32.add_u", Rmw, I64, 2) \
+	X(I32AtomicRmwSub, 0xfe25, Memory, "i32.atomic.rmw.sub", Rmw, I32, 2) \
+	X(I64AtomicRmwSub, 0xfe26, Memory, "i64.atomic.rmw.sub", Rmw, I64, 3) \
+	X(I32AtomicRmw8SubU, 0xfe27, Memory, "i32.atomic.rmw8.sub_u", Rmw, I32, 0) \
+	X(I32AtomicRmw16SubU, 0xfe28, Memory, "i32.atomic.rmw16.sub_u", Rmw, I32, 1) \
+	X(I64AtomicRmw8SubU, 0xfe29, Memory, "i64.atomic.rmw8.sub_u", Rmw, I64, 0) \
+	X(I64AtomicRmw16SubU, 0xfe2a, Memory, "i64.atomic.rmw16.sub_u", Rmw, I64, 1) \
+	X(I64AtomicRmw32SubU, 0xfe2b, Memory, "i64.atomic.rmw32.sub_u", Rmw, I64, 2) \
+	X(I32AtomicRmwAnd, 0xfe2c, Memory, "i32.atomic.rmw.and", Rmw, I32, 2) \
+	X(I64AtomicRmwAnd, 0xfe2d, Memory, "i64.atomic.rmw.and", Rmw, I64, 3) \
+	X(I32AtomicRmw8AndU, 0xfe2e, Memory, "i32.atomic.rmw8.and_u", Rmw, I32, 0) \
+	X(I32AtomicRmw16AndU, 0xfe2f, Memory, "i32.atomic.rmw16.and_u", Rmw, I32, 1) \
+	X(I64AtomicRmw8AndU, 0xfe30, Memory, "i64.atomic.rmw8.and_u", Rmw, I64, 0) \
+	X(I64AtomicRmw16AndU, 0xfe31, Memory, "i64.atomic.rmw16.and_u", Rmw, I64, 1) \
+	X(I64AtomicRmw32AndU, 0xfe32, Memory, "i64.atomic.rmw32.and_u", Rmw, I64, 2) \
+	X(I32AtomicRmwOr, 0xfe33, Memory, "i32.atomic.rmw.or", Rmw, I32, 2) \
+	X(I64AtomicRmwOr, 0xfe34, Memory, "i64.atomic.rmw.or", Rmw, I64, 3) \
+	X(I32AtomicRmw8OrU, 0xfe35, Memory, "i32.atomic.rmw8.or_u", Rmw, I32, 0) \
+	X(I32AtomicRmw16OrU, 0xfe36, Memory, "i32.atomic.rmw16.or_u", Rmw, I32, 1) \
+	X(I64AtomicRmw8OrU, 0xfe37, Memory, "i64.atomic.rmw8.or_u", Rmw, I64, 0) \
+	X(I64AtomicRmw16OrU, 0xfe38, Memory, "i64.atomic.rmw16.or_u", Rmw, I64, 1) \
+	X(I64AtomicRmw32OrU, 0xfe39, Memory, "i64.atomic.rmw32.or_u", Rmw, I64, 2) \
+	X(I32AtomicRmwXor, 0xfe3a, Memory, "i32.atomic.rmw.xor", Rmw, I32, 2) \
+	X(I64AtomicRmwXor, 0xfe3b, Memory, "i64.atomic.rmw.xor", Rmw, I64, 3) \
+	X(I32AtomicRmw8XorU, 0xfe3c, Memory, "i32.atomic.rmw8.xor_u", Rmw, I32, 0) \
+	X(I32AtomicRmw16XorU, 0xfe3d, Memory, "i32.atomic.rmw16.xor_u", Rmw, I32, 1) \
+	X(I64AtomicRmw8XorU, 0xfe3e, Memory, "i64.atomic.rmw8.xor_u", Rmw, I64, 0) \
+	X(I64AtomicRmw16XorU, 0xfe3f, Memory, "i64.atomic.rmw16.xor_u", Rmw, I64, 1) \
+	X(I64AtomicRmw32XorU, 0xfe40, Memory, "i64.atomic.rmw32.xor_u", Rmw, I64, 2) \
+	X(I32AtomicRmwXchg, 0xfe41, Memory, "i32.atomic.rmw.xchg", Rmw, I32, 2) \
+	X(I64AtomicRmwXchg, 0xfe42, Memory, "i64.atomic.rmw.xchg", Rmw, I64, 3) \
+	X(I32AtomicRmw8XchgU, 0xfe43, Memory, "i32.atomic.rmw8.xchg_u", Rmw, I32, 0) \
+	X(I32AtomicRmw16XchgU, 0xfe44, Memory, "i32.atomic.rmw16.xchg_u", Rmw, I32, 1) \
+	X(I64AtomicRmw8XchgU, 0xfe45, Memory, "i64.atomic.rmw8.xchg_u", Rmw, I64, 0) \
+	X(I64AtomicRmw16XchgU, 0xfe46, Memory, "i64.atomic.rmw16.xchg_u", Rmw, I64, 1) \
+	X(I64AtomicRmw32XchgU, 0xfe47, Memory, "i64.atomic.rmw32.xchg_u", Rmw, I64, 2) \
+	X(I32AtomicRmwCmpxchg, 0xfe48, Memory, "i32.atomic.rmw.cmpxchg", CmpXchg, I32, 2) \
+	X(I64AtomicRmwCmpxchg, 0xfe49, Memory, "i64.atomic.rmw.cmpxchg", CmpXchg, I64, 3) \
+	X(I32AtomicRmw8CmpxchgU, 0xfe4a, Memory, "i32.atomic.rmw8.cmpxchg_u", CmpXchg, I32, 0) \
+	X(I32AtomicRmw16CmpxchgU, 0xfe4b, Memory, "i32.atomic.rmw16.cmpxchg_u", CmpXchg, I32, 1) \
+	X(I64AtomicRmw8CmpxchgU, 0xfe4c, Memory, "i64.atomic.rmw8.cmpxchg_u", CmpXchg, I64, 0) \
+	X(I64AtomicRmw16CmpxchgU, 0xfe4d, Memory, "i64.atomic.rmw16.cmpxchg_u", CmpXchg, I64, 1) \
+	X(I64AtomicRmw32CmpxchgU, 0xfe4e, Memory, "i64.atomic.rmw32.cmpxchg_u", CmpXchg, I64, 2)
+
 enum class Op : std::uint16_t
 {
 #define CPPGM_WASM_ENUM(name, code, immediate, text) name = code,
 	CPPGM_WASM_OPERATIONS(CPPGM_WASM_ENUM)
 #undef CPPGM_WASM_ENUM
+#define CPPGM_WASM_ATOMIC_ENUM(name, code, immediate, text, form, type, alignment) name = code,
+		CPPGM_WASM_ATOMIC_OPERATIONS(CPPGM_WASM_ATOMIC_ENUM)
+#undef CPPGM_WASM_ATOMIC_ENUM
 #define CPPGM_WASM_SIMD_ENUM(name, code, immediate, text, stack, lanes, align) name = code,
-		CPPGM_WASM_SIMD_OPERATIONS(CPPGM_WASM_SIMD_ENUM)
+			CPPGM_WASM_SIMD_OPERATIONS(CPPGM_WASM_SIMD_ENUM)
 #undef CPPGM_WASM_SIMD_ENUM
 };
 
@@ -578,6 +664,11 @@ inline Immediate immediate_form(Op op)
 		return Immediate::immediate;
 		CPPGM_WASM_OPERATIONS(CPPGM_WASM_FORM)
 #undef CPPGM_WASM_FORM
+#define CPPGM_WASM_ATOMIC_FORM(name, code, immediate, text, form, type, alignment) \
+	case Op::name: \
+		return Immediate::immediate;
+		CPPGM_WASM_ATOMIC_OPERATIONS(CPPGM_WASM_ATOMIC_FORM)
+#undef CPPGM_WASM_ATOMIC_FORM
 #define CPPGM_WASM_SIMD_FORM(name, code, immediate, text, stack, lanes, align) \
 	case Op::name: \
 		return Immediate::immediate;
@@ -596,6 +687,11 @@ inline const char* spelling(Op op)
 		return text;
 		CPPGM_WASM_OPERATIONS(CPPGM_WASM_TEXT)
 #undef CPPGM_WASM_TEXT
+#define CPPGM_WASM_ATOMIC_TEXT(name, code, immediate, text, form, type, alignment) \
+	case Op::name: \
+		return text;
+		CPPGM_WASM_ATOMIC_OPERATIONS(CPPGM_WASM_ATOMIC_TEXT)
+#undef CPPGM_WASM_ATOMIC_TEXT
 #define CPPGM_WASM_SIMD_TEXT(name, code, immediate, text, stack, lanes, align) \
 	case Op::name: \
 		return text;
@@ -619,6 +715,21 @@ inline SimdInfo simd_info(Op op)
 	}
 }
 
+inline AtomicInfo atomic_info(Op op)
+{
+	switch (op)
+	{
+#define CPPGM_WASM_ATOMIC_INFO(name, code, immediate, text, form, type, alignment) \
+	case Op::name: \
+		return AtomicInfo{ AtomicForm::form, ValueType::type, alignment };
+		CPPGM_WASM_ATOMIC_OPERATIONS(CPPGM_WASM_ATOMIC_INFO)
+#undef CPPGM_WASM_ATOMIC_INFO
+	default:
+		return AtomicInfo{ AtomicForm::None, ValueType::Void, 0 };
+	}
+}
+
+#undef CPPGM_WASM_ATOMIC_OPERATIONS
 #undef CPPGM_WASM_SIMD_OPERATIONS
 
 #undef CPPGM_WASM_OPERATIONS

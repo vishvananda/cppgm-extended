@@ -24,6 +24,7 @@ private:
 	uint32_t memory_address(lowir::Value value);
 	void constant(lowir::Literal bits, lowir::Type type);
 	void instruction(const lowir::Instruction& inst);
+	void atomic_instruction(const lowir::Instruction& inst);
 	void call(const lowir::Instruction& inst);
 	void call_body(const lowir::Instruction& inst, const lowir::Signature& signature);
 	void exception_call(const lowir::Instruction& inst, const lowir::Signature* signature, uint32_t landing);

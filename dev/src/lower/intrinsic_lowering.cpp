@@ -569,7 +569,7 @@ void FunctionLowering::emit_ordered(lowir::Instruction inst, const RValue& order
 RValue FunctionLowering::atomic_intrinsic(const syntax::CallExpr& expr, sema::Intrinsic kind)
 {
 	// GCC's __atomic builtins (sema::Intrinsic) as LowIR's atomic
-	// operations, on the object's scalar type (a pointer's as i64: GCC's
+	// operations, on the object's scalar type (a pointer's as its target-width integer: GCC's
 	// arithmetic is unscaled, a __c11_atomic builtin's on an _Atomic(T*)
 	// counts T's, as Clang's; the generic forms' and __c11_atomic's
 	// floating-point or class object of 1, 2, 4 or 8 bytes as the integer
@@ -619,7 +619,10 @@ RValue FunctionLowering::atomic_intrinsic(const syntax::CallExpr& expr, sema::In
 											   : lowir::TypeKind::I64);
 	}
 	const bool is_pointer = stored.kind() == lowir::TypeKind::Ptr;
-	const lowir::Type type = is_pointer ? lowir::Type::scalar(lowir::TypeKind::I64) : stored;
+	const lowir::Type type = is_pointer
+		? lowir::Type::scalar(
+			  program_.pointer_type().pointer_bytes() == 4 ? lowir::TypeKind::I32 : lowir::TypeKind::I64)
+		: stored;
 	const lowir::Value target = operand(*arguments[0], ConversionContext::Argument).value;
 	// A value's bits as another type of its size (not `typed` accesses).
 	const auto reinterpret = [&](const RValue& value, lowir::Type to) {

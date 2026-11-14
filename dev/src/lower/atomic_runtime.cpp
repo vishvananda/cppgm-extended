@@ -44,9 +44,11 @@ lowir::SymbolId ProgramLowering::atomic_runtime_function(sema::Intrinsic kind)
 	{
 		lowir::Parameter parameter = lowir::Parameter();
 		parameter.name = argument_name(i);
-		parameter.type = lowir::Type::scalar(parameters[i] == 's' ? lowir::TypeKind::I64
-				: parameters[i] == 'p'                            ? lowir::TypeKind::Ptr
-																  : lowir::TypeKind::I32);
+		parameter.type = parameters[i] == 'p'
+			? program_.pointer_type()
+			: lowir::Type::scalar(parameters[i] == 's' && program_.pointer_type().pointer_bytes() == 8
+					  ? lowir::TypeKind::I64
+					  : lowir::TypeKind::I32);
 		program_.parameters.push_back(parameter);
 	}
 	signature.result = lowir::Type::scalar(
@@ -63,14 +65,16 @@ lowir::SymbolId ProgramLowering::atomic_runtime_function(sema::Intrinsic kind)
 
 RValue FunctionLowering::atomic_runtime_call(const syntax::CallExpr& expr, sema::Intrinsic kind)
 {
-	if (!lowering_.host_objects())
+	if (!lowering_.host_objects() && !target_model::is_wasm(program_.target))
 		throw LoweringError(expr.location, "a generic atomic runtime call requires host object mode");
 	const bool compare = kind == sema::Intrinsic::AtomicCompareExchange;
 	const syntax::Slice<syntax::Expr*>& operands = expr.arguments;
 	const sema::Type* pointer = operands[0]->facts->type->unqualified;
 	const size_t base = arguments_.size();
-	arguments_.push_back(
-		integer(lowir::Type::scalar(lowir::TypeKind::I64), lowering_.size_of(pointer->element, expr.location)).value);
+	arguments_.push_back(integer(
+		lowir::Type::scalar(program_.pointer_type().pointer_bytes() == 4 ? lowir::TypeKind::I32 : lowir::TypeKind::I64),
+		lowering_.size_of(pointer->element, expr.location))
+			.value);
 	for (uint32_t i = 0; i < operands.size; ++i)
 	{
 		if (compare && i == 3)

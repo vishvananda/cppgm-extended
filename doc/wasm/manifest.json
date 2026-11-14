@@ -68,6 +68,34 @@
       "revision": "943c5df07e84f11d2b83078964df5812530afbd2",
       "retrieved": "2026-11-12",
       "sha256": "2ea7e85a8f83555cf5e40c994b38b816a8dfb8cb95fa6208e71560e510d2165b"
+    },
+    {
+      "file": "threads-binary-instructions.rst",
+      "source": "https://raw.githubusercontent.com/WebAssembly/threads/cc535ada1aa21cfaa3cabf3ac73b89acef78a0a0/document/core/binary/instructions.rst",
+      "revision": "cc535ada1aa21cfaa3cabf3ac73b89acef78a0a0",
+      "retrieved": "2026-11-13",
+      "sha256": "aae098a64de4103acc4e55be3354fbd4be058bb7074cb851efbde1e167e8f417"
+    },
+    {
+      "file": "threads-validation-instructions.rst",
+      "source": "https://raw.githubusercontent.com/WebAssembly/threads/cc535ada1aa21cfaa3cabf3ac73b89acef78a0a0/document/core/valid/instructions.rst",
+      "revision": "cc535ada1aa21cfaa3cabf3ac73b89acef78a0a0",
+      "retrieved": "2026-11-13",
+      "sha256": "2185c3e8b5fcb2694d17500b06f08e1663f94316f7e1be3cdafd337861af0fad"
+    },
+    {
+      "file": "threads-execution-instructions.rst",
+      "source": "https://raw.githubusercontent.com/WebAssembly/threads/cc535ada1aa21cfaa3cabf3ac73b89acef78a0a0/document/core/exec/instructions.rst",
+      "revision": "cc535ada1aa21cfaa3cabf3ac73b89acef78a0a0",
+      "retrieved": "2026-11-13",
+      "sha256": "8b74695d86f6200fc201bf4dddfd527df111ca1ed3f7557bd71817defdadf5fa"
+    },
+    {
+      "file": "threads-document-LICENSE",
+      "source": "https://raw.githubusercontent.com/WebAssembly/threads/cc535ada1aa21cfaa3cabf3ac73b89acef78a0a0/document/core/LICENSE",
+      "revision": "cc535ada1aa21cfaa3cabf3ac73b89acef78a0a0",
+      "retrieved": "2026-11-13",
+      "sha256": "983b7373bdde9a9aae54b7b2f1f53c5458787cb56ea5f49eae3fe76c5544345b"
     }
   ]
 }
