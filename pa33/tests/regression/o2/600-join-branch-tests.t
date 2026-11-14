@@ -5,9 +5,12 @@
 # zero, and one sign test for two of one type: `a < 0 || b < 0` is
 # `(a | b) < 0`, `a >= 0 && b >= 0` is `(a | b) >= 0` and `a < 0 && b < 0`
 # is `(a & b) < 0`. The second block holds no more than its test and one
-# operation that cannot trap. A first test that mostly reaches the shared
-# target keeps its branch (two values seldom agree, and a value is seldom
-# zero): the second test would seldom run. Two results joined cost more
+# operation that cannot trap. Two values tested against zero and two sign
+# tests join whatever the estimate says of the first: one operation takes
+# the place of its branch. Two pointers tested against zero join as the
+# integers they are. For other tests, a first test that mostly reaches the
+# shared target keeps its branch (two values seldom agree): the second test
+# would seldom run. Two results joined cost more
 # than the one branch they save where that branch is seldom mispredicted:
 # where the estimate predicts the first test either way, and on a loop's
 # exit test before its end. Two equalities that reach the shared target (`a == x ||
@@ -199,9 +202,9 @@ function @signs_of_two_sizes(%x : i32, %y : i64) -> void [binding=strong, no_inl
 }
 
 # Both branches stay: a first test the estimate predicts (x == 3 || y < 4),
-# a loop's exit test (it runs while i < n && i + m < 100), first tests that
-# mostly reach the shared target (two values that differ, a value that is
-# not zero), two equalities that reach it (x == 3 || y == 4), two
+# a loop's exit test (it runs while i < n && i + m < 100), a first test that
+# mostly reaches the shared target (two values that differ), two equalities
+# that reach it (x == 3 || y == 4), two
 # inequalities that reach the other target (x && y, plain values of two
 # sizes), a second block that loads, one with two operations besides its
 # test, a branch that states what it expects, a shared target that tells the
@@ -376,6 +379,7 @@ function @invariant(%n : i64, %flag : u32) -> void [binding=strong, no_inline=ye
     return void
 }
 
+# x || y, two plain values: (x | y) != 0, though x is seldom zero.
 function @plain(%x : i64, %y : i64) -> void [binding=strong, no_inline=yes] {
   block ^entry:
     branch %x, ^yes, ^more
@@ -389,6 +393,25 @@ function @plain(%x : i64, %y : i64) -> void [binding=strong, no_inline=yes] {
 
   block ^no:
     call void @note(128)
+    return void
+}
+
+# p == 0 && q == 0, two pointers: the integers they are, joined.
+function @pointers(%p : ptr, %q : ptr) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %a = cmp eq ptr %p, 0
+    branch %a, ^more, ^no
+
+  block ^more:
+    %b = cmp eq ptr %q, 0
+    branch %b, ^yes, ^no
+
+  block ^yes:
+    call void @note(1024)
+    return void
+
+  block ^no:
+    call void @note(2048)
     return void
 }
 
@@ -504,6 +527,8 @@ function @main() -> i32 [role=entry] {
     call void @equal_both(7, 256)
     call void @plain(0, 0)
     call void @plain(0, 5)
+    call void @pointers(0, 0)
+    call void @pointers(0, @seen)
     call void @bits(4, 0)
     call void @bits(0, 1)
     call void @two_equalities(3, 0)

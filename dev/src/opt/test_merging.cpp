@@ -788,10 +788,6 @@ bool TestMerging::join_branches(BlockId e, unsigned side, BlockId next, BlockId 
 	// that inverts fewer conditions, of those that can be had.
 	const bool truths[2] = { side == 1, inner.ops[1].index == shared };
 	const Value conditions[2] = { branch.ops[0], inner.ops[0] };
-	// A first test that mostly reaches S leaves the second seldom run:
-	// joined, it would be computed each time for nothing.
-	if (mostly(conditions[0], truths[0]))
-		return false;
 	int chosen = -1;
 	unsigned least = 3;
 	for (int either = 1; either >= 0; --either)
@@ -835,7 +831,8 @@ bool TestMerging::join_branches(BlockId e, unsigned side, BlockId next, BlockId 
 			if (invariant_test(forest_.innermost[e], conditions[k]))
 				return false;
 	// Two values tested against zero join as `(a | b) != 0` (S where it
-	// holds): `a != 0 | b != 0`, or `a == 0 & b == 0` that reach R.
+	// holds): `a != 0 | b != 0`, or `a == 0 & b == 0` that reach R. Two
+	// pointers join as the integers they are.
 	Value tested[2];
 	Type tested_type = Type::scalar(TypeKind::I64);
 	bool or_form = true;
@@ -855,8 +852,8 @@ bool TestMerging::join_branches(BlockId e, unsigned side, BlockId next, BlockId 
 		}
 		if (truths[k] != either)
 			p = lowir::inverted(p);
-		or_form = or_form && p == (either ? ComparePredicate::Ne : ComparePredicate::Eq) && test_type(t) &&
-			(k == 0 || t.kind() == tested_type.kind());
+		or_form = or_form && p == (either ? ComparePredicate::Ne : ComparePredicate::Eq) &&
+			(test_type(t) || t.is_pointer()) && (k == 0 || t.kind() == tested_type.kind());
 		tested_type = t;
 	}
 	// Two sign tests of values of one type join as one sign test, as LLVM
@@ -890,8 +887,14 @@ bool TestMerging::join_branches(BlockId e, unsigned side, BlockId next, BlockId 
 	// `and` or `or` for the one branch they save, the first test's, and pay
 	// only where that branch is hard to predict: not where the estimate
 	// predicts the first test (an equality, or a value against zero), nor
-	// on a loop's exit test before its end (see exits_mid_loop).
-	if (!or_form && !sign_form && (mostly(conditions[0], !truths[0]) || exits_mid_loop(forest_, e, shared, rest)))
+	// on a loop's exit test before its end (see exits_mid_loop). A first
+	// test that mostly reaches S leaves the second seldom run: joined, its
+	// result would be computed each time for nothing. (The two forms above
+	// cost one operation in place of the first test's branch, whatever the
+	// estimate says: LLVM's selection keeps them as one branch too.)
+	if (!or_form && !sign_form &&
+		(mostly(conditions[0], truths[0]) || mostly(conditions[0], !truths[0]) ||
+			exits_mid_loop(forest_, e, shared, rest)))
 		return false;
 	// The second test's instructions, before `e`'s branch.
 	InstId at = previous_in_block(body_, e, term);
@@ -926,6 +929,17 @@ bool TestMerging::join_branches(BlockId e, unsigned side, BlockId next, BlockId 
 	}
 	if (or_form)
 	{
+		if (tested_type.is_pointer())
+		{
+			tested_type = Type::scalar(tested_type.pointer_bytes() == 4 ? TypeKind::I32 : TypeKind::I64);
+			for (unsigned k = 0; k < 2; ++k)
+			{
+				Instruction integer = make_instruction(Opcode::Copy, tested_type);
+				integer.location = branch.location;
+				integer.ops[0] = tested[k];
+				tested[k] = add(e, at, integer, tested_type);
+			}
+		}
 		Instruction joined = make_instruction(Opcode::Binary, tested_type);
 		joined.sub = static_cast<uint8_t>(BinaryOp::Or);
 		joined.location = branch.location;

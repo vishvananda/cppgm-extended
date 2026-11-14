@@ -299,10 +299,8 @@ function @invariant(%n : i64, %flag : u32) -> void [binding=strong, no_inline=ye
 }
 function @plain(%x : i64, %y : i64) -> void [binding=strong, no_inline=yes] {
   block ^entry:
-    branch %x, ^yes, ^more
-
-  block ^more:
-    branch %y, ^yes, ^no
+    %t1 = binary or i64 %x, %y
+    branch %t1, ^yes, ^no
 
   block ^yes:
     call void @note(64)
@@ -310,6 +308,21 @@ function @plain(%x : i64, %y : i64) -> void [binding=strong, no_inline=yes] {
 
   block ^no:
     call void @note(128)
+    return void
+}
+function @pointers(%p : ptr, %q : ptr) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = copy i64 %p
+    %t2 = copy i64 %q
+    %t3 = binary or i64 %t1, %t2
+    branch %t3, ^no, ^yes
+
+  block ^yes:
+    call void @note(1024)
+    return void
+
+  block ^no:
+    call void @note(2048)
     return void
 }
 function @loads(%x : i32, %p : ptr) -> void [binding=strong, no_inline=yes] {
@@ -420,6 +433,8 @@ function @main() -> i32 [role=entry] {
     call void @equal_both(7, 256)
     call void @plain(0, 0)
     call void @plain(0, 5)
+    call void @pointers(0, 0)
+    call void @pointers(0, @seen)
     call void @bits(4, 0)
     call void @bits(0, 1)
     call void @two_equalities(3, 0)
