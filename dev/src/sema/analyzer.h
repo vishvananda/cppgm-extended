@@ -683,6 +683,8 @@ private:
 	bool check_not_deleted(const FunctionEntity* function, uint32_t location);
 
 	// ----------------------------- class templates (class_templates.cpp)
+	class ScratchContext;
+	friend class ScratchContext;
 	class InstantiationContext;
 	friend class InstantiationContext;
 	class SoftSubstitution;

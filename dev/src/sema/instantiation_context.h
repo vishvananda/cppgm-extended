@@ -27,6 +27,22 @@ struct Analyzer::InstantiationScratch
 	std::vector<const syntax::BinaryExpr*> binary_spine;
 };
 
+// Isolate non-reentrant analysis scratch for a nested semantic query. The
+// pool retains each level's capacity for instantiations and lazy noexcepts.
+class Analyzer::ScratchContext
+{
+public:
+	explicit ScratchContext(Analyzer& analyzer);
+	~ScratchContext();
+	ScratchContext(const ScratchContext&) = delete;
+	ScratchContext& operator=(const ScratchContext&) = delete;
+
+private:
+	void swap_scratch();
+	Analyzer& a_;
+	InstantiationScratch* scratch_;
+};
+
 // Instantiation runs in the middle of other analysis (a class completed for
 // an expression, a declaration or an overload candidate): the contextual
 // state and the non-reentrant scratch of the analysis around it are set
@@ -48,8 +64,6 @@ public:
 	~InstantiationContext();
 
 private:
-	void swap_scratch();
-
 	Analyzer& a_;
 	uint32_t limit_;
 	uint64_t dependent_uses_;
@@ -94,7 +108,7 @@ private:
 	bool standard_only_;
 	bool explicit_specialization_;
 	bool lexical_limit_;
-	InstantiationScratch* scratch_;
+	ScratchContext scratch_;
 };
 
 // A substitution whose failure is a result (see soft_substitution_): a
