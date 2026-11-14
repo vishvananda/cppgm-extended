@@ -1,0 +1,61 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @pick
+  abi
+    param %x -> rdi : i64
+    param %n -> rsi : i64
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    bt.i64 rdi, rsi
+    mov <gpr0>, 7
+    mov rax, 3
+    cmovb rax, <gpr0>
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr1> <gpr2>
+
+  block ^entry
+    mov rdi, 5
+    mov rsi, 2
+    call @pick [args=(rsi,rdi)]
+    zext.i32 <gpr1>, rax
+    mov rdi, 5
+    mov rsi, 3
+    call @pick [args=(rsi,rdi)]
+    zext.i32 <gpr2>, rax
+    mov rdi, 5
+    mov rsi, 64
+    call @pick [args=(rsi,rdi)]
+    cmp.i32 <gpr1>, 7
+    sete <gpr1>
+    movzx <gpr1>, <gpr1>
+    cmp.i32 <gpr2>, 3
+    sete <gpr2>
+    movzx <gpr2>, <gpr2>
+    cmp.i32 rax, 7
+    sete rax
+    movzx rax, rax
+    and.u32 <gpr1>, <gpr2>
+    and.u32 <gpr1>, rax
+    mov rax, 1
+    sub.i32 rax, <gpr1>
+    ret rax

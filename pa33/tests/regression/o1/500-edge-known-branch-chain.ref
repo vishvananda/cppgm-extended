@@ -36,13 +36,8 @@ function @keep_when_chain_merges(%flag : i64, %other : i64) -> i64 {
 
   block ^merge:
     call void @observe(3)
-    branch %flag, ^left, ^right
-
-  block ^left:
-    return i64 7
-
-  block ^right:
-    return i64 3
+    %t1 = select i64 %flag, 7, 3
+    return i64 %t1
 }
 function @keep_across_landing_pad(%flag : i64) -> i64 {
   block ^entry:

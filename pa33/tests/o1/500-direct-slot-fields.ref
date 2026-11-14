@@ -39,11 +39,6 @@ function @main() -> i32 [role=entry] {
     %z = cmp eq f64 %c, 10
     %xy = binary and i64 %x, %y
     %ok = binary and i64 %z, %xy
-    branch %ok, ^passed, ^failed
-
-  block ^passed:
-    return i32 0
-
-  block ^failed:
-    return i32 1
+    %t9 = select i32 %ok, 0, 1
+    return i32 %t9
 }

@@ -462,13 +462,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^for_end_35:
     %t83 = cmp ne u32 %t5, 12288
-    branch %t83, ^if_then_36, ^if_end_37
-
-  block ^if_then_36:
-    return i32 2
-
-  block ^if_end_37:
-    return i32 0
+    %t84 = select i32 %t83, 2, 0
+    return i32 %t84
 }
 function @positive(%seed : u32) -> i64 [binding=weak, object=_Z8positiveIhLi0EEyj, no_inline=yes] {
   slot $data : obj<32x1>

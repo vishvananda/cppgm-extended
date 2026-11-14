@@ -240,11 +240,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_20:
     %t41 = call i32 @zero_trip(%t17, 3)
     %t42 = cmp ne i32 %t41, 27
-    branch %t42, ^if_then_21, ^if_end_22
+    %t43 = select i32 %t42, 8, 0
+    return i32 %t43
 
   block ^if_then_21:
     return i32 8
-
-  block ^if_end_22:
-    return i32 0
 }

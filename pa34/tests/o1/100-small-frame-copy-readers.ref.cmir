@@ -23,8 +23,7 @@ function @flag
     slot $copy -> [rbp-<off0>] : i64
 
   block ^entry
-    load.u32 rax, [rdi]
-    and rax, 4
+    test.u8 [rdi], 4
     setne rax
     movzx rax, rax
     ret rax

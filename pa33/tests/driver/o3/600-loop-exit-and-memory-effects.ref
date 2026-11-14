@@ -100,13 +100,8 @@ function @locate(%wanted : u32) -> u32 [binding=strong, object=_Z6locatej, no_in
     %t10 = index inbounds i8 %t1, 12
     %t11 = load typed u32 %t10
     %t12 = cmp eq u32 %wanted, %t11
-    branch %t12, ^if_then_7, ^for_end_8
-
-  block ^if_then_7:
-    return u32 3
-
-  block ^for_end_8:
-    return u32 4
+    %t13 = select u32 %t12, 3, 4
+    return u32 %t13
 }
 function @reverse(%wanted : u32) -> u32 [binding=strong, object=_Z7reversej, no_inline=yes] {
   slot $values : obj<16x4>
@@ -143,13 +138,8 @@ function @reverse(%wanted : u32) -> u32 [binding=strong, object=_Z7reversej, no_
   block ^for_body_6:
     %t11 = load typed u32 %t1
     %t12 = cmp eq u32 %wanted, %t11
-    branch %t12, ^if_then_7, ^for_cond_8
-
-  block ^if_then_7:
-    return u32 0
-
-  block ^for_cond_8:
-    return u32 4
+    %t13 = select u32 %t12, 0, 4
+    return u32 %t13
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $start : u32
@@ -396,64 +386,62 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_cond_28:
     %t147 = call u32 @locate(0)
     %t148 = cmp ne u32 %t147, 4
-    branch %t148, ^if_then_41, ^lor_rhs_29
+    branch %t148, ^if_then_40, ^lor_rhs_29
 
   block ^lor_rhs_29:
     %t149 = call u32 @reverse(0)
     %t150 = cmp ne u32 %t149, 4
-    branch %t150, ^if_then_41, ^if_end_30
+    branch %t150, ^if_then_40, ^if_end_30
 
   block ^if_end_30:
     %t151 = call u32 @locate(2)
-    branch %t151, ^if_then_41, ^lor_rhs_31
+    branch %t151, ^if_then_40, ^lor_rhs_31
 
   block ^lor_rhs_31:
     %t152 = call u32 @reverse(2)
-    branch %t152, ^if_then_41, ^if_end_32
+    branch %t152, ^if_then_40, ^if_end_32
 
   block ^if_end_32:
     %t153 = call u32 @locate(4)
     %t154 = cmp ne u32 %t153, 1
-    branch %t154, ^if_then_41, ^lor_rhs_33
+    branch %t154, ^if_then_40, ^lor_rhs_33
 
   block ^lor_rhs_33:
     %t155 = call u32 @reverse(4)
     %t156 = cmp ne u32 %t155, 1
-    branch %t156, ^if_then_41, ^if_end_34
+    branch %t156, ^if_then_40, ^if_end_34
 
   block ^if_end_34:
     %t157 = call u32 @locate(6)
     %t158 = cmp ne u32 %t157, 2
-    branch %t158, ^if_then_41, ^lor_rhs_35
+    branch %t158, ^if_then_40, ^lor_rhs_35
 
   block ^lor_rhs_35:
     %t159 = call u32 @reverse(6)
     %t160 = cmp ne u32 %t159, 2
-    branch %t160, ^if_then_41, ^if_end_36
+    branch %t160, ^if_then_40, ^if_end_36
 
   block ^if_end_36:
     %t161 = call u32 @locate(8)
     %t162 = cmp ne u32 %t161, 3
-    branch %t162, ^if_then_41, ^lor_rhs_37
+    branch %t162, ^if_then_40, ^lor_rhs_37
 
   block ^lor_rhs_37:
     %t163 = call u32 @reverse(8)
     %t164 = cmp ne u32 %t163, 3
-    branch %t164, ^if_then_41, ^if_end_38
+    branch %t164, ^if_then_40, ^if_end_38
 
   block ^if_end_38:
     %t165 = call u32 @locate(10)
     %t166 = cmp ne u32 %t165, 4
-    branch %t166, ^if_then_41, ^lor_rhs_39
+    branch %t166, ^if_then_40, ^lor_rhs_39
 
   block ^lor_rhs_39:
     %t167 = call u32 @reverse(10)
     %t168 = cmp ne u32 %t167, 4
-    branch %t168, ^if_then_41, ^if_end_40
+    %t169 = select i32 %t168, 3, 0
+    return i32 %t169
 
-  block ^if_end_40:
-    return i32 0
-
-  block ^if_then_41:
+  block ^if_then_40:
     return i32 3
 }

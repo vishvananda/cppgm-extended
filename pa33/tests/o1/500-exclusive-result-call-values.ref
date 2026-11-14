@@ -108,11 +108,9 @@ function @main() -> i32 [role=entry] {
     store i64 3, %out
     call void @published_result(%out)
     %late_value = load i64 %beyond
-    %ok5 = cmp eq i64 %late_value, 10
-    branch %ok5, ^done, ^bad
-
-  block ^done:
-    return i32 0
+    %t14 = cmp ne i64 %late_value, 10
+    %t15 = convert trunc i32 i64 %t14
+    return i32 %t15
 
   block ^bad:
     return i32 1

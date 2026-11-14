@@ -40,13 +40,8 @@ global @__switch_results_5 : obj<8x1> [storage=readonly, binding=internal] = {
 function @uniform(%x : i32) -> i32 [no_inline=yes] {
   block ^entry:
     %t1 = cmp ult i32 %x, 8
-    branch %t1, ^accept, ^otherwise
-
-  block ^accept:
-    return i32 1
-
-  block ^otherwise:
-    return i32 0
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
 }
 function @small(%x : i8) -> u8 [no_inline=yes] {
   block ^entry:

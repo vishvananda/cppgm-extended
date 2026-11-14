@@ -1,10 +1,5 @@
 function @select(%condition : u8) -> i64 {
   block ^entry:
-    branch %condition, ^hit, ^fallback
-
-  block ^hit:
-    return i64 19
-
-  block ^fallback:
-    return i64 23
+    %t1 = select i64 %condition, 19, 23
+    return i64 %t1
 }

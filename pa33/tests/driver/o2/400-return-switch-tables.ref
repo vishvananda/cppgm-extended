@@ -586,11 +586,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_66:
     %t102 = load typed i32 @effects
     %t103 = cmp ne i32 %t102, 5
-    branch %t103, ^if_then_67, ^if_end_68
+    %t104 = select i32 %t103, 13, 0
+    return i32 %t104
 
   block ^if_then_67:
     return i32 13
-
-  block ^if_end_68:
-    return i32 0
 }

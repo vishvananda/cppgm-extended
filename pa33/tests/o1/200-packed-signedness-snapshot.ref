@@ -22,11 +22,9 @@ function @main() -> i32 [role=entry] {
 
   block ^word:
     %bits = call u32 @word(-1)
-    %same = cmp eq u32 %bits, 4294967295
-    branch %same, ^passed, ^failed
-
-  block ^passed:
-    return i32 0
+    %t5 = cmp ne u32 %bits, 4294967295
+    %t6 = convert trunc i32 i64 %t5
+    return i32 %t6
 
   block ^failed:
     return i32 1

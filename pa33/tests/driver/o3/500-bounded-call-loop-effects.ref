@@ -458,13 +458,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed u32 0, %t175
     %t176 = call u32 @exercise__16(%t4, %t173)
     %t177 = cmp ne u32 %t176, 3
-    branch %t177, ^if_then_68, ^lor_rhs_67
-
-  block ^lor_rhs_67:
-    return i32 0
-
-  block ^if_then_68:
-    return i32 1
+    %t178 = convert trunc i32 i64 %t177
+    return i32 %t178
 }
 function @exercise(%operation : ptr, %state : ptr) -> u32 [binding=weak, object=_Z8exerciseILin4ELin4ELb0EEjPFjjP5StateES1_, no_inline=yes] {
   block ^entry:

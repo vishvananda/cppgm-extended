@@ -569,10 +569,8 @@ function @main() -> i32 [role=entry] {
     %v27 = call i32 @guard_late(1, 0)
     %ok27 = cmp eq i32 %v27, 37
     %all27 = binary and i1 %all26, %ok27
-    branch %all27, ^pass, ^fail
-
-  block ^pass:
-    return i32 0
+    %t118 = select i32 %all27, 0, 1
+    return i32 %t118
 
   block ^fail:
     return i32 1

@@ -7,11 +7,6 @@ function @fold_false_edge(%condition : i64) -> i64 {
 }
 function @retain_removed_phi_edge(%condition : i64) -> i64 {
   block ^entry:
-    branch %condition, ^phi_target, ^selected
-
-  block ^phi_target:
-    return i64 11
-
-  block ^selected:
-    return i64 3
+    %t1 = select i64 %condition, 11, 3
+    return i64 %t1
 }

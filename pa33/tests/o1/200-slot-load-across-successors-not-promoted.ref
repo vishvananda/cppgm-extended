@@ -1,10 +1,5 @@
 function @choose(%condition : i64) -> i64 {
   block ^entry:
-    branch %condition, ^inverted, ^plain
-
-  block ^inverted:
-    return i64 -4294967296
-
-  block ^plain:
-    return i64 4294967295
+    %t1 = select i64 %condition, -4294967296, 4294967295
+    return i64 %t1
 }

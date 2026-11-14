@@ -4,74 +4,65 @@ function @capped(%n : i32, %p : ptr) -> i32 [no_inline=yes] {
   block ^entry:
     %big = cmp gt i32 %n, 60
     %t2 = select i32 %big, 60, %n
-    %t3 = cmp gt i32 %n, 60
-    %t4 = select i32 %t3, 0, 0
-    %t5 = load typed i32 @state
-    %t6 = cmp lt i32 %t4, %t2
-    branch %t6, ^loop_preheader_1, ^wide_tail_4
+    %t3 = load typed i32 @state
+    %t4 = binary and i32 %t2, -4
+    %t5 = cmp gt i32 %t4, 0
+    branch %t5, ^loop_preheader_1, ^wide_tail_3
 
   block ^loop_preheader_1:
-    %t7 = binary sub i32 %t2, %t4
-    %t8 = binary and i32 %t7, -4
-    %t9 = cmp gt i32 %t8, 0
-    branch %t9, ^loop_preheader_2, ^wide_tail_4
+    %t6 = convert sext i64 i32 %t3
+    jump ^unrolled_2
 
-  block ^loop_preheader_2:
-    %t10 = binary add i32 %t4, %t8
-    %t11 = convert sext i64 i32 %t5
-    %t12 = convert sext i64 i32 %t4
-    jump ^unrolled_3
-
-  block ^unrolled_3:
-    %t13 = phi i64 [^loop_preheader_2: %t11, ^unrolled_3: %t25]
-    %t14 = phi i64 [^loop_preheader_2: %t12, ^unrolled_3: %t28]
-    %t15 = convert trunc exact i32 i64 %t13
-    %t16 = binary add nowrap i32 %t15, 3
+  block ^unrolled_2:
+    %t7 = phi i64 [^loop_preheader_1: %t6, ^unrolled_2: %t19]
+    %t8 = phi i64 [^loop_preheader_1: 0, ^unrolled_2: %t22]
+    %t9 = convert trunc exact i32 i64 %t7
+    %t10 = binary add nowrap i32 %t9, 3
+    store typed i32 %t10, @state
+    %t11 = binary add i64 %t7, 3
+    %t12 = index i64 %p, %t8
+    store typed i64 %t11, %t12
+    %t13 = binary add nowrap i32 %t9, 6
+    store typed i32 %t13, @state
+    %t14 = binary add i64 %t7, 6
+    %t15 = index i64 %t12, 1
+    store typed i64 %t14, %t15
+    %t16 = binary add nowrap i32 %t9, 9
     store typed i32 %t16, @state
-    %t17 = binary add i64 %t13, 3
-    %t18 = index i64 %p, %t14
+    %t17 = binary add i64 %t7, 9
+    %t18 = index i64 %t12, 2
     store typed i64 %t17, %t18
-    %t19 = binary add nowrap i32 %t15, 6
-    store typed i32 %t19, @state
-    %t20 = binary add i64 %t13, 6
-    %t21 = index i64 %t18, 1
-    store typed i64 %t20, %t21
-    %t22 = binary add nowrap i32 %t15, 9
-    store typed i32 %t22, @state
-    %t23 = binary add i64 %t13, 9
-    %t24 = index i64 %t18, 2
-    store typed i64 %t23, %t24
-    %t25 = binary add nowrap i64 %t13, 12
-    %t26 = convert trunc exact i32 i64 %t25
-    store typed i32 %t26, @state
-    %t27 = index i64 %t18, 3
-    store typed i64 %t25, %t27
-    %t28 = binary add nowrap i64 %t14, 4
-    %t29 = convert trunc exact i32 i64 %t28
-    %t30 = cmp ne i32 %t10, %t29
-    branch %t30, ^unrolled_3, ^wide_tail_4
+    %t19 = binary add nowrap i64 %t7, 12
+    %t20 = convert trunc exact i32 i64 %t19
+    store typed i32 %t20, @state
+    %t21 = index i64 %t12, 3
+    store typed i64 %t19, %t21
+    %t22 = binary add nowrap i64 %t8, 4
+    %t23 = convert trunc exact i32 i64 %t22
+    %t24 = cmp ne i32 %t4, %t23
+    branch %t24, ^unrolled_2, ^wide_tail_3
 
-  block ^wide_tail_4:
-    %t31 = phi i32 [^entry: %t5, ^unrolled_3: %t26, ^loop_preheader_1: %t5]
-    %t32 = phi i32 [^entry: %t4, ^unrolled_3: %t29, ^loop_preheader_1: %t4]
-    %t33 = convert sext i64 i32 %t31
-    %t34 = convert sext i64 i32 %t32
+  block ^wide_tail_3:
+    %t25 = phi i32 [^entry: %t3, ^unrolled_2: %t20]
+    %t26 = phi i32 [^entry: 0, ^unrolled_2: %t23]
+    %t27 = convert sext i64 i32 %t25
+    %t28 = convert sext i64 i32 %t26
     jump ^loop
 
   block ^loop:
-    %t35 = phi i64 [^wide_tail_4: %t33, ^body: %t39]
-    %t36 = phi i64 [^wide_tail_4: %t34, ^body: %t42]
-    %i = convert trunc exact i32 i64 %t36
+    %t29 = phi i64 [^wide_tail_3: %t27, ^body: %t33]
+    %t30 = phi i64 [^wide_tail_3: %t28, ^body: %t36]
+    %i = convert trunc exact i32 i64 %t30
     %more = cmp lt i32 %i, %t2
     branch %more, ^body, ^done
 
   block ^body:
-    %t39 = binary add nowrap i64 %t35, 3
-    %new = convert trunc exact i32 i64 %t39
+    %t33 = binary add nowrap i64 %t29, 3
+    %new = convert trunc exact i32 i64 %t33
     store typed i32 %new, @state
-    %at = index i64 %p, %t36
-    store typed i64 %t39, %at
-    %t42 = binary add nowrap i64 %t36, 1
+    %at = index i64 %p, %t30
+    store typed i64 %t33, %at
+    %t36 = binary add nowrap i64 %t30, 1
     jump ^loop
 
   block ^done:

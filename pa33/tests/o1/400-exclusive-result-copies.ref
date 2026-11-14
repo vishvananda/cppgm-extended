@@ -58,11 +58,9 @@ function @main() -> i32 [role=entry] {
     call void @ordinary(%p1, %input)
     %last_alias = index i8 %input, 32
     %alias_value = load i64 %last_alias
-    %alias_ok = cmp eq i64 %alias_value, 1
-    branch %alias_ok, ^done, ^bad
-
-  block ^done:
-    return i32 0
+    %t11 = cmp ne i64 %alias_value, 1
+    %t12 = convert trunc i32 i64 %t11
+    return i32 %t12
 
   block ^bad:
     return i32 1

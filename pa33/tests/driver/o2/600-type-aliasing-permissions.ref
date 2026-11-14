@@ -35,11 +35,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store f32 %t5, %t1
     %t6 = call f32 @change_class(%t1, %t1)
     %t7 = cmp ne f32 %t6, 5f
-    branch %t7, ^if_then_3, ^if_else_4
-
-  block ^if_then_3:
-    return i32 2
-
-  block ^if_else_4:
-    return i32 0
+    %t8 = select i32 %t7, 2, 0
+    return i32 %t8
 }

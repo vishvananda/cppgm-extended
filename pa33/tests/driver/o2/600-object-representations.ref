@@ -259,13 +259,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t93 = index i64 [projection=array_element] %t76, 3
     %t94 = load typed i64 %t93
     %t95 = cmp ne i64 %t94, 4
-    branch %t95, ^if_then_29, ^if_end_30
+    %t96 = select i32 %t95, 8, 0
+    return i32 %t96
 
   block ^if_then_29:
     return i32 8
-
-  block ^if_end_30:
-    return i32 0
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:

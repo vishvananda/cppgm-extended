@@ -6,5 +6,3 @@ debug_loc not-requested
 compile_unit tests/debuginfo/object-o1/100-cppgm-line-tables-o1.t
 subprogram _Z1fi line 1
 line 3
-line 4
-line 5

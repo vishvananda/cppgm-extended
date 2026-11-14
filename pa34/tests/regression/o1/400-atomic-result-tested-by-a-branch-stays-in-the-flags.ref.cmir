@@ -1,0 +1,203 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @acquire
+  abi
+    param %lock -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $expected -> [rbp-<off0>] : u8
+
+  block ^entry
+    mov rcx, 1
+    mov rax, 0
+    lock_cmpxchg.u8 [rdi], rcx
+    je ^taken
+
+  block ^busy
+    mov rax, 0
+    ret rax
+
+  block ^taken
+    mov rax, 1
+    ret rax
+
+function @retry
+  abi
+    param %cell -> rdi : ptr
+    param %add -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $old -> [rbp-<off0>] : i64
+
+  block ^entry
+    load.i64 rax, [rdi]
+    store.i64 [rbp-<off0>], rax
+
+  block ^attempt
+    mov rcx, rsi
+    add rcx, [rbp-<off0>]
+    lock_cmpxchg.i64 [rdi], rcx
+    store.i64 [rbp-<off0>], rax
+    jne ^attempt
+
+  block ^done
+    ret rax
+
+function @release
+  abi
+    param %count -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lock_add.i32 [rdi], -1
+    je ^drop
+
+  block ^keep
+    mov rax, 0
+    ret rax
+
+  block ^drop
+    mov rax, 1
+    ret rax
+
+function @count
+  abi
+    param %count -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lock_add.i32 [rdi], 3
+    ret
+
+function @both
+  abi
+    param %count -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, 4
+    lock_xadd.i32 [rdi], rax
+    add.u32 rax, 4
+    cmp.i32 rax, 0
+    je ^none
+    ret rax
+
+  block ^some
+    ret rax
+
+  block ^none
+    mov rax, 0xffffffffffffffff00000000ffffffff
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $lock -> [rbp-<off1>] : u8
+    slot $cell -> [rbp-<off2>] : i64
+    slot $count -> [rbp-<off0>] : i32
+    temp %d -> [rbp-<off3>] : i32
+    temp %e -> [rbp-<off4>] : i32
+    temp %f -> [rbp-<off5>] : i32
+
+  block ^entry
+    store.u8 [rbp-<off1>], 0
+    store.i64 [rbp-<off2>], 5
+    store.i32 [rbp-<off0>], 2
+    lea rdi, [rbp-<off1>]
+    call @acquire [args=(rdi)]
+    zext.i32 <gpr0>, rax
+    lea rdi, [rbp-<off1>]
+    call @acquire [args=(rdi)]
+    zext.i32 <gpr3>, rax
+    load.u8 <gpr4>, [rbp-<off1>]
+    lea rdi, [rbp-<off2>]
+    mov rsi, 7
+    call @retry [args=(rsi,rdi)]
+    mov <gpr2>, rax
+    load.i64 <gpr1>, [rbp-<off2>]
+    lea rdi, [rbp-<off0>]
+    call @release [args=(rdi)]
+    zext.i32 <gpr5>, rax
+    store.i32 [rbp-<off3>], <gpr5>
+    lea rdi, [rbp-<off0>]
+    call @release [args=(rdi)]
+    zext.i32 <gpr5>, rax
+    store.i32 [rbp-<off4>], <gpr5>
+    lea rdi, [rbp-<off0>]
+    call @count [args=(rdi)]
+    load.u32 <gpr5>, [rbp-<off0>]
+    store.i32 [rbp-<off5>], <gpr5>
+    lea rdi, [rbp-<off0>]
+    call @both [args=(rdi)]
+    cmp.i32 <gpr0>, 1
+    sete <gpr0>
+    movzx <gpr0>, <gpr0>
+    cmp.i32 <gpr3>, 0
+    sete <gpr3>
+    movzx <gpr3>, <gpr3>
+    cmp.u8 <gpr4>, 1
+    sete <gpr4>
+    movzx <gpr4>, <gpr4>
+    cmp.i64 <gpr2>, 5
+    sete <gpr2>
+    movzx <gpr2>, <gpr2>
+    cmp.i64 <gpr1>, 12
+    sete <gpr1>
+    movzx <gpr1>, <gpr1>
+    cmp.i32 [rbp-<off3>], 0
+    sete rcx
+    movzx rcx, rcx
+    cmp.i32 [rbp-<off4>], 1
+    sete rdx
+    movzx rdx, rdx
+    cmp.i32 [rbp-<off5>], 3
+    sete rsi
+    movzx rsi, rsi
+    cmp.i32 rax, 7
+    sete rax
+    movzx rax, rax
+    and.u32 <gpr0>, <gpr3>
+    and.u32 <gpr0>, <gpr4>
+    and.u32 <gpr0>, <gpr2>
+    and.u32 <gpr0>, <gpr1>
+    and.u32 <gpr0>, rcx
+    and.u32 <gpr0>, rdx
+    and.u32 <gpr0>, rsi
+    and.u32 <gpr0>, rax
+    mov rax, 1
+    sub.i32 rax, <gpr0>
+    ret rax

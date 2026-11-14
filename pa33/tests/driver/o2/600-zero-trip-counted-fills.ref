@@ -271,25 +271,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t33 = index i8 [projection=field] %t30, 8
     %t34 = load i64 %t33
     %t35 = cmp ne i64 %t34, 1
-    branch %t35, ^if_then_15, ^lor_rhs_11
+    branch %t35, ^if_then_13, ^lor_rhs_11
 
   block ^lor_rhs_11:
-    branch %t32, ^if_then_15, ^if_end_12
+    branch %t32, ^if_then_13, ^if_end_12
 
   block ^if_end_12:
     %t36 = index inbounds i128 [projection=array_element] %t30, 1
     %t37 = load i64 %t36
     %t38 = index i8 [projection=field] %t30, 24
     %t39 = load i64 %t38
-    %t40 = cmp ne i64 %t39, 1
-    branch %t40, ^if_then_15, ^lor_rhs_13
+    %t40 = select i32 %t37, 3, 0
+    %t41 = cmp ne i64 %t39, 1
+    %t42 = select i32 %t41, 3, %t40
+    return i32 %t42
 
-  block ^lor_rhs_13:
-    branch %t37, ^if_then_15, ^if_end_14
-
-  block ^if_end_14:
-    return i32 0
-
-  block ^if_then_15:
+  block ^if_then_13:
     return i32 3
 }

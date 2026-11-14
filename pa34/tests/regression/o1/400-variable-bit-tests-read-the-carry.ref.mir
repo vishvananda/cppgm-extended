@@ -1,0 +1,155 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @bits
+  storage data
+  item zero 16
+
+function @word
+  abi
+    param %w -> rdi : ptr
+    param %i -> rsi : u32
+    return u8 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rsi
+    shr rax, 6
+    load.i64 rdi, [rdi+rax*8]
+    bt.i64 rdi, rsi
+    setb rax
+    ret rax
+
+function @clear
+  abi
+    param %x -> rdi : i64
+    param %n -> rsi : i64
+    return u8 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    bt.i64 rdi, rsi
+    setae rax
+    ret rax
+
+function @moved
+  abi
+    param %x -> rdi : i64
+    param %n -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zext.i32 rcx, rsi
+    mov rax, rdi
+    shl rax, rcx
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    temp %f -> [rbp-8] : u8
+    temp %g -> [rbp-16] : u8
+    temp %k -> [rbp-24] : i64
+
+  block ^entry
+    store.i64 @bits, 5
+    store.i64 @bits+8, 4611686018427387904
+    mov rdi, @bits
+    mov rsi, 0
+    call @word [args=(rsi,rdi)]
+    zext.i32 rbx, rax
+    mov rdi, @bits
+    mov rsi, 1
+    call @word [args=(rsi,rdi)]
+    zext.i32 r14, rax
+    mov rdi, @bits
+    mov rsi, 2
+    call @word [args=(rsi,rdi)]
+    zext.i32 r15, rax
+    mov rdi, @bits
+    mov rsi, 126
+    call @word [args=(rsi,rdi)]
+    zext.i32 r13, rax
+    mov rdi, @bits
+    mov rsi, 127
+    call @word [args=(rsi,rdi)]
+    zext.i32 r12, rax
+    mov rdi, 5
+    mov rsi, 1
+    call @clear [args=(rsi,rdi)]
+    zext.i32 r10, rax
+    store.u8 [rbp-8], r10
+    mov rdi, 5
+    mov rsi, 2
+    call @clear [args=(rsi,rdi)]
+    zext.i32 r10, rax
+    store.u8 [rbp-16], r10
+    mov rdi, 5
+    mov rsi, 3
+    call @moved [args=(rsi,rdi)]
+    mov r10, rax
+    store.i64 [rbp-24], r10
+    mov rdi, 5
+    mov rsi, 67
+    call @moved [args=(rsi,rdi)]
+    cmp.u8 rbx, 1
+    sete rbx
+    movzx rbx, rbx
+    cmp.u8 r14, 0
+    sete r14
+    movzx r14, r14
+    cmp.u8 r15, 1
+    sete r15
+    movzx r15, r15
+    cmp.u8 r13, 1
+    sete r13
+    movzx r13, r13
+    cmp.u8 r12, 0
+    sete r12
+    movzx r12, r12
+    cmp.u8 [rbp-8], 1
+    sete rcx
+    movzx rcx, rcx
+    cmp.u8 [rbp-16], 0
+    sete rdx
+    movzx rdx, rdx
+    cmp.i64 [rbp-24], 40
+    sete rsi
+    movzx rsi, rsi
+    cmp.i64 rax, 40
+    sete rax
+    movzx rax, rax
+    and.u32 rbx, r14
+    and.u32 rbx, r15
+    and.u32 rbx, r13
+    and.u32 rbx, r12
+    and.u32 rbx, rcx
+    and.u32 rbx, rdx
+    and.u32 rbx, rsi
+    and.u32 rbx, rax
+    mov rax, 1
+    sub.i32 rax, rbx
+    ret rax

@@ -1,0 +1,36 @@
+global @seen : i64 = 0
+
+function @note(%v : i64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %old = load i64 @seen
+    %new = binary add i64 %v, %old
+    store i64 %new, @seen
+    return void
+}
+function @either(%x : i32, %y : i32) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %a = cmp gt i32 %x, 3
+    %next = binary add i32 %y, 1
+    %b = cmp lt i32 %next, 4
+    %t4 = binary or i64 %a, %b
+    branch %t4, ^yes, ^no
+
+  block ^yes:
+    call void @note(1)
+    return void
+
+  block ^no:
+    call void @note(2)
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    call void @either(9, 2147483647)
+    call void @either(0, 2)
+    call void @either(0, 3)
+    %seen = load i64 @seen
+    %ok = cmp eq i64 %seen, 4
+    %r = convert trunc i32 i64 %ok
+    %code = binary sub i32 1, %r
+    return i32 %code
+}

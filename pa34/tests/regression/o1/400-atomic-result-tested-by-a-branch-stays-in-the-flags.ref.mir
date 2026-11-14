@@ -1,0 +1,203 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @acquire
+  abi
+    param %lock -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $expected -> [rbp-8] : u8
+
+  block ^entry
+    mov rcx, 1
+    mov rax, 0
+    lock_cmpxchg.u8 [rdi], rcx
+    je ^taken
+
+  block ^busy
+    mov rax, 0
+    ret rax
+
+  block ^taken
+    mov rax, 1
+    ret rax
+
+function @retry
+  abi
+    param %cell -> rdi : ptr
+    param %add -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $old -> [rbp-8] : i64
+
+  block ^entry
+    load.i64 rax, [rdi]
+    store.i64 [rbp-8], rax
+
+  block ^attempt
+    mov rcx, rsi
+    add rcx, [rbp-8]
+    lock_cmpxchg.i64 [rdi], rcx
+    store.i64 [rbp-8], rax
+    jne ^attempt
+
+  block ^done
+    ret rax
+
+function @release
+  abi
+    param %count -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lock_add.i32 [rdi], -1
+    je ^drop
+
+  block ^keep
+    mov rax, 0
+    ret rax
+
+  block ^drop
+    mov rax, 1
+    ret rax
+
+function @count
+  abi
+    param %count -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lock_add.i32 [rdi], 3
+    ret
+
+function @both
+  abi
+    param %count -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, 4
+    lock_xadd.i32 [rdi], rax
+    add.u32 rax, 4
+    cmp.i32 rax, 0
+    je ^none
+    ret rax
+
+  block ^some
+    ret rax
+
+  block ^none
+    mov rax, 0xffffffffffffffff00000000ffffffff
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 96
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    slot $lock -> [rbp-16] : u8
+    slot $cell -> [rbp-24] : i64
+    slot $count -> [rbp-8] : i32
+    temp %d -> [rbp-32] : i32
+    temp %e -> [rbp-40] : i32
+    temp %f -> [rbp-48] : i32
+
+  block ^entry
+    store.u8 [rbp-16], 0
+    store.i64 [rbp-24], 5
+    store.i32 [rbp-8], 2
+    lea rdi, [rbp-16]
+    call @acquire [args=(rdi)]
+    zext.i32 rbx, rax
+    lea rdi, [rbp-16]
+    call @acquire [args=(rdi)]
+    zext.i32 r14, rax
+    load.u8 r15, [rbp-16]
+    lea rdi, [rbp-24]
+    mov rsi, 7
+    call @retry [args=(rsi,rdi)]
+    mov r13, rax
+    load.i64 r12, [rbp-24]
+    lea rdi, [rbp-8]
+    call @release [args=(rdi)]
+    zext.i32 r10, rax
+    store.i32 [rbp-32], r10
+    lea rdi, [rbp-8]
+    call @release [args=(rdi)]
+    zext.i32 r10, rax
+    store.i32 [rbp-40], r10
+    lea rdi, [rbp-8]
+    call @count [args=(rdi)]
+    load.u32 r10, [rbp-8]
+    store.i32 [rbp-48], r10
+    lea rdi, [rbp-8]
+    call @both [args=(rdi)]
+    cmp.i32 rbx, 1
+    sete rbx
+    movzx rbx, rbx
+    cmp.i32 r14, 0
+    sete r14
+    movzx r14, r14
+    cmp.u8 r15, 1
+    sete r15
+    movzx r15, r15
+    cmp.i64 r13, 5
+    sete r13
+    movzx r13, r13
+    cmp.i64 r12, 12
+    sete r12
+    movzx r12, r12
+    cmp.i32 [rbp-32], 0
+    sete rcx
+    movzx rcx, rcx
+    cmp.i32 [rbp-40], 1
+    sete rdx
+    movzx rdx, rdx
+    cmp.i32 [rbp-48], 3
+    sete rsi
+    movzx rsi, rsi
+    cmp.i32 rax, 7
+    sete rax
+    movzx rax, rax
+    and.u32 rbx, r14
+    and.u32 rbx, r15
+    and.u32 rbx, r13
+    and.u32 rbx, r12
+    and.u32 rbx, rcx
+    and.u32 rbx, rdx
+    and.u32 rbx, rsi
+    and.u32 rbx, rax
+    mov rax, 1
+    sub.i32 rax, rbx
+    ret rax

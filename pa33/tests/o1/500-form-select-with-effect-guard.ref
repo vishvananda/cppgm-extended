@@ -34,11 +34,6 @@ function @main() -> i32 [role=entry] {
     %ab = binary and i1 %a, %b
     %cd = binary and i1 %c, %d
     %all = binary and i1 %ab, %cd
-    branch %all, ^pass, ^fail
-
-  block ^pass:
-    return i32 0
-
-  block ^fail:
-    return i32 1
+    %t13 = select i32 %all, 0, 1
+    return i32 %t13
 }

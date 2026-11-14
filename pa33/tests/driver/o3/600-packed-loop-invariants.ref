@@ -367,11 +367,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_42:
     %t87 = load typed f64 %t64
     %t88 = cmp eq f64 %t87, %t87
-    branch %t88, ^if_then_43, ^if_end_44
+    %t89 = select i32 %t88, 10, 0
+    return i32 %t89
 
   block ^if_then_43:
     return i32 10
-
-  block ^if_end_44:
-    return i32 0
 }

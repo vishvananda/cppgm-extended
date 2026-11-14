@@ -14,13 +14,8 @@ function @signed_bit(%x : i64) -> i64 [no_inline=yes] {
 function @branch_bits(%x : u32) -> i64 [no_inline=yes] {
   block ^entry:
     %t1 = binary and u32 %x, 384
-    branch %t1, ^yes, ^no
-
-  block ^yes:
-    return i64 11
-
-  block ^no:
-    return i64 29
+    %t2 = select i64 %t1, 11, 29
+    return i64 %t2
 }
 function @sign_fill(%x : i32) -> i64 [no_inline=yes] {
   block ^entry:

@@ -39,11 +39,7 @@ function @main() -> i32 [role=entry] {
     %a4 = binary add i32 %t, %a3
     %a5 = binary sub i32 %a4, %u
     %c = cmp eq i32 %a5, 328
-    branch %c, ^ok, ^bad
-
-  block ^ok:
-    return i32 0
-
-  block ^bad:
-    return i32 1
+    %t15 = cmp eq i64 %c, 0
+    %t16 = convert trunc i32 i64 %t15
+    return i32 %t16
 }

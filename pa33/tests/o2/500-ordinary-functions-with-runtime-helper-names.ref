@@ -212,11 +212,9 @@ function @main() -> i32 [role=entry] {
     %counter = addr @calls
     %total = load i64 %counter
     %bad_count = cmp ne i64 %total, 4
-    branch %bad_count, ^fail, ^done
+    %t19 = convert trunc i32 i64 %bad_count
+    return i32 %t19
 
   block ^fail:
     return i32 1
-
-  block ^done:
-    return i32 0
 }

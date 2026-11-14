@@ -224,7 +224,7 @@ function @main
     and <gpr2>, [rbp-<off5>]
     and <gpr2>, [rbp-<off6>]
     and <gpr2>, [rbp-<off7>]
-    and <gpr2>, rax
+    test.i64 <gpr2>, rax
     sete rax
     movzx rax, rax
     ret rax

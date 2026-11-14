@@ -1,13 +1,8 @@
 function @leaf(%cond : i1, %p : ptr) -> i64 {
   block ^entry:
-    branch %cond, ^then, ^else
-
-  block ^then:
     %t1 = copy i64 %p
-    return i64 %t1
-
-  block ^else:
-    return i64 0
+    %t2 = select i64 %cond, %t1, 0
+    return i64 %t2
 }
 function @caller(%cond : i1, %p : ptr, %out : ptr) -> void {
   block ^entry:

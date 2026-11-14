@@ -1,0 +1,155 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @less
+  abi
+    param %a -> rdi : i32
+    param %b -> rsi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i32 rdi, rsi
+    setl rax
+    movzx rax, rax
+    ret rax
+
+function @not_less
+  abi
+    param %a -> rdi : i32
+    param %b -> rsi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i32 rdi, rsi
+    setge rax
+    movzx rax, rax
+    ret rax
+
+function @nonzero
+  abi
+    param %a -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.i64 rdi, rdi
+    setne rax
+    movzx rax, rax
+    ret rax
+
+function @field
+  abi
+    param %p -> rdi : ptr
+    param %v -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 [rdi], 0
+    mov rax, 9
+    cmovne rax, rsi
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $cell -> [rbp-<off0>] : i64
+    temp %f -> [rbp-<off1>] : i64
+    temp %g -> [rbp-<off2>] : i64
+
+  block ^entry
+    store.i64 [rbp-<off0>], 0
+    mov rdi, 1
+    mov rsi, 2
+    call @less [args=(rsi,rdi)]
+    zext.i32 <gpr0>, rax
+    mov rdi, 2
+    mov rsi, 2
+    call @less [args=(rsi,rdi)]
+    zext.i32 <gpr3>, rax
+    mov rdi, 1
+    mov rsi, 2
+    call @not_less [args=(rsi,rdi)]
+    zext.i32 <gpr4>, rax
+    mov rdi, 3
+    mov rsi, 2
+    call @not_less [args=(rsi,rdi)]
+    zext.i32 <gpr2>, rax
+    mov rdi, 0
+    call @nonzero [args=(rdi)]
+    mov <gpr1>, rax
+    mov rdi, -4
+    call @nonzero [args=(rdi)]
+    mov <gpr5>, rax
+    store.i64 [rbp-<off1>], <gpr5>
+    lea rdi, [rbp-<off0>]
+    mov rsi, 5
+    call @field [args=(rsi,rdi)]
+    mov <gpr5>, rax
+    store.i64 [rbp-<off2>], <gpr5>
+    store.i64 [rbp-<off0>], 3
+    lea rdi, [rbp-<off0>]
+    mov rsi, 5
+    call @field [args=(rsi,rdi)]
+    cmp.i32 <gpr0>, 1
+    sete <gpr0>
+    movzx <gpr0>, <gpr0>
+    cmp.i32 <gpr3>, 0
+    sete <gpr3>
+    movzx <gpr3>, <gpr3>
+    cmp.i32 <gpr4>, 0
+    sete <gpr4>
+    movzx <gpr4>, <gpr4>
+    cmp.i32 <gpr2>, 1
+    sete <gpr2>
+    movzx <gpr2>, <gpr2>
+    cmp.i64 <gpr1>, 0
+    sete <gpr1>
+    movzx <gpr1>, <gpr1>
+    cmp.i64 [rbp-<off1>], 1
+    sete rcx
+    movzx rcx, rcx
+    cmp.i64 [rbp-<off2>], 9
+    sete rdx
+    movzx rdx, rdx
+    cmp.i64 rax, 5
+    sete rax
+    movzx rax, rax
+    and.u32 <gpr0>, <gpr3>
+    and.u32 <gpr0>, <gpr4>
+    and.u32 <gpr0>, <gpr2>
+    and.u32 <gpr0>, <gpr1>
+    and.u32 <gpr0>, rcx
+    and.u32 <gpr0>, rdx
+    and.u32 <gpr0>, rax
+    mov rax, 1
+    sub.i32 rax, <gpr0>
+    ret rax

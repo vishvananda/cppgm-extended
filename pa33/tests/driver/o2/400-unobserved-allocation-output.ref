@@ -107,13 +107,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_13:
     %t20 = call i32 @allocation_errno(9223372036854775807)
     %t21 = cmp ne i32 %t20, 1
-    branch %t21, ^if_then_14, ^if_end_15
+    %t22 = select i32 %t21, 5, 0
+    return i32 %t22
 
   block ^if_then_14:
     return i32 5
-
-  block ^if_end_15:
-    return i32 0
 }
 function @__private_output0(%n : i64) -> i64 [binding=internal, no_inline=yes] {
   block ^entry:

@@ -28,11 +28,6 @@ function @main() -> i32 [role=entry] {
     %observed = call i64 @volatile_field(-17)
     %same = cmp eq i64 %observed, -17
     %all = binary and i1 %ok, %same
-    branch %all, ^pass, ^fail
-
-  block ^pass:
-    return i32 0
-
-  block ^fail:
-    return i32 1
+    %t6 = select i32 %all, 0, 1
+    return i32 %t6
 }

@@ -224,7 +224,7 @@ function @main
     and rbx, [rbp-40]
     and rbx, [rbp-48]
     and rbx, [rbp-56]
-    and rbx, rax
+    test.i64 rbx, rax
     sete rax
     movzx rax, rax
     ret rax

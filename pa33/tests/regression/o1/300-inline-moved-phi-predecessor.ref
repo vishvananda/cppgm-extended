@@ -1,12 +1,7 @@
 function @choose(%condition : i64) -> i64 {
   block ^entry:
-    branch %condition, ^left, ^right
-
-  block ^left:
-    return i64 11
-
-  block ^right:
-    return i64 22
+    %t1 = select i64 %condition, 11, 22
+    return i64 %t1
 }
 function @caller(%use_call : i64, %condition : i64) -> i64 [binding=strong] {
   block ^entry:

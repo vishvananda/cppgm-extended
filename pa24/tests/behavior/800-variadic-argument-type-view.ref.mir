@@ -54,7 +54,6 @@ function @main
     mov rax, 0
     call @sum [args=(rax,rdx,rsi,rdi), variadic]
     cmp.i64 rax, 10
-    mov r11, 0
-    mov r8, 1
-    cmove r8, r11
+    setne r8
+    movzx r8, r8
     ret r8

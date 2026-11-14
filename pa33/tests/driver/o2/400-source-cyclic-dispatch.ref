@@ -671,11 +671,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_56:
     %t111 = load typed u32 @depth_sum
     %t112 = cmp ne u32 %t111, 1
-    branch %t112, ^if_then_57, ^if_end_58
+    %t113 = select i32 %t112, 13, 0
+    return i32 %t113
 
   block ^if_then_57:
     return i32 13
-
-  block ^if_end_58:
-    return i32 0
 }

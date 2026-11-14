@@ -84,11 +84,9 @@ function @main() -> i32 [role=entry] {
   block ^observed:
     call void @observed(%out, %input)
     %observed_value = load i64 %out
-    %ok5 = cmp eq i64 %observed_value, 6
-    branch %ok5, ^done, ^bad
-
-  block ^done:
-    return i32 0
+    %t14 = cmp ne i64 %observed_value, 6
+    %t15 = convert trunc i32 i64 %t14
+    return i32 %t15
 
   block ^bad:
     return i32 1

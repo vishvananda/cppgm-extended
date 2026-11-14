@@ -84,11 +84,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_else_4:
     %t8 = call i32 @scan(%t5, 2)
     %t9 = cmp ne i32 %t8, 10
-    branch %t9, ^if_then_5, ^if_end_6
-
-  block ^if_then_5:
-    return i32 3
-
-  block ^if_end_6:
-    return i32 0
+    %t10 = select i32 %t9, 3, 0
+    return i32 %t10
 }

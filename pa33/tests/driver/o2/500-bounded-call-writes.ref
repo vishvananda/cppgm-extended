@@ -503,20 +503,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t86 = load i64 %t85
     %t87 = index i8 [projection=field] %t85, 24
     %t88 = load i64 %t87
-    branch %t82, ^if_then_45, ^lor_rhs_42
+    branch %t82, ^if_then_43, ^lor_rhs_42
 
   block ^lor_rhs_42:
-    branch %t84, ^if_then_45, ^lor_rhs_43
+    %t89 = select i32 %t88, 14, 0
+    %t90 = select i32 %t86, 14, %t89
+    %t91 = select i32 %t84, 14, %t90
+    return i32 %t91
 
-  block ^lor_rhs_43:
-    branch %t86, ^if_then_45, ^lor_rhs_44
-
-  block ^lor_rhs_44:
-    branch %t88, ^if_then_45, ^if_end_46
-
-  block ^if_then_45:
+  block ^if_then_43:
     return i32 14
-
-  block ^if_end_46:
-    return i32 0
 }

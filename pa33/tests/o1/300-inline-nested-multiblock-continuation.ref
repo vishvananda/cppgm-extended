@@ -10,24 +10,14 @@ function @main(%outer : i64, %inner : i64) -> i64 [role=entry] {
 function @wrapper(%outer : i64, %inner : i64) -> i64 {
   block ^entry:
     %is_zero = cmp eq i64 %outer, 0
-    branch %is_zero, ^inline_entry_1, ^nonzero
-
-  block ^inline_entry_1:
     %is_zero_2 = cmp eq i64 %inner, 0
     %t3 = select i64 %is_zero_2, 10, 20
-    return i64 %t3
-
-  block ^nonzero:
-    return i64 %outer
+    %t4 = select i64 %is_zero, %t3, %outer
+    return i64 %t4
 }
 function @leaf(%inner : i64) -> i64 {
   block ^entry:
     %is_zero = cmp eq i64 %inner, 0
-    branch %is_zero, ^zero, ^nonzero
-
-  block ^zero:
-    return i64 10
-
-  block ^nonzero:
-    return i64 20
+    %t2 = select i64 %is_zero, 10, 20
+    return i64 %t2
 }

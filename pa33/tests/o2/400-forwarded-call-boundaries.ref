@@ -107,10 +107,8 @@ function @main() -> i64 [role=entry] {
     %small_6 = convert trunc u8 i64 %raw
     %r_7 = call i64 @narrow_target(%small_6)
     %c_ok = cmp eq i64 %r_7, 255
-    branch %c_ok, ^passed, ^failed
-
-  block ^passed:
-    return i64 0
+    %t9 = cmp eq i64 %c_ok, 0
+    return i64 %t9
 
   block ^failed:
     return i64 1

@@ -58,31 +58,17 @@ function @sum(%m : i64) -> i64 [binding=strong, no_inline=yes] {
 }
 function @compared(%p : ptr, %q : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
   block ^entry:
-    %p0 = cmp ne ptr %p, 0
-    branch %p0, ^other, ^zero
-
-  block ^other:
     %q0 = cmp eq ptr %q, 0
-    branch %q0, ^zero, ^merge
-
-  block ^merge:
-    return i64 1
-
-  block ^zero:
-    return i64 0
+    %t2 = cmp eq i64 %q0, 0
+    %t3 = cmp ne ptr %p, 0
+    %t4 = select i64 %t3, %t2, 0
+    return i64 %t4
 }
 function @untested(%a : i64, %b : i64) -> i64 [binding=strong, no_inline=yes] {
   block ^entry:
-    branch %a, ^one, ^merge
-
-  block ^merge:
-    branch %b, ^one, ^two
-
-  block ^one:
-    return i64 1
-
-  block ^two:
-    return i64 2
+    %t1 = select i64 %b, 1, 2
+    %t2 = select i64 %a, 1, %t1
+    return i64 %t2
 }
 function @main() -> i32 [role=entry] {
   block ^entry:

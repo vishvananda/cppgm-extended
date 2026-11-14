@@ -24,13 +24,8 @@ function @read_constant(%addend : i64) -> i64 [effects=readonly, unwind=no, bind
 }
 function @differing(%mode : i64) -> i64 [unwind=no, binding=internal, no_inline=yes] {
   block ^entry:
-    branch %mode, ^selected, ^other
-
-  block ^selected:
-    return i64 5
-
-  block ^other:
-    return i64 -5
+    %t1 = select i64 %mode, 5, -5
+    return i64 %t1
 }
 function @addressed(%mode : i64, %value : i64) -> i64 [unwind=no, binding=weak, no_inline=yes] {
   block ^entry:

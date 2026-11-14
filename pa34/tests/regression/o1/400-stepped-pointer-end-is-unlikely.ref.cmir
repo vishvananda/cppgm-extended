@@ -102,8 +102,7 @@ function @main
     call @same [args=(rdx,rsi,rdi)]
     imul.i32 <gpr1>, 2
     add.i32 <gpr1>, rax
-    mov <gpr2>, 0
     cmp.i32 <gpr1>, 2
-    mov rax, 1
-    cmove rax, <gpr2>
+    setne rax
+    movzx rax, rax
     ret rax

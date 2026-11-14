@@ -267,13 +267,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_16:
     %t23 = load volatile u32 @state
     %t24 = cmp ne u32 %t23, 1748549342
-    branch %t24, ^if_then_17, ^if_end_18
+    %t25 = convert trunc i32 i64 %t24
+    return i32 %t25
 
   block ^if_then_17:
     return i32 1
-
-  block ^if_end_18:
-    return i32 0
 }
 function @mixed(%value : u32) -> u8 [binding=weak, object=_Z5mixedj, inline_hint=yes] {
   block ^entry:

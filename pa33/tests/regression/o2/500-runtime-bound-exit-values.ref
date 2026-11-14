@@ -112,11 +112,6 @@ function @main() -> i64 [role=entry] {
   block ^c10:
     %r10 = call i32 @count_down(0, 5)
     %ok10 = cmp eq i32 %r10, 0
-    branch %ok10, ^pass, ^bad10
-
-  block ^bad10:
-    return i64 11
-
-  block ^pass:
-    return i64 0
+    %t23 = select i64 %ok10, 0, 11
+    return i64 %t23
 }

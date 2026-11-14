@@ -1,12 +1,5 @@
 function @guarded(%p : ptr) -> i64 [no_inline=yes] {
   block ^entry:
-    %present = cmp ne ptr %p, 0
-    branch %present, ^nonnull, ^null
-
-  block ^nonnull:
-    return i64 0
-
-  block ^null:
     return i64 0
 }
 function @joined(%p : ptr, %take : i1) -> i64 [no_inline=yes] {

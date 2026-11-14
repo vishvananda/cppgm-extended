@@ -7,13 +7,8 @@ function @callful(%value : i64) -> void [unwind=no, binding=strong] {
 }
 function @choose(%condition : i64, %value : i64) -> i64 [binding=strong] {
   block ^entry:
-    branch %condition, ^selected, ^zero
-
-  block ^selected:
-    return i64 %value
-
-  block ^zero:
-    return i64 0
+    %t1 = select i64 %condition, %value, 0
+    return i64 %t1
 }
 function @main(%condition : i64, %value : i64) -> i64 [role=entry] {
   block ^entry:

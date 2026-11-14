@@ -928,31 +928,29 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call u32 @planning_observe(0)
     %t2 = cmp ne u32 %t1, 17
-    branch %t2, ^if_then_6, ^if_end_1
+    branch %t2, ^if_then_5, ^if_end_1
 
   block ^if_end_1:
     %t3 = call u32 @planning_observe(17)
     %t4 = cmp ne u32 %t3, 17
-    branch %t4, ^if_then_6, ^if_end_2
+    branch %t4, ^if_then_5, ^if_end_2
 
   block ^if_end_2:
     %t5 = call u32 @planning_observe(2147483647)
     %t6 = cmp ne u32 %t5, 17
-    branch %t6, ^if_then_6, ^if_end_3
+    branch %t6, ^if_then_5, ^if_end_3
 
   block ^if_end_3:
     %t7 = call u32 @planning_observe(2147483648)
     %t8 = cmp ne u32 %t7, 17
-    branch %t8, ^if_then_6, ^if_end_4
+    branch %t8, ^if_then_5, ^if_end_4
 
   block ^if_end_4:
     %t9 = call u32 @planning_observe(4294967295)
     %t10 = cmp ne u32 %t9, 17
-    branch %t10, ^if_then_6, ^if_end_5
+    %t11 = convert trunc i32 i64 %t10
+    return i32 %t11
 
-  block ^if_end_5:
-    return i32 0
-
-  block ^if_then_6:
+  block ^if_then_5:
     return i32 1
 }

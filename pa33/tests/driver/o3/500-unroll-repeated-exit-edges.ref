@@ -25,13 +25,8 @@ function @scan(%selector : i32) -> i32 [binding=strong, object=_Z4scani, no_inli
   block ^switch_default_6:
     %t6 = binary add nowrap i32 %selector, 3
     %t7 = cmp ult i32 %t6, 2
-    branch %t7, ^switch_case_7, ^switch_default_8
-
-  block ^switch_case_7:
-    return i32 3
-
-  block ^switch_default_8:
-    return i32 4
+    %t8 = select i32 %t7, 3, 4
+    return i32 %t8
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

@@ -147,11 +147,6 @@ function @main() -> i32 [role=entry] {
     %all = binary and i64 %k, %ok
     %lm = binary and i64 %l, %m
     %complete = binary and i64 %all, %lm
-    branch %complete, ^passed, ^failed
-
-  block ^passed:
-    return i32 0
-
-  block ^failed:
-    return i32 1
+    %t47 = select i32 %complete, 0, 1
+    return i32 %t47
 }

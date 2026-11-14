@@ -81,11 +81,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed u8 0, $flag
     %t14 = call i32 @bool_across_char(%t3, %t3)
     %t15 = cmp ne i32 %t14, 1
-    branch %t15, ^if_then_9, ^if_end_10
-
-  block ^if_then_9:
-    return i32 4
-
-  block ^if_end_10:
-    return i32 0
+    %t16 = select i32 %t15, 4, 0
+    return i32 %t16
 }

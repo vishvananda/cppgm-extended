@@ -23,11 +23,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load volatile f64 $x
     %t5 = call f64 @sqrt(%t4)
     %t6 = cmp ne f64 %t5, 32
-    branch %t6, ^if_then_2, ^if_end_3
+    %t7 = convert trunc i32 i64 %t6
+    return i32 %t7
 
   block ^if_then_2:
     return i32 1
-
-  block ^if_end_3:
-    return i32 0
 }

@@ -7,42 +7,25 @@ function @member(%x : i32) -> i32 [no_inline=yes] {
     %b = cmp eq i32 %x, 2
     %b1 = convert trunc i1 i64 %b
     %either = select i1 %a, %a1, %b1
-    branch %either, ^yes, ^third
-
-  block ^third:
     %c = cmp eq i32 %x, 3
-    branch %c, ^yes, ^no
-
-  block ^yes:
-    return i32 1
-
-  block ^no:
-    return i32 0
+    %t7 = convert trunc i32 i64 %c
+    %t8 = select i32 %either, 1, %t7
+    return i32 %t8
 }
 function @narrow(%x : i32) -> i32 [no_inline=yes] {
   block ^entry:
     %byte = convert trunc u8 i32 %x
     %signed = copy i8 %byte
-    branch %signed, ^yes, ^no
-
-  block ^yes:
-    return i32 1
-
-  block ^no:
-    return i32 0
+    %t3 = select i32 %signed, 1, 0
+    return i32 %t3
 }
 function @mixed(%cond : i32) -> i32 [no_inline=yes] {
   block ^entry:
     %value = select i32 %cond, 256, 1
     %byte = convert trunc u8 i32 %value
     %signed = copy i8 %byte
-    branch %signed, ^yes, ^no
-
-  block ^yes:
-    return i32 1
-
-  block ^no:
-    return i32 0
+    %t4 = select i32 %signed, 1, 0
+    return i32 %t4
 }
 function @main() -> i32 [role=entry] {
   block ^entry:

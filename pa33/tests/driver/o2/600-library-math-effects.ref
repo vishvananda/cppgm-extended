@@ -121,11 +121,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_15:
     %t23 = call f64 @square(-3.0)
     %t24 = cmp ne f64 %t23, 9
-    branch %t24, ^if_then_17, ^lor_rhs_16
-
-  block ^lor_rhs_16:
-    return i32 0
-
-  block ^if_then_17:
-    return i32 7
+    %t25 = select i32 %t24, 7, 0
+    return i32 %t25
 }
