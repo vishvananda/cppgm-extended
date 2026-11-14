@@ -24,8 +24,7 @@ function @zero_byte(%x : i64) -> i64 [no_inline=yes] {
 }
 function @sign_byte(%x : i64) -> i64 [no_inline=yes] {
   block ^entry:
-    %masked = binary and i64 %x, 255
-    %byte = convert trunc i8 i64 %masked
+    %byte = convert trunc i8 i64 %x
     %wide = convert sext i64 i8 %byte
     return i64 %wide
 }

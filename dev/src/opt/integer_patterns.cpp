@@ -68,6 +68,8 @@ public:
 	bool variable_power_division(BlockId block, InstId& prev, InstId id);
 	bool round_power_alignment(BlockId block, InstId& prev, InstId id);
 	bool narrow_truncation(Instruction& inst);
+	bool unmasked_truncation(Instruction& inst);
+	bool repeated_extension(Instruction& inst);
 	bool successor_compare(Instruction& inst);
 	bool advanced_compare(Instruction& inst);
 	bool top_range_compare(Instruction& inst);
@@ -78,6 +80,7 @@ private:
 	Value retyped(Value v, unsigned width) const;
 	const Instruction* binary(Value v, unsigned width, BinaryOp op, uint64_t& literal) const;
 	Value unmasked(Value v, unsigned width, uint64_t kept) const;
+	unsigned sign_copies(Value v, Type type, unsigned& budget) const;
 	bool power_of_two(Value value, Type type, unsigned& budget, unsigned width = 64);
 	Value resolve(Value v) { return facts_.resolve(v); }
 	uint64_t possible_bits(Value v, Type t) { return facts_.possible_bits(v, t); }
@@ -742,6 +745,122 @@ Value IntegerPatterns::unmasked(Value v, unsigned width, uint64_t kept) const
 	return v;
 }
 
+// A truncation reads only the low bits of its source: a mask that keeps
+// every one of them is dropped.
+bool IntegerPatterns::unmasked_truncation(Instruction& inst)
+{
+	if (inst.op != Opcode::Convert || static_cast<ConvertOp>(inst.sub) != ConvertOp::Trunc || !inst.type.is_integer() ||
+		inst.type.kind() == TypeKind::I1)
+		return false;
+	const Type from = convert_source_type(inst);
+	if (!from.is_integer() || from.kind() == TypeKind::I128)
+		return false;
+	const unsigned width = lowir::integer_bits(from.kind()), narrow = lowir::integer_bits(inst.type.kind());
+	if (narrow >= width)
+		return false;
+	const Value v = unmasked(inst.ops[0], width, (uint64_t(1) << narrow) - 1);
+	if (v == inst.ops[0] || !v.is(ValueKind::Temp) || !body_.temps[v.index].type.is_integer() ||
+		lowir::integer_bits(body_.temps[v.index].type.kind()) != width)
+		return false;
+	// (A zero extension of the truncation is the masked value itself.)
+	unsigned scanned = 0;
+	for (InstId i = inst.next; i != kNoId && scanned < 64; i = body_.instructions[i].next, ++scanned)
+	{
+		const Instruction& user = body_.instructions[i];
+		if (user.op == Opcode::Convert && static_cast<ConvertOp>(user.sub) == ConvertOp::ZExt &&
+			user.ops[0] == Value::temp(inst.result))
+			return false;
+	}
+	inst.ops[0] = v;
+	inst.flags = 0; // the mask may have made the truncation exact
+	set_convert_source_type(inst, body_.temps[v.index].type);
+	return true;
+}
+
+// The top bits of integer `v` known to equal its sign bit, that bit counted:
+// a literal's; the bits an extension adds; the fewest among the values a phi,
+// a select or a bitwise operation joins; one otherwise.
+unsigned IntegerPatterns::sign_copies(Value v, Type type, unsigned& budget) const
+{
+	if (budget == 0 || !type.is_integer() || type.kind() == TypeKind::I128 || type.kind() == TypeKind::I1)
+		return 1;
+	--budget;
+	const unsigned width = lowir::integer_bits(type.kind());
+	Constant c;
+	Literal bits;
+	if (literal_constant(body_, v, c))
+	{
+		if (!integer_bits(type, c, bits))
+			return 1;
+		const uint64_t sign = (bits.low >> (width - 1)) & 1;
+		unsigned copies = 1;
+		while (copies < width && ((bits.low >> (width - 1 - copies)) & 1) == sign)
+			++copies;
+		return copies;
+	}
+	const Instruction* def = producer(v);
+	if (def == nullptr || !def->type.is_integer() || lowir::integer_bits(def->type.kind()) != width)
+		return 1;
+	if (def->op == Opcode::Copy)
+	{
+		const Type from = def->ops[0].is(ValueKind::Temp) ? body_.temps[def->ops[0].index].type : def->type;
+		return from.is_integer() && lowir::integer_bits(from.kind()) == width ? sign_copies(def->ops[0], from, budget)
+																			  : 1;
+	}
+	if (def->op == Opcode::Convert)
+	{
+		const ConvertOp op = static_cast<ConvertOp>(def->sub);
+		const Type from = convert_source_type(*def);
+		if (!from.is_integer() || lowir::integer_bits(from.kind()) >= width)
+			return 1;
+		const unsigned added = width - lowir::integer_bits(from.kind());
+		return op == ConvertOp::SExt ? added + sign_copies(def->ops[0], from, budget)
+			: op == ConvertOp::ZExt  ? added
+									 : 1;
+	}
+	const bool bitwise = def->op == Opcode::Binary &&
+		(static_cast<BinaryOp>(def->sub) == BinaryOp::And || static_cast<BinaryOp>(def->sub) == BinaryOp::Or ||
+			static_cast<BinaryOp>(def->sub) == BinaryOp::Xor);
+	if (def->op != Opcode::Phi && def->op != Opcode::Select && !bitwise)
+		return 1;
+	unsigned least = width;
+	const unsigned count = def->op == Opcode::Phi ? def->extra_count / 2 : 2;
+	for (unsigned i = 0; i < count && least > 1; ++i)
+	{
+		const Value in = def->op == Opcode::Phi ? body_.operands[def->extra_first + i * 2 + 1]
+												: def->ops[def->op == Opcode::Select ? i + 1 : i];
+		if (!(in.is(ValueKind::Temp) && in.index == def->result))
+			least = std::min(least, sign_copies(in, def->type, budget));
+	}
+	return least;
+}
+
+// A sign extension of a truncation of a value of the extension's width that
+// already repeats the kept sign bit above it: the value itself.
+bool IntegerPatterns::repeated_extension(Instruction& inst)
+{
+	if (inst.op != Opcode::Convert || static_cast<ConvertOp>(inst.sub) != ConvertOp::SExt || !inst.type.is_integer() ||
+		inst.type.kind() == TypeKind::I128)
+		return false;
+	const Type from = convert_source_type(inst);
+	const Instruction* cut = producer(inst.ops[0]);
+	if (!from.is_integer() || from.kind() == TypeKind::I1 || cut == nullptr || cut->op != Opcode::Convert ||
+		static_cast<ConvertOp>(cut->sub) != ConvertOp::Trunc || !cut->ops[0].is(ValueKind::Temp))
+		return false;
+	const Type wide = body_.temps[cut->ops[0].index].type;
+	const unsigned width = lowir::integer_bits(inst.type.kind()), narrow = lowir::integer_bits(from.kind());
+	unsigned budget = 16;
+	if (!wide.is_integer() || lowir::integer_bits(wide.kind()) != width || narrow >= width ||
+		lowir::integer_bits(cut->type.kind()) != narrow || sign_copies(cut->ops[0], wide, budget) < width - narrow + 1)
+		return false;
+	inst.op = Opcode::Copy;
+	inst.sub = 0;
+	inst.flags = 0;
+	inst.immediate = 0;
+	inst.ops[0] = cut->ops[0];
+	return true;
+}
+
 // A bit-field at the top of its storage unit, stepped and written back:
 // `((x >> k) + c) << k | (x & low k bits)` is `x + (c << k)`. The step's
 // carries leave at the unit's top as they leave the field's, and the sum
@@ -805,7 +924,8 @@ bool simplify_integer_conversion(
 	FunctionBody& body, const std::vector<uint32_t>& uses, IntegerPatternFacts& facts, Instruction& instruction)
 {
 	IntegerPatterns patterns(body, uses, facts);
-	return patterns.narrow_truncation(instruction);
+	return patterns.narrow_truncation(instruction) || patterns.unmasked_truncation(instruction) ||
+		patterns.repeated_extension(instruction);
 }
 
 bool simplify_field_step(

@@ -1,0 +1,38 @@
+function @byte(%v : u32) -> u8 [no_inline=yes] {
+  block ^entry:
+    %s = binary ushr u32 %v, 16
+    %r = convert trunc u8 u32 %s
+    return u8 %r
+}
+function @wide_mask(%v : u32) -> u8 [no_inline=yes] {
+  block ^entry:
+    %r = convert trunc u8 u32 %v
+    return u8 %r
+}
+function @retyped(%v : i32) -> u8 [no_inline=yes] {
+  block ^entry:
+    %r = convert trunc u8 i32 %v
+    return u8 %r
+}
+function @narrow_mask(%v : u32) -> u8 [no_inline=yes] {
+  block ^entry:
+    %m = binary and u32 %v, 127
+    %r = convert trunc u8 u32 %m
+    return u8 %r
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call u8 @byte(305419896)
+    %b = call u8 @wide_mask(305419896)
+    %c = call u8 @retyped(-2)
+    %d = call u8 @narrow_mask(255)
+    %x = cmp ne u8 %a, 52
+    %y = cmp ne u8 %b, 120
+    %z = cmp ne u8 %c, 254
+    %w = cmp ne u8 %d, 127
+    %p = binary or i1 %x, %y
+    %q = binary or i1 %z, %w
+    %bad = binary or i1 %p, %q
+    %r = convert zext i32 i1 %bad
+    return i32 %r
+}

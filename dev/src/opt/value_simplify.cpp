@@ -1759,8 +1759,7 @@ bool Simplifier::convert_identity(Instruction& inst, Value& out)
 // Integer conversion patterns use the same typed SSA facts as arithmetic.
 bool Simplifier::narrow_truncation(Instruction& inst)
 {
-	return inst.op == Opcode::Convert && static_cast<ConvertOp>(inst.sub) == ConvertOp::Trunc && c_.level >= 1 &&
-		simplify_integer_conversion(body_, uses_, *this, inst);
+	return inst.op == Opcode::Convert && c_.level >= 1 && simplify_integer_conversion(body_, uses_, *this, inst);
 }
 
 bool Simplifier::phi_value(const Instruction& phi, Value& out)
