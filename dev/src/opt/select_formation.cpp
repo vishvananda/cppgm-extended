@@ -562,7 +562,8 @@ bool SelectFormation::form(BlockId e)
 			a.is(ValueKind::Slot) || b.is(ValueKind::Slot) || a.is(ValueKind::None) || b.is(ValueKind::None))
 			return false;
 	}
-	if (selects != 0 && loads_through_merge(cond, join))
+	// (The Wasm target takes the select there, as its reference toolchain does.)
+	if (selects != 0 && !target_model::is_wasm(c_.program.target) && loads_through_merge(cond, join))
 		return false;
 	// Two values with work on both arms: selects run both arms on every path.
 	if (selects == kSelectCap && from_t == t && from_f == f && body_.blocks[t].first != body_.blocks[t].last &&
@@ -647,17 +648,16 @@ InstId SelectFormation::load_arm(BlockId a, BlockId from) const
 	const InstId last = body_.blocks[a].last;
 	if (last == kNoId || body_.instructions[last].op != Opcode::Jump)
 		return kNoId;
-	unsigned count = 0;
+	unsigned count = 0, copies = 0;
 	for (InstId i = body_.blocks[a].first; i != last; i = body_.instructions[i].next)
 	{
 		const Instruction& inst = body_.instructions[i];
-		if (++count > kArmCap)
-			return kNoId;
 		if (inst.op == Opcode::Load && inst.next == last && !(inst.flags & IF_VOLATILE) && inst.result != kNoId &&
 			selectable(inst.type) && inst.ops[0].is(ValueKind::Temp) &&
 			body_.temps[inst.ops[0].index].type.is_pointer())
 			return i;
-		if (!speculatable(body_, inst))
+		// (A copy renames the address, as a smart pointer's accessor does.)
+		if ((inst.op == Opcode::Copy ? ++copies > kArmCopies : ++count > kArmCap) || !speculatable(body_, inst))
 			return kNoId;
 	}
 	return kNoId;
