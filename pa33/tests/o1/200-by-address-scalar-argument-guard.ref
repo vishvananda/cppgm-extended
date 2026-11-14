@@ -84,7 +84,7 @@ function @main() -> i64 [role=entry] {
     %t16 = addr $refarg__9
     store f64 2.5, %t16
     %r6f = call f64 @read_f64(%t16)
-    %r6d = binary mul f64 %r6f, 2
+    %r6d = binary add f64 %r6f, %r6f
     %r6 = convert fptosi i64 f64 %r6d
     %za = addr $zero
     store i64 0, %za

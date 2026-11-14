@@ -28,7 +28,7 @@ function @same_field(%p : ptr, %i : i32, %j : i32) -> f64 [binding=strong, no_in
     %mass = index i8 %f, 16
     %other = index i8 %e, 16
     %m1 = load typed f64 %mass
-    %d = binary mul f64 %m1, 2
+    %d = binary add f64 %m1, %m1
     store typed f64 %d, %other
     %m2 = load typed f64 %mass
     %s = binary add f64 %m1, %m2
@@ -43,7 +43,7 @@ function @wrapping(%p : ptr, %i : i64, %j : i64) -> f64 [binding=strong, no_inli
     %mass = index i8 %f, 16
     %speed = index i8 %e, 8
     %m1 = load typed f64 %mass
-    %d = binary mul f64 %m1, 2
+    %d = binary add f64 %m1, %m1
     store typed f64 %d, %speed
     %m2 = load typed f64 %mass
     %s = binary add f64 %m1, %m2

@@ -180,7 +180,6 @@ private:
 	bool project_or(BlockId block, InstId& prev, InstId id);
 	bool unsigned_division(Instruction& inst);
 	bool even_product_halved(Instruction& inst);
-	bool exact_reciprocal(Instruction& inst);
 	void canonicalize(Instruction& inst);
 	bool narrow_compare(Instruction& inst);
 	bool exact_compare(Instruction& inst);
@@ -1937,28 +1936,6 @@ bool Simplifier::even_product_halved(Instruction& inst)
 	return true;
 }
 
-// A floating division by a power of two whose reciprocal is exact is a
-// multiplication by it: the same real result, rounded the same, far cheaper.
-bool Simplifier::exact_reciprocal(Instruction& inst)
-{
-	const TypeKind kind = inst.type.kind();
-	if (inst.op != Opcode::Binary || static_cast<BinaryOp>(inst.sub) != BinaryOp::Div ||
-		(kind != TypeKind::F32 && kind != TypeKind::F64) || !inst.ops[1].is(ValueKind::Float) ||
-		inst.ops[1].float_kind != kind)
-		return false;
-	const unsigned fraction = kind == TypeKind::F32 ? 23 : 52;
-	const uint64_t top = kind == TypeKind::F32 ? 0xff : 0x7ff;
-	const uint64_t bits = body_.literals[inst.ops[1].index].low;
-	const uint64_t exponent = (bits >> fraction) & top;
-	if ((bits & ((static_cast<uint64_t>(1) << fraction) - 1)) != 0 || exponent == 0 || exponent >= top - 1)
-		return false;
-	const uint64_t sign = bits & (static_cast<uint64_t>(1) << (fraction + (kind == TypeKind::F32 ? 8 : 11)));
-	const Literal inverse = { sign | ((top - 1 - exponent) << fraction), 0 };
-	inst.sub = static_cast<uint8_t>(BinaryOp::Mul);
-	inst.ops[1] = literal_value(body_, ValueKind::Float, kind, inverse);
-	return true;
-}
-
 // `and (or a, b), c` where c keeps none of a's possible bits is
 // `and b, c` (a packed field's store after another field's: the earlier
 // merge's kept bits fall out, and with them the eightbyte's old value).
@@ -3119,9 +3096,9 @@ void Simplifier::process_block(BlockId block)
 			simplify_field_step(body_, uses_, *this, inst))
 			changed_ = true;
 		if ((inst.op == Opcode::Binary && reassociate(inst)) || narrow_truncation(inst) || mask_or(inst) ||
-			packed_part(inst) || unsigned_division(inst) || even_product_halved(inst) || exact_reciprocal(inst) ||
-			merge_index(inst) || narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) ||
-			readonly_table_address(inst))
+			packed_part(inst) || unsigned_division(inst) || even_product_halved(inst) ||
+			cheaper_float_arithmetic(body_, uses_, inst) || merge_index(inst) || narrow_compare(inst) ||
+			exact_compare(inst) || bulk_call(inst) || readonly_table_address(inst))
 			changed_ = true;
 		Value value;
 		if (inst.result != kNoId && (fold(inst, value) || identity(inst, value)))
