@@ -233,8 +233,23 @@ void Linker::data_section(Bytes& output) const
 		// but omit trailing zero initialization after applying relocations.
 		while (!contents.data.empty() && contents.data.back() == 0)
 			contents.data.pop_back();
-		if (!contents.data.empty())
-			segments.push_back({ data_.at(ref), std::move(contents) });
+		if (contents.data.empty())
+			continue;
+		const uint32_t address = data_.at(ref);
+		if (!segments.empty())
+		{
+			auto& previous = segments.back();
+			const uint64_t end = uint64_t(previous.first) + previous.second.data.size();
+			// Small zero-filled gaps cost less than another active segment.
+			// Keep addresses fixed and avoid materializing large BSS holes.
+			if (end <= address && address - end <= 8)
+			{
+				previous.second.data.resize(address - previous.first, 0);
+				previous.second.append(contents);
+				continue;
+			}
+		}
+		segments.push_back({ address, std::move(contents) });
 	}
 	if (segments.empty())
 		return;
