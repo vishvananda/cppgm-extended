@@ -1,6 +1,7 @@
 #include "native/select/for_each_inst.h"
 #include "native/select/function_selector.h"
 
+#include <algorithm>
 #include <climits>
 #include <string>
 
@@ -85,89 +86,154 @@ bool fixed_stack(const Function& f)
 	return !areas || accesses <= kAreaFrameAccessCap || (f.preserve_mask & (1u << RBP)) != 0;
 }
 
-// O1+, without EH (its landings are edges this graph lacks): object slots
-// of one type that no execution uses both of share storage (`owner`: per
-// slot the slot whose storage it takes; left empty when none share). Two
-// interfere when a block naming one reaches (or is) a block naming the
-// other; slots live for the whole call, so without such a path no value
-// of one survives into a use of the other. Up to 64 candidates, one bit
-// each; nothing is allocated unless two have one type.
-void share_object_slots(const SelectorState& state, std::vector<uint32_t>& owner)
+// The most slots of one function that sharing reads: its largest.
+const uint32_t kSharedSlots = 512;
+
+// A slot's frame bytes and alignment (layout_slots).
+uint64_t slot_bytes(Type type)
+{
+	const uint64_t bytes = (static_cast<uint64_t>(value_bytes(type)) + 7) & ~7ull;
+	return bytes == 0 ? 8 : bytes;
+}
+
+uint32_t slot_align(Type type)
+{
+	const uint32_t align = value_align(type);
+	return type.is_object() && align < 8 ? 8 : align;
+}
+
+// O1+, without EH (its landings are edges this graph lacks): slots that no
+// execution uses both of share storage (`owner`: per slot the first slot of
+// its group, whose storage it takes; `bytes` and `align`: per first slot,
+// what its group needs; left empty when none share). Two interfere when a
+// block naming one reaches (or is) a block naming the other; slots live for
+// the whole call, so without such a path no value of one survives into a
+// use of the other. The largest slots choose first, each the first group
+// none of whose members interferes with it. One set of slots per block,
+// carried forward along the edges to a fixed point.
+void share_frame_slots(const SelectorState& state, std::vector<uint32_t>& owner, std::vector<uint64_t>& bytes,
+	std::vector<uint32_t>& align)
 {
 	const lowir::FunctionBody& body = *state.body_;
-	uint32_t candidates[65];
-	uint32_t count = 0;
-	bool pair = false;
-	for (uint32_t s = 0; s < body.slots.size() && count <= 64; ++s)
-	{
-		if (state.slot_state_[s] != SS_NORMAL || !body.slots[s].type.is_object())
-			continue;
-		for (uint32_t c = 0; c < count && !pair; ++c)
-			pair = body.slots[candidates[c]].type == body.slots[s].type;
-		candidates[count++] = s;
-	}
-	if (!pair || count > 64)
+	std::vector<uint32_t> candidates;
+	for (uint32_t s = 0; s < body.slots.size(); ++s)
+		if (state.slot_state_[s] == SS_NORMAL && value_align(body.slots[s].type) <= 16)
+			candidates.push_back(s);
+	if (candidates.size() < 2)
 		return;
-	const uint32_t blocks = static_cast<uint32_t>(state.blocks_.size());
-	std::vector<uint64_t> bit(body.slots.size(), 0);
+	std::stable_sort(candidates.begin(), candidates.end(),
+		[&](uint32_t x, uint32_t y) { return slot_bytes(body.slots[x].type) > slot_bytes(body.slots[y].type); });
+	if (candidates.size() > kSharedSlots)
+		candidates.resize(kSharedSlots);
+	const uint32_t count = static_cast<uint32_t>(candidates.size());
+	const uint32_t words = (count + 63) / 64;
+	std::vector<uint32_t> position(body.slots.size(), lowir::kNoId);
 	for (uint32_t c = 0; c < count; ++c)
-		bit[candidates[c]] = uint64_t(1) << c;
-	std::vector<uint64_t> named(blocks, 0);
+		position[candidates[c]] = c;
+	// Per block: the slots it names, then those named on a path to its end.
+	const uint32_t blocks = static_cast<uint32_t>(state.blocks_.size());
+	std::vector<uint64_t> named(static_cast<size_t>(blocks) * words, 0);
+	std::vector<uint32_t> work;
+	std::vector<uint8_t> queued(blocks, 0);
 	for (uint32_t b = 0; b < blocks; ++b)
 	{
 		if (!state.blocks_[b].reachable)
 			continue;
+		uint64_t* set = &named[static_cast<size_t>(b) * words];
+		bool any = false;
+		auto name = [&](const lowir::Value& value) {
+			if (!value.is(lowir::ValueKind::Slot) || position[value.index] == lowir::kNoId)
+				return;
+			set[position[value.index] / 64] |= uint64_t(1) << (position[value.index] % 64);
+			any = true;
+		};
 		for (lowir::InstId i = body.blocks[state.blocks_[b].id].first; i != lowir::kNoId; i = body.instructions[i].next)
 		{
 			const lowir::Instruction& inst = body.instructions[i];
 			for (unsigned k = 0; k < 3; ++k)
-				named[b] |= inst.ops[k].is(lowir::ValueKind::Slot) ? bit[inst.ops[k].index] : 0;
+				name(inst.ops[k]);
 			for (uint32_t k = 0; k < inst.extra_count; ++k)
+				name(body.operands[inst.extra_first + k]);
+		}
+		if (any)
+			queued[b] = 1, work.push_back(b);
+	}
+	std::vector<uint64_t> reach(named);
+	while (!work.empty())
+	{
+		const uint32_t b = work.back();
+		work.pop_back();
+		queued[b] = 0;
+		const uint64_t* from = &reach[static_cast<size_t>(b) * words];
+		for (uint32_t k = state.succ_first_[b]; k < state.succ_first_[b + 1]; ++k)
+		{
+			uint64_t* to = &reach[static_cast<size_t>(state.succs_[k]) * words];
+			bool grew = false;
+			for (uint32_t w = 0; w < words; ++w)
 			{
-				const lowir::Value value = body.operands[inst.extra_first + k];
-				named[b] |= value.is(lowir::ValueKind::Slot) ? bit[value.index] : 0;
+				grew = grew || (from[w] & ~to[w]) != 0;
+				to[w] |= from[w];
 			}
+			if (grew && !queued[state.succs_[k]])
+				queued[state.succs_[k]] = 1, work.push_back(state.succs_[k]);
 		}
 	}
-	std::vector<uint64_t> reach(count, 0);
-	std::vector<uint32_t> seen(blocks, lowir::kNoId), work;
+	// Per slot: the slots named where it is, or before on some path; then
+	// those it is named before as well.
+	std::vector<uint64_t> meets(static_cast<size_t>(count) * words, 0);
+	for (uint32_t b = 0; b < blocks; ++b)
+		for (uint32_t w = 0; w < words; ++w)
+			for (uint64_t left = named[static_cast<size_t>(b) * words + w]; left != 0; left &= left - 1)
+			{
+				uint64_t* row = &meets[static_cast<size_t>(w * 64 + __builtin_ctzll(left)) * words];
+				for (uint32_t v = 0; v < words; ++v)
+					row[v] |= reach[static_cast<size_t>(b) * words + v];
+			}
+	std::vector<uint64_t> met(meets);
+	for (uint32_t c = 0; c < count; ++c)
+		for (uint32_t w = 0; w < words; ++w)
+			for (uint64_t left = meets[static_cast<size_t>(c) * words + w]; left != 0; left &= left - 1)
+				met[static_cast<size_t>(w * 64 + __builtin_ctzll(left)) * words + c / 64] |= uint64_t(1) << (c % 64);
+	// (group: the candidates of each group, a set per group made.)
+	std::vector<uint64_t> group;
+	std::vector<uint32_t> joined(count, 0);
+	uint32_t groups = 0;
+	bool shared = false;
 	for (uint32_t c = 0; c < count; ++c)
 	{
-		for (uint32_t b = 0; b < blocks; ++b)
+		const uint64_t* row = &met[static_cast<size_t>(c) * words];
+		uint32_t g = 0;
+		for (; g < groups; ++g)
 		{
-			if ((named[b] >> c) & 1)
-				seen[b] = c, work.push_back(b);
+			const uint64_t* members = &group[static_cast<size_t>(g) * words];
+			uint32_t w = 0;
+			while (w < words && (members[w] & row[w]) == 0)
+				++w;
+			if (w == words)
+				break;
 		}
-		while (!work.empty())
-		{
-			const uint32_t b = work.back();
-			work.pop_back();
-			reach[c] |= named[b];
-			for (uint32_t k = state.succ_first_[b]; k < state.succ_first_[b + 1]; ++k)
-			{
-				if (seen[state.succs_[k]] != c)
-					seen[state.succs_[k]] = c, work.push_back(state.succs_[k]);
-			}
-		}
+		if (g == groups)
+			group.resize(static_cast<size_t>(++groups) * words, 0);
+		else
+			shared = true;
+		group[static_cast<size_t>(g) * words + c / 64] |= uint64_t(1) << (c % 64);
+		joined[c] = g;
 	}
-	// Each joins the first earlier group of its type none of whose members
-	// interferes with it (either way).
+	if (!shared)
+		return;
+	// Each group's first slot holds its storage: layout meets it first.
+	std::vector<uint32_t> first(groups, lowir::kNoId);
+	for (uint32_t c = 0; c < count; ++c)
+		first[joined[c]] = std::min(first[joined[c]], candidates[c]);
 	owner.assign(body.slots.size(), lowir::kNoId);
-	uint64_t group[64] = { 0 };
+	bytes.assign(body.slots.size(), 0);
+	align.assign(body.slots.size(), 0);
 	for (uint32_t c = 0; c < count; ++c)
 	{
-		uint64_t interferes = reach[c];
-		for (uint32_t d = 0; d < count; ++d)
-			interferes |= ((reach[d] >> c) & 1) << d;
-		uint32_t g = c;
-		for (uint32_t d = 0; d < c && g == c; ++d)
-		{
-			if (group[d] != 0 && (group[d] & interferes) == 0 &&
-				body.slots[candidates[d]].type == body.slots[candidates[c]].type)
-				g = d;
-		}
-		group[g] |= uint64_t(1) << c;
-		owner[candidates[c]] = candidates[g];
+		const uint32_t lead = first[joined[c]];
+		owner[candidates[c]] = lead;
+		bytes[lead] = std::max(bytes[lead], slot_bytes(body.slots[candidates[c]].type));
+		align[lead] = std::max(align[lead], slot_align(body.slots[candidates[c]].type));
 	}
 }
 
@@ -584,9 +650,10 @@ void FunctionSelector::add_binding(BindingKind kind, lowir::NameId name, int32_t
 void FunctionSelector::layout_slots()
 {
 	const lowir::FunctionBody& body = *body_;
-	std::vector<uint32_t> owner;
+	std::vector<uint32_t> owner, shared_align;
+	std::vector<uint64_t> shared_bytes;
 	if (level_ >= 1 && !has_eh_)
-		share_object_slots(*this, owner);
+		share_frame_slots(*this, owner, shared_bytes, shared_align);
 	if (level_ >= 1 && !has_eh_)
 	{
 		const auto copies = machine::sequential_copy_slots(program_, body);
@@ -638,18 +705,16 @@ void FunctionSelector::layout_slots()
 		if (slot_state_[s] != SS_NORMAL)
 			continue;
 		const Type type = body.slots[s].type;
-		const uint64_t bytes = (static_cast<uint64_t>(value_bytes(type)) + 7) & ~7ull;
-		uint32_t align = value_align(type);
-		if (type.is_object() && align < 8)
-			align = 8;
 		// A sharing slot takes its group's storage (the first member's, laid
-		// out before it).
+		// out before it with the bytes and alignment the group needs).
+		const bool leads = s < shared_bytes.size() && shared_bytes[s] != 0;
 		if (shares(s))
 			slot_offset_[s] = slot_offset_[owner[s]];
 		else if (over_aligned(s))
 			slot_offset_[s] += out_->aligned_disp;
 		else
-			slot_offset_[s] = frame_alloc(bytes == 0 ? 8 : bytes, align);
+			slot_offset_[s] = frame_alloc(
+				leads ? shared_bytes[s] : slot_bytes(type), leads ? shared_align[s] : slot_align(type));
 		add_binding(BindingKind::Slot, lowir::own_name(body.slots[s]), slot_offset_[s], type);
 	}
 	if (program_.debug && out_->symbol < program_.debug->functions.size())

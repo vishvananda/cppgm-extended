@@ -1,0 +1,110 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @ends
+  abi
+    param %base -> rdi : ptr
+    param %last -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 rax, [rdi]
+    add rax, [rdi+rsi*8]
+    ret rax
+
+function @pick
+  abi
+    param %which -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0>
+    slot $kept -> [rbp-<off0>] : obj<16x8>
+    slot $pair -> [rbp-<off1>] : obj<16x8>
+    slot $wide -> [rbp-<off1>] : obj<64x8>
+    slot $word -> [rbp-<off1>] : i64
+
+  block ^entry
+    store.i64 [rbp-<off0>], 100
+    store.i64 [rbp-<off2>], rdi
+    cmp.i64 rdi, 0
+    je ^first
+    cmp.i64 rdi, 1
+    je ^second
+
+  block ^other
+    store.i64 [rbp-<off1>], rdi
+    lea rdi, [rbp-<off1>]
+    mov rsi, 0
+    call @ends [args=(rsi,rdi), unwind=no]
+    mov <gpr0>, rax
+    jmp ^done
+
+  block ^second
+    zero_bytes 64x8, [rbp-<off1>]
+    store.i64 [rbp-<off1>], 10
+    store.i64 [rbp-<off3>], 20
+    lea rdi, [rbp-<off1>]
+    mov rsi, 7
+    call @ends [args=(rsi,rdi), unwind=no]
+    mov <gpr0>, rax
+    jmp ^done
+
+  block ^first
+    store.i64 [rbp-<off1>], 3
+    store.i64 [rbp-<off4>], 4
+    lea rdi, [rbp-<off1>]
+    mov rsi, 1
+    call @ends [args=(rsi,rdi), unwind=no]
+    mov <gpr0>, rax
+
+  block ^done
+    lea rdi, [rbp-<off0>]
+    mov rsi, 1
+    call @ends [args=(rsi,rdi), unwind=no]
+    add rax, <gpr0>
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1>
+
+  block ^entry
+    mov rdi, 0
+    call @pick [args=(rdi), unwind=no]
+    mov <gpr0>, rax
+    mov rdi, 1
+    call @pick [args=(rdi), unwind=no]
+    mov <gpr1>, rax
+    mov rdi, 5
+    call @pick [args=(rdi), unwind=no]
+    cmp.i64 <gpr0>, 107
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    cmp.i64 <gpr1>, 131
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    cmp.i64 rax, 115
+    setne rax
+    movzx rax, rax
+    or <gpr0>, <gpr1>
+    or rax, <gpr0>
+    ret rax

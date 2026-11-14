@@ -1,0 +1,110 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @ends
+  abi
+    param %base -> rdi : ptr
+    param %last -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 rax, [rdi]
+    add rax, [rdi+rsi*8]
+    ret rax
+
+function @pick
+  abi
+    param %which -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 96
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
+    slot $kept -> [rbp-16] : obj<16x8>
+    slot $pair -> [rbp-80] : obj<16x8>
+    slot $wide -> [rbp-80] : obj<64x8>
+    slot $word -> [rbp-80] : i64
+
+  block ^entry
+    store.i64 [rbp-16], 100
+    store.i64 [rbp-8], rdi
+    cmp.i64 rdi, 0
+    je ^first
+    cmp.i64 rdi, 1
+    je ^second
+
+  block ^other
+    store.i64 [rbp-80], rdi
+    lea rdi, [rbp-80]
+    mov rsi, 0
+    call @ends [args=(rsi,rdi), unwind=no]
+    mov rbx, rax
+    jmp ^done
+
+  block ^second
+    zero_bytes 64x8, [rbp-80]
+    store.i64 [rbp-80], 10
+    store.i64 [rbp-24], 20
+    lea rdi, [rbp-80]
+    mov rsi, 7
+    call @ends [args=(rsi,rdi), unwind=no]
+    mov rbx, rax
+    jmp ^done
+
+  block ^first
+    store.i64 [rbp-80], 3
+    store.i64 [rbp-72], 4
+    lea rdi, [rbp-80]
+    mov rsi, 1
+    call @ends [args=(rsi,rdi), unwind=no]
+    mov rbx, rax
+
+  block ^done
+    lea rdi, [rbp-16]
+    mov rsi, 1
+    call @ends [args=(rsi,rdi), unwind=no]
+    add rax, rbx
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r14
+
+  block ^entry
+    mov rdi, 0
+    call @pick [args=(rdi), unwind=no]
+    mov rbx, rax
+    mov rdi, 1
+    call @pick [args=(rdi), unwind=no]
+    mov r14, rax
+    mov rdi, 5
+    call @pick [args=(rdi), unwind=no]
+    cmp.i64 rbx, 107
+    setne rbx
+    movzx rbx, rbx
+    cmp.i64 r14, 131
+    setne r14
+    movzx r14, r14
+    cmp.i64 rax, 115
+    setne rax
+    movzx rax, rax
+    or rbx, r14
+    or rax, rbx
+    ret rax
