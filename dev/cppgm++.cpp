@@ -205,6 +205,7 @@ struct SourceOutputInvocation
 	// always preprocesses so; its object dialect is the object half's, see
 	// run_emit_lowir_mode). `-I`, `-D` and `-U` as the driver takes them.
 	bool hosted = false;
+	bool nostdinc = false;
 	bool plain_char_unsigned = false;
 	bool popcnt = false;
 	bool popcnt_explicit = false;
@@ -263,6 +264,7 @@ int optimization_level(const string& arg)
 SourceOutputInvocation parse_source_output_invocation(const vector<string>& args, bool allow_lowir_options)
 {
 	bool explicit_outfile = false;
+	string forced_includes;
 	SourceOutputInvocation invocation;
 	vector<string>& inputs = invocation.inputs;
 
@@ -365,6 +367,17 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 			continue;
 		}
 		const size_t option = i;
+		if (args[i] == "-nostdinc")
+		{
+			invocation.nostdinc = true;
+			continue;
+		}
+		if (args[i] == "-include")
+		{
+			consume_required_option_argument(args, i, "-include", "file");
+			forced_includes += "#include \"" + args[i] + "\"\n";
+			continue;
+		}
 		if (consume_joined_or_separate_option(args, i, "-I", "path"))
 		{
 			invocation.include_paths.push_back(i == option ? args[i].substr(2) : args[i]);
@@ -441,6 +454,8 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 	{
 		throw InvocationError("invalid usage");
 	}
+	// Like -c, read forced headers after all command-line macro changes.
+	invocation.command_line += forced_includes;
 	if (!invocation.popcnt_explicit)
 		invocation.popcnt = invocation.sse_level >= 4;
 	// Keep source views and object compilation on the same header paths.
@@ -714,7 +729,7 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 	options.modes.exceptions = invocation.exceptions;
 	options.sse_level = invocation.sse_level;
 	if (invocation.hosted)
-		driver::add_host_environment(options, invocation.target != native::host_target());
+		driver::add_host_environment(options, invocation.nostdinc || invocation.target != native::host_target());
 	driver::configure_target_environment(options, invocation.target);
 	if (invocation.wasm_atomics && target_model::is_wasm(invocation.target))
 	{
@@ -723,7 +738,10 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 	else if (invocation.wasm_atomics_explicit && invocation.wasm_atomics)
 		throw InvocationError("-matomics requires a Wasm target");
 	if (target_model::is_wasm(invocation.target))
-		driver::add_wasm_headers(options, invocation.sysroot, invocation.resource_directory);
+	{
+		if (!invocation.nostdinc)
+			driver::add_wasm_headers(options, invocation.sysroot, invocation.resource_directory);
+	}
 	else if (!invocation.sysroot.empty() || !invocation.resource_directory.empty())
 		throw InvocationError("target header directories currently require a Wasm target");
 	return options;
@@ -1072,7 +1090,7 @@ int run_emit_lowir_mode(vector<string> args)
 	// The LowIR view preprocesses in the host environment -c uses (PA33: a
 	// source the driver lanes compile includes host headers).
 	if (!options.hosted)
-		driver::add_host_environment(options, invocation.target != native::host_target());
+		driver::add_host_environment(options, invocation.nostdinc || invocation.target != native::host_target());
 	lowir::Program program;
 	lower::ProgramLowering lowering(program);
 	// Definitions are written as they complete and their bodies released,

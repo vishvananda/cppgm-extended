@@ -156,6 +156,10 @@ New or newly required in PA30:
   - `-U <macro>` and `-U<macro>`
   - `-include <file>`
   - `-isystem <dir>` and `-isystem<dir>`
+- source views (`--emit-ast`, `--emit-types`, `--emit-semantics`, and
+  `--emit-lowir`) honor the same `-include` and `-nostdinc` controls as object
+  compilation. Forced headers are read in order after all `-D` and `-U`
+  options, even when those options follow `-include` on the command line
 - direct driver query forms:
   - `--version`
   - `-v`
