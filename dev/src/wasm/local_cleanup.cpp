@@ -35,27 +35,97 @@ int value_inputs(Op op)
 
 // Where the expression that leaves the value on top of the stack before
 // `end` begins, when every operation of it may go with that value; else
-// `end`. A relocated operand stays: its relocation names it.
+// `end`. The expression may begin after a value another local keeps
+// (`stored`): that local's `local.tee` is then a `local.set`. A relocated
+// operand that goes is marked 2: its relocation goes too.
 size_t unread_value(
-	const Function& function, size_t end, const std::vector<uint8_t>& relocated, std::vector<uint32_t>& reads)
+	const Function& function, size_t end, std::vector<uint8_t>& relocated, std::vector<uint32_t>& reads, bool& stored)
 {
 	size_t need = 1, at = end;
-	while (need != 0 && at != 0)
+	stored = false;
+	while (need != 0 && at != 0 && !stored)
 	{
-		const Instruction& inst = function.instructions[at - 1];
-		const int inputs = value_inputs(inst.op);
-		if (inputs < 0 || (inst.operands.count != 0 && relocated[inst.operands.first] != 0))
+		const Op op = function.instructions[at - 1].op;
+		stored = op == Op::LocalTee && need == 1 && at != end;
+		if (stored)
+			break;
+		const int inputs = value_inputs(op);
+		if (inputs < 0)
 			return end;
 		need += static_cast<size_t>(inputs);
 		--need;
 		--at;
 	}
-	if (need != 0)
+	if (need != 0 && !stored)
 		return end;
 	for (size_t i = at; i < end; ++i)
-		if (function.instructions[i].op == Op::LocalGet)
-			--reads[function.operands[function.instructions[i].operands.first]];
+	{
+		const Instruction& inst = function.instructions[i];
+		if (inst.op == Op::LocalGet)
+			--reads[function.operands[inst.operands.first]];
+		else if (inst.operands.count != 0 && relocated[inst.operands.first] != 0)
+			relocated[inst.operands.first] = 2;
+	}
 	return at;
+}
+
+// The integer comparison that holds when `op` does not; Nop when `op` is not
+// an integer comparison of two values.
+Op inverse_comparison(Op op)
+{
+	static const uint8_t kInverse[10] = { 1, 0, 8, 9, 6, 7, 4, 5, 2, 3 };
+	const unsigned code = static_cast<unsigned>(op);
+	if (code < 0x46 || code > 0x5a || code == 0x50)
+		return Op::Nop;
+	const unsigned base = code > 0x50 ? 0x51 : 0x46;
+	return static_cast<Op>(base + kInverse[code - base]);
+}
+
+// Whether `op` leaves 0 or 1: a comparison or a zero test.
+bool leaves_truth(Op op)
+{
+	const unsigned code = static_cast<unsigned>(op);
+	return code >= 0x45 && code <= 0x66;
+}
+
+// A truth test reads only whether its value is zero: the test of a widened
+// 32-bit value is the test of that value, and a doubled negation before an
+// `if`, a `br_if` or a `select` goes. A negated integer comparison is the
+// opposite comparison, and a truth value negated twice is that value. A
+// widening that is narrowed at once goes too.
+void fold_truth_tests(Function& function)
+{
+	size_t kept = 0;
+	for (const Instruction& inst : function.instructions)
+	{
+		const Op last = kept != 0 ? function.instructions[kept - 1].op : Op::Nop;
+		if (inst.op == Op::I64Eqz && last == Op::I64ExtendI32U)
+		{
+			function.instructions[kept - 1].op = Op::I32Eqz;
+			continue;
+		}
+		if (inst.op == Op::I32WrapI64 && (last == Op::I64ExtendI32U || last == Op::I64ExtendI32S))
+		{
+			--kept;
+			continue;
+		}
+		if (inst.op == Op::I32Eqz && inverse_comparison(last) != Op::Nop)
+		{
+			function.instructions[kept - 1].op = inverse_comparison(last);
+			continue;
+		}
+		if (inst.op == Op::I32Eqz && last == Op::I32Eqz && kept >= 2 &&
+			leaves_truth(function.instructions[kept - 2].op))
+		{
+			--kept;
+			continue;
+		}
+		if ((inst.op == Op::If || inst.op == Op::BrIf || inst.op == Op::Select) && kept >= 2 && last == Op::I32Eqz &&
+			function.instructions[kept - 2].op == Op::I32Eqz)
+			kept -= 2;
+		function.instructions[kept++] = inst;
+	}
+	function.instructions.resize(kept);
 }
 
 } // namespace
@@ -85,6 +155,7 @@ void cleanup_locals(Function& function, bool optimize)
 			function.instructions[kept++] = inst;
 		}
 		function.instructions.resize(kept);
+		fold_truth_tests(function);
 		// A value that no instruction reads is not stored, and not computed
 		// when its operations have no effect: a step whose uses all went into
 		// memory offsets. Removing one may leave the values it read unread.
@@ -104,10 +175,13 @@ void cleanup_locals(Function& function, bool optimize)
 				{
 					if (inst.op == Op::LocalTee)
 						continue;
-					const size_t begin = unread_value(function, kept, relocated, uses);
+					bool stored = false;
+					const size_t begin = unread_value(function, kept, relocated, uses, stored);
 					if (begin != kept)
 					{
 						kept = begin;
+						if (stored)
+							function.instructions[kept - 1].op = Op::LocalSet;
 						again = true;
 						continue;
 					}
@@ -124,6 +198,11 @@ void cleanup_locals(Function& function, bool optimize)
 			}
 			function.instructions.resize(kept);
 		}
+		size_t named = 0;
+		for (const Relocation& relocation : function.relocations)
+			if (relocated[relocation.offset] != 2)
+				function.relocations[named++] = relocation;
+		function.relocations.resize(named);
 	}
 	// Parameters retain their public ABI indices, including unused parameters.
 	// Ordinary locals need no allocation if no surviving instruction uses them.

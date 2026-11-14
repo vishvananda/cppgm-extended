@@ -1,0 +1,38 @@
+{
+  "source": true,
+  "wasi": true,
+  "exports": [
+    "fill",
+    "pick",
+    "put",
+    "value_of"
+  ],
+  "commands": [
+    {
+      "stdout": "",
+      "exit": 0
+    }
+  ],
+  "quality": {
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "functions": {
+      "fill": {
+        "instructions": 138
+      },
+      "pick": {
+        "instructions": 21
+      },
+      "put": {
+        "instructions": 19
+      },
+      "value_of": {
+        "instructions": 22
+      }
+    }
+  },
+  "target": "wasm32-wasip1"
+}

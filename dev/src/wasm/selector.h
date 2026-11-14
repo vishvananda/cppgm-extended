@@ -33,6 +33,17 @@ private:
 		uint32_t offset;
 	};
 	Place place_of(lowir::Value address) const;
+	// The memory immediate of an access: an offset, and the global whose
+	// address the linker adds to it (kNoId: none).
+	struct Access
+	{
+		uint32_t offset;
+		uint32_t symbol;
+	};
+	bool global_element(
+		lowir::Value address, uint32_t& symbol, lowir::Value& index, uint64_t& scale, uint64_t& offset) const;
+	Access memory_access(lowir::Value address);
+	void access(Op op, const Access& access);
 	Place frame_place(uint32_t offset) const;
 	Place slot_place(uint32_t slot) const;
 	uint32_t argument_slot(lowir::Value source) const;
@@ -103,6 +114,10 @@ private:
 	void viewed(lowir::Value operand, lowir::Type type, bool signed_view);
 	void condition(lowir::Value operand);
 	void edge(lowir::BlockId from, lowir::BlockId to);
+	bool conditional_branch(const lowir::Instruction& inst);
+	bool branch_if_target(lowir::BlockId to, lowir::BlockId other, uint32_t& depth, bool& moves);
+	void number_blocks(uint32_t region, uint32_t& next);
+	void find_carried();
 	void phi_copies(lowir::BlockId from, lowir::BlockId to);
 	void block(lowir::BlockId block);
 	void restore_stack();
@@ -170,7 +185,13 @@ private:
 	{
 		lowir::BlockId target;
 		uint32_t depth;
+		bool loop;
 	};
+	// Structured emission: each block's position, and per loop header the
+	// positions of its loop's first and last block.
+	std::vector<uint32_t> position_, loop_first_, loop_last_;
+	// Per loop header: one of its phis is read outside the loop (0 or 1; empty before the scan).
+	std::vector<uint8_t> escaped_;
 	std::vector<Label> labels_;
 	std::vector<Label> dispatch_labels_;
 	std::vector<uint32_t> region_locals_;

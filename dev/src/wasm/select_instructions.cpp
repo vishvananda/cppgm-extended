@@ -133,6 +133,113 @@ uint32_t Selector::memory_address(Value operand)
 	return place.offset;
 }
 
+// An element of a global array: one step by a value from the global's first
+// byte, then literal steps, each with the nonwrapping promise. The element
+// lies in the global, so the scaled index alone does not wrap, and the
+// global's address plus the literal steps goes into the memory immediate.
+bool Selector::global_element(Value address, uint32_t& symbol, Value& index, uint64_t& scale, uint64_t& offset) const
+{
+	offset = 0;
+	index = Value::none();
+	for (unsigned depth = 0; depth < 16 && address.is(ValueKind::Temp); ++depth)
+	{
+		const InstId id = body_.temps[address.index].def;
+		if (id == kNoId)
+			return false;
+		const auto& def = body_.instructions[id];
+		if (def.op == Opcode::Copy && def.type.is_pointer() && def.ops[0].is(ValueKind::Temp) &&
+			body_.temps[def.ops[0].index].type.is_pointer())
+			address = def.ops[0];
+		else if (def.op == Opcode::Addr && def.ops[0].is(ValueKind::Symbol))
+			address = def.ops[0];
+		else if (def.op == Opcode::Index && def.index_bounds() == IndexBounds::InBounds && !index.is(ValueKind::Temp))
+		{
+			const uint64_t bytes = storage_bytes(def.type);
+			if (bytes == 0 || bytes > 65536)
+				return false;
+			if (def.ops[1].is(ValueKind::Integer))
+			{
+				const auto& literal = body_.literals[def.ops[1].index];
+				if (literal.high != 0 || literal.low > (uint64_t(1) << 30) / bytes ||
+					literal.low * bytes > (uint64_t(1) << 30) - offset)
+					return false;
+				offset += literal.low * bytes;
+			}
+			else if (def.ops[1].is(ValueKind::Temp) && wide_locals_[def.ops[1].index] == kNoId)
+			{
+				index = def.ops[1];
+				scale = bytes;
+				// (A step by a value times a literal is that value's step
+				// of as many elements: pointer arithmetic.)
+				const InstId made = body_.temps[index.index].def;
+				const lowir::Instruction* product = made != kNoId ? &body_.instructions[made] : nullptr;
+				if (product != nullptr && product->op == Opcode::Binary &&
+					product->type.kind() == lowir::TypeKind::I64 && product->ops[0].is(ValueKind::Temp) &&
+					wide_locals_[product->ops[0].index] == kNoId && product->ops[1].is(ValueKind::Integer) &&
+					body_.literals[product->ops[1].index].high == 0)
+				{
+					const uint64_t literal = body_.literals[product->ops[1].index].low;
+					const auto op = static_cast<lowir::BinaryOp>(product->sub);
+					const uint64_t factor = op == lowir::BinaryOp::Mul ? literal
+						: op == lowir::BinaryOp::Shl && literal <= 16  ? uint64_t(1) << literal
+																	   : 0;
+					if (factor != 0 && factor <= 65536 / bytes)
+					{
+						index = product->ops[0];
+						scale = bytes * factor;
+					}
+				}
+			}
+			else
+				return false;
+			address = def.ops[0];
+		}
+		else
+			return false;
+	}
+	if (!address.is(ValueKind::Symbol) || !index.is(ValueKind::Temp) ||
+		!is_global_kind(program_.symbols[address.index].kind))
+		return false;
+	symbol = address.index;
+	return module_.relocatable || module_.addresses[symbol] != kNoId;
+}
+
+// Leaves the base of an access and gives its memory immediate.
+Selector::Access Selector::memory_access(Value address)
+{
+	uint32_t symbol = kNoId;
+	Value index;
+	uint64_t scale = 0, offset = 0;
+	if (!global_element(address, symbol, index, scale, offset))
+		return Access{ memory_address(address), kNoId };
+	value(index, Type::scalar(TypeKind::U32));
+	if ((scale & (scale - 1)) == 0)
+	{
+		if (scale != 1)
+		{
+			out_.emit(Op::I32Const, { static_cast<uint64_t>(__builtin_ctzll(scale)) });
+			out_.emit(Op::I32Shl);
+		}
+	}
+	else
+	{
+		out_.emit(Op::I32Const, { scale });
+		out_.emit(Op::I32Mul);
+	}
+	return Access{ static_cast<uint32_t>(offset), symbol };
+}
+
+void Selector::access(Op op, const Access& access)
+{
+	if (access.symbol == kNoId)
+	{
+		out_.emit(op, { 0, access.offset });
+		return;
+	}
+	out_.emit(op, { 0, (module_.relocatable ? 0 : module_.addresses[access.symbol]) + uint64_t(access.offset) });
+	out_.relocate(RelocationKind::MemoryAddress, access.symbol, 1, access.offset);
+}
+
 void Selector::instruction(const lowir::Instruction& inst)
 {
 	if ((exception_reference_ != kNoId && exception_instruction(inst)) || object_instruction(inst) ||
@@ -190,8 +297,7 @@ void Selector::instruction(const lowir::Instruction& inst)
 		break;
 	case Opcode::Load:
 	{
-		const uint32_t offset = memory_address(inst.ops[0]);
-		out_.emit(memory_op(inst.type, false), { 0, offset });
+		access(memory_op(inst.type, false), memory_access(inst.ops[0]));
 		// A load of 8 or 16 bits extends to the view of its type.
 		const unsigned bits = integer_bits(inst.type.kind());
 		if ((bits == 8 || bits == 16) && body_.temps[inst.result].type == inst.type)
@@ -203,9 +309,9 @@ void Selector::instruction(const lowir::Instruction& inst)
 	}
 	case Opcode::Store:
 	{
-		const uint32_t offset = memory_address(inst.ops[1]);
+		const Access place = memory_access(inst.ops[1]);
 		value(inst.ops[0], inst.type);
-		out_.emit(memory_op(inst.type, true), { 0, offset });
+		access(memory_op(inst.type, true), place);
 		return;
 	}
 	case Opcode::Index:
@@ -264,6 +370,8 @@ void Selector::instruction(const lowir::Instruction& inst)
 		edge(current_block_, inst.ops[0].index);
 		return;
 	case Opcode::Branch:
+		if (conditional_branch(inst))
+			return;
 		condition(inst.ops[0]);
 		out_.emit(Op::If, { block_type(ValueType::Void) });
 		++nesting_;

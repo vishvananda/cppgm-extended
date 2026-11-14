@@ -1,0 +1,34 @@
+{
+  "source": true,
+  "wasi": true,
+  "exports": [
+    "mixed",
+    "find",
+    "larger"
+  ],
+  "commands": [
+    {
+      "stdout": "",
+      "exit": 0
+    }
+  ],
+  "quality": {
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "functions": {
+      "mixed": {
+        "instructions": 141
+      },
+      "find": {
+        "instructions": 47
+      },
+      "larger": {
+        "instructions": 19
+      }
+    }
+  },
+  "target": "wasm32-wasip1"
+}
