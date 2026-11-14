@@ -1,5 +1,5 @@
-<svg data-original-label="self-built speed vs gcc" data-original-message="0.97×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="self-built speed vs gcc; AMD EPYC 9V45 96-Core Processor; measured a0093889216091a98b4ab4561769544b02092c58; 22 commits behind main: 0.97×*">
-  <title>self-built speed vs gcc; AMD EPYC 9V45 96-Core Processor; measured a0093889216091a98b4ab4561769544b02092c58; 22 commits behind main: 0.97×*</title>
+<svg data-original-label="self-built speed vs gcc" data-original-message="0.97×" xmlns="http://www.w3.org/2000/svg" width="120" height="24" viewBox="0 0 120 24" role="img" aria-label="self-built speed vs gcc; AMD EPYC 9V45 96-Core Processor; measured a0093889216091a98b4ab4561769544b02092c58; 41 commits behind main: 0.97×*">
+  <title>self-built speed vs gcc; AMD EPYC 9V45 96-Core Processor; measured a0093889216091a98b4ab4561769544b02092c58; 41 commits behind main: 0.97×*</title>
   <defs><clipPath id="badge"><rect width="120" height="24" rx="4"/></clipPath></defs>
   <g clip-path="url(#badge)">
     <rect width="64" height="24" fill="#555"/>
