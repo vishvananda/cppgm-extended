@@ -1,0 +1,91 @@
+# A call through a member function pointer tests bit 0 of the pointer's
+# first word: set, the word is a vtable offset plus one; clear, it is the
+# function's address. A function's address is even on x86-64, so `@known`
+# keeps no test and no vtable path: it calls the address of `@plus`.
+# `@unknown` reads its word from a parameter and keeps the test, and
+# `@data_bit` keeps the bit of a byte object's address.
+global @byte : u8 = 7
+
+function @plus(%this : ptr [object_bytes=8], %a : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %v = load i64 %this
+    %r = binary add i64 %v, %a
+    return i64 %r
+}
+
+function @known(%s : ptr, %a : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %f = addr @plus
+    %word = copy i64 %f
+    %bit = binary and i64 %word, 1
+    %virtual = cmp ne i64 %bit, 0
+    branch %virtual, ^virtual, ^direct
+
+  block ^virtual:
+    %table = load ptr %s
+    %offset = binary sub i64 %word, 1
+    %entry = index i8 %table, %offset
+    %found = load ptr %entry
+    jump ^end
+
+  block ^direct:
+    %callee = copy ptr %word
+    jump ^end
+
+  block ^end:
+    %target = phi ptr [^virtual: %found, ^direct: %callee]
+    %r = call i64 %target(%s, %a) as (%arg0 : ptr, %arg1 : i64) -> i64
+    return i64 %r
+}
+
+function @unknown(%s : ptr, %word : i64, %a : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %bit = binary and i64 %word, 1
+    %virtual = cmp ne i64 %bit, 0
+    branch %virtual, ^virtual, ^direct
+
+  block ^virtual:
+    %table = load ptr %s
+    %offset = binary sub i64 %word, 1
+    %entry = index i8 %table, %offset
+    %found = load ptr %entry
+    jump ^end
+
+  block ^direct:
+    %callee = copy ptr %word
+    jump ^end
+
+  block ^end:
+    %target = phi ptr [^virtual: %found, ^direct: %callee]
+    %r = call i64 %target(%s, %a) as (%arg0 : ptr, %arg1 : i64) -> i64
+    return i64 %r
+}
+
+function @data_bit() -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %p = addr @byte
+    %word = copy i64 %p
+    %bit = binary and i64 %word, 1
+    return i64 %bit
+}
+
+function @main() -> i32 [role=entry] {
+  slot $s : i64
+
+  block ^entry:
+    %p = addr $s
+    store i64 40, %p
+    %a = call i64 @known(%p, 2)
+    %f = addr @plus
+    %word = copy i64 %f
+    %b = call i64 @unknown(%p, %word, 2)
+    %c = call i64 @data_bit()
+    %ok0 = cmp eq i64 %a, 42
+    %ok1 = cmp eq i64 %b, 42
+    %ok2 = cmp ule i64 %c, 1
+    %a0 = binary and i64 %ok0, %ok1
+    %a1 = binary and i64 %a0, %ok2
+    %r = convert trunc i32 i64 %a1
+    %code = binary sub i32 1, %r
+    return i32 %code
+}

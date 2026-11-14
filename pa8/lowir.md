@@ -1290,6 +1290,12 @@ depend on it, a producer may omit it, and the comparison ignores it.
 
 `typed` is an instruction fact (see Instruction Facts below).
 
+On the x86-64 profiles the address of a function is even. A member function
+pointer keeps its virtual flag in bit 0 of the word that otherwise holds a
+function address, so a producer places every function at an even address and
+a consumer may take bit 0 of `addr @function` as zero. The Wasm profiles
+state nothing about the bits of a function's address.
+
 `load volatile` and `store volatile` mark an observable access to a
 volatile-qualified object. Volatility is a property of the operation, not of
 the pointer type: no pass may remove, merge, reorder, or forward a volatile

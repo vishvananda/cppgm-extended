@@ -162,6 +162,7 @@ private:
 	bool affine_constant(BlockId block, InstId& prev, InstId id);
 	bool shifted_truth_mask(BlockId block, InstId& prev, InstId id);
 	uint64_t possible_bits(Value v, Type type, unsigned depth = 0) override;
+	bool function_address(Value v) const;
 	uint64_t returned_power_bits(SymbolId symbol, Type type) override;
 	// Callee bodies are unchanged during this walk. Cache at most sixteen
 	// queries; past the budget, leave arithmetic alone rather than rescan.
@@ -1764,6 +1765,22 @@ bool Simplifier::phi_value(const Instruction& phi, Value& out)
 
 // (x op c1) op c2 -> x op (c1 op c2) for add, mul, and, or, xor; also sub
 // of a constant as an add.
+// Whether `v` is the address of a function, through pointer copies, on a
+// profile that places every function at an even address.
+bool Simplifier::function_address(Value v) const
+{
+	if (target_model::is_wasm(c_.program.target))
+		return false;
+	for (unsigned step = 0; step < 4 && v.is(ValueKind::Temp); ++step)
+	{
+		const Instruction* def = producer(v);
+		if (def == nullptr || !(def->op == Opcode::Addr || (def->op == Opcode::Copy && def->type.is_pointer())))
+			return false;
+		v = def->ops[0];
+	}
+	return v.is(ValueKind::Symbol) && is_function_kind(c_.program.symbols[v.index].kind);
+}
+
 // The bits of integer value v that may be set: a literal's; a zero
 // extension's, its source's; and/or/xor and constant shifts of those;
 // every bit of the type otherwise (types up to 64 bits).
@@ -1790,6 +1807,10 @@ uint64_t Simplifier::possible_bits(Value v, Type type, unsigned depth)
 		if (from.is_integer() && storage_bytes(from) == storage_bytes(type))
 			return possible_bits(def->ops[0], from, depth + 1);
 	}
+	// A function's address is even (lowir.md, Memory and Addressing): a
+	// member-pointer call of a known function tests bit 0 for nothing.
+	if (def->op == Opcode::Copy && width == 64 && function_address(def->ops[0]))
+		return all & ~static_cast<uint64_t>(1);
 	if (def->op == Opcode::Vector)
 	{
 		const VectorOp op = static_cast<VectorOp>(def->sub);
